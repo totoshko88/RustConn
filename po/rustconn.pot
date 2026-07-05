@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: rustconn 0.17.10\n"
+"Project-Id-Version: rustconn 0.18.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4128,7 +4128,7 @@ msgstr ""
 msgid "All connection history entries will be permanently removed."
 msgstr ""
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr ""
@@ -4836,7 +4836,7 @@ msgstr ""
 msgid "Import recording"
 msgstr ""
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr ""
 
@@ -4855,7 +4855,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr ""
 
@@ -6606,7 +6606,8 @@ msgstr ""
 msgid "Keyboard shortcuts"
 msgstr ""
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr ""
 
@@ -7476,7 +7477,7 @@ msgid "Active"
 msgstr ""
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr ""
 
@@ -8058,10 +8059,6 @@ msgstr ""
 msgid "Connecting..."
 msgstr ""
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr ""
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr ""
@@ -8288,15 +8285,15 @@ msgstr ""
 msgid "Connection list"
 msgstr ""
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr ""
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr ""
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr ""
 
@@ -8461,7 +8458,7 @@ msgid "Delete selected connections"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+msgid "Group operations mode"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8473,7 +8470,7 @@ msgid "View connection history"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+msgid "Sort alphabetically"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8481,7 +8478,7 @@ msgid "Sort connections alphabetically"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+msgid "Sort by recent usage"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8489,7 +8486,7 @@ msgid "Sort connections by recent usage"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+msgid "Open password vault"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8497,7 +8494,7 @@ msgid "Open password vault for credential management"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+msgid "Toggle smart folders"
 msgstr ""
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8738,39 +8735,39 @@ msgstr ""
 msgid "Go to Split View"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr ""
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr ""
 
@@ -9828,6 +9825,10 @@ msgstr ""
 msgid "Failed to move {} item(s):"
 msgstr ""
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr ""
@@ -9916,25 +9917,34 @@ msgstr ""
 msgid "Append newline (press Enter)"
 msgstr ""
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr ""
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+msgid "Could not save smart folder"
+msgstr ""
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr ""
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr ""
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr ""
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr ""
+
+#: rustconn/src/window/smart_folders.rs:209
+msgid "Could not save preference"
 msgstr ""
 
 #: rustconn/src/window/snippets.rs:65
@@ -10236,7 +10246,7 @@ msgstr ""
 msgid "Workspace '{}' saved"
 msgstr ""
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr ""
 

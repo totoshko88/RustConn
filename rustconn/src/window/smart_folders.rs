@@ -52,11 +52,12 @@ impl MainWindow {
                         if let Err(e) = state_mut.update_settings(settings) {
                             tracing::warn!(error = %e, "failed to save smart folder");
                             if let Some(win) = window_weak_save.upgrade() {
+                                // Persistence failure is not transient — blocking dialog (GNOME HIG).
                                 let msg = i18n_f("Could not save smart folder: {}", &[&e]);
-                                crate::toast::show_toast_on_window(
+                                crate::alert::show_error(
                                     &win,
+                                    &i18n("Could not save smart folder"),
                                     &msg,
-                                    crate::toast::ToastType::Error,
                                 );
                             }
                         }
@@ -117,11 +118,12 @@ impl MainWindow {
                         if let Err(e) = state_mut.update_settings(settings) {
                             tracing::warn!(error = %e, "failed to save edited smart folder");
                             if let Some(win) = window_weak_save.upgrade() {
+                                // Persistence failure is not transient — blocking dialog (GNOME HIG).
                                 let msg = i18n_f("Could not save smart folder: {}", &[&e]);
-                                crate::toast::show_toast_on_window(
+                                crate::alert::show_error(
                                     &win,
+                                    &i18n("Could not save smart folder"),
                                     &msg,
-                                    crate::toast::ToastType::Error,
                                 );
                             }
                         }
@@ -202,12 +204,9 @@ impl MainWindow {
                         "failed to persist smart-folders visibility toggle"
                     );
                     if let Some(win) = window_weak.upgrade() {
+                        // Settings persistence failure is not transient — blocking dialog (GNOME HIG).
                         let msg = i18n_f("Could not save preference: {}", &[&e]);
-                        crate::toast::show_toast_on_window(
-                            &win,
-                            &msg,
-                            crate::toast::ToastType::Error,
-                        );
+                        crate::alert::show_error(&win, &i18n("Could not save preference"), &msg);
                     }
                 }
             }

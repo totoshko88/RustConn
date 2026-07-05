@@ -1210,7 +1210,7 @@ pub fn start_zerotrust_connection(
                 {
                     crate::toast::show_toast_on_window(
                         window,
-                        &format!("Invalid config: {e}"),
+                        &crate::i18n::i18n_f("Invalid config: {}", &[&e.to_string()]),
                         crate::toast::ToastType::Error,
                     );
                 }

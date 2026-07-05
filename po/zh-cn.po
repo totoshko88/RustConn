@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -4175,7 +4175,7 @@ msgstr "清除历史？"
 msgid "All connection history entries will be permanently removed."
 msgstr "所有连接历史记录将被永久删除。"
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "清除"
@@ -4891,7 +4891,7 @@ msgstr "录像"
 msgid "Import recording"
 msgstr "导入录像"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "搜索录制…"
 
@@ -4910,7 +4910,7 @@ msgid ""
 msgstr "会话录像将显示在此处。使用上下文菜单开始录制会话。"
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "播放录像"
 
@@ -6670,7 +6670,8 @@ msgstr "退出应用程序"
 msgid "Keyboard shortcuts"
 msgstr "键盘快捷键"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "切换全屏"
 
@@ -7543,7 +7544,7 @@ msgid "Active"
 msgstr "活动"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "已停止"
 
@@ -8133,10 +8134,6 @@ msgstr "切换到 FreeRDP 窗口以与会话交互"
 msgid "Connecting..."
 msgstr "连接中..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "切换全屏"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "断开连接"
@@ -8363,15 +8360,15 @@ msgstr "切换协议过滤器"
 msgid "Connection list"
 msgstr "连接列表"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "打开密码库（活动）"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "未找到密码库"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "密码库已禁用"
 
@@ -8536,7 +8533,8 @@ msgid "Delete selected connections"
 msgstr "删除选中的连接"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "组操作模式"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8548,7 +8546,8 @@ msgid "View connection history"
 msgstr "查看连接历史"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "按字母顺序排序"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8556,7 +8555,8 @@ msgid "Sort connections alphabetically"
 msgstr "按字母顺序排列连接"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "按最近使用排序"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8564,7 +8564,8 @@ msgid "Sort connections by recent usage"
 msgstr "按最近使用排列连接"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "打开密码保管库"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8572,7 +8573,8 @@ msgid "Open password vault for credential management"
 msgstr "打开密码保管库以管理凭据"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "切换智能文件夹"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8813,39 +8815,39 @@ msgstr "此会话显示在另一个标签页的分屏布局中"
 msgid "Go to Split View"
 msgstr "转到分屏视图"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "清除终端"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "播放"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "停止"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "停止回放"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "重复"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "从头开始重复录制"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "搜索录制"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "播放中…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "回放完成"
 
@@ -9922,6 +9924,10 @@ msgstr "已移动 {} 个项目。"
 msgid "Failed to move {} item(s):"
 msgstr "移动 {} 个项目失败："
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "安装 picocom 以支持串口连接"
@@ -10010,25 +10016,36 @@ msgstr "要发送的文本..."
 msgid "Append newline (press Enter)"
 msgstr "追加换行符（按 Enter）"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "无法保存智能文件夹：{}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "无法保存智能文件夹：{}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "无法删除智能文件夹：{}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "无法删除智能文件夹"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "智能文件夹 '{}' 已删除"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "无法保存偏好设置：{}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "无法保存偏好设置：{}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10330,7 +10347,7 @@ msgstr "工作区名称"
 msgid "Workspace '{}' saved"
 msgstr "工作区“{}”已保存"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "保存工作区失败"
 
@@ -10341,6 +10358,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "切换全屏"
 
 #~ msgid "Import Successful"
 #~ msgstr "导入成功"

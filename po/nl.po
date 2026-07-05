@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -4233,7 +4233,7 @@ msgstr "Geschiedenis wissen?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Alle verbindingsgeschiedenisvermeldingen worden permanent verwijderd."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Wissen"
@@ -4954,7 +4954,7 @@ msgstr "Opnames"
 msgid "Import recording"
 msgstr "Opname importeren"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Opnames zoeken…"
 
@@ -4975,7 +4975,7 @@ msgstr ""
 "nemen."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Opname afspelen"
 
@@ -6765,7 +6765,8 @@ msgstr "Applicatie afsluiten"
 msgid "Keyboard shortcuts"
 msgstr "Sneltoetsen"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Volledig scherm in-/uitschakelen"
 
@@ -7643,7 +7644,7 @@ msgid "Active"
 msgstr "Actief"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Gestopt"
 
@@ -8246,10 +8247,6 @@ msgstr "Schakel over naar het FreeRDP-venster om met de sessie te werken"
 msgid "Connecting..."
 msgstr "Verbinden..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Volledig scherm in-/uitschakelen"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Verbinding verbreken"
@@ -8478,15 +8475,15 @@ msgstr "Protocolfilters in-/uitschakelen"
 msgid "Connection list"
 msgstr "Verbindingslijst"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Wachtwoordkluis openen (actief)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Wachtwoordkluis niet gevonden"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Wachtwoordkluis uitgeschakeld"
 
@@ -8651,7 +8648,8 @@ msgid "Delete selected connections"
 msgstr "Geselecteerde verbindingen verwijderen"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Groepsbewerkingsmodus"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8663,7 +8661,8 @@ msgid "View connection history"
 msgstr "Verbindingsgeschiedenis bekijken"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Alfabetisch sorteren"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8671,7 +8670,8 @@ msgid "Sort connections alphabetically"
 msgstr "Verbindingen alfabetisch sorteren"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Sorteren op recent gebruik"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8679,7 +8679,8 @@ msgid "Sort connections by recent usage"
 msgstr "Verbindingen sorteren op recent gebruik"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Wachtwoordkluis openen"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8687,7 +8688,8 @@ msgid "Open password vault for credential management"
 msgstr "Wachtwoordkluis openen voor inloggegevensbeheer"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Slimme mappen in-/uitschakelen"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8931,39 +8933,39 @@ msgstr ""
 msgid "Go to Split View"
 msgstr "Ga naar gesplitste weergave"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Terminal wissen"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Afspelen"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Stoppen"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Afspelen stoppen"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Herhalen"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Opname herhalen vanaf begin"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Opnames zoeken"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Afspelen…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Afspelen voltooid"
 
@@ -10072,6 +10074,10 @@ msgstr "{} item(s) verplaatst."
 msgid "Failed to move {} item(s):"
 msgstr "Kan {} item(s) niet verplaatsen:"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Installeer picocom voor seriële verbindingen"
@@ -10160,25 +10166,36 @@ msgstr "Te verzenden tekst..."
 msgid "Append newline (press Enter)"
 msgstr "Nieuwe regel toevoegen (druk op Enter)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Slimme map kon niet worden opgeslagen: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Slimme map kon niet worden opgeslagen: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Slimme map kon niet worden verwijderd: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Kan slimme map niet verwijderen"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Slimme map '{}' verwijderd"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Voorkeur kon niet worden opgeslagen: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Voorkeur kon niet worden opgeslagen: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10485,7 +10502,7 @@ msgstr "Werkruimtenaam"
 msgid "Workspace '{}' saved"
 msgstr "Werkruimte ‘{}’ opgeslagen"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Kan werkruimte niet opslaan"
 
@@ -10496,6 +10513,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Volledig scherm in-/uitschakelen"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import geslaagd"

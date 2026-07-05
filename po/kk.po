@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -4230,7 +4230,7 @@ msgstr "Тарихты тазалау?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Барлық қосылым тарихы жазбалары біржола жойылады."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Тазалау"
@@ -4950,7 +4950,7 @@ msgstr "Жазбалар"
 msgid "Import recording"
 msgstr "Жазбаны импорттау"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Жазбаларды іздеу…"
 
@@ -4971,7 +4971,7 @@ msgstr ""
 "мәзірді пайдаланыңыз."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Жазбаны ойнату"
 
@@ -6752,7 +6752,8 @@ msgstr "Қолданбадан шығу"
 msgid "Keyboard shortcuts"
 msgstr "Пернетақта тіркесімдері"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Толық экранды ауыстыру"
 
@@ -7628,7 +7629,7 @@ msgid "Active"
 msgstr "Белсенді"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Тоқтатылды"
 
@@ -8236,10 +8237,6 @@ msgstr "Сеанспен өзара әрекеттесу үшін FreeRDP тер
 msgid "Connecting..."
 msgstr "Қосылуда..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Толық экранды ауыстыру"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Ажырату"
@@ -8468,15 +8465,15 @@ msgstr "Хаттама сүзгілерін ауыстыру"
 msgid "Connection list"
 msgstr "Қосылымдар тізімі"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Құпия сөз қоймасын ашу (белсенді)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Құпия сөз қоймасы табылмады"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Құпия сөз қоймасы өшірілген"
 
@@ -8641,7 +8638,8 @@ msgid "Delete selected connections"
 msgstr "Таңдалған қосылымдарды жою"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Топтық операциялар режимі"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8653,7 +8651,8 @@ msgid "View connection history"
 msgstr "Қосылым тарихын көру"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Әліпби бойынша сұрыптау"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8661,7 +8660,8 @@ msgid "Sort connections alphabetically"
 msgstr "Қосылымдарды алфавит бойынша сұрыптау"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Соңғы пайдалану бойынша сұрыптау"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8669,7 +8669,8 @@ msgid "Sort connections by recent usage"
 msgstr "Қосылымдарды соңғы пайдалану бойынша сұрыптау"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Құпия сөз қоймасын ашу"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8677,7 +8678,8 @@ msgid "Open password vault for credential management"
 msgstr "Тіркелгі деректерін басқару үшін құпия сөз қоймасын ашу"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Ақылды бумаларды ауыстыру"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8918,39 +8920,39 @@ msgstr "Бұл сеанс басқа қойындының бөлінген ор�
 msgid "Go to Split View"
 msgstr "Бөлінген көрініске өту"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Терминалды тазалау"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Ойнату"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Тоқтату"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Ойнатуды тоқтату"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Қайталау"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Жазбаны басынан қайталау"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Жазбаларды іздеу"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Ойнатылуда…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Ойнату аяқталды"
 
@@ -10048,6 +10050,10 @@ msgstr "{} элемент жылжытылды."
 msgid "Failed to move {} item(s):"
 msgstr "{} элементті жылжыту сәтсіз:"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Serial қосылымдары үшін picocom орнатыңыз"
@@ -10136,25 +10142,36 @@ msgstr "Жіберілетін мәтін..."
 msgid "Append newline (press Enter)"
 msgstr "Жаңа жол қосу (Enter басыңыз)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Зерделі қалтаны сақтау мүмкін болмады: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Зерделі қалтаны сақтау мүмкін болмады: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Зерделі қалтаны жою мүмкін болмады: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Ақылды қалтаны жою мүмкін болмады"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Ақылды бума '{}' жойылды"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Параметрді сақтау мүмкін болмады: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Параметрді сақтау мүмкін болмады: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10458,7 +10475,7 @@ msgstr "Жұмыс кеңістігінің атауы"
 msgid "Workspace '{}' saved"
 msgstr "«{}» жұмыс кеңістігі сақталды"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Жұмыс кеңістігін сақтау сәтсіз аяқталды"
 
@@ -10469,6 +10486,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Толық экранды ауыстыру"
 
 #~ msgid "Import Successful"
 #~ msgstr "Импорт сәтті"

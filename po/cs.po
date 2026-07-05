@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
@@ -4220,7 +4220,7 @@ msgstr "Vymazat historii?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Všechny záznamy historie připojení budou trvale odstraněny."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Vymazat"
@@ -4940,7 +4940,7 @@ msgstr "Nahrávky"
 msgid "Import recording"
 msgstr "Importovat nahrávku"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Hledat nahrávky…"
 
@@ -4961,7 +4961,7 @@ msgstr ""
 "nahrávání relace."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Přehrát nahrávku"
 
@@ -6739,7 +6739,8 @@ msgstr "Ukončit aplikaci"
 msgid "Keyboard shortcuts"
 msgstr "Klávesové zkratky"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Přepnout celou obrazovku"
 
@@ -7616,7 +7617,7 @@ msgid "Active"
 msgstr "Aktivní"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Zastaveno"
 
@@ -8218,10 +8219,6 @@ msgstr "Přepněte do okna FreeRDP pro interakci s relací"
 msgid "Connecting..."
 msgstr "Připojování…"
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Přepnout celou obrazovku"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Odpojit"
@@ -8450,15 +8447,15 @@ msgstr "Přepnout filtry protokolů"
 msgid "Connection list"
 msgstr "Seznam připojení"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Otevřít trezor hesel (Aktivní)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Trezor hesel nenalezen"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Trezor hesel zakázán"
 
@@ -8623,7 +8620,8 @@ msgid "Delete selected connections"
 msgstr "Smazat vybraná připojení"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Režim skupinových operací"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8635,7 +8633,8 @@ msgid "View connection history"
 msgstr "Zobrazit historii připojení"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Řadit abecedně"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8643,7 +8642,8 @@ msgid "Sort connections alphabetically"
 msgstr "Seřadit připojení abecedně"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Řadit podle posledního použití"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8651,7 +8651,8 @@ msgid "Sort connections by recent usage"
 msgstr "Seřadit připojení podle posledního použití"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Otevřít trezor hesel"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8659,7 +8660,8 @@ msgid "Open password vault for credential management"
 msgstr "Otevřít trezor hesel pro správu přihlašovacích údajů"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Přepnout inteligentní složky"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8900,39 +8902,39 @@ msgstr "Tato relace je zobrazena v rozděleném rozložení jiné karty"
 msgid "Go to Split View"
 msgstr "Přejít na rozdělené zobrazení"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Vymazat terminál"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Přehrát"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Zastavit"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Zastavit přehrávání"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Opakovat"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Opakovat nahrávku od začátku"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Hledat nahrávky"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Přehrávání…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Přehrávání dokončeno"
 
@@ -10030,6 +10032,10 @@ msgstr "Přesunuto {} položek."
 msgid "Failed to move {} item(s):"
 msgstr "Nepodařilo se přesunout {} položek:"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Nainstalujte picocom pro sériová připojení"
@@ -10118,25 +10124,36 @@ msgstr "Text k odeslání…"
 msgid "Append newline (press Enter)"
 msgstr "Přidat nový řádek (Enter)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Nelze uložit chytrou složku: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Nelze uložit chytrou složku: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Nelze smazat chytrou složku: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Nelze smazat chytrou složku"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Inteligentní složka '{}' smazána"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Nelze uložit nastavení: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Nelze uložit nastavení: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10440,7 +10457,7 @@ msgstr "Název pracovního prostoru"
 msgid "Workspace '{}' saved"
 msgstr "Pracovní prostor „{}“ uložen"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Nepodařilo se uložit pracovní prostor"
 
@@ -10451,6 +10468,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Přepnout celou obrazovku"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import úspěšný"

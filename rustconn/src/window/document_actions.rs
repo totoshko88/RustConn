@@ -92,7 +92,7 @@ fn setup_open_document_action(
                         Err(e) => {
                             drop(state_ref);
                             tracing::error!(?e, "Failed to open document");
-                            groups::show_error_toast(
+                            groups::show_error_dialog(
                                 &win_for_cb,
                                 &i18n("Failed to open document."),
                             );
@@ -129,7 +129,7 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                     {
                         drop(state_ref);
                         tracing::error!(?e, "Failed to save document");
-                        groups::show_error_toast(&win, &i18n("Failed to save document."));
+                        groups::show_error_dialog(&win, &i18n("Failed to save document."));
                     }
                 } else {
                     let dialog = SaveDocumentDialog::new();
@@ -150,7 +150,7 @@ fn setup_save_document_action(window: &gtk4::ApplicationWindow, state: &SharedAp
                             ) {
                                 drop(state_ref);
                                 tracing::error!(?e, "Failed to save document");
-                                groups::show_error_toast(
+                                groups::show_error_dialog(
                                     &win_for_cb,
                                     &i18n("Failed to save document."),
                                 );
@@ -271,7 +271,7 @@ fn setup_export_document_action(window: &gtk4::ApplicationWindow, state: &Shared
                             if let Err(e) = state_ref.export_document(doc_id, &path) {
                                 drop(state_ref);
                                 tracing::error!(?e, "Failed to export document");
-                                groups::show_error_toast(
+                                groups::show_error_dialog(
                                     &win_for_cb,
                                     &i18n("Failed to export document."),
                                 );
@@ -331,7 +331,7 @@ fn setup_import_document_action(
                             Err(e) => {
                                 drop(state_ref);
                                 tracing::error!(?e, "Failed to import document");
-                                groups::show_error_toast(
+                                groups::show_error_dialog(
                                     &win_for_cb,
                                     &i18n("Failed to import document."),
                                 );

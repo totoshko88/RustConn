@@ -68,10 +68,10 @@ impl SessionControls {
         container.append(&status_label);
 
         let fullscreen_button = Button::from_icon_name("view-fullscreen-symbolic");
-        fullscreen_button.set_tooltip_text(Some(&i18n("Toggle Fullscreen")));
+        fullscreen_button.set_tooltip_text(Some(&i18n("Toggle fullscreen")));
         fullscreen_button.add_css_class("flat");
         fullscreen_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Toggle Fullscreen",
+            "Toggle fullscreen",
         ))]);
         container.append(&fullscreen_button);
 

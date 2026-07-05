@@ -81,6 +81,23 @@ For larger forms — `adw::Dialog` with custom content (Properties, Connection e
 
 Do not show a toast for critical errors — use a banner or alert dialog.
 
+### Error feedback — toast vs dialog (decision rule)
+
+When an operation fails, pick the surface by consequence, not by convenience:
+
+| Error type | Feedback | Helper |
+|-----------|----------|--------|
+| Save / validation / entity-creation failure (user data or an unfinished action at risk) | modal dialog | `alert::show_error` |
+| Persistent config problem (backend down, sync failed, cannot store secret) | banner | `adw::Banner` |
+| Transient / background failure the user can retry (connection dropped, port knock, reconnect) | toast | `ToastType::Error` |
+
+Rule of thumb: **if losing the message means losing data or a half-finished action → dialog**;
+if it's a background/network event that survives a retry → toast. Never drop a
+user-triggered failure silently or into `println!`/`tracing` only.
+
+Name helpers after what they show: a function that opens an `AlertDialog` is
+`show_error_dialog`, not `show_error_toast`.
+
 ## Boxed lists — settings and lists
 
 Any settings list → `adw::PreferencesGroup` with `adw::ActionRow` / `adw::EntryRow` /

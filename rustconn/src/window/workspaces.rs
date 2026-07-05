@@ -243,7 +243,12 @@ fn save_current_workspace(
             Some(Err(e)) => {
                 tracing::warn!("Failed to save workspace: {e}");
                 if let Some(win) = window_weak.upgrade() {
-                    show_toast_on_window(&win, &i18n("Failed to save workspace"), ToastType::Error);
+                    // Persistence failure is not transient — blocking dialog (GNOME HIG).
+                    crate::alert::show_error(
+                        &win,
+                        &i18n("Failed to save workspace"),
+                        &e.clone(),
+                    );
                 }
             }
             None => {}

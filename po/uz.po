@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Uzbek\n"
@@ -4252,7 +4252,7 @@ msgstr "Tarixni tozalashmi?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Barcha ulanish tarixi yozuvlari butunlay o'chiriladi."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Tozalash"
@@ -4972,7 +4972,7 @@ msgstr "Yozuvlar"
 msgid "Import recording"
 msgstr "Yozuvni import qilish"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Yozuvlarni qidirish…"
 
@@ -4993,7 +4993,7 @@ msgstr ""
 "kontekst menyusidan foydalaning."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Yozuvni ijro etish"
 
@@ -6777,7 +6777,8 @@ msgstr "Ilovadan chiqish"
 msgid "Keyboard shortcuts"
 msgstr "Klaviatura yorliqlari"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Toʻliq ekranni almashtirish"
 
@@ -7655,7 +7656,7 @@ msgid "Active"
 msgstr "Faol"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "To'xtatildi"
 
@@ -8273,10 +8274,6 @@ msgstr "Sessiya bilan ishlash uchun FreeRDP oynasiga o’ting"
 msgid "Connecting..."
 msgstr "Ulanmoqda..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "To'liq ekranni almashtirish"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Uzish"
@@ -8505,15 +8502,15 @@ msgstr "Protokol filtrlarini almashtirish"
 msgid "Connection list"
 msgstr "Ulanishlar ro'yxati"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Parol omborini ochish (Faol)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Parol ombori topilmadi"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Parol ombori o'chirilgan"
 
@@ -8678,7 +8675,8 @@ msgid "Delete selected connections"
 msgstr "Tanlangan ulanishlarni o’chirish"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Guruh operatsiyalari rejimi"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8690,7 +8688,8 @@ msgid "View connection history"
 msgstr "Ulanish tarixini ko’rish"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Alifbo tartibida saralash"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8698,7 +8697,8 @@ msgid "Sort connections alphabetically"
 msgstr "Ulanishlarni alifbo tartibida saralash"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "So'nggi foydalanish bo'yicha saralash"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8706,7 +8706,8 @@ msgid "Sort connections by recent usage"
 msgstr "Ulanishlarni oxirgi foydalanish bo’yicha saralash"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Parol omborini ochish"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8714,7 +8715,8 @@ msgid "Open password vault for credential management"
 msgstr "Hisob ma’lumotlarini boshqarish uchun parol omborini ochish"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Aqlli papkalarni almashtirish"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8955,39 +8957,39 @@ msgstr "Bu seans boshqa varaqning bo'lingan tartibida ko'rsatilgan"
 msgid "Go to Split View"
 msgstr "Bo'lingan ko'rinishga o'tish"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Terminalni tozalash"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Ijro"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "To’xtatish"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Ijroni to'xtatish"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Takrorlash"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Yozuvni boshidan takrorlash"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Yozuvlarni qidirish"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Ijro etilmoqda…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Ijro tugallandi"
 
@@ -10093,6 +10095,10 @@ msgstr "{} ta element ko'chirildi."
 msgid "Failed to move {} item(s):"
 msgstr "{} ta elementni ko'chirib bo'lmadi:"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Serial ulanishlar uchun picocom o'rnating"
@@ -10181,25 +10187,36 @@ msgstr "Yuboriladigan matn..."
 msgid "Append newline (press Enter)"
 msgstr "Yangi qator qo'shish (Enter bosing)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Aqlli jildni saqlab boʻlmadi: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Aqlli jildni saqlab boʻlmadi: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Aqlli jildni oʻchirib boʻlmadi: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Aqlli jildni o'chirish imkonsiz"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Aqlli papka '{}' o'chirildi"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Sozlamani saqlab boʻlmadi: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Sozlamani saqlab boʻlmadi: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10504,7 +10521,7 @@ msgstr "Ish maydoni nomi"
 msgid "Workspace '{}' saved"
 msgstr "«{}» ish maydoni saqlandi"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Ish maydonini saqlab boʻlmadi"
 
@@ -10515,6 +10532,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "To'liq ekranni almashtirish"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import muvaffaqiyatli"

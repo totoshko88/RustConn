@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -4218,7 +4218,7 @@ msgstr "Ryd historik?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Alle forbindelseshistorikposter vil blive permanent fjernet."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Ryd"
@@ -4937,7 +4937,7 @@ msgstr "Optagelser"
 msgid "Import recording"
 msgstr "Importér optagelse"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Søg optagelser…"
 
@@ -4958,7 +4958,7 @@ msgstr ""
 "en session."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Afspil optagelse"
 
@@ -6733,7 +6733,8 @@ msgstr "Afslut program"
 msgid "Keyboard shortcuts"
 msgstr "Tastaturgenveje"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Skift fuldskærm"
 
@@ -7611,7 +7612,7 @@ msgid "Active"
 msgstr "Aktive"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Stoppet"
 
@@ -8213,10 +8214,6 @@ msgstr "Skift til FreeRDP-vinduet for at interagere med sessionen"
 msgid "Connecting..."
 msgstr "Opretter forbindelse..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Skift fuldskærm"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Afbryd"
@@ -8445,15 +8442,15 @@ msgstr "Skift protokolfiltre"
 msgid "Connection list"
 msgstr "Forbindelsesliste"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Åbn adgangskodeboks (aktiv)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Adgangskodeboks ikke fundet"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Adgangskodeboks deaktiveret"
 
@@ -8618,7 +8615,8 @@ msgid "Delete selected connections"
 msgstr "Slet valgte forbindelser"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Gruppefunktionstilstand"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8630,7 +8628,8 @@ msgid "View connection history"
 msgstr "Vis forbindelseshistorik"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Sortér alfabetisk"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8638,7 +8637,8 @@ msgid "Sort connections alphabetically"
 msgstr "Sortér forbindelser alfabetisk"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Sortér efter seneste brug"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8646,7 +8646,8 @@ msgid "Sort connections by recent usage"
 msgstr "Sortér forbindelser efter seneste brug"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Åbn adgangskodeboks"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8654,7 +8655,8 @@ msgid "Open password vault for credential management"
 msgstr "Åbn adgangskodeboks til legitimationshåndtering"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Skift smart mapper"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8895,39 +8897,39 @@ msgstr "Denne session vises i en anden fanes delte layout"
 msgid "Go to Split View"
 msgstr "Gå til delt visning"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Ryd terminal"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Afspil"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Stop"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Stop afspilning"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Gentag"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Gentag optagelse fra start"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Søg optagelser"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Afspiller…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Afspilning fuldført"
 
@@ -10024,6 +10026,10 @@ msgstr "Flyttet {} element(er)."
 msgid "Failed to move {} item(s):"
 msgstr "Kunne ikke flytte {} element(er):"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Installér picocom til serielle forbindelser"
@@ -10112,25 +10118,36 @@ msgstr "Tekst til afsendelse..."
 msgid "Append newline (press Enter)"
 msgstr "Tilføj linjeskift (tryk Enter)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Kunne ikke gemme den smarte mappe: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Kunne ikke gemme den smarte mappe: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Kunne ikke slette den smarte mappe: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Kunne ikke slette smart mappe"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Smart mappe '{}' slettet"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Kunne ikke gemme indstillingen: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Kunne ikke gemme indstillingen: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10434,7 +10451,7 @@ msgstr "Arbejdsområdenavn"
 msgid "Workspace '{}' saved"
 msgstr "Arbejdsområdet „{}“ er gemt"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Arbejdsområdet kunne ikke gemmes"
 
@@ -10445,6 +10462,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Skift fuldskærm"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import vellykket"

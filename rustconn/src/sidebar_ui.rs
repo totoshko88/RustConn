@@ -662,7 +662,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     let group_ops_button = Button::from_icon_name("view-list-symbolic");
     group_ops_button.add_css_class("flat");
-    group_ops_button.set_tooltip_text(Some(&i18n("Group Operations Mode")));
+    group_ops_button.set_tooltip_text(Some(&i18n("Group operations mode")));
     group_ops_button.set_action_name(Some("win.group-operations"));
     group_ops_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Enable group operations mode for multi-select",
@@ -680,7 +680,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     let sort_button = Button::from_icon_name("view-sort-ascending-symbolic");
     sort_button.add_css_class("flat");
-    sort_button.set_tooltip_text(Some(&i18n("Sort Alphabetically")));
+    sort_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
     sort_button.set_action_name(Some("win.sort-connections"));
     sort_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Sort connections alphabetically",
@@ -689,7 +689,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     let sort_recent_button = Button::from_icon_name("view-sort-descending-symbolic");
     sort_recent_button.add_css_class("flat");
-    sort_recent_button.set_tooltip_text(Some(&i18n("Sort by Recent Usage")));
+    sort_recent_button.set_tooltip_text(Some(&i18n("Sort by recent usage")));
     sort_recent_button.set_action_name(Some("win.sort-recent"));
     sort_recent_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Sort connections by recent usage",
@@ -698,7 +698,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     let keepass_button = Button::from_icon_name("dialog-password-symbolic");
     keepass_button.add_css_class("flat");
-    keepass_button.set_tooltip_text(Some(&i18n("Open Password Vault")));
+    keepass_button.set_tooltip_text(Some(&i18n("Open password vault")));
     keepass_button.set_action_name(Some("win.open-keepass"));
     keepass_button.add_css_class("keepass-button");
     keepass_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
@@ -708,7 +708,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     let smart_folders_button = Button::from_icon_name("folder-templates-symbolic");
     smart_folders_button.add_css_class("flat");
-    smart_folders_button.set_tooltip_text(Some(&i18n("Toggle Smart Folders")));
+    smart_folders_button.set_tooltip_text(Some(&i18n("Toggle smart folders")));
     smart_folders_button.set_action_name(Some("win.toggle-smart-folders"));
     smart_folders_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Show or hide smart folders panel",

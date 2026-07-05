@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -4218,7 +4218,7 @@ msgstr "Rensa historik?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Alla anslutningshistorikposter kommer att tas bort permanent."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Rensa"
@@ -4938,7 +4938,7 @@ msgstr "Inspelningar"
 msgid "Import recording"
 msgstr "Importera inspelning"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Sök inspelningar…"
 
@@ -4959,7 +4959,7 @@ msgstr ""
 "av en session."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Spela upp inspelning"
 
@@ -6739,7 +6739,8 @@ msgstr "Avsluta applikation"
 msgid "Keyboard shortcuts"
 msgstr "Tangentbordsgenvägar"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Växla helskärm"
 
@@ -7617,7 +7618,7 @@ msgid "Active"
 msgstr "Aktiva"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Stoppad"
 
@@ -8220,10 +8221,6 @@ msgstr "Växla till FreeRDP-fönstret för att interagera med sessionen"
 msgid "Connecting..."
 msgstr "Ansluter..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Växla helskärm"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Koppla från"
@@ -8452,15 +8449,15 @@ msgstr "Växla protokollfilter"
 msgid "Connection list"
 msgstr "Anslutningslista"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Öppna lösenordsvalv (aktivt)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Lösenordsvalv hittades inte"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Lösenordsvalv inaktiverat"
 
@@ -8625,7 +8622,8 @@ msgid "Delete selected connections"
 msgstr "Ta bort valda anslutningar"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Gruppåtgärdsläge"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8637,7 +8635,8 @@ msgid "View connection history"
 msgstr "Visa anslutningshistorik"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Sortera alfabetiskt"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8645,7 +8644,8 @@ msgid "Sort connections alphabetically"
 msgstr "Sortera anslutningar alfabetiskt"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Sortera efter senaste användning"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8653,7 +8653,8 @@ msgid "Sort connections by recent usage"
 msgstr "Sortera anslutningar efter senaste användning"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Öppna lösenordsvalv"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8661,7 +8662,8 @@ msgid "Open password vault for credential management"
 msgstr "Öppna lösenordsvalv för hantering av autentiseringsuppgifter"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Växla smarta mappar"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8902,39 +8904,39 @@ msgstr "Denna session visas i en annan fliks delade layout"
 msgid "Go to Split View"
 msgstr "Gå till delad vy"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Rensa terminal"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Spela"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Stoppa"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Stoppa uppspelning"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Upprepa"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Upprepa inspelning från början"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Sök inspelningar"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Spelar…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Uppspelning klar"
 
@@ -10035,6 +10037,10 @@ msgstr "Flyttade {} objekt."
 msgid "Failed to move {} item(s):"
 msgstr "Kunde inte flytta {} objekt:"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Installera picocom för seriella anslutningar"
@@ -10123,25 +10129,36 @@ msgstr "Text att skicka..."
 msgid "Append newline (press Enter)"
 msgstr "Lägg till ny rad (tryck Enter)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Det gick inte att spara den smarta mappen: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Det gick inte att spara den smarta mappen: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Det gick inte att ta bort den smarta mappen: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Kunde inte ta bort smart mapp"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Smart mapp '{}' raderad"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Det gick inte att spara inställningen: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Det gick inte att spara inställningen: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10445,7 +10462,7 @@ msgstr "Arbetsytans namn"
 msgid "Workspace '{}' saved"
 msgstr "Arbetsytan ”{}” sparad"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Det gick inte att spara arbetsytan"
 
@@ -10456,6 +10473,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Växla helskärm"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import lyckades"

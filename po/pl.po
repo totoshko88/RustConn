@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 00:03+0300\n"
+"POT-Creation-Date: 2026-07-05 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Polish\n"
@@ -4222,7 +4222,7 @@ msgstr "Wyczyścić historię?"
 msgid "All connection history entries will be permanently removed."
 msgstr "Wszystkie wpisy historii połączeń zostaną trwale usunięte."
 
-#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:263
+#: rustconn/src/dialogs/history.rs:198 rustconn/src/terminal/playback.rs:256
 #: rustconn/src/window/edit_group.rs:604 rustconn/src/window/edit_group.rs:1038
 msgid "Clear"
 msgstr "Wyczyść"
@@ -4942,7 +4942,7 @@ msgstr "Nagrania"
 msgid "Import recording"
 msgstr "Importuj nagranie"
 
-#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:297
+#: rustconn/src/dialogs/recording.rs:103 rustconn/src/terminal/playback.rs:290
 msgid "Search recordings…"
 msgstr "Szukaj nagrań…"
 
@@ -4963,7 +4963,7 @@ msgstr ""
 "nagrywanie sesji."
 
 #: rustconn/src/dialogs/recording.rs:360 rustconn/src/dialogs/recording.rs:363
-#: rustconn/src/terminal/playback.rs:269
+#: rustconn/src/terminal/playback.rs:262
 msgid "Play recording"
 msgstr "Odtwórz nagranie"
 
@@ -6744,7 +6744,8 @@ msgstr "Zamknij aplikację"
 msgid "Keyboard shortcuts"
 msgstr "Skróty klawiszowe"
 
-#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:646 rustconn/src/embedded.rs:71
+#: rustconn/src/embedded.rs:74 rustconn/src/embedded.rs:193
 msgid "Toggle fullscreen"
 msgstr "Przełącz pełny ekran"
 
@@ -7622,7 +7623,7 @@ msgid "Active"
 msgstr "Aktywne"
 
 #: rustconn/src/dialogs/tunnel.rs:108 rustconn/src/dialogs/tunnel.rs:177
-#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:461
+#: rustconn/src/dialogs/tunnel.rs:530 rustconn/src/terminal/playback.rs:454
 msgid "Stopped"
 msgstr "Zatrzymano"
 
@@ -8228,10 +8229,6 @@ msgstr "Przełącz do okna FreeRDP, aby korzystać z sesji"
 msgid "Connecting..."
 msgstr "Łączenie..."
 
-#: rustconn/src/embedded.rs:71 rustconn/src/embedded.rs:74
-msgid "Toggle Fullscreen"
-msgstr "Przełącz pełny ekran"
-
 #: rustconn/src/embedded.rs:79 rustconn/src/embedded.rs:83
 msgid "Disconnect"
 msgstr "Rozłącz"
@@ -8460,15 +8457,15 @@ msgstr "Przełącz filtry protokołów"
 msgid "Connection list"
 msgstr "Lista połączeń"
 
-#: rustconn/src/sidebar/mod.rs:1861
+#: rustconn/src/sidebar/mod.rs:1844
 msgid "Open Password Vault (Active)"
 msgstr "Otwórz sejf haseł (aktywny)"
 
-#: rustconn/src/sidebar/mod.rs:1866
+#: rustconn/src/sidebar/mod.rs:1849
 msgid "Password Vault Not Found"
 msgstr "Nie znaleziono sejfu haseł"
 
-#: rustconn/src/sidebar/mod.rs:1869
+#: rustconn/src/sidebar/mod.rs:1852
 msgid "Password Vault Disabled"
 msgstr "Sejf haseł wyłączony"
 
@@ -8633,7 +8630,8 @@ msgid "Delete selected connections"
 msgstr "Usuń wybrane połączenia"
 
 #: rustconn/src/sidebar_ui.rs:665
-msgid "Group Operations Mode"
+#, fuzzy
+msgid "Group operations mode"
 msgstr "Tryb operacji grupowych"
 
 #: rustconn/src/sidebar_ui.rs:668
@@ -8645,7 +8643,8 @@ msgid "View connection history"
 msgstr "Wyświetl historię połączeń"
 
 #: rustconn/src/sidebar_ui.rs:683
-msgid "Sort Alphabetically"
+#, fuzzy
+msgid "Sort alphabetically"
 msgstr "Sortuj alfabetycznie"
 
 #: rustconn/src/sidebar_ui.rs:686
@@ -8653,7 +8652,8 @@ msgid "Sort connections alphabetically"
 msgstr "Sortuj połączenia alfabetycznie"
 
 #: rustconn/src/sidebar_ui.rs:692
-msgid "Sort by Recent Usage"
+#, fuzzy
+msgid "Sort by recent usage"
 msgstr "Sortuj według ostatniego użycia"
 
 #: rustconn/src/sidebar_ui.rs:695
@@ -8661,7 +8661,8 @@ msgid "Sort connections by recent usage"
 msgstr "Sortuj połączenia wg ostatniego użycia"
 
 #: rustconn/src/sidebar_ui.rs:701
-msgid "Open Password Vault"
+#, fuzzy
+msgid "Open password vault"
 msgstr "Otwórz sejf haseł"
 
 #: rustconn/src/sidebar_ui.rs:705
@@ -8669,7 +8670,8 @@ msgid "Open password vault for credential management"
 msgstr "Otwórz sejf haseł do zarządzania poświadczeniami"
 
 #: rustconn/src/sidebar_ui.rs:711
-msgid "Toggle Smart Folders"
+#, fuzzy
+msgid "Toggle smart folders"
 msgstr "Przełącz foldery inteligentne"
 
 #: rustconn/src/sidebar_ui.rs:714
@@ -8910,39 +8912,39 @@ msgstr "Ta sesja jest wyświetlana w podzielonym układzie innej karty"
 msgid "Go to Split View"
 msgstr "Przejdź do widoku podzielonego"
 
-#: rustconn/src/terminal/playback.rs:265
+#: rustconn/src/terminal/playback.rs:258
 msgid "Clear terminal"
 msgstr "Wyczyść terminal"
 
-#: rustconn/src/terminal/playback.rs:268
+#: rustconn/src/terminal/playback.rs:261
 msgid "Play"
 msgstr "Odtwórz"
 
-#: rustconn/src/terminal/playback.rs:272
+#: rustconn/src/terminal/playback.rs:265
 msgid "Stop"
 msgstr "Zatrzymaj"
 
-#: rustconn/src/terminal/playback.rs:273
+#: rustconn/src/terminal/playback.rs:266
 msgid "Stop playback"
 msgstr "Zatrzymaj odtwarzanie"
 
-#: rustconn/src/terminal/playback.rs:276
+#: rustconn/src/terminal/playback.rs:269
 msgid "Repeat"
 msgstr "Powtórz"
 
-#: rustconn/src/terminal/playback.rs:277
+#: rustconn/src/terminal/playback.rs:270
 msgid "Repeat recording from start"
 msgstr "Powtórz nagranie od początku"
 
-#: rustconn/src/terminal/playback.rs:298 rustconn/src/terminal/playback.rs:299
+#: rustconn/src/terminal/playback.rs:291 rustconn/src/terminal/playback.rs:292
 msgid "Search recordings"
 msgstr "Szukaj nagrań"
 
-#: rustconn/src/terminal/playback.rs:455
+#: rustconn/src/terminal/playback.rs:448
 msgid "Playing…"
 msgstr "Odtwarzanie…"
 
-#: rustconn/src/terminal/playback.rs:467
+#: rustconn/src/terminal/playback.rs:460
 msgid "Playback complete"
 msgstr "Odtwarzanie zakończone"
 
@@ -10051,6 +10053,10 @@ msgstr "Przeniesiono {} element(ów)."
 msgid "Failed to move {} item(s):"
 msgstr "Nie udało się przenieść {} element(ów):"
 
+#: rustconn/src/window/protocols.rs:1213
+msgid "Invalid config: {}"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:1416
 msgid "Install picocom for Serial connections"
 msgstr "Zainstaluj picocom dla połączeń szeregowych"
@@ -10139,25 +10145,36 @@ msgstr "Tekst do wysłania..."
 msgid "Append newline (press Enter)"
 msgstr "Dodaj nowy wiersz (naciśnij Enter)"
 
-#: rustconn/src/window/smart_folders.rs:55
-#: rustconn/src/window/smart_folders.rs:120
+#: rustconn/src/window/smart_folders.rs:56
+#: rustconn/src/window/smart_folders.rs:122
 msgid "Could not save smart folder: {}"
 msgstr "Nie można zapisać inteligentnego folderu: {}"
 
-#: rustconn/src/window/smart_folders.rs:168
+#: rustconn/src/window/smart_folders.rs:59
+#: rustconn/src/window/smart_folders.rs:125
+#, fuzzy
+msgid "Could not save smart folder"
+msgstr "Nie można zapisać inteligentnego folderu: {}"
+
+#: rustconn/src/window/smart_folders.rs:170
 msgid "Could not delete smart folder: {}"
 msgstr "Nie można usunąć inteligentnego folderu: {}"
 
-#: rustconn/src/window/smart_folders.rs:169
+#: rustconn/src/window/smart_folders.rs:171
 msgid "Could not delete smart folder"
 msgstr "Nie można usunąć inteligentnego folderu"
 
-#: rustconn/src/window/smart_folders.rs:176
+#: rustconn/src/window/smart_folders.rs:178
 msgid "Smart folder '{}' deleted"
 msgstr "Folder inteligentny '{}' usunięty"
 
-#: rustconn/src/window/smart_folders.rs:205
+#: rustconn/src/window/smart_folders.rs:208
 msgid "Could not save preference: {}"
+msgstr "Nie można zapisać preferencji: {}"
+
+#: rustconn/src/window/smart_folders.rs:209
+#, fuzzy
+msgid "Could not save preference"
 msgstr "Nie można zapisać preferencji: {}"
 
 #: rustconn/src/window/snippets.rs:65
@@ -10463,7 +10480,7 @@ msgstr "Nazwa obszaru roboczego"
 msgid "Workspace '{}' saved"
 msgstr "Zapisano obszar roboczy „{}”"
 
-#: rustconn/src/window/workspaces.rs:246
+#: rustconn/src/window/workspaces.rs:249
 msgid "Failed to save workspace"
 msgstr "Nie udało się zapisać obszaru roboczego"
 
@@ -10474,6 +10491,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;połączenie;terminal;zdalny;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Toggle Fullscreen"
+#~ msgstr "Przełącz pełny ekran"
 
 #~ msgid "Import Successful"
 #~ msgstr "Import zakończony pomyślnie"
