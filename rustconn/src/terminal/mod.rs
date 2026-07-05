@@ -84,6 +84,42 @@ struct RemoteRecordingInfo {
     ssh_params: SshRecordingParams,
 }
 
+/// Whether a session can be hosted in a split panel, and how.
+///
+/// Keyed on the stored widget kind rather than a protocol string, so an
+/// external-process viewer is declined even when its protocol is rdp/vnc/spice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SplitEligibility {
+    /// VTE terminal or an in-process embedded viewer — can be split.
+    Embeddable,
+    /// rdp/vnc/spice running via an external process/viewer — cannot be embedded.
+    ExternalViewer,
+    /// No live session/widget for this id.
+    None,
+}
+
+/// Maps a session's stored state to its split eligibility (pure, GTK-free).
+///
+/// `session_widgets` storage wins over `has_terminal`: an embedded viewer or
+/// external process is classified by its variant; otherwise a live VTE terminal
+/// is `Embeddable`; anything unknown is `None`.
+#[must_use]
+fn eligibility_from(
+    has_terminal: bool,
+    storage: Option<&SessionWidgetStorage>,
+) -> SplitEligibility {
+    match storage {
+        Some(
+            SessionWidgetStorage::Vnc(_)
+            | SessionWidgetStorage::EmbeddedRdp(_)
+            | SessionWidgetStorage::EmbeddedSpice(_),
+        ) => SplitEligibility::Embeddable,
+        Some(SessionWidgetStorage::ExternalProcess(_)) => SplitEligibility::ExternalViewer,
+        None if has_terminal => SplitEligibility::Embeddable,
+        None => SplitEligibility::None,
+    }
+}
+
 /// Terminal notebook widget for managing multiple terminal sessions
 /// Now using adw::TabView for modern GNOME HIG compliance
 pub struct TerminalNotebook {
@@ -1005,6 +1041,25 @@ impl TerminalNotebook {
             .borrow()
             .get(&session_id)
             .map(|t| t.clone().upcast())
+    }
+
+    /// Reports whether a session can be split, keyed on its stored widget kind.
+    #[must_use]
+    #[expect(dead_code, reason = "wired into split_view_actions.rs in Task 4")]
+    pub fn split_eligibility(&self, session_id: Uuid) -> SplitEligibility {
+        // Scope each borrow so we never hold two RefCell borrows at once.
+        let from_widget = {
+            let widgets = self.session_widgets.borrow();
+            widgets
+                .get(&session_id)
+                .map(|storage| eligibility_from(false, Some(storage)))
+        };
+        if let Some(eligibility) = from_widget {
+            return eligibility;
+        }
+
+        let has_terminal = self.terminals.borrow().contains_key(&session_id);
+        eligibility_from(has_terminal, None)
     }
 
     /// Gets the session state for a VNC session
@@ -3006,4 +3061,56 @@ fn cursor_line_text(terminal: &Terminal) -> Option<String> {
             .find(|l| !l.trim().is_empty())
             .map(str::to_owned)
     })
+}
+
+#[cfg(test)]
+mod split_eligibility_tests {
+    use super::{SessionWidgetStorage, SplitEligibility, eligibility_from};
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    #[test]
+    fn external_process_is_external_viewer() {
+        // Constructible without GTK — carries only a child-process handle.
+        let storage = SessionWidgetStorage::ExternalProcess(Rc::new(RefCell::new(None)));
+        assert_eq!(
+            eligibility_from(false, Some(&storage)),
+            SplitEligibility::ExternalViewer
+        );
+    }
+
+    #[test]
+    fn stored_widget_wins_over_terminal_flag() {
+        // Even if a stray terminal flag is set, an external viewer stays declined.
+        let storage = SessionWidgetStorage::ExternalProcess(Rc::new(RefCell::new(None)));
+        assert_eq!(
+            eligibility_from(true, Some(&storage)),
+            SplitEligibility::ExternalViewer
+        );
+    }
+
+    #[test]
+    fn terminal_only_session_is_embeddable() {
+        assert_eq!(eligibility_from(true, None), SplitEligibility::Embeddable);
+    }
+
+    #[test]
+    fn unknown_session_is_none() {
+        assert_eq!(eligibility_from(false, None), SplitEligibility::None);
+    }
+
+    #[test]
+    fn embedded_widget_variants_are_embeddable() {
+        // The Vnc/EmbeddedRdp/EmbeddedSpice arms need real GTK widgets to
+        // construct, so gate on a display; skip cleanly when headless.
+        if gtk4::init().is_err() {
+            return;
+        }
+        let widget = Rc::new(crate::session::VncSessionWidget::new());
+        let storage = SessionWidgetStorage::Vnc(widget);
+        assert_eq!(
+            eligibility_from(false, Some(&storage)),
+            SplitEligibility::Embeddable
+        );
+    }
 }
