@@ -35,6 +35,7 @@ pub mod cluster;
 pub mod config;
 pub mod connection;
 pub mod dialog_utils;
+pub mod display_geometry;
 pub mod document;
 pub mod drag_drop;
 pub mod dynamic_folder;
@@ -118,6 +119,7 @@ pub use connection::{
     intern_connection_strings, intern_hostname, intern_protocol_name, intern_username,
     log_interning_stats, log_interning_stats_with_warning, looks_like_password_prompt,
 };
+pub use display_geometry::{DesktopRequest, desktop_request_for_area};
 pub use document::{
     DOCUMENT_FORMAT_VERSION, Document, DocumentError, DocumentManager, DocumentResult,
     EncryptionStrength,
