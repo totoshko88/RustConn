@@ -1633,8 +1633,8 @@ impl MainWindow {
 
             // For SSH: register session info for potential drag-and-drop
             // Per spec: new connections ALWAYS open in a new tab, never in split pane
-            // Don't pass terminal - it stays in TabView page
-            split_view.add_session(info.clone(), None);
+            // The display widget is resolved on demand via the content provider.
+            split_view.add_session(info.clone());
 
             // Per spec: new connections always show in TabView (as a new tab)
             // Hide split view, show TabView content
@@ -3235,8 +3235,8 @@ impl MainWindow {
         // Per spec: New connections ALWAYS create independent Root_Tabs
         // Register session for potential drag-and-drop, but don't show in split pane
         if let Some(info) = notebook.get_session_info(session_id) {
-            // Don't pass terminal - it stays in TabView page
-            split_view.add_session(info, None);
+            // The display widget is resolved on demand via the content provider.
+            split_view.add_session(info);
         }
 
         // Hide split view, show TabView content for the new tab

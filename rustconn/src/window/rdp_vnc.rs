@@ -904,7 +904,7 @@ fn start_external_rdp_session(
 
     // Add to split_view
     if let Some(info) = notebook.get_session_info(session_id) {
-        split_view.add_session(info, None);
+        split_view.add_session(info);
     }
 
     // Monitor external process — auto-close tab when FreeRDP window is closed

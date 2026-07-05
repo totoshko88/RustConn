@@ -250,6 +250,17 @@ pub type ContainerColor = Rc<RefCell<Option<usize>>>;
 /// Shared panel UUID map type for sharing between bridge and callbacks
 type SharedPanelUuidMap = Rc<RefCell<HashMap<PanelId, Uuid>>>;
 
+/// Resolves a session's display widget (VTE terminal or embedded RDP/VNC/SPICE
+/// viewer) for placement in a split panel.
+///
+/// Wired by the window to `TerminalNotebook::get_session_display_widget`, this
+/// lets the bridge place any session's content uniformly without knowing the
+/// concrete protocol widget type. Shared behind an `Rc<RefCell<..>>` so it can
+/// be resolved lazily from `'static` GTK callbacks (drop target).
+pub type ContentProvider = Rc<dyn Fn(Uuid) -> Option<gtk4::Widget>>;
+/// Shared, settable content-widget provider used by the placement path.
+type SharedContentProvider = Rc<RefCell<Option<ContentProvider>>>;
+
 /// Bridge providing legacy-compatible API over new split view system
 pub struct SplitViewBridge {
     /// The underlying adapter
@@ -258,8 +269,17 @@ pub struct SplitViewBridge {
     root: GtkBox,
     /// Shared sessions map
     sessions: SharedSessions,
-    /// Shared terminals map
+    /// Shared terminals map.
+    ///
+    /// Retained only for the VTE-specific broadcast feature and legacy focus
+    /// lookups; the placement path resolves content through
+    /// [`Self::content_widget`] instead.
     terminals: SharedTerminals,
+    /// Resolves any session's display widget for uniform placement.
+    ///
+    /// Set by the window via [`Self::set_content_provider`]. When unset, the
+    /// placement path falls back to the internal `terminals` map.
+    content_provider: SharedContentProvider,
     /// Session color map
     session_colors: SessionColorMap,
     /// Color pool for allocation (shared across all split containers)
@@ -344,6 +364,7 @@ impl SplitViewBridge {
             root,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             terminals: Rc::new(RefCell::new(HashMap::new())),
+            content_provider: Rc::new(RefCell::new(None)),
             session_colors: Rc::new(RefCell::new(HashMap::new())),
             color_pool,
             container_color: Rc::new(RefCell::new(None)),
@@ -544,18 +565,43 @@ impl SplitViewBridge {
             .any(|&pid| adapter.get_panel_session(pid).is_some())
     }
 
-    /// Adds a session to the shared session list
-    pub fn add_session(&self, session: TerminalSession, terminal: Option<Terminal>) {
+    /// Adds a session to the shared session list.
+    ///
+    /// The display widget is no longer passed here: it is resolved on demand
+    /// via the content provider (see [`Self::content_widget`]), which lets a
+    /// panel host any session's widget (VTE terminal or embedded viewer)
+    /// uniformly.
+    pub fn add_session(&self, session: TerminalSession) {
         let session_id = session.id;
-        tracing::debug!(
-            "add_session: session_id={}, has_terminal={}",
-            session_id,
-            terminal.is_some()
-        );
+        tracing::debug!("add_session: session_id={}", session_id);
         self.sessions.borrow_mut().insert(session_id, session);
-        if let Some(term) = terminal {
-            self.terminals.borrow_mut().insert(session_id, term);
+    }
+
+    /// Sets the provider used to resolve a session's display widget.
+    ///
+    /// The window wires this to `TerminalNotebook::get_session_display_widget`
+    /// so the bridge can place terminals and embedded viewers through one path.
+    pub fn set_content_provider(&self, provider: ContentProvider) {
+        *self.content_provider.borrow_mut() = Some(provider);
+    }
+
+    /// Resolves the display widget for a session for placement in a panel.
+    ///
+    /// Uses the wired content provider first (VTE terminal or embedded
+    /// RDP/VNC/SPICE viewer); falls back to the internal `terminals` map when
+    /// no provider is set. Returns `None` when the session has no live widget.
+    #[must_use]
+    pub fn content_widget(&self, session_id: Uuid) -> Option<gtk4::Widget> {
+        let provider = self.content_provider.borrow().as_ref().map(Rc::clone);
+        if let Some(provider) = provider
+            && let Some(widget) = provider(session_id)
+        {
+            return Some(widget);
         }
+        self.terminals
+            .borrow()
+            .get(&session_id)
+            .map(|t| t.clone().upcast())
     }
 
     /// Removes a session from the shared session list
@@ -740,26 +786,25 @@ impl SplitViewBridge {
             self.set_session_color(session_id, color_index);
         }
 
-        // Set terminal content if available
-        if let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() {
+        // Set content (VTE terminal or embedded viewer) if resolvable.
+        if let Some(content) = self.content_widget(session_id) {
             tracing::debug!(
-                "show_session: found terminal for session {}, setting panel content",
+                "show_session: found content widget for session {}, setting panel content",
                 session_id
             );
-            // Remove terminal from any previous parent first
-            // This is critical - GTK widgets can only have one parent
-            Self::detach_terminal_from_parent(&terminal);
+            // Remove the widget from any previous parent first — a GTK widget
+            // can only have one parent, and we reparent the same instance.
+            Self::detach_from_parent(&content);
 
-            let wrapper = self.wrap_terminal_for_panel(&terminal);
-            self.adapter.borrow().set_panel_content(panel_id, &wrapper);
+            let placed = self.wrap_content_for_panel(&content);
+            self.adapter.borrow().set_panel_content(panel_id, &placed);
 
-            // Ensure terminal is visible
-            terminal.set_visible(true);
+            // Ensure the content widget is visible
+            content.set_visible(true);
         } else {
             tracing::warn!(
-                "show_session: NO terminal found for session {} in self.terminals (available: {:?})",
-                session_id,
-                self.terminals.borrow().keys().collect::<Vec<_>>()
+                "show_session: no content widget found for session {}",
+                session_id
             );
         }
 
@@ -816,33 +861,37 @@ impl SplitViewBridge {
             panel_id
         };
 
-        // Get terminal for this session
-        let terminal = self
-            .terminals
-            .borrow()
-            .get(&session_id)
-            .cloned()
-            .ok_or("Terminal not found")?;
+        // Resolve the content widget (terminal or embedded viewer) for this session
+        let content = self
+            .content_widget(session_id)
+            .ok_or("Content widget not found")?;
 
-        // Detach from current parent
-        Self::detach_terminal_from_parent(&terminal);
+        // Detach from current parent (reparent the same instance)
+        Self::detach_from_parent(&content);
 
-        // Set terminal directly as panel content with optional scrollbar
-        let wrapper = self.wrap_terminal_for_panel(&terminal);
-        self.adapter.borrow().set_panel_content(panel_id, &wrapper);
+        // Set the widget as panel content (scrollbar added only for VTE)
+        let placed = self.wrap_content_for_panel(&content);
+        self.adapter.borrow().set_panel_content(panel_id, &placed);
 
-        // Ensure terminal is visible
-        terminal.set_visible(true);
+        // Ensure the content widget is visible
+        content.set_visible(true);
 
         Ok(())
     }
 
-    /// Detaches a terminal from its current parent widget
-    fn detach_terminal_from_parent(terminal: &Terminal) {
-        if let Some(parent) = terminal.parent()
-            && let Some(box_widget) = parent.downcast_ref::<GtkBox>()
-        {
-            box_widget.remove(terminal);
+    /// Detaches a widget from its current parent.
+    ///
+    /// Generic over any content widget (VTE terminal or embedded viewer): a
+    /// `GtkBox` parent uses `remove`, any other parent uses `unparent`. GTK
+    /// widgets can only have one parent, so this must run before re-attaching
+    /// the same instance elsewhere.
+    fn detach_from_parent(widget: &gtk4::Widget) {
+        if let Some(parent) = widget.parent() {
+            if let Some(box_widget) = parent.downcast_ref::<GtkBox>() {
+                box_widget.remove(widget);
+            } else {
+                widget.unparent();
+            }
         }
     }
 
@@ -856,22 +905,37 @@ impl SplitViewBridge {
         terminal.set_vexpand(true);
     }
 
-    /// Wraps a terminal in a horizontal box with an optional scrollbar.
+    /// Prepares a content widget for placement in a split panel.
     ///
-    /// Uses a standalone `GtkScrollbar` connected to VTE's `vadjustment`
-    /// (the same approach used by GNOME Terminal).
-    fn wrap_terminal_for_panel(&self, terminal: &Terminal) -> GtkBox {
-        Self::prepare_terminal_for_panel(terminal);
-        let wrapper = GtkBox::new(Orientation::Horizontal, 0);
-        wrapper.set_hexpand(true);
-        wrapper.set_vexpand(true);
-        wrapper.append(terminal);
-        if self.show_scrollbar {
-            let scrollbar =
-                gtk4::Scrollbar::new(Orientation::Vertical, terminal.vadjustment().as_ref());
-            wrapper.append(&scrollbar);
+    /// A `vte4::Terminal` is wrapped in a horizontal box with a standalone
+    /// `GtkScrollbar` bound to its `vadjustment` (the same approach used by
+    /// GNOME Terminal). Any other widget (embedded RDP/VNC/SPICE viewer) is
+    /// placed directly — it carries its own toolbar and reconnect banner — and
+    /// the same instance is returned so no widget content is ever cloned.
+    fn wrap_content_for_panel(&self, content: &gtk4::Widget) -> gtk4::Widget {
+        Self::wrap_content_for_panel_impl(content, self.show_scrollbar)
+    }
+
+    /// Associated form of [`Self::wrap_content_for_panel`] for use from
+    /// `'static` GTK callbacks that do not hold `&self` (drop target).
+    fn wrap_content_for_panel_impl(content: &gtk4::Widget, show_scrollbar: bool) -> gtk4::Widget {
+        if let Some(terminal) = content.downcast_ref::<Terminal>() {
+            Self::prepare_terminal_for_panel(terminal);
+            let wrapper = GtkBox::new(Orientation::Horizontal, 0);
+            wrapper.set_hexpand(true);
+            wrapper.set_vexpand(true);
+            wrapper.append(terminal);
+            if show_scrollbar {
+                let scrollbar =
+                    gtk4::Scrollbar::new(Orientation::Vertical, terminal.vadjustment().as_ref());
+                wrapper.append(&scrollbar);
+            }
+            wrapper.upcast()
+        } else {
+            content.set_hexpand(true);
+            content.set_vexpand(true);
+            content.clone()
         }
-        wrapper
     }
 
     /// Sets whether split panels show a scrollbar next to VTE terminals.
@@ -1023,9 +1087,8 @@ impl SplitViewBridge {
         let panel_ids = adapter.panel_ids();
 
         tracing::debug!(
-            "restore_panel_contents: restoring {} panels, terminals count: {}",
-            panel_ids.len(),
-            self.terminals.borrow().len()
+            "restore_panel_contents: restoring {} panels",
+            panel_ids.len()
         );
 
         for panel_id in panel_ids {
@@ -1033,31 +1096,31 @@ impl SplitViewBridge {
                 let session_uuid = session_id.as_uuid();
 
                 tracing::debug!(
-                    "restore_panel_contents: panel {} has session {}, looking for terminal",
+                    "restore_panel_contents: panel {} has session {}, resolving content widget",
                     panel_id,
                     session_uuid
                 );
 
-                // Get terminal for this session
-                if let Some(terminal) = self.terminals.borrow().get(&session_uuid).cloned() {
-                    // Detach from current parent
-                    Self::detach_terminal_from_parent(&terminal);
+                // Resolve the content widget (terminal or embedded viewer)
+                if let Some(content) = self.content_widget(session_uuid) {
+                    // Detach from current parent (reparent the same instance)
+                    Self::detach_from_parent(&content);
 
-                    // Set terminal with optional scrollbar as panel content
-                    let wrapper = self.wrap_terminal_for_panel(&terminal);
-                    adapter.set_panel_content(panel_id, &wrapper);
+                    // Set the widget as panel content (scrollbar added only for VTE)
+                    let placed = self.wrap_content_for_panel(&content);
+                    adapter.set_panel_content(panel_id, &placed);
 
-                    // Ensure terminal is visible
-                    terminal.set_visible(true);
+                    // Ensure the content widget is visible
+                    content.set_visible(true);
 
                     tracing::debug!(
-                        "restore_panel_contents: restored terminal for session {} in panel {}",
+                        "restore_panel_contents: restored content for session {} in panel {}",
                         session_uuid,
                         panel_id
                     );
                 } else {
                     tracing::warn!(
-                        "restore_panel_contents: no terminal found for session {} in panel {}",
+                        "restore_panel_contents: no content widget for session {} in panel {}",
                         session_uuid,
                         panel_id
                     );
@@ -1164,6 +1227,7 @@ impl SplitViewBridge {
         let container_color_rc = Rc::clone(&self.container_color);
         let sessions_rc = Rc::clone(&self.sessions);
         let terminals_rc = Rc::clone(&self.terminals);
+        let content_provider_rc = Rc::clone(&self.content_provider);
         let focused_pane_uuid = Rc::new(RefCell::new(pane_uuid));
         let show_scrollbar_for_drop = self.show_scrollbar;
 
@@ -1239,23 +1303,19 @@ impl SplitViewBridge {
                 return false;
             }
 
-            // Display terminal in panel if available
-            if let Some(terminal) = terminal_opt {
-                Self::detach_terminal_from_parent(&terminal);
-                Self::prepare_terminal_for_panel(&terminal);
-                let wrapper = GtkBox::new(Orientation::Horizontal, 0);
-                wrapper.set_hexpand(true);
-                wrapper.set_vexpand(true);
-                wrapper.append(&terminal);
-                if show_scrollbar_for_drop {
-                    let scrollbar = gtk4::Scrollbar::new(
-                        Orientation::Vertical,
-                        terminal.vadjustment().as_ref(),
-                    );
-                    wrapper.append(&scrollbar);
-                }
-                adapter_rc.borrow().set_panel_content(panel_id, &wrapper);
-                terminal.set_visible(true);
+            // Display the session's content widget: prefer the content provider
+            // (VTE terminal or embedded RDP/VNC/SPICE viewer), falling back to
+            // the dropped terminal when no provider is wired.
+            let content = content_provider_rc
+                .borrow()
+                .as_ref()
+                .and_then(|provider| provider(session_uuid))
+                .or_else(|| terminal_opt.as_ref().map(|t| t.clone().upcast()));
+            if let Some(content) = content {
+                Self::detach_from_parent(&content);
+                let placed = Self::wrap_content_for_panel_impl(&content, show_scrollbar_for_drop);
+                adapter_rc.borrow().set_panel_content(panel_id, &placed);
+                content.set_visible(true);
             }
 
             // Get the container color and call the on_drop callback
@@ -2060,69 +2120,14 @@ impl SplitViewBridge {
             });
     }
 
-    /// Moves a session to a specific panel by UUID.
+    /// Moves a session into a panel, displaying the given content widget.
     ///
-    /// This is called when the user selects a session from the "Select Tab" popover.
-    /// It places the session in the specified panel and updates the terminal display.
-    ///
-    /// Note: This method tries to get the terminal from the internal `terminals` map,
-    /// which may be empty if terminals are stored in `TerminalNotebook`. For reliable
-    /// terminal display, use `move_session_to_panel_with_terminal` instead.
-    ///
-    /// # Arguments
-    ///
-    /// * `panel_uuid` - The UUID of the target panel
-    /// * `session_id` - The UUID of the session to move
-    ///
-    /// # Returns
-    ///
-    /// `Ok(())` on success, or an error message on failure.
-    pub fn move_session_to_panel(&self, panel_uuid: Uuid, session_id: Uuid) -> Result<(), String> {
-        let panel_id = *self
-            .uuid_panel_map
-            .borrow()
-            .get(&panel_uuid)
-            .ok_or("Panel not found")?;
-
-        let session = rustconn_core::split::SessionId::from_uuid(session_id);
-
-        // Place session in panel
-        self.adapter
-            .borrow_mut()
-            .place_in_panel(panel_id, session)
-            .map_err(|e| e.to_string())?;
-
-        // Set terminal content if available from internal map
-        if let Some(terminal) = self.terminals.borrow().get(&session_id).cloned() {
-            Self::detach_terminal_from_parent(&terminal);
-            let wrapper = self.wrap_terminal_for_panel(&terminal);
-            self.adapter.borrow().set_panel_content(panel_id, &wrapper);
-            terminal.set_visible(true);
-        }
-
-        // Update pane's current_session for filtering in Select Tab
-        {
-            let mut panes = self.panes.borrow_mut();
-            if let Some(pane) = panes.iter_mut().find(|p| p.id() == panel_uuid) {
-                pane.set_current_session(Some(session_id));
-            }
-        }
-
-        // Update focused pane UUID
-        *self.focused_pane_uuid.borrow_mut() = Some(panel_uuid);
-
-        // Update focus styling in the adapter
-        if let Err(e) = self.adapter.borrow_mut().set_focus(panel_id) {
-            tracing::warn!("Failed to set focus on panel {}: {}", panel_id, e);
-        }
-
-        Ok(())
-    }
-
-    /// Moves a session to a specific panel by UUID, with an externally provided terminal.
-    ///
-    /// This is the preferred method when the terminal is stored in `TerminalNotebook`
-    /// rather than in the bridge's internal `terminals` map.
+    /// This is the uniform placement path used by Select Tab and drag-and-drop:
+    /// `content` may be a VTE terminal or an embedded RDP/VNC/SPICE viewer. The
+    /// same widget instance is reparented into the panel (never cloned), so a
+    /// live protocol connection is preserved. A VTE terminal is stored in the
+    /// internal `terminals` map for the broadcast feature; embedded widgets are
+    /// not.
     ///
     /// The session's color is set to match the container's color, ensuring
     /// consistent tab coloring for all sessions in this split container.
@@ -2131,19 +2136,20 @@ impl SplitViewBridge {
     ///
     /// * `panel_uuid` - The UUID of the target panel
     /// * `session_id` - The UUID of the session to move
-    /// * `terminal` - The VTE terminal widget to display in the panel
+    /// * `content` - The display widget to place in the panel
     ///
     /// # Returns
     ///
-    /// `Ok(color_index)` with the container's color on success, or an error message on failure.
-    pub fn move_session_to_panel_with_terminal(
+    /// `Ok(color_index)` with the container's color on success, or an error
+    /// message on failure.
+    pub fn move_session_to_panel(
         &self,
         panel_uuid: Uuid,
         session_id: Uuid,
-        terminal: &Terminal,
+        content: &gtk4::Widget,
     ) -> Result<usize, String> {
         tracing::debug!(
-            "move_session_to_panel_with_terminal: panel_uuid={}, session_id={}",
+            "move_session_to_panel: panel_uuid={}, session_id={}",
             panel_uuid,
             session_id
         );
@@ -2166,7 +2172,7 @@ impl SplitViewBridge {
             })?;
 
         tracing::debug!(
-            "move_session_to_panel_with_terminal: resolved panel_id={} for uuid={}",
+            "move_session_to_panel: resolved panel_id={} for uuid={}",
             panel_id,
             panel_uuid
         );
@@ -2179,10 +2185,9 @@ impl SplitViewBridge {
             .place_in_panel(panel_id, session)
             .map_err(|e| e.to_string())?;
 
-        // Store terminal in bridge's map for later restoration after rebuild_widgets()
-        // This is critical: when another split happens, rebuild_widgets() recreates all
-        // panel widgets with "Loading..." placeholders, and restore_panel_contents()
-        // needs to find the terminal in self.terminals to restore it.
+        // Keep the internal `terminals` map populated for VTE terminals only —
+        // it backs the broadcast feature and legacy focus lookups. Embedded
+        // viewers are resolved on demand via the content provider.
         //
         // Note: we do NOT register the session into `self.sessions` here —
         // the source of truth for "what is in this split" is each pane's
@@ -2190,15 +2195,17 @@ impl SplitViewBridge {
         // split's contents must use [`Self::active_sessions`] /
         // [`Self::active_session_count`] rather than `session_ids()` /
         // `session_count()`.
-        self.terminals
-            .borrow_mut()
-            .insert(session_id, terminal.clone());
+        if let Some(terminal) = content.downcast_ref::<Terminal>() {
+            self.terminals
+                .borrow_mut()
+                .insert(session_id, terminal.clone());
+        }
 
-        // Detach terminal from any previous parent and display in panel
-        Self::detach_terminal_from_parent(terminal);
-        let wrapper = self.wrap_terminal_for_panel(terminal);
-        self.adapter.borrow().set_panel_content(panel_id, &wrapper);
-        terminal.set_visible(true);
+        // Detach the widget from any previous parent and display it in the panel
+        Self::detach_from_parent(content);
+        let placed = self.wrap_content_for_panel(content);
+        self.adapter.borrow().set_panel_content(panel_id, &placed);
+        content.set_visible(true);
 
         // Update pane's current_session for filtering in Select Tab
         {
@@ -2207,7 +2214,7 @@ impl SplitViewBridge {
                 pane.set_current_session(Some(session_id));
             } else {
                 tracing::warn!(
-                    "move_session_to_panel_with_terminal: pane not found for uuid={}",
+                    "move_session_to_panel: pane not found for uuid={}",
                     panel_uuid
                 );
             }
@@ -2231,14 +2238,39 @@ impl SplitViewBridge {
         }
 
         tracing::debug!(
-            "move_session_to_panel_with_terminal: SUCCESS - session {} in panel {} with \
-             container color {}",
+            "move_session_to_panel: SUCCESS - session {} in panel {} with container color {}",
             session_id,
             panel_id,
             color_index
         );
 
         Ok(color_index)
+    }
+
+    /// Moves a session to a specific panel, displaying an externally provided
+    /// VTE terminal.
+    ///
+    /// Thin wrapper over [`Self::move_session_to_panel`] kept for call sites
+    /// that already hold a `vte4::Terminal` (e.g. the global split view). New
+    /// code should prefer the generic [`Self::move_session_to_panel`] with a
+    /// content widget resolved via [`Self::content_widget`].
+    ///
+    /// # Arguments
+    ///
+    /// * `panel_uuid` - The UUID of the target panel
+    /// * `session_id` - The UUID of the session to move
+    /// * `terminal` - The VTE terminal widget to display in the panel
+    ///
+    /// # Returns
+    ///
+    /// `Ok(color_index)` with the container's color on success, or an error message on failure.
+    pub fn move_session_to_panel_with_terminal(
+        &self,
+        panel_uuid: Uuid,
+        session_id: Uuid,
+        terminal: &Terminal,
+    ) -> Result<usize, String> {
+        self.move_session_to_panel(panel_uuid, session_id, terminal.upcast_ref())
     }
 
     /// Creates welcome content - static version for use by other modules

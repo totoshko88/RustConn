@@ -770,7 +770,7 @@ impl MainWindow {
                 });
 
                 if let Some(info) = notebook_clone.get_session_info(session_id) {
-                    split_view_clone.add_session(info, None);
+                    split_view_clone.add_session(info);
                 }
                 split_view_clone.widget().set_visible(false);
                 split_view_clone.widget().set_vexpand(false);
@@ -1236,7 +1236,7 @@ impl MainWindow {
 
             if let Some(sv) = split_view {
                 if let Some(info) = notebook.get_session_info(session_id) {
-                    sv.add_session(info, None);
+                    sv.add_session(info);
                 }
                 sv.widget().set_visible(false);
                 sv.widget().set_vexpand(false);

@@ -1019,10 +1019,6 @@ impl TerminalNotebook {
 
     /// Gets the GTK widget for a session (for display in split view)
     #[must_use]
-    #[expect(
-        dead_code,
-        reason = "kept alive for GTK widget lifecycle / future API exposure"
-    )]
     pub fn get_session_display_widget(&self, session_id: Uuid) -> Option<Widget> {
         let widgets = self.session_widgets.borrow();
         if let Some(storage) = widgets.get(&session_id) {
