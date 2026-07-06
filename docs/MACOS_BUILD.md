@@ -181,9 +181,9 @@ cat > RustConn.app/Contents/Info.plist << 'EOF'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
-    <string>0.18.0</string>
+    <string>0.18.1</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.18.0</string>
+    <string>0.18.1</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSMinimumSystemVersion</key>
