@@ -908,7 +908,48 @@ impl MainWindow {
         {
             let session_bridges_for_cleanup = self.session_split_bridges.clone();
             let split_view_for_cleanup = split_view.clone();
+            // Weak ref: the closure is stored *inside* terminal_notebook, so a
+            // strong clone here would form an Rc cycle (notebook → closure →
+            // notebook) and leak the whole notebook.
+            let notebook_for_cleanup = Rc::downgrade(&terminal_notebook);
+            let monitoring_for_cleanup = self.monitoring.clone();
             terminal_notebook.set_on_split_cleanup(move |session_id| {
+                // If the closing tab OWNS a split bridge (key == owner session_id),
+                // its guest (Select-Tabbed) sessions live inside this tab's split
+                // widget and their home tabs only show the "Displayed in Split View"
+                // placeholder. Return every guest to its home tab before the owner
+                // tab — and its bridge widget — is torn down, otherwise the guest
+                // is stranded on that placeholder.
+                if let Some(notebook) = notebook_for_cleanup.upgrade() {
+                    let guests: Vec<Uuid> = {
+                        let bridges = session_bridges_for_cleanup.borrow();
+                        bridges.get(&session_id).map_or_else(Vec::new, |bridge| {
+                            bridge
+                                .pane_ids()
+                                .iter()
+                                .filter_map(|&pane_id| bridge.get_pane_session(pane_id))
+                                .filter(|&sid| sid != session_id)
+                                .collect()
+                        })
+                    };
+                    for guest_id in guests {
+                        tracing::debug!(
+                            "on_split_cleanup: returning guest session {} to its home tab \
+                             (split owner {} closing)",
+                            guest_id,
+                            session_id
+                        );
+                        notebook.clear_tab_split_color(guest_id);
+                        notebook.reparent_terminal_to_tab(guest_id);
+                        // Resume monitoring suspended when the guest entered the split.
+                        if monitoring_for_cleanup.is_suspended(guest_id)
+                            && let Some(container) = notebook.get_session_container(guest_id)
+                        {
+                            monitoring_for_cleanup.resume_monitoring(guest_id, &container);
+                        }
+                    }
+                }
+
                 // Clear session from ALL per-session split bridges
                 {
                     let bridges = session_bridges_for_cleanup.borrow();
@@ -922,6 +963,9 @@ impl MainWindow {
                         }
                     }
                 }
+                // Drop the owner's now-emptied bridge so its stale entry does not
+                // linger in the map keyed by a closed session.
+                session_bridges_for_cleanup.borrow_mut().remove(&session_id);
                 // Clear from global split view
                 split_view_for_cleanup.clear_session_from_panes(session_id);
             });

@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.18.0** | Last updated: July 2026
+**Version 0.18.1** | Last updated: July 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -740,6 +740,20 @@ pub struct ProtocolCapabilities {
 - `SftpProtocol`: SFTP file transfer via file manager/mc (capabilities: file_transfer, external_fallback, split_view when mc mode is active)
 - `MoshProtocol`: MOSH mobile shell via external `mosh` client (capabilities: terminal, split_view)
 - `WebProtocol`: Web URLs opened in the system browser via `UriLauncher`/`xdg-open` (capabilities: external_fallback)
+
+> **Split-view eligibility is not the `split_view` capability flag.** Since 0.18.1, whether a session
+> can be placed in a split panel is decided at the *widget* level by
+> `TerminalNotebook::split_eligibility()` (`rustconn/src/terminal/mod.rs`), keyed on the stored
+> widget kind rather than the protocol's `ProtocolCapabilities.split_view` flag:
+> - **Any in-process embedded widget is `Embeddable`** — a VTE terminal *or* an embedded viewer
+>   (`EmbeddedRdp`, `Vnc`, `EmbeddedSpice`). Split view is no longer VTE-only; it works for every
+>   embedded tab, including RDP/VNC/SPICE remote desktops.
+> - An `ExternalProcess` session (xfreerdp/vncviewer/external SPICE viewer) is `ExternalViewer` and
+>   is declined — it has no in-process widget to reparent into a panel.
+> - A session with no live widget is `None`.
+>
+> The `ProtocolCapabilities.split_view` flag therefore remains `true` only for the terminal-based
+> protocols above and is no longer the gate for embedded remote desktops.
 
 ### Adding a New Protocol
 

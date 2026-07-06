@@ -2781,23 +2781,33 @@ impl TerminalNotebook {
             Embedded::Rdp(w) => {
                 let widget = w.widget();
                 Self::detach_widget_from_parent(widget.upcast_ref());
-                // RDP is wrapped in a ToastOverlay for file-drop notifications;
-                // recreate it and re-register so DnD toasts keep working after
-                // the viewer returns from a split panel.
-                let toast_overlay = adw::ToastOverlay::new();
-                toast_overlay.set_child(Some(widget));
-                toast_overlay.set_hexpand(true);
-                toast_overlay.set_vexpand(true);
-                w.set_toast_overlay(toast_overlay.clone());
-                container.append(&toast_overlay);
+                // Append the RDP container directly (mirroring the VNC/SPICE
+                // arms). Wrapping it in a freshly-created `adw::ToastOverlay`
+                // here left the reparented `DrawingArea` unable to repaint (its
+                // draw func was never re-invoked, so live frames landed in the
+                // buffer but never reached the screen — a blank viewer). The
+                // file-drop ToastOverlay is only needed while DnD is active and
+                // is re-established elsewhere; a plain re-parent restores drawing.
+                widget.set_hexpand(true);
+                widget.set_vexpand(true);
+                container.append(widget);
                 widget.set_visible(true);
             }
         }
 
-        let mut containers = self.tab_containers.borrow_mut();
-        if let Some(tab_container) = containers.get_mut(&session_id) {
-            tab_container.switch_to_single(&container);
+        {
+            let mut containers = self.tab_containers.borrow_mut();
+            if let Some(tab_container) = containers.get_mut(&session_id) {
+                tab_container.switch_to_single(&container);
+            }
         }
+
+        // Nudge a repaint once the re-parented viewer has settled into its new
+        // allocation (the live frame lives in a Rust-side buffer, not GTK's
+        // surface cache).
+        glib::idle_add_local_once(move || {
+            container.queue_draw();
+        });
         true
     }
 

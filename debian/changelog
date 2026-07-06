@@ -1,3 +1,16 @@
+rustconn (0.18.1-1) unstable; urgency=medium
+
+  * Version bump to 0.18.1
+  * Split view generalized to embedded RDP/VNC/SPICE tabs; mixed terminal+desktop splits
+  * Embedded viewers adapt toolbar and resolution to narrow panels/small windows
+  * External-viewer sessions declined from split with a clear message
+  * Keystroke broadcast restricted to terminal sessions
+  * Disconnecting inside a split keeps the panel open
+  * Fixed embedded RDP small-window scaling (huge cursor), blank-after-unsplit, and resize loop
+  * Updated dependencies: cc, lzma-rust2, num-bigint
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 06 Jul 2026 12:00:00 +0200
+
 rustconn (0.18.0-1) unstable; urgency=medium
 
   * Added a Native (full HiDPI) Display Scale option for embedded RDP/VNC — a

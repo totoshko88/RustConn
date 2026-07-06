@@ -294,6 +294,14 @@ pub struct EmbeddedRdpWidget {
     widget_id: u64,
     /// Signal handler ID for the drawing area resize handler
     resize_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
+    /// CSS (logical) widget size at the last dynamic-resolution request.
+    ///
+    /// Guards against a resize feedback loop: a resolution change can nudge the
+    /// widget's allocation by a few px (toolbar reflow / tab re-measure), which
+    /// would otherwise re-trigger a request. A new request is only sent when the
+    /// logical size moved beyond a threshold from this reference. `None` until
+    /// the first request.
+    last_resize_request_css: Rc<RefCell<Option<(u32, u32)>>>,
     /// Signal handler ID for local clipboard change monitoring (Phase 3)
     #[cfg(feature = "rdp-embedded")]
     clipboard_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
@@ -730,6 +738,7 @@ impl EmbeddedRdpWidget {
                 WIDGET_COUNTER.fetch_add(1, Ordering::SeqCst)
             },
             resize_handler_id: Rc::new(RefCell::new(None)),
+            last_resize_request_css: Rc::new(RefCell::new(None)),
             #[cfg(feature = "rdp-embedded")]
             clipboard_handler_id: Rc::new(RefCell::new(None)),
             clipboard_sync_suppressed: Rc::new(RefCell::new(false)),

@@ -27,6 +27,17 @@ use crate::i18n::i18n;
 /// from minor layout adjustments.
 const RESIZE_THRESHOLD_PX: u32 = 50;
 
+/// Minimum change in the widget's *logical* (CSS) size, in pixels, before a
+/// settled resize issues a new remote-resolution request.
+///
+/// A resolution change can nudge the widget's allocation by a handful of pixels
+/// (toolbar reflow, tab re-measure). Without this dead zone that nudge would be
+/// read as a fresh resize and request another resolution, which nudges again —
+/// an endless ping-pong (observed as the window "breathing" on small sizes).
+/// Comfortably larger than the observed few-pixel jitter, small enough that a
+/// real user drag still registers.
+const RESIZE_HYSTERESIS_CSS_PX: u32 = 48;
+
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
 
@@ -50,6 +61,7 @@ impl super::EmbeddedRdpWidget {
         let status_label = self.status_label.clone();
         let on_reconnect = self.on_reconnect.clone();
         let is_ironrdp = self.is_ironrdp.clone();
+        let last_request_css = self.last_resize_request_css.clone();
 
         let handler_id = self
             .drawing_area
@@ -116,6 +128,7 @@ impl super::EmbeddedRdpWidget {
                 let tx = ironrdp_tx.clone();
                 let sl = status_label.clone();
                 let reconnect_cb = on_reconnect.clone();
+                let last_req = last_request_css.clone();
                 let using_ironrdp = *is_ironrdp.borrow();
                 let force_reconnect = config
                     .borrow()
@@ -131,36 +144,48 @@ impl super::EmbeddedRdpWidget {
                         let current_rdp_w = *rdp_w.borrow();
                         let current_rdp_h = *rdp_h.borrow();
 
-                        // Only resize if size actually changed significantly (>50px device)
-                        let w_diff = (device_width as i32 - current_rdp_w as i32).unsigned_abs();
-                        let h_diff = (device_height as i32 - current_rdp_h as i32).unsigned_abs();
+                        // Adaptive resolution (R13.1, R13.2): ask the pure core
+                        // helper for a >=min, aspect-preserving, even-dimensioned
+                        // request. For a small window (logical < 640x480) it
+                        // returns a larger desktop at a fixed 100% DPI so the
+                        // viewer downscales the frame locally — dense content,
+                        // normal-sized cursor.
+                        #[expect(
+                            clippy::cast_possible_truncation,
+                            reason = "RDP scale percent is a small value (100–300) that fits u16"
+                        )]
+                        let base_scale_percent = super::rdp_scale_percent(effective_scale) as u16;
+                        let req = rustconn_core::display_geometry::desktop_request_for_area(
+                            device_width,
+                            device_height,
+                            640,
+                            480,
+                            base_scale_percent,
+                        );
 
-                        if w_diff > RESIZE_THRESHOLD_PX || h_diff > RESIZE_THRESHOLD_PX {
-                            // Adaptive resolution (R13.1, R13.2): instead of
-                            // skipping requests for small/oddly-shaped panels
-                            // below 640x480, ask the pure core helper for a
-                            // >=min, aspect-preserving, even-dimensioned request.
-                            // When the panel is below minimum the helper raises
-                            // scale_percent (200/300) and returns a min-clamped
-                            // resolution so the panel fills with legible content.
-                            #[expect(
-                                clippy::cast_possible_truncation,
-                                reason = "RDP scale percent is a small value (100–300) that fits u16"
-                            )]
-                            let base_scale_percent =
-                                super::rdp_scale_percent(effective_scale) as u16;
-                            let req = rustconn_core::display_geometry::desktop_request_for_area(
-                                device_width,
-                                device_height,
-                                640,
-                                480,
-                                base_scale_percent,
-                            );
+                        // Preserve the MS-RDPEDISP max-desktop ceiling
+                        // (round_rdp_desktop also re-affirms even dimensions).
+                        let (rounded_width, rounded_height) =
+                            super::round_rdp_desktop(req.width, req.height);
 
-                            // Preserve the MS-RDPEDISP max-desktop ceiling
-                            // (round_rdp_desktop also re-affirms even dimensions).
-                            let (rounded_width, rounded_height) =
-                                super::round_rdp_desktop(req.width, req.height);
+                        // Feedback-loop guard: act only when the *logical* widget
+                        // size actually moved beyond the hysteresis since our last
+                        // request AND the resulting resolution really differs from
+                        // the current one. Comparing the request (not the raw
+                        // widget size) to the current resolution is essential:
+                        // a small window requests a 2×/3× desktop, so the old
+                        // "widget vs resolution" check was always above threshold
+                        // and re-fired on every layout nudge — an endless loop.
+                        let logical_moved = last_req.borrow().is_none_or(|(lw, lh)| {
+                            css_width.abs_diff(lw) >= RESIZE_HYSTERESIS_CSS_PX
+                                || css_height.abs_diff(lh) >= RESIZE_HYSTERESIS_CSS_PX
+                        });
+                        let resolution_changed = rounded_width.abs_diff(current_rdp_w)
+                            > RESIZE_THRESHOLD_PX
+                            || rounded_height.abs_diff(current_rdp_h) > RESIZE_THRESHOLD_PX;
+
+                        if logical_moved && resolution_changed {
+                            *last_req.borrow_mut() = Some((css_width, css_height));
 
                             // Update config with new resolution
                             {
@@ -181,8 +206,8 @@ impl super::EmbeddedRdpWidget {
                                     let _ = sender.send(RdpClientCommand::SetDesktopSize {
                                         width: w,
                                         height: h,
-                                        // Helper-raised DPI scale (200/300 for
-                                        // sub-minimum panels) keeps content legible.
+                                        // Helper DPI: 100% for a small window
+                                        // (dense, normal cursor), display DPI otherwise.
                                         scale_percent: Some(u32::from(req.scale_percent)),
                                     });
                                 }
@@ -339,10 +364,10 @@ impl super::EmbeddedRdpWidget {
         )]
         let device_height = (f64::from(css_height) * effective_scale) as u32;
 
-        // Adaptive resolution (R13.1, R13.2): small/oddly-shaped panels below
-        // 640x480 are filled by upscaling the request and raising the DPI scale
-        // via the pure core helper instead of being skipped. The helper returns
-        // a >=min, aspect-preserving, even-dimensioned request.
+        // Adaptive resolution (R13.1, R13.2): the pure core helper returns a
+        // >=min, aspect-preserving, even-dimensioned request. A small window
+        // (logical < 640x480) gets a larger desktop at a fixed 100% DPI,
+        // downscaled locally by the viewer — dense content, normal-sized cursor.
         #[expect(
             clippy::cast_possible_truncation,
             reason = "RDP scale percent is a small value (100–300) that fits u16"
@@ -391,8 +416,8 @@ impl super::EmbeddedRdpWidget {
                 let _ = sender.send(RdpClientCommand::SetDesktopSize {
                     width: w,
                     height: h,
-                    // Helper-raised DPI scale (200/300 for sub-minimum panels)
-                    // keeps content legible.
+                    // Helper DPI: 100% for a small window (dense, normal
+                    // cursor), display DPI otherwise.
                     scale_percent: Some(u32::from(req.scale_percent)),
                 });
             }

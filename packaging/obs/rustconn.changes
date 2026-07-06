@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Mon Jul 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.1
+
+- Version bump to 0.18.1
+- Split view generalized to embedded RDP/VNC/SPICE tabs; mixed terminal+desktop splits
+- Embedded viewers adapt toolbar and resolution to narrow panels/small windows
+- External-viewer sessions declined from split with a clear message
+- Keystroke broadcast restricted to terminal sessions
+- Disconnecting inside a split keeps the panel open
+- Fixed embedded RDP small-window scaling, blank-after-unsplit, and resize loop
+- Updated dependencies: cc, lzma-rust2, num-bigint
+
+-------------------------------------------------------------------
 Sun Jul 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.0
 
 - Added a Native (full HiDPI) Display Scale option for embedded RDP/VNC — a "retina" mode that follows the live display scale, alongside Auto and 125–400% (#207)

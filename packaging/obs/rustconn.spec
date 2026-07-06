@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.0
+Version:        0.18.1
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,13 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Mon Jul 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.1-0
+- Version bump to 0.18.1
+- Split view generalized to embedded RDP/VNC/SPICE tabs
+- Embedded viewers adapt toolbar/resolution to narrow panels
+- Fixed embedded RDP small-window scaling, blank-after-unsplit, and resize loop
+- Updated dependencies: cc, lzma-rust2, num-bigint
+
 * Sun Jul 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.0-0
 - Added a Native (full HiDPI) Display Scale option for embedded RDP/VNC — a "retina" mode that follows the live display scale, alongside Auto and 125–400% (#207)
 - Fixed embedded VNC showing noise on Tight/JPEG rectangles — the client now decodes JPEG to BGRA and re-enables the Tight encoding

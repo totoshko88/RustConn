@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.18.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.18.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -1126,7 +1126,7 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 
 ### Split View
 
-Split view works with terminal-based sessions (SSH, Telnet, Serial, Kubernetes, Local Shell, and SFTP in mc mode) and with embedded RDP, VNC, and SPICE sessions. You can mix terminals and embedded remote desktops in the same split, and an embedded session keeps its live connection when it moves between panels.
+Split view works with **any in-process (embedded) session**, not just VTE terminals. That means every terminal-based session (SSH, Telnet, Serial, Kubernetes, Local Shell, and SFTP in mc mode) as well as embedded RDP, VNC, and SPICE remote desktops. The only sessions that cannot be split are those handed off to an external viewer process (see below). You can mix terminals and embedded remote desktops in the same split, and an embedded session keeps its live connection when it moves between panels.
 
 Sessions shown through an external viewer (xfreerdp, vncviewer, or an external SPICE viewer) cannot be placed in a split — attempting to split one shows "Split view is not available for external-viewer sessions. Switch this connection to embedded mode to use split." and leaves the layout unchanged.
 

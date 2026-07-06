@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.1" date="2026-07-06">
+      <description>
+        <p>Version 0.18.1 - embedded split view and RDP fixes:</p>
+        <ul>
+          <li>Split view now works for embedded RDP, VNC, and SPICE tabs, mixable with terminals</li>
+          <li>Embedded viewers adapt their toolbar and resolution to narrow panels and small windows</li>
+          <li>Fixed embedded RDP small-window scaling, a blank viewer after unsplit, and a resize loop</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.0" date="2026-07-05">
       <description>
         <p>Version 0.18.0 — HiDPI remote desktops and a large internal cleanup:</p>

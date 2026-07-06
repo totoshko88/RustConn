@@ -299,7 +299,20 @@ impl super::EmbeddedRdpWidget {
         let effective_scale = config
             .scale_override
             .resolved_scale(f64::from(self.drawing_area.scale_factor()));
-        let (actual_width, actual_height) = {
+        // Base DPI scale as a percentage (e.g. 2.0 → 200). With Display Scale =
+        // Auto this is 100 (native rendering on the logical-sized desktop).
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "RDP scale percent is a small value (100–300) that fits u16"
+        )]
+        let base_scale_percent = super::rdp_scale_percent(effective_scale) as u16;
+        // Resolve the initial resolution AND the DPI scale through the shared
+        // core helper, so the connect path matches the resize / Fit-resolution
+        // paths. For a small window (logical < 640x480) it requests a >=minimum
+        // desktop at a fixed 100% DPI and lets the viewer downscale the frame —
+        // so the cursor/UI stay normal-sized and content is dense, instead of a
+        // huge 200%-DPI cursor on a cramped ~373x270 logical desktop.
+        let (actual_width, actual_height, rdp_scale_percent) = {
             let w = self.drawing_area.width();
             let h = self.drawing_area.height();
             if w > 100 && h > 100 {
@@ -316,13 +329,20 @@ impl super::EmbeddedRdpWidget {
                     reason = "value range fits the target type and is non-negative by construction in this code path"
                 )]
                 let device_h = (f64::from(h.unsigned_abs()) * effective_scale) as u32;
-                // Even dimensions + resolution ceiling (see round_rdp_desktop).
-                let (width, height) = super::round_rdp_desktop(device_w, device_h);
-                // Ensure a sane minimum (widget may still be mid-layout).
-                (width.max(640), height.max(480))
+                let req = rustconn_core::display_geometry::desktop_request_for_area(
+                    device_w,
+                    device_h,
+                    640,
+                    480,
+                    base_scale_percent,
+                );
+                // Even dimensions + resolution ceiling (see round_rdp_desktop);
+                // the helper already guarantees >= 640x480.
+                let (width, height) = super::round_rdp_desktop(req.width, req.height);
+                (width, height, u32::from(req.scale_percent))
             } else {
-                // Widget not yet realized, use config values
-                (config.width, config.height)
+                // Widget not yet realized, use config values at the base scale.
+                (config.width, config.height, u32::from(base_scale_percent))
             }
         };
 
@@ -332,11 +352,6 @@ impl super::EmbeddedRdpWidget {
             port = config.port,
             "Attempting IronRDP connection"
         );
-
-        // Compute RDP desktop scale factor as percentage (e.g. 2.0 → 200) so the
-        // server applies the matching DPI. With Display Scale = Auto this is 100
-        // (native rendering on the logical-sized desktop).
-        let rdp_scale_percent = super::rdp_scale_percent(effective_scale);
 
         tracing::debug!(
             protocol = "rdp",
@@ -568,8 +583,25 @@ impl super::EmbeddedRdpWidget {
                     reason = "value range fits the target type and is non-negative by construction in this code path"
                 )]
                 let dev_h = (f64::from(css_h) * effective_scale) as u32;
+                // Adaptive request through the shared core helper (same path as
+                // connect / resize / Fit): a small window gets a >=minimum
+                // desktop at 100% DPI, downscaled locally (dense, normal cursor).
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "RDP scale percent is a small value (100–300) that fits u16"
+                )]
+                let snap_base_scale = super::rdp_scale_percent(effective_scale) as u16;
+                let snap_req = rustconn_core::display_geometry::desktop_request_for_area(
+                    dev_w,
+                    dev_h,
+                    640,
+                    480,
+                    snap_base_scale,
+                );
                 // Even dimensions + ceiling (see round_rdp_desktop).
-                let (settled_w, settled_h) = super::round_rdp_desktop(dev_w, dev_h);
+                let (settled_w, settled_h) =
+                    super::round_rdp_desktop(snap_req.width, snap_req.height);
+                let settled_scale = u32::from(snap_req.scale_percent);
 
                 // Only when realized, a sane size, and actually different (slack
                 // absorbs the ≤1px even-rounding residual).
@@ -601,7 +633,7 @@ impl super::EmbeddedRdpWidget {
                         let _ = sender.send(RdpClientCommand::SetDesktopSize {
                             width: sw,
                             height: sh,
-                            scale_percent: Some(super::rdp_scale_percent(effective_scale)),
+                            scale_percent: Some(settled_scale),
                         });
                     }
                     tracing::info!(
