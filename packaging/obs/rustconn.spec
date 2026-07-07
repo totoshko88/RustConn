@@ -259,7 +259,7 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
-* Tue Jul 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.2-0
+* Wed Jul 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.2-0
 - Version bump to 0.18.2
 - SPICE unix socket connections (spice+unix://) with Browse button
 - Compact interface: primary-menu toggle + Ctrl+Shift+D shortcut, automatic mode on small windows

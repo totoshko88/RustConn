@@ -140,7 +140,7 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.18.2" date="2026-07-07">
+    <release version="0.18.2" date="2026-07-08">
       <description>
         <p>Version 0.18.2 - SPICE unix sockets and a compact-interface overhaul:</p>
         <ul>
