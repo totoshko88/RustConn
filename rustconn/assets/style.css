@@ -461,6 +461,14 @@ button.context-menu-destructive:hover {
  * Monitoring Bar Styles
  * ============================================================ */
 
+/* Monitoring bar — default height (previously hardcoded in Rust via
+ * height_request; now CSS-driven so compact mode can override). */
+.monitoring-bar {
+    min-height: 28px;
+    margin-start: 6px;
+    margin-end: 6px;
+}
+
 /* Stale monitoring indicator — collector stopped, metrics are outdated */
 .monitoring-stale {
     opacity: 0.5;
@@ -505,12 +513,15 @@ tabbar > revealer > box {
     border-top: 1px solid alpha(@borders, 0.3);
 }
 
-/* Sidebar bottom toolbar buttons — minimum 44x44px tap target
- * (GNOME HIG pointer & touch guideline; icon-only flat buttons
- * otherwise shrink below comfortable touch size) */
+/* Sidebar bottom toolbar buttons.
+ * Height keeps the 44px HIG touch target; width is relaxed to 24px so the
+ * row of six icon buttons no longer pins the sidebar to a ~360px floor and
+ * users can shrink it toward the 180px minimum (same 24px width compact mode
+ * already uses without harm — this is a pointer-first desktop app). */
 .sidebar toolbarview > .bottom-bar button {
-    min-width: 44px;
+    min-width: 24px;
     min-height: 44px;
+    padding: 2px 4px;
 }
 
 /* ============================================================
@@ -629,34 +640,54 @@ tabbar > revealer > box {
  *
  * Goal: reduce vertical chrome (header bar + tab bar + button padding)
  * so more space is available for the active session content. Especially
- * useful on small laptop screens (≤14") and on KDE Plasma where the
- * default Adwaita chrome looks taller than native Qt apps.
+ * useful on small laptop screens (≤14") and on KDE Plasma / macOS where
+ * the default Adwaita chrome looks taller than native Qt/AppKit apps.
+ *
+ * Strategy: reduce the chrome's min-height and padding uniformly across
+ * header bar, tab bar, sidebar, toolbars, monitoring/playback bars, and
+ * banners. Font-size is only reduced on a few small controls whose height
+ * is also reduced, so text stays proportional to its row. A global
+ * font-size on `window` is intentionally avoided — in GTK4 it cascades
+ * unpredictably (VTE terminal, em-based metrics) and leaves text floating
+ * inside px-fixed rows.
+ *
+ * Standardized scale (GTK4 CSS has no length custom-properties / var(), so
+ * these are repeated literals — keep them consistent when editing):
+ *   - interactive controls (buttons in header/sidebar/toolbars): min 24px.
+ *     This is a deliberate floor: compact is a pointer / small-screen mode,
+ *     so the 44px HIG touch target is relaxed, but not below 24px, to stay
+ *     comfortably clickable and legible.
+ *   - non-interactive rows/bars (tabs, list rows, monitoring bar): 22–28px.
  *
  * Total vertical savings vs default Adwaita: ~28-32px on header,
- * ~10-12px on tab bar, plus tab bar auto-hides for single-tab sessions.
+ * ~10-12px on tab bar, ~6px on monitoring/playback bars. (The tab bar is
+ * kept visible even for a single tab so its Tab Overview button stays
+ * reachable, so it is slimmed rather than hidden.)
  * ============================================================ */
 
-/* Header bar — slimmer */
+/* Header bar — slimmer.
+ *
+ * Only the headerbar itself gets a reduced min-height; the buttons are
+ * shrunk so they fit inside it. Do NOT set min-height on `windowhandle`
+ * or its inner boxes — a `> box > *` universal rule stacks a 32px floor
+ * onto every nested child, which GTK lays out vertically and inflates the
+ * header to ~3x its height. Overriding the headerbar min-height alone
+ * (with small buttons) is enough and matches the standard libadwaita
+ * compact pattern. */
 window.compact headerbar {
     min-height: 32px;
     padding-top: 0;
     padding-bottom: 0;
 }
 
-window.compact headerbar > windowhandle {
-    min-height: 32px;
-}
-
-window.compact headerbar > windowhandle > box,
-window.compact headerbar > windowhandle > box > * {
-    min-height: 32px;
-}
-
-/* Header bar buttons — denser tap targets */
+/* Header bar buttons — denser tap targets. Zero vertical margin so the
+ * buttons don't push the header taller than its min-height. */
 window.compact headerbar button {
     min-height: 24px;
     min-width: 24px;
     padding: 2px 6px;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 window.compact headerbar button.image-button {
@@ -684,6 +715,12 @@ window.compact tabbar .end-action {
 
 window.compact tabbar tabbox > tabboxchild {
     min-height: 28px;
+}
+
+/* Tab bar — remove extra padding around the bar itself */
+window.compact tabbar {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 /* Compact spin/dropdown rows in dialogs */
@@ -720,8 +757,8 @@ window.compact .sidebar toolbarview > .bottom-bar {
 }
 
 window.compact .sidebar toolbarview > .bottom-bar button {
-    min-height: 22px;
-    min-width: 22px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 2px;
 }
 
@@ -741,10 +778,10 @@ window.compact popover.menu contents {
 
 /* Filter bar buttons — slightly smaller in compact mode */
 window.compact .filter-button {
-    min-height: 22px;
-    min-width: 22px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 2px 4px;
-    font-size: 0.85em;
+    font-size: 0.9em;
 }
 
 /* Embedded RDP/VNC/SPICE toolbar — denser in compact mode */
@@ -756,7 +793,7 @@ window.compact .embedded-toolbar {
 }
 
 window.compact .embedded-toolbar button {
-    min-height: 22px;
+    min-height: 24px;
     padding-top: 2px;
     padding-bottom: 2px;
 }
@@ -764,6 +801,38 @@ window.compact .embedded-toolbar button {
 window.compact .embedded-toolbar separator {
     margin-left: 3px;
     margin-right: 3px;
+}
+
+/* Monitoring bar — slimmer in compact mode (height controlled by CSS
+ * since the Rust code no longer sets a fixed height_request) */
+window.compact .monitoring-bar {
+    min-height: 22px;
+    margin-start: 4px;
+    margin-end: 4px;
+}
+
+/* NOTE: Do NOT set `min-height` on `banner`. The two AdwBanners
+ * (sync/secret) are always present but collapsed (revealed = false) by
+ * default. A `min-height` on the banner node forces GTK to allocate that
+ * height even while the banner is hidden, producing a ~56px phantom band
+ * (2 banners × 28px) below the header — which looks like a tripled header.
+ * A revealed banner already sizes to its content, so no compact rule is
+ * needed here. */
+
+/* Split panel margins — tighter in compact mode for more content area */
+window.compact .split-panel {
+    margin: 1px;
+    border-radius: 4px;
+}
+
+/* Playback toolbar — denser in compact mode */
+window.compact .playback-toolbar {
+    padding: 2px 6px;
+}
+
+window.compact .playback-toolbar button {
+    min-height: 24px;
+    padding: 2px 4px;
 }
 
 /* ============================================================

@@ -127,6 +127,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub spice_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
     pub spice_jump_host_dropdown: &'a DropDown,
     pub spice_connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
+    pub spice_unix_socket_check: &'a adw::SwitchRow,
+    pub spice_socket_path_entry: &'a Entry,
     // Zero Trust fields
     pub zt_provider_dropdown: &'a DropDown,
     pub zt_aws_target_entry: &'a adw::EntryRow,
@@ -1468,6 +1470,17 @@ impl ConnectionDialogData<'_> {
             _ => Some(SpiceImageCompression::Auto), // 0 and any other value default to Auto
         };
 
+        let unix_socket_path = if self.spice_unix_socket_check.is_active() {
+            let text = self.spice_socket_path_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(PathBuf::from(text.trim().to_string()))
+            }
+        } else {
+            None
+        };
+
         SpiceConfig {
             tls_enabled: self.spice_tls_check.is_active(),
             ca_cert_path,
@@ -1485,7 +1498,10 @@ impl ConnectionDialogData<'_> {
                 }
             },
             show_local_cursor: self.spice_show_local_cursor_check.is_active(),
-            jump_host_id: {
+            jump_host_id: if unix_socket_path.is_some() {
+                // Socket mode is local — jump host does not apply
+                None
+            } else {
                 let idx = self.spice_jump_host_dropdown.selected() as usize;
                 let conns = self.spice_connections_data.borrow();
                 if idx < conns.len() {
@@ -1494,6 +1510,7 @@ impl ConnectionDialogData<'_> {
                     None
                 }
             },
+            unix_socket_path,
         }
     }
 

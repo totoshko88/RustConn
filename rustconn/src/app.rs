@@ -8,7 +8,7 @@ use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{gio, glib};
 use libadwaita as adw;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -49,17 +49,64 @@ pub fn apply_color_scheme(scheme: ColorScheme) {
     }
 }
 
-/// Applies the "Compact interface" setting to all open application windows.
+thread_local! {
+    /// Global compact preferences shared by all windows: `(manual, auto)`.
+    ///
+    /// `manual` forces the compact chrome on always; `auto` engages it only
+    /// while a window is small (see [`window_is_small`]).
+    static COMPACT_PREFS: Cell<(bool, bool)> = const { Cell::new((false, false)) };
+}
+
+/// Auto-compact engages when the window is no taller than this (logical px).
+// ponytail: fixed height/width heuristic, fine for desktop/laptop screens;
+// promote to a user setting if people on unusual DPIs find the trigger wrong.
+const COMPACT_AUTO_MAX_HEIGHT: i32 = 800;
+/// ...or no wider than this (logical px). Either dimension being tight engages it.
+const COMPACT_AUTO_MAX_WIDTH: i32 = 900;
+
+/// Returns `true` when `window` is small enough for auto-compact to engage.
+fn window_is_small(window: &gtk4::Window) -> bool {
+    // Prefer the allocated size; before the first allocation fall back to the
+    // requested default size so startup already reflects the right density.
+    let mut w = window.width();
+    let mut h = window.height();
+    if w == 0 {
+        w = window.default_width();
+    }
+    if h == 0 {
+        h = window.default_height();
+    }
+    (h > 0 && h <= COMPACT_AUTO_MAX_HEIGHT) || (w > 0 && w <= COMPACT_AUTO_MAX_WIDTH)
+}
+
+/// Adds or removes the `.compact` CSS class on `window` from the given inputs.
 ///
-/// Adds or removes the `compact` CSS class on every window. The CSS rules in
-/// `assets/style.css` (`window.compact ...`) reduce header bar `min-height`,
-/// tab bar height, and button padding to give more vertical space to content.
+/// Effective compact = `manual || (auto && window_is_small)`. The CSS rules in
+/// `assets/style.css` (`window.compact ...`) reduce header bar, tab bar,
+/// monitoring bar, split panel, playback toolbar, and button dimensions to give
+/// more vertical space to content. Idempotent (`add`/`remove_css_class` are).
+fn set_window_compact(window: &gtk4::Window, manual: bool, auto: bool) {
+    if manual || (auto && window_is_small(window)) {
+        window.add_css_class("compact");
+    } else {
+        window.remove_css_class("compact");
+    }
+}
+
+/// Recomputes the `.compact` class for one window from the stored preferences.
 ///
-/// Designed to run live: changes take effect without restart, and re-running
-/// with the same value is a no-op (`add_css_class` / `remove_css_class` are
-/// idempotent).
-pub fn apply_compact_ui(compact: bool) {
-    use gtk4::prelude::*;
+/// Used as the resize handler so auto-compact reacts live to window size.
+fn recompute_window_compact(window: &gtk4::Window) {
+    let (manual, auto) = COMPACT_PREFS.with(Cell::get);
+    set_window_compact(window, manual, auto);
+}
+
+/// Stores the compact preferences and re-applies `.compact` to every window.
+///
+/// Call after the manual or automatic toggle changes (settings dialog, menu,
+/// or keyboard shortcut). Runs live — no restart needed.
+pub fn set_compact_prefs(manual: bool, auto: bool) {
+    COMPACT_PREFS.with(|p| p.set((manual, auto)));
 
     let Some(app) = gtk4::gio::Application::default() else {
         return;
@@ -67,14 +114,20 @@ pub fn apply_compact_ui(compact: bool) {
     let Some(gtk_app) = app.downcast_ref::<gtk4::Application>() else {
         return;
     };
-
     for window in gtk_app.windows() {
-        if compact {
-            window.add_css_class("compact");
-        } else {
-            window.remove_css_class("compact");
-        }
+        set_window_compact(&window, manual, auto);
     }
+}
+
+/// Attaches a size watcher so auto-compact reacts live to window resizing.
+///
+/// Call once per window at creation. GTK4 keeps `default-width`/`default-height`
+/// in sync with the current size and notifies on resize, which is independent of
+/// the adaptive `AdwBreakpoint`s (those drive property setters, not CSS classes),
+/// so the two never fight over the same state.
+pub fn watch_window_for_compact(window: &gtk4::Window) {
+    window.connect_default_width_notify(recompute_window_compact);
+    window.connect_default_height_notify(recompute_window_compact);
 }
 
 /// Application ID for `RustConn`
@@ -172,9 +225,16 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // (Ukrainian, Russian, Greek, …) where GTK's keyval-based matching fails.
     install_layout_independent_accels(window.gtk_window(), app);
 
-    // Apply saved compact-UI preference now that the window exists.
-    // Adds the `.compact` CSS class to the window if enabled in settings.
-    apply_compact_ui(state.borrow().settings().ui.compact_ui);
+    // Apply saved compact-UI preferences now that the window exists. The size
+    // watcher lets auto-compact react to later resizing; set_compact_prefs adds
+    // the `.compact` class immediately for the current size and manual setting.
+    watch_window_for_compact(window.gtk_window().upcast_ref());
+    let (compact_manual, compact_auto) = {
+        let state_ref = state.borrow();
+        let ui = &state_ref.settings().ui;
+        (ui.compact_ui, ui.compact_auto)
+    };
+    set_compact_prefs(compact_manual, compact_auto);
 
     // Initialize tray icon if enabled in settings
     let enable_tray = state.borrow().settings().ui.enable_tray_icon;

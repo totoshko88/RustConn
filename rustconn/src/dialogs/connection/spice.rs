@@ -12,7 +12,8 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, DropDown, Entry, Label, Orientation, ScrolledWindow, StringList,
+    Box as GtkBox, Button, DropDown, Entry, FileDialog, Label, Orientation, ScrolledWindow,
+    StringList,
 };
 use libadwaita as adw;
 use rustconn_core::models::SharedFolder;
@@ -31,7 +32,6 @@ pub(super) fn create_spice_options() -> (
     GtkBox,
     adw::SwitchRow,
     Entry,
-    Button,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -41,6 +41,8 @@ pub(super) fn create_spice_options() -> (
     Rc<RefCell<Vec<SharedFolder>>>,
     gtk4::ListBox,
     DropDown,
+    adw::SwitchRow,
+    Entry,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -95,6 +97,31 @@ pub(super) fn create_spice_options() -> (
         .build();
     ca_cert_row.add_suffix(&ca_cert_box);
     security_group.add(&ca_cert_row);
+
+    // Wire browse button — open a file chooser and write the picked path back.
+    // Parent window is resolved from the widget tree at click time, mirroring
+    // the unix-socket browse button.
+    let ca_cert_entry_for_browse = ca_cert_entry.clone();
+    ca_cert_button.connect_clicked(move |btn| {
+        let file_dialog = FileDialog::builder()
+            .title(i18n("Select CA Certificate"))
+            .modal(true)
+            .build();
+
+        let parent = btn.root().and_downcast::<gtk4::Window>();
+        let entry = ca_cert_entry_for_browse.clone();
+        file_dialog.open(
+            parent.as_ref(),
+            gtk4::gio::Cancellable::NONE,
+            move |result| {
+                if let Ok(file) = result
+                    && let Some(path) = file.path()
+                {
+                    entry.set_text(&path.to_string_lossy());
+                }
+            },
+        );
+    });
 
     // SPICE-2: Inline file validation for CA certificate path
     ca_cert_entry.connect_changed(move |entry| {
@@ -271,6 +298,40 @@ pub(super) fn create_spice_options() -> (
         .title(i18n("Connection"))
         .build();
 
+    // Unix socket switch
+    let unix_socket_check = adw::SwitchRow::builder()
+        .title(i18n("Unix Socket"))
+        .subtitle(i18n("Connect via local unix socket instead of network"))
+        .active(false)
+        .build();
+    spice_connection_group.add(&unix_socket_check);
+
+    // Unix socket path
+    let socket_path_box = GtkBox::new(Orientation::Horizontal, 4);
+    socket_path_box.set_valign(gtk4::Align::Center);
+    let socket_path_entry = Entry::builder()
+        .hexpand(true)
+        // Literal example path — not translatable
+        .placeholder_text("/run/libvirt/qemu/vm-spice.sock")
+        .build();
+    let socket_path_button = Button::builder()
+        .icon_name("folder-open-symbolic")
+        .tooltip_text(i18n("Browse for unix socket file"))
+        .build();
+    socket_path_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Browse for unix socket file",
+    ))]);
+    socket_path_box.append(&socket_path_entry);
+    socket_path_box.append(&socket_path_button);
+
+    let socket_path_row = adw::ActionRow::builder()
+        .title(i18n("Socket Path"))
+        .subtitle(i18n("Path to SPICE unix socket file"))
+        .build();
+    socket_path_row.add_suffix(&socket_path_box);
+    socket_path_row.set_sensitive(false);
+    spice_connection_group.add(&socket_path_row);
+
     let none_items: Vec<String> = vec![i18n("(None)")];
     let none_refs: Vec<&str> = none_items.iter().map(String::as_str).collect();
     let spice_jump_host_list = StringList::new(&none_refs);
@@ -288,6 +349,45 @@ pub(super) fn create_spice_options() -> (
     spice_jump_host_row.add_suffix(&spice_jump_host_dropdown);
     spice_connection_group.add(&spice_jump_host_row);
 
+    // Wire unix socket toggle — when enabled: show socket path, hide jump host
+    let socket_path_row_clone = socket_path_row.clone();
+    let spice_jump_host_row_clone = spice_jump_host_row.clone();
+    unix_socket_check.connect_active_notify(move |check| {
+        let on = check.is_active();
+        socket_path_row_clone.set_sensitive(on);
+        spice_jump_host_row_clone.set_sensitive(!on);
+    });
+
+    // Wire browse button — open a file chooser and write the picked path back
+    let socket_path_entry_for_browse = socket_path_entry.clone();
+    socket_path_button.connect_clicked(move |btn| {
+        let file_dialog = FileDialog::builder()
+            .title(i18n("Select SPICE Unix Socket"))
+            .modal(true)
+            .build();
+
+        // Default to the common libvirt socket directory when it exists
+        let default_dir = std::path::Path::new("/run/libvirt/qemu");
+        if default_dir.is_dir() {
+            file_dialog.set_initial_folder(Some(&gtk4::gio::File::for_path(default_dir)));
+        }
+
+        // Parent window is resolved from the widget tree at click time
+        let parent = btn.root().and_downcast::<gtk4::Window>();
+        let entry = socket_path_entry_for_browse.clone();
+        file_dialog.open(
+            parent.as_ref(),
+            gtk4::gio::Cancellable::NONE,
+            move |result| {
+                if let Ok(file) = result
+                    && let Some(path) = file.path()
+                {
+                    entry.set_text(&path.to_string_lossy());
+                }
+            },
+        );
+    });
+
     content.append(&spice_connection_group);
 
     clamp.set_child(Some(&content));
@@ -300,7 +400,6 @@ pub(super) fn create_spice_options() -> (
         vbox,
         tls_check,
         ca_cert_entry,
-        ca_cert_button,
         skip_verify_check,
         usb_check,
         clipboard_check,
@@ -310,5 +409,7 @@ pub(super) fn create_spice_options() -> (
         shared_folders,
         folders_list,
         spice_jump_host_dropdown,
+        unix_socket_check,
+        socket_path_entry,
     )
 }

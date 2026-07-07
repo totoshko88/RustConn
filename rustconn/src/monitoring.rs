@@ -10,9 +10,6 @@ use std::cell::{Cell, RefCell};
 
 use crate::i18n::i18n;
 
-/// Height of the monitoring bar in pixels
-const BAR_HEIGHT: i32 = 28;
-
 /// A compact monitoring bar widget showing remote host metrics.
 ///
 /// Layout: `[CPU: ██░░ 45%] [RAM: ██░░ 62%] [Disk: ██░░ 78%] [↓ 1.2 MB/s ↑ 0.3 MB/s]`
@@ -74,13 +71,12 @@ impl MonitoringBar {
         let container = gtk4::Box::builder()
             .orientation(Orientation::Horizontal)
             .spacing(12)
-            .height_request(BAR_HEIGHT)
             .halign(Align::Fill)
             .hexpand(true)
             .overflow(gtk4::Overflow::Hidden)
+            // Height and horizontal margins are CSS-driven via `.monitoring-bar`
+            // so compact mode can shrink them uniformly (see assets/style.css).
             .css_classes(["monitoring-bar"])
-            .margin_start(6)
-            .margin_end(6)
             .build();
 
         let (cpu_section, cpu_bar, cpu_label) =

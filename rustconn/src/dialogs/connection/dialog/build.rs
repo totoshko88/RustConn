@@ -194,7 +194,6 @@ impl ConnectionDialog {
             spice_box,
             spice_tls_check,
             spice_ca_cert_entry,
-            spice_ca_cert_button,
             spice_skip_verify_check,
             spice_usb_check,
             spice_clipboard_check,
@@ -204,6 +203,8 @@ impl ConnectionDialog {
             spice_shared_folders,
             spice_shared_folders_list,
             spice_jump_host_dropdown,
+            spice_unix_socket_check,
+            spice_socket_path_entry,
         ) = crate::dialogs::connection::spice::create_spice_options();
         protocol_stack.add_named(&spice_box, Some("spice"));
 
@@ -535,6 +536,8 @@ impl ConnectionDialog {
             &spice_shared_folders,
             &spice_jump_host_dropdown,
             &spice_connections_data,
+            &spice_unix_socket_check,
+            &spice_socket_path_entry,
             &zt_provider_dropdown,
             &zt_aws_target_entry,
             &zt_aws_profile_entry,
@@ -738,7 +741,6 @@ impl ConnectionDialog {
             global_variables,
             logging_tab: logging_tab_struct,
             spice_ca_cert_entry,
-            spice_ca_cert_button,
             spice_skip_verify_check,
             spice_usb_check,
             spice_clipboard_check,
@@ -749,6 +751,8 @@ impl ConnectionDialog {
             spice_shared_folders_list,
             spice_jump_host_dropdown,
             spice_connections_data,
+            spice_unix_socket_check,
+            spice_socket_path_entry,
             zt_provider_dropdown,
             zt_provider_stack,
             zt_aws_target_entry,

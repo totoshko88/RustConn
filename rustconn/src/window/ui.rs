@@ -304,6 +304,7 @@ pub fn create_app_menu() -> gio::Menu {
     // App meta section (GNOME HIG: Fullscreen, Passthrough, Shortcuts, About, Quit)
     let app_section = gio::Menu::new();
     app_section.append(Some(&i18n("Fullscreen")), Some("win.toggle-fullscreen"));
+    app_section.append(Some(&i18n("Compact Interface")), Some("win.toggle-compact"));
     app_section.append(
         Some(&i18n("Keyboard Passthrough")),
         Some("win.toggle-passthrough"),

@@ -115,6 +115,28 @@ impl MainWindow {
         });
         window.add_action(&toggle_fullscreen_action);
 
+        // Toggle compact interface (stateful per GNOME HIG — menu shows a
+        // checkmark). Reflects and persists the manual compact setting; the
+        // automatic-on-small-windows preference is preserved untouched.
+        let initial_compact = state.borrow().settings().ui.compact_ui;
+        let toggle_compact_action =
+            gio::SimpleAction::new_stateful("toggle-compact", None, &initial_compact.to_variant());
+        let state_for_compact = state.clone();
+        toggle_compact_action.connect_activate(move |action, _| {
+            let (manual, auto) = {
+                let mut st = state_for_compact.borrow_mut();
+                let ui = &mut st.settings_mut().ui;
+                ui.compact_ui = !ui.compact_ui;
+                (ui.compact_ui, ui.compact_auto)
+            };
+            if let Err(e) = state_for_compact.borrow().save_settings() {
+                tracing::warn!(error = %e, "Failed to persist compact interface toggle");
+            }
+            crate::app::set_compact_prefs(manual, auto);
+            action.set_state(&manual.to_variant());
+        });
+        window.add_action(&toggle_compact_action);
+
         // Toggle keyboard passthrough mode (stateful)
         // When enabled, all keybindings except quit/fullscreen/passthrough-toggle
         // are disabled so keys pass through to VTE terminal or embedded viewer.

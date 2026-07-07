@@ -30,6 +30,7 @@ pub fn create_ui_page() -> (
     adw::SpinRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    adw::SwitchRow,
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Interface"))
@@ -168,7 +169,7 @@ pub fn create_ui_page() -> (
     let sidebar_width_row = adw::SpinRow::builder()
         .title(i18n("Sidebar width"))
         .subtitle(i18n("Width of the connection sidebar in pixels"))
-        .adjustment(&gtk4::Adjustment::new(320.0, 260.0, 500.0, 10.0, 50.0, 0.0))
+        .adjustment(&gtk4::Adjustment::new(320.0, 180.0, 500.0, 10.0, 50.0, 0.0))
         .build();
     appearance_group.add(&sidebar_width_row);
 
@@ -178,13 +179,34 @@ pub fn create_ui_page() -> (
     let compact_ui = adw::SwitchRow::builder()
         .title(i18n("Compact interface"))
         .subtitle(i18n(
-            "Reduce header bar and tab bar height (useful on small screens and KDE)",
+            "Reduce header bar, tab bar, and toolbar height. Applied instantly; useful on small screens, macOS and KDE",
         ))
         .build();
-    compact_ui.connect_active_notify(move |row| {
-        crate::app::apply_compact_ui(row.is_active());
-    });
     appearance_group.add(&compact_ui);
+
+    // Automatic compact — engage compact chrome only while the window is small.
+    let compact_auto = adw::SwitchRow::builder()
+        .title(i18n("Compact automatically on small windows"))
+        .subtitle(i18n(
+            "Switch to compact chrome when the window becomes short or narrow, and back when it grows",
+        ))
+        .build();
+    appearance_group.add(&compact_auto);
+
+    // Live preview: both toggles feed the same recompute so the effect is
+    // visible before the dialog is saved.
+    {
+        let auto = compact_auto.clone();
+        compact_ui.connect_active_notify(move |row| {
+            crate::app::set_compact_prefs(row.is_active(), auto.is_active());
+        });
+    }
+    {
+        let manual = compact_ui.clone();
+        compact_auto.connect_active_notify(move |row| {
+            crate::app::set_compact_prefs(manual.is_active(), row.is_active());
+        });
+    }
 
     // Send terminal control shortcuts to the session toggle — when on, the
     // focus-based accelerator suspend is active (single-Ctrl chords reach the
@@ -323,6 +345,7 @@ pub fn create_ui_page() -> (
         show_protocol_filters,
         sidebar_width_row,
         compact_ui,
+        compact_auto,
         terminal_passthrough_ctrl,
     )
 }
@@ -372,6 +395,7 @@ pub fn load_ui_settings(
     show_protocol_filters: &adw::SwitchRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
+    compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     settings: &UiSettings,
     connections: &[&Connection],
@@ -437,11 +461,12 @@ pub fn load_ui_settings(
 
     // Load sidebar width (default 320 if not set)
     let sidebar_w = settings.sidebar_width.unwrap_or(320);
-    sidebar_width_row.set_value(f64::from(sidebar_w.clamp(260, 500)));
+    sidebar_width_row.set_value(f64::from(sidebar_w.clamp(180, 500)));
 
     // Load compact interface — apply CSS immediately so it persists at startup.
     compact_ui.set_active(settings.compact_ui);
-    crate::app::apply_compact_ui(settings.compact_ui);
+    compact_auto.set_active(settings.compact_auto);
+    crate::app::set_compact_prefs(settings.compact_ui, settings.compact_auto);
 
     terminal_passthrough_ctrl.set_active(settings.terminal_passthrough_ctrl);
 
@@ -489,6 +514,7 @@ pub fn collect_ui_settings(
     show_protocol_filters: &adw::SwitchRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
+    compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     connections: &[&Connection],
 ) -> UiSettings {
@@ -527,7 +553,7 @@ pub fn collect_ui_settings(
         window_width: None,
         window_height: None,
         window_maximized: false,
-        sidebar_width: Some(sidebar_width_row.value().clamp(260.0, 500.0) as i32),
+        sidebar_width: Some(sidebar_width_row.value().clamp(180.0, 500.0) as i32),
         enable_tray_icon: enable_tray_icon.is_active(),
         minimize_to_tray: minimize_to_tray.is_active(),
         expanded_groups: std::collections::HashSet::new(),
@@ -547,6 +573,7 @@ pub fn collect_ui_settings(
         show_protocol_filters: show_protocol_filters.is_active(),
         show_smart_folders: false, // Preserved via toggle button, not settings dialog
         compact_ui: compact_ui.is_active(),
+        compact_auto: compact_auto.is_active(),
         terminal_passthrough_ctrl: terminal_passthrough_ctrl.is_active(),
     }
 }

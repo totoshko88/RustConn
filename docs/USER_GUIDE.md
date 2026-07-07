@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.18.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.18.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -845,6 +845,10 @@ VNC connections support embedded (vnc-rs) or external (TigerVNC) client modes. C
 ### SPICE
 
 SPICE connections support TLS encryption, CA certificate validation, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, and shared folders. SPICE opens in an external viewer (remote-viewer / virt-viewer).
+
+**Unix Socket Mode:**
+
+For local VMs managed by libvirt/QEMU, you can connect directly via a unix socket instead of host:port. Enable the "Unix Socket" toggle in the SPICE tab and provide the socket path (e.g. `/run/libvirt/qemu/vm-spice.sock`). The viewer uses `spice+unix://` URI. Jump host is not available in socket mode.
 
 ### MOSH Protocol
 

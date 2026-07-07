@@ -1,6 +1,6 @@
 # RustConn Zero Trust Providers
 
-**Version 0.18.1** | Identity-aware proxy integrations for RustConn
+**Version 0.18.2** | Identity-aware proxy integrations for RustConn
 
 RustConn supports connecting through identity-aware proxy services (Zero Trust). Instead of direct SSH/RDP to a host, the connection is tunneled through a provider's CLI tool that handles authentication and authorization.
 

@@ -1850,6 +1850,11 @@ pub struct SpiceConfig {
     /// port forwarding (`ssh -L`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub jump_host_id: Option<uuid::Uuid>,
+    /// Path to a SPICE unix socket (e.g. `/run/libvirt/qemu/vm-spice.sock`).
+    /// When set, the connection uses `spice+unix://` URI instead of host:port.
+    /// Mutually exclusive with host:port — jump_host_id is ignored when set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unix_socket_path: Option<PathBuf>,
 }
 
 impl Default for SpiceConfig {
@@ -1865,6 +1870,7 @@ impl Default for SpiceConfig {
             proxy: None,
             show_local_cursor: true,
             jump_host_id: None,
+            unix_socket_path: None,
         }
     }
 }

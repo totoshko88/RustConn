@@ -127,6 +127,8 @@ impl ConnectionDialog {
         spice_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
         spice_jump_host_dropdown: &DropDown,
         spice_connections_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
+        spice_unix_socket_check: &adw::SwitchRow,
+        spice_socket_path_entry: &Entry,
         zt_provider_dropdown: &DropDown,
         zt_aws_target_entry: &adw::EntryRow,
         zt_aws_profile_entry: &adw::EntryRow,
@@ -315,6 +317,8 @@ impl ConnectionDialog {
         let spice_shared_folders = spice_shared_folders.clone();
         let spice_jump_host_dropdown = spice_jump_host_dropdown.clone();
         let spice_connections_data = spice_connections_data.clone();
+        let spice_unix_socket_check = spice_unix_socket_check.clone();
+        let spice_socket_path_entry = spice_socket_path_entry.clone();
         let zt_provider_dropdown = zt_provider_dropdown.clone();
         let zt_aws_target_entry = zt_aws_target_entry.clone();
         let zt_aws_profile_entry = zt_aws_profile_entry.clone();
@@ -514,6 +518,8 @@ impl ConnectionDialog {
                 spice_shared_folders: &spice_shared_folders,
                 spice_jump_host_dropdown: &spice_jump_host_dropdown,
                 spice_connections_data: &spice_connections_data,
+                spice_unix_socket_check: &spice_unix_socket_check,
+                spice_socket_path_entry: &spice_socket_path_entry,
                 zt_provider_dropdown: &zt_provider_dropdown,
                 zt_aws_target_entry: &zt_aws_target_entry,
                 zt_aws_profile_entry: &zt_aws_profile_entry,

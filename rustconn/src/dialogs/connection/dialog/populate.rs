@@ -80,32 +80,6 @@ impl ConnectionDialog {
         });
     }
 
-    /// Sets up the file chooser button for SPICE CA certificate selection using portal
-    pub fn setup_ca_cert_file_chooser(&self, parent_window: Option<&gtk4::Window>) {
-        let ca_cert_entry = self.spice_ca_cert_entry.clone();
-        let parent = parent_window.cloned();
-
-        self.spice_ca_cert_button.connect_clicked(move |_| {
-            let file_dialog = FileDialog::builder()
-                .title(i18n("Select CA Certificate"))
-                .modal(true)
-                .build();
-
-            let entry = ca_cert_entry.clone();
-            file_dialog.open(
-                parent.as_ref(),
-                gtk4::gio::Cancellable::NONE,
-                move |result| {
-                    if let Ok(file) = result
-                        && let Some(path) = file.path()
-                    {
-                        entry.set_text(&path.to_string_lossy());
-                    }
-                },
-            );
-        });
-    }
-
     /// Populates the dialog with an existing connection for editing
     pub fn set_connection(&self, conn: &Connection) {
         self.dialog.set_title(&i18n("Edit Connection"));
@@ -1334,6 +1308,16 @@ impl ConnectionDialog {
                 )]
                 self.spice_jump_host_dropdown.set_selected(idx as u32);
             }
+        }
+
+        // Set unix socket path
+        if let Some(ref socket_path) = spice.unix_socket_path {
+            self.spice_unix_socket_check.set_active(true);
+            self.spice_socket_path_entry
+                .set_text(&socket_path.to_string_lossy());
+        } else {
+            self.spice_unix_socket_check.set_active(false);
+            self.spice_socket_path_entry.set_text("");
         }
     }
 

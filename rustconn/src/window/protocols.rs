@@ -617,7 +617,9 @@ fn start_spice_connection_internal(
     };
 
     // --- SSH tunnel for jump host ---
+    // Unix-socket mode connects locally, so the jump host is ignored (no tunnel).
     let (effective_host, effective_port, ssh_tunnel) = if let Some(ref opts) = spice_opts
+        && opts.unix_socket_path.is_none()
         && let Some(jump_id) = opts.jump_host_id
     {
         if let Ok(state_ref) = state.try_borrow()
@@ -744,6 +746,11 @@ fn start_spice_connection_internal(
 
             // Configure local cursor visibility
             config.show_local_cursor = opts.show_local_cursor;
+
+            // Configure unix socket if set
+            if let Some(ref socket_path) = opts.unix_socket_path {
+                config = config.with_unix_socket(socket_path);
+            }
         }
 
         // Connect state change callback to mark tab as disconnected

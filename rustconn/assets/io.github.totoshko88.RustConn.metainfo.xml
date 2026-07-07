@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.2" date="2026-07-08">
+      <description>
+        <p>Version 0.18.2 - SPICE unix sockets and a compact-interface overhaul:</p>
+        <ul>
+          <li>Connect to SPICE servers over a local unix socket (spice+unix://), with a Browse button in the SPICE tab</li>
+          <li>Compact interface is now reachable from the primary menu and a Ctrl+Shift+D shortcut</li>
+          <li>New automatic compact mode that engages on small windows and relaxes when the window grows</li>
+          <li>Compact mode now covers the monitoring bar, split panels, and playback toolbar, with larger minimum tap targets</li>
+          <li>Fixed the SPICE CA-certificate Browse button, which previously did nothing</li>
+          <li>Fixed compact mode inflating the header and banner area instead of shrinking it</li>
+          <li>Bundled FreeRDP updated to 3.28.0 in the Flatpak build</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.1" date="2026-07-07">
       <description>
         <p>Version 0.18.1 - embedded split view, workspace restore, and RDP fixes:</p>

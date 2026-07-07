@@ -2590,6 +2590,7 @@ impl TemplateDialog {
             proxy: None,
             show_local_cursor: true,
             jump_host_id: None,
+            unix_socket_path: None,
         })
     }
 

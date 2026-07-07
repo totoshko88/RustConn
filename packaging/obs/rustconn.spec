@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.1
+Version:        0.18.2
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,17 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Jul 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.2-0
+- Version bump to 0.18.2
+- SPICE unix socket connections (spice+unix://) with Browse button
+- Compact interface: primary-menu toggle + Ctrl+Shift+D shortcut, automatic mode on small windows
+- Compact mode extended to monitoring bar, split panels, and playback toolbar
+- Fixed SPICE CA-certificate Browse button (was wired to no handler)
+- Fixed CLI/GUI SPICE viewer USB-redirection flag divergence
+- Fixed compact mode inflating the header/banner area
+- FreeRDP (Flatpak) updated 3.27.1 -> 3.28.0
+- Dependency updates: zbus 5.17, zvariant 5.13
+
 * Tue Jul 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.1-0
 - Version bump to 0.18.1
 - Split view generalized to embedded RDP/VNC/SPICE tabs

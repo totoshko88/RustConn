@@ -78,6 +78,8 @@ pub struct PartialConnection {
     pub k8s_container: Option<String>,
     // Web
     pub url: Option<String>,
+    // SPICE unix socket
+    pub spice_unix_socket_path: Option<PathBuf>,
 }
 
 impl PartialConnection {
@@ -125,6 +127,7 @@ impl PartialConnection {
             }
             ProtocolConfig::Spice(cfg) => {
                 partial.jump_host_id = cfg.jump_host_id;
+                partial.spice_unix_socket_path = cfg.unix_socket_path.clone();
             }
             ProtocolConfig::Serial(cfg) => {
                 partial.serial_device = Some(cfg.device.clone());
@@ -298,6 +301,7 @@ impl PartialConnection {
                 if let Some(jump_id) = self.jump_host_id {
                     cfg.jump_host_id = Some(jump_id);
                 }
+                cfg.unix_socket_path = self.spice_unix_socket_path.clone();
                 ProtocolConfig::Spice(cfg)
             }
             ProtocolType::Telnet => {
@@ -637,6 +641,7 @@ impl ConnectionWizard {
             } else {
                 None
             },
+            spice_unix_socket_path: None, // ponytail: wizard doesn't expose socket path yet; user opens Advanced for this
         }
     }
 
@@ -712,6 +717,7 @@ impl ConnectionWizard {
                 if let Some(jump_id) = partial.jump_host_id {
                     cfg.jump_host_id = Some(jump_id);
                 }
+                cfg.unix_socket_path = partial.spice_unix_socket_path.clone();
                 ProtocolConfig::Spice(cfg)
             }
             ProtocolType::Telnet => {

@@ -67,6 +67,10 @@ pub struct SpiceClientConfig {
 
     /// Show local mouse cursor over embedded viewer (disable to avoid double cursor)
     pub show_local_cursor: bool,
+
+    /// Path to a SPICE unix socket (e.g. `/run/libvirt/qemu/vm-spice.sock`).
+    /// When set, the connection uses `spice+unix://` URI instead of host:port.
+    pub unix_socket_path: Option<PathBuf>,
 }
 
 /// SPICE security protocol options
@@ -150,6 +154,7 @@ impl Default for SpiceClientConfig {
             security_protocol: SpiceSecurityProtocol::default(),
             proxy: None,
             show_local_cursor: true,
+            unix_socket_path: None,
         }
     }
 }
@@ -270,6 +275,15 @@ impl SpiceClientConfig {
         self
     }
 
+    /// Sets the unix socket path for local SPICE connections.
+    ///
+    /// When set, the viewer uses `spice+unix://` URI instead of host:port.
+    #[must_use]
+    pub fn with_unix_socket(mut self, path: impl Into<PathBuf>) -> Self {
+        self.unix_socket_path = Some(path.into());
+        self
+    }
+
     /// Returns the server address as "host:port"
     #[must_use]
     pub fn server_address(&self) -> String {
@@ -282,6 +296,24 @@ impl SpiceClientConfig {
     ///
     /// Returns an error if the configuration is invalid.
     pub fn validate(&self) -> Result<(), String> {
+        // Unix socket mode — only validate the path
+        if let Some(ref socket_path) = self.unix_socket_path {
+            if socket_path.as_os_str().is_empty() {
+                return Err("Unix socket path cannot be empty".to_string());
+            }
+            // Shared folders still need validation
+            for folder in &self.shared_folders {
+                if folder.share_name.is_empty() {
+                    return Err("Shared folder name cannot be empty".to_string());
+                }
+                if folder.local_path.as_os_str().is_empty() {
+                    return Err("Shared folder path cannot be empty".to_string());
+                }
+            }
+            return Ok(());
+        }
+
+        // TCP mode — validate host:port
         if self.host.is_empty() {
             return Err("Host cannot be empty".to_string());
         }
@@ -402,6 +434,31 @@ mod tests {
     fn test_validate_empty_shared_folder_name() {
         let folder = SpiceSharedFolder::new("/tmp", "");
         let config = SpiceClientConfig::new("localhost").with_shared_folder(folder);
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_unix_socket_ignores_empty_host() {
+        // Socket mode is valid even with an empty host and no TLS cert.
+        let config = SpiceClientConfig::default()
+            .with_tls(true)
+            .with_unix_socket("/run/libvirt/qemu/vm-spice.sock");
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_unix_socket_empty_path() {
+        let config = SpiceClientConfig::new("localhost").with_unix_socket("");
+        let err = config.validate().expect_err("empty socket path must fail");
+        assert_eq!(err, "Unix socket path cannot be empty");
+    }
+
+    #[test]
+    fn test_validate_unix_socket_bad_shared_folder() {
+        // Shared folders are validated even in socket mode.
+        let config = SpiceClientConfig::new("localhost")
+            .with_unix_socket("/run/spice.sock")
+            .with_shared_folder(SpiceSharedFolder::new("/tmp", ""));
         assert!(config.validate().is_err());
     }
 

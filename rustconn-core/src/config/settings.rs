@@ -572,14 +572,24 @@ pub struct UiSettings {
     /// Show Smart Folders section in sidebar
     #[serde(default)]
     pub show_smart_folders: bool,
-    /// Compact interface — denser header bar, tabs and buttons
+    /// Compact interface — denser chrome across the whole window
     ///
-    /// Reduces vertical chrome (header bar, tab bar, button padding) so more
-    /// space is available for the active session content. Especially useful on
-    /// small laptop screens (≤14") and on KDE Plasma where the default Adwaita
-    /// chrome looks taller than native Qt apps.
+    /// Reduces vertical chrome (header bar, tab bar, monitoring bar, banners,
+    /// split panel margins, playback toolbar, button padding) so more space is
+    /// available for the active session content. Especially useful on small
+    /// laptop screens (≤14"), macOS, and KDE Plasma where the default Adwaita
+    /// chrome looks taller than native Qt/AppKit apps.
     #[serde(default)]
     pub compact_ui: bool,
+    /// Automatically enable compact interface when the window is small.
+    ///
+    /// When `true`, the `.compact` chrome engages on its own once the window
+    /// drops below a size threshold (short and/or narrow), and relaxes again
+    /// when the window grows — independent of the manual [`Self::compact_ui`]
+    /// switch (which, when on, always forces compact). Off by default so
+    /// existing behavior is unchanged.
+    #[serde(default)]
+    pub compact_auto: bool,
     /// Send single-Ctrl terminal control shortcuts (Ctrl+F/P/N/W/H/M/I) to the
     /// focused terminal/viewer instead of the application accelerators.
     ///
@@ -691,6 +701,7 @@ impl Default for UiSettings {
             show_protocol_filters: false,
             show_smart_folders: false,
             compact_ui: cfg!(target_os = "macos"),
+            compact_auto: false,
             terminal_passthrough_ctrl: true,
         }
     }

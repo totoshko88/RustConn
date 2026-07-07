@@ -200,7 +200,6 @@ pub struct ConnectionDialog {
     // SPICE fields
     spice_tls_check: adw::SwitchRow,
     spice_ca_cert_entry: Entry,
-    spice_ca_cert_button: Button,
     spice_skip_verify_check: adw::SwitchRow,
     spice_usb_check: adw::SwitchRow,
     spice_clipboard_check: adw::SwitchRow,
@@ -211,6 +210,8 @@ pub struct ConnectionDialog {
     spice_shared_folders_list: gtk4::ListBox,
     spice_jump_host_dropdown: DropDown,
     spice_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
+    spice_unix_socket_check: adw::SwitchRow,
+    spice_socket_path_entry: Entry,
     // Zero Trust fields
     zt_provider_dropdown: DropDown,
     zt_provider_stack: Stack,

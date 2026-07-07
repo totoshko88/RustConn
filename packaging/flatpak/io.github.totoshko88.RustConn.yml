@@ -279,8 +279,8 @@ modules:
       - -DWITH_RDTK=OFF
     sources:
       - type: archive
-        url: https://pub.freerdp.com/releases/freerdp-3.27.1.tar.xz
-        sha256: 5ab6c4c4579c78518d1adb80d490a77c3a9f7ab7a6356b8da1c35faa223b11d5
+        url: https://pub.freerdp.com/releases/freerdp-3.28.0.tar.xz
+        sha256: f0ee0f8ae28226df2e0aab57c84613dab9e2becb227757486c5db2867b9ff9fd
         x-checker-data:
           type: anitya
           project-id: 10442
@@ -324,5 +324,5 @@ modules:
     sources:
       - type: git
         url: https://github.com/totoshko88/RustConn.git
-        tag: v0.18.1
+        tag: v0.18.2
       - cargo-sources.json

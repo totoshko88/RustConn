@@ -24,6 +24,33 @@ pub use config::{
 };
 pub use error::SpiceClientError;
 
+use std::path::Path;
+
+/// USB auto-redirect filter for `remote-viewer`: auto-redirect HID-class
+/// (`0x03`) devices on connect. The value is a `|`-separated list of
+/// `class,vendor,product,version,allow` rules.
+pub const SPICE_USB_AUTO_REDIRECT_FILTER: &str = "0x03,-1,-1,-1,0|-1,-1,-1,-1,1";
+
+/// Builds the SPICE connection URI for an external viewer.
+///
+/// Returns `spice+unix://<path>` when `unix_socket_path` is set (host/port are
+/// ignored), `spice+tls://host:port` when TLS is enabled, otherwise
+/// `spice://host:port`. Shared by [`build_spice_viewer_args`] and the CLI's
+/// `SpiceProtocol::build_command` so both paths stay in sync.
+#[must_use]
+pub fn build_spice_uri(
+    unix_socket_path: Option<&Path>,
+    tls_enabled: bool,
+    host: &str,
+    port: u16,
+) -> String {
+    match unix_socket_path {
+        Some(path) => format!("spice+unix://{}", path.display()),
+        None if tls_enabled => format!("spice+tls://{host}:{port}"),
+        None => format!("spice://{host}:{port}"),
+    }
+}
+
 /// Detects available SPICE viewer applications for fallback mode
 ///
 /// Returns the path to the first available SPICE viewer, or None if none found.
@@ -62,24 +89,34 @@ pub fn detect_spice_viewer() -> Option<String> {
 pub fn build_spice_viewer_args(config: &SpiceClientConfig) -> Vec<String> {
     let mut args = Vec::new();
 
-    // Connection URI: spice://host:port
-    let uri = if config.tls_enabled {
-        format!("spice+tls://{}:{}", config.host, config.port)
-    } else {
-        format!("spice://{}:{}", config.host, config.port)
-    };
-    args.push(uri);
+    // Connection URI: spice+unix:///path or spice://host:port
+    args.push(build_spice_uri(
+        config.unix_socket_path.as_deref(),
+        config.tls_enabled,
+        &config.host,
+        config.port,
+    ));
 
     // Full screen option (not enabled by default for embedded-like behavior)
 
     // Title
     args.push("--title".to_string());
-    args.push(format!("SPICE: {}", config.host));
+    if config.unix_socket_path.is_some() {
+        args.push(format!(
+            "SPICE: {}",
+            config
+                .unix_socket_path
+                .as_ref()
+                .map_or("socket", |p| p.to_str().unwrap_or("socket"))
+        ));
+    } else {
+        args.push(format!("SPICE: {}", config.host));
+    }
 
     // USB redirection
     if config.usb_redirection {
         args.push("--spice-usbredir-auto-redirect-filter".to_string());
-        args.push("0x03,-1,-1,-1,0|-1,-1,-1,-1,1".to_string());
+        args.push(SPICE_USB_AUTO_REDIRECT_FILTER.to_string());
     }
 
     // Shared folders (webdav)
@@ -230,5 +267,19 @@ mod tests {
 
         assert!(args.contains(&"--spice-proxy".to_string()));
         assert!(args.contains(&"http://192.168.1.100:3128".to_string()));
+    }
+
+    #[test]
+    fn test_build_spice_viewer_args_unix_socket() {
+        // Unix-socket mode uses the spice+unix:// scheme and ignores host:port.
+        let config = SpiceClientConfig::new("ignored-host")
+            .with_port(5900)
+            .with_tls(true) // must not produce spice+tls:// in socket mode
+            .with_unix_socket("/run/libvirt/qemu/vm-spice.sock");
+        let args = build_spice_viewer_args(&config);
+
+        assert!(args.contains(&"spice+unix:///run/libvirt/qemu/vm-spice.sock".to_string()));
+        assert!(!args.iter().any(|a| a.starts_with("spice://")));
+        assert!(!args.iter().any(|a| a.starts_with("spice+tls://")));
     }
 }

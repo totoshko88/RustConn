@@ -293,6 +293,7 @@ fn arb_spice_config() -> impl Strategy<Value = SpiceConfig> {
                 proxy: None,
                 show_local_cursor: true,
                 jump_host_id: None,
+                unix_socket_path: None,
             },
         )
 }

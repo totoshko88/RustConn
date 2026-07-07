@@ -656,8 +656,10 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-    toolbar.set_margin_start(12);
-    toolbar.set_margin_end(12);
+    // Small side margins so the six icon buttons fit within a narrow (≈180px)
+    // sidebar without pinning its minimum width.
+    toolbar.set_margin_start(6);
+    toolbar.set_margin_end(6);
     toolbar.set_halign(gtk4::Align::Center);
 
     let group_ops_button = Button::from_icon_name("view-list-symbolic");

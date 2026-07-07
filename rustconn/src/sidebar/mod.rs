@@ -116,8 +116,9 @@ impl ConnectionSidebar {
     #[must_use]
     pub fn new() -> Self {
         let container = GtkBox::new(Orientation::Vertical, 0);
-        // Minimum sidebar width — fits bottom toolbar, search bar, and protocol filters
-        container.set_width_request(260);
+        // Minimum sidebar width — kept in sync with the OverlaySplitView min
+        // (window/mod.rs) and the settings SpinRow lower bound (ui_tab.rs).
+        container.set_width_request(180);
         container.add_css_class("sidebar");
 
         // Search box with entry and help button
@@ -964,6 +965,30 @@ impl ConnectionSidebar {
 
         // Create debouncer for search with 100ms delay
         let search_debouncer = Rc::new(Debouncer::for_search());
+
+        // A GtkRevealer with a SlideUp/SlideDown transition animates only its
+        // height, yet a *collapsed* revealer still reserves its child's WIDTH.
+        // The filter and bulk-action bars are horizontal button rows (~300px
+        // min width) that don't wrap without adw-1-7, so even while hidden they
+        // pinned the sidebar minimum width to ~300px (root cause of #204). Drop
+        // each revealer from layout entirely while fully collapsed, and restore
+        // it the instant it starts revealing so the open/close animation stays.
+        fn drop_when_collapsed(revealer: &gtk4::Revealer) {
+            revealer.set_visible(revealer.reveals_child());
+            revealer.connect_reveal_child_notify(|r| {
+                if r.reveals_child() {
+                    r.set_visible(true);
+                }
+            });
+            revealer.connect_child_revealed_notify(|r| {
+                if !r.is_child_revealed() {
+                    r.set_visible(false);
+                }
+            });
+        }
+        drop_when_collapsed(&filter_revealer);
+        drop_when_collapsed(&bulk_actions_revealer);
+        drop_when_collapsed(&smart_folders_revealer);
 
         Self {
             container,

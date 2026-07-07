@@ -21,13 +21,15 @@ class Rustconn < Formula
   depends_on "vte3"
 
   def install
-    # Build GUI with macOS-specific features (no wayland, no D-Bus tray)
-    system "cargo", "install", *std_cargo_args(path: "rustconn"),
+    # Build both binaries in a single cargo invocation to avoid
+    # duplicate dependency resolution and share compilation artifacts.
+    system "cargo", "build", "--release",
+           "-p", "rustconn", "-p", "rustconn-cli",
            "--no-default-features",
-           "--features", "tray-macos,vnc-embedded,rdp-embedded,rdp-audio"
+           "--features", "rustconn/tray-macos,rustconn/vnc-embedded,rustconn/rdp-embedded,rustconn/rdp-audio"
 
-    # Build CLI
-    system "cargo", "install", *std_cargo_args(path: "rustconn-cli")
+    bin.install "target/release/rustconn"
+    bin.install "target/release/rustconn-cli"
 
     # Install locales
     Dir["po/*.po"].each do |po|

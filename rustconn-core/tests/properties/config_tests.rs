@@ -520,6 +520,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         show_protocol_filters: false,
                         show_smart_folders: false,
                         compact_ui: false,
+                        compact_auto: false,
                         terminal_passthrough_ctrl: true,
                     },
                     connection: rustconn_core::ConnectionSettings::default(),

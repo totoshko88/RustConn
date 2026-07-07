@@ -121,6 +121,8 @@ pub struct SettingsDialog {
     sidebar_width_row: adw::SpinRow,
     // Compact interface toggle
     compact_ui: adw::SwitchRow,
+    // Automatic compact interface on small windows
+    compact_auto: adw::SwitchRow,
     // Send terminal control shortcuts to the session toggle (focus-based suspend)
     terminal_passthrough_ctrl: adw::SwitchRow,
     // SSH Agent settings
@@ -239,6 +241,7 @@ impl SettingsDialog {
             show_protocol_filters,
             sidebar_width_row,
             compact_ui,
+            compact_auto,
             terminal_passthrough_ctrl,
         ) = create_ui_page();
         mark("ui_page");
@@ -659,6 +662,7 @@ impl SettingsDialog {
             show_protocol_filters,
             sidebar_width_row,
             compact_ui,
+            compact_auto,
             terminal_passthrough_ctrl,
             ssh_agent_status_label,
             ssh_agent_socket_label,
@@ -1003,6 +1007,7 @@ impl SettingsDialog {
             &self.show_protocol_filters,
             &self.sidebar_width_row,
             &self.compact_ui,
+            &self.compact_auto,
             &self.terminal_passthrough_ctrl,
             &settings.ui,
             &conn_refs,
@@ -1141,6 +1146,7 @@ impl SettingsDialog {
         let show_protocol_filters_clone = self.show_protocol_filters.clone();
         let sidebar_width_row_clone = self.sidebar_width_row.clone();
         let compact_ui_clone = self.compact_ui.clone();
+        let compact_auto_clone = self.compact_auto.clone();
         let terminal_passthrough_ctrl_clone = self.terminal_passthrough_ctrl.clone();
         let connections_clone = self.connections.clone();
         let keybindings_overrides_clone = self.keybindings_overrides.clone();
@@ -1286,6 +1292,7 @@ impl SettingsDialog {
                 &show_protocol_filters_clone,
                 &sidebar_width_row_clone,
                 &compact_ui_clone,
+                &compact_auto_clone,
                 &terminal_passthrough_ctrl_clone,
                 &conn_refs,
             );

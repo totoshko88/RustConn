@@ -319,6 +319,12 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new("win.toggle-fullscreen", "F11", "Toggle Fullscreen", View),
         KeybindingDef::new("win.toggle-sidebar", "F9", "Toggle Sidebar", View),
         KeybindingDef::new(
+            "win.toggle-compact",
+            "<Control><Shift>d",
+            "Toggle Compact Interface",
+            View,
+        ),
+        KeybindingDef::new(
             "win.toggle-passthrough",
             "<Control><Shift>BackSpace",
             "Toggle Keyboard Passthrough",

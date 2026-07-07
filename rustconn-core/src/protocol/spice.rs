@@ -52,14 +52,36 @@ impl Protocol for SpiceProtocol {
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()> {
         let spice_config = Self::get_spice_config(connection)?;
 
-        // Validate host is not empty
+        // Unix socket mode — skip host/port validation
+        if let Some(ref socket_path) = spice_config.unix_socket_path {
+            if socket_path.as_os_str().is_empty() {
+                return Err(ProtocolError::InvalidConfig(
+                    "Unix socket path cannot be empty".to_string(),
+                ));
+            }
+            // Validate shared folders even in socket mode
+            for folder in &spice_config.shared_folders {
+                if folder.local_path.as_os_str().is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Shared folder local path cannot be empty".to_string(),
+                    ));
+                }
+                if folder.share_name.is_empty() {
+                    return Err(ProtocolError::InvalidConfig(
+                        "Shared folder share name cannot be empty".to_string(),
+                    ));
+                }
+            }
+            return Ok(());
+        }
+
+        // TCP mode — validate host and port
         if connection.host.is_empty() {
             return Err(ProtocolError::InvalidConfig(
                 "Host cannot be empty".to_string(),
             ));
         }
 
-        // Validate port is in valid range
         if connection.port == 0 {
             return Err(ProtocolError::InvalidConfig("Port cannot be 0".to_string()));
         }
@@ -104,46 +126,54 @@ impl Protocol for SpiceProtocol {
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
-        let scheme = if let ProtocolConfig::Spice(ref spice_config) = connection.protocol_config {
-            if spice_config.tls_enabled {
-                "spice+tls"
-            } else {
-                "spice"
-            }
-        } else {
-            "spice"
+        // Non-SPICE config: fall back to a plain spice:// URI.
+        let ProtocolConfig::Spice(ref spice_config) = connection.protocol_config else {
+            let uri = crate::spice_client::build_spice_uri(
+                None,
+                false,
+                &connection.host,
+                connection.port,
+            );
+            return Some(vec!["remote-viewer".to_string(), uri]);
         };
 
-        let uri = format!("{scheme}://{}:{}", connection.host, connection.port);
-        let mut args = vec![uri];
+        // URI building is shared with `build_spice_viewer_args` so the socket /
+        // TLS / plain schemes never diverge again.
+        let uri = crate::spice_client::build_spice_uri(
+            spice_config.unix_socket_path.as_deref(),
+            spice_config.tls_enabled,
+            &connection.host,
+            connection.port,
+        );
+        let mut cmd = vec!["remote-viewer".to_string(), uri];
 
-        if let ProtocolConfig::Spice(ref spice_config) = connection.protocol_config {
-            if let Some(ref ca_cert) = spice_config.ca_cert_path {
-                args.push(format!("--spice-ca-file={}", ca_cert.display()));
-            }
-            if spice_config.usb_redirection {
-                args.push("--spice-usbredir-redirect-on-connect=auto".to_string());
-            }
-            for folder in &spice_config.shared_folders {
-                args.push(format!(
-                    "--spice-shared-dir={}",
-                    folder.local_path.display()
-                ));
-            }
-            if let Some(ref proxy) = spice_config.proxy {
-                if proxy
-                    .chars()
-                    .all(|c| c.is_alphanumeric() || ".-:/@_".contains(c))
-                {
-                    args.push(format!("--spice-proxy={proxy}"));
-                } else {
-                    tracing::warn!(proxy = %proxy, "Invalid SPICE proxy format, skipping");
-                }
+        // CA cert only applies in TCP+TLS mode (a unix socket has no TLS layer).
+        if spice_config.unix_socket_path.is_none()
+            && let Some(ref ca_cert) = spice_config.ca_cert_path
+        {
+            cmd.push(format!("--spice-ca-file={}", ca_cert.display()));
+        }
+        if spice_config.usb_redirection {
+            cmd.push("--spice-usbredir-auto-redirect-filter".to_string());
+            cmd.push(crate::spice_client::SPICE_USB_AUTO_REDIRECT_FILTER.to_string());
+        }
+        for folder in &spice_config.shared_folders {
+            cmd.push(format!(
+                "--spice-shared-dir={}",
+                folder.local_path.display()
+            ));
+        }
+        if let Some(ref proxy) = spice_config.proxy {
+            if proxy
+                .chars()
+                .all(|c| c.is_alphanumeric() || ".-:/@_".contains(c))
+            {
+                cmd.push(format!("--spice-proxy={proxy}"));
+            } else {
+                tracing::warn!(proxy = %proxy, "Invalid SPICE proxy format, skipping");
             }
         }
 
-        let mut cmd = vec!["remote-viewer".to_string()];
-        cmd.extend(args);
         Some(cmd)
     }
 }
@@ -300,5 +330,64 @@ mod tests {
         };
         let connection = create_spice_connection(config);
         assert!(protocol.validate_connection(&connection).is_ok());
+    }
+
+    #[test]
+    fn test_validate_unix_socket_ignores_empty_host_port() {
+        let protocol = SpiceProtocol::new();
+        let config = SpiceConfig {
+            unix_socket_path: Some(PathBuf::from("/run/libvirt/qemu/vm-spice.sock")),
+            ..Default::default()
+        };
+        let mut connection = create_spice_connection(config);
+        // Socket mode must be valid even without host/port.
+        connection.host = String::new();
+        connection.port = 0;
+        assert!(protocol.validate_connection(&connection).is_ok());
+    }
+
+    #[test]
+    fn test_validate_unix_socket_empty_path() {
+        let protocol = SpiceProtocol::new();
+        let config = SpiceConfig {
+            unix_socket_path: Some(PathBuf::new()),
+            ..Default::default()
+        };
+        let connection = create_spice_connection(config);
+        let err = protocol
+            .validate_connection(&connection)
+            .expect_err("empty socket path must fail");
+        assert!(err.to_string().contains("Unix socket path cannot be empty"));
+    }
+
+    #[test]
+    fn test_validate_unix_socket_bad_shared_folder() {
+        let protocol = SpiceProtocol::new();
+        let config = SpiceConfig {
+            unix_socket_path: Some(PathBuf::from("/run/spice.sock")),
+            shared_folders: vec![SharedFolder {
+                local_path: PathBuf::new(),
+                share_name: "Share".to_string(),
+            }],
+            ..Default::default()
+        };
+        let connection = create_spice_connection(config);
+        // Shared folders are validated even in socket mode.
+        assert!(protocol.validate_connection(&connection).is_err());
+    }
+
+    #[test]
+    fn test_build_command_unix_socket_usb_flag() {
+        let protocol = SpiceProtocol::new();
+        let config = SpiceConfig {
+            unix_socket_path: Some(PathBuf::from("/run/spice.sock")),
+            usb_redirection: true,
+            ..Default::default()
+        };
+        let connection = create_spice_connection(config);
+        let cmd = protocol.build_command(&connection).expect("command");
+        assert!(cmd.contains(&"spice+unix:///run/spice.sock".to_string()));
+        // USB flag must match build_spice_viewer_args (no divergence).
+        assert!(cmd.contains(&"--spice-usbredir-auto-redirect-filter".to_string()));
     }
 }
