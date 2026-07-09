@@ -8877,8 +8877,6 @@ msgstr "Remote-Verbindungen einfach verwalten"
 msgid "Double-click a connection in the sidebar to get started"
 msgstr ""
 "Doppelklicken Sie auf eine Verbindung in der Seitenleiste um zu "
-"beginnenDoppelklicken Sie auf eine Verbindung in der "
-"SeitenleisteDoppelklicken Sie auf eine Verbindung in der Seitenleiste, um zu "
 "beginnen"
 
 #: rustconn/src/split_view/bridge.rs:1749
