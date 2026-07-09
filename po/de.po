@@ -6565,13 +6565,13 @@ msgstr "Fenstergeometrie beim Start wiederherstellen"
 #: rustconn/src/dialogs/settings/ui_tab.rs:241
 #, fuzzy
 msgid "Show connection in window title"
-msgstr "Wird in Taskleiste und Fenstertitel angezeigt"
+msgstr "Verbindung im Fenstertitel anzeigen"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:243
 msgid ""
 "Append the active connection name to the window title, so time-tracking "
 "tools can identify it"
-msgstr ""
+msgstr "Zeige den Namen der aktiven Verbindung im Fenstertitel, damit Zeiterfassungs Programme ihn auslesen können."
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:252
 msgid "Startup"
