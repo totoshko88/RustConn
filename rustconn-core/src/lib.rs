@@ -247,8 +247,9 @@ pub use session::{
     SessionState, SessionType,
 };
 pub use sftp::{
-    build_mc_sftp_command, build_sftp_command, build_sftp_uri, build_sftp_uri_from_connection,
-    ensure_key_in_agent, get_downloads_dir, get_ssh_key_path,
+    build_mc_sftp_command, build_sftp_browser_uri, build_sftp_command, build_sftp_uri,
+    build_sftp_uri_from_connection, ensure_key_in_agent, get_downloads_dir, get_ssh_key_path,
+    resolve_remote_home,
 };
 pub use snap::{
     get_config_dir, get_confinement_message, get_data_dir, get_known_hosts_path, get_ssh_dir,

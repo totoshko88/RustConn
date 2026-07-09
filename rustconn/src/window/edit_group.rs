@@ -335,16 +335,12 @@ pub fn show_edit_group_dialog(
     variable_action_row.add_suffix(&variable_manage_btn);
     credentials_expander.add_row(&variable_action_row);
 
-    // Accessible label relations for screen readers
-    password_source_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        password_source_row.upcast_ref(),
-    ])]);
-    password_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        password_value_row.upcast_ref(),
-    ])]);
-    variable_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        variable_action_row.upcast_ref(),
-    ])]);
+    // Accessible label relations for screen readers. Upcast through Widget via
+    // the helper so it survives libadwaita 0.9.2 dropping ActionRow's Accessible
+    // bound.
+    crate::utils::set_labelled_by(&password_source_dropdown, &password_source_row);
+    crate::utils::set_labelled_by(&password_entry, &password_value_row);
+    crate::utils::set_labelled_by(&variable_dropdown, &variable_action_row);
 
     // Populate variable dropdown with secret global variables
     {

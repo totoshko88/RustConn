@@ -140,6 +140,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.4" date="2026-07-09">
+      <description>
+        <p>Version 0.18.4 - SFTP home directory, viewer cleanup, and dependency unblock:</p>
+        <ul>
+          <li>The SFTP file browser now opens in your login home directory instead of the server root (#212)</li>
+          <li>A new optional SFTP Remote Directory field lets you pin an explicit path for chroot or non-standard layouts</li>
+          <li>External viewers are no longer left as zombie processes when the app shuts down without exiting</li>
+          <li>The sidebar bottom toolbar now matches the header bar's icon size and spacing</li>
+          <li>SFTP home-directory detection caches failed probes, honours a per-connection SSH agent socket, and adds keepalives</li>
+          <li>libadwaita updated to 0.9.2 (pin lifted), plus der, inotify, regex, zerocopy, and zlib-rs patch bumps</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.3" date="2026-07-09">
       <description>
         <p>Version 0.18.3 - external-session tracking and sidebar indicators:</p>

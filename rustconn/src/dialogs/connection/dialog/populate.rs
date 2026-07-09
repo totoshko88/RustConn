@@ -962,6 +962,11 @@ impl ConnectionDialog {
             self.ssh_pkcs11_entry.set_text(provider);
         }
 
+        // Load SFTP remote directory override
+        if let Some(ref remote_path) = ssh.remote_path {
+            self.ssh_remote_path_entry.set_text(remote_path);
+        }
+
         // Load keep-alive settings
         if let Some(interval) = ssh.keep_alive_interval {
             self.ssh_keep_alive_interval.set_value(f64::from(interval));

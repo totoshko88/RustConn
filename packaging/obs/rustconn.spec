@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.3
+Version:        0.18.4
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -259,6 +259,14 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Jul 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.4-0
+- Version bump to 0.18.4
+- Added SFTP file browser now opens in the login home directory instead of the server root, with an optional SFTP Remote Directory field to pin a path (#212)
+- Fixed external viewers (TigerVNC, FreeRDP, remote-viewer) left as zombies when shutdown() ran without the process exiting; they are now reaped
+- Improved sidebar bottom toolbar to match the header bar's icon size and spacing
+- Improved SFTP home-directory resolution: failed probes are cached, a per-connection SSH agent socket is honoured, and keepalives stop a stalled probe pinning the worker
+- Dependency updates: libadwaita 0.9.1 -> 0.9.2 (pin lifted), plus der, inotify, regex, regex-automata, zerocopy, zerocopy-derive, zlib-rs patch bumps
+
 * Thu Jul 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.3-0
 - Version bump to 0.18.3
 - Added external-session tracking for VNC/RDP/SPICE external-viewer sessions: process registry + shared poll timer, sidebar external-viewer emblem, Disconnect / Stop tracking context menu, split-membership marker, smart double-click

@@ -777,14 +777,19 @@ impl MainWindow {
                 notebook_clone.widget().set_vexpand(true);
                 notebook_clone.show_tab_view_content();
             } else {
-                // Open file manager with sftp:// URI
-                let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                // Open file manager with sftp:// URI. The home directory is
+                // resolved later off the main thread; base_uri (server root)
+                // is the fallback (issue #212).
+                let Some(base_uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn)
+                else {
                     toast_clone.show_warning(&crate::i18n::i18n(
                         "SFTP is only available for SSH connections.",
                     ));
                     drop(state_ref);
                     return;
                 };
+                let conn_for_uri = conn.clone();
+                let groups_for_uri = groups.clone();
                 drop(state_ref);
 
                 // Warn in Flatpak: external file managers cannot access
@@ -800,7 +805,7 @@ impl MainWindow {
                     ));
                 }
 
-                tracing::info!(%uri, "Opening SFTP file browser");
+                tracing::info!(%base_uri, "Opening SFTP file browser");
                 toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP..."));
 
                 // Add SSH key to agent in background, then open URI
@@ -810,7 +815,6 @@ impl MainWindow {
                 // ssh-add in background thread, then launch file
                 // manager as a direct subprocess (not via
                 // UriLauncher/D-Bus) so it inherits SSH_AUTH_SOCK.
-                let uri_clone = uri.clone();
                 crate::utils::spawn_blocking_with_callback(
                     move || {
                         // Add SSH key to agent if configured
@@ -849,14 +853,22 @@ impl MainWindow {
                                 }
                             }
                         }
-                        rustconn_core::sftp::is_ssh_agent_available()
+                        // Resolve the home-directory URI after the key is in
+                        // the agent, off the GTK main thread; fall back to the
+                        // server-root URI if resolution fails.
+                        let uri = rustconn_core::sftp::build_sftp_browser_uri(
+                            &conn_for_uri,
+                            &groups_for_uri,
+                        )
+                        .unwrap_or(base_uri);
+                        (uri, rustconn_core::sftp::is_ssh_agent_available())
                     },
-                    move |agent_ok| {
+                    move |(uri, agent_ok): (String, bool)| {
                         // Launch file manager as a direct subprocess
                         // so it inherits SSH_AUTH_SOCK. UriLauncher
                         // goes through D-Bus/portal which may not
                         // pass our env to an already-running Dolphin.
-                        Self::sftp_launch_file_manager(&uri_clone);
+                        Self::sftp_launch_file_manager(&uri);
                         if !agent_ok {
                             toast_cb.show_warning(&crate::i18n::i18n(
                                 "SSH agent not running — file manager may not authenticate.",
@@ -1244,10 +1256,14 @@ impl MainWindow {
             notebook.widget().set_vexpand(true);
             notebook.show_tab_view_content();
         } else {
-            let Some(uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+            let Some(base_uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
                 drop(state_ref);
                 return;
             };
+            // Clone for off-thread home-directory resolution (issue #212);
+            // base_uri (server root) stays as the fallback.
+            let conn_for_uri = conn.clone();
+            let groups_for_uri = groups.clone();
             drop(state_ref);
 
             // Warn in Flatpak: external file managers cannot access
@@ -1271,10 +1287,9 @@ impl MainWindow {
                 }
             }
 
-            tracing::info!(%uri, "SFTP connect: opening file browser");
+            tracing::info!(%base_uri, "SFTP connect: opening file browser");
 
             let key_for_add = key_path.clone();
-            let uri_clone = uri.clone();
             crate::utils::spawn_blocking_with_callback(
                 move || {
                     if let Some(ref kp) = key_for_add {
@@ -1303,13 +1318,16 @@ impl MainWindow {
                             }
                         }
                     }
-                    true
+                    // Resolve the home-directory URI after the key is in the
+                    // agent, off the GTK main thread; fall back to server root.
+                    rustconn_core::sftp::build_sftp_browser_uri(&conn_for_uri, &groups_for_uri)
+                        .unwrap_or(base_uri)
                 },
-                move |_| {
+                move |uri: String| {
                     // Launch file manager as a direct subprocess
                     // so it inherits SSH_AUTH_SOCK. UriLauncher
                     // goes through D-Bus which may not pass env.
-                    Self::sftp_launch_file_manager(&uri_clone);
+                    Self::sftp_launch_file_manager(&uri);
                 },
             );
         }

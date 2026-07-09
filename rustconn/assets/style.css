@@ -513,16 +513,12 @@ tabbar > revealer > box {
     border-top: 1px solid alpha(@borders, 0.3);
 }
 
-/* Sidebar bottom toolbar buttons.
- * Height keeps the 44px HIG touch target; width is relaxed to 24px so the
- * row of six icon buttons no longer pins the sidebar to a ~360px floor and
- * users can shrink it toward the 180px minimum (same 24px width compact mode
- * already uses without harm — this is a pointer-first desktop app). */
-.sidebar toolbarview > .bottom-bar button {
-    min-width: 24px;
-    min-height: 44px;
-    padding: 2px 4px;
-}
+/* Sidebar bottom toolbar buttons — deliberately NOT custom-sized. They inherit
+ * Adwaita's standard flat icon-button metrics, the same the header bar uses, so
+ * both toolbars read with identical icon size and spacing (GNOME HIG). The 6px
+ * box spacing set in sidebar_ui.rs matches AdwHeaderBar's built-in child gap.
+ * (This intentionally drops the 0.18.2 24px/44px override; the six standard
+ * buttons raise the practical minimum sidebar width to ~240px.) */
 
 /* ============================================================
  * Connection Dialog — General Tab Styles
@@ -756,10 +752,13 @@ window.compact .sidebar toolbarview > .bottom-bar {
     padding: 2px 4px;
 }
 
+/* Compact: same reduced icon-button metrics as the header
+ * (`window.compact headerbar button.image-button`), so the two toolbars stay
+ * identical in compact mode too. */
 window.compact .sidebar toolbarview > .bottom-bar button {
     min-height: 24px;
     min-width: 24px;
-    padding: 2px;
+    padding: 2px 4px;
 }
 
 /* Popover menu items — less vertical padding for shorter menus */

@@ -354,6 +354,7 @@ impl SshConfigImporter {
                 .get("serveralivecountmax")
                 .and_then(|v| v.parse::<u32>().ok()),
             verbose: false,
+            remote_path: None,
         };
 
         // Create connection

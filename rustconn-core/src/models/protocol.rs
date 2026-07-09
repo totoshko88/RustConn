@@ -844,6 +844,17 @@ pub struct SshConfig {
     /// Useful for diagnosing connection issues (e.g., reset by remote device).
     #[serde(default)]
     pub verbose: bool,
+    /// Initial remote directory for the SFTP file-browser URI.
+    ///
+    /// The GVFS sftp backend mounts at the server root `/`, so a bare
+    /// `sftp://host` URI opens `/` — inaccessible on shared hosting (issue
+    /// #212). When set, this absolute path is appended to the URI so the file
+    /// manager opens where the user has access. When empty, the login home
+    /// directory is resolved automatically (best-effort `ssh … pwd`), falling
+    /// back to the server root. Only affects the file-manager path; `ssh`, the
+    /// `sftp` CLI and `mc` already start in `$HOME`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub remote_path: Option<String>,
 }
 
 fn default_true() -> bool {

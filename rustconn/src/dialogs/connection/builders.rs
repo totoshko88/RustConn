@@ -69,6 +69,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub ssh_options_entry: &'a Entry,
     pub ssh_agent_socket_entry: &'a adw::EntryRow,
     pub ssh_pkcs11_entry: &'a adw::EntryRow,
+    pub ssh_remote_path_entry: &'a adw::EntryRow,
     pub ssh_keep_alive_interval: &'a adw::SpinRow,
     pub ssh_keep_alive_count_max: &'a adw::SpinRow,
     pub ssh_port_forwards: &'a Rc<RefCell<Vec<rustconn_core::models::PortForward>>>,
@@ -1210,6 +1211,16 @@ impl ConnectionDialogData<'_> {
             }
         };
 
+        // SFTP remote directory override (empty → auto-detect home, issue #212)
+        let remote_path = {
+            let text = self.ssh_remote_path_entry.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+
         let custom_options = Self::parse_custom_options(&self.ssh_options_entry.text());
 
         let ssh_agent_socket = {
@@ -1271,6 +1282,7 @@ impl ConnectionDialogData<'_> {
             ssh_agent_socket,
             keep_alive_interval,
             keep_alive_count_max,
+            remote_path,
         }
     }
 

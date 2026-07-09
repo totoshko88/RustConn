@@ -53,6 +53,7 @@ pub struct SshOptionsWidgets {
     pub mosh_server_binary_entry: Entry,
     pub ssh_agent_socket_entry: adw::EntryRow,
     pub ssh_pkcs11_entry: adw::EntryRow,
+    pub ssh_remote_path_entry: adw::EntryRow,
     pub keep_alive_interval: adw::SpinRow,
     pub keep_alive_count_max: adw::SpinRow,
 }
@@ -104,6 +105,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         options_entry,
         ssh_agent_socket_entry,
         ssh_pkcs11_entry,
+        ssh_remote_path_entry,
     ) = create_session_group();
     content.append(&session_group);
 
@@ -172,6 +174,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         mosh_server_binary_entry,
         ssh_agent_socket_entry,
         ssh_pkcs11_entry,
+        ssh_remote_path_entry,
         keep_alive_interval,
         keep_alive_count_max,
     }
@@ -532,6 +535,7 @@ fn create_session_group() -> (
     Entry,
     adw::EntryRow,
     adw::EntryRow,
+    adw::EntryRow,
 ) {
     let session_group = adw::PreferencesGroup::builder()
         .title(i18n("Session"))
@@ -640,6 +644,16 @@ fn create_session_group() -> (
     });
     session_group.add(&ssh_pkcs11_entry);
 
+    // SFTP remote directory: the file manager opens here instead of the server
+    // root. Empty → the login home directory is detected automatically (#212).
+    let ssh_remote_path_entry = adw::EntryRow::builder()
+        .title(i18n("SFTP Remote Directory"))
+        .build();
+    ssh_remote_path_entry.set_tooltip_text(Some(&i18n(
+        "Directory the SFTP file browser opens in. Leave empty to detect the home directory automatically.",
+    )));
+    session_group.add(&ssh_remote_path_entry);
+
     (
         session_group,
         agent_forwarding,
@@ -651,6 +665,7 @@ fn create_session_group() -> (
         options_entry,
         ssh_agent_socket_entry,
         ssh_pkcs11_entry,
+        ssh_remote_path_entry,
     )
 }
 

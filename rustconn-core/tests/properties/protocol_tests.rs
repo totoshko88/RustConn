@@ -44,6 +44,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
             |(auth_method, proxy_jump, use_control_master, custom_options, startup_command)| {
                 SshConfig {
                     auth_method,
+                    remote_path: None,
                     key_path: None, // Don't test with actual file paths
                     key_source: SshKeySource::Default,
                     agent_key_fingerprint: None,
@@ -821,6 +822,7 @@ fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
             )| {
                 SshConfig {
                     auth_method,
+                    remote_path: None,
                     key_path: key_path.map(PathBuf::from),
                     key_source: SshKeySource::Default,
                     agent_key_fingerprint: None,
@@ -864,6 +866,7 @@ fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
             };
             SshConfig {
                 auth_method: SshAuthMethod::Agent,
+                remote_path: None,
                 key_path: None,
                 key_source,
                 agent_key_fingerprint: fingerprint,
@@ -1025,6 +1028,7 @@ fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
             |(key_path, proxy_jump, use_control_master, custom_options)| {
                 SshConfig {
                     auth_method: SshAuthMethod::PublicKey,
+                    remote_path: None,
                     key_path: None, // Use key_source instead
                     key_source: SshKeySource::File {
                         path: PathBuf::from(key_path),
@@ -1072,6 +1076,7 @@ fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
                         comment,
                     },
                     agent_key_fingerprint: Some(fingerprint),
+                    remote_path: None,
                     identities_only: false, // Should NOT be enabled for Agent auth
                     proxy_jump,
                     proxy_command: None,
@@ -1680,6 +1685,7 @@ fn arb_ssh_config_with_port_forwards() -> impl Strategy<Value = SshConfig> {
             keep_alive_interval: None,
             keep_alive_count_max: None,
             verbose: false,
+            remote_path: None,
         })
 }
 
@@ -1720,6 +1726,7 @@ proptest! {
     ) {
         let config = SshConfig {
             auth_method: SshAuthMethod::Password,
+            remote_path: None,
             key_path: None,
             key_source: SshKeySource::Default,
             agent_key_fingerprint: None,

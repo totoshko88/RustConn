@@ -95,6 +95,28 @@ pub fn set_accessible_label(widget: &impl gtk4::prelude::AccessibleExtManual, la
     widget.update_property(&[gtk4::accessible::Property::Label(label)]);
 }
 
+/// Sets a `LabelledBy` accessibility relation from `target` to `label_widget`.
+///
+/// The labelling widget is upcast through [`gtk4::Widget`] instead of directly
+/// to [`gtk4::Accessible`]. Every widget is an `Accessible` via `Widget`, so
+/// this holds regardless of whether the concrete row type carries its own
+/// `IsA<Accessible>` bound — libadwaita 0.9.2 dropped that bound on
+/// `adw::ActionRow`, which would otherwise break a direct `upcast_ref`.
+///
+/// # Arguments
+///
+/// * `target` - The widget whose accessible name is provided by the label
+/// * `label_widget` - The widget (row or label) that names `target`
+pub fn set_labelled_by(
+    target: &impl gtk4::prelude::AccessibleExtManual,
+    label_widget: &impl gtk4::prelude::IsA<gtk4::Widget>,
+) {
+    use gtk4::prelude::Cast;
+    target.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[label_widget
+        .upcast_ref::<gtk4::Widget>()
+        .upcast_ref()])]);
+}
+
 /// Regex pattern for extracting variable names from templates
 ///
 /// Matches patterns like `${variable_name}` and captures the variable name.

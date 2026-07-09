@@ -271,6 +271,7 @@ impl SecureCrtImporter {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    remote_path: None,
                 };
 
                 let mut conn = Connection::new(

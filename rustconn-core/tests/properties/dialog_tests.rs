@@ -327,6 +327,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
         keep_alive_interval: None,
         keep_alive_count_max: None,
         verbose: false,
+        remote_path: None,
     })
 }
 

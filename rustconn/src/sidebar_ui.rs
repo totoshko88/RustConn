@@ -684,9 +684,10 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 /// Layout: [Group Ops] [History] [A-Z Sort] [Recent] [KeePass] [Smart Folders]
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
-    let toolbar = GtkBox::new(Orientation::Horizontal, 4);
-    // Small side margins so the six icon buttons fit within a narrow (≈180px)
-    // sidebar without pinning its minimum width.
+    // 6px inter-icon gap matches AdwHeaderBar's built-in child spacing, and the
+    // buttons use Adwaita's standard flat-icon metrics (no CSS size override, see
+    // style.css), so the bottom row reads identically to the header (GNOME HIG).
+    let toolbar = GtkBox::new(Orientation::Horizontal, 6);
     toolbar.set_margin_start(6);
     toolbar.set_margin_end(6);
     toolbar.set_halign(gtk4::Align::Center);

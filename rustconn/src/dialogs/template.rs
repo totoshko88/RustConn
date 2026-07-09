@@ -2400,6 +2400,7 @@ impl TemplateDialog {
             keep_alive_interval: None,
             keep_alive_count_max: None,
             verbose: false,
+            remote_path: None,
         };
 
         if !custom_options_text.is_empty() {

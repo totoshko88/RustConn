@@ -5,6 +5,30 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.4] - 2026-07-09
+
+### Added
+
+- **SFTP file browser opens in the home directory instead of the server root** ([#212](https://github.com/totoshko88/RustConn/issues/212)) — opening an SSH connection over SFTP in a GNOME/KDE file manager used to land on `/`, which fails with "this location cannot be displayed" on shared hosting where the account has no access to the root. The GVFS sftp backend mounts at the server root and ignores the mount's home `default_location`, unlike `ssh`, whose login shell starts in `$HOME`. RustConn now resolves the login home directory once per session (a best-effort `ssh … pwd` with `BatchMode=yes` and a short `ConnectTimeout`, reusing the connection's proxy-jump, port and key, run off the UI thread and cached) and opens the browser there, falling back to the server root if resolution fails. A new optional **SFTP Remote Directory** field (Connection editor → SSH → Session) lets you pin an explicit path for chroot or non-standard layouts; leaving it empty keeps the automatic home detection. The `ssh`/`sftp` CLI and `mc` paths were already correct and are unchanged
+
+### Fixed
+
+- **External-viewer children were left as zombies when `shutdown()` ran while the app kept living** — application-quit cleanup SIGKILLed each RustConn-owned external viewer (TigerVNC, FreeRDP, remote-viewer) but never reaped it. At real process exit `init` adopts and reaps the zombie, so production was unaffected, but any path where `shutdown()` runs without the process actually exiting (an idempotent second `shutdown`, or a `close_request` that does not quit) leaked a zombie, and the killed child stayed visible in the process table. `shutdown()` now reaps each killed child (`kill` + `wait`, the same kill-then-reap pattern already used by `disconnect`); `wait` returns almost immediately because SIGKILL is delivered promptly
+
+### Improved
+
+- **Sidebar bottom toolbar now matches the header's icon size and spacing** — the six action icons at the bottom of the sidebar were custom-shrunk (24px width, 44px height, tight padding) and so read at a visibly different density than the standard Adwaita icon buttons in the header bar. The custom sizing is dropped: the sidebar buttons now inherit the same standard flat icon-button metrics as the header (with a matching 6px inter-icon gap), so both toolbars read uniformly in normal and compact mode, as GNOME HIG intends. Trade-off: six standard-width buttons raise the practical minimum sidebar width from ~180px (relaxed in 0.18.2) to ~240px; the width setting still accepts lower values but the button row no longer forces itself narrower
+- **SFTP home-directory resolution no longer repeats a failed probe every open** — the `ssh … pwd` probe that finds the login home directory (issue #212) only cached successes, so a host where the non-interactive `BatchMode` probe cannot authenticate — most commonly a password-only account, exactly the shared-hosting case #212 targets — paid the full connect round-trip on *every* SFTP open before falling back to the server root. The probe outcome is now memoised per host including failure, so a second open in the same session returns instantly. The probe also honours a per-connection or group **SSH agent socket** override (it previously used only the app-started agent, so a connection pointing at a custom agent could fail the probe and land on the server root, reintroducing #212), and adds `ServerAliveInterval`/`ServerAliveCountMax` keepalives so a link that stalls *after* connecting cannot pin the blocking worker thread beyond `ConnectTimeout`
+
+### Internal
+
+- **Accessible-label relations no longer block libadwaita updates** — the `LabelledBy` relations that name form entries for screen readers upcast their labelling `adw::ActionRow` directly to `gtk4::Accessible`, which depended on the `IsA<Accessible>` bound that libadwaita 0.9.2 dropped from `ActionRow` (the reason the crate was pinned at 0.9.1 since 0.18.2). The relations are now set through a single `utils::set_labelled_by` helper that upcasts via `gtk4::Widget` — every widget is an `Accessible` through `Widget` regardless of the concrete row type — so the same a11y wiring holds across `ActionRow` binding changes. The 17 call sites in the connection editor (`general_tab`) and the group editor (`edit_group`) were migrated; accessibility behaviour is unchanged
+
+### Dependencies
+
+- **libadwaita 0.9.1 → 0.9.2** — the accessible-label refactor above removes the last compile blocker, so the pin is lifted and the workspace builds clean on 0.9.2 (clippy 0 warnings across all four crates). This closes the "revisit with a source fix" note carried since 0.18.2
+- **Updated (transitive/utility patch bumps)**: der 0.8.0→0.8.1, inotify 0.11.3→0.11.4, regex 1.12.4→1.13.0, regex-automata 0.4.14→0.4.15, zerocopy 0.8.53→0.8.54, zerocopy-derive 0.8.53→0.8.54, zlib-rs 0.6.5→0.6.6 — no API impact
+
 ## [0.18.3] - 2026-07-09
 
 ### Added

@@ -93,7 +93,9 @@ pub fn cmd_sftp(
             ));
         }
     } else {
-        let uri = rustconn_core::sftp::build_sftp_uri_from_connection(connection)
+        // Resolve the login home directory so the file manager opens where the
+        // user has access instead of the server root (issue #212).
+        let uri = rustconn_core::sftp::build_sftp_browser_uri(connection, &groups)
             .ok_or_else(|| CliError::Protocol("Failed to build SFTP URI".to_string()))?;
 
         println!("Opening SFTP file browser for '{}'...", connection.name);

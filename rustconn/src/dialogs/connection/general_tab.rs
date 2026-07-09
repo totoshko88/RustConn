@@ -423,49 +423,23 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     let outer = GtkBox::new(Orientation::Vertical, 0);
     outer.append(&clamp);
 
-    // Accessible label relations for screen readers
-    name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        name_row.upcast_ref()
-    ])]);
-    icon_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        icon_row.upcast_ref()
-    ])]);
-    protocol_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        protocol_row.upcast_ref()
-    ])]);
-    host_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        host_row.upcast_ref()
-    ])]);
-    port_spin.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        port_row.upcast_ref()
-    ])]);
-    username_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        username_row.upcast_ref()
-    ])]);
-    domain_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        domain_row.upcast_ref()
-    ])]);
-    password_source_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        pw_source_row.upcast_ref(),
-    ])]);
-    password_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        password_value_row.upcast_ref(),
-    ])]);
-    variable_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        variable_action_row.upcast_ref(),
-    ])]);
-    script_command_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        script_action_row.upcast_ref(),
-    ])]);
-    tags_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        tags_row.upcast_ref()
-    ])]);
-    group_dropdown.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        group_action_row.upcast_ref()
-    ])]);
-    description_view.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
-        desc_row.upcast_ref()
-    ])]);
+    // Accessible label relations for screen readers. Upcast through Widget via
+    // the helper so it survives libadwaita 0.9.2 dropping ActionRow's Accessible
+    // bound.
+    crate::utils::set_labelled_by(&name_entry, &name_row);
+    crate::utils::set_labelled_by(&icon_entry, &icon_row);
+    crate::utils::set_labelled_by(&protocol_dropdown, &protocol_row);
+    crate::utils::set_labelled_by(&host_entry, &host_row);
+    crate::utils::set_labelled_by(&port_spin, &port_row);
+    crate::utils::set_labelled_by(&username_entry, &username_row);
+    crate::utils::set_labelled_by(&domain_entry, &domain_row);
+    crate::utils::set_labelled_by(&password_source_dropdown, &pw_source_row);
+    crate::utils::set_labelled_by(&password_entry, &password_value_row);
+    crate::utils::set_labelled_by(&variable_dropdown, &variable_action_row);
+    crate::utils::set_labelled_by(&script_command_entry, &script_action_row);
+    crate::utils::set_labelled_by(&tags_entry, &tags_row);
+    crate::utils::set_labelled_by(&group_dropdown, &group_action_row);
+    crate::utils::set_labelled_by(&description_view, &desc_row);
 
     BasicTabWidgets {
         container: outer,
