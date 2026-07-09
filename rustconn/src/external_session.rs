@@ -179,15 +179,16 @@ impl ExternalSessionRegistry {
         for id in ids {
             // Best-effort kill of an owned child, scoped so the borrow is
             // released before `finish` (which borrows the map again). Errors are
-            // ignored: the child may have already exited. The killed child is
-            // reaped by init once RustConn exits.
-            // ponytail: no try_wait reap here — we are quitting; init adopts and
-            // reaps the zombie. Add a reap loop only if shutdown ever runs while
-            // the app keeps living.
+            // ignored: the child may have already exited. We then reap it so it
+            // does not linger as a zombie while the app finishes quitting — and
+            // so an idempotent second shutdown (or a `close_request` path that
+            // does not actually exit) stays clean. `wait` returns almost
+            // immediately because SIGKILL is delivered promptly.
             {
                 let mut map = self.sessions.borrow_mut();
                 if let Some(child) = map.get_mut(&id).and_then(|s| s.child.as_mut()) {
                     let _ = child.kill();
+                    let _ = child.wait();
                 }
             }
             self.finish(id);
