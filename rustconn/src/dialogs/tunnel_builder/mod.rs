@@ -13,7 +13,7 @@ pub use step_connection::StepConnectionPage;
 pub use step_forwards::StepForwardsPage;
 pub use step_review::StepReviewPage;
 
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::i18n;
 use crate::state::{SharedAppState, with_state, with_state_mut};
 use crate::window::SharedTunnelManager;
 use adw::prelude::*;
@@ -179,7 +179,7 @@ impl TunnelBuilderDialog {
             }
         } else {
             // Connection no longer exists — show error
-            self.show_missing_connection_error(tunnel.connection_id);
+            self.show_missing_connection_error();
         }
 
         // Set forwards
@@ -606,12 +606,11 @@ impl TunnelBuilderDialog {
     }
 
     /// Shows an error when the referenced connection no longer exists
-    fn show_missing_connection_error(&self, connection_id: Uuid) {
+    fn show_missing_connection_error(&self) {
         let error = adw::AlertDialog::builder()
             .heading(i18n("Connection Not Found"))
-            .body(i18n_f(
+            .body(i18n(
                 "The SSH connection referenced by this tunnel no longer exists. Select a different connection.",
-                &[&connection_id.to_string()],
             ))
             .build();
 
