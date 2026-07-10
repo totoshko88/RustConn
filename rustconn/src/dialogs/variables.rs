@@ -16,7 +16,7 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::config::AppSettings;
 use rustconn_core::variables::Variable;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::rc::Rc;
 
@@ -105,9 +105,18 @@ impl VariablesDialog {
         let variables: Rc<RefCell<Vec<VariableRow>>> = Rc::new(RefCell::new(Vec::new()));
         let settings: SharedSettings = Rc::new(RefCell::new(None));
 
+        // Guards against a double callback: the Save button delivers its result
+        // and then closes the dialog, which fires `connect_closed`. Without this
+        // flag the caller would receive `Some(..)` followed by a spurious `None`.
+        let completed = Rc::new(Cell::new(false));
+
         // Connect dialog closed to cancel callback
         let on_save_clone = on_save.clone();
+        let completed_clone = completed.clone();
         dialog.connect_closed(move |_| {
+            if completed_clone.get() {
+                return;
+            }
             if let Some(ref cb) = *on_save_clone.borrow() {
                 cb(None);
             }
@@ -131,6 +140,7 @@ impl VariablesDialog {
         save_btn.connect_clicked(move |_| {
             if Self::validate_duplicates(&variables_clone) {
                 let vars = Self::collect_variables(&variables_clone);
+                completed.set(true);
                 if let Some(ref cb) = *on_save_clone.borrow() {
                     cb(Some(vars));
                 }

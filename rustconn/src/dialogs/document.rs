@@ -11,7 +11,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 use secrecy::SecretString;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -174,9 +174,19 @@ impl NewDocumentDialog {
         let validate_clone = validate;
         password_check.connect_toggled(move |_| validate_clone());
 
+        // Guards against a double callback: the action button delivers its
+        // result and then closes the dialog, which fires `connect_closed`.
+        // Without this flag the caller would receive `Some(..)` immediately
+        // followed by a spurious `None`.
+        let completed = Rc::new(Cell::new(false));
+
         // On dialog closed (Escape or programmatic close) → notify callback
         let on_complete_clone = on_complete.clone();
+        let completed_clone = completed.clone();
         dialog.connect_closed(move |_| {
+            if completed_clone.get() {
+                return;
+            }
             if let Some(ref cb) = *on_complete_clone.borrow() {
                 cb(None);
             }
@@ -185,6 +195,7 @@ impl NewDocumentDialog {
         // Create button
         let dialog_clone = dialog.clone();
         let on_complete_clone = on_complete.clone();
+        let completed_clone = completed.clone();
         let name_entry_clone = name_entry.clone();
         let password_check_clone = password_check.clone();
         let password_entry_clone = password_entry.clone();
@@ -196,6 +207,7 @@ impl NewDocumentDialog {
                 None
             };
 
+            completed_clone.set(true);
             if let Some(ref cb) = *on_complete_clone.borrow() {
                 cb(Some(DocumentDialogResult::Create { name, password }));
             }
@@ -337,9 +349,18 @@ impl OpenDocumentDialog {
         toolbar_view.set_content(Some(&content));
         dialog.set_child(Some(&toolbar_view));
 
+        // Guards against a double callback (see NewDocumentDialog): the Open
+        // button delivers its result and then closes the dialog, which fires
+        // `connect_closed`.
+        let completed = Rc::new(Cell::new(false));
+
         // On dialog closed (Escape) → notify callback with None
         let on_complete_clone = on_complete.clone();
+        let completed_clone = completed.clone();
         dialog.connect_closed(move |_| {
+            if completed_clone.get() {
+                return;
+            }
             if let Some(ref cb) = *on_complete_clone.borrow() {
                 cb(None);
             }
@@ -350,6 +371,7 @@ impl OpenDocumentDialog {
         let path_clone = path;
         open_btn.connect_clicked(move |_| {
             let password = SecretString::from(password_entry.text().to_string());
+            completed.set(true);
             if let Some(ref cb) = *on_complete.borrow() {
                 cb(Some(DocumentDialogResult::Open {
                     path: path_clone.clone(),
@@ -644,9 +666,18 @@ impl DocumentProtectionDialog {
         let validate_clone = validate;
         enable_check.connect_toggled(move |_| validate_clone());
 
+        // Guards against a double callback (see NewDocumentDialog): the Apply
+        // button delivers its result and then closes the dialog, which fires
+        // `connect_closed`.
+        let completed = Rc::new(Cell::new(false));
+
         // On dialog closed (Escape) → notify callback with None
         let on_complete_clone = on_complete.clone();
+        let completed_clone = completed.clone();
         dialog.connect_closed(move |_| {
+            if completed_clone.get() {
+                return;
+            }
             if let Some(ref cb) = *on_complete_clone.borrow() {
                 cb(None);
             }
@@ -655,6 +686,7 @@ impl DocumentProtectionDialog {
         // Apply button
         let dialog_clone = dialog.clone();
         let on_complete_clone = on_complete.clone();
+        let completed_clone = completed.clone();
         let enable_check_clone = enable_check.clone();
         let password_entry_clone = password_entry.clone();
         let doc_id_clone = doc_id.clone();
@@ -668,6 +700,7 @@ impl DocumentProtectionDialog {
             if let Some(id) = *doc_id_clone.borrow()
                 && let Some(ref cb) = *on_complete_clone.borrow()
             {
+                completed_clone.set(true);
                 cb(Some(DocumentDialogResult::Save {
                     id,
                     path: PathBuf::new(), // Path will be determined by caller
