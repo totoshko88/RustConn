@@ -1050,25 +1050,23 @@ pub fn delete_vault_credential(
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
             if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                // Full hierarchical path incl. the "RustConn/" prefix and the
+                // protocol suffix, e.g. "RustConn/Group/Name (rdp)" — the format
+                // `delete_entry_from_kdbx` (and the CLI) expect.
                 let entry_path =
                     rustconn_core::secret::KeePassHierarchy::build_entry_path(connection, groups);
-                let base_path = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
-                let entry_name = format!("{base_path} ({protocol_str})");
+                let full_entry_path = format!("{entry_path} ({protocol_str})");
                 let key_file = settings.secrets.kdbx_key_file.clone();
                 let kdbx = std::path::Path::new(kdbx_path);
                 let key = key_file.as_ref().map(std::path::Path::new);
-                // KeePass delete is done by saving empty entry — or we just log
-                // that KeePass entries should be cleaned manually, since the KDBX
-                // API doesn't expose a delete_entry method directly.
-                // For now, attempt to overwrite with empty password as a best-effort.
-                rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
+                // Actually remove the entry via keepassxc-cli (previously this
+                // only overwrote it with an empty password as a best-effort,
+                // leaving the entry behind in the database).
+                rustconn_core::secret::KeePassStatus::delete_entry_from_kdbx(
                     kdbx,
                     settings.secrets.kdbx_password.as_ref(),
                     key,
-                    &entry_name,
-                    "",
-                    "",
-                    None,
+                    &full_entry_path,
                 )
                 .map_err(|e| format!("{e}"))
             } else {
