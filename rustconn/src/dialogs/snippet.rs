@@ -29,7 +29,6 @@ pub struct SnippetDialog {
     tags_entry: Entry,
     command_view: TextView,
     variables_list: ListBox,
-    add_var_button: Button,
     save_btn: Button,
     target_row: adw::ComboRow,
     delivery_row: adw::ComboRow,
@@ -119,7 +118,7 @@ impl SnippetDialog {
         content.append(&command_frame);
 
         // === Variables Section ===
-        let (variables_frame, variables_list, add_var_button) = Self::create_variables_section();
+        let (variables_frame, variables_list) = Self::create_variables_section();
         content.append(&variables_frame);
 
         // Connect command text changes to auto-detect variables
@@ -146,7 +145,6 @@ impl SnippetDialog {
             tags_entry,
             command_view,
             variables_list,
-            add_var_button,
             save_btn: new_btn,
             target_row,
             delivery_row,
@@ -263,10 +261,12 @@ impl SnippetDialog {
         (group, command_view)
     }
 
-    fn create_variables_section() -> (adw::PreferencesGroup, ListBox, Button) {
+    fn create_variables_section() -> (adw::PreferencesGroup, ListBox) {
         let group = adw::PreferencesGroup::builder()
             .title(i18n("Variables"))
-            .description(i18n("Variables are auto-detected from command"))
+            .description(i18n(
+                "Variables are auto-detected from ${name} placeholders in the command",
+            ))
             .build();
 
         let scrolled = ScrolledWindow::builder()
@@ -284,16 +284,7 @@ impl SnippetDialog {
 
         group.add(&scrolled);
 
-        let button_box = GtkBox::new(Orientation::Horizontal, 8);
-        button_box.set_halign(gtk4::Align::End);
-        button_box.set_margin_top(12);
-
-        let add_var_button = Button::builder().label(i18n("Add Variable")).build();
-        button_box.append(&add_var_button);
-
-        group.add(&button_box);
-
-        (group, variables_list, add_var_button)
+        (group, variables_list)
     }
 
     fn auto_detect_variables(
@@ -466,27 +457,6 @@ impl SnippetDialog {
         Ok(())
     }
 
-    /// Wires the add variable button to add new variable rows
-    ///
-    /// When clicked, prompts for a variable name and adds a new row
-    /// with description and `default_value` fields.
-    fn wire_add_var_button(&self) {
-        let variables_list = self.variables_list.clone();
-        let variables = self.variables.clone();
-
-        self.add_var_button.connect_clicked(move |_| {
-            // Create a simple dialog to get the variable name
-            // For now, we'll use a counter-based name
-            let var_count = variables.borrow().len();
-            let var_name = format!("var{}", var_count + 1);
-
-            // Create and add the variable row
-            let row = Self::create_variable_row(&var_name, None, None);
-            variables_list.append(&row.row);
-            variables.borrow_mut().push(row);
-        });
-    }
-
     /// Adds a variable row manually with specified values
     ///
     /// Used for programmatically adding variables with description and default values.
@@ -530,9 +500,6 @@ impl SnippetDialog {
     pub fn run<F: Fn(Option<Snippet>) + 'static>(&self, cb: F) {
         // Store callback
         *self.on_save.borrow_mut() = Some(Box::new(cb));
-
-        // Wire up the add variable button
-        self.wire_add_var_button();
 
         // Connect save button directly using stored reference
         let dialog = self.dialog.clone();
