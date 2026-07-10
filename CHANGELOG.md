@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Dead `sanitize` parameter on session recording** — `start_recording` accepted a `SanitizeConfig` that every caller filled with the (enabled) default, implying recordings had their secrets redacted. Nothing consumed it: the recording is captured verbatim by `script`, and the string-oriented sanitizer is only meaningful for the separate session-logging path, not a binary `script` capture. The misleading parameter has been dropped from the recording API and its six call sites rather than shipping ineffective, false-sense-of-security redaction. Sensitive-data redaction remains available where it works — session logging (Settings → Logging)
 
+### Documentation
+
+- **Corrected the primary menu doc comment** — `create_app_menu`'s doc listed a separate "Security" submenu for Password Generator / Wake On LAN / SSH Tunnels, but those live in a section of the Tools submenu. The comment now matches the built menu (Tools also lists Workspaces)
+
 ### Fixed
 
 - **Tunnel Builder "connection not found" message passed an argument to a format string with no placeholder** — `show_missing_connection_error` called `i18n_f` with the connection id but the message had no `{}`, so the id was silently discarded. Since a raw UUID is not useful to the user anyway, the call is now a plain `i18n()` with the self-explanatory message

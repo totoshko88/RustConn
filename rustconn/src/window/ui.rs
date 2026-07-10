@@ -220,12 +220,12 @@ pub fn create_header_bar() -> (
 /// Creates the application menu
 ///
 /// Menu sections:
-/// 1. Connections: New Connection, New Group, Quick Connect, Local Shell
-/// 2. Tools (submenu): Snippets, Clusters, Templates, Variables
+/// 1. Connections: New Connection, New Connection (Advanced), New Group, Quick Connect, Local Shell
+/// 2. Tools (submenu): Snippets, Clusters, Workspaces, Templates, Variables, and a
+///    section with Password Generator, Wake On LAN, SSH Tunnels
 /// 3. Sessions (submenu): Active Sessions, History, Statistics, Recordings
-/// 4. Security (submenu): Password Generator, Wake On LAN, SSH Tunnels
-/// 5. File: Import, Export, Copy, Paste
-/// 6. App: Settings, Fullscreen, Passthrough, Keyboard Shortcuts, About, Quit
+/// 4. File: Import, Export, Copy, Paste
+/// 5. App: Settings, Fullscreen, Passthrough, Keyboard Shortcuts, About, Quit
 #[must_use]
 pub fn create_app_menu() -> gio::Menu {
     let menu = gio::Menu::new();
