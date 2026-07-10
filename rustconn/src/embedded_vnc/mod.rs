@@ -35,13 +35,27 @@ use gtk4::{Box as GtkBox, Button, DrawingArea, Label};
 use rustconn_core::vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
 use rustconn_core::vnc_client::{
-    VncClient, VncClientCommand, VncClientConfig, VncClientEvent, VncCommandSender,
+    VncClient, VncClientCommand, VncClientConfig, VncClientEvent, VncCommandSender, VncEncoding,
 };
 use std::cell::RefCell;
 use std::process::{Child, Command, Stdio};
 use std::rc::Rc;
 #[cfg(feature = "vnc-embedded")]
 use std::sync::{Arc, Mutex as StdMutex};
+
+/// Maps a user-facing encoding preference string to a `VncEncoding` the
+/// embedded client can negotiate. Returns `None` for names the minimal client
+/// does not implement (e.g. `"hextile"`), which keeps the default order.
+#[cfg(feature = "vnc-embedded")]
+fn map_preferred_encoding(name: &str) -> Option<VncEncoding> {
+    match name.trim().to_ascii_lowercase().as_str() {
+        "tight" => Some(VncEncoding::Tight),
+        "zrle" => Some(VncEncoding::Zrle),
+        "copyrect" => Some(VncEncoding::CopyRect),
+        "raw" => Some(VncEncoding::Raw),
+        _ => None,
+    }
+}
 
 /// Embedded VNC widget using Wayland subsurface
 ///
@@ -344,12 +358,27 @@ impl EmbeddedVncWidget {
             .with_shared(true)
             .with_view_only(config.view_only);
 
-        let vnc_config = if let Some(ref password) = config.password {
+        let mut vnc_config = if let Some(ref password) = config.password {
             use secrecy::ExposeSecret;
             vnc_config.with_password(password.expose_secret())
         } else {
             vnc_config
         };
+
+        // Honor the user's preferred encoding — the one performance knob the
+        // embedded client can negotiate — by moving it to the front of the
+        // offered list. Quality/compression are Tight/zlib sub-encoding
+        // parameters the minimal embedded client does not implement; they apply
+        // only to the external viewer, so note when they are set but unused.
+        if let Some(pref) = config.encoding.as_deref().and_then(map_preferred_encoding) {
+            vnc_config.encodings.retain(|e| *e != pref);
+            vnc_config.encodings.insert(0, pref);
+        }
+        if config.quality.is_some() || config.compression.is_some() {
+            tracing::debug!(
+                "[EmbeddedVNC] quality/compression apply only to the external viewer; ignored in embedded mode"
+            );
+        }
 
         // Create the VNC client and connect (spawns background thread)
         let mut client = VncClient::new(vnc_config);
