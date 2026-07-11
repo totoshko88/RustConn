@@ -49,6 +49,7 @@ mod resize;
 pub use buffer::CairoBackedBuffer;
 pub use file_dnd::{FileDndCircuitBreaker, LocalFileInfo};
 pub use launcher::SafeFreeRdpLauncher;
+pub(crate) use launcher::StderrLines;
 pub use thread::FreeRdpThread;
 #[cfg(feature = "rdp-embedded")]
 pub use thread::{ClipboardFileTransfer, FileDownloadState};
@@ -184,9 +185,9 @@ fn widget_fractional_scale(widget: &impl gtk4::prelude::WidgetExt) -> f64 {
 /// Returns `SendError` if the IronRDP command channel is closed.
 #[cfg(feature = "rdp-embedded")]
 fn send_run_dialog_command(
-    sender: &std::sync::mpsc::Sender<RdpClientCommand>,
+    sender: &tokio::sync::mpsc::UnboundedSender<RdpClientCommand>,
     command: &str,
-) -> Result<(), std::sync::mpsc::SendError<RdpClientCommand>> {
+) -> Result<(), tokio::sync::mpsc::error::SendError<RdpClientCommand>> {
     sender.send(RdpClientCommand::SendKeySequence {
         keys: rustconn_core::build_open_run_dialog(),
     })?;
@@ -266,11 +267,13 @@ pub struct EmbeddedRdpWidget {
     config: Rc<RefCell<Option<RdpConfig>>>,
     /// FreeRDP child process (for external mode)
     process: Rc<RefCell<Option<Child>>>,
+    /// Accumulated stderr lines from the external FreeRDP process (for error classification)
+    stderr_lines: Rc<RefCell<Option<StderrLines>>>,
     /// FreeRDP thread wrapper for embedded mode
     freerdp_thread: Rc<RefCell<Option<FreeRdpThread>>>,
     /// IronRDP command sender for embedded mode
     #[cfg(feature = "rdp-embedded")]
-    ironrdp_command_tx: Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+    ironrdp_command_tx: Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
     /// Whether using embedded mode (wlfreerdp) or external mode (xfreerdp)
     is_embedded: Rc<RefCell<bool>>,
     /// Whether using IronRDP (true) or FreeRDP (false) for embedded mode
@@ -398,7 +401,7 @@ struct JigglerHandles {
     state: Rc<RefCell<RdpConnectionState>>,
     is_ironrdp: Rc<RefCell<bool>>,
     #[cfg(feature = "rdp-embedded")]
-    ironrdp_tx: Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+    ironrdp_tx: Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
     freerdp_thread: Rc<RefCell<Option<FreeRdpThread>>>,
     rdp_width: Rc<RefCell<u32>>,
     rdp_height: Rc<RefCell<u32>>,
@@ -716,7 +719,7 @@ impl EmbeddedRdpWidget {
 
         #[cfg(feature = "rdp-embedded")]
         let ironrdp_command_tx: Rc<
-            RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>,
+            RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>,
         > = Rc::new(RefCell::new(None));
 
         let widget = Self {
@@ -732,6 +735,7 @@ impl EmbeddedRdpWidget {
             state,
             config: Rc::new(RefCell::new(None)),
             process: Rc::new(RefCell::new(None)),
+            stderr_lines: Rc::new(RefCell::new(None)),
             freerdp_thread: Rc::new(RefCell::new(None)),
             #[cfg(feature = "rdp-embedded")]
             ironrdp_command_tx,

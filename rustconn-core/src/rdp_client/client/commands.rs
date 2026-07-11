@@ -1,11 +1,10 @@
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent};
 use ironrdp::cliprdr::CliprdrClient;
-use ironrdp::pdu::input::MousePdu;
-use ironrdp::pdu::input::fast_path::{FastPathInputEvent, KeyboardFlags};
-use ironrdp::pdu::input::mouse::PointerFlags;
+use ironrdp::pdu::input::fast_path::FastPathInputEvent;
 use ironrdp::pdu::rdp::headers::ShareDataPdu;
 use ironrdp::session::image::DecodedImage;
 use ironrdp::session::{ActiveStage, ActiveStageOutput};
+use ironrdp_input::{Database, MouseButton, MousePosition, Operation, Scancode, WheelRotations};
 use ironrdp_tokio::FramedWrite;
 
 #[expect(
@@ -18,6 +17,7 @@ pub async fn process_command<W: FramedWrite>(
     image: &mut DecodedImage,
     writer: &mut W,
     event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
+    input_db: &mut Database,
 ) -> Result<bool, RdpClientError> {
     match cmd {
         RdpClientCommand::Disconnect => {
@@ -35,35 +35,72 @@ pub async fn process_command<W: FramedWrite>(
             pressed,
             extended,
         } => {
-            let event = create_keyboard_event(scancode, pressed, extended);
-            send_input_events(active_stage, image, writer, &[event]).await;
+            let sc = Scancode::from_u8(extended, scancode as u8);
+            let op = if pressed {
+                Operation::KeyPressed(sc)
+            } else {
+                Operation::KeyReleased(sc)
+            };
+            let events = input_db.apply(std::iter::once(op));
+            send_input_events(active_stage, image, writer, &events).await;
         }
         RdpClientCommand::UnicodeEvent { character, pressed } => {
-            let event = create_unicode_event(character, pressed);
-            send_input_events(active_stage, image, writer, &[event]).await;
+            let op = if pressed {
+                Operation::UnicodeKeyPressed(character)
+            } else {
+                Operation::UnicodeKeyReleased(character)
+            };
+            let events = input_db.apply(std::iter::once(op));
+            send_input_events(active_stage, image, writer, &events).await;
         }
-        RdpClientCommand::PointerEvent { x, y, buttons } => {
-            let event = create_pointer_event(x, y, buttons);
-            send_input_events(active_stage, image, writer, &[event]).await;
+        RdpClientCommand::PointerEvent { x, y, buttons: _ } => {
+            let op = Operation::MouseMove(MousePosition { x, y });
+            let events = input_db.apply(std::iter::once(op));
+            send_input_events(active_stage, image, writer, &events).await;
         }
         RdpClientCommand::MouseButtonPress { x, y, button } => {
-            let event = create_button_press_event(x, y, button);
-            send_input_events(active_stage, image, writer, &[event]).await;
+            let mb = gdk_button_to_ironrdp(button);
+            let ops = [
+                Operation::MouseMove(MousePosition { x, y }),
+                Operation::MouseButtonPressed(mb),
+            ];
+            let events = input_db.apply(ops);
+            send_input_events(active_stage, image, writer, &events).await;
         }
         RdpClientCommand::MouseButtonRelease { x, y, button } => {
-            let event = create_button_release_event(x, y, button);
-            send_input_events(active_stage, image, writer, &[event]).await;
+            let mb = gdk_button_to_ironrdp(button);
+            let ops = [
+                Operation::MouseMove(MousePosition { x, y }),
+                Operation::MouseButtonReleased(mb),
+            ];
+            let events = input_db.apply(ops);
+            send_input_events(active_stage, image, writer, &events).await;
         }
         RdpClientCommand::SendCtrlAltDel => {
-            let events = create_ctrl_alt_del_sequence();
+            let ctrl = Scancode::from_u8(false, 0x1D);
+            let alt = Scancode::from_u8(false, 0x38);
+            let del = Scancode::from_u8(true, 0x53);
+            let ops = [
+                Operation::KeyPressed(ctrl),
+                Operation::KeyPressed(alt),
+                Operation::KeyPressed(del),
+                Operation::KeyReleased(del),
+                Operation::KeyReleased(alt),
+                Operation::KeyReleased(ctrl),
+            ];
+            let events = input_db.apply(ops);
             send_input_events(active_stage, image, writer, &events).await;
         }
         RdpClientCommand::SendKeySequence { keys } => {
-            // Send each key event with a small delay so the remote OS can
-            // process the sequence (e.g. Win+R → type command → Enter).
             for (scancode, pressed, extended) in keys {
-                let event = create_keyboard_event(scancode, pressed, extended);
-                send_input_events(active_stage, image, writer, &[event]).await;
+                let sc = Scancode::from_u8(extended, scancode as u8);
+                let op = if pressed {
+                    Operation::KeyPressed(sc)
+                } else {
+                    Operation::KeyReleased(sc)
+                };
+                let events = input_db.apply(std::iter::once(op));
+                send_input_events(active_stage, image, writer, &events).await;
                 tokio::time::sleep(std::time::Duration::from_millis(30)).await;
             }
         }
@@ -72,12 +109,20 @@ pub async fn process_command<W: FramedWrite>(
             vertical,
         } => {
             if vertical != 0 {
-                let event = create_wheel_event(vertical, false);
-                send_input_events(active_stage, image, writer, &[event]).await;
+                let op = Operation::WheelRotations(WheelRotations {
+                    is_vertical: true,
+                    rotation_units: vertical,
+                });
+                let events = input_db.apply(std::iter::once(op));
+                send_input_events(active_stage, image, writer, &events).await;
             }
             if horizontal != 0 {
-                let event = create_wheel_event(horizontal, true);
-                send_input_events(active_stage, image, writer, &[event]).await;
+                let op = Operation::WheelRotations(WheelRotations {
+                    is_vertical: false,
+                    rotation_units: horizontal,
+                });
+                let events = input_db.apply(std::iter::once(op));
+                send_input_events(active_stage, image, writer, &events).await;
             }
         }
         RdpClientCommand::SetDesktopSize {
@@ -195,11 +240,11 @@ pub async fn process_command<W: FramedWrite>(
             for grapheme in text.graphemes(true) {
                 for ch in grapheme.chars() {
                     // Press
-                    let press = create_unicode_event(ch, true);
-                    send_input_events(active_stage, image, writer, &[press]).await;
+                    let events = input_db.apply(std::iter::once(Operation::UnicodeKeyPressed(ch)));
+                    send_input_events(active_stage, image, writer, &events).await;
                     // Release
-                    let release = create_unicode_event(ch, false);
-                    send_input_events(active_stage, image, writer, &[release]).await;
+                    let events = input_db.apply(std::iter::once(Operation::UnicodeKeyReleased(ch)));
+                    send_input_events(active_stage, image, writer, &events).await;
                 }
                 tokio::time::sleep(delay).await;
             }
@@ -249,109 +294,37 @@ pub async fn process_command<W: FramedWrite>(
     Ok(false)
 }
 
-/// Creates a keyboard `FastPath` event
-fn create_keyboard_event(scancode: u16, pressed: bool, extended: bool) -> FastPathInputEvent {
-    let mut flags = KeyboardFlags::empty();
-    if !pressed {
-        flags |= KeyboardFlags::RELEASE;
+/// Maps RDP button numbers to `ironrdp_input::MouseButton`.
+///
+/// The button values arrive pre-mapped by `gtk_button_to_rdp_button` in the GUI crate:
+/// 1=Left, 2=Right, 3=Middle, 4=X1 (back), 5=X2 (forward).
+fn gdk_button_to_ironrdp(button: u8) -> MouseButton {
+    match button {
+        2 => MouseButton::Right,
+        3 => MouseButton::Middle,
+        4 => MouseButton::X1,
+        5 => MouseButton::X2,
+        _ => MouseButton::Left,
     }
-    if extended {
-        flags |= KeyboardFlags::EXTENDED;
+}
+
+/// Sends a file-contents error response to the server via CLIPRDR.
+///
+/// Extracted to avoid repeating the 5-line get→submit→process→write pattern
+/// at every error path in `handle_file_contents_request`.
+async fn send_file_contents_error<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    stream_id: u32,
+) {
+    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
+        let response = ironrdp::cliprdr::pdu::FileContentsResponse::new_error(stream_id);
+        if let Ok(messages) = cliprdr.submit_file_contents(response)
+            && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
+        {
+            let _ = writer.write_all(&frame).await;
+        }
     }
-    // RDP scancodes are 8-bit, but we use u16 to preserve the value during transmission
-    // The actual scancode is in the lower 8 bits
-    FastPathInputEvent::KeyboardEvent(flags, scancode as u8)
-}
-
-/// Creates a Unicode keyboard `FastPath` event for non-ASCII characters
-fn create_unicode_event(character: char, pressed: bool) -> FastPathInputEvent {
-    let mut flags = KeyboardFlags::empty();
-    if !pressed {
-        flags |= KeyboardFlags::RELEASE;
-    }
-    // Unicode events use the character's code point as u16
-    // Characters outside BMP (> 0xFFFF) are truncated, but most keyboard input is within BMP
-    let code_point = character as u32 as u16;
-    FastPathInputEvent::UnicodeKeyboardEvent(flags, code_point)
-}
-
-/// Creates a pointer/mouse motion `FastPath` event (no button state change)
-const fn create_pointer_event(x: u16, y: u16, _buttons: u8) -> FastPathInputEvent {
-    // For motion events, only send MOVE flag - no button state
-    FastPathInputEvent::MouseEvent(MousePdu {
-        flags: PointerFlags::MOVE,
-        number_of_wheel_rotation_units: 0,
-        x_position: x,
-        y_position: y,
-    })
-}
-
-/// Creates a mouse button press `FastPath` event
-fn create_button_press_event(x: u16, y: u16, button: u8) -> FastPathInputEvent {
-    let button_flag = match button {
-        2 => PointerFlags::RIGHT_BUTTON,
-        3 => PointerFlags::MIDDLE_BUTTON_OR_WHEEL,
-        _ => PointerFlags::LEFT_BUTTON,
-    };
-
-    // Button press: button flag + DOWN, no MOVE
-    FastPathInputEvent::MouseEvent(MousePdu {
-        flags: button_flag | PointerFlags::DOWN,
-        number_of_wheel_rotation_units: 0,
-        x_position: x,
-        y_position: y,
-    })
-}
-
-/// Creates a mouse button release `FastPath` event
-const fn create_button_release_event(x: u16, y: u16, button: u8) -> FastPathInputEvent {
-    let button_flag = match button {
-        2 => PointerFlags::RIGHT_BUTTON,
-        3 => PointerFlags::MIDDLE_BUTTON_OR_WHEEL,
-        _ => PointerFlags::LEFT_BUTTON,
-    };
-
-    // Button release: only button flag, no DOWN, no MOVE
-    FastPathInputEvent::MouseEvent(MousePdu {
-        flags: button_flag,
-        number_of_wheel_rotation_units: 0,
-        x_position: x,
-        y_position: y,
-    })
-}
-
-/// Creates Ctrl+Alt+Del key sequence
-fn create_ctrl_alt_del_sequence() -> [FastPathInputEvent; 6] {
-    [
-        // Ctrl down
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::empty(), 0x1D),
-        // Alt down
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::empty(), 0x38),
-        // Delete down (extended)
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::EXTENDED, 0x53),
-        // Delete up
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::RELEASE | KeyboardFlags::EXTENDED, 0x53),
-        // Alt up
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::RELEASE, 0x38),
-        // Ctrl up
-        FastPathInputEvent::KeyboardEvent(KeyboardFlags::RELEASE, 0x1D),
-    ]
-}
-
-/// Creates a mouse wheel event
-const fn create_wheel_event(delta: i16, horizontal: bool) -> FastPathInputEvent {
-    let flags = if horizontal {
-        PointerFlags::HORIZONTAL_WHEEL
-    } else {
-        PointerFlags::VERTICAL_WHEEL
-    };
-
-    FastPathInputEvent::MouseEvent(MousePdu {
-        flags,
-        number_of_wheel_rotation_units: delta,
-        x_position: 0,
-        y_position: 0,
-    })
 }
 
 /// Sends input events to the RDP server
@@ -361,6 +334,9 @@ async fn send_input_events<W: FramedWrite>(
     writer: &mut W,
     events: &[FastPathInputEvent],
 ) {
+    if events.is_empty() {
+        return;
+    }
     if let Ok(outputs) = active_stage.process_fastpath_input(image, events) {
         for output in outputs {
             if let ActiveStageOutput::ResponseFrame(data) = output {
@@ -448,10 +424,6 @@ async fn handle_clipboard_request<W: FramedWrite>(
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
-)]
 async fn handle_file_contents_request<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
@@ -485,15 +457,7 @@ async fn handle_file_contents_request<W: FramedWrite>(
             "File contents request for unknown index {}: no local file stored",
             file_index
         );
-        // Send error response
-        if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-            let response = ironrdp::cliprdr::pdu::FileContentsResponse::new_error(stream_id);
-            if let Ok(messages) = cliprdr.submit_file_contents(response)
-                && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
-            {
-                let _ = writer.write_all(&frame).await;
-            }
-        }
+        send_file_contents_error(active_stage, writer, stream_id).await;
         return;
     };
 
@@ -520,14 +484,7 @@ async fn handle_file_contents_request<W: FramedWrite>(
             }
         } else {
             tracing::warn!("Failed to get file metadata for index {}", file_index,);
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-                let response = ironrdp::cliprdr::pdu::FileContentsResponse::new_error(stream_id);
-                if let Ok(messages) = cliprdr.submit_file_contents(response)
-                    && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
-                {
-                    let _ = writer.write_all(&frame).await;
-                }
-            }
+            send_file_contents_error(active_stage, writer, stream_id).await;
         }
     } else {
         // Return file data chunk — delegate I/O to a blocking thread so
@@ -564,14 +521,7 @@ async fn handle_file_contents_request<W: FramedWrite>(
             }
         } else {
             tracing::warn!("Failed to read file index {}", file_index);
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-                let response = ironrdp::cliprdr::pdu::FileContentsResponse::new_error(stream_id);
-                if let Ok(messages) = cliprdr.submit_file_contents(response)
-                    && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
-                {
-                    let _ = writer.write_all(&frame).await;
-                }
-            }
+            send_file_contents_error(active_stage, writer, stream_id).await;
         }
     }
 }

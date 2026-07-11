@@ -335,7 +335,7 @@ impl super::EmbeddedRdpWidget {
         config: &std::rc::Rc<std::cell::RefCell<Option<super::types::RdpConfig>>>,
         is_ironrdp: &std::rc::Rc<std::cell::RefCell<bool>>,
         ironrdp_tx: &std::rc::Rc<
-            std::cell::RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>,
+            std::cell::RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>,
         >,
         status_label: &gtk4::Label,
         on_reconnect: &std::rc::Rc<std::cell::RefCell<Option<Box<dyn Fn() + 'static>>>>,

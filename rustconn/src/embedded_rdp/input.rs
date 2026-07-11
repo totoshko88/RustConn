@@ -31,7 +31,7 @@ fn send_ironrdp_key(
     keycode: u32,
     keyval: gdk::Key,
     pressed: bool,
-    ironrdp_tx: &Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+    ironrdp_tx: &Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
 ) {
     use rustconn_core::rdp_client::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};
 
@@ -80,7 +80,7 @@ fn release_all_keys(
     pressed_keys: &Rc<RefCell<HashMap<u32, gdk::Key>>>,
     using_ironrdp: bool,
     freerdp_thread: &Rc<RefCell<Option<super::FreeRdpThread>>>,
-    ironrdp_tx: &Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+    ironrdp_tx: &Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
 ) {
     let keys: Vec<(u32, gdk::Key)> = pressed_keys.borrow_mut().drain().collect();
     for (keycode, keyval) in keys {

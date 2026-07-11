@@ -60,16 +60,19 @@ pub const fn gtk_button_to_rdp_mask(gtk_button: u32) -> u8 {
     }
 }
 
-/// Converts GTK button number to RDP button number
+/// Converts GTK button number to RDP button number for IronRDP input
 ///
-/// GTK buttons: 1=left, 2=middle, 3=right
-/// RDP buttons: 1=left, 2=right, 3=middle
+/// GTK buttons: 1=left, 2=middle, 3=right, 8=back (X1), 9=forward (X2)
+/// Mapped to values that `gdk_button_to_ironrdp` in rustconn-core expects:
+/// 1=left, 2=right, 3=middle, 4=X1 (back), 5=X2 (forward)
 #[must_use]
 pub const fn gtk_button_to_rdp_button(gtk_button: u32) -> u8 {
     match gtk_button {
         1 => 1, // Left
         2 => 3, // Middle (GTK 2 → RDP 3)
         3 => 2, // Right (GTK 3 → RDP 2)
+        8 => 4, // Back (GTK 8 → X1, mapped in core as 4)
+        9 => 5, // Forward (GTK 9 → X2, mapped in core as 5)
         _ => 1,
     }
 }
@@ -235,5 +238,8 @@ mod tests {
         assert_eq!(gtk_button_to_rdp_button(1), 1); // Left → Left
         assert_eq!(gtk_button_to_rdp_button(2), 3); // Middle → Middle (RDP 3)
         assert_eq!(gtk_button_to_rdp_button(3), 2); // Right → Right (RDP 2)
+        assert_eq!(gtk_button_to_rdp_button(8), 4); // Back → X1
+        assert_eq!(gtk_button_to_rdp_button(9), 5); // Forward → X2
+        assert_eq!(gtk_button_to_rdp_button(99), 1); // Unknown → Left (fallback)
     }
 }

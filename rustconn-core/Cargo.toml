@@ -80,10 +80,13 @@ ironrdp = { version = "0.17", features = [
     "rdpsnd",         # Audio redirection
     "echo",           # Echo DVC for RTT measurement (MS-RDPEECO)
 ], optional = true }
+ironrdp-input = { version = "0.7", optional = true }
 ironrdp-tokio = { version = "0.10", features = ["reqwest"], optional = true }
 ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
 # GFX pipeline (MS-RDPEGFX) with H.264/AVC decoding via OpenH264 dlopen
 ironrdp-egfx = { version = "0.3", features = ["openh264-libloading"], optional = true }
+# RD Gateway (MS-TSGU) — HTTPS tunneling for RDP through corporate gateways
+ironrdp-mstsgu = { version = "0.0.1", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
@@ -101,16 +104,19 @@ oo7 = { workspace = true }
 # Note: ironrdp-rdpdr-native 0.7 requires ironrdp-rdpdr 0.7.x which matches ironrdp 0.17
 
 [features]
-default = ["vnc-embedded", "rdp-embedded", "gfx-h264"]
+default = ["vnc-embedded", "rdp-embedded", "gfx-h264", "rd-gateway"]
 vnc-embedded = ["dep:vnc-rs", "dep:zune-jpeg"]
 # rdp-embedded feature enables the RdpClient struct with IronRDP
 rdp-embedded = [
     "dep:ironrdp",
+    "dep:ironrdp-input",
     "dep:ironrdp-tokio",
     "dep:ironrdp-tls",
 ]
 # gfx-h264 enables EGFX pipeline with H.264/AVC decoding (requires rdp-embedded)
 gfx-h264 = ["dep:ironrdp-egfx", "rdp-embedded"]
+# rd-gateway enables native RD Gateway (MS-TSGU) tunneling without external client
+rd-gateway = ["dep:ironrdp-mstsgu", "rdp-embedded"]
 
 [dev-dependencies]
 proptest = { workspace = true }

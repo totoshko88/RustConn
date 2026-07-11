@@ -26,8 +26,8 @@ mod commands;
 mod connection;
 mod session;
 
-/// Sender for commands to the RDP client (thread-safe, non-async)
-pub type RdpCommandSender = std::sync::mpsc::Sender<RdpClientCommand>;
+/// Sender for commands to the RDP client (thread-safe, works from sync and async code)
+pub type RdpCommandSender = tokio::sync::mpsc::UnboundedSender<RdpClientCommand>;
 
 /// Receiver for events from the RDP client (thread-safe, non-async)
 pub type RdpEventReceiver = std::sync::mpsc::Receiver<RdpClientEvent>;
@@ -50,7 +50,7 @@ pub enum RdpClientState {
 
 /// RDP client handle for managing connections
 pub struct RdpClient {
-    command_tx: Option<std::sync::mpsc::Sender<RdpClientCommand>>,
+    command_tx: Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>,
     event_rx: Option<std::sync::mpsc::Receiver<RdpClientEvent>>,
     connected: Arc<AtomicBool>,
     config: RdpClientConfig,
@@ -85,7 +85,7 @@ impl RdpClient {
         self.shutdown_signal.store(false, Ordering::SeqCst);
 
         let (event_tx, event_rx) = std::sync::mpsc::channel();
-        let (command_tx, command_rx) = std::sync::mpsc::channel();
+        let (command_tx, command_rx) = tokio::sync::mpsc::unbounded_channel();
 
         self.event_rx = Some(event_rx);
         self.command_tx = Some(command_tx);
@@ -244,7 +244,7 @@ impl RdpClient {
 
     /// Returns a clone of the command sender channel
     #[must_use]
-    pub fn command_sender(&self) -> Option<std::sync::mpsc::Sender<RdpClientCommand>> {
+    pub fn command_sender(&self) -> Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>> {
         self.command_tx.clone()
     }
 }
@@ -259,7 +259,7 @@ impl Drop for RdpClient {
 async fn run_rdp_client(
     config: RdpClientConfig,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,
-    command_rx: std::sync::mpsc::Receiver<RdpClientCommand>,
+    command_rx: tokio::sync::mpsc::UnboundedReceiver<RdpClientCommand>,
     shutdown_signal: Arc<AtomicBool>,
 ) -> Result<(), RdpClientError> {
     // Phase 1-3: Establish connection

@@ -6,6 +6,14 @@
 use super::types::{EmbeddedRdpError, RdpConfig};
 use secrecy::{ExposeSecret, SecretString};
 use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, Mutex};
+
+/// Shared buffer collecting stderr lines from the external FreeRDP process.
+///
+/// Used by [`arm_external_exit_watchdog`](super::connection) to produce
+/// user-friendly error messages (e.g. "authentication failed") instead of
+/// the generic "client exited unexpectedly" toast.
+pub(crate) type StderrLines = Arc<Mutex<Vec<String>>>;
 
 /// Safe FreeRDP launcher with Qt error suppression
 ///
@@ -87,7 +95,7 @@ impl SafeFreeRdpLauncher {
     /// # Errors
     ///
     /// Returns error if FreeRDP cannot be launched.
-    pub fn launch(&self, config: &RdpConfig) -> Result<Child, EmbeddedRdpError> {
+    pub fn launch(&self, config: &RdpConfig) -> Result<(Child, StderrLines), EmbeddedRdpError> {
         // RemoteApp (RAIL) is not supported by wlfreerdp — it requires a window
         // manager that can create individual app windows. Use xfreerdp/sdl-freerdp.
         let is_remote_app = config
@@ -212,17 +220,22 @@ impl SafeFreeRdpLauncher {
             .map_err(|e| EmbeddedRdpError::FreeRdpInit(e.to_string()))?;
 
         // Drain the client's stderr on a background thread and forward every
-        // non-empty line to `tracing`. This surfaces the genuine connection
-        // failure reason (e.g. `ERRCONNECT_AUTHENTICATION_FAILED`,
-        // certificate errors) that previously vanished into `/dev/null`.
+        // non-empty line to `tracing`. Also accumulate lines in a shared buffer
+        // so that the exit watchdog can classify the failure (auth vs cert vs
+        // generic) and present a meaningful message to the user.
+        let stderr_lines: StderrLines = Arc::new(Mutex::new(Vec::new()));
         if let Some(stderr) = child.stderr.take() {
             let client = actual_binary.clone();
+            let lines_clone = Arc::clone(&stderr_lines);
             std::thread::spawn(move || {
                 use std::io::{BufRead, BufReader};
                 for line in BufReader::new(stderr).lines().map_while(Result::ok) {
                     let trimmed = line.trim();
                     if !trimmed.is_empty() {
                         tracing::warn!(protocol = "rdp", client = %client, "[FreeRDP] {trimmed}");
+                        if let Ok(mut buf) = lines_clone.lock() {
+                            buf.push(trimmed.to_owned());
+                        }
                     }
                 }
             });
@@ -247,7 +260,7 @@ impl SafeFreeRdpLauncher {
         // _password_guard is dropped here, removing the temp args file.
         // FreeRDP keeps the file mapped only briefly during argument
         // parsing, so removing it shortly after spawn is safe.
-        Ok(child)
+        Ok((child, stderr_lines))
     }
 
     /// Detects the best available FreeRDP binary (Wayland-first)

@@ -54,11 +54,12 @@ nix = { version = "0.31", features = ["signal", "process"] }
 # The native embedded SPICE path was removed in 0.18.0: spice-client 0.2 exposes
 # neither an inputs channel nor raw display frames, so embedding was impossible
 # without forking the crate.
-default = ["tray", "vnc-embedded", "rdp-embedded", "rdp-audio", "wayland-native"]
+default = ["tray", "vnc-embedded", "rdp-embedded", "rdp-audio", "rd-gateway", "wayland-native"]
 tray = ["dep:ksni", "dep:resvg"]
 tray-macos = ["dep:tray-icon", "dep:muda", "dep:resvg"]
 vnc-embedded = ["rustconn-core/vnc-embedded"]
 rdp-embedded = ["rustconn-core/rdp-embedded"]
+rd-gateway = ["rustconn-core/rd-gateway"]
 rdp-audio = ["rdp-embedded", "dep:cpal"]
 wayland-native = ["dep:gdk4-wayland"]
 # Enable libadwaita 1.6+ widgets (AdwSpinner, CSS variables, accent colors)

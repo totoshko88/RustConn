@@ -26,7 +26,25 @@ use std::net::SocketAddr;
 use std::panic::AssertUnwindSafe;
 use tokio::net::TcpStream;
 
-pub type UpgradedFramed = TokioFramed<ironrdp_tls::TlsStream<TcpStream>>;
+/// Transport layer: either a direct TCP connection or a gateway tunnel.
+enum GatewayOrTcp {
+    Tcp(TcpStream),
+    #[cfg(feature = "rd-gateway")]
+    Gateway(ironrdp_mstsgu::GwClient),
+}
+
+/// Helper trait that combines `AsyncRead + AsyncWrite + Unpin + Send + Sync` for type-erased streams.
+pub trait AsyncReadWrite:
+    tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + Sync
+{
+}
+impl<T: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + Sync> AsyncReadWrite for T {}
+
+/// Type-erased async stream used after TLS upgrade.
+/// Supports both direct TCP and gateway-tunneled connections.
+pub type RdpStream = Box<dyn AsyncReadWrite>;
+
+pub type UpgradedFramed = TokioFramed<RdpStream>;
 
 /// Result of a successful RDP connection establishment.
 ///
@@ -73,29 +91,110 @@ pub async fn establish_connection(
     let server_addr = config.server_address();
     let connect_timeout = Duration::from_secs(config.timeout_secs);
 
-    // Phase 1: Establish TCP connection
-    let tcp_result = timeout(connect_timeout, TcpStream::connect(&server_addr)).await;
+    // Phase 1: Establish TCP connection (or gateway tunnel)
+    #[cfg(feature = "rd-gateway")]
+    let (stream, client_addr) = if config.uses_gateway() {
+        // Connect through RD Gateway (MS-TSGU) via ironrdp-mstsgu
+        let gw = &config.gateway;
+        let gw_endpoint = if gw.port == 443 {
+            gw.hostname.clone()
+        } else {
+            format!("{}:{}", gw.hostname, gw.port)
+        };
+        let gw_user = gw.username.clone().unwrap_or_default();
+        // Gateway password: reuse session password when no explicit gateway password is set.
+        // This matches FreeRDP's behaviour (credentials are shared by default).
+        // NOTE: ironrdp-mstsgu takes an owned String — we zeroize the intermediate.
+        // ponytail: the final String passed to ironrdp-mstsgu is not zeroized on drop;
+        // upgrade when ironrdp-mstsgu accepts SecretString or &str.
+        let gw_pass = {
+            use zeroize::Zeroizing;
+            let tmp = config
+                .password
+                .as_ref()
+                .map(|s| Zeroizing::new(s.expose_secret().to_string()))
+                .unwrap_or_default();
+            (*tmp).clone()
+        };
+        let gw_target = ironrdp_mstsgu::GwConnectTarget {
+            gw_endpoint,
+            gw_user,
+            gw_pass,
+            server: config.host.clone(),
+        };
+        let client_name = hostname::get().map_or_else(
+            |_| "RustConn".to_string(),
+            |h| h.to_string_lossy().into_owned(),
+        );
 
-    let stream = match tcp_result {
-        Ok(Ok(stream)) => {
-            // Disable Nagle's algorithm — RDP is latency-sensitive and the
-            // tunnel adds its own buffering layer.
-            let _ = stream.set_nodelay(true);
-            stream
+        tracing::info!(
+            protocol = "rdp",
+            gateway = %config.gateway.hostname,
+            target = %config.host,
+            "Connecting through RD Gateway (MS-TSGU)"
+        );
+
+        let gw_result = timeout(
+            connect_timeout,
+            ironrdp_mstsgu::GwClient::connect(&gw_target, &client_name),
+        )
+        .await;
+
+        match gw_result {
+            Ok(Ok((gw_client, addr))) => (GatewayOrTcp::Gateway(gw_client), addr),
+            Ok(Err(e)) => {
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "RD Gateway connection failed: {e}"
+                )));
+            }
+            Err(_) => {
+                return Err(RdpClientError::Timeout);
+            }
         }
-        Ok(Err(e)) => {
-            return Err(RdpClientError::ConnectionFailed(format!(
-                "Failed to connect to {server_addr}: {e}"
-            )));
-        }
-        Err(_) => {
-            return Err(RdpClientError::Timeout);
-        }
+    } else {
+        let tcp_result = timeout(connect_timeout, TcpStream::connect(&server_addr)).await;
+        let stream = match tcp_result {
+            Ok(Ok(stream)) => {
+                let _ = stream.set_nodelay(true);
+                stream
+            }
+            Ok(Err(e)) => {
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "Failed to connect to {server_addr}: {e}"
+                )));
+            }
+            Err(_) => {
+                return Err(RdpClientError::Timeout);
+            }
+        };
+        let addr = stream
+            .local_addr()
+            .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], 0)));
+        (GatewayOrTcp::Tcp(stream), addr)
     };
 
-    let client_addr = stream
-        .local_addr()
-        .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], 0)));
+    #[cfg(not(feature = "rd-gateway"))]
+    let (stream, client_addr) = {
+        let tcp_result = timeout(connect_timeout, TcpStream::connect(&server_addr)).await;
+        let stream = match tcp_result {
+            Ok(Ok(stream)) => {
+                let _ = stream.set_nodelay(true);
+                stream
+            }
+            Ok(Err(e)) => {
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "Failed to connect to {server_addr}: {e}"
+                )));
+            }
+            Err(_) => {
+                return Err(RdpClientError::Timeout);
+            }
+        };
+        let addr = stream
+            .local_addr()
+            .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], 0)));
+        (GatewayOrTcp::Tcp(stream), addr)
+    };
 
     // Phase 2: Build IronRDP connector configuration
     let connector_config = build_connector_config(config);
@@ -281,7 +380,14 @@ pub async fn establish_connection(
     let handshake_timeout = Duration::from_secs(handshake_secs);
 
     let handshake_result = timeout(handshake_timeout, async {
-        let mut framed = TokioFramed::new(stream);
+        // Type-erase the transport: both TcpStream and GwClient implement
+        // AsyncRead + AsyncWrite + Unpin + Send.
+        let raw_stream: Box<dyn AsyncReadWrite> = match stream {
+            GatewayOrTcp::Tcp(tcp) => Box::new(tcp),
+            #[cfg(feature = "rd-gateway")]
+            GatewayOrTcp::Gateway(gw) => Box::new(gw),
+        };
+        let mut framed = TokioFramed::new(raw_stream);
 
         // Begin connection (X.224 negotiation)
         tracing::debug!(
@@ -331,7 +437,7 @@ pub async fn establish_connection(
 
         let upgraded = ironrdp_tokio::mark_as_upgraded(should_upgrade, &mut connector);
 
-        let mut upgraded_framed = TokioFramed::new(upgraded_stream);
+        let mut upgraded_framed = TokioFramed::new(Box::new(upgraded_stream) as RdpStream);
 
         // Create network client for Kerberos/AAD authentication
         let mut network_client = ReqwestNetworkClient::new();

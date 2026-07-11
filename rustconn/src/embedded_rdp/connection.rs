@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use crate::i18n::{i18n, i18n_f};
 
-use super::launcher::SafeFreeRdpLauncher;
+use super::launcher::{SafeFreeRdpLauncher, StderrLines};
 use super::thread::FreeRdpThread;
 use super::types::{
     EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpConnectionState, RdpEvent,
@@ -19,6 +19,46 @@ use super::types::{
 
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
+
+/// Classifies FreeRDP stderr output into a user-friendly error message.
+///
+/// Scans accumulated stderr lines for known FreeRDP error patterns and returns
+/// an appropriate localized message. Falls back to a generic message when the
+/// failure reason is unrecognizable.
+fn classify_freerdp_failure(stderr_lines: &StderrLines, status_str: &str) -> String {
+    let lines = stderr_lines.lock().unwrap_or_else(|e| e.into_inner());
+    let joined = lines.join(" ");
+
+    if joined.contains("ERRCONNECT_LOGON_FAILURE")
+        || joined.contains("LOGON_FAILURE")
+        || joined.contains("ERRCONNECT_AUTHENTICATION_FAILED")
+        || joined.contains("nla_recv_pdu")
+            && (joined.contains("STATUS_LOGON_FAILURE") || joined.contains("0x00020014"))
+    {
+        i18n("Authentication failed: invalid username or password.")
+    } else if joined.contains("ERRCONNECT_LOGON_TYPE_NOT_GRANTED") {
+        i18n("Access denied: you do not have permission to log on to this server via RDP.")
+    } else if joined.contains("ERRCONNECT_ACCOUNT_LOCKED_OUT") {
+        i18n("Account is locked out. Wait a few minutes and try again.")
+    } else if joined.contains("ERRCONNECT_ACCOUNT_DISABLED") {
+        i18n("Account is disabled on the server.")
+    } else if joined.contains("ERRCONNECT_PASSWORD_EXPIRED")
+        || joined.contains("ERRCONNECT_PASSWORD_MUST_CHANGE")
+    {
+        i18n("Password expired. Change the password on the server and try again.")
+    } else if joined.contains("ERRCONNECT_CONNECT_TRANSPORT_FAILED")
+        || joined.contains("connect_failed")
+    {
+        i18n("Connection failed: server is unreachable. Check the host address and port.")
+    } else if joined.contains("Certificate") && joined.contains("denied") {
+        i18n("Connection rejected: server certificate was not accepted.")
+    } else {
+        i18n_f(
+            "RDP connection failed ({}). Run with RUST_LOG=debug for details.",
+            &[status_str],
+        )
+    }
+}
 
 /// Polls a freshly launched external FreeRDP client for an early exit.
 ///
@@ -37,6 +77,7 @@ fn arm_external_exit_watchdog(
     on_state_changed: Rc<RefCell<Option<super::types::StateCallback>>>,
     on_error: Rc<RefCell<Option<super::types::ErrorCallback>>>,
     drawing_area: gtk4::DrawingArea,
+    stderr_lines: StderrLines,
 ) {
     // Poll every 500 ms for ~3 s. Long enough to catch an immediate auth/cert
     // rejection, short enough not to delay reporting a genuine failure.
@@ -69,10 +110,7 @@ fn arm_external_exit_watchdog(
                 "[FreeRDP] External client exited shortly after launch — connection failed"
             );
 
-            let msg = i18n_f(
-                "External RDP client closed unexpectedly ({}). Check that FreeRDP is installed and the server is reachable; run with RUST_LOG=debug for details.",
-                &[&status_str],
-            );
+            let msg = classify_freerdp_failure(&stderr_lines, &status_str);
 
             // take-invoke-restore: the callbacks may close the tab and re-enter
             // these cells, which would otherwise panic with BorrowMutError.
@@ -115,7 +153,7 @@ pub(super) struct RdpConnectionContext {
     pub on_fallback: Rc<RefCell<Option<super::types::FallbackCallback>>>,
     pub is_embedded: Rc<RefCell<bool>>,
     pub is_ironrdp: Rc<RefCell<bool>>,
-    pub ironrdp_tx: Rc<RefCell<Option<std::sync::mpsc::Sender<RdpClientCommand>>>>,
+    pub ironrdp_tx: Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
     pub client_ref: Rc<RefCell<Option<rustconn_core::rdp_client::RdpClient>>>,
     pub fallback_config: Rc<RefCell<Option<RdpConfig>>>,
     pub fallback_process: Rc<RefCell<Option<std::process::Child>>>,
@@ -261,9 +299,9 @@ impl super::EmbeddedRdpWidget {
     pub(super) fn connect_ironrdp(&self, config: &RdpConfig) -> Result<(), EmbeddedRdpError> {
         use rustconn_core::rdp_client::{RdpClient, RdpClientConfig};
 
-        // IronRDP 0.14 does not support RD Gateway (MS-TSGU). If gateway is
-        // configured, bail out early so the caller falls back to external
-        // xfreerdp which does support gateway connections.
+        // When rd-gateway feature is disabled and gateway is configured,
+        // fall back to external xfreerdp which supports gateway.
+        #[cfg(not(feature = "rd-gateway"))]
         if config
             .gateway_hostname
             .as_ref()
@@ -273,7 +311,7 @@ impl super::EmbeddedRdpWidget {
                 protocol = "rdp",
                 host = %config.host,
                 gateway = ?config.gateway_hostname,
-                "RD Gateway configured — IronRDP does not support gateway yet, \
+                "RD Gateway configured but rd-gateway feature disabled — \
                  falling back to external client"
             );
             return Err(EmbeddedRdpError::GatewayNotSupported);
@@ -1474,21 +1512,39 @@ impl super::EmbeddedRdpWidget {
         // "Connection finalize failed: …". Match both the wrapper prefix and the
         // upstream signature so the connection falls back to FreeRDP instead of
         // surfacing a dead-end error. See https://github.com/totoshko88/RustConn/issues/199.
-        let is_protocol_error = msg.contains("ServerDemandActive")
-            || msg.contains("ServerDeactivateAll")
-            || msg.contains("connect_finalize")
-            || msg.contains("Connection finalize failed")
-            || msg.contains("invalid state (this is a bug)")
-            || msg.contains("unexpected Share Control Pdu")
-            || msg.contains("Unsupported PDU")
-            || msg.contains("Unsupported security protocol")
-            || msg.contains("negotiation failed")
-            || msg.contains("NegotiationError")
-            || msg.contains("decode error")
-            || msg.contains("unsupported fast-path update code")
-            // First-frame watchdog: server connected but never sent a decodable
-            // frame (GFX/H.264-only). Treated as incompatibility → FreeRDP fallback.
-            || msg.contains("no-frame-watchdog");
+        //
+        // IMPORTANT: CredSSP authentication failures (wrong password, locked
+        // account, etc.) also arrive as "Connection finalize failed: … CredSSP"
+        // but are NOT protocol incompatibilities — retrying with FreeRDP using
+        // the same credentials is pointless. Exclude them from fallback.
+        let is_auth_failure = msg.contains("0xc000006d")
+            || msg.contains("0xc000006e")
+            || msg.contains("0xc000006a")
+            || msg.contains("0xc0000070")
+            || msg.contains("0xc0000071")
+            || msg.contains("0xc0000072")
+            || msg.contains("0xc000015b")
+            || msg.contains("STATUS_LOGON_FAILURE")
+            || msg.contains("STATUS_ACCOUNT_DISABLED")
+            || msg.contains("STATUS_ACCOUNT_LOCKED_OUT")
+            || msg.contains("STATUS_PASSWORD_EXPIRED");
+
+        let is_protocol_error = !is_auth_failure
+            && (msg.contains("ServerDemandActive")
+                || msg.contains("ServerDeactivateAll")
+                || msg.contains("connect_finalize")
+                || msg.contains("Connection finalize failed")
+                || msg.contains("invalid state (this is a bug)")
+                || msg.contains("unexpected Share Control Pdu")
+                || msg.contains("Unsupported PDU")
+                || msg.contains("Unsupported security protocol")
+                || msg.contains("negotiation failed")
+                || msg.contains("NegotiationError")
+                || msg.contains("decode error")
+                || msg.contains("unsupported fast-path update code")
+                // First-frame watchdog: server connected but never sent a decodable
+                // frame (GFX/H.264-only). Treated as incompatibility → FreeRDP fallback.
+                || msg.contains("no-frame-watchdog"));
 
         if is_protocol_error {
             tracing::warn!(
@@ -1510,7 +1566,7 @@ impl super::EmbeddedRdpWidget {
 
             // Attempt FreeRDP external fallback via SafeFreeRdpLauncher
             // (uses /from-stdin to avoid exposing password in /proc/PID/cmdline)
-            let fallback_ok = ctx
+            let fallback_result = ctx
                 .fallback_config
                 .borrow()
                 .as_ref()
@@ -1518,7 +1574,7 @@ impl super::EmbeddedRdpWidget {
                 .and_then(|cfg| {
                     let launcher = SafeFreeRdpLauncher::new();
                     match launcher.launch(&cfg) {
-                        Ok(child) => {
+                        Ok((child, stderr_buf)) => {
                             tracing::info!(
                                 protocol = "rdp",
                                 host = %cfg.host,
@@ -1526,7 +1582,7 @@ impl super::EmbeddedRdpWidget {
                                 "[IronRDP] Fallback to external FreeRDP"
                             );
                             *ctx.fallback_process.borrow_mut() = Some(child);
-                            Some(())
+                            Some(stderr_buf)
                         }
                         Err(e) => {
                             tracing::error!(
@@ -1540,7 +1596,7 @@ impl super::EmbeddedRdpWidget {
                     }
                 });
 
-            if fallback_ok.is_some() {
+            if let Some(stderr_buf) = fallback_result {
                 *ctx.state.borrow_mut() = RdpConnectionState::Connected;
                 if let Some(ref cb) = *ctx.on_state_changed.borrow() {
                     cb(RdpConnectionState::Connected);
@@ -1559,6 +1615,7 @@ impl super::EmbeddedRdpWidget {
                     ctx.on_state_changed.clone(),
                     ctx.on_error.clone(),
                     ctx.drawing_area.clone(),
+                    stderr_buf,
                 );
             } else {
                 *ctx.state.borrow_mut() = RdpConnectionState::Error;
@@ -1603,6 +1660,18 @@ impl super::EmbeddedRdpWidget {
         // STATUS_LOGON_FAILURE (0xc000006d) — wrong username or password
         if msg.contains("0xc000006d") || msg.contains("STATUS_LOGON_FAILURE") {
             return i18n("Authentication failed: invalid username or password.");
+        }
+        // STATUS_WRONG_PASSWORD (0xc000006a)
+        if msg.contains("0xc000006a") {
+            return i18n("Authentication failed: invalid username or password.");
+        }
+        // STATUS_ACCOUNT_RESTRICTION (0xc000006e) — logon restrictions apply
+        if msg.contains("0xc000006e") {
+            return i18n("Authentication failed: account restrictions prevent this login.");
+        }
+        // STATUS_PASSWORD_MUST_CHANGE (0xc0000070)
+        if msg.contains("0xc0000070") {
+            return i18n("Authentication failed: password must be changed before first login.");
         }
         // STATUS_ACCOUNT_DISABLED (0xc0000072)
         if msg.contains("0xc0000072") {
@@ -1949,8 +2018,9 @@ impl super::EmbeddedRdpWidget {
         let launcher = SafeFreeRdpLauncher::new();
 
         match launcher.launch(config) {
-            Ok(child) => {
+            Ok((child, stderr_buf)) => {
                 *self.process.borrow_mut() = Some(child);
+                *self.stderr_lines.borrow_mut() = Some(stderr_buf);
                 *self.is_embedded.borrow_mut() = false;
                 self.set_state(RdpConnectionState::Connected);
                 // Trigger redraw to show "Session running in external window"
@@ -2062,12 +2132,20 @@ impl super::EmbeddedRdpWidget {
     ///
     /// See [`arm_external_exit_watchdog`] for the rationale.
     fn arm_external_exit_watchdog(&self) {
+        use std::sync::{Arc, Mutex};
+
+        let stderr_buf = self
+            .stderr_lines
+            .borrow()
+            .clone()
+            .unwrap_or_else(|| Arc::new(Mutex::new(Vec::new())));
         arm_external_exit_watchdog(
             self.process.clone(),
             self.state.clone(),
             self.on_state_changed.clone(),
             self.on_error.clone(),
             self.drawing_area.clone(),
+            stderr_buf,
         );
     }
 

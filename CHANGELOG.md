@@ -5,6 +5,37 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.6] - 2026-07-11
+
+### Added
+
+- **Native RD Gateway (MS-TSGU) support for the embedded RDP client** — connections routed through an RD Gateway now use IronRDP's native `ironrdp-mstsgu` tunneling instead of falling back to an external xfreerdp process. This means GFX pipeline + H.264 decoding, clipboard, shared folders, printer redirection, and audio all work through gateway connections identically to direct TCP. The gateway authenticates with Basic auth (username + password shared with the session credentials by default). Gated behind the `rd-gateway` feature flag (enabled by default); disabling it restores the previous fallback-to-xfreerdp behaviour
+- **Mouse X1/X2 (browser back/forward) button support for embedded RDP** — the embedded client now maps GTK4 buttons 8 and 9 (back/forward side-buttons) through to RDP Extended Mouse buttons X1 and X2, forwarding browser back/forward side-buttons to the remote desktop
+
+### Improved
+
+- **Input handling migrated to `ironrdp-input` state machine** — the embedded RDP client now uses the upstream `ironrdp_input::Database` for keyboard and mouse event generation instead of hand-rolled `FastPathInputEvent` construction. Benefits: deduplicates redundant mouse-move events when the cursor hasn't moved, prevents sending key-release for a key that was never pressed (avoids confusing remote apps), and correctly tracks the full set of 5 mouse buttons. ~80 lines of bespoke input code replaced by 6 `Operation` dispatches through the canonical library
+- **Zero-latency input delivery via `tokio::select!`** — the session loop now uses `tokio::select!` between the server PDU stream and the command channel (migrated from `std::sync::mpsc` to `tokio::sync::mpsc::unbounded`), eliminating the previous 0–50ms polling delay for keyboard and mouse events. Input is now delivered to the server in the same event loop tick as it arrives from the GUI, which is particularly noticeable on high-latency gateway connections
+- **Optimized RGBA→BGRA pixel conversion for GFX pipeline** — the H.264 frame conversion now uses `chunks_exact(4)` with pre-allocated output buffer instead of byte-by-byte `push()`, enabling LLVM to auto-vectorize into SSSE3 `pshufb` on x86_64. Measured ~3× faster on 4K (3840×2160) frames
+- **Gateway password intermediate is zeroized** — the intermediate `String` bridging `SecretString::expose_secret()` to `ironrdp-mstsgu`'s owned-String API is wrapped in `zeroize::Zeroizing` and overwritten on drop, matching the discipline used for the session password. The final owned copy passed into the library is controlled by `ironrdp-mstsgu` (not yet zeroize-aware); upgrade tracked upstream
+
+### Fixed
+
+- **RDP authentication failures showed a misleading "external client closed unexpectedly" error** — when IronRDP received a CredSSP `STATUS_LOGON_FAILURE` (wrong username/password, `0xc000006d`) the error message contained "Connection finalize failed", which matched the protocol-incompatibility heuristic and triggered a pointless FreeRDP fallback with the same credentials. FreeRDP also failed, and the user saw only a generic "External RDP client closed unexpectedly (exit status: 255)" toast. Auth failures (wrong password, locked/disabled account, expired password) are now excluded from the fallback heuristic and reported immediately as "Authentication failed: invalid username or password." When FreeRDP fallback *is* triggered for genuine protocol incompatibilities, the watchdog now classifies the external client's stderr output (LOGON_FAILURE, ACCOUNT_LOCKED, transport failure, certificate rejection) into specific user-facing messages instead of the generic one
+- **FreeRDP error parser merged duplicate auth branches** — the `ERRCONNECT_AUTHENTICATION_FAILED` branch returned the same message as `ERRCONNECT_LOGON_FAILURE` and was unreachable; merged into a single condition (clippy `if_same_then_else`)
+
+### Internal
+
+- **Session command channel migrated to `tokio::sync::mpsc::unbounded`** — `RdpCommandSender` is now `tokio::sync::mpsc::UnboundedSender`, enabling `tokio::select!` in the session loop. The sender is `Send + Sync` and supports non-async `send()` from the GTK thread without blocking. Public API is unchanged (callers use `send_command()`)
+- **Extracted `send_file_contents_error` helper** — the 5-line "get cliprdr → submit error → process → write" pattern was duplicated 3× in `handle_file_contents_request`; now a single async helper called from all error paths
+
+### Dependencies
+
+- **ironrdp-input 0.7.0** (new) — canonical input state machine for keyboard/mouse events
+- **ironrdp-mstsgu 0.0.1** (new) — RD Gateway (MS-TSGU) WebSocket tunnel client
+- **tokio-tungstenite 0.29.0, tungstenite 0.29.0** (new, transitive) — WebSocket transport for `ironrdp-mstsgu` gateway tunneling
+- Updated lockfile: aead 0.6.0-rc.10→0.6.1, bytemuck 1.25.0→1.25.1, ironrdp-core 0.2.0→0.2.1, sha1 0.10.6→0.10.7, thread_local 1.1.9→1.1.10, tinyvec 1.11.0→1.12.0, zip 8.5.1→8.6.0
+
 ## [0.18.5] - 2026-07-11
 
 ### Added
