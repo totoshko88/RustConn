@@ -1,8 +1,8 @@
 # RustConn CLI Reference
 
-**Version 0.18.2** | Full command-line interface for RustConn connection management
+**Version 0.18.6** | Command-line interface for RustConn connection management
 
-The `rustconn-cli` binary provides full connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other.
+The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
 For the main user guide, see [USER_GUIDE.md](USER_GUIDE.md).
 
@@ -16,6 +16,15 @@ For the main user guide, see [USER_GUIDE.md](USER_GUIDE.md).
 | Flatpak | `flatpak run --command=rustconn-cli io.github.totoshko88.RustConn [command]` |
 
 For Flatpak, create a shell alias to save typing (see [Flatpak Usage](#flatpak-usage) below).
+
+## Build Feature Sets
+
+| Feature set | Includes |
+|-------------|----------|
+| Default / `--no-default-features` | Headless management commands: config, list/show, add/update/delete, import/export, groups, tags, templates, clusters, variables, sync metadata, stats, shell completions |
+| `client-launch` | Optional launch paths such as `connect` and desktop file-manager integration |
+| `secret-management` | Optional `secret` commands and system keyring support |
+| `full` | `client-launch` + `secret-management` |
 
 ---
 
@@ -307,6 +316,9 @@ Zero Trust provider flags:
 | `--custom-command` | `generic` | Command template with `{host}`, `{user}`, `{port}` placeholders |
 
 ### connect — Initiate a connection
+
+Available only when `rustconn-cli` is built with `--features client-launch` or
+`--features full`.
 
 ```bash
 rustconn-cli connect "Server" [--dry-run]
@@ -703,6 +715,9 @@ rustconn-cli var delete "my_var"
 
 ### secret — Manage secret backends
 
+Available only when `rustconn-cli` is built with `--features secret-management`
+or `--features full`.
+
 Manage credentials stored in secret backends (system keyring, KeePass, Bitwarden, 1Password, Passbolt, Pass).
 
 | Subcommand | Description |
@@ -973,7 +988,6 @@ When running RustConn as a Flatpak, the CLI requires the full Flatpak invocation
 ```bash
 flatpak run --command=rustconn-cli io.github.totoshko88.RustConn list
 flatpak run --command=rustconn-cli io.github.totoshko88.RustConn add -n "Server" -H 10.0.0.1
-flatpak run --command=rustconn-cli io.github.totoshko88.RustConn connect "Server"
 ```
 
 Create a shell alias to simplify this:
@@ -988,7 +1002,6 @@ Then use it like the native binary:
 ```bash
 rcli list
 rcli add -n "Server" -H 10.0.0.1
-rcli connect "Server"
 ```
 
 For shell completions in Flatpak:
@@ -1025,7 +1038,7 @@ rustconn-cli list --format csv --protocol ssh | tail -n +2 | while IFS=, read -r
     echo "Checking $name at $host:$port"
 done
 
-# Dry-run a connection to see the command
+# Dry-run a connection to see the command (requires `client-launch` or `full`)
 rustconn-cli connect "Production DB" --dry-run
 
 # Get all connections in a group with their details

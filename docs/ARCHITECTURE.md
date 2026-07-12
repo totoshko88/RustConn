@@ -31,11 +31,11 @@ rustconn-pty-sys/   # Isolated FFI helper (macOS PTY controlling terminal)
 
 ### Crate Boundaries
 
-| Crate | Purpose | Allowed Dependencies |
+| Crate | Purpose | Dependency Boundary |
 |-------|---------|---------------------|
-| `rustconn-core` | Domain logic: models, config persistence, CRUD managers, protocol data, import/export, credential abstractions | `tokio`, `serde`, `secrecy`, `thiserror` — NO GTK |
-| `rustconn` | GTK4 UI, dialogs, terminal integration, embedded/external session presentation | `gtk4`, `vte4`, `libadwaita`, `rustconn-core`, `rustconn-pty-sys` |
-| `rustconn-cli` | Headless management CLI: config, connections, import/export, list/show, simple operations | `clap`, `rustconn-core` — NO GTK |
+| `rustconn-core` | Domain logic: models, config persistence, CRUD managers, protocol data, import/export, credential abstractions | Non-GUI Rust dependencies only; host keyring and embedded-client runtimes stay behind explicit features — NO GTK |
+| `rustconn` | GTK4 UI, dialogs, terminal integration, embedded/external session presentation | Owns `gtk4`, `vte4`, `libadwaita`, and enables core integration features when needed |
+| `rustconn-cli` | Headless management CLI: config, connections, import/export, list/show, simple operations | CLI/runtime dependencies plus `rustconn-core`; client launch and secret-management stay behind explicit features — NO GTK |
 | `rustconn-pty-sys` | FFI helper: give a spawned child its PTY slave as a controlling terminal (`setsid` + `TIOCSCTTY`) for the macOS native PTY ([#175](https://github.com/totoshko88/RustConn/issues/175)) | `libc` only — NO GTK |
 
 **Decision Rule:** "Does this code need GTK widgets?" → No → `rustconn-core` / Yes → `rustconn`
@@ -633,19 +633,27 @@ pub trait SecretBackend: Send + Sync {
 ```
 
 **Implementations:**
-- `LibsecretBackend`: GNOME Keyring (default)
+- `LibsecretBackend`: Secret Service via `oo7` when `system-keyring` is enabled on non-macOS
+- `MacOsKeychainBackend`: macOS Keychain when `system-keyring` is enabled on macOS
 - `KdbxExporter` + `kdbx_keyring`: KeePassXC/KeePass via direct `.kdbx` file access
 - `BitwardenBackend`: Bitwarden via CLI
 - `OnePasswordBackend`: 1Password via CLI
 - `PassboltBackend`: Passbolt via CLI (`go-passbolt-cli`)
 - `PassBackend`: Pass (passwordstore.org) via `pass` CLI
 
-### System Keyring Integration
+### Optional System Keyring Integration
 
-The `keyring` module (`rustconn-core/src/secret/keyring.rs`) provides shared keyring storage via `secret-tool` (libsecret Secret Service API) for all backends that need system keyring integration:
+The `keyring` module (`rustconn-core/src/secret/keyring.rs`) provides shared
+keyring storage for backends that need host keyring integration. It is active
+only when `rustconn-core/system-keyring` is enabled; otherwise the same public
+async functions compile as unavailable stubs so headless builds do not pull
+desktop/keyring dependencies.
+
+On Linux/BSD this talks to the Secret Service in process via `oo7`. On macOS,
+credentials route to the native Keychain backend.
 
 ```rust
-// Check if secret-tool is available
+// Check if host keyring integration is available
 if keyring::is_secret_tool_available().await {
     // Store a credential
     keyring::store("bitwarden-master", &password, "Bitwarden Master Password").await?;
@@ -670,7 +678,9 @@ On settings load, backends with "Save to system keyring" enabled automatically r
 
 #### Flatpak Compatibility
 
-The `secret-tool` binary is not included in the GNOME Flatpak runtime (`org.gnome.Platform`). To ensure keyring operations work inside the Flatpak sandbox, `libsecret` 0.21.7 is built as a Flatpak module in all manifests. This provides the `secret-tool` binary at `/app/bin/secret-tool`. The D-Bus permission `--talk-name=org.freedesktop.secrets` is already present in `finish-args`, allowing `secret-tool` to communicate with GNOME Keyring / KDE Wallet from within the sandbox.
+Flatpak keyring access uses the same Secret Service D-Bus permission
+(`--talk-name=org.freedesktop.secrets`). No `secret-tool` runtime binary is
+required for the Linux/BSD path because the `oo7` client runs in process.
 
 ### KeePass Hierarchical Storage
 

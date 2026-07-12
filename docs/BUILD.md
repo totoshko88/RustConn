@@ -65,8 +65,12 @@ Binary: `target/debug/rustconn` or `target/release/rustconn`.
 ### CLI (`rustconn-cli`)
 
 ```bash
+# Minimal/headless build
 cargo build -p rustconn-cli
 cargo build --release -p rustconn-cli
+
+# Full CLI with desktop/client-launch and secret-management commands
+cargo build -p rustconn-cli --features full
 ```
 
 Binary: `target/debug/rustconn-cli` or `target/release/rustconn-cli`.
@@ -93,10 +97,13 @@ cargo build --release      # release, all crates
 | Flag | Default | Description |
 |------|:-------:|-------------|
 | `tray` | ✓ | System tray icon (ksni + resvg) |
+| `system-keyring` | ✓ | Host keyring integration via `rustconn-core/system-keyring` |
 | `vnc-embedded` | ✓ | Embedded VNC client (vnc-rs) |
 | `rdp-embedded` | ✓ | Embedded RDP client (IronRDP) |
 | `rdp-audio` | ✓ | RDP session audio (cpal); enables `rdp-embedded` |
+| `rd-gateway` | ✓ | Native RD Gateway tunneling for embedded RDP |
 | `wayland-native` | ✓ | Wayland surface support (gdk4-wayland) |
+| `tray-macos` | — | macOS tray icon support |
 | `adw-1-6` | — | libadwaita 1.6+ (AdwSpinner, CSS variables) |
 | `adw-1-7` | — | libadwaita 1.7+ (AdwWrapBox); enables `adw-1-6` |
 | `adw-1-8` | — | libadwaita 1.8+ (AdwShortcutsDialog); enables `adw-1-7` |
@@ -119,10 +126,50 @@ cargo build --release -p rustconn --features adw-1-7
 
 ### rustconn-core (library)
 
+`rustconn-core` defaults to a headless domain kernel (`default = []`). Enable
+integration features only from crates that need host keyrings or embedded
+client runtimes.
+
 | Flag | Default | Description |
 |------|:-------:|-------------|
-| `vnc-embedded` | ✓ | vnc-rs |
-| `rdp-embedded` | ✓ | IronRDP |
+| `system-keyring` | — | Host keyring integration (`oo7` on Linux/BSD, macOS Keychain on macOS) |
+| `vnc-embedded` | — | vnc-rs runtime for embedded VNC sessions |
+| `rdp-embedded` | — | IronRDP runtime for embedded RDP sessions |
+| `gfx-h264` | — | RDP EGFX/H.264 pipeline; enables `rdp-embedded` |
+| `rd-gateway` | — | Native RD Gateway tunneling; enables `rdp-embedded` |
+
+Examples:
+
+```bash
+# Headless domain kernel
+cargo build -p rustconn-core --no-default-features
+
+# Core with embedded clients and system keyring integration
+cargo build -p rustconn-core --no-default-features \
+  --features "system-keyring vnc-embedded rdp-embedded rd-gateway"
+```
+
+### rustconn-cli
+
+`rustconn-cli` defaults to the minimal headless management path. Desktop-adjacent
+commands are opt-in.
+
+| Flag | Default | Description |
+|------|:-------:|-------------|
+| `client-launch` | — | External client/file-manager launch commands such as `connect` |
+| `secret-management` | — | `secret` subcommands and `rustconn-core/system-keyring` |
+| `desktop-integration` | — | Convenience group: `client-launch` + `secret-management` |
+| `full` | — | Full CLI feature set; currently enables `desktop-integration` |
+
+Examples:
+
+```bash
+# Minimal/headless CLI
+cargo build -p rustconn-cli --no-default-features
+
+# Full CLI including optional desktop/client-launch paths
+cargo build -p rustconn-cli --features full
+```
 
 ---
 
