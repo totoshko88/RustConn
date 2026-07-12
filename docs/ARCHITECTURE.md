@@ -33,12 +33,44 @@ rustconn-pty-sys/   # Isolated FFI helper (macOS PTY controlling terminal)
 
 | Crate | Purpose | Allowed Dependencies |
 |-------|---------|---------------------|
-| `rustconn-core` | Business logic, protocols, credentials, import/export | `tokio`, `serde`, `secrecy`, `thiserror` — NO GTK |
-| `rustconn` | GTK4 UI, dialogs, terminal integration | `gtk4`, `vte4`, `libadwaita`, `rustconn-core`, `rustconn-pty-sys` |
-| `rustconn-cli` | CLI interface | `clap`, `rustconn-core` — NO GTK |
+| `rustconn-core` | Domain logic: models, config persistence, CRUD managers, protocol data, import/export, credential abstractions | `tokio`, `serde`, `secrecy`, `thiserror` — NO GTK |
+| `rustconn` | GTK4 UI, dialogs, terminal integration, embedded/external session presentation | `gtk4`, `vte4`, `libadwaita`, `rustconn-core`, `rustconn-pty-sys` |
+| `rustconn-cli` | Headless management CLI: config, connections, import/export, list/show, simple operations | `clap`, `rustconn-core` — NO GTK |
 | `rustconn-pty-sys` | FFI helper: give a spawned child its PTY slave as a controlling terminal (`setsid` + `TIOCSCTTY`) for the macOS native PTY ([#175](https://github.com/totoshko88/RustConn/issues/175)) | `libc` only — NO GTK |
 
 **Decision Rule:** "Does this code need GTK widgets?" → No → `rustconn-core` / Yes → `rustconn`
+
+### Headless Boundary
+
+`rustconn-core` defaults to an empty feature set. A minimal build is the shared
+domain kernel and must not pull GUI, DBus/keyring, embedded-client, GFX, or RD
+Gateway runtime dependencies by default.
+
+Optional integration features:
+
+| Feature | Owner | Purpose |
+|---------|-------|---------|
+| `rustconn-core/system-keyring` | GUI / full CLI | Host keyring integration (`oo7` or macOS Keychain) |
+| `rustconn-core/vnc-embedded` | GUI | Native VNC client runtime |
+| `rustconn-core/rdp-embedded` | GUI | Native IronRDP client runtime |
+| `rustconn-core/gfx-h264` | GUI | RDP EGFX/H.264 pipeline |
+| `rustconn-core/rd-gateway` | GUI | Native RD Gateway tunneling for embedded RDP |
+| `rustconn-cli/client-launch` | Full CLI | Launch external clients or desktop file managers |
+| `rustconn-cli/secret-management` | Full CLI | Secret backend commands and system keyring support |
+
+Default edit targets:
+
+| Change | Start here | Do not start here |
+|--------|------------|-------------------|
+| Connection fields, validation, serialization | `rustconn-core/src/models`, `rustconn-core/src/connection`, `rustconn-core/src/protocol` | `rustconn/src/dialogs` |
+| Headless CRUD/list/import/export behavior | `rustconn-cli/src/commands`, `rustconn-core/src/config`, `rustconn-core/src/import`, `rustconn-core/src/export` | `rustconn/src/window` |
+| Embedded RDP/VNC runtime behavior | `rustconn-core/src/rdp_client`, `rustconn-core/src/vnc_client`, then `rustconn/src/embedded_*` | Generic core managers |
+| GUI dialogs, session widgets, toasts | `rustconn/src/dialogs`, `rustconn/src/window`, `rustconn/src/embedded_*` | `rustconn-core` |
+| Secret storage model | `rustconn-core/src/secret` | GUI settings pages, unless only presentation changes |
+
+Keep desktop/client integration behind explicit features or in `rustconn/`.
+Core may expose data types and pure builders for those integrations, but should
+not require their runtime dependencies in the default feature set.
 
 ### The `unsafe` Exception
 

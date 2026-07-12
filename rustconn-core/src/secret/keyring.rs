@@ -18,16 +18,17 @@
 use crate::error::{SecretError, SecretResult};
 
 // oo7 attribute maps are only built on the in-process (non-macOS) path.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 use std::collections::HashMap;
 
 // secret-tool subprocess machinery is only used by the retained macOS path.
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 use std::process::Stdio;
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 use tokio::process::Command;
 
 /// Application identifier used as the `application` attribute in keyring entries
+#[cfg(feature = "system-keyring")]
 const APP_ID: &str = "rustconn";
 
 /// Builds the two-attribute map used to identify a keyring entry.
@@ -35,7 +36,7 @@ const APP_ID: &str = "rustconn";
 /// The scheme (`application` + `key`) is identical to the one the old
 /// `secret-tool` path wrote, so items round-trip across both mechanisms
 /// (backward compatibility, R11.1).
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 fn build_attributes(key: &str) -> HashMap<String, String> {
     let mut attrs = HashMap::new();
     attrs.insert("application".to_string(), APP_ID.to_string());
@@ -56,7 +57,7 @@ fn build_attributes(key: &str) -> HashMap<String, String> {
 /// Service, not to retry the store/search/delete. `ZBus`/`IO` are raw
 /// wire/socket failures reaching the bus; the two `Service` sub-cases are a
 /// broken transport (`ZBus`) or a vanished session (`NoSession`).
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 fn is_transport_failure(e: &oo7::dbus::Error) -> bool {
     use oo7::dbus::{Error, ServiceError};
     matches!(
@@ -77,7 +78,7 @@ fn is_transport_failure(e: &oo7::dbus::Error) -> bool {
 ///
 /// Messages carry only oo7's `Display` (operation/attribute context) and never
 /// secret material.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 #[expect(
     clippy::needless_pass_by_value,
     reason = "mirrors the by-value map_err adapter signature; the three wrappers move the error in"
@@ -100,7 +101,7 @@ fn map_oo7_error(
 ///
 /// Establishing the connection is a pure transport/service concern, so any
 /// error here is always [`SecretError::BackendUnavailable`] (R9.3).
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 #[expect(
     clippy::needless_pass_by_value,
     reason = "passed directly to Result::map_err, which hands the error over by value"
@@ -110,19 +111,19 @@ pub(crate) fn map_oo7_service_error(e: oo7::dbus::Error) -> SecretError {
 }
 
 /// Maps a create/update (`Collection::create_item`) failure onto `SecretError`.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub(crate) fn map_oo7_store_error(e: oo7::dbus::Error) -> SecretError {
     map_oo7_error(e, SecretError::StoreFailed, "oo7 store failed")
 }
 
 /// Maps a search/read (`search_items` / `Item::secret`) failure onto `SecretError`.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub(crate) fn map_oo7_retrieve_error(e: oo7::dbus::Error) -> SecretError {
     map_oo7_error(e, SecretError::RetrieveFailed, "oo7 retrieve failed")
 }
 
 /// Maps a delete (`Item::delete`) failure onto `SecretError`.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub(crate) fn map_oo7_delete_error(e: oo7::dbus::Error) -> SecretError {
     map_oo7_error(e, SecretError::DeleteFailed, "oo7 delete failed")
 }
@@ -138,7 +139,7 @@ pub(crate) fn map_oo7_delete_error(e: oo7::dbus::Error) -> SecretError {
 ///
 /// On the oo7 path there is no `secret-tool` binary to probe; this now means
 /// "a Secret Service responded over D-Bus".
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub async fn is_secret_tool_available() -> bool {
     oo7::dbus::Service::new().await.is_ok()
 }
@@ -151,7 +152,7 @@ pub async fn is_secret_tool_available() -> bool {
 /// # Errors
 /// Returns `SecretError::BackendUnavailable` if no Secret Service answers.
 /// Returns `SecretError::StoreFailed` if the item cannot be written.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
     let attrs = build_attributes(key);
 
@@ -181,7 +182,7 @@ pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
 /// Returns `SecretError::BackendUnavailable` if no Secret Service answers.
 /// Returns `SecretError::RetrieveFailed` if the search or read fails, or the
 /// stored value is not valid UTF-8.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
     let attrs = build_attributes(key);
 
@@ -223,7 +224,7 @@ pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
 /// Returns `SecretError::BackendUnavailable` if no Secret Service answers.
 /// Returns `SecretError::RetrieveFailed` if the search fails, or
 /// `SecretError::DeleteFailed` if an item cannot be removed.
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub async fn clear(key: &str) -> SecretResult<()> {
     let attrs = build_attributes(key);
 
@@ -257,7 +258,67 @@ pub async fn clear(key: &str) -> SecretResult<()> {
 /// All keyring operations depend on this tool. If it is missing,
 /// callers should fall back to encrypted-settings storage and
 /// inform the user to install `libsecret-tools`.
-#[cfg(target_os = "macos")]
+#[cfg(not(feature = "system-keyring"))]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the public async API identical to the feature-enabled keyring implementation"
+)]
+pub async fn is_secret_tool_available() -> bool {
+    false
+}
+
+/// Stores a value in the system keyring.
+///
+/// # Errors
+/// Always returns `SecretError::BackendUnavailable` when `system-keyring` is disabled.
+#[cfg(not(feature = "system-keyring"))]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the public async API identical to the feature-enabled keyring implementation"
+)]
+pub async fn store(_key: &str, _value: &str, _label: &str) -> SecretResult<()> {
+    Err(SecretError::BackendUnavailable(
+        "system keyring support is not compiled in; enable the \
+         rustconn-core/system-keyring feature"
+            .to_string(),
+    ))
+}
+
+/// Retrieves a value from the system keyring.
+///
+/// # Errors
+/// Always returns `SecretError::BackendUnavailable` when `system-keyring` is disabled.
+#[cfg(not(feature = "system-keyring"))]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the public async API identical to the feature-enabled keyring implementation"
+)]
+pub async fn lookup(_key: &str) -> SecretResult<Option<String>> {
+    Err(SecretError::BackendUnavailable(
+        "system keyring support is not compiled in; enable the \
+         rustconn-core/system-keyring feature"
+            .to_string(),
+    ))
+}
+
+/// Deletes a value from the system keyring.
+///
+/// # Errors
+/// Always returns `SecretError::BackendUnavailable` when `system-keyring` is disabled.
+#[cfg(not(feature = "system-keyring"))]
+#[expect(
+    clippy::unused_async,
+    reason = "keeps the public async API identical to the feature-enabled keyring implementation"
+)]
+pub async fn clear(_key: &str) -> SecretResult<()> {
+    Err(SecretError::BackendUnavailable(
+        "system keyring support is not compiled in; enable the \
+         rustconn-core/system-keyring feature"
+            .to_string(),
+    ))
+}
+
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub async fn is_secret_tool_available() -> bool {
     // secret-tool does not support --version; running it without valid
     // arguments prints usage to stderr and exits with code 1.
@@ -279,7 +340,7 @@ pub async fn is_secret_tool_available() -> bool {
 /// Returns `SecretError::BackendUnavailable` if `secret-tool` is not installed.
 /// Returns `SecretError::LibSecret` if `secret-tool` cannot be spawned
 /// or the store command fails.
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
     use tokio::io::AsyncWriteExt;
 
@@ -328,7 +389,7 @@ pub async fn store(key: &str, value: &str, label: &str) -> SecretResult<()> {
 ///
 /// # Errors
 /// Returns `SecretError::LibSecret` if `secret-tool` cannot be spawned.
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
     let output = Command::new("secret-tool")
         .env("PATH", crate::cli_download::get_extended_path())
@@ -353,7 +414,7 @@ pub async fn lookup(key: &str) -> SecretResult<Option<String>> {
 ///
 /// # Errors
 /// Returns `SecretError::DeleteFailed` if the clear command fails.
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub async fn clear(key: &str) -> SecretResult<()> {
     let output = Command::new("secret-tool")
         .env("PATH", crate::cli_download::get_extended_path())

@@ -10,10 +10,17 @@ Communication language: Ukrainian.
 
 | Crate | Purpose | Restrictions |
 |-------|---------|-------------|
-| `rustconn-core` | Business logic, models, protocols | **FORBIDDEN**: gtk4, adw, vte4 |
-| `rustconn-cli` | CLI interface | Only rustconn-core |
-| `rustconn` | GTK4/libadwaita GUI | May import everything |
+| `rustconn-core` | Domain logic: models, config, CRUD managers, import/export, protocol data, credential abstractions | **FORBIDDEN**: gtk4, adw, vte4. Default features stay headless/empty. Embedded clients, GFX, RD Gateway, and host keyring are optional features only. |
+| `rustconn-cli` | Headless management over core data | Only rustconn-core. Default features stay minimal; client launch and secret-management paths are optional. |
+| `rustconn` | GTK4/libadwaita GUI, dialogs, embedded/external session presentation | May import GUI crates and enable core integration features |
 | `rustconn-pty-sys` | Isolated FFI helper (macOS PTY controlling terminal, `setsid`+`TIOCSCTTY`) | **Only** sanctioned `unsafe` location (M-UNSAFE); `libc` only, no gtk4/adw/vte4 |
+
+### Codex Target Split
+
+- Core ticket → start in `rustconn-core/src/lib.rs`, `models`, `config`, `connection`, `protocol`, `secret`; keep runtime integrations behind features.
+- CLI ticket → start in `rustconn-cli/src/cli.rs`, `commands`, `error.rs`; keep the default path to config/CRUD/list/import/export/simple operations.
+- GUI ticket → start in `rustconn/src/dialogs`, `window`, `embedded_*`; do not move GTK/libadwaita concepts into core or CLI.
+- Cross-layer work must name the boundary being crossed and keep each layer's change reviewable on its own.
 
 ## Code Philosophy (YAGNI / lazy-senior)
 

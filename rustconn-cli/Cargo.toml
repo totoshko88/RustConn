@@ -12,7 +12,7 @@ name = "rustconn-cli"
 path = "src/main.rs"
 
 [dependencies]
-rustconn-core = { path = "../rustconn-core", version = "0.18.1" }
+rustconn-core = { path = "../rustconn-core", version = "0.18.1", default-features = false }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -27,6 +27,15 @@ secrecy = { workspace = true }
 zeroize = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+[features]
+default = []
+# Minimal/default CLI is headless management: config, CRUD, list/show,
+# import/export, tests, groups, tags, templates, sync metadata, stats, etc.
+client-launch = []
+secret-management = ["rustconn-core/system-keyring"]
+desktop-integration = ["client-launch", "secret-management"]
+full = ["desktop-integration"]
 
 [dev-dependencies]
 tempfile = "3.26"

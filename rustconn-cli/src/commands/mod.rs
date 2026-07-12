@@ -4,6 +4,7 @@ mod add;
 mod cloud_sync;
 mod cluster;
 mod completions;
+#[cfg(feature = "client-launch")]
 mod connect;
 mod delete;
 mod duplicate;
@@ -17,6 +18,7 @@ mod monitor;
 mod move_cmd;
 mod pin;
 mod recording;
+#[cfg(feature = "secret-management")]
 mod secret;
 mod sftp;
 mod show;
@@ -56,6 +58,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             group.as_deref(),
             tag.as_deref(),
         ),
+        #[cfg(feature = "client-launch")]
         Commands::Connect { name, dry_run } => connect::cmd_connect(config_path, &name, dry_run),
         Commands::Add {
             name,
@@ -464,6 +467,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::Template(subcmd) => template::cmd_template(config_path, subcmd),
         Commands::Cluster(subcmd) => cluster::cmd_cluster(config_path, subcmd),
         Commands::Var(subcmd) => variable::cmd_var(config_path, subcmd),
+        #[cfg(feature = "secret-management")]
         Commands::Secret(subcmd) => secret::cmd_secret(config_path, subcmd),
         Commands::SmartFolder(subcmd) => smart_folder::cmd_smart_folder(config_path, subcmd),
         Commands::DynamicFolder(subcmd) => dynamic_folder::cmd_dynamic_folder(config_path, subcmd),

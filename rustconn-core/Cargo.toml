@@ -88,23 +88,27 @@ ironrdp-egfx = { version = "0.3", features = ["openh264-libloading"], optional =
 # RD Gateway (MS-TSGU) — HTTPS tunneling for RDP through corporate gateways
 ironrdp-mstsgu = { version = "0.0.1", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
-native-tls = { workspace = true }
+native-tls = { workspace = true, optional = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
 fs2 = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-security-framework = "3.3"
+security-framework = { version = "3.3", optional = true }
 
 # Secret Service (keyring) client. Gated to non-macOS so oo7 NEVER compiles on
 # macOS (which uses security-framework above). Used by the LibSecret/keyring
 # path in Part C.
 [target.'cfg(not(target_os = "macos"))'.dependencies]
-oo7 = { workspace = true }
+oo7 = { workspace = true, optional = true }
 
 # Note: ironrdp-rdpdr-native 0.7 requires ironrdp-rdpdr 0.7.x which matches ironrdp 0.17
 
 [features]
-default = ["vnc-embedded", "rdp-embedded", "gfx-h264", "rd-gateway"]
+default = []
+# Domain-only builds should keep this crate usable without desktop/session
+# integration dependencies. Enable the following features only in crates that
+# embed clients or integrate with the host desktop keyring.
+system-keyring = ["dep:oo7", "dep:security-framework"]
 vnc-embedded = ["dep:vnc-rs", "dep:zune-jpeg"]
 # rdp-embedded feature enables the RdpClient struct with IronRDP
 rdp-embedded = [
@@ -112,6 +116,7 @@ rdp-embedded = [
     "dep:ironrdp-input",
     "dep:ironrdp-tokio",
     "dep:ironrdp-tls",
+    "dep:native-tls",
 ]
 # gfx-h264 enables EGFX pipeline with H.264/AVC decoding (requires rdp-embedded)
 gfx-h264 = ["dep:ironrdp-egfx", "rdp-embedded"]

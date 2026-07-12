@@ -12,7 +12,7 @@ name = "rustconn"
 path = "src/main.rs"
 
 [dependencies]
-rustconn-core = { path = "../rustconn-core", version = "0.18.1" }
+rustconn-core = { path = "../rustconn-core", version = "0.18.1", default-features = false }
 tokio = { workspace = true }
 # Event-driven tray message delivery to the GTK main loop (no polling)
 async-channel = { workspace = true }
@@ -54,9 +54,18 @@ nix = { version = "0.31", features = ["signal", "process"] }
 # The native embedded SPICE path was removed in 0.18.0: spice-client 0.2 exposes
 # neither an inputs channel nor raw display frames, so embedding was impossible
 # without forking the crate.
-default = ["tray", "vnc-embedded", "rdp-embedded", "rdp-audio", "rd-gateway", "wayland-native"]
+default = [
+    "tray",
+    "system-keyring",
+    "vnc-embedded",
+    "rdp-embedded",
+    "rdp-audio",
+    "rd-gateway",
+    "wayland-native",
+]
 tray = ["dep:ksni", "dep:resvg"]
 tray-macos = ["dep:tray-icon", "dep:muda", "dep:resvg"]
+system-keyring = ["rustconn-core/system-keyring"]
 vnc-embedded = ["rustconn-core/vnc-embedded"]
 rdp-embedded = ["rustconn-core/rdp-embedded"]
 rd-gateway = ["rustconn-core/rd-gateway"]

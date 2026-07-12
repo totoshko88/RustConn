@@ -48,10 +48,6 @@ fn test_help_command() {
         "Help should mention program name"
     );
     assert!(stdout.contains("list"), "Help should mention list command");
-    assert!(
-        stdout.contains("connect"),
-        "Help should mention connect command"
-    );
     assert!(stdout.contains("add"), "Help should mention add command");
     assert!(
         stdout.contains("export"),
@@ -201,33 +197,6 @@ fn test_list_csv_format() {
 // ============================================================================
 // Error Handling Tests
 // ============================================================================
-
-#[test]
-fn test_connect_nonexistent() {
-    let temp_dir = TempDir::new().expect("Failed to create temp dir");
-
-    let output = run_cli(&["connect", "nonexistent"], Some(temp_dir.path()));
-
-    // Should fail with exit code 2 (connection not found)
-    assert!(
-        !output.status.success(),
-        "Connect to nonexistent should fail"
-    );
-
-    let exit_code = output.status.code().unwrap_or(-1);
-    assert!(
-        exit_code == 1 || exit_code == 2,
-        "Exit code should be 1 or 2 for connection error. Got: {exit_code}"
-    );
-
-    let stderr = stderr_str(&output);
-    assert!(
-        stderr.contains("not found")
-            || stderr.contains("Error")
-            || stderr.contains("No connections"),
-        "Should show error message. Got: {stderr}"
-    );
-}
 
 #[test]
 fn test_import_nonexistent_file() {

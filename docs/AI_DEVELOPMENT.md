@@ -124,6 +124,21 @@ is the canonical source.
 
 ## Design Decisions
 
+### Codex target boundaries
+
+Keep future AI tasks sliced by crate boundary:
+
+| Target | Scope | First files to inspect |
+|--------|-------|------------------------|
+| Core | Domain logic, models, config persistence, import/export, protocol data, credential abstractions | `rustconn-core/src/lib.rs`, `rustconn-core/src/models`, `rustconn-core/src/config`, `rustconn-core/src/connection`, `rustconn-core/src/protocol` |
+| CLI | Headless management over core data: list/show/add/update/delete, import/export, tests, tags/groups/templates | `rustconn-cli/src/cli.rs`, `rustconn-cli/src/commands`, `rustconn-cli/src/error.rs` |
+| GUI | GTK/libadwaita presentation, dialogs, embedded/external sessions, toasts, window state | `rustconn/src/dialogs`, `rustconn/src/window`, `rustconn/src/embedded_*` |
+
+Do not mix these in one Codex ticket unless the change is an end-to-end feature
+that explicitly requires all layers. `rustconn-core` has an empty default
+feature set; embedded clients, RD Gateway/GFX, host keyring support, and CLI
+client-launch behavior are optional integration features.
+
 ### Steering vs hooks
 
 Steering provides the *mental model* (what conventions exist and why); hooks

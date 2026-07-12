@@ -10,15 +10,21 @@
 //! - [`connection`] - Connection CRUD operations and managers
 //! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes)
 //! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm)
-//! - [`secret`] - Credential backends (`KeePassXC`, libsecret)
+//! - [`secret`] - Credential backends and resolvers; host keyring integration is optional
 //! - [`search`] - Fuzzy search with caching and debouncing
 //! - [`automation`] - Expect scripts, key sequences, tasks
 //! - [`performance`] - Connection-string interner (dedup) + search debouncer
 //!
 //! # Feature Flags
 //!
-//! - `vnc-embedded` - Native VNC client via `vnc-rs` (default)
-//! - `rdp-embedded` - Native RDP client via `IronRDP` (default)
+//! The default feature set is intentionally empty so `rustconn-core` can be used
+//! as a headless domain library.
+//!
+//! - `system-keyring` - Host keyring integration (`oo7`/macOS Keychain)
+//! - `vnc-embedded` - Native VNC client via `vnc-rs`
+//! - `rdp-embedded` - Native RDP client via `IronRDP`
+//! - `gfx-h264` - RDP EGFX/H.264 pipeline support
+//! - `rd-gateway` - Native RD Gateway tunneling for embedded RDP
 //!
 //! SPICE sessions use an external viewer (virt-viewer/remote-viewer); the
 //! native embedded SPICE client was removed in 0.18.0.
@@ -26,6 +32,7 @@
 // Enable missing_docs warning for public API documentation
 #![warn(missing_docs)]
 
+// Domain model, persistence, and headless management modules.
 pub mod activity_monitor;
 pub mod automation;
 pub mod busy;
@@ -52,7 +59,6 @@ pub mod password_generator;
 pub mod performance;
 pub mod progress;
 pub mod protocol;
-pub mod rdp_client;
 pub mod search;
 pub mod secret;
 pub mod session;
@@ -61,7 +67,6 @@ pub mod shell_escape;
 pub mod smart_folder;
 pub mod snap;
 pub mod snippet;
-pub mod spice_client;
 pub mod split;
 pub mod ssh_agent;
 pub mod ssh_tunnel;
@@ -73,10 +78,16 @@ pub mod tracing;
 pub mod tunnel_manager;
 pub mod tunnel_preview;
 pub mod variables;
-pub mod vnc_client;
 pub mod wol;
 
 pub mod workspace;
+
+// Optional desktop/client integration modules. These modules expose pure config
+// and availability types without their heavy runtime dependencies unless the
+// corresponding feature is enabled.
+pub mod rdp_client;
+pub mod spice_client;
+pub mod vnc_client;
 
 // =============================================================================
 // Convenience re-exports
@@ -193,12 +204,10 @@ pub use rdp_client::quick_actions::{
     QUICK_ACTIONS, QuickAction, build_enter_sequence, build_hotkey_sequence, build_open_run_dialog,
     run_command_for,
 };
-#[cfg(feature = "rdp-embedded")]
-pub use rdp_client::{AudioFormatInfo, RdpClient, RdpCommandSender, RdpEventReceiver};
 pub use rdp_client::{
-    ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientConfig, RdpClientError,
-    RdpClientEvent, RdpRect, RdpSecurityProtocol, convert_to_bgra, create_frame_update,
-    create_frame_update_with_conversion,
+    AudioFormatInfo, ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientConfig,
+    RdpClientError, RdpClientEvent, RdpRect, RdpSecurityProtocol, convert_to_bgra,
+    create_frame_update, create_frame_update_with_conversion,
     input::{
         CoordinateTransform,
         MAX_RDP_HEIGHT,
@@ -222,6 +231,8 @@ pub use rdp_client::{
     },
     is_embedded_rdp_available, keyval_to_unicode,
 };
+#[cfg(feature = "rdp-embedded")]
+pub use rdp_client::{RdpClient, RdpCommandSender, RdpEventReceiver};
 pub use search::{
     ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,
     SearchFilter, SearchQuery, SearchResult, benchmark,
@@ -237,10 +248,9 @@ pub use secret::{
     PassBackend, PendingCredentialResolution, SecretBackend, SecretManager, VerifiedCredentials,
     parse_keepassxc_version, resolve_with_callback, spawn_credential_resolution,
 };
-// `LibSecretBackend` is compiled only on non-macOS (macOS uses the Keychain and
-// never builds the oo7-backed libsecret client), so its re-export is split out
-// of the grouped `pub use` above and gated separately.
-#[cfg(not(target_os = "macos"))]
+// Host keyring backends are compiled only when explicitly requested. The
+// headless default keeps DBus/macOS Security.framework out of rustconn-core.
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub use secret::LibSecretBackend;
 pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,

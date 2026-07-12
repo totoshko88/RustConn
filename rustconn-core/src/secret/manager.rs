@@ -250,10 +250,14 @@ impl SecretManager {
                 // macOS never constructs LibSecretBackend (oo7 is not compiled
                 // there) — it routes to the system Keychain instead (R10.1,
                 // R10.2). Non-macOS keeps the oo7-backed libsecret client.
-                #[cfg(target_os = "macos")]
+                #[cfg(all(feature = "system-keyring", target_os = "macos"))]
                 backends.push(Arc::new(super::MacOsKeychainBackend::new()));
-                #[cfg(not(target_os = "macos"))]
+                #[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
+                #[cfg(not(feature = "system-keyring"))]
+                tracing::debug!(
+                    "System keyring backend selected but rustconn-core/system-keyring is disabled"
+                );
             }
             SecretBackendType::Pass => {
                 backends.push(Arc::new(super::PassBackend::from_secret_settings(settings)));
@@ -264,19 +268,30 @@ impl SecretManager {
                 // Add the system keyring as the operational backend for
                 // non-KeePass lookups (e.g. variable resolution). macOS uses
                 // the Keychain (LibSecretBackend is not compiled there).
-                #[cfg(target_os = "macos")]
+                #[cfg(all(feature = "system-keyring", target_os = "macos"))]
                 backends.push(Arc::new(super::MacOsKeychainBackend::new()));
-                #[cfg(not(target_os = "macos"))]
+                #[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
+                #[cfg(not(feature = "system-keyring"))]
+                tracing::debug!(
+                    "KDBX backend selected without system-keyring; only direct KDBX \
+                     and app-managed fallback backends are available"
+                );
             }
-            #[cfg(target_os = "macos")]
+            #[cfg(all(feature = "system-keyring", target_os = "macos"))]
             SecretBackendType::MacOsKeychain => {
                 backends.push(Arc::new(super::MacOsKeychainBackend::new()));
             }
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
             SecretBackendType::MacOsKeychain => {
                 // Fallback to libsecret on non-macOS platforms
                 backends.push(Arc::new(super::LibSecretBackend::default_app()));
+            }
+            #[cfg(not(feature = "system-keyring"))]
+            SecretBackendType::MacOsKeychain => {
+                tracing::debug!(
+                    "macOS Keychain backend selected but rustconn-core/system-keyring is disabled"
+                );
             }
             SecretBackendType::EncryptedFile => {
                 // Application-managed encrypted file: addressed by the flat

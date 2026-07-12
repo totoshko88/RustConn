@@ -1,7 +1,8 @@
-//! Pure Rust VNC client for embedded VNC sessions
+//! Optional embedded VNC client integration boundary
 //!
-//! This module provides a VNC client implementation using the `vnc-rs` crate,
-//! enabling true embedded VNC sessions in GTK4 without external processes.
+//! A headless build keeps this module as an availability boundary only. The
+//! `vnc-rs` runtime, VNC config, events, and client types are compiled only with
+//! the `vnc-embedded` feature.
 //!
 //! # Architecture
 //!

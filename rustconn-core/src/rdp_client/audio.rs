@@ -12,78 +12,13 @@
 //! 4. Backend sends data to GUI via event channel
 //! 5. GUI plays audio using platform audio API (cpal/rodio)
 
-use super::RdpClientEvent;
+use super::{AudioFormatInfo, RdpClientEvent};
 use ironrdp::core::impl_as_any;
 use ironrdp::rdpsnd::client::RdpsndClientHandler;
 use ironrdp::rdpsnd::pdu::{AudioFormat, AudioFormatFlags, PitchPdu, VolumePdu, WaveFormat};
 use std::borrow::Cow;
 use std::sync::mpsc::Sender;
 use tracing::{debug, trace};
-
-/// Audio format information for GUI playback
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AudioFormatInfo {
-    /// Format tag (1 = PCM, 6 = A-Law, 7 = μ-Law, etc.)
-    pub format_tag: u16,
-    /// Number of channels (1 = mono, 2 = stereo)
-    pub channels: u16,
-    /// Samples per second (e.g., 44100, 48000)
-    pub samples_per_sec: u32,
-    /// Average bytes per second
-    pub avg_bytes_per_sec: u32,
-    /// Block alignment
-    pub block_align: u16,
-    /// Bits per sample (8, 16, 24, 32)
-    pub bits_per_sample: u16,
-}
-
-impl AudioFormatInfo {
-    /// PCM format tag
-    pub const FORMAT_PCM: u16 = 1;
-    /// A-Law format tag
-    pub const FORMAT_ALAW: u16 = 6;
-    /// μ-Law format tag
-    pub const FORMAT_MULAW: u16 = 7;
-
-    /// Creates a new audio format info
-    #[must_use]
-    pub fn new(format_tag: u16, channels: u16, samples_per_sec: u32, bits_per_sample: u16) -> Self {
-        let block_align = channels * (bits_per_sample / 8);
-        let avg_bytes_per_sec = samples_per_sec * u32::from(block_align);
-        Self {
-            format_tag,
-            channels,
-            samples_per_sec,
-            avg_bytes_per_sec,
-            block_align,
-            bits_per_sample,
-        }
-    }
-
-    /// Creates a standard CD-quality PCM format (44100 Hz, 16-bit, stereo)
-    #[must_use]
-    pub fn cd_quality() -> Self {
-        Self::new(Self::FORMAT_PCM, 2, 44100, 16)
-    }
-
-    /// Creates a DVD-quality PCM format (48000 Hz, 16-bit, stereo)
-    #[must_use]
-    pub fn dvd_quality() -> Self {
-        Self::new(Self::FORMAT_PCM, 2, 48000, 16)
-    }
-
-    /// Returns true if this is a PCM format
-    #[must_use]
-    pub const fn is_pcm(&self) -> bool {
-        self.format_tag == Self::FORMAT_PCM
-    }
-
-    /// Returns the number of bytes per sample (all channels)
-    #[must_use]
-    pub const fn bytes_per_sample(&self) -> u16 {
-        self.block_align
-    }
-}
 
 impl From<&AudioFormat> for AudioFormatInfo {
     fn from(format: &AudioFormat) -> Self {

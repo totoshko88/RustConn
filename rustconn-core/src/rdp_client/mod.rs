@@ -1,11 +1,14 @@
-//! Pure Rust RDP client for embedded RDP sessions
+//! RDP client boundary for domain types and optional embedded sessions
 //!
-//! This module provides an RDP client implementation using the `ironrdp` crate,
-//! enabling true embedded RDP sessions in GTK4 without external processes.
+//! This module always exposes RDP configuration, events, command types, backend
+//! detection, and argument helpers that are useful to headless callers. The
+//! actual embedded RDP runtime is compiled only with the `rdp-embedded` feature,
+//! so a minimal `rustconn-core` build does not pull IronRDP or client runtime
+//! dependencies.
 //!
 //! # Architecture
 //!
-//! The RDP client runs in a background thread with its own Tokio runtime and
+//! When enabled, the RDP client runs in a background thread with its own Tokio runtime and
 //! communicates with the GUI through channels:
 //! - `RdpClientEvent` channel: framebuffer updates, resolution changes, etc.
 //! - `RdpClientCommand` channel: keyboard/mouse input, disconnect requests
@@ -68,8 +71,6 @@ pub mod reconnect;
 
 pub mod quick_actions;
 
-#[cfg(feature = "rdp-embedded")]
-pub use audio::AudioFormatInfo;
 pub use backend::{BackendDetectionResult, RdpBackend, RdpBackendSelector};
 #[cfg(feature = "rdp-embedded")]
 pub use client::{RdpClient, RdpClientState, RdpCommandSender, RdpEventReceiver};
@@ -78,8 +79,9 @@ pub use config::{
 };
 pub use error::RdpClientError;
 pub use event::{
-    ClipboardFileInfo, ClipboardFormatInfo, PixelFormat, RdpClientCommand, RdpClientEvent, RdpRect,
-    convert_to_bgra, create_frame_update, create_frame_update_with_conversion,
+    AudioFormatInfo, ClipboardFileInfo, ClipboardFormatInfo, PixelFormat, RdpClientCommand,
+    RdpClientEvent, RdpRect, convert_to_bgra, create_frame_update,
+    create_frame_update_with_conversion,
 };
 pub use gateway::{GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState};
 pub use graphics::{

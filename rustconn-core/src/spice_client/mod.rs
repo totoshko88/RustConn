@@ -1,12 +1,12 @@
-//! SPICE session support via an external viewer.
+//! SPICE external-viewer integration boundary.
 //!
 //! SPICE sessions are handled by launching an external viewer
 //! (`remote-viewer`, `virt-viewer`, or `spicy`). This module provides the
 //! connection configuration ([`SpiceClientConfig`]), error type
 //! ([`SpiceClientError`]), and the helpers that detect a viewer and build its
-//! command line ([`detect_spice_viewer`], [`build_spice_viewer_args`]). The
-//! `rustconn` crate spawns the viewer process and tracks it in its external
-//! session registry.
+//! command line ([`detect_spice_viewer`], [`build_spice_viewer_args`]).
+//! Callers that need a strict domain-only build should avoid invoking the
+//! detection/launch helpers and treat [`SpiceClientConfig`] as data.
 //!
 //! # History
 //!

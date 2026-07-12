@@ -2,7 +2,7 @@
 //!
 //! This module provides secure credential storage through multiple backends:
 //! - Direct KDBX file access (compatible with `KeePassXC`, GNOME Secrets, `OneKeePass`)
-//! - libsecret for GNOME Keyring/KDE Wallet integration (fallback)
+//! - libsecret / macOS Keychain integration when the `system-keyring` feature is enabled
 //! - Bitwarden CLI integration
 //! - 1Password CLI integration
 //!
@@ -18,10 +18,10 @@ pub mod hierarchy;
 mod kdbx;
 mod kdbx_keyring;
 pub mod keyring;
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 mod libsecret;
 pub(crate) mod local_crypto;
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub mod macos_keychain;
 mod manager;
 mod onepassword;
@@ -61,9 +61,9 @@ pub use kdbx_keyring::{
     delete_kdbx_password_from_keyring, get_kdbx_password_from_keyring,
     store_kdbx_password_in_keyring,
 };
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 pub use libsecret::LibSecretBackend;
-#[cfg(target_os = "macos")]
+#[cfg(all(feature = "system-keyring", target_os = "macos"))]
 pub use macos_keychain::MacOsKeychainBackend;
 pub use manager::{
     BulkOperationResult, CACHE_TTL_SECONDS, CredentialUpdate, SecretManager, StoreOutcome,

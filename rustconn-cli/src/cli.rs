@@ -27,7 +27,7 @@ pub struct Cli {
     pub quiet: bool,
 
     /// Disable colored output
-    #[arg(long, global = true, env = "NO_COLOR")]
+    #[arg(long, global = true)]
     pub no_color: bool,
 
     #[command(subcommand)]
@@ -58,6 +58,7 @@ pub enum Commands {
     },
 
     /// Connect to a server by name or ID
+    #[cfg(feature = "client-launch")]
     #[command(about = "Initiate a connection to a remote server")]
     Connect {
         /// Connection name or UUID
@@ -947,6 +948,7 @@ pub enum Commands {
     Var(VariableCommands),
 
     /// Manage secret backends and credentials
+    #[cfg(feature = "secret-management")]
     #[command(subcommand, about = "Manage secret backends and credentials")]
     Secret(SecretCommands),
 
@@ -1608,6 +1610,7 @@ pub enum VariableCommands {
 }
 
 /// Secret backend subcommands
+#[cfg(feature = "secret-management")]
 #[derive(Subcommand)]
 pub enum SecretCommands {
     /// Show available secret backends and their status

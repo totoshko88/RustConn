@@ -18,7 +18,7 @@ fn main() {
     let cli = Cli::parse();
     let config_path = cli.config.as_deref();
 
-    color::init(cli.no_color);
+    color::init(cli.no_color || std::env::var_os("NO_COLOR").is_some());
     setup_logging(cli.verbose, cli.quiet);
 
     let result = commands::dispatch(config_path, cli.command);

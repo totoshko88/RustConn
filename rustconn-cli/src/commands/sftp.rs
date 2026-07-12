@@ -93,43 +93,55 @@ pub fn cmd_sftp(
             ));
         }
     } else {
-        // Resolve the login home directory so the file manager opens where the
-        // user has access instead of the server root (issue #212).
-        let uri = rustconn_core::sftp::build_sftp_browser_uri(connection, &groups)
-            .ok_or_else(|| CliError::Protocol("Failed to build SFTP URI".to_string()))?;
+        #[cfg(feature = "client-launch")]
+        {
+            // Resolve the login home directory so the file manager opens where the
+            // user has access instead of the server root (issue #212).
+            let uri = rustconn_core::sftp::build_sftp_browser_uri(connection, &groups)
+                .ok_or_else(|| CliError::Protocol("Failed to build SFTP URI".to_string()))?;
 
-        println!("Opening SFTP file browser for '{}'...", connection.name);
-        println!("URI: {uri}");
+            println!("Opening SFTP file browser for '{}'...", connection.name);
+            println!("URI: {uri}");
 
-        // Launch file manager with agent env injected. On KDE,
-        // xdg-open routes through D-Bus to an already-running
-        // Dolphin that won't have our env.
-        let mut proc = std::process::Command::new("dolphin");
-        proc.args(["--new-window", &uri]);
-        rustconn_core::sftp::apply_agent_env(&mut proc);
-        if proc.spawn().is_ok() {
-            return Ok(());
+            // Launch file manager with agent env injected. On KDE,
+            // xdg-open routes through D-Bus to an already-running
+            // Dolphin that won't have our env.
+            let mut proc = std::process::Command::new("dolphin");
+            proc.args(["--new-window", &uri]);
+            rustconn_core::sftp::apply_agent_env(&mut proc);
+            if proc.spawn().is_ok() {
+                return Ok(());
+            }
+
+            let mut proc = std::process::Command::new("nautilus");
+            proc.args(["--new-window", &uri]);
+            rustconn_core::sftp::apply_agent_env(&mut proc);
+            if proc.spawn().is_ok() {
+                return Ok(());
+            }
+
+            let mut proc = std::process::Command::new(rustconn_core::secret::url_open_command());
+            proc.arg(&uri);
+            rustconn_core::sftp::apply_agent_env(&mut proc);
+            if proc.spawn().is_ok() {
+                return Ok(());
+            }
+
+            return Err(CliError::Connection(
+                "Failed to open file manager. Try --cli to use sftp \
+                 directly"
+                    .to_string(),
+            ));
         }
 
-        let mut proc = std::process::Command::new("nautilus");
-        proc.args(["--new-window", &uri]);
-        rustconn_core::sftp::apply_agent_env(&mut proc);
-        if proc.spawn().is_ok() {
-            return Ok(());
+        #[cfg(not(feature = "client-launch"))]
+        {
+            return Err(CliError::Connection(
+                "SFTP file-browser launch is not compiled in this minimal CLI. \
+                 Use --cli or --mc, or build with the client-launch feature."
+                    .to_string(),
+            ));
         }
-
-        let mut proc = std::process::Command::new(rustconn_core::secret::url_open_command());
-        proc.arg(&uri);
-        rustconn_core::sftp::apply_agent_env(&mut proc);
-        if proc.spawn().is_ok() {
-            return Ok(());
-        }
-
-        return Err(CliError::Connection(
-            "Failed to open file manager. Try --cli to use sftp \
-             directly"
-                .to_string(),
-        ));
     }
 
     Ok(())
