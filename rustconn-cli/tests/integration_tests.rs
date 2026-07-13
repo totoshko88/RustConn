@@ -247,8 +247,7 @@ fn test_connect_absent_from_help() {
     // It may appear inside other descriptions (e.g. "Test connectivity").
     let has_connect_subcommand = stdout.lines().any(|line| {
         let trimmed = line.trim_start();
-        trimmed.starts_with("connect ")
-            || trimmed == "connect"
+        trimmed.starts_with("connect ") || trimmed == "connect"
     });
     assert!(
         !has_connect_subcommand,
