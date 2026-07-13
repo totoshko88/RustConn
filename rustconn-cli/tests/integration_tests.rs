@@ -243,9 +243,16 @@ fn test_connect_absent_from_help() {
     let output = run_cli(&["--help"], None);
     assert!(output.status.success());
     let stdout = stdout_str(&output);
+    // Check that "connect" does not appear as a standalone subcommand name.
+    // It may appear inside other descriptions (e.g. "Test connectivity").
+    let has_connect_subcommand = stdout.lines().any(|line| {
+        let trimmed = line.trim_start();
+        trimmed.starts_with("connect ")
+            || trimmed == "connect"
+    });
     assert!(
-        !stdout.contains("connect"),
-        "Help should NOT mention connect command when client-launch is disabled. Got: {stdout}"
+        !has_connect_subcommand,
+        "Help should NOT list connect as a subcommand when client-launch is disabled"
     );
 }
 
