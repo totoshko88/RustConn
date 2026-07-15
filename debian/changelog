@@ -1,3 +1,14 @@
+rustconn (0.18.9-1) unstable; urgency=medium
+
+  * Security: vault password retrieval now returns Zeroizing<String>
+  * Security: clipboard password wrapped in Zeroizing<String>
+  * Fixed: pre/post-connect tasks enforce 60s timeout ceiling
+  * Fixed: keyring save operations have 5s timeout
+  * Improved: deny.toml cleanup (removed stale ignores)
+  * Dependencies: FreeRDP 3.28.0 → 3.29.0 (22 security fixes)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 15 Jul 2026 12:00:00 +0200
+
 rustconn (0.18.8-1) unstable; urgency=medium
 
   * Version bump to 0.18.8

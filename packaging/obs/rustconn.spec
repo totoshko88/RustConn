@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.8
+Version:        0.18.9
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -261,6 +261,13 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Wed Jul 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.9-0
+- Security: vault password retrieval returns Zeroizing<String>
+- Security: clipboard password wrapped in Zeroizing<String>
+- Fixed: pre/post-connect tasks enforce 60s timeout ceiling
+- Fixed: keyring save operations have 5s timeout
+- Dependencies: FreeRDP 3.28.0 → 3.29.0
+
 * Tue Jul 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.8-0
 - Version bump to 0.18.8
 - Fixed: Network interface change breaks connections (#217)

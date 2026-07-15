@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Wed Jul 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.9
+
+- Version bump to 0.18.9
+  * Security: vault password retrieval returns Zeroizing<String>
+  * Security: clipboard password wrapped in Zeroizing<String>
+  * Fixed: pre/post-connect tasks enforce 60s timeout ceiling
+  * Fixed: keyring save operations have 5s timeout
+  * Improved: deny.toml cleanup
+  * Dependencies: FreeRDP 3.28.0 → 3.29.0 (22 security fixes)
+
+-------------------------------------------------------------------
 Tue Jul 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.8
 
 - Version bump to 0.18.8
