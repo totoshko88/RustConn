@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Secret values from vault backends now properly zeroize intermediates** — `load_variable_from_vault_with_path` returns `Zeroizing<String>` instead of plain `String`, ensuring that password intermediates are wiped from memory when dropped. Previously, a `Zeroizing` wrapper was created but then a new unprotected `String` copy escaped via `String::from(z.as_str())`, defeating the zeroization (9 call sites across Bitwarden, 1Password, Pass, Passbolt, KeePass, LibSecret, EncryptedFile, MacOS Keychain backends)
+- **Clipboard password now wrapped in `Zeroizing<String>`** — the "Copy Password" action previously held the exposed password as a plain `String` in a 30-second GLib timeout closure for clipboard auto-clear comparison. The password is now wrapped in `Zeroizing<String>`, ensuring it is wiped from heap memory when the closure drops
 
 ## [0.18.8] - 2026-07-14
 

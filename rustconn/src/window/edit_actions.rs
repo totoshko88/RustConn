@@ -163,7 +163,7 @@ impl MainWindow {
 
             // Helper closure to copy password to clipboard with auto-clear
             let copy_to_clipboard =
-                |pw_owned: String,
+                |pw_owned: zeroize::Zeroizing<String>,
                  window_weak: &glib::WeakRef<adw::ApplicationWindow>,
                  toast: &SharedToastOverlay| {
                     if let Some(win) = window_weak.upgrade() {
@@ -177,7 +177,7 @@ impl MainWindow {
                             if let Some(cb) = clipboard_weak.upgrade() {
                                 cb.read_text_async(gio::Cancellable::NONE, move |result| {
                                     if let Ok(Some(current)) = result
-                                        && current.as_str() == pw_owned
+                                        && current.as_str() == pw_owned.as_str()
                                         && let Some(cb2) = clipboard_weak.upgrade()
                                     {
                                         cb2.set_text("");
@@ -194,7 +194,7 @@ impl MainWindow {
                 if pw.is_empty() {
                     toast_clone.show_warning(&crate::i18n::i18n("Cached password is empty"));
                 } else {
-                    copy_to_clipboard(pw.to_string(), &window_weak, &toast_clone);
+                    copy_to_clipboard(zeroize::Zeroizing::new(pw.to_string()), &window_weak, &toast_clone);
                 }
                 return;
             }
@@ -214,7 +214,7 @@ impl MainWindow {
                                     toast_clone2
                                         .show_warning(&crate::i18n::i18n("Password is empty"));
                                 } else {
-                                    copy_to_clipboard(pw.to_string(), &window_weak2, &toast_clone2);
+                                    copy_to_clipboard(zeroize::Zeroizing::new(pw.to_string()), &window_weak2, &toast_clone2);
                                 }
                             } else {
                                 toast_clone2.show_warning(&crate::i18n::i18n(
