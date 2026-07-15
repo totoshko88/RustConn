@@ -14,24 +14,10 @@ unmaintained = "workspace"
 yanked = "warn"
 # Transitive dependency advisories with no available fix:
 # - RUSTSEC-2023-0071: rsa Marvin Attack — no patched version; pulled by
-#   ironrdp (sspi) and spice-client. Not exploitable in our local-client context.
+#   ironrdp (sspi). Not exploitable in our local-client context.
+# Last reviewed: 2026-07-15
 ignore = [
     "RUSTSEC-2023-0071",
-    # atomic-polyfill unmaintained — transitive via ironrdp/sspi chain;
-    # no upstream update available.
-    "RUSTSEC-2023-0089",
-    # instant unmaintained — transitive via ironrdp/sspi chain;
-    # no upstream update available.
-    "RUSTSEC-2024-0384",
-    # paste unmaintained — transitive via ironrdp/sspi/cryptoki chain;
-    # no upstream update available.
-    "RUSTSEC-2024-0436",
-    # hickory-proto NSEC3 unbounded loop — transitive via sspi/ironrdp;
-    # pinned to 0.25.x, no safe upgrade available.
-    "RUSTSEC-2026-0118",
-    # hickory-proto O(n²) name compression CPU exhaustion — transitive
-    # via sspi/ironrdp; fix requires >=0.26.1, sspi pins 0.25.x.
-    "RUSTSEC-2026-0119",
 ]
 
 [licenses]
@@ -45,13 +31,10 @@ allow = [
     "Zlib",
     "MPL-2.0",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
     "BSL-1.0",
     "CC0-1.0",
-    "OpenSSL",
     "Unlicense",
     "GPL-3.0-or-later",
-    "GPL-3.0",
     "bzip2-1.0.6",
 ]
 confidence-threshold = 0.8

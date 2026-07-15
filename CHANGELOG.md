@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pre/post-connect tasks no longer block the UI indefinitely** — when a user-defined connection task has no explicit `timeout_ms` configured, the GUI now enforces a 60-second safety ceiling via `tokio::time::timeout`. Previously, a script without a timeout could hang the GTK main thread forever, freezing the entire application
 - **Keyring save operations now have a 5-second timeout** — saving credentials to the system keyring (Bitwarden, 1Password, Passbolt, KeePass passwords) previously called `block_on()` without a timeout. If the Secret Service daemon was unresponsive (locked session, D-Bus issues), the GTK UI would freeze. All 4 save functions now wrap in `tokio::time::timeout(5s)`
 
+### Improved
+
+- **`deny.toml` cleaned up** — removed 5 stale advisory ignores (RUSTSEC-2023-0089, RUSTSEC-2024-0384, RUSTSEC-2024-0436, RUSTSEC-2026-0118, RUSTSEC-2026-0119) that no longer match any crate in Cargo.lock, and 3 unmatched license allowances (GPL-3.0, OpenSSL, Unicode-DFS-2016). Added review date.
+
+### Dependencies
+
+- **FreeRDP 3.28.0 → 3.29.0** (Flatpak/Flathub manifests) — security update resolving 22 advisories including heap buffer overflows in H.264/AV1 decoders, camera channel, X.509 null bytes, and key negotiation
+
 ## [0.18.8] - 2026-07-14
 
 ### Fixed
