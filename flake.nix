@@ -72,7 +72,7 @@
             # Install desktop file and icon
             install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
               $out/share/applications/io.github.totoshko88.RustConn.desktop
-            install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.svg \
+            install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
               $out/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
             # Install metainfo
             install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml \
