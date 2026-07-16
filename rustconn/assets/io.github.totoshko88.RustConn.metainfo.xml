@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.10" date="2026-07-16">
+      <description>
+        <p>Version 0.18.10 - Nix flake and RDP watchdog fix:</p>
+        <ul>
+          <li>Added Nix flake for NixOS / Nix users (nix run, nix profile install)</li>
+          <li>Fixed embedded RDP false Server Incompatible fallback on Windows Server 2019 with AD auth (#218)</li>
+          <li>Fixed FreeRDP fallback Authentication failed on single-session servers</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.9" date="2026-07-15">
       <description>
         <p>Version 0.18.9 - Security and stability improvements:</p>
