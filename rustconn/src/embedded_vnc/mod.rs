@@ -632,8 +632,59 @@ impl EmbeddedVncWidget {
                             drawing_area.display().clipboard().set_text(&text);
                         }
                     }
-                    VncClientEvent::CursorUpdate { .. } => {
-                        // Could update cursor shape
+                    VncClientEvent::CursorUpdate { rect, data } => {
+                        use gtk4::gdk;
+
+                        let w = usize::from(rect.width);
+                        let h = usize::from(rect.height);
+                        let expected = w * h * 4;
+                        if data.len() < expected {
+                            tracing::warn!(
+                                expected,
+                                actual = data.len(),
+                                "VNC cursor bitmap too small, skipping"
+                            );
+                        } else if w == 0 || h == 0 {
+                            // Empty cursor — hide pointer
+                            drawing_area.set_cursor_from_name(Some("none"));
+                        } else {
+                            // ponytail: vnc-rs delivers BGRA matching the negotiated
+                            // pixel format (32bpp little-endian). If vnc-rs ever changes
+                            // its output to RGBA, the R↔B channels here will swap —
+                            // verify after vnc-rs upgrades.
+                            // GDK expects B8G8R8A8 premultiplied, so premultiply
+                            // in-place.
+                            let mut out = data;
+                            out.truncate(expected);
+                            for pixel in out.chunks_exact_mut(4) {
+                                let a = u16::from(pixel[3]);
+                                if a == 0 {
+                                    pixel[0] = 0;
+                                    pixel[1] = 0;
+                                    pixel[2] = 0;
+                                } else if a < 255 {
+                                    pixel[0] = (u16::from(pixel[0]) * a / 255) as u8;
+                                    pixel[1] = (u16::from(pixel[1]) * a / 255) as u8;
+                                    pixel[2] = (u16::from(pixel[2]) * a / 255) as u8;
+                                }
+                            }
+
+                            let bytes = glib::Bytes::from(&out);
+                            let texture = gdk::MemoryTexture::new(
+                                w as i32,
+                                h as i32,
+                                gdk::MemoryFormat::B8g8r8a8Premultiplied,
+                                &bytes,
+                                w * 4,
+                            );
+                            let cursor = gdk::Cursor::from_texture(
+                                &texture,
+                                i32::from(rect.x),
+                                i32::from(rect.y),
+                                None,
+                            );
+                            drawing_area.set_cursor(Some(&cursor));
+                        }
                     }
                     VncClientEvent::AuthRequired => {
                         // Authentication is handled during connection

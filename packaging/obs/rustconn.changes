@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.11
+
+- Version bump to 0.18.11
+  * Fixed: Missing mouse cursor on remote Wayland sessions over VNC (#220)
+  * Fixed: Embedded RDP retry without GFX pipeline before FreeRDP fallback (#218)
+  * Fixed: Nix flake tests no longer run during nix build
+  * Fixed: Nix flake duplicate CHANGELOG entry merged
+
+-------------------------------------------------------------------
 Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.10
 
 - Version bump to 0.18.10

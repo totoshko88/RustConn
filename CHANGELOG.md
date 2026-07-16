@@ -5,6 +5,15 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.11] - 2026-07-16
+
+### Fixed
+
+- **Missing mouse cursor on remote Wayland sessions over VNC (issue #220)** — the embedded VNC client now processes `CursorUpdate` pseudo-encoding events from the server, building a proper GDK cursor texture from the received bitmap. Previously the event was silently ignored, leaving the pointer invisible when the remote host runs a Wayland compositor (which cannot bake the hardware cursor into the framebuffer capture, unlike X11)
+- **Embedded RDP: retry without GFX pipeline before falling back to external FreeRDP (issue #218)** — when the IronRDP GFX/H.264 pipeline fails (decode errors or no first frame within 15s), RustConn now disconnects and retries the same connection with the EGFX channel disabled (Legacy/RemoteFX bitmap path). Only if the retry also fails does it fall back to an external FreeRDP process. This avoids the "Authentication failed" race condition on Windows Servers with single-session policy, where the FreeRDP reconnection was rejected because IronRDP's previous session hadn't fully torn down. The `graphics_mode` field in `RdpClientConfig` is now respected — `Legacy` and `RemoteFx` modes skip EGFX DVC registration entirely
+- **Nix flake: tests no longer run during `nix build`** — added `doCheck = false` to `flake.nix`; the full test suite (argon2 property tests, ~120s) was running unnecessarily during end-user installation. Tests are validated in CI, not at install time
+- **Nix flake: duplicate CHANGELOG entry for 0.18.11** — merged two separate `## [0.18.11]` sections into one
+
 ## [0.18.10] - 2026-07-16
 
 ### Added

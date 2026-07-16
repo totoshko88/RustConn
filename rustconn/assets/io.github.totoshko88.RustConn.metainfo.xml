@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.11" date="2026-07-16">
+      <description>
+        <p>Version 0.18.11 - VNC cursor and RDP fallback improvements:</p>
+        <ul>
+          <li>Fixed missing mouse cursor on remote Wayland sessions over VNC (#220)</li>
+          <li>Embedded RDP now retries without GFX pipeline before falling back to FreeRDP (#218)</li>
+          <li>Nix flake: tests no longer run during nix build</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.10" date="2026-07-16">
       <description>
         <p>Version 0.18.10 - Nix flake and RDP watchdog fix:</p>

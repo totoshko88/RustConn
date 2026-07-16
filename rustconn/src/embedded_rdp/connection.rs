@@ -158,6 +158,12 @@ pub(super) struct RdpConnectionContext {
     pub fallback_config: Rc<RefCell<Option<RdpConfig>>>,
     pub fallback_process: Rc<RefCell<Option<std::process::Child>>>,
     pub clipboard_handler_id: Rc<RefCell<Option<glib::SignalHandlerId>>>,
+    /// Whether we already attempted a retry without GFX pipeline.
+    /// Prevents infinite retry loops. (Issue #218)
+    pub gfx_retry_attempted: Rc<RefCell<bool>>,
+    /// Reconnect callback — triggers a fresh `connect()` with the (now-modified)
+    /// stored config. Shared with the reconnect button.
+    pub on_reconnect: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
 }
 
 impl super::EmbeddedRdpWidget {
@@ -478,6 +484,18 @@ impl super::EmbeddedRdpWidget {
             client_config = client_config.with_keyboard_layout(klid);
         }
 
+        // When GFX pipeline previously failed (e.g. decode errors, no first
+        // frame), retry with Legacy graphics mode — this skips the EGFX DVC
+        // registration entirely and forces RemoteFX/bitmap path. (Issue #218)
+        if config.force_legacy_graphics {
+            tracing::info!(
+                protocol = "rdp",
+                "Retrying with Legacy graphics (GFX pipeline disabled)"
+            );
+            client_config = client_config
+                .with_graphics_mode(rustconn_core::rdp_client::graphics::GraphicsMode::Legacy);
+        }
+
         // Create and connect the IronRDP client
         let mut client = RdpClient::new(client_config);
         client
@@ -719,6 +737,13 @@ impl super::EmbeddedRdpWidget {
         let first_frame_received = std::rc::Rc::new(std::cell::RefCell::new(false));
         let connected_at: std::rc::Rc<std::cell::RefCell<Option<std::time::Instant>>> =
             std::rc::Rc::new(std::cell::RefCell::new(None));
+
+        // GFX retry state: when the GFX pipeline fails (decode errors, no first
+        // frame), we retry once with Legacy graphics mode before falling back to
+        // external FreeRDP. Avoids the double-connection race on single-session
+        // servers where FreeRDP fails with NLA because IronRDP's session hasn't
+        // fully torn down yet. (Issue #218)
+        let gfx_retry_attempted = std::rc::Rc::new(std::cell::RefCell::new(false));
 
         glib::timeout_add_local(
             std::time::Duration::from_millis(polling_interval),
@@ -1481,6 +1506,8 @@ impl super::EmbeddedRdpWidget {
                         fallback_config: fallback_config.clone(),
                         fallback_process: fallback_process.clone(),
                         clipboard_handler_id: clipboard_handler_id.clone(),
+                        gfx_retry_attempted: gfx_retry_attempted.clone(),
+                        on_reconnect: on_reconnect.clone(),
                     };
                     Self::handle_ironrdp_error(error_msg, &ctx);
                 }
@@ -1559,6 +1586,54 @@ impl super::EmbeddedRdpWidget {
                 || msg.contains("no-frame-watchdog"));
 
         if is_protocol_error {
+            // Distinguish GFX-specific errors (decode failure, no-frame-watchdog)
+            // from true protocol incompatibilities (ServerDemandActive, NLA negotiation).
+            // GFX errors get a retry with Legacy graphics before falling back to FreeRDP.
+            let is_gfx_error =
+                msg.contains("no-frame-watchdog") || msg.contains("GFX pipeline decode failure");
+
+            let should_retry_without_gfx = is_gfx_error && !*ctx.gfx_retry_attempted.borrow();
+
+            if should_retry_without_gfx {
+                // Mark retry as attempted to prevent infinite loops
+                *ctx.gfx_retry_attempted.borrow_mut() = true;
+
+                tracing::info!(
+                    protocol = "rdp",
+                    error = %msg,
+                    "[IronRDP] GFX pipeline failed — retrying with Legacy graphics \
+                     (skipping EGFX channel)"
+                );
+
+                // Disconnect the current IronRDP session
+                *ctx.ironrdp_tx.borrow_mut() = None;
+                if let Some(mut c) = ctx.client_ref.borrow_mut().take() {
+                    c.disconnect();
+                }
+
+                // Modify the stored config to force Legacy graphics on retry
+                if let Some(ref mut cfg) = *ctx.fallback_config.borrow_mut() {
+                    cfg.force_legacy_graphics = true;
+                }
+
+                // Schedule reconnect after a brief delay (1s) to allow the
+                // server to fully tear down the previous session. This avoids
+                // NLA rejection on single-session servers. (Issue #218)
+                let on_reconnect = ctx.on_reconnect.clone();
+                let state = ctx.state.clone();
+                let on_state_changed = ctx.on_state_changed.clone();
+                glib::timeout_add_local_once(std::time::Duration::from_secs(1), move || {
+                    *state.borrow_mut() = RdpConnectionState::Connecting;
+                    if let Some(ref cb) = *on_state_changed.borrow() {
+                        cb(RdpConnectionState::Connecting);
+                    }
+                    if let Some(ref callback) = *on_reconnect.borrow() {
+                        callback();
+                    }
+                });
+                return;
+            }
+
             tracing::warn!(
                 protocol = "rdp",
                 error = %msg,
@@ -2099,7 +2174,11 @@ impl super::EmbeddedRdpWidget {
     /// the connection fails.
     pub fn reconnect(&self) -> Result<(), EmbeddedRdpError> {
         let config = self.config.borrow().clone();
-        if let Some(config) = config {
+        if let Some(mut config) = config {
+            // Reset force_legacy_graphics so the GFX pipeline gets another
+            // chance on user-initiated reconnect. If GFX fails again, the
+            // automatic retry will re-enable Legacy mode. (Issue #218)
+            config.force_legacy_graphics = false;
             self.connect(&config)
         } else {
             Err(EmbeddedRdpError::Connection(

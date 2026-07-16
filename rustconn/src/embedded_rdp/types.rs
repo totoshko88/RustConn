@@ -169,6 +169,12 @@ pub struct RdpConfig {
     pub remote_app_args: Option<String>,
     /// RemoteApp display name.
     pub remote_app_name: Option<String>,
+    /// Force Legacy/RemoteFX graphics path (skip GFX/EGFX pipeline).
+    /// Set to `true` on automatic retry when GFX decode fails (issue #218).
+    // ponytail: single bool covers one retry level (GFX→Legacy); if a
+    // multi-step cascade is ever needed (Avc444→H264→RemoteFx→Legacy→FreeRDP),
+    // replace with a `GfxFallbackState` enum and a state machine.
+    pub force_legacy_graphics: bool,
 }
 
 impl Default for RdpConfig {
@@ -207,6 +213,7 @@ impl Default for RdpConfig {
             remote_app_program: None,
             remote_app_args: None,
             remote_app_name: None,
+            force_legacy_graphics: false,
         }
     }
 }

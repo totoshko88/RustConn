@@ -1,3 +1,13 @@
+rustconn (0.18.11-1) unstable; urgency=medium
+
+  * Fixed: Missing mouse cursor on remote Wayland sessions over VNC (#220)
+  * Fixed: Embedded RDP retry without GFX pipeline before falling back to
+    external FreeRDP (#218) — avoids NLA race on single-session servers
+  * Fixed: Nix flake tests no longer run during nix build (doCheck = false)
+  * Fixed: Nix flake duplicate CHANGELOG entry merged
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 16 Jul 2026 14:00:00 +0200
+
 rustconn (0.18.10-1) unstable; urgency=medium
 
   * Added Nix flake for NixOS / Nix users

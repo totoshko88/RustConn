@@ -15,7 +15,9 @@ yanked = "warn"
 # Transitive dependency advisories with no available fix:
 # - RUSTSEC-2023-0071: rsa Marvin Attack — no patched version; pulled by
 #   ironrdp (sspi). Not exploitable in our local-client context.
+#   Upgrade path: sspi drops rsa dependency or rsa 0.10 ships stable.
 # Last reviewed: 2026-07-15
+# Next review: when ironrdp or sspi releases a new major version.
 ignore = [
     "RUSTSEC-2023-0071",
 ]

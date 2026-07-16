@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.18.10** | Last updated: July 2026
+**Version 0.18.11** | Last updated: July 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -884,6 +884,16 @@ let best = detect_best_freerdp();
 **Backend Priority:**
 - **Embedded:** IronRDP (native Rust, always preferred)
 - **External Wayland-first:** wlfreerdp3 → wlfreerdp → sdl-freerdp3 → sdl-freerdp → xfreerdp3 → xfreerdp
+
+**RDP Fallback Strategy (3-step):**
+
+When the embedded IronRDP client encounters issues, it follows a graduated fallback:
+
+1. **GFX/H.264 pipeline** — default when `gfx-h264` feature is enabled and `graphics_mode` is Auto/GfxH264/GfxAvc444
+2. **Retry without GFX** — if the GFX pipeline fails (decode errors or no first frame within 15s), the connection is retried with `GraphicsMode::Legacy` which skips EGFX DVC registration entirely. A 1-second delay between disconnect and retry avoids NLA rejection on single-session Windows Servers. This retry happens at most once per connection attempt (`gfx_retry_attempted` flag).
+3. **External FreeRDP fallback** — if the Legacy retry also fails (or for non-GFX protocol errors like ServerDemandActive incompatibility), the session is handed off to an external FreeRDP process.
+
+Authentication failures (wrong password, locked account) are excluded from fallback — they are reported immediately without retrying.
 
 **Security:** FreeRDP passwords are passed via `/from-stdin` instead of `/p:{password}` command-line argument, preventing exposure via `/proc/PID/cmdline`.
 

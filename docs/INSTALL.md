@@ -335,6 +335,8 @@ nix build
 - The flake builds against nixpkgs `unstable` for GTK4 4.14+ and libadwaita 1.5+.
 - Both `rustconn` (GUI) and `rustconn-cli` are included in the default package.
 - NixOS stable (24.11) should work — GTK4 4.16 and libadwaita 1.6 are available there.
+- Tests are skipped during `nix build` (`doCheck = false`) — the full test suite takes ~120s due to argon2 property tests and is validated in CI instead.
+- After cloning, run `nix flake lock` to generate `flake.lock` for reproducible builds (the lock file is not committed to avoid pinning nixpkgs for all users).
 
 ## Arch Linux (AUR, community-maintained)
 

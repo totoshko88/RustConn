@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.18.6** | Command-line interface for RustConn connection management
+**Version 0.18.11** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 

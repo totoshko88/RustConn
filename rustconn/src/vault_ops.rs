@@ -981,6 +981,8 @@ fn retrieve_by_vault_entry_name(
 pub fn resolve_global_variables(
     settings: &rustconn_core::config::AppSettings,
 ) -> Vec<rustconn_core::Variable> {
+    use zeroize::Zeroize;
+
     let mut vars = settings.global_variables.clone();
     for var in &mut vars {
         if var.is_secret && var.value.is_empty() {
@@ -990,7 +992,13 @@ pub fn resolve_global_variables(
                 var.kdbx_entry_path.as_deref(),
                 var.vault_entry_name.as_deref(),
             ) {
-                Ok(Some(pwd)) => var.value.clone_from(&pwd),
+                Ok(Some(pwd)) => {
+                    // Zeroize the previous value before overwriting — clone_from
+                    // frees the old buffer via the allocator (no zeroize), so a
+                    // stale secret could linger in freed heap memory.
+                    var.value.zeroize();
+                    var.value.clone_from(&pwd);
+                }
                 Ok(None) => {
                     tracing::debug!(var_name = %var.name, "No secret found in vault for variable");
                 }

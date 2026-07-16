@@ -339,9 +339,11 @@ pub async fn establish_connection(
         .with_dynamic_channel(EchoClient::new());
 
     // Register EGFX Graphics Pipeline for H.264/AVC decoding when available.
-    // The channel is created unconditionally — the handler sends decoded frame
-    // updates to the session loop via mpsc. When the feature is off, this block
-    // is compiled out entirely.
+    //
+    // Respects `config.graphics_mode`: Legacy and RemoteFx modes skip the EGFX
+    // channel entirely, forcing the server to use bitmap/RemoteFX updates
+    // through the static channel path. This enables a retry-without-GFX
+    // strategy when the GFX pipeline fails (issue #218).
     //
     // Fallback behavior (Req 6):
     // - When `try_load_openh264()` returns None (library missing), the
@@ -351,15 +353,34 @@ pub async fn establish_connection(
     // - When the `gfx-h264` feature is disabled at compile time, this entire block
     //   is absent — no EGFX DVC is registered, and the session uses the existing
     //   RemoteFX/Legacy rendering path identically to before (Req 6 AC 2, AC 5).
+    // - When `graphics_mode` is Legacy or RemoteFx, the EGFX DVC is not
+    //   registered even if the feature is enabled — the session uses the
+    //   RemoteFX/Legacy path without the GFX pipeline.
     #[cfg(feature = "gfx-h264")]
     let gfx_update_rx = {
+        use crate::rdp_client::graphics::GraphicsMode;
+        let skip_gfx = matches!(
+            config.graphics_mode,
+            GraphicsMode::Legacy | GraphicsMode::RemoteFx
+        );
+
         let (gfx_update_tx, gfx_update_rx) = std::sync::mpsc::channel::<GfxFrameUpdate>();
-        let h264_decoder = try_load_openh264();
-        let h264_available = h264_decoder.is_some();
-        let handler = RustConnGfxHandler::new(gfx_update_tx, event_tx.clone());
-        let gfx_client = GraphicsPipelineClient::new(Box::new(handler), h264_decoder);
-        drdynvc = drdynvc.with_dynamic_channel(gfx_client);
-        tracing::info!(h264_available, "EGFX pipeline registered");
+        if skip_gfx {
+            // Drop the sender — receiver's try_recv() will return Disconnected
+            // immediately, which is fine (the session loop uses `while let Ok`).
+            drop(gfx_update_tx);
+            tracing::info!(
+                graphics_mode = ?config.graphics_mode,
+                "EGFX pipeline skipped (graphics_mode forces Legacy/RemoteFX path)"
+            );
+        } else {
+            let h264_decoder = try_load_openh264();
+            let h264_available = h264_decoder.is_some();
+            let handler = RustConnGfxHandler::new(gfx_update_tx, event_tx.clone());
+            let gfx_client = GraphicsPipelineClient::new(Box::new(handler), h264_decoder);
+            drdynvc = drdynvc.with_dynamic_channel(gfx_client);
+            tracing::info!(h264_available, "EGFX pipeline registered");
+        }
         gfx_update_rx
     };
 

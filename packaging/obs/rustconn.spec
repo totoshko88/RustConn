@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.10
+Version:        0.18.11
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -261,6 +261,12 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.11-0
+- Fixed: Missing mouse cursor on remote Wayland sessions over VNC (#220)
+- Fixed: Embedded RDP retry without GFX before FreeRDP fallback (#218)
+- Fixed: Nix flake tests no longer run during nix build
+- Fixed: Nix flake duplicate CHANGELOG entry merged
+
 * Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.10-0
 - Added Nix flake for NixOS / Nix users
 - Fixed: Embedded RDP to WinServer 2019 AD auth false fallback (#218)

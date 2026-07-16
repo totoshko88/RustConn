@@ -14,7 +14,7 @@
       {
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = "rustconn";
-          version = "0.18.10";
+          version = "0.18.11";
 
           src = self;
 
@@ -42,8 +42,28 @@
             cairo
           ];
 
-          # Build both GUI and CLI
-          cargoBuildFlags = [ "--workspace" "--exclude" "rustconn-pty-sys" ];
+          # Build GUI and CLI as separate cargo invocations because:
+          # - rustconn (GUI) uses its default features (all embedded clients)
+          # - rustconn-cli needs --features full (connect, secret-management, SFTP)
+          # Without --features full, CLI ships without connect/secret/SFTP commands.
+          # (Same fix as release.yml / Flatpak in 0.18.7)
+          buildPhase = ''
+            runHook preBuild
+            cargo build --release --frozen --offline -p rustconn
+            cargo build --release --frozen --offline -p rustconn-cli --features full
+            runHook postBuild
+          '';
+
+          installPhase = ''
+            runHook preInstall
+            install -Dm755 target/release/rustconn $out/bin/rustconn
+            install -Dm755 target/release/rustconn-cli $out/bin/rustconn-cli
+            runHook postInstall
+          '';
+
+          # Skip tests during nix build — they require ~120s (argon2 property tests)
+          # and are not meaningful for end-user installation
+          doCheck = false;
 
           # GUI crate needs gettext (msgfmt) at build time for locale compilation
           RUSTCONN_SKIP_LOCALE_BUILD = "0";

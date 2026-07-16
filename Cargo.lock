@@ -684,9 +684,9 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "cfg_aliases"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
 name = "chacha20"
@@ -5067,7 +5067,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.18.10"
+version = "0.18.11"
 dependencies = [
  "async-channel",
  "chrono",
@@ -5101,7 +5101,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.18.10"
+version = "0.18.11"
 dependencies = [
  "chrono",
  "clap",
@@ -5123,7 +5123,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.18.10"
+version = "0.18.11"
 dependencies = [
  "aes 0.9.1",
  "ar",
@@ -5182,7 +5182,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.18.10"
+version = "0.18.11"
 dependencies = [
  "libc",
 ]
@@ -5754,9 +5754,9 @@ checksum = "3a0219bd7d979d58245a4f41f695e1ac9f8befdffadd7f61f1bae9e39abc6620"
 
 [[package]]
 name = "sspi"
-version = "0.21.2"
+version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "779917c9b8d57b17bb9e2acad050db131aff409201098bc31d550164d645818a"
+checksum = "5c3bd2a45e7e24fd72eba100ced3fd847e05fe4657d7f067eb06d1a894f0d4e5"
 dependencies = [
  "async-dnssd",
  "async-recursion",
@@ -6147,9 +6147,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.52.3"
+version = "1.52.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
+checksum = "317fafbbe3f02fc663dad00ea6186197de963cd4190e86a26d8d0fae095539af"
 dependencies = [
  "bytes",
  "libc",
