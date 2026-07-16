@@ -5,6 +5,25 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.10] - 2026-07-16
+
+### Added
+
+- **Nix flake for NixOS / Nix users** — `flake.nix` in the repository root allows `nix run github:totoshko88/RustConn` or `nix profile install` without waiting for upstream nixpkgs packaging. Both `rustconn` (GUI) and `rustconn-cli` are included. Builds against nixpkgs unstable (GTK4 4.14+, libadwaita 1.5+)
+
+### Fixed
+
+- **Embedded RDP sessions to Windows Server 2019 with AD auth falsely triggered "Server Incompatible" fallback (issue #218)** — the first-frame watchdog timeout (8 seconds) was too short for servers with Active Directory login scripts and Group Policy refresh, which can take 10+ seconds to render the first desktop frame through the GFX/H.264 pipeline introduced in v0.18.5. The timeout is now 15 seconds. Additionally, when the GFX pipeline reports a persistent decode failure (10+ consecutive empty frames), fallback to FreeRDP is triggered immediately instead of waiting for the full timeout
+- **FreeRDP fallback after IronRDP disconnect could fail with "Authentication failed" on single-session servers** — Windows Server configured to restrict users to a single RDP session would reject the FreeRDP reconnection because IronRDP's session was still tearing down. The increased watchdog timeout (15s) reduces false fallback triggers, avoiding the double-connection race entirely for servers that simply need more time to deliver the first frame
+
+### Documentation
+
+- Added NixOS / Nix installation section to `docs/INSTALL.md` with flake usage, home-manager integration example, and local build instructions
+
+### Dependencies
+
+- **Updated**: bitflags 2.13.0→2.13.1, clap 4.6.1→4.6.2, ksni 0.3.5→0.3.6, regex 1.13.0→1.13.1, simd-adler32 0.3.9→0.3.10, sspi 0.21.1→0.21.2, syn 2.0.118→2.0.119, uuid 1.23.5→1.24.0
+
 ## [0.18.9] - 2026-07-15
 
 ### Fixed

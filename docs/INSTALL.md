@@ -85,7 +85,7 @@ flatpak install flathub org.gnome.Platform//50
 #### Install
 
 ```bash
-flatpak install --user RustConn-0.18.9.flatpak
+flatpak install --user RustConn-0.18.10.flatpak
 ```
 
 Confirm runtime dependency installation if prompted.
@@ -299,6 +299,42 @@ OBS packages use tiered feature flags based on the distro's libadwaita version:
 baseline for Ubuntu 24.04 LTS.
 
 All OBS packages: https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn
+
+## NixOS / Nix
+
+RustConn provides a Nix flake for NixOS and any system with Nix installed:
+
+```bash
+# Run without installing
+nix run github:totoshko88/RustConn
+
+# Install into user profile
+nix profile install github:totoshko88/RustConn
+
+# Or add to your NixOS/home-manager configuration as a flake input:
+# flake.nix
+{
+  inputs.rustconn.url = "github:totoshko88/RustConn";
+
+  # In your system/home config:
+  # environment.systemPackages = [ inputs.rustconn.packages.x86_64-linux.default ];
+}
+```
+
+### Build from flake locally
+
+```bash
+git clone https://github.com/totoshko88/RustConn.git
+cd RustConn
+nix build
+./result/bin/rustconn
+```
+
+### Notes
+
+- The flake builds against nixpkgs `unstable` for GTK4 4.14+ and libadwaita 1.5+.
+- Both `rustconn` (GUI) and `rustconn-cli` are included in the default package.
+- NixOS stable (24.11) should work — GTK4 4.16 and libadwaita 1.6 are available there.
 
 ## Arch Linux (AUR, community-maintained)
 

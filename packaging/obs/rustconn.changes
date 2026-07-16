@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.10
+
+- Version bump to 0.18.10
+  * Added Nix flake for NixOS / Nix users
+  * Fixed: Embedded RDP to Windows Server 2019 with AD auth false fallback (#218)
+  * Fixed: FreeRDP fallback "Authentication failed" on single-session servers
+  * Dependencies: bitflags, clap, ksni, regex, sspi, uuid updated
+
+-------------------------------------------------------------------
 Wed Jul 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.9
 
 - Version bump to 0.18.9

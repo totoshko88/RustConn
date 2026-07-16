@@ -535,9 +535,12 @@ impl super::EmbeddedRdpWidget {
         /// How long to wait for the first displayable frame after the server
         /// reports the session as connected before falling back to the external
         /// FreeRDP client. Servers that only offer GFX/H.264 (which IronRDP cannot
-        /// decode yet) connect successfully but never produce a frame; 8 s is long
-        /// enough to rule out a slow first paint on high-latency links. (Fixes #177)
-        const FIRST_FRAME_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(8);
+        /// decode yet) connect successfully but never produce a frame.
+        ///
+        /// 15 s accommodates Windows Server 2019 with AD auth + login scripts
+        /// where the desktop may take 10+ seconds to render the first frame
+        /// through the GFX pipeline. (Fixes #177, #218)
+        const FIRST_FRAME_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
 
         let state = self.state.clone();
         let drawing_area = self.drawing_area.clone();
@@ -1408,15 +1411,24 @@ impl super::EmbeddedRdpWidget {
                                 consecutive_failures,
                             } => {
                                 // GFX H.264 pipeline is failing persistently.
-                                // Log the issue — the session continues with degraded
-                                // quality (empty frames produce stale regions on screen).
-                                // ponytail: in future, show a toast or banner to the
-                                // user; for now just log since the session is still usable.
+                                // This means the server chose a codec we cannot
+                                // decode (e.g. AVC444 on a misconfigured OpenH264).
+                                // Trigger immediate fallback instead of waiting for
+                                // the no-frame-watchdog timeout. (Fixes #218)
                                 tracing::warn!(
                                     protocol = "rdp",
                                     consecutive_failures,
-                                    "GFX H.264 persistent decode failure reported by pipeline"
+                                    "GFX H.264 persistent decode failure — triggering fallback"
                                 );
+                                if !*first_frame_received.borrow() {
+                                    deferred_error = Some(
+                                        "no-frame-watchdog: GFX pipeline decode failure \
+                                         (server codec incompatible with client)"
+                                            .to_string(),
+                                    );
+                                    should_break = true;
+                                    break;
+                                }
                             }
                         }
                     }

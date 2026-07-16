@@ -1,3 +1,14 @@
+rustconn (0.18.10-1) unstable; urgency=medium
+
+  * Added Nix flake for NixOS / Nix users
+  * Fixed: Embedded RDP to Windows Server 2019 with AD auth false
+    "Server Incompatible" fallback (#218) — watchdog timeout raised to 15s
+  * Fixed: FreeRDP fallback "Authentication failed" on single-session servers
+  * Dependencies: bitflags 2.13.0→2.13.1, clap 4.6.1→4.6.2, ksni 0.3.5→0.3.6,
+    regex 1.13.0→1.13.1, sspi 0.21.1→0.21.2, uuid 1.23.5→1.24.0
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 16 Jul 2026 12:00:00 +0200
+
 rustconn (0.18.9-1) unstable; urgency=medium
 
   * Security: vault password retrieval now returns Zeroizing<String>
