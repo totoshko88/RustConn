@@ -1,5 +1,6 @@
 ---
-inclusion: always
+inclusion: manual
+description: "Full project rules reference. Already injected as user-rule at session start — use this only when you need to re-read the rules mid-session."
 ---
 
 # RustConn — Project Rules
@@ -114,6 +115,25 @@ A task is done ONLY when all hold — this is the finish line for `/goal` loops 
 5. No debug leftovers (`dbg!`/`todo!`/`println!`/`eprintln!`)
 
 If a goal-loop can't reach this within its iterations, STOP and report what's blocking — never loosen the gate (drop a test, silence clippy, skip i18n) just to "finish".
+
+#### Escape Hatches (when the gate is blocked by external factors)
+
+When the blocker is NOT your code but an upstream/environmental issue, these are the
+sanctioned workarounds. Each requires a tracking comment and must be reported to the developer.
+
+| Blocker | Sanctioned workaround | Tracking |
+|---------|----------------------|----------|
+| Clippy warning from new upstream lint or compiler upgrade | `#[expect(clippy::lint_name, reason = "upstream issue URL")]` | `// ponytail: remove after next clippy update` |
+| Flaky test (passes locally, fails non-deterministically) | `#[ignore = "flaky: issue #NNN"]` | File an issue, link in the ignore reason |
+| i18n extraction broken (xgettext crash, encoding issue) | Skip POT update, add `// TODO(i18n): re-run po/update-pot.sh after fix` | Report the xgettext bug |
+| Dependency compile error blocking `cargo test` | Pin previous version in `Cargo.toml`, add `// ponytail: unpin after crate X releases fix` | File upstream issue |
+| Test timeout in CI but passes locally | Increase timeout in test with `// ponytail: CI is slower, revert if infra improves` | Note in PR description |
+
+**Rules for escape hatches:**
+- Never use silently — always inform the developer what was bypassed and why.
+- Every workaround has a `// ponytail:` or `#[ignore]` with an issue/URL.
+- Re-check at next release: if the blocker is resolved, remove the workaround.
+- These do NOT apply to your own bugs — only to external/environmental factors.
 
 ### Test Run Rules (CRITICAL)
 

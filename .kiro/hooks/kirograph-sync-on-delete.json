@@ -5,7 +5,7 @@
       "name": "KiroGraph Sync on Delete",
       "description": "Remove deleted files from the KiroGraph index immediately.",
       "trigger": "PostFileDelete",
-      "matcher": "\\.(ts|tsx|js|jsx|py|go|rs|java|cs|rb|php|swift|kt|dart)$",
+      "matcher": "\\.(rs|toml)$",
       "action": {
         "type": "command",
         "command": "kirograph sync-if-dirty 2>/dev/null || true"

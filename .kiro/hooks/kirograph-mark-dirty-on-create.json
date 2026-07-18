@@ -5,7 +5,7 @@
       "name": "KiroGraph Mark Dirty on Create",
       "description": "Mark the KiroGraph index as dirty when source files are created.",
       "trigger": "PostFileCreate",
-      "matcher": "\\.(ts|tsx|js|jsx|py|go|rs|java|cs|rb|php|swift|kt|dart)$",
+      "matcher": "\\.(rs|toml)$",
       "action": {
         "type": "command",
         "command": "kirograph mark-dirty 2>/dev/null || true"
