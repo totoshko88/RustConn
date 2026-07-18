@@ -65,4 +65,4 @@ Omit empty sections — only include sections that have entries.
 - Date format: `YYYY-MM-DD` (ISO 8601)
 - Unreleased work goes under `## [Unreleased]` at the top (added when needed, removed at release)
 - Never leave placeholder text — every entry must be real content
-- The `sync-package-versions` hook and `release-version` steering handle version propagation — CHANGELOG content is always manual
+- The `release-version` hook handles version propagation — CHANGELOG content is always manual

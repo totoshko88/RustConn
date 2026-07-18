@@ -64,6 +64,6 @@ When editing a `.rs` file in `rustconn/src/secret/`:
 When editing `Cargo.lock`:
 - `cargo-security-scan` + `flatpak-manifest-check` fire together
 
-## Known issues
+## Notes
 
-- **KiroGraph matchers** are narrowed to `\.(rs|toml)$` — matches the Rust-only project scope.
+- KiroGraph matchers are scoped to `\.(rs|toml)$` — matching the Rust-only project.

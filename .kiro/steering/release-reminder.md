@@ -31,6 +31,6 @@ When editing `Cargo.toml`, if the workspace version is being bumped:
 
 ## Important
 
-- Version-number propagation to packaging files (flatpak/flathub tags, dsc files, AppImage, docs, spec `Version:` field) is handled by the **manual `release-version` hook** during finalize — run it when testing is done. (The old auto-on-save `sync-package-versions` hook is disabled to avoid an agent call on every Cargo.toml edit.)
+- Version-number propagation to packaging files (flatpak/flathub tags, dsc files, AppImage, docs, spec `Version:` field) is handled by the **manual `release-version` hook** during finalize — run it when testing is done.
 - YOU must handle all changelog/release-notes files manually — neither hook creates changelog entries
 - For full release process details, activate the `rustconn-dev` power and read `release.md` steering
