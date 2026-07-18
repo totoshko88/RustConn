@@ -1,28 +1,16 @@
 {
-  "name": "KiroGraph Sync on Delete",
-  "version": "1.0.0",
-  "description": "Remove deleted files from the KiroGraph index immediately.",
-  "when": {
-    "type": "fileDeleted",
-    "patterns": [
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js",
-      "**/*.jsx",
-      "**/*.py",
-      "**/*.go",
-      "**/*.rs",
-      "**/*.java",
-      "**/*.cs",
-      "**/*.rb",
-      "**/*.php",
-      "**/*.swift",
-      "**/*.kt",
-      "**/*.dart"
-    ]
-  },
-  "then": {
-    "type": "runCommand",
-    "command": "kirograph sync-if-dirty 2>/dev/null || true"
-  }
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "KiroGraph Sync on Delete",
+      "description": "Remove deleted files from the KiroGraph index immediately.",
+      "trigger": "PostFileDelete",
+      "matcher": "\\.(rs|toml)$",
+      "action": {
+        "type": "command",
+        "command": "kirograph sync-if-dirty 2>/dev/null || true"
+      },
+      "enabled": true
+    }
+  ]
 }

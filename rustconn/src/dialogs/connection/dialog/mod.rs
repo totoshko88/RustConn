@@ -183,6 +183,7 @@ pub struct ConnectionDialog {
     rdp_remote_app_program_entry: Entry,
     rdp_remote_app_args_entry: Entry,
     rdp_remote_app_name_entry: Entry,
+    rdp_graphics_mode_dropdown: DropDown,
     // VNC fields
     vnc_client_mode_dropdown: DropDown,
     vnc_performance_mode_dropdown: DropDown,

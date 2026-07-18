@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Sat Jul 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.12
+
+- Version bump to 0.18.12
+- Added Graphics Pipeline selector for embedded RDP connections (issue #218)
+- Fixed missing mouse cursor on remote Wayland VNC sessions (issue #220)
+
+-------------------------------------------------------------------
 Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.11
 
 - Version bump to 0.18.11

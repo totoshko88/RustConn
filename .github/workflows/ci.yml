@@ -37,14 +37,7 @@ jobs:
           toolchain: stable
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libasound2-dev
+        uses: ./.github/actions/install-deps
 
       - name: Cache cargo registry
         uses: actions/cache@v5
@@ -88,14 +81,7 @@ jobs:
           components: clippy
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libasound2-dev
+        uses: ./.github/actions/install-deps
 
       - name: Cache cargo registry
         uses: actions/cache@v5
@@ -123,14 +109,7 @@ jobs:
           toolchain: stable
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libasound2-dev
+        uses: ./.github/actions/install-deps
 
       - name: Cache cargo registry
         uses: actions/cache@v5
@@ -215,14 +194,7 @@ jobs:
           toolchain: 1.95.0
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-4-dev \
-            libvte-2.91-gtk4-dev \
-            libadwaita-1-dev \
-            libdbus-1-dev \
-            libasound2-dev
+        uses: ./.github/actions/install-deps
 
       - name: Cache cargo registry
         uses: actions/cache@v5

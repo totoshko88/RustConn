@@ -168,6 +168,7 @@ impl ConnectionDialog {
             rdp_remote_app_program_entry,
             rdp_remote_app_args_entry,
             rdp_remote_app_name_entry,
+            rdp_graphics_mode_dropdown,
         ) = crate::dialogs::connection::rdp::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -513,6 +514,7 @@ impl ConnectionDialog {
             &rdp_remote_app_program_entry,
             &rdp_remote_app_args_entry,
             &rdp_remote_app_name_entry,
+            &rdp_graphics_mode_dropdown,
             &vnc_client_mode_dropdown,
             &vnc_performance_mode_dropdown,
             &vnc_encoding_dropdown,
@@ -723,6 +725,7 @@ impl ConnectionDialog {
             rdp_remote_app_program_entry,
             rdp_remote_app_args_entry,
             rdp_remote_app_name_entry,
+            rdp_graphics_mode_dropdown,
             vnc_client_mode_dropdown,
             vnc_performance_mode_dropdown,
             vnc_encoding_dropdown,

@@ -1,3 +1,11 @@
+rustconn (0.18.12-1) unstable; urgency=medium
+
+  * Version bump to 0.18.12
+  * Added Graphics Pipeline selector for embedded RDP connections (issue #218)
+  * Fixed missing mouse cursor on remote Wayland VNC sessions (issue #220)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 18 Jul 2026 12:00:00 +0200
+
 rustconn (0.18.11-1) unstable; urgency=medium
 
   * Fixed: Missing mouse cursor on remote Wayland sessions over VNC (#220)

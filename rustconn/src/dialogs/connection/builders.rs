@@ -103,6 +103,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_remote_app_program_entry: &'a Entry,
     pub rdp_remote_app_args_entry: &'a Entry,
     pub rdp_remote_app_name_entry: &'a Entry,
+    pub rdp_graphics_mode_dropdown: &'a DropDown,
     pub vnc_client_mode_dropdown: &'a DropDown,
     pub vnc_performance_mode_dropdown: &'a DropDown,
     pub vnc_encoding_dropdown: &'a DropDown,
@@ -1440,6 +1441,11 @@ impl ConnectionDialogData<'_> {
         RdpConfig {
             client_mode,
             performance_mode,
+            graphics_mode: match self.rdp_graphics_mode_dropdown.selected() {
+                1 => rustconn_core::rdp_client::graphics::GraphicsMode::Legacy,
+                2 => rustconn_core::rdp_client::graphics::GraphicsMode::RemoteFx,
+                _ => rustconn_core::rdp_client::graphics::GraphicsMode::Auto,
+            },
             resolution,
             color_depth,
             audio_redirect: self.rdp_audio_check.is_active(),

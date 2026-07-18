@@ -82,7 +82,6 @@ is the canonical source.
 | `translation-sync` | `rustconn/src/**/*.rs` | ✅ | Add file to `POTFILES.in` when new `i18n()` appears |
 | `uk-translation-review` | `po/uk.po` | ✅ | Invoke `uk-translation-reviewer` sub-agent |
 | `security-review` | secret/credential/password `*.rs` | ✅ | Invoke `security-reviewer` sub-agent (SecretString, zeroize, stdin pipes, no secrets in logs) |
-| `sync-package-versions` | `Cargo.toml` | ❌ disabled | Superseded by `release-version` (see below) |
 
 ### KiroGraph index upkeep (`fileCreated` / `fileEdited` / `fileDeleted` / `agentStop`)
 | Hook | Trigger | Action |
@@ -116,9 +115,8 @@ is the canonical source.
 
 > **Release note:** version-string propagation is done by the manual
 > `release-version` hook at finalize time, **not** automatically on every
-> `Cargo.toml` save. The old auto `sync-package-versions` hook is disabled to
-> avoid an agent call on every dependency edit. Changelog *content* is always
-> written by hand; `release-version` only *propagates* it to packaging formats.
+> `Cargo.toml` save. Changelog *content* is always written by hand;
+> `release-version` only *propagates* it to packaging formats.
 
 ---
 

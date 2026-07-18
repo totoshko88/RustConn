@@ -1083,6 +1083,15 @@ impl ConnectionDialog {
         self.rdp_performance_mode_dropdown
             .set_selected(rdp.performance_mode.index());
 
+        // Set graphics pipeline mode dropdown
+        // 0=Auto, 1=Legacy, 2=RemoteFx
+        self.rdp_graphics_mode_dropdown
+            .set_selected(match rdp.graphics_mode {
+                rustconn_core::rdp_client::graphics::GraphicsMode::Legacy => 1,
+                rustconn_core::rdp_client::graphics::GraphicsMode::RemoteFx => 2,
+                _ => 0, // Auto and any GFX variant → Auto
+            });
+
         if let Some(ref res) = rdp.resolution {
             self.rdp_width_spin.set_value(f64::from(res.width));
             self.rdp_height_spin.set_value(f64::from(res.height));

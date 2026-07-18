@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Post-Task Diagnostics",
+      "description": "After a spec task completes, runs getDiagnostics on the .rs files the task changed. Terminal-free (no cargo), so it is safe under the shared bash session and cannot collide with a running build. Catches compile/type errors per task instead of waiting for the end-of-session agentStop check. Does NOT run fmt/clippy/tests — those stay gated to rust-quality-check.",
+      "trigger": "PostTaskExec",
+      "action": {
+        "type": "agent",
+        "prompt": "A spec task just completed. Verify it left no compile errors, WITHOUT touching the terminal beyond a single git diff.\n\n1. Run `git diff --name-only HEAD -- '*.rs'` to list changed Rust files (ignore the spurious shared-terminal `Exit Code -1` artifact — read the listed paths).\n\n2. If no `.rs` files changed → say nothing, stop.\n\n3. Run `getDiagnostics` on the changed `.rs` files (max 10). Do NOT run `cargo build`, `cargo clippy`, or `cargo test` — getDiagnostics is sufficient and terminal-free.\n\n4. Report ONLY if errors are found (file + message). If all clean → say nothing.\n\nRationale: cargo runs are centralized through the rust-quality-check sub-agent to avoid shared-terminal collisions; this hook is the cheap per-task safety net."
+      },
+      "enabled": true
+    }
+  ]
+}

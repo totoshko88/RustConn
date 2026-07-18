@@ -484,9 +484,25 @@ impl super::EmbeddedRdpWidget {
             client_config = client_config.with_keyboard_layout(klid);
         }
 
+        // Apply user-selected graphics mode for the embedded IronRDP client.
+        // Auto (default) lets IronRDP negotiate GFX/H.264; Legacy/RemoteFx skip
+        // the EGFX pipeline entirely. (Issue #218 — user workaround)
+        if !matches!(
+            config.graphics_mode,
+            rustconn_core::rdp_client::graphics::GraphicsMode::Auto
+        ) {
+            tracing::info!(
+                protocol = "rdp",
+                graphics_mode = ?config.graphics_mode,
+                "User-selected graphics mode applied"
+            );
+            client_config = client_config.with_graphics_mode(config.graphics_mode);
+        }
+
         // When GFX pipeline previously failed (e.g. decode errors, no first
         // frame), retry with Legacy graphics mode — this skips the EGFX DVC
         // registration entirely and forces RemoteFX/bitmap path. (Issue #218)
+        // This overrides the user's graphics_mode for the retry attempt only.
         if config.force_legacy_graphics {
             tracing::info!(
                 protocol = "rdp",
@@ -1592,7 +1608,16 @@ impl super::EmbeddedRdpWidget {
             let is_gfx_error =
                 msg.contains("no-frame-watchdog") || msg.contains("GFX pipeline decode failure");
 
-            let should_retry_without_gfx = is_gfx_error && !*ctx.gfx_retry_attempted.borrow();
+            let should_retry_without_gfx = is_gfx_error && !*ctx.gfx_retry_attempted.borrow()
+                // Skip retry if user already selected a non-GFX graphics mode
+                // (Legacy/RemoteFx) — there's nothing to fall back to.
+                && ctx
+                    .fallback_config
+                    .borrow()
+                    .as_ref()
+                    .is_none_or(|cfg| {
+                        matches!(cfg.graphics_mode, rustconn_core::rdp_client::graphics::GraphicsMode::Auto)
+                    });
 
             if should_retry_without_gfx {
                 // Mark retry as attempted to prevent infinite loops

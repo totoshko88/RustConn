@@ -4,6 +4,7 @@
 //! used by the embedded RDP widget.
 
 use rustconn_core::models::RdpPerformanceMode;
+use rustconn_core::rdp_client::graphics::GraphicsMode;
 use secrecy::SecretString;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -169,8 +170,16 @@ pub struct RdpConfig {
     pub remote_app_args: Option<String>,
     /// RemoteApp display name.
     pub remote_app_name: Option<String>,
+    /// User-selected graphics pipeline mode for the embedded IronRDP client.
+    /// - Auto (default): negotiate GFX/H.264 when available
+    /// - Legacy: skip GFX pipeline entirely (most compatible, fixes #218)
+    /// - RemoteFx: use RemoteFX codec without GFX pipeline
+    ///
+    /// Only relevant for Embedded mode; External (FreeRDP) handles this itself.
+    pub graphics_mode: GraphicsMode,
     /// Force Legacy/RemoteFX graphics path (skip GFX/EGFX pipeline).
     /// Set to `true` on automatic retry when GFX decode fails (issue #218).
+    /// This is an internal retry flag — the user-facing choice is `graphics_mode`.
     // ponytail: single bool covers one retry level (GFX→Legacy); if a
     // multi-step cascade is ever needed (Avc444→H264→RemoteFx→Legacy→FreeRDP),
     // replace with a `GfxFallbackState` enum and a state machine.
@@ -213,6 +222,7 @@ impl Default for RdpConfig {
             remote_app_program: None,
             remote_app_args: None,
             remote_app_name: None,
+            graphics_mode: GraphicsMode::Auto,
             force_legacy_graphics: false,
         }
     }

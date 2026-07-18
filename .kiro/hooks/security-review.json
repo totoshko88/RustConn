@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Security Review on Credential Edits",
+      "description": "Mirror of the uk-translation-review hook, but for credential-handling code. When a secret backend, credential resolver, or password file is edited, it invokes the security-reviewer sub-agent to verify SecretString usage, zeroization of intermediates, stdin pipes for CLI passwords, and the absence of secrets in logs/errors. Forms a 'verification loop' so security invariants are checked automatically instead of relying on memory.",
+      "trigger": "PostFileSave",
+      "matcher": "(rustconn-core/src/secret/.*[^/]*\\.rs$|.*credential[^/]*\\.rs$|.*[^/]*credentials[^/]*\\.rs$|.*[^/]*password[^/]*\\.rs$)",
+      "action": {
+        "type": "agent",
+        "prompt": "A credential-handling Rust file was just edited. Invoke the security-reviewer sub-agent to audit the change. Use invokeSubAgent with name \"security-reviewer\" and a prompt like: \"Review the recently edited credential file(s). Verify: (1) passwords/keys use secrecy::SecretString, never plain String; (2) intermediate expose_secret().to_string() values are wrapped in zeroize::Zeroizing; (3) CLI passwords are passed via stdin pipe, never as process args; (4) no secret values appear in tracing logs, error messages, or Debug output. Report any violation with file and line; if clean, say so briefly.\" Report the sub-agent's findings. If it reports no issues, a one-line confirmation is enough."
+      },
+      "enabled": true
+    }
+  ]
+}

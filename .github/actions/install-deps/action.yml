@@ -1,0 +1,16 @@
+name: Install System Dependencies
+description: Install GTK4/libadwaita/VTE development libraries required to build RustConn
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgtk-4-dev \
+          libvte-2.91-gtk4-dev \
+          libadwaita-1-dev \
+          libdbus-1-dev \
+          libasound2-dev

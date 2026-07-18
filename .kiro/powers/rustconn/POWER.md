@@ -8,6 +8,11 @@ author: "Anton Isaiev"
 
 # RustConn Development Power
 
+> **Note:** This workspace-level power supersedes the user-level `rustconn-dev` power.
+> `rustconn-dev` (in `~/.kiro/powers/installed/`) is a lighter subset for development only.
+> This power (`rustconn`) adds: GitHub MCP server, release steering, github-workflow steering.
+> Both are active — workspace power takes precedence on conflicts.
+
 Linux connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, Zero Trust.
 GTK4/libadwaita GUI, Wayland-first. Rust 2024 edition, MSRV 1.95, three-crate Cargo workspace.
 

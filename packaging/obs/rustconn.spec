@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.18.11
+Version:        0.18.12
 Release:        0
 Summary:        Modern connection manager for Linux (SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, Zero Trust)
 License:        GPL-3.0-or-later
@@ -261,6 +261,11 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
+* Sat Jul 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.12-0
+- Version bump to 0.18.12
+- Added Graphics Pipeline selector for embedded RDP connections (issue #218)
+- Fixed missing mouse cursor on remote Wayland VNC sessions (issue #220)
+
 * Thu Jul 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.11-0
 - Fixed: Missing mouse cursor on remote Wayland sessions over VNC (#220)
 - Fixed: Embedded RDP retry without GFX before FreeRDP fallback (#218)

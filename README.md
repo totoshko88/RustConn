@@ -96,6 +96,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | **AppImage** | [GitHub Releases](https://github.com/totoshko88/RustConn/releases) |
 | **Windows (WSL2)** | Runs under WSLg ([guide](docs/WSL.md)) |
 | **From source** | Rust 1.95+, GTK4 4.14+ ([build guide](docs/BUILD.md)) |
+| **Nix (flake)** | `nix profile install github:totoshko88/RustConn` or add to your flake inputs |
 
 Keyboard shortcuts are customizable in Settings → Keybindings; press `Ctrl+?`
 in the app for the complete, always-current list.

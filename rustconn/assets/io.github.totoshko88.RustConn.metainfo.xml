@@ -140,6 +140,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.18.12" date="2026-07-18">
+      <description>
+        <p>Version 0.18.12 - Graphics Pipeline control and VNC cursor fix:</p>
+        <ul>
+          <li>Added Graphics Pipeline selector (Auto/Legacy/RemoteFX) for embedded RDP connections (issue #218)</li>
+          <li>Fixed missing mouse cursor on remote Wayland VNC sessions (issue #220)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.11" date="2026-07-16">
       <description>
         <p>Version 0.18.11 - VNC cursor and RDP fallback improvements:</p>

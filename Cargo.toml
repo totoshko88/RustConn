@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.18.11"
+version = "0.18.12"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -144,6 +144,7 @@ assigning_clones = "allow"
 # understand why the lint is suppressed.
 allow_attributes_without_reason = "warn"
 clone_on_ref_ptr = "warn"   # catches .clone() on Rc/Arc — prefer Rc::clone(&x)
+redundant_clone = "warn"   # catches .clone() where the value is not used again
 empty_drop = "warn"         # flags empty Drop impls (usually a mistake)
 
 

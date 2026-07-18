@@ -53,6 +53,8 @@ fn map_preferred_encoding(name: &str) -> Option<VncEncoding> {
         "zrle" => Some(VncEncoding::Zrle),
         "copyrect" => Some(VncEncoding::CopyRect),
         "raw" => Some(VncEncoding::Raw),
+        "cursor" => Some(VncEncoding::CursorPseudo),
+        "desktopsize" => Some(VncEncoding::DesktopSizePseudo),
         _ => None,
     }
 }

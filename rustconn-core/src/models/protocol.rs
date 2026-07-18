@@ -1443,6 +1443,11 @@ pub struct RdpConfig {
     /// Performance mode (quality/balanced/speed)
     #[serde(default)]
     pub performance_mode: RdpPerformanceMode,
+    /// Graphics pipeline mode for embedded IronRDP client.
+    /// Auto (default) negotiates GFX/H.264; Legacy skips GFX entirely.
+    /// Only relevant for Embedded mode. (Issue #218)
+    #[serde(default)]
+    pub graphics_mode: crate::rdp_client::graphics::GraphicsMode,
     /// Screen resolution
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resolution: Option<Resolution>,

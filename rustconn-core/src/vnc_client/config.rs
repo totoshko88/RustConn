@@ -43,11 +43,18 @@ impl Default for VncClientConfig {
             // efficient for photographic content and is now decoded to BGRA
             // (see client.rs::decode_jpeg_to_bgra). ZRLE/CopyRect/Raw remain
             // as fallbacks the server can pick from.
+            // Pseudo-encodings follow data encodings per RFB convention:
+            // CursorPseudo makes the server send cursor shape updates instead
+            // of drawing the pointer into the framebuffer (required on Wayland
+            // where the compositor does not composite the hardware cursor).
+            // DesktopSizePseudo enables dynamic resolution change notifications.
             encodings: vec![
                 VncEncoding::Tight,
                 VncEncoding::Zrle,
                 VncEncoding::CopyRect,
                 VncEncoding::Raw,
+                VncEncoding::CursorPseudo,
+                VncEncoding::DesktopSizePseudo,
             ],
             shared: true,
             view_only: false,
@@ -124,6 +131,14 @@ pub enum VncEncoding {
     Tight,
     /// ZRLE encoding (Zlib Run-Length Encoding)
     Zrle,
+    /// Cursor pseudo-encoding (RFB -239): server sends cursor shape separately
+    /// instead of drawing it into the framebuffer. Required for Wayland sessions
+    /// where the compositor does not composite the hardware cursor into the
+    /// captured surface.
+    CursorPseudo,
+    /// Desktop-size pseudo-encoding (RFB -223): server notifies about resolution
+    /// changes instead of disconnecting. Enables dynamic resize.
+    DesktopSizePseudo,
 }
 
 #[cfg(test)]
@@ -163,5 +178,8 @@ mod tests {
         assert_eq!(config.encodings.first(), Some(&VncEncoding::Tight));
         assert!(config.encodings.contains(&VncEncoding::Zrle));
         assert!(config.encodings.contains(&VncEncoding::Raw));
+        // Pseudo-encodings required for Wayland cursor and dynamic resize
+        assert!(config.encodings.contains(&VncEncoding::CursorPseudo));
+        assert!(config.encodings.contains(&VncEncoding::DesktopSizePseudo));
     }
 }

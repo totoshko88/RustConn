@@ -553,6 +553,9 @@ fn start_embedded_rdp_session(
     embedded_config.remote_app_args = rdp_config.remote_app_args.clone();
     embedded_config.remote_app_name = rdp_config.remote_app_name.clone();
 
+    // Pass graphics pipeline mode (Issue #218 — user can disable GFX per-connection)
+    embedded_config.graphics_mode = rdp_config.graphics_mode;
+
     // Pass certificate verification setting
     embedded_config.ignore_certificate = rdp_config.ignore_certificate;
 

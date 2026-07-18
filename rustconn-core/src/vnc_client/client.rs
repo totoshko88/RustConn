@@ -273,13 +273,19 @@ async fn run_vnc_client(
         .allow_shared(config.shared)
         .set_pixel_format(PixelFormat::bgra());
 
-    // Add encodings
+    // Add encodings (data encodings first, then pseudo-encodings per RFB convention)
     for encoding in &config.encodings {
         connector = match encoding {
             super::config::VncEncoding::Tight => connector.add_encoding(VncEncoding::Tight),
             super::config::VncEncoding::Zrle => connector.add_encoding(VncEncoding::Zrle),
             super::config::VncEncoding::CopyRect => connector.add_encoding(VncEncoding::CopyRect),
             super::config::VncEncoding::Raw => connector.add_encoding(VncEncoding::Raw),
+            super::config::VncEncoding::CursorPseudo => {
+                connector.add_encoding(VncEncoding::CursorPseudo)
+            }
+            super::config::VncEncoding::DesktopSizePseudo => {
+                connector.add_encoding(VncEncoding::DesktopSizePseudo)
+            }
         };
     }
 

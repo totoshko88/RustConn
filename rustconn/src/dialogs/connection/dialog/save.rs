@@ -103,6 +103,7 @@ impl ConnectionDialog {
         rdp_remote_app_program_entry: &Entry,
         rdp_remote_app_args_entry: &Entry,
         rdp_remote_app_name_entry: &Entry,
+        rdp_graphics_mode_dropdown: &DropDown,
         vnc_client_mode_dropdown: &DropDown,
         vnc_performance_mode_dropdown: &DropDown,
         vnc_encoding_dropdown: &DropDown,
@@ -294,6 +295,7 @@ impl ConnectionDialog {
         let rdp_remote_app_args_entry = rdp_remote_app_args_entry.clone();
         let rdp_remote_app_name_entry = rdp_remote_app_name_entry.clone();
         let rdp_performance_mode_dropdown = rdp_performance_mode_dropdown.clone();
+        let rdp_graphics_mode_dropdown = rdp_graphics_mode_dropdown.clone();
         let vnc_client_mode_dropdown = vnc_client_mode_dropdown.clone();
         let vnc_encoding_dropdown = vnc_encoding_dropdown.clone();
         let vnc_compression_spin = vnc_compression_spin.clone();
@@ -497,6 +499,7 @@ impl ConnectionDialog {
                 rdp_remote_app_program_entry: &rdp_remote_app_program_entry,
                 rdp_remote_app_args_entry: &rdp_remote_app_args_entry,
                 rdp_remote_app_name_entry: &rdp_remote_app_name_entry,
+                rdp_graphics_mode_dropdown: &rdp_graphics_mode_dropdown,
                 vnc_client_mode_dropdown: &vnc_client_mode_dropdown,
                 vnc_encoding_dropdown: &vnc_encoding_dropdown,
                 vnc_compression_spin: &vnc_compression_spin,

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Crate Boundary & Unsafe Guard",
+      "description": "preToolUse guard that enforces the hardest-to-reverse architectural invariants BEFORE a write lands: no GUI imports in rustconn-core/rustconn-cli, and no `unsafe` outside rustconn-pty-sys. Cheap self-check — stays silent unless the pending write targets a .rs file in a guarded crate. Complements the agentStop `post-session-diagnostics` hook (which catches issues after the fact) and clippy (which catches println!/unwrap! cheaply). Disable if the per-write reflection cost is too high for your workflow.",
+      "trigger": "PreToolUse",
+      "matcher": "^(fs_write|fs_append|str_replace|delete_file|code)$",
+      "action": {
+        "type": "agent",
+        "prompt": "FAST GUARD — do NOT write anything, only verify the PENDING write you are about to perform. This check exists to stop architecture violations that are expensive to discover after a multi-file change.\n\n1. If the target path is NOT a `.rs` file → say nothing, allow the write, stop.\n\n2. If the target is under `rustconn-core/` or `rustconn-cli/` (excluding their `tests/`): the pending content MUST NOT introduce `use gtk4`, `use adw`, `use vte4`, `gtk4::`, `adw::`, or `vte4::`. These crates are GUI-free. If found → DENY: report the offending line and instruct that the GUI code belongs in `rustconn/`. Do not perform the write.\n\n3. For ANY `.rs` target EXCEPT files under `rustconn-pty-sys/`: the pending content MUST NOT introduce `unsafe {`, `unsafe fn`, `unsafe impl`, or `unsafe trait`. `unsafe_code = \"forbid\"` everywhere except the sanctioned `rustconn-pty-sys` FFI crate (M-UNSAFE). If found → DENY: report it and instruct that new FFI must go in a dedicated `rustconn-*-sys` crate. Do not perform the write.\n\n4. Otherwise → allow the write and stay silent (no commentary).\n\nScope is intentionally narrow: do NOT check println!/unwrap!/i18n here — clippy and the agentStop diagnostics hook already cover those cheaply. Keep this check instant."
+      },
+      "enabled": true
+    }
+  ]
+}

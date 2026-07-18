@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Ukrainian Translation Review",
+      "description": "Автоматично викликає агента uk-translation-reviewer при редагуванні файлу po/uk.po для перевірки та виправлення перекладу відповідно до стайл-гайду.",
+      "trigger": "PostFileSave",
+      "matcher": "po/uk\\.po$",
+      "action": {
+        "type": "agent",
+        "prompt": "The file po/uk.po was just edited. Invoke the uk-translation-reviewer sub-agent to review and correct the Ukrainian translations according to the style guide. Use invokeSubAgent with name \"uk-translation-reviewer\" and prompt \"Review the recently edited po/uk.po file. Check all msgstr entries for violations of the Ukrainian Style Guide rules (imperative mood for UI actions, DSTU terminology, Kharkiv orthography, variable preservation). Fix any violations found and report what was changed.\""
+      },
+      "enabled": true
+    }
+  ]
+}

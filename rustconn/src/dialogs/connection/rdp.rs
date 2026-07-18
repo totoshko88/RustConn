@@ -26,7 +26,7 @@ use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 31-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 32-element tuple matching the fields expected by `ConnectionDialog`.
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -59,6 +59,7 @@ pub(super) fn create_rdp_options() -> (
     Entry,
     Entry,
     Entry,
+    DropDown,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -123,6 +124,28 @@ pub(super) fn create_rdp_options() -> (
         .build();
     performance_mode_row.add_suffix(&performance_mode_dropdown);
     display_group.add(&performance_mode_row);
+
+    // Graphics mode dropdown (only relevant for embedded IronRDP client)
+    let gfx_mode_items: Vec<String> = vec![
+        i18n("Automatic"),
+        i18n("Legacy (Compatible)"),
+        i18n("RemoteFX"),
+    ];
+    let gfx_mode_strs: Vec<&str> = gfx_mode_items.iter().map(String::as_str).collect();
+    let gfx_mode_list = StringList::new(&gfx_mode_strs);
+    let graphics_mode_dropdown = DropDown::builder()
+        .model(&gfx_mode_list)
+        .valign(gtk4::Align::Center)
+        .build();
+
+    let graphics_mode_row = adw::ActionRow::builder()
+        .title(i18n("Graphics Pipeline"))
+        .subtitle(i18n(
+            "Automatic uses GFX/H.264 when available. Legacy for older servers.",
+        ))
+        .build();
+    graphics_mode_row.add_suffix(&graphics_mode_dropdown);
+    display_group.add(&graphics_mode_row);
 
     // Resolution
     let res_box = GtkBox::new(Orientation::Horizontal, 4);
@@ -206,12 +229,14 @@ pub(super) fn create_rdp_options() -> (
     display_group.add(&embedded_info_row);
 
     let embedded_info_clone = embedded_info_row.clone();
+    let graphics_mode_row_clone = graphics_mode_row.clone();
     client_mode_dropdown.connect_selected_notify(move |dropdown| {
         let is_embedded = dropdown.selected() == 0;
         resolution_row_clone.set_visible(!is_embedded);
         color_row_clone.set_visible(!is_embedded);
         scale_row_clone.set_visible(is_embedded);
         embedded_info_clone.set_visible(is_embedded);
+        graphics_mode_row_clone.set_visible(is_embedded);
     });
 
     // Set initial state (Embedded - hide resolution/color, show scale)
@@ -704,5 +729,6 @@ pub(super) fn create_rdp_options() -> (
         remote_app_program_entry,
         remote_app_args_entry,
         remote_app_name_entry,
+        graphics_mode_dropdown,
     )
 }

@@ -1,0 +1,89 @@
+# Kiro Workspace Permissions для RustConn
+# Копіювати в: ~/.kiro/workspace-roots/3324a452d6cf05d1/permissions.yaml
+#
+# Зменшує промпти підтвердження для безпечних операцій.
+# Kiro scope deny (записи в .kiro/settings/ та permissions) — не перевизначається.
+
+rules:
+  # ─── Файлова система ─────────────────────────────────────────────
+  - capability: fs_read
+    effect: allow
+
+  - capability: fs_write
+    effect: allow
+    match:
+      - "rustconn-core/**"
+      - "rustconn-cli/**"
+      - "rustconn/**"
+      - "rustconn-pty-sys/**"
+      - "po/**"
+      - "docs/**"
+      - "packaging/**"
+      - "snap/**"
+      - "debian/**"
+      - "scripts/**"
+      - ".kiro/steering/**"
+      - ".kiro/hooks/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "CHANGELOG.md"
+    exclude:
+      - "**/.env"
+      - "**/.env.*"
+      - "**/*.pem"
+      - "**/secrets/**"
+
+  # ─── Shell ───────────────────────────────────────────────────────
+  - capability: shell
+    effect: allow
+    match:
+      - "cargo *"
+      - "git diff*"
+      - "git status*"
+      - "git log*"
+      - "git branch*"
+      - "git show*"
+      - "git stash*"
+      - "grep *"
+      - "rg *"
+      - "find *"
+      - "ls *"
+      - "cat *"
+      - "head *"
+      - "tail *"
+      - "wc *"
+      - "sort *"
+      - "cut *"
+      - "sed *"
+      - "awk *"
+      - "pgrep *"
+      - "bash po/update-pot.sh"
+      - "msgmerge *"
+      - "python3 packaging/*"
+      - "kirograph *"
+    exclude:
+      - "cargo publish*"
+      - "git push*"
+      - "git checkout*"
+      - "git reset*"
+      - "git clean*"
+      - "git merge*"
+      - "git rebase*"
+      - "git tag*"
+
+  # ─── MCP: KiroGraph (всі інструменти) ───────────────────────────
+  - capability: mcp
+    effect: allow
+    match:
+      - "kirograph/*"
+
+  # ─── Web ─────────────────────────────────────────────────────────
+  - capability: web_search
+    effect: allow
+
+  - capability: web_fetch
+    effect: allow
+
+  # ─── Sub-agents ──────────────────────────────────────────────────
+  - capability: subagent
+    effect: allow
