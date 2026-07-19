@@ -1161,7 +1161,7 @@ Available via the "⋯" menu → "Open in System Browser" — opens the current 
 ```bash
 rustconn-cli add --name "AWS Console" --protocol web --host "https://console.aws.amazon.com"
 rustconn-cli add --name "Proxmox" --protocol web --host "https://pve.local:8006" --accept-invalid-certs
-rustconn-cli add --name "Docs" --protocol web --host "file:///usr/share/doc/index.html" --no-javascript
+rustconn-cli add --name "Docs" --protocol web --host "file:///usr/share/doc/index.html" --javascript false
 rustconn-cli add --name "Grafana" --protocol web --host "https://grafana.internal" --browser-mode system
 ```
 

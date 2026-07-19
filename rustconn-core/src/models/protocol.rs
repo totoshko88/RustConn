@@ -3162,9 +3162,9 @@ impl<'de> Deserialize<'de> for WebConfig {
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
 
-        // Validate user_agent length (max 512 chars)
+        // Validate user_agent length (max 512 Unicode characters)
         if let Some(ref ua) = raw.user_agent
-            && ua.len() > 512
+            && ua.chars().count() > 512
         {
             return Err(serde::de::Error::custom(
                 "user_agent exceeds maximum allowed length of 512 characters",

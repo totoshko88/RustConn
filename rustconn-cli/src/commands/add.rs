@@ -118,9 +118,11 @@ pub(super) struct AddParams<'a> {
     pub serial_custom_arg: &'a [String],
     // Web
     pub browser_mode: Option<&'a str>,
-    pub no_javascript: bool,
+    pub javascript: Option<bool>,
     pub user_agent: Option<&'a str>,
-    pub accept_invalid_certs: bool,
+    pub accept_invalid_certs: Option<bool>,
+    pub private_mode: bool,
+    pub zoom_level: Option<f64>,
 }
 
 /// Add connection command handler
@@ -419,12 +421,13 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
 
     // Apply Web-specific settings
     if params.browser_mode.is_some()
-        || params.no_javascript
+        || params.javascript.is_some()
         || params.user_agent.is_some()
-        || params.accept_invalid_certs
+        || params.accept_invalid_certs.is_some()
+        || params.private_mode
+        || params.zoom_level.is_some()
     {
-        if let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) =
-            connection.protocol_config
+        if let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
         {
             if let Some(mode) = params.browser_mode {
                 cfg.browser_mode = match mode {
@@ -434,24 +437,35 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
                     _ => rustconn_core::models::WebBrowserMode::default(),
                 };
             }
-            if params.no_javascript {
-                cfg.javascript_enabled = false;
+            if let Some(js) = params.javascript {
+                cfg.javascript_enabled = js;
             }
             if let Some(ua) = params.user_agent {
-                if ua.len() > 512 {
+                if ua.chars().count() > 512 {
                     return Err(CliError::Config(
                         "--user-agent exceeds maximum allowed length of 512 characters".to_string(),
                     ));
                 }
                 cfg.user_agent = Some(ua.to_string());
             }
-            if params.accept_invalid_certs {
-                cfg.accept_invalid_certs = true;
+            if let Some(certs) = params.accept_invalid_certs {
+                cfg.accept_invalid_certs = certs;
+            }
+            if params.private_mode {
+                cfg.private_mode = true;
+            }
+            if let Some(zoom) = params.zoom_level {
+                if !(0.3..=3.0).contains(&zoom) {
+                    return Err(CliError::Config(
+                        "--zoom-level must be between 0.3 and 3.0".to_string(),
+                    ));
+                }
+                cfg.zoom_level = zoom;
             }
         } else {
             tracing::warn!(
-                "Web-specific options (--browser-mode, --no-javascript, --user-agent, \
-                 --accept-invalid-certs) are only applicable to Web connections"
+                "Web-specific options (--browser-mode, --javascript, --user-agent, \
+                 --accept-invalid-certs, --private-mode, --zoom-level) are only applicable to Web connections"
             );
         }
     }

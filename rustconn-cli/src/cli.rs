@@ -454,17 +454,25 @@ pub enum Commands {
         #[arg(long, value_name = "MODE", value_parser = ["embedded", "system", "custom"])]
         browser_mode: Option<String>,
 
-        /// Disable JavaScript in the embedded WebView (default: enabled)
-        #[arg(long)]
-        no_javascript: bool,
+        /// Enable or disable JavaScript in the embedded WebView [default: true]
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "false")]
+        javascript: Option<bool>,
 
         /// Custom user agent string for the embedded browser (max 512 chars)
         #[arg(long, value_name = "STRING")]
         user_agent: Option<String>,
 
-        /// Accept invalid TLS certificates (self-signed, expired) in embedded browser
+        /// Accept invalid TLS certificates (self-signed, expired) in embedded browser [true/false]
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        accept_invalid_certs: Option<bool>,
+
+        /// Open in private/incognito mode (custom browser only)
         #[arg(long)]
-        accept_invalid_certs: bool,
+        private_mode: bool,
+
+        /// Zoom level for the embedded browser (0.3–3.0, default: 1.0)
+        #[arg(long, value_name = "FLOAT")]
+        zoom_level: Option<f64>,
     },
 
     /// Export connections to external format
@@ -932,17 +940,25 @@ pub enum Commands {
         #[arg(long, value_name = "MODE", value_parser = ["embedded", "system", "custom"])]
         browser_mode: Option<String>,
 
-        /// Disable JavaScript in the embedded WebView (default: enabled)
-        #[arg(long)]
-        no_javascript: bool,
+        /// Enable or disable JavaScript in the embedded WebView [default: true]
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "false")]
+        javascript: Option<bool>,
 
         /// Custom user agent string for the embedded browser (max 512 chars)
         #[arg(long, value_name = "STRING")]
         user_agent: Option<String>,
 
-        /// Accept invalid TLS certificates (self-signed, expired) in embedded browser
+        /// Accept invalid TLS certificates (self-signed, expired) in embedded browser [true/false]
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        accept_invalid_certs: Option<bool>,
+
+        /// Open in private/incognito mode (custom browser only)
         #[arg(long)]
-        accept_invalid_certs: bool,
+        private_mode: bool,
+
+        /// Zoom level for the embedded browser (0.3–3.0, default: 1.0)
+        #[arg(long, value_name = "FLOAT")]
+        zoom_level: Option<f64>,
     },
 
     /// Send Wake-on-LAN magic packet

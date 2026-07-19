@@ -211,9 +211,11 @@ Options:
 | `--serial-flow-control` | — | Serial flow control: `none` (default), `hardware`, `software` |
 | `--serial-custom-arg` | — | Custom serial client argument (repeatable) |
 | `--browser-mode` | — | Web browser mode: `embedded` (default on Linux), `system`, `custom` |
-| `--no-javascript` | — | Disable JavaScript in the embedded browser |
-| `--user-agent` | — | Custom user agent string (max 512 chars) |
-| `--accept-invalid-certs` | — | Accept invalid TLS certificates in embedded browser |
+| `--javascript` | — | Enable/disable JavaScript: `true` (default) or `false`; bare `--javascript` = `false` |
+| `--user-agent` | — | Custom user agent string (max 512 Unicode characters) |
+| `--accept-invalid-certs` | — | Accept invalid TLS certificates: `true`/`false`; bare flag = `true` |
+| `--private-mode` | — | Open in private/incognito mode (custom browser) |
+| `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -262,13 +264,13 @@ rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600 \
 # Web (embedded browser with self-signed cert)
 rustconn-cli add -n "Proxmox" -H "https://pve.local:8006" -P web --accept-invalid-certs
 
-# Web (system browser, no JavaScript)
+# Web (system browser, JavaScript disabled)
 rustconn-cli add -n "Docs" -H "file:///usr/share/doc/index.html" -P web \
-    --browser-mode system --no-javascript
+    --browser-mode system --javascript false
 
-# Web (custom user agent)
+# Web (custom user agent, specific zoom)
 rustconn-cli add -n "Grafana" -H "https://grafana.internal" -P web \
-    --user-agent "RustConn/0.19 Dashboard Monitor"
+    --user-agent "RustConn/0.19 Dashboard Monitor" --zoom-level 0.8
 
 # Kubernetes
 rustconn-cli add -n "Pod" -H pod-name -P k8s

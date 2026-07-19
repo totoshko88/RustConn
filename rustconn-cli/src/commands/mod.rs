@@ -151,9 +151,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             serial_flow_control,
             serial_custom_arg,
             browser_mode,
-            no_javascript,
+            javascript,
             user_agent,
             accept_invalid_certs,
+            private_mode,
+            zoom_level,
         } => add::cmd_add(
             config_path,
             add::AddParams {
@@ -247,9 +249,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 serial_flow_control: serial_flow_control.as_deref(),
                 serial_custom_arg: &serial_custom_arg,
                 browser_mode: browser_mode.as_deref(),
-                no_javascript,
+                javascript,
                 user_agent: user_agent.as_deref(),
                 accept_invalid_certs,
+                private_mode,
+                zoom_level,
             },
         ),
         Commands::Export {
@@ -370,9 +374,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             serial_flow_control,
             serial_custom_arg,
             browser_mode,
-            no_javascript,
+            javascript,
             user_agent,
             accept_invalid_certs,
+            private_mode,
+            zoom_level,
         } => update::cmd_update(
             config_path,
             update::UpdateParams {
@@ -468,9 +474,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 serial_flow_control: serial_flow_control.as_deref(),
                 serial_custom_arg: &serial_custom_arg,
                 browser_mode: browser_mode.as_deref(),
-                no_javascript,
+                javascript,
                 user_agent: user_agent.as_deref(),
                 accept_invalid_certs,
+                private_mode,
+                zoom_level,
             },
         ),
         Commands::Wol {
