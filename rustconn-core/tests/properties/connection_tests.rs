@@ -3,14 +3,14 @@
 //! **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
 //! **Validates: Requirements 1.1, 1.2, 1.3**
 
-use chrono;
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::{
     ConfigManager, Connection, ConnectionManager, ProtocolConfig, RdpConfig, RdpGateway,
     Resolution, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
-use std::collections::HashMap;
-use std::path::PathBuf;
 use tempfile::TempDir;
 use uuid::Uuid;
 

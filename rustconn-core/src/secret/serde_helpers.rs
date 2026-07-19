@@ -45,9 +45,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use secrecy::ExposeSecret;
     use serde::Deserialize;
+
+    use super::*;
 
     #[derive(Deserialize)]
     struct Wrapper {

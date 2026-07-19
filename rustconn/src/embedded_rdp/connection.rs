@@ -3,22 +3,21 @@
 //! Contains connect, disconnect, reconnect, and connection status methods
 //! including IronRDP native client integration and FreeRDP fallback.
 
-use gtk4::glib;
-use gtk4::prelude::*;
-use secrecy::ExposeSecret;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::i18n::{i18n, i18n_f};
+use gtk4::glib;
+use gtk4::prelude::*;
+#[cfg(feature = "rdp-embedded")]
+use rustconn_core::rdp_client::RdpClientCommand;
+use secrecy::ExposeSecret;
 
 use super::launcher::{SafeFreeRdpLauncher, StderrLines};
 use super::thread::FreeRdpThread;
 use super::types::{
     EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpConnectionState, RdpEvent,
 };
-
-#[cfg(feature = "rdp-embedded")]
-use rustconn_core::rdp_client::RdpClientCommand;
+use crate::i18n::{i18n, i18n_f};
 
 /// Classifies FreeRDP stderr output into a user-friendly error message.
 ///
@@ -1677,7 +1676,7 @@ impl super::EmbeddedRdpWidget {
             }
 
             // Attempt FreeRDP external fallback via SafeFreeRdpLauncher
-            // (uses /from-stdin to avoid exposing password in /proc/PID/cmdline)
+            // (uses ephemeral args file to avoid exposing password in /proc/PID/cmdline)
             let fallback_result = ctx
                 .fallback_config
                 .borrow()

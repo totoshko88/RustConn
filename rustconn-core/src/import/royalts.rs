@@ -10,13 +10,12 @@ use quick_xml::Reader;
 use quick_xml::events::Event;
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
     SshConfig, VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Royal TS SSH connection data
 #[derive(Debug, Clone, Default)]

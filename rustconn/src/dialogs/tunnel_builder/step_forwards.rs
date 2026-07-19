@@ -4,15 +4,16 @@
 //! and tunnel options (auto-start, auto-reconnect). Each rule is displayed as
 //! an `adw::ExpanderRow` with dynamic title showing the current configuration.
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use libadwaita as adw;
 use rustconn_core::models::{PortForward, PortForwardDirection};
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use super::TunnelPathDiagram;
+use crate::i18n::i18n;
 
 // ---------------------------------------------------------------------------
 // Constants

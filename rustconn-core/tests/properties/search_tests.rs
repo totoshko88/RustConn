@@ -764,8 +764,9 @@ mod edge_case_tests {
 // These tests validate the correctness properties for the SearchCache
 // as defined in the performance-improvements design document.
 
-use rustconn_core::{ConnectionSearchResult, SearchCache};
 use std::time::Duration;
+
+use rustconn_core::{ConnectionSearchResult, SearchCache};
 
 /// Strategy for generating cache query strings
 fn arb_cache_query() -> impl Strategy<Value = String> {

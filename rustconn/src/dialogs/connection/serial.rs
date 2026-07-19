@@ -4,8 +4,6 @@
 //! data bits, stop bits, parity, and flow control settings.
 //! Serial uses an external `picocom` CLI client via VTE terminal.
 
-use super::protocol_layout::ProtocolLayoutBuilder;
-use super::widgets::EntryRowBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, DropDown, Entry, StringList};
@@ -14,6 +12,8 @@ use rustconn_core::{
     SerialBaudRate, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
 };
 
+use super::protocol_layout::ProtocolLayoutBuilder;
+use super::widgets::EntryRowBuilder;
 use crate::i18n::{i18n, i18n_f};
 
 /// Return type for Serial options creation

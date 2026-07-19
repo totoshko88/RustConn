@@ -5,13 +5,15 @@
 //! Each button shows icon + label + subtitle for discoverability.
 //! Clicking a protocol advances to Step 2.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Image, Label, Orientation};
 use libadwaita as adw;
 use rustconn_core::models::ProtocolType;
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Protocol page — Step 1 of the wizard
 pub struct ProtocolPage {

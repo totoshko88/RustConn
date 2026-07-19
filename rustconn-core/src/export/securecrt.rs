@@ -12,11 +12,10 @@ use std::path::Path;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
 /// SecureCRT session file exporter.
 ///

@@ -4,11 +4,12 @@
 //! Dialogs use `adw::Dialog` for GNOME HIG compliance (bottom-sheet on narrow,
 //! auto-close on Escape, drag-to-close).
 
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use crate::alert;

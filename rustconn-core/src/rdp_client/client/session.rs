@@ -1,22 +1,23 @@
-#[cfg(feature = "gfx-h264")]
-use super::super::gfx_handler::GfxFrameUpdate;
-use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
-use super::commands::process_command;
-use super::connection::UpgradedFramed;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use ironrdp::connector::ConnectionResult;
 use ironrdp::connector::connection_activation::{
     ConnectionActivationFactory, ConnectionActivationState,
 };
 use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
 use ironrdp::pdu::WriteBuf;
-use ironrdp::session::ActiveStageBuilder;
 use ironrdp::session::image::DecodedImage;
-use ironrdp::session::{ActiveStage, ActiveStageOutput, fast_path};
+use ironrdp::session::{ActiveStage, ActiveStageBuilder, ActiveStageOutput, fast_path};
 use ironrdp_tokio::{
     Framed, FramedRead, FramedWrite, single_sequence_step_read, split_tokio_framed,
 };
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+
+#[cfg(feature = "gfx-h264")]
+use super::super::gfx_handler::GfxFrameUpdate;
+use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
+use super::commands::process_command;
+use super::connection::UpgradedFramed;
 
 /// Runs the active RDP session, processing framebuffer updates and input
 ///
@@ -24,7 +25,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// EGFX frame updates from the `GraphicsPipelineHandler`. The session loop
 /// drains it after each `ActiveStage::process()` call to convert RGBA→BGRA
 /// and emit `FrameUpdate` events to the GUI.
-pub async fn run_active_session(
+pub(super) async fn run_active_session(
     framed: UpgradedFramed,
     connection_result: ConnectionResult,
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,

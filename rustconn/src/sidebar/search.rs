@@ -1,9 +1,10 @@
 //! Search logic for the sidebar
-use gtk4::prelude::*;
-use gtk4::{Button, EventControllerKey, Label, Orientation, Popover, SearchEntry, glib};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
+use gtk4::{Button, EventControllerKey, Label, Orientation, Popover, SearchEntry, glib};
 
 use crate::sidebar_types::MAX_SEARCH_HISTORY;
 

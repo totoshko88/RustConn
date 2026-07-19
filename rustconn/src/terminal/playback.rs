@@ -12,18 +12,17 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, Label, ListBox, ListBoxRow, Orientation, Popover, ScrolledWindow,
-    SearchEntry,
+    SearchEntry, glib,
+};
+use rustconn_core::session::recording::{
+    RecordingEntry, RecordingManager, RecordingReader, default_recordings_dir,
 };
 use vte4::prelude::*;
 
 use crate::i18n::i18n;
-use rustconn_core::session::recording::{
-    RecordingEntry, RecordingManager, RecordingReader, default_recordings_dir,
-};
 
 // ---------------------------------------------------------------------------
 // PlaybackState

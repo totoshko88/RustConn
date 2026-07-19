@@ -28,11 +28,10 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, Zeroizing};
 
-use crate::error::{SecretError, SecretResult};
-use crate::models::Credentials;
-
 use super::backend::SecretBackend;
 use super::local_crypto::{decrypt_credential, encrypt_credential, get_machine_key};
+use crate::error::{SecretError, SecretResult};
+use crate::models::Credentials;
 
 /// File name (under the XDG data dir) holding the encrypted credential map.
 const STORE_FILE_NAME: &str = "credentials.enc";

@@ -6,12 +6,11 @@ use std::fmt::Write;
 
 use tracing::{debug, info_span};
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-use crate::tracing::span_names;
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
+use crate::tracing::span_names;
 
 /// SSH config file exporter.
 ///
@@ -269,8 +268,9 @@ fn escape_value(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

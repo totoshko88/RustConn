@@ -3,11 +3,13 @@
 //! This module provides a common interface for embedded protocol widgets (RDP, VNC, SPICE).
 //! It reduces code duplication by defining shared behavior and types.
 
-use crate::i18n::i18n;
-use gtk4::Box as GtkBox;
-use gtk4::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use gtk4::Box as GtkBox;
+use gtk4::prelude::*;
+
+use crate::i18n::i18n;
 
 /// Common connection state for all embedded protocols
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

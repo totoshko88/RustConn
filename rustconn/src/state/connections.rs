@@ -2,16 +2,16 @@
 //!
 //! Extracted from `state.rs` as part of ARCH-5 decomposition.
 
-use crate::async_utils::with_runtime;
-use crate::vault_ops::{
-    delete_group_vault_credential, delete_vault_credential, migrate_vault_entries_on_group_change,
-    rename_vault_credential_for_move,
-};
 use rustconn_core::error::ConfigResult;
 use rustconn_core::models::{Connection, ConnectionGroup};
 use uuid::Uuid;
 
 use super::AppState;
+use crate::async_utils::with_runtime;
+use crate::vault_ops::{
+    delete_group_vault_credential, delete_vault_credential, migrate_vault_entries_on_group_change,
+    rename_vault_credential_for_move,
+};
 
 impl AppState {
     /// Creates a new connection
@@ -83,6 +83,9 @@ impl AppState {
     /// credentials deleted from the configured backend before the trash
     /// entries are removed. Credential cleanup failures are logged but
     /// do not prevent the trash from being emptied.
+    ///
+    /// Also removes webkit session data directories for Web connections
+    /// (`~/.local/share/rustconn/webkit/<uuid>/` and `~/.cache/rustconn/webkit/<uuid>/`).
     pub fn empty_trash(&mut self) -> ConfigResult<()> {
         use rustconn_core::models::PasswordSource;
 
@@ -101,6 +104,15 @@ impl AppState {
             .into_iter()
             .filter(|c| c.password_source == PasswordSource::Vault)
             .cloned()
+            .collect();
+
+        // Collect all trashed connection IDs for webkit session cleanup
+        #[cfg(feature = "web-embedded")]
+        let trashed_connection_ids: Vec<uuid::Uuid> = self
+            .connection_manager
+            .list_trash_connections()
+            .iter()
+            .map(|c| c.id)
             .collect();
 
         // Collect vault groups from trash for credential cleanup
@@ -128,6 +140,33 @@ impl AppState {
                     group_name = %group.name,
                     error = %e,
                     "Failed to clean up group vault credential on permanent delete"
+                );
+            }
+        }
+
+        // Remove webkit session data/cache directories for permanently deleted connections
+        #[cfg(feature = "web-embedded")]
+        for conn_id in &trashed_connection_ids {
+            let data_dir = crate::embedded_web::session_data_dir(conn_id);
+            let cache_dir = crate::embedded_web::session_cache_dir(conn_id);
+            if data_dir.exists()
+                && let Err(e) = std::fs::remove_dir_all(&data_dir)
+            {
+                tracing::warn!(
+                    connection_id = %conn_id,
+                    path = %data_dir.display(),
+                    error = %e,
+                    "Failed to remove webkit session data directory"
+                );
+            }
+            if cache_dir.exists()
+                && let Err(e) = std::fs::remove_dir_all(&cache_dir)
+            {
+                tracing::warn!(
+                    connection_id = %conn_id,
+                    path = %cache_dir.display(),
+                    error = %e,
+                    "Failed to remove webkit session cache directory"
                 );
             }
         }
@@ -513,6 +552,33 @@ impl AppState {
         self.connection_manager
             .update_last_connected(connection_id)
             .map_err(|e| format!("Failed to update last connected: {e}"))
+    }
+
+    /// Updates the persisted zoom level for a Web connection.
+    ///
+    /// Called by the debounced zoom-change handler in the embedded web widget.
+    /// Only updates when the connection uses `ProtocolConfig::Web`.
+    pub fn update_web_zoom_level(&mut self, connection_id: Uuid, zoom_level: f64) {
+        use rustconn_core::models::ProtocolConfig;
+
+        let Some(conn) = self.connection_manager.get_connection(connection_id) else {
+            tracing::debug!(%connection_id, "Connection not found for zoom persist");
+            return;
+        };
+
+        let mut updated = conn.clone();
+        if let ProtocolConfig::Web(ref mut web_config) = updated.protocol_config {
+            web_config.zoom_level = zoom_level.clamp(0.3, 3.0);
+        } else {
+            return;
+        }
+
+        if let Err(e) = self
+            .connection_manager
+            .update_connection(connection_id, updated)
+        {
+            tracing::debug!(%connection_id, %e, "Failed to persist zoom level");
+        }
     }
 
     /// Sorts all connections by `last_connected` timestamp (most recent first)

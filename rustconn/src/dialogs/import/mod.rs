@@ -8,6 +8,9 @@
 
 mod sources;
 
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -20,8 +23,6 @@ use rustconn_core::import::{
     LibvirtXmlImporter, RemminaImporter, SshConfigImporter,
 };
 use rustconn_core::progress::LocalProgressReporter;
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
 
 use crate::i18n::{i18n, i18n_f};
 

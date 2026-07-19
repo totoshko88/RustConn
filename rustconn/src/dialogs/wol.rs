@@ -4,15 +4,17 @@
 //! the Tools menu. Allows picking a connection with WoL configured
 //! or entering MAC address manually.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Orientation};
 use libadwaita as adw;
 use rustconn_core::models::Connection;
 use rustconn_core::wol::{MacAddress, WolConfig};
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Standalone Wake On LAN dialog
 pub struct WolDialog {

@@ -3,10 +3,11 @@
 //! This module provides functionality to wake sleeping machines before connecting
 //! by sending magic packets to their MAC addresses.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::net::UdpSocket;
 use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Errors related to Wake On LAN operations

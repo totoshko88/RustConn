@@ -33,12 +33,13 @@ pub mod widgets;
 mod wol;
 mod workspace;
 
-pub use adw_dialogs::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
+pub use adw_dialogs::*;
 pub use backend_missing::{BackendMissingResponse, show_backend_missing_dialog};
 pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog};
-pub use command_palette::CommandPaletteDialog;
-pub use command_palette::OpenTabInfo;
+pub use command_palette::{CommandPaletteDialog, OpenTabInfo};
 pub use connection::ConnectionDialog;
 pub use connection_wizard::{ConnectionWizard, PartialConnection, WizardResult};
 pub use document::{
@@ -54,6 +55,11 @@ pub use password::{PasswordDialog, PasswordDialogResult};
 pub use password_generator::show_password_generator_dialog;
 pub use progress::ProgressDialog;
 pub use recording::RecordingsDialog;
+use rustconn_core::config::AppSettings;
+use rustconn_core::import::ImportResult;
+use rustconn_core::models::{Connection, Snippet};
+use rustconn_core::variables::Variable;
+use secrecy::SecretString;
 pub use settings::SettingsDialog;
 pub use shortcuts::ShortcutsDialog;
 pub use smart_folder::{SmartFolderCallback, SmartFolderDialog};
@@ -67,14 +73,6 @@ pub use variable_setup::{VariableSetupResponse, show_variable_setup_dialog};
 pub use variables::VariablesDialog;
 pub use wol::WolDialog;
 pub use workspace::WorkspaceManagerDialog;
-
-use rustconn_core::config::AppSettings;
-use rustconn_core::import::ImportResult;
-use rustconn_core::models::{Connection, Snippet};
-use rustconn_core::variables::Variable;
-use secrecy::SecretString;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 /// Result from connection dialog containing connection and optional password
 #[derive(Debug, Clone)]

@@ -3,7 +3,9 @@
 //! Shows auth options for protocols that need them, a color profile
 //! selector for VTE-based protocols, and Save/Save & Connect buttons.
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Orientation, PasswordEntry, ScrolledWindow, StringList};
@@ -11,8 +13,8 @@ use libadwaita as adw;
 use rustconn_core::models::{ConnectionThemeOverride, ProtocolType, SshAuthMethod};
 use rustconn_core::terminal_themes::TerminalTheme;
 use secrecy::SecretString;
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::i18n;
 
 /// Authentication page — Step 3 of the wizard
 pub struct AuthPage {

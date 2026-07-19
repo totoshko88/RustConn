@@ -2,14 +2,14 @@
 //!
 //! Client detection is performed asynchronously to avoid blocking the UI thread.
 
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Label, Spinner};
-use libadwaita as adw;
-use rustconn_core::protocol::ClientDetectionResult;
 use std::path::PathBuf;
 use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Label, Spinner, glib};
+use libadwaita as adw;
+use rustconn_core::protocol::ClientDetectionResult;
 
 use crate::i18n::{i18n, i18n_f};
 

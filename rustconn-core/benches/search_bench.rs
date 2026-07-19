@@ -6,6 +6,7 @@
     clippy::cast_possible_truncation,
     reason = "module-wide override for legacy code; refactored case by case"
 )]
+#![allow(clippy::unwrap_used, reason = "benchmarks use unwrap for brevity")]
 #![allow(
     clippy::cast_possible_wrap,
     reason = "module-wide override for legacy code; refactored case by case"
@@ -19,11 +20,12 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
+use std::hint::black_box;
+
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};
 use rustconn_core::search::{SearchEngine, SearchQuery};
 use rustconn_core::sync::SyncMode;
-use std::hint::black_box;
 use uuid::Uuid;
 
 /// Creates test connections for benchmarking

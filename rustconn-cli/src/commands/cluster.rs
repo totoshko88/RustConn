@@ -17,7 +17,10 @@ use crate::util::{create_config_manager, find_connection};
 /// - [`CliError::Config`] when configuration cannot be read or written
 /// - [`CliError::ConnectionNotFound`] when a referenced connection does not exist
 /// - [`CliError::Cluster`] when a cluster operation fails (duplicate name, missing cluster)
-pub fn cmd_cluster(config_path: Option<&Path>, subcmd: ClusterCommands) -> Result<(), CliError> {
+pub(super) fn cmd_cluster(
+    config_path: Option<&Path>,
+    subcmd: ClusterCommands,
+) -> Result<(), CliError> {
     match subcmd {
         ClusterCommands::List { format } => cmd_cluster_list(config_path, format.effective()),
         ClusterCommands::Show { name } => cmd_cluster_show(config_path, &name),

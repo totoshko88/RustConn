@@ -6,9 +6,8 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
-
 use super::{ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget};
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
 /// Asbru-CM YAML exporter.
 ///
@@ -347,8 +346,9 @@ fn escape_yaml_string(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

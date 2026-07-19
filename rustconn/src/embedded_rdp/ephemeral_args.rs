@@ -24,13 +24,13 @@
 //! parsing, dropping the guard immediately after `child.try_wait()`
 //! returns `None` is safe.
 
-use secrecy::{ExposeSecret, SecretString};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
 use rustconn_core::error::SecretResult;
+use secrecy::{ExposeSecret, SecretString};
 
 /// Single-use args file containing only the RemoteApp password line.
 ///
@@ -154,8 +154,9 @@ impl std::fmt::Debug for EphemeralRdpArgs {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
 
     /// Creates a temporary directory mode 0700 to mimic `$XDG_RUNTIME_DIR`.
     /// The directory and its contents are removed when the returned guard

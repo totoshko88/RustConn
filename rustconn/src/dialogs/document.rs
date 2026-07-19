@@ -2,8 +2,10 @@
 //!
 //! Provides dialogs for creating, opening, saving, and managing documents.
 
-use crate::alert::{self, SaveChangesResponse};
-use crate::i18n::{i18n, i18n_f};
+use std::cell::{Cell, RefCell};
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -11,10 +13,10 @@ use gtk4::{
 };
 use libadwaita as adw;
 use secrecy::SecretString;
-use std::cell::{Cell, RefCell};
-use std::path::PathBuf;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::alert::{self, SaveChangesResponse};
+use crate::i18n::{i18n, i18n_f};
 
 /// Callback type for document dialog results
 pub type DocumentCallback = Rc<RefCell<Option<Box<dyn Fn(Option<DocumentDialogResult>)>>>>;

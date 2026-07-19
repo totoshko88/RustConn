@@ -9,8 +9,7 @@ use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::terminal_themes::TerminalTheme;
 
-use crate::i18n::i18n;
-use crate::i18n::i18n_f;
+use crate::i18n::{i18n, i18n_f};
 
 /// Creates the terminal settings page using AdwPreferencesPage
 #[expect(

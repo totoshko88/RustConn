@@ -1,9 +1,8 @@
 //! Serial protocol handler
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SerialFlowControl, SerialParity, SerialStopBits};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Serial protocol handler
 ///

@@ -1784,9 +1784,10 @@ impl ConnectionManager {
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::models::{ProtocolConfig, SshConfig};
-    use tempfile::TempDir;
 
     fn create_test_manager() -> (ConnectionManager, TempDir) {
         let temp_dir = TempDir::new().unwrap();

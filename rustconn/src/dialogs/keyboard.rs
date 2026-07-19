@@ -3,9 +3,8 @@
 //! This module provides reusable functions for improving keyboard navigation
 //! in dialog windows, following GNOME HIG guidelines.
 
-use gtk4::gdk;
-use gtk4::glib;
 use gtk4::prelude::*;
+use gtk4::{gdk, glib};
 
 /// Sets up standard keyboard shortcuts for a dialog window.
 ///

@@ -5,23 +5,19 @@
 //!
 //! Extracted from `embedded_vnc.rs` as part of ARCH-5 decomposition.
 
-use gtk4::gdk;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick,
-    Label, Orientation,
-};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::i18n::{i18n, i18n_f};
+use gtk4::prelude::*;
+use gtk4::{
+    Box as GtkBox, Button, DrawingArea, EventControllerKey, EventControllerMotion, GestureClick,
+    Label, Orientation, gdk, glib,
+};
 
-use super::EmbeddedVncWidget;
 #[cfg(feature = "vnc-embedded")]
 use super::VncClientCommand;
-use super::VncConnectionState;
-use super::find_best_standard_resolution;
+use super::{EmbeddedVncWidget, VncConnectionState, find_best_standard_resolution};
+use crate::i18n::{i18n, i18n_f};
 
 impl EmbeddedVncWidget {
     /// Creates a new embedded VNC widget

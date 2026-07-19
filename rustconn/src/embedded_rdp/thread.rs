@@ -10,18 +10,18 @@
 //! holding the lock), we recover gracefully by extracting the inner value and
 //! setting an error state rather than propagating the panic.
 
-use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
-use secrecy::ExposeSecret;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
-use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread::{self, JoinHandle};
 
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::ClipboardFileInfo;
+use secrecy::ExposeSecret;
+
+use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpEvent};
 
 // ============================================================================
 // Clipboard File Transfer State (for rdp-embedded feature)
@@ -400,13 +400,41 @@ impl FreeRdpThread {
             cmd.arg(format!("/u:{username}"));
         }
 
-        if let Some(ref password) = config.password
-            && !password.expose_secret().is_empty()
-        {
-            // Use /from-stdin to avoid exposing password in /proc/PID/cmdline
-            cmd.arg("/from-stdin");
-            cmd.stdin(Stdio::piped());
+        // Session password is passed via a single-use args file in
+        // $XDG_RUNTIME_DIR (mode 0600) consumed by `/args-from:file:`.
+        //
+        // The previous `/from-stdin` approach broke on servers behind an RD
+        // Connection Broker: the broker issues a Server Redirection PDU,
+        // FreeRDP reconnects to the target host and needs the credentials
+        // again — but stdin is already consumed (issue #218). The args-file
+        // stores `/p:<password>` in a temp file that FreeRDP reads once into
+        // memory, surviving redirects without exposing the secret in
+        // `/proc/<pid>/cmdline`.
+        let session_password = config
+            .password
+            .as_ref()
+            .filter(|p| !p.expose_secret().is_empty());
+
+        let mut secret_args: Vec<(&str, &secrecy::SecretString)> = Vec::new();
+        if let Some(p) = session_password {
+            secret_args.push(("p", p));
         }
+
+        let _password_guard = if secret_args.is_empty() {
+            None
+        } else {
+            match super::ephemeral_args::EphemeralRdpArgs::write_args(&secret_args) {
+                Ok(guard) => {
+                    cmd.arg(format!("/args-from:file:{}", guard.path().display()));
+                    Some(guard)
+                }
+                Err(e) => {
+                    return Err(EmbeddedRdpError::FreeRdpInit(format!(
+                        "could not prepare RDP credentials file: {e}"
+                    )));
+                }
+            }
+        };
 
         cmd.arg(format!("/w:{}", config.width));
         cmd.arg(format!("/h:{}", config.height));
@@ -435,16 +463,10 @@ impl FreeRdpThread {
         cmd.stderr(Stdio::null());
 
         match cmd.spawn() {
-            Ok(mut child) => {
-                // Write password via stdin when /from-stdin is used
-                if let Some(ref password) = config.password
-                    && !password.expose_secret().is_empty()
-                    && let Some(mut stdin) = child.stdin.take()
-                {
-                    use std::io::Write;
-                    let _ = writeln!(stdin, "{}", password.expose_secret());
-                }
+            Ok(child) => {
                 lock_or_recover(shared).process = Some(child);
+                // _password_guard is dropped here after FreeRDP has consumed
+                // the file during argument parsing (synchronous before fork).
                 Ok(())
             }
             Err(e) => Err(EmbeddedRdpError::FreeRdpInit(e.to_string())),

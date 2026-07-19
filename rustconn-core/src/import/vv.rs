@@ -15,12 +15,11 @@ use std::path::{Path, PathBuf};
 
 use secrecy::SecretString;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, Credentials, PasswordSource, ProtocolConfig, SpiceConfig, VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for virt-viewer `.vv` connection files.
 ///
@@ -377,9 +376,11 @@ impl ImportSource for VirtViewerImporter {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Write;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     fn write_vv_file(content: &str) -> NamedTempFile {
         let mut f = NamedTempFile::new().expect("tempfile");

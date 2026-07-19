@@ -4,6 +4,10 @@
 //! Each shortcut is displayed in a row grouped by category, with the ability
 //! to record a new accelerator or reset to the default.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, EventControllerKey, Label, gio};
@@ -12,9 +16,6 @@ use rustconn_core::config::keybindings::{
     KeybindingCategory, KeybindingSettings, accelerators_equivalent, default_keybindings,
     is_valid_accelerator,
 };
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 
 use crate::i18n::{i18n, i18n_f};
 

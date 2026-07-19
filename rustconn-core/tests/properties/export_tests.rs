@@ -2,13 +2,14 @@
 //!
 //! Tests correctness properties for exporting connections to various formats.
 
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::export::{AnsibleExporter, AsbruExporter, RemminaExporter, SshConfigExporter};
 use rustconn_core::import::{
     AnsibleInventoryImporter, AsbruImporter, RemminaImporter, SshConfigImporter,
 };
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-use std::path::PathBuf;
 
 /// Generates a valid hostname (no wildcards, valid characters)
 fn arb_hostname() -> impl Strategy<Value = String> {

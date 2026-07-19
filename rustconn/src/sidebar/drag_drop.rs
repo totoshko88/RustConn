@@ -1,7 +1,8 @@
-use crate::sidebar::ConnectionItem;
 use gtk4::prelude::*;
 use gtk4::{gdk, glib};
 use serde::{Deserialize, Serialize};
+
+use crate::sidebar::ConnectionItem;
 
 /// Strongly typed payload for drag operations
 #[derive(Serialize, Deserialize, Debug)]

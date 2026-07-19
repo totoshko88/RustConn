@@ -7,10 +7,9 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshConfig};
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Ansible inventory files.
 ///

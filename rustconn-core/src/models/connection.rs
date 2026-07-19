@@ -1,10 +1,10 @@
 //! Connection model representing a saved remote access configuration.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use std::collections::HashMap;
 
 use super::custom_property::CustomProperty;
 use super::highlight::HighlightRule;

@@ -4,6 +4,18 @@
 //! connections, managing snippets, groups, templates, clusters, variables,
 //! and Wake-on-LAN functionality.
 
+// Binary crate: pub items are internal helpers shared between modules, not a public API.
+#![allow(
+    unreachable_pub,
+    reason = "binary crate — pub is for inter-module visibility only"
+)]
+// CLI output IS println/eprintln — this is the intended interface, not a debug leftover.
+#![allow(clippy::print_stdout, reason = "CLI binary communicates via stdout")]
+#![allow(
+    clippy::print_stderr,
+    reason = "CLI binary uses stderr for warnings/errors"
+)]
+
 mod cli;
 mod color;
 mod commands;

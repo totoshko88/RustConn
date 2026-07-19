@@ -3,9 +3,10 @@
 //! These tests validate the correctness properties for session logging
 //! as defined in the design document for RustConn enhancements.
 
+use std::fs;
+
 use proptest::prelude::*;
 use rustconn_core::session::{LogConfig, LogContext, SessionLogger};
-use std::fs;
 use tempfile::TempDir;
 
 // ============================================================================

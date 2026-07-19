@@ -5,15 +5,14 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use secrecy::SecretString;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
+use super::backend::{BackendAvailability, SecretBackend};
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
-
-use super::backend::{BackendAvailability, SecretBackend};
 
 /// Default TTL for cached credentials in seconds (5 minutes).
 pub const CACHE_TTL_SECONDS: i64 = 300;

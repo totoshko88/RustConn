@@ -1,8 +1,9 @@
 //! Property tests for connection retry logic
 
+use std::time::Duration;
+
 use proptest::prelude::*;
 use rustconn_core::connection::{RetryConfig, RetryState};
-use std::time::Duration;
 
 /// Strategy for generating valid retry configurations
 fn retry_config_strategy() -> impl Strategy<Value = RetryConfig> {

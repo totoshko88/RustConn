@@ -11,15 +11,14 @@ use std::process::{Command, Stdio};
 
 use uuid::Uuid;
 
+use super::normalize::parse_host_port;
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpConfig,
     RdpGateway, Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig,
     VncConfig,
 };
-
-use super::normalize::parse_host_port;
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Remmina connection files.
 ///

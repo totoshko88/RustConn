@@ -3,12 +3,14 @@
 //! This module contains functions for sorting connections and handling
 //! drag-drop reordering operations.
 
+use std::rc::Rc;
+
+use uuid::Uuid;
+
 use super::types::get_protocol_string;
 use crate::i18n::i18n;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::state::SharedAppState;
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;

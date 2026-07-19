@@ -2,10 +2,11 @@
 //!
 //! Tests correctness properties for progress reporting during long operations.
 
-use proptest::prelude::*;
-use rustconn_core::progress::{CallbackProgressReporter, NoOpProgressReporter, ProgressReporter};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+use proptest::prelude::*;
+use rustconn_core::progress::{CallbackProgressReporter, NoOpProgressReporter, ProgressReporter};
 
 /// Strategy for generating a reasonable number of items to process
 fn arb_item_count() -> impl Strategy<Value = usize> {

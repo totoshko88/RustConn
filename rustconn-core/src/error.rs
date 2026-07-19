@@ -5,6 +5,7 @@
 //! secret storage, and session management operations.
 
 use std::path::PathBuf;
+
 use thiserror::Error;
 
 /// Top-level error type for `RustConn` operations

@@ -6,14 +6,16 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
+use std::path::PathBuf;
+
+use secrecy::{ExposeSecret, SecretString};
+use serde::{Deserialize, Serialize};
+
 use super::gateway::GatewayConfig;
 use super::graphics::{GraphicsMode, GraphicsQuality};
 use super::multimonitor::MonitorLayout;
 use super::reconnect::ReconnectPolicy;
 use crate::models::RdpPerformanceMode;
-use secrecy::{ExposeSecret, SecretString};
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 
 /// Shared folder configuration for RDP drive redirection
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

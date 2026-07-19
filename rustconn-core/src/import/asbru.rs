@@ -16,13 +16,12 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
     SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Importer for Asbru-CM configuration files.
 ///

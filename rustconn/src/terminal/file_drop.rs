@@ -6,10 +6,9 @@
 
 use gtk4::gdk;
 use gtk4::prelude::*;
+use rustconn_core::shell_escape::escape_path;
 use vte4::Terminal;
 use vte4::prelude::*;
-
-use rustconn_core::shell_escape::escape_path;
 
 /// Sets up a file drop target on a VTE terminal widget.
 ///

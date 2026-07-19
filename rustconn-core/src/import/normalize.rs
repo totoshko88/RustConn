@@ -13,9 +13,8 @@ use std::path::Path;
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod};
-
 use super::ImportResult;
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod};
 
 /// Options for import normalization
 #[derive(Debug, Clone, Default)]

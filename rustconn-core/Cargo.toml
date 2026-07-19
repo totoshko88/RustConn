@@ -110,6 +110,8 @@ default = []
 # embed clients or integrate with the host desktop keyring.
 system-keyring = ["dep:oo7", "dep:security-framework"]
 vnc-embedded = ["dep:vnc-rs", "dep:zune-jpeg"]
+# web-embedded enables the embedded WebKitGTK 6.0 WebView for in-tab web browsing
+web-embedded = []
 # rdp-embedded feature enables the RdpClient struct with IronRDP
 rdp-embedded = [
     "dep:ironrdp",

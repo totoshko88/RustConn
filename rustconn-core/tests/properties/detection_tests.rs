@@ -834,10 +834,11 @@ proptest! {
 
 #[cfg(test)]
 mod provider_persistence_unit_tests {
-    use super::*;
     use rustconn_core::models::{
         AwsSsmConfig, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
     };
+
+    use super::*;
 
     #[test]
     fn test_zerotrust_config_with_detected_provider_serialization() {

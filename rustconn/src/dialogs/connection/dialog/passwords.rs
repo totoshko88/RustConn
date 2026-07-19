@@ -7,13 +7,14 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::alert;
-use crate::i18n::{i18n, i18n_f};
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Entry};
 use std::rc::Rc;
 
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Entry};
+
 use super::ConnectionDialog;
+use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 
 impl ConnectionDialog {
     /// Updates password row visibility based on password source
@@ -171,6 +172,12 @@ impl ConnectionDialog {
                 2 => "vnc",
                 3 => "spice",
                 4 => "zerotrust",
+                5 => "telnet",
+                6 => "serial",
+                7 => "sftp",
+                8 => "kubernetes",
+                9 => "mosh",
+                10 => "web",
                 _ => "ssh",
             };
 
@@ -516,6 +523,12 @@ impl ConnectionDialog {
                 2 => "vnc",
                 3 => "spice",
                 4 => "zerotrust",
+                5 => "telnet",
+                6 => "serial",
+                7 => "sftp",
+                8 => "kubernetes",
+                9 => "mosh",
+                10 => "web",
                 _ => "ssh",
             };
 

@@ -3,10 +3,11 @@
 //! This module contains error types, enums, and configuration structs
 //! used by the embedded RDP widget.
 
+use std::path::PathBuf;
+
 use rustconn_core::models::RdpPerformanceMode;
 use rustconn_core::rdp_client::graphics::GraphicsMode;
 use secrecy::SecretString;
-use std::path::PathBuf;
 use thiserror::Error;
 
 /// Error type for embedded RDP operations

@@ -33,7 +33,11 @@ fn confirm(message: &str) -> bool {
 /// In non-interactive mode without `--force` the call returns `Ok(())`
 /// without deleting anything (silent abort) to avoid destructive defaults
 /// in scripts.
-pub fn cmd_delete(config_path: Option<&Path>, name: &str, force: bool) -> Result<(), CliError> {
+pub(super) fn cmd_delete(
+    config_path: Option<&Path>,
+    name: &str,
+    force: bool,
+) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager

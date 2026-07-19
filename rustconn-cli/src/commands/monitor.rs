@@ -16,7 +16,10 @@ use crate::util::{create_config_manager, find_connection};
 /// Returns:
 /// - [`CliError::Config`] when connections cannot be loaded or saved
 /// - [`CliError::ConnectionNotFound`] when no connection matches the supplied name
-pub fn cmd_monitor(config_path: Option<&Path>, subcmd: MonitorCommands) -> Result<(), CliError> {
+pub(super) fn cmd_monitor(
+    config_path: Option<&Path>,
+    subcmd: MonitorCommands,
+) -> Result<(), CliError> {
     match subcmd {
         MonitorCommands::Enable { name, interval } => {
             cmd_monitor_enable(config_path, &name, interval)

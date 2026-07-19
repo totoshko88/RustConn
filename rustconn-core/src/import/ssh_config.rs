@@ -8,11 +8,10 @@ use std::path::{Path, PathBuf};
 
 use tracing::{debug, info_span};
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
 use crate::tracing::span_names;
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Maximum `Include` recursion depth. Matches OpenSSH's own limit and guards
 /// against include cycles (a glob that matches its own file).

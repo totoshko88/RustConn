@@ -264,8 +264,8 @@ impl MainWindow {
                                     crate::terminal::SplitEligibility::Embeddable
                                 )
                             })
-                            .map(|s| (s.id, s.name))
-                            .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
+                            .map(|s| (s.id, s.name, s.protocol))
+                            .filter(|(id, _, _)| !split_view_for_provider.is_session_displayed(*id))
                             .collect()
                     },
                     move |panel_uuid, session_id| {
@@ -570,8 +570,8 @@ impl MainWindow {
                                     crate::terminal::SplitEligibility::Embeddable
                                 )
                             })
-                            .map(|s| (s.id, s.name))
-                            .filter(|(id, _)| !split_view_for_provider.is_session_displayed(*id))
+                            .map(|s| (s.id, s.name, s.protocol))
+                            .filter(|(id, _, _)| !split_view_for_provider.is_session_displayed(*id))
                             .collect()
                     },
                     move |panel_uuid, session_id| {

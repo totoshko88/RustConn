@@ -337,7 +337,17 @@ if $SKIP_CHECKS; then
     warn "Skipping cargo fmt/clippy/tests (--skip-checks)"
 else
     info "Running: cargo fmt --all -- --check"
-    cargo fmt --all -- --check || fail "cargo fmt --check failed"
+    # imports_granularity and group_imports are nightly-only options defined in
+    # rustfmt.toml. Stable rustfmt prints warnings about them but still formats
+    # correctly. Suppress those expected warnings to keep the output clean.
+    FMT_OUTPUT="$(cargo fmt --all -- --check 2>&1)" || {
+        # Filter out known nightly-only warnings before reporting
+        REAL_ISSUES="$(echo "$FMT_OUTPUT" | grep -v "^Warning: can't set \`imports_granularity\|^Warning: can't set \`group_imports" || true)"
+        if [[ -n "$REAL_ISSUES" ]]; then
+            echo "$REAL_ISSUES" >&2
+            fail "cargo fmt --check failed"
+        fi
+    }
     ok "cargo fmt clean"
 
     info "Running: cargo clippy --all-targets --quiet -- -D warnings"

@@ -72,13 +72,33 @@ impl MainWindow {
             return;
         }
 
-        // Web bookmarks open in the default browser — we don't pass credentials
-        // to the browser, so vault resolution is unnecessary overhead (~3s for
-        // KeePassXC). Credentials are resolved on-demand via Copy Password.
+        // Web bookmarks: If credentials are configured (Vault/Variable), resolve
+        // them first so they are cached for autofill. Otherwise skip resolution.
         if protocol_type == rustconn_core::models::ProtocolType::Web {
-            drop(busy_guard);
-            Self::handle_web_connect(&state, &sidebar, connection_id);
-            return;
+            let needs_web_credentials = {
+                let Ok(state_ref) = state.try_borrow() else {
+                    drop(busy_guard);
+                    return;
+                };
+                state_ref.get_connection(connection_id).is_some_and(|c| {
+                    matches!(
+                        c.password_source,
+                        rustconn_core::models::PasswordSource::Vault
+                            | rustconn_core::models::PasswordSource::Variable(_)
+                            | rustconn_core::models::PasswordSource::Script(_)
+                    )
+                })
+            };
+
+            if !needs_web_credentials || cached_credentials.is_some() {
+                // No vault credentials needed, or already cached — launch immediately
+                drop(busy_guard);
+                Self::handle_web_connect(&state, &notebook, &sidebar, connection_id);
+                return;
+            }
+            // Fall through to async vault resolution below — after resolution
+            // completes, handle_resolved_credentials will be called which routes
+            // to handle_web_connect for Web protocol.
         }
 
         // Skip async credential resolution for connections that don't use
@@ -524,8 +544,8 @@ impl MainWindow {
                 );
             }
             ProtocolType::Web => {
-                // Web connections open URL in default browser — no tab created
-                // Cache credentials if available (for Copy Password context menu)
+                // Web: Embedded mode opens in-tab, System/Custom open externally
+                // Cache credentials if available (for autofill / Copy Password)
                 if let Some(ref creds) = resolved_credentials
                     && let (Some(username), Some(password)) =
                         (&creds.username, creds.expose_password())
@@ -533,7 +553,7 @@ impl MainWindow {
                 {
                     state_mut.cache_credentials(connection_id, username, password, "");
                 }
-                Self::handle_web_connect(&state, &sidebar, connection_id);
+                Self::handle_web_connect(&state, &notebook, &sidebar, connection_id);
             }
         }
     }

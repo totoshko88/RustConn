@@ -17,7 +17,7 @@ use crate::util::create_config_manager;
 /// - [`CliError::Export`] when the requested format does not support the
 ///   selected options (`--csv-delimiter` / `--csv-fields` outside CSV) or the
 ///   underlying exporter fails to write the output file
-pub fn cmd_export(
+pub(super) fn cmd_export(
     config_path: Option<&Path>,
     format: ExportFormatArg,
     output: &Path,
@@ -198,7 +198,7 @@ fn export_connections(
     reason = "import dispatches across every supported source format with format-specific \
               parsing; per-format helpers would duplicate connection persistence"
 )]
-pub fn cmd_import(
+pub(super) fn cmd_import(
     config_path: Option<&Path>,
     format: ImportFormatArg,
     file: Option<&Path>,

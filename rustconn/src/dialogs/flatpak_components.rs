@@ -9,10 +9,14 @@
 //! - User-friendly error messages via toast
 //! - SHA256 checksum verification for security
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Button, Label, Orientation, PolicyType, ScrolledWindow, Spinner};
+use gtk4::{
+    Align, Box as GtkBox, Button, Label, Orientation, PolicyType, ScrolledWindow, Spinner, glib,
+};
 use libadwaita as adw;
 use rustconn_core::cli_download::{
     ComponentCategory, DownloadCancellation, DownloadableComponent, get_components_by_category,
@@ -20,8 +24,6 @@ use rustconn_core::cli_download::{
     update_component,
 };
 use rustconn_core::is_sandboxed;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::async_utils::spawn_async;
 use crate::i18n::i18n;

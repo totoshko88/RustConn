@@ -2,13 +2,14 @@
 //!
 //! This module contains types, enums, and helper structs used by the sidebar widget.
 
+use std::cell::RefCell;
+use std::collections::HashSet;
+
 use gtk4::prelude::*;
 use gtk4::{
     CssProvider, MultiSelection, Orientation, Separator, SingleSelection, TreeListModel, Widget,
     gio,
 };
-use std::cell::RefCell;
-use std::collections::HashSet;
 use uuid::Uuid;
 
 /// Tree state for preservation across refreshes

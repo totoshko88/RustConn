@@ -7,21 +7,21 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::alert;
-use crate::dialogs::connection::logging_tab;
-use crate::dialogs::connection::ssh;
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 use gtk4::ScrolledWindow;
 use gtk4::prelude::*;
 use rustconn_core::automation::ExpectRule;
 use rustconn_core::models::{CustomProperty, HighlightRule};
 use rustconn_core::variables::Variable;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use super::{ConnectionDialog, LocalVariableRow};
+use crate::alert;
+use crate::dialogs::connection::{logging_tab, ssh};
+use crate::i18n::{i18n, i18n_f};
 
 impl ConnectionDialog {
     /// Creates a new connection dialog
@@ -283,9 +283,13 @@ impl ConnectionDialog {
         protocol_stack.add_named(&k8s_box, Some("kubernetes"));
 
         // Web bookmark options page
-        let (web_box, web_browser_entry, web_private_mode_switch) =
-            crate::dialogs::connection::web::create_web_options();
-        protocol_stack.add_named(&web_box, Some("web"));
+        let web_options = crate::dialogs::connection::web::create_web_options();
+        protocol_stack.add_named(&web_options.container, Some("web"));
+        let web_browser_entry = web_options.browser_entry;
+        let web_private_mode_switch = web_options.private_mode_switch;
+        let web_browser_mode_combo = web_options.browser_mode_combo;
+        let web_javascript_switch = web_options.javascript_switch;
+        let web_user_agent_row = web_options.user_agent_row;
 
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
@@ -594,6 +598,9 @@ impl ConnectionDialog {
             &mosh_server_binary_entry,
             &web_browser_entry,
             &web_private_mode_switch,
+            &web_browser_mode_combo,
+            &web_javascript_switch,
+            &web_user_agent_row,
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
@@ -809,6 +816,9 @@ impl ConnectionDialog {
             k8s_custom_args_entry,
             web_browser_entry,
             web_private_mode_switch,
+            web_browser_mode_combo,
+            web_javascript_switch,
+            web_user_agent_row,
             mosh_port_range_entry,
             mosh_predict_dropdown,
             mosh_server_binary_entry,

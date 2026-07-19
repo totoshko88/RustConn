@@ -4,10 +4,11 @@
 //! successfully used for authentication. This allows the application to skip
 //! the password dialog for connections with verified credentials.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
 
 /// Status of credential verification for a connection

@@ -36,7 +36,7 @@ pub mod widgets;
 mod zerotrust;
 
 // Re-export types from parent module for use in submodules
-pub use super::{ConnectionCallback, ConnectionDialogResult};
-
 // Re-export the main dialog
 pub use dialog::ConnectionDialog;
+
+pub use super::{ConnectionCallback, ConnectionDialogResult};

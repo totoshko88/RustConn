@@ -2,19 +2,19 @@
 //!
 //! This module contains methods for managing connection templates.
 
-use crate::alert;
-use crate::i18n::{i18n, i18n_f};
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Label, Orientation};
-use libadwaita::prelude::AdwDialogExt;
 use std::rc::Rc;
 
+use gtk4::prelude::*;
+use gtk4::{Label, Orientation, glib};
+use libadwaita::prelude::AdwDialogExt;
+use rustconn_core::models::PasswordSource;
+
 use super::MainWindow;
+use crate::alert;
 use crate::dialogs::{ConnectionDialog, TemplateDialog, TemplateManagerDialog};
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use rustconn_core::models::PasswordSource;
 
 /// Type alias for shared sidebar
 pub type SharedSidebar = Rc<ConnectionSidebar>;

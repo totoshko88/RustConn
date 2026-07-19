@@ -11,16 +11,16 @@
 //!
 //! For automation/service accounts, use `OP_SERVICE_ACCOUNT_TOKEN` environment variable.
 
+use std::process::Stdio;
+
 use async_trait::async_trait;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
-use std::process::Stdio;
 use tokio::process::Command;
 
+use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
-
-use super::backend::SecretBackend;
 
 /// 1Password CLI backend
 ///

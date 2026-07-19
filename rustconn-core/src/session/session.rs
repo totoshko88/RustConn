@@ -3,10 +3,11 @@
 //! This module defines the Session struct and related types for tracking
 //! active connection sessions.
 
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::process::Child;
+
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info_span};
 use uuid::Uuid;
 

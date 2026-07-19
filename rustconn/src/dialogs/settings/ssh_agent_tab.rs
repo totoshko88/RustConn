@@ -2,16 +2,16 @@
 //!
 //! SSH agent status and key loading is performed asynchronously to avoid blocking the UI.
 
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, ListBox, Orientation};
-use libadwaita as adw;
-use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
-use rustconn_core::ssh_agent::SshAgentManager;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, Label, ListBox, Orientation, glib};
+use libadwaita as adw;
+use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
+use rustconn_core::ssh_agent::SshAgentManager;
 
 use crate::i18n::{i18n, i18n_f};
 

@@ -32,9 +32,8 @@ pub use native::{NATIVE_FILE_EXTENSION, NATIVE_FORMAT_VERSION, NativeExport, Nat
 pub use remmina::RemminaExporter;
 pub use royalts::RoyalTsExporter;
 pub use securecrt::SecureCrtExporter;
-pub use ssh_config::SshConfigExporter;
-
 use serde::{Deserialize, Serialize};
+pub use ssh_config::SshConfigExporter;
 use thiserror::Error;
 
 use crate::models::{Connection, ConnectionGroup};

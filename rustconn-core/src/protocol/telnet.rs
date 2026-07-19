@@ -1,9 +1,8 @@
 //! Telnet protocol handler
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Telnet protocol handler
 ///

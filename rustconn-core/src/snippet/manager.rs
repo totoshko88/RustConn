@@ -508,8 +508,9 @@ impl SnippetManager {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     fn create_test_manager() -> (SnippetManager, TempDir) {
         let temp_dir = TempDir::new().unwrap();

@@ -11,8 +11,6 @@ use std::collections::HashSet;
 
 use chrono::{Duration, Utc};
 use proptest::prelude::*;
-use uuid::Uuid;
-
 use rustconn_core::models::{
     AutomationConfig, Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType,
     SshConfig,
@@ -20,6 +18,7 @@ use rustconn_core::models::{
 use rustconn_core::sync::group_export::{GroupSyncExport, SyncConnection, SyncGroup};
 use rustconn_core::sync::group_merge::GroupMergeEngine;
 use rustconn_core::sync::variable_template::VariableTemplate;
+use uuid::Uuid;
 
 // ---------------------------------------------------------------------------
 // Helpers

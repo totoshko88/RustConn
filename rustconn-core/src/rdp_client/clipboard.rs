@@ -16,16 +16,18 @@
 //! - `CF_DIB` (8): Device-independent bitmap (future)
 //! - `CF_HDROP` (15): File list (future)
 
-use super::{ClipboardFileInfo, ClipboardFormatInfo, RdpClientEvent};
+use std::collections::HashMap;
+use std::sync::mpsc::Sender;
+
 use ironrdp::cliprdr::backend::{ClipboardMessage, ClipboardMessageProxy, CliprdrBackend};
 use ironrdp::cliprdr::pdu::{
     ClipboardFormat, ClipboardFormatId, ClipboardGeneralCapabilityFlags, FileContentsFlags,
     FileContentsRequest, FileContentsResponse, FormatDataRequest, FormatDataResponse, LockDataId,
 };
 use ironrdp::core::impl_as_any;
-use std::collections::HashMap;
-use std::sync::mpsc::Sender;
 use tracing::{debug, trace, warn};
+
+use super::{ClipboardFileInfo, ClipboardFormatInfo, RdpClientEvent};
 
 /// Proxy for sending clipboard messages to the main event loop
 #[derive(Clone, Debug)]

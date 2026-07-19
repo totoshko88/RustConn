@@ -33,12 +33,17 @@ pub mod types;
 mod ui;
 mod workspaces;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::Arc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Orientation, gio, glib};
 use libadwaita as adw;
-use std::cell::RefCell;
-use std::rc::Rc;
+use rustconn_core::automation::TaskExecutor;
+use rustconn_core::split::ColorPool;
+use rustconn_core::variables::{VariableManager, VariableScope};
 use uuid::Uuid;
 use vte4::prelude::*;
 
@@ -47,8 +52,6 @@ use self::types::{
     SessionSplitBridges, SharedExternalWindowManager, SharedNotebook, SharedSidebar,
     SharedSplitView, get_protocol_string,
 };
-use crate::toast::ToastOverlay;
-
 use crate::activity_coordinator::ActivityCoordinator;
 use crate::dialogs::{ExportDialog, SettingsDialog};
 use crate::external_window::ExternalWindowManager;
@@ -57,10 +60,7 @@ use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::split_view::{SplitDirection, SplitViewBridge};
 use crate::state::{SharedAppState, try_with_state_mut, with_state};
 use crate::terminal::TerminalNotebook;
-use rustconn_core::automation::TaskExecutor;
-use rustconn_core::split::ColorPool;
-use rustconn_core::variables::{VariableManager, VariableScope};
-use std::sync::Arc;
+use crate::toast::ToastOverlay;
 
 /// Shared color pool type for global color allocation across all split containers
 type SharedColorPool = Rc<RefCell<ColorPool>>;
@@ -1161,7 +1161,7 @@ impl MainWindow {
                                 || s.protocol == "local"
                                 || s.protocol.starts_with("zerotrust")
                         })
-                        .map(|s| (s.id, s.name))
+                        .map(|s| (s.id, s.name, s.protocol))
                         .collect()
                 },
                 move |panel_uuid, session_id| {
@@ -2363,8 +2363,8 @@ impl MainWindow {
                 None
             }
             "web" => {
-                // Web opens URL in default browser — no terminal session
-                Self::handle_web_connect(state, sidebar, connection_id);
+                // Web: Embedded mode opens in-tab, System/Custom open externally
+                Self::handle_web_connect(state, notebook, sidebar, connection_id);
                 None
             }
             _ => {

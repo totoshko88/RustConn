@@ -16,7 +16,10 @@ use crate::util::create_config_manager;
 /// Returns:
 /// - [`CliError::Config`] when history or connections cannot be loaded
 /// - [`CliError::ConnectionNotFound`] when a referenced connection does not exist
-pub fn cmd_history(config_path: Option<&Path>, subcmd: HistoryCommands) -> Result<(), CliError> {
+pub(super) fn cmd_history(
+    config_path: Option<&Path>,
+    subcmd: HistoryCommands,
+) -> Result<(), CliError> {
     match subcmd {
         HistoryCommands::List {
             format,

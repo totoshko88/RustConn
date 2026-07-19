@@ -231,10 +231,11 @@ impl WorkspaceProfileManager {
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::models::{WorkspaceEntry, WorkspaceProfile};
     use crate::session::SessionType;
-    use tempfile::TempDir;
 
     fn create_test_manager() -> (WorkspaceProfileManager, TempDir) {
         let temp_dir = TempDir::new().unwrap();

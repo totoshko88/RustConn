@@ -50,9 +50,10 @@
 //! });
 //! ```
 
-use gtk4::glib;
 use std::cell::RefCell;
 use std::future::Future;
+
+use gtk4::glib;
 
 // Thread-local tokio runtime for blocking async operations
 thread_local! {

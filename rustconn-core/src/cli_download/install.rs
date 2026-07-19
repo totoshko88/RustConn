@@ -1,11 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use super::download::{download_with_progress, verify_checksum};
+use super::extract::{extract_deb, extract_tar_gz, extract_zip, find_binary_in_dir};
 use super::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
     DownloadableComponent, ProgressCallback,
-    download::download_with_progress,
-    download::verify_checksum,
-    extract::{extract_deb, extract_tar_gz, extract_zip, find_binary_in_dir},
 };
 
 pub(super) async fn install_download_component(

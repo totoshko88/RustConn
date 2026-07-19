@@ -3,11 +3,12 @@
 //! Contains the Variables and Custom Properties sections, allowing users
 //! to define connection-scoped variables and arbitrary metadata.
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, ListBox, Orientation, ScrolledWindow};
 use libadwaita as adw;
+
+use crate::i18n::i18n;
 
 /// Creates the Data tab combining Variables and Custom Properties.
 ///

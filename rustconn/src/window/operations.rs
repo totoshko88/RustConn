@@ -3,18 +3,19 @@
 //! This module contains functions for connection operations like delete,
 //! duplicate, copy, paste, and reload sidebar.
 
+use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::glib;
+use gtk4::prelude::*;
+use libadwaita as adw;
+use uuid::Uuid;
+
 use super::MainWindow;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use libadwaita as adw;
-
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;

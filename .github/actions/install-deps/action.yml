@@ -13,4 +13,5 @@ runs:
           libvte-2.91-gtk4-dev \
           libadwaita-1-dev \
           libdbus-1-dev \
-          libasound2-dev
+          libasound2-dev \
+          libwebkitgtk-6.0-dev

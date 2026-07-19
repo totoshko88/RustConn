@@ -6,8 +6,9 @@
 //! Note: These tests verify the selection logic at the data model level.
 //! The actual GTK4 SelectionModel integration is tested through the sidebar module.
 
-use proptest::prelude::*;
 use std::collections::HashSet;
+
+use proptest::prelude::*;
 use uuid::Uuid;
 
 // ========== Selection State Model ==========

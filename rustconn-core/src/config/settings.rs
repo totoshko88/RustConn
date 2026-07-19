@@ -2,18 +2,18 @@
 //!
 //! This module defines the application-wide settings stored in config.toml.
 
+use std::path::PathBuf;
+
+use secrecy::SecretString;
+use serde::{Deserialize, Serialize};
+use zeroize::Zeroizing;
+
 use crate::activity_monitor::ActivityMonitorDefaults;
-use crate::models::HighlightRule;
-use crate::models::HistorySettings;
-use crate::models::SmartFolder;
+use crate::models::{HighlightRule, HistorySettings, SmartFolder};
 use crate::monitoring::MonitoringSettings;
 use crate::secret::CredentialStorage;
 use crate::sync::SyncSettings;
 use crate::variables::Variable;
-use secrecy::SecretString;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use zeroize::Zeroizing;
 
 /// Application-wide settings
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]

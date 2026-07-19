@@ -4,6 +4,7 @@
 //! across virtual scrolling operations, where items scroll in and out of view.
 
 use std::collections::HashSet;
+
 use uuid::Uuid;
 
 /// Selection state manager for virtual scrolling

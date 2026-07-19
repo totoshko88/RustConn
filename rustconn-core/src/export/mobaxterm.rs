@@ -11,11 +11,10 @@ use std::path::Path;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
 /// Default icon numbers for each session type in MobaXterm.
 const ICON_SSH: u16 = 109;
@@ -469,9 +468,10 @@ impl ExportTarget for MobaXtermExporter {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
     use crate::models::Resolution;
-    use std::fs;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

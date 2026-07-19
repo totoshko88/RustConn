@@ -14,7 +14,11 @@ use crate::util::{create_config_manager, find_connection, find_or_create_group_i
 /// - [`CliError::Config`] when connections or groups cannot be loaded or saved
 /// - [`CliError::ConnectionNotFound`] when no connection matches `name`
 /// - [`CliError::Group`] when the target group cannot be created
-pub fn cmd_move(config_path: Option<&Path>, name: &str, group_name: &str) -> Result<(), CliError> {
+pub(super) fn cmd_move(
+    config_path: Option<&Path>,
+    name: &str,
+    group_name: &str,
+) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager

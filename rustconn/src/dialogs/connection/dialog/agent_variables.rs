@@ -7,15 +7,14 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::i18n::i18n;
 use adw::prelude::*;
-use gtk4::StringList;
-use gtk4::glib;
 use gtk4::prelude::*;
+use gtk4::{StringList, glib};
 use libadwaita as adw;
 use rustconn_core::variables::Variable;
 
 use super::ConnectionDialog;
+use crate::i18n::i18n;
 
 impl ConnectionDialog {
     /// Refreshes the SSH agent key list asynchronously.

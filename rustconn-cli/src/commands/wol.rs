@@ -17,7 +17,7 @@ use crate::util::{create_config_manager, find_connection};
 ///   nor a known connection name
 /// - [`CliError::Wol`] when the connection has no Wake-on-LAN configuration
 ///   or the magic packet cannot be sent (network/socket error)
-pub fn cmd_wol(
+pub(super) fn cmd_wol(
     config_path: Option<&Path>,
     target: &str,
     broadcast: &str,

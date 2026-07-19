@@ -36,7 +36,7 @@ const MAX_IMPORT_FILE_SIZE: u64 = 50 * 1024 * 1024;
 /// ```ignore
 /// let content = read_import_file(path, "SSH config")?;
 /// ```
-pub fn read_import_file(path: &Path, source_name: &str) -> Result<String, ImportError> {
+pub(super) fn read_import_file(path: &Path, source_name: &str) -> Result<String, ImportError> {
     let metadata = fs::metadata(path).map_err(|e| ImportError::ParseError {
         source_name: source_name.to_string(),
         reason: format!("Cannot read {}: {}", path.display(), e),

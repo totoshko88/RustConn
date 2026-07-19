@@ -11,8 +11,9 @@
 //! - Session state preservation hints
 //! - Connection quality monitoring
 
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
 
 /// Jitter factor for randomizing reconnection delays (0.0 to 1.0 range added)
 const JITTER_FACTOR: f64 = 0.25;

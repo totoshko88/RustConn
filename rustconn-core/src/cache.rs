@@ -201,9 +201,10 @@ impl<T: LoadCacheObject + fmt::Debug> fmt::Debug for Cached<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicU32, Ordering};
+
+    use super::*;
 
     /// Simple counter that tracks how many times construct() was called.
     struct Counter {

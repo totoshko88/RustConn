@@ -15,17 +15,17 @@
 //! same labels, so entries written by the old `secret-tool` code remain findable
 //! after the switch to oo7 (backward compatibility, R11.1).
 
-use crate::error::{SecretError, SecretResult};
-
 // oo7 attribute maps are only built on the in-process (non-macOS) path.
 #[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
 use std::collections::HashMap;
-
 // secret-tool subprocess machinery is only used by the retained macOS path.
 #[cfg(all(feature = "system-keyring", target_os = "macos"))]
 use std::process::Stdio;
+
 #[cfg(all(feature = "system-keyring", target_os = "macos"))]
 use tokio::process::Command;
+
+use crate::error::{SecretError, SecretResult};
 
 /// Application identifier used as the `application` attribute in keyring entries
 #[cfg(feature = "system-keyring")]

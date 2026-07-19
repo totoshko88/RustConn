@@ -13,6 +13,12 @@
 //!
 //! For interior mutability, `RefCell` is used instead of `Mutex` for the same reasons.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use uuid::Uuid;
+
 use crate::activity_coordinator::ActivityCoordinator;
 use crate::external_window::ExternalWindowManager;
 use crate::monitoring::MonitoringCoordinator;
@@ -20,10 +26,6 @@ use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Maximum number of quick connect history entries to keep (LIFO)
 const QUICK_CONNECT_HISTORY_MAX: usize = 15;

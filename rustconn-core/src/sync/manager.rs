@@ -9,11 +9,7 @@ use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
 use tokio::sync::mpsc;
-use tracing;
 use uuid::Uuid;
-
-use crate::models::{Connection, ConnectionGroup};
-use crate::variables::Variable;
 
 use super::group_export::{
     GroupSyncExport, SyncConnection, SyncError, SyncGroup, collect_variable_templates,
@@ -21,6 +17,8 @@ use super::group_export::{
 };
 use super::group_merge::{GroupMergeEngine, GroupMergeResult};
 use super::settings::{SyncMode, SyncSettings};
+use crate::models::{Connection, ConnectionGroup};
+use crate::variables::Variable;
 
 /// Per-group sync state tracking.
 #[derive(Debug, Clone, Default)]
@@ -939,9 +937,11 @@ fn collect_group_tree(root_id: Uuid, groups: &[ConnectionGroup]) -> Vec<Connecti
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
     use tempfile::TempDir;
+
+    use super::*;
 
     fn test_settings(sync_dir: Option<PathBuf>) -> SyncSettings {
         SyncSettings {

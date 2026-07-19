@@ -137,6 +137,8 @@ rustconn/src/embedded_rdp/ui.rs
 rustconn/src/embedded_rdp/connection.rs
 rustconn/src/embedded_rdp/file_dnd.rs
 rustconn/src/embedded_rdp/resize.rs
+rustconn/src/embedded_web/mod.rs
+rustconn/src/embedded_web/navigation.rs
 rustconn/src/embedded_spice.rs
 rustconn/src/embedded_trait.rs
 rustconn/src/embedded_vnc/mod.rs

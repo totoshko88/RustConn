@@ -6,9 +6,12 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::process::Child;
 use std::rc::Rc;
+
 use uuid::Uuid;
 
 use crate::embedded_rdp::EmbeddedRdpWidget;
+#[cfg(feature = "web-embedded")]
+use crate::embedded_web::EmbeddedWebWidget;
 use crate::session::VncSessionWidget;
 
 /// Terminal session information
@@ -62,6 +65,9 @@ pub enum SessionWidgetStorage {
     Vnc(Rc<VncSessionWidget>),
     /// Embedded RDP widget (with dynamic resolution)
     EmbeddedRdp(Rc<EmbeddedRdpWidget>),
+    /// Embedded Web browser widget (WebKitGTK 6.0)
+    #[cfg(feature = "web-embedded")]
+    EmbeddedWeb(Rc<EmbeddedWebWidget>),
     /// External process (xfreerdp, vncviewer, etc.) — killed on tab close
     ExternalProcess(Rc<RefCell<Option<Child>>>),
 }

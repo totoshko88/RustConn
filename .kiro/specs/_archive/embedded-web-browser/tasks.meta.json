@@ -1,0 +1,637 @@
+{
+  "pbtResults": {
+    "1.4 Write property tests for `WebConfig` serialization (Properties 4, 5, 6)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784401198013
+    },
+    "3.3 Write property test for session isolation (Property 3)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784403091256
+    },
+    "3.2 Write property test for URL validation (Property 1)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784403094564
+    },
+    "6.3 Write property test for autofill all-or-nothing (Property 8)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784403684216
+    },
+    "4.2 Write property test for zoom clamping (Property 2)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784403736574
+    },
+    "4.3 Write property test for navigation button sensitivity (Property 7)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784403741268
+    }
+  },
+  "executionHistory": {
+    "1.1 Add `WebBrowserMode` enum and extend `WebConfig` in `rustconn-core/src/models/protocol.rs`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697193
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397708009
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784400754307
+      }
+    ],
+    "1.2 Add `web-embedded` feature flag to `rustconn-core/Cargo.toml`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697572
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397708753
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784400755013
+      }
+    ],
+    "1.3 Update `ProtocolCapabilities` in `rustconn-core/src/protocol/web.rs`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697682
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784400762680
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401226716
+      }
+    ],
+    "1.4 Write property tests for `WebConfig` serialization (Properties 4, 5, 6)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697794
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784400763570
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401227636
+      }
+    ],
+    "2.1 Add `web-embedded` feature and `webkit6` dependency to `rustconn/Cargo.toml`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697871
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784400764385
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401228730
+      }
+    ],
+    "3.1 Create `rustconn/src/embedded_web/mod.rs` with `EmbeddedWebWidget` struct": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397697942
+      },
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401236817
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589554
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402594963
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402776405
+      }
+    ],
+    "3.2 Write property test for URL validation (Property 1)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698006
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589633
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402781071
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403544811
+      }
+    ],
+    "3.3 Write property test for session isolation (Property 3)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698072
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589698
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402781704
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403545520
+      }
+    ],
+    "4.1 Create `rustconn/src/embedded_web/navigation.rs` with `NavigationToolbar`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698144
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589749
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402782561
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403546442
+      }
+    ],
+    "4.2 Write property test for zoom clamping (Property 2)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698221
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589791
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403552835
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403760334
+      }
+    ],
+    "4.3 Write property test for navigation button sensitivity (Property 7)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698289
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589838
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403553579
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403759692
+      }
+    ],
+    "5. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698369
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589891
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403767528
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405126238
+      }
+    ],
+    "6.1 Create `rustconn/src/embedded_web/settings.rs` with `apply_settings()`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698460
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402589949
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402783380
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403547241
+      }
+    ],
+    "6.2 Create `rustconn/src/embedded_web/autofill.rs` with `AutofillManager`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698527
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590011
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402784254
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403548124
+      }
+    ],
+    "6.3 Write property test for autofill all-or-nothing (Property 8)": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698622
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590066
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403554435
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403759039
+      }
+    ],
+    "7.1 Extend `SessionWidgetStorage` enum in `rustconn/src/terminal/mod.rs`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698701
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590120
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403768310
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405127244
+      }
+    ],
+    "7.2 Wire `EmbeddedWebWidget` creation into session manager": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698769
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590196
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405134033
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405968254
+      }
+    ],
+    "8.1 Extend `rustconn/src/dialogs/connection/web.rs` with Browser Mode and JavaScript controls": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698842
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590244
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403769203
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405127994
+      }
+    ],
+    "9.1 Update `WebProtocol::build_command()` in `rustconn-core/src/protocol/web.rs`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698914
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590291
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403769997
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405128748
+      }
+    ],
+    "10. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397698998
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590338
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406554681
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784407320538
+      }
+    ],
+    "11.1 Add `pub mod embedded_web;` to `rustconn/src/lib.rs` or appropriate parent, gated with `#[cfg(feature = \"web-embedded\")]`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397699083
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590386
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405134877
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405969405
+      }
+    ],
+    "12.1 Update `.github/actions/install-deps/action.yml`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397699147
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590434
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405974169
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406150589
+      }
+    ],
+    "12.2 Update macOS Homebrew formula `packaging/macos/rustconn.rb`": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397699229
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590489
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405974821
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406151416
+      }
+    ],
+    "13.1 Bump workspace version to `0.19.0` and update changelog": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397699319
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590538
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406155808
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406549966
+      }
+    ],
+    "14. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784397699445
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784402590592
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784407324853
+      },
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784408966631
+      }
+    ],
+    "1. Feature flag setup and model changes in rustconn-core": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401227691
+      }
+    ],
+    "2. Feature flag setup in rustconn GUI crate": [
+      {
+        "executionId": "eae0eb9b-628f-4090-9721-674a752926bb",
+        "chatSessionId": "sess_dc37bd26-2885-46eb-a4fb-2d5564a1114d",
+        "timestamp": 1784401228782
+      }
+    ],
+    "3. Implement embedded web widget core": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403545555
+      }
+    ],
+    "6. Implement WebView settings and autofill": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403759075
+      }
+    ],
+    "4. Implement navigation toolbar": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784403760378
+      }
+    ],
+    "8. Update connection dialog": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405128058
+      }
+    ],
+    "9. Update web protocol handler for new browser modes": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405128810
+      }
+    ],
+    "7. Integrate with session management and split view": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405968313
+      }
+    ],
+    "11. Register the embedded_web module": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784405969439
+      }
+    ],
+    "12. CI and packaging updates": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406151474
+      }
+    ],
+    "13. Version bump and changelog": [
+      {
+        "executionId": "c91c83f2-e9e1-448c-989d-1b223c85422d",
+        "chatSessionId": "sess_8961f43e-4c81-44cb-a23a-388c300626bb",
+        "timestamp": 1784406550025
+      }
+    ]
+  }
+}

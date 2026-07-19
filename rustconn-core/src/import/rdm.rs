@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use super::normalize::parse_host_port;
+use super::traits::{ImportResult, ImportSource, SkippedEntry};
 use crate::error::ImportError;
 use crate::models::{
     AutomationConfig, Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType,
@@ -17,9 +19,6 @@ use crate::models::{
 };
 use crate::progress::ProgressReporter;
 use crate::sync::SyncMode;
-
-use super::normalize::parse_host_port;
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
 
 /// RDM JSON connection entry
 #[derive(Debug, Clone, Deserialize)]

@@ -3,10 +3,11 @@
 //! Displays a compact horizontal bar below the terminal showing
 //! CPU, memory, disk, and network usage from the remote host.
 
+use std::cell::{Cell, RefCell};
+
 use gtk4::prelude::*;
 use gtk4::{self, Align, Orientation};
 use rustconn_core::monitoring::{MonitoringSettings, RemoteMetrics, SystemInfo};
-use std::cell::{Cell, RefCell};
 
 use crate::i18n::i18n;
 
@@ -496,6 +497,7 @@ struct MonitoringParams {
 
 use std::collections::HashMap;
 use std::rc::Rc;
+
 use uuid::Uuid;
 
 impl MonitoringCoordinator {

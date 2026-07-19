@@ -5,6 +5,7 @@
 
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::time::Duration;
+
 use thiserror::Error;
 
 /// Error type for port check operations

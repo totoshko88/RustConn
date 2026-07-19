@@ -3,14 +3,16 @@
 //! This module provides the async VNC client that connects to VNC servers
 //! and produces framebuffer events for the GUI to render.
 
-use super::{VncClientCommand, VncClientConfig, VncClientError, VncClientEvent, VncRect};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use vnc::{
     ClientKeyEvent, ClientMouseEvent, PixelFormat, VncConnector, VncEncoding, VncEvent, X11Event,
 };
+
+use super::{VncClientCommand, VncClientConfig, VncClientError, VncClientEvent, VncRect};
 
 /// Sender for commands to the VNC client (thread-safe, non-async)
 pub type VncCommandSender = mpsc::Sender<VncClientCommand>;

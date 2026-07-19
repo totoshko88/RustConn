@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use fs2::FileExt;
 use tokio::io::AsyncWriteExt;
 
+use super::settings::AppSettings;
 use crate::cluster::Cluster;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{
@@ -17,8 +18,6 @@ use crate::models::{
     WorkspaceProfile,
 };
 use crate::sync::tombstone::Tombstone;
-
-use super::settings::AppSettings;
 
 /// File names for configuration files
 const CONNECTIONS_FILE: &str = "connections.toml";
@@ -83,7 +82,7 @@ struct TombstonesFile {
 
 /// Wrapper for serializing trash (deleted items)
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-pub struct TrashFile {
+pub(super) struct TrashFile {
     #[serde(default)]
     pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
     #[serde(default)]
@@ -1058,9 +1057,10 @@ impl ConfigManager {
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::models::{ProtocolConfig, SshConfig};
-    use tempfile::TempDir;
 
     fn create_test_manager() -> (ConfigManager, TempDir) {
         let temp_dir = TempDir::new().unwrap();
@@ -1215,8 +1215,9 @@ mod tests {
 
     #[test]
     fn test_save_and_load_clusters() {
-        use crate::cluster::Cluster;
         use uuid::Uuid;
+
+        use crate::cluster::Cluster;
 
         let (manager, _temp) = create_test_manager();
 
@@ -1239,8 +1240,9 @@ mod tests {
 
     #[test]
     fn test_save_and_load_tombstones() {
-        use crate::sync::tombstone::{SyncEntityType, Tombstone};
         use uuid::Uuid;
+
+        use crate::sync::tombstone::{SyncEntityType, Tombstone};
 
         let (manager, _temp) = create_test_manager();
 

@@ -38,17 +38,17 @@
 //! backend.store("my-server", &credentials).await?;
 //! ```
 
+use std::process::Stdio;
+use std::sync::RwLock;
+
 use async_trait::async_trait;
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
-use std::process::Stdio;
-use std::sync::RwLock;
 use tokio::process::Command;
 
+use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
-
-use super::backend::SecretBackend;
 
 /// Thread-safe in-process storage for the Bitwarden session key.
 ///

@@ -13,7 +13,7 @@ use crate::util::create_config_manager;
 ///
 /// Returns [`CliError::Config`] when connections, groups, or templates
 /// cannot be loaded.
-pub fn cmd_stats(config_path: Option<&Path>, format: OutputFormat) -> Result<(), CliError> {
+pub(super) fn cmd_stats(config_path: Option<&Path>, format: OutputFormat) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let connections = config_manager

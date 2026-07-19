@@ -1,8 +1,9 @@
 //! Property tests for session health check functionality
 
+use std::time::Duration;
+
 use proptest::prelude::*;
 use rustconn_core::session::{HealthCheckConfig, HealthCheckEvent, HealthStatus};
-use std::time::Duration;
 use uuid::Uuid;
 
 proptest! {

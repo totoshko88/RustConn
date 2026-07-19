@@ -17,7 +17,7 @@ use crate::util::{create_config_manager, find_connection};
 /// - [`CliError::Protocol`] when the connection is not an SSH connection
 /// - [`CliError::Connection`] when the SFTP client (sftp / Midnight Commander /
 ///   GIO file manager) cannot be launched
-pub fn cmd_sftp(
+pub(super) fn cmd_sftp(
     config_path: Option<&Path>,
     name: &str,
     use_cli: bool,

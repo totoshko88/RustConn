@@ -6,6 +6,7 @@
 //! initially and loading children when groups are expanded.
 
 use std::collections::HashSet;
+
 use uuid::Uuid;
 
 use crate::models::{Connection, ConnectionGroup};

@@ -3,17 +3,18 @@
 //! This module provides retry configuration and utilities for handling
 //! transient connection failures with automatic retry and exponential backoff.
 
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
+
 /// Default maximum number of retry attempts
-pub const DEFAULT_MAX_ATTEMPTS: u32 = 3;
+pub(super) const DEFAULT_MAX_ATTEMPTS: u32 = 3;
 
 /// Default initial delay between retries in milliseconds
-pub const DEFAULT_INITIAL_DELAY_MS: u64 = 1000;
+pub(super) const DEFAULT_INITIAL_DELAY_MS: u64 = 1000;
 
 /// Default maximum delay between retries in milliseconds
-pub const DEFAULT_MAX_DELAY_MS: u64 = 30_000;
+pub(super) const DEFAULT_MAX_DELAY_MS: u64 = 30_000;
 
 /// Default backoff multiplier (delay doubles each retry)
 pub const DEFAULT_BACKOFF_MULTIPLIER: f64 = 2.0;

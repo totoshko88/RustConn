@@ -22,8 +22,9 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::models::RdpPerformanceMode;
 use serde::{Deserialize, Serialize};
+
+use crate::models::RdpPerformanceMode;
 
 /// Graphics mode for RDP sessions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]

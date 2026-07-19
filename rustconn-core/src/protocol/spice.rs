@@ -1,9 +1,8 @@
 //! SPICE protocol handler
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SpiceConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// SPICE protocol handler
 ///
@@ -180,9 +179,10 @@ impl Protocol for SpiceProtocol {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::models::{ProtocolConfig, SharedFolder, SpiceImageCompression};
-    use std::path::PathBuf;
 
     fn create_spice_connection(config: SpiceConfig) -> Connection {
         Connection::new(

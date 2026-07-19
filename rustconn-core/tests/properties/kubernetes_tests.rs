@@ -3,10 +3,11 @@
 //! Tests KubernetesConfig creation, serialization round-trip,
 //! protocol validation, and command building.
 
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::models::{Connection, KubernetesConfig, ProtocolConfig};
 use rustconn_core::protocol::{KubernetesProtocol, Protocol};
-use std::path::PathBuf;
 
 // ============================================================================
 // Strategies

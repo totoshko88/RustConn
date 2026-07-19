@@ -19,13 +19,13 @@
 mod config;
 mod error;
 
+use std::path::Path;
+
 pub use config::{
     SpiceClientConfig, SpiceImageCompression as SpiceCompression, SpiceSecurityProtocol,
     SpiceSharedFolder,
 };
 pub use error::SpiceClientError;
-
-use std::path::Path;
 
 /// USB auto-redirect filter for `remote-viewer`: auto-redirect HID-class
 /// (`0x03`) devices on connect. The value is a `|`-separated list of

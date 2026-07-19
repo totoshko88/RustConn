@@ -9,12 +9,11 @@ use std::fmt::Write;
 use tracing::{debug, info_span};
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-use crate::tracing::span_names;
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
+use crate::tracing::span_names;
 
 /// Royal TS XML exporter.
 ///

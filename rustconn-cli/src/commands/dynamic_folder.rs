@@ -18,7 +18,7 @@ use crate::util::create_config_manager;
 /// - [`CliError::Config`] when configuration cannot be read or written
 /// - [`CliError::DynamicFolder`] when a dynamic folder operation fails
 ///   (duplicate name, missing folder, invalid filter expression)
-pub fn cmd_dynamic_folder(
+pub(super) fn cmd_dynamic_folder(
     config_path: Option<&Path>,
     subcmd: DynamicFolderCommands,
 ) -> Result<(), CliError> {

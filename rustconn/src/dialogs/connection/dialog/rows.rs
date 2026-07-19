@@ -7,7 +7,10 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, DropDown, Entry, Grid, Label, ListBox, ListBoxRow,
@@ -16,12 +19,10 @@ use gtk4::{
 use rustconn_core::automation::{ExpectRule, builtin_templates};
 use rustconn_core::models::{CustomProperty, PropertyType};
 use rustconn_core::variables::Variable;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use super::{ConnectionDialog, CustomPropertyRow, ExpectRuleRow, LocalVariableRow};
+use crate::i18n::i18n;
 
 impl ConnectionDialog {
     /// Creates a custom property row widget

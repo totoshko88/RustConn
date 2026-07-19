@@ -184,9 +184,10 @@ pub fn resolve_ssh_agent_socket(
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod, SshKeySource};
-    use std::path::PathBuf;
 
     /// Helper: create an SSH connection with Inherit key_source, linked to a group.
     fn ssh_conn_inherit(group_id: Uuid) -> Connection {

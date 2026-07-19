@@ -3,11 +3,12 @@
 //! This module provides reusable UI components for managing shared folders
 //! that can be used by both RDP and SPICE connection dialogs.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, FileDialog, Label, Orientation};
 use rustconn_core::models::SharedFolder;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::i18n::i18n;
 

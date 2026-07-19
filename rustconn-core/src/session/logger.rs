@@ -4,11 +4,12 @@
 //! terminal output to timestamped log files with configurable rotation
 //! and retention policies.
 
-use chrono::{Local, Utc};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
+
+use chrono::{Local, Utc};
 use thiserror::Error;
 
 use crate::variables::{VariableManager, VariableScope};
@@ -932,8 +933,9 @@ pub fn contains_sensitive_prompt(line: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     #[test]
     fn test_log_config_default() {

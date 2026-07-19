@@ -1,0 +1,47 @@
+# Typos CLI configuration file
+# ============================
+# Run: `typos` (or `typos --format brief` for CI)
+# Install: `cargo install typos-cli`
+#
+# How to fix errors:
+# 1. Obvious typo: just fix it.
+# 2. False-positive in binary/generated file: add to `extend-exclude`.
+# 3. False-positive in source code:
+#    3.1. Identifier name → `extend-identifiers`
+#    3.2. Arbitrary word (docs, comments) → `extend-words`
+#    3.3. Pattern → `extend-ignore-re`
+#    3.4. Last resort: add file to `extend-exclude`
+
+[files]
+extend-exclude = [
+    "*.mo",
+    "*.po",
+    "target/",
+    ".flatpak-builder/",
+    "Cargo.lock",
+    "package-lock.json",
+    "messages.mo",
+]
+
+[default.extend-words]
+# Project name
+rustconn = "rustconn"
+# GTK/GLib terms
+gio = "gio"
+glib = "glib"
+adw = "adw"
+# Ukrainian locale identifiers
+uk = "uk"
+
+[default.extend-identifiers]
+# Add false-positive identifiers here as they appear
+
+[default]
+extend-ignore-re = [
+    # UUIDs
+    "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    # Hex strings (e.g. encryption salts, keys)
+    "\\b[0-9a-fA-F]{32,}\\b",
+    # Commit hashes in CHANGELOG.md
+    "\\b[0-9a-f]{7,40}\\b",
+]

@@ -2,9 +2,10 @@
 //!
 //! Contains the `DrawingArea` draw function and status overlay rendering.
 
-use gtk4::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
 
 use super::types::{RdpConfig, RdpConnectionState};
 

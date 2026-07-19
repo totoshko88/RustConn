@@ -6,10 +6,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use super::{ExportError, ExportResult};
 use crate::models::Connection;
 use crate::progress::ProgressReporter;
-
-use super::{ExportError, ExportResult};
 
 /// Default batch size for export operations.
 pub const DEFAULT_EXPORT_BATCH_SIZE: usize = 50;

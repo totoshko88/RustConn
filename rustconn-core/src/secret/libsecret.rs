@@ -11,14 +11,14 @@
 //! compiles `oo7`, so `LibSecretBackend` does not exist on macOS at all (R10.1,
 //! R10.2).
 
-use async_trait::async_trait;
-use secrecy::SecretString;
 use std::collections::HashMap;
 
-use crate::error::{SecretError, SecretResult};
-use crate::models::Credentials;
+use async_trait::async_trait;
+use secrecy::SecretString;
 
 use super::backend::{BackendAvailability, SecretBackend};
+use crate::error::{SecretError, SecretResult};
+use crate::models::Credentials;
 
 /// libsecret backend for GNOME Keyring/KDE Wallet
 ///

@@ -3,12 +3,13 @@
 //! Contains the Expect Rules section (auto-respond to terminal patterns),
 //! a pattern tester, and pre-connect / post-disconnect task configuration.
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Entry, Label, ListBox, Orientation, ScrolledWindow, SpinButton};
 use libadwaita as adw;
 use rustconn_core::automation::builtin_templates;
+
+use crate::i18n::i18n;
 
 /// All widgets created by [`create_automation_combined_tab`].
 pub(super) struct AutomationTabWidgets {

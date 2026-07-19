@@ -3,7 +3,9 @@
 //! Provides a dialog for generating secure passwords with configurable options.
 //! Migrated to use libadwaita components for GNOME HIG compliance.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -13,8 +15,8 @@ use libadwaita as adw;
 use rustconn_core::password_generator::{
     PasswordGenerator, PasswordGeneratorConfig, PasswordStrength, estimate_crack_time,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Shows the password generator dialog
 pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Widget>>) {

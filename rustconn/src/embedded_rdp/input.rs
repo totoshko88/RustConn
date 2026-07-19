@@ -3,24 +3,23 @@
 //! Contains keyboard, mouse, and scroll event handlers with coordinate
 //! transformation between widget space and RDP framebuffer space.
 
-#[cfg(feature = "rdp-embedded")]
-use gtk4::EventControllerFocus;
-use gtk4::gdk;
-use gtk4::glib::translate::IntoGlib;
-use gtk4::prelude::*;
-use gtk4::{
-    EventControllerKey, EventControllerMotion, EventControllerScroll, EventControllerScrollFlags,
-    GestureClick,
-};
 use std::cell::RefCell;
 #[cfg(feature = "rdp-embedded")]
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use super::types::{RdpCommand, RdpConnectionState};
-
+#[cfg(feature = "rdp-embedded")]
+use gtk4::EventControllerFocus;
+use gtk4::glib::translate::IntoGlib;
+use gtk4::prelude::*;
+use gtk4::{
+    EventControllerKey, EventControllerMotion, EventControllerScroll, EventControllerScrollFlags,
+    GestureClick, gdk,
+};
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
+
+use super::types::{RdpCommand, RdpConnectionState};
 
 /// Sends a key event via IronRDP using the fallback chain: keycode → keyval → Unicode.
 ///

@@ -7,9 +7,8 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup};
-
 use super::ImportResult;
+use crate::models::{Connection, ConnectionGroup};
 
 /// Strategy for handling duplicate connections during import.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

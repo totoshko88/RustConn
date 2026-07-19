@@ -3,12 +3,13 @@
 //! Provides UI for managing workspace profiles — saved sets of connections
 //! that can be opened together to restore a working context.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Align, Box as GtkBox, Button, Label, ListBox, Orientation, SelectionMode};
 use libadwaita as adw;
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use crate::i18n::{i18n, i18n_f};

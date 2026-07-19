@@ -4,12 +4,12 @@
 //! - P5: `resolve_ssh_key_path()` terminates for any group hierarchy (including cycles)
 //! - P6: `resolve_ssh_key_path()` returns the nearest ancestor's key or `None`
 
-use proptest::prelude::*;
 use std::path::PathBuf;
-use uuid::Uuid;
 
+use proptest::prelude::*;
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, SshKeySource};
+use uuid::Uuid;
 
 // ---------------------------------------------------------------------------
 // Strategies

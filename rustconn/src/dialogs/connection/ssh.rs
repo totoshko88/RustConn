@@ -6,17 +6,18 @@
 //! - Connection options (Jump Host, ProxyJump, IdentitiesOnly, ControlMaster)
 //! - Session options (Agent Forwarding, X11 Forwarding, Compression, Startup Command)
 
-use super::protocol_layout::ProtocolLayoutBuilder;
-use super::widgets::{CheckboxRowBuilder, EntryRowBuilder};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, DropDown, Entry, Label, Orientation, StringList};
 use libadwaita as adw;
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::i18n::i18n;
 use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
+
+use super::protocol_layout::ProtocolLayoutBuilder;
+use super::widgets::{CheckboxRowBuilder, EntryRowBuilder};
+use crate::i18n::i18n;
 
 /// Named struct for SSH options widgets.
 ///

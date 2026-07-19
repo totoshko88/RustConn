@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.19.0" date="2026-07-20">
+      <description>
+        <p>Version 0.19.0 - Embedded web browser for Web connections:</p>
+        <ul>
+          <li>Embedded WebKitGTK 6.0 web browser for Web connections (Linux)</li>
+          <li>Browser mode selection: Embedded, System, or Custom browser command</li>
+          <li>Per-connection persistent sessions with isolated cookies and local storage</li>
+          <li>Navigation toolbar with back/forward/reload/home and zoom controls</li>
+          <li>Credential autofill via JavaScript injection and HTTP Basic Auth</li>
+          <li>JavaScript enable/disable toggle per connection</li>
+          <li>Split view support for embedded web alongside terminals</li>
+          <li>web-embedded feature flag (default on Linux, excluded on macOS)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.18.12" date="2026-07-18">
       <description>
         <p>Version 0.18.12 - Graphics Pipeline control and VNC cursor fix:</p>

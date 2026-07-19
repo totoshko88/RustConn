@@ -3,20 +3,22 @@
 //! This module contains dialog functions for creating new connections and groups,
 //! including template picker and parent group selection.
 
+use std::rc::Rc;
+use std::time::Duration;
+
+use adw::prelude::*;
+use gtk4::glib;
+use gtk4::prelude::*;
+use libadwaita as adw;
+use rustconn_core::models::PasswordSource;
+use uuid::Uuid;
+
 use super::MainWindow;
 use crate::alert;
 use crate::dialogs::{ConnectionDialog, ImportDialog};
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use libadwaita as adw;
-use rustconn_core::models::PasswordSource;
-use std::rc::Rc;
-use std::time::Duration;
-use uuid::Uuid;
 
 /// How long to wait for a `Bitwarden` auto-unlock before reporting timeout.
 ///

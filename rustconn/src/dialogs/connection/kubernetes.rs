@@ -2,13 +2,13 @@
 //!
 //! UI panel for Kubernetes pod shell connections via `kubectl exec`.
 
-use super::protocol_layout::ProtocolLayoutBuilder;
-use super::widgets::EntryRowBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, StringList};
 use libadwaita as adw;
 
+use super::protocol_layout::ProtocolLayoutBuilder;
+use super::widgets::EntryRowBuilder;
 use crate::i18n::i18n;
 
 /// Return type for Kubernetes options creation

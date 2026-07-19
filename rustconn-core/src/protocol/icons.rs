@@ -5,8 +5,9 @@
 //!
 //! Also provides protocol-specific icon names for the sidebar display.
 
-use crate::models::ProtocolType;
 use std::path::PathBuf;
+
+use crate::models::ProtocolType;
 
 /// Cloud provider type for icon selection
 ///

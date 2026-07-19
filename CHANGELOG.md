@@ -5,6 +5,80 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-07-20
+
+### Added
+
+#### Embedded Web Browser (WebKitGTK 6.0)
+
+- **In-tab WebKitGTK 6.0 browser for Web connections (issue #151)** — Web protocol connections now render pages inside RustConn tabs instead of launching an external browser, providing an integrated browsing experience for internal tools, dashboards, and admin panels (noVNC, Guacamole, KasmVNC, Grafana, Proxmox, etc.)
+- **Browser mode selection** — each Web connection chooses how URLs open: **Embedded** (in-tab via WebKitGTK), **System** (xdg-open / UriLauncher), or **Custom** (user-specified command); configured in the connection dialog protocol tab
+- **Per-connection persistent sessions** — isolated WebKitGTK `NetworkSession` per connection backed by `~/.local/share/rustconn/webkit/<uuid>/`; login sessions survive restarts without cross-connection data leakage
+- **Navigation toolbar** — Back/Forward/Reload/Home buttons, editable URL bar (Enter to navigate, auto-prepends `https://` for bare hostnames), Autofill button, Zoom In/Out, and a "⋯" overflow menu (Copy URL, Open in System Browser, Zoom Reset, Clear Session Data)
+- **Credential autofill** — injects stored credentials into login forms via JavaScript (targets username/email + password fields, dispatches `input`/`change` events for SPA compatibility); HTTP Basic/Digest 401 challenges answered automatically from the configured secret backend
+- **Per-connection JavaScript toggle** — disable JS execution for security-sensitive bookmarks
+- **Accept invalid TLS certificates** — `accept_invalid_certs` for self-signed certs on local services (Cockpit, Proxmox dev, etc.)
+- **Custom user agent** — per-connection override string (max 512 chars, validated at deserialization)
+- **Split view support** — embedded Web sessions participate in the split-view system alongside RDP/VNC/terminals
+- **Loading progress bar** — thin bar under the toolbar shows real-time page load progress
+- **Auto-fit zoom** — when the WebView is narrower than 1024 px, zoom is reduced proportionally to prevent horizontal overflow
+- **Zoom persistence** — zoom level saved to connection config (debounced 2 s) and restored on reopen; range 30–300 %
+- **Download notifications** — file downloads show a toast on completion (saved to `~/Downloads/`)
+- **`file://` URL support** — Web connections now accept `file://` URLs in addition to `http://` and `https://`
+- **`web-embedded` feature flag** — WebKitGTK dependency gated behind a Cargo feature (default on Linux, excluded on macOS); all WebKitGTK code conditionally compiled with `#[cfg(feature = "web-embedded")]`; feature declared in both `rustconn` and `rustconn-core`
+
+#### CLI
+
+- **`add`/`update --protocol web` flags: `--browser-mode`, `--javascript`, `--user-agent`, `--accept-invalid-certs`, `--private-mode`, `--zoom-level`** — Web connections can be fully configured from the CLI; `--javascript` and `--accept-invalid-certs` accept `true`/`false` (bidirectional — can both enable and disable); bare `--javascript` = `false`, bare `--accept-invalid-certs` = `true`; `--user-agent` validates the 512-char limit; `--zoom-level` validates 0.3–3.0 range; all flags available on both `add` and `update` subcommands
+- **`show` displays Web connection settings** — browser mode, JavaScript state, user agent, accept_invalid_certs, browser command, private mode, and zoom level are shown in table, JSON, and CSV output
+- **CLI binary lint overrides** — `unreachable_pub`, `clippy::print_stdout`, and `clippy::print_stderr` allowed crate-wide with documented reasons, reflecting that a CLI binary communicates via stdout/stderr by design
+
+#### Developer Tooling
+
+- **`typos.toml` configuration** — project-wide typo checking via `typos-cli`; excludes generated/binary files (`.mo`, `.po`, `Cargo.lock`, `.flatpak-builder/`) and project-specific terminology (`rustconn`, `gio`, `glib`, `adw`, `uk`)
+- **`profile.test` optimizations** — `proptest` and `rand_chacha` compile with `opt-level = 3` in test builds, reducing property test runtime from ~120 s to ~30 s
+- **WebConfig property tests** — `web_config_tests.rs` with proptest coverage for serialization round-trip, user agent validation, zoom clamping, and compile-time default behavior
+
+### Fixed
+
+- **Embedded RDP fallback fails on servers behind RD Connection Broker (issue #218)** — when IronRDP falls back to an external FreeRDP process, passwords were previously piped via `/from-stdin`. This broke on servers using a Connection Broker: the broker issues a Server Redirection PDU, FreeRDP reconnects to a different host, but stdin was already consumed. All sessions (not just RemoteApp) now pass passwords via a single-use ephemeral args file (`/args-from:file:<path>`) that FreeRDP reads once into memory, surviving redirects without exposing the secret in `/proc/PID/cmdline`
+- **Flatpak RDP: removed unnecessary `--forward-fd=0`** — `flatpak-spawn` no longer passes `--forward-fd=0` since stdin piping is replaced by the args file approach
+- **Zero Trust Generic provider double shell wrapping** — `build_command()` for the Generic provider already returns `("sh", ["-c", "template"])`; wrapping it in another `bash -c '...'` broke argument parsing. Now spawned directly
+- **Potential panic on non-ASCII error messages** — the embedded browser's `load-failed` error truncation used byte-position slicing (`&description[..197]`) which panics on multi-byte UTF-8 (Cyrillic, CJK, emoji); now uses `floor_char_boundary` for safe truncation
+
+### Improved
+
+- **Group dialog UI** — replaced adaptive ViewSwitcher/breakpoint pattern with always-visible bottom `ViewSwitcherBar`; fixed minimum dialog height (500 px); pages registered in consistent order (Identity → Connections → Cloud Sync → Dynamic → Automation)
+- **Responsive embedded browser toolbar** — secondary buttons (Home, Autofill, Zoom In/Out) auto-hide at < 500 px width; all actions remain reachable via the "⋯" menu
+- **Reconnect banner on load failure** — network errors display a banner with error description + "Reload" button (matching the RDP reconnect pattern)
+- **Zoom button tooltips** — dynamically show current percentage (e.g. "Zoom in (120%)")
+- **Stricter workspace lints** — added `unreachable_pub`, `redundant_imports` (rustc); `unwrap_used`, `dbg_macro`, `todo`, `print_stdout`, `print_stderr`, `wildcard_imports` (clippy); `allow-unwrap-in-tests = true` in `.clippy.toml` to keep test code ergonomic
+- **Import style enforced** — `rustfmt.toml` sets `imports_granularity = "Module"` and `group_imports = "StdExternalCrate"` (nightly `rustfmt`); all imports across the codebase reformatted: std → external → crate
+- **CLI module visibility tightened** — internal helpers in `rustconn-cli` changed from `pub` to `pub(super)` / `pub(crate)` to prevent accidental API surface leakage
+- **`rustconn-core` re-exports alphabetized** — `lib.rs` pub use statements sorted and grouped consistently
+- **Trash cleanup includes webkit sessions** — `empty_trash()` removes WebKit data/cache directories for permanently deleted Web connections
+- **Cloud Sync strips device-local Web fields** — `zoom_level` is reset to 1.0 during sync export so per-device display preferences do not propagate between machines
+
+### Documentation
+
+- Updated USER_GUIDE.md to version 0.19.0 with comprehensive embedded browser section (toolbar, zoom, autofill, keyboard shortcuts, known limitations, CLI examples)
+- Updated README.md Web protocol description and demo video link in feature table
+- Updated CLI_REFERENCE.md with Web protocol flags and examples
+- Updated metainfo XML with 0.19.0 release entry
+- Updated debian/changelog and OBS packaging changelogs
+
+### Dependencies
+
+- **Added**: webkit6 0.6 (WebKitGTK 6.0 Rust bindings), javascriptcore6 0.6, soup3 0.9
+- **Updated**: anyhow 1.0.106→1.0.107, proc-macro2 1.0.106→1.0.107, serde 1.0.228→1.0.229, syn 2.0.18→2.0.19, thiserror 1.2.67→1.3.0, tracing-subscriber 0.1.20→0.1.21
+- **CI**: added `libwebkitgtk-6.0-dev` to install-deps action
+
+### Known Limitations
+
+- **WebKitGTK does not support WebCodecs API** — hardware-accelerated H.264/VP8 decoding via WebCodecs (used by Selkies WebRTC streaming) is not available; low-latency streaming tools like Selkies require a Chromium-based engine
+- **No DRM/EME content playback** — encrypted media (Netflix, Spotify) is not supported in the embedded view (Widevine not available in WebKitGTK)
+- **Embedded mode is Linux-only** — requires WebKitGTK 6.0; other platforms fall back to System mode
+
 ## [0.18.12] - 2026-07-18
 
 ### Added

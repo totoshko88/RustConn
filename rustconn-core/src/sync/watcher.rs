@@ -220,8 +220,9 @@ impl Drop for SyncFileWatcher {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
 
     #[test]
     fn master_file_filtering() {

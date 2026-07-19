@@ -3,13 +3,14 @@
 //! This module provides functionality for opening connections in separate
 //! external windows instead of embedded in the main application window.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Label, Orientation};
 use libadwaita as adw;
 use libadwaita::prelude::*;
 use rustconn_core::models::{Connection, WindowGeometry};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
 use vte4::Terminal;
 

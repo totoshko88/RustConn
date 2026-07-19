@@ -13,13 +13,12 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig,
     SshKeySource, TelnetConfig, VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
 
 /// MobaXterm session type identifiers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

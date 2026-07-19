@@ -4,11 +4,12 @@
 //! across dialogs, reducing code duplication and ensuring consistent
 //! styling following GNOME HIG.
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, CheckButton, DropDown, Entry, SpinButton, StringList};
 use libadwaita as adw;
+
+use crate::i18n::i18n;
 
 /// Creates a standard dialog header bar following GNOME HIG.
 ///

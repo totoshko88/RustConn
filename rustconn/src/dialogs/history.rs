@@ -3,14 +3,16 @@
 //! This module provides a dialog for viewing, searching, and managing
 //! connection history with per-entry deletion.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow};
 use libadwaita as adw;
 use rustconn_core::models::ConnectionHistoryEntry;
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Connection history dialog
 pub struct HistoryDialog {

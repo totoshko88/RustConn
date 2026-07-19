@@ -3,9 +3,10 @@
 //! This module provides structures and functions for persisting and restoring
 //! session state across application restarts.
 
+use std::path::PathBuf;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use uuid::Uuid;
 
 use super::session::SessionType;

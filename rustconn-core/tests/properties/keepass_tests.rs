@@ -2,11 +2,12 @@
 //!
 //! These tests validate the correctness properties defined in the `KeePass` integration design.
 
+use std::path::PathBuf;
+
 use chrono::Utc;
 use proptest::prelude::*;
 use rustconn_core::models::{PasswordSource, ProtocolConfig, ProtocolType, SshConfig};
 use rustconn_core::{Connection, CredentialResolver, KeePassStatus, parse_keepassxc_version};
-use std::path::PathBuf;
 use tempfile::TempDir;
 use uuid::Uuid;
 
@@ -435,9 +436,10 @@ fn create_test_connection_with_source(
 /// This module tests the pure logic that determines button state.
 #[cfg(test)]
 mod button_state_tests {
+    use std::path::PathBuf;
+
     use proptest::prelude::*;
     use rustconn_core::config::SecretSettings;
-    use std::path::PathBuf;
 
     /// Pure function that computes the expected "Save to KeePass" button sensitivity
     /// based on the KeePass integration state.
@@ -554,10 +556,12 @@ mod button_state_tests {
 
 #[cfg(test)]
 mod resolution_chain_tests {
-    use super::*;
+    use std::sync::Arc;
+
     use rustconn_core::SecretManager;
     use rustconn_core::config::SecretSettings;
-    use std::sync::Arc;
+
+    use super::*;
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
     /// **Validates: Requirements 4.1, 4.2, 4.3**
@@ -738,13 +742,14 @@ mod resolution_chain_tests {
 /// all ancestor group names in order from root to leaf.
 #[cfg(test)]
 mod hierarchy_tests {
+    use std::collections::HashSet;
+
     use chrono::Utc;
     use proptest::prelude::*;
     use rustconn_core::models::{
         ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
     };
     use rustconn_core::{Connection, KEEPASS_ROOT_GROUP, KeePassHierarchy};
-    use std::collections::HashSet;
     use uuid::Uuid;
 
     /// Strategy for generating valid group names (non-empty, alphanumeric with spaces/underscores)

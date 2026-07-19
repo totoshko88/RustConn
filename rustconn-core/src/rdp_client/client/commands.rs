@@ -1,4 +1,3 @@
-use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent};
 use ironrdp::cliprdr::CliprdrClient;
 use ironrdp::pdu::input::fast_path::FastPathInputEvent;
 use ironrdp::pdu::rdp::headers::ShareDataPdu;
@@ -7,11 +6,13 @@ use ironrdp::session::{ActiveStage, ActiveStageOutput};
 use ironrdp_input::{Database, MouseButton, MousePosition, Operation, Scancode, WheelRotations};
 use ironrdp_tokio::FramedWrite;
 
+use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent};
+
 #[expect(
     clippy::too_many_lines,
     reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
 )]
-pub async fn process_command<W: FramedWrite>(
+pub(super) async fn process_command<W: FramedWrite>(
     cmd: RdpClientCommand,
     active_stage: &mut ActiveStage,
     image: &mut DecodedImage,

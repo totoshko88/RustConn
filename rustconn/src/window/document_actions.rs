@@ -3,14 +3,16 @@
 //! This module contains functions for setting up document-related actions:
 //! new, open, save, close, export, and import documents.
 
+use std::rc::Rc;
+
+use gtk4::gio;
+use gtk4::prelude::*;
+use rustconn_core::document::EncryptionStrength;
+
 use super::groups;
 use crate::i18n::i18n;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use gtk4::gio;
-use gtk4::prelude::*;
-use rustconn_core::document::EncryptionStrength;
-use std::rc::Rc;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;

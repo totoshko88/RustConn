@@ -15,25 +15,25 @@ mod ssh_agent_tab;
 mod terminal_tab;
 mod ui_tab;
 
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use adw::prelude::*;
 pub use clients_tab::*;
 pub use cloud_sync_tab::*;
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, DropDown, Entry, Label, SpinButton};
 pub use keybindings_tab::*;
+use libadwaita as adw;
 pub use logging_tab::*;
 pub use monitoring_tab::*;
+use rustconn_core::config::AppSettings;
+use rustconn_core::models::Connection;
+use rustconn_core::ssh_agent::SshAgentManager;
 pub use secrets_tab::*;
 pub use ssh_agent_tab::*;
 pub use terminal_tab::*;
 pub use ui_tab::*;
-
-use adw::prelude::*;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DropDown, Entry, Label, SpinButton};
-use libadwaita as adw;
-use rustconn_core::config::AppSettings;
-use rustconn_core::models::Connection;
-use rustconn_core::ssh_agent::SshAgentManager;
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
 
 use crate::i18n::i18n;
 

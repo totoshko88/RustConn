@@ -3,17 +3,17 @@
 //! This module contains methods for managing connection groups,
 //! including move to group dialog and related functionality.
 
-use crate::alert;
-use crate::i18n::{i18n, i18n_f};
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Button, Label, Orientation};
-use libadwaita as adw;
 use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Button, Label, Orientation, glib};
+use libadwaita as adw;
 use uuid::Uuid;
 
 use super::MainWindow;
+use crate::alert;
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 

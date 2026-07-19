@@ -12,13 +12,15 @@
 //! 4. Backend sends data to GUI via event channel
 //! 5. GUI plays audio using platform audio API (cpal/rodio)
 
-use super::{AudioFormatInfo, RdpClientEvent};
+use std::borrow::Cow;
+use std::sync::mpsc::Sender;
+
 use ironrdp::core::impl_as_any;
 use ironrdp::rdpsnd::client::RdpsndClientHandler;
 use ironrdp::rdpsnd::pdu::{AudioFormat, AudioFormatFlags, PitchPdu, VolumePdu, WaveFormat};
-use std::borrow::Cow;
-use std::sync::mpsc::Sender;
 use tracing::{debug, trace};
+
+use super::{AudioFormatInfo, RdpClientEvent};
 
 impl From<&AudioFormat> for AudioFormatInfo {
     fn from(format: &AudioFormat) -> Self {
@@ -239,8 +241,9 @@ impl RdpsndClientHandler for RustConnAudioBackend {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::mpsc;
+
+    use super::*;
 
     #[test]
     fn test_audio_format_info_cd_quality() {

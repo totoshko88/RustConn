@@ -7,7 +7,12 @@ mod connections;
 mod sessions;
 mod sync;
 
-use crate::async_utils::with_runtime;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::path::Path;
+use std::rc::Rc;
+use std::sync::Arc;
+
 use chrono::Utc;
 use rustconn_core::automation::FolderConnectionTracker;
 use rustconn_core::cluster::ClusterManager;
@@ -24,12 +29,9 @@ use rustconn_core::sync::SyncManager;
 use rustconn_core::template::TemplateManager;
 use rustconn_core::workspace::WorkspaceProfileManager;
 use secrecy::SecretString;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::path::Path;
-use std::rc::Rc;
-use std::sync::Arc;
 use uuid::Uuid;
+
+use crate::async_utils::with_runtime;
 
 /// Internal clipboard for connection copy/paste operations
 ///

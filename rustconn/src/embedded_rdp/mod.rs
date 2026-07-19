@@ -46,10 +46,18 @@ mod input;
 mod resize;
 
 // Re-export types for external use
+use std::cell::RefCell;
+use std::process::Child;
+use std::rc::Rc;
+
 pub use buffer::CairoBackedBuffer;
 pub use file_dnd::{FileDndCircuitBreaker, LocalFileInfo};
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation, glib};
 pub use launcher::SafeFreeRdpLauncher;
 pub(crate) use launcher::StderrLines;
+#[cfg(feature = "rdp-embedded")]
+use rustconn_core::rdp_client::RdpClientCommand;
 pub use thread::FreeRdpThread;
 #[cfg(feature = "rdp-embedded")]
 pub use thread::{ClipboardFileTransfer, FileDownloadState};
@@ -57,20 +65,9 @@ pub use types::{
     EmbeddedRdpError, EmbeddedSharedFolder, FreeRdpThreadState, RdpCommand, RdpConfig,
     RdpConnectionState, RdpEvent,
 };
-
 use types::{ErrorCallback, FallbackCallback, StateCallback};
 
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation};
-use std::cell::RefCell;
-use std::process::Child;
-use std::rc::Rc;
-
 use crate::i18n::i18n;
-
-#[cfg(feature = "rdp-embedded")]
-use rustconn_core::rdp_client::RdpClientCommand;
 
 /// Inter-character delay when autotyping a command into the Windows Run dialog.
 ///

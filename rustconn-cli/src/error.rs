@@ -107,7 +107,7 @@ impl CliError {
     /// - 1: General error (configuration, validation, export, import, IO)
     /// - 2: Connection failure (test failed, connection not found)
     #[must_use]
-    pub const fn exit_code(&self) -> i32 {
+    pub(crate) const fn exit_code(&self) -> i32 {
         match self {
             // Connection-related failures use exit code 2
             Self::TestFailed(_) | Self::ConnectionNotFound(_) | Self::Connection(_) => {

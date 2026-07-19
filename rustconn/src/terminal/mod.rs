@@ -17,7 +17,11 @@ pub mod tab_container;
 mod tab_menu;
 mod types;
 
-pub use types::{SessionWidgetStorage, TerminalSession};
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::time::Instant;
 
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation, Widget, gio, glib};
@@ -25,11 +29,7 @@ use libadwaita as adw;
 use libadwaita::prelude::*;
 use rustconn_core::models::AutomationConfig;
 use rustconn_core::terminal_themes::TerminalTheme;
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
-use std::rc::Rc;
-use std::time::Instant;
+pub use types::{SessionWidgetStorage, TerminalSession};
 use uuid::Uuid;
 #[cfg(not(target_os = "macos"))]
 use vte4::PtyFlags;
@@ -42,6 +42,12 @@ use vte4::prelude::*;
 /// `_vte_regex_has_multiline_compile_flag(regex)` check failed.
 const PCRE2_MULTILINE: u32 = 0x0000_0400;
 
+use rustconn_core::automation::{KeyElement, KeySequence};
+use rustconn_core::highlight::CompiledHighlightRules;
+use rustconn_core::models::HighlightRule;
+use rustconn_core::session::recording::{RecordingMetadata, metadata_path, write_metadata};
+use rustconn_core::split::tab_groups::TabGroupManager;
+
 use crate::activity_coordinator::ActivityCoordinator;
 use crate::automation::{AutomationSession, prepare_rules_from_config};
 use crate::embedded_rdp::EmbeddedRdpWidget;
@@ -49,11 +55,6 @@ use crate::i18n::{i18n, i18n_f};
 use crate::session::{SessionState, SessionWidget, VncSessionWidget};
 use crate::terminal::highlight_overlay::HighlightOverlay;
 use crate::terminal::tab_container::TabPageContainer;
-use rustconn_core::automation::{KeyElement, KeySequence};
-use rustconn_core::highlight::CompiledHighlightRules;
-use rustconn_core::models::HighlightRule;
-use rustconn_core::session::recording::{RecordingMetadata, metadata_path, write_metadata};
-use rustconn_core::split::tab_groups::TabGroupManager;
 
 /// SSH connection parameters needed for remote recording file retrieval.
 #[derive(Debug, Clone)]
@@ -110,6 +111,8 @@ fn eligibility_from(
         Some(SessionWidgetStorage::Vnc(_) | SessionWidgetStorage::EmbeddedRdp(_)) => {
             SplitEligibility::Embeddable
         }
+        #[cfg(feature = "web-embedded")]
+        Some(SessionWidgetStorage::EmbeddedWeb(_)) => SplitEligibility::Embeddable,
         Some(SessionWidgetStorage::ExternalProcess(_)) => SplitEligibility::ExternalViewer,
         None if has_terminal => SplitEligibility::Embeddable,
         None => SplitEligibility::None,
@@ -427,6 +430,10 @@ impl TerminalNotebook {
                     match widget_storage {
                         SessionWidgetStorage::EmbeddedRdp(widget) => widget.disconnect(),
                         SessionWidgetStorage::Vnc(widget) => widget.disconnect(),
+                        #[cfg(feature = "web-embedded")]
+                        SessionWidgetStorage::EmbeddedWeb(widget) => {
+                            let _ = widget.disconnect();
+                        }
                         SessionWidgetStorage::ExternalProcess(process) => {
                             if let Some(mut child) = process.borrow_mut().take() {
                                 let _ = child.kill();
@@ -889,6 +896,66 @@ impl TerminalNotebook {
         self.notify_tab_added(session_id, connection_id);
     }
 
+    /// Adds an embedded Web browser tab with the `EmbeddedWebWidget`.
+    ///
+    /// Creates a new tab page, stores the widget as
+    /// `SessionWidgetStorage::EmbeddedWeb`, and selects the page.
+    #[cfg(feature = "web-embedded")]
+    pub fn add_embedded_web_tab(
+        &self,
+        session_id: Uuid,
+        connection_id: Uuid,
+        title: &str,
+        widget: Rc<crate::embedded_web::EmbeddedWebWidget>,
+    ) {
+        self.remove_welcome_page();
+
+        // #197: suspend single-Ctrl accelerators while the viewer has focus.
+        self.attach_focus_passthrough(widget.widget());
+
+        let container = GtkBox::new(Orientation::Vertical, 0);
+        container.set_hexpand(true);
+        container.set_vexpand(true);
+        container.append(widget.widget());
+
+        let tab_container = TabPageContainer::single(&container);
+        let page = self.tab_view.append(tab_container.widget());
+        page.set_title(title);
+        page.set_icon(Some(&gio::ThemedIcon::new("web-browser-symbolic")));
+        page.set_tooltip(title);
+
+        self.sessions.borrow_mut().insert(session_id, page.clone());
+        self.tab_containers
+            .borrow_mut()
+            .insert(session_id, tab_container);
+        self.session_widgets
+            .borrow_mut()
+            .insert(session_id, SessionWidgetStorage::EmbeddedWeb(widget));
+
+        self.session_info.borrow_mut().insert(
+            session_id,
+            TerminalSession {
+                id: session_id,
+                connection_id,
+                name: title.to_string(),
+                protocol: "web".to_string(),
+                is_embedded: true,
+                log_file: None,
+                history_entry_id: None,
+                tab_group: None,
+                tab_color_index: None,
+                connected_at: chrono::Utc::now(),
+            },
+        );
+
+        self.tab_view.set_selected_page(&page);
+        // Apply protocol color indicator if enabled
+        if *self.color_tabs_by_protocol.borrow() {
+            self.apply_protocol_color(session_id, "web");
+        }
+        self.notify_tab_added(session_id, connection_id);
+    }
+
     /// Adds an embedded session tab (for RDP/VNC external processes)
     pub fn add_embedded_session_tab(
         &self,
@@ -992,6 +1059,8 @@ impl TerminalNotebook {
             return match storage {
                 SessionWidgetStorage::Vnc(widget) => Some(widget.widget().clone()),
                 SessionWidgetStorage::EmbeddedRdp(widget) => Some(widget.widget().clone().upcast()),
+                #[cfg(feature = "web-embedded")]
+                SessionWidgetStorage::EmbeddedWeb(widget) => Some(widget.widget().clone().upcast()),
                 SessionWidgetStorage::ExternalProcess(_) => None,
             };
         }
@@ -2767,12 +2836,16 @@ impl TerminalNotebook {
         enum Embedded {
             Vnc(Rc<VncSessionWidget>),
             Rdp(Rc<EmbeddedRdpWidget>),
+            #[cfg(feature = "web-embedded")]
+            Web(Rc<crate::embedded_web::EmbeddedWebWidget>),
         }
         let embedded = {
             let widgets = self.session_widgets.borrow();
             match widgets.get(&session_id) {
                 Some(SessionWidgetStorage::Vnc(w)) => Embedded::Vnc(Rc::clone(w)),
                 Some(SessionWidgetStorage::EmbeddedRdp(w)) => Embedded::Rdp(Rc::clone(w)),
+                #[cfg(feature = "web-embedded")]
+                Some(SessionWidgetStorage::EmbeddedWeb(w)) => Embedded::Web(Rc::clone(w)),
                 _ => return false,
             }
         };
@@ -2802,6 +2875,15 @@ impl TerminalNotebook {
                 // buffer but never reached the screen — a blank viewer). The
                 // file-drop ToastOverlay is only needed while DnD is active and
                 // is re-established elsewhere; a plain re-parent restores drawing.
+                widget.set_hexpand(true);
+                widget.set_vexpand(true);
+                container.append(widget);
+                widget.set_visible(true);
+            }
+            #[cfg(feature = "web-embedded")]
+            Embedded::Web(w) => {
+                let widget = w.widget();
+                Self::detach_widget_from_parent(widget.upcast_ref());
                 widget.set_hexpand(true);
                 widget.set_vexpand(true);
                 container.append(widget);
@@ -3254,9 +3336,10 @@ fn cursor_line_text(terminal: &Terminal) -> Option<String> {
 
 #[cfg(test)]
 mod split_eligibility_tests {
-    use super::{SessionWidgetStorage, SplitEligibility, eligibility_from};
     use std::cell::RefCell;
     use std::rc::Rc;
+
+    use super::{SessionWidgetStorage, SplitEligibility, eligibility_from};
 
     #[test]
     fn external_process_is_external_viewer() {

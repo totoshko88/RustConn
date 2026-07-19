@@ -1,10 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use super::download::{download_with_progress, verify_checksum};
+use super::extract::{extract_tar_gz_preserve, extract_zip, find_binary_recursive};
 use super::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
     DownloadableComponent, ProgressCallback,
-    download::{download_with_progress, verify_checksum},
-    extract::{extract_tar_gz_preserve, extract_zip, find_binary_recursive},
 };
 
 #[expect(

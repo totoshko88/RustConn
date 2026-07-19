@@ -3,15 +3,16 @@
 //! This module contains methods for managing active sessions,
 //! including the sessions manager dialog and related functionality.
 
-use crate::alert;
-use crate::i18n::i18n;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, Label, Orientation};
 use libadwaita as adw;
-use std::rc::Rc;
 use uuid::Uuid;
 
+use crate::alert;
+use crate::i18n::i18n;
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;

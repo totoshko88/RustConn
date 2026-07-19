@@ -7,7 +7,10 @@
 //! Uses `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow screens,
 //! auto-close on Escape, drag-to-close support.
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -16,9 +19,8 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::session::recording::{RecordingEntry, RecordingManager, default_recordings_dir};
-use std::cell::RefCell;
-use std::path::PathBuf;
-use std::rc::Rc;
+
+use crate::i18n::i18n;
 
 // ---------------------------------------------------------------------------
 // RecordingListRow

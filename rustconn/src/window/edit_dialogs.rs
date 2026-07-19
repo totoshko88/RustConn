@@ -3,6 +3,17 @@
 //! This module contains functions for editing connections and groups,
 //! showing connection details, and quick connect dialog.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Button, Label, Orientation, glib};
+use libadwaita as adw;
+use rustconn_core::models::PasswordSource;
+use rustconn_core::sync::SyncMode;
+use uuid::Uuid;
+
 use super::MainWindow;
 use super::edit_group::show_edit_group_dialog;
 use crate::alert;
@@ -13,16 +24,6 @@ use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Button, Label, Orientation};
-use libadwaita as adw;
-use rustconn_core::models::PasswordSource;
-use rustconn_core::sync::SyncMode;
-use std::cell::RefCell;
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;

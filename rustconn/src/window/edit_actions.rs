@@ -889,20 +889,19 @@ impl MainWindow {
         window.add_action(&sftp_action);
     }
 
-    /// Opens a Web bookmark connection in the default browser.
+    /// Opens a Web bookmark connection.
     ///
-    /// When a custom browser is configured in `WebConfig`, launches it as a
-    /// subprocess with optional private-mode flags. Otherwise uses
-    /// `gtk4::UriLauncher` which works correctly in both Flatpak
-    /// (via `org.freedesktop.portal.OpenURI`) and native environments.
-    /// Does not create a tab — shows a toast confirming the URL was opened.
-    /// Resets sidebar status after the browser launch completes.
+    /// When Browser Mode is Embedded (and the `web-embedded` feature is active),
+    /// creates an `EmbeddedWebWidget` inside a new tab. Otherwise launches the
+    /// URL in a custom browser subprocess or the system default browser via
+    /// `gtk4::UriLauncher`.
     pub(crate) fn handle_web_connect(
         state: &SharedAppState,
+        notebook: &SharedNotebook,
         sidebar: &SharedSidebar,
         connection_id: Uuid,
     ) {
-        let (url, web_config) = {
+        let (url, web_config, conn_name) = {
             let Ok(state_ref) = state.try_borrow() else {
                 return;
             };
@@ -910,6 +909,7 @@ impl MainWindow {
                 return;
             };
             let url = conn.host.clone();
+            let name = conn.name.clone();
             let config = match &conn.protocol_config {
                 rustconn_core::models::ProtocolConfig::Web(cfg) => cfg.clone(),
                 _ => rustconn_core::models::WebConfig::default(),
@@ -921,7 +921,7 @@ impl MainWindow {
             {
                 tracing::warn!(?e, "Failed to update last_connected for web connection");
             }
-            (url, config)
+            (url, config, name)
         };
 
         if url.is_empty() {
@@ -930,8 +930,81 @@ impl MainWindow {
             return;
         }
 
-        // If a custom browser is configured, launch it as a subprocess
-        if let Some(ref browser) = web_config.browser {
+        // Silence unused-variable warnings when web-embedded feature is disabled.
+        // These are used in the #[cfg(feature = "web-embedded")] block below.
+        #[cfg(not(feature = "web-embedded"))]
+        {
+            let _ = &notebook;
+            let _ = &conn_name;
+        }
+
+        // Embedded mode: create an in-tab WebKitGTK widget
+        #[cfg(feature = "web-embedded")]
+        if web_config.browser_mode == rustconn_core::models::WebBrowserMode::Embedded {
+            use std::rc::Rc;
+
+            use crate::embedded_web::EmbeddedWebWidget;
+
+            // Retrieve cached credentials for autofill (username + SecretString password)
+            let credentials = {
+                let Ok(state_ref) = state.try_borrow() else {
+                    return;
+                };
+                state_ref
+                    .get_cached_credentials(connection_id)
+                    .map(|creds| {
+                        use secrecy::ExposeSecret;
+                        (
+                            creds.username.clone(),
+                            secrecy::SecretString::new(
+                                creds.password.expose_secret().to_string().into(),
+                            ),
+                        )
+                    })
+            };
+
+            let session_id = uuid::Uuid::new_v4();
+            match EmbeddedWebWidget::new(connection_id, &url, &web_config, credentials) {
+                Ok(widget) => {
+                    let widget = Rc::new(widget);
+
+                    // Wire zoom persistence: save zoom level to connection config on change
+                    let state_for_zoom = Rc::clone(state);
+                    let conn_id_for_zoom = connection_id;
+                    widget.connect_zoom_changed(move |new_zoom| {
+                        if let Ok(mut state_mut) = state_for_zoom.try_borrow_mut() {
+                            state_mut.update_web_zoom_level(conn_id_for_zoom, new_zoom);
+                        }
+                    });
+
+                    notebook.add_embedded_web_tab(session_id, connection_id, &conn_name, widget);
+                    sidebar.update_connection_status(&connection_id.to_string(), "connected");
+                    tracing::info!(
+                        connection = %conn_name,
+                        %connection_id,
+                        "Embedded web session started"
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        connection = %conn_name,
+                        error = %e,
+                        "Failed to create embedded web widget"
+                    );
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Failed to open URL: {}",
+                        &[&e.to_string()],
+                    ));
+                }
+            }
+            return;
+        }
+
+        // Custom mode: launch user-specified browser as a subprocess
+        if web_config.browser_mode == rustconn_core::models::WebBrowserMode::Custom
+            && let Some(ref browser) = web_config.browser
+        {
             let mut cmd = std::process::Command::new(browser);
 
             // Add private mode flag for known browsers
@@ -973,7 +1046,7 @@ impl MainWindow {
             return;
         }
 
-        // Use gtk4::UriLauncher for portal-aware URL opening (system default browser)
+        // System mode (default): use gtk4::UriLauncher for portal-aware URL opening
         let launcher = gtk4::UriLauncher::new(&url);
         let sidebar_clone = sidebar.clone();
         launcher.launch(

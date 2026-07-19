@@ -3,10 +3,11 @@
 //! **Feature: rustconn, Property 13: Credentials Security Invariant**
 //! **Validates: Requirements 5.5**
 
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::Credentials;
 use rustconn_core::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource};
-use std::path::PathBuf;
 
 /// Generates arbitrary SSH key paths (file paths that look like SSH keys)
 fn arb_key_path() -> impl Strategy<Value = PathBuf> {

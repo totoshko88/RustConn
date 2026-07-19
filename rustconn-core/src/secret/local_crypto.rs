@@ -18,26 +18,26 @@
 use zeroize::Zeroizing;
 
 /// Magic bytes identifying AES-256-GCM encrypted credentials (v1)
-pub const SETTINGS_CRYPTO_MAGIC: &[u8] = b"RCSC";
+pub(crate) const SETTINGS_CRYPTO_MAGIC: &[u8] = b"RCSC";
 
 /// Current settings crypto version
-pub const SETTINGS_CRYPTO_VERSION: u8 = 1;
+pub(crate) const SETTINGS_CRYPTO_VERSION: u8 = 1;
 
 /// Salt length for Argon2id key derivation
-pub const SETTINGS_SALT_LEN: usize = 16;
+pub(crate) const SETTINGS_SALT_LEN: usize = 16;
 
 /// Nonce length for AES-256-GCM
-pub const SETTINGS_NONCE_LEN: usize = 12;
+pub(crate) const SETTINGS_NONCE_LEN: usize = 12;
 
 /// Header length: magic(4) + version(1) + salt(16) + nonce(12)
-pub const SETTINGS_HEADER_LEN: usize = 4 + 1 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN;
+pub(crate) const SETTINGS_HEADER_LEN: usize = 4 + 1 + SETTINGS_SALT_LEN + SETTINGS_NONCE_LEN;
 
 /// Gets a machine-specific key for encryption.
 ///
 /// Uses an app-specific key file, `/etc/machine-id`, or returns empty.
 /// In a Flatpak sandbox `/etc/machine-id` is inaccessible, so we first try an
 /// app-specific key file stored in the XDG data directory.
-pub fn get_machine_key() -> Vec<u8> {
+pub(crate) fn get_machine_key() -> Vec<u8> {
     /// Key length type for HKDF output (32 bytes = 256 bits)
     struct HkdfKeyLen;
     impl ring::hkdf::KeyType for HkdfKeyLen {
@@ -105,7 +105,7 @@ pub fn get_machine_key() -> Vec<u8> {
 /// # Errors
 /// Returns an error string if salt/nonce generation, key creation, or the
 /// AES-GCM seal operation fails.
-pub fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
+pub(crate) fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8>, String> {
     use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::rand::{SecureRandom, SystemRandom};
 
@@ -151,7 +151,10 @@ pub fn encrypt_credential(plaintext: &[u8], machine_key: &[u8]) -> Result<Vec<u8
 /// long-removed legacy XOR format) or if AES-GCM decryption fails. The legacy
 /// XOR fallback was removed in 0.17.0 — it provided no real protection and the
 /// transparent migration window (since v0.12) has long passed.
-pub fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Zeroizing<Vec<u8>>, String> {
+pub(crate) fn decrypt_credential(
+    data: &[u8],
+    machine_key: &[u8],
+) -> Result<Zeroizing<Vec<u8>>, String> {
     if data.len() >= SETTINGS_HEADER_LEN && data[..4] == *SETTINGS_CRYPTO_MAGIC {
         decrypt_credential_aes(data, machine_key)
     } else {
@@ -171,7 +174,7 @@ pub fn decrypt_credential(data: &[u8], machine_key: &[u8]) -> Result<Zeroizing<V
 /// # Errors
 /// Returns an error if the input is too short, the nonce is malformed, key
 /// derivation fails, or AES-GCM authentication fails.
-pub fn decrypt_credential_aes(
+pub(crate) fn decrypt_credential_aes(
     data: &[u8],
     machine_key: &[u8],
 ) -> Result<Zeroizing<Vec<u8>>, String> {
@@ -219,7 +222,7 @@ pub fn decrypt_credential_aes(
 /// # Errors
 /// Returns an error string if the Argon2 parameters are invalid or key
 /// derivation fails.
-pub fn derive_settings_key(machine_key: &[u8], salt: &[u8]) -> Result<[u8; 32], String> {
+pub(crate) fn derive_settings_key(machine_key: &[u8], salt: &[u8]) -> Result<[u8; 32], String> {
     use argon2::{Algorithm, Argon2, Params, Version};
 
     // Lighter params: 16 MiB memory, 2 iterations, 1 thread

@@ -18,7 +18,7 @@ use crate::util::{create_config_manager, parse_protocol_type};
 /// - [`CliError::Config`] when configuration cannot be read or written
 /// - [`CliError::SmartFolder`] when a smart folder operation fails
 ///   (duplicate name, missing folder, invalid filter rule)
-pub fn cmd_smart_folder(
+pub(super) fn cmd_smart_folder(
     config_path: Option<&Path>,
     subcmd: SmartFolderCommands,
 ) -> Result<(), CliError> {

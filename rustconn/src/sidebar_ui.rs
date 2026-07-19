@@ -3,11 +3,12 @@
 //! This module contains UI-related helper functions for creating popovers,
 //! context menus, and other visual elements used by the sidebar widget.
 
-use crate::i18n::i18n;
-use gtk4::gdk;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator};
 use std::cell::RefCell;
+
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk};
+
+use crate::i18n::i18n;
 
 thread_local! {
     /// Tracks the currently open context menu popover across the entire application.

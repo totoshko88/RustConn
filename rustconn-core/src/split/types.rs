@@ -4,6 +4,7 @@
 //! throughout the split view system.
 
 use std::fmt;
+
 use uuid::Uuid;
 
 /// Unique identifier for a panel within a split layout.

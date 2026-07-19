@@ -17,7 +17,10 @@ use crate::util::{create_config_manager, create_template_manager, parse_protocol
 /// - [`CliError::Config`] when templates cannot be loaded or saved
 /// - [`CliError::Template`] when a template operation fails (duplicate name,
 ///   missing template, unknown protocol)
-pub fn cmd_template(config_path: Option<&Path>, subcmd: TemplateCommands) -> Result<(), CliError> {
+pub(super) fn cmd_template(
+    config_path: Option<&Path>,
+    subcmd: TemplateCommands,
+) -> Result<(), CliError> {
     match subcmd {
         TemplateCommands::List { format, protocol } => {
             cmd_template_list(config_path, format.effective(), protocol.as_deref())

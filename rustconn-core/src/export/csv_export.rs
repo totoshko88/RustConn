@@ -3,12 +3,11 @@
 //! Serializes connections into RFC 4180-compliant CSV with configurable
 //! delimiter and field selection.
 
-use crate::models::{Connection, ConnectionGroup, ProtocolType};
-
 use super::{
     ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
     write_export_file,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolType};
 
 /// Fields that can be included in CSV export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

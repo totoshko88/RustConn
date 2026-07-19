@@ -3,14 +3,15 @@
 //! This module contains methods for managing connection clusters,
 //! including cluster dialogs and related functionality.
 
-use crate::i18n::{i18n, i18n_f};
-use gtk4::prelude::*;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
 use uuid::Uuid;
 
 use super::MainWindow;
 use crate::alert;
 use crate::dialogs::{ClusterDialog, ClusterListDialog};
+use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;

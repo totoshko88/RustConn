@@ -7,20 +7,22 @@
 //! The add/edit functionality is delegated to `TunnelBuilderDialog`
 //! (see `tunnel_builder` module).
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::glib;
+use gtk4::prelude::*;
+use libadwaita as adw;
+use rustconn_core::models::{Connection, StandaloneTunnel};
+use uuid::Uuid;
+
 use crate::dialogs::tunnel_builder::{
     NewConnectionOpener, TunnelBuilderContext, TunnelBuilderDialog,
 };
 use crate::i18n::i18n;
 use crate::state::{SharedAppState, with_state, with_state_mut};
 use crate::window::SharedTunnelManager;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use libadwaita as adw;
-use rustconn_core::models::{Connection, StandaloneTunnel};
-use std::cell::RefCell;
-use std::rc::Rc;
-use uuid::Uuid;
 
 // ---------------------------------------------------------------------------
 // Tunnel Manager Dialog

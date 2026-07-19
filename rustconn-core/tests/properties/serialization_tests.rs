@@ -3,14 +3,15 @@
 //! **Feature: rustconn, Property 6: Connection Serialization Round-Trip**
 //! **Validates: Requirements 10.5, 10.6**
 
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::models::SharedFolder;
 use rustconn_core::{
     Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution, SpiceConfig,
     SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
 };
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 // Strategy for generating valid connection names
 fn arb_name() -> impl Strategy<Value = String> {

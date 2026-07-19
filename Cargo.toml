@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.18.12"
+version = "0.19.0"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -99,6 +99,12 @@ unsafe_code = "forbid"
 # nobody asked for (YAGNI).
 unused_lifetimes = "warn"
 redundant_lifetimes = "warn"
+# IronRDP-inspired: find pub items invisible outside their module
+# NOTE: noisy in test helper code — suppress per-file with
+# #![allow(unreachable_pub)] in test entry points if needed.
+unreachable_pub = "warn"
+# IronRDP-inspired: catch redundant `use` imports
+redundant_imports = "warn"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -147,4 +153,25 @@ clone_on_ref_ptr = "warn"   # catches .clone() on Rc/Arc — prefer Rc::clone(&x
 redundant_clone = "warn"   # catches .clone() where the value is not used again
 empty_drop = "warn"         # flags empty Drop impls (usually a mistake)
 
+# IronRDP-inspired: catch debug/development leftovers before they reach main
+unwrap_used = "warn"        # forces explicit error handling (expect/? instead of unwrap)
+dbg_macro = "warn"          # no dbg!() in committed code
+todo = "warn"               # no todo!() in releases
+print_stdout = "warn"       # use tracing, not println! (library code)
+print_stderr = "warn"       # use tracing, not eprintln! (library code)
+# IronRDP-inspired: explicit imports for better readability and smaller diffs
+wildcard_imports = "warn"
+# redundant_pub_crate conflicts with unreachable_pub — when a module is private,
+# pub(crate) is technically redundant but communicates intent. Suppress the noise.
+redundant_pub_crate = "allow"
 
+
+
+# IronRDP-inspired: compile proptest and rand_chacha with optimizations even in
+# test builds — dramatically speeds up property tests (argon2 suite goes from
+# ~120s to ~30s in debug).
+[profile.test.package.proptest]
+opt-level = 3
+
+[profile.test.package.rand_chacha]
+opt-level = 3

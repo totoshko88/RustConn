@@ -14,10 +14,9 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation};
 use libadwaita as adw;
 use libadwaita::prelude::*;
+use rustconn_core::split::{ColorPool, PanelId, SessionId};
 use uuid::Uuid;
 use vte4::Terminal;
-
-use rustconn_core::split::{ColorPool, PanelId, SessionId};
 
 use super::adapter::SplitViewAdapter;
 use crate::i18n::i18n;
@@ -1922,7 +1921,7 @@ impl SplitViewBridge {
                 sessions
                     .borrow()
                     .iter()
-                    .map(|(id, session)| (*id, session.name.clone()))
+                    .map(|(id, session)| (*id, session.name.clone(), session.protocol.clone()))
                     .collect()
             },
             on_session_selected,
@@ -1938,7 +1937,7 @@ impl SplitViewBridge {
     ///
     /// # Arguments
     ///
-    /// * `session_provider` - Function that returns all available sessions as (id, name) pairs
+    /// * `session_provider` - Function that returns all available sessions as (id, name, protocol) tuples
     /// * `on_session_selected` - Callback invoked when a session is selected.
     ///   Receives (panel_uuid, session_id) and should move the session to the panel.
     /// * `split_colors` - Global map of session_id → color_index for sessions in any split view
@@ -1948,7 +1947,7 @@ impl SplitViewBridge {
         on_session_selected: F,
         split_colors: Rc<RefCell<HashMap<Uuid, usize>>>,
     ) where
-        P: Fn() -> Vec<(Uuid, String)> + Clone + 'static,
+        P: Fn() -> Vec<(Uuid, String, String)> + Clone + 'static,
         F: Fn(Uuid, Uuid) + Clone + 'static,
     {
         // Share the actual panel_uuid_map reference instead of cloning
@@ -1997,9 +1996,9 @@ impl SplitViewBridge {
                 let all_sessions = session_provider();
 
                 // Filter to only those NOT already in this split view
-                let available_sessions: Vec<(Uuid, String)> = all_sessions
+                let available_sessions: Vec<(Uuid, String, String)> = all_sessions
                     .into_iter()
-                    .filter(|(id, _)| !sessions_in_split.contains(id))
+                    .filter(|(id, _, _)| !sessions_in_split.contains(id))
                     .collect();
 
                 if available_sessions.is_empty() {
@@ -2066,12 +2065,13 @@ impl SplitViewBridge {
                     .css_classes(["boxed-list"])
                     .build();
 
-                for (session_id, session_name) in available_sessions {
+                for (session_id, session_name, protocol) in available_sessions {
                     let row = adw::ActionRow::builder()
                         .title(&session_name)
                         .activatable(true)
                         .build();
-                    row.add_prefix(&gtk4::Image::from_icon_name("utilities-terminal-symbolic"));
+                    let icon_name = rustconn_core::protocol::icons::get_protocol_icon_by_name(&protocol);
+                    row.add_prefix(&gtk4::Image::from_icon_name(icon_name));
 
                     // Show split color indicator if session is in any split view
                     if let Some(&color_index) = split_colors.borrow().get(&session_id)
@@ -2336,8 +2336,9 @@ impl Default for SplitViewBridge {
 
 #[cfg(test)]
 mod broadcast_gating_tests {
-    use super::{SplitViewBridge, TerminalPane};
     use uuid::Uuid;
+
+    use super::{SplitViewBridge, TerminalPane};
 
     // The bridge builds real GTK widgets (adapter panes) and `vte4::Terminal`
     // instances, so these tests need a display; skip cleanly when headless,

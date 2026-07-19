@@ -1,8 +1,9 @@
 //! Property tests for export format functionality
 
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::export::{ExportError, ExportFormat, ExportOptions, ExportResult};
-use std::path::PathBuf;
 
 proptest! {
     /// Property: ExportFormat::all returns all formats

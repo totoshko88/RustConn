@@ -3,12 +3,10 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::PasswordSource;
-use super::SshAuthMethod;
+use super::{PasswordSource, SshAuthMethod};
 use crate::sync::SyncMode;
 
 /// A hierarchical group for organizing connections

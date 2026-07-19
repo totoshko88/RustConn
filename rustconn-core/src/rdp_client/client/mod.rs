@@ -17,10 +17,11 @@
 // #![allow(clippy::missing_panics_doc)]
 // #![allow(clippy::default_trait_access)]
 
-use super::{RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
+
+use super::{RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent};
 
 mod commands;
 mod connection;

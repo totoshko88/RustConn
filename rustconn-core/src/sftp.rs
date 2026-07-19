@@ -3,11 +3,10 @@
 //! Provides utilities for building SFTP URIs and CLI commands
 //! for SSH connections with SFTP enabled.
 
-use crate::models::Connection;
-use crate::models::ConnectionGroup;
-use crate::models::SshKeySource;
 use std::path::PathBuf;
 use std::sync::OnceLock;
+
+use crate::models::{Connection, ConnectionGroup, SshKeySource};
 
 /// Information about a running ssh-agent instance.
 ///

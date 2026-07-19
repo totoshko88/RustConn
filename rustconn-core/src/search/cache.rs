@@ -204,8 +204,9 @@ impl Default for SearchCache {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     fn create_test_result(score: f32) -> ConnectionSearchResult {
         ConnectionSearchResult::new(Uuid::new_v4(), score)

@@ -4,16 +4,17 @@
 //! in group-operations mode in one pass. Each field has an "apply" check —
 //! only checked fields are written, so unrelated settings stay untouched.
 
-use super::MainWindow;
-use crate::alert;
-use crate::i18n::{i18n, i18n_f};
-use crate::state::SharedAppState;
-use crate::window::operations::SharedSidebar;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
 use uuid::Uuid;
+
+use super::MainWindow;
+use crate::alert;
+use crate::i18n::{i18n, i18n_f};
+use crate::state::SharedAppState;
+use crate::window::operations::SharedSidebar;
 
 /// Shows the batch edit dialog for the current sidebar selection.
 ///

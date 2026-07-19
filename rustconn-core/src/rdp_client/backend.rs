@@ -3,9 +3,10 @@
 //! This module provides centralized logic for detecting available RDP backends
 //! and selecting the most appropriate one based on system capabilities.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::process::{Command, Stdio};
+
+use serde::{Deserialize, Serialize};
 
 /// Available RDP backend implementations
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

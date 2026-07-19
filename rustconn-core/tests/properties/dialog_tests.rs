@@ -6,6 +6,8 @@
 //! **Feature: rustconn-bugfixes, Property 1: Connection Validation**
 //! **Validates: Requirements 1.1, 1.2**
 
+use std::collections::HashMap;
+
 use proptest::prelude::*;
 use rustconn_core::dialog_utils::{
     format_args, format_custom_options, parse_args, parse_custom_options, validate_host,
@@ -14,7 +16,6 @@ use rustconn_core::dialog_utils::{
 use rustconn_core::{
     ConfigManager, Connection, ProtocolConfig, SshAuthMethod, SshConfig, SshKeySource,
 };
-use std::collections::HashMap;
 
 // ========== Generators ==========
 

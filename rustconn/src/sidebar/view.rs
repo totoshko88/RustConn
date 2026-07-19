@@ -1,12 +1,13 @@
 //! View logic for the sidebar (list items)
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, DragSource, GestureClick, Image, Label, ListItem, ListView, MultiSelection,
     Orientation, SignalListItemFactory, SingleSelection, TreeExpander, TreeListRow, gdk, glib,
     pango,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionItem;

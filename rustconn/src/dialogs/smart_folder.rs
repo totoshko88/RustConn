@@ -3,17 +3,19 @@
 //! Provides a libadwaita dialog for creating and editing smart folders with
 //! filter criteria: protocol, host pattern, tags, and group.
 
-use crate::dialogs::widgets::{DropdownRowBuilder, EntryRowBuilder};
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, DropDown, Entry, Orientation};
 use libadwaita as adw;
 use rustconn_core::ProtocolType;
 use rustconn_core::models::{ConnectionGroup, SmartFolder};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::dialogs::widgets::{DropdownRowBuilder, EntryRowBuilder};
+use crate::i18n::i18n;
 
 /// Callback type for smart folder dialog results.
 pub type SmartFolderCallback = Rc<RefCell<Option<Box<dyn Fn(Option<SmartFolder>)>>>>;

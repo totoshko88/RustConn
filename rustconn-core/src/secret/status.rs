@@ -9,9 +9,10 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use secrecy::{ExposeSecret, SecretString};
 use std::path::Path;
 use std::process::Command;
+
+use secrecy::{ExposeSecret, SecretString};
 
 use crate::error::{SecretError, SecretResult};
 

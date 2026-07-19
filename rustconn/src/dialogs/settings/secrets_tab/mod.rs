@@ -3,21 +3,19 @@
 mod detection;
 mod keyring;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
-use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, DropDown, Entry, FileDialog, FileFilter, Label,
-    Orientation, StringList, Switch,
+    Orientation, StringList, Switch, glib,
 };
 use libadwaita as adw;
 use rustconn_core::config::{SecretBackendType, SecretSettings};
 use rustconn_core::secret::{CredentialStorage, set_session_key};
 use secrecy::SecretString;
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::i18n::i18n;
 
 use self::detection::{
     check_bitwarden_status_sync, detect_secret_backends, extract_session_key,
@@ -28,6 +26,7 @@ use self::keyring::{
     get_pb_passphrase_from_keyring, save_bw_password_to_keyring, save_kdbx_password_to_keyring,
     save_op_token_to_keyring, save_pb_passphrase_to_keyring,
 };
+use crate::i18n::i18n;
 
 /// Return type for secrets page - contains all widgets needed for dynamic visibility
 #[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]

@@ -3,16 +3,18 @@
 //! Adaptive form that changes fields based on the selected protocol.
 //! Includes Jump Host dropdown for protocols that support SSH tunneling.
 
-use crate::i18n::{i18n, i18n_f};
-use crate::state::SharedAppState;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Orientation, ScrolledWindow, StringList};
 use libadwaita as adw;
 use rustconn_core::models::ProtocolType;
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::i18n::{i18n, i18n_f};
+use crate::state::SharedAppState;
 
 /// Connection details page — Step 2 of the wizard
 #[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]

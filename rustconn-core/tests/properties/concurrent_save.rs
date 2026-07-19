@@ -5,11 +5,12 @@
 //! After ARCH-2 (file locking), concurrent saves should serialize via advisory lock.
 //! The file must always contain valid TOML with a consistent set of connections.
 
+use std::sync::Arc;
+use std::thread;
+
 use proptest::prelude::*;
 use rustconn_core::config::ConfigManager;
 use rustconn_core::models::{Connection, ProtocolConfig, SshConfig};
-use std::sync::Arc;
-use std::thread;
 use tempfile::TempDir;
 
 /// Strategy for generating a connection name.

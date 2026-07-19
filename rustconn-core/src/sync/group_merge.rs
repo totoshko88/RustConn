@@ -14,10 +14,9 @@ use std::collections::{HashMap, HashSet};
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup};
-
 use super::group_export::{GroupSyncExport, SyncConnection, SyncGroup, compute_group_path};
 use super::variable_template::VariableTemplate;
+use crate::models::{Connection, ConnectionGroup};
 
 /// Name-based merge engine for Group Sync Import mode.
 ///
@@ -198,11 +197,12 @@ impl GroupMergeEngine {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{Duration, Utc};
+
     use super::*;
     use crate::models::{
         AutomationConfig, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
     };
-    use chrono::{Duration, Utc};
 
     /// Helper: create a minimal `SyncConnection`.
     fn make_sync_conn(name: &str, group_path: &str) -> SyncConnection {

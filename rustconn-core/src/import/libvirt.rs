@@ -14,13 +14,12 @@ use std::path::{Path, PathBuf};
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, SpiceConfig,
     VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// Default VNC port used by libvirt when autoport is enabled.
 const DEFAULT_VNC_PORT: u16 = 5900;
@@ -560,9 +559,11 @@ impl ImportSource for LibvirtXmlImporter {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::io::Write;
+
     use tempfile::NamedTempFile;
+
+    use super::*;
 
     fn write_xml_file(content: &str) -> NamedTempFile {
         let mut f = NamedTempFile::new().expect("tempfile");

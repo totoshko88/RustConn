@@ -3,9 +3,8 @@
 //! Registers actions for creating, editing, and deleting smart folders
 //! from the sidebar UI.
 
-use gtk4::gio;
-use gtk4::glib;
 use gtk4::prelude::*;
+use gtk4::{gio, glib};
 use libadwaita as adw;
 
 use super::MainWindow;

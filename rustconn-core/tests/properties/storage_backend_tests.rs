@@ -3,6 +3,9 @@
 //! These tests validate the correctness properties for credential storage
 //! backend selection and migration as defined in Requirements 3.1-3.6.
 
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use proptest::prelude::*;
 use rustconn_core::CredentialResolver;
 use rustconn_core::config::{SecretBackendType, SecretSettings};
@@ -10,8 +13,6 @@ use rustconn_core::models::{
     Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
 };
 use rustconn_core::secret::SecretManager;
-use std::path::PathBuf;
-use std::sync::Arc;
 use uuid::Uuid;
 
 // ========== Generators ==========

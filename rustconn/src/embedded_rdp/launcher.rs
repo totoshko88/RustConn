@@ -3,10 +3,12 @@
 //! This module provides the `SafeFreeRdpLauncher` struct for launching FreeRDP
 //! with environment variables set to suppress Qt/Wayland warnings.
 
-use super::types::{EmbeddedRdpError, RdpConfig};
-use secrecy::{ExposeSecret, SecretString};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
+
+use secrecy::{ExposeSecret, SecretString};
+
+use super::types::{EmbeddedRdpError, RdpConfig};
 
 /// Shared buffer collecting stderr lines from the external FreeRDP process.
 ///
@@ -125,8 +127,6 @@ impl SafeFreeRdpLauncher {
         let mut cmd = if via_host {
             let mut c = Command::new("flatpak-spawn");
             c.arg("--host");
-            // Forward stdin for password passing via /from-stdin
-            c.arg("--forward-fd=0");
             // Pass environment variables via flatpak-spawn --env
             for (key, value) in self.build_env() {
                 c.arg(format!("--env={key}={value}"));
@@ -155,25 +155,30 @@ impl SafeFreeRdpLauncher {
             }
         }
 
-        // The RemoteApp session password must never appear on argv
-        // (`/proc/<pid>/cmdline`): `/from-stdin` does not work for RAIL
-        // sessions, so it is written into a single-use args file in
-        // $XDG_RUNTIME_DIR (mode 0600) and consumed via `/args-from:file:`.
-        // The guard removes the file when this function returns, even on the
-        // error path.
+        // Session password is always passed via a single-use args file in
+        // $XDG_RUNTIME_DIR (mode 0600) consumed by `/args-from:file:`.
         //
-        // The RD Gateway no longer needs a separate secret here: FreeRDP reuses
-        // the session credentials (the `/u:`, `/d:` and `/from-stdin` password)
-        // for the gateway, matching the working manual command
-        // `xfreerdp /gateway:g:HOST /u:NAME /d:DOMAIN`. The previous `/gp:` path
-        // used a FreeRDP 2.x alias that FreeRDP 3.x rejects (issue #187).
+        // Previously, non-RemoteApp sessions used `/from-stdin` (piping
+        // domain\npassword\n). This broke on servers behind an RD Connection
+        // Broker: the broker issues a Server Redirection PDU, FreeRDP
+        // reconnects to the target host and prompts for credentials again —
+        // but stdin is already consumed (issue #218). The args-file approach
+        // stores `/p:<password>` in a temp file that FreeRDP reads once into
+        // memory, surviving redirects without exposing the secret in
+        // `/proc/<pid>/cmdline`.
+        //
+        // The RD Gateway no longer needs a separate secret here: FreeRDP
+        // reuses the session credentials (`/u:`, `/d:` and the `/p:` from
+        // the args file) for the gateway, matching the working manual command
+        // `xfreerdp /gateway:g:HOST /u:NAME /d:DOMAIN`. The previous `/gp:`
+        // path used a FreeRDP 2.x alias that FreeRDP 3.x rejects (issue #187).
         let session_password = config
             .password
             .as_ref()
             .filter(|p| !p.expose_secret().is_empty());
 
         let mut secret_args: Vec<(&str, &SecretString)> = Vec::new();
-        if is_remote_app && let Some(p) = session_password {
+        if let Some(p) = session_password {
             secret_args.push(("p", p));
         }
 
@@ -241,25 +246,9 @@ impl SafeFreeRdpLauncher {
             });
         }
 
-        // Write password via stdin when /from-stdin is used (i.e. for
-        // non-RemoteApp sessions; RemoteApp gets the password via the
-        // ephemeral args file above).
-        if !is_remote_app
-            && let Some(ref password) = config.password
-            && !password.expose_secret().is_empty()
-            && let Some(mut stdin) = child.stdin.take()
-        {
-            use std::io::Write;
-            // FreeRDP 3.x /from-stdin expects: domain\npassword\n
-            // Send empty domain line first, then password
-            let domain = config.domain.as_deref().unwrap_or("");
-            let _ = writeln!(stdin, "{domain}");
-            let _ = writeln!(stdin, "{}", password.expose_secret());
-        }
-
         // _password_guard is dropped here, removing the temp args file.
-        // FreeRDP keeps the file mapped only briefly during argument
-        // parsing, so removing it shortly after spawn is safe.
+        // FreeRDP reads the file during argument parsing (a fraction of a
+        // second after spawn), so removing it shortly after is safe.
         Ok((child, stderr_lines))
     }
 
@@ -291,29 +280,10 @@ impl SafeFreeRdpLauncher {
             cmd.arg(format!("/u:{username}"));
         }
 
-        if let Some(ref password) = config.password
-            && !password.expose_secret().is_empty()
-        {
-            // For RemoteApp (external xfreerdp3 process), the caller writes
-            // the password into a single-use args file in $XDG_RUNTIME_DIR
-            // and passes `/args-from:file:<path>` instead — so the password
-            // never appears in `/proc/<pid>/cmdline`. See
-            // `super::ephemeral_args::EphemeralRdpArgs` for details and
-            // `launch()` for the wiring.
-            //
-            // For embedded mode (wlfreerdp) we still use `/from-stdin` —
-            // it works fine for non-RAIL sessions and reuses the existing
-            // pipe-based password injection.
-            let is_remote_app = config
-                .remote_app_program
-                .as_ref()
-                .is_some_and(|p| !p.is_empty());
-
-            if !is_remote_app {
-                cmd.arg("/from-stdin");
-                cmd.stdin(Stdio::piped());
-            }
-        }
+        // The password is passed via a single-use args file
+        // (`/args-from:file:<path>`) in `launch()` — it never appears on
+        // argv or stdin. This survives RD Connection Broker redirects
+        // because FreeRDP reads the file once into memory (issue #218).
 
         cmd.arg(format!("/w:{}", config.width));
         cmd.arg(format!("/h:{}", config.height));
@@ -363,7 +333,7 @@ impl SafeFreeRdpLauncher {
         // favour of the unified `/gateway:` option (see xfreerdp3(1)); the old
         // aliases are rejected as "Unexpected keyword" and the client exits
         // before connecting (issue #187). FreeRDP reuses the session
-        // credentials (`/u:`, `/d:` and the `/from-stdin` password) for the
+        // credentials (`/u:`, `/d:` and the `/p:` from the args file) for the
         // gateway, exactly like the working manual command
         // `xfreerdp /gateway:g:HOST /u:NAME /d:DOMAIN`. We only add an explicit
         // gateway user when it differs from the session user; a distinct

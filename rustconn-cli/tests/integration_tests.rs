@@ -9,6 +9,7 @@
 )]
 
 use std::process::{Command, Output};
+
 use tempfile::TempDir;
 
 /// Helper to run the CLI with given arguments

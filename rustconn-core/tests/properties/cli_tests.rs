@@ -2,10 +2,11 @@
 //!
 //! Tests correctness properties for CLI list and add command functionality.
 
+use std::path::PathBuf;
+
 use proptest::prelude::*;
 use rustconn_core::config::ConfigManager;
 use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType, SshAuthMethod};
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Generates a valid hostname (no wildcards, valid characters)

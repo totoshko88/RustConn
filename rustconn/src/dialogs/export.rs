@@ -4,6 +4,10 @@
 //! and options for exporting connections to Ansible, SSH Config, Remmina,
 //! and Asbru-CM formats.
 
+use std::cell::RefCell;
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -21,9 +25,6 @@ use rustconn_core::models::{
     Connection, ConnectionGroup, ConnectionTemplate, SmartFolder, Snippet,
 };
 use rustconn_core::variables::Variable;
-use std::cell::RefCell;
-use std::path::PathBuf;
-use std::rc::Rc;
 
 use crate::i18n::{i18n, i18n_f};
 

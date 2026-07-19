@@ -1,11 +1,9 @@
 //! Group management commands.
 
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use rustconn_core::ConnectionManager;
-use rustconn_core::models::ConnectionGroup;
-use rustconn_core::models::SshAuthMethod;
+use rustconn_core::models::{ConnectionGroup, SshAuthMethod};
 
 use crate::cli::{GroupCommands, OutputFormat};
 use crate::error::CliError;
@@ -19,7 +17,7 @@ use crate::util::create_config_manager;
 /// Returns:
 /// - [`CliError::Config`] when groups or connections cannot be loaded or saved
 /// - [`CliError::Group`] when a referenced group does not exist or a name conflicts
-pub fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
+pub(super) fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
     match subcmd {
         GroupCommands::List { format } => cmd_group_list(config_path, format.effective()),
         GroupCommands::Show { name, format } => {

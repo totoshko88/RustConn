@@ -3,15 +3,17 @@
 //! Provides a simple dialog for entering credentials when connecting
 //! to RDP/VNC sessions that require authentication.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, Entry, Grid, Label, Orientation, PasswordEntry};
 use libadwaita as adw;
 use rustconn_core::secret::CancellationToken;
 use secrecy::SecretString;
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Result from password dialog
 #[derive(Debug, Clone)]

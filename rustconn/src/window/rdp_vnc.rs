@@ -3,18 +3,19 @@
 //! This module contains functions for starting RDP and VNC connections
 //! with password dialogs and credential handling.
 
+use std::rc::Rc;
+
+use gtk4::prelude::*;
+use rustconn_core::models::PasswordSource;
+use secrecy::ExposeSecret;
+use uuid::Uuid;
+
 use crate::dialogs::PasswordDialog;
 use crate::embedded::{EmbeddedSessionTab, RdpLauncher};
 use crate::sidebar::ConnectionSidebar;
 use crate::split_view::SplitViewBridge;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
-use gtk4::prelude::*;
-use rustconn_core::models::PasswordSource;
-use secrecy::ExposeSecret;
-
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -466,8 +467,9 @@ fn start_embedded_rdp_session(
     history_entry_id: Option<Uuid>,
     ssh_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
 ) {
-    use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
     use gtk4::glib;
+
+    use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig as EmbeddedRdpConfig};
 
     // Create embedded RDP widget
     let embedded_widget = EmbeddedRdpWidget::new();

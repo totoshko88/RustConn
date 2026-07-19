@@ -25,6 +25,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+
 use thiserror::Error;
 
 /// HTTP timeout for CLI download index/redirect lookups.
@@ -40,7 +41,6 @@ pub use self::components::{
 };
 pub use self::detection::{PackageManager, detect_package_manager, get_system_install_command};
 pub use self::extract::find_binary_recursive;
-
 use self::install::install_download_component;
 use self::install_pip::install_pip_component;
 

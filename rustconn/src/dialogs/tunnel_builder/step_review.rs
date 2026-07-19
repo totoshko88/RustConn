@@ -4,15 +4,16 @@
 //! with status indicators (in edit mode), a monospace SSH command preview,
 //! a copy-to-clipboard button with Toast feedback, and a "Create"/"Save" button.
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use libadwaita as adw;
 use rustconn_core::models::PortForward;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use super::TunnelPathDiagram;
+use crate::i18n::i18n;
 
 // ---------------------------------------------------------------------------
 // StepReviewPage — the full Step 3 page

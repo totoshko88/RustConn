@@ -9,6 +9,9 @@
 //! Updated for GTK 4.10+ compatibility using `adw::Dialog` instead of Dialog.
 //! Uses `adw::ViewStack` with `adw::ViewSwitcher` for proper libadwaita theming.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -24,8 +27,6 @@ use rustconn_core::models::{
     SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
     ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use crate::i18n::i18n;

@@ -19,13 +19,14 @@
 //!   `SecretManager` falls back to the encrypted-file backend, reports the
 //!   fallback backend id, and the credential is retrievable afterwards.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use proptest::prelude::*;
 use rustconn_core::error::{SecretError, SecretResult};
 use rustconn_core::models::Credentials;
 use rustconn_core::secret::{EncryptedFileBackend, SecretBackend, SecretManager, StoreOutcome};
 use secrecy::SecretString;
-use std::sync::Arc;
 use tempfile::TempDir;
 
 // ========== Generators ==========

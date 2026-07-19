@@ -6,7 +6,9 @@
 //! Migrated to `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow
 //! screens, centered floating sheet on wide screens.
 
-use crate::i18n::{i18n, i18n_f};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -15,9 +17,9 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::cluster::Cluster;
 use rustconn_core::models::Connection;
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::i18n::{i18n, i18n_f};
 
 /// Type alias for cluster dialog callback
 pub type ClusterCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Cluster>)>>>>;

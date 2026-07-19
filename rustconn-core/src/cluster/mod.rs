@@ -3,8 +3,9 @@
 //! This module provides cluster functionality for managing multiple connections
 //! as a group, including broadcast mode for sending input to all sessions simultaneously.
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -598,8 +599,11 @@ impl ClusterManager {
         let session = ClusterSession::new(cluster);
         self.active_sessions.insert(cluster_id, session);
 
-        // Safe to unwrap: we just inserted the session above
-        Ok(self.active_sessions.get_mut(&cluster_id).unwrap())
+        // INVARIANT: we just inserted the session above, so get_mut always succeeds.
+        Ok(self
+            .active_sessions
+            .get_mut(&cluster_id)
+            .expect("session was just inserted"))
     }
 
     /// Gets an active cluster session

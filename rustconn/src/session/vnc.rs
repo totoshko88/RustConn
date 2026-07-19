@@ -5,20 +5,20 @@
 //! and falls back to an external VNC viewer when embedding is unavailable or
 //! the connection requests `VncClientMode::External`.
 
-use super::{SessionError, SessionState};
-use crate::embedded_vnc::{EmbeddedVncWidget, VncConfig as EmbeddedVncConfig, VncConnectionState};
-use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Label, Orientation, Overlay};
-use rustconn_core::models::{VncClientMode, VncConfig};
-use rustconn_core::protocol::{VncProtocol, detect_vnc_client, detect_vnc_viewer_name};
 use std::cell::RefCell;
 use std::process::{Child, Command, Stdio};
 use std::rc::Rc;
 
-use crate::i18n::i18n;
-
+use gtk4::prelude::*;
+use gtk4::{Align, Box as GtkBox, Label, Orientation, Overlay};
 #[cfg(feature = "adw-1-6")]
 use libadwaita as adw;
+use rustconn_core::models::{VncClientMode, VncConfig};
+use rustconn_core::protocol::{VncProtocol, detect_vnc_client, detect_vnc_viewer_name};
+
+use super::{SessionError, SessionState};
+use crate::embedded_vnc::{EmbeddedVncWidget, VncConfig as EmbeddedVncConfig, VncConnectionState};
+use crate::i18n::i18n;
 
 /// Callback type for state change notifications
 type StateCallback = Box<dyn Fn(SessionState) + 'static>;

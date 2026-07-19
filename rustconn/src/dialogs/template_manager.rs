@@ -2,7 +2,9 @@
 //!
 //! Extracted from `dialogs/template.rs` to reduce module complexity.
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -11,9 +13,9 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::{ConnectionTemplate, ProtocolType};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::i18n::i18n;
 
 /// Template manager dialog for listing and managing templates
 pub struct TemplateManagerDialog {

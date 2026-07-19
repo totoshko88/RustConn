@@ -1,9 +1,8 @@
 //! SSH protocol handler
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// SSH protocol handler
 ///
@@ -126,9 +125,10 @@ impl Protocol for SshProtocol {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::models::ProtocolConfig;
-    use std::path::PathBuf;
 
     fn create_ssh_connection(config: SshConfig) -> Connection {
         Connection::new(

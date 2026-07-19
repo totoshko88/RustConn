@@ -2,21 +2,22 @@
 //!
 //! Extracted from `window/edit_dialogs.rs` to reduce module complexity.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Button, Label, Orientation, glib};
+use libadwaita as adw;
+use rustconn_core::models::{Credentials, PasswordSource, SshAuthMethod};
+use rustconn_core::sync::SyncMode;
+use uuid::Uuid;
+
 use super::MainWindow;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Button, Label, Orientation};
-use libadwaita as adw;
-use rustconn_core::models::{Credentials, PasswordSource, SshAuthMethod};
-use rustconn_core::sync::SyncMode;
-use std::cell::RefCell;
-use std::rc::Rc;
-use uuid::Uuid;
 
 type SharedSidebar = Rc<ConnectionSidebar>;
 
@@ -34,13 +35,13 @@ pub fn show_edit_group_dialog(
     };
     drop(state_ref);
 
-    // Create group dialog with tabbed layout (ViewStack + ViewSwitcherBar)
+    // Create group dialog with tabbed layout (bottom ViewSwitcherBar, like connection dialog)
     let group_dialog = adw::Dialog::builder()
         .title(i18n("Edit Group"))
         .content_width(600)
         .content_height(730)
         .build();
-    group_dialog.set_size_request(600, -1);
+    group_dialog.set_size_request(600, 500);
 
     let header = adw::HeaderBar::new();
     let save_btn = gtk4::Button::from_icon_name("media-floppy-symbolic");
@@ -49,39 +50,25 @@ pub fn show_edit_group_dialog(
     save_btn.add_css_class("suggested-action");
     header.pack_start(&save_btn);
 
+    // Header shows title only — no switcher (consistent with connection dialog)
+    header.set_title_widget(None::<&gtk4::Widget>);
+
     // ViewStack for tabbed pages
     let view_stack = adw::ViewStack::new();
     view_stack.set_vexpand(true);
 
-    // ViewSwitcher in header bar for wide screens (GNOME HIG)
-    let view_switcher = adw::ViewSwitcher::builder()
-        .stack(&view_stack)
-        .policy(adw::ViewSwitcherPolicy::Wide)
-        .build();
-    header.set_title_widget(Some(&view_switcher));
-
-    // Bottom switcher bar for narrow screens (fallback via breakpoint)
+    // Bottom tab bar — always visible (GNOME HIG for dialogs with many pages)
     let view_switcher_bar = adw::ViewSwitcherBar::builder()
         .stack(&view_stack)
-        .reveal(false)
+        .reveal(true)
         .build();
 
     // Layout: HeaderBar on top, ViewStack in center, ViewSwitcherBar at bottom
-    let toolbar_view = adw::ToolbarView::new();
-    toolbar_view.add_top_bar(&header);
-    toolbar_view.set_content(Some(&view_stack));
-    toolbar_view.add_bottom_bar(&view_switcher_bar);
-    group_dialog.set_child(Some(&toolbar_view));
-
-    // Breakpoint: narrow (<500sp) → hide header switcher, show bottom bar
-    let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
-        adw::BreakpointConditionLengthType::MaxWidth,
-        500.0,
-        adw::LengthUnit::Sp,
-    ));
-    breakpoint.add_setter(&view_switcher_bar, "reveal", Some(&true.to_value()));
-    breakpoint.add_setter(&view_switcher, "visible", Some(&false.to_value()));
-    group_dialog.add_breakpoint(breakpoint);
+    let main_box = gtk4::Box::new(Orientation::Vertical, 0);
+    main_box.append(&header);
+    main_box.append(&view_stack);
+    main_box.append(&view_switcher_bar);
+    group_dialog.set_child(Some(&main_box));
 
     // === Helper: create a scrollable page container ===
     let make_page_content = || -> gtk4::Box {
@@ -895,20 +882,8 @@ pub fn show_edit_group_dialog(
     let is_root_group = group.parent_id.is_none();
 
     let sync_scrolled = wrap_in_scrolled(&sync_content);
-    let sync_page = view_stack.add_titled_with_icon(
-        &sync_scrolled,
-        Some("sync"),
-        &i18n("Cloud Sync"),
-        "emblem-synchronizing-symbolic",
-    );
-    sync_page.set_visible(is_root_group);
 
-    // Hide Cloud Sync page when parent changes to non-root
-    let sync_page_for_parent = sync_page.clone();
-    parent_row.connect_selected_notify(move |row| {
-        // Index 0 = "(None - Root Level)" means this group becomes/stays root
-        sync_page_for_parent.set_visible(row.selected() == 0);
-    });
+    // Hide Cloud Sync page when parent changes to non-root (connected after registration below)
 
     // === Dynamic Folder Section ===
     let dynamic_content = make_page_content();
@@ -983,12 +958,6 @@ pub fn show_edit_group_dialog(
     dynamic_content.append(&dynamic_group);
 
     let dynamic_scrolled = wrap_in_scrolled(&dynamic_content);
-    view_stack.add_titled_with_icon(
-        &dynamic_scrolled,
-        Some("dynamic"),
-        &i18n("Dynamic"),
-        "folder-new-symbolic",
-    );
 
     // === Automation Section (Expect Rules + Post-login Scripts) ===
     let automation_content = make_page_content();
@@ -1366,7 +1335,7 @@ pub fn show_edit_group_dialog(
     description_group.add(&description_scroll);
     identity_content.append(&description_group);
 
-    // Register Identity page in ViewStack
+    // Register Identity page in ViewStack (first tab)
     let identity_scrolled = wrap_in_scrolled(&identity_content);
     view_stack.add_titled_with_icon(
         &identity_scrolled,
@@ -1386,7 +1355,31 @@ pub fn show_edit_group_dialog(
         "network-server-symbolic",
     );
 
-    // Register Automation page in ViewStack
+    // Register Cloud Sync page in ViewStack
+    let sync_page = view_stack.add_titled_with_icon(
+        &sync_scrolled,
+        Some("sync"),
+        &i18n("Cloud Sync"),
+        "emblem-synchronizing-symbolic",
+    );
+    sync_page.set_visible(is_root_group);
+
+    // Hide Cloud Sync page when parent changes to non-root
+    let sync_page_for_parent = sync_page.clone();
+    parent_row.connect_selected_notify(move |row| {
+        // Index 0 = "(None - Root Level)" means this group becomes/stays root
+        sync_page_for_parent.set_visible(row.selected() == 0);
+    });
+
+    // Register Dynamic Folder page in ViewStack
+    view_stack.add_titled_with_icon(
+        &dynamic_scrolled,
+        Some("dynamic"),
+        &i18n("Dynamic"),
+        "folder-new-symbolic",
+    );
+
+    // Register Automation page in ViewStack (last tab)
     let automation_scrolled = wrap_in_scrolled(&automation_content);
     view_stack.add_titled_with_icon(
         &automation_scrolled,

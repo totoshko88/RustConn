@@ -6,9 +6,10 @@
 //! Each node is a `gtk4::Frame` with icon, host label, port label, and
 //! status dot indicator. Arrows connect the nodes.
 
-use crate::i18n::i18n;
 use gtk4::prelude::*;
 use rustconn_core::models::{PortForwardDirection, TunnelStatus};
+
+use crate::i18n::i18n;
 
 // ---------------------------------------------------------------------------
 // DiagramNode — a single node in the path diagram

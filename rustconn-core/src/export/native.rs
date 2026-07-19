@@ -12,11 +12,10 @@ use std::path::Path;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::ExportError;
 use crate::cluster::Cluster;
 use crate::models::{Connection, ConnectionGroup, ConnectionTemplate, SmartFolder, Snippet};
 use crate::variables::Variable;
-
-use super::ExportError;
 
 /// Current version of the native export format
 pub const NATIVE_FORMAT_VERSION: u32 = 3;

@@ -10,11 +10,10 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use tracing::{debug, instrument, warn};
 
-use crate::config::SecretSettings;
-use crate::models::{Connection, Credentials};
-
 use super::manager::SecretManager;
 use super::resolver::CredentialResolver;
+use crate::config::SecretSettings;
+use crate::models::{Connection, Credentials};
 
 /// Token for cancelling pending credential resolution requests
 ///

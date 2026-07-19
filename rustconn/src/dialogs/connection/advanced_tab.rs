@@ -3,7 +3,6 @@
 //! Contains Terminal Theme override, Remote Monitoring, Session Recording,
 //! Activity Monitor, Highlight Rules, and Wake-on-LAN configuration sections.
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -12,6 +11,8 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::wol::{DEFAULT_BROADCAST_ADDRESS, DEFAULT_WOL_PORT, DEFAULT_WOL_WAIT_SECONDS};
+
+use crate::i18n::i18n;
 
 /// Creates the Advanced tab combining Terminal Theme, Monitoring, Recording,
 /// Activity Monitor, Highlight Rules, and WOL settings.

@@ -7,21 +7,22 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::alert;
-use crate::dialogs::connection::builders::ConnectionDialogData;
-use crate::dialogs::connection::logging_tab;
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Button, CheckButton, ColorDialogButton, DropDown, Entry, SpinButton, TextView};
 use libadwaita as adw;
 use rustconn_core::automation::ExpectRule;
 use rustconn_core::models::{CustomProperty, HighlightRule, SharedFolder};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use super::{ConnectionDialog, LocalVariableRow};
+use crate::alert;
+use crate::dialogs::connection::builders::ConnectionDialogData;
+use crate::dialogs::connection::logging_tab;
+use crate::i18n::i18n;
 
 impl ConnectionDialog {
     /// Connects the save button to validate and save the connection
@@ -183,6 +184,9 @@ impl ConnectionDialog {
         mosh_server_binary_entry: &Entry,
         web_browser_entry: &Entry,
         web_private_mode_switch: &adw::SwitchRow,
+        web_browser_mode_combo: &adw::ComboRow,
+        web_javascript_switch: &adw::SwitchRow,
+        web_user_agent_row: &adw::EntryRow,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
@@ -375,6 +379,9 @@ impl ConnectionDialog {
         let mosh_server_binary_entry = mosh_server_binary_entry.clone();
         let web_browser_entry = web_browser_entry.clone();
         let web_private_mode_switch = web_private_mode_switch.clone();
+        let web_browser_mode_combo = web_browser_mode_combo.clone();
+        let web_javascript_switch = web_javascript_switch.clone();
+        let web_user_agent_row = web_user_agent_row.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_switch = logging_tab.enabled_switch.clone();
         let logging_path_entry = logging_tab.path_entry.clone();
@@ -578,6 +585,9 @@ impl ConnectionDialog {
                 mosh_server_binary_entry: &mosh_server_binary_entry,
                 web_browser_entry: &web_browser_entry,
                 web_private_mode_switch: &web_private_mode_switch,
+                web_browser_mode_combo: &web_browser_mode_combo,
+                web_javascript_switch: &web_javascript_switch,
+                web_user_agent_row: &web_user_agent_row,
                 local_variables: &local_variables,
                 logging_tab: &logging_tab::LoggingTab {
                     enabled_switch: logging_enabled_switch.clone(),

@@ -4,15 +4,15 @@
 //! manager "pass" (passwordstore.org). Pass uses GPG encryption and git-backed
 //! storage, making it ideal for command-line users.
 
+use std::process::Stdio;
+
 use async_trait::async_trait;
 use secrecy::SecretString;
-use std::process::Stdio;
 use tokio::process::Command;
 
+use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
-
-use super::backend::SecretBackend;
 
 /// Pass (password-store) backend for Unix password manager
 ///

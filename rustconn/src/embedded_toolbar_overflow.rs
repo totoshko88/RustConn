@@ -13,10 +13,11 @@
 //! of the widget itself, so it works identically in a split panel and in a
 //! shrunk single-tab window.
 
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, DrawingArea, MenuButton, Orientation, Popover, Widget};
 use std::cell::Cell;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, DrawingArea, MenuButton, Orientation, Popover, Widget};
 
 use crate::i18n::i18n;
 

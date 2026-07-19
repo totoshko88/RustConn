@@ -16,7 +16,7 @@ use crate::util::create_config_manager;
 ///
 /// Returns:
 /// - [`CliError::Config`] when connections, groups, or tags cannot be loaded
-pub fn cmd_list(
+pub(super) fn cmd_list(
     config_path: Option<&Path>,
     format: OutputFormat,
     protocol: Option<&str>,
@@ -93,7 +93,7 @@ fn print_table(connections: &[&Connection]) {
 
 /// Format connections as a table string
 #[must_use]
-pub fn format_table(connections: &[&Connection]) -> String {
+pub(super) fn format_table(connections: &[&Connection]) -> String {
     if connections.is_empty() {
         return "No connections found.".to_string();
     }
@@ -155,7 +155,7 @@ fn print_json(connections: &[&Connection]) -> Result<(), CliError> {
 /// # Errors
 ///
 /// Returns `CliError::Config` if JSON serialization fails.
-pub fn format_json(connections: &[&Connection]) -> Result<String, CliError> {
+pub(super) fn format_json(connections: &[&Connection]) -> Result<String, CliError> {
     let output: Vec<ConnectionOutput> = connections.iter().map(|c| (*c).into()).collect();
     serde_json::to_string_pretty(&output)
         .map_err(|e| CliError::Config(format!("Failed to serialize to JSON: {e}")))
@@ -168,7 +168,7 @@ fn print_csv(connections: &[&Connection]) {
 
 /// Format connections as CSV string
 #[must_use]
-pub fn format_csv(connections: &[&Connection]) -> String {
+pub(super) fn format_csv(connections: &[&Connection]) -> String {
     let mut output = String::new();
 
     // Print header
@@ -193,7 +193,7 @@ pub fn format_csv(connections: &[&Connection]) -> String {
 
 /// Simplified connection output for CLI
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ConnectionOutput {
+pub(super) struct ConnectionOutput {
     pub id: String,
     pub name: String,
     pub host: String,

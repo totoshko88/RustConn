@@ -12,6 +12,8 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
+use std::path::PathBuf;
+
 use rustconn_core::export::{
     AnsibleExporter, AsbruExporter, ExportFormat, ExportOptions, ExportTarget, RemminaExporter,
     SshConfigExporter,
@@ -20,7 +22,6 @@ use rustconn_core::import::{
     AnsibleInventoryImporter, AsbruImporter, RemminaImporter, SshConfigImporter,
 };
 use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Creates a set of test SSH connections with various configurations

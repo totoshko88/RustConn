@@ -20,12 +20,13 @@
 
 // cast_precision_loss, cast_possible_truncation, unused_self allowed at workspace level
 
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Stream, StreamConfig};
-use rustconn_core::rdp_client::AudioFormatInfo;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
+
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{Stream, StreamConfig};
+use rustconn_core::rdp_client::AudioFormatInfo;
 use thiserror::Error;
 
 /// Error type for audio operations

@@ -1,9 +1,8 @@
 //! RDP protocol handler
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, RdpConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// RDP protocol handler
 ///

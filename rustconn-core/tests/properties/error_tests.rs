@@ -1,9 +1,10 @@
 //! Property tests for error types
 
+use std::path::PathBuf;
+
 use rustconn_core::error::{
     ConfigError, ImportError, ProtocolError, RustConnError, SecretError, SessionError,
 };
-use std::path::PathBuf;
 
 // ============================================================================
 // ConfigError Tests

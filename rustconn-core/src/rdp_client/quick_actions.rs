@@ -14,19 +14,19 @@
 /// Scancode constants for readability
 mod scancodes {
     /// Left Windows key (extended)
-    pub const WIN: u16 = 0x5B;
+    pub(super) const WIN: u16 = 0x5B;
     /// R key
-    pub const R: u16 = 0x13;
+    pub(super) const R: u16 = 0x13;
     /// I key
-    pub const I: u16 = 0x17;
+    pub(super) const I: u16 = 0x17;
     /// Enter key
-    pub const ENTER: u16 = 0x1C;
+    pub(super) const ENTER: u16 = 0x1C;
     /// Escape key
-    pub const ESC: u16 = 0x01;
+    pub(super) const ESC: u16 = 0x01;
     /// Left Ctrl key
-    pub const CTRL: u16 = 0x1D;
+    pub(super) const CTRL: u16 = 0x1D;
     /// Left Shift key
-    pub const SHIFT: u16 = 0x2A;
+    pub(super) const SHIFT: u16 = 0x2A;
 }
 
 /// A predefined Windows admin quick action

@@ -10,8 +10,11 @@
 //! to all dialog widgets and provides `validate()` and `build_connection()` methods
 //! to produce a `ConnectionDialogResult` from the current widget state.
 
-use super::logging_tab;
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{CheckButton, ColorDialogButton, DropDown, Entry, SpinButton, TextView};
@@ -30,11 +33,10 @@ use rustconn_core::models::{
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
 use rustconn_core::wol::{DEFAULT_BROADCAST_ADDRESS, MacAddress, WolConfig};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use super::logging_tab;
+use crate::i18n::i18n;
 
 pub(super) struct ConnectionDialogData<'a> {
     pub name_entry: &'a Entry,
@@ -189,6 +191,9 @@ pub(super) struct ConnectionDialogData<'a> {
     // Web fields
     pub web_browser_entry: &'a Entry,
     pub web_private_mode_switch: &'a adw::SwitchRow,
+    pub web_browser_mode_combo: &'a adw::ComboRow,
+    pub web_javascript_switch: &'a adw::SwitchRow,
+    pub web_user_agent_row: &'a adw::EntryRow,
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
     pub expect_rules: &'a Vec<ExpectRule>,
@@ -351,6 +356,20 @@ impl ConnectionDialogData<'_> {
         let icon_text = self.icon_entry.text();
         rustconn_core::dialog_utils::validate_icon(icon_text.trim())
             .map_err(|e| i18n(&e.to_string()))?;
+
+        // Web (10): Custom browser mode requires a non-empty browser command
+        if protocol_idx == 10 {
+            use crate::dialogs::connection::web::browser_mode_from_combo_index;
+            let mode = browser_mode_from_combo_index(self.web_browser_mode_combo.selected());
+            if mode == rustconn_core::models::WebBrowserMode::Custom {
+                let browser_text = self.web_browser_entry.text();
+                if browser_text.trim().is_empty() {
+                    return Err(i18n(
+                        "Browser command is required when Custom mode is selected",
+                    ));
+                }
+            }
+        }
 
         Ok(())
     }
@@ -1186,6 +1205,8 @@ impl ConnectionDialogData<'_> {
     }
 
     fn build_web_config(&self) -> rustconn_core::models::WebConfig {
+        use crate::dialogs::connection::web::browser_mode_from_combo_index;
+
         let browser = {
             let text = self.web_browser_entry.text();
             if text.trim().is_empty() {
@@ -1194,9 +1215,26 @@ impl ConnectionDialogData<'_> {
                 Some(text.trim().to_string())
             }
         };
+
+        let browser_mode = browser_mode_from_combo_index(self.web_browser_mode_combo.selected());
+
+        let user_agent = {
+            let text = self.web_user_agent_row.text();
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text.trim().to_string())
+            }
+        };
+
         rustconn_core::models::WebConfig {
             browser,
             private_mode: self.web_private_mode_switch.is_active(),
+            browser_mode,
+            javascript_enabled: self.web_javascript_switch.is_active(),
+            user_agent,
+            zoom_level: 1.0,
+            accept_invalid_certs: false,
         }
     }
 

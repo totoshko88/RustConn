@@ -8,23 +8,24 @@ pub mod step_connection;
 pub mod step_forwards;
 pub mod step_review;
 
-pub use path_diagram::TunnelPathDiagram;
-pub use step_connection::StepConnectionPage;
-pub use step_forwards::StepForwardsPage;
-pub use step_review::StepReviewPage;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::i18n::i18n;
-use crate::state::{SharedAppState, with_state, with_state_mut};
-use crate::window::SharedTunnelManager;
 use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
+pub use path_diagram::TunnelPathDiagram;
 use rustconn_core::models::{Connection, PortForward, ProtocolConfig, StandaloneTunnel};
 use rustconn_core::tunnel_preview::{TunnelPreviewParams, build_tunnel_preview_command};
-use std::cell::RefCell;
-use std::rc::Rc;
+pub use step_connection::StepConnectionPage;
+pub use step_forwards::StepForwardsPage;
+pub use step_review::StepReviewPage;
 use uuid::Uuid;
+
+use crate::i18n::i18n;
+use crate::state::{SharedAppState, with_state, with_state_mut};
+use crate::window::SharedTunnelManager;
 
 // ---------------------------------------------------------------------------
 // TunnelBuilderContext

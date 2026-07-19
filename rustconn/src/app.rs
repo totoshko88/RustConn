@@ -4,21 +4,22 @@
 //! for the `RustConn` GTK4 application, including state management and
 //! action setup.
 
-use adw::prelude::*;
-use gtk4::prelude::*;
-use gtk4::{gio, glib};
-use libadwaita as adw;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use adw::prelude::*;
+use gettextrs::gettext;
+use gtk4::prelude::*;
+use gtk4::{gio, glib};
+use libadwaita as adw;
+use rustconn_core::config::ColorScheme;
 
 use crate::state::{
     SharedAppState, create_shared_state, try_with_state, with_state, with_state_mut,
 };
 use crate::tray::{TrayManager, TrayMessage};
 use crate::window::MainWindow;
-use gettextrs::gettext;
-use rustconn_core::config::ColorScheme;
 
 /// Global flag indicating the application is shutting down.
 /// When set, session exit callbacks should suppress error logging

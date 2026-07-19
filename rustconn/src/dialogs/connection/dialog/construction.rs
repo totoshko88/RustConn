@@ -7,7 +7,6 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -16,6 +15,7 @@ use gtk4::{
 use libadwaita as adw;
 
 use super::ConnectionDialog;
+use crate::i18n::i18n;
 
 impl ConnectionDialog {
     /// Sets up inline validation for required fields

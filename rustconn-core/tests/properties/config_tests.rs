@@ -6,16 +6,19 @@
 //! **Feature: rustconn-enhancements, Property 4: Settings Persistence Round-Trip**
 //! **Validates: Requirements 6.1, 6.2**
 
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use proptest::prelude::*;
+use rustconn_core::config::{
+    AppSettings, ColorScheme, ConfigManager, LoggingSettings, SecretBackendType, SecretSettings,
+    SessionRestoreSettings, TerminalSettings, UiSettings,
+};
+use rustconn_core::sync::SyncSettings;
 use rustconn_core::{
     Connection, ConnectionGroup, HistorySettings, ProtocolConfig, RdpConfig, RdpGateway,
     Resolution, Snippet, SnippetVariable, SshAuthMethod, SshConfig, SshKeySource, VncConfig,
-    config::AppSettings, config::ColorScheme, config::ConfigManager, config::LoggingSettings,
-    config::SecretBackendType, config::SecretSettings, config::SessionRestoreSettings,
-    config::TerminalSettings, config::UiSettings, sync::SyncSettings,
 };
-use std::collections::HashMap;
-use std::path::PathBuf;
 use tempfile::TempDir;
 
 // ========== Generators ==========

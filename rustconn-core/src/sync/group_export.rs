@@ -8,6 +8,7 @@
 //! File I/O uses atomic writes (temp file + rename) so readers never see
 //! partial or corrupt JSON.
 
+use std::collections::HashSet;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
@@ -15,8 +16,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use std::collections::HashSet;
-
+use super::variable_template::VariableTemplate;
 use crate::automation::ConnectionTask;
 use crate::models::{
     AutomationConfig, Connection, ConnectionGroup, CustomProperty, HighlightRule, PasswordSource,
@@ -24,8 +24,6 @@ use crate::models::{
 };
 use crate::variables::Variable;
 use crate::wol::WolConfig;
-
-use super::variable_template::VariableTemplate;
 
 /// Errors that can occur during sync file operations.
 #[derive(Debug, thiserror::Error)]
@@ -429,11 +427,21 @@ fn build_template(name: &str, existing_variables: &[Variable]) -> VariableTempla
 ///
 /// For SSH and SFTP configs, `key_path` is set to `None` because it is a
 /// local filesystem path that differs between devices.  All other protocol
-/// configs are returned unchanged.
+/// Strips device-local fields from protocol configs before sync export.
+///
+/// SSH/SFTP: removes `key_path` (device-specific file path).
+/// Web: resets `zoom_level` to default 1.0 (device-dependent screen size).
+/// Other configs are returned unchanged.
 fn strip_local_only_ssh_fields(config: &ProtocolConfig) -> ProtocolConfig {
     match config {
         ProtocolConfig::Ssh(ssh) => ProtocolConfig::Ssh(strip_ssh_key_path(ssh)),
         ProtocolConfig::Sftp(ssh) => ProtocolConfig::Sftp(strip_ssh_key_path(ssh)),
+        ProtocolConfig::Web(web) => {
+            let mut cleaned = web.clone();
+            // Zoom level is device-local: a 13" laptop and a 32" monitor need different zoom.
+            cleaned.zoom_level = 1.0;
+            ProtocolConfig::Web(cleaned)
+        }
         other => other.clone(),
     }
 }
@@ -579,8 +587,6 @@ pub fn group_name_to_filename(name: &str) -> String {
 /// Returns [`SyncError::InvalidSyncFilename`] if the filename contains
 /// path traversal components (`..`), directory separators, or is an absolute path.
 pub fn validate_sync_filename(filename: &str) -> Result<(), SyncError> {
-    use std::path::Path;
-
     let path = Path::new(filename);
 
     // Reject absolute paths

@@ -13,12 +13,13 @@
 //! two callbacks ([`ExternalSessionCallbacks`]) that bridge into the sidebar
 //! session count and the connection history.
 
-use gtk4::glib;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::process::Child;
 use std::rc::Rc;
 use std::time::Duration;
+
+use gtk4::glib;
 use uuid::Uuid;
 
 /// Poll interval for watching external viewer child processes.
@@ -312,12 +313,14 @@ mod tests {
     //! Owned-child cases spawn short-lived real processes (`sleep`, `true`) and
     //! clean them up.
 
-    use super::{ExternalSessionCallbacks, ExternalSessionRegistry};
-    use gtk4::glib;
     use std::cell::{Cell, RefCell};
     use std::process::{Child, Command};
     use std::rc::Rc;
+
+    use gtk4::glib;
     use uuid::Uuid;
+
+    use super::{ExternalSessionCallbacks, ExternalSessionRegistry};
 
     /// Serializes every glib-context-touching test body.
     ///

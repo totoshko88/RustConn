@@ -4,11 +4,11 @@
 //! - Coordinate transformation (widget ↔ RDP)
 //! - Status overlay drawing
 
-use super::types::RdpConfig;
-use super::types::RdpConnectionState;
-use crate::i18n::i18n;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use super::types::{RdpConfig, RdpConnectionState};
+use crate::i18n::i18n;
 
 /// Transforms widget coordinates to RDP framebuffer coordinates
 ///

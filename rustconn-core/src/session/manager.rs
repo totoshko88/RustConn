@@ -7,14 +7,14 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::{Duration, Instant};
-use uuid::Uuid;
 
-use crate::error::{SessionError, SessionResult};
-use crate::models::Connection;
-use crate::protocol::ProtocolRegistry;
+use uuid::Uuid;
 
 use super::logger::{LogConfig, LogContext, SessionLogger};
 use super::session::{Session, SessionState, SessionType};
+use crate::error::{SessionError, SessionResult};
+use crate::models::Connection;
+use crate::protocol::ProtocolRegistry;
 
 /// Default health check interval in seconds
 pub const DEFAULT_HEALTH_CHECK_INTERVAL_SECS: u64 = 30;

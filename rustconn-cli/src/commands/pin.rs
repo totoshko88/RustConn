@@ -13,7 +13,7 @@ use crate::util::{create_config_manager, find_connection};
 /// Returns:
 /// - [`CliError::Config`] when connections cannot be loaded or saved
 /// - [`CliError::ConnectionNotFound`] when no connection matches `name`
-pub fn cmd_pin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+pub(super) fn cmd_pin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager
@@ -64,7 +64,7 @@ pub fn cmd_pin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
 /// Returns:
 /// - [`CliError::Config`] when connections cannot be loaded or saved
 /// - [`CliError::ConnectionNotFound`] when no connection matches `name`
-pub fn cmd_unpin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
+pub(super) fn cmd_unpin(config_path: Option<&Path>, name: &str) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager

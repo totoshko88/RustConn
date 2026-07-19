@@ -21,11 +21,11 @@
 
 pub mod vnc;
 
-pub use vnc::VncSessionWidget;
+use std::fmt;
 
 use gtk4::prelude::*;
-use std::fmt;
 use thiserror::Error;
+pub use vnc::VncSessionWidget;
 
 /// Session widget enum that wraps protocol-specific display widgets
 ///

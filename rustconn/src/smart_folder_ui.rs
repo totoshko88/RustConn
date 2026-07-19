@@ -7,18 +7,19 @@
 //! - Double-click on a connection row activates `win.connect-to` action
 //! - Read-only view (no drag-drop)
 
-use crate::i18n::i18n;
-use gtk4::gdk;
+use std::cell::Cell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, Image, Label, ListBox, ListBoxRow, Orientation, Revealer,
-    RevealerTransitionType, SelectionMode, Widget,
+    RevealerTransitionType, SelectionMode, Widget, gdk,
 };
 use rustconn_core::get_protocol_icon;
 use rustconn_core::models::{Connection, SmartFolder};
 use rustconn_core::smart_folder::SmartFolderManager;
-use std::cell::Cell;
-use std::rc::Rc;
+
+use crate::i18n::i18n;
 
 /// Sidebar section that displays smart folders with dynamic connection counts.
 pub struct SmartFoldersSidebar {

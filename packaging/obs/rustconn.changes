@@ -1,4 +1,17 @@
 -------------------------------------------------------------------
+Mon Jul 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.0
+
+- Version bump to 0.19.0
+- Added embedded WebKitGTK 6.0 web browser for Web connections (Linux)
+- Added browser mode selection: Embedded, System, or Custom browser command
+- Added per-connection persistent sessions with isolated cookies and local storage
+- Added navigation toolbar with back/forward/reload/home and zoom controls
+- Added credential autofill via JavaScript injection and HTTP Basic Auth
+- Added JavaScript enable/disable toggle per connection
+- Added split view support for embedded web alongside terminals
+- Added web-embedded feature flag (default on Linux, excluded on macOS)
+
+-------------------------------------------------------------------
 Sat Jul 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.12
 
 - Version bump to 0.18.12

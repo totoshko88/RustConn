@@ -1,8 +1,9 @@
 //! Protocol configuration types for SSH, RDP, and VNC connections.
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 
 /// Protocol type identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -859,6 +860,11 @@ pub struct SshConfig {
 
 fn default_true() -> bool {
     true
+}
+
+/// Default zoom level: 100%.
+fn default_zoom() -> f64 {
+    1.0
 }
 
 const fn default_jiggler_interval() -> u32 {
@@ -3046,13 +3052,50 @@ mod zerotrust_tests {
     }
 }
 
-/// Web bookmark configuration
+/// Browser mode selection for Web connections.
+///
+/// Determines how a Web connection URL is opened: embedded inside the tab,
+/// in the system default browser, or via a custom command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WebBrowserMode {
+    /// Embedded WebKitGTK 6.0 WebView inside the tab
+    #[cfg(feature = "web-embedded")]
+    Embedded,
+    /// System default browser (xdg-open / UriLauncher)
+    System,
+    /// Custom browser command
+    Custom,
+}
+
+#[expect(
+    clippy::derivable_impls,
+    reason = "Default is conditional on web-embedded feature flag"
+)]
+impl Default for WebBrowserMode {
+    fn default() -> Self {
+        #[cfg(feature = "web-embedded")]
+        {
+            Self::Embedded
+        }
+        #[cfg(not(feature = "web-embedded"))]
+        {
+            Self::System
+        }
+    }
+}
+
+/// Web connection configuration.
 ///
 /// Configuration for web bookmark connections. These connections open a URL
-/// in the user's default browser. Credentials (username/password) are stored
-/// in the configured secret backend and can be copied via the context menu.
-/// The browser's password manager extension handles auto-fill.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// in the user's default browser or an embedded WebView. Credentials
+/// (username/password) are stored in the configured secret backend and can
+/// be used for autofill in embedded mode.
+///
+/// `Serialize` is derived, but `Deserialize` is implemented manually to
+/// validate `user_agent` length (max 512 chars) and clamp `zoom_level`
+/// to the [0.3, 3.0] range at parse time.
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WebConfig {
     /// Custom browser command (None = system default via xdg-open / portal)
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -3060,4 +3103,82 @@ pub struct WebConfig {
     /// Open in private/incognito mode
     #[serde(default)]
     pub private_mode: bool,
+    /// Browser mode: Embedded, System, or Custom
+    pub browser_mode: WebBrowserMode,
+    /// Whether JavaScript is enabled in the embedded WebView
+    pub javascript_enabled: bool,
+    /// Custom user agent string (None = WebKitGTK default, max 512 chars)
+    pub user_agent: Option<String>,
+    /// Persisted zoom level (1.0 = 100%, range 0.3–3.0)
+    #[serde(default = "default_zoom")]
+    pub zoom_level: f64,
+    /// Accept invalid TLS certificates (self-signed, expired, wrong host).
+    /// Useful for local services like Cockpit, Proxmox, or dev environments.
+    #[serde(default)]
+    pub accept_invalid_certs: bool,
+}
+
+// Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
+// so total equality is safe. Required because ProtocolConfig derives Eq.
+impl Eq for WebConfig {}
+
+impl Default for WebConfig {
+    fn default() -> Self {
+        Self {
+            browser: None,
+            private_mode: false,
+            browser_mode: WebBrowserMode::default(),
+            javascript_enabled: true,
+            user_agent: None,
+            zoom_level: 1.0,
+            accept_invalid_certs: false,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for WebConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        /// Internal helper for raw deserialization before validation.
+        #[derive(Deserialize)]
+        struct WebConfigRaw {
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            browser: Option<String>,
+            #[serde(default)]
+            private_mode: bool,
+            #[serde(default)]
+            browser_mode: WebBrowserMode,
+            #[serde(default = "default_true")]
+            javascript_enabled: bool,
+            #[serde(default)]
+            user_agent: Option<String>,
+            #[serde(default = "default_zoom")]
+            zoom_level: f64,
+            #[serde(default)]
+            accept_invalid_certs: bool,
+        }
+
+        let raw = WebConfigRaw::deserialize(deserializer)?;
+
+        // Validate user_agent length (max 512 Unicode characters)
+        if let Some(ref ua) = raw.user_agent
+            && ua.chars().count() > 512
+        {
+            return Err(serde::de::Error::custom(
+                "user_agent exceeds maximum allowed length of 512 characters",
+            ));
+        }
+
+        Ok(Self {
+            browser: raw.browser,
+            private_mode: raw.private_mode,
+            browser_mode: raw.browser_mode,
+            javascript_enabled: raw.javascript_enabled,
+            user_agent: raw.user_agent,
+            zoom_level: raw.zoom_level.clamp(0.3, 3.0),
+            accept_invalid_certs: raw.accept_invalid_certs,
+        })
+    }
 }

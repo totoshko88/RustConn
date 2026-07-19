@@ -3,16 +3,17 @@
 //! This module provides an `adw::Dialog` for viewing detailed connection statistics.
 //! Migrated to libadwaita components for GNOME HIG compliance.
 
-use crate::i18n::i18n;
-use adw::prelude::*;
-use gtk4::Box as GtkBox;
-use gtk4::prelude::*;
-use gtk4::{Button, Label, Orientation, ScrolledWindow};
-use libadwaita as adw;
-use rustconn_core::models::ConnectionStatistics;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, Label, Orientation, ScrolledWindow};
+use libadwaita as adw;
+use rustconn_core::models::ConnectionStatistics;
 use uuid::Uuid;
+
+use crate::i18n::i18n;
 
 /// Connection statistics dialog
 pub struct StatisticsDialog {

@@ -6,13 +6,14 @@
 //! **Feature: performance-improvements, Property 15: Async Credential Resolution**
 //! **Validates: Requirements 9.1, 9.4**
 
+use std::sync::Arc;
+use std::time::Duration;
+
 use proptest::prelude::*;
 use rustconn_core::models::AutomationConfig;
 use rustconn_core::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, SecretManager,
 };
-use std::sync::Arc;
-use std::time::Duration;
 
 // ========== Generators ==========
 
@@ -47,10 +48,11 @@ fn create_test_connection(
     port: u16,
     username: Option<String>,
 ) -> rustconn_core::Connection {
+    use std::collections::HashMap;
+
     use rustconn_core::{
         Connection, PasswordSource, ProtocolConfig, ProtocolType, SshConfig, WindowMode,
     };
-    use std::collections::HashMap;
 
     Connection {
         id: uuid::Uuid::new_v4(),

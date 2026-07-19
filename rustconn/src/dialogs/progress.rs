@@ -3,12 +3,13 @@
 //! Provides a GTK4 dialog for displaying progress during operations like
 //! imports, exports, and bulk operations.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, Orientation, ProgressBar};
 use libadwaita as adw;
-use std::cell::Cell;
-use std::rc::Rc;
 
 use crate::i18n::i18n;
 

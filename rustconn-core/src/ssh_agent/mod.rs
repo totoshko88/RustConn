@@ -3,8 +3,9 @@
 //! This module provides functionality for interacting with the SSH agent,
 //! including starting the agent, managing keys, and parsing agent output.
 
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// SSH Agent status and key information

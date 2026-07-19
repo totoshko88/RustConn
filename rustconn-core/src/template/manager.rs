@@ -263,9 +263,10 @@ impl TemplateManager {
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::models::ConnectionTemplate;
-    use tempfile::TempDir;
 
     fn create_test_manager() -> (TemplateManager, TempDir) {
         let temp_dir = TempDir::new().unwrap();

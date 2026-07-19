@@ -6,6 +6,9 @@
 //! Uses `adw::Dialog` for GNOME HIG compliance: bottom-sheet on narrow screens,
 //! auto-close on Escape, drag-to-close support.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -14,8 +17,6 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::{Snippet, SnippetVariable};
-use std::cell::RefCell;
-use std::rc::Rc;
 use uuid::Uuid;
 
 use crate::i18n::i18n;

@@ -11,6 +11,9 @@
 //! - Mouse jiggler and autotype settings
 //! - Keyboard layout selection
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -19,8 +22,6 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::{RdpClientMode, RdpPerformanceMode, ScaleOverride, SharedFolder};
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::i18n::i18n;
 

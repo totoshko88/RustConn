@@ -2,14 +2,15 @@
 //!
 //! Extracted from `state.rs` as part of ARCH-5 decomposition.
 
-use crate::vault_ops::copy_vault_credential;
+use std::collections::HashMap;
+
 use rustconn_core::cluster::Cluster;
 use rustconn_core::models::{Connection, ConnectionHistoryEntry, ConnectionStatistics, Snippet};
 use rustconn_core::session::Session;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::AppState;
+use crate::vault_ops::copy_vault_credential;
 
 impl AppState {
     /// Terminates a session

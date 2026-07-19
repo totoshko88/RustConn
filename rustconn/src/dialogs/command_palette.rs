@@ -6,7 +6,9 @@
 //! - `#` prefix → filter by group
 //! - Plain text → fuzzy search connections
 
-use crate::i18n::i18n;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -19,8 +21,8 @@ use rustconn_core::search::command_palette::{
     CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
 };
 use rustconn_core::{SearchEngine, SearchQuery, get_protocol_icon_by_name};
-use std::cell::RefCell;
-use std::rc::Rc;
+
+use crate::i18n::i18n;
 
 /// Callback type for when a palette action is selected
 pub type PaletteCallback = Rc<RefCell<Option<Box<dyn Fn(CommandPaletteAction)>>>>;

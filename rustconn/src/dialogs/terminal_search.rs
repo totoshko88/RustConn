@@ -3,12 +3,13 @@
 //! Provides a search interface for VTE terminals with regex support,
 //! highlight all matches, and navigation between matches.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, CheckButton, Label, Orientation, SearchEntry};
 use libadwaita as adw;
-use std::cell::RefCell;
-use std::rc::Rc;
 use vte4::Terminal;
 use vte4::prelude::*;
 

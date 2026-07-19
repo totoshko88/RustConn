@@ -2,6 +2,14 @@
 //!
 //! Extracted from `window/protocols.rs` to reduce module complexity.
 
+use std::rc::Rc;
+
+use gtk4::glib;
+use gtk4::prelude::*;
+use rustconn_core::connection::{check_port, ssh_inheritance};
+use secrecy::SecretString;
+use uuid::Uuid;
+
 use super::MainWindow;
 use super::protocols::{
     SharedNotebook, SharedSidebar, append_proxy_command_destination, contains_ssh_failure,
@@ -9,13 +17,6 @@ use super::protocols::{
 };
 use crate::state::SharedAppState;
 use crate::utils::spawn_blocking_with_callback;
-use gtk4::glib;
-use gtk4::prelude::*;
-use rustconn_core::connection::check_port;
-use rustconn_core::connection::ssh_inheritance;
-use secrecy::SecretString;
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Returns `true` if the session's cursor line is an SSH password prompt, in any
 /// of the supported UI languages.
@@ -212,6 +213,10 @@ fn build_ssh_command_args(
     // `-o PKCS11Provider` is NOT inherited by ProxyJump child connections,
     // so it must be injected into the first hop's ProxyCommand explicitly.
     let mut first_hop_pkcs11: Option<String> = None;
+    // Identity file of the immediate jump hop. `-J` does NOT inherit `-i` from
+    // the outer ssh command, so when the bastion authenticates by key we must
+    // switch to ProxyCommand and pass its own identity explicitly.
+    let mut first_hop_identity: Option<String> = None;
     // Password of the immediate jump hop, resolved from its OWN cached
     // credentials. Without this the target connection's password is fed to the
     // bastion prompt (issue #191). Delivered to the bastion via SSH_ASKPASS on
@@ -282,6 +287,15 @@ fn build_ssh_command_args(
                                 .pkcs11_provider
                                 .clone()
                                 .filter(|p| !p.trim().is_empty());
+                            // Resolve the jump host's OWN identity file so it
+                            // can be passed to ProxyCommand (issue #241: -J does
+                            // NOT inherit -i from the outer ssh).
+                            first_hop_identity =
+                                rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(
+                                    jump_conn, &groups,
+                                )
+                                .and_then(|p| rustconn_core::resolve_key_path(&p))
+                                .map(|p| p.to_string_lossy().to_string());
                             // Resolve the bastion's OWN password (issue #191).
                             // First try the in-memory cache (fast path).
                             first_hop_password = state_ref
@@ -513,6 +527,7 @@ fn build_ssh_command_args(
 
         if flatpak_known_hosts.is_some()
             || first_hop_pkcs11.is_some()
+            || first_hop_identity.is_some()
             || askpass_script.is_some()
             || any_hop_has_password
         {
@@ -547,9 +562,10 @@ fn build_ssh_command_args(
             }
 
             // Pass identity file to jump host if we have one.
-            // `key` is the resolved identity (removed from `args` to avoid
-            // duplication in the outer ssh command) — use it directly.
-            if let Some(ref key_path) = key {
+            // Prefer the jump host's OWN resolved identity; fall back to the
+            // target's key (common pattern: same .pem for bastion + target).
+            let jump_identity = first_hop_identity.as_ref().or(key.as_ref());
+            if let Some(key_path) = jump_identity {
                 proxy_parts.push("-i".to_string());
                 proxy_parts.push(key_path.clone());
                 proxy_parts.push("-o".to_string());
@@ -647,7 +663,7 @@ fn build_ssh_command_args(
                 protocol = "ssh",
                 proxy_command = %proxy_cmd,
                 hop_passwords_count = jump_host_passwords.len(),
-                "Using ProxyCommand instead of -J (Flatpak known_hosts or PKCS#11 or multi-hop password)"
+                "Using ProxyCommand instead of -J (identity/Flatpak/PKCS#11/password)"
             );
             args.push("-o".to_string());
             args.push(format!("ProxyCommand={proxy_cmd}"));

@@ -7,11 +7,12 @@
 //! Includes a circuit breaker that auto-disables the feature after repeated
 //! failures, showing a toast notification to the user.
 
-use gtk4::gdk;
-use gtk4::prelude::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
+
+use gtk4::gdk;
+use gtk4::prelude::*;
 
 use crate::i18n::{i18n, i18n_f};
 

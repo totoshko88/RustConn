@@ -3,10 +3,9 @@
 //! Delegates command building to provider-specific CLIs (aws, gcloud, az, oci,
 //! cloudflared, tsh, tailscale, boundary, hoop) via `ZeroTrustConfig::build_command()`.
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Zero Trust protocol handler
 ///

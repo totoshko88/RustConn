@@ -1,9 +1,8 @@
 //! Kubernetes protocol handler (kubectl exec)
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, KubernetesConfig, ProtocolConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Kubernetes protocol handler
 ///

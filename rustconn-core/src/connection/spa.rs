@@ -9,15 +9,15 @@
 use std::net::{ToSocketAddrs, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use aes::Aes256;
+use aes::cipher::block_padding::Pkcs7;
+use aes::cipher::{BlockModeEncrypt, KeyIvInit};
 use data_encoding::BASE64;
 use ring::hmac;
 use ring::rand::{SecureRandom, SystemRandom};
 use secrecy::{ExposeSecret, SecretString};
 use thiserror::Error;
 use zeroize::Zeroizing;
-
-use aes::Aes256;
-use aes::cipher::{BlockModeEncrypt, KeyIvInit, block_padding::Pkcs7};
 
 type Aes256CbcEnc = cbc::Encryptor<Aes256>;
 

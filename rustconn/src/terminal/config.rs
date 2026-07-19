@@ -2,13 +2,13 @@
 //!
 //! This module handles VTE terminal appearance and behavior configuration.
 
-use gtk4::gdk;
-use gtk4::glib;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
+use gtk4::{gdk, glib};
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::models::ConnectionThemeOverride;
 use rustconn_core::terminal_themes::{Color, TerminalTheme};
-use std::rc::Rc;
 use vte4::prelude::*;
 use vte4::{CursorBlinkMode, CursorShape, Terminal};
 
@@ -134,8 +134,9 @@ fn setup_keyboard_shortcuts(terminal: &Terminal) {
 /// The `snippet_section` is a shared live `gio::Menu` model — all terminals
 /// reference the same instance so snippet changes propagate automatically.
 pub fn setup_context_menu(terminal: &Terminal, snippet_section: &Rc<gtk4::gio::Menu>) {
-    use gtk4::gio;
     use std::cell::RefCell;
+
+    use gtk4::gio;
 
     // Cache the last selection so Copy still works after VTE clears it
     // on right-click.

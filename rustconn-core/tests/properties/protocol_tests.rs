@@ -3,16 +3,16 @@
 //! These tests validate the correctness properties for SSH, RDP, and VNC
 //! protocol validation as defined in the design document.
 
-use proptest::prelude::*;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
+use proptest::prelude::*;
 use rustconn_core::models::{
     Connection, PortForward, PortForwardDirection, ProtocolConfig, RdpConfig, RdpGateway,
     Resolution, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
     SshKeySource, VncConfig,
 };
 use rustconn_core::protocol::{Protocol, RdpProtocol, SshProtocol, VncProtocol};
-use std::path::PathBuf;
 
 // ============================================================================
 // Generators for SSH configurations

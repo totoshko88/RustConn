@@ -12,23 +12,24 @@ mod auth_page;
 mod connection_page;
 mod protocol_page;
 
-use crate::i18n::i18n;
-use crate::state::SharedAppState;
+use std::cell::RefCell;
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use adw::prelude::*;
+use auth_page::AuthPage;
+use connection_page::ConnectionPage;
 use gtk4::prelude::*;
 use libadwaita as adw;
+use protocol_page::ProtocolPage;
 use rustconn_core::models::{
     Connection, ConnectionThemeOverride, ProtocolType, SshAuthMethod, ZeroTrustProvider,
 };
 use secrecy::SecretString;
-use std::cell::RefCell;
-use std::path::PathBuf;
-use std::rc::Rc;
 use uuid::Uuid;
 
-use auth_page::AuthPage;
-use connection_page::ConnectionPage;
-use protocol_page::ProtocolPage;
+use crate::i18n::i18n;
+use crate::state::SharedAppState;
 
 /// Result from the connection wizard
 pub enum WizardResult {

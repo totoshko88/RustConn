@@ -17,7 +17,7 @@ use crate::util::create_config_manager;
 /// Returns:
 /// - [`CliError::Import`] when the inventory file does not exist or cannot be parsed
 /// - [`CliError::Config`] when connections cannot be loaded or saved
-pub fn cmd_sync(
+pub(super) fn cmd_sync(
     config_path: Option<&Path>,
     file: &Path,
     source: &str,

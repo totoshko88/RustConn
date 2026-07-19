@@ -16,7 +16,7 @@ use crate::util::{create_config_manager, find_connection};
 ///   (and `name` is not the special value `"all"`)
 /// - [`CliError::TestFailed`] when the TCP probe fails or the host is unreachable
 ///   within `timeout` seconds
-pub fn cmd_test(
+pub(super) fn cmd_test(
     config_path: Option<&Path>,
     name: &str,
     timeout: u64,

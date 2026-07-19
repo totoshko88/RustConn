@@ -6,11 +6,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use super::traits::ImportResult;
 use crate::error::ImportError;
 use crate::models::Connection;
 use crate::progress::ProgressReporter;
-
-use super::traits::ImportResult;
 
 /// Default batch size for import operations.
 pub const DEFAULT_IMPORT_BATCH_SIZE: usize = 50;

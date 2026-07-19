@@ -3,9 +3,10 @@
 //! These tests validate the correctness properties defined in the design document
 //! for the Lazy Loading system (Requirements 3.x).
 
+use std::collections::HashSet;
+
 use proptest::prelude::*;
 use rustconn_core::{Connection, ConnectionGroup, LazyGroupLoader};
-use std::collections::HashSet;
 use uuid::Uuid;
 
 // ========== Strategies ==========

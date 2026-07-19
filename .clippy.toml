@@ -3,3 +3,5 @@ msrv = "1.95"
 cognitive-complexity-threshold = 25
 too-many-arguments-threshold = 7
 type-complexity-threshold = 250
+# IronRDP-inspired: allow unwrap/expect in test code (inline #[cfg(test)] modules)
+allow-unwrap-in-tests = true

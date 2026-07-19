@@ -28,9 +28,9 @@ pub mod filter;
 pub mod search;
 pub mod view;
 
-use crate::i18n::i18n;
-use crate::sidebar_ui;
-use crate::smart_folder_ui::SmartFoldersSidebar;
+use std::cell::RefCell;
+use std::collections::HashSet;
+use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::ObjectSubclassIsExt;
@@ -43,10 +43,11 @@ use libadwaita as adw;
 use rustconn_core::Debouncer;
 use rustconn_core::connection::{LazyGroupLoader, SelectionState as CoreSelectionState};
 use rustconn_core::models::{Connection, SmartFolder};
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use crate::i18n::i18n;
+use crate::sidebar_ui;
+use crate::smart_folder_ui::SmartFoldersSidebar;
 
 /// Sidebar widget for connection tree display
 #[expect(dead_code, reason = "Many fields kept for GTK widget lifecycle")]
@@ -2033,11 +2034,13 @@ impl Default for ConnectionSidebar {
 // ============================================================================
 
 mod imp {
-    use super::{gio, glib};
+    use std::cell::RefCell;
+
     use glib::Properties;
     use glib::prelude::*;
     use glib::subclass::prelude::*;
-    use std::cell::RefCell;
+
+    use super::{gio, glib};
 
     #[derive(Properties)]
     #[properties(wrapper_type = super::ConnectionItem)]

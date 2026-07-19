@@ -19,7 +19,6 @@ use gtk4::glib;
 use gtk4::prelude::*;
 
 use super::types::RdpConnectionState;
-
 use crate::i18n::i18n;
 
 /// Minimum pixel difference (in device pixels) before triggering an RDP

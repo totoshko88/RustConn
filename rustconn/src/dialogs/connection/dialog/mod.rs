@@ -9,7 +9,10 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
-use super::logging_tab;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, CheckButton, ColorDialogButton, DrawingArea, DropDown, Entry, Label,
@@ -19,10 +22,9 @@ use libadwaita as adw;
 use rustconn_core::automation::ExpectRule;
 use rustconn_core::models::{CustomProperty, HighlightRule, SharedFolder};
 use rustconn_core::variables::Variable;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use uuid::Uuid;
+
+use super::logging_tab;
 
 /// Keyboard layout KLID values matching the dropdown order.
 /// Index 0 = Auto (None), rest map to specific Windows KLIDs.
@@ -285,6 +287,9 @@ pub struct ConnectionDialog {
     // Web fields
     web_browser_entry: Entry,
     web_private_mode_switch: adw::SwitchRow,
+    web_browser_mode_combo: adw::ComboRow,
+    web_javascript_switch: adw::SwitchRow,
+    web_user_agent_row: adw::EntryRow,
     // Variables fields
     variables_list: ListBox,
     variables_rows: Rc<RefCell<Vec<LocalVariableRow>>>,

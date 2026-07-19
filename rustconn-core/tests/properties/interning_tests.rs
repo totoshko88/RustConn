@@ -12,12 +12,13 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
+use std::sync::Arc;
+
 use proptest::prelude::*;
 use rustconn_core::{
     get_interning_stats, intern_hostname, intern_protocol_name, intern_username,
     log_interning_stats_with_warning,
 };
-use std::sync::Arc;
 
 // ========== Strategies ==========
 

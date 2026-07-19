@@ -93,6 +93,7 @@ mod variable_tests;
 mod verification_tests;
 mod virt_viewer_tests;
 mod vnc_client_tests;
+mod web_config_tests;
 mod window_mode_tests;
 mod wol_tests;
 mod workspace_tests;

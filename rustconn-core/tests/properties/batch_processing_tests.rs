@@ -2,13 +2,14 @@
 //!
 //! Tests correctness properties for batch import and export operations.
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use proptest::prelude::*;
 use rustconn_core::export::{BatchExporter, DEFAULT_EXPORT_BATCH_SIZE};
 use rustconn_core::import::{BatchImporter, DEFAULT_IMPORT_BATCH_SIZE};
 use rustconn_core::models::Connection;
 use rustconn_core::progress::CallbackProgressReporter;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Strategy for generating a reasonable batch size
 fn arb_batch_size() -> impl Strategy<Value = usize> {

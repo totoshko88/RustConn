@@ -22,13 +22,12 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, ProtocolConfig, RdpConfig, SshAuthMethod, SshConfig, SshKeySource,
     TelnetConfig, VncConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// SecureCRT protocol identifiers as stored in `S:"Protocol Name"`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

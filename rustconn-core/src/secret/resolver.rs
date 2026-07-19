@@ -7,13 +7,12 @@ use std::sync::Arc;
 
 use tracing::{debug, warn};
 
-use crate::config::{SecretBackendType, SecretSettings};
-use crate::error::SecretResult;
-use crate::models::{Connection, ConnectionGroup, Credentials, PasswordSource};
-
 use super::hierarchy::KeePassHierarchy;
 use super::manager::SecretManager;
 use super::verification::{CredentialStatus, CredentialVerificationManager, VerifiedCredentials};
+use crate::config::{SecretBackendType, SecretSettings};
+use crate::error::SecretResult;
+use crate::models::{Connection, ConnectionGroup, Credentials, PasswordSource};
 
 /// Resolves credentials for a connection based on configuration
 ///
@@ -1223,9 +1222,10 @@ impl CredentialResolver {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
     use crate::models::{ConnectionGroup, ProtocolConfig, ProtocolType, SshConfig};
-    use uuid::Uuid;
 
     fn create_test_connection(name: &str, host: &str) -> Connection {
         Connection {

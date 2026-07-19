@@ -26,10 +26,9 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::error::ImportError;
-
 use super::libvirt::LibvirtXmlImporter;
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use crate::error::ImportError;
 
 /// Default libvirt URI for user-session VMs.
 const DEFAULT_URI: &str = "qemu:///session";

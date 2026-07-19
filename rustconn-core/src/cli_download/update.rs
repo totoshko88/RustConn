@@ -1,11 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use super::install::install_download_component;
+use super::install_pip::{create_pip_wrapper_script, ensure_pip_available};
 use super::{
     CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
-    DownloadableComponent, InstallMethod, ProgressCallback, get_cli_install_dir,
-    install::install_download_component,
-    install_custom,
-    install_pip::{create_pip_wrapper_script, ensure_pip_available},
+    DownloadableComponent, InstallMethod, ProgressCallback, get_cli_install_dir, install_custom,
 };
 
 /// Update a component (uninstall and reinstall)

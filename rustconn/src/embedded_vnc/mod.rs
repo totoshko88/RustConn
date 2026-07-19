@@ -26,22 +26,22 @@ pub use crate::embedded_vnc_types::{
 };
 
 mod ui;
-pub use ui::{gtk_button_to_vnc_mask, transform_widget_to_vnc};
-
-use crate::i18n::i18n;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DrawingArea, Label};
-use rustconn_core::vnc_client::is_embedded_vnc_available;
-#[cfg(feature = "vnc-embedded")]
-use rustconn_core::vnc_client::{
-    VncClient, VncClientCommand, VncClientConfig, VncClientEvent, VncCommandSender, VncEncoding,
-};
 use std::cell::RefCell;
 use std::process::{Child, Command, Stdio};
 use std::rc::Rc;
 #[cfg(feature = "vnc-embedded")]
 use std::sync::{Arc, Mutex as StdMutex};
+
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, DrawingArea, Label, glib};
+use rustconn_core::vnc_client::is_embedded_vnc_available;
+#[cfg(feature = "vnc-embedded")]
+use rustconn_core::vnc_client::{
+    VncClient, VncClientCommand, VncClientConfig, VncClientEvent, VncCommandSender, VncEncoding,
+};
+pub use ui::{gtk_button_to_vnc_mask, transform_widget_to_vnc};
+
+use crate::i18n::i18n;
 
 /// Maps a user-facing encoding preference string to a `VncEncoding` the
 /// embedded client can negotiate. Returns `None` for names the minimal client

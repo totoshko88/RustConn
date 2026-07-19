@@ -7,11 +7,10 @@ use std::fmt::Write;
 
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 
 /// Ansible inventory exporter.
 ///
@@ -348,8 +347,9 @@ fn sanitize_host_name(name: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

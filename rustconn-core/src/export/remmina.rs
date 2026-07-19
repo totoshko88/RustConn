@@ -6,11 +6,10 @@ use std::fmt::Write;
 use std::fs;
 use std::path::Path;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
-
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 
 /// Remmina connection file exporter.
 ///
@@ -336,9 +335,10 @@ impl ExportTarget for RemminaExporter {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::models::{Resolution, SshAuthMethod};
-    use std::path::PathBuf;
 
     fn create_ssh_connection(name: &str, host: &str, port: u16) -> Connection {
         Connection::new_ssh(name.to_string(), host.to_string(), port)

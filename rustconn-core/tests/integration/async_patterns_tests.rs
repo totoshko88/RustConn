@@ -5,15 +5,16 @@
 //!
 //! **Validates: Requirements 9.1, 9.2 - Async operations instead of blocking calls**
 
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::Duration;
+
 use rustconn_core::models::AutomationConfig;
 use rustconn_core::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, Connection, Credentials,
     PasswordSource, ProtocolConfig, ProtocolType, SecretManager, SshConfig, WindowMode,
 };
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::time::Duration;
 
 /// Creates a test connection for integration testing
 fn create_test_connection(name: &str, host: &str) -> Connection {

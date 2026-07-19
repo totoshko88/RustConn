@@ -143,8 +143,9 @@ pub enum VncEncoding {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use secrecy::ExposeSecret;
+
+    use super::*;
 
     #[test]
     fn test_config_builder() {

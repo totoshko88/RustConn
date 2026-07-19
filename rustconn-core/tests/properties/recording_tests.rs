@@ -2,10 +2,11 @@
 //!
 //! **Validates: Requirements 6.1, 6.2, 6.10, 6.11, 11.7**
 
+use std::time::Duration;
+
 use proptest::prelude::*;
 use rustconn_core::session::SanitizeConfig;
 use rustconn_core::session::recording::{RecordingReader, SessionRecorder};
-use std::time::Duration;
 
 /// Helper: write `chunks` through a recorder, then read them back.
 /// Returns the list of `(delay, data)` pairs read from the files.

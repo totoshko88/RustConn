@@ -12,7 +12,7 @@ use crate::error::CliError;
 ///
 /// Always returns `Ok(())` today; the signature keeps `Result` for symmetry
 /// with the rest of the `cmd_*` API.
-pub fn cmd_completions(shell: Shell) -> Result<(), CliError> {
+pub(super) fn cmd_completions(shell: Shell) -> Result<(), CliError> {
     let mut cmd = Cli::command();
     generate(shell, &mut cmd, "rustconn-cli", &mut std::io::stdout());
     Ok(())

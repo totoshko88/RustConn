@@ -15,10 +15,9 @@ mod inner {
     };
     use zeroize::Zeroizing;
 
+    use super::super::backend::SecretBackend;
     use crate::error::{SecretError, SecretResult};
     use crate::models::Credentials;
-
-    use super::super::backend::SecretBackend;
 
     /// Service name used for all Keychain entries
     const SERVICE_NAME: &str = "rustconn";

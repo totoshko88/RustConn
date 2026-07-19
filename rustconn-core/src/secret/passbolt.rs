@@ -18,16 +18,16 @@
 //! convention `RustConn: {connection_id}`. Each resource stores
 //! username in the name/description and password as the secret.
 
+use std::process::Stdio;
+
 use async_trait::async_trait;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
-use std::process::Stdio;
 use tokio::process::Command;
 
+use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
-
-use super::backend::SecretBackend;
 
 /// Passbolt CLI backend
 ///

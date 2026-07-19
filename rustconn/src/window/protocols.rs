@@ -3,6 +3,15 @@
 //! This module contains functions for starting connections for different protocols:
 //! SSH, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust.
 
+use std::rc::Rc;
+
+use gtk4::glib;
+use gtk4::prelude::*;
+use rustconn_core::connection::{automation_inheritance, check_port, ssh_inheritance};
+use rustconn_core::models::AutomationConfig;
+use rustconn_core::variables::{Variable, VariableManager, VariableScope};
+use uuid::Uuid;
+
 use super::MainWindow;
 pub use super::protocols_ssh::{reconnect_ssh_in_place, start_ssh_connection};
 use crate::i18n::{i18n, i18n_f};
@@ -10,15 +19,6 @@ use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::utils::spawn_blocking_with_callback;
-use gtk4::glib;
-use gtk4::prelude::*;
-use rustconn_core::connection::automation_inheritance;
-use rustconn_core::connection::check_port;
-use rustconn_core::connection::ssh_inheritance;
-use rustconn_core::models::AutomationConfig;
-use rustconn_core::variables::{Variable, VariableManager, VariableScope};
-use std::rc::Rc;
-use uuid::Uuid;
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -1504,15 +1504,26 @@ pub fn start_zerotrust_connection(
         );
         notebook.spawn_command(session_id, &["/bin/sh", "-c", &spawn_cmd], None, None, None);
     } else {
-        let spawn_command = rustconn_core::flatpak::wrap_host_command(&full_command);
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-        notebook.spawn_command(
-            session_id,
-            &[&shell, "-c", &spawn_command],
-            None,
-            None,
-            None,
-        );
+        // For Generic provider, build_command already returns ("sh", ["-c", "template"])
+        // which is a complete shell invocation. Wrapping in yet another shell would
+        // break argument parsing (e.g. "bash -c 'sh -c aws login'" treats "login"
+        // as $0, not part of the command). Spawn it directly.
+        if is_generic {
+            let spawn_argv: Vec<&str> = std::iter::once(program.as_str())
+                .chain(args.iter().map(String::as_str))
+                .collect();
+            notebook.spawn_command(session_id, &spawn_argv, None, None, None);
+        } else {
+            let spawn_command = rustconn_core::flatpak::wrap_host_command(&full_command);
+            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+            notebook.spawn_command(
+                session_id,
+                &[&shell, "-c", &spawn_command],
+                None,
+                None,
+                None,
+            );
+        }
     }
 
     Some(session_id)

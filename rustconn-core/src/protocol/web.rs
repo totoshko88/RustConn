@@ -5,10 +5,9 @@
 //! Credentials are stored in the configured secret backend for
 //! copy-to-clipboard functionality.
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, WebConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// Web bookmark protocol handler
 ///
@@ -65,11 +64,14 @@ impl Protocol for WebProtocol {
             ));
         }
 
-        // Validate URL starts with http:// or https://
+        // Validate URL starts with http://, https://, or file://
         let host_lower = connection.host.to_lowercase();
-        if !host_lower.starts_with("http://") && !host_lower.starts_with("https://") {
+        if !host_lower.starts_with("http://")
+            && !host_lower.starts_with("https://")
+            && !host_lower.starts_with("file://")
+        {
             return Err(ProtocolError::InvalidConfig(
-                "URL must start with http:// or https://".to_string(),
+                "URL must start with http://, https://, or file://".to_string(),
             ));
         }
 
@@ -78,11 +80,17 @@ impl Protocol for WebProtocol {
 
     fn capabilities(&self) -> ProtocolCapabilities {
         ProtocolCapabilities {
+            #[cfg(feature = "web-embedded")]
+            embedded: true,
+            #[cfg(not(feature = "web-embedded"))]
             embedded: false,
             external_fallback: true,
             file_transfer: false,
             audio: false,
             clipboard: false,
+            #[cfg(feature = "web-embedded")]
+            split_view: true,
+            #[cfg(not(feature = "web-embedded"))]
             split_view: false,
             terminal_based: false,
             multi_monitor: false,
@@ -98,24 +106,45 @@ impl Protocol for WebProtocol {
     }
 
     fn build_command(&self, connection: &Connection) -> Option<Vec<String>> {
+        use crate::models::WebBrowserMode;
+
         let web_config = Self::get_web_config(connection).ok()?;
 
-        let browser = web_config.browser.as_deref().unwrap_or("xdg-open");
+        match web_config.browser_mode {
+            // Embedded mode: session manager creates the widget directly
+            #[cfg(feature = "web-embedded")]
+            WebBrowserMode::Embedded => None,
 
-        let mut cmd = vec![browser.to_string()];
+            // System mode: delegate to xdg-open (Linux) / UriLauncher (GUI)
+            WebBrowserMode::System => {
+                let mut cmd = vec!["xdg-open".to_string()];
+                cmd.push(connection.host.clone());
+                Some(cmd)
+            }
 
-        // Add private mode flag for known browsers
-        if web_config.private_mode {
-            let browser_lower = browser.to_lowercase();
-            if browser_lower.contains("firefox") {
-                cmd.push("--private-window".to_string());
-            } else if browser_lower.contains("chrom") || browser_lower.contains("brave") {
-                cmd.push("--incognito".to_string());
+            // Custom mode: execute user-specified browser command with URL appended
+            WebBrowserMode::Custom => {
+                let browser = web_config.browser.as_deref().unwrap_or("").trim();
+                if browser.is_empty() {
+                    // Empty command — caller displays error notification, no fallback
+                    return None;
+                }
+
+                let mut cmd = vec![browser.to_string()];
+
+                // Add private mode flag for known browsers
+                if web_config.private_mode {
+                    let browser_lower = browser.to_lowercase();
+                    if browser_lower.contains("firefox") {
+                        cmd.push("--private-window".to_string());
+                    } else if browser_lower.contains("chrom") || browser_lower.contains("brave") {
+                        cmd.push("--incognito".to_string());
+                    }
+                }
+
+                cmd.push(connection.host.clone());
+                Some(cmd)
             }
         }
-
-        cmd.push(connection.host.clone());
-
-        Some(cmd)
     }
 }

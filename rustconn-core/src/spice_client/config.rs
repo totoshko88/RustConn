@@ -6,9 +6,10 @@
     reason = "module-wide override for legacy code; refactored case by case"
 )]
 
+use std::path::PathBuf;
+
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 
 /// Configuration for SPICE client connection
 #[derive(Debug, Clone, Serialize, Deserialize)]

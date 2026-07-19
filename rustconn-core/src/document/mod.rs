@@ -27,10 +27,11 @@
 //! manager.save(doc_id, Path::new("connections.rcdb"), None, EncryptionStrength::Standard)?;
 //! ```
 
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
+
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 use zeroize::Zeroizing;

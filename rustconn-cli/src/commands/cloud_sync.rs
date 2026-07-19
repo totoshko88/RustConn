@@ -10,13 +10,12 @@ use std::path::Path;
 use rustconn_core::sync::SyncManager;
 use rustconn_core::sync::settings::SyncMode;
 
+use super::sync::cmd_sync;
 use crate::cli::{OutputFormat, SyncCommands};
 use crate::color;
 use crate::error::CliError;
 use crate::format::escape_csv_field;
 use crate::util::create_config_manager;
-
-use super::sync::cmd_sync;
 
 /// Dispatches a `sync` subcommand to the appropriate handler.
 ///
@@ -26,7 +25,10 @@ use super::sync::cmd_sync;
 /// - [`CliError::Config`] when configuration or sync state cannot be read or written
 /// - [`CliError::Import`] / [`CliError::Export`] when an inventory file is
 ///   missing, malformed, or cannot be written
-pub fn cmd_cloud_sync(config_path: Option<&Path>, subcmd: SyncCommands) -> Result<(), CliError> {
+pub(super) fn cmd_cloud_sync(
+    config_path: Option<&Path>,
+    subcmd: SyncCommands,
+) -> Result<(), CliError> {
     match subcmd {
         SyncCommands::Status => cmd_sync_status(config_path),
         SyncCommands::List { format } => cmd_sync_list(config_path, format.effective()),

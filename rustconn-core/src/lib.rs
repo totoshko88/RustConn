@@ -31,6 +31,17 @@
 
 // Enable missing_docs warning for public API documentation
 #![warn(missing_docs)]
+// Inline test modules import items via `use super::*` and sometimes also via explicit
+// `use crate::...` paths — the latter are flagged as redundant. Suppressing here avoids
+// touching 146 inline test modules.
+#![cfg_attr(
+    test,
+    allow(
+        redundant_imports,
+        clippy::print_stderr,
+        reason = "test modules use super::* plus explicit imports; tests may print diagnostics"
+    )
+)]
 
 // Domain model, persistence, and headless management modules.
 pub mod activity_monitor;
@@ -176,6 +187,13 @@ pub use models::{
     WindowGeometry, WindowMode, WorkspaceEntry, WorkspaceProfile, WorkspaceSplitLayout,
     collect_descendant_group_ids, group_templates_by_protocol,
 };
+pub use monitoring::{
+    CollectorHandle, CpuSnapshot, DiskMetrics, LoadAverage, METRICS_COMMAND, MemoryMetrics,
+    MetricsComputer, MetricsEvent, MetricsParser, MonitoringConfig, MonitoringError,
+    MonitoringResult, MonitoringSettings, NetworkMetrics, NetworkSnapshot, RemoteMetrics,
+    RemoteOsType, SYSTEM_INFO_COMMAND, SystemInfo, close_all_control_sockets, close_control_socket,
+    ssh_control_path, ssh_exec_factory, start_collector,
+};
 pub use password_generator::{
     CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
     PasswordGeneratorResult, PasswordStrength, estimate_crack_time,
@@ -233,14 +251,18 @@ pub use rdp_client::{
 };
 #[cfg(feature = "rdp-embedded")]
 pub use rdp_client::{RdpClient, RdpCommandSender, RdpEventReceiver};
+pub use search::cache::SearchCache;
+pub use search::command_palette::{
+    CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
+};
 pub use search::{
     ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,
     SearchFilter, SearchQuery, SearchResult, benchmark,
-    cache::SearchCache,
-    command_palette::{
-        CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
-    },
 };
+// Host keyring backends are compiled only when explicitly requested. The
+// headless default keeps DBus/macOS Security.framework out of rustconn-core.
+#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
+pub use secret::LibSecretBackend;
 pub use secret::{
     AsyncCredentialResolver, AsyncCredentialResult, CACHE_TTL_SECONDS, CancellationToken,
     CredentialResolver, CredentialStatus, CredentialVerificationManager, DialogPreFillData,
@@ -248,10 +270,6 @@ pub use secret::{
     PassBackend, PendingCredentialResolution, SecretBackend, SecretManager, VerifiedCredentials,
     parse_keepassxc_version, resolve_with_callback, spawn_credential_resolution,
 };
-// Host keyring backends are compiled only when explicitly requested. The
-// headless default keeps DBus/macOS Security.framework out of rustconn-core.
-#[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
-pub use secret::LibSecretBackend;
 pub use session::{
     LogConfig, LogContext, LogError, LogResult, Session, SessionLogger, SessionManager,
     SessionState, SessionType,
@@ -270,15 +288,6 @@ pub use spice_client::{
     SpiceClientConfig, SpiceClientError, SpiceCompression, SpiceSecurityProtocol,
     SpiceSharedFolder, build_spice_viewer_args, detect_spice_viewer,
 };
-pub use sync::{
-    Inventory, InventoryEntry, SYNC_TAG_PREFIX, SyncResult, default_port_for_protocol,
-    load_inventory, parse_inventory_json, parse_inventory_yaml, sync_inventory, sync_tag,
-};
-pub use template::TemplateManager;
-pub use template::{
-    PREDEFINED_TEMPLATES, PredefinedTemplate, TemplateCategory, all_predefined_templates,
-    find_predefined_template, templates_by_category,
-};
 // Split view types (tab-scoped layouts)
 pub use split::SplitDirection;
 pub use split::{
@@ -288,6 +297,14 @@ pub use split::{
 pub use ssh_agent::{
     AgentError, AgentKey, AgentResult, AgentStatus, SshAgentManager, parse_agent_output,
     parse_key_list,
+};
+pub use sync::{
+    Inventory, InventoryEntry, SYNC_TAG_PREFIX, SyncResult, default_port_for_protocol,
+    load_inventory, parse_inventory_json, parse_inventory_yaml, sync_inventory, sync_tag,
+};
+pub use template::{
+    PREDEFINED_TEMPLATES, PredefinedTemplate, TemplateCategory, TemplateManager,
+    all_predefined_templates, find_predefined_template, templates_by_category,
 };
 pub use testing::{
     ConnectionTester, DEFAULT_CONCURRENCY, DEFAULT_TEST_TIMEOUT_SECS, TestError, TestResult,
@@ -309,11 +326,3 @@ pub use wol::{
     MacAddress, WolConfig, WolError, WolResult, generate_magic_packet, send_magic_packet, send_wol,
 };
 pub use workspace::WorkspaceProfileManager;
-
-pub use monitoring::{
-    CollectorHandle, CpuSnapshot, DiskMetrics, LoadAverage, METRICS_COMMAND, MemoryMetrics,
-    MetricsComputer, MetricsEvent, MetricsParser, MonitoringConfig, MonitoringError,
-    MonitoringResult, MonitoringSettings, NetworkMetrics, NetworkSnapshot, RemoteMetrics,
-    RemoteOsType, SYSTEM_INFO_COMMAND, SystemInfo, close_all_control_sockets, close_control_socket,
-    ssh_control_path, ssh_exec_factory, start_collector,
-};

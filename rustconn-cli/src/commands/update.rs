@@ -18,7 +18,7 @@ use crate::util::{create_config_manager, find_connection};
     reason = "AddParams/UpdateParams mirror Clap-derived flags 1:1; bundling related \
               booleans into enums would force callers to convert and obscure CLI mapping"
 )]
-pub struct UpdateParams<'a> {
+pub(super) struct UpdateParams<'a> {
     pub name: &'a str,
     pub new_name: Option<&'a str>,
     pub host: Option<&'a str>,
@@ -114,6 +114,13 @@ pub struct UpdateParams<'a> {
     pub serial_parity: Option<&'a str>,
     pub serial_flow_control: Option<&'a str>,
     pub serial_custom_arg: &'a [String],
+    // Web
+    pub browser_mode: Option<&'a str>,
+    pub javascript: Option<bool>,
+    pub user_agent: Option<&'a str>,
+    pub accept_invalid_certs: Option<bool>,
+    pub private_mode: bool,
+    pub zoom_level: Option<f64>,
 }
 
 /// Update connection command handler
@@ -132,7 +139,10 @@ pub struct UpdateParams<'a> {
     reason = "UpdateParams is consumed by value to take ownership of borrowed flag values \
               from Clap; the long body matches every editable field in turn"
 )]
-pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Result<(), CliError> {
+pub(super) fn cmd_update(
+    config_path: Option<&Path>,
+    params: UpdateParams<'_>,
+) -> Result<(), CliError> {
     let config_manager = create_config_manager(config_path)?;
 
     let mut connections = config_manager
@@ -562,6 +572,56 @@ pub fn cmd_update(config_path: Option<&Path>, params: UpdateParams<'_>) -> Resul
                 "Serial-specific options (--serial-data-bits, --serial-stop-bits, \
                  --serial-parity, --serial-flow-control, --serial-custom-arg) \
                  are only applicable to Serial connections"
+            );
+        }
+    }
+
+    // Apply Web-specific settings
+    if params.browser_mode.is_some()
+        || params.javascript.is_some()
+        || params.user_agent.is_some()
+        || params.accept_invalid_certs.is_some()
+        || params.private_mode
+        || params.zoom_level.is_some()
+    {
+        if let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        {
+            if let Some(mode) = params.browser_mode {
+                cfg.browser_mode = match mode {
+                    "system" => rustconn_core::models::WebBrowserMode::System,
+                    "custom" => rustconn_core::models::WebBrowserMode::Custom,
+                    _ => rustconn_core::models::WebBrowserMode::default(),
+                };
+            }
+            if let Some(js) = params.javascript {
+                cfg.javascript_enabled = js;
+            }
+            if let Some(ua) = params.user_agent {
+                if ua.chars().count() > 512 {
+                    return Err(CliError::Config(
+                        "--user-agent exceeds maximum allowed length of 512 characters".to_string(),
+                    ));
+                }
+                cfg.user_agent = Some(ua.to_string());
+            }
+            if let Some(certs) = params.accept_invalid_certs {
+                cfg.accept_invalid_certs = certs;
+            }
+            if params.private_mode {
+                cfg.private_mode = true;
+            }
+            if let Some(zoom) = params.zoom_level {
+                if !(0.3..=3.0).contains(&zoom) {
+                    return Err(CliError::Config(
+                        "--zoom-level must be between 0.3 and 3.0".to_string(),
+                    ));
+                }
+                cfg.zoom_level = zoom;
+            }
+        } else {
+            tracing::warn!(
+                "Web-specific options (--browser-mode, --javascript, --user-agent, \
+                 --accept-invalid-certs, --private-mode, --zoom-level) are only applicable to Web connections"
             );
         }
     }

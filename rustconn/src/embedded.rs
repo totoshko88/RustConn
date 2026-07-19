@@ -4,20 +4,19 @@
 //! within the main application window using native protocol clients.
 //! On Wayland, sessions fall back to external windows.
 
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation};
-use libadwaita as adw;
 use std::cell::RefCell;
 use std::process::Child;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation, glib};
+use libadwaita as adw;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::i18n::{i18n, i18n_f};
-
 // Re-export DisplayServer from the unified display module for backward compatibility
 pub use crate::display::DisplayServer;
+use crate::i18n::{i18n, i18n_f};
 
 /// Error type for embedding operations
 #[derive(Debug, Clone, Error)]

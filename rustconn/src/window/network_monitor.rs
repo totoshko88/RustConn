@@ -4,12 +4,12 @@
 //! change, cleans up stale SSH `ControlMaster` sockets and triggers
 //! auto-reconnect for affected sessions (both VTE and embedded RDP/VNC).
 
-use gtk4::gio;
-use gtk4::glib;
-use gtk4::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
+
+use gtk4::prelude::*;
+use gtk4::{gio, glib};
 
 use super::SharedToastOverlay;
 use super::types::SharedNotebook;

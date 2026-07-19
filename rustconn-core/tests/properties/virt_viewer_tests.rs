@@ -3,10 +3,11 @@
 //! Tests parsing correctness, fuzz resilience, and edge cases for
 //! the virt-viewer INI-style file format used by libvirt/Proxmox VE.
 
+use std::io::Write;
+
 use proptest::prelude::*;
 use rustconn_core::import::{ImportSource, VirtViewerImporter};
 use rustconn_core::models::{PasswordSource, ProtocolConfig};
-use std::io::Write;
 use tempfile::NamedTempFile;
 
 // ============================================================================

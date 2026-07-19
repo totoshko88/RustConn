@@ -155,6 +155,7 @@ pub(super) fn extract_deb(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
 /// Extract uncompressed tar archive
 pub(super) fn extract_tar(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
     use std::io::Cursor;
+
     use tar::Archive;
 
     let cursor = Cursor::new(data);
@@ -278,8 +279,9 @@ pub(super) fn extract_tar_zst(data: &[u8], dest: &Path) -> CliDownloadResult<()>
 }
 
 pub(super) fn extract_tar_gz(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
-    use flate2::read::GzDecoder;
     use std::io::Cursor;
+
+    use flate2::read::GzDecoder;
     use tar::Archive;
 
     let cursor = Cursor::new(data);
@@ -346,8 +348,9 @@ pub(super) fn extract_tar_gz(data: &[u8], dest: &Path) -> CliDownloadResult<()> 
 
 /// Extract tar.gz archive preserving directory structure (no flattening)
 pub(super) fn extract_tar_gz_preserve(data: &[u8], dest: &Path) -> CliDownloadResult<()> {
-    use flate2::read::GzDecoder;
     use std::io::Cursor;
+
+    use flate2::read::GzDecoder;
     use tar::Archive;
 
     let cursor = Cursor::new(data);

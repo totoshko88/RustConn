@@ -3,11 +3,11 @@
 //! This module contains UI creation functions for the main window,
 //! including header bar and application menu construction.
 
-use crate::i18n::i18n;
-use gtk4::gio;
 use gtk4::prelude::*;
-use gtk4::{Button, Label, MenuButton};
+use gtk4::{Button, Label, MenuButton, gio};
 use libadwaita as adw;
+
+use crate::i18n::i18n;
 
 /// Creates the header bar with title and controls
 ///

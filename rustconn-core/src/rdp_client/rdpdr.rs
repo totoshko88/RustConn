@@ -10,7 +10,13 @@
 //! of directory changes, this module sets up file system watches and sends notifications
 //! when files are created, modified, deleted, or renamed.
 
-use super::dir_watcher::{DirectoryChange, DirectoryWatcher, WatchRequest};
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::os::unix::fs::MetadataExt;
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+
 use ironrdp::core::impl_as_any;
 use ironrdp::pdu::PduResult;
 use ironrdp::rdpdr::RdpdrBackend;
@@ -33,13 +39,9 @@ use ironrdp::rdpdr::pdu::efs::{
 };
 use ironrdp::rdpdr::pdu::esc::{ScardCall, ScardIoCtlCode};
 use ironrdp::svc::SvcMessage;
-use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::unix::fs::MetadataExt;
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
 use tracing::{debug, trace, warn};
+
+use super::dir_watcher::{DirectoryChange, DirectoryWatcher, WatchRequest};
 
 /// RDPDR backend for Linux/Unix shared folders
 #[derive(Debug)]

@@ -4,9 +4,10 @@
 //! Built-in themes are always available; user-created custom themes
 //! are persisted to `~/.config/rustconn/custom_themes.json`.
 
-use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
+
+use serde::{Deserialize, Serialize};
 
 /// RGB color representation
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

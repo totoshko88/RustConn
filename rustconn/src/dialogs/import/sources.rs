@@ -2,6 +2,9 @@
 //!
 //! Extracted from `import.rs` as part of ARCH-5 decomposition.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::prelude::*;
 use gtk4::{
     Box as GtkBox, Button, Frame, Label, ListBox, ListBoxRow, Orientation, ProgressBar,
@@ -14,12 +17,9 @@ use rustconn_core::import::{
     RdpFileImporter, RemminaImporter, RoyalTsImporter, SecureCrtImporter, SshConfigImporter,
     VirtViewerImporter,
 };
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::i18n::{i18n, i18n_f};
 
 use super::ImportDialog;
+use crate::i18n::{i18n, i18n_f};
 
 impl ImportDialog {
     pub(super) fn create_source_page() -> (GtkBox, ListBox) {

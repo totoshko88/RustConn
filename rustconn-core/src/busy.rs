@@ -131,8 +131,9 @@ impl Drop for BusyGuard {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::AtomicBool;
+
+    use super::*;
 
     #[test]
     fn test_single_guard() {

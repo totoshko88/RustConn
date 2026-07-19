@@ -4,6 +4,7 @@
 //! Used for "Check if online" feature and WoL + auto-connect integration.
 
 use std::time::Duration;
+
 use thiserror::Error;
 use tokio::net::TcpStream;
 use tokio::time::timeout;

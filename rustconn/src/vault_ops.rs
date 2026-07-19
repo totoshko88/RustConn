@@ -1450,8 +1450,9 @@ pub fn generate_store_key(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rustconn_core::config::{SecretBackendType, SecretSettings};
+
+    use super::*;
 
     fn default_secret_settings(backend: SecretBackendType) -> SecretSettings {
         SecretSettings {

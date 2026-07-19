@@ -20,10 +20,9 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use super::traits::{ImportResult, ImportSource, read_import_file};
 use crate::error::ImportError;
 use crate::models::{Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution};
-
-use super::traits::{ImportResult, ImportSource, read_import_file};
 
 /// Parsed contents of an `.rdp` file.
 #[derive(Debug, Default)]

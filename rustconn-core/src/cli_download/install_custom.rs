@@ -1,10 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use super::download::download_with_progress;
+use super::extract::{extract_tar_gz, extract_zip};
 use super::{
     CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
     DownloadableComponent, ProgressCallback,
-    download::download_with_progress,
-    extract::{extract_tar_gz, extract_zip},
 };
 
 pub(super) async fn install_custom_component(

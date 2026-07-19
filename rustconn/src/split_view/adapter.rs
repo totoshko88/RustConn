@@ -8,13 +8,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use gtk4::gdk;
-use gtk4::gio;
-use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Button, DropTarget, Orientation, Overlay, Paned};
+use gtk4::{Align, Box as GtkBox, Button, DropTarget, Orientation, Overlay, Paned, gdk, gio, glib};
 use libadwaita as adw;
-
 use rustconn_core::split::{
     DropResult, PanelId, PanelNode, SessionId, SplitDirection, SplitError, SplitLayoutModel,
     SplitNode,

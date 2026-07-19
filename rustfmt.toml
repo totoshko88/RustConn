@@ -7,3 +7,7 @@ use_small_heuristics = "Default"
 reorder_imports = true
 reorder_modules = true
 remove_nested_parens = true
+# NOTE: imports_granularity = "Module" and group_imports = "StdExternalCrate"
+# require nightly rustfmt. Run with: cargo +nightly fmt --all
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"

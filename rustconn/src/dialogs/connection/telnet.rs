@@ -3,14 +3,14 @@
 //! UI panel for Telnet connections with keyboard behavior settings.
 //! Telnet uses an external `telnet` CLI client via VTE terminal.
 
-use super::protocol_layout::ProtocolLayoutBuilder;
-use super::widgets::EntryRowBuilder;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, DropDown, Entry, StringList};
 use libadwaita as adw;
 use rustconn_core::models::{TelnetBackspaceSends, TelnetDeleteSends};
 
+use super::protocol_layout::ProtocolLayoutBuilder;
+use super::widgets::EntryRowBuilder;
 use crate::i18n::i18n;
 
 /// Return type for Telnet options creation

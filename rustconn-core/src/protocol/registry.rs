@@ -3,12 +3,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::models::ProtocolType;
-
 use super::{
     KubernetesProtocol, MoshProtocol, Protocol, RdpProtocol, SerialProtocol, SftpProtocol,
     SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, WebProtocol, ZeroTrustProtocol,
 };
+use crate::models::ProtocolType;
 
 /// Registry for protocol handlers
 ///

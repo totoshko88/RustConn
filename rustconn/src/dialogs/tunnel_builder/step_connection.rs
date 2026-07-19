@@ -4,19 +4,19 @@
 //! and a live `TunnelPathDiagram` preview. Filters connections by name/host
 //! with 150ms debounce.
 
-use crate::i18n::i18n;
-use crate::state::SharedAppState;
-use adw::prelude::*;
-use gtk4::glib;
-use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Orientation, StringList};
-use libadwaita as adw;
-use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType};
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use adw::prelude::*;
+use gtk4::prelude::*;
+use gtk4::{Box as GtkBox, Orientation, StringList, glib};
+use libadwaita as adw;
+use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType};
 use uuid::Uuid;
 
 use super::TunnelPathDiagram;
+use crate::i18n::i18n;
+use crate::state::SharedAppState;
 
 /// Step 1 page — Connection & Name selection
 ///

@@ -6,7 +6,6 @@
 //! Uses `adw::PreferencesGroup` sections following GNOME HIG, consistent
 //! with the Advanced and SSH tabs.
 
-use crate::i18n::i18n;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -14,6 +13,8 @@ use gtk4::{
     StringList, TextView, WrapMode,
 };
 use libadwaita as adw;
+
+use crate::i18n::i18n;
 
 /// Widgets created by the General tab, replacing the previous 30-element tuple.
 #[expect(

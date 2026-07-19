@@ -3,9 +3,10 @@
 //! **Feature: rustconn, Property 12: Snippet Variable Extraction**
 //! **Validates: Requirements 8.3**
 
+use std::collections::{HashMap, HashSet};
+
 use proptest::prelude::*;
 use rustconn_core::SnippetManager;
-use std::collections::{HashMap, HashSet};
 
 // Strategy for generating valid variable names (alphanumeric with underscores, starting with letter or underscore)
 fn arb_var_name() -> impl Strategy<Value = String> {

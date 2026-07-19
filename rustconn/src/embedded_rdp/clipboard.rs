@@ -2,16 +2,13 @@
 //!
 //! Contains setup for Copy, Paste, and Ctrl+Alt+Del toolbar buttons.
 
-use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Button, Label};
-
-use crate::i18n::{i18n, i18n_f};
-
-use super::types::{RdpCommand, RdpConnectionState};
-
+use gtk4::{Button, Label, glib};
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
+
+use super::types::{RdpCommand, RdpConnectionState};
+use crate::i18n::{i18n, i18n_f};
 
 /// Shows a brief status message that auto-hides after the given duration.
 fn show_status_briefly(label: &Label, text: &str, duration_secs: u64) {

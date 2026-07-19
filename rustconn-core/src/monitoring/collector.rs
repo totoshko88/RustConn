@@ -3,8 +3,9 @@
 //! The collector sends [`METRICS_COMMAND`] through a callback, parses the
 //! output, computes deltas for CPU and network, and emits [`RemoteMetrics`].
 
-use chrono::Utc;
 use std::time::Duration;
+
+use chrono::Utc;
 use tokio::sync::mpsc;
 
 use super::metrics::{

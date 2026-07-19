@@ -3,11 +3,12 @@
 //! This module provides inotify-based directory monitoring for RDP shared folders.
 //! When a directory changes, it sends notifications back to the RDP server.
 
-use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
+
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tracing::{debug, trace, warn};
 
 /// File action constants matching MS-FSCC `FILE_ACTION_*`

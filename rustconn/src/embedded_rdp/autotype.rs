@@ -7,18 +7,15 @@
 //! Uses `TS_UNICODE_KEYBOARD_EVENT` PDU via IronRDP which is keyboard-layout
 //! independent — works regardless of DE/US/other layout mismatches.
 
-use gtk4::glib;
 use gtk4::prelude::*;
-use gtk4::{Button, Label};
+use gtk4::{Button, Label, glib};
 use libadwaita as adw;
 use libadwaita::prelude::*;
-
-use crate::i18n::{i18n, i18n_f};
-
-use super::types::RdpConnectionState;
-
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
+
+use super::types::RdpConnectionState;
+use crate::i18n::{i18n, i18n_f};
 
 impl super::EmbeddedRdpWidget {
     /// Creates the "Type Clipboard" button for the toolbar.

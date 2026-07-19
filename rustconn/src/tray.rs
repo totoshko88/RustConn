@@ -21,8 +21,9 @@
 //! The tray icon feature is enabled by default but can be disabled by building
 //! with `--no-default-features` if the D-Bus dependency is not available.
 
-use gettextrs::gettext;
 use std::sync::{Arc, Mutex};
+
+use gettextrs::gettext;
 use uuid::Uuid;
 
 /// Messages sent from the tray icon to the main application
@@ -73,10 +74,13 @@ impl Default for TrayState {
 
 #[cfg(feature = "tray")]
 mod tray_impl {
-    use super::*;
-    use ksni::blocking::{Handle, TrayMethods};
-    use ksni::{Icon, MenuItem, Tray, menu::StandardItem};
     use std::sync::mpsc;
+
+    use ksni::blocking::{Handle, TrayMethods};
+    use ksni::menu::StandardItem;
+    use ksni::{Icon, MenuItem, Tray};
+
+    use super::*;
 
     /// Embedded SVG icon data (tray-specific variant with cream halo for
     /// visibility on dark KDE/Plasma panels — see issue #157).
@@ -386,9 +390,10 @@ pub use tray_impl::TrayManager;
 
 #[cfg(feature = "tray-macos")]
 mod tray_macos_impl {
-    use super::*;
     use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
     use tray_icon::TrayIconBuilder;
+
+    use super::*;
 
     /// Embedded SVG icon data (same as Linux tray)
     const ICON_SVG: &[u8] =

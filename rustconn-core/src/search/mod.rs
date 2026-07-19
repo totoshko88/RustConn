@@ -35,12 +35,13 @@
 pub mod cache;
 pub mod command_palette;
 
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{debug, info_span};
 use uuid::Uuid;
@@ -1084,8 +1085,7 @@ pub mod benchmark {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::CustomProperty;
-    use crate::models::ProtocolConfig;
+    use crate::models::{CustomProperty, ProtocolConfig};
 
     /// Borrows an owned connection slice as the `&[&Connection]` the search
     /// API now takes.

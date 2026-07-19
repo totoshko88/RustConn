@@ -343,10 +343,11 @@ const SHORTCUTS: &[ShortcutEntry] = &[
 
 #[cfg(feature = "adw-1-8")]
 mod native {
-    use super::SHORTCUTS;
-    use crate::i18n::i18n;
     use adw::prelude::*;
     use libadwaita as adw;
+
+    use super::SHORTCUTS;
+    use crate::i18n::i18n;
 
     /// Keyboard shortcuts help dialog using native `AdwShortcutsDialog`
     pub struct ShortcutsDialog {
@@ -398,14 +399,15 @@ mod native {
 
 #[cfg(not(feature = "adw-1-8"))]
 mod legacy {
-    use super::SHORTCUTS;
-    use crate::i18n::i18n;
     use adw::prelude::*;
     use gtk4::prelude::*;
     use gtk4::{
         Box as GtkBox, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow, SearchEntry,
     };
     use libadwaita as adw;
+
+    use super::SHORTCUTS;
+    use crate::i18n::i18n;
 
     /// Keyboard shortcuts help dialog (legacy fallback)
     pub struct ShortcutsDialog {
@@ -593,11 +595,10 @@ mod legacy {
 // Public re-export — unified API regardless of feature
 // ============================================================
 
-#[cfg(feature = "adw-1-8")]
-pub use native::ShortcutsDialog;
-
 #[cfg(not(feature = "adw-1-8"))]
 pub use legacy::ShortcutsDialog;
+#[cfg(feature = "adw-1-8")]
+pub use native::ShortcutsDialog;
 
 /// Marker function for xgettext to discover shortcut descriptions and categories.
 /// These strings are defined as static `&str` in the `SHORTCUTS` array and wrapped
@@ -667,8 +668,9 @@ fn _i18n_markers() {
 
 #[cfg(test)]
 mod tests {
-    use super::SHORTCUTS;
     use rustconn_core::default_keybindings;
+
+    use super::SHORTCUTS;
 
     /// Every default (non-overridden) accelerator registered in the core
     /// keybinding registry must be visible in the help dialog.

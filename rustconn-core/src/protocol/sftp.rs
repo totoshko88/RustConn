@@ -3,10 +3,9 @@
 //! SFTP connections reuse SSH configuration but open a file manager
 //! instead of a terminal session. Validation mirrors SSH.
 
+use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig, SshAuthMethod, SshConfig};
-
-use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 
 /// SFTP protocol handler
 ///

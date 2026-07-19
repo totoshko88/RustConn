@@ -37,12 +37,13 @@
 //!   treats them as 1 character, so highlight positions may be slightly off
 //!   for lines containing wide characters.
 
-use gtk4::prelude::*;
-use gtk4::{DrawingArea, Overlay};
-use rustconn_core::highlight::CompiledHighlightRules;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+
+use gtk4::prelude::*;
+use gtk4::{DrawingArea, Overlay};
+use rustconn_core::highlight::CompiledHighlightRules;
 use uuid::Uuid;
 use vte4::Terminal;
 use vte4::prelude::*;

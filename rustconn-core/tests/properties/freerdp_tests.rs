@@ -15,7 +15,6 @@ use rustconn_core::models::WindowGeometry;
 use rustconn_core::protocol::{
     FreeRdpConfig, build_freerdp_args, extract_geometry_from_args, has_decorations_flag,
 };
-use secrecy::ExposeSecret;
 
 // ============================================================================
 // Generators for FreeRDP configurations
@@ -292,29 +291,25 @@ proptest! {
         );
     }
 
-    // Additional property: Password uses /from-stdin, never /p:
+    // Additional property: Password never appears on argv (neither /p: nor /from-stdin)
     #[test]
     fn prop_password_only_when_set(config in arb_freerdp_config()) {
         let args = build_freerdp_args(&config);
 
         let has_from_stdin = args.iter().any(|a| a == "/from-stdin");
         let has_plain_password = args.iter().any(|a| a.starts_with("/p:"));
-        let password_is_set = config
-            .password
-            .as_ref()
-            .is_some_and(|p| !p.expose_secret().is_empty());
 
+        // Since issue #218, passwords are passed via ephemeral args file
+        // (/args-from:file:) — never on the arg list.
         prop_assert!(
             !has_plain_password,
             "Password must never appear as /p: argument. Args: {:?}",
             args
         );
-        prop_assert_eq!(
-            has_from_stdin,
-            password_is_set,
-            "/from-stdin should be present iff password is set and non-empty. \
-             Config: {:?}, Args: {:?}",
-            config.password,
+        prop_assert!(
+            !has_from_stdin,
+            "/from-stdin must not be emitted by build_freerdp_args (issue #218). \
+             Password is handled via ephemeral args file. Args: {:?}",
             args
         );
     }

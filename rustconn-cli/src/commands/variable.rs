@@ -19,7 +19,10 @@ use crate::util::create_config_manager;
 ///   missing variable, invalid value)
 /// - [`CliError::Secret`] when a secret variable cannot be written to or
 ///   read from the configured backend
-pub fn cmd_var(config_path: Option<&Path>, subcmd: VariableCommands) -> Result<(), CliError> {
+pub(super) fn cmd_var(
+    config_path: Option<&Path>,
+    subcmd: VariableCommands,
+) -> Result<(), CliError> {
     match subcmd {
         VariableCommands::List { format } => cmd_var_list(config_path, format.effective()),
         VariableCommands::Show { name } => cmd_var_show(config_path, &name),

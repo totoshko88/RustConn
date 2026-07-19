@@ -9,13 +9,12 @@ use std::path::Path;
 
 use uuid::Uuid;
 
+use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, KubernetesConfig, ProtocolConfig, ProtocolType, RdpConfig,
     SerialConfig, SpiceConfig, SshConfig, TelnetConfig, VncConfig, ZeroTrustConfig,
 };
-
-use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 
 /// CSV column mapping configuration.
 ///

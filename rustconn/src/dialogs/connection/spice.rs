@@ -9,6 +9,9 @@
 //! - Shared folders management
 //! - Jump host selection
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
@@ -17,8 +20,6 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::SharedFolder;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::i18n::i18n;
 

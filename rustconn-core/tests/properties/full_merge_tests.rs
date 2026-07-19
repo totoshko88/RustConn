@@ -9,12 +9,11 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Utc};
 use proptest::prelude::*;
-use uuid::Uuid;
-
 use rustconn_core::models::Connection;
 use rustconn_core::sync::full_export::FullSyncExport;
 use rustconn_core::sync::full_merge::{FullMergeEngine, LocalState};
 use rustconn_core::sync::tombstone::{SyncEntityType, Tombstone};
+use uuid::Uuid;
 
 /// Strategy for generating a fixed timestamp within a reasonable range.
 fn arb_timestamp() -> impl Strategy<Value = DateTime<Utc>> {
