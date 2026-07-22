@@ -66,15 +66,15 @@ and updates OBS.
 
 ```mermaid
 graph TD
-    Tag[git push tag v0.18.10] --> BuildDeb[Build .deb]
+    Tag[git push tag v0.19.2] --> BuildDeb[Build .deb]
     Tag --> BuildRPM[Build .rpm]
     Tag --> BuildAppImage[Build AppImage]
     Tag --> BuildFlatpak[Build .flatpak]
 
-    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_0.18.10_amd64.deb]
-    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-0.18.10-1.fc44.x86_64.rpm]
-    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-0.18.10-x86_64.AppImage]
-    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-0.18.10.flatpak]
+    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_0.19.2_amd64.deb]
+    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-0.19.2-1.fc44.x86_64.rpm]
+    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-0.19.2-x86_64.AppImage]
+    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-0.19.2.flatpak]
 
     DebArtifact --> Release[Create GitHub Release]
     RPMArtifact --> Release

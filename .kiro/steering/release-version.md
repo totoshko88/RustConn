@@ -14,7 +14,8 @@ Then perform ALL of the following steps:
 2. **DEPENDENCY FRESHNESS CHECK (report, then ask before applying)** — before bumping anything, audit EVERY dependency type for available updates so the release ships current deps. Report findings grouped; do NOT silently apply. Ask the user which (if any) to update before continuing.
    - **Cargo**: `cargo update --dry-run 2>&1` (patch/minor/major) + `cargo deny check advisories` (fallback `cargo audit`). Record applied updates in CHANGELOG.md `### Dependencies`.
    - **CLI downloads**: run `scripts/check-cli-versions.sh` (or read `rustconn-core/src/cli_download.rs`). For any outdated PINNED tool, update `pinned_version`, `download_url`, `aarch64_url`, and `checksum` (Static policy → fetch the new .sha256). Record under CHANGELOG.md `### Changed` as `- CLI downloads — Tool X.Y.Z→X.Y.W`.
-   - **Flatpak** (`packaging/flatpak/*.yml` + keep `packaging/flathub/*.yml` in sync): check `org.gnome.Platform`/`org.gnome.Sdk` `runtime-version` (currently '50'), the `rust-stable` SDK extension, and bundled pinned source modules with `x-checker-data` (FreeRDP `freerdp-X.Y.Z.tar.xz`, cJSON). For any bump, update the version AND its `sha256`.
+   - **Flatpak** (`packaging/flatpak/*.yml` + keep `packaging/flathub/*.yml` in sync): check `org.gnome.Platform`/`org.gnome.Sdk` `runtime-version` (currently '50'), the `rust-stable` SDK extension, and bundled pinned source modules with `x-checker-data` (FreeRDP `freerdp-X.Y.Z.tar.xz`, cJSON). For any bump, update the version AND its `sha256`. Ensure flathub manifest FreeRDP version matches the local manifest (they can drift independently — sync flathub to local if behind).
+   - **Nix** (`flake.nix`): version string must match workspace version (checked by `release.sh`). No dependency inputs to audit — uses nixpkgs unstable.
    - **Snap** (`snap/snapcraft.yaml`): check `base` (core24) and the `gnome` extension (gnome-46-2404) — flag if a core26 gnome extension now exists (issue #174 context) — plus pinned `stage-packages`/`build-packages` drift.
    - If everything is current, note 'dependencies up to date' and proceed.
 
@@ -37,10 +38,12 @@ Then perform ALL of the following steps:
    - `packaging/obs/rustconn.dsc` → `Version: X.Y.Z-1` + tar filenames
    - `packaging/obs/debian.dsc` → `Version: X.Y.Z-1` + `DEBTRANSFORM-TAR`
    - `packaging/obs/_service` → `<param name="revision">vX.Y.Z</param>`
+   - `flake.nix` → `version = "X.Y.Z";`
+   - `rustconn/Cargo.toml` → `rustconn-core = { ..., version = "X.Y.Z", ... }`
    - `docs/USER_GUIDE.md` → `**Version X.Y.Z**`
    - `docs/ARCHITECTURE.md` → `**Version X.Y.Z**`
    - `docs/AI_DEVELOPMENT.md` → version in the first line after heading
-   - `docs/CI_BUILD_FLOW.md` → update example version strings
+   - `docs/CI_BUILD_FLOW.md` → update example version strings in mermaid diagrams
 
 7. **Regenerate Cargo.lock** — run `cargo generate-lockfile`
 
