@@ -278,7 +278,7 @@ done
 %{_datadir}/locale/*/LC_MESSAGES/rustconn.mo
 
 %changelog
-* Tue Jul 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.2-0
+* Thu Jul 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.2-0
 - Version bump to 0.19.2
 - Added Multipath TCP (MPTCP) support for SSH, RDP, and VNC connections
 - Fixed VPN connect/disconnect no longer kills healthy SSH sessions
