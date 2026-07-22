@@ -27,7 +27,7 @@ use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 32-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 33-element tuple matching the fields expected by `ConnectionDialog`.
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -51,6 +51,7 @@ pub(super) fn create_rdp_options() -> (
     SpinButton,
     SpinButton,
     SpinButton,
+    adw::SwitchRow,
     adw::SwitchRow,
     DropDown,
     Rc<RefCell<Vec<SharedFolder>>>,
@@ -351,6 +352,19 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&rdp_reconnect_on_resize_check);
+
+    // Multipath TCP — use multiple network paths for mobility and aggregation
+    let rdp_mptcp_subtitle = if rustconn_core::connection::mptcp::is_mptcp_available() {
+        i18n("Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode only)")
+    } else {
+        i18n("Multiple network paths (embedded mode only). Not available: kernel MPTCP is disabled")
+    };
+    let rdp_mptcp_check = adw::SwitchRow::builder()
+        .title(i18n("Multipath TCP"))
+        .subtitle(rdp_mptcp_subtitle)
+        .active(false)
+        .build();
+    features_group.add(&rdp_mptcp_check);
 
     // Disable NLA
     let disable_nla_check = adw::SwitchRow::builder()
@@ -722,6 +736,7 @@ pub(super) fn create_rdp_options() -> (
         rdp_autotype_delay_spin,
         rdp_autotype_initial_delay_spin,
         rdp_reconnect_on_resize_check,
+        rdp_mptcp_check,
         rdp_jump_host_dropdown,
         shared_folders,
         folders_list,

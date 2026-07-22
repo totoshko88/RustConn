@@ -542,6 +542,12 @@ impl super::EmbeddedRdpWidget {
             client_config = client_config.with_graphics_mode(config.graphics_mode);
         }
 
+        // Enable MPTCP if the user toggled it — the client will attempt to
+        // create an MPTCP socket and fall back to regular TCP transparently.
+        if config.mptcp {
+            client_config.mptcp = true;
+        }
+
         // When GFX pipeline previously failed (e.g. decode errors, no first
         // frame), retry with Legacy graphics mode — this skips the EGFX DVC
         // registration entirely and forces RemoteFX/bitmap path. (Issue #218)
@@ -1470,16 +1476,27 @@ impl super::EmbeddedRdpWidget {
                                 rtt_ms,
                                 active_graphics_mode,
                             } => {
-                                // Display RTT and active graphics mode in the status label
-                                status_label.set_text(&i18n_f(
-                                    "RTT: {} ms | {}",
-                                    &[&rtt_ms.to_string(), active_graphics_mode.display_name()],
-                                ));
+                                // Display RTT, active graphics mode, and MPTCP status
+                                let mptcp_active =
+                                    config.borrow().as_ref().is_some_and(|c| c.mptcp);
+                                let status_text = if mptcp_active {
+                                    i18n_f(
+                                        "RTT: {} ms | {} | MPTCP",
+                                        &[&rtt_ms.to_string(), active_graphics_mode.display_name()],
+                                    )
+                                } else {
+                                    i18n_f(
+                                        "RTT: {} ms | {}",
+                                        &[&rtt_ms.to_string(), active_graphics_mode.display_name()],
+                                    )
+                                };
+                                status_label.set_text(&status_text);
                                 status_label.set_visible(true);
                                 tracing::debug!(
                                     protocol = "rdp",
                                     rtt_ms,
                                     graphics_mode = active_graphics_mode.display_name(),
+                                    mptcp_active,
                                     "RTT measurement from server Auto-Detect"
                                 );
                             }

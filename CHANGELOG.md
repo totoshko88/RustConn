@@ -5,6 +5,33 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.2] - 2026-07-23
+
+### Added
+
+- **Multipath TCP (MPTCP) support (issue #231)** — enables using multiple network paths simultaneously for seamless mobility (switch between Wi-Fi and Ethernet without dropping connections) and bandwidth aggregation. MPTCP is available as a per-connection toggle for SSH, embedded RDP, and embedded VNC protocols. SSH connections pass `-o TCPMultipath=yes` (requires OpenSSH 9.9+). Embedded RDP and VNC clients use MPTCP sockets via the new `socket2`-based helper in `rustconn-core/src/connection/mptcp.rs`. Falls back to regular TCP transparently when the kernel does not support MPTCP (requires Linux 5.6+ with `CONFIG_MPTCP=y`). Imported SSH configs with `TCPMultipath yes` are recognized during import. Runtime MPTCP availability is detected via `/proc/sys/net/mptcp/enabled`.
+
+### Fixed
+
+- **VPN connect/disconnect no longer kills healthy SSH sessions (issue #230)** — the network-change handler previously ran `ssh -O exit` on all ControlMaster sockets unconditionally, terminating active SSH sessions even when the VPN only added/removed specific routes without affecting the default gateway. Now uses `ssh -O check` to probe each socket first: healthy masters are left untouched, and only truly dead sockets are removed. Unconditional cleanup (`ssh -O exit`) is reserved for the network-down path where all TCP connections are assumed dead.
+
+### Dependencies
+
+- **Updated**: clap 4.6.3 → 4.6.4, libc 0.2.188 → 0.2.189, syn 3.0.2 → 3.0.3, tokio-stream 0.1.18 → 0.1.19
+- **Added**: socket2 0.5 (MPTCP socket creation)
+
+### Improved
+
+- **MPTCP status indicator in embedded sessions** — the RDP toolbar status label now shows "| MPTCP" alongside RTT and graphics mode (e.g., "RTT: 12 ms | GFX + H.264 | MPTCP") when MPTCP is enabled for the connection; the VNC toolbar shows "MPTCP" on connect. Helps users confirm the feature is active for the current session
+- **CLI `show` displays MPTCP state** — `rustconn-cli show` now prints "MPTCP: enabled" in table output and `"mptcp": true` in JSON output for SSH, RDP, and VNC connections that have MPTCP enabled
+- **CLI `update --mptcp` accepts true/false** — bare `--mptcp` enables (unchanged); `--mptcp false` disables MPTCP on an existing connection without opening the GUI. Matches the `--javascript` pattern used by Web protocol flags
+- **Network monitor thread spawn failure logged** — if the background thread for SSH socket health-checking cannot be spawned (e.g., ulimit exhaustion), a `tracing::warn!` is now emitted instead of silently discarding the error via `.ok()`
+- **MPTCP property tests** — protocol test generators now randomize the `mptcp` field; 4 new property tests verify JSON serialization round-trip preservation for SSH/RDP/VNC configs and correct `TCPMultipath=yes` presence in SSH command args
+
+### Documentation
+
+- Updated USER_GUIDE.md MPTCP section with `--mptcp false` CLI usage and toolbar status indicator description
+
 ## [0.19.1] - 2026-07-21
 
 ### Fixed

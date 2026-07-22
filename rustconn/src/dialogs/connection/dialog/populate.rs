@@ -949,6 +949,7 @@ impl ConnectionDialog {
         self.ssh_x11_forwarding.set_active(ssh.x11_forwarding);
         self.ssh_compression.set_active(ssh.compression);
         self.ssh_verbose.set_active(ssh.verbose);
+        self.ssh_mptcp.set_active(ssh.mptcp);
         if let Some(ref cmd) = ssh.startup_command {
             self.ssh_startup_entry.set_text(cmd);
         }
@@ -1126,6 +1127,7 @@ impl ConnectionDialog {
             .set_value(f64::from(rdp.autotype_initial_delay_ms));
         self.rdp_reconnect_on_resize_check
             .set_active(rdp.reconnect_on_resize);
+        self.rdp_mptcp_check.set_active(rdp.mptcp);
         self.rdp_disable_nla_check.set_active(rdp.disable_nla);
         self.rdp_security_layer_dropdown
             .set_selected(rdp.security_layer.index());
@@ -1268,6 +1270,7 @@ impl ConnectionDialog {
 
         self.vnc_accept_certificate_check
             .set_active(vnc.accept_certificate);
+        self.vnc_mptcp_check.set_active(vnc.mptcp);
     }
 
     pub(super) fn set_spice_config(&self, spice: &SpiceConfig) {

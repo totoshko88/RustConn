@@ -132,6 +132,11 @@ impl SshConfigExporter {
                 let _ = writeln!(output, "    ServerAliveCountMax {count}");
             }
 
+            // Multipath TCP (requires OpenSSH 9.9+)
+            if ssh_config.mptcp {
+                let _ = writeln!(output, "    TCPMultipath yes");
+            }
+
             // Custom options (filter dangerous directives that allow arbitrary command execution)
             for (key, value) in &ssh_config.custom_options {
                 // Skip keep-alive keys if already emitted from dedicated fields

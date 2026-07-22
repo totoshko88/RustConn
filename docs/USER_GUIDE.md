@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.19.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.19.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -479,6 +479,7 @@ The SSH tab in the connection dialog contains session-level toggles that control
 | Connection Multiplexing | `ControlMaster=auto` | Reuse a single TCP connection for multiple SSH sessions to the same host. Subsequent connections open instantly without re-authenticating. RustConn adds `ControlPersist=60` so the master connection stays alive for 60 seconds after the last session closes. The shorter persist time (reduced from 10 minutes in 0.18.7) combined with proactive socket cleanup on network change prevents new connections from trying to multiplex through dead master sockets. When RustConn exits, all ControlMaster sockets are automatically closed to prevent stale sockets from lingering in the filesystem |
 | Waypipe | `waypipe ssh ...` | Forward Wayland GUI applications (see [Waypipe](#waypipe-wayland-forwarding) below) |
 | Verbose | `-v` | Show detailed SSH debug output in the terminal for diagnosing connection issues (auth failures, key negotiation, resets) |
+| Multipath TCP | `-o TCPMultipath=yes` | Use multiple network paths simultaneously for seamless mobility (switch between Wi-Fi and Ethernet without dropping the connection) and bandwidth aggregation. See [Multipath TCP (MPTCP)](#multipath-tcp-mptcp) below |
 
 **Configure:**
 1. Edit an SSH connection → **Protocol** tab
@@ -607,6 +608,74 @@ transparently.
 - Qt6 apps work if `QT_QPA_PLATFORM=wayland` is set on the remote host.
 - To check which display protocol your local session uses:
   `echo $XDG_SESSION_TYPE` (should print `wayland`).
+
+#### Multipath TCP (MPTCP)
+
+Multipath TCP allows a single TCP connection to use multiple network paths simultaneously. This enables:
+
+- **Seamless mobility** — switch between Wi-Fi and Ethernet (or dock/undock a laptop) without dropping the SSH session
+- **Bandwidth aggregation** — combine multiple network interfaces for higher throughput
+
+**System requirements:**
+
+| Component | Minimum version |
+|-----------|----------------|
+| Linux kernel | 5.6+ with `CONFIG_MPTCP=y` (most modern distros ship with MPTCP enabled) |
+| OpenSSH (for SSH) | 9.9+ (older versions ignore the option with a warning) |
+| Server | Must also support MPTCP (Linux 5.6+, Windows Server 2022+) |
+
+**How to check availability:**
+
+```bash
+# Check if your kernel supports MPTCP
+cat /proc/sys/net/mptcp/enabled
+# "1" = available, "0" = disabled, file missing = not supported
+
+# Enable MPTCP if disabled (requires root)
+sudo sysctl net.mptcp.enabled=1
+```
+
+The connection dialog shows whether MPTCP is available in the toggle subtitle. If it reads "Not available: kernel MPTCP is disabled", enable it via the sysctl above or check that your kernel is compiled with `CONFIG_MPTCP=y`.
+
+**Setup:**
+
+1. Edit a connection (SSH, RDP, or VNC) → **Protocol** tab
+2. In the **Session** (SSH) or **Features** (RDP/VNC) group, enable **Multipath TCP**
+3. Save and connect
+
+**Behavior:**
+
+- **SSH**: Passes `-o TCPMultipath=yes` to the SSH command. OpenSSH negotiates MPTCP during the TCP handshake. If the server does not support MPTCP, the connection falls back to regular TCP transparently — no error, no user action needed.
+- **RDP/VNC (embedded mode)**: Creates an MPTCP socket directly via `socket2`. Falls back to a regular TCP socket if the kernel does not support the MPTCP protocol number. External viewers (FreeRDP, TigerVNC) handle their own sockets and ignore this setting.
+
+**CLI:**
+
+```bash
+# Create an SSH connection with MPTCP enabled
+rustconn-cli add --name "server" --host example.com --protocol ssh --mptcp
+
+# Enable MPTCP on an existing connection
+rustconn-cli update "server" --mptcp
+
+# Disable MPTCP on an existing connection
+rustconn-cli update "server" --mptcp false
+```
+
+**Status indicator:**
+
+When MPTCP is enabled on an embedded RDP or VNC session, the toolbar status label shows "MPTCP" alongside other connection info (e.g., "RTT: 12 ms | GFX + H.264 | MPTCP" for RDP). This confirms the feature is active for the current session.
+
+**SSH config import/export:**
+
+- Import: `TCPMultipath yes` in `~/.ssh/config` is recognized and mapped to the MPTCP toggle
+- Export: Connections with MPTCP enabled export `TCPMultipath yes` in the Host block
+
+**Known limitations:**
+
+- MPTCP is negotiated during the TCP handshake — both client **and** server must support it. If either side does not, the connection uses regular TCP (no error).
+- Windows Server 2022+ supports MPTCP. Older Windows versions do not.
+- MPTCP does not help if both interfaces route through the same path (e.g., two Wi-Fi adapters on the same access point).
+- The connection dialog cannot verify whether the remote server supports MPTCP — only local kernel availability is checked.
 
 ### RDP
 

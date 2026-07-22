@@ -23,5 +23,6 @@ pub use parser::{
 };
 pub use settings::{MonitoringConfig, MonitoringSettings};
 pub use ssh_exec::{
-    close_all_control_sockets, close_control_socket, ssh_control_path, ssh_exec_factory,
+    close_all_control_sockets, close_control_socket, close_dead_control_sockets, ssh_control_path,
+    ssh_exec_factory,
 };

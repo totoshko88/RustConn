@@ -177,7 +177,34 @@ pub(super) async fn establish_connection(
 
     #[cfg(not(feature = "rd-gateway"))]
     let (stream, client_addr) = {
-        let tcp_result = timeout(connect_timeout, TcpStream::connect(&server_addr)).await;
+        let tcp_result = if config.mptcp {
+            // MPTCP path: resolve hostname then use MPTCP socket
+            let resolved = timeout(connect_timeout, async {
+                let addr = tokio::net::lookup_host(&server_addr)
+                    .await
+                    .map_err(|e| {
+                        std::io::Error::other(format!("Failed to resolve {server_addr}: {e}"))
+                    })?
+                    .next()
+                    .ok_or_else(|| {
+                        std::io::Error::other(format!("No addresses found for {server_addr}"))
+                    })?;
+                crate::connection::mptcp::connect_mptcp_async(addr)
+                    .await
+                    .map_err(|e| std::io::Error::other(e.to_string()))
+            })
+            .await;
+            match resolved {
+                Ok(inner) => Ok(inner),
+                Err(_) => Err(std::io::Error::other("timeout")),
+            }
+        } else {
+            let r = timeout(connect_timeout, TcpStream::connect(&server_addr)).await;
+            match r {
+                Ok(inner) => Ok(inner),
+                Err(_) => Err(std::io::Error::other("timeout")),
+            }
+        };
         let stream = match tcp_result {
             Ok(Ok(stream)) => {
                 let _ = stream.set_nodelay(true);
@@ -188,8 +215,13 @@ pub(super) async fn establish_connection(
                     "Failed to connect to {server_addr}: {e}"
                 )));
             }
-            Err(_) => {
+            Err(e) if e.to_string() == "timeout" => {
                 return Err(RdpClientError::Timeout);
+            }
+            Err(e) => {
+                return Err(RdpClientError::ConnectionFailed(format!(
+                    "Failed to connect to {server_addr}: {e}"
+                )));
             }
         };
         let addr = stream

@@ -52,6 +52,7 @@ pub(super) struct UpdateParams<'a> {
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
+    pub mptcp: Option<bool>,
     pub ignore_certificate: bool,
     pub tags: Option<&'a str>,
     pub add_tag: &'a [String],
@@ -407,6 +408,27 @@ pub(super) fn cmd_update(
                 tracing::warn!(
                     "--ignore-certificate is only applicable to RDP and VNC connections"
                 );
+            }
+        }
+    }
+
+    // Apply MPTCP setting (SSH, RDP, VNC)
+    if let Some(mptcp_value) = params.mptcp {
+        match connection.protocol_config {
+            rustconn_core::models::ProtocolConfig::Ssh(ref mut cfg) => {
+                cfg.mptcp = mptcp_value;
+            }
+            rustconn_core::models::ProtocolConfig::Sftp(ref mut cfg) => {
+                cfg.mptcp = mptcp_value;
+            }
+            rustconn_core::models::ProtocolConfig::Rdp(ref mut cfg) => {
+                cfg.mptcp = mptcp_value;
+            }
+            rustconn_core::models::ProtocolConfig::Vnc(ref mut cfg) => {
+                cfg.mptcp = mptcp_value;
+            }
+            _ => {
+                tracing::warn!("--mptcp is only applicable to SSH, SFTP, RDP, and VNC connections");
             }
         }
     }

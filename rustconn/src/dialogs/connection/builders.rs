@@ -67,6 +67,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub ssh_x11_forwarding: &'a CheckButton,
     pub ssh_compression: &'a CheckButton,
     pub ssh_verbose: &'a CheckButton,
+    pub ssh_mptcp: &'a CheckButton,
     pub ssh_startup_entry: &'a Entry,
     pub ssh_options_entry: &'a Entry,
     pub ssh_agent_socket_entry: &'a adw::EntryRow,
@@ -97,6 +98,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_autotype_delay_spin: &'a SpinButton,
     pub rdp_autotype_initial_delay_spin: &'a SpinButton,
     pub rdp_reconnect_on_resize_check: &'a adw::SwitchRow,
+    pub rdp_mptcp_check: &'a adw::SwitchRow,
     pub rdp_jump_host_dropdown: &'a DropDown,
     pub rdp_connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     pub rdp_shared_folders: &'a Rc<RefCell<Vec<SharedFolder>>>,
@@ -119,6 +121,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub vnc_custom_args_entry: &'a Entry,
     pub vnc_jump_host_dropdown: &'a DropDown,
     pub vnc_accept_certificate_check: &'a adw::SwitchRow,
+    pub vnc_mptcp_check: &'a adw::SwitchRow,
     pub vnc_connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     pub spice_tls_check: &'a adw::SwitchRow,
     pub spice_ca_cert_entry: &'a Entry,
@@ -1412,6 +1415,7 @@ impl ConnectionDialogData<'_> {
             x11_forwarding: self.ssh_x11_forwarding.is_active(),
             compression: self.ssh_compression.is_active(),
             verbose: self.ssh_verbose.is_active(),
+            mptcp: self.ssh_mptcp.is_active(),
             custom_options,
             startup_command,
             sftp_enabled: true,
@@ -1521,6 +1525,7 @@ impl ConnectionDialogData<'_> {
             autotype_delay_ms: self.rdp_autotype_delay_spin.value() as u32,
             autotype_initial_delay_ms: self.rdp_autotype_initial_delay_spin.value() as u32,
             reconnect_on_resize: self.rdp_reconnect_on_resize_check.is_active(),
+            mptcp: self.rdp_mptcp_check.is_active(),
             script_paste_via_clipboard: true,
             remote_app_program: {
                 let text = self.rdp_remote_app_program_entry.text();
@@ -1602,6 +1607,7 @@ impl ConnectionDialogData<'_> {
                 }
             },
             accept_certificate: self.vnc_accept_certificate_check.is_active(),
+            mptcp: self.vnc_mptcp_check.is_active(),
         }
     }
 

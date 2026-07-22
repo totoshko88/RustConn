@@ -845,6 +845,12 @@ pub struct SshConfig {
     /// Useful for diagnosing connection issues (e.g., reset by remote device).
     #[serde(default)]
     pub verbose: bool,
+    /// Enable Multipath TCP (`-o TCPMultipath=yes`).
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires OpenSSH 9.9+ and kernel MPTCP support (Linux 5.6+).
+    /// Falls back to regular TCP transparently when unavailable.
+    #[serde(default)]
+    pub mptcp: bool,
     /// Initial remote directory for the SFTP file-browser URI.
     ///
     /// The GVFS sftp backend mounts at the server root `/`, so a bare
@@ -986,6 +992,13 @@ impl SshConfig {
         // Add compression if enabled
         if self.compression {
             args.push("-C".to_string());
+        }
+
+        // Add MPTCP (Multipath TCP) if enabled — requires OpenSSH 9.9+.
+        // Gracefully ignored by older OpenSSH versions (unknown option warning).
+        if self.mptcp {
+            args.push("-o".to_string());
+            args.push("TCPMultipath=yes".to_string());
         }
 
         // Add keep-alive options if configured
@@ -1556,6 +1569,13 @@ pub struct RdpConfig {
     /// RemoteApp display name (shown in taskbar/window title).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub remote_app_name: Option<String>,
+
+    /// Enable Multipath TCP for the embedded RDP connection.
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires kernel MPTCP support (Linux 5.6+). Falls back to regular TCP.
+    /// Only applies to Embedded mode; External FreeRDP handles its own sockets.
+    #[serde(default)]
+    pub mptcp: bool,
 }
 
 impl RdpConfig {
@@ -1791,6 +1811,13 @@ pub struct VncConfig {
     /// Default: false (strict verification — connection fails on untrusted cert).
     #[serde(default)]
     pub accept_certificate: bool,
+
+    /// Enable Multipath TCP for the embedded VNC connection.
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires kernel MPTCP support (Linux 5.6+). Falls back to regular TCP.
+    /// Only applies to Embedded mode; External viewers handle their own sockets.
+    #[serde(default)]
+    pub mptcp: bool,
 }
 
 impl VncConfig {

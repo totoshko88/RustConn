@@ -395,7 +395,7 @@ proptest! {
             x11_forwarding: false,
             compression: false,
             custom_options: std::collections::HashMap::new(),
-            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(), waypipe: false, ssh_agent_socket: None, keep_alive_interval: None, keep_alive_count_max: None, verbose: false, remote_path: None,
+            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(), waypipe: false, ssh_agent_socket: None, keep_alive_interval: None, keep_alive_count_max: None, verbose: false, mptcp: false, remote_path: None,
         };
 
         // Create connection
@@ -465,7 +465,7 @@ proptest! {
             x11_forwarding: false,
             compression: false,
             custom_options: std::collections::HashMap::new(),
-            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(), waypipe: false, ssh_agent_socket: None, keep_alive_interval: None, keep_alive_count_max: None, verbose: false, remote_path: None,
+            startup_command: None, jump_host_id: None, sftp_enabled: false, port_forwards: Vec::new(), waypipe: false, ssh_agent_socket: None, keep_alive_interval: None, keep_alive_count_max: None, verbose: false, mptcp: false, remote_path: None,
         };
 
         let connection = Connection::new(

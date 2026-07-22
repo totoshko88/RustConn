@@ -21,11 +21,9 @@ use crate::state::SharedAppState;
 /// interface switch.
 const DEBOUNCE_SECS: u64 = 3;
 
-/// Delay before triggering reconnects, giving the socket cleanup thread
-/// time to finish `ssh -O exit` on stale masters (each has a 3s timeout,
+/// Delay before triggering reconnects, giving the socket health-check thread
+/// time to finish `ssh -O check` on each master (each has a 3s timeout,
 /// up to 10 concurrent via `buffer_unordered`).
-/// ponytail: 3s covers even a batch of 10 sockets; if more exist or one is
-/// truly stuck, `ControlMaster=auto` will create a fresh master anyway.
 const RECONNECT_DELAY_MS: u64 = 3000;
 
 /// Maximum number of network-change reactions within a 60-second window
@@ -87,8 +85,8 @@ pub fn setup_network_monitor(
         // GIO signals "changed" even for same-state events; filter out noise.
         if available == previously_available && available {
             // Still online and no actual change — could be a spurious signal.
-            // Still clean up sockets because the route may have changed
-            // (VPN connect/disconnect doesn't always flip the "available" flag).
+            // We still check socket health (ssh -O check) in case the route
+            // changed, but healthy sockets are preserved (#230).
         }
 
         last_reaction.set(Some(now));
@@ -133,7 +131,7 @@ pub fn setup_network_monitor(
         if !available {
             // Network went down — close stale control sockets so they don't
             // block future connections. Show a banner-like toast.
-            close_stale_control_sockets();
+            close_all_sockets_unconditionally();
 
             if !suppress_reactions {
                 toast_overlay_clone.show_warning(&i18n(
@@ -144,8 +142,10 @@ pub fn setup_network_monitor(
         }
 
         // Network is available (came back or interface switched).
-        // Clean up stale sockets that were bound to the old interface.
-        close_stale_control_sockets();
+        // Check which sockets are actually dead — only remove those.
+        // This avoids killing healthy sessions when a VPN connects/disconnects
+        // without affecting the route to the SSH host (#230).
+        close_only_dead_sockets();
 
         // Check connectivity level: if we're behind a captive portal or have
         // only limited connectivity, reconnecting will fail anyway. Just inform
@@ -186,15 +186,12 @@ pub fn setup_network_monitor(
     });
 }
 
-/// Closes all RustConn SSH `ControlMaster` sockets.
+/// Closes all RustConn SSH `ControlMaster` sockets unconditionally.
 ///
-/// After a network interface change, existing TCP connections backing the
-/// master sockets are dead. Leaving the socket files around causes new SSH
-/// connections to the same host to attempt (and fail) multiplexing.
-fn close_stale_control_sockets() {
-    // Run async cleanup on a background thread to avoid blocking GTK main loop
-    std::thread::Builder::new()
-        .name("net-change-socket-cleanup".into())
+/// Used when the network went completely down — all masters are assumed dead.
+fn close_all_sockets_unconditionally() {
+    if let Err(e) = std::thread::Builder::new()
+        .name("net-down-socket-cleanup".into())
         .spawn(|| {
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -202,14 +199,46 @@ fn close_stale_control_sockets() {
             match rt {
                 Ok(rt) => {
                     rt.block_on(rustconn_core::close_all_control_sockets());
-                    tracing::debug!("Closed stale ControlMaster sockets after network change");
+                    tracing::debug!("Closed all ControlMaster sockets (network down)");
                 }
                 Err(e) => {
                     tracing::warn!(error = %e, "Failed to create runtime for socket cleanup");
                 }
             }
         })
-        .ok();
+    {
+        tracing::warn!(error = %e, "Failed to spawn socket-cleanup thread (ulimit reached?)");
+    }
+}
+
+/// Checks ControlMaster sockets and removes only dead ones.
+///
+/// Used on network-change events where the network is still available (e.g.
+/// VPN connect/disconnect that doesn't affect the default route). Healthy
+/// sockets are left untouched — their SSH sessions continue uninterrupted.
+fn close_only_dead_sockets() {
+    if let Err(e) = std::thread::Builder::new()
+        .name("net-change-socket-check".into())
+        .spawn(|| {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build();
+            match rt {
+                Ok(rt) => {
+                    let removed = rt.block_on(rustconn_core::close_dead_control_sockets());
+                    tracing::debug!(
+                        removed,
+                        "Checked ControlMaster sockets after network change"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to create runtime for socket check");
+                }
+            }
+        })
+    {
+        tracing::warn!(error = %e, "Failed to spawn socket-check thread (ulimit reached?)");
+    }
 }
 
 /// Triggers in-place reconnect for VTE sessions currently showing the

@@ -41,6 +41,7 @@ pub fn sample_ssh_connection_with_key() -> Connection {
         keep_alive_interval: None,
         keep_alive_count_max: None,
         verbose: false,
+        mptcp: false,
         remote_path: None,
     };
 
@@ -84,6 +85,7 @@ pub fn sample_ssh_connection_custom_port() -> Connection {
         keep_alive_interval: None,
         keep_alive_count_max: None,
         verbose: false,
+        mptcp: false,
         remote_path: None,
     };
 
@@ -125,6 +127,7 @@ pub fn sample_ssh_connection_with_proxy() -> Connection {
         keep_alive_interval: None,
         keep_alive_count_max: None,
         verbose: false,
+        mptcp: false,
         remote_path: None,
     };
 
@@ -175,6 +178,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         remote_app_program: None,
         remote_app_args: None,
         remote_app_name: None,
+        mptcp: false,
     };
 
     let mut conn = Connection::new(
@@ -208,6 +212,7 @@ pub fn sample_vnc_connection_custom_port() -> Connection {
         show_local_cursor: true,
         jump_host_id: None,
         accept_certificate: false,
+        mptcp: false,
     };
 
     Connection::new(

@@ -215,6 +215,13 @@ pub enum Commands {
         #[arg(long)]
         ssh_verbose: bool,
 
+        /// Enable Multipath TCP for SSH/RDP/VNC connections.
+        /// SSH: passes -o TCPMultipath=yes (requires OpenSSH 9.9+).
+        /// RDP/VNC embedded: uses MPTCP socket (requires Linux 5.6+ kernel).
+        /// Falls back to regular TCP transparently when unavailable.
+        #[arg(long)]
+        mptcp: bool,
+
         /// Accept untrusted certificate for RDP or VNC (skip verification)
         #[arg(long)]
         ignore_certificate: bool,
@@ -692,6 +699,14 @@ pub enum Commands {
         /// Enable SSH verbose/debug output (-v flag)
         #[arg(long)]
         ssh_verbose: bool,
+
+        /// Enable or disable Multipath TCP for SSH/RDP/VNC connections.
+        /// SSH: passes -o TCPMultipath=yes (requires OpenSSH 9.9+).
+        /// RDP/VNC embedded: uses MPTCP socket (requires Linux 5.6+ kernel).
+        /// Falls back to regular TCP transparently when unavailable.
+        /// Bare --mptcp enables; --mptcp false disables.
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        mptcp: Option<bool>,
 
         /// Accept untrusted certificate for RDP or VNC (skip verification)
         #[arg(long)]

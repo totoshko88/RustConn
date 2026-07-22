@@ -478,6 +478,7 @@ impl AsbruImporter {
                         keep_alive_interval: None,
                         keep_alive_count_max: None,
                         verbose: false,
+                        mptcp: false,
                         remote_path: None,
                     }),
                     22u16,

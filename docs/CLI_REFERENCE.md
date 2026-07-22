@@ -155,6 +155,7 @@ Options:
 | `--keep-alive-interval` | — | SSH keep-alive interval in seconds (`ServerAliveInterval`) |
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
 | `--ssh-verbose` | — | Enable SSH verbose/debug output (`-v` flag) |
+| `--mptcp` | — | Enable Multipath TCP (SSH: `-o TCPMultipath=yes`; RDP/VNC embedded: MPTCP socket). Requires Linux 5.6+ kernel, OpenSSH 9.9+ for SSH. Falls back to regular TCP transparently |
 | `--ignore-certificate` | — | Accept any RDP server certificate (skip TOFU verification) |
 | `--tags` | — | Comma-separated tags (e.g. `"production,linux,critical"`) |
 | `--description` | — | Description text for the connection |
@@ -381,6 +382,7 @@ rustconn-cli update "My Server" --icon "⭐"
 rustconn-cli update "My Server" --jump-host "Bastion"
 rustconn-cli update "My Server" --keep-alive-interval 60 --keep-alive-count 3
 rustconn-cli update "My Server" --ssh-verbose
+rustconn-cli update "My Server" --mptcp
 rustconn-cli update "My Server" --x11-forwarding --agent-forwarding --compression
 rustconn-cli update "My Server" --local-forward 8080:localhost:80 --dynamic-forward 1080
 rustconn-cli update "My Server" --proxy-command "ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"

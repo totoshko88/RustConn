@@ -112,6 +112,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    mptcp: false,
                     remote_path: None,
                 }
             },
@@ -194,6 +195,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 remote_app_program: None,
                 remote_app_args: None,
                 remote_app_name: None,
+                mptcp: false,
             },
         )
 }
@@ -238,6 +240,7 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
             show_local_cursor: true,
             jump_host_id: None,
             accept_certificate: false,
+            mptcp: false,
         })
 }
 

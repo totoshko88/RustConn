@@ -239,6 +239,134 @@ pub async fn close_all_control_sockets() {
     .await;
 }
 
+/// Checks all RustConn SSH ControlMaster sockets and removes only dead ones.
+///
+/// Unlike [`close_all_control_sockets`] (which unconditionally kills every
+/// master), this function first probes each socket with `ssh -O check`. If the
+/// master is still alive and responsive, the socket is left untouched. Only
+/// sockets where `check` fails (master exited, TCP connection dead) are cleaned
+/// up by removing the stale socket file.
+///
+/// This is the appropriate function to call on network-change events where the
+/// route to the SSH host may not have changed (e.g. VPN connect/disconnect that
+/// only adds/removes specific routes without affecting the default gateway).
+///
+/// # Returns
+/// The number of stale sockets that were removed.
+pub async fn close_dead_control_sockets() -> u32 {
+    let dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
+        if cfg!(target_os = "macos") {
+            "/tmp".to_string()
+        } else {
+            std::env::temp_dir().to_string_lossy().to_string()
+        }
+    });
+
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        tracing::debug!(dir, "Cannot read runtime directory for socket health check");
+        return 0;
+    };
+
+    let socket_files: Vec<_> = entries
+        .filter_map(Result::ok)
+        .filter(|entry| {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if !name_str.starts_with("rc-") || name_str.starts_with("rc-askpass-") {
+                return false;
+            }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::FileTypeExt;
+                entry.file_type().map(|ft| ft.is_socket()).unwrap_or(false)
+            }
+            #[cfg(not(unix))]
+            {
+                true
+            }
+        })
+        .collect();
+
+    if socket_files.is_empty() {
+        return 0;
+    }
+
+    tracing::debug!(
+        count = socket_files.len(),
+        "Checking health of RustConn SSH ControlMaster sockets"
+    );
+
+    let removed = std::sync::atomic::AtomicU32::new(0);
+
+    futures::stream::iter(socket_files.iter().map(|entry| {
+        let path = entry.path();
+        let path_str = path.to_string_lossy().to_string();
+        let removed_ref = &removed;
+        async move {
+            // Probe the socket with `ssh -O check` — if the master is alive
+            // and the underlying TCP connection is healthy, this returns exit 0.
+            let mut cmd = Command::new("ssh");
+            cmd.arg("-O").arg("check");
+            cmd.arg("-o").arg(format!("ControlPath={path_str}"));
+            cmd.arg("_");
+            cmd.stdout(std::process::Stdio::null());
+            cmd.stderr(std::process::Stdio::null());
+
+            match tokio::time::timeout(Duration::from_secs(3), cmd.output()).await {
+                Ok(Ok(output)) if output.status.success() => {
+                    // Master is alive — do not touch this socket
+                    tracing::debug!(
+                        socket = %path_str,
+                        "ControlMaster socket is healthy, keeping alive"
+                    );
+                }
+                Ok(Ok(_output)) => {
+                    // `ssh -O check` failed → master is dead, remove stale file
+                    let _ = std::fs::remove_file(&path);
+                    removed_ref.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    tracing::debug!(
+                        socket = %path_str,
+                        "ControlMaster socket is dead, removed stale file"
+                    );
+                }
+                Ok(Err(e)) => {
+                    tracing::debug!(
+                        socket = %path_str, error = %e,
+                        "Failed to check ControlMaster socket health"
+                    );
+                }
+                Err(_) => {
+                    // Timeout on check — master is likely stuck, remove socket
+                    let _ = std::fs::remove_file(&path);
+                    removed_ref.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    tracing::debug!(
+                        socket = %path_str,
+                        "Timeout checking ControlMaster socket, removed stale file"
+                    );
+                }
+            }
+        }
+    }))
+    .buffer_unordered(10)
+    .collect::<Vec<()>>()
+    .await;
+
+    let count = removed.load(std::sync::atomic::Ordering::Relaxed);
+    if count > 0 {
+        tracing::info!(
+            removed = count,
+            total = socket_files.len(),
+            "Removed dead ControlMaster sockets after network change"
+        );
+    } else {
+        tracing::debug!(
+            total = socket_files.len(),
+            "All ControlMaster sockets are healthy — no cleanup needed"
+        );
+    }
+    count
+}
+
 /// RAII wrapper for the temporary `SSH_ASKPASS` script.
 ///
 /// Deletes the script file when the last `Arc<AskpassScript>` reference is dropped

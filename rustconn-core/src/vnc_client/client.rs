@@ -242,15 +242,38 @@ async fn run_vnc_client(
         "VNC connection is unencrypted. Consider using SSH tunnel for security."
     );
     let connect_timeout = std::time::Duration::from_secs(config.timeout_secs);
-    let tcp = tokio::time::timeout(connect_timeout, TcpStream::connect(config.server_address()))
+    let tcp = if config.mptcp {
+        // MPTCP path: resolve hostname then use MPTCP socket
+        tokio::time::timeout(connect_timeout, async {
+            let addr = tokio::net::lookup_host(config.server_address())
+                .await
+                .map_err(|e| VncClientError::ConnectionFailed(format!("Failed to resolve: {e}")))?
+                .next()
+                .ok_or_else(|| {
+                    VncClientError::ConnectionFailed("No addresses found".to_string())
+                })?;
+            crate::connection::mptcp::connect_mptcp_async(addr)
+                .await
+                .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))
+        })
         .await
         .map_err(|_| {
             VncClientError::ConnectionFailed(format!(
                 "Connection timed out after {}s",
                 config.timeout_secs
             ))
-        })?
-        .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))?;
+        })??
+    } else {
+        tokio::time::timeout(connect_timeout, TcpStream::connect(config.server_address()))
+            .await
+            .map_err(|_| {
+                VncClientError::ConnectionFailed(format!(
+                    "Connection timed out after {}s",
+                    config.timeout_secs
+                ))
+            })?
+            .map_err(|e| VncClientError::ConnectionFailed(e.to_string()))?
+    };
 
     // Build the VNC connector
     //

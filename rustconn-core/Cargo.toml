@@ -90,6 +90,8 @@ ironrdp-mstsgu = { version = "0.0.1", features = ["native-tls"], optional = true
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true, optional = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
+# MPTCP (Multipath TCP) socket creation — safe API, no unsafe needed
+socket2 = { version = "0.5", features = ["all"] }
 fs2 = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]

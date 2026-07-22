@@ -367,6 +367,10 @@ impl EmbeddedVncWidget {
             vnc_config
         };
 
+        // Enable MPTCP if the user toggled it — the client will attempt to
+        // create an MPTCP socket and fall back to regular TCP transparently.
+        vnc_config.mptcp = config.mptcp;
+
         // Honor the user's preferred encoding — the one performance knob the
         // embedded client can negotiate — by moving it to the front of the
         // offered list. Quality/compression are Tight/zlib sub-encoding
@@ -414,6 +418,7 @@ impl EmbeddedVncWidget {
         let state = self.state.clone();
         let drawing_area = self.drawing_area.clone();
         let toolbar = self.toolbar.clone();
+        let status_label = self.status_label.clone();
         let on_state_changed = self.on_state_changed.clone();
         let on_error = self.on_error.clone();
         let on_frame_update = self.on_frame_update.clone();
@@ -424,6 +429,8 @@ impl EmbeddedVncWidget {
         // Store desired resolution from config for SetDesktopSize request after connect
         let desired_width = config.width;
         let desired_height = config.height;
+        // Whether MPTCP was requested for this connection (for status display)
+        let mptcp_enabled = config.mptcp;
         // Capture config and process for auto-fallback to external viewer
         let fallback_config = self.config.clone();
         let fallback_process = self.process.clone();
@@ -456,6 +463,11 @@ impl EmbeddedVncWidget {
                         tracing::debug!("[EmbeddedVNC] Connected!");
                         *state.borrow_mut() = VncConnectionState::Connected;
                         toolbar.set_visible(true);
+                        // Show MPTCP indicator in status label when enabled
+                        if mptcp_enabled {
+                            status_label.set_text("MPTCP");
+                            status_label.set_visible(true);
+                        }
                         if let Some(ref callback) = *on_state_changed.borrow() {
                             callback(VncConnectionState::Connected);
                         }

@@ -30,6 +30,12 @@ pub struct VncClientConfig {
 
     /// Connection timeout in seconds
     pub timeout_secs: u64,
+
+    /// Enable Multipath TCP for the embedded VNC connection.
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires kernel MPTCP support (Linux 5.6+). Falls back to regular TCP.
+    #[serde(default)]
+    pub mptcp: bool,
 }
 
 impl Default for VncClientConfig {
@@ -59,6 +65,7 @@ impl Default for VncClientConfig {
             shared: true,
             view_only: false,
             timeout_secs: 30,
+            mptcp: false,
         }
     }
 }

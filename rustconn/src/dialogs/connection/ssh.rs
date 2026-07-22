@@ -45,6 +45,7 @@ pub struct SshOptionsWidgets {
     pub x11_forwarding: CheckButton,
     pub compression: CheckButton,
     pub verbose: CheckButton,
+    pub mptcp: CheckButton,
     pub startup_entry: Entry,
     pub options_entry: Entry,
     /// MOSH settings group (hidden by default, shown when protocol is MOSH)
@@ -102,6 +103,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         x11_forwarding,
         compression,
         verbose,
+        mptcp,
         startup_entry,
         options_entry,
         ssh_agent_socket_entry,
@@ -167,6 +169,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         x11_forwarding,
         compression,
         verbose,
+        mptcp,
         startup_entry,
         options_entry,
         mosh_group,
@@ -532,6 +535,7 @@ fn create_session_group() -> (
     CheckButton,
     CheckButton,
     CheckButton,
+    CheckButton,
     Entry,
     Entry,
     adw::EntryRow,
@@ -572,6 +576,19 @@ fn create_session_group() -> (
         .subtitle(i18n("Show SSH debug output for troubleshooting (-v)"))
         .build();
     session_group.add(&verbose_row);
+
+    // Multipath TCP switch
+    let mptcp_subtitle = if rustconn_core::connection::mptcp::is_mptcp_available() {
+        i18n("Use multiple network paths for mobility and aggregation (-o TCPMultipath=yes)")
+    } else {
+        i18n(
+            "Use multiple network paths (-o TCPMultipath=yes). Not available: kernel MPTCP is disabled",
+        )
+    };
+    let (mptcp_row, mptcp) = CheckboxRowBuilder::new(i18n("Multipath TCP"))
+        .subtitle(mptcp_subtitle)
+        .build();
+    session_group.add(&mptcp_row);
 
     // Startup command entry
     let (startup_row, startup_entry) = EntryRowBuilder::new(i18n("Startup Command"))
@@ -662,6 +679,7 @@ fn create_session_group() -> (
         x11_forwarding,
         compression,
         verbose,
+        mptcp,
         startup_entry,
         options_entry,
         ssh_agent_socket_entry,

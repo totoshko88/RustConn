@@ -140,6 +140,15 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.19.2" date="2026-07-23">
+      <description>
+        <p>Version 0.19.2 - MPTCP support and SSH tunnel stability:</p>
+        <ul>
+          <li>Added Multipath TCP (MPTCP) support for SSH, RDP, and VNC connections</li>
+          <li>Fixed VPN connect/disconnect no longer kills healthy SSH sessions</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.19.1" date="2026-07-21">
       <description>
         <p>Version 0.19.1 - RDP and SSH connection fixes:</p>

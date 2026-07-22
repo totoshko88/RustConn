@@ -224,8 +224,11 @@ PKG_FILES=(
     "packaging/flatpak/io.github.totoshko88.RustConn.yml"
     "packaging/flathub/io.github.totoshko88.RustConn.yml"
     "snap/snapcraft.yaml"
+    "flake.nix"
     "docs/USER_GUIDE.md"
     "docs/ARCHITECTURE.md"
+    "docs/AI_DEVELOPMENT.md"
+    "rustconn/Cargo.toml"
 )
 PKG_PATS=(
     "^rustconn \\($VERSION-1\\)"
@@ -239,8 +242,11 @@ PKG_PATS=(
     "tag: v$VERSION$"
     "tag: v$VERSION$"
     "^version: '$VERSION'$"
+    "version = \"$VERSION\""
     "\\*\\*Version $VERSION\\*\\*"
     "\\*\\*Version $VERSION\\*\\*"
+    "\\*\\*Version $VERSION\\*\\*"
+    "version = \"$VERSION\""
 )
 
 PKG_FAILED=0

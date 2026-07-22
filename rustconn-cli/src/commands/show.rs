@@ -135,6 +135,9 @@ fn print_json(
                     .collect();
                 map.insert("port_forwards".to_string(), serde_json::json!(fwds));
             }
+            if config.mptcp {
+                map.insert("mptcp".to_string(), serde_json::Value::Bool(true));
+            }
         }
         ProtocolConfig::Rdp(config) => {
             if let Some(ref res) = config.resolution {
@@ -162,6 +165,9 @@ fn print_json(
                     serde_json::Value::String(resolve_jump(jump_id)),
                 );
             }
+            if config.mptcp {
+                map.insert("mptcp".to_string(), serde_json::Value::Bool(true));
+            }
         }
         ProtocolConfig::Vnc(config) => {
             if let Some(jump_id) = config.jump_host_id {
@@ -169,6 +175,9 @@ fn print_json(
                     "jump_host".to_string(),
                     serde_json::Value::String(resolve_jump(jump_id)),
                 );
+            }
+            if config.mptcp {
+                map.insert("mptcp".to_string(), serde_json::Value::Bool(true));
             }
         }
         ProtocolConfig::Spice(config) => {
@@ -378,6 +387,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             if let Some(ref socket) = config.ssh_agent_socket {
                 println!("  SSH Agent Socket: {socket}");
             }
+            if config.mptcp {
+                println!("  MPTCP:    enabled");
+            }
         }
         ProtocolConfig::Rdp(ref config) => {
             if let Some(ref domain) = connection.domain {
@@ -418,6 +430,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
                     "  Autotype Initial Delay: {}ms",
                     config.autotype_initial_delay_ms
                 );
+            }
+            if config.mptcp {
+                println!("  MPTCP:    enabled");
             }
         }
         ProtocolConfig::Serial(ref config) => {
@@ -466,6 +481,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
         ProtocolConfig::Vnc(ref config) => {
             if let Some(jump_id) = config.jump_host_id {
                 println!("  Jump Host: {}", resolve_jump(jump_id));
+            }
+            if config.mptcp {
+                println!("  MPTCP:    enabled");
             }
         }
         ProtocolConfig::Spice(ref config) => {

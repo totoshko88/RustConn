@@ -185,6 +185,10 @@ pub struct RdpConfig {
     // multi-step cascade is ever needed (Avc444→H264→RemoteFx→Legacy→FreeRDP),
     // replace with a `GfxFallbackState` enum and a state machine.
     pub force_legacy_graphics: bool,
+    /// Enable Multipath TCP for the embedded RDP connection.
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires kernel MPTCP support (Linux 5.6+). Falls back to regular TCP.
+    pub mptcp: bool,
 }
 
 impl Default for RdpConfig {
@@ -225,6 +229,7 @@ impl Default for RdpConfig {
             remote_app_name: None,
             graphics_mode: GraphicsMode::Auto,
             force_legacy_graphics: false,
+            mptcp: false,
         }
     }
 }

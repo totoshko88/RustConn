@@ -39,9 +39,17 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
         any::<bool>(),                        // use_control_master
         arb_ssh_custom_options(),
         prop::option::of("[a-z0-9 -]{1,50}"), // startup_command
+        any::<bool>(),                        // mptcp
     )
         .prop_map(
-            |(auth_method, proxy_jump, use_control_master, custom_options, startup_command)| {
+            |(
+                auth_method,
+                proxy_jump,
+                use_control_master,
+                custom_options,
+                startup_command,
+                mptcp,
+            )| {
                 SshConfig {
                     auth_method,
                     remote_path: None,
@@ -66,6 +74,7 @@ fn arb_ssh_config() -> impl Strategy<Value = SshConfig> {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    mptcp,
                 }
             },
         )
@@ -136,9 +145,18 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
         prop::option::of(arb_rdp_gateway()),
         arb_shared_folders(),
         prop::collection::vec("/[a-z-]{1,20}", 0..3), // custom_args
+        any::<bool>(),                                // mptcp
     )
         .prop_map(
-            |(resolution, color_depth, audio_redirect, gateway, shared_folders, custom_args)| {
+            |(
+                resolution,
+                color_depth,
+                audio_redirect,
+                gateway,
+                shared_folders,
+                custom_args,
+                mptcp,
+            )| {
                 RdpConfig {
                     resolution,
                     color_depth,
@@ -168,6 +186,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                     remote_app_program: None,
                     remote_app_args: None,
                     remote_app_name: None,
+                    mptcp,
                 }
             },
         )
@@ -200,22 +219,26 @@ fn arb_vnc_config() -> impl Strategy<Value = VncConfig> {
         prop::option::of(0u8..=9),                    // compression
         prop::option::of(0u8..=9),                    // quality
         prop::collection::vec("-[a-z]{1,15}", 0..3),  // custom_args
+        any::<bool>(),                                // mptcp
     )
-        .prop_map(|(encoding, compression, quality, custom_args)| VncConfig {
-            client_mode: Default::default(),
-            performance_mode: Default::default(),
-            encoding,
-            compression,
-            quality,
-            view_only: false,
-            scaling: true,
-            clipboard_enabled: true,
-            custom_args,
-            scale_override: Default::default(),
-            show_local_cursor: true,
-            jump_host_id: None,
-            accept_certificate: false,
-        })
+        .prop_map(
+            |(encoding, compression, quality, custom_args, mptcp)| VncConfig {
+                client_mode: Default::default(),
+                performance_mode: Default::default(),
+                encoding,
+                compression,
+                quality,
+                view_only: false,
+                scaling: true,
+                clipboard_enabled: true,
+                custom_args,
+                scale_override: Default::default(),
+                show_local_cursor: true,
+                jump_host_id: None,
+                accept_certificate: false,
+                mptcp,
+            },
+        )
 }
 
 fn arb_vnc_connection() -> impl Strategy<Value = Connection> {
@@ -845,6 +868,7 @@ fn arb_ssh_config_with_identities_only() -> impl Strategy<Value = SshConfig> {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    mptcp: false,
                 }
             },
         )
@@ -889,6 +913,7 @@ fn arb_ssh_config_with_agent_fingerprint() -> impl Strategy<Value = SshConfig> {
                 keep_alive_interval: None,
                 keep_alive_count_max: None,
                 verbose: false,
+                mptcp: false,
             }
         })
 }
@@ -1053,6 +1078,7 @@ fn arb_ssh_config_with_file_key_source() -> impl Strategy<Value = SshConfig> {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    mptcp: false,
                 }
             },
         )
@@ -1096,6 +1122,7 @@ fn arb_ssh_config_with_agent_key_source() -> impl Strategy<Value = SshConfig> {
                     keep_alive_interval: None,
                     keep_alive_count_max: None,
                     verbose: false,
+                    mptcp: false,
                 }
             },
         )
@@ -1686,6 +1713,7 @@ fn arb_ssh_config_with_port_forwards() -> impl Strategy<Value = SshConfig> {
             keep_alive_interval: None,
             keep_alive_count_max: None,
             verbose: false,
+            mptcp: false,
             remote_path: None,
         })
 }
@@ -1747,7 +1775,7 @@ proptest! {
             waypipe: false,
             ssh_agent_socket: None,
             keep_alive_interval: None,
-            keep_alive_count_max: None, verbose: false,
+            keep_alive_count_max: None, verbose: false, mptcp: false,
         };
         let args = config.build_command_args();
 
@@ -1915,6 +1943,7 @@ fn remote_app_freerdp_args_full() {
         remote_app_program: Some("||notepad".to_string()),
         remote_app_args: Some("/p test.txt".to_string()),
         remote_app_name: Some("Notepad".to_string()),
+        mptcp: false,
         ..Default::default()
     };
     let args = config.remote_app_freerdp_args();
@@ -1933,6 +1962,7 @@ fn remote_app_freerdp_args_skips_empty_optional_fields() {
         remote_app_program: Some("calc".to_string()),
         remote_app_args: Some(String::new()),
         remote_app_name: None,
+        mptcp: false,
         ..Default::default()
     };
     let args = config.remote_app_freerdp_args();
@@ -1952,6 +1982,7 @@ proptest! {
             remote_app_program: Some(program.clone()),
             remote_app_args: args,
             remote_app_name: name,
+            mptcp: false,
             ..Default::default()
         };
         let result = config.remote_app_freerdp_args();
@@ -1992,4 +2023,67 @@ fn remote_app_freerdp_args_no_quotes_without_spaces() {
     let args = config.remote_app_freerdp_args();
     assert_eq!(args.len(), 1);
     assert_eq!(args[0], "/app:program:||notepad,cmd:/p,name:Notepad");
+}
+
+// ============================================================================
+// MPTCP serialization round-trip tests
+// ============================================================================
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(50))]
+
+    /// MPTCP field survives JSON serialization round-trip for SSH connections.
+    #[test]
+    fn prop_ssh_mptcp_survives_json_roundtrip(conn in arb_ssh_connection()) {
+        let json = serde_json::to_string(&conn.protocol_config)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("serialize: {e}").into()))?;
+        let deserialized: ProtocolConfig = serde_json::from_str(&json)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("deserialize: {e}").into()))?;
+        if let (ProtocolConfig::Ssh(orig), ProtocolConfig::Ssh(deser)) =
+            (&conn.protocol_config, &deserialized)
+        {
+            prop_assert_eq!(orig.mptcp, deser.mptcp, "MPTCP field must survive SSH JSON round-trip");
+        }
+    }
+
+    /// MPTCP field survives JSON serialization round-trip for RDP connections.
+    #[test]
+    fn prop_rdp_mptcp_survives_json_roundtrip(conn in arb_rdp_connection()) {
+        let json = serde_json::to_string(&conn.protocol_config)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("serialize: {e}").into()))?;
+        let deserialized: ProtocolConfig = serde_json::from_str(&json)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("deserialize: {e}").into()))?;
+        if let (ProtocolConfig::Rdp(orig), ProtocolConfig::Rdp(deser)) =
+            (&conn.protocol_config, &deserialized)
+        {
+            prop_assert_eq!(orig.mptcp, deser.mptcp, "MPTCP field must survive RDP JSON round-trip");
+        }
+    }
+
+    /// MPTCP field survives JSON serialization round-trip for VNC connections.
+    #[test]
+    fn prop_vnc_mptcp_survives_json_roundtrip(conn in arb_vnc_connection()) {
+        let json = serde_json::to_string(&conn.protocol_config)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("serialize: {e}").into()))?;
+        let deserialized: ProtocolConfig = serde_json::from_str(&json)
+            .map_err(|e| proptest::test_runner::TestCaseError::Fail(format!("deserialize: {e}").into()))?;
+        if let (ProtocolConfig::Vnc(orig), ProtocolConfig::Vnc(deser)) =
+            (&conn.protocol_config, &deserialized)
+        {
+            prop_assert_eq!(orig.mptcp, deser.mptcp, "MPTCP field must survive VNC JSON round-trip");
+        }
+    }
+
+    /// SSH build_command_args includes TCPMultipath=yes when mptcp is true,
+    /// and does NOT include it when mptcp is false.
+    #[test]
+    fn prop_ssh_mptcp_flag_in_command_args(config in arb_ssh_config()) {
+        let args = config.build_command_args();
+        let has_mptcp_arg = args.iter().any(|a| a == "TCPMultipath=yes");
+        prop_assert_eq!(
+            has_mptcp_arg,
+            config.mptcp,
+            "TCPMultipath=yes should be present iff mptcp is enabled"
+        );
+    }
 }

@@ -36,6 +36,7 @@ pub(super) fn create_vnc_options() -> (
     Entry,
     DropDown,
     adw::SwitchRow,
+    adw::SwitchRow,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -253,6 +254,19 @@ pub(super) fn create_vnc_options() -> (
         .build();
     features_group.add(&accept_certificate_switch);
 
+    // Multipath TCP — use multiple network paths for mobility and aggregation
+    let vnc_mptcp_subtitle = if rustconn_core::connection::mptcp::is_mptcp_available() {
+        i18n("Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode only)")
+    } else {
+        i18n("Multiple network paths (embedded mode only). Not available: kernel MPTCP is disabled")
+    };
+    let mptcp_switch = adw::SwitchRow::builder()
+        .title(i18n("Multipath TCP"))
+        .subtitle(vnc_mptcp_subtitle)
+        .active(false)
+        .build();
+    features_group.add(&mptcp_switch);
+
     // VNC-3: Password info row
     let password_info_row = adw::ActionRow::builder()
         .title(i18n("Authentication"))
@@ -328,5 +342,6 @@ pub(super) fn create_vnc_options() -> (
         custom_args_entry,
         vnc_jump_host_dropdown,
         accept_certificate_switch,
+        mptcp_switch,
     )
 }

@@ -2,7 +2,7 @@ Format: 3.0 (quilt)
 Source: rustconn
 Binary: rustconn
 Architecture: any
-Version: 0.19.1-1
+Version: 0.19.2-1
 Maintainer: Anton Isaiev <totoshko88@gmail.com>
 Homepage: https://github.com/totoshko88/RustConn
 Standards-Version: 4.6.2

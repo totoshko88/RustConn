@@ -160,6 +160,12 @@ pub struct RdpClientConfig {
     /// Example: `0x0407` for German, `0x040C` for French.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keyboard_layout: Option<u32>,
+
+    /// Enable Multipath TCP for the embedded RDP connection.
+    /// Uses multiple network paths for seamless mobility and bandwidth aggregation.
+    /// Requires kernel MPTCP support (Linux 5.6+). Falls back to regular TCP.
+    #[serde(default)]
+    pub mptcp: bool,
 }
 
 const fn default_true() -> bool {
@@ -260,6 +266,7 @@ impl Default for RdpClientConfig {
             remote_app: None,
             connection_name: None,
             keyboard_layout: None,
+            mptcp: false,
         }
     }
 }

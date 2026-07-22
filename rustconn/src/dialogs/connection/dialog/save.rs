@@ -66,6 +66,7 @@ impl ConnectionDialog {
         ssh_x11_forwarding: &CheckButton,
         ssh_compression: &CheckButton,
         ssh_verbose: &CheckButton,
+        ssh_mptcp: &CheckButton,
         ssh_startup_entry: &Entry,
         ssh_options_entry: &Entry,
         ssh_agent_socket_entry: &adw::EntryRow,
@@ -96,6 +97,7 @@ impl ConnectionDialog {
         rdp_autotype_delay_spin: &SpinButton,
         rdp_autotype_initial_delay_spin: &SpinButton,
         rdp_reconnect_on_resize_check: &adw::SwitchRow,
+        rdp_mptcp_check: &adw::SwitchRow,
         rdp_jump_host_dropdown: &DropDown,
         rdp_connections_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
         rdp_shared_folders: &Rc<RefCell<Vec<SharedFolder>>>,
@@ -118,6 +120,7 @@ impl ConnectionDialog {
         vnc_custom_args_entry: &Entry,
         vnc_jump_host_dropdown: &DropDown,
         vnc_accept_certificate_check: &adw::SwitchRow,
+        vnc_mptcp_check: &adw::SwitchRow,
         vnc_connections_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
         spice_tls_check: &adw::SwitchRow,
         spice_ca_cert_entry: &Entry,
@@ -261,6 +264,7 @@ impl ConnectionDialog {
         let ssh_x11_forwarding = ssh_x11_forwarding.clone();
         let ssh_compression = ssh_compression.clone();
         let ssh_verbose = ssh_verbose.clone();
+        let ssh_mptcp = ssh_mptcp.clone();
         let ssh_startup_entry = ssh_startup_entry.clone();
         let ssh_options_entry = ssh_options_entry.clone();
         let ssh_agent_socket_entry = ssh_agent_socket_entry.clone();
@@ -290,6 +294,7 @@ impl ConnectionDialog {
         let rdp_autotype_delay_spin = rdp_autotype_delay_spin.clone();
         let rdp_autotype_initial_delay_spin = rdp_autotype_initial_delay_spin.clone();
         let rdp_reconnect_on_resize_check = rdp_reconnect_on_resize_check.clone();
+        let rdp_mptcp_check = rdp_mptcp_check.clone();
         let rdp_jump_host_dropdown = rdp_jump_host_dropdown.clone();
         let rdp_connections_data = rdp_connections_data.clone();
         let rdp_shared_folders = rdp_shared_folders.clone();
@@ -313,6 +318,7 @@ impl ConnectionDialog {
         let vnc_performance_mode_dropdown = vnc_performance_mode_dropdown.clone();
         let vnc_jump_host_dropdown = vnc_jump_host_dropdown.clone();
         let vnc_accept_certificate_check = vnc_accept_certificate_check.clone();
+        let vnc_mptcp_check = vnc_mptcp_check.clone();
         let vnc_connections_data = vnc_connections_data.clone();
         let spice_tls_check = spice_tls_check.clone();
         let spice_ca_cert_entry = spice_ca_cert_entry.clone();
@@ -469,6 +475,7 @@ impl ConnectionDialog {
                 ssh_x11_forwarding: &ssh_x11_forwarding,
                 ssh_compression: &ssh_compression,
                 ssh_verbose: &ssh_verbose,
+                ssh_mptcp: &ssh_mptcp,
                 ssh_startup_entry: &ssh_startup_entry,
                 ssh_options_entry: &ssh_options_entry,
                 ssh_agent_socket_entry: &ssh_agent_socket_entry,
@@ -498,6 +505,7 @@ impl ConnectionDialog {
                 rdp_autotype_delay_spin: &rdp_autotype_delay_spin,
                 rdp_autotype_initial_delay_spin: &rdp_autotype_initial_delay_spin,
                 rdp_reconnect_on_resize_check: &rdp_reconnect_on_resize_check,
+                rdp_mptcp_check: &rdp_mptcp_check,
                 rdp_jump_host_dropdown: &rdp_jump_host_dropdown,
                 rdp_connections_data: &rdp_connections_data,
                 rdp_shared_folders: &rdp_shared_folders,
@@ -519,6 +527,7 @@ impl ConnectionDialog {
                 vnc_custom_args_entry: &vnc_custom_args_entry,
                 vnc_jump_host_dropdown: &vnc_jump_host_dropdown,
                 vnc_accept_certificate_check: &vnc_accept_certificate_check,
+                vnc_mptcp_check: &vnc_mptcp_check,
                 vnc_connections_data: &vnc_connections_data,
                 spice_tls_check: &spice_tls_check,
                 spice_ca_cert_entry: &spice_ca_cert_entry,

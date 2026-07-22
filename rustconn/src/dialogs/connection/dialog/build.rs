@@ -114,6 +114,7 @@ impl ConnectionDialog {
         let ssh_x11_forwarding = ssh_widgets.x11_forwarding;
         let ssh_compression = ssh_widgets.compression;
         let ssh_verbose = ssh_widgets.verbose;
+        let ssh_mptcp = ssh_widgets.mptcp;
         let ssh_startup_entry = ssh_widgets.startup_entry;
         let ssh_options_entry = ssh_widgets.options_entry;
         let mosh_settings_group = ssh_widgets.mosh_group;
@@ -160,6 +161,7 @@ impl ConnectionDialog {
             rdp_autotype_delay_spin,
             rdp_autotype_initial_delay_spin,
             rdp_reconnect_on_resize_check,
+            rdp_mptcp_check,
             rdp_jump_host_dropdown,
             rdp_shared_folders,
             rdp_shared_folders_list,
@@ -188,6 +190,7 @@ impl ConnectionDialog {
             vnc_custom_args_entry,
             vnc_jump_host_dropdown,
             vnc_accept_certificate_check,
+            vnc_mptcp_check,
         ) = crate::dialogs::connection::vnc::create_vnc_options();
         protocol_stack.add_named(&vnc_box, Some("vnc"));
 
@@ -480,6 +483,7 @@ impl ConnectionDialog {
             &ssh_x11_forwarding,
             &ssh_compression,
             &ssh_verbose,
+            &ssh_mptcp,
             &ssh_startup_entry,
             &ssh_options_entry,
             &ssh_agent_socket_entry,
@@ -510,6 +514,7 @@ impl ConnectionDialog {
             &rdp_autotype_delay_spin,
             &rdp_autotype_initial_delay_spin,
             &rdp_reconnect_on_resize_check,
+            &rdp_mptcp_check,
             &rdp_jump_host_dropdown,
             &rdp_connections_data,
             &rdp_shared_folders,
@@ -532,6 +537,7 @@ impl ConnectionDialog {
             &vnc_custom_args_entry,
             &vnc_jump_host_dropdown,
             &vnc_accept_certificate_check,
+            &vnc_mptcp_check,
             &vnc_connections_data,
             &spice_tls_check,
             &spice_ca_cert_entry,
@@ -692,6 +698,7 @@ impl ConnectionDialog {
             ssh_x11_forwarding,
             ssh_compression,
             ssh_verbose,
+            ssh_mptcp,
             ssh_startup_entry,
             ssh_options_entry,
             ssh_agent_socket_entry,
@@ -723,6 +730,7 @@ impl ConnectionDialog {
             rdp_autotype_delay_spin,
             rdp_autotype_initial_delay_spin,
             rdp_reconnect_on_resize_check,
+            rdp_mptcp_check,
             rdp_jump_host_dropdown,
             rdp_connections_data,
             rdp_shared_folders,
@@ -746,6 +754,7 @@ impl ConnectionDialog {
             vnc_custom_args_entry,
             vnc_jump_host_dropdown,
             vnc_accept_certificate_check,
+            vnc_mptcp_check,
             vnc_connections_data,
             spice_tls_check,
             variables_list,

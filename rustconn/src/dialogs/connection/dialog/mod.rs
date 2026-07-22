@@ -144,6 +144,7 @@ pub struct ConnectionDialog {
     ssh_x11_forwarding: CheckButton,
     ssh_compression: CheckButton,
     ssh_verbose: CheckButton,
+    ssh_mptcp: CheckButton,
     ssh_startup_entry: Entry,
     ssh_options_entry: Entry,
     ssh_agent_socket_entry: adw::EntryRow,
@@ -176,6 +177,7 @@ pub struct ConnectionDialog {
     rdp_autotype_delay_spin: gtk4::SpinButton,
     rdp_autotype_initial_delay_spin: gtk4::SpinButton,
     rdp_reconnect_on_resize_check: adw::SwitchRow,
+    rdp_mptcp_check: adw::SwitchRow,
     rdp_jump_host_dropdown: DropDown,
     rdp_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     rdp_shared_folders: Rc<RefCell<Vec<SharedFolder>>>,
@@ -200,6 +202,7 @@ pub struct ConnectionDialog {
     vnc_custom_args_entry: Entry,
     vnc_jump_host_dropdown: DropDown,
     vnc_accept_certificate_check: adw::SwitchRow,
+    vnc_mptcp_check: adw::SwitchRow,
     vnc_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     // SPICE fields
     spice_tls_check: adw::SwitchRow,

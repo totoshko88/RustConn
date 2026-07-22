@@ -19,6 +19,7 @@ mod interning;
 pub mod knock;
 mod lazy_loader;
 mod manager;
+pub mod mptcp;
 mod port_check;
 mod retry;
 pub mod spa;
@@ -36,6 +37,7 @@ pub use knock::{
 };
 pub use lazy_loader::LazyGroupLoader;
 pub use manager::ConnectionManager;
+pub use mptcp::{MptcpError, MptcpResult, connect_mptcp, connect_mptcp_async, is_mptcp_available};
 pub use port_check::{PortCheckError, PortCheckResult, check_port, check_port_async};
 pub use retry::{DEFAULT_BACKOFF_MULTIPLIER, RetryConfig, RetryState};
 pub use spa::{SpaError, SpaResult, build_spa_packet, send_spa};

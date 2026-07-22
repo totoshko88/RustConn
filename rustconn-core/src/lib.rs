@@ -192,7 +192,7 @@ pub use monitoring::{
     MetricsComputer, MetricsEvent, MetricsParser, MonitoringConfig, MonitoringError,
     MonitoringResult, MonitoringSettings, NetworkMetrics, NetworkSnapshot, RemoteMetrics,
     RemoteOsType, SYSTEM_INFO_COMMAND, SystemInfo, close_all_control_sockets, close_control_socket,
-    ssh_control_path, ssh_exec_factory, start_collector,
+    close_dead_control_sockets, ssh_control_path, ssh_exec_factory, start_collector,
 };
 pub use password_generator::{
     CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
