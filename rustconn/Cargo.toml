@@ -46,7 +46,7 @@ muda = { version = "0.19", optional = true }
 # `setlocale` runs in `main()` before any thread is spawned (see `src/i18n.rs`)
 # — and is recorded in `deny.toml` with that justification. Moving the call into
 # a dedicated `rustconn-locale-sys` crate is the path to 0.8.
-gettext-rs = { version = "0.7", features = ["gettext-system"] }
+gettext-rs = { version = "0.8", features = ["gettext-system"] }
 # Tracing for structured logging
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
