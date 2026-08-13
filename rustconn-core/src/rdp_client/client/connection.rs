@@ -746,7 +746,29 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         platform: MajorPlatformType::UNIX,
         hardware_id: None,
         request_data: None,
-        autologon: false,
+        // Ask the server to log the session in with the credentials this PDU
+        // already carries (`INFO_AUTOLOGON`).
+        //
+        // Windows never needed it: the session is established from the
+        // CredSSP/NLA exchange, so the flag being off went unnoticed. xrdp does
+        // need it — its session manager only skips its own login screen when
+        // the flag is set, so connecting to a Linux host got past the first
+        // stage with the password accepted and then stopped at the greeter,
+        // asking for the same credentials again. FreeRDP sets this flag
+        // whenever credentials are supplied, which is why the very same host
+        // logs straight in from Remmina.
+        //
+        // Off when there is nothing to log in with: the flag would promise an
+        // automatic logon the PDU cannot deliver, and a server that trusts it
+        // may drop the connection instead of showing its own prompt.
+        autologon: config
+            .username
+            .as_ref()
+            .is_some_and(|username| !username.is_empty())
+            && config
+                .password
+                .as_ref()
+                .is_some_and(|password| !password.expose_secret().is_empty()),
         enable_audio_playback: config.audio_enabled,
         performance_flags,
         license_cache: None,
