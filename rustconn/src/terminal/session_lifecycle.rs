@@ -149,6 +149,30 @@ impl TerminalNotebook {
         self.poll_cancel_tokens.borrow_mut().insert(key, cancel);
     }
 
+    /// Records whether an unattended sweep may reconnect this session.
+    ///
+    /// Called by the disconnect path with the same verdict it reached for its
+    /// own auto-reconnect poll, so the two cannot disagree. Always call it —
+    /// passing `false` clears an earlier `true`, which matters for a session
+    /// that dropped once from a real failure and later exited cleanly.
+    pub fn set_auto_reconnect_eligible(&self, session_id: Uuid, eligible: bool) {
+        let mut set = self.auto_reconnect_eligible.borrow_mut();
+        if eligible {
+            set.insert(session_id);
+        } else {
+            set.remove(&session_id);
+        }
+    }
+
+    /// Whether an unattended sweep may reconnect this session.
+    ///
+    /// Defaults to `false`: a session whose disconnect never reached the
+    /// decision point is left alone rather than logged back in on a guess.
+    #[must_use]
+    pub fn is_auto_reconnect_eligible(&self, session_id: Uuid) -> bool {
+        self.auto_reconnect_eligible.borrow().contains(&session_id)
+    }
+
     /// Cancels and removes a background polling task by key
     pub fn cancel_poll(&self, key: Uuid) {
         if let Some(cancel) = self.poll_cancel_tokens.borrow_mut().remove(&key) {

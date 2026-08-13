@@ -261,8 +261,14 @@ fn trigger_reconnect_for_disconnected_sessions(state: &SharedAppState, notebook:
         .get_all_sessions()
         .into_iter()
         .filter(|info| {
-            // Check if the reconnect overlay is visible for this session
+            // The reconnect overlay is visible for this session…
             notebook.is_reconnect_shown(info.id)
+                // …and its disconnect was one this sweep is allowed to undo.
+                // A visible banner is not consent: the disconnect path shows one
+                // for a shell the user closed with `exit` too, and re-entering
+                // that host on the next Wi-Fi roam is not recovery, it is the
+                // app logging in on its own.
+                && notebook.is_auto_reconnect_eligible(info.id)
         })
         .map(|info| (info.id, info.connection_id))
         .collect();

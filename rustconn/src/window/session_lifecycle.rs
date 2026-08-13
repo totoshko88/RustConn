@@ -755,6 +755,24 @@ impl MainWindow {
                 );
             }
 
+            // Record the verdict for the unattended sweeps (network change,
+            // resume from sleep) before acting on it. They can only see that a
+            // reconnect banner is up, and a banner is also shown for a shell the
+            // user closed with `exit` and for a process that died seconds after
+            // starting — where reconnecting is exactly what must not happen.
+            // Without this, `exit` re-enters the host by itself on the next
+            // Wi-Fi roam.
+            //
+            // The `is_ssh_auth_failure` term deliberately does *not* apply here.
+            // OpenSSH exits 255 for a connection it lost just as it does for a
+            // password it was refused, so carrying that term over would make the
+            // sweep skip precisely the sessions it exists to recover (#217). The
+            // poll below can afford the heuristic because it retries every few
+            // seconds and would spin forever on bad credentials; a sweep fires
+            // once, on a discrete external event, and one re-prompt is a far
+            // smaller price than never recovering a dropped SSH session.
+            notebook_clone.set_auto_reconnect_eligible(session_id, is_failure && !is_rapid_crash);
+
             if is_failure
                 && !is_ssh_auth_failure
                 && !is_rapid_crash

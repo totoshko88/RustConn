@@ -313,6 +313,15 @@ pub struct TerminalNotebook {
     /// Cancel tokens for background polling tasks (host check, auto-reconnect, WoL)
     /// Keyed by session_id or connection_id depending on context
     poll_cancel_tokens: Rc<RefCell<HashMap<Uuid, std::sync::Arc<std::sync::atomic::AtomicBool>>>>,
+    /// Sessions an *unattended* sweep is allowed to bring back.
+    ///
+    /// A visible reconnect banner is not consent: the disconnect path shows one
+    /// for a shell the user closed with `exit`, for a failed authentication and
+    /// for a process that crashed on startup — precisely the cases where it
+    /// deliberately refuses to reconnect. Membership here records that decision
+    /// so a network change or a resume from sleep honours it instead of
+    /// re-running the login by itself.
+    auto_reconnect_eligible: Rc<RefCell<std::collections::HashSet<Uuid>>>,
     /// SSH tunnels for jump-host connections (RDP, VNC, SPICE, Telnet).
     /// Killed automatically when the tab is closed.
     ssh_tunnels: Rc<RefCell<HashMap<Uuid, rustconn_core::ssh_tunnel::SshTunnel>>>,
@@ -456,6 +465,7 @@ impl TerminalNotebook {
             active_recordings: Rc::new(RefCell::new(HashSet::new())),
             remote_recordings: RefCell::new(HashMap::new()),
             poll_cancel_tokens: Rc::new(RefCell::new(HashMap::new())),
+            auto_reconnect_eligible: Rc::new(RefCell::new(std::collections::HashSet::new())),
             ssh_tunnels: Rc::new(RefCell::new(HashMap::new())),
             activity_coordinator: Rc::new(RefCell::new(None)),
             tab_containers: Rc::new(RefCell::new(HashMap::new())),
@@ -498,6 +508,7 @@ impl TerminalNotebook {
         let detached_close = Rc::clone(&self.detached);
         let on_session_ended = Rc::clone(&self.on_session_ended);
         let vte_child_pids = self.vte_child_pids.clone();
+        let auto_reconnect_on_close = Rc::clone(&self.auto_reconnect_eligible);
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
@@ -638,6 +649,7 @@ impl TerminalNotebook {
                 drop(pty_relays_on_close.borrow_mut().remove(&session_id));
                 output_observers_on_close.borrow_mut().remove(&session_id);
                 commit_forwarded_on_close.borrow_mut().remove(&session_id);
+                auto_reconnect_on_close.borrow_mut().remove(&session_id);
 
                 // Kill VTE child process group explicitly (#172).
                 // Some CLI clients (notably telnet) do not exit on SIGHUP
