@@ -567,44 +567,61 @@ impl MainWindow {
                 let executor =
                     TaskExecutor::with_tracker(Arc::new(var_manager), Arc::clone(&post_disconnect_folder_tracker));
 
-                let result = crate::async_utils::with_runtime(|rt| {
-                    rt.block_on(async {
-                        // ponytail: 60s ceiling protects the GTK main thread;
-                        // the task's own timeout (if configured) fires first.
-                        let ceiling = std::time::Duration::from_mins(1);
-                        tokio::time::timeout(ceiling, executor.execute_post_disconnect(
-                            task,
-                            VariableScope::Connection(connection_id),
-                            post_disconnect_folder_id,
-                        ))
-                        .await
-                        .unwrap_or(Err(rustconn_core::automation::TaskError::Timeout(60_000)))
-                    })
-                });
-
-                match result {
-                    Ok(Ok(_)) => {
-                        tracing::info!(
-                            %connection_id,
-                            "Post-disconnect task completed successfully"
-                        );
-                    }
-                    Ok(Err(e)) => {
-                        tracing::warn!(
-                            %connection_id,
-                            command = %task.command,
-                            error = %e,
-                            "Post-disconnect task failed"
-                        );
-                    }
-                    Err(runtime_err) => {
-                        tracing::warn!(
-                            %connection_id,
-                            error = %runtime_err,
-                            "Failed to create async runtime for post-disconnect task"
-                        );
-                    }
-                }
+                // Run it off the main thread. A post-disconnect task is an
+                // arbitrary user command — a script, an ssh, a curl against a
+                // host that may itself be unreachable — and blocking here
+                // freezes the entire application, every other terminal, RDP and
+                // VNC tab included, for as long as it takes: up to the ceiling
+                // below. Nothing further down depends on the outcome; the arms
+                // only log. Same shape the wake-on-LAN host check already uses.
+                let task_for_run = task.clone();
+                let command_for_log = task.command.clone();
+                crate::utils::spawn_blocking_with_callback(
+                    move || {
+                        crate::async_utils::with_runtime(|rt| {
+                            rt.block_on(async {
+                                // ponytail: 60s ceiling bounds the worker thread;
+                                // the task's own timeout (if configured) fires first.
+                                let ceiling = std::time::Duration::from_mins(1);
+                                tokio::time::timeout(
+                                    ceiling,
+                                    executor.execute_post_disconnect(
+                                        &task_for_run,
+                                        VariableScope::Connection(connection_id),
+                                        post_disconnect_folder_id,
+                                    ),
+                                )
+                                .await
+                                .unwrap_or(Err(
+                                    rustconn_core::automation::TaskError::Timeout(60_000),
+                                ))
+                            })
+                        })
+                    },
+                    move |result| match result {
+                        Ok(Ok(_)) => {
+                            tracing::info!(
+                                %connection_id,
+                                "Post-disconnect task completed successfully"
+                            );
+                        }
+                        Ok(Err(e)) => {
+                            tracing::warn!(
+                                %connection_id,
+                                command = %command_for_log,
+                                error = %e,
+                                "Post-disconnect task failed"
+                            );
+                        }
+                        Err(runtime_err) => {
+                            tracing::warn!(
+                                %connection_id,
+                                error = %runtime_err,
+                                "Failed to create async runtime for post-disconnect task"
+                            );
+                        }
+                    },
+                );
             }
 
             // Get history entry ID before session info is removed
