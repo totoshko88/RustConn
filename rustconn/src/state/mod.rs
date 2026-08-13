@@ -971,57 +971,100 @@ impl AppState {
             )
         {
             let backend_type = select_backend_for_load(&secret_settings);
-            let lookup_key = generate_store_key(
+            let protocol_str = connection
+                .protocol_config
+                .protocol_type()
+                .as_str()
+                .to_lowercase();
+
+            // Look the credential up where it is written. Saving goes through
+            // `generate_store_key_with_group`, which for keyring backends
+            // produces `RustConn/{group_path}/{name} ({protocol})`; resolving
+            // used `generate_store_key`, which passes no group and produces the
+            // flat `{name} ({protocol})`. So a password saved normally was
+            // searched for at a key nothing is written to any more: the lookup
+            // reported "no password found", and the connection fell through to
+            // the credential prompt with the secret sitting in the keyring the
+            // whole time. Same defect the doc comment on
+            // `generate_store_key_with_group` records for the macOS Keychain in
+            // 0.19.19 — the load side of it was left behind.
+            let group_path = connection.group_id.map(|group_id| {
+                rustconn_core::secret::KeePassHierarchy::resolve_group_path(group_id, groups)
+                    .join("/")
+            });
+            let hierarchical_key = generate_store_key_with_group(
                 &connection.name,
                 &connection.host,
-                &connection
-                    .protocol_config
-                    .protocol_type()
-                    .as_str()
-                    .to_lowercase(),
+                &protocol_str,
+                backend_type,
+                group_path.as_deref(),
+            );
+            // Tried second so credentials written by a release that stored flat
+            // keep resolving, exactly as `resolve_from_keyring_hierarchical`
+            // falls back for the keyring backends it handles.
+            let legacy_key = generate_store_key(
+                &connection.name,
+                &connection.host,
+                &protocol_str,
                 backend_type,
             );
 
-            tracing::debug!(
-                lookup_key = %lookup_key,
-                ?backend_type,
-                "[resolve_credentials_blocking] Vault (non-KeePass): resolving"
-            );
+            let mut lookup_keys = vec![hierarchical_key.clone()];
+            if legacy_key != hierarchical_key {
+                lookup_keys.push(legacy_key);
+            }
 
-            match dispatch_vault_op(&secret_settings, &lookup_key, VaultOp::Retrieve) {
-                Ok(Some(creds)) => {
-                    tracing::debug!("[resolve_credentials_blocking] Found password in vault");
-                    return Ok(CredentialResolutionResult::Resolved(creds));
-                }
-                Ok(None) => {
-                    tracing::debug!("[resolve_credentials_blocking] No password found in vault");
-                    // Vault entry not found — return specific result so UI can prompt
-                    let protocol_str = connection
-                        .protocol_config
-                        .protocol_type()
-                        .as_str()
-                        .to_lowercase();
-                    return Ok(CredentialResolutionResult::VaultEntryMissing {
-                        connection_name: connection.name.clone(),
-                        lookup_key: generate_store_key(
-                            &connection.name,
-                            &connection.host,
-                            &protocol_str,
-                            backend_type,
-                        ),
-                    });
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        error = %e,
-                        "[resolve_credentials_blocking] Vault lookup failed"
-                    );
-                    // Backend may not be properly configured
-                    return Ok(CredentialResolutionResult::BackendNotConfigured {
-                        required_backend: secret_settings.preferred_backend,
-                    });
+            for lookup_key in &lookup_keys {
+                tracing::debug!(
+                    lookup_key = %lookup_key,
+                    ?backend_type,
+                    "[resolve_credentials_blocking] Vault (non-KeePass): resolving"
+                );
+
+                match dispatch_vault_op(&secret_settings, lookup_key, VaultOp::Retrieve) {
+                    // An entry holding an empty password is not a hit. Older
+                    // releases left such entries behind under the flat key, and
+                    // accepting one would end the search before the key that
+                    // actually holds the secret is tried.
+                    Ok(Some(creds))
+                        if creds
+                            .password
+                            .as_ref()
+                            .is_some_and(|password| !password.expose_secret().is_empty()) =>
+                    {
+                        tracing::debug!(
+                            lookup_key = %lookup_key,
+                            "[resolve_credentials_blocking] Found password in vault"
+                        );
+                        return Ok(CredentialResolutionResult::Resolved(creds));
+                    }
+                    Ok(_) => {
+                        tracing::debug!(
+                            lookup_key = %lookup_key,
+                            "[resolve_credentials_blocking] No password under this key"
+                        );
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            error = %e,
+                            "[resolve_credentials_blocking] Vault lookup failed"
+                        );
+                        // Backend may not be properly configured
+                        return Ok(CredentialResolutionResult::BackendNotConfigured {
+                            required_backend: secret_settings.preferred_backend,
+                        });
+                    }
                 }
             }
+
+            tracing::debug!("[resolve_credentials_blocking] No password found in vault");
+            // Vault entry not found — return specific result so UI can prompt.
+            // The key reported is the hierarchical one, since that is where a
+            // credential saved from here on will land.
+            return Ok(CredentialResolutionResult::VaultEntryMissing {
+                connection_name: connection.name.clone(),
+                lookup_key: hierarchical_key,
+            });
         }
 
         // For Inherit password source, traverse parent groups to find credentials
