@@ -916,3 +916,16 @@ togglebutton.broadcasting image {
     opacity: 0.9;
     background-color: alpha(@view_bg_color, 0.8);
 }
+
+/* Drag strip along the sidebar's trailing edge (see window/mod.rs).
+ * Transparent until pointed at: the split view already draws its own separator
+ * there, and a second permanent line would read as a rendering glitch. The
+ * hover tint is the only affordance needed — the resize cursor does the rest. */
+.sidebar-resize-handle {
+    background-color: transparent;
+    transition: background-color 120ms ease-in-out;
+}
+
+.sidebar-resize-handle:hover {
+    background-color: alpha(currentColor, 0.18);
+}

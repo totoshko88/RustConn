@@ -66,6 +66,87 @@ use crate::toast::ToastOverlay;
 /// Shared color pool type for global color allocation across all split containers
 type SharedColorPool = Rc<RefCell<ColorPool>>;
 
+/// Width of the sidebar's drag strip, in pixels.
+///
+/// Wide enough to hit without aiming, narrow enough not to steal clicks meant
+/// for the connection rows beside it.
+const SIDEBAR_RESIZE_HANDLE_PX: i32 = 5;
+
+/// Bounds for a dragged sidebar width.
+///
+/// The same range the Preferences spin row offers and the same clamp applied
+/// when the setting is loaded — a width dragged past either end would simply be
+/// reset on the next start, so the drag stops where the setting would.
+const SIDEBAR_WIDTH_MIN: f64 = 180.0;
+const SIDEBAR_WIDTH_MAX: f64 = 500.0;
+
+/// Lets `handle` drag the sidebar's trailing edge.
+///
+/// `AdwOverlaySplitView` has no drag handle of its own: the sidebar is exactly
+/// as wide as `max-sidebar-width` says, which until now could only be changed
+/// through Preferences. The strip is a sibling packed after the sidebar content,
+/// so it follows the edge at any width without anyone having to keep a position
+/// in sync.
+fn attach_sidebar_resize(
+    split_view: &adw::OverlaySplitView,
+    handle: &gtk4::Box,
+    state: &SharedAppState,
+) {
+    // Pointless while the sidebar is collapsed: in that mode it is an overlay
+    // over the content and its width comes from the breakpoint, not the setting.
+    handle.set_visible(!split_view.is_collapsed());
+    let handle_for_collapse = handle.clone();
+    split_view.connect_collapsed_notify(move |split_view| {
+        handle_for_collapse.set_visible(!split_view.is_collapsed());
+    });
+
+    let drag = gtk4::GestureDrag::new();
+
+    let split_for_update = split_view.clone();
+    let handle_for_update = handle.clone();
+    drag.connect_drag_update(move |gesture, offset_x, offset_y| {
+        let Some((start_x, start_y)) = gesture.start_point() else {
+            return;
+        };
+        // Map the pointer into the split view's coordinates instead of
+        // accumulating the gesture's offset. The handle moves as the sidebar
+        // grows, so an offset measured against it drifts away from the pointer;
+        // the mapped x, on the other hand, *is* the width the sidebar should
+        // have, and stays correct however the layout shifts underneath.
+        let pointer =
+            gtk4::graphene::Point::new((start_x + offset_x) as f32, (start_y + offset_y) as f32);
+        let Some(in_split_view) = handle_for_update.compute_point(&split_for_update, &pointer)
+        else {
+            return;
+        };
+        split_for_update.set_max_sidebar_width(
+            f64::from(in_split_view.x()).clamp(SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX),
+        );
+    });
+
+    let split_for_end = split_view.clone();
+    let state_for_end = state.clone();
+    drag.connect_drag_end(move |_, _, _| {
+        // Persisted once per drag rather than on every motion event, and
+        // independent of `remember_window_geometry`: that setting governs the
+        // window's own geometry, while a sidebar the user dragged is a
+        // deliberate choice worth keeping either way.
+        let width = split_for_end.max_sidebar_width() as i32;
+        if let Ok(mut state) = state_for_end.try_borrow_mut() {
+            let mut settings = state.settings().clone();
+            if settings.ui.sidebar_width == Some(width) {
+                return;
+            }
+            settings.ui.sidebar_width = Some(width);
+            if let Err(e) = state.update_settings(settings) {
+                tracing::warn!(?e, "Failed to persist the dragged sidebar width");
+            }
+        }
+    });
+
+    handle.add_controller(drag);
+}
+
 /// Shared toast overlay reference
 pub type SharedToastOverlay = Rc<ToastOverlay>;
 
@@ -317,9 +398,22 @@ impl MainWindow {
         overlay_split_view.set_enable_hide_gesture(true);
         overlay_split_view.set_pin_sidebar(true);
 
-        // Create sidebar
+        // Create sidebar, with a drag strip along its trailing edge so the width
+        // can be set by pulling it rather than only through Preferences.
         let sidebar = Rc::new(ConnectionSidebar::new());
-        overlay_split_view.set_sidebar(Some(sidebar.widget()));
+        let sidebar_box = gtk4::Box::new(Orientation::Horizontal, 0);
+        sidebar.widget().set_hexpand(true);
+        sidebar_box.append(sidebar.widget());
+
+        let resize_handle = gtk4::Box::new(Orientation::Vertical, 0);
+        resize_handle.set_size_request(SIDEBAR_RESIZE_HANDLE_PX, -1);
+        resize_handle.add_css_class("sidebar-resize-handle");
+        resize_handle.set_cursor_from_name(Some("col-resize"));
+        sidebar_box.append(&resize_handle);
+
+        attach_sidebar_resize(&overlay_split_view, &resize_handle, &state);
+
+        overlay_split_view.set_sidebar(Some(&sidebar_box));
 
         // Load persisted search history
         with_state(&state, |s| {
