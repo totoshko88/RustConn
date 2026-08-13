@@ -457,6 +457,10 @@ impl EmbeddedWebWidget {
         // Connect load-changed signal
         widget.connect_load_changed_signal();
 
+        // Honour pages that ask for a second web view (target="_blank",
+        // window.open, "Open Link in New Window")
+        widget.connect_create_signal();
+
         // Connect TLS certificate error signal for self-signed cert handling
         widget.connect_tls_error_signal();
 
@@ -598,6 +602,44 @@ impl EmbeddedWebWidget {
 
     /// Connects the WebView `load-changed` signal to update connection state.
     ///
+    /// Follows links the page wants to open in a second web view.
+    ///
+    /// WebKit emits `create` whenever a page asks for another web view:
+    /// `target="_blank"`, `window.open()`, or the context menu's "Open Link in
+    /// New Window". The handler is expected to return the view that should take
+    /// the load; returning nothing — which is what happens with no handler
+    /// connected at all — makes WebKit drop the request without a word. The
+    /// link then simply does nothing, and neither does "Open Link in New
+    /// Window", which is what this connection type looked like until now.
+    ///
+    /// The requested URI is loaded in this same view instead of a new one. The
+    /// session lives in the view's `NetworkSession`, so sending it to a fresh
+    /// view — or to the system browser — would arrive unauthenticated at a site
+    /// the user is already logged into. Back returns to the previous page,
+    /// since the load goes through the normal history.
+    fn connect_create_signal(&self) {
+        self.web_view
+            .connect_create(move |web_view, navigation_action| {
+                let uri = navigation_action
+                    .request()
+                    .and_then(|request| request.uri())
+                    .map(|uri| uri.to_string());
+
+                match uri {
+                    // `window.open()` with no argument asks for an empty view for
+                    // scripts to write into. Nothing to load, and nowhere to write.
+                    None => tracing::debug!("Ignoring a new-view request that carries no URI"),
+                    Some(uri) => {
+                        tracing::debug!(%uri, "Loading a new-view request in the current view");
+                        web_view.load_uri(&uri);
+                    }
+                }
+
+                // No second view is handed back: the load was taken over above.
+                None
+            });
+    }
+
     /// Maps WebKitGTK `LoadEvent` variants to `EmbeddedConnectionState`:
     /// - `Started` / `Redirected` → `Connecting`
     /// - `Finished` → `Connected`
