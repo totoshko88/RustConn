@@ -99,14 +99,22 @@ impl ConnectionDialog {
 
     /// Formats an agent key for short display in dropdown button
     /// Shows: "comment_start...comment_end (TYPE)"
+    ///
+    /// Measured and cut in *characters*, never bytes. An agent key comment is
+    /// free text the user chose (`ssh-keygen -C`), so it routinely carries
+    /// accented letters or emoji; a byte offset of 10 or `len - 10` can land
+    /// inside a multi-byte character, and slicing there panics. That panic
+    /// happens while the dropdown is being populated from a GTK signal
+    /// handler, so it aborts the process and takes every open session with it.
     pub(super) fn format_agent_key_short(key: &rustconn_core::ssh_agent::AgentKey) -> String {
         let comment = &key.comment;
         let max_comment_len = 24;
+        let comment_len = comment.chars().count();
 
-        let short_comment = if comment.len() > max_comment_len {
+        let short_comment = if comment_len > max_comment_len {
             // Show first 10 and last 10 chars with ellipsis
-            let start = &comment[..10];
-            let end = &comment[comment.len() - 10..];
+            let start: String = comment.chars().take(10).collect();
+            let end: String = comment.chars().skip(comment_len - 10).collect();
             format!("{start}…{end}")
         } else {
             comment.clone()
@@ -236,5 +244,63 @@ impl ConnectionDialog {
 
         // Update window title to indicate Import group mode
         self.dialog.set_title(&i18n("Edit Connection (Synced)"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ConnectionDialog;
+    use rustconn_core::ssh_agent::AgentKey;
+
+    fn key_with_comment(comment: &str) -> AgentKey {
+        AgentKey {
+            fingerprint: "SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".into(),
+            bits: 256,
+            key_type: "ED25519".into(),
+            comment: comment.into(),
+        }
+    }
+
+    #[test]
+    fn a_short_comment_is_shown_whole() {
+        let formatted = ConnectionDialog::format_agent_key_short(&key_with_comment("felipe@host"));
+        assert_eq!(formatted, "felipe@host (ED25519)");
+    }
+
+    #[test]
+    fn a_long_ascii_comment_keeps_ten_characters_at_each_end() {
+        let formatted = ConnectionDialog::format_agent_key_short(&key_with_comment(
+            "abcdefghijMMMMMMklmnopqrst",
+        ));
+        assert_eq!(formatted, "abcdefghij…klmnopqrst (ED25519)");
+    }
+
+    #[test]
+    fn a_long_comment_with_accents_does_not_panic() {
+        // `ssh-keygen -C "backup-señor-cliente-final"`: byte offset 10 lands
+        // inside the "ñ", so a byte slice here aborts the whole application.
+        let formatted = ConnectionDialog::format_agent_key_short(&key_with_comment(
+            "backup-señor-cliente-final",
+        ));
+        assert_eq!(formatted, "backup-señ…ente-final (ED25519)");
+    }
+
+    #[test]
+    fn a_comment_made_entirely_of_wide_characters_does_not_panic() {
+        // Every character is 4 bytes: len() is 100 while chars().count() is 25,
+        // so a byte-measured cut misjudges both the threshold and the offsets.
+        let comment = "🔑".repeat(25);
+        let formatted = ConnectionDialog::format_agent_key_short(&key_with_comment(&comment));
+        assert_eq!(
+            formatted,
+            format!("{}…{} (ED25519)", "🔑".repeat(10), "🔑".repeat(10))
+        );
+    }
+
+    #[test]
+    fn a_comment_exactly_at_the_limit_is_not_truncated() {
+        let comment = "a".repeat(24);
+        let formatted = ConnectionDialog::format_agent_key_short(&key_with_comment(&comment));
+        assert_eq!(formatted, format!("{comment} (ED25519)"));
     }
 }
