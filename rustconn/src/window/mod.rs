@@ -1626,33 +1626,9 @@ impl MainWindow {
                 return glib::Propagation::Stop;
             }
 
-            // Snapshot the open sessions for the next start (issue #243). Done
-            // before any teardown, while the notebook still knows what is live.
-            session_restore::save_snapshot(&state_clone, &notebook_for_close);
-
-            // Flush all active session recordings before shutdown
-            notebook_for_close.flush_active_recordings();
-
-            // Terminate tracked external viewers (issue #209): kill owned
-            // children so they do not outlive RustConn as orphans, and close
-            // their open history entries. Detaching viewers keep running.
-            if let Some(registry) = external_session_registry() {
-                registry.shutdown();
-            }
-
-            // Stop all standalone SSH tunnels
-            tunnel_manager_for_close.borrow_mut().stop_all();
-
-            // No detached window outlives the main window (issue #236). Each
-            // close runs the standard session teardown, so their child
-            // processes and tunnels go down with the tabbed ones. Skipped when
-            // minimizing to tray: then the main window only hides and every
-            // session, detached or not, keeps running.
-            if !minimize_to_tray && let Some(registry) = detached_window_registry() {
-                registry.close_all();
-            }
-
-            // Save window geometry and expanded groups state
+            // Save window geometry and expanded groups state. Done before the
+            // tray branch below so both outcomes — hiding and really quitting —
+            // persist the same thing.
             let (width, height) = win.default_size();
             let is_maximized = win.is_maximized();
             let sidebar_width = (split_view_clone.max_sidebar_width() as i32).max(180);
@@ -1672,17 +1648,53 @@ impl MainWindow {
                     settings.ui.window_height = Some(height);
                     settings.ui.window_maximized = is_maximized;
                     settings.ui.sidebar_width = Some(sidebar_width);
-                    if let Err(e) = state.update_settings(settings.clone()) {
+                    if let Err(e) = state.update_settings(settings) {
                         tracing::warn!(?e, "Failed to update settings");
                     }
                 }
+            }
 
-                // Check if we should minimize to tray instead of closing
-                if settings.ui.minimize_to_tray && settings.ui.enable_tray_icon {
-                    // Hide the window instead of closing
-                    win.set_visible(false);
-                    return glib::Propagation::Stop;
-                }
+            // Minimizing to tray only hides the window; the app keeps running,
+            // so nothing below may be torn down. The decision has to happen
+            // *before* that teardown: it stops every standalone SSH tunnel,
+            // kills every tracked external viewer and stops every active
+            // recording, and doing so on a mere hide leaves the user restoring
+            // the window to find their port forwards dead and their viewer
+            // windows gone, with no message. The detached-window registry
+            // already carried this guard (issue #236) and states the contract
+            // the rest of the teardown has to honour too: on a tray-minimize
+            // every session, detached or not, keeps running.
+            //
+            // Deciding here also means the hide no longer depends on
+            // `try_borrow_mut()` above succeeding — a failed borrow used to
+            // fall through and really close the window.
+            if minimize_to_tray {
+                win.set_visible(false);
+                return glib::Propagation::Stop;
+            }
+
+            // Snapshot the open sessions for the next start (issue #243). Done
+            // before any teardown, while the notebook still knows what is live.
+            session_restore::save_snapshot(&state_clone, &notebook_for_close);
+
+            // Flush all active session recordings before shutdown
+            notebook_for_close.flush_active_recordings();
+
+            // Terminate tracked external viewers (issue #209): kill owned
+            // children so they do not outlive RustConn as orphans, and close
+            // their open history entries. Detaching viewers keep running.
+            if let Some(registry) = external_session_registry() {
+                registry.shutdown();
+            }
+
+            // Stop all standalone SSH tunnels
+            tunnel_manager_for_close.borrow_mut().stop_all();
+
+            // No detached window outlives the main window (issue #236). Each
+            // close runs the standard session teardown, so their child
+            // processes and tunnels go down with the tabbed ones.
+            if let Some(registry) = detached_window_registry() {
+                registry.close_all();
             }
 
             glib::Propagation::Proceed
