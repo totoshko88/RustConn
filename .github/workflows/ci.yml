@@ -146,7 +146,7 @@ jobs:
       # version as the locally installed typos-cli (1.49.0) so a CI-only
       # dictionary update cannot produce findings that do not reproduce locally.
       - name: Spell check
-        uses: crate-ci/typos@8a48f81b6c64dcfea44b3633223084c4be58ac5f # v1.49.0
+        uses: crate-ci/typos@4d9c206a77c041268485162b8e2579ad7a5cb9a3 # v1.50.0
 
       # Prebuilt binary, so this job still needs no Rust toolchain. Pinned by
       # SHA — this action downloads and executes a binary, which is the last
