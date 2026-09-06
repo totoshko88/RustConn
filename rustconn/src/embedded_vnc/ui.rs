@@ -308,7 +308,10 @@ impl EmbeddedVncWidget {
 
                     // Connection info
                     let config_ref = config.borrow();
-                    let host = config_ref.as_ref().map_or("Not configured", |c| &c.host);
+                    let not_configured = i18n("Not configured");
+                    let host = config_ref
+                        .as_ref()
+                        .map_or(not_configured.as_str(), |c| c.host.as_str());
 
                     cr.set_source_rgb(0.9, 0.9, 0.9);
                     cr.set_font_size(18.0);
@@ -320,13 +323,13 @@ impl EmbeddedVncWidget {
                     // Status message
                     cr.set_font_size(13.0);
                     let status_text = match current_state {
-                        VncConnectionState::Disconnected => "Disconnected",
-                        VncConnectionState::Connecting => "Connecting...",
+                        VncConnectionState::Disconnected => i18n("Disconnected"),
+                        VncConnectionState::Connecting => i18n("Connecting…"),
                         VncConnectionState::Connected if !embedded => {
-                            "Session running in external window"
+                            i18n("Session running in external window")
                         }
-                        VncConnectionState::Connected => "Connected",
-                        VncConnectionState::Error => "Connection error",
+                        VncConnectionState::Connected => i18n("Connected"),
+                        VncConnectionState::Error => i18n("Connection error"),
                     };
 
                     let color = match current_state {
@@ -337,9 +340,9 @@ impl EmbeddedVncWidget {
                     };
                     cr.set_source_rgb(color.0, color.1, color.2);
 
-                    if let Ok(extents) = cr.text_extents(status_text) {
+                    if let Ok(extents) = cr.text_extents(&status_text) {
                         cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 100.0);
-                        let _ = cr.show_text(status_text);
+                        let _ = cr.show_text(&status_text);
                     }
                 }
             });

@@ -133,10 +133,10 @@ pub fn draw_status_overlay(
 
     // Host name
     let config_ref = config.borrow();
+    let no_connection = i18n("No connection");
     let host = config_ref
         .as_ref()
-        .map(|c| c.host.as_str())
-        .unwrap_or("No connection");
+        .map_or(no_connection.as_str(), |c| c.host.as_str());
 
     cr.set_source_rgb(0.9, 0.9, 0.9);
     cr.set_font_size(18.0);
