@@ -455,6 +455,14 @@ impl AuthPage {
         self.key_file_path.borrow().clone()
     }
 
+    /// Pre-fill the icon field (emoji or icon name).
+    ///
+    /// Used when the wizard is opened from an existing connection, so
+    /// "Duplicate via Wizard…" shows the icon it is about to carry over.
+    pub fn set_icon(&self, icon: Option<&str>) {
+        self.icon_row.set_text(icon.unwrap_or_default());
+    }
+
     /// Get custom icon (emoji or icon name) if entered
     #[must_use]
     pub fn icon(&self) -> Option<String> {

@@ -63,6 +63,13 @@ pub struct PartialConnection {
     pub key_path: Option<PathBuf>,
     pub jump_host_id: Option<Uuid>,
     pub theme_override: Option<ConnectionThemeOverride>,
+    /// Emoji or icon name entered on the wizard's Authentication page, or
+    /// inherited from the selected template.
+    ///
+    /// Carried here so it survives the hand-off to the full editor: without it
+    /// "Advanced…" silently dropped an icon the user had already typed, while
+    /// Save and Save & Connect kept it.
+    pub icon: Option<String>,
     // Zero Trust
     pub zt_provider: Option<ZeroTrustProvider>,
     pub zt_command: Option<String>,
@@ -99,6 +106,7 @@ impl PartialConnection {
         let username = conn.username.clone();
         let domain = conn.domain.clone();
         let theme_override = conn.theme_override.clone();
+        let icon = conn.icon.clone();
 
         let mut partial = Self {
             protocol,
@@ -108,6 +116,7 @@ impl PartialConnection {
             username,
             domain,
             theme_override,
+            icon,
             ..Default::default()
         };
 
@@ -364,6 +373,9 @@ impl PartialConnection {
         if let Some(ref theme) = self.theme_override {
             conn.theme_override = Some(theme.clone());
         }
+        if let Some(ref icon) = self.icon {
+            conn.icon = Some(icon.clone());
+        }
         // Mark the source as Vault when a usable password was typed, so the
         // Advanced dialog opens with the correct source pre-selected. The
         // password value itself is transferred separately by the caller.
@@ -580,6 +592,13 @@ impl ConnectionWizard {
             key_path: self.auth_page.key_path(),
             jump_host_id: self.connection_page.selected_jump_host(),
             theme_override: self.auth_page.theme_override(),
+            // What the user typed wins; otherwise inherit the selected
+            // template's icon. This is the only place the fallback is decided,
+            // so the "Advanced…" hand-off and Save cannot disagree about it.
+            icon: self
+                .auth_page
+                .icon()
+                .or_else(|| self.connection_page.selected_template_icon()),
             zt_provider: if is_zt {
                 use rustconn_core::models::ZeroTrustProvider;
                 match self.connection_page.zt_provider_index() {
@@ -781,20 +800,16 @@ impl ConnectionWizard {
         if stored_password.is_some() {
             conn.password_source = PasswordSource::Vault;
         }
-        // Use auth_page icon if set, otherwise inherit from selected template
-        let icon = self.auth_page.icon();
-        conn.icon = if icon.is_some() {
-            icon
-        } else {
-            self.connection_page.selected_template_icon()
-        };
+        // Resolved once in `collect_partial`, so this path and the "Advanced…"
+        // hand-off carry the same icon.
+        conn.icon = partial.icon.clone();
         (conn, stored_password)
     }
 
     /// Pre-fill the wizard from a `PartialConnection` (e.g. "Duplicate via Wizard").
     ///
     /// Sets the protocol, navigates to the connection page (step 2), and
-    /// populates host/port/username/domain/name fields.
+    /// populates the name, host, port, username, domain and icon fields.
     pub fn set_partial(&self, partial: &PartialConnection) {
         let Some(protocol) = partial.protocol else {
             return;
@@ -822,6 +837,7 @@ impl ConnectionWizard {
         if let Some(ref domain) = partial.domain {
             self.connection_page.domain_row.set_text(domain);
         }
+        self.auth_page.set_icon(partial.icon.as_deref());
 
         // Navigate directly to connection page (skip protocol selection)
         self.nav_view.push(&self.connection_page.page);
