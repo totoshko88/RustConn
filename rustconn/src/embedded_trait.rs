@@ -11,6 +11,20 @@ use gtk4::prelude::*;
 
 use crate::i18n::i18n;
 
+/// Shows a brief status message on a toolbar label, auto-hiding it afterwards.
+///
+/// Shared by the RDP and VNC toolbars so that a clipboard action reports the
+/// same way in both. It lived in `embedded_rdp::clipboard` first, which is why
+/// the VNC Copy button had no feedback at all: there was nothing to call.
+pub fn show_status_briefly(label: &gtk4::Label, text: &str, duration_secs: u64) {
+    label.set_text(text);
+    label.set_visible(true);
+    let hide = label.clone();
+    gtk4::glib::timeout_add_local_once(std::time::Duration::from_secs(duration_secs), move || {
+        hide.set_visible(false);
+    });
+}
+
 /// Common connection state for all embedded protocols
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EmbeddedConnectionState {

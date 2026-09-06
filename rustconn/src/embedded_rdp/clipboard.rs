@@ -3,22 +3,13 @@
 //! Contains setup for Copy, Paste, and Ctrl+Alt+Del toolbar buttons.
 
 use gtk4::prelude::*;
-use gtk4::{Button, Label, glib};
+use gtk4::{Button, glib};
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
 
 use super::types::{RdpCommand, RdpConnectionState};
+use crate::embedded_trait::show_status_briefly;
 use crate::i18n::{i18n, i18n_f};
-
-/// Shows a brief status message that auto-hides after the given duration.
-fn show_status_briefly(label: &Label, text: &str, duration_secs: u64) {
-    label.set_text(text);
-    label.set_visible(true);
-    let hide = label.clone();
-    glib::timeout_add_local_once(std::time::Duration::from_secs(duration_secs), move || {
-        hide.set_visible(false);
-    });
-}
 
 impl super::EmbeddedRdpWidget {
     /// Sets up the clipboard Copy/Paste button handlers

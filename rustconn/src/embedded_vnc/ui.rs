@@ -17,6 +17,7 @@ use gtk4::{
 #[cfg(feature = "vnc-embedded")]
 use super::VncClientCommand;
 use super::{EmbeddedVncWidget, VncConnectionState, find_best_standard_resolution};
+use crate::embedded_trait::show_status_briefly;
 use crate::i18n::{i18n, i18n_f};
 
 impl EmbeddedVncWidget {
@@ -43,9 +44,18 @@ impl EmbeddedVncWidget {
         status_label.add_css_class("dim-label");
         toolbar.append(&status_label);
 
-        // Copy button - copies from remote clipboard to local
+        // Copy button — re-applies the last clipboard text the server pushed.
+        // Insensitive until the server has pushed something, because RFB gives
+        // the client no way to ask for the remote clipboard (see
+        // `EmbeddedVncWidget::remote_clipboard_text`).
         let copy_button = Button::with_label(&i18n("Copy"));
-        copy_button.set_tooltip_text(Some(&i18n("Copy from remote session to local clipboard")));
+        copy_button.set_tooltip_text(Some(&i18n(
+            "Copy remote clipboard to local (waiting for remote data…)",
+        )));
+        copy_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Copy remote clipboard to local",
+        ))]);
+        copy_button.set_sensitive(false);
         toolbar.append(&copy_button);
 
         // Paste button - pastes from local clipboard to remote
@@ -174,6 +184,7 @@ impl EmbeddedVncWidget {
             on_reconnect: Rc::new(RefCell::new(None)),
             reconnect_banner,
             reconnect_button,
+            remote_clipboard_text: Rc::new(RefCell::new(None)),
             #[cfg(feature = "vnc-embedded")]
             vnc_client: Rc::new(RefCell::new(None)),
             #[cfg(feature = "vnc-embedded")]
@@ -658,36 +669,62 @@ impl EmbeddedVncWidget {
     /// Sets up the clipboard Copy/Paste button handlers
     #[cfg(feature = "vnc-embedded")]
     fn setup_clipboard_buttons(&self, copy_btn: &Button, paste_btn: &Button) {
-        // Copy button - get text from remote clipboard and copy to local
+        // Copy button — put the last server-pushed clipboard text into the local
+        // clipboard. RFB has no "read remote clipboard" request, so this replays
+        // what `ServerCutText` already delivered rather than fetching anything;
+        // it matters when the local clipboard has since been overwritten.
         {
-            let drawing_area = self.drawing_area.clone();
+            let container = self.container.clone();
             let state = self.state.clone();
             let is_embedded = self.is_embedded.clone();
+            let remote_clipboard_text = self.remote_clipboard_text.clone();
+            let status_label = self.status_label.clone();
 
             copy_btn.connect_clicked(move |_| {
                 let current_state = *state.borrow();
                 let embedded = *is_embedded.borrow();
 
                 if current_state != VncConnectionState::Connected || !embedded {
+                    tracing::debug!(
+                        protocol = "vnc",
+                        ?current_state,
+                        embedded,
+                        "Copy button: not connected or not embedded"
+                    );
                     return;
                 }
 
-                // For VNC, clipboard sync happens via ServerCutText messages
-                // This button shows a hint that clipboard is synced
-                tracing::debug!(
-                    "[VNC] Clipboard sync: VNC clipboard is automatically synchronized"
-                );
+                let Some(text) = remote_clipboard_text.borrow().clone() else {
+                    tracing::debug!(
+                        protocol = "vnc",
+                        "Copy button: no remote clipboard data available"
+                    );
+                    show_status_briefly(&status_label, &i18n("No remote clipboard data"), 2);
+                    return;
+                };
 
-                // Get GTK clipboard and show notification
-                let display = drawing_area.display();
-                let clipboard = display.clipboard();
-                clipboard.read_text_async(
-                    None::<&gtk4::gio::Cancellable>,
-                    move |result: Result<Option<glib::GString>, glib::Error>| {
-                        if let Ok(Some(text)) = result {
-                            tracing::debug!("[VNC] Local clipboard has {} chars", text.len());
-                        }
-                    },
+                // Use the top-level window's display: on Wayland the clipboard
+                // belongs to the focused surface, so the window surface is the
+                // most reliable owner.
+                let clipboard = if let Some(root) = container.root()
+                    && let Some(window) = root.downcast_ref::<gtk4::Window>()
+                {
+                    gtk4::prelude::WidgetExt::display(window).clipboard()
+                } else {
+                    container.display().clipboard()
+                };
+                clipboard.set_text(&text);
+
+                let char_count = text.chars().count();
+                tracing::debug!(
+                    protocol = "vnc",
+                    chars = char_count,
+                    "Copy button: set local clipboard from remote"
+                );
+                show_status_briefly(
+                    &status_label,
+                    &i18n_f("Copied {} chars", &[&char_count.to_string()]),
+                    2,
                 );
             });
         }
