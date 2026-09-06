@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Improved
+
+- **The macOS window header was taller than a native app, even in compact mode** — the header-bar icon buttons carried a fixed 44×44px size request from Rust (the GNOME HIG tap-target minimum), and since `AdwHeaderBar` derives its height from its tallest child, that floor set the header height and no CSS could shrink it — the reason the `.compact` and `.macos` rules had visibly no effect on the bar around the traffic lights. macOS has no touch input and native AppKit toolbar buttons are around 28px, so the size request is now platform-dependent: 28px on macOS, 44px everywhere else, keeping the tap-target guarantee where touch exists. The `.macos` stylesheet gained matching header rules (denser button padding, tighter title line box) and dropped the interface font bump from 1.1em to 1.05em, which had been inflating the "Shell" and "Broadcast" labels enough to raise the header on its own. The result sits much closer to a native macOS titlebar.
+
 ### Documentation
 
 - **Quick Connect history was documented as discarded on exit, when it is in fact kept** — the User Guide, the type alias, the struct and the field on `MainWindow` all described the "Recent" list under Quick Connect as runtime-only and "not persisted to disk", but it has been written to `AppSettings::quick_connect_history` and reloaded on startup for some time: `persist_quick_connect_history` runs after each Quick Connect (`save_settings()`), and `load_quick_connect_history` restores it when the window is built. The four descriptions disagreed with the code and, in `window/types.rs`, with each other — one doc comment said "not serialized to disk" three lines above another that said "persisted in settings". They now all say the list survives a restart, and note what it stores: host, port, protocol and username only, never a password.

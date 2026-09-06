@@ -191,6 +191,15 @@ pub fn create_header_bar() -> (
     // GNOME HIG (Pointer & Touch): icon-only buttons must meet the 44×44px
     // minimum tap target. Buttons with a text label (Shell, Broadcast,
     // Passthrough) already exceed it via their content.
+    //
+    // macOS has no touch input, and its native AppKit toolbar buttons sit
+    // around 28px. `AdwHeaderBar` derives its (CSS-immovable) minimum height
+    // from the tallest child, so a 44px size request here is exactly what keeps
+    // the header taller than a native window. Drop the floor to 28px on macOS
+    // so the CSS compact/macOS rules can actually take effect; keep 44px
+    // everywhere else for the tap-target guarantee.
+    let header_button_size: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
+
     for icon_button in [
         &sidebar_toggle,
         &quick_connect_button,
@@ -201,9 +210,9 @@ pub fn create_header_bar() -> (
         &split_vertical_button,
         &split_horizontal_button,
     ] {
-        icon_button.set_size_request(44, 44);
+        icon_button.set_size_request(header_button_size, header_button_size);
     }
-    menu_button.set_size_request(44, 44);
+    menu_button.set_size_request(header_button_size, header_button_size);
 
     (
         header_bar,
