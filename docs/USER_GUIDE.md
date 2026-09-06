@@ -2164,11 +2164,11 @@ Templates are connection presets that store protocol settings, authentication de
 
 **Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Icon, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
 
-**Predefined Templates:** RustConn ships with 20 built-in templates for common CLI tools that don't have dedicated protocol support:
+**Predefined Templates:** RustConn ships with 21 built-in templates for common CLI tools that don't have dedicated protocol support:
 
 | Category | Templates |
 |----------|-----------|
-| Remote Desktop | 🖥️ RustDesk, 🔴 AnyDesk, 🌐 Remmina |
+| Remote Desktop | 🖥️ RustDesk, 🔴 AnyDesk, 🌐 Remmina, 📡 WinBox |
 | Containers | 🐳 Docker, 🦭 Podman, 📦 LXC/LXD, 🧊 Incus, 🗃️ Distrobox |
 | Virtualization | 🖧 Virsh Console, 🟠 Proxmox VM, 🟡 Proxmox CT |
 | Hardware | 🔌 IPMI SOL, 🔧 Picocom, 🐟 Redfish BMC |
@@ -2326,6 +2326,27 @@ Port knocking allows you to open firewall ports by sending a specific sequence o
 **Timing defaults:**
 - Inter-knock delay: 100ms
 - Post-knock settle: 200ms
+
+#### fwknop Single Packet Authorization (SPA)
+
+Where a knock *sequence* can be replayed or observed by anyone watching the wire, SPA opens the firewall with a **single encrypted, authenticated UDP packet**. This is the same scheme `fwknopd` expects on the server side, implemented natively in RustConn — no `fwknop` client binary is needed, and it works inside the Flatpak sandbox.
+
+**Configure per-connection:**
+1. Edit Connection → **Advanced** tab → **Connection Behavior** section → expand **SPA (fwknop)**
+2. Enable **SPA** and fill in the fields below
+
+| Field | Meaning | Default |
+|-------|---------|---------|
+| **Rijndael Key** | AES-256-CBC passphrase (or base64) — must match the server's `KEY`/`KEY_BASE64`. Stored in your secret backend. | — |
+| **HMAC Key** | HMAC-SHA256 key — must match the server's `HMAC_KEY`/`HMAC_KEY_BASE64`. Stored in your secret backend. Strongly recommended. | — |
+| **Access** | The access request the server should honor, e.g. `tcp/22` or `tcp/22,tcp/443`. | `tcp/22` |
+| **Destination Port** | UDP port the SPA packet is sent to. | `62201` |
+| **Allow IP** | Which address the server opens for: **Source IP** (packet's own source, `0.0.0.0` in the request), **Resolve Public** (look up this machine's public IP first, like `fwknop -R`), or **Explicit**. | Source IP |
+
+**How it works:**
+- Before connecting, RustConn builds the SPA payload, encrypts it with AES-256-CBC (OpenSSL-compatible `Salted__` / EVP_BytesToKey key derivation), appends an HMAC-SHA256 digest, and sends it as one UDP datagram. A fresh random salt and timestamp make every packet unique.
+- SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
+- The keys never appear in the config file — only vault references are stored.
 
 ### Broadcast Input
 

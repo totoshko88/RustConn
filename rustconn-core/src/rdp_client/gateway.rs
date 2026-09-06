@@ -14,8 +14,19 @@
 //!
 //! # IronRDP Support Status
 //!
-//! As of IronRDP 0.14, gateway support is not yet implemented.
-//! This module prepares the configuration structures for when it becomes available.
+//! Embedded RD Gateway tunneling is implemented behind the `rd-gateway` feature
+//! via `ironrdp-mstsgu` (see `client/connection.rs`). Two limitations of that
+//! crate are load-bearing:
+//!
+//! - **HTTP Basic authentication only.** The gateway is challenged with a
+//!   `user:password` pair; NTLM/Negotiate and smart-card gateway auth are not
+//!   available through the embedded tunnel.
+//! - **Target port is fixed at 3389.** `ironrdp-mstsgu` hard-codes the tunnel
+//!   target port, so a non-standard RDP port cannot be reached this way. GUI
+//!   callers route those connections to the external FreeRDP client instead.
+//!
+//! When the feature is off, `GatewayConfig` is still parsed and stored so that
+//! a connection round-trips unchanged; only the connect path is compiled out.
 
 use serde::{Deserialize, Serialize};
 
