@@ -10,7 +10,7 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, DropDown, Entry, Label, Orientation, ScrolledWindow, SpinButton, Stack,
+    Box as GtkBox, Button, DropDown, Entry, Orientation, ScrolledWindow, SpinButton, Stack,
 };
 use libadwaita as adw;
 
@@ -42,30 +42,29 @@ fn is_custom_command_provider(zt_provider_dropdown: &DropDown) -> bool {
 pub(super) struct GeneralFields {
     /// Host (or URL for Web) entry
     pub host_entry: Entry,
-    /// Label of the host row
-    pub host_label: Label,
+    /// Row carrying the Host (or URL) title.
+    ///
+    /// Hiding and retitling act on the row, because the visible text of a
+    /// boxed-list row is its own `title` property. Acting on a separate `Label`
+    /// instead left the row titled "Host" under the Web protocol and kept an
+    /// empty titled row on screen for protocols that have no host.
+    pub host_row: adw::ActionRow,
     /// Port spin button
     pub port_spin: SpinButton,
-    /// Label of the port row
-    pub port_label: Label,
-    /// Username entry
-    pub username_entry: Entry,
-    /// Label of the username row
-    pub username_label: Label,
-    /// Tags entry
-    pub tags_entry: Entry,
-    /// Label of the tags row
-    pub tags_label: Label,
+    /// Row carrying the Port title — see [`Self::host_row`].
+    pub port_row: adw::ActionRow,
+    /// Row carrying the Username title — see [`Self::host_row`].
+    pub username_row: adw::ActionRow,
+    /// Row carrying the Tags title — see [`Self::host_row`].
+    pub tags_row: adw::ActionRow,
     /// Password source dropdown
     pub password_source_dropdown: DropDown,
-    /// Label of the password source row
-    pub password_source_label: Label,
+    /// Row carrying the Password Source title — see [`Self::host_row`].
+    pub pw_source_row: adw::ActionRow,
     /// Inline password entry row, shown by the password source dropdown
     pub password_row: GtkBox,
-    /// Windows domain entry (RDP only)
-    pub domain_entry: Entry,
-    /// Label of the domain row
-    pub domain_label: Label,
+    /// Row carrying the Domain title (RDP only) — see [`Self::host_row`].
+    pub domain_row: adw::ActionRow,
     /// MOSH-specific settings group
     pub mosh_settings_group: adw::PreferencesGroup,
     /// Keyboard group on the SSH page, hidden for SFTP (issue #271)
@@ -286,29 +285,28 @@ impl ConnectionDialog {
         let hide_network = (is_zerotrust && !custom_command) || is_serial || is_kubernetes;
         let visible = !hide_network;
 
-        fields.host_entry.set_visible(visible || is_web);
-        fields.host_label.set_visible(visible || is_web);
-        fields.port_spin.set_visible(visible && !is_web);
-        fields.port_label.set_visible(visible && !is_web);
-        fields.username_entry.set_visible(visible);
-        fields.username_label.set_visible(visible);
+        // Visibility is set on the rows, never on the entries they contain: the
+        // entry is a suffix of the row, so hiding only the entry leaves a row
+        // that still shows its title with nothing to type into.
+        fields.host_row.set_visible(visible || is_web);
+        fields.port_row.set_visible(visible && !is_web);
+        fields.username_row.set_visible(visible);
 
-        // Update host field label and placeholder for Web protocol
+        // Update host row title and placeholder for Web protocol
         if is_web {
-            fields.host_label.set_text(&crate::i18n::i18n("URL"));
+            fields.host_row.set_title(&crate::i18n::i18n("URL"));
             fields
                 .host_entry
                 .set_placeholder_text(Some(&crate::i18n::i18n("https://example.com")));
         } else {
-            fields.host_label.set_text(&crate::i18n::i18n("Host"));
+            fields.host_row.set_title(&crate::i18n::i18n("Host"));
             fields
                 .host_entry
                 .set_placeholder_text(Some(&crate::i18n::i18n("hostname or IP")));
         }
         // Tags are organisation metadata (search, smart folders) and
         // apply to every protocol — including Custom Command (#151).
-        fields.tags_entry.set_visible(true);
-        fields.tags_label.set_visible(true);
+        fields.tags_row.set_visible(true);
 
         // Password source only relevant for protocols that use credentials:
         // SSH, SFTP, RDP, VNC, SPICE, Web, Telnet. Telnet is an interactive
@@ -323,8 +321,7 @@ impl ConnectionDialog {
                 protocol_id,
                 "ssh" | "sftp" | "rdp" | "vnc" | "spice" | "web" | "telnet"
             );
-        fields.password_source_dropdown.set_visible(uses_password);
-        fields.password_source_label.set_visible(uses_password);
+        fields.pw_source_row.set_visible(uses_password);
         // The inline password row belongs to the Vault source. Recomputed rather
         // than only hidden, so the row reappears when a protocol switch (or the
         // Zero Trust provider switch) re-enables credentials — otherwise the
@@ -337,8 +334,7 @@ impl ConnectionDialog {
 
         // Domain only relevant for RDP (GEN-2)
         let is_rdp = protocol_id == "rdp";
-        fields.domain_entry.set_visible(is_rdp);
-        fields.domain_label.set_visible(is_rdp);
+        fields.domain_row.set_visible(is_rdp);
 
         // MOSH settings group visible only when MOSH is selected
         fields

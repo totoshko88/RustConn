@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.7] - 2026-09-06
+
+### Fixed
+
+- **The connection editor kept calling a URL a Host, and hid fields by leaving an empty row behind** — selecting the Web protocol was supposed to retitle the Host row to **URL**, and the protocols that have no host or port — Serial, Kubernetes, and every Zero Trust provider but Custom Command — were supposed to drop those rows entirely. Neither worked. The General tab created seven `gtk::Label` widgets for Host, Port, Username, Domain, Tags, Password Source and Value, stored them on `BasicTabWidgets`, and never added a single one to any container. The visible text of a boxed-list row is the row's own `AdwActionRow::title`, set separately when the row was built, so the labels were orphans from the moment they were constructed. `apply_general_field_visibility` then spent its whole body acting on them: `host_label.set_text("URL")` retitled a widget nobody could see, and `host_label.set_visible(false)` hid the same one. What made the second half look like it worked is that the *entries* were being hidden alongside — so a hidden field left its row on screen, titled "Host" or "Port", with nothing in it to type into. Visibility and titles now act on the rows, which is also why the paired `*_entry.set_visible()` calls are gone: an entry is a suffix *inside* the row, so hiding the row already takes the entry with it, and toggling both invited the two to disagree. The orphaned labels are deleted rather than wired up, along with the `Value` one that had no reader at all. Three of them turned out to be the only thing keeping `username_entry`, `tags_entry` and `domain_entry` alive in the visibility struct, and the whole `#[expect(dead_code)]` on `BasicTabWidgets` went with them — an attribute that had been silently absorbing this bug, since "these fields are never read" was the compiler pointing straight at it.
+
 ## [0.21.6] - 2026-09-05
 
 ### Added

@@ -17,19 +17,23 @@ use libadwaita as adw;
 use crate::i18n::i18n;
 
 /// Widgets created by the General tab, replacing the previous 30-element tuple.
-#[expect(
-    dead_code,
-    reason = "kept alive for GTK widget lifecycle / future API exposure"
-)]
 pub(super) struct BasicTabWidgets {
     pub container: GtkBox,
     pub name_entry: Entry,
     pub icon_entry: Entry,
     pub description_view: TextView,
     pub host_entry: Entry,
-    pub host_label: Label,
+    /// Row carrying the Host (or URL) title.
+    ///
+    /// The row itself, not a detached `Label`: the visible text of a boxed-list
+    /// row *is* `AdwActionRow::title`, so retitling or hiding has to happen on
+    /// the row. This used to be a `Label::new()` that was never added to any
+    /// container, which made the Web-protocol "Host" → "URL" relabel a no-op
+    /// and left an empty titled row behind whenever the field was hidden.
+    pub host_row: adw::ActionRow,
     pub port_spin: SpinButton,
-    pub port_label: Label,
+    /// Row carrying the Port title — see [`Self::host_row`].
+    pub port_row: adw::ActionRow,
     /// Where the bastion comes from: Inherit or Direct (issue #301).
     ///
     /// Lives on this tab rather than on the SSH page of the protocol stack
@@ -41,16 +45,19 @@ pub(super) struct BasicTabWidgets {
     /// row is meant to refuse and no way to refuse it.
     pub network_mode_row: adw::ComboRow,
     pub username_entry: Entry,
-    pub username_label: Label,
+    /// Row carrying the Username title — see [`Self::host_row`].
+    pub username_row: adw::ActionRow,
     pub domain_entry: Entry,
-    pub domain_label: Label,
+    /// Row carrying the Domain title — see [`Self::host_row`].
+    pub domain_row: adw::ActionRow,
     pub tags_entry: Entry,
-    pub tags_label: Label,
+    /// Row carrying the Tags title — see [`Self::host_row`].
+    pub tags_row: adw::ActionRow,
     pub protocol_dropdown: DropDown,
     pub password_source_dropdown: DropDown,
-    pub password_source_label: Label,
+    /// Row carrying the Password Source title — see [`Self::host_row`].
+    pub pw_source_row: adw::ActionRow,
     pub password_entry: Entry,
-    pub password_entry_label: Label,
     pub password_visibility_button: Button,
     pub password_load_button: Button,
     pub vault_test_button: Button,
@@ -140,7 +147,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .title(i18n("Connection"))
         .build();
 
-    let host_label = Label::new(Some(&i18n("Host")));
     let host_entry = Entry::builder()
         .placeholder_text(i18n("hostname or IP"))
         .hexpand(true)
@@ -152,7 +158,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     host_row.add_suffix(&host_entry);
     connection_group.add(&host_row);
 
-    let port_label = Label::new(Some(&i18n("Port")));
     let port_adj = gtk4::Adjustment::new(22.0, 1.0, 65535.0, 1.0, 10.0, 0.0);
     let port_spin = SpinButton::builder()
         .adjustment(&port_adj)
@@ -217,7 +222,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     } else {
         format!("(default: {current_user})")
     };
-    let username_label = Label::new(Some(&i18n("Username")));
     let username_entry = Entry::builder()
         .placeholder_text(&placeholder)
         .hexpand(true)
@@ -240,7 +244,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     auth_group.add(&username_row);
 
     // Domain (RDP only — visibility controlled by protocol dropdown)
-    let domain_label = Label::new(Some(&i18n("Domain")));
     let domain_entry = Entry::builder()
         .placeholder_text(i18n("Optional (e.g., WORKGROUP)"))
         .hexpand(true)
@@ -266,7 +269,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     auth_group.add(&domain_row);
 
     // Password Source
-    let password_source_label = Label::new(Some(&i18n("Password")));
     let pw_src_items: Vec<String> = vec![
         i18n("Prompt"),
         i18n("Vault"),
@@ -289,7 +291,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     auth_group.add(&pw_source_row);
 
     // Password value row (visible for Vault source)
-    let password_entry_label = Label::new(Some(&i18n("Value")));
     let password_entry = Entry::builder()
         .placeholder_text(i18n("Password value"))
         .hexpand(true)
@@ -397,7 +398,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .title(i18n("Organization"))
         .build();
 
-    let tags_label = Label::new(Some(&i18n("Tags")));
     let tags_entry = Entry::builder()
         .placeholder_text(i18n("tag1, tag2, ..."))
         .hexpand(true)
@@ -476,21 +476,20 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         icon_entry,
         description_view,
         host_entry,
-        host_label,
+        host_row,
         port_spin,
-        port_label,
+        port_row,
         network_mode_row,
         username_entry,
-        username_label,
+        username_row,
         domain_entry,
-        domain_label,
+        domain_row,
         tags_entry,
-        tags_label,
+        tags_row,
         protocol_dropdown,
         password_source_dropdown,
-        password_source_label,
+        pw_source_row,
         password_entry,
-        password_entry_label,
         password_visibility_button,
         password_load_button,
         vault_test_button,
