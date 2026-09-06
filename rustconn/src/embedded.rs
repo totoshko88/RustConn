@@ -45,7 +45,6 @@ pub enum EmbeddingError {
 #[derive(Clone)]
 pub struct SessionControls {
     container: GtkBox,
-    fullscreen_button: Button,
     disconnect_button: Button,
     status_label: Label,
 }
@@ -66,14 +65,13 @@ impl SessionControls {
         status_label.add_css_class("dim-label");
         container.append(&status_label);
 
-        let fullscreen_button = Button::from_icon_name("view-fullscreen-symbolic");
-        fullscreen_button.set_tooltip_text(Some(&i18n("Toggle fullscreen")));
-        fullscreen_button.add_css_class("flat");
-        fullscreen_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Toggle fullscreen",
-        ))]);
-        container.append(&fullscreen_button);
-
+        // No fullscreen button here. There was one, and pressing it flipped a
+        // private `bool` and called no window API at all — a control that could
+        // not do what its tooltip promised. It was never seen: the only
+        // `EmbeddedSessionTab` built is the `force_external` one in
+        // `window::rdp_vnc`, which exists to own the spawned viewer process and
+        // is never added to the notebook. Fullscreen for a real session is
+        // `win.toggle-fullscreen`.
         let disconnect_button = Button::from_icon_name("process-stop-symbolic");
         disconnect_button.set_tooltip_text(Some(&i18n("Disconnect")));
         disconnect_button.add_css_class("flat");
@@ -84,7 +82,6 @@ impl SessionControls {
 
         Self {
             container,
-            fullscreen_button,
             disconnect_button,
             status_label,
         }
@@ -101,24 +98,9 @@ impl SessionControls {
         self.status_label.set_text(status);
     }
 
-    /// Connects a callback for the fullscreen button
-    pub fn connect_fullscreen<F: Fn() + 'static>(&self, callback: F) {
-        self.fullscreen_button.connect_clicked(move |_| callback());
-    }
-
     /// Connects a callback for the disconnect button
     pub fn connect_disconnect<F: Fn() + 'static>(&self, callback: F) {
         self.disconnect_button.connect_clicked(move |_| callback());
-    }
-
-    /// Updates the fullscreen button icon based on state
-    pub fn set_fullscreen_icon(&self, is_fullscreen: bool) {
-        let icon_name = if is_fullscreen {
-            "view-restore-symbolic"
-        } else {
-            "view-fullscreen-symbolic"
-        };
-        self.fullscreen_button.set_icon_name(icon_name);
     }
 }
 
@@ -139,7 +121,6 @@ pub struct EmbeddedSessionTab {
     controls: SessionControls,
     process: Rc<RefCell<Option<Child>>>,
     is_embedded: bool,
-    is_fullscreen: Rc<RefCell<bool>>,
 }
 
 impl EmbeddedSessionTab {
@@ -222,7 +203,6 @@ impl EmbeddedSessionTab {
             controls,
             process: Rc::new(RefCell::new(None)),
             is_embedded,
-            is_fullscreen: Rc::new(RefCell::new(false)),
         };
 
         tab.setup_controls();
@@ -231,12 +211,6 @@ impl EmbeddedSessionTab {
     }
 
     fn setup_controls(&self) {
-        let is_fullscreen = self.is_fullscreen.clone();
-        self.controls.connect_fullscreen(move || {
-            let mut fs = is_fullscreen.borrow_mut();
-            *fs = !*fs;
-        });
-
         let process = self.process.clone();
         self.controls.connect_disconnect(move || {
             if let Some(mut child) = process.borrow_mut().take() {

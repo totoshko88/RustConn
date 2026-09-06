@@ -864,10 +864,9 @@ impl ConnectionSidebar {
         let drop_indicator_leave = drop_indicator.clone();
         let list_view_for_leave = list_view.clone();
         list_view_drop_target.connect_leave(move |_target| {
-            // Hide the line indicator
+            // Hide the line indicator. `hide()` also clears the row's
+            // `drop-target-*` class, which is the whole of the highlight.
             drop_indicator_leave.hide();
-            // Clear the highlighted group tracking
-            drop_indicator_leave.set_highlighted_group(None);
             // Remove all drop-related CSS classes
             list_view_for_leave.remove_css_class("drop-active");
             list_view_for_leave.remove_css_class("drop-into-group");
@@ -1654,11 +1653,8 @@ impl ConnectionSidebar {
         };
 
         // Update visual feedback using CSS classes
-        drop_indicator.show(position, 0); // Index not used for CSS approach
+        drop_indicator.show(position);
         drop_indicator.set_current_widget(Some(row_widget), position);
-
-        // Clear legacy group highlights
-        Self::clear_group_highlights(list_view, drop_indicator);
 
         gdk::DragAction::MOVE
     }
@@ -1686,16 +1682,9 @@ impl ConnectionSidebar {
         None
     }
 
-    /// Clears highlight from all group rows
-    /// CSS classes are now managed by DropIndicator
-    fn clear_group_highlights(_list_view: &ListView, drop_indicator: &DropIndicator) {
-        drop_indicator.set_highlighted_group(None);
-    }
-
     /// Hides the drop indicator (called on drag end or leave)
     pub fn hide_drop_indicator(&self) {
         self.drop_indicator.hide();
-        self.drop_indicator.set_highlighted_group(None);
     }
 
     /// Adds a query to search history
