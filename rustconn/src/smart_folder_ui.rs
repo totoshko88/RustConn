@@ -1,7 +1,7 @@
 //! Smart Folders sidebar section widget.
 //!
 //! Provides a collapsible "Smart Folders" section for the sidebar with:
-//! - A header with 🔍 icon and "Add" button
+//! - A header with a search icon and "Add" button
 //! - Expandable rows: click to reveal matching connections inline
 //! - Context menu with Edit / Delete actions
 //! - Double-click on a connection row activates `win.connect-to` action
@@ -52,9 +52,12 @@ impl SmartFoldersSidebar {
         let header_row = GtkBox::new(Orientation::Horizontal, 6);
         header_row.set_margin_bottom(6);
 
-        let icon_label = Label::new(Some("🔍"));
-        icon_label.add_css_class("heading");
-        header_row.append(&icon_label);
+        // Symbolic rather than a 🔍 glyph: a themed icon follows the icon theme
+        // and high-contrast setting, and sits on the text baseline properly.
+        let section_icon = Image::from_icon_name("system-search-symbolic");
+        section_icon.set_pixel_size(16);
+        section_icon.add_css_class("dim-label");
+        header_row.append(&section_icon);
 
         let header_label = Label::new(Some(&i18n("Smart Folders")));
         header_label.add_css_class("heading");
@@ -167,10 +170,29 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
     arrow.add_css_class("dim-label");
     header.append(&arrow);
 
-    // Folder icon (custom emoji or default 📁)
-    let icon_str = folder.icon.as_deref().unwrap_or("📁");
-    let icon = Label::new(Some(icon_str));
-    header.append(&icon);
+    // Folder icon. Same three cases as a connection row below: nothing set, an
+    // emoji the user typed, or a GTK icon name. This used to push whatever the
+    // field held straight into a `Label`, so a user who entered an icon *name*
+    // saw the literal text "folder-symbolic", and the default was a hardcoded
+    // 📁 glyph that ignores the icon theme and high-contrast mode.
+    let custom_folder_icon = folder.icon.as_deref().unwrap_or("");
+    if custom_folder_icon.is_empty() {
+        let icon = Image::from_icon_name("folder-symbolic");
+        icon.set_pixel_size(16);
+        header.append(&icon);
+    } else if rustconn_core::dialog_utils::is_glyph_icon(custom_folder_icon) {
+        let emoji_lbl = Label::new(Some(custom_folder_icon));
+        emoji_lbl.add_css_class("emoji-icon");
+        emoji_lbl.set_width_chars(2);
+        header.append(&emoji_lbl);
+    } else {
+        let icon = Image::from_icon_name(crate::icon_render::theme_icon_or(
+            custom_folder_icon,
+            "folder-symbolic",
+        ));
+        icon.set_pixel_size(16);
+        header.append(&icon);
+    }
 
     // Folder name
     let name_label = Label::new(Some(&folder.name));
