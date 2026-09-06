@@ -135,7 +135,7 @@ spctl --assess --type execute --verbose=4 dist/RustConn.app
 
 ## DMG and Notarization
 
-The DMG packager consumes the canonical bundle and writes `dist/RustConn-0.19.8-macOS-$(uname -m).dmg`.
+The DMG packager consumes the canonical bundle and writes `dist/RustConn-0.21.7-macOS-$(uname -m).dmg`.
 
 ```bash
 # Build and ad-hoc sign a local artifact
@@ -179,7 +179,7 @@ Then build, sign, submit, staple, and validate in one command:
 Inspect a finished DMG:
 
 ```bash
-hdiutil attach dist/RustConn-0.19.8-macOS-$(uname -m).dmg
+hdiutil attach dist/RustConn-0.21.7-macOS-$(uname -m).dmg
 codesign --verify --deep --strict --verbose=4 /Volumes/RustConn/RustConn.app
 spctl --assess --type execute --verbose=4 /Volumes/RustConn/RustConn.app
 hdiutil detach /Volumes/RustConn
@@ -235,7 +235,7 @@ open dist/RustConn.app
 The repository formula is `packaging/macos/rustconn.rb`. Its tag-only source is a temporary pre-tag state that avoids a fabricated checksum; a Git tag is mutable, so the formula must not be published in that form. Before publishing to a tap, replace the source with the release archive and its measured SHA-256 (or pin the release commit as the Git revision):
 
 ```bash
-curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/v0.19.8.tar.gz \
+curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.7.tar.gz \
   | shasum -a 256
 ```
 
