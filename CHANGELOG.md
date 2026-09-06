@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+
+- **Quick Connect history was documented as discarded on exit, when it is in fact kept** — the User Guide, the type alias, the struct and the field on `MainWindow` all described the "Recent" list under Quick Connect as runtime-only and "not persisted to disk", but it has been written to `AppSettings::quick_connect_history` and reloaded on startup for some time: `persist_quick_connect_history` runs after each Quick Connect (`save_settings()`), and `load_quick_connect_history` restores it when the window is built. The four descriptions disagreed with the code and, in `window/types.rs`, with each other — one doc comment said "not serialized to disk" three lines above another that said "persisted in settings". They now all say the list survives a restart, and note what it stores: host, port, protocol and username only, never a password.
+
 ## [0.21.7] - 2026-09-06
 
 ### Fixed

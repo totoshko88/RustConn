@@ -29,7 +29,9 @@ use crate::terminal::TerminalNotebook;
 /// Maximum number of quick connect history entries to keep (LIFO)
 const QUICK_CONNECT_HISTORY_MAX: usize = 15;
 
-/// A runtime-only quick connect history entry (not serialized to disk)
+/// A quick connect history entry, mirrored to `AppSettings::quick_connect_history`
+/// so the "Recent" list survives a restart. Holds no secrets — see
+/// [`QuickConnectHistoryItem`](rustconn_core::config::QuickConnectHistoryItem).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickConnectHistoryEntry {
     /// Protocol index: 0=SSH, 1=RDP, 2=VNC, 3=Telnet
@@ -89,7 +91,7 @@ impl QuickConnectHistoryEntry {
     }
 }
 
-/// Shared quick connect history (max 15 entries, LIFO, persisted in settings)
+/// Shared Quick Connect history (max 15 entries, LIFO, persisted in settings)
 pub type SharedQuickConnectHistory = Rc<RefCell<Vec<QuickConnectHistoryEntry>>>;
 
 impl QuickConnectHistoryEntry {
