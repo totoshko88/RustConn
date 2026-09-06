@@ -335,9 +335,12 @@ impl ExportDialog {
             .build();
         options_group.add(&include_groups_row);
 
-        // Credentials info row
+        // Credentials info row. The title carries no ℹ glyph: the row already
+        // has a `dialog-information-symbolic` prefix below, so the glyph was a
+        // second icon rendered as text — untranslatable, unthemed, and read out
+        // by a screen reader as part of the heading.
         let creds_info_row = adw::ActionRow::builder()
-            .title(i18n("ℹ Credentials Storage"))
+            .title(i18n("Credentials Storage"))
             .subtitle(i18n("Passwords are stored in your password manager and not included in exports. Export your credential structure separately if needed."))
             .build();
         let info_icon = gtk4::Image::from_icon_name("dialog-information-symbolic");
