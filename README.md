@@ -41,8 +41,9 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
 | **Organization** | Groups, tags, templates, custom icons (emoji/GTK), connection history & statistics |
 | **Monitoring** | Remote host metrics bar (CPU, RAM, disk, network, load, system info) — agentless, per-connection toggle |
-| **Import/Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, SecureCRT, Remote Desktop Manager, RDP files (.rdp), virt-viewer (.vv), libvirt (XML + daemon), CSV, native (.rcn) |
-| **Security** | KeePassXC (KDBX), libsecret, macOS Keychain, Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass (passwordstore.org), script credentials, encrypted-file fallback (no keyring required); hardware-token SSH auth (FIDO2 security keys, PKCS#11 / YubiKey / smart cards) |
+| **Import** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, SecureCRT, Remote Desktop Manager, RDP files (.rdp), virt-viewer (.vv), libvirt (XML + daemon), CSV, native (.rcn) |
+| **Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, SecureCRT, CSV, native (.rcn) — the import-only formats (Remote Desktop Manager, .rdp, .vv, libvirt) have no exporter |
+| **Security** | KeePassXC (KDBX), libsecret, macOS Keychain, Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass (passwordstore.org), script credentials; encrypted-file fallback with no keyring required (machine-bound or a portable file for use across machines); hardware-token SSH auth (FIDO2 security keys, PKCS#11 / YubiKey / smart cards) |
 | **Terminal** | Split terminals, command snippets, text highlighting rules, session recording, custom terminal themes, tab overview, tab pinning |
 | **Session Windows** | Move any session (SSH, Telnet, Serial, Kubernetes, MOSH, Zero Trust, embedded RDP/VNC/Web) to its own window and back with `Ctrl+Shift+M` — per-monitor fullscreen, never reconnects |
 | **Automation** | Expect rules, key sequences, pre/post-connect tasks, cluster & ad-hoc broadcast, session reconnect, Wake-on-LAN |
@@ -64,7 +65,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | Serial | picocom via VTE | External (bundled in Flatpak) |
 | Kubernetes | kubectl exec via VTE | External |
 | MOSH | mosh via VTE | External |
-| Zero Trust | AWS SSM, GCP IAP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev | External |
+| Zero Trust | AWS SSM, GCP IAP, Azure Bastion, Azure SSH (AAD), OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev | External |
 | Web | Embedded WebKitGTK 6.0 browser (Linux) / System browser / Custom browser command | Embedded + external |
 
 ## Installation
