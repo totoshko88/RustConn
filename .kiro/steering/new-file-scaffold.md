@@ -156,7 +156,8 @@ pattern-match while the backend is still a stub.
 
 Registration: add to backend list in `secret/mod.rs`.
 
-Security reminders (enforced by `security-review` hook):
+Security reminders (the `commit-review-gate` hook asks for the `security-reviewer`
+sub-agent at commit time when the change touches these paths):
 - Never store/log SecretString values
 - Intermediate strings → `Zeroizing::new()`
 - External CLIs → stdin pipe, never `.arg(password)`

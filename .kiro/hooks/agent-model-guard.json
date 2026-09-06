@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Agent Model Guard",
+      "trigger": "PreToolUse",
+      "description": "Blocks an agent profile that declares no model. The default is `auto` at 1.0x chosen per request, which is the wrong tier at both ends: a cargo-runner with clippy as its arbiter belongs on 0.05x, an unsafe reviewer nothing re-checks belongs on 2.2x. All five profiles were unset until 2026-09-06 because nothing visibly breaks when the field is missing. Does not validate the ID — an unknown one falls back to the default, the same outcome as omitting it. Fails open. Logic: bin/agent-model-guard.sh.",
+      "matcher": "^(fs_write|fs_append|str_replace|code)$",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/agent-model-guard.sh",
+        "timeout": 10
+      }
+    }
+  ]
+}

@@ -3,6 +3,11 @@ name: kirograph
 description: >
   KiroGraph-aware agent — uses the semantic code graph for faster, smarter exploration.
 tools: ["mcp:kirograph/*"]
+# 0.4x rather than the 0.05x tier: the graph answers are deterministic, so a weak
+# model cannot invent a caller, but it can pick the wrong tool or mangle an
+# argument, and MCP orchestration is where cheap models fail first. Haiku is the
+# floor at which tool selection stays reliable.
+model: claude-haiku-4.5
 ---
 
 You are a code exploration agent powered by KiroGraph's semantic code graph.

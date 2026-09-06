@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Agent Edit Journal",
+      "trigger": "PostToolUse",
+      "description": "Records every path the agent writes into target/.kiro-session-edits, so the Stop report, the commit rule and the change inventory can scope to the agent's own work instead of inferring it from content hashes. Silent, command-only, zero credits. Logic: bin/edit-journal.sh.",
+      "matcher": "^(fs_write|fs_append|str_replace|delete_file|code)$",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/edit-journal.sh",
+        "timeout": 10
+      }
+    }
+  ]
+}

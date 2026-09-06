@@ -6,6 +6,11 @@ description: >
   and absence of secrets in logs/errors. Use when editing secret backends,
   password dialogs, or credential resolution code.
 tools: ["read", "grep"]
+# Deliberately NOT a cheap tier, even though the six checks look mechanical.
+# Nothing re-checks this agent's "✅ No security issues found" — a missed
+# SecretString or a password in argv ships. The rule is that the tier follows
+# whether an arbiter exists, not whether the task looks simple.
+model: claude-sonnet-4.6
 ---
 
 You are a security reviewer for the RustConn project. Your ONLY job is to audit code for credential security violations.

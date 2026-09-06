@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Session Report (deliver)",
+      "trigger": "UserPromptSubmit",
+      "description": "Prints target/.kiro-session-report to the agent and deletes it. UserPromptSubmit is one of the three triggers whose command stdout is forwarded, which is what makes free delivery possible: the scan runs at Stop for nothing, and its finding rides into a turn the user was starting anyway. Prints nothing when there is no report, so a clean session adds no tokens. Fails open. Logic: bin/session-report.sh.",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/session-report.sh flush",
+        "timeout": 10
+      }
+    }
+  ]
+}

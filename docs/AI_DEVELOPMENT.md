@@ -54,12 +54,12 @@ RustConn uses Kiro **steering files** and **hooks** in two complementary layers:
 
 ## Steering Files
 
-`.kiro/steering/` currently holds **27** files. The agent loads each according to
+`.kiro/steering/` currently holds **29** files. The agent loads each according to
 its `inclusion:` front-matter:
 
 | Mode | What it means | Roughly |
 |------|---------------|---------|
-| `always` | In every session, unconditionally | `core-rules.md`, `shell-environment.md`, `kirograph.md` |
+| `always` | In every session, unconditionally | `core-rules.md`, `shell-environment.md`, `kirograph.md` — ~4 000 words with root `AGENTS.md`, paid on every request |
 | `fileMatch` | Loaded when a matching file enters context | the GUI, domain and error-playbook guides |
 | `manual` | Only when named with `#` in chat, or by a hook | the process runbooks |
 | `auto` | Matched against the file's own `description` | needs both `name` and `description`, or it matches nothing |
@@ -77,6 +77,19 @@ distinction is what a file *does* when it lands in context.
 A file that is **guidance** changes how the agent approaches work and starts
 nothing on its own. `bugfix-workflow.md` is the example: loading it during a bug
 fix is exactly what you want, and it was converted to `auto` on 2026-09-02.
+
+### Rules in the `always` set, reasoning in a companion
+
+The `always` set is a fixed token cost on every request in every session, so it
+holds invariants and nothing else. Measurements, incidents and worked examples go
+into a `manual` companion, where they are more useful anyway — you read them when a
+rule looks arbitrary, not on every turn.
+
+`shell-environment.md` was split this way on 2026-09-06: 1 691 words became 890
+words of rules plus `shell-environment-why.md` for the queued-sleep failure, the
+cargo timings, the `/tmp`-to-`target/` correction and the portal-blocked GUI
+diagnosis. No rule lives only in the companion — if you find one there, it belongs
+in the always file. Policy: `cost-discipline.md`.
 
 A file that is a **runbook** opens with an instruction and expects to be obeyed.
 Four of these must stay `manual`, because `auto` would have them fire on a passing
@@ -108,17 +121,28 @@ enough that the number was off by thirteen.
 
 ## Hooks
 
-`.kiro/hooks/` currently holds **16** hooks, one JSON file each, in the v2 format
+`.kiro/hooks/` currently holds **17** hooks, one JSON file each, in the v2 format
 the agent executes directly. Triggers are PascalCase.
 
 | Trigger | Hooks | What the group is for |
 |---------|-------|-----------------------|
-| `PreToolUse` | `crate-boundary-guard`, `bash-serialization-guard`, `release-manual-only-guard` | Refuse an action before it happens: a GUI import in a headless crate or `unsafe` outside a `-sys` crate; a cargo run that will lose its output or wedge the terminal; any route to cutting a release by hand |
-| `PostFileSave` | `translation-sync`, `cargo-security-scan`, `flatpak-manifest-check`, `security-review`, `uk-translation-review`, `unsafe-review`, `kirograph-mark-dirty-on-save` | React to a save, each with a path matcher so it fires only for the files it is about |
+| `PreToolUse` | `crate-boundary-guard`, `agent-model-guard`, `bash-serialization-guard`, `release-manual-only-guard`, `commit-review-gate` | Refuse or question an action before it happens: a GUI import in a headless crate or `unsafe` outside a `-sys` crate; an agent profile with no model tier; a cargo run that will lose its output or wedge the terminal; any push or route to cutting a release; a commit that skips a review its paths require |
+| `PostToolUse` | `edit-journal` | Record what the agent wrote, so later hooks can scope to its own work instead of the dirty tree |
+| `PostFileSave` | `translation-sync`, `cargo-security-scan`, `flatpak-manifest-check`, `kirograph-mark-dirty-on-save` | React to a save, each with a path matcher so it fires only for the files it is about |
 | `PostFileCreate` / `PostFileDelete` | `kirograph-mark-dirty-on-create`, `kirograph-sync-on-delete` | Keep the code graph honest about files appearing and disappearing |
-| `SessionStart` | `session-baseline` | Record the working tree, so `Stop` can tell what the session changed |
-| `Stop` | `post-session-diagnostics`, `kirograph-sync-if-dirty` | Post-session work: diagnostics on what changed, deferred graph sync |
+| `SessionStart` | `session-reset` | Clear the previous session's journal and report |
+| `Stop` | `session-report`, `kirograph-sync-if-dirty` | Post-session work: scan the journalled files for debug leftovers, deferred graph sync |
+| `UserPromptSubmit` | `session-report-flush` | Deliver the `Stop` scan's finding on the next turn — the only place a free hook can speak |
 | `PostTaskExec` | `post-task-diagnostics` | `getDiagnostics` on `.rs` files a spec task touched — terminal-free, no cargo |
+
+**One agent action left.** As of 2026-09-06 only `post-task-diagnostics` starts an
+agent loop, and it fires on spec task completion. The others are `command` actions,
+which run locally and cost no credits. Four used to be agent actions:
+`post-session-diagnostics` on every `Stop`, and three reviews on every matching
+`PostFileSave`. The conversion is described in steering `cost-discipline.md`,
+including the two patterns that made it possible — attributing edits by journal
+rather than by content hash, and delivering a free hook's output through
+`UserPromptSubmit`.
 
 Each hook's own `description` field carries its rationale, including the hardening
 notes that matter (why the KiroGraph sync checks for a stale lock, why the release
@@ -126,9 +150,10 @@ guard covers three separate routes). That is the canonical text.
 
 `scripts/check-ai-docs.sh` gates the count above and, since 2026-09-02, also
 asserts that every hook file has a row in steering `hooks-map.md`. That second
-check was added because the map lost `session-baseline` for a week while claiming
-in its first line to cover every hook — the table above had it, the map did not,
-and nothing compared either against `ls .kiro/hooks/`.
+check was added because the map lost `session-baseline` (since replaced by
+`session-reset`) for a week while claiming in its first line to cover every hook —
+the table above had it, the map did not, and nothing compared either against
+`ls .kiro/hooks/`.
 
 The manual runbooks that used to be listed here as hooks — the quality gate, the
 dependency audit, the ponytail ledger, the release preparation, the commit-message
@@ -159,10 +184,26 @@ calls to conclude that nothing had changed, in a session whose only edit was
 markdown.
 
 The shape that works: a `command` hook does the mechanical part and stays silent
-when there is nothing to say; the agent is invoked only for the step a script
-cannot take. For `post-session-diagnostics` that is exactly one step, calling
-`getDiagnostics`, so the hook keeps an `agent` action whose prompt is now "run this
-script and act only on its output".
+when there is nothing to say; the agent is invoked only for the step a script cannot
+take.
+
+`post-session-diagnostics` was first converted to that shape in August — a script
+did the file selection and the leftover scan, and the prompt was reduced to "run
+this script and act only on its output", keeping one `agent` action for the single
+step a script cannot take: calling `getDiagnostics`. That was still one agent loop
+per turn, and on 2026-09-06 the remaining step turned out to be worth nothing in an
+ACP session, where `getDiagnostics` is not in the tool set at all — five turns in a
+row produced a report about files the agent had never touched and ended in a tool
+that did not exist. The hook is now `session-report`, fully `command`, with two
+lessons that generalise:
+
+- **A hook must not depend on a tool only one client provides.** The prompt was
+  correct in the IDE and a dead end everywhere else, and nothing in its own text
+  said which.
+- **When the last step a script cannot take is worth less than an agent loop per
+  turn, drop the step.** Compile diagnostics moved to the commit gate, where clippy
+  runs once per feature. `session-report` computes for free at `Stop` and hands its
+  finding over through `session-report-flush` on the next prompt.
 
 The same reasoning moved four runbooks out of prose and into `scripts/`:
 
@@ -235,10 +276,13 @@ manual re-index. They fail silently (`|| true`) when KiroGraph is absent.
    concurrent cargo runs interleave. Hooks and rules centralize cargo through a
    single `rust-quality-check` invocation to avoid collisions.
 3. **`translation-sync` does not run `update-pot.sh`.** It only updates
-   `POTFILES.in` and reminds the developer — regenerating 16 `.po` files is too
-   invasive for an automatic hook.
+   `POTFILES.in` and reminds the developer — regenerating every `.po` file is too
+   invasive for an automatic hook. (`ls po/*.po` is the count; this line said 16
+   while there were 17.)
 4. **`flatpak-manifest-check` is advisory only.** Regenerating `cargo-sources.json`
-   needs Python and produces large diffs; the hook warns but does not act.
+   needs Python and produces large diffs; the hook notes the staleness but does not
+   act. Since 2026-09-06 it is a timestamp comparison in a script rather than an
+   agent prompt, so the advice is now free.
 5. **KiroGraph semantic search may be unavailable.** The embedding model can fail
    to load in some Node environments; structural queries (search, callers,
    architecture) still work. See `kirograph.md`.
@@ -248,7 +292,9 @@ manual re-index. They fail silently (`|| true`) when KiroGraph is absent.
 ## Maintenance
 
 ### Adding or changing a hook
-1. Edit/create `.kiro/hooks/<name>.kiro.hook` (JSON schema below).
+1. Edit/create `.kiro/hooks/<name>.json` (JSON schema below). The `.kiro.hook`
+   extension this line named is not what the loader reads — `ls .kiro/hooks/`
+   is all `.json`.
 2. Bump its `"version"` field.
 3. If it changes a *group* of behaviour above, update the relevant table in this
    file — but keep per-hook detail in the hook file, not here.

@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Commit Review Gate",
+      "trigger": "PreToolUse",
+      "description": "At `git commit`, asks for the reviews the edit journal says the change needs: unsafe-reviewer for a rustconn-*-sys change, security-reviewer for credential code, uk-translation-reviewer for po/uk.po. Replaces three PostFileSave agent hooks that fired once per file — six loops for a six-file change to the secret subsystem, each seeing one file in isolation, plus one on every msgmerge rewrite of uk.po. Asks rather than blocks: it cannot observe whether a reviewer already ran. Scope is the agent's own writes, never the dirty tree. Fails open. Logic: bin/commit-review-gate.sh.",
+      "matcher": "^(execute_bash|executeBash|bash|shell)$",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/commit-review-gate.sh",
+        "timeout": 10
+      }
+    }
+  ]
+}

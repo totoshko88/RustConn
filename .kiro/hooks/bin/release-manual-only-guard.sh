@@ -24,8 +24,17 @@
 # Rules:
 #   R1  `release.sh` without `--dry-run` is refused.
 #   R2  `--yes` / `-y` is refused, with or without `--dry-run`.
-#   R3  the by-hand equivalent — creating or pushing a `v<semver>` tag — is
-#       refused too, otherwise R1 just moves the problem to `git tag`.
+#   R3  creating a `v<semver>` tag by hand is refused too, otherwise R1 just
+#       moves the problem to `git tag`.
+#   R4  `git push` is refused outright — any remote, any ref, tag or branch.
+#
+# R4 replaced a narrower rule on 2026-09-06 at the maintainer's instruction. It
+# used to refuse only a push that carried a version tag, on the reasoning that the
+# tag push is the irreversible act. That is true and it was the wrong boundary:
+# publishing is the maintainer's call regardless of what is being published, and
+# an agent that may push a branch is an agent deciding when work becomes visible
+# to CI, to reviewers and to anything watching the remote. Committing stays
+# allowed — a local commit is reversible and is where the work is recorded.
 #
 # `--dry-run` is not merely allowed, it is the expected agent action: it runs
 # every gate and stops before the plan is executed.
@@ -96,12 +105,22 @@ if printf '%s' "$cmd" | grep -qE "$release_invocation"; then
     exit 0
 fi
 
-# --- R3: no cutting a release by hand either ------------------------------
+# --- R3/R4: no cutting a release by hand either ----------------------------
 # AGENTS.md already states this ("Never run `git tag`/`git push` by hand for a
 # release"); without it here, R1 would only redirect the same action through git.
 semver='v[0-9]+\.[0-9]+\.[0-9]+'
 
-if printf '%s' "$cmd" | grep -qE '(^|[^[:alnum:]_.-])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+tag([[:space:]]|$)'; then
+# Command position, same reasoning as the release.sh matcher above: at the start,
+# after a `;`/`&&`/`||`/`|`/`(`, or inside `sh -c "…"`, stepping over leading
+# wrappers. Without this, prose containing the words is treated as a call — and
+# under R4, which blocks every push rather than only a tagged one, that turned
+# `echo "then git push it"` into a refusal. The narrower pre-R4 rule hid the flaw
+# because it also required a version tag on the line.
+git_verb() {
+    printf '%s' "$cmd" | grep -qE "(^|[;&|(]|-c[[:space:]]+[\"']?)[[:space:]]*((nohup|exec|time|bash|sh)[[:space:]]+)*git([[:space:]]+-[^[:space:]]+)*[[:space:]]+$1([[:space:]]|\$)"
+}
+
+if git_verb tag; then
     # Listing and deleting are not cutting a release. `-l`/`--list`/`-n`/`-d`/
     # `--delete`/`--verify` all leave refs alone or remove one, which is what
     # undoing a bad tag needs.
@@ -114,14 +133,34 @@ if printf '%s' "$cmd" | grep -qE '(^|[^[:alnum:]_.-])git([[:space:]]+-[^[:space:
     fi
 fi
 
-if printf '%s' "$cmd" | grep -qE '(^|[^[:alnum:]_.-])git([[:space:]]+-[^[:space:]]+)*[[:space:]]+push([[:space:]]|$)'; then
+# --- R4: never push, full stop ---------------------------------------------
+# `--dry-run` shows what would be pushed and updates nothing, so it stays
+# allowed; it is the push equivalent of `release.sh --dry-run`.
+if git_verb push; then
+    if printf '%s' "$cmd" | grep -qE '(^|[[:space:]])(--dry-run|-n)([[:space:]]|$)'; then
+        exit 0
+    fi
+
+    # A tag push gets the specific explanation, because the consequence is
+    # specific: it is what publishes a release.
     if printf '%s' "$cmd" | grep -qE "(^|[[:space:]])(--tags|--follow-tags)([[:space:]]|$)" \
         || printf '%s' "$cmd" | grep -qE "refs/tags/$semver|(^|[[:space:]:])$semver([[:space:]]|$)"; then
         block 'pushing a release tag is what publishes the release.' \
-            '  The tag push is what triggers the Release workflow, the artifact build and' \
-            '  the Flathub/OBS/Snap updates — none of which can be taken back cleanly.' \
+            '  The tag push triggers the Release workflow, the artifact build and the' \
+            '  Flathub/OBS/Snap updates — none of which can be taken back cleanly.' \
             "${hand_back[@]}"
     fi
+
+    block 'pushing is never the agent'"'"'s action — not a branch, not a tag, not any remote.' \
+        '  Commit locally, then hand over. Say what is ready and let the maintainer push,' \
+        '  or point at the release path:' \
+        '    git push -u origin <branch>      the maintainer'"'"'s call' \
+        '    ./scripts/release.sh --dry-run   validate a release, then hand over' \
+        '' \
+        '  A commit is local and reversible. A push is not: it is the point where work' \
+        '  becomes visible to CI, to reviewers and to anything watching the remote, and' \
+        '  deciding when that happens belongs to the maintainer.' \
+        '  `git push --dry-run` is allowed if you need to show what would go.'
 fi
 
 exit 0

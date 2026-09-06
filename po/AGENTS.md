@@ -26,10 +26,13 @@ Run all three before claiming a translation change is done:
   reorder them and may not drop one.
 - No `\u{...}` escapes in a translatable literal — write the character. The escape
   survives extraction and reaches the user verbatim.
-- `uk.po` has a dedicated reviewer: the `uk-translation-review` hook runs the
-  `uk-translation-reviewer` sub-agent on save. It enforces DSTU terminology,
-  imperative mood for UI actions and Kharkiv orthography. Do not hand-tune Ukrainian
-  strings against your own instinct — let the reviewer run and act on what it says.
+- `uk.po` has a dedicated reviewer: the `commit-review-gate` hook asks for the
+  `uk-translation-reviewer` sub-agent at commit time when the change touched
+  `po/uk.po`. It enforces DSTU terminology, imperative mood for UI actions and
+  Kharkiv orthography. Do not hand-tune Ukrainian strings against your own instinct —
+  let the reviewer run and act on what it says. Until 2026-09-06 this fired on every
+  *save* of the file, which meant a full review after every `msgmerge` that rewrote
+  the catalogue without changing a single translation.
 - `rustconn.pot` carries `Project-Id-Version: rustconn X.Y.Z` and is one of the 19
   files `scripts/release.sh` checks for the release version. It is generated —
   regenerate it, do not hand-edit the version line.
