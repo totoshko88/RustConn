@@ -219,7 +219,7 @@ mod tray_impl {
             }
 
             items.push(MenuItem::Standard(StandardItem {
-                label: gettext("Quick Connect..."),
+                label: gettext("Quick Connect…"),
                 activate: Box::new(|tray: &mut Self| {
                     let _ = tray.sender.try_send(TrayMessage::QuickConnect);
                 }),
@@ -578,7 +578,7 @@ mod tray_macos_impl {
 
             let _ = menu.append(&MenuItem::with_id(
                 muda::MenuId(ID_QUICK_CONNECT.into()),
-                &gettext("Quick Connect..."),
+                &gettext("Quick Connect…"),
                 true,
                 None,
             ));

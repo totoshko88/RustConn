@@ -23,8 +23,9 @@ step with `ls po/*.po`.
 | Task | Read |
 |------|------|
 | Anything — invariants, crate table, Definition of Done | `.kiro/steering/core-rules.md` |
-| Running cargo, terminals, background jobs | `.kiro/steering/shell-environment.md` |
+| Running cargo, terminals, background jobs | `.kiro/steering/shell-environment.md`, and `shell-environment-why.md` when a rule there looks arbitrary |
 | Code philosophy, workflow, escape hatches | `.kiro/steering/project-rules.md` |
+| Adding an agent, a hook, or an `always` steering file | `.kiro/steering/cost-discipline.md` |
 | GUI work — HIG, windows, dialogs | `.kiro/steering/gnome-hig.md`, `window-guide.md`, `dialogs-guide.md` |
 | Credential handling | `.kiro/steering/secrets-guide.md` |
 | Rust idiom | `.kiro/steering/rust-pragmatic-guidelines.md` |
@@ -151,10 +152,18 @@ Conventional commits: `type(scope): description`, imperative, lowercase, no
 trailing period. Types: feat, fix, docs, style, refactor, test, chore, perf, ci,
 build. Scopes: rustconn-core, rustconn-cli, rustconn (gui), i18n, packaging, ci.
 
+**A finished feature gets a changelog entry and a commit.** In that order, once the
+Definition of Done holds. Stage only the files this session edited —
+`target/.kiro-session-edits`, kept by the `edit-journal` hook — never `git add -A`:
+this checkout is regularly shared with the IDE and a second session.
+
+**Never `git push`.** Not a branch, not a tag, not any remote. Commit locally, say
+what is ready, and hand over. `git push --dry-run` is fine to show what would go.
+
 **An agent prepares a release; it never cuts one.** `./scripts/release.sh
 --dry-run` is the agent action and is expected: it runs every gate and stops before
-the plan executes. Running the script for real, passing `--yes`, or tagging and
-pushing by hand is the maintainer's call. Report the dry-run gate list and the
-diff, then hand over. What goes wrong otherwise, and the mechanics of each channel:
-`packaging/AGENTS.md` and `core-rules.md`. The `release-manual-only-guard` hook
-enforces all three routes, but do not rely on it.
+the plan executes. Running the script for real, passing `--yes`, or tagging by hand
+is the maintainer's call. Report the dry-run gate list and the diff, then hand over.
+What goes wrong otherwise, and the mechanics of each channel: `packaging/AGENTS.md`
+and `core-rules.md`. The `release-manual-only-guard` hook enforces every route,
+including the blanket push refusal, but do not rely on it.

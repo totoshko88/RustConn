@@ -714,7 +714,7 @@ impl EmbeddedWebWidget {
                 let description = error.message().to_string();
                 let truncated = if description.len() > 200 {
                     let boundary = description.floor_char_boundary(197);
-                    format!("{}...", &description[..boundary])
+                    format!("{}…", &description[..boundary])
                 } else {
                     description
                 };

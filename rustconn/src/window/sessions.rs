@@ -357,7 +357,7 @@ pub fn show_send_text_dialog(
     content.append(&label);
 
     let entry = gtk4::Entry::builder()
-        .placeholder_text(i18n("Text to send..."))
+        .placeholder_text(i18n("Text to send…"))
         .hexpand(true)
         .build();
     content.append(&entry);

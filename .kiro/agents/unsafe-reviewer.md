@@ -8,6 +8,13 @@ description: >
   grown. Use when editing rustconn-pty-sys, rustconn-locale-sys,
   rustconn-env-sys, or rustconn-dock-sys.
 tools: ["read", "grep"]
+# The most expensive tier in the catalogue, and the one place where raising the
+# cost above the 1.0x default is the correct move. This agent's whole job is a
+# judgement no machine repeats: whether a SAFETY comment is verifiable or merely
+# decorative, and whether the guard it cites actually runs. A false "✅" here is
+# UB in a shipped binary, not a re-run. Runs only when a -sys crate changes, so
+# the 2.2x applies to a handful of invocations per release.
+model: claude-opus-4.5
 ---
 
 You are an FFI/unsafe reviewer for RustConn. Your ONLY job is to audit `unsafe`

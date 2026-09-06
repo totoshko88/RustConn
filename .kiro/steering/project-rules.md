@@ -74,8 +74,17 @@ cargo machete                                      # Unused dependencies
 
 ## Quality Checks
 
-Delegate to `rust-quality-check` sub-agent for fmt+clippy+tests instead of running in main context.
-For quick single-file validation → `getDiagnostics`.
+Delegate to `rust-quality-check` sub-agent for fmt+clippy+tests instead of running
+in main context. It runs on the cheapest model in the catalogue on purpose — clippy
+re-checks its answer, so a wrong pass costs one re-run (`cost-discipline.md`).
+
+For quick single-file validation → `getDiagnostics`, **when you have it**. It is an
+IDE-side tool: it reads what the language server already published, which is why it
+is cheap and why cargo is the wrong substitute. In a session driven by an ACP
+client (`kiro-cli … acp`) it is absent from the tool set entirely, and there is no
+free equivalent — nothing has pre-computed the answer. In that case do not
+improvise with cargo mid-task; let the commit gate's quality run cover it, or
+delegate to `rust-quality-check` when the change is actually finished.
 
 ### Self-Check Rules (hooks + mental)
 
@@ -87,17 +96,21 @@ a safety net, not an excuse to skip thinking:
 - **Crate boundary**: `rustconn-core/` and `rustconn-cli/` must NOT contain `use gtk4`, `use adw`, `use vte4`, `gtk4::`, `adw::`, `vte4::`. Move GUI code to `rustconn/`. *(hook-enforced)*
 - **No unsafe**: never write `unsafe {`, `unsafe fn`, `unsafe impl`, `unsafe trait` — **except** in a `rustconn-*-sys` crate (`rustconn-pty-sys`, `rustconn-locale-sys`, `rustconn-env-sys`, `rustconn-dock-sys`; M-UNSAFE). New `unsafe` outside them is forbidden — it gets its own `-sys` crate instead. *(hook-enforced)*
 
-After writing `.rs` files in `rustconn/src/`, verify (these stay mental — caught later by clippy + the `post-session-diagnostics` agentStop hook, not pre-write):
+After writing `.rs` files in `rustconn/src/`, verify (these stay mental — caught later by clippy, and for debug leftovers by the `session-report` Stop hook, not pre-write):
 - **i18n**: all user-facing strings (`.set_label()`, `.set_title()`, `.set_tooltip_text()`, `Button::with_label()`) wrapped in `i18n()` or `i18n_f()`. Ignore: tracing, CSS, icons, action names.
-- **Credentials** (in secret/password/credential files): `SecretString` for passwords, `.zeroize()` intermediates, no secrets in logs/args/errors. *(editing these files also triggers the `security-review` hook → `security-reviewer` sub-agent)*
+- **Credentials** (in secret/password/credential files): `SecretString` for passwords, `.zeroize()` intermediates, no secrets in logs/args/errors. *(the `commit-review-gate` hook asks for the `security-reviewer` sub-agent at commit time — once for the whole change, where a per-file `PostFileSave` hook used to fire once per saved file)*
 - **Protocol files**: business logic in rustconn-core, GTK in rustconn.
 
 ### When to Run fmt/clippy/tests
 
-- **Do NOT** run `cargo fmt`/`cargo clippy` automatically on every change — use `getDiagnostics` for quick validation.
+- **Do NOT** run `cargo fmt`/`cargo clippy` automatically on every change — use `getDiagnostics` for quick validation, or nothing at all if the session has no such tool.
 - Run `rust-quality-check` sub-agent only when: (a) about to commit, (b) user explicitly asks, (c) finishing a multi-file feature.
 - Run tests only when: (a) user explicitly asks, (b) finishing a spec task, (c) before release.
-- After completing work, inform the user: "Done. Run quality check (fmt+clippy)?" — wait for confirmation.
+- After completing a feature, the sequence is the quality gate → CHANGELOG entry →
+  commit of the journalled files, per "Finishing a feature" in `core-rules.md`.
+  Report what was committed and what is left; never push. For a change that is not
+  a finished feature, still ask before running the gate: "Done. Run quality check
+  (fmt+clippy)?"
 
 ### Learning Loop (after non-trivial tasks)
 

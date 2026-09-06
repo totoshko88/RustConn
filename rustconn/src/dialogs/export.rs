@@ -302,13 +302,13 @@ impl ExportDialog {
 
         let output_path_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text(i18n("Select output file or directory..."))
+            .placeholder_text(i18n("Select output file or directory…"))
             .editable(false)
             .valign(gtk4::Align::Center)
             .build();
 
         let browse_button = Button::builder()
-            .label(i18n("Browse..."))
+            .label(i18n("Browse…"))
             .valign(gtk4::Align::Center)
             .build();
 
@@ -335,9 +335,12 @@ impl ExportDialog {
             .build();
         options_group.add(&include_groups_row);
 
-        // Credentials info row
+        // Credentials info row. The title carries no ℹ glyph: the row already
+        // has a `dialog-information-symbolic` prefix below, so the glyph was a
+        // second icon rendered as text — untranslatable, unthemed, and read out
+        // by a screen reader as part of the heading.
         let creds_info_row = adw::ActionRow::builder()
-            .title(i18n("ℹ Credentials Storage"))
+            .title(i18n("Credentials Storage"))
             .subtitle(i18n("Passwords are stored in your password manager and not included in exports. Export your credential structure separately if needed."))
             .build();
         let info_icon = gtk4::Image::from_icon_name("dialog-information-symbolic");
@@ -450,7 +453,7 @@ impl ExportDialog {
         vbox.set_halign(gtk4::Align::Center);
 
         let header = Label::builder()
-            .label(i18n("Exporting..."))
+            .label(i18n("Exporting…"))
             .css_classes(["title-3"])
             .build();
         vbox.append(&header);
@@ -464,7 +467,7 @@ impl ExportDialog {
         vbox.append(&progress_bar);
 
         let progress_label = Label::builder()
-            .label(i18n("Preparing export..."))
+            .label(i18n("Preparing export…"))
             .css_classes(["dim-label"])
             .build();
         vbox.append(&progress_label);
@@ -923,10 +926,9 @@ impl ExportDialog {
 
                 // Update placeholder text based on format
                 if format.exports_to_directory() {
-                    output_path_entry
-                        .set_placeholder_text(Some(&i18n("Select output directory...")));
+                    output_path_entry.set_placeholder_text(Some(&i18n("Select output directory…")));
                 } else {
-                    output_path_entry.set_placeholder_text(Some(&i18n("Select output file...")));
+                    output_path_entry.set_placeholder_text(Some(&i18n("Select output file…")));
                 }
 
                 // Clear current path when format changes
@@ -1043,7 +1045,7 @@ impl ExportDialog {
             btn.set_sensitive(false);
             progress_bar.set_fraction(0.0);
             progress_label.set_text(&i18n_f(
-                "Exporting to {}...",
+                "Exporting to {}…",
                 &[&i18n(format.display_name())],
             ));
 
@@ -1098,7 +1100,7 @@ impl ExportDialog {
             };
 
             progress_bar.set_fraction(0.3);
-            progress_label.set_text(&i18n("Writing output files..."));
+            progress_label.set_text(&i18n("Writing output files…"));
 
             let options_clone = options.clone();
             let csv_opts_clone = csv_opts.clone();

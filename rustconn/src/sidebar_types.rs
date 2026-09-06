@@ -85,22 +85,11 @@ pub enum DropPosition {
     Into,
 }
 
-/// Data for a drag-drop operation
-///
-/// This struct is used by `invoke_drag_drop()` and `set_drag_drop_callback()` methods
-/// to pass drag-drop operation details to registered callbacks.
-#[derive(Debug, Clone)]
-#[expect(dead_code, reason = "Fields used by drag-drop callback system")]
-pub struct DragDropData {
-    /// Type of the dragged item ("conn" or "group")
-    pub item_type: String,
-    /// ID of the dragged item
-    pub item_id: String,
-    /// ID of the target item
-    pub target_id: String,
-    /// Whether the target is a group
-    pub target_is_group: bool,
-}
+// `DragDropData` used to sit here, marked `#[expect(dead_code, reason = "Fields
+// used by drag-drop callback system")]`. No callback system ever referenced it —
+// the drag payload is encoded as a string in `sidebar::drag_drop` — so the reason
+// described an intention rather than the code, and the attribute is what kept the
+// compiler from saying so.
 
 /// Visual indicator for drag-and-drop operations
 ///
@@ -113,11 +102,14 @@ pub struct DropIndicator {
     indicator: Separator,
     /// Current drop position type
     position: RefCell<Option<DropPosition>>,
-    /// Target row index for the drop
-    target_index: RefCell<Option<u32>>,
-    /// Currently highlighted group index (for drop-into visual)
-    highlighted_group_index: RefCell<Option<u32>>,
     /// Currently highlighted widget (for CSS class management)
+    ///
+    /// This, plus the `drop-target-*` CSS classes, is the whole of the drop
+    /// visual. A `target_index` and a `highlighted_group_index` used to be
+    /// tracked alongside it, left over from the pre-CSS approach: both were
+    /// written and never read, `set_highlighted_group` was only ever called with
+    /// `None`, and `show()` took an index its one caller passed as `0` under a
+    /// comment saying it was unused.
     current_widget: RefCell<Option<Widget>>,
 }
 
@@ -139,27 +131,8 @@ impl DropIndicator {
         Self {
             indicator,
             position: RefCell::new(None),
-            target_index: RefCell::new(None),
-            highlighted_group_index: RefCell::new(None),
             current_widget: RefCell::new(None),
         }
-    }
-
-    /// Sets the highlighted group index
-    pub fn set_highlighted_group(&self, index: Option<u32>) {
-        *self.highlighted_group_index.borrow_mut() = index;
-    }
-
-    /// Returns the highlighted group index
-    ///
-    /// Note: Part of drag-drop API, used internally by drop target handlers.
-    #[must_use]
-    #[expect(
-        dead_code,
-        reason = "kept alive for GTK widget lifecycle / future API exposure"
-    )]
-    pub fn highlighted_group_index(&self) -> Option<u32> {
-        *self.highlighted_group_index.borrow()
     }
 
     /// Clears CSS classes from the currently highlighted widget
@@ -315,10 +288,12 @@ impl DropIndicator {
         &self.indicator
     }
 
-    /// Shows the indicator at the specified position
-    pub fn show(&self, position: DropPosition, target_index: u32) {
+    /// Records the drop position.
+    ///
+    /// Takes no row index: the visual comes from the `drop-target-*` CSS class
+    /// on the row widget, so there is nothing an index could position.
+    pub fn show(&self, position: DropPosition) {
         *self.position.borrow_mut() = Some(position);
-        *self.target_index.borrow_mut() = Some(target_index);
         // Keep overlay indicator hidden - we use CSS classes now
         self.indicator.set_visible(false);
     }
@@ -326,7 +301,6 @@ impl DropIndicator {
     /// Hides the indicator and clears CSS classes
     pub fn hide(&self) {
         *self.position.borrow_mut() = None;
-        *self.target_index.borrow_mut() = None;
         self.indicator.set_visible(false);
         // Clear CSS classes from current widget
         self.clear_current_widget();
@@ -343,29 +317,11 @@ impl DropIndicator {
         *self.position.borrow()
     }
 
-    /// Returns the current target index
-    ///
-    /// Note: Part of drag-drop API for determining drop position.
-    #[must_use]
-    #[expect(
-        dead_code,
-        reason = "kept alive for GTK widget lifecycle / future API exposure"
-    )]
-    pub fn target_index(&self) -> Option<u32> {
-        *self.target_index.borrow()
-    }
-
-    /// Returns whether the indicator is currently visible
-    ///
-    /// Note: Part of drag-drop API for visual feedback state.
-    #[must_use]
-    #[expect(
-        dead_code,
-        reason = "kept alive for GTK widget lifecycle / future API exposure"
-    )]
-    pub fn is_visible(&self) -> bool {
-        self.indicator.is_visible()
-    }
+    // `target_index()`, `is_visible()` and `highlighted_group_index()` were
+    // removed here. All three were unreachable and all three carried the reason
+    // "kept alive for GTK widget lifecycle" — which cannot apply to a method:
+    // only a *field* keeps a widget alive. `position()` above is kept because
+    // `sidebar::mod` genuinely calls it.
 }
 
 impl Default for DropIndicator {

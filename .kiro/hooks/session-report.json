@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Session Report (scan)",
+      "trigger": "Stop",
+      "description": "Scans the .rs files the agent wrote this session for debug leftovers and writes target/.kiro-session-report if it finds any. Command action, so it costs no credits; its stdout is not forwarded on Stop, which is why the companion Session Report (deliver) hook prints the file on the next prompt. Replaces Post-Session Diagnostics, an agent action that spent a full agent loop on every turn — five in one session on 2026-09-06, each reporting files the agent had never touched, and each ending in a getDiagnostics call that does not exist outside the IDE. Compile diagnostics moved to the commit gate. Silent when clean; fails open. Logic: bin/session-report.sh.",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/session-report.sh write",
+        "timeout": 30
+      }
+    }
+  ]
+}

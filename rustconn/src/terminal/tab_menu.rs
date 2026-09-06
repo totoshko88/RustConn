@@ -147,7 +147,7 @@ impl TerminalNotebook {
             // Show existing groups as clickable buttons
             let known_groups = tab_group_manager.borrow().group_names();
             let entry = gtk4::Entry::builder()
-                .placeholder_text(i18n("New group name..."))
+                .placeholder_text(i18n("New group name…"))
                 .hexpand(true)
                 .build();
 

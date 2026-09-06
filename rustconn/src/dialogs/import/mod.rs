@@ -160,7 +160,7 @@ impl ImportDialog {
         vbox.set_valign(gtk4::Align::Center);
 
         let header = Label::builder()
-            .label(i18n("Importing..."))
+            .label(i18n("Importing…"))
             .css_classes(["title-3"])
             .build();
         vbox.append(&header);
@@ -173,7 +173,7 @@ impl ImportDialog {
         vbox.append(&progress_bar);
 
         let progress_label = Label::builder()
-            .label(i18n("Scanning for connections..."))
+            .label(i18n("Scanning for connections…"))
             .css_classes(["dim-label"])
             .build();
         vbox.append(&progress_label);
@@ -538,7 +538,7 @@ impl ImportDialog {
                 progress_bar.set_fraction(0.0);
 
                 let display_name = Self::get_source_display_name(&source_id);
-                progress_label.set_text(&i18n_f("Importing from {}...", &[&display_name]));
+                progress_label.set_text(&i18n_f("Importing from {}…", &[&display_name]));
 
                 // Run import on a background thread to avoid blocking the GTK
                 // main loop (file I/O, virsh subprocess, argon2 can take seconds).
@@ -634,7 +634,7 @@ impl ImportDialog {
                 progress_bar.set_fraction(0.0);
 
                 let display_name = Self::get_source_display_name(&source_id);
-                progress_label.set_text(&i18n_f("Importing from {}...", &[&display_name]));
+                progress_label.set_text(&i18n_f("Importing from {}…", &[&display_name]));
 
                 // Handle special case for file-based import
                 if source_id == "ssh_config_file" {
@@ -949,7 +949,7 @@ impl ImportDialog {
         let reporter = Self::create_progress_reporter(progress_bar, progress_label, cancelled);
 
         // Report start of import
-        reporter.report(0, 1, &i18n_f("Starting import from {}...", &[source_id]));
+        reporter.report(0, 1, &i18n_f("Starting import from {}…", &[source_id]));
 
         let result = match source_id {
             "ssh_config" => {
@@ -961,7 +961,7 @@ impl ImportDialog {
                     reporter.report(
                         i,
                         total,
-                        &i18n_f("Importing from {}...", &[&path.display().to_string()]),
+                        &i18n_f("Importing from {}…", &[&path.display().to_string()]),
                     );
                     if reporter.is_cancelled() {
                         return ImportResult::default();
@@ -979,7 +979,7 @@ impl ImportDialog {
                     reporter.report(
                         i,
                         total,
-                        &i18n_f("Importing from {}...", &[&path.display().to_string()]),
+                        &i18n_f("Importing from {}…", &[&path.display().to_string()]),
                     );
                     if reporter.is_cancelled() {
                         return ImportResult::default();
@@ -997,7 +997,7 @@ impl ImportDialog {
                     reporter.report(
                         i,
                         total,
-                        &i18n_f("Importing from {}...", &[&path.display().to_string()]),
+                        &i18n_f("Importing from {}…", &[&path.display().to_string()]),
                     );
                     if reporter.is_cancelled() {
                         return ImportResult::default();
@@ -1015,7 +1015,7 @@ impl ImportDialog {
                     reporter.report(
                         i,
                         total,
-                        &i18n_f("Importing from {}...", &[&path.display().to_string()]),
+                        &i18n_f("Importing from {}…", &[&path.display().to_string()]),
                     );
                     if reporter.is_cancelled() {
                         return ImportResult::default();
@@ -1033,7 +1033,7 @@ impl ImportDialog {
                     reporter.report(
                         i,
                         total,
-                        &i18n_f("Importing from {}...", &[&path.display().to_string()]),
+                        &i18n_f("Importing from {}…", &[&path.display().to_string()]),
                     );
                     if reporter.is_cancelled() {
                         return ImportResult::default();
@@ -1043,7 +1043,7 @@ impl ImportDialog {
                 Self::import_or_error(importer.import(), "Libvirt")
             }
             "libvirt_daemon" => {
-                reporter.report(0, 1, &i18n("Querying libvirt daemon..."));
+                reporter.report(0, 1, &i18n("Querying libvirt daemon…"));
                 if reporter.is_cancelled() {
                     return ImportResult::default();
                 }

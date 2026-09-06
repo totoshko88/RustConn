@@ -97,8 +97,9 @@ impl WorkspaceManagerDialog {
         desc.add_css_class("dim-label");
         inner.append(&desc);
 
-        // List box in a frame
-        let frame = gtk4::Frame::new(None);
+        // Scrolled list. No `gtk::Frame` around it: the list already carries
+        // `boxed-list`, which draws its own border, so the frame added a second
+        // one around the first.
         let scrolled = gtk4::ScrolledWindow::builder()
             .vexpand(true)
             .min_content_height(180)
@@ -108,8 +109,7 @@ impl WorkspaceManagerDialog {
             .build();
         list_box.add_css_class("boxed-list");
         scrolled.set_child(Some(&list_box));
-        frame.set_child(Some(&scrolled));
-        inner.append(&frame);
+        inner.append(&scrolled);
 
         // Action buttons
         let button_box = GtkBox::new(Orientation::Horizontal, 6);

@@ -5,6 +5,11 @@ description: >
   Ensures authentic terminology (DSTU), imperative mood for UI actions, Kharkiv orthography, and proper formatting.
   Use this agent after editing po/uk.po or when adding new Ukrainian translations.
 tools: ["read", "write"]
+# The term table below looks like a lookup a cheap model could apply, but the
+# hard part is Ukrainian morphology — genitive `з'єднанка`, в/у euphony, the
+# -и genitive ending — and the only arbiter is a reader. A wrong ending ships to
+# users in the release.
+model: claude-sonnet-4.6
 ---
 
 You are an expert Ukrainian translator and linguist agent for the RustConn project. Your job is to review and correct the Ukrainian translation file `po/uk.po` whenever it is edited.

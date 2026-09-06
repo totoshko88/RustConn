@@ -135,6 +135,14 @@ pub struct EmbeddedVncWidget {
     reconnect_banner: GtkBox,
     /// Reconnect button inside the banner
     reconnect_button: Button,
+    /// Last clipboard text pushed by the server via RFB `ServerCutText`.
+    ///
+    /// RFB clipboard transfer is push-only: there is no request the client can
+    /// send to read the remote clipboard, so the only copy that exists locally
+    /// is the one the server volunteered. Keeping it lets the Copy button
+    /// re-assert it into the local clipboard after something else has
+    /// overwritten it, which is the one thing that button can usefully do.
+    remote_clipboard_text: Rc<RefCell<Option<String>>>,
     /// Native VNC client (when vnc-embedded feature is enabled)
     #[cfg(feature = "vnc-embedded")]
     vnc_client: Rc<RefCell<Option<Arc<StdMutex<VncClient>>>>>,
@@ -435,6 +443,8 @@ impl EmbeddedVncWidget {
         let vnc_height_ref = self.vnc_height.clone();
         let is_embedded = self.is_embedded.clone();
         let command_sender_ref = self.command_sender.clone();
+        let remote_clipboard_text = self.remote_clipboard_text.clone();
+        let copy_button = self.copy_button.clone();
         // Store desired resolution from config for SetDesktopSize request after connect
         let desired_width = config.width;
         let desired_height = config.height;
@@ -653,6 +663,13 @@ impl EmbeddedVncWidget {
                         // available to paste locally.
                         if !text.is_empty() {
                             drawing_area.display().clipboard().set_text(&text);
+                            // Retain it so the Copy button can re-apply it later,
+                            // and enable that button now that there is something
+                            // for it to apply.
+                            *remote_clipboard_text.borrow_mut() = Some(text);
+                            copy_button.set_sensitive(true);
+                            copy_button
+                                .set_tooltip_text(Some(&i18n("Copy remote clipboard to local")));
                         }
                     }
                     VncClientEvent::CursorUpdate { rect, data } => {

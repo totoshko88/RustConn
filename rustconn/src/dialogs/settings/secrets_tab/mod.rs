@@ -9,8 +9,7 @@ use std::rc::Rc;
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, Button, Entry, FileDialog, FileFilter, Label, Orientation, StringList, Switch,
-    glib,
+    Box as GtkBox, Button, Entry, FileDialog, FileFilter, Label, Orientation, StringList, glib,
 };
 use libadwaita as adw;
 use rustconn_core::config::{SecretBackendType, SecretSettings};
@@ -161,8 +160,8 @@ pub struct SecretsPageWidgets {
     pub keepassxc_status_container: GtkBox,
     pub kdbx_key_file_entry: Entry,
     pub kdbx_key_file_browse_button: Button,
-    pub kdbx_use_key_file_check: Switch,
-    pub kdbx_use_password_check: Switch,
+    pub kdbx_use_key_file_check: adw::SwitchRow,
+    pub kdbx_use_password_check: adw::SwitchRow,
     // Additional rows for visibility control
     pub kdbx_group: adw::PreferencesGroup,
     pub auth_group: adw::PreferencesGroup,
@@ -176,7 +175,7 @@ pub struct SecretsPageWidgets {
     pub bitwarden_password_entry: adw::PasswordEntryRow,
     /// 3-state credential storage selector for Bitwarden master password.
     pub bitwarden_storage_combo: adw::ComboRow,
-    pub bitwarden_use_api_key_check: Switch,
+    pub bitwarden_use_api_key_check: adw::SwitchRow,
     pub bitwarden_client_id_entry: Entry,
     pub bitwarden_client_secret_entry: adw::PasswordEntryRow,
     /// Detected Bitwarden CLI command path (updated async)
@@ -728,7 +727,7 @@ fn credential_file_status_row() -> (adw::ActionRow, Label) {
         // of the dialog instead of taking a second line.
         .max_width_chars(32)
         .justify(gtk4::Justification::Right)
-        .label(i18n("Checking..."))
+        .label(i18n("Checking…"))
         .css_classes(["dim-label"])
         .build();
     let row = adw::ActionRow::builder()
@@ -972,7 +971,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let availability_label = Label::builder()
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
-        .label(i18n("Checking..."))
+        .label(i18n("Checking…"))
         .css_classes(["dim-label"])
         .wrap(true)
         .max_width_chars(36)
@@ -1064,7 +1063,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("op".to_string()));
 
     // Initial version display — "Detecting..."
-    version_label.set_text(&i18n("Detecting..."));
+    version_label.set_text(&i18n("Detecting…"));
     version_label.add_css_class("dim-label");
 
     // === Bitwarden Configuration Group ===
@@ -1083,7 +1082,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save password checkbox for Bitwarden (encrypted in settings file)
     let bitwarden_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1099,17 +1098,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     );
     bitwarden_group.add(&bitwarden_storage_combo);
 
-    // API Key authentication switch
-    let bitwarden_use_api_key_check = Switch::builder().valign(gtk4::Align::Center).build();
-    let bw_use_api_key_row = adw::ActionRow::builder()
+    // API Key authentication switch. An `AdwSwitchRow` for the same reason as
+    // `enable_fallback` above: a bare `GtkSwitch` in an `AdwActionRow` suffix is
+    // the odd one out in a boxed list.
+    let bitwarden_use_api_key_check = adw::SwitchRow::builder()
         .title(i18n("Use API key authentication"))
         .subtitle(i18n(
             "For automation or 2FA methods not supported by CLI (FIDO2, Duo)",
         ))
         .build();
-    bw_use_api_key_row.add_suffix(&bitwarden_use_api_key_check);
-    bw_use_api_key_row.set_activatable_widget(Some(&bitwarden_use_api_key_check));
-    bitwarden_group.add(&bw_use_api_key_row);
+    bitwarden_group.add(&bitwarden_use_api_key_check);
 
     // API Client ID entry
     let bitwarden_client_id_entry = Entry::builder()
@@ -1137,10 +1135,10 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // Setup visibility for API key fields
     let bw_client_id_row_clone = bw_client_id_row.clone();
     let bw_client_secret_entry_clone = bitwarden_client_secret_entry.clone();
-    bitwarden_use_api_key_check.connect_state_set(move |_, state| {
+    bitwarden_use_api_key_check.connect_active_notify(move |row| {
+        let state = row.is_active();
         bw_client_id_row_clone.set_visible(state);
         bw_client_secret_entry_clone.set_visible(state);
-        glib::Propagation::Proceed
     });
 
     // Initial visibility - hide API key fields by default
@@ -1199,7 +1197,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             };
 
             button.set_sensitive(false);
-            update_status_label(&status_label, &i18n("Unlocking..."), "dim-label");
+            update_status_label(&status_label, &i18n("Unlocking…"), "dim-label");
 
             let bw_cmd_str = bw_cmd.borrow().clone();
 
@@ -1301,7 +1299,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save password checkbox (encrypted in settings file)
     let onepassword_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1347,7 +1345,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let op_cmd = onepassword_cmd.clone();
         onepassword_signin_button.connect_clicked(move |button| {
             button.set_sensitive(false);
-            update_status_label(&status_label, &i18n("Opening terminal..."), "dim-label");
+            update_status_label(&status_label, &i18n("Opening terminal…"), "dim-label");
 
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
@@ -1413,7 +1411,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save passphrase checkbox (encrypted in settings file)
     let passbolt_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1520,7 +1518,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Status label showing initialization status
     let pass_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -2164,17 +2162,12 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .description(i18n("Database unlock methods"))
         .build();
 
-    // Use password switch
-    let kdbx_use_password_check = Switch::builder()
-        .active(true)
-        .valign(gtk4::Align::Center)
-        .build();
-    let use_password_row = adw::ActionRow::builder()
+    // Use password switch — an `AdwSwitchRow`, like the rest of this page.
+    let kdbx_use_password_check = adw::SwitchRow::builder()
         .title(i18n("Use password"))
+        .active(true)
         .build();
-    use_password_row.add_suffix(&kdbx_use_password_check);
-    use_password_row.set_activatable_widget(Some(&kdbx_use_password_check));
-    auth_group.add(&use_password_row);
+    auth_group.add(&kdbx_use_password_check);
 
     // Password entry (the row itself; `password_row` aliases it for the
     // visibility toggling driven by the "Use password" switch)
@@ -2208,14 +2201,11 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     );
     auth_group.add(&kdbx_storage_combo);
 
-    // Use key file switch
-    let kdbx_use_key_file_check = Switch::builder().valign(gtk4::Align::Center).build();
-    let use_key_file_row = adw::ActionRow::builder()
+    // Use key file switch — an `AdwSwitchRow`, like the rest of this page.
+    let kdbx_use_key_file_check = adw::SwitchRow::builder()
         .title(i18n("Use key file"))
         .build();
-    use_key_file_row.add_suffix(&kdbx_use_key_file_check);
-    use_key_file_row.set_activatable_widget(Some(&kdbx_use_key_file_check));
-    auth_group.add(&use_key_file_row);
+    auth_group.add(&kdbx_use_key_file_check);
 
     // Key file path with browse button
     let kdbx_key_file_entry = Entry::builder()
@@ -2277,17 +2267,16 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     // tracks the password row, hidden when password auth is disabled.
     let password_row_clone = password_row.clone();
     let kdbx_storage_combo_clone = kdbx_storage_combo.clone();
-    kdbx_use_password_check.connect_state_set(move |_, state| {
+    kdbx_use_password_check.connect_active_notify(move |row| {
+        let state = row.is_active();
         password_row_clone.set_visible(state);
         kdbx_storage_combo_clone.set_visible(state);
-        glib::Propagation::Proceed
     });
 
     // Setup visibility connections for key file fields
     let key_file_row_clone = key_file_row.clone();
-    kdbx_use_key_file_check.connect_state_set(move |_, state| {
-        key_file_row_clone.set_visible(state);
-        glib::Propagation::Proceed
+    kdbx_use_key_file_check.connect_active_notify(move |row| {
+        key_file_row_clone.set_visible(row.is_active());
     });
 
     // Setup visibility for KeePass sections when integration is enabled/disabled
@@ -2379,7 +2368,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 version_label_clone.set_text(&i18n("Not installed"));
                 version_label_clone.add_css_class("error");
             } else {
-                version_label_clone.set_text(&i18n("Detecting..."));
+                version_label_clone.set_text(&i18n("Detecting…"));
                 version_label_clone.add_css_class("dim-label");
             }
         };
@@ -2636,7 +2625,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
-        update_status_label(&kdbx_status_label_check, &i18n("Checking..."), "dim-label");
+        update_status_label(&kdbx_status_label_check, &i18n("Checking…"), "dim-label");
 
         // Run verification asynchronously to avoid blocking the GTK main loop
         // (KDBX key derivation with argon2 can take seconds).

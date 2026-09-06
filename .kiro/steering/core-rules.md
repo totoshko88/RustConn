@@ -74,6 +74,42 @@ the caller lives.
   the second one seals the window, so a third added later panics rather than
   quietly working
 
+## Finishing a feature: changelog, then commit, never push
+
+A finished feature that is not committed is a feature at risk. "Finished" means the
+Definition of Done below holds — not "the code appears to work". Item 6 already
+requires the `CHANGELOG.md` entry; write it first so it lands in the same commit,
+then:
+
+1. `git add` **only the files this session edited** — the list is
+   `target/.kiro-session-edits`, kept by the `edit-journal` hook
+2. `git commit` with a conventional message (`type(scope): description`)
+
+**Never `git add -A` or `git add .`.** This checkout is regularly shared with the
+IDE and with a second session, so a blanket stage commits someone else's unfinished
+work. If the journal overlaps changes the agent did not make, stop and ask.
+
+**Never `git push`.** Not a branch, not a tag, not any remote. Commit locally, say
+what is ready, and hand over — the maintainer pushes, or runs `./scripts/release.sh`.
+A commit is local and reversible; a push is where work becomes visible to CI, to
+reviewers and to every downstream channel, and that call is the maintainer's.
+`git push --dry-run` is fine to show what would go. `release-manual-only-guard`
+enforces it; do not rely on it.
+
+Exception: during release preparation `release-version.md` forbids git entirely —
+that flow leaves a clean tree for `release.sh` and commits nothing.
+
+Run the quality gate once before the commit, for the whole change. Rationale and
+the incident behind the staging rule: `cost-discipline.md`.
+
+## Agent profiles declare their model
+
+Every profile in `.kiro/agents/` carries an explicit `model:`. The default is `auto`
+at 1.0x chosen per request — wrong at both ends, since a cargo runner clippy
+re-checks belongs at 0.05x and a reviewer nothing re-checks belongs at 2.2x. Pick by
+whether an arbiter exists, not by how simple the task looks. `agent-model-guard`
+rejects a profile without the field; the table is in `cost-discipline.md`.
+
 ## Definition of Done
 
 A task is done ONLY when all hold. This is the finish line for `/goal` loops and
@@ -102,9 +138,10 @@ An agent prepares a release and validates it. The maintainer cuts it.
 - **Never** run `release.sh` without `--dry-run`, and never pass `--yes`. That
   flag exists so a *human* can confirm without a prompt; an agent shell has no
   TTY, so passing it means the agent has appointed itself the person who decides.
-- **Never** do it by hand either — no `git tag v<x.y.z>`, no pushing a release
-  tag. The tag push is what triggers the Release workflow, the artifact build and
-  the Flathub/OBS/Snap updates.
+- **Never** do it by hand either — no `git tag v<x.y.z>`. Pushing is already
+  forbidden outright above; the reason it matters *here* is that the tag push is
+  what triggers the Release workflow, the artifact build and the Flathub/OBS/Snap
+  updates, so this is the one push that cannot be taken back at all.
 - Finish by reporting: the gate list from the dry run, the diff, and what is left
   to decide. Then stop.
 

@@ -172,7 +172,7 @@ impl VncSessionWidget {
                 } else {
                     let status_text = match vnc_state {
                         VncConnectionState::Disconnected => i18n("Disconnected"),
-                        VncConnectionState::Connecting => i18n("Connecting..."),
+                        VncConnectionState::Connecting => i18n("Connecting…"),
                         VncConnectionState::Connected => String::new(), // Won't be shown
                         VncConnectionState::Error => i18n("Connection error"),
                     };
@@ -240,7 +240,7 @@ impl VncSessionWidget {
 
         // Update state to connecting
         *self.state.borrow_mut() = SessionState::Connecting;
-        self.status_label.set_text(&i18n("Connecting..."));
+        self.status_label.set_text(&i18n("Connecting…"));
         self.spinner.set_visible(true);
 
         // Notify state change

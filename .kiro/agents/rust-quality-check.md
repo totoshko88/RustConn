@@ -6,6 +6,11 @@ description: >
   Use this agent to quickly validate code quality before committing or in CI-like checks.
   Invoke with no arguments for fmt+clippy only, or mention "tests" to include cargo test.
 tools: ["shell"]
+# 0.05x. The cheapest tier in the catalogue, because clippy is the arbiter: if
+# this agent reports a pass it did not earn, the next run says so. A wrong answer
+# here costs one re-run, which is the test for whether a cheap model is safe.
+# See steering cost-discipline.md.
+model: qwen3-coder-next
 ---
 
 You are a Rust code quality checker. Your ONLY job is to run cargo fmt, clippy, and optionally tests, fix issues, and report results concisely.

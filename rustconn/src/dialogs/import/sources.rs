@@ -305,7 +305,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         // Parse SSH config file using import_from_path
                         let importer = SshConfigImporter::new();
@@ -398,7 +398,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = AsbruImporter::new();
                         let result = Self::import_or_error(
@@ -494,7 +494,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = AnsibleInventoryImporter::new();
                         let result = Self::import_or_error(
@@ -589,7 +589,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
                         // Parse native file — try NativeExport first, then GroupSyncExport
                         match NativeExport::from_file(&path) {
                             Ok(native_export) => {
@@ -755,7 +755,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = RoyalTsImporter::new();
                         let result = Self::import_or_error(
@@ -844,7 +844,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = RdmImporter::new();
                         let result = Self::import_or_error(
@@ -935,7 +935,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = MobaXtermImporter::with_path(path.clone());
                         let result = Self::import_or_error(
@@ -1030,7 +1030,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = LibvirtXmlImporter::new();
                         let result =
@@ -1116,7 +1116,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone.set_text(&i18n_f(
-                            "Importing from {}...",
+                            "Importing from {}…",
                             &[&path.display().to_string()],
                         ));
 
@@ -1204,7 +1204,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         let importer = RdpFileImporter::new();
                         let result =
@@ -1295,7 +1295,7 @@ impl ImportDialog {
                         btn_clone.set_sensitive(false);
                         progress_bar_clone.set_fraction(0.5);
                         progress_label_clone
-                            .set_text(&i18n_f("Importing from {}...", &[&path.display().to_string()]));
+                            .set_text(&i18n_f("Importing from {}…", &[&path.display().to_string()]));
 
                         // Auto-detect delimiter from file extension and content
                         let delimiter = if path
@@ -1438,7 +1438,7 @@ impl ImportDialog {
 
                     let file_count = paths.len();
                     progress_label_clone.set_text(&i18n_f(
-                        "Importing from {} files...",
+                        "Importing from {} files…",
                         &[&file_count.to_string()],
                     ));
 
@@ -1456,7 +1456,7 @@ impl ImportDialog {
                             .file_name()
                             .map_or_else(|| String::from("?"), |n| n.to_string_lossy().to_string());
                         progress_label_clone.set_text(&i18n_f(
-                            "Importing {}...",
+                            "Importing {}…",
                             &[&filename],
                         ));
 

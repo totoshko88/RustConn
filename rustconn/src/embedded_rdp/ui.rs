@@ -133,10 +133,10 @@ pub fn draw_status_overlay(
 
     // Host name
     let config_ref = config.borrow();
+    let no_connection = i18n("No connection");
     let host = config_ref
         .as_ref()
-        .map(|c| c.host.as_str())
-        .unwrap_or("No connection");
+        .map_or(no_connection.as_str(), |c| c.host.as_str());
 
     cr.set_source_rgb(0.9, 0.9, 0.9);
     cr.set_font_size(18.0);
@@ -157,9 +157,9 @@ pub fn draw_status_overlay(
         }
         RdpConnectionState::Connecting => {
             if embedded {
-                (i18n("Connecting via IronRDP..."), (0.8, 0.8, 0.6))
+                (i18n("Connecting via IronRDP…"), (0.8, 0.8, 0.6))
             } else {
-                (i18n("Starting FreeRDP..."), (0.8, 0.8, 0.6))
+                (i18n("Starting FreeRDP…"), (0.8, 0.8, 0.6))
             }
         }
         RdpConnectionState::Connected => {

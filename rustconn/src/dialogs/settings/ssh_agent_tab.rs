@@ -38,7 +38,7 @@ pub fn create_ssh_agent_page() -> (
         .build();
 
     let ssh_agent_status_label = Label::builder()
-        .label(i18n("Checking..."))
+        .label(i18n("Checking…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .build();
@@ -188,7 +188,7 @@ pub fn load_ssh_agent_settings(
     ssh_agent_manager: &Rc<RefCell<SshAgentManager>>,
 ) {
     // Show loading state immediately
-    ssh_agent_status_label.set_text(&i18n("Checking..."));
+    ssh_agent_status_label.set_text(&i18n("Checking…"));
     ssh_agent_status_label.remove_css_class("error");
     ssh_agent_status_label.remove_css_class("success");
     ssh_agent_status_label.add_css_class("dim-label");
@@ -199,7 +199,7 @@ pub fn load_ssh_agent_settings(
         ssh_agent_keys_list.remove(&child);
     }
     let loading_row = adw::ActionRow::builder()
-        .title(i18n("Loading keys..."))
+        .title(i18n("Loading keys…"))
         .build();
     let spinner = crate::spinner::new();
     loading_row.add_prefix(&spinner);
@@ -312,7 +312,7 @@ pub fn populate_available_keys_list(
         available_keys_list.remove(&child);
     }
     let loading_row = adw::ActionRow::builder()
-        .title(i18n("Scanning ~/.ssh/..."))
+        .title(i18n("Scanning ~/.ssh/…"))
         .build();
     let spinner = crate::spinner::new();
     loading_row.add_prefix(&spinner);

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Session Reset",
+      "trigger": "SessionStart",
+      "description": "Clears the per-session state the other hooks accumulate: truncates the agent edit journal (target/.kiro-session-edits) and removes any leftover report. Replaces the former Session Baseline hook, which recorded content hashes so the Stop hook could infer what the session changed — an inference that answered 'did anything change this file?' and therefore attributed the IDE's and other sessions' edits to the agent. bin/edit-journal.sh records the writes directly, so the hashes and their failure mode are gone. Silent always; fails open. Logic: bin/session-reset.sh.",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/session-reset.sh",
+        "timeout": 15
+      }
+    }
+  ]
+}

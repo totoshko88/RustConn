@@ -324,7 +324,7 @@ mod legacy {
             dialog.set_child(Some(&toolbar_view));
 
             let search_entry = SearchEntry::builder()
-                .placeholder_text(i18n("Search shortcuts..."))
+                .placeholder_text(i18n("Search shortcuts…"))
                 .build();
             content.append(&search_entry);
 

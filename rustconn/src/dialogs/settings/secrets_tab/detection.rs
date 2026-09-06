@@ -74,7 +74,7 @@ impl BackendReadiness {
             Self::Ready(detail) if detail.is_empty() => i18n("Ready"),
             Self::Ready(detail) | Self::NeedsAction(detail) => detail.clone(),
             Self::NotInstalled => i18n("Not installed"),
-            Self::Unknown => i18n("Checking..."),
+            Self::Unknown => i18n("Checking…"),
         }
     }
 

@@ -65,7 +65,7 @@ impl TerminalSearchDialog {
 
         // Search entry
         let search_entry = SearchEntry::builder()
-            .placeholder_text(i18n("Search text..."))
+            .placeholder_text(i18n("Search text…"))
             .hexpand(true)
             .build();
         content.append(&search_entry);

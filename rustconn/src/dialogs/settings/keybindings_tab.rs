@@ -74,10 +74,11 @@ pub fn create_keybindings_page() -> (
             .build();
 
         for def in &cat_defs {
-            let row = adw::ActionRow::builder()
-                .title(i18n(&def.label))
-                .subtitle(&def.action)
-                .build();
+            // No subtitle: this row used to carry `def.action` — the internal
+            // action name, e.g. "app.close-tab". That is an identifier the code
+            // keys its lookups by, not something to show a user, and it was the
+            // one untranslated string on the page.
+            let row = adw::ActionRow::builder().title(i18n(&def.label)).build();
 
             // Current accelerator label
             let accel_label = Label::builder()

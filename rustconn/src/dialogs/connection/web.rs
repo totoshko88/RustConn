@@ -227,28 +227,15 @@ pub fn combo_index_from_browser_mode(mode: WebBrowserMode) -> u32 {
     }
 }
 
-/// Validates the browser command entry for Custom mode.
-///
-/// Returns `true` if the configuration is valid (either not Custom mode,
-/// or Custom mode with a non-empty browser command).
-#[must_use]
-#[expect(
-    dead_code,
-    reason = "public API for upcoming connection-editor validation wiring"
-)]
-pub fn validate_web_options(combo: &adw::ComboRow, browser_entry: &Entry) -> bool {
-    let mode = browser_mode_from_combo_index(combo.selected());
-    if mode == WebBrowserMode::Custom {
-        let text = browser_entry.text();
-        let is_valid = !text.trim().is_empty();
-        if is_valid {
-            browser_entry.remove_css_class("error");
-        } else {
-            browser_entry.add_css_class("error");
-        }
-        is_valid
-    } else {
-        browser_entry.remove_css_class("error");
-        true
-    }
-}
+// `validate_web_options` used to live here, carrying
+// `#[expect(dead_code, reason = "public API for upcoming connection-editor
+// validation wiring")]`. That wiring had in fact already happened, in
+// `ConnectionDialogData::validate`, and it was done better: a refusal there
+// returns a message that reaches the user through `alert::show_error`, whereas
+// this returned a bare `bool` and communicated the reason only as a CSS class.
+// Keeping a second, weaker copy of the same rule invited the two to disagree
+// about when a Custom browser command is acceptable.
+//
+// The live `error` styling applied while the mode combo changes is unaffected —
+// see the `connect_selected_notify` handler above, which is feedback rather than
+// a save gate.

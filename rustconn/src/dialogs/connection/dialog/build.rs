@@ -41,19 +41,19 @@ impl ConnectionDialog {
         let icon_entry = basic.icon_entry.clone();
         let description_view = basic.description_view.clone();
         let host_entry = basic.host_entry.clone();
-        let host_label = basic.host_label.clone();
+        let host_row = basic.host_row.clone();
         let port_spin = basic.port_spin.clone();
-        let port_label = basic.port_label.clone();
+        let port_row = basic.port_row.clone();
         let network_mode_row = basic.network_mode_row.clone();
         let username_entry = basic.username_entry.clone();
-        let username_label = basic.username_label.clone();
+        let username_row = basic.username_row.clone();
         let domain_entry = basic.domain_entry.clone();
-        let domain_label = basic.domain_label.clone();
+        let domain_row = basic.domain_row.clone();
         let tags_entry = basic.tags_entry.clone();
-        let tags_label = basic.tags_label.clone();
+        let tags_row = basic.tags_row.clone();
         let protocol_dropdown = basic.protocol_dropdown.clone();
         let password_source_dropdown = basic.password_source_dropdown.clone();
-        let password_source_label = basic.password_source_label.clone();
+        let pw_source_row = basic.pw_source_row.clone();
         let password_entry = basic.password_entry.clone();
         let password_visibility_button = basic.password_visibility_button.clone();
         let password_load_button = basic.password_load_button.clone();
@@ -320,18 +320,15 @@ impl ConnectionDialog {
         // Connect protocol dropdown to stack
         let general_fields = super::construction::GeneralFields {
             host_entry: host_entry.clone(),
-            host_label: host_label.clone(),
+            host_row: host_row.clone(),
             port_spin: port_spin.clone(),
-            port_label: port_label.clone(),
-            username_entry: username_entry.clone(),
-            username_label: username_label.clone(),
-            tags_entry: tags_entry.clone(),
-            tags_label: tags_label.clone(),
+            port_row: port_row.clone(),
+            username_row: username_row.clone(),
+            tags_row: tags_row.clone(),
             password_source_dropdown: password_source_dropdown.clone(),
-            password_source_label: password_source_label.clone(),
+            pw_source_row: pw_source_row.clone(),
             password_row: password_row.clone(),
-            domain_entry: domain_entry.clone(),
-            domain_label: domain_label.clone(),
+            domain_row: domain_row.clone(),
             mosh_settings_group: mosh_settings_group.clone(),
             // Not kept on the dialog: only the protocol dropdown ever touches it.
             ssh_keyboard_group,
@@ -1144,7 +1141,7 @@ impl ConnectionDialog {
 
             // Show testing status
             btn.set_sensitive(false);
-            btn.set_label(&i18n("Testing..."));
+            btn.set_label(&i18n("Testing…"));
 
             // Clone data needed for the test (not GTK widgets)
             let host = connection.host.clone();

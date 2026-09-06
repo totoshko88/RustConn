@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk};
+use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, glib};
 
 use crate::i18n::i18n;
 
@@ -202,19 +202,66 @@ impl MenuActivation {
 }
 
 /// A single item in the context menu.
-enum ContextMenuItem {
-    /// A clickable action with a label and a window action name (without "win." prefix).
-    Action { label: String, action: String },
+pub enum ContextMenuItem {
+    /// A clickable action.
+    ///
+    /// `steps` are window actions (without the `win.` prefix) activated in
+    /// order, each with an optional target value. A single step covers the
+    /// common case; two express "select this row, then act on the selection",
+    /// which is how a menu built for a connection identified by id reaches the
+    /// actions that operate on the sidebar's current selection.
+    Action {
+        label: String,
+        steps: Vec<(String, Option<glib::Variant>)>,
+        destructive: bool,
+    },
     /// A visual separator between groups of actions.
     Separator,
 }
 
 impl ContextMenuItem {
-    fn action(label: &str, action: &str) -> Self {
+    /// A one-step action with no target value.
+    pub fn action(label: &str, action: &str) -> Self {
         Self::Action {
             label: label.to_string(),
-            action: action.to_string(),
+            steps: vec![(action.to_string(), None)],
+            destructive: false,
         }
+    }
+
+    /// A one-step action carrying a target value.
+    pub fn action_with_target(label: &str, action: &str, target: &glib::Variant) -> Self {
+        Self::Action {
+            label: label.to_string(),
+            steps: vec![(action.to_string(), Some(target.clone()))],
+            destructive: false,
+        }
+    }
+
+    /// An action that first selects `target` by id, then activates `action` on
+    /// the resulting selection.
+    pub fn action_on_selected(label: &str, id: &glib::Variant, action: &str) -> Self {
+        Self::Action {
+            label: label.to_string(),
+            steps: vec![
+                ("select-item-by-id".to_string(), Some(id.clone())),
+                (action.to_string(), None),
+            ],
+            destructive: false,
+        }
+    }
+
+    /// Marks the item as destructive, so it is styled apart from the rest.
+    #[must_use]
+    pub fn destructive(mut self) -> Self {
+        if let Self::Action {
+            ref mut destructive,
+            ..
+        } = self
+        {
+            *destructive = true;
+        }
+        self
     }
 }
 
@@ -273,7 +320,7 @@ pub fn show_context_menu_for_item(
         } else if is_root_group && sync_mode == "none" {
             items.push(ContextMenuItem::Separator);
             items.push(ContextMenuItem::action(
-                &i18n("Enable Cloud Sync..."),
+                &i18n("Enable Cloud Sync…"),
                 "edit-connection",
             ));
         }
@@ -309,7 +356,7 @@ pub fn show_context_menu_for_item(
             "duplicate-via-wizard",
         ));
         items.push(ContextMenuItem::action(
-            &i18n("Move to Group..."),
+            &i18n("Move to Group…"),
             "move-to-group",
         ));
         // Opening a second, independent session for a connection that already
@@ -345,14 +392,14 @@ pub fn show_context_menu_for_item(
             "copy-password",
         ));
         items.push(ContextMenuItem::action(
-            &i18n("Run Snippet..."),
+            &i18n("Run Snippet…"),
             "run-snippet-for-connection",
         ));
         // Opens the log viewer where this connection writes its session logs.
         // Always offered: the point is to show the location even when nothing
         // has been recorded yet (issue #247).
         items.push(ContextMenuItem::action(
-            &i18n("Session Log..."),
+            &i18n("Session Log…"),
             "show-connection-log",
         ));
         if is_ssh {
@@ -402,10 +449,7 @@ pub fn show_context_menu_for_item(
     let is_import_group = is_group && sync_mode == "import";
     if !is_import_group {
         items.push(ContextMenuItem::Separator);
-        items.push(ContextMenuItem::action(
-            &i18n("Delete"),
-            "delete-connection",
-        ));
+        items.push(ContextMenuItem::action(&i18n("Delete"), "delete-connection").destructive());
     }
 
     show_popover(widget, window, &items, x, y, activation);
@@ -424,8 +468,8 @@ pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y:
         ContextMenuItem::action(&i18n("New Group"), "new-group"),
         ContextMenuItem::action(&i18n("New Smart Folder"), "new-smart-folder"),
         ContextMenuItem::Separator,
-        ContextMenuItem::action(&i18n("Import..."), "import"),
-        ContextMenuItem::action(&i18n("Export..."), "export"),
+        ContextMenuItem::action(&i18n("Import…"), "import"),
+        ContextMenuItem::action(&i18n("Export…"), "export"),
     ];
 
     show_popover(widget, window, &items, x, y, MenuActivation::PointerRow);
@@ -449,7 +493,7 @@ pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y:
 ///   empty-space clicks).
 /// - Each button's click handler closing the popover before activating
 ///   the action.
-fn show_popover(
+pub fn show_popover(
     widget: &impl IsA<gtk4::Widget>,
     window: &gtk4::ApplicationWindow,
     items: &[ContextMenuItem],
@@ -482,26 +526,39 @@ fn show_popover(
 
     for item in items {
         match item {
-            ContextMenuItem::Action { label, action } => {
+            ContextMenuItem::Action {
+                label,
+                steps,
+                destructive,
+            } => {
                 let button = Button::builder()
                     .accessible_role(gtk4::AccessibleRole::MenuItem)
                     .build();
                 button.add_css_class("flat");
                 button.add_css_class("context-menu-item");
+                if *destructive {
+                    button.add_css_class("context-menu-destructive");
+                }
 
                 let lbl = Label::new(Some(label));
                 lbl.set_xalign(0.0);
                 button.set_child(Some(&lbl));
 
                 let window_weak = window.downgrade();
-                let action_name = action.clone();
+                let steps = steps.clone();
                 let popover_weak = popover.downgrade();
                 button.connect_clicked(move |_| {
                     if let Some(p) = popover_weak.upgrade() {
                         popdown_intentionally(&p);
                     }
                     if let Some(w) = window_weak.upgrade() {
-                        gtk4::prelude::ActionGroupExt::activate_action(&w, &action_name, None);
+                        for (action_name, target) in &steps {
+                            gtk4::prelude::ActionGroupExt::activate_action(
+                                &w,
+                                action_name,
+                                target.as_ref(),
+                            );
+                        }
                     }
                 });
 

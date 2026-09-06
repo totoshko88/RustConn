@@ -251,7 +251,7 @@ impl super::EmbeddedRdpWidget {
                                 }
 
                                 // Show reconnecting status
-                                sl.set_text(&i18n("Reconnecting..."));
+                                sl.set_text(&i18n("Reconnecting…"));
                                 sl.set_visible(true);
 
                                 // Trigger reconnect via callback after short delay
@@ -446,7 +446,7 @@ impl super::EmbeddedRdpWidget {
                 let _ = sender.send(RdpClientCommand::Disconnect);
             }
 
-            status_label.set_text(&i18n("Reconnecting..."));
+            status_label.set_text(&i18n("Reconnecting…"));
             status_label.set_visible(true);
 
             let reconnect_cb = on_reconnect.clone();
