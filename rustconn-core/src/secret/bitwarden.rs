@@ -1151,11 +1151,20 @@ pub async fn lock_vault() -> SecretResult<()> {
     clear_verified();
     clear_session_key();
     let bw_cmd = get_bw_cmd();
-    let output = bw_command(&bw_cmd)
-        .arg("lock")
-        .output()
-        .await
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw lock: {e}")))?;
+    // Bounded like every other bw invocation: `lock` can trigger a network sync
+    // that stalls, and this is awaited from the GUI's teardown path.
+    let output = tokio::time::timeout(
+        BW_INVOCATION_TIMEOUT,
+        bw_command(&bw_cmd).arg("lock").output(),
+    )
+    .await
+    .map_err(|_| {
+        SecretError::ConnectionFailed(format!(
+            "bw lock timed out after {}s",
+            BW_INVOCATION_TIMEOUT.as_secs()
+        ))
+    })?
+    .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw lock: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1185,15 +1194,26 @@ pub async fn login_with_api_key(
     client_secret: &SecretString,
 ) -> SecretResult<()> {
     let bw_cmd = get_bw_cmd();
-    let output = bw_command(&bw_cmd)
-        .args(["login", "--apikey"])
-        .env("BW_CLIENTID", client_id.expose_secret())
-        .env("BW_CLIENTSECRET", client_secret.expose_secret())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw login: {e}")))?;
+    // `login --apikey` reaches the Bitwarden server, so it is the most likely of
+    // all bw invocations to hang on a slow or unreachable network. Bound it.
+    let output = tokio::time::timeout(
+        BW_INVOCATION_TIMEOUT,
+        bw_command(&bw_cmd)
+            .args(["login", "--apikey"])
+            .env("BW_CLIENTID", client_id.expose_secret())
+            .env("BW_CLIENTSECRET", client_secret.expose_secret())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output(),
+    )
+    .await
+    .map_err(|_| {
+        SecretError::ConnectionFailed(format!(
+            "bw login timed out after {}s",
+            BW_INVOCATION_TIMEOUT.as_secs()
+        ))
+    })?
+    .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw login: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1212,11 +1232,19 @@ pub async fn login_with_api_key(
 pub async fn logout() -> SecretResult<()> {
     clear_verified();
     let bw_cmd = get_bw_cmd();
-    let output = bw_command(&bw_cmd)
-        .arg("logout")
-        .output()
-        .await
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw logout: {e}")))?;
+    // Bounded like the others: `logout` can attempt a final server round-trip.
+    let output = tokio::time::timeout(
+        BW_INVOCATION_TIMEOUT,
+        bw_command(&bw_cmd).arg("logout").output(),
+    )
+    .await
+    .map_err(|_| {
+        SecretError::ConnectionFailed(format!(
+            "bw logout timed out after {}s",
+            BW_INVOCATION_TIMEOUT.as_secs()
+        ))
+    })?
+    .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run bw logout: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

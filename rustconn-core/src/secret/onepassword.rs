@@ -23,6 +23,18 @@ use super::serde_helpers::serde_error_kind;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
+/// Ceiling on a single `op` invocation.
+///
+/// The `op` CLI reaches the 1Password service for most operations and can stall
+/// on a slow or unreachable network, or on a biometric prompt that never gets
+/// answered. Nothing bounded these calls before, so a stalled `op` blocked its
+/// caller forever. Thirty seconds matches [`BW_INVOCATION_TIMEOUT`] in the
+/// Bitwarden backend: long enough for a real round-trip plus an unlock prompt,
+/// short enough to fail while the user is still watching.
+///
+/// [`BW_INVOCATION_TIMEOUT`]: super::bitwarden::BW_INVOCATION_TIMEOUT
+const OP_INVOCATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// 1Password CLI backend
 ///
 /// This backend uses the `op` command-line utility to interact with
@@ -160,10 +172,14 @@ impl OnePasswordBackend {
 
     /// Runs an op command and returns stdout
     async fn run_command(&self, args: &[&str]) -> SecretResult<String> {
-        let output = self
-            .build_command(args)
-            .output()
+        let output = tokio::time::timeout(OP_INVOCATION_TIMEOUT, self.build_command(args).output())
             .await
+            .map_err(|_| {
+                SecretError::ConnectionFailed(format!(
+                    "op command timed out after {}s",
+                    OP_INVOCATION_TIMEOUT.as_secs()
+                ))
+            })?
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run op: {e}")))?;
 
         if !output.status.success() {
@@ -205,9 +221,14 @@ impl OnePasswordBackend {
             drop(stdin);
         }
 
-        let output = child
-            .wait_with_output()
+        let output = tokio::time::timeout(OP_INVOCATION_TIMEOUT, child.wait_with_output())
             .await
+            .map_err(|_| {
+                SecretError::ConnectionFailed(format!(
+                    "op command timed out after {}s",
+                    OP_INVOCATION_TIMEOUT.as_secs()
+                ))
+            })?
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to wait for op: {e}")))?;
 
         if !output.status.success() {
