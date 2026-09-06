@@ -59,7 +59,7 @@ impl SessionControls {
         container.set_margin_top(6);
         container.set_margin_bottom(6);
 
-        let status_label = Label::new(Some(&i18n("Connecting...")));
+        let status_label = Label::new(Some(&i18n("Connecting…")));
         status_label.set_hexpand(true);
         status_label.set_halign(gtk4::Align::Start);
         status_label.add_css_class("dim-label");

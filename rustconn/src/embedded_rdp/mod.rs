@@ -562,7 +562,7 @@ impl EmbeddedRdpWidget {
         // Copy button - copies remote clipboard to local (enabled when data available)
         let copy_button = Button::with_label(&i18n("Copy"));
         copy_button.set_tooltip_text(Some(&i18n(
-            "Copy remote clipboard to local (waiting for remote data...)",
+            "Copy remote clipboard to local (waiting for remote data…)",
         )));
         copy_button.set_sensitive(false); // Disabled until we receive clipboard data
         toolbar.append(&copy_button);
@@ -1475,7 +1475,7 @@ impl EmbeddedRdpWidget {
 
                         // Disable button during transfer
                         save_btn_clone.set_sensitive(false);
-                        save_btn_clone.set_label(&i18n("Downloading..."));
+                        save_btn_clone.set_label(&i18n("Downloading…"));
 
                         // Request file contents for each file
                         if let Some(ref sender) = *ironrdp_tx_clone.borrow() {
@@ -1508,11 +1508,11 @@ impl EmbeddedRdpWidget {
                         }
 
                         // Show progress
-                        status_label_clone.set_text(&i18n("Downloading files..."));
+                        status_label_clone.set_text(&i18n("Downloading files…"));
                         status_label_clone.set_visible(true);
 
                         if let Some(ref callback) = *on_progress_clone.borrow() {
-                            callback(0.0, "Starting download...");
+                            callback(0.0, "Starting download…");
                         }
                     }
                 },

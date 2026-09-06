@@ -140,7 +140,7 @@ impl ConnectionSidebar {
 
         // Search entry
         let search_entry = SearchEntry::new();
-        search_entry.set_placeholder_text(Some(&i18n("Search... (? for help)")));
+        search_entry.set_placeholder_text(Some(&i18n("Search… (? for help)")));
         search_entry.set_hexpand(true);
         // Accessibility: set label for screen readers
         search_entry.update_property(&[gtk4::accessible::Property::Label(&i18n(
@@ -152,7 +152,7 @@ impl ConnectionSidebar {
         let search_spinner = {
             let s = crate::spinner::new();
             s.set_visible(false);
-            s.set_tooltip_text(Some(&i18n("Search pending...")));
+            s.set_tooltip_text(Some(&i18n("Search pending…")));
             s
         };
         search_box.append(&search_spinner);

@@ -320,7 +320,7 @@ pub fn show_context_menu_for_item(
         } else if is_root_group && sync_mode == "none" {
             items.push(ContextMenuItem::Separator);
             items.push(ContextMenuItem::action(
-                &i18n("Enable Cloud Sync..."),
+                &i18n("Enable Cloud Sync…"),
                 "edit-connection",
             ));
         }
@@ -356,7 +356,7 @@ pub fn show_context_menu_for_item(
             "duplicate-via-wizard",
         ));
         items.push(ContextMenuItem::action(
-            &i18n("Move to Group..."),
+            &i18n("Move to Group…"),
             "move-to-group",
         ));
         // Opening a second, independent session for a connection that already
@@ -392,14 +392,14 @@ pub fn show_context_menu_for_item(
             "copy-password",
         ));
         items.push(ContextMenuItem::action(
-            &i18n("Run Snippet..."),
+            &i18n("Run Snippet…"),
             "run-snippet-for-connection",
         ));
         // Opens the log viewer where this connection writes its session logs.
         // Always offered: the point is to show the location even when nothing
         // has been recorded yet (issue #247).
         items.push(ContextMenuItem::action(
-            &i18n("Session Log..."),
+            &i18n("Session Log…"),
             "show-connection-log",
         ));
         if is_ssh {
@@ -468,8 +468,8 @@ pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y:
         ContextMenuItem::action(&i18n("New Group"), "new-group"),
         ContextMenuItem::action(&i18n("New Smart Folder"), "new-smart-folder"),
         ContextMenuItem::Separator,
-        ContextMenuItem::action(&i18n("Import..."), "import"),
-        ContextMenuItem::action(&i18n("Export..."), "export"),
+        ContextMenuItem::action(&i18n("Import…"), "import"),
+        ContextMenuItem::action(&i18n("Export…"), "export"),
     ];
 
     show_popover(widget, window, &items, x, y, MenuActivation::PointerRow);

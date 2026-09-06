@@ -236,7 +236,7 @@ pub fn show_snippets_manager(
 
     // Search entry
     let search_entry = gtk4::SearchEntry::new();
-    search_entry.set_placeholder_text(Some(&i18n("Search snippets...")));
+    search_entry.set_placeholder_text(Some(&i18n("Search snippets…")));
     content.append(&search_entry);
 
     // Snippets list
@@ -618,7 +618,7 @@ pub fn show_snippet_picker(
     content.set_margin_end(12);
 
     let search_entry = gtk4::SearchEntry::new();
-    search_entry.set_placeholder_text(Some(&i18n("Search snippets...")));
+    search_entry.set_placeholder_text(Some(&i18n("Search snippets…")));
     content.append(&search_entry);
 
     let scrolled = gtk4::ScrolledWindow::builder()

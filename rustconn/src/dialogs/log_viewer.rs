@@ -350,7 +350,7 @@ impl LogViewerDialog {
         let buffer = text_view.buffer();
 
         // Show loading indicator
-        buffer.set_text(&i18n("Loading..."));
+        buffer.set_text(&i18n("Loading…"));
 
         // Clone path for the background thread
         let path_clone = path.to_path_buf();

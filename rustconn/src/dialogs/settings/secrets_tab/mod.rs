@@ -727,7 +727,7 @@ fn credential_file_status_row() -> (adw::ActionRow, Label) {
         // of the dialog instead of taking a second line.
         .max_width_chars(32)
         .justify(gtk4::Justification::Right)
-        .label(i18n("Checking..."))
+        .label(i18n("Checking…"))
         .css_classes(["dim-label"])
         .build();
     let row = adw::ActionRow::builder()
@@ -971,7 +971,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let availability_label = Label::builder()
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
-        .label(i18n("Checking..."))
+        .label(i18n("Checking…"))
         .css_classes(["dim-label"])
         .wrap(true)
         .max_width_chars(36)
@@ -1063,7 +1063,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_cmd: Rc<RefCell<String>> = Rc::new(RefCell::new("op".to_string()));
 
     // Initial version display — "Detecting..."
-    version_label.set_text(&i18n("Detecting..."));
+    version_label.set_text(&i18n("Detecting…"));
     version_label.add_css_class("dim-label");
 
     // === Bitwarden Configuration Group ===
@@ -1082,7 +1082,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save password checkbox for Bitwarden (encrypted in settings file)
     let bitwarden_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1197,7 +1197,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             };
 
             button.set_sensitive(false);
-            update_status_label(&status_label, &i18n("Unlocking..."), "dim-label");
+            update_status_label(&status_label, &i18n("Unlocking…"), "dim-label");
 
             let bw_cmd_str = bw_cmd.borrow().clone();
 
@@ -1299,7 +1299,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save password checkbox (encrypted in settings file)
     let onepassword_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1345,7 +1345,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         let op_cmd = onepassword_cmd.clone();
         onepassword_signin_button.connect_clicked(move |button| {
             button.set_sensitive(false);
-            update_status_label(&status_label, &i18n("Opening terminal..."), "dim-label");
+            update_status_label(&status_label, &i18n("Opening terminal…"), "dim-label");
 
             // Try to open a terminal with op signin
             // This requires user interaction for biometric or password
@@ -1411,7 +1411,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Save passphrase checkbox (encrypted in settings file)
     let passbolt_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -1518,7 +1518,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
 
     // Status label showing initialization status
     let pass_status_label = Label::builder()
-        .label(i18n("Detecting..."))
+        .label(i18n("Detecting…"))
         .halign(gtk4::Align::End)
         .valign(gtk4::Align::Center)
         .css_classes(["dim-label"])
@@ -2368,7 +2368,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
                 version_label_clone.set_text(&i18n("Not installed"));
                 version_label_clone.add_css_class("error");
             } else {
-                version_label_clone.set_text(&i18n("Detecting..."));
+                version_label_clone.set_text(&i18n("Detecting…"));
                 version_label_clone.add_css_class("dim-label");
             }
         };
@@ -2625,7 +2625,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             None
         };
 
-        update_status_label(&kdbx_status_label_check, &i18n("Checking..."), "dim-label");
+        update_status_label(&kdbx_status_label_check, &i18n("Checking…"), "dim-label");
 
         // Run verification asynchronously to avoid blocking the GTK main loop
         // (KDBX key derivation with argon2 can take seconds).

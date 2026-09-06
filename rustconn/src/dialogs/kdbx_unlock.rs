@@ -125,7 +125,7 @@ pub fn show_kdbx_unlock_dialog<F>(
             let password_verify = password.clone();
 
             // Show verifying state
-            status_label_ref.set_text(&i18n("Verifying..."));
+            status_label_ref.set_text(&i18n("Verifying…"));
             status_label_ref.remove_css_class("error");
             status_label_ref.add_css_class("dim-label");
             status_label_ref.set_visible(true);

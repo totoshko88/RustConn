@@ -94,7 +94,7 @@ impl PasswordDialog {
 
         let spinner = crate::spinner::new();
         let spinner_label = Label::builder()
-            .label(i18n("Resolving credentials..."))
+            .label(i18n("Resolving credentials…"))
             .css_classes(["dim-label"])
             .build();
         spinner_box.append(&spinner);
@@ -360,7 +360,7 @@ impl PasswordDialog {
     /// This method displays a spinner and message while credentials are being
     /// resolved asynchronously, preventing UI freezing.
     pub fn show_loading(&self, message: Option<&str>) {
-        let default_msg = i18n("Resolving credentials...");
+        let default_msg = i18n("Resolving credentials…");
         let msg = message.unwrap_or(&default_msg);
         self.spinner_label.set_text(msg);
         self.spinner_box.set_visible(true);

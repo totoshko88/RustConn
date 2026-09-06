@@ -151,7 +151,7 @@ pub fn create_clients_page() -> adw::PreferencesPage {
 fn create_loading_row(title: &str) -> adw::ActionRow {
     let row = adw::ActionRow::builder()
         .title(i18n(title))
-        .subtitle(i18n("Checking..."))
+        .subtitle(i18n("Checking…"))
         .build();
 
     let spinner = Spinner::builder()

@@ -157,9 +157,9 @@ pub fn draw_status_overlay(
         }
         RdpConnectionState::Connecting => {
             if embedded {
-                (i18n("Connecting via IronRDP..."), (0.8, 0.8, 0.6))
+                (i18n("Connecting via IronRDP…"), (0.8, 0.8, 0.6))
             } else {
-                (i18n("Starting FreeRDP..."), (0.8, 0.8, 0.6))
+                (i18n("Starting FreeRDP…"), (0.8, 0.8, 0.6))
             }
         }
         RdpConnectionState::Connected => {

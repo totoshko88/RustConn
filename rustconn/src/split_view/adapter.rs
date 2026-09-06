@@ -1414,7 +1414,7 @@ impl SplitViewAdapter {
         // Create "Select Tab" button as an alternative to drag-and-drop
         // This is useful because AdwTabBar intercepts drag events
         let select_button = Button::builder()
-            .label(i18n("Select Tab..."))
+            .label(i18n("Select Tab…"))
             .tooltip_text(i18n("Choose an open tab to display in this panel"))
             .halign(Align::Center)
             .build();
@@ -1510,7 +1510,7 @@ impl SplitViewAdapter {
     fn create_occupied_placeholder(&self) -> adw::StatusPage {
         adw::StatusPage::builder()
             .icon_name("content-loading-symbolic")
-            .title(i18n("Loading..."))
+            .title(i18n("Loading…"))
             .hexpand(true)
             .vexpand(true)
             .build()

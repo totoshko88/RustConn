@@ -493,7 +493,7 @@ impl MainWindow {
                             id_for_cb,
                         );
                         toast_for_cb.show_success(&crate::i18n::i18n_f(
-                            "Wake On LAN sent to {} — waiting for host to come online...",
+                            "Wake On LAN sent to {} — waiting for host to come online…",
                             &[&mac_for_cb],
                         ));
 
@@ -534,7 +534,7 @@ impl MainWindow {
                                 match result {
                                     Ok(true) => {
                                         toast.show_success(&crate::i18n::i18n_f(
-                                            "{} is online — connecting...",
+                                            "{} is online — connecting…",
                                             &[&host_display],
                                         ));
                                         Self::start_connection_with_credential_resolution(
@@ -607,7 +607,7 @@ impl MainWindow {
             let host_display = host.clone();
 
             toast.show_toast(&crate::i18n::i18n_f(
-                "Checking if {} is online...",
+                "Checking if {} is online…",
                 &[&host_display],
             ));
 
@@ -794,7 +794,7 @@ impl MainWindow {
                     return;
                 }
 
-                toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP..."));
+                toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP…"));
 
                 let tab_name = format!("mc: {conn_name}");
                 let session_id = notebook_clone.create_terminal_tab_with_settings(
@@ -951,7 +951,7 @@ impl MainWindow {
                 }
 
                 tracing::info!(%base_uri, "Opening SFTP file browser");
-                toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP..."));
+                toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP…"));
 
                 // Add SSH key to agent in background, then open URI
                 let toast_cb = toast_clone.clone();

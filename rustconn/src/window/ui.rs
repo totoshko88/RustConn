@@ -252,22 +252,19 @@ pub fn create_app_menu() -> gio::Menu {
     // registrations in `window/snippet_actions.rs` and `window/edit_actions.rs`
     // before adding either here.
     let tools_submenu = gio::Menu::new();
-    tools_submenu.append(Some(&i18n("Snippets...")), Some("win.manage-snippets"));
-    tools_submenu.append(Some(&i18n("Clusters...")), Some("win.manage-clusters"));
-    tools_submenu.append(Some(&i18n("Workspaces...")), Some("win.manage-workspaces"));
-    tools_submenu.append(Some(&i18n("Templates...")), Some("win.manage-templates"));
-    tools_submenu.append(Some(&i18n("Variables...")), Some("win.manage-variables"));
+    tools_submenu.append(Some(&i18n("Snippets…")), Some("win.manage-snippets"));
+    tools_submenu.append(Some(&i18n("Clusters…")), Some("win.manage-clusters"));
+    tools_submenu.append(Some(&i18n("Workspaces…")), Some("win.manage-workspaces"));
+    tools_submenu.append(Some(&i18n("Templates…")), Some("win.manage-templates"));
+    tools_submenu.append(Some(&i18n("Variables…")), Some("win.manage-variables"));
 
     let tools_section_sep = gio::Menu::new();
     tools_section_sep.append(
-        Some(&i18n("Password Generator...")),
+        Some(&i18n("Password Generator…")),
         Some("win.password-generator"),
     );
-    tools_section_sep.append(
-        Some(&i18n("Wake On LAN...")),
-        Some("win.wake-on-lan-dialog"),
-    );
-    tools_section_sep.append(Some(&i18n("SSH Tunnels...")), Some("win.ssh-tunnels"));
+    tools_section_sep.append(Some(&i18n("Wake On LAN…")), Some("win.wake-on-lan-dialog"));
+    tools_section_sep.append(Some(&i18n("SSH Tunnels…")), Some("win.ssh-tunnels"));
     tools_submenu.append_section(None, &tools_section_sep);
 
     let tools_section = gio::Menu::new();
@@ -276,14 +273,11 @@ pub fn create_app_menu() -> gio::Menu {
 
     // Sessions submenu — monitoring and history
     let sessions_submenu = gio::Menu::new();
-    sessions_submenu.append(Some(&i18n("Active Sessions...")), Some("win.show-sessions"));
-    sessions_submenu.append(
-        Some(&i18n("Connection History...")),
-        Some("win.show-history"),
-    );
-    sessions_submenu.append(Some(&i18n("Statistics...")), Some("win.show-statistics"));
-    sessions_submenu.append(Some(&i18n("Recordings...")), Some("win.manage-recordings"));
-    sessions_submenu.append(Some(&i18n("Session Logs...")), Some("win.show-logs"));
+    sessions_submenu.append(Some(&i18n("Active Sessions…")), Some("win.show-sessions"));
+    sessions_submenu.append(Some(&i18n("Connection History…")), Some("win.show-history"));
+    sessions_submenu.append(Some(&i18n("Statistics…")), Some("win.show-statistics"));
+    sessions_submenu.append(Some(&i18n("Recordings…")), Some("win.manage-recordings"));
+    sessions_submenu.append(Some(&i18n("Session Logs…")), Some("win.show-logs"));
 
     let sessions_section = gio::Menu::new();
     sessions_section.append_submenu(Some(&i18n("Sessions")), &sessions_submenu);
@@ -291,8 +285,8 @@ pub fn create_app_menu() -> gio::Menu {
 
     // File section (import/export + clipboard)
     let file_section = gio::Menu::new();
-    file_section.append(Some(&i18n("Import Connections...")), Some("win.import"));
-    file_section.append(Some(&i18n("Export Connections...")), Some("win.export"));
+    file_section.append(Some(&i18n("Import Connections…")), Some("win.import"));
+    file_section.append(Some(&i18n("Export Connections…")), Some("win.export"));
     file_section.append(Some(&i18n("Copy Connection")), Some("win.copy-connection"));
     file_section.append(
         Some(&i18n("Paste Connection")),
@@ -302,13 +296,13 @@ pub fn create_app_menu() -> gio::Menu {
 
     // Settings section (separated from app meta per GNOME HIG)
     let settings_section = gio::Menu::new();
-    settings_section.append(Some(&i18n("Settings...")), Some("win.settings"));
+    settings_section.append(Some(&i18n("Settings…")), Some("win.settings"));
     // External CLI components menu — visible in any confined sandbox (snap or
     // Flatpak), where host binaries are unavailable and tools are downloaded
     // into the app's writable data dir. The action is always registered but
     // does nothing outside a sandbox.
     if rustconn_core::is_sandboxed() {
-        settings_section.append(Some(&i18n("Components...")), Some("win.flatpak-components"));
+        settings_section.append(Some(&i18n("Components…")), Some("win.flatpak-components"));
     }
     menu.append_section(None, &settings_section);
 
@@ -320,7 +314,7 @@ pub fn create_app_menu() -> gio::Menu {
         Some(&i18n("Keyboard Passthrough")),
         Some("win.toggle-passthrough"),
     );
-    app_section.append(Some(&i18n("Keyboard Shortcuts...")), Some("app.shortcuts"));
+    app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
     app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
     app_section.append(Some(&i18n("Quit")), Some("app.quit"));
     menu.append_section(None, &app_section);

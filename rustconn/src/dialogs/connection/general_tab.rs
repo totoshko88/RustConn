@@ -399,7 +399,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .build();
 
     let tags_entry = Entry::builder()
-        .placeholder_text(i18n("tag1, tag2, ..."))
+        .placeholder_text(i18n("tag1, tag2, …"))
         .hexpand(true)
         .width_chars(16)
         .max_width_chars(40)

@@ -1141,7 +1141,7 @@ impl ConnectionDialog {
 
             // Show testing status
             btn.set_sensitive(false);
-            btn.set_label(&i18n("Testing..."));
+            btn.set_label(&i18n("Testing…"));
 
             // Clone data needed for the test (not GTK widgets)
             let host = connection.host.clone();

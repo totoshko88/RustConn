@@ -199,7 +199,7 @@ impl SnippetDialog {
         // Tags
         let (tags_row, tags_entry) = EntryRowBuilder::new(i18n("Tags"))
             .subtitle(i18n("Comma-separated"))
-            .placeholder(i18n("tag1, tag2, ..."))
+            .placeholder(i18n("tag1, tag2, …"))
             .build();
         tags_row.set_activatable_widget(Some(&tags_entry));
         group.add(&tags_row);

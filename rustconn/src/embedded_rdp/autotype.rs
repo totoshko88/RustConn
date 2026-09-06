@@ -94,7 +94,7 @@ impl super::EmbeddedRdpWidget {
                             );
                             show_autotype_status(
                                 &status,
-                                &i18n_f("Typing {} chars...", &[&char_count.to_string()]),
+                                &i18n_f("Typing {} chars…", &[&char_count.to_string()]),
                                 3,
                             );
                         } else {
@@ -256,7 +256,7 @@ impl super::EmbeddedRdpWidget {
                     );
                     show_autotype_status(
                         &status,
-                        &i18n_f("Typing {} chars...", &[&char_count.to_string()]),
+                        &i18n_f("Typing {} chars…", &[&char_count.to_string()]),
                         3,
                     );
                 }
