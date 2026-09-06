@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.21.6
+Version:        0.21.7
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -387,6 +387,36 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Sep 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.7-0
+- Version bump to 0.21.7
+- Fixed: the Session Logs dialog could not be made narrow — it is an
+  adw::OverlaySplitView now, collapsing the file list into an overlay below 500sp
+  with a header toggle, instead of a gtk::Paned that kept both panes on screen
+- Fixed: two boxed lists were drawn inside a second border, and the Credentials
+  Storage row carried both an "ℹ" character and an information icon; both removed
+- Fixed: client detection on Preferences ▸ Clients reported by colour and glyph
+  alone; each indicator now carries the state as words as accessible label and
+  tooltip
+- Fixed: the Keyboard Shortcuts page showed internal action identifiers as row
+  subtitles; the subtitle is gone
+- Fixed: three switches in Preferences ▸ Secrets were bare GtkSwitch widgets in an
+  AdwActionRow suffix rather than AdwSwitchRow; all three are AdwSwitchRow now
+- Fixed: a smart folder whose icon was an icon name displayed the name as text;
+  the folder row now tells an emoji from a themed icon name
+- Fixed: the Smart Folders context menus were invisible to a screen reader and
+  unusable from the keyboard; they go through the shared show_popover builder now
+- Fixed: the embedded VNC status screen was English-only and its Copy button did
+  nothing; both now go through i18n() and the RDP clipboard helper
+- Fixed: the connection wizard threw away the icon when Advanced… was pressed, and
+  the connection editor kept calling a URL a Host and left empty rows behind
+- Changed: every ellipsis in the interface is one "…" character instead of three
+  periods; 111 strings across 31 files normalised, merging duplicated msgids
+- Removed: around 390 lines of unreachable UI code, including a fullscreen button
+  that flipped a private bool and called no window API
+- Dependencies: crossbeam-channel 0.5.16→0.5.17, crossbeam-deque 0.8.7→0.8.8,
+  crossbeam-epoch 0.9.20→0.9.21, crossbeam-utils 0.8.22→0.8.23, der 0.8.1→0.8.2,
+  ipnet 2.12.1→2.12.2
+
 * Sat Sep 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.6-0
 - Version bump to 0.21.6
 - Added: an optional second confirmation before a snippet runs (#315) — a Confirm

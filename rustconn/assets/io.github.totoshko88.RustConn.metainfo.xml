@@ -140,6 +140,22 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.21.7" date="2026-09-06">
+      <description>
+        <p>Version 0.21.7 - a dialog that finally fits a small screen, accessibility fixes across the interface, and a round of dead-code removal:</p>
+        <ul>
+          <li>The Session Logs dialog can now be made narrow. Its file list collapses into an overlay on a small display and a header button toggles it, instead of being held wide by a fixed split</li>
+          <li>Client detection on the Clients page now says whether each client was found in words - Installed, Not found, or Using embedded client - so it no longer relies on colour and a symbol alone, and a screen reader can read it</li>
+          <li>The embedded VNC status screen and its Copy button now work in every language and give the same feedback the RDP session does</li>
+          <li>The Smart Folders right-click menus are now reachable from the keyboard and announced properly by a screen reader, matching the rest of the application</li>
+          <li>Fixed: adding an icon in the connection wizard and then pressing Advanced no longer loses it</li>
+          <li>Fixed: the connection editor now titles a Web address URL rather than Host, and drops the rows that a protocol does not use instead of leaving them empty</li>
+          <li>Fixed: several small visual and labelling issues - a doubled border around two lists, an information row with two icons, internal action names shown as shortcut descriptions, and switches that sat slightly apart from their neighbours</li>
+          <li>Every ellipsis in the interface is now a single character, which also merged some translations that had drifted apart</li>
+          <li>Removed a fullscreen button that never worked and a body of unreachable interface code</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.21.6" date="2026-09-05">
       <description>
         <p>Version 0.21.6 - a confirmation before a snippet runs, a Bitwarden vault that unlocks in your own language, and failures that stop happening in silence:</p>

@@ -55,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The hook and steering inventories were brought back in line with reality** — `hooks-map.md` gained the `PostToolUse` and `UserPromptSubmit` sections it had no rows for, `docs/AI_DEVELOPMENT.md` had its counts corrected (27→29 steering files, 16→17 hooks) and its trigger table rewritten, and four documents still pointed at hooks that no longer exist. Two unrelated stale facts fixed in passing: `docs/AI_DEVELOPMENT.md` said translations span 16 `.po` files when `ls po/*.po` counts 17, and told hook authors to create `.kiro/hooks/<name>.kiro.hook`, an extension the loader does not read.
 
+### Dependencies
+
+- **Updated**: crossbeam-channel 0.5.16 → 0.5.17, crossbeam-deque 0.8.7 → 0.8.8, crossbeam-epoch 0.9.20 → 0.9.21, crossbeam-utils 0.8.22 → 0.8.23, der 0.8.1 → 0.8.2, ipnet 2.12.1 → 2.12.2. All in-range patch/minor updates within existing requirements; `cargo deny check advisories` clean. `dirs` was held at 6.0 rather than taken to 7.0: the API is identical for the functions in use, but `tray-icon 0.24` still pins `dirs = "^6"`, so bumping would duplicate the crate in the tree for no functional gain.
+
 ## [0.21.6] - 2026-09-05
 
 ### Added
