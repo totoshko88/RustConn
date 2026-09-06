@@ -20,6 +20,7 @@ use rustconn_core::models::{Connection, SmartFolder};
 use rustconn_core::smart_folder::SmartFolderManager;
 
 use crate::i18n::i18n;
+use crate::sidebar_ui::{ContextMenuItem, MenuActivation, show_popover};
 
 /// Sidebar section that displays smart folders with dynamic connection counts.
 pub struct SmartFoldersSidebar {
@@ -268,7 +269,7 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
     // --- Right-click on connection row → context menu ---
     let conn_ctx_gesture = gtk4::GestureClick::new();
     conn_ctx_gesture.set_button(gdk::BUTTON_SECONDARY);
-    conn_ctx_gesture.connect_pressed(move |gesture, _n, _x, y| {
+    conn_ctx_gesture.connect_pressed(move |gesture, _n, x, y| {
         if let Some(widget) = gesture.widget()
             && let Some(list_box) = widget.downcast_ref::<ListBox>()
             && let Some(row) = list_box.row_at_y(y as i32)
@@ -278,7 +279,9 @@ fn build_expandable_folder_row(folder: &SmartFolder, connections: &[&Connection]
                 return;
             }
             list_box.select_row(Some(&row));
-            show_connection_context_menu_in_smart_folder(&row, conn_id.to_string());
+            // Anchored on the list box with the click coordinates, so the shared
+            // builder can resolve a stable anchor the way the sidebar does.
+            show_connection_context_menu_in_smart_folder(list_box, x, y, &conn_id);
         }
     });
     conn_list.add_controller(conn_ctx_gesture);
@@ -351,6 +354,12 @@ fn build_connection_row(conn: &Connection) -> ListBoxRow {
 }
 
 /// Shows a context menu with Edit / Delete for a smart folder row.
+///
+/// Built through [`crate::sidebar_ui::show_popover`], the same builder the
+/// sidebar's own context menus use. This function used to assemble its own
+/// popover, which is how it ended up without the accessible menu roles, the
+/// arrow-key navigation, the Escape handler, the height cap and the
+/// active-popover coordination that builder provides.
 fn show_smart_folder_context_menu(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
@@ -362,82 +371,20 @@ fn show_smart_folder_context_menu(
         return;
     };
 
-    let popover = gtk4::Popover::new();
-    // Keep the menu legible under third-party GTK themes (e.g. Breeze on KDE),
-    // which otherwise paint the flat-button text to clash with the popover
-    // background (#181). Styling lives in assets/style.css.
-    popover.add_css_class("context-menu-popover");
+    let items = vec![
+        ContextMenuItem::action(&i18n("Edit"), "edit-smart-folder"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action(&i18n("Delete"), "delete-smart-folder").destructive(),
+    ];
 
-    let menu_box = GtkBox::new(Orientation::Vertical, 0);
-    menu_box.set_margin_top(6);
-    menu_box.set_margin_bottom(6);
-    menu_box.set_margin_start(6);
-    menu_box.set_margin_end(6);
-
-    let create_menu_button = |label: &str| -> Button {
-        let btn = Button::with_label(label);
-        btn.set_has_frame(false);
-        btn.add_css_class("flat");
-        btn.add_css_class("context-menu-item");
-        btn.set_halign(gtk4::Align::Start);
-        btn
-    };
-
-    let popover_ref = popover.downgrade();
-    let window_clone = window.clone();
-
-    // Edit
-    let edit_btn = create_menu_button(&i18n("Edit"));
-    let win = window_clone.clone();
-    let popover_c = popover_ref.clone();
-    edit_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("edit-smart-folder") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&edit_btn);
-
-    // Delete
-    let delete_btn = create_menu_button(&i18n("Delete"));
-    delete_btn.add_css_class("context-menu-destructive");
-    let win = window_clone;
-    let popover_c = popover_ref;
-    delete_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("delete-smart-folder") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&delete_btn);
-
-    popover.set_child(Some(&menu_box));
-    popover.set_parent(window);
-
-    let widget_bounds = widget.compute_bounds(window);
-    #[expect(
-        clippy::cast_possible_truncation,
-        reason = "value range fits the target type by construction in this code path"
-    )]
-    let (popup_x, popup_y) = if let Some(bounds) = widget_bounds {
-        (bounds.x() as i32 + x as i32, bounds.y() as i32 + y as i32)
-    } else {
-        (x as i32, y as i32)
-    };
-
-    popover.set_pointing_to(Some(&gdk::Rectangle::new(popup_x, popup_y, 1, 1)));
-    popover.set_autohide(true);
-    popover.set_has_arrow(true);
-
-    popover.connect_closed(|p| {
-        p.unparent();
-    });
-
-    popover.popup();
+    show_popover(
+        widget,
+        window,
+        &items,
+        x,
+        y,
+        MenuActivation::PointerFallback,
+    );
 }
 
 /// Shows a context menu for a connection row inside a smart folder.
@@ -446,179 +393,39 @@ fn show_smart_folder_context_menu(
 /// Wake On LAN, Check if Online, and Delete. Actions that require sidebar
 /// selection first select the connection in the main sidebar via
 /// `select-item-by-id` action, then activate the standard window action.
-fn show_connection_context_menu_in_smart_folder(row: &ListBoxRow, conn_id: String) {
-    let Some(root) = row.root() else { return };
+fn show_connection_context_menu_in_smart_folder(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    conn_id: &str,
+) {
+    let Some(root) = widget.root() else { return };
     let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
         return;
     };
 
-    let popover = gtk4::Popover::new();
-    // Keep the menu legible under third-party GTK themes (e.g. Breeze on KDE),
-    // which otherwise paint the flat-button text to clash with the popover
-    // background (#181). Styling lives in assets/style.css.
-    popover.add_css_class("context-menu-popover");
+    let id = conn_id.to_variant();
+    let items = vec![
+        ContextMenuItem::action_with_target(&i18n("Connect"), "connect-to", &id),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action_on_selected(&i18n("Edit"), &id, "edit-connection"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action_on_selected(&i18n("Copy Username"), &id, "copy-username"),
+        ContextMenuItem::action_on_selected(&i18n("Copy Password"), &id, "copy-password"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action_on_selected(&i18n("Wake On LAN"), &id, "wake-on-lan"),
+        ContextMenuItem::action_on_selected(&i18n("Check if Online"), &id, "check-host-online"),
+        ContextMenuItem::Separator,
+        ContextMenuItem::action_on_selected(&i18n("Delete"), &id, "delete-connection")
+            .destructive(),
+    ];
 
-    let menu_box = GtkBox::new(Orientation::Vertical, 0);
-    menu_box.set_margin_top(6);
-    menu_box.set_margin_bottom(6);
-    menu_box.set_margin_start(6);
-    menu_box.set_margin_end(6);
-
-    let create_menu_button = |label: &str| -> Button {
-        let btn = Button::with_label(label);
-        btn.set_has_frame(false);
-        btn.add_css_class("flat");
-        btn.add_css_class("context-menu-item");
-        btn.set_halign(gtk4::Align::Start);
-        btn
-    };
-
-    let popover_ref = popover.downgrade();
-
-    // Connect
-    let connect_btn = create_menu_button(&i18n("Connect"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    connect_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("connect-to") {
-            action.activate(Some(&id.to_variant()));
-        }
-    });
-    menu_box.append(&connect_btn);
-
-    // Separator
-    menu_box.append(&gtk4::Separator::new(Orientation::Horizontal));
-
-    // Edit
-    let edit_btn = create_menu_button(&i18n("Edit"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    edit_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("edit-connection") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&edit_btn);
-
-    // Separator
-    menu_box.append(&gtk4::Separator::new(Orientation::Horizontal));
-
-    // Copy Username
-    let copy_user_btn = create_menu_button(&i18n("Copy Username"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    copy_user_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("copy-username") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&copy_user_btn);
-
-    // Copy Password
-    let copy_pass_btn = create_menu_button(&i18n("Copy Password"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    copy_pass_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("copy-password") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&copy_pass_btn);
-
-    // Separator
-    menu_box.append(&gtk4::Separator::new(Orientation::Horizontal));
-
-    // Wake On LAN
-    let wol_btn = create_menu_button(&i18n("Wake On LAN"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    wol_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("wake-on-lan") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&wol_btn);
-
-    // Check if Online
-    let check_btn = create_menu_button(&i18n("Check if Online"));
-    let win = window.clone();
-    let id = conn_id.clone();
-    let popover_c = popover_ref.clone();
-    check_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("check-host-online") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&check_btn);
-
-    // Separator
-    menu_box.append(&gtk4::Separator::new(Orientation::Horizontal));
-
-    // Delete
-    let delete_btn = create_menu_button(&i18n("Delete"));
-    delete_btn.add_css_class("context-menu-destructive");
-    let win = window.clone();
-    let id = conn_id;
-    let popover_c = popover_ref;
-    delete_btn.connect_clicked(move |_| {
-        if let Some(p) = popover_c.upgrade() {
-            p.popdown();
-        }
-        if let Some(action) = win.lookup_action("select-item-by-id") {
-            action.activate(Some(&id.to_variant()));
-        }
-        if let Some(action) = win.lookup_action("delete-connection") {
-            action.activate(None);
-        }
-    });
-    menu_box.append(&delete_btn);
-
-    popover.set_child(Some(&menu_box));
-    popover.set_parent(row);
-    popover.set_autohide(true);
-    popover.set_has_arrow(true);
-
-    popover.connect_closed(|p| {
-        p.unparent();
-    });
-
-    popover.popup();
+    show_popover(
+        widget,
+        window,
+        &items,
+        x,
+        y,
+        MenuActivation::PointerFallback,
+    );
 }
