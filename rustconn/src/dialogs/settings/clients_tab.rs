@@ -200,18 +200,22 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
         .subtitle(&subtitle)
         .build();
 
-    // Status icon - for embedded protocols, always show success
-    let (icon, css_class) = if client.has_embedded {
+    // Status indicator. The glyph and its colour are the visual cue; the
+    // accessible label and tooltip carry the same meaning as words, because a
+    // bare "✓"/"✗"/"●" plus a CSS colour is exactly the "conveyed by colour
+    // alone" case — a screen reader would otherwise read out the glyph and
+    // nothing else.
+    let (icon, css_class, status_text) = if client.has_embedded {
         // Embedded support available - always show as available
         if client.installed {
-            ("✓", "success") // External client found
+            ("✓", "success", i18n("Installed")) // External client found
         } else {
-            ("●", "accent") // Using embedded (neutral/info indicator)
+            ("●", "accent", i18n("Using embedded client")) // neutral/info
         }
     } else if client.installed {
-        ("✓", "success")
+        ("✓", "success", i18n("Installed"))
     } else {
-        ("✗", "error")
+        ("✗", "error", i18n("Not found"))
     };
 
     let status_label = Label::builder()
@@ -219,6 +223,8 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
         .valign(gtk4::Align::Center)
         .css_classes([css_class])
         .build();
+    status_label.set_tooltip_text(Some(&status_text));
+    status_label.update_property(&[gtk4::accessible::Property::Label(&status_text)]);
     new_row.add_prefix(&status_label);
 
     // Version label
