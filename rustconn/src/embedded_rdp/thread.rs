@@ -28,6 +28,31 @@ use super::types::{EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, 
 // ============================================================================
 
 /// State of a single file download from RDP clipboard
+/// Size of each RANGE request when downloading a clipboard file.
+///
+/// A clipboard download is pulled in fixed pieces rather than asking for the
+/// whole file at once: a single `u32::MAX` request made the server's reply
+/// size its own choice, so a large file arrived truncated. 1 MiB keeps the
+/// round-trips few while staying well inside what a server will return in one
+/// File Contents Response.
+#[cfg(feature = "rdp-embedded")]
+pub const FILE_DOWNLOAD_CHUNK_SIZE: u32 = 1024 * 1024;
+
+/// What [`ClipboardFileTransfer::append_data`] decided after a chunk.
+#[cfg(feature = "rdp-embedded")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChunkOutcome {
+    /// The file is fully received and ready to save.
+    Complete,
+    /// More data is needed; request the next range from this offset.
+    NeedMore {
+        /// Byte offset the next RANGE request must start at.
+        next_offset: u64,
+    },
+    /// No download is tracked under this stream id (already finished or cancelled).
+    Unknown,
+}
+
 #[cfg(feature = "rdp-embedded")]
 #[derive(Debug, Clone)]
 pub struct FileDownloadState {
@@ -133,14 +158,37 @@ impl ClipboardFileTransfer {
         self.downloads.remove(&stream_id).is_some()
     }
 
-    /// Appends data to a download
-    pub fn append_data(&mut self, stream_id: u32, data: &[u8], is_last: bool) {
-        if let Some(state) = self.downloads.get_mut(&stream_id) {
-            state.data.extend_from_slice(data);
-            state.bytes_received += data.len() as u64;
-            if is_last {
-                state.complete = true;
-                self.completed_count += 1;
+    /// The announced file index for an active download, for building the next
+    /// RANGE request on the same file.
+    pub fn file_index_of(&self, stream_id: u32) -> Option<u32> {
+        self.downloads.get(&stream_id).map(|d| d.file_info.index)
+    }
+
+    /// Appends a received data chunk and reports what to do next.
+    ///
+    /// The server delivers a file in one or more chunks, so completion is decided
+    /// by comparing bytes received against the known size — not by trusting a
+    /// per-chunk "last" flag (there is no reliable one on the wire). A short chunk
+    /// (fewer bytes than asked) also means end of file: a server that has no more
+    /// to give returns less rather than signalling separately.
+    pub fn append_data(&mut self, stream_id: u32, data: &[u8], short_chunk: bool) -> ChunkOutcome {
+        let Some(state) = self.downloads.get_mut(&stream_id) else {
+            return ChunkOutcome::Unknown;
+        };
+        state.data.extend_from_slice(data);
+        state.bytes_received += data.len() as u64;
+
+        // total_size 0 means the size request has not landed yet; treat any
+        // short chunk as the end, otherwise wait for the byte count to catch up.
+        let done =
+            short_chunk || (state.total_size > 0 && state.bytes_received >= state.total_size);
+        if done {
+            state.complete = true;
+            self.completed_count += 1;
+            ChunkOutcome::Complete
+        } else {
+            ChunkOutcome::NeedMore {
+                next_offset: state.bytes_received,
             }
         }
     }
@@ -508,5 +556,79 @@ impl FreeRdpThread {
 impl Drop for FreeRdpThread {
     fn drop(&mut self) {
         self.shutdown();
+    }
+}
+
+#[cfg(all(test, feature = "rdp-embedded"))]
+mod tests {
+    use rustconn_core::rdp_client::ClipboardFileInfo;
+
+    use super::{ChunkOutcome, ClipboardFileTransfer};
+
+    fn transfer_with_file(size: u64) -> (ClipboardFileTransfer, u32) {
+        let mut t = ClipboardFileTransfer::new();
+        t.set_available_files(vec![ClipboardFileInfo::new(
+            "big.bin".to_string(),
+            size,
+            0,
+            0,
+            0,
+        )]);
+        t.total_files = 1;
+        let stream_id = t.start_download(0).expect("download starts");
+        t.update_size(stream_id, size);
+        (t, stream_id)
+    }
+
+    #[test]
+    fn a_file_larger_than_one_chunk_requests_the_next_range() {
+        let (mut t, sid) = transfer_with_file(3000);
+        // First 1000-byte chunk of a 3000-byte file: not done, ask for more from
+        // offset 1000.
+        let outcome = t.append_data(sid, &vec![0u8; 1000], false);
+        assert_eq!(outcome, ChunkOutcome::NeedMore { next_offset: 1000 });
+        assert!(!t.all_complete());
+    }
+
+    #[test]
+    fn reaching_the_known_size_completes_the_download() {
+        let (mut t, sid) = transfer_with_file(2000);
+        assert_eq!(
+            t.append_data(sid, &vec![0u8; 1000], false),
+            ChunkOutcome::NeedMore { next_offset: 1000 }
+        );
+        // Second chunk brings bytes_received to the full size → complete.
+        assert_eq!(
+            t.append_data(sid, &vec![0u8; 1000], false),
+            ChunkOutcome::Complete
+        );
+        assert!(t.all_complete());
+    }
+
+    #[test]
+    fn a_short_chunk_ends_the_download_even_below_the_estimated_size() {
+        // The server claims 5000 bytes but returns fewer than requested: treat
+        // the short chunk as end of file rather than looping forever.
+        let (mut t, sid) = transfer_with_file(5000);
+        assert_eq!(
+            t.append_data(sid, &vec![0u8; 800], true),
+            ChunkOutcome::Complete
+        );
+        assert!(t.all_complete());
+    }
+
+    #[test]
+    fn a_chunk_for_an_unknown_stream_is_reported() {
+        let mut t = ClipboardFileTransfer::new();
+        assert_eq!(t.append_data(999, &[1, 2, 3], false), ChunkOutcome::Unknown);
+    }
+
+    #[test]
+    fn cancel_and_file_index_lookup() {
+        let (mut t, sid) = transfer_with_file(100);
+        assert_eq!(t.file_index_of(sid), Some(0));
+        assert!(t.cancel_download(sid));
+        assert_eq!(t.file_index_of(sid), None);
+        assert!(!t.cancel_download(sid));
     }
 }

@@ -40,6 +40,13 @@ pub(super) struct FileTransferContext<'a> {
     pub status_label: &'a gtk4::Label,
     pub on_file_progress: &'a Rc<RefCell<Option<Box<dyn Fn(f64, &str) + 'static>>>>,
     pub on_file_complete: &'a Rc<RefCell<Option<Box<dyn Fn(usize, &str) + 'static>>>>,
+    /// Command channel, used to send the follow-up RANGE requests that pull a
+    /// clipboard file down chunk by chunk.
+    pub ironrdp_tx: &'a Rc<
+        RefCell<
+            Option<tokio::sync::mpsc::UnboundedSender<rustconn_core::rdp_client::RdpClientCommand>>,
+        >,
+    >,
 }
 
 /// Records that a displayable frame arrived from the server.
@@ -209,23 +216,67 @@ pub(super) fn handle_clipboard_file_list(
     }
 }
 
+/// Sends a RANGE File Contents request for the next chunk of a download.
+fn send_range_request(ctx: &FileTransferContext<'_>, stream_id: u32, file_index: u32, offset: u64) {
+    if let Some(ref sender) = *ctx.ironrdp_tx.borrow() {
+        let _ = sender.send(RdpClientCommand::RequestFileContents {
+            stream_id,
+            file_index,
+            request_size: false,
+            offset,
+            length: super::thread::FILE_DOWNLOAD_CHUNK_SIZE,
+        });
+    }
+}
+
+/// Handles the file size reply by kicking off the first data range.
+///
+/// The download asks only for the size up front; the size tells us how much to
+/// pull, so the first RANGE request is issued here and each subsequent one from
+/// [`handle_clipboard_file_contents`] as chunks arrive.
+pub(super) fn handle_clipboard_file_size(ctx: &FileTransferContext<'_>, stream_id: u32, size: u64) {
+    tracing::debug!(protocol = "rdp", stream_id, size, "Clipboard file size");
+    let file_index = {
+        let mut transfer = ctx.file_transfer.borrow_mut();
+        transfer.update_size(stream_id, size);
+        transfer.file_index_of(stream_id)
+    };
+    let Some(file_index) = file_index else {
+        tracing::warn!(
+            protocol = "rdp",
+            stream_id,
+            "size reply for an unknown download; ignoring"
+        );
+        return;
+    };
+    send_range_request(ctx, stream_id, file_index, 0);
+}
+
 /// Handles a clipboard file contents chunk from the server.
+///
+/// Accumulates the chunk and, if the file is not yet complete, requests the next
+/// range so a file larger than a single response is pulled in full. Completion
+/// is decided from the known size (or a short chunk), not a per-chunk flag.
 pub(super) fn handle_clipboard_file_contents(
     ctx: &FileTransferContext<'_>,
     stream_id: u32,
     data: &[u8],
-    is_last: bool,
 ) {
+    // A chunk shorter than we asked for means the server has no more to give,
+    // even if its size estimate was larger — a guard against an endless loop.
+    let short_chunk = (data.len() as u32) < super::thread::FILE_DOWNLOAD_CHUNK_SIZE;
     tracing::debug!(
         protocol = "rdp",
         stream_id,
         bytes = data.len(),
-        is_last,
+        short_chunk,
         "Clipboard file contents"
     );
-    ctx.file_transfer
-        .borrow_mut()
-        .append_data(stream_id, data, is_last);
+    let (outcome, file_index) = {
+        let mut transfer = ctx.file_transfer.borrow_mut();
+        let outcome = transfer.append_data(stream_id, data, short_chunk);
+        (outcome, transfer.file_index_of(stream_id))
+    };
 
     let (progress, completed, total) = {
         let transfer = ctx.file_transfer.borrow();
@@ -246,14 +297,24 @@ pub(super) fn handle_clipboard_file_contents(
         );
     }
 
-    if is_last {
-        match ctx.file_transfer.borrow().save_download(stream_id) {
-            Ok(path) => {
-                tracing::info!(protocol = "rdp", path = %path.display(), "Saved clipboard file");
+    match outcome {
+        super::thread::ChunkOutcome::NeedMore { next_offset } => {
+            // Pull the next slice; the file is not complete yet.
+            if let Some(file_index) = file_index {
+                send_range_request(ctx, stream_id, file_index, next_offset);
             }
-            Err(e) => {
-                tracing::error!(protocol = "rdp", error = %e, "Failed to save clipboard file");
-            }
+            return;
+        }
+        super::thread::ChunkOutcome::Unknown => return,
+        super::thread::ChunkOutcome::Complete => {}
+    }
+
+    match ctx.file_transfer.borrow().save_download(stream_id) {
+        Ok(path) => {
+            tracing::info!(protocol = "rdp", path = %path.display(), "Saved clipboard file");
+        }
+        Err(e) => {
+            tracing::error!(protocol = "rdp", error = %e, "Failed to save clipboard file");
         }
     }
 

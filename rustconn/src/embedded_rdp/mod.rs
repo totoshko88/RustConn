@@ -1486,22 +1486,19 @@ impl EmbeddedRdpWidget {
                                 };
 
                                 if let Some(sid) = stream_id {
-                                    // First request size, then data
+                                    // Ask only for the size here. The first data
+                                    // range is sent once the size arrives (see
+                                    // handle_clipboard_file_size), and each further
+                                    // range follows the previous chunk, so a file
+                                    // larger than one response is pulled in full
+                                    // instead of being truncated by a single
+                                    // all-at-once request.
                                     let _ = sender.send(RdpClientCommand::RequestFileContents {
                                         stream_id: sid,
                                         file_index: file.index,
                                         request_size: true,
                                         offset: 0,
                                         length: 0,
-                                    });
-
-                                    // Then request actual data
-                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
-                                        stream_id: sid,
-                                        file_index: file.index,
-                                        request_size: false,
-                                        offset: 0,
-                                        length: u32::MAX, // Request all data
                                     });
                                 }
                             }

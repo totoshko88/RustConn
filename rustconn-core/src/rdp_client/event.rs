@@ -559,10 +559,10 @@ pub enum RdpClientEvent {
     ClipboardFileContents {
         /// Stream ID for matching request/response
         stream_id: u32,
-        /// File data
+        /// File data for this range. Whether it is the last chunk is decided by
+        /// the GUI from the known file size, not signalled here — the wire gives
+        /// no reliable per-chunk "last" flag.
         data: Vec<u8>,
-        /// Whether this is the last chunk
-        is_last: bool,
     },
 
     /// File size information received from server

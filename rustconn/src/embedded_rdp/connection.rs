@@ -1188,6 +1188,7 @@ impl super::EmbeddedRdpWidget {
                     status_label: &status_label,
                     on_file_progress: &on_file_progress,
                     on_file_complete: &on_file_complete,
+                    ironrdp_tx: &ironrdp_tx,
                 };
 
                 // Poll for events from IronRDP client
@@ -1577,23 +1578,15 @@ impl super::EmbeddedRdpWidget {
                                     &file_ctx, files,
                                 );
                             }
-                            RdpClientEvent::ClipboardFileContents {
-                                stream_id,
-                                data,
-                                is_last,
-                            } => {
+                            RdpClientEvent::ClipboardFileContents { stream_id, data } => {
                                 super::polling_handlers::handle_clipboard_file_contents(
-                                    &file_ctx, stream_id, &data, is_last,
+                                    &file_ctx, stream_id, &data,
                                 );
                             }
                             RdpClientEvent::ClipboardFileSize { stream_id, size } => {
-                                tracing::debug!(
-                                    protocol = "rdp",
-                                    stream_id,
-                                    size,
-                                    "Clipboard file size"
+                                super::polling_handlers::handle_clipboard_file_size(
+                                    &file_ctx, stream_id, size,
                                 );
-                                file_transfer.borrow_mut().update_size(stream_id, size);
                             }
                             RdpClientEvent::ClipboardFileError { stream_id } => {
                                 super::polling_handlers::handle_clipboard_file_error(

@@ -521,9 +521,6 @@ impl CliprdrBackend for RustConnClipboardBackend {
                 .send(RdpClientEvent::ClipboardFileContents {
                     stream_id,
                     data: data.to_vec(),
-                    // Single-chunk assumption; RANGE-based chunking is a
-                    // follow-up (the download requests the whole file at once).
-                    is_last: true,
                 });
         }
     }
@@ -765,14 +762,9 @@ mod tests {
             .on_file_contents_response(FileContentsResponse::new_data_response(9, payload.clone()));
 
         match rx.try_recv() {
-            Ok(RdpClientEvent::ClipboardFileContents {
-                stream_id,
-                data,
-                is_last,
-            }) => {
+            Ok(RdpClientEvent::ClipboardFileContents { stream_id, data }) => {
                 assert_eq!(stream_id, 9);
                 assert_eq!(data, payload);
-                assert!(is_last);
             }
             other => panic!("expected ClipboardFileContents, got {other:?}"),
         }
