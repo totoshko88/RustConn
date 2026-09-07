@@ -409,7 +409,7 @@ pub(super) async fn establish_connection(
     // DisplayControlClient is also registered here for dynamic resolution changes (MS-RDPEDISP).
     // The Echo channel (MS-RDPEECO) responds to server echo requests, enabling the server
     // to measure round-trip time and report it back via Auto-Detect PDU.
-    // ironrdp 0.16: DisplayControlClient::new takes a capabilities callback. We send the
+    // DisplayControlClient::new takes a capabilities callback. We send the
     // monitor layout on demand via ActiveStage::encode_resize, so nothing is emitted when
     // capabilities arrive — return an empty message set.
     let dc_ready_tx = event_tx.clone();

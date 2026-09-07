@@ -321,16 +321,17 @@ where
             .await?;
         }
         ActiveStageOutput::MultitransportRequest(pdu) => {
-            // IronRDP 0.15: server requests sideband UDP transport.
-            // We do not implement UDP multitransport — log and continue.
+            // Server requests sideband UDP (multitransport) transport. We do not
+            // implement UDP multitransport — the TCP virtual channels carry
+            // everything we need — so log and continue over TCP.
             tracing::debug!(
                 request_id = pdu.request_id,
                 "Server requested multitransport (UDP) — not supported, ignoring"
             );
         }
         ActiveStageOutput::AutoDetect(request) => {
-            // IronRDP 0.16: server sends network characteristics result.
-            // Extract RTT measurement and forward to GUI.
+            // Server sends a network-characteristics result (RTT/bandwidth
+            // probe). Extract the RTT measurement and forward it to the GUI.
             if let ironrdp::pdu::rdp::autodetect::AutoDetectRequest::NetworkCharacteristicsResult {
                 average_rtt_ms,
                 ..
@@ -444,7 +445,7 @@ where
 
 /// Extracts pixel data for a specific region from the decoded image.
 ///
-/// IronRDP 0.16 outputs pixels in BgrA32 which matches Cairo's ARGB32 format
+/// IronRDP outputs pixels in BgrA32 which matches Cairo's ARGB32 format
 /// on little-endian (both are B-G-R-A byte order in memory). No channel swap needed.
 ///
 /// Optimized for 4K rendering: uses row-based `memcpy` which is cache-friendly
