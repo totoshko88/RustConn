@@ -1487,11 +1487,27 @@ impl super::EmbeddedRdpWidget {
                             RdpClientEvent::ServerMessage(msg) => {
                                 tracing::debug!(protocol = "rdp", message = %msg, "Server message");
                             }
-                            RdpClientEvent::FileContentsRequested { .. } => {
-                                // File contents requests are handled directly in the
-                                // session thread via handle_file_contents_request().
-                                // This event is only emitted for observability; no
-                                // GUI action needed.
+                            RdpClientEvent::FileContentsRequested {
+                                stream_id,
+                                file_index,
+                                is_size_request,
+                                offset,
+                                requested_size,
+                            } => {
+                                // The server is asking for one of the files we
+                                // announced (client → server upload). The backend
+                                // that received the PDU has no writer, so it raised
+                                // this event; answer it by asking the session loop
+                                // to read the local file and submit the response.
+                                if let Some(ref sender) = *ironrdp_tx.borrow() {
+                                    let _ = sender.send(RdpClientCommand::ProvideFileContents {
+                                        stream_id,
+                                        file_index,
+                                        request_size: is_size_request,
+                                        offset,
+                                        length: requested_size,
+                                    });
+                                }
                             }
                             #[cfg(feature = "rdp-audio")]
                             RdpClientEvent::AudioFormatChanged(format) => {

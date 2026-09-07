@@ -301,7 +301,25 @@ pub(super) async fn process_command<W: FramedWrite>(
             offset,
             length,
         } => {
-            handle_file_contents_request(
+            handle_download_file_contents(
+                active_stage,
+                writer,
+                stream_id,
+                file_index,
+                request_size,
+                offset,
+                length,
+            )
+            .await;
+        }
+        RdpClientCommand::ProvideFileContents {
+            stream_id,
+            file_index,
+            request_size,
+            offset,
+            length,
+        } => {
+            handle_provide_file_contents(
                 active_stage,
                 writer,
                 stream_id,
@@ -333,7 +351,7 @@ fn gdk_button_to_ironrdp(button: u8) -> MouseButton {
 /// Sends a file-contents error response to the server via CLIPRDR.
 ///
 /// Extracted to avoid repeating the 5-line get→submit→process→write pattern
-/// at every error path in `handle_file_contents_request`.
+/// at every error path in `handle_provide_file_contents`.
 async fn send_file_contents_error<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
@@ -446,7 +464,107 @@ async fn handle_clipboard_request<W: FramedWrite>(
     }
 }
 
-async fn handle_file_contents_request<W: FramedWrite>(
+/// Builds the CLIPRDR File Contents Request PDU for a download.
+///
+/// Pure, so the MS-RDPECLIP 2.2.5.3 field rules can be tested without an
+/// `ActiveStage`: a SIZE request pins `requested_size` to 8 and `position` to 0;
+/// a RANGE request carries the real `offset`/`length`. Returns `None` when
+/// `file_index` does not fit the signed lindex the PDU uses — the one input the
+/// server side would reject at decode.
+fn build_download_request(
+    stream_id: u32,
+    file_index: u32,
+    request_size: bool,
+    offset: u64,
+    length: u32,
+) -> Option<ironrdp::cliprdr::pdu::FileContentsRequest> {
+    use ironrdp::cliprdr::pdu::{FileContentsFlags, FileContentsRequest};
+
+    let index = i32::try_from(file_index).ok()?;
+    let (flags, position, requested_size) = if request_size {
+        (FileContentsFlags::SIZE, 0, 8)
+    } else {
+        (FileContentsFlags::RANGE, offset, length)
+    };
+
+    Some(FileContentsRequest {
+        stream_id,
+        index,
+        flags,
+        position,
+        requested_size,
+        // Left to `request_file_contents`, which fills in the active clip lock id
+        // when the server negotiated CAN_LOCK_CLIPDATA.
+        data_id: None,
+    })
+}
+
+/// Downloads a file from the *server's* clipboard (server → client).
+///
+/// Turns a "Save N Files" request into a CLIPRDR File Contents *Request* PDU via
+/// [`CliprdrClient::request_file_contents`]. A `request_size` request asks for
+/// the file size (`FileContentsFlags::SIZE`, fixed 8-byte reply, position 0);
+/// otherwise it asks for a byte range (`FileContentsFlags::RANGE`). The reply is
+/// delivered asynchronously to `on_file_contents_response`, not here.
+async fn handle_download_file_contents<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    stream_id: u32,
+    file_index: u32,
+    request_size: bool,
+    offset: u64,
+    length: u32,
+) {
+    let Some(request) =
+        build_download_request(stream_id, file_index, request_size, offset, length)
+    else {
+        tracing::warn!(
+            protocol = "rdp",
+            file_index,
+            "file index exceeds i32 range; skipping download request"
+        );
+        return;
+    };
+
+    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
+        match cliprdr.request_file_contents(request) {
+            Ok(messages) => {
+                if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
+                    let _ = writer.write_all(&frame).await;
+                    tracing::debug!(
+                        protocol = "rdp",
+                        stream_id,
+                        file_index,
+                        request_size,
+                        "File contents request sent to server"
+                    );
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    protocol = "rdp",
+                    stream_id,
+                    error = %e,
+                    "request_file_contents failed (file clipboard not negotiated?)"
+                );
+            }
+        }
+    } else {
+        tracing::warn!(
+            protocol = "rdp",
+            "CLIPRDR channel not available for download"
+        );
+    }
+}
+
+/// Answers the server's file-contents request with our *local* file
+/// (client → server), for a file we announced via `FileGroupDescriptorW`.
+///
+/// This is the mirror of [`handle_download_file_contents`]: the server asked, we
+/// reply with [`CliprdrClient::submit_file_contents`]. Reached from
+/// [`RdpClientCommand::ProvideFileContents`], which the GUI sends in response to
+/// [`RdpClientEvent::FileContentsRequested`].
+async fn handle_provide_file_contents<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
     stream_id: u32,
@@ -456,7 +574,7 @@ async fn handle_file_contents_request<W: FramedWrite>(
     length: u32,
 ) {
     tracing::debug!(
-        "RequestFileContents: stream_id={}, index={}, size_request={}, offset={}, length={}",
+        "ProvideFileContents: stream_id={}, index={}, size_request={}, offset={}, length={}",
         stream_id,
         file_index,
         request_size,
@@ -545,5 +663,44 @@ async fn handle_file_contents_request<W: FramedWrite>(
             tracing::warn!("Failed to read file index {}", file_index);
             send_file_contents_error(active_stage, writer, stream_id).await;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ironrdp::cliprdr::pdu::FileContentsFlags;
+
+    use super::build_download_request;
+
+    #[test]
+    fn size_request_pins_position_and_size() {
+        // MS-RDPECLIP 2.2.5.3: a SIZE request always asks for exactly 8 bytes at
+        // position 0, whatever offset/length the caller passed.
+        let req = build_download_request(7, 2, true, 999, 4096).expect("valid index");
+        assert_eq!(req.stream_id, 7);
+        assert_eq!(req.index, 2);
+        assert!(req.flags.contains(FileContentsFlags::SIZE));
+        assert!(!req.flags.contains(FileContentsFlags::RANGE));
+        assert_eq!(req.position, 0);
+        assert_eq!(req.requested_size, 8);
+        assert_eq!(req.data_id, None);
+    }
+
+    #[test]
+    fn range_request_carries_offset_and_length() {
+        let req = build_download_request(3, 0, false, 1024, 512).expect("valid index");
+        assert_eq!(req.stream_id, 3);
+        assert!(req.flags.contains(FileContentsFlags::RANGE));
+        assert!(!req.flags.contains(FileContentsFlags::SIZE));
+        assert_eq!(req.position, 1024);
+        assert_eq!(req.requested_size, 512);
+    }
+
+    #[test]
+    fn file_index_past_i32_is_rejected() {
+        // The PDU's lindex is a signed 32-bit integer; a larger index would be
+        // refused at decode on the server, so we refuse to build it at all.
+        let too_big = u32::try_from(i32::MAX).expect("i32::MAX fits u32") + 1;
+        assert!(build_download_request(1, too_big, true, 0, 0).is_none());
     }
 }

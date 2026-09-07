@@ -804,7 +804,13 @@ pub enum RdpClientCommand {
         format_id: u32,
     },
 
-    /// Request file contents from server clipboard
+    /// Download file contents *from* the server clipboard (server → client).
+    ///
+    /// Sent by the "Save N Files" button after the server announced a file list
+    /// via `FileGroupDescriptorW`. The session loop turns this into a CLIPRDR
+    /// File Contents *Request* PDU (`Cliprdr::request_file_contents`); the reply
+    /// arrives asynchronously as [`RdpClientEvent::ClipboardFileSize`] or
+    /// [`RdpClientEvent::ClipboardFileContents`].
     RequestFileContents {
         /// Stream ID for matching request/response
         stream_id: u32,
@@ -815,6 +821,27 @@ pub enum RdpClientCommand {
         /// Offset for data requests
         offset: u64,
         /// Number of bytes to request (for data requests)
+        length: u32,
+    },
+
+    /// Answer the server's file-contents request *with* our local file
+    /// (client → server), for a file we announced via `FileGroupDescriptorW`.
+    ///
+    /// Sent by the GUI in response to [`RdpClientEvent::FileContentsRequested`].
+    /// The session loop reads the local file and replies with a CLIPRDR File
+    /// Contents *Response* PDU (`Cliprdr::submit_file_contents`). This is the
+    /// mirror image of [`Self::RequestFileContents`]: a request answered, not a
+    /// download initiated.
+    ProvideFileContents {
+        /// Stream ID copied from the server's request
+        stream_id: u32,
+        /// Index into our announced local file list
+        file_index: u32,
+        /// Whether the server asked for the size (true) or the data (false)
+        request_size: bool,
+        /// Byte offset for a data request
+        offset: u64,
+        /// Number of bytes the server asked for
         length: u32,
     },
 
