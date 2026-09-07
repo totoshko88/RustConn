@@ -976,9 +976,12 @@ window.macos headerbar {
     padding-bottom: 0;
 }
 
+/* 28px agrees with the size request set in ui.rs. It used to say 26px, which
+ * was simply dead: a size request is a floor CSS cannot go under, so the
+ * smaller number described a size the button never had. */
 window.macos headerbar button {
-    min-height: 26px;
-    min-width: 26px;
+    min-height: 28px;
+    min-width: 28px;
     padding: 2px 6px;
     margin-top: 0;
     margin-bottom: 0;
