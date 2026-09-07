@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.21.8] - 2026-09-07
 
 ### Fixed
 
@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs corrected to match the code** — the User Guide's template count (21, not 20; WinBox was missing); `rdp_client/gateway.rs` claiming RD Gateway was "not yet implemented" when it has worked behind the `rd-gateway` feature for some time; the undocumented fwknop Single Packet Authorization sender now has a User Guide subsection; the README's export coverage (split from a combined Import/Export row that overstated it, and Azure spelled out as two providers); `CLI_REFERENCE.md`'s missing `man-page` command and misdescribed `sftp` gating; and Quick Connect history documented as discarded on exit when it is in fact persisted (host, port, protocol and username only, never a password).
 
 - **Version and structure drift in docs fixed** — `CLI_REFERENCE.md` and `ZERO_TRUST.md` had drifted to old versions because the bump tooling did not list them; both are now tracked, and three docs with an old release quoted in example output are refreshed by hand. `ARCHITECTURE.md` had three factual drifts (a "six-crate" opener against a seven-crate table, a documented error-display helper that does not exist, and three moved file paths), all corrected, with three omitted managers added to the Manager Pattern table.
+
+### Dependencies
+
+- **Updated**: rustls 0.23.43→0.23.44.
 
 ## [0.21.7] - 2026-09-06
 

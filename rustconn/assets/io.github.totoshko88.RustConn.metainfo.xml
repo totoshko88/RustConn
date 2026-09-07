@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.21.8" date="2026-09-07">
+      <description>
+        <p>Version 0.21.8 - the embedded RDP clipboard file transfer works for the first time, with the security and robustness fixes that came with making it reachable:</p>
+        <ul>
+          <li>Copying files from the remote desktop through the RDP clipboard ("Save N Files") now works. The download and upload directions were crossed, size and data replies were told apart by length, and large files were truncated; files are now pulled in fixed ranges and a refused file is skipped while the rest continue</li>
+          <li>A filename sent by the server can no longer be written outside the folder you chose - an absolute path or ".." used to escape it. Names are reduced to one safe component and an existing file is never overwritten</li>
+          <li>A failed save no longer crashes the session, a refused file no longer leaves the batch reporting nothing, and a misbehaving server can no longer loop the download or corrupt a file</li>
+          <li>A server can no longer make the client reserve up to 4 GiB of memory for a single clipboard file request</li>
+          <li>Stored credentials could be printed in the clear by a debug dump; the secret settings and credential types now redact themselves</li>
+          <li>Bitwarden, 1Password and Passbolt calls can no longer hang the application forever on a slow or unreachable server</li>
+          <li>The automatic-login timeout can now be set on a group, not only a single connection</li>
+          <li>The window header on macOS is closer to a native titlebar height</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.21.7" date="2026-09-06">
       <description>
         <p>Version 0.21.7 - a dialog that finally fits a small screen, accessibility fixes across the interface, and a round of dead-code removal:</p>

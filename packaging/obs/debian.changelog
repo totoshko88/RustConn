@@ -1,3 +1,28 @@
+rustconn (0.21.8-1) unstable; urgency=medium
+
+  * Version bump to 0.21.8
+  * Fixed: embedded RDP clipboard file transfer ("Save N Files") now works —
+    crossed directions, length-based reply classification and all-at-once
+    truncation are fixed; files are pulled in 1 MiB ranges and refusals drop
+    just that file.
+  * Fixed (security): a server clipboard filename could be written outside the
+    chosen folder via an absolute path or ".."; names are reduced to one safe
+    component and an existing file is never clobbered.
+  * Fixed: a failed-write report panicked, a refused file never let the batch
+    finish, and a hostile server could loop or corrupt a download; a 512 MiB
+    cap, a re-entry guard, monotonic stream ids and directory filtering fix it.
+  * Fixed (security): an oversized clipboard file request could allocate up to
+    4 GiB; capped at 8 MiB per response.
+  * Fixed (security): SecretSettings and Credentials Debug could print stored
+    credentials in the clear; both redact by hand now.
+  * Fixed: secret-backend CLI calls could hang the caller forever; bounded by a
+    30-second timeout that also kills the child.
+  * Improved: the auto-login timeout can now be set on a group.
+  * Improved: the macOS window header is closer to a native titlebar height.
+  * Dependencies: rustls 0.23.43->0.23.44.
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 07 Sep 2026 15:10:00 +0300
+
 rustconn (0.21.7-1) unstable; urgency=medium
 
   * Version bump to 0.21.7
