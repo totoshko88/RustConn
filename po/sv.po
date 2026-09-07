@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 16:15+0300\n"
+"POT-Creation-Date: 2026-09-07 18:21+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -89,7 +89,7 @@ msgstr ""
 "Inställningar"
 
 #: rustconn/src/app.rs:707 rustconn/src/dialogs/shortcuts.rs:176
-#: rustconn/src/embedded_rdp/mod.rs:383 rustconn/src/split_view/bridge.rs:1977
+#: rustconn/src/embedded_rdp/mod.rs:393 rustconn/src/split_view/bridge.rs:1977
 #: rustconn/src/window/ui.rs:111
 msgid "Settings"
 msgstr "Inställningar"
@@ -159,8 +159,8 @@ msgstr "Alla bidragsgivare och supportrar"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:746
-#: rustconn/src/embedded_rdp/mod.rs:1981
+#: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:756
+#: rustconn/src/embedded_rdp/mod.rs:2018
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -2873,7 +2873,7 @@ msgstr "Vidarebefordra USB-enheter till fjärr"
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:108
 #: rustconn/src/dialogs/snippet.rs:223 rustconn/src/dialogs/template.rs:1256
-#: rustconn/src/embedded_rdp/mod.rs:392
+#: rustconn/src/embedded_rdp/mod.rs:402
 msgid "Auto"
 msgstr "Auto"
 
@@ -4002,7 +4002,7 @@ msgstr "Lösenfras för den portabla filen"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
-#: rustconn/src/embedded_rdp/mod.rs:563 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
 msgstr "Kopiera"
@@ -7792,7 +7792,7 @@ msgstr "Fokusera terminalen"
 msgid "Command Palette (Commands)"
 msgstr "Kommandopalett (kommandon)"
 
-#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/embedded_rdp/mod.rs:571
+#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/embedded_rdp/mod.rs:581
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:253
 msgid "Paste"
 msgstr "Klistra in"
@@ -7982,11 +7982,11 @@ msgstr "Mål"
 msgid "Where this snippet can be executed"
 msgstr "Var denna snippet kan köras"
 
-#: rustconn/src/dialogs/snippet.rs:224 rustconn/src/embedded_rdp/mod.rs:393
+#: rustconn/src/dialogs/snippet.rs:224 rustconn/src/embedded_rdp/mod.rs:403
 msgid "Clipboard (fast)"
 msgstr "Urklipp (snabbt)"
 
-#: rustconn/src/dialogs/snippet.rs:225 rustconn/src/embedded_rdp/mod.rs:394
+#: rustconn/src/dialogs/snippet.rs:225 rustconn/src/embedded_rdp/mod.rs:404
 msgid "Autotype (reliable)"
 msgstr "Autoskrivning (pålitlig)"
 
@@ -9162,8 +9162,8 @@ msgid "Clipboard channel not ready"
 msgstr "Urklippskanal inte redo"
 
 #: rustconn/src/embedded_rdp/connection.rs:146
-#: rustconn/src/embedded_rdp/connection.rs:2066
-#: rustconn/src/embedded_rdp/connection.rs:2070
+#: rustconn/src/embedded_rdp/connection.rs:2121
+#: rustconn/src/embedded_rdp/connection.rs:2125
 msgid "Authentication failed: invalid username or password."
 msgstr "Autentisering misslyckades: ogiltigt användarnamn eller lösenord."
 
@@ -9201,7 +9201,7 @@ msgid "RDP connection failed ({}). Run with RUST_LOG=debug for details."
 msgstr "RDP-anslutning misslyckades ({}). Kör med RUST_LOG=debug för detaljer."
 
 #: rustconn/src/embedded_rdp/connection.rs:386
-#: rustconn/src/embedded_rdp/connection.rs:1904
+#: rustconn/src/embedded_rdp/connection.rs:1959
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr "Anslutningen avbröts eftersom servern kräver äldre RDP-säkerhet."
 
@@ -9214,249 +9214,251 @@ msgstr ""
 "Den inbyggda klienten ignorerar egna FreeRDP-argument. Ställ in RDP-"
 "klientläget på Externt för att använda dem."
 
-#: rustconn/src/embedded_rdp/connection.rs:1941
+#: rustconn/src/embedded_rdp/connection.rs:1996
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "Det gick inte att förbereda den externa RDP-kompatibilitetsklienten."
 
-#: rustconn/src/embedded_rdp/connection.rs:1952
+#: rustconn/src/embedded_rdp/connection.rs:2007
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Använder extern RDP-klient (servern kräver RDS-licensiering)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1954
+#: rustconn/src/embedded_rdp/connection.rs:2009
 msgid "Using external RDP client (server incompatible)"
 msgstr "Använder extern RDP-klient (server inkompatibel)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1972
-#: rustconn/src/embedded_rdp/connection.rs:2449
+#: rustconn/src/embedded_rdp/connection.rs:2027
+#: rustconn/src/embedded_rdp/connection.rs:2504
 msgid "The external RDP client could not be started."
 msgstr "Den externa RDP-klienten kunde inte startas."
 
-#: rustconn/src/embedded_rdp/connection.rs:2005
+#: rustconn/src/embedded_rdp/connection.rs:2060
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Den externa RDP-klienten kunde inte startas. Installera FreeRDP 3 och försök "
 "igen."
 
-#: rustconn/src/embedded_rdp/connection.rs:2074
+#: rustconn/src/embedded_rdp/connection.rs:2129
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr ""
 "Autentisering misslyckades: kontobegränsningar förhindrar denna inloggning."
 
-#: rustconn/src/embedded_rdp/connection.rs:2078
+#: rustconn/src/embedded_rdp/connection.rs:2133
 msgid "Authentication failed: password must be changed before first login."
 msgstr ""
 "Autentisering misslyckades: lösenordet måste ändras före första inloggningen."
 
-#: rustconn/src/embedded_rdp/connection.rs:2082
+#: rustconn/src/embedded_rdp/connection.rs:2137
 msgid "Authentication failed: account is disabled."
 msgstr "Autentisering misslyckades: kontot är inaktiverat."
 
-#: rustconn/src/embedded_rdp/connection.rs:2086
+#: rustconn/src/embedded_rdp/connection.rs:2141
 msgid "Authentication failed: account is locked out."
 msgstr "Autentisering misslyckades: kontot är låst."
 
-#: rustconn/src/embedded_rdp/connection.rs:2090
+#: rustconn/src/embedded_rdp/connection.rs:2145
 msgid "Authentication failed: password has expired."
 msgstr "Autentisering misslyckades: lösenordet har gått ut."
 
-#: rustconn/src/embedded_rdp/connection.rs:2094
+#: rustconn/src/embedded_rdp/connection.rs:2149
 msgid "Authentication failed: account has expired."
 msgstr "Autentisering misslyckades: kontot har gått ut."
 
-#: rustconn/src/embedded_rdp/connection.rs:2098
+#: rustconn/src/embedded_rdp/connection.rs:2153
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Autentisering misslyckades: användaren har inte behörighet att logga in på "
 "den här datorn."
 
-#: rustconn/src/embedded_rdp/connection.rs:2102
+#: rustconn/src/embedded_rdp/connection.rs:2157
 msgid "NLA authentication failed. Check username and password."
 msgstr "NLA-autentisering misslyckades. Kontrollera användarnamn och lösenord."
 
-#: rustconn/src/embedded_rdp/connection.rs:2106
+#: rustconn/src/embedded_rdp/connection.rs:2161
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "TLS-anslutning misslyckades. Servern kanske inte stöder denna säkerhetsnivå."
 
-#: rustconn/src/embedded_rdp/connection.rs:2110
+#: rustconn/src/embedded_rdp/connection.rs:2165
 msgid "Connection refused. Check host and port."
 msgstr "Anslutning nekad. Kontrollera värd och port."
 
-#: rustconn/src/embedded_rdp/connection.rs:2113
+#: rustconn/src/embedded_rdp/connection.rs:2168
 #: rustconn/src/embedded_web/mod.rs:581
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Anslutningen tog för lång tid. Kontrollera att värden är nåbar."
 
-#: rustconn/src/embedded_rdp/connection.rs:2429
+#: rustconn/src/embedded_rdp/connection.rs:2484
 msgid "RDP session will open in an external window"
 msgstr "RDP-sessionen öppnas i ett externt fönster"
 
-#: rustconn/src/embedded_rdp/connection.rs:2488
+#: rustconn/src/embedded_rdp/connection.rs:2543
 msgid "RDP connection failed. Install FreeRDP 3 for external RDP sessions."
 msgstr ""
 "RDP-anslutningen misslyckades. Installera FreeRDP 3 för externa RDP-"
 "sessioner."
 
-#: rustconn/src/embedded_rdp/connection.rs:2490
+#: rustconn/src/embedded_rdp/connection.rs:2545
 msgid "Failed to start FreeRDP: {}"
 msgstr "Det gick inte att starta FreeRDP: {}"
 
-#: rustconn/src/embedded_rdp/file_dnd.rs:220
+#: rustconn/src/embedded_rdp/file_dnd.rs:225
 msgid "File drag disabled: {}"
 msgstr "Fildragning inaktiverad: {}"
 
-#: rustconn/src/embedded_rdp/file_dnd.rs:224
+#: rustconn/src/embedded_rdp/file_dnd.rs:229
 msgid "Try Again"
 msgstr "Försök igen"
 
-#: rustconn/src/embedded_rdp/mod.rs:382
+#: rustconn/src/embedded_rdp/mod.rs:392
 msgid "Task Manager"
 msgstr "Aktivitetshanteraren"
 
-#: rustconn/src/embedded_rdp/mod.rs:384
+#: rustconn/src/embedded_rdp/mod.rs:394
 msgid "Registry Editor"
 msgstr "Registereditor"
 
-#: rustconn/src/embedded_rdp/mod.rs:385
+#: rustconn/src/embedded_rdp/mod.rs:395
 msgid "Device Manager"
 msgstr "Enhetshanteraren"
 
-#: rustconn/src/embedded_rdp/mod.rs:386
+#: rustconn/src/embedded_rdp/mod.rs:396
 msgid "Event Viewer"
 msgstr "Loggboken"
 
-#: rustconn/src/embedded_rdp/mod.rs:387
+#: rustconn/src/embedded_rdp/mod.rs:397
 msgid "Services"
 msgstr "Tjänster"
 
-#: rustconn/src/embedded_rdp/mod.rs:388
+#: rustconn/src/embedded_rdp/mod.rs:398
 msgid "Disk Management"
 msgstr "Diskhantering"
 
-#: rustconn/src/embedded_rdp/mod.rs:389
+#: rustconn/src/embedded_rdp/mod.rs:399
 msgid "Resource Monitor"
 msgstr "Resursövervakaren"
 
-#: rustconn/src/embedded_rdp/mod.rs:390
+#: rustconn/src/embedded_rdp/mod.rs:400
 msgid "Computer Management"
 msgstr "Datorhantering"
 
-#: rustconn/src/embedded_rdp/mod.rs:396 rustconn/src/embedded_rdp/mod.rs:1036
+#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1073
 msgid "Shell Launchers"
 msgstr "Skalstartare"
 
-#: rustconn/src/embedded_rdp/mod.rs:398 rustconn/src/embedded_rdp/mod.rs:1053
+#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1090
 msgid "Scripts"
 msgstr "Skript"
 
-#: rustconn/src/embedded_rdp/mod.rs:400 rustconn/src/embedded_rdp/mod.rs:1031
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1068
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:401 rustconn/src/embedded_rdp/mod.rs:1035
+#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1072
 msgid "CMD (Admin)"
 msgstr "CMD (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:544 rustconn/src/embedded_rdp/mod.rs:546
+#: rustconn/src/embedded_rdp/mod.rs:554 rustconn/src/embedded_rdp/mod.rs:556
 msgid "Fit resolution to window"
 msgstr "Anpassa fjärrskrivbordet till fönsterstorlek"
 
-#: rustconn/src/embedded_rdp/mod.rs:565 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:575 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr "Kopiera fjärrurklipp till lokalt (väntar på fjärrdata…)"
 
-#: rustconn/src/embedded_rdp/mod.rs:572 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:582 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "Klistra in från lokalt urklipp till fjärrsession"
 
-#: rustconn/src/embedded_rdp/mod.rs:577 rustconn/src/embedded_rdp/mod.rs:582
+#: rustconn/src/embedded_rdp/mod.rs:587 rustconn/src/embedded_rdp/mod.rs:592
 msgid "Autotype"
 msgstr "Autotype"
 
-#: rustconn/src/embedded_rdp/mod.rs:579
+#: rustconn/src/embedded_rdp/mod.rs:589
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr ""
 "Skicka text som tangenttryckningar (kringgår inklistringsbegränsningar)"
 
-#: rustconn/src/embedded_rdp/mod.rs:586
+#: rustconn/src/embedded_rdp/mod.rs:596
 msgid "Type Clipboard"
 msgstr "Skriv urklipp"
 
-#: rustconn/src/embedded_rdp/mod.rs:589
+#: rustconn/src/embedded_rdp/mod.rs:599
 msgid "Type Text…"
 msgstr "Skriv text…"
 
-#: rustconn/src/embedded_rdp/mod.rs:603
+#: rustconn/src/embedded_rdp/mod.rs:613
 msgid "Run PowerShell script on remote"
 msgstr "Kör PowerShell-skript på fjärrdator"
 
-#: rustconn/src/embedded_rdp/mod.rs:606
+#: rustconn/src/embedded_rdp/mod.rs:616
 msgid "Run script on remote"
 msgstr "Kör skript på fjärrdator"
 
-#: rustconn/src/embedded_rdp/mod.rs:621 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:631 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:623 rustconn/src/embedded_vnc/ui.rs:75
+#: rustconn/src/embedded_rdp/mod.rs:633 rustconn/src/embedded_vnc/ui.rs:75
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "Skicka Ctrl+Alt+Del till fjärrsession"
 
-#: rustconn/src/embedded_rdp/mod.rs:629 rustconn/src/embedded_rdp/mod.rs:632
+#: rustconn/src/embedded_rdp/mod.rs:639 rustconn/src/embedded_rdp/mod.rs:642
 msgid "Windows admin tools"
 msgstr "Windows-administrationsverktyg"
 
-#: rustconn/src/embedded_rdp/mod.rs:656
+#: rustconn/src/embedded_rdp/mod.rs:666
 msgid "Save Files"
 msgstr "Spara filer"
 
-#: rustconn/src/embedded_rdp/mod.rs:659
+#: rustconn/src/embedded_rdp/mod.rs:669
 msgid "Save files from remote clipboard"
 msgstr "Spara filer från fjärrurklipp"
 
-#: rustconn/src/embedded_rdp/mod.rs:749 rustconn/src/embedded_vnc/ui.rs:145
+#: rustconn/src/embedded_rdp/mod.rs:759 rustconn/src/embedded_vnc/ui.rs:145
 #: rustconn/src/terminal/mod.rs:1214
 #: rustconn/src/terminal/session_lifecycle.rs:350
 msgid "Reconnect"
 msgstr "Återanslut"
 
-#: rustconn/src/embedded_rdp/mod.rs:751 rustconn/src/embedded_vnc/ui.rs:147
+#: rustconn/src/embedded_rdp/mod.rs:761 rustconn/src/embedded_vnc/ui.rs:147
 #: rustconn/src/terminal/mod.rs:1216
 #: rustconn/src/terminal/session_lifecycle.rs:352
 msgid "Reconnect to this session"
 msgstr "Återanslut till denna session"
 
-#: rustconn/src/embedded_rdp/mod.rs:912
+#: rustconn/src/embedded_rdp/mod.rs:924
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "Aktivera delning av urklipp för att skicka filer till fjärrsessionen"
 
-#: rustconn/src/embedded_rdp/mod.rs:964
-msgid "{} file(s) ready to paste on remote"
-msgstr "{} fil(er) redo att klistra in på fjärr"
+#: rustconn/src/embedded_rdp/mod.rs:1000
+msgid ""
+"{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
+"paste"
+msgstr "{} fil(er) kopierade till fjärrurklipp — tryck Ctrl+V i sessionen för att klistra in"
 
-#: rustconn/src/embedded_rdp/mod.rs:1029
+#: rustconn/src/embedded_rdp/mod.rs:1066
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1034
+#: rustconn/src/embedded_rdp/mod.rs:1071
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1113 rustconn/src/embedded_rdp/mod.rs:1184
-#: rustconn/src/embedded_rdp/mod.rs:1442
+#: rustconn/src/embedded_rdp/mod.rs:1150 rustconn/src/embedded_rdp/mod.rs:1221
+#: rustconn/src/embedded_rdp/mod.rs:1479
 msgid "Channel not ready"
 msgstr "Kanal inte redo"
 
-#: rustconn/src/embedded_rdp/mod.rs:1158 rustconn/src/embedded_rdp/mod.rs:1211
+#: rustconn/src/embedded_rdp/mod.rs:1195 rustconn/src/embedded_rdp/mod.rs:1248
 msgid "Script sent"
 msgstr "Skript skickat"
 
-#: rustconn/src/embedded_rdp/mod.rs:1257 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1294 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Kör utdrag?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1264 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1301 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -9466,23 +9468,23 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1270 rustconn/src/window/snippets.rs:113
+#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Kör"
 
-#: rustconn/src/embedded_rdp/mod.rs:1487
+#: rustconn/src/embedded_rdp/mod.rs:1524
 msgid "Select folder to save files"
 msgstr "Välj mapp för att spara filer"
 
-#: rustconn/src/embedded_rdp/mod.rs:1518
+#: rustconn/src/embedded_rdp/mod.rs:1555
 msgid "Downloading…"
 msgstr "Laddar ner…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1548
+#: rustconn/src/embedded_rdp/mod.rs:1585
 msgid "Downloading files…"
 msgstr "Laddar ner filer…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1966
+#: rustconn/src/embedded_rdp/mod.rs:2003
 msgid "Connection may have been lost while the computer slept"
 msgstr "Anslutningen kan ha brutits medan datorn sov"
 
@@ -11697,39 +11699,39 @@ msgstr "Flyttade {} objekt."
 msgid "Failed to move {} item(s):"
 msgstr "Kunde inte flytta {} objekt:"
 
-#: rustconn/src/window/protocols.rs:571
+#: rustconn/src/window/protocols.rs:598
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "Det gick inte att starta den externa visaren ‘{}’: {}"
 
-#: rustconn/src/window/protocols.rs:1037 rustconn/src/window/rdp_vnc.rs:1376
+#: rustconn/src/window/protocols.rs:1064 rustconn/src/window/rdp_vnc.rs:1376
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Ingen VNC-visare hittades. Installera TigerVNC eller Remmina."
 
-#: rustconn/src/window/protocols.rs:1371
+#: rustconn/src/window/protocols.rs:1398
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Ingen SPICE-visare hittades. Installera virt-viewer."
 
-#: rustconn/src/window/protocols.rs:1555 rustconn/src/window/protocols.rs:2059
+#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/protocols.rs:2086
 msgid "Invalid variable: {}"
 msgstr "Ogiltig variabel: {}"
 
-#: rustconn/src/window/protocols.rs:1976
+#: rustconn/src/window/protocols.rs:2003
 msgid "Invalid config: {}"
 msgstr "Ogiltig konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:2156
+#: rustconn/src/window/protocols.rs:2183
 msgid "Install picocom for Serial connections"
 msgstr "Installera picocom för seriella anslutningar"
 
-#: rustconn/src/window/protocols.rs:2337
+#: rustconn/src/window/protocols.rs:2364
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installera kubectl för Kubernetes-anslutningar"
 
-#: rustconn/src/window/protocols.rs:2355
+#: rustconn/src/window/protocols.rs:2382
 msgid "Configure pod and container for Kubernetes"
 msgstr "Konfigurera pod och container för Kubernetes"
 
-#: rustconn/src/window/protocols.rs:2600
+#: rustconn/src/window/protocols.rs:2627
 msgid "Install mosh for MOSH connections"
 msgstr "Installera mosh för MOSH-anslutningar"
 
@@ -11770,24 +11772,24 @@ msgstr "Datorn har vaknat från vila — fjärrsessioner kontrolleras"
 msgid "Reconnecting sessions after sleep"
 msgstr "Återansluter sessioner efter vila"
 
-#: rustconn/src/window/session_lifecycle.rs:316
+#: rustconn/src/window/session_lifecycle.rs:335
 msgid "Session log could not be created: {}"
 msgstr "Sessionsloggen kunde inte skapas: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:522
+#: rustconn/src/window/session_lifecycle.rs:541
 msgid "Activity detected: {}"
 msgstr "Aktivitet upptäckt: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:526
+#: rustconn/src/window/session_lifecycle.rs:545
 msgid "Silence detected: {}"
 msgstr "Tystnad upptäckt: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:539
-#: rustconn/src/window/session_lifecycle.rs:552
+#: rustconn/src/window/session_lifecycle.rs:558
+#: rustconn/src/window/session_lifecycle.rs:571
 msgid "Command finished: {}"
 msgstr "Kommando slutfört: {}"
 
-#: rustconn/src/window/session_lifecycle.rs:546
+#: rustconn/src/window/session_lifecycle.rs:565
 msgid "Command failed with status {}: {}"
 msgstr "Kommandot misslyckades med status {}: {}"
 
@@ -12212,6 +12214,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "{} file(s) ready to paste on remote"
+#~ msgstr "{} fil(er) redo att klistra in på fjärr"
 
 #~ msgid "Copy from remote session to local clipboard"
 #~ msgstr "Kopiera från fjärrsession till lokalt urklipp"

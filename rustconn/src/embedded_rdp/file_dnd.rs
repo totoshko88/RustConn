@@ -1,5 +1,10 @@
 //! Drag-and-drop file transfer for embedded RDP sessions
 //!
+//! Note this is clipboard file *copy*, not desktop drag-and-drop: RDP has no
+//! wire representation for dropping a file onto the remote desktop. A dropped
+//! file is placed on the remote clipboard, and the user pastes it (Ctrl+V) in
+//! the session. That is the same model FreeRDP and mstsc use.
+//!
 //! When files are dragged onto the RDP widget, they are announced to the
 //! remote server via the CLIPRDR file clipboard channel (`CF_HDROP` /
 //! `FileGroupDescriptorW`). The server can then "paste" the files.

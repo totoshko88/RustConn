@@ -989,16 +989,22 @@ impl EmbeddedRdpWidget {
 
                         cb_for_callback.borrow_mut().record_success();
 
-                        // Show brief status feedback
+                        // Say what actually happened and what to do next. RDP has
+                        // no drag-to-desktop: a dropped file goes onto the remote
+                        // *clipboard*, and the user must press Ctrl+V in the remote
+                        // session to place it. Without this instruction the drop
+                        // looks like it did nothing (the file never appears on the
+                        // remote desktop on its own).
                         let file_count = files.len().to_string();
                         status_label.set_text(&crate::i18n::i18n_f(
-                            "{} file(s) ready to paste on remote",
+                            "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to paste",
                             &[&file_count],
                         ));
                         status_label.set_visible(true);
                         let hide_label = status_label.clone();
+                        // 6 s: long enough to read a one-line instruction.
                         glib::timeout_add_local_once(
-                            std::time::Duration::from_secs(3),
+                            std::time::Duration::from_secs(6),
                             move || {
                                 hide_label.set_visible(false);
                             },
