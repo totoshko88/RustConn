@@ -871,6 +871,7 @@ impl EmbeddedRdpWidget {
             let status_label = self.status_label.clone();
             let cb_for_callback = self.file_dnd_circuit_breaker.clone();
             let toast_overlay_ref = self.toast_overlay.clone();
+            let config = self.config.clone();
 
             file_dnd::setup_rdp_file_drop_target(
                 self.drawing_area.upcast_ref::<gtk4::Widget>(),
@@ -886,6 +887,37 @@ impl EmbeddedRdpWidget {
                             ?current_state,
                             embedded,
                             "File DnD: not connected or not embedded"
+                        );
+                        return;
+                    }
+
+                    // File transfer rides entirely on the CLIPRDR channel, and
+                    // that channel is only registered when the connection has
+                    // clipboard sharing on (see connection.rs `with_clipboard`).
+                    // Dropping a file while it is off produced an announce with
+                    // no channel to carry it — the drop was accepted and even
+                    // reported "ready to paste", but nothing could ever happen.
+                    // Refuse the drop up front and say why, instead of failing
+                    // silently in the session loop.
+                    let clipboard_on = config
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(|c| c.clipboard_enabled);
+                    if !clipboard_on {
+                        tracing::info!(
+                            protocol = "rdp",
+                            "File DnD refused: clipboard sharing is disabled for this connection"
+                        );
+                        status_label.set_text(&crate::i18n::i18n(
+                            "Enable clipboard sharing to send files to the remote session",
+                        ));
+                        status_label.set_visible(true);
+                        let hide_label = status_label.clone();
+                        glib::timeout_add_local_once(
+                            std::time::Duration::from_secs(4),
+                            move || {
+                                hide_label.set_visible(false);
+                            },
                         );
                         return;
                     }

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 14:24+0300\n"
+"POT-Creation-Date: 2026-09-07 16:15+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -165,7 +165,7 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:746
-#: rustconn/src/embedded_rdp/mod.rs:1943
+#: rustconn/src/embedded_rdp/mod.rs:1981
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -9344,19 +9344,19 @@ msgstr "Монітор ресурсів"
 msgid "Computer Management"
 msgstr "Керування комп'ютером"
 
-#: rustconn/src/embedded_rdp/mod.rs:396 rustconn/src/embedded_rdp/mod.rs:998
+#: rustconn/src/embedded_rdp/mod.rs:396 rustconn/src/embedded_rdp/mod.rs:1036
 msgid "Shell Launchers"
 msgstr "Запуск оболонок"
 
-#: rustconn/src/embedded_rdp/mod.rs:398 rustconn/src/embedded_rdp/mod.rs:1015
+#: rustconn/src/embedded_rdp/mod.rs:398 rustconn/src/embedded_rdp/mod.rs:1053
 msgid "Scripts"
 msgstr "Скрипти"
 
-#: rustconn/src/embedded_rdp/mod.rs:400 rustconn/src/embedded_rdp/mod.rs:993
+#: rustconn/src/embedded_rdp/mod.rs:400 rustconn/src/embedded_rdp/mod.rs:1031
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Адмін)"
 
-#: rustconn/src/embedded_rdp/mod.rs:401 rustconn/src/embedded_rdp/mod.rs:997
+#: rustconn/src/embedded_rdp/mod.rs:401 rustconn/src/embedded_rdp/mod.rs:1035
 msgid "CMD (Admin)"
 msgstr "CMD (Адмін)"
 
@@ -9428,32 +9428,36 @@ msgstr "Перепід'єднай"
 msgid "Reconnect to this session"
 msgstr "Перез'єднайся із цим сеансом"
 
-#: rustconn/src/embedded_rdp/mod.rs:932
+#: rustconn/src/embedded_rdp/mod.rs:912
+msgid "Enable clipboard sharing to send files to the remote session"
+msgstr "Увімкни спільний буфер обміну, щоб надсилати файли у віддалений сеанс"
+
+#: rustconn/src/embedded_rdp/mod.rs:964
 msgid "{} file(s) ready to paste on remote"
 msgstr "{} файл(ів) готово до вставлення на віддалений"
 
-#: rustconn/src/embedded_rdp/mod.rs:991
+#: rustconn/src/embedded_rdp/mod.rs:1029
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:996
+#: rustconn/src/embedded_rdp/mod.rs:1034
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1075 rustconn/src/embedded_rdp/mod.rs:1146
-#: rustconn/src/embedded_rdp/mod.rs:1404
+#: rustconn/src/embedded_rdp/mod.rs:1113 rustconn/src/embedded_rdp/mod.rs:1184
+#: rustconn/src/embedded_rdp/mod.rs:1442
 msgid "Channel not ready"
 msgstr "Канал не готовий"
 
-#: rustconn/src/embedded_rdp/mod.rs:1120 rustconn/src/embedded_rdp/mod.rs:1173
+#: rustconn/src/embedded_rdp/mod.rs:1158 rustconn/src/embedded_rdp/mod.rs:1211
 msgid "Script sent"
 msgstr "Скрипт надіслано"
 
-#: rustconn/src/embedded_rdp/mod.rs:1219 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1257 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Запустити сніпета?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1226 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1264 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -9463,23 +9467,23 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1232 rustconn/src/window/snippets.rs:113
+#: rustconn/src/embedded_rdp/mod.rs:1270 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Запусти"
 
-#: rustconn/src/embedded_rdp/mod.rs:1449
+#: rustconn/src/embedded_rdp/mod.rs:1487
 msgid "Select folder to save files"
 msgstr "Обери теку, де зберігатимеш файли"
 
-#: rustconn/src/embedded_rdp/mod.rs:1480
+#: rustconn/src/embedded_rdp/mod.rs:1518
 msgid "Downloading…"
 msgstr "Завантаження…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1510
+#: rustconn/src/embedded_rdp/mod.rs:1548
 msgid "Downloading files…"
 msgstr "Завантаження файлів…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1928
+#: rustconn/src/embedded_rdp/mod.rs:1966
 msgid "Connection may have been lost while the computer slept"
 msgstr "Можливо, з'єднок утрачено, поки комп'ютер спав"
 
