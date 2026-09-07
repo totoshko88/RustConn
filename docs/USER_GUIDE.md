@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.21.7** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.21.8** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -311,7 +311,7 @@ Set the fields only when a device words its prompt differently, for example `Ent
 **Behaviour and limits:**
 
 - Each step fires **once**. If the device rejects the credentials and prompts again, RustConn stops and hands the session over to you — automatic retries are how an account gets locked out.
-- Watching stops after the terminal has been **idle** for 10 seconds — the clock restarts on every piece of output, so a device that spends a long time on its banner keeps the watcher alive instead of outliving it (changed in 0.21.2; the window used to run from the moment the session started, which meant a slow banner could outlast it). A hard ceiling of 2 minutes applies regardless, so a device printing a periodic heartbeat cannot keep the watcher running forever. The 10 seconds can be changed per connection or per group with `login_timeout_secs` in the automation section of `connections.toml`; there is no control for it in the interface yet.
+- Watching stops after the terminal has been **idle** for 10 seconds — the clock restarts on every piece of output, so a device that spends a long time on its banner keeps the watcher alive instead of outliving it (changed in 0.21.2; the window used to run from the moment the session started, which meant a slow banner could outlast it). A hard ceiling of 2 minutes applies regardless, so a device printing a periodic heartbeat cannot keep the watcher running forever. The 10 seconds can be changed per connection (Edit connection → **Automation** → **Automatic Login** → *Login Timeout*) or per group (Edit group → **Automation** → *Login Timeout*); `0` there means "use the inherited value or the built-in default". The same value is stored as `login_timeout_secs` in the automation section of `connections.toml`.
 - `Last login:` and `Last failed login:` in an MOTD are explicitly not treated as username prompts.
 - The **Password Prompt** field also applies to SSH, but only to connections where RustConn types the password into the terminal. Since 0.21.2 most SSH connections instead hand the password to OpenSSH itself, which asks for it directly and never shows a prompt to match — see [How an SSH password reaches the server](#how-an-ssh-password-reaches-the-server). The field still applies to the SSH connections that fall back to the terminal watcher, listed there. The **Username Prompt** field is unused for SSH either way — the account name travels in the command line.
 - Telnet transmits everything, including the password, **in clear text**. Automatic login does not change that; use SSH where you can.
@@ -436,7 +436,7 @@ Temporary connection without saving:
 - Supports SSH, RDP, VNC, Telnet
 - Optional template selection for pre-filling
 - Password field for RDP/VNC
-- **Runtime history** — last 15 Quick Connect sessions are remembered during the app lifetime (not persisted to disk); shown as a "Recent" section with type-ahead filtering by host/username; clicking an entry fills protocol, host, port, and username fields instantly
+- **Recent history** — the last 15 Quick Connect sessions are remembered and persist across restarts (stored in settings; host, port, protocol and username only — never a password); shown as a "Recent" section with type-ahead filtering by host/username; clicking an entry fills protocol, host, port, and username fields instantly
 
 ### Connection Actions
 
@@ -2164,11 +2164,11 @@ Templates are connection presets that store protocol settings, authentication de
 
 **Template Fields:** Protocol, Host/Port, Username/Domain, Password Source, Tags, Icon, Protocol Config, Custom Properties, Pre/Post Tasks, WoL Config.
 
-**Predefined Templates:** RustConn ships with 20 built-in templates for common CLI tools that don't have dedicated protocol support:
+**Predefined Templates:** RustConn ships with 21 built-in templates for common CLI tools that don't have dedicated protocol support:
 
 | Category | Templates |
 |----------|-----------|
-| Remote Desktop | 🖥️ RustDesk, 🔴 AnyDesk, 🌐 Remmina |
+| Remote Desktop | 🖥️ RustDesk, 🔴 AnyDesk, 🌐 Remmina, 📡 WinBox |
 | Containers | 🐳 Docker, 🦭 Podman, 📦 LXC/LXD, 🧊 Incus, 🗃️ Distrobox |
 | Virtualization | 🖧 Virsh Console, 🟠 Proxmox VM, 🟡 Proxmox CT |
 | Hardware | 🔌 IPMI SOL, 🔧 Picocom, 🐟 Redfish BMC |
@@ -2326,6 +2326,27 @@ Port knocking allows you to open firewall ports by sending a specific sequence o
 **Timing defaults:**
 - Inter-knock delay: 100ms
 - Post-knock settle: 200ms
+
+#### fwknop Single Packet Authorization (SPA)
+
+Where a knock *sequence* can be replayed or observed by anyone watching the wire, SPA opens the firewall with a **single encrypted, authenticated UDP packet**. This is the same scheme `fwknopd` expects on the server side, implemented natively in RustConn — no `fwknop` client binary is needed, and it works inside the Flatpak sandbox.
+
+**Configure per-connection:**
+1. Edit Connection → **Advanced** tab → **Connection Behavior** section → expand **SPA (fwknop)**
+2. Enable **SPA** and fill in the fields below
+
+| Field | Meaning | Default |
+|-------|---------|---------|
+| **Rijndael Key** | AES-256-CBC passphrase (or base64) — must match the server's `KEY`/`KEY_BASE64`. Stored in your secret backend. | — |
+| **HMAC Key** | HMAC-SHA256 key — must match the server's `HMAC_KEY`/`HMAC_KEY_BASE64`. Stored in your secret backend. Strongly recommended. | — |
+| **Access** | The access request the server should honor, e.g. `tcp/22` or `tcp/22,tcp/443`. | `tcp/22` |
+| **Destination Port** | UDP port the SPA packet is sent to. | `62201` |
+| **Allow IP** | Which address the server opens for: **Source IP** (packet's own source, `0.0.0.0` in the request), **Resolve Public** (look up this machine's public IP first, like `fwknop -R`), or **Explicit**. | Source IP |
+
+**How it works:**
+- Before connecting, RustConn builds the SPA payload, encrypts it with AES-256-CBC (OpenSSL-compatible `Salted__` / EVP_BytesToKey key derivation), appends an HMAC-SHA256 digest, and sends it as one UDP datagram. A fresh random salt and timestamp make every packet unique.
+- SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
+- The keys never appear in the config file — only vault references are stored.
 
 ### Broadcast Input
 

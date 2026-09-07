@@ -974,7 +974,8 @@ pub fn show_edit_group_dialog(
     let has_automation = !group.expect_rules.is_empty()
         || !group.post_login_scripts.is_empty()
         || group.username_prompt.is_some()
-        || group.password_prompt.is_some();
+        || group.password_prompt.is_some()
+        || group.login_timeout_secs.is_some();
 
     let automation_expander = adw::ExpanderRow::builder()
         .title(i18n("Automation"))
@@ -1034,13 +1035,20 @@ pub fn show_edit_group_dialog(
     // Same two fields as the connection editor; set here they cover every
     // connection in the group, which is the point for a folder of identical
     // devices from one vendor.
-    // The group editor exposes the two prompt fields but not the login-timeout
-    // spin — a per-group login timeout is not surfaced here yet, so the 4th
-    // tuple element is ignored (it still inherits via `login_timeout_secs`).
-    let (login_prompts_group, group_login_username_entry, group_login_password_entry, _) =
-        crate::dialogs::connection::automation_tab::create_automatic_login_section();
+    // Same three controls as the connection editor. Set on the group they cover
+    // every connection in it, which is the point for a folder of identical
+    // devices from one vendor. The login-timeout spin inherits down the chain
+    // via `login_timeout_secs`; 0 leaves it unset so a parent or the built-in
+    // default still applies.
+    let (
+        login_prompts_group,
+        group_login_username_entry,
+        group_login_password_entry,
+        group_login_timeout_spin,
+    ) = crate::dialogs::connection::automation_tab::create_automatic_login_section();
     group_login_username_entry.set_text(group.username_prompt.as_deref().unwrap_or(""));
     group_login_password_entry.set_text(group.password_prompt.as_deref().unwrap_or(""));
+    group_login_timeout_spin.set_value(group.login_timeout_secs.map_or(0.0, f64::from));
     login_prompts_group.set_visible(has_automation);
     automation_content.append(&login_prompts_group);
 
@@ -1450,6 +1458,7 @@ pub fn show_edit_group_dialog(
     let group_expect_rules_clone = group_expect_rules;
     let group_login_username_entry_clone = group_login_username_entry;
     let group_login_password_entry_clone = group_login_password_entry;
+    let group_login_timeout_spin_clone = group_login_timeout_spin;
     let group_post_login_scripts_clone = group_post_login_scripts;
     let old_name = group.name;
 
@@ -1678,6 +1687,12 @@ pub fn show_edit_group_dialog(
                         let text = group_login_password_entry_clone.text().trim().to_string();
                         (!text.is_empty()).then_some(text)
                     };
+                    // 0 means "unset" so a parent group or the built-in default
+                    // still supplies the timeout, matching the connection editor.
+                    updated.login_timeout_secs = {
+                        let secs = group_login_timeout_spin_clone.value_as_int();
+                        (secs > 0).then(|| u32::try_from(secs).unwrap_or(u32::MAX))
+                    };
                     // Collect expect rules, filtering out empty patterns
                     updated.expect_rules = group_expect_rules_clone
                         .borrow()
@@ -1698,6 +1713,7 @@ pub fn show_edit_group_dialog(
                     updated.post_login_scripts = Vec::new();
                     updated.username_prompt = None;
                     updated.password_prompt = None;
+                    updated.login_timeout_secs = None;
                 }
 
                 // Capture old groups snapshot before update for vault migration

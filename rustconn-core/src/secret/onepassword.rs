@@ -23,6 +23,19 @@ use super::serde_helpers::serde_error_kind;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
+/// Ceiling on a single `op` invocation.
+///
+/// The `op` CLI reaches the 1Password service for most operations and can stall
+/// on a slow or unreachable network, or on a biometric prompt that never gets
+/// answered. Nothing bounded these calls before, so a stalled `op` blocked its
+/// caller forever. Thirty seconds matches `BW_INVOCATION_TIMEOUT` in the
+/// Bitwarden backend: long enough for a real round-trip plus an unlock prompt,
+/// short enough to fail while the user is still watching.
+///
+/// Named in prose rather than linked: `bitwarden` is a private module, so an
+/// intra-doc link to it fires `rustdoc::private_intra_doc_links`.
+const OP_INVOCATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// 1Password CLI backend
 ///
 /// This backend uses the `op` command-line utility to interact with
@@ -139,6 +152,11 @@ impl OnePasswordBackend {
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new("op");
         cmd.env("PATH", crate::cli_download::get_extended_path());
+        // `OP_INVOCATION_TIMEOUT` drops the future when it fires, and
+        // `tokio::process` does not kill the child on drop by default — without
+        // this an `op` waiting on a biometric prompt nobody answers would be left
+        // running after the timeout gave up on it.
+        cmd.kill_on_drop(true);
         cmd.args(args);
 
         // Add service account token if available
@@ -160,10 +178,14 @@ impl OnePasswordBackend {
 
     /// Runs an op command and returns stdout
     async fn run_command(&self, args: &[&str]) -> SecretResult<String> {
-        let output = self
-            .build_command(args)
-            .output()
+        let output = tokio::time::timeout(OP_INVOCATION_TIMEOUT, self.build_command(args).output())
             .await
+            .map_err(|_| {
+                SecretError::ConnectionFailed(format!(
+                    "op command timed out after {}s",
+                    OP_INVOCATION_TIMEOUT.as_secs()
+                ))
+            })?
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run op: {e}")))?;
 
         if !output.status.success() {
@@ -205,9 +227,14 @@ impl OnePasswordBackend {
             drop(stdin);
         }
 
-        let output = child
-            .wait_with_output()
+        let output = tokio::time::timeout(OP_INVOCATION_TIMEOUT, child.wait_with_output())
             .await
+            .map_err(|_| {
+                SecretError::ConnectionFailed(format!(
+                    "op command timed out after {}s",
+                    OP_INVOCATION_TIMEOUT.as_secs()
+                ))
+            })?
             .map_err(|e| SecretError::ConnectionFailed(format!("Failed to wait for op: {e}")))?;
 
         if !output.status.success() {
@@ -549,12 +576,29 @@ pub async fn get_onepassword_status() -> OnePasswordStatus {
     }
 
     // Check if signed in using whoami
-    // This will trigger desktop app authentication if integration is enabled
-    let whoami_output = Command::new("op")
-        .env("PATH", crate::cli_download::get_extended_path())
-        .args(["whoami", "--format", "json"])
-        .output()
-        .await;
+    // This will trigger desktop app authentication if integration is enabled —
+    // which is exactly why it needs a bound: an unanswered biometric prompt
+    // would otherwise park this status probe forever. A timeout is treated like
+    // any other failure to answer, i.e. "not signed in".
+    let whoami_output = match tokio::time::timeout(
+        OP_INVOCATION_TIMEOUT,
+        Command::new("op")
+            .env("PATH", crate::cli_download::get_extended_path())
+            .kill_on_drop(true)
+            .args(["whoami", "--format", "json"])
+            .output(),
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(_elapsed) => Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            format!(
+                "op whoami timed out after {}s",
+                OP_INVOCATION_TIMEOUT.as_secs()
+            ),
+        )),
+    };
 
     match whoami_output {
         Ok(output) if output.status.success() => {
@@ -613,12 +657,23 @@ pub async fn get_onepassword_status() -> OnePasswordStatus {
 /// # Errors
 /// Returns `SecretError` if sign-out fails
 pub async fn signout() -> SecretResult<()> {
-    let output = Command::new("op")
-        .env("PATH", crate::cli_download::get_extended_path())
-        .arg("signout")
-        .output()
-        .await
-        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run op signout: {e}")))?;
+    // Reaches the service, so it is bounded like every other networked `op` call.
+    let output = tokio::time::timeout(
+        OP_INVOCATION_TIMEOUT,
+        Command::new("op")
+            .env("PATH", crate::cli_download::get_extended_path())
+            .kill_on_drop(true)
+            .arg("signout")
+            .output(),
+    )
+    .await
+    .map_err(|_| {
+        SecretError::ConnectionFailed(format!(
+            "op signout timed out after {}s",
+            OP_INVOCATION_TIMEOUT.as_secs()
+        ))
+    })?
+    .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run op signout: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);

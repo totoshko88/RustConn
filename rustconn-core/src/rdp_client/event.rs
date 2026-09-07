@@ -559,10 +559,10 @@ pub enum RdpClientEvent {
     ClipboardFileContents {
         /// Stream ID for matching request/response
         stream_id: u32,
-        /// File data
+        /// File data for this range. Whether it is the last chunk is decided by
+        /// the GUI from the known file size, not signalled here — the wire gives
+        /// no reliable per-chunk "last" flag.
         data: Vec<u8>,
-        /// Whether this is the last chunk
-        is_last: bool,
     },
 
     /// File size information received from server
@@ -571,6 +571,14 @@ pub enum RdpClientEvent {
         stream_id: u32,
         /// File size in bytes
         size: u64,
+    },
+
+    /// The server refused a file-contents request (`CB_FILECONTENTS_RESPONSE`
+    /// with the fail flag). The matching download must be abandoned rather than
+    /// left waiting for data that will never arrive.
+    ClipboardFileError {
+        /// Stream ID of the request the server rejected
+        stream_id: u32,
     },
 
     /// Authentication required (for NLA)
@@ -804,7 +812,13 @@ pub enum RdpClientCommand {
         format_id: u32,
     },
 
-    /// Request file contents from server clipboard
+    /// Download file contents *from* the server clipboard (server → client).
+    ///
+    /// Sent by the "Save N Files" button after the server announced a file list
+    /// via `FileGroupDescriptorW`. The session loop turns this into a CLIPRDR
+    /// File Contents *Request* PDU (`Cliprdr::request_file_contents`); the reply
+    /// arrives asynchronously as [`RdpClientEvent::ClipboardFileSize`] or
+    /// [`RdpClientEvent::ClipboardFileContents`].
     RequestFileContents {
         /// Stream ID for matching request/response
         stream_id: u32,
@@ -815,6 +829,27 @@ pub enum RdpClientCommand {
         /// Offset for data requests
         offset: u64,
         /// Number of bytes to request (for data requests)
+        length: u32,
+    },
+
+    /// Answer the server's file-contents request *with* our local file
+    /// (client → server), for a file we announced via `FileGroupDescriptorW`.
+    ///
+    /// Sent by the GUI in response to [`RdpClientEvent::FileContentsRequested`].
+    /// The session loop reads the local file and replies with a CLIPRDR File
+    /// Contents *Response* PDU (`Cliprdr::submit_file_contents`). This is the
+    /// mirror image of [`Self::RequestFileContents`]: a request answered, not a
+    /// download initiated.
+    ProvideFileContents {
+        /// Stream ID copied from the server's request
+        stream_id: u32,
+        /// Index into our announced local file list
+        file_index: u32,
+        /// Whether the server asked for the size (true) or the data (false)
+        request_size: bool,
+        /// Byte offset for a data request
+        offset: u64,
+        /// Number of bytes the server asked for
         length: u32,
     },
 
@@ -870,20 +905,27 @@ pub enum RdpClientCommand {
         initial_delay_ms: u32,
     },
 
-    /// Store local file paths in the clipboard backend for file DnD transfer.
+    /// Offer dropped files to the server via CLIPRDR file copy.
     ///
-    /// Called by the GUI after files are dropped onto the RDP widget.
-    /// The paths are indexed by position matching the `FileGroupDescriptorW`
-    /// announcement order. When the server requests file contents, the
-    /// session loop reads from these stored paths.
-    StoreLocalFiles {
-        /// Local file paths in the same order as announced in FileGroupDescriptorW
+    /// Called by the GUI after files are dropped onto the RDP widget. The
+    /// session loop stores the local paths (so a later File Contents Request can
+    /// be answered by reading them by index) and then hands the file list to
+    /// IronRDP's `Cliprdr::initiate_file_copy`.
+    ///
+    /// The descriptor is deliberately **not** built here. IronRDP keeps its own
+    /// `local_file_list` and only forwards a File Contents Request to the backend
+    /// when that list is populated — which happens only through
+    /// `initiate_file_copy`. Hand-building a `FILEGROUPDESCRIPTORW` and parking it
+    /// under a private format id left IronRDP's list empty, so it answered the
+    /// server's contents request with an error PDU before the backend ever saw
+    /// it (the file appeared offered, then failed with "Unspecified error").
+    InitiateFileCopy {
+        /// Local file paths, in the same order as `files`. Read by index when
+        /// the server requests contents.
         paths: Vec<std::path::PathBuf>,
-        /// The encoded `FILEGROUPDESCRIPTORW` blob, parked so that
-        /// `on_format_data_request` can answer the peer when it asks for the
-        /// listing. Sending it unprompted (as we did before 0.19.12) is not a
-        /// legal Format Data Response — the peer has to request it first.
-        descriptor: Vec<u8>,
+        /// File metadata (name, size, attributes) used to build the CLIPRDR file
+        /// descriptors. Order matches `paths`.
+        files: Vec<ClipboardFileInfo>,
     },
 }
 

@@ -114,6 +114,25 @@ impl TranscriptWriter {
             self.pending = Zeroizing::new(self.pending[index + 1..].to_vec());
             self.write(&complete);
         }
+
+        // A password prompt (`Password: `) carries no newline, so it would
+        // normally wait out `PARTIAL_LINE_GRACE` before reaching the logger —
+        // but the user answers it at once, and the answer travels on the
+        // separate `INPUT:` channel. If the prompt has not armed the logger by
+        // then, the answer is not recognised as the secret and is logged in the
+        // clear (issue #321). Flush a pending prompt through immediately so the
+        // logger is armed before the keystrokes arrive.
+        if !self.pending.is_empty() {
+            let plain = Zeroizing::new(rustconn_core::session::strip_ansi_escapes(
+                &String::from_utf8_lossy(&self.pending),
+            ));
+            if rustconn_core::session::contains_sensitive_prompt(&plain) {
+                let prompt = std::mem::replace(&mut self.pending, Zeroizing::new(Vec::new()));
+                self.pending_since = None;
+                self.write(&prompt);
+                return;
+            }
+        }
         self.pending_since = (!self.pending.is_empty()).then(std::time::Instant::now);
     }
 

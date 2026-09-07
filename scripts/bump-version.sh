@@ -170,7 +170,8 @@ rules_for() {
         # new entry written by hand.
         printf 's/^(Version:[[:space:]]+)%s$/\\1%s/\n' "$SV" "$NEW"
         ;;
-    "docs/USER_GUIDE.md" | "docs/ARCHITECTURE.md" | "docs/AI_DEVELOPMENT.md")
+    "docs/USER_GUIDE.md" | "docs/ARCHITECTURE.md" | "docs/AI_DEVELOPMENT.md" | \
+        "docs/CLI_REFERENCE.md" | "docs/ZERO_TRUST.md")
         # The header line at the top, anchored. "Changed in x.y.z" in the body is
         # a statement about a past release and must not move.
         printf 's/^\\*\\*Version %s\\*\\*/**Version %s**/\n' "$SV" "$NEW"

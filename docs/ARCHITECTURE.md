@@ -1,12 +1,12 @@
 # RustConn Architecture Guide
 
-**Version 0.21.7** | Last updated: August 2026
+**Version 0.21.8** | Last updated: August 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
 ## Crate Structure
 
-RustConn is a six-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
+RustConn is a seven-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
 
 ```
 rustconn/            # GTK4 GUI application
@@ -248,7 +248,7 @@ Two consequences worth knowing when editing session code:
 The GUI uses a shared mutable state pattern for GTK's single-threaded model:
 
 ```rust
-// rustconn/src/state.rs
+// rustconn/src/state/mod.rs
 pub type SharedAppState = Rc<RefCell<AppState>>;
 
 pub struct AppState {
@@ -324,6 +324,9 @@ Each domain has a dedicated manager in `rustconn-core`:
 | `SnippetManager` | Command snippets |
 | `TemplateManager` | Connection template CRUD, search, import/export |
 | `ClusterManager` | Connection clusters |
+| `SyncManager` | Cross-device settings/connection sync |
+| `WorkspaceProfileManager` | Save/restore sets of open sessions |
+| `FolderConnectionTracker` | Which connections belong to which folder |
 
 ### Connection Retry
 
@@ -479,7 +482,7 @@ When a thread panics while holding a mutex lock, the mutex becomes "poisoned" to
 For simple state flags and process handles (like in `FreeRdpThread`), we can safely recover from poisoning by extracting the inner value:
 
 ```rust
-// rustconn/src/embedded_rdp_thread.rs
+// rustconn/src/embedded_rdp/thread.rs
 
 /// Safely locks a mutex, recovering from poisoning by extracting the inner value.
 fn lock_or_recover<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -585,7 +588,7 @@ spawn_blocking_with_callback(
 For async operations that need tokio (credential backends, etc.):
 
 ```rust
-// rustconn/src/state.rs
+// rustconn/src/async_utils.rs
 thread_local! {
     static TOKIO_RUNTIME: RefCell<Option<tokio::runtime::Runtime>> = 
         const { RefCell::new(None) };
@@ -718,28 +721,35 @@ pub enum ProtocolError {
 
 ### GUI Error Display
 
-The GUI converts technical errors to user-friendly messages:
+A `Display` string from a `rustconn-core` error is already meant for a user (the
+`thiserror` messages are written that way), so the GUI shows it directly rather
+than through a separate technical-to-friendly mapping layer. Which surface it
+picks depends on the consequence of the failure — modal dialog for a lost action,
+banner for a persistent problem, toast for a transient one (see the "Toasts vs
+Banners vs Dialogs" table in the GNOME HIG steering).
+
+The application-level helper is `show_error_dialog` in `rustconn/src/app.rs`. It
+presents an `adw::AlertDialog` on the active window rather than parenting it on a
+fresh `ApplicationWindow`, which would otherwise linger after the dialog is
+dismissed:
 
 ```rust
-// rustconn/src/error_display.rs
-pub fn user_friendly_message(error: &AppStateError) -> String {
-    match error {
-        AppStateError::ConnectionNotFound(_) => 
-            "The connection could not be found. It may have been deleted.".to_string(),
-        AppStateError::CredentialError(_) => 
-            "Could not access credentials. Check your secret storage settings.".to_string(),
-        // ...
-    }
-}
+// rustconn/src/app.rs
+fn show_error_dialog(app: &adw::Application, title: &str, message: &str) {
+    let dialog = adw::AlertDialog::new(Some(title), Some(message));
+    dialog.add_response("ok", &crate::i18n::i18n("OK"));
+    dialog.set_default_response(Some("ok"));
 
-pub fn show_error_dialog(parent: &impl IsA<gtk4::Window>, error: &AppStateError) {
-    let dialog = adw::AlertDialog::new(
-        Some("Error"),
-        Some(&user_friendly_message(error)),
-    );
-    // Technical details in expandable section...
+    // Present without a parent window — avoids creating an orphaned
+    // ApplicationWindow that lingers after the dialog is dismissed.
+    let parent = app.active_window();
+    dialog.present(parent.as_ref());
 }
 ```
+
+Inside a window, the `alert` and toast helpers in `rustconn/src/dialogs/` carry
+the same `title`/`message` shape; the title is the "what happened" and the
+message is the "what to do", both wrapped in `i18n()`.
 
 ### Log Sanitization
 

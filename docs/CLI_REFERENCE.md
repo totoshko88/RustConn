@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.21.4** | Command-line interface for RustConn connection management
+**Version 0.21.8** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -506,6 +506,11 @@ rustconn-cli sftp "My Server" --mc           # Open in Midnight Commander
 
 The command automatically manages SSH agent keys before connecting. Only SSH connections are supported; other protocols return an error.
 
+The `sftp` command itself is available in every build, including the minimal
+headless one — `--cli` and `--mc` need no features. Only the default file-manager
+mode (opening the SFTP location in Dolphin/Nautilus/`xdg-open`) requires the
+`client-launch` feature; without it, use `--cli` or `--mc`.
+
 ### export — Export connections
 
 ```bash
@@ -906,6 +911,21 @@ rustconn-cli completions fish > ~/.config/fish/completions/rustconn-cli.fish
 ```
 
 Supported shells: `bash`, `zsh`, `fish`, `elvish`, `powershell`.
+
+### man-page — Generate the man page
+
+```bash
+rustconn-cli man-page
+```
+
+Writes a roff-formatted man page for `rustconn-cli` to stdout; redirect it to the
+appropriate `man` directory to install it:
+
+```bash
+rustconn-cli man-page > ~/.local/share/man/man1/rustconn-cli.1
+```
+
+Takes no arguments and is available in every build.
 
 ### stats — Show connection statistics
 

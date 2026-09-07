@@ -1,3 +1,35 @@
+rustconn (0.21.8-1) unstable; urgency=medium
+
+  * Version bump to 0.21.8
+  * Fixed (security): a password typed at an interactive prompt could reach the
+    session log in the clear (#321); the input after a sensitive prompt is now
+    redacted.
+  * Fixed: an Expect-rule response could not resolve a connection-local variable
+    (#317); local variables are now resolved too.
+  * Fixed: embedded RDP clipboard file transfer now works in both directions —
+    downloads ("Save N Files") and dragging a file onto the session (offered via
+    IronRDP's file-copy API; a hand-built offer used to fail with "Unspecified
+    error"), the file transfers in full.
+  * Improved: a file dropped on an RDP session confirms with a toast — it lands
+    on the remote clipboard, press Ctrl+V in the session to paste it.
+  * Fixed (security): a server clipboard filename could be written outside the
+    chosen folder via an absolute path or ".."; names are reduced to one safe
+    component and an existing file is never clobbered.
+  * Fixed: a failed-write report panicked, a refused file never let the batch
+    finish, and a hostile server could loop or corrupt a download; a 512 MiB
+    cap, a re-entry guard, monotonic stream ids and directory filtering fix it.
+  * Fixed (security): an oversized clipboard file request could allocate up to
+    4 GiB; capped at 8 MiB per response.
+  * Fixed (security): SecretSettings and Credentials Debug could print stored
+    credentials in the clear; both redact by hand now.
+  * Fixed: secret-backend CLI calls could hang the caller forever; bounded by a
+    30-second timeout that also kills the child.
+  * Improved: the auto-login timeout can now be set on a group.
+  * Improved: the macOS window header is closer to a native titlebar height.
+  * Dependencies: rustls 0.23.43->0.23.44.
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 07 Sep 2026 15:10:00 +0300
+
 rustconn (0.21.7-1) unstable; urgency=medium
 
   * Version bump to 0.21.7

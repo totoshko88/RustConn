@@ -951,19 +951,49 @@ togglebutton.broadcasting image {
  * Applied unconditionally on macOS via the `.macos` class set in
  * Rust at window creation (cfg(target_os = "macos")).
  *
- * Note: libadwaita's AdwHeaderBar ignores CSS min-height — the
- * internal layout hardcodes its minimum size around the traffic
- * lights and child widgets. Only rules that do not attempt to
- * shrink the headerbar below that floor are effective here.
- * The .macos class is retained for future overrides as GTK4's
- * macOS backend matures.
+ * Note: libadwaita's AdwHeaderBar derives its minimum height from its
+ * tallest child, not from CSS min-height. The header buttons used to
+ * carry a 44px size request from Rust (GNOME HIG tap target), which set
+ * that floor and no CSS could move it. On macOS the size request is now
+ * 28px (create_header_bar in window/ui.rs) — there is no touch input and
+ * native AppKit toolbar buttons are that size — so the rules below can
+ * finally shrink the header toward a native macOS look.
  * ============================================================ */
 
-/* Font size: Adwaita default is ~11pt, macOS System Font is 13pt.
- * Scale up slightly so text does not look disproportionately small
- * next to the large Adwaita padding (which cannot be CSS-shrunk). */
+/* Font size: Adwaita default is ~11pt, macOS System Font is 13pt. A small
+ * bump keeps text from looking undersized next to Adwaita's padding, but
+ * 1.1em inflated the header-bar labels (Shell, Broadcast) enough to raise
+ * the whole header — 1.05em reads native without that cost. */
 window.macos {
-    font-size: 1.1em;
+    font-size: 1.05em;
+}
+
+/* Header bar — denser on macOS, matching the reduced button size request.
+ * Zero vertical button margin so the buttons do not push the header taller
+ * than the traffic lights already require. */
+window.macos headerbar {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* 28px agrees with the size request set in ui.rs. It used to say 26px, which
+ * was simply dead: a size request is a floor CSS cannot go under, so the
+ * smaller number described a size the button never had. */
+window.macos headerbar button {
+    min-height: 28px;
+    min-width: 28px;
+    padding: 2px 6px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+window.macos headerbar button.image-button {
+    padding: 2px 4px;
+}
+
+/* Header title label — tighter line box so it does not set the header height. */
+window.macos headerbar .title {
+    padding: 0;
 }
 
 /* Tab bar — slightly slimmer on macOS */

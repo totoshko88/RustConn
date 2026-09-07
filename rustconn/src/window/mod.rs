@@ -282,7 +282,7 @@ pub struct MainWindow {
     tunnel_manager: SharedTunnelManager,
     /// Busy-state tracker — shows/hides header bar spinner on 0→1 / 1→0 transitions
     busy_stack: rustconn_core::BusyStack,
-    /// Runtime-only quick connect history (max 15 entries, LIFO, not persisted)
+    /// Quick Connect history (max 15 entries, LIFO, persisted in settings)
     quick_connect_history: types::SharedQuickConnectHistory,
     /// Passthrough mode indicator button in header bar (visible when active)
     passthrough_indicator: gtk4::Button,

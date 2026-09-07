@@ -358,6 +358,16 @@ pub struct EmbeddedRdpWidget {
     /// Flag to suppress clipboard change events when we set the clipboard
     /// ourselves (Copy button or Phase 2 auto-sync), preventing feedback loops.
     clipboard_sync_suppressed: Rc<RefCell<bool>>,
+    /// True while a file drag-and-drop offer is outstanding, i.e. between the
+    /// drop and the server either pulling the file or the offer timing out.
+    ///
+    /// CLIPRDR keeps a single current clipboard offer, so the local-clipboard
+    /// text-sync must not announce text while this is set — a text announce
+    /// replaces the file offer and the server then asks for text instead of the
+    /// file descriptor, so the transfer silently never happens. Cleared when the
+    /// server requests the file contents (offer consumed) or by a safety timeout,
+    /// so a drop cannot disable text sync for the rest of the session.
+    file_offer_active: Rc<Cell<bool>>,
     /// Mouse jiggler timer source ID (sends periodic mouse moves to prevent idle disconnect)
     jiggler_timer: Rc<RefCell<Option<glib::SourceId>>>,
     /// Circuit breaker for file drag-and-drop (auto-disables after repeated failures)
@@ -828,6 +838,7 @@ impl EmbeddedRdpWidget {
             last_resize_request_css: Rc::new(RefCell::new(None)),
             clipboard_monitor: Rc::new(RefCell::new(None)),
             clipboard_sync_suppressed: Rc::new(RefCell::new(false)),
+            file_offer_active: Rc::new(Cell::new(false)),
             jiggler_timer: Rc::new(RefCell::new(None)),
             file_dnd_circuit_breaker: Rc::new(RefCell::new(file_dnd::FileDndCircuitBreaker::new())),
             toast_overlay: Rc::new(RefCell::new(None)),
@@ -871,6 +882,9 @@ impl EmbeddedRdpWidget {
             let status_label = self.status_label.clone();
             let cb_for_callback = self.file_dnd_circuit_breaker.clone();
             let toast_overlay_ref = self.toast_overlay.clone();
+            let config = self.config.clone();
+            let file_offer_active = self.file_offer_active.clone();
+            let toast_for_success = self.toast_overlay.clone();
 
             file_dnd::setup_rdp_file_drop_target(
                 self.drawing_area.upcast_ref::<gtk4::Widget>(),
@@ -890,61 +904,135 @@ impl EmbeddedRdpWidget {
                         return;
                     }
 
-                    if let Some(ref sender) = *ironrdp_tx.borrow() {
-                        // Build FileGroupDescriptorW and announce to server
-                        let descriptor = file_dnd::build_file_group_descriptor(&files);
-
-                        // Park the paths (for File Contents Requests) and the
-                        // listing (for the Format Data Request) in the backend.
-                        let paths: Vec<std::path::PathBuf> =
-                            files.iter().map(|f| f.path.clone()).collect();
-                        let _ =
-                            sender.send(RdpClientCommand::StoreLocalFiles { paths, descriptor });
-
-                        // Announce the pair MS-RDPECLIP requires for stream-based
-                        // file copy: FileGroupDescriptorW carries the listing and
-                        // FileContents lets the peer pull the bytes. Both are
-                        // registered formats, so they go out with their names and
-                        // ids in the 0xC000+ range — announcing the descriptor
-                        // under CF_HDROP (15) made Windows parse it as DROPFILES
-                        // and fail the paste (issue #256).
-                        let formats = vec![
-                            rustconn_core::ClipboardFormatInfo::new(
-                                rustconn_core::ClipboardFormatInfo::FILE_GROUP_DESCRIPTOR_W,
-                                Some("FileGroupDescriptorW".to_string()),
-                            ),
-                            rustconn_core::ClipboardFormatInfo::new(
-                                rustconn_core::ClipboardFormatInfo::FILE_CONTENTS,
-                                Some("FileContents".to_string()),
-                            ),
-                        ];
-
-                        // Announce the formats. The peer answers with a Format
-                        // Data Request, which the backend serves from the parked
-                        // descriptor above.
-                        let _ = sender.send(RdpClientCommand::ClipboardCopy(formats));
-
-                        cb_for_callback.borrow_mut().record_success();
-
-                        // Show brief status feedback
-                        let file_count = files.len().to_string();
-                        status_label.set_text(&crate::i18n::i18n_f(
-                            "{} file(s) ready to paste on remote",
-                            &[&file_count],
+                    // File transfer rides entirely on the CLIPRDR channel, and
+                    // that channel is only registered when the connection has
+                    // clipboard sharing on (see connection.rs `with_clipboard`).
+                    // Dropping a file while it is off produced an announce with
+                    // no channel to carry it — the drop was accepted and even
+                    // reported "ready to paste", but nothing could ever happen.
+                    // Refuse the drop up front and say why, instead of failing
+                    // silently in the session loop.
+                    let clipboard_on = config
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(|c| c.clipboard_enabled);
+                    if !clipboard_on {
+                        tracing::info!(
+                            protocol = "rdp",
+                            "File DnD refused: clipboard sharing is disabled for this connection"
+                        );
+                        status_label.set_text(&crate::i18n::i18n(
+                            "Enable clipboard sharing to send files to the remote session",
                         ));
                         status_label.set_visible(true);
                         let hide_label = status_label.clone();
                         glib::timeout_add_local_once(
-                            std::time::Duration::from_secs(3),
+                            std::time::Duration::from_secs(4),
                             move || {
                                 hide_label.set_visible(false);
                             },
                         );
+                        return;
+                    }
 
+                    if let Some(ref sender) = *ironrdp_tx.borrow() {
+                        // Hand the file list to IronRDP's file-copy API. It both
+                        // populates IronRDP's internal file list — without which
+                        // it rejects the server's File Contents Request before our
+                        // backend sees it — and sends the FileGroupDescriptorW
+                        // FormatList itself, so we must not build or announce a
+                        // competing one by hand. Doing that left IronRDP's list
+                        // empty and the offer failed on the Windows side with
+                        // "Unspecified error".
+                        let paths: Vec<std::path::PathBuf> =
+                            files.iter().map(|f| f.path.clone()).collect();
+                        let infos: Vec<rustconn_core::rdp_client::ClipboardFileInfo> = files
+                            .iter()
+                            .enumerate()
+                            .map(|(i, f)| {
+                                rustconn_core::rdp_client::ClipboardFileInfo::new(
+                                    f.name.clone(),
+                                    f.size,
+                                    f.attributes,
+                                    f.last_modified,
+                                    i as u32,
+                                )
+                            })
+                            .collect();
+
+                        // Mark the file offer outstanding so the local-clipboard
+                        // text-sync does not replace it before the server pulls
+                        // the file (CLIPRDR keeps a single current offer). Cleared
+                        // when the server requests the contents, or by the safety
+                        // timeout below so a drop cannot mute text sync forever.
+                        file_offer_active.set(true);
+                        let clear_offer = file_offer_active.clone();
+                        // 30 s comfortably covers a server's request round-trip;
+                        // past that, assume the offer went unclaimed and let text
+                        // sync resume rather than stay muted for the session.
+                        glib::timeout_add_local_once(
+                            std::time::Duration::from_secs(30),
+                            move || {
+                                if clear_offer.replace(false) {
+                                    tracing::debug!(
+                                        protocol = "rdp",
+                                        "File clipboard offer expired unclaimed; \
+                                         re-enabling local clipboard text sync"
+                                    );
+                                }
+                            },
+                        );
+
+                        let _ = sender.send(RdpClientCommand::InitiateFileCopy {
+                            paths,
+                            files: infos,
+                        });
+
+                        cb_for_callback.borrow_mut().record_success();
+
+                        // Say what actually happened and what to do next. RDP has
+                        // no drag-to-desktop: a dropped file goes onto the remote
+                        // *clipboard*, and the user must press Ctrl+V in the remote
+                        // session to place it. Without this the drop looks like it
+                        // did nothing (the file never appears on the remote desktop
+                        // on its own).
+                        let file_count = files.len().to_string();
+                        let message = crate::i18n::i18n_f(
+                            "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to paste",
+                            &[&file_count],
+                        );
+
+                        // A toast is the HIG-correct surface for the result of an
+                        // action, and it is far harder to miss than the inline
+                        // status line. Show it when the overlay is available; keep
+                        // the status line as the fallback (and for the brief moment
+                        // before the overlay is wired after the widget is parented).
+                        if let Some(ref overlay) = *toast_for_success.borrow() {
+                            let toast = libadwaita::Toast::new(&message);
+                            toast.set_timeout(6);
+                            overlay.add_toast(toast);
+                        } else {
+                            status_label.set_text(&message);
+                            status_label.set_visible(true);
+                            let hide_label = status_label.clone();
+                            glib::timeout_add_local_once(
+                                std::time::Duration::from_secs(6),
+                                move || {
+                                    hide_label.set_visible(false);
+                                },
+                            );
+                        }
+
+                        // "Queued", not "done": whether the format list actually
+                        // reaches the server is decided in the session loop
+                        // (handle_clipboard_copy), which logs the outcome. This
+                        // line used to say "Announced …" unconditionally, which
+                        // read as success even when the copy was dropped for a
+                        // missing or not-yet-ready CLIPRDR channel.
                         tracing::info!(
                             protocol = "rdp",
                             file_count = files.len(),
-                            "Announced files to RDP server via CLIPRDR"
+                            "Queued file announce to RDP server via CLIPRDR (outcome logged by the session loop)"
                         );
                     } else {
                         tracing::warn!(
@@ -1465,12 +1553,14 @@ impl EmbeddedRdpWidget {
                     if let Ok(folder) = result
                         && let Some(path) = folder.path()
                     {
-                        // Set target directory and start downloads
+                        // Arm the run. `begin_batch` also clears the previous
+                        // run's downloads and its save-failure tally, which
+                        // setting the fields by hand did not: a second click on
+                        // the same file list never re-announces it, so the old
+                        // failures were counted again in the new summary.
                         {
                             let mut transfer = file_transfer_clone.borrow_mut();
-                            transfer.target_directory = Some(path.clone());
-                            transfer.total_files = files_clone.len();
-                            transfer.completed_count = 0;
+                            transfer.begin_batch(path.clone(), files_clone.len());
                         }
 
                         // Disable button during transfer
@@ -1486,22 +1576,19 @@ impl EmbeddedRdpWidget {
                                 };
 
                                 if let Some(sid) = stream_id {
-                                    // First request size, then data
+                                    // Ask only for the size here. The first data
+                                    // range is sent once the size arrives (see
+                                    // handle_clipboard_file_size), and each further
+                                    // range follows the previous chunk, so a file
+                                    // larger than one response is pulled in full
+                                    // instead of being truncated by a single
+                                    // all-at-once request.
                                     let _ = sender.send(RdpClientCommand::RequestFileContents {
                                         stream_id: sid,
                                         file_index: file.index,
                                         request_size: true,
                                         offset: 0,
                                         length: 0,
-                                    });
-
-                                    // Then request actual data
-                                    let _ = sender.send(RdpClientCommand::RequestFileContents {
-                                        stream_id: sid,
-                                        file_index: file.index,
-                                        request_size: false,
-                                        offset: 0,
-                                        length: u32::MAX, // Request all data
                                     });
                                 }
                             }

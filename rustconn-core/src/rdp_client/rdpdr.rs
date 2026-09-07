@@ -219,17 +219,20 @@ impl RustConnRdpdrBackend {
     ///
     /// # Current Limitations
     ///
-    /// ironrdp 0.13 does not expose `ClientDriveNotifyChangeDirectoryResponse` type,
-    /// so we cannot send actual RDP responses for directory change notifications.
-    /// The inotify integration is complete and detects changes correctly, but the
-    /// responses cannot be sent until ironrdp adds support for this PDU type.
+    /// `ironrdp-rdpdr` 0.7 (the version paired with ironrdp 0.17) still does not
+    /// expose a `ClientDriveNotifyChangeDirectoryResponse` type — it has the
+    /// server-side `ServerDriveNotifyChangeDirectoryRequest` and
+    /// `ClientDriveQueryDirectoryResponse`, but not the notify *response*. So the
+    /// inotify integration detects changes correctly, but the responses cannot be
+    /// sent until upstream adds this PDU. This is an external blocker, not
+    /// unfinished local work.
     ///
     /// Per MS-RDPEFS 2.2.3.4.11, the response should contain:
     /// - `DeviceIoResponse` header with the original request's `DeviceIoRequest`
     /// - Buffer containing `FILE_NOTIFY_INFORMATION` structures (MS-FSCC 2.4.42)
     ///
-    /// When ironrdp adds `ClientDriveNotifyChangeDirectoryResponse`, update this
-    /// method to construct and return the proper response PDUs.
+    /// When `ironrdp-rdpdr` adds `ClientDriveNotifyChangeDirectoryResponse`,
+    /// update this method to construct and return the proper response PDUs.
     pub fn poll_directory_changes(&mut self) -> Vec<SvcMessage> {
         let Some(watcher) = &self.dir_watcher else {
             return Vec::new();
@@ -1286,10 +1289,10 @@ impl RustConnRdpdrBackend {
             ))]);
         }
 
-        // The ServerDriveLockControlRequest in ironrdp 0.13 has limited fields.
-        // We acknowledge the lock request with success.
+        // `ServerDriveLockControlRequest` in ironrdp-rdpdr 0.7 still exposes only
+        // limited fields, so we acknowledge the lock request with success.
         // A full implementation would parse the lock information from the PDU
-        // and maintain lock state, but the current ironrdp API doesn't expose
+        // and maintain lock state, but the current ironrdp API does not expose
         // the lock details directly.
         //
         // For basic compatibility, we just acknowledge success.

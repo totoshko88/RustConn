@@ -143,16 +143,16 @@ jobs:
       # hashes — but nothing ever ran it. A config without a runner is decoration.
       #
       # Pinned by SHA like every other third-party action here, and to the same
-      # version as the locally installed typos-cli (1.49.0) so a CI-only
+      # version as the locally installed typos-cli (1.50.1) so a CI-only
       # dictionary update cannot produce findings that do not reproduce locally.
       - name: Spell check
-        uses: crate-ci/typos@8a48f81b6c64dcfea44b3633223084c4be58ac5f # v1.49.0
+        uses: crate-ci/typos@d43b6c087ac471e2ea7b8af622ff15f05c0c365b # v1.50.1
 
       # Prebuilt binary, so this job still needs no Rust toolchain. Pinned by
       # SHA — this action downloads and executes a binary, which is the last
       # place to accept a moving tag.
       - name: Install cargo-machete
-        uses: taiki-e/install-action@82cd3e7658a6f96c86c0234aeeda1748937cb0a1 # v2.85.13
+        uses: taiki-e/install-action@5bf6ce016fd2e72eefc647cbca1e4213f65955b8 # v2.87.5
         with:
           # The tool is version-pinned too, not just the action. An unpinned
           # `cargo-machete` would let a new upstream release turn CI red with no

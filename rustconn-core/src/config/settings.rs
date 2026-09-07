@@ -316,7 +316,14 @@ impl Default for LoggingSettings {
 }
 
 /// Secret storage settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `Debug` is implemented manually (see below) rather than derived: the
+/// `SecretString` fields redact themselves, but the `*_encrypted` fields are
+/// plain `String`s holding a machine-key-encrypted credential, and a derived
+/// `Debug` would print those ciphertexts verbatim. The manual impl redacts
+/// every secret-bearing field, and `secret_settings_debug_does_not_leak` proves
+/// it (M-PUBLIC-DEBUG).
+#[derive(Clone, Serialize, Deserialize)]
 #[expect(
     clippy::struct_excessive_bools,
     reason = "settings/flags struct mirrors persisted config 1:1; bools represent independent toggles, not a state machine"
@@ -441,6 +448,96 @@ fn default_secret_backend() -> SecretBackendType {
     #[cfg(not(target_os = "macos"))]
     {
         SecretBackendType::LibSecret
+    }
+}
+
+impl std::fmt::Debug for SecretSettings {
+    /// Redacts every secret-bearing field.
+    ///
+    /// `SecretString` redacts itself, but the `*_encrypted` fields are plain
+    /// `String` ciphertexts a derived `Debug` would print verbatim. Both kinds
+    /// are shown as a presence marker (`<set>` / `<none>`) so a debug dump still
+    /// tells you whether a credential is configured without disclosing it.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        /// Presence marker for an `Option` holding a secret, without its value.
+        fn redacted<T>(opt: Option<&T>) -> &'static str {
+            if opt.is_some() { "<set>" } else { "<none>" }
+        }
+
+        f.debug_struct("SecretSettings")
+            .field("preferred_backend", &self.preferred_backend)
+            .field("enable_fallback", &self.enable_fallback)
+            .field("kdbx_path", &self.kdbx_path)
+            .field("kdbx_enabled", &self.kdbx_enabled)
+            .field("kdbx_password", &redacted(self.kdbx_password.as_ref()))
+            .field(
+                "kdbx_password_encrypted",
+                &redacted(self.kdbx_password_encrypted.as_ref()),
+            )
+            .field("kdbx_key_file", &self.kdbx_key_file)
+            .field("kdbx_use_key_file", &self.kdbx_use_key_file)
+            .field("kdbx_use_password", &self.kdbx_use_password)
+            .field(
+                "bitwarden_password",
+                &redacted(self.bitwarden_password.as_ref()),
+            )
+            .field(
+                "bitwarden_password_encrypted",
+                &redacted(self.bitwarden_password_encrypted.as_ref()),
+            )
+            .field("bitwarden_use_api_key", &self.bitwarden_use_api_key)
+            .field(
+                "bitwarden_client_id",
+                &redacted(self.bitwarden_client_id.as_ref()),
+            )
+            .field(
+                "bitwarden_client_id_encrypted",
+                &redacted(self.bitwarden_client_id_encrypted.as_ref()),
+            )
+            .field(
+                "bitwarden_client_secret",
+                &redacted(self.bitwarden_client_secret.as_ref()),
+            )
+            .field(
+                "bitwarden_client_secret_encrypted",
+                &redacted(self.bitwarden_client_secret_encrypted.as_ref()),
+            )
+            .field("bitwarden_save_to_keyring", &self.bitwarden_save_to_keyring)
+            .field("kdbx_save_to_keyring", &self.kdbx_save_to_keyring)
+            .field(
+                "onepassword_service_account_token",
+                &redacted(self.onepassword_service_account_token.as_ref()),
+            )
+            .field(
+                "onepassword_service_account_token_encrypted",
+                &redacted(self.onepassword_service_account_token_encrypted.as_ref()),
+            )
+            .field(
+                "onepassword_save_to_keyring",
+                &self.onepassword_save_to_keyring,
+            )
+            .field(
+                "passbolt_passphrase",
+                &redacted(self.passbolt_passphrase.as_ref()),
+            )
+            .field(
+                "passbolt_passphrase_encrypted",
+                &redacted(self.passbolt_passphrase_encrypted.as_ref()),
+            )
+            .field("passbolt_save_to_keyring", &self.passbolt_save_to_keyring)
+            .field("passbolt_server_url", &self.passbolt_server_url)
+            .field("pass_store_dir", &self.pass_store_dir)
+            .field("portable_file_path", &self.portable_file_path)
+            .field(
+                "portable_passphrase",
+                &redacted(self.portable_passphrase.as_ref()),
+            )
+            .field(
+                "portable_passphrase_encrypted",
+                &redacted(self.portable_passphrase_encrypted.as_ref()),
+            )
+            .field("portable_save_to_keyring", &self.portable_save_to_keyring)
+            .finish()
     }
 }
 
@@ -1832,5 +1929,52 @@ mod tests {
         unique.sort_unstable();
         unique.dedup();
         assert_eq!(unique.len(), labels.len(), "labels must be distinct");
+    }
+
+    /// `SecretSettings` has a manual `Debug` because a derived one would print
+    /// the `*_encrypted` ciphertexts in the clear. Prove nothing sensitive —
+    /// neither a `SecretString` value nor a stored ciphertext — reaches the
+    /// output (M-PUBLIC-DEBUG).
+    #[test]
+    fn secret_settings_debug_does_not_leak() {
+        use super::SecretSettings;
+        use secrecy::SecretString;
+
+        const RUNTIME_SECRET: &str = "runtime-secret-sentinel";
+        const CIPHERTEXT_SENTINEL: &str = "encrypted-ciphertext-sentinel";
+
+        let settings = SecretSettings {
+            kdbx_password: Some(SecretString::from(RUNTIME_SECRET)),
+            bitwarden_password: Some(SecretString::from(RUNTIME_SECRET)),
+            bitwarden_client_id: Some(SecretString::from(RUNTIME_SECRET)),
+            bitwarden_client_secret: Some(SecretString::from(RUNTIME_SECRET)),
+            onepassword_service_account_token: Some(SecretString::from(RUNTIME_SECRET)),
+            passbolt_passphrase: Some(SecretString::from(RUNTIME_SECRET)),
+            portable_passphrase: Some(SecretString::from(RUNTIME_SECRET)),
+            kdbx_password_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            bitwarden_password_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            bitwarden_client_id_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            bitwarden_client_secret_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            onepassword_service_account_token_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            passbolt_passphrase_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            portable_passphrase_encrypted: Some(CIPHERTEXT_SENTINEL.to_string()),
+            ..Default::default()
+        };
+
+        let rendered = format!("{settings:?}");
+
+        assert!(
+            !rendered.contains(RUNTIME_SECRET),
+            "runtime secret leaked into Debug: {rendered}"
+        );
+        assert!(
+            !rendered.contains(CIPHERTEXT_SENTINEL),
+            "stored ciphertext leaked into Debug: {rendered}"
+        );
+        // The presence marker must still be there so a debug dump is useful.
+        assert!(
+            rendered.contains("<set>"),
+            "expected a `<set>` presence marker in: {rendered}"
+        );
     }
 }

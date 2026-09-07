@@ -8,7 +8,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// Note: Passwords and passphrases are stored as `SecretString` for in-memory security,
 /// but serialization is handled specially to avoid exposing secrets in config files.
 /// In practice, credentials should be stored in a secure backend (`KeePassXC`, libsecret).
-#[derive(Debug, Clone)]
+///
+/// `Debug` is implemented manually rather than derived. `SecretString` redacts
+/// itself today, but a derived `Debug` would silently start leaking the moment
+/// a plain-`String` secret field is added; the manual impl and its test
+/// (`credentials_debug_does_not_leak`) make that a compile-and-test guarantee
+/// (M-PUBLIC-DEBUG).
+#[derive(Clone)]
 pub struct Credentials {
     /// Username for authentication
     pub username: Option<String>,
@@ -18,6 +24,32 @@ pub struct Credentials {
     pub key_passphrase: Option<SecretString>,
     /// Domain for Windows/RDP authentication
     pub domain: Option<String>,
+}
+
+impl std::fmt::Debug for Credentials {
+    /// Redacts the password and key passphrase; shows only their presence.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Credentials")
+            .field("username", &self.username)
+            .field(
+                "password",
+                &if self.password.is_some() {
+                    "<set>"
+                } else {
+                    "<none>"
+                },
+            )
+            .field(
+                "key_passphrase",
+                &if self.key_passphrase.is_some() {
+                    "<set>"
+                } else {
+                    "<none>"
+                },
+            )
+            .field("domain", &self.domain)
+            .finish()
+    }
 }
 
 /// Serializable representation of credentials (without secrets)
@@ -149,5 +181,45 @@ impl PartialEq for Credentials {
                 _ => false,
             }
             && self.domain == other.domain
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Credentials;
+    use secrecy::SecretString;
+
+    /// `Credentials` has a manual `Debug` guarding against a future plain-text
+    /// secret field. Prove the password and passphrase never reach the output,
+    /// while non-secret fields still do (M-PUBLIC-DEBUG).
+    #[test]
+    fn credentials_debug_does_not_leak() {
+        const PASSWORD: &str = "password-sentinel";
+        const PASSPHRASE: &str = "passphrase-sentinel";
+
+        let creds = Credentials {
+            username: Some("alice".to_string()),
+            password: Some(SecretString::from(PASSWORD)),
+            key_passphrase: Some(SecretString::from(PASSPHRASE)),
+            domain: Some("EXAMPLE".to_string()),
+        };
+
+        let rendered = format!("{creds:?}");
+
+        assert!(
+            !rendered.contains(PASSWORD),
+            "password leaked into Debug: {rendered}"
+        );
+        assert!(
+            !rendered.contains(PASSPHRASE),
+            "key passphrase leaked into Debug: {rendered}"
+        );
+        // Non-secret fields are still useful in a debug dump.
+        assert!(rendered.contains("alice"), "username missing: {rendered}");
+        assert!(rendered.contains("EXAMPLE"), "domain missing: {rendered}");
+        assert!(
+            rendered.contains("<set>"),
+            "expected a `<set>` presence marker: {rendered}"
+        );
     }
 }

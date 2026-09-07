@@ -280,19 +280,8 @@ pub(super) async fn process_command<W: FramedWrite>(
         RdpClientCommand::RequestClipboardData { format_id } => {
             handle_clipboard_request(active_stage, writer, format_id).await;
         }
-        RdpClientCommand::StoreLocalFiles { paths, descriptor } => {
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
-                && let Some(backend) = cliprdr
-                    .downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
-            {
-                backend.set_local_file_paths(paths);
-                // Park the listing so `on_format_data_request` can serve it the
-                // moment the peer asks for FileGroupDescriptorW.
-                backend.set_pending_copy_data(
-                    super::super::ClipboardFormatInfo::FILE_GROUP_DESCRIPTOR_W,
-                    descriptor,
-                );
-            }
+        RdpClientCommand::InitiateFileCopy { paths, files } => {
+            handle_initiate_file_copy(active_stage, writer, paths, files).await;
         }
         RdpClientCommand::RequestFileContents {
             stream_id,
@@ -301,7 +290,25 @@ pub(super) async fn process_command<W: FramedWrite>(
             offset,
             length,
         } => {
-            handle_file_contents_request(
+            handle_download_file_contents(
+                active_stage,
+                writer,
+                stream_id,
+                file_index,
+                request_size,
+                offset,
+                length,
+            )
+            .await;
+        }
+        RdpClientCommand::ProvideFileContents {
+            stream_id,
+            file_index,
+            request_size,
+            offset,
+            length,
+        } => {
+            handle_provide_file_contents(
                 active_stage,
                 writer,
                 stream_id,
@@ -333,7 +340,7 @@ fn gdk_button_to_ironrdp(button: u8) -> MouseButton {
 /// Sends a file-contents error response to the server via CLIPRDR.
 ///
 /// Extracted to avoid repeating the 5-line get→submit→process→write pattern
-/// at every error path in `handle_file_contents_request`.
+/// at every error path in `handle_provide_file_contents`.
 async fn send_file_contents_error<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
@@ -394,26 +401,162 @@ async fn handle_clipboard_copy<W: FramedWrite>(
     writer: &mut W,
     formats: Vec<super::super::ClipboardFormatInfo>,
 ) {
-    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-        let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> = formats
-            .iter()
-            .map(|f| {
-                let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
-                    ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        // The channel was never registered (clipboard disabled for this session)
+        // or has gone away. Announcing was queued regardless — say so, rather
+        // than dropping the format list without a trace. This was the silent
+        // gap behind "Announced files to RDP server" with nothing following it.
+        tracing::warn!(
+            protocol = "rdp",
+            format_count = formats.len(),
+            "Clipboard copy dropped: CLIPRDR channel not present (clipboard disabled or not negotiated)"
+        );
+        return;
+    };
+
+    let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> = formats
+        .iter()
+        .map(|f| {
+            let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
+                ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
+            );
+            if let Some(ref name) = f.name {
+                format = format.with_name(ironrdp::cliprdr::pdu::ClipboardFormatName::new(
+                    name.clone(),
+                ));
+            }
+            format
+        })
+        .collect();
+
+    // `initiate_copy` refuses if the CLIPRDR handshake has not completed
+    // (`on_ready` not yet called) — a real race when files are dropped in the
+    // first moment of a session. Surfacing the error is what turns "nothing
+    // happened" into a diagnosable event.
+    let messages = match cliprdr.initiate_copy(&clipboard_formats) {
+        Ok(messages) => messages,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                format_count = formats.len(),
+                "Clipboard copy failed: initiate_copy rejected the format list \
+                 (channel not ready yet, or malformed formats)"
+            );
+            return;
+        }
+    };
+
+    let frame = match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => frame,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                "Clipboard copy failed: could not encode the format-list PDU"
+            );
+            return;
+        }
+    };
+
+    if let Err(e) = writer.write_all(&frame).await {
+        tracing::warn!(
+            protocol = "rdp",
+            error = %e,
+            "Clipboard copy failed: writing the format-list PDU to the wire failed"
+        );
+        return;
+    }
+    tracing::debug!(
+        protocol = "rdp",
+        format_count = formats.len(),
+        "Clipboard copy initiated (format list sent to server)"
+    );
+}
+
+/// Offers dropped files to the server through IronRDP's file-copy API.
+///
+/// Two things must happen and they are not the same: the backend keeps the local
+/// *paths* so a later File Contents Request can be answered by reading the file
+/// by index, and IronRDP's own `local_file_list` must be populated so it forwards
+/// that request to the backend at all. Only `Cliprdr::initiate_file_copy` does the
+/// second — it also builds and sends the FileGroupDescriptorW FormatList itself,
+/// so we must not send a competing one. Doing it by hand (a parked descriptor +
+/// `initiate_copy`) left the list empty and IronRDP rejected the contents request
+/// with an error PDU, which surfaced on Windows as "Unspecified error".
+async fn handle_initiate_file_copy<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    paths: Vec<std::path::PathBuf>,
+    files: Vec<super::super::ClipboardFileInfo>,
+) {
+    use ironrdp::cliprdr::pdu::{ClipboardFileAttributes, FileDescriptor};
+
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        tracing::warn!(
+            protocol = "rdp",
+            file_count = files.len(),
+            "File copy dropped: CLIPRDR channel not present (clipboard disabled or not negotiated)"
+        );
+        return;
+    };
+
+    // Store the paths so `handle_provide_file_contents` can read the bytes by
+    // index when the server asks. Order matches the descriptor list below.
+    if let Some(backend) =
+        cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.set_local_file_paths(paths);
+    }
+
+    let descriptors: Vec<FileDescriptor> = files
+        .iter()
+        .map(|f| {
+            FileDescriptor::new(f.name.clone())
+                .with_file_size(f.size)
+                .with_attributes(ClipboardFileAttributes::from_bits_truncate(f.attributes))
+                // FILETIME is unsigned on the wire; the model stores i64. A
+                // negative value would be a bad timestamp, so clamp to 0 rather
+                // than wrap.
+                .with_last_write_time(u64::try_from(f.last_write_time).unwrap_or(0))
+        })
+        .collect();
+
+    let messages = match cliprdr.initiate_file_copy(descriptors) {
+        Ok(messages) => messages,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                file_count = files.len(),
+                "initiate_file_copy failed (channel not ready, or file clipboard not negotiated)"
+            );
+            return;
+        }
+    };
+
+    match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => {
+            if let Err(e) = writer.write_all(&frame).await {
+                tracing::warn!(
+                    protocol = "rdp",
+                    error = %e,
+                    "Writing the file-copy format list to the wire failed"
                 );
-                if let Some(ref name) = f.name {
-                    format = format.with_name(ironrdp::cliprdr::pdu::ClipboardFormatName::new(
-                        name.clone(),
-                    ));
-                }
-                format
-            })
-            .collect();
-        if let Ok(messages) = cliprdr.initiate_copy(&clipboard_formats)
-            && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
-        {
-            let _ = writer.write_all(&frame).await;
-            tracing::debug!("Clipboard copy initiated with {} formats", formats.len());
+                return;
+            }
+            tracing::debug!(
+                protocol = "rdp",
+                file_count = files.len(),
+                "File copy offered to server (IronRDP file list populated)"
+            );
+        }
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                "Encoding the file-copy format list failed"
+            );
         }
     }
 }
@@ -446,7 +589,172 @@ async fn handle_clipboard_request<W: FramedWrite>(
     }
 }
 
-async fn handle_file_contents_request<W: FramedWrite>(
+/// Builds the CLIPRDR File Contents Request PDU for a download.
+///
+/// Pure, so the MS-RDPECLIP 2.2.5.3 field rules can be tested without an
+/// `ActiveStage`: a SIZE request pins `requested_size` to 8 and `position` to 0;
+/// a RANGE request carries the real `offset`/`length`. Returns `None` when
+/// `file_index` does not fit the signed lindex the PDU uses — the one input the
+/// server side would reject at decode.
+fn build_download_request(
+    stream_id: u32,
+    file_index: u32,
+    request_size: bool,
+    offset: u64,
+    length: u32,
+) -> Option<ironrdp::cliprdr::pdu::FileContentsRequest> {
+    use ironrdp::cliprdr::pdu::{FileContentsFlags, FileContentsRequest};
+
+    let index = i32::try_from(file_index).ok()?;
+    let (flags, position, requested_size) = if request_size {
+        (FileContentsFlags::SIZE, 0, 8)
+    } else {
+        (FileContentsFlags::RANGE, offset, length)
+    };
+
+    Some(FileContentsRequest {
+        stream_id,
+        index,
+        flags,
+        position,
+        requested_size,
+        // Left to `request_file_contents`, which fills in the active clip lock id
+        // when the server negotiated CAN_LOCK_CLIPDATA.
+        data_id: None,
+    })
+}
+
+/// Tells the GUI a download request never reached the server.
+///
+/// The download paths that fail before a request goes out — an out-of-range file
+/// index, `request_file_contents` refusing because the file clipboard was not
+/// negotiated — otherwise leave the batch's "Save N Files" button on
+/// "Downloading…" for that stream, because no size or data reply is coming.
+/// Routes through the backend so the same `ClipboardFileError` a server refusal
+/// raises is emitted here, which the GUI already knows how to unwind. A no-op
+/// when the CLIPRDR channel is gone, since there is then no backend to reach.
+fn fail_download(active_stage: &mut ActiveStage, stream_id: u32) {
+    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
+        && let Some(backend) =
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.emit_download_failed(stream_id);
+    }
+}
+
+/// Downloads a file from the *server's* clipboard (server → client).
+///
+/// Turns a "Save N Files" request into a CLIPRDR File Contents *Request* PDU via
+/// [`CliprdrClient::request_file_contents`]. A `request_size` request asks for
+/// the file size (`FileContentsFlags::SIZE`, fixed 8-byte reply, position 0);
+/// otherwise it asks for a byte range (`FileContentsFlags::RANGE`). The reply is
+/// delivered asynchronously to `on_file_contents_response`, not here.
+async fn handle_download_file_contents<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    stream_id: u32,
+    file_index: u32,
+    request_size: bool,
+    offset: u64,
+    length: u32,
+) {
+    let Some(request) = build_download_request(stream_id, file_index, request_size, offset, length)
+    else {
+        tracing::warn!(
+            protocol = "rdp",
+            file_index,
+            "file index exceeds i32 range; skipping download request"
+        );
+        // The GUI is waiting on this stream id; tell it the download will never
+        // arrive so its "Save N Files" button does not stay on "Downloading…".
+        fail_download(active_stage, stream_id);
+        return;
+    };
+
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        tracing::warn!(
+            protocol = "rdp",
+            stream_id,
+            "CLIPRDR channel not available for download"
+        );
+        return;
+    };
+
+    // Record the size expectation *before* sending, so the response — which
+    // can arrive on the very next read — is classified by request type
+    // rather than by guessing from an 8-byte payload.
+    if request_size
+        && let Some(backend) =
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.expect_size_response(stream_id);
+    }
+    match cliprdr.request_file_contents(request) {
+        Ok(messages) => match active_stage.process_svc_processor_messages(messages) {
+            Ok(frame) => {
+                if let Err(e) = writer.write_all(&frame).await {
+                    tracing::warn!(
+                        protocol = "rdp",
+                        stream_id,
+                        error = %e,
+                        "writing the file contents request failed"
+                    );
+                    // The request never reached the wire, so no reply is coming
+                    // and the size expectation recorded above would sit parked
+                    // forever. Unwind the download instead of leaving the batch
+                    // waiting on a stream that is already lost.
+                    fail_download(active_stage, stream_id);
+                    return;
+                }
+                tracing::debug!(
+                    protocol = "rdp",
+                    stream_id,
+                    file_index,
+                    request_size,
+                    "File contents request sent to server"
+                );
+            }
+            Err(e) => {
+                tracing::warn!(
+                    protocol = "rdp",
+                    stream_id,
+                    error = %e,
+                    "encoding the file contents request failed"
+                );
+                fail_download(active_stage, stream_id);
+            }
+        },
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                stream_id,
+                error = %e,
+                "request_file_contents failed (file clipboard not negotiated?)"
+            );
+            // No request went out, so no reply is coming. Surface it as a failed
+            // download rather than leaving the batch waiting forever.
+            fail_download(active_stage, stream_id);
+        }
+    }
+}
+
+/// Largest slice of a local file returned in one File Contents Response.
+///
+/// The request's `requested_size` is a `u32` chosen by the peer, so an
+/// unclamped allocation is a 4 GiB buffer on request. 8 MiB is generous next to
+/// the 1 MiB the client's own download loop asks for, and a peer that wants more
+/// simply asks again from a later offset — a response shorter than requested is
+/// how MS-RDPECLIP expresses a partial read.
+const MAX_UPLOAD_CHUNK: u32 = 8 * 1024 * 1024;
+
+/// Answers the server's file-contents request with our *local* file
+/// (client → server), for a file we announced via `FileGroupDescriptorW`.
+///
+/// This is the mirror of [`handle_download_file_contents`]: the server asked, we
+/// reply with [`CliprdrClient::submit_file_contents`]. Reached from
+/// [`RdpClientCommand::ProvideFileContents`], which the GUI sends in response to
+/// [`RdpClientEvent::FileContentsRequested`].
+async fn handle_provide_file_contents<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
     stream_id: u32,
@@ -456,7 +764,7 @@ async fn handle_file_contents_request<W: FramedWrite>(
     length: u32,
 ) {
     tracing::debug!(
-        "RequestFileContents: stream_id={}, index={}, size_request={}, offset={}, length={}",
+        "ProvideFileContents: stream_id={}, index={}, size_request={}, offset={}, length={}",
         stream_id,
         file_index,
         request_size,
@@ -511,12 +819,27 @@ async fn handle_file_contents_request<W: FramedWrite>(
     } else {
         // Return file data chunk — delegate I/O to a blocking thread so
         // large clipboard file transfers don't stall the RDP event loop.
+        // `length` is whatever the server asked for — up to 4 GiB — and it was
+        // allocated in full before a single byte was read. Clamp it: the reply is
+        // a single File Contents Response, and a peer wanting more asks again
+        // with a later offset. A short reply is already the protocol's way of
+        // saying "that is all for now", so answering less than requested is
+        // legal and the client-side download loop does exactly this.
+        let capped_length = length.min(MAX_UPLOAD_CHUNK) as usize;
+        if capped_length < length as usize {
+            tracing::debug!(
+                protocol = "rdp",
+                requested = length,
+                capped = capped_length,
+                "Capping an oversized file contents request"
+            );
+        }
         let path_clone = path.clone();
         let io_result = tokio::task::spawn_blocking(move || {
             use std::io::{Read, Seek, SeekFrom};
             let mut file = std::fs::File::open(&path_clone)?;
             file.seek(SeekFrom::Start(offset))?;
-            let mut buf = vec![0u8; length as usize];
+            let mut buf = vec![0u8; capped_length];
             let bytes_read = file.read(&mut buf)?;
             buf.truncate(bytes_read);
             Ok::<Vec<u8>, std::io::Error>(buf)
@@ -545,5 +868,44 @@ async fn handle_file_contents_request<W: FramedWrite>(
             tracing::warn!("Failed to read file index {}", file_index);
             send_file_contents_error(active_stage, writer, stream_id).await;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ironrdp::cliprdr::pdu::FileContentsFlags;
+
+    use super::build_download_request;
+
+    #[test]
+    fn size_request_pins_position_and_size() {
+        // MS-RDPECLIP 2.2.5.3: a SIZE request always asks for exactly 8 bytes at
+        // position 0, whatever offset/length the caller passed.
+        let req = build_download_request(7, 2, true, 999, 4096).expect("valid index");
+        assert_eq!(req.stream_id, 7);
+        assert_eq!(req.index, 2);
+        assert!(req.flags.contains(FileContentsFlags::SIZE));
+        assert!(!req.flags.contains(FileContentsFlags::RANGE));
+        assert_eq!(req.position, 0);
+        assert_eq!(req.requested_size, 8);
+        assert_eq!(req.data_id, None);
+    }
+
+    #[test]
+    fn range_request_carries_offset_and_length() {
+        let req = build_download_request(3, 0, false, 1024, 512).expect("valid index");
+        assert_eq!(req.stream_id, 3);
+        assert!(req.flags.contains(FileContentsFlags::RANGE));
+        assert!(!req.flags.contains(FileContentsFlags::SIZE));
+        assert_eq!(req.position, 1024);
+        assert_eq!(req.requested_size, 512);
+    }
+
+    #[test]
+    fn file_index_past_i32_is_rejected() {
+        // The PDU's lindex is a signed 32-bit integer; a larger index would be
+        // refused at decode on the server, so we refuse to build it at all.
+        let too_big = u32::try_from(i32::MAX).expect("i32::MAX fits u32") + 1;
+        assert!(build_download_request(1, too_big, true, 0, 0).is_none());
     }
 }

@@ -100,8 +100,11 @@ zune-jpeg = { version = "0.5.15", optional = true }
 #     `advertised_capabilities_exclude_avc444` marks the spot.
 #   * Audio input / microphone (MS-RDPEAI): no channel → microphone_enabled field
 #     in RdpClientConfig is still dead (unrelated to GFX work; needs upstream support).
-#   * Drive change notifications: needs ClientDriveNotifyChangeDirectoryResponse PDU
-#     (check if ironrdp-rdpdr 0.7 added it).
+#   * Drive change notifications: needs ClientDriveNotifyChangeDirectoryResponse
+#     PDU. Confirmed absent in ironrdp-rdpdr 0.7 (the version paired with ironrdp
+#     0.17): only the server-side request and ClientDriveQueryDirectoryResponse
+#     exist. inotify detection works; the response cannot be sent until upstream
+#     adds the type.
 # Features (kept on one line so manifest scanners can parse the dependency):
 #   cliprdr        — clipboard redirection
 #   rdpdr          — device/drive redirection (shared folders)

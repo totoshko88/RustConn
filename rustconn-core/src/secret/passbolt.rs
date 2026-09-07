@@ -30,6 +30,16 @@ use super::serde_helpers::serde_error_kind;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
+/// Ceiling on a single `passbolt` CLI invocation that reaches the server.
+///
+/// `go-passbolt-cli` talks to a remote Passbolt server for every real
+/// operation, so a slow or unreachable host would otherwise block the caller
+/// forever. Nothing bounded these calls before. Thirty seconds matches the
+/// Bitwarden and 1Password backends: long enough for a genuine round-trip,
+/// short enough to fail while the user is still watching. Local `--version`
+/// availability probes are left unbounded — they never touch the network.
+const PASSBOLT_INVOCATION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// Passbolt CLI backend
 ///
 /// Uses the `passbolt` command-line tool (go-passbolt-cli) to interact
@@ -131,6 +141,11 @@ impl PassboltBackend {
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new("passbolt");
         cmd.env("PATH", crate::cli_download::get_extended_path());
+        // `PASSBOLT_INVOCATION_TIMEOUT` drops the future when it fires, and
+        // `tokio::process` does not kill the child on drop by default. This
+        // matters more here than elsewhere: the passphrase is on this command's
+        // argv, so an orphan leaves it visible in `/proc/PID/cmdline`.
+        cmd.kill_on_drop(true);
         cmd.args(args);
 
         if let Some(ref addr) = self.server_address {
@@ -200,10 +215,18 @@ impl PassboltBackend {
 
     /// Runs a passbolt command and returns stdout
     async fn run_command(&self, args: &[&str]) -> SecretResult<String> {
-        let output =
-            self.build_command(args).output().await.map_err(|e| {
-                SecretError::ConnectionFailed(format!("Failed to run passbolt: {e}"))
-            })?;
+        let output = tokio::time::timeout(
+            PASSBOLT_INVOCATION_TIMEOUT,
+            self.build_command(args).output(),
+        )
+        .await
+        .map_err(|_| {
+            SecretError::ConnectionFailed(format!(
+                "passbolt command timed out after {}s",
+                PASSBOLT_INVOCATION_TIMEOUT.as_secs()
+            ))
+        })?
+        .map_err(|e| SecretError::ConnectionFailed(format!("Failed to run passbolt: {e}")))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -471,12 +494,29 @@ pub async fn get_passbolt_status() -> PassboltStatus {
     // Try to read server address from CLI config
     let server_address = read_passbolt_server_address();
 
-    // Check if configured by trying to list users
-    let list_output = Command::new("passbolt")
-        .env("PATH", crate::cli_download::get_extended_path())
-        .args(["list", "user", "--json"])
-        .output()
-        .await;
+    // Check if configured by trying to list users. This reaches the server, so
+    // bound it: a timeout is treated the same as any other failure to list —
+    // "not configured" — which is what the `Err` arm below already does.
+    let list_output = match tokio::time::timeout(
+        PASSBOLT_INVOCATION_TIMEOUT,
+        Command::new("passbolt")
+            .env("PATH", crate::cli_download::get_extended_path())
+            // Bounded below, so the child must not outlive the timeout.
+            .kill_on_drop(true)
+            .args(["list", "user", "--json"])
+            .output(),
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(_elapsed) => Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            format!(
+                "passbolt list user timed out after {}s",
+                PASSBOLT_INVOCATION_TIMEOUT.as_secs()
+            ),
+        )),
+    };
 
     match list_output {
         Ok(output) if output.status.success() => PassboltStatus {

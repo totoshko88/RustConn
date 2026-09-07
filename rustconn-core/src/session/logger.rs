@@ -409,6 +409,19 @@ pub struct SessionLogger {
     /// A session log records what the user typed, so a password answered at a
     /// prompt would otherwise land on disk in clear text.
     sanitize: SanitizeConfig,
+    /// Whether the last content line written was a sensitive prompt.
+    ///
+    /// A password typed at a `Password:` prompt is not on the same line as the
+    /// prompt — the prompt is one record and the answer the next — and the
+    /// answer carries no marker of its own (`INPUT: hunter2` matches nothing in
+    /// [`SENSITIVE_PATTERNS`]). Per-line redaction alone therefore lets the
+    /// initial password through (issue
+    /// [#321](https://github.com/totoshko88/RustConn/issues/321)). This flag is
+    /// set when a written line trips [`contains_sensitive_prompt`] and consumed
+    /// by the next line, which is redacted whole regardless of its content. It
+    /// spans both channels because the prompt travels on the transcript and the
+    /// answer on the `INPUT:` records, and both go through this one logger.
+    armed_after_prompt: bool,
 }
 
 impl SessionLogger {
@@ -438,6 +451,7 @@ impl SessionLogger {
                 bytes_written: 0,
                 rotation_count: 0,
                 sanitize: SanitizeConfig::new(),
+                armed_after_prompt: false,
             });
         }
 
@@ -473,6 +487,7 @@ impl SessionLogger {
             bytes_written,
             rotation_count: 0,
             sanitize: SanitizeConfig::new(),
+            armed_after_prompt: false,
         })
     }
 
@@ -592,6 +607,96 @@ impl SessionLogger {
         self.bytes_written
     }
 
+    /// Strips escapes, redacts secrets, and applies the after-prompt state.
+    ///
+    /// Runs before every write so a line following a sensitive prompt is
+    /// redacted whole even though it carries no marker of its own — the case
+    /// per-line matching misses, and the one that leaks the initial password
+    /// typed at a `Password:` prompt (issue
+    /// [#321](https://github.com/totoshko88/RustConn/issues/321)).
+    ///
+    /// Escapes are stripped first so redaction sees plain text — a password
+    /// prompt with an embedded colour code would otherwise split the pattern
+    /// and slip past both the per-line matcher and the arming decision, which
+    /// reads the same plain text and would miss `Password` and `:` on opposite
+    /// sides of an escape.
+    ///
+    /// `consume_arm` distinguishes the two channels. The transcript (`write`)
+    /// passes `false`: it *arms* the state when it carries a prompt, but its own
+    /// following lines are legitimate output that a no-echo password prompt does
+    /// not echo, so blanking them would eat real transcript. The `INPUT:` event
+    /// channel (`write_record`) passes `true`: that is where a typed password
+    /// actually lands, carrying no marker of its own, so an armed line there is
+    /// redacted whole and the state disarmed.
+    fn sanitize_with_prompt_state(&mut self, input: &str, consume_arm: bool) -> Zeroizing<String> {
+        let stripped = Zeroizing::new(strip_ansi_escapes(input));
+
+        // With sanitization off, credential redaction is disabled by
+        // configuration; the after-prompt masking is part of that same
+        // protection, so it is off too. The lines still update the arming state
+        // so the feature behaves consistently if sanitization is toggled.
+        if !self.sanitize.enabled {
+            self.arm_from_lines(&stripped, consume_arm);
+            return Zeroizing::new(stripped.to_string());
+        }
+
+        let ends_with_newline = stripped.ends_with('\n');
+        let mut out = Zeroizing::new(String::with_capacity(stripped.len()));
+        let mut first = true;
+        for line in stripped.lines() {
+            if !first {
+                out.push('\n');
+            }
+            first = false;
+
+            if consume_arm && self.armed_after_prompt && !line.trim().is_empty() {
+                // The answer to the prompt on the input channel. Redact the
+                // whole line — it carries no marker, so nothing below would
+                // catch it — and disarm.
+                out.push_str(&self.sanitize.replacement);
+                self.armed_after_prompt = false;
+                continue;
+            }
+
+            let sanitized = sanitize_output_zeroizing(line, &self.sanitize);
+            out.push_str(&sanitized);
+
+            // Arm from the plain line: the next input line is treated as the
+            // secret answer. A blank line does not disarm — a prompt is often
+            // followed by an empty transcript flush before the answer arrives.
+            if contains_sensitive_prompt(line) {
+                self.armed_after_prompt = true;
+            } else if !consume_arm && !line.trim().is_empty() {
+                // Substantive transcript output means the prompt was already
+                // answered elsewhere (a vault password sent straight to the PTY,
+                // never through the `INPUT:` channel). Disarm so a later,
+                // unrelated command is not blanked. The typed-password case is
+                // unaffected: the `INPUT:` record arrives and consumes the arm
+                // before the server's response reaches the transcript.
+                self.armed_after_prompt = false;
+            }
+        }
+        if ends_with_newline && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        out
+    }
+
+    /// Updates the after-prompt arming state from plain text, without writing.
+    ///
+    /// Used when sanitization is disabled so the state stays consistent.
+    fn arm_from_lines(&mut self, stripped: &str, consume_arm: bool) {
+        for line in stripped.lines() {
+            if consume_arm && self.armed_after_prompt && !line.trim().is_empty() {
+                self.armed_after_prompt = false;
+            } else if contains_sensitive_prompt(line) {
+                self.armed_after_prompt = true;
+            } else if !consume_arm && !line.trim().is_empty() {
+                self.armed_after_prompt = false;
+            }
+        }
+    }
+
     /// Returns whether logging is enabled
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
@@ -624,7 +729,9 @@ impl SessionLogger {
 
         // Write lines, optionally with timestamp prefix
         let decoded = Zeroizing::new(String::from_utf8_lossy(data).into_owned());
-        let data_str = prepare_for_log(&decoded, &self.sanitize);
+        // The transcript arms the after-prompt state but does not consume it:
+        // its own following lines are non-echoed legitimate output.
+        let data_str = self.sanitize_with_prompt_state(&decoded, false);
 
         for line in data_str.lines() {
             let formatted = Zeroizing::new(if self.config.log_timestamps {
@@ -668,7 +775,10 @@ impl SessionLogger {
 
         self.rotate_if_needed()?;
 
-        let sanitized = prepare_for_log(record, &self.sanitize);
+        // Event records include the `INPUT:` channel, where a password typed at
+        // a prompt lands with no marker of its own — so this channel consumes
+        // the after-prompt arming and redacts that line whole (issue #321).
+        let sanitized = self.sanitize_with_prompt_state(record, true);
         let writer = self
             .writer
             .as_mut()
@@ -1020,18 +1130,6 @@ impl SanitizeConfig {
 #[must_use]
 pub fn sanitize_output(output: &str, config: &SanitizeConfig) -> String {
     sanitize_output_zeroizing(output, config).to_string()
-}
-
-/// Prepares terminal text for a log file: escapes stripped, secrets redacted.
-///
-/// The order matters. Redaction matches patterns like `password:` against the
-/// text, and an escape sequence embedded in a prompt would split the pattern in
-/// two and let the line through unredacted — so stripping runs first and
-/// redaction sees plain text. Both intermediate copies are zeroizing, because
-/// the input may well be a credential.
-fn prepare_for_log(input: &str, config: &SanitizeConfig) -> Zeroizing<String> {
-    let stripped = Zeroizing::new(strip_ansi_escapes(input));
-    sanitize_output_zeroizing(&stripped, config)
 }
 
 /// Internal sanitizer used by session logging so transcript copies are scrubbed.
@@ -1594,6 +1692,118 @@ mod tests {
             "a typed password must not reach the log file: {written}"
         );
         assert!(written.contains("[REDACTED]"));
+    }
+
+    // ===== Redaction of the password typed at a prompt (issue #321) =====
+
+    /// Builds an enabled logger over a fresh file in `dir`.
+    fn prompt_logger(dir: &TempDir) -> SessionLogger {
+        let config = LogConfig::new(dir.path().join("prompt.log").to_string_lossy().into_owned());
+        SessionLogger::new(config, &LogContext::new("host", "ssh"), None).expect("logger opens")
+    }
+
+    /// The typed answer to a password prompt carries no marker of its own, yet
+    /// must not reach the log — the prompt on the transcript arms the next
+    /// `INPUT:` record for redaction.
+    #[test]
+    fn a_password_typed_after_a_prompt_is_redacted() {
+        let dir = TempDir::new().expect("temp dir");
+        let mut logger = prompt_logger(&dir);
+
+        // Prompt travels on the transcript channel (`write`).
+        logger.write(b"Password: ").expect("write prompt");
+        // Answer travels on the `INPUT:` event channel (`write_record`).
+        logger
+            .write_record("INPUT: hunter2")
+            .expect("write input record");
+        logger.flush().expect("flush");
+
+        let written = fs::read_to_string(logger.log_path()).expect("read back");
+        assert!(
+            !written.contains("hunter2"),
+            "the password typed at the prompt must not reach the log: {written}"
+        );
+        assert!(written.contains("[REDACTED]"));
+    }
+
+    /// Only the first input line after the prompt is treated as the secret; a
+    /// later command must be logged normally.
+    #[test]
+    fn only_the_line_immediately_after_the_prompt_is_redacted() {
+        let dir = TempDir::new().expect("temp dir");
+        let mut logger = prompt_logger(&dir);
+
+        logger.write(b"Password: ").expect("write prompt");
+        logger.write_record("INPUT: hunter2").expect("write secret");
+        logger.write_record("INPUT: ls -la").expect("write command");
+        logger.flush().expect("flush");
+
+        let written = fs::read_to_string(logger.log_path()).expect("read back");
+        assert!(!written.contains("hunter2"), "secret leaked: {written}");
+        assert!(
+            written.contains("ls -la"),
+            "an ordinary command after the prompt must still be logged: {written}"
+        );
+    }
+
+    /// A no-echo password prompt does not echo the password onto the transcript,
+    /// so the transcript's own following line is legitimate output and must not
+    /// be blanked by the arming state.
+    #[test]
+    fn transcript_output_after_a_prompt_is_not_over_redacted() {
+        let dir = TempDir::new().expect("temp dir");
+        let mut logger = prompt_logger(&dir);
+
+        logger.write(b"Password: ").expect("write prompt");
+        logger
+            .write(b"Welcome to Ubuntu 24.04 LTS\n")
+            .expect("write banner");
+        logger.flush().expect("flush");
+
+        let written = fs::read_to_string(logger.log_path()).expect("read back");
+        assert!(
+            written.contains("Welcome to Ubuntu 24.04 LTS"),
+            "post-login output must survive: {written}"
+        );
+    }
+
+    /// When a prompt is answered off-channel (a vault password sent straight to
+    /// the PTY), transcript output flows and disarms the state, so the user's
+    /// next typed command is not mistaken for the secret.
+    #[test]
+    fn a_command_after_an_off_channel_answer_is_not_redacted() {
+        let dir = TempDir::new().expect("temp dir");
+        let mut logger = prompt_logger(&dir);
+
+        logger.write(b"Password: ").expect("write prompt");
+        // The vault answer never reaches the logger; the server's response does.
+        logger
+            .write(b"Last login: Mon Sep  7\n")
+            .expect("write output");
+        logger.write_record("INPUT: ls -la").expect("write command");
+        logger.flush().expect("flush");
+
+        let written = fs::read_to_string(logger.log_path()).expect("read back");
+        assert!(
+            written.contains("ls -la"),
+            "a command after an off-channel prompt answer must be logged: {written}"
+        );
+    }
+
+    /// An input line with no preceding prompt is logged verbatim.
+    #[test]
+    fn input_without_a_preceding_prompt_is_not_redacted() {
+        let dir = TempDir::new().expect("temp dir");
+        let mut logger = prompt_logger(&dir);
+
+        logger.write_record("INPUT: whoami").expect("write input");
+        logger.flush().expect("flush");
+
+        let written = fs::read_to_string(logger.log_path()).expect("read back");
+        assert!(
+            written.contains("whoami"),
+            "ordinary input must be logged: {written}"
+        );
     }
 
     // ===== ANSI stripping (issue #247, PTY relay) =====
