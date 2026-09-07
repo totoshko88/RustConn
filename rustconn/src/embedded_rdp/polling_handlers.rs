@@ -200,7 +200,25 @@ pub(super) fn handle_clipboard_file_list(
             "Clipboard file entry"
         );
     }
+    // Drop directories before they reach the offered count. A File Contents
+    // Request for a directory is refused by the server, so keeping them made the
+    // button promise files it could never deliver and turned the refusal path
+    // into the ordinary case for any folder copy. Transferring a tree would mean
+    // walking the descriptor hierarchy and creating directories locally, which
+    // this code does not do — so a directory is not something to offer at all.
+    let announced = files.len();
+    let files: Vec<_> = files
+        .into_iter()
+        .filter(|file| !file.is_directory())
+        .collect();
     let file_count = files.len();
+    if file_count < announced {
+        tracing::info!(
+            protocol = "rdp",
+            skipped = announced - file_count,
+            "Skipping directories in the clipboard file list; only files can be transferred"
+        );
+    }
     ctx.file_transfer.borrow_mut().set_available_files(files);
     if file_count > 0 {
         ctx.save_files_button
@@ -305,15 +323,35 @@ pub(super) fn handle_clipboard_file_contents(
             }
             return;
         }
+        super::thread::ChunkOutcome::TooLarge => {
+            // Already counted as refused and its buffer dropped; the batch may
+            // now be settled, so fall through to the summary.
+            tracing::warn!(
+                protocol = "rdp",
+                stream_id,
+                limit_bytes = super::thread::MAX_DOWNLOAD_BYTES,
+                "Clipboard file exceeded the download limit; skipping it"
+            );
+            finish_batch_if_settled(ctx);
+            return;
+        }
         super::thread::ChunkOutcome::Unknown => return,
         super::thread::ChunkOutcome::Complete => {}
     }
 
     // The bytes arrived; writing them is a separate step that can fail on a
-    // full disk or a read-only target. A failed write is a lost file the user
-    // asked for, so it must reach the status line — not only the log — and the
-    // batch summary below must not paper over it with "Saved N files".
-    match ctx.file_transfer.borrow().save_download(stream_id) {
+    // full disk, a read-only target, or a filename the server sent that cannot
+    // be written safely. A failed write is a lost file the user asked for, so it
+    // must reach the status line — not only the log — and the batch summary must
+    // not paper over it with "Saved N files".
+    //
+    // The result is bound before the `match` on purpose. A `match` scrutinee's
+    // temporaries live until the end of the whole `match`, so borrowing inline
+    // would keep the `Ref` alive inside the arms and the `borrow_mut()` below
+    // would panic with `RefCell already borrowed` — on precisely the disk-full
+    // path this reporting exists for.
+    let save_result = ctx.file_transfer.borrow().save_download(stream_id);
+    match save_result {
         Ok(path) => {
             tracing::info!(protocol = "rdp", path = %path.display(), "Saved clipboard file");
         }
@@ -323,12 +361,25 @@ pub(super) fn handle_clipboard_file_contents(
         }
     }
 
-    if ctx.file_transfer.borrow().all_complete() {
-        let (saved, failed, target, file_count) = {
-            let transfer = ctx.file_transfer.borrow();
+    finish_batch_if_settled(ctx);
+}
+
+/// Reports the batch result once every file is settled, and frees the button.
+///
+/// Called from both the completion path and the refusal path: either can be the
+/// event that settles the last file, and before this was shared a refusal left
+/// the batch permanently unresolvable — no summary, no completion callback.
+fn finish_batch_if_settled(ctx: &FileTransferContext<'_>) {
+    let Some((saved, missing, target, file_count)) = ({
+        let transfer = ctx.file_transfer.borrow();
+        transfer.all_complete().then(|| {
             (
                 transfer.saved_count(),
-                transfer.save_failures(),
+                // A file the server refused and a file whose write failed are
+                // the same thing to the user: they asked for it and it is not
+                // on disk. The log tells the two apart; the summary counts them
+                // together rather than making the user parse two numbers.
+                transfer.save_failures() + transfer.refused_count(),
                 transfer
                     .target_directory
                     .as_ref()
@@ -336,34 +387,36 @@ pub(super) fn handle_clipboard_file_contents(
                     .unwrap_or_default(),
                 transfer.available_files.len(),
             )
-        };
+        })
+    }) else {
+        return;
+    };
 
-        ctx.save_files_button.set_sensitive(true);
-        ctx.save_files_button
-            .set_label(&i18n_f("Save {} Files", &[&file_count.to_string()]));
+    ctx.save_files_button.set_sensitive(true);
+    ctx.save_files_button
+        .set_label(&i18n_f("Save {} Files", &[&file_count.to_string()]));
 
-        // When every file wrote, say so; when some did not, name how many, so
-        // the user is not told "saved" about a file that is not on disk.
-        let summary = if failed == 0 {
-            i18n_f("Saved {} files", &[&saved.to_string()])
-        } else {
-            i18n_f(
-                "Saved {} files, {} could not be written",
-                &[&saved.to_string(), &failed.to_string()],
-            )
-        };
-        ctx.status_label.set_text(&summary);
-        ctx.status_label.set_visible(true);
-        let status_hide = ctx.status_label.clone();
-        // The confirmation is transient — 3 s is the same dwell time the other
-        // inline status messages use.
-        glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
-            status_hide.set_visible(false);
-        });
+    // When every file landed, say so; when some did not, name how many, so the
+    // user is not told "saved" about a file that is not there.
+    let summary = if missing == 0 {
+        i18n_f("Saved {} files", &[&saved.to_string()])
+    } else {
+        i18n_f(
+            "Saved {} files, {} could not be saved",
+            &[&saved.to_string(), &missing.to_string()],
+        )
+    };
+    ctx.status_label.set_text(&summary);
+    ctx.status_label.set_visible(true);
+    let status_hide = ctx.status_label.clone();
+    // The confirmation is transient — 3 s is the same dwell time the other
+    // inline status messages use.
+    glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
+        status_hide.set_visible(false);
+    });
 
-        if let Some(ref callback) = *ctx.on_file_complete.borrow() {
-            callback(saved, &target);
-        }
+    if let Some(ref callback) = *ctx.on_file_complete.borrow() {
+        callback(saved, &target);
     }
 }
 
@@ -381,19 +434,12 @@ pub(super) fn handle_clipboard_file_error(ctx: &FileTransferContext<'_>, stream_
         "Server refused a clipboard file; skipping it"
     );
 
-    let file_count = ctx.file_transfer.borrow().available_files.len();
-    ctx.save_files_button.set_sensitive(true);
-    ctx.save_files_button
-        .set_label(&i18n_f("Save {} Files", &[&file_count.to_string()]));
-
-    ctx.status_label
-        .set_text(&i18n("Some files could not be downloaded"));
-    ctx.status_label.set_visible(true);
-    let status_hide = ctx.status_label.clone();
-    // Same 3 s transient dwell the "Saved N files" confirmation uses.
-    glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
-        status_hide.set_visible(false);
-    });
+    // The refusal is now counted, so this may have settled the last file. The
+    // button and the status line are left to the shared summary rather than
+    // being reset here: resetting them per refusal freed the button while other
+    // files were still downloading, and each refusal overwrote the status line
+    // with a transient message that the final summary then overwrote again.
+    finish_batch_if_settled(ctx);
 }
 
 /// Handles an RTT measurement reported by the server's Auto-Detect sequence.

@@ -1465,12 +1465,14 @@ impl EmbeddedRdpWidget {
                     if let Ok(folder) = result
                         && let Some(path) = folder.path()
                     {
-                        // Set target directory and start downloads
+                        // Arm the run. `begin_batch` also clears the previous
+                        // run's downloads and its save-failure tally, which
+                        // setting the fields by hand did not: a second click on
+                        // the same file list never re-announces it, so the old
+                        // failures were counted again in the new summary.
                         {
                             let mut transfer = file_transfer_clone.borrow_mut();
-                            transfer.target_directory = Some(path.clone());
-                            transfer.total_files = files_clone.len();
-                            transfer.completed_count = 0;
+                            transfer.begin_batch(path.clone(), files_clone.len());
                         }
 
                         // Disable button during transfer
