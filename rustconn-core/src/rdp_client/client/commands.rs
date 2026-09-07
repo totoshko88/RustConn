@@ -412,28 +412,77 @@ async fn handle_clipboard_copy<W: FramedWrite>(
     writer: &mut W,
     formats: Vec<super::super::ClipboardFormatInfo>,
 ) {
-    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-        let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> = formats
-            .iter()
-            .map(|f| {
-                let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
-                    ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
-                );
-                if let Some(ref name) = f.name {
-                    format = format.with_name(ironrdp::cliprdr::pdu::ClipboardFormatName::new(
-                        name.clone(),
-                    ));
-                }
-                format
-            })
-            .collect();
-        if let Ok(messages) = cliprdr.initiate_copy(&clipboard_formats)
-            && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
-        {
-            let _ = writer.write_all(&frame).await;
-            tracing::debug!("Clipboard copy initiated with {} formats", formats.len());
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        // The channel was never registered (clipboard disabled for this session)
+        // or has gone away. Announcing was queued regardless — say so, rather
+        // than dropping the format list without a trace. This was the silent
+        // gap behind "Announced files to RDP server" with nothing following it.
+        tracing::warn!(
+            protocol = "rdp",
+            format_count = formats.len(),
+            "Clipboard copy dropped: CLIPRDR channel not present (clipboard disabled or not negotiated)"
+        );
+        return;
+    };
+
+    let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> = formats
+        .iter()
+        .map(|f| {
+            let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
+                ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
+            );
+            if let Some(ref name) = f.name {
+                format = format.with_name(ironrdp::cliprdr::pdu::ClipboardFormatName::new(
+                    name.clone(),
+                ));
+            }
+            format
+        })
+        .collect();
+
+    // `initiate_copy` refuses if the CLIPRDR handshake has not completed
+    // (`on_ready` not yet called) — a real race when files are dropped in the
+    // first moment of a session. Surfacing the error is what turns "nothing
+    // happened" into a diagnosable event.
+    let messages = match cliprdr.initiate_copy(&clipboard_formats) {
+        Ok(messages) => messages,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                format_count = formats.len(),
+                "Clipboard copy failed: initiate_copy rejected the format list \
+                 (channel not ready yet, or malformed formats)"
+            );
+            return;
         }
+    };
+
+    let frame = match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => frame,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                "Clipboard copy failed: could not encode the format-list PDU"
+            );
+            return;
+        }
+    };
+
+    if let Err(e) = writer.write_all(&frame).await {
+        tracing::warn!(
+            protocol = "rdp",
+            error = %e,
+            "Clipboard copy failed: writing the format-list PDU to the wire failed"
+        );
+        return;
     }
+    tracing::debug!(
+        protocol = "rdp",
+        format_count = formats.len(),
+        "Clipboard copy initiated (format list sent to server)"
+    );
 }
 
 async fn handle_clipboard_request<W: FramedWrite>(

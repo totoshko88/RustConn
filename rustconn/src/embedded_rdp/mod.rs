@@ -941,10 +941,16 @@ impl EmbeddedRdpWidget {
                             },
                         );
 
+                        // "Queued", not "done": whether the format list actually
+                        // reaches the server is decided in the session loop
+                        // (handle_clipboard_copy), which logs the outcome. This
+                        // line used to say "Announced …" unconditionally, which
+                        // read as success even when the copy was dropped for a
+                        // missing or not-yet-ready CLIPRDR channel.
                         tracing::info!(
                             protocol = "rdp",
                             file_count = files.len(),
-                            "Announced files to RDP server via CLIPRDR"
+                            "Queued file announce to RDP server via CLIPRDR (outcome logged by the session loop)"
                         );
                     } else {
                         tracing::warn!(
