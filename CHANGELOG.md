@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Improved
 
+- **A file dropped on an RDP session now confirms with a toast, not just a status line** — a dropped file goes onto the remote *clipboard* (RDP has no drag-to-desktop), and the inline status line saying so was easy to miss, so the drop looked like it did nothing. A dropped file now raises a toast — "N file(s) copied to the remote clipboard — press Ctrl+V in the session to paste" — through the same overlay the "File drag disabled" notice uses; the status line remains as a fallback.
+
 - **The auto-login timeout can now be set on a group, not just a connection** — the group editor reused the connection editor's Automatic Login section but ignored the Login Timeout control, so a per-group timeout was TOML-only. It now reads and writes `login_timeout_secs` alongside the prompt fields: `0` leaves it unset so a parent group or the built-in 10-second default applies. No new translatable strings.
 
 - **The macOS window header was taller than a native app, even in compact mode** — the header-bar icon buttons carried a fixed 44×44px size request (the GNOME HIG tap-target minimum), which set the whole header height and no CSS could shrink. The size request is now 28px on macOS (matching native AppKit toolbar buttons, where there is no touch input) and 44px everywhere else, with matching `.macos` header styling. The result sits much closer to a native macOS titlebar.

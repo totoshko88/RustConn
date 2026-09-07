@@ -389,9 +389,15 @@ done
 %changelog
 * Mon Sep 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.8-0
 - Version bump to 0.21.8
-- Fixed: embedded RDP clipboard file transfer ("Save N Files") now works —
-  crossed directions, length-based reply classification and all-at-once
-  truncation are fixed; files pulled in 1 MiB ranges, a refusal drops one file
+- Fixed (security): a password typed at an interactive prompt could reach the
+  session log in the clear (#321); the input after a sensitive prompt is redacted
+- Fixed: an Expect-rule response could not resolve a connection-local variable
+  (#317); local variables are now resolved too
+- Fixed: embedded RDP clipboard file transfer now works in both directions —
+  downloads ("Save N Files") and dragging a file onto the session, offered via
+  IronRDP's file-copy API; the file transfers in full
+- Improved: a file dropped on an RDP session confirms with a toast — it lands on
+  the remote clipboard, press Ctrl+V in the session to paste it
 - Fixed (security): a server clipboard filename could escape the chosen folder
   via an absolute path or ".."; names are reduced to one safe component and an
   existing file is never clobbered

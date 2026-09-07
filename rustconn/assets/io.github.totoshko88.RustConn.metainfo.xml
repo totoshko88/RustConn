@@ -144,7 +144,9 @@
       <description>
         <p>Version 0.21.8 - the embedded RDP clipboard file transfer works for the first time, with the security and robustness fixes that came with making it reachable:</p>
         <ul>
-          <li>Copying files from the remote desktop through the RDP clipboard ("Save N Files") now works. The download and upload directions were crossed, size and data replies were told apart by length, and large files were truncated; files are now pulled in fixed ranges and a refused file is skipped while the rest continue</li>
+          <li>Copying files through the RDP clipboard now works in both directions. Downloading from the remote ("Save N Files") and dragging a file onto the session both transfer the file in full; a dropped file lands on the remote clipboard, and a toast reminds you to press Ctrl+V in the session to paste it</li>
+          <li>A password typed at an interactive prompt could be written to the session log in the clear; the input after a sensitive prompt is now redacted</li>
+          <li>An automation Expect-rule response can now use a connection-local variable, not only global and built-in ones</li>
           <li>A filename sent by the server can no longer be written outside the folder you chose - an absolute path or ".." used to escape it. Names are reduced to one safe component and an existing file is never overwritten</li>
           <li>A failed save no longer crashes the session, a refused file no longer leaves the batch reporting nothing, and a misbehaving server can no longer loop the download or corrupt a file</li>
           <li>A server can no longer make the client reserve up to 4 GiB of memory for a single clipboard file request</li>
