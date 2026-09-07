@@ -461,9 +461,7 @@ fn create_new_in(
             .open(&candidate)
         {
             Ok(file) => return Ok((candidate, file)),
-            Err(e)
-                if e.kind() == std::io::ErrorKind::AlreadyExists && attempt < MAX_ATTEMPTS =>
-            {
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && attempt < MAX_ATTEMPTS => {
                 attempt += 1;
             }
             Err(e) => return Err(e),
@@ -479,11 +477,9 @@ fn create_new_in(
 fn suffixed_name(name: &str, n: u32) -> String {
     let path = std::path::Path::new(name);
     match (path.file_stem(), path.extension()) {
-        (Some(stem), Some(ext)) => format!(
-            "{} ({n}).{}",
-            stem.to_string_lossy(),
-            ext.to_string_lossy()
-        ),
+        (Some(stem), Some(ext)) => {
+            format!("{} ({n}).{}", stem.to_string_lossy(), ext.to_string_lossy())
+        }
         _ => format!("{name} ({n})"),
     }
 }
@@ -953,7 +949,10 @@ mod tests {
         t.update_size(first, 10);
         t.update_size(second, 10);
 
-        assert_eq!(t.append_data(first, &[0u8; 10], false), ChunkOutcome::Complete);
+        assert_eq!(
+            t.append_data(first, &[0u8; 10], false),
+            ChunkOutcome::Complete
+        );
         assert!(!t.all_complete(), "one file is still outstanding");
 
         // The server refuses the second file.
@@ -981,7 +980,10 @@ mod tests {
     #[test]
     fn cancelling_a_completed_download_does_not_double_count() {
         let (mut t, sid) = transfer_with_file(10);
-        assert_eq!(t.append_data(sid, &[0u8; 10], false), ChunkOutcome::Complete);
+        assert_eq!(
+            t.append_data(sid, &[0u8; 10], false),
+            ChunkOutcome::Complete
+        );
         assert!(t.cancel_download(sid));
         assert_eq!(t.refused_count(), 0, "it completed; it was not refused");
         assert_eq!(t.completed_count, 1);
@@ -1015,7 +1017,10 @@ mod tests {
     #[test]
     fn a_chunk_after_completion_is_ignored() {
         let (mut t, sid) = transfer_with_file(10);
-        assert_eq!(t.append_data(sid, &[1u8; 10], false), ChunkOutcome::Complete);
+        assert_eq!(
+            t.append_data(sid, &[1u8; 10], false),
+            ChunkOutcome::Complete
+        );
         assert_eq!(t.completed_count, 1);
 
         // A duplicate of the same chunk.
@@ -1081,7 +1086,10 @@ mod tests {
 
         assert_ne!(first, second, "a new batch must not reuse a stream id");
         // A stale chunk for the retired id lands on nothing.
-        assert_eq!(t.append_data(first, &[0u8; 1], false), ChunkOutcome::Unknown);
+        assert_eq!(
+            t.append_data(first, &[0u8; 1], false),
+            ChunkOutcome::Unknown
+        );
     }
 
     /// A second click on the same file list never re-announces it, so the run
@@ -1159,7 +1167,10 @@ mod tests {
     #[test]
     fn the_collision_suffix_goes_before_the_extension() {
         assert_eq!(super::suffixed_name("notes.txt", 1), "notes (1).txt");
-        assert_eq!(super::suffixed_name("archive.tar.gz", 2), "archive.tar (2).gz");
+        assert_eq!(
+            super::suffixed_name("archive.tar.gz", 2),
+            "archive.tar (2).gz"
+        );
         assert_eq!(super::suffixed_name("README", 3), "README (3)");
         assert_eq!(super::suffixed_name(".bashrc", 1), ".bashrc (1)");
     }
@@ -1172,13 +1183,7 @@ mod tests {
     /// name is `name`, targeted at `dir`.
     fn completed_download_named(dir: &std::path::Path, name: &str) -> (ClipboardFileTransfer, u32) {
         let mut t = ClipboardFileTransfer::new();
-        t.set_available_files(vec![ClipboardFileInfo::new(
-            name.to_string(),
-            4,
-            0,
-            0,
-            0,
-        )]);
+        t.set_available_files(vec![ClipboardFileInfo::new(name.to_string(), 4, 0, 0, 0)]);
         t.begin_batch(dir.to_path_buf(), 1);
         let sid = t.start_download(0).expect("starts");
         t.update_size(sid, 4);
