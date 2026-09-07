@@ -111,13 +111,7 @@ pub(super) fn automation_variables(
 ) -> Vec<Variable> {
     use secrecy::ExposeSecret;
 
-    let mut vars = global_variables.to_vec();
-
-    if let Some(username) = conn.username.as_deref().filter(|u| !u.trim().is_empty()) {
-        vars.push(Variable::new("username", username));
-    }
-    vars.push(Variable::new("host", &conn.host));
-    vars.push(Variable::new("port", conn.port.to_string()));
+    let mut vars = automation_variables_base(conn, global_variables);
 
     // Materialize the secret only for a rule that asks for it, so an ordinary
     // connection never puts its password into a `Variable`.
@@ -137,6 +131,39 @@ pub(super) fn automation_variables(
             );
         }
     }
+
+    vars
+}
+
+/// Assembles the non-secret variables an Expect response can reference.
+///
+/// The order encodes precedence, because the caller loads the result into a
+/// [`VariableManager`] where a later entry overwrites an earlier one of the same
+/// name: globals first, then the connection-local variables (so a local shadows
+/// a global — the same precedence the command path gives them via
+/// `connection_variable_manager`), then the synthetic `${username}`, `${host}`
+/// and `${port}` (so they shadow a same-named local). `${password}` is added by
+/// the caller after this, last of all, and so shadows everything here — which
+/// preserves the stock "Sudo Password" template's contract (issue #257).
+///
+/// Pulling the connection-local variables in is what lets `${user2_password}`
+/// defined only on the connection resolve in an Expect response instead of being
+/// dropped as undefined and leaving the user stuck at the prompt (issue #317).
+fn automation_variables_base(
+    conn: &rustconn_core::Connection,
+    global_variables: &[Variable],
+) -> Vec<Variable> {
+    let mut vars = global_variables.to_vec();
+
+    for var in conn.local_variables.values() {
+        vars.push(var.clone());
+    }
+
+    if let Some(username) = conn.username.as_deref().filter(|u| !u.trim().is_empty()) {
+        vars.push(Variable::new("username", username));
+    }
+    vars.push(Variable::new("host", &conn.host));
+    vars.push(Variable::new("port", conn.port.to_string()));
 
     vars
 }
@@ -2765,8 +2792,8 @@ mod tests {
     use secrecy::{ExposeSecret, SecretString};
 
     use super::{
-        PASSWORD_ENV_VAR, PASSWORD_TOKEN, connection_variable_manager, effective_password,
-        link_password_reference, strip_quotes_around_password,
+        PASSWORD_ENV_VAR, PASSWORD_TOKEN, automation_variables_base, connection_variable_manager,
+        effective_password, link_password_reference, strip_quotes_around_password,
     };
 
     /// A connection carrying the given local variables.
@@ -2881,5 +2908,69 @@ mod tests {
             .expect("substitution succeeds");
         assert!(!expanded.contains("from-local-var"));
         assert_eq!(expanded, format!("rustdesk --password {PASSWORD_TOKEN}"));
+    }
+
+    /// Issue #317: a variable defined only on the connection (Local Variables)
+    /// must resolve in an Expect response. Before the fix `automation_variables`
+    /// carried only the globals and the synthetic fields, so a local variable
+    /// resolved against nothing, the rule was dropped as undefined, and the
+    /// Expect script stalled at the prompt.
+    #[test]
+    fn a_local_variable_resolves_in_an_expect_response() {
+        use rustconn_core::variables::{VariableManager, VariableScope};
+
+        let conn = connection_with_locals(&[Variable::new("user2_password", "hunter2")]);
+        let vars = automation_variables_base(&conn, &[]);
+
+        // Mirror the SSH path: everything is loaded as a global variable and
+        // resolution runs in the global scope.
+        let mut manager = VariableManager::new();
+        for var in &vars {
+            manager.set_global(var.clone());
+        }
+        let substitution = manager
+            .substitute_for_terminal_input("${user2_password}\n", VariableScope::Global)
+            .expect("substitution succeeds");
+
+        assert!(
+            substitution.unresolved.is_empty(),
+            "the local variable must resolve, not be reported unresolved: {:?}",
+            substitution.unresolved
+        );
+        assert_eq!(substitution.text.as_str(), "hunter2\n");
+    }
+
+    /// A connection-local variable shadows a global of the same name, matching
+    /// the precedence the command path gives them.
+    #[test]
+    fn a_local_variable_shadows_a_global_of_the_same_name() {
+        let conn = connection_with_locals(&[Variable::new("shared", "from-local")]);
+        let vars = automation_variables_base(&conn, &[Variable::new("shared", "from-global")]);
+
+        // The last entry of a given name wins once loaded via `set_global`, and
+        // the local is appended after the globals.
+        let last = vars
+            .iter()
+            .rev()
+            .find(|v| v.name == "shared")
+            .expect("the variable is present");
+        assert_eq!(last.value, "from-local");
+    }
+
+    /// The synthetic `${host}`/`${port}`/`${username}` still shadow a local of
+    /// the same name, so an accidental local `host` cannot redirect the prompt
+    /// answer.
+    #[test]
+    fn synthetic_fields_shadow_a_same_named_local() {
+        let mut conn = connection_with_locals(&[Variable::new("host", "wrong.example")]);
+        conn.host = "real.example".to_string();
+        let vars = automation_variables_base(&conn, &[]);
+
+        let last = vars
+            .iter()
+            .rev()
+            .find(|v| v.name == "host")
+            .expect("host is present");
+        assert_eq!(last.value, "real.example");
     }
 }

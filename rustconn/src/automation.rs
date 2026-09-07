@@ -353,9 +353,11 @@ impl AutomationSession {
 /// could not be substituted are dropped.
 ///
 /// `var_manager` is expected to carry the connection's built-in `${password}`,
-/// `${username}`, `${host}` and `${port}` alongside the global variables — see
-/// `window::protocols::automation_variables`, which assembles it. Without them
-/// those four resolve against nothing (issue #257).
+/// `${username}`, `${host}` and `${port}`, its connection-local variables, and
+/// the global variables — see `window::protocols::automation_variables`, which
+/// assembles them. Without the built-ins those four resolve against nothing
+/// (issue #257); without the locals a `${var}` defined only on the connection is
+/// dropped as undefined and the prompt is left to the user (issue #317).
 pub(crate) fn prepare_rules_from_config(
     rules: &[ExpectRule],
     var_manager: &rustconn_core::variables::VariableManager,
