@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-06 18:34+0300\n"
+"POT-Creation-Date: 2026-09-07 14:24+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -47,8 +47,8 @@ msgstr "OK"
 #: rustconn/src/terminal/tab_menu.rs:203 rustconn/src/terminal/tab_menu.rs:406
 #: rustconn/src/vault_ops.rs:315 rustconn/src/window/batch_edit.rs:69
 #: rustconn/src/window/connection_dialogs.rs:1078
-#: rustconn/src/window/edit_group.rs:1787
-#: rustconn/src/window/edit_group.rs:1835 rustconn/src/window/mod.rs:3651
+#: rustconn/src/window/edit_group.rs:1803
+#: rustconn/src/window/edit_group.rs:1851 rustconn/src/window/mod.rs:3651
 #: rustconn/src/window/operations.rs:82 rustconn/src/window/operations.rs:457
 #: rustconn/src/window/operations.rs:640 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:548
@@ -159,8 +159,8 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:746
-#: rustconn/src/embedded_rdp/mod.rs:1944
-#: rustconn/src/embedded_rdp/polling_handlers.rs:62
+#: rustconn/src/embedded_rdp/mod.rs:1943
+#: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
 msgid "Session disconnected"
@@ -617,7 +617,7 @@ msgstr "Žiadne pravidlá zvýrazňovania"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:620
 #: rustconn/src/dialogs/connection/automation_tab.rs:157
 #: rustconn/src/dialogs/settings/mod.rs:349
-#: rustconn/src/window/edit_group.rs:1158
+#: rustconn/src/window/edit_group.rs:1166
 msgid "Add Rule"
 msgstr "Pridať pravidlo"
 
@@ -693,8 +693,8 @@ msgstr "Povoliť pravidlo"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:285
 #: rustconn/src/dialogs/connection/dialog/rows.rs:287
 #: rustconn/src/dialogs/settings/mod.rs:1781
-#: rustconn/src/window/edit_group.rs:1953
-#: rustconn/src/window/edit_group.rs:1955
+#: rustconn/src/window/edit_group.rs:1969
+#: rustconn/src/window/edit_group.rs:1971
 msgid "Delete rule"
 msgstr "Zmazať pravidlo"
 
@@ -704,17 +704,17 @@ msgid "Delete highlight rule"
 msgstr "Zmazať pravidlo zvýraznenia"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:86
-#: rustconn/src/window/edit_group.rs:1049
+#: rustconn/src/window/edit_group.rs:1057
 msgid "Expect Rules"
 msgstr "Pravidlá očakávania"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:87
-#: rustconn/src/window/edit_group.rs:1050
+#: rustconn/src/window/edit_group.rs:1058
 msgid "Auto-respond to terminal patterns (priority order)"
 msgstr "Automaticky odpovedať na vzory terminálu (poradie priority)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:98
-#: rustconn/src/window/edit_group.rs:1059
+#: rustconn/src/window/edit_group.rs:1067
 msgid ""
 "Responses support ${password}, ${username}, and ${VARIABLE_NAME} "
 "placeholders resolved at connection time"
@@ -723,22 +723,22 @@ msgstr ""
 "{VARIABLE_NAME} vyhodnotené pri pripojení"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:111
-#: rustconn/src/window/edit_group.rs:1072
+#: rustconn/src/window/edit_group.rs:1080
 msgid "No expect rules"
 msgstr "Žiadne pravidlá expect"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:122
-#: rustconn/src/window/edit_group.rs:1088
+#: rustconn/src/window/edit_group.rs:1096
 msgid "From Template"
 msgstr "Zo šablóny"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:123
-#: rustconn/src/window/edit_group.rs:1089
+#: rustconn/src/window/edit_group.rs:1097
 msgid "Add rules from a built-in template"
 msgstr "Pridať pravidlá zo vstavanej šablóny"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:169
-#: rustconn/src/window/edit_group.rs:1204
+#: rustconn/src/window/edit_group.rs:1212
 msgid "Pattern Tester"
 msgstr "Tester vzorov"
 
@@ -751,18 +751,18 @@ msgid "Test text against patterns"
 msgstr "Testovať text proti vzorom"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:180
-#: rustconn/src/window/edit_group.rs:1221
+#: rustconn/src/window/edit_group.rs:1229
 msgid "Test Input"
 msgstr "Testovací vstup"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:185
-#: rustconn/src/window/edit_group.rs:1215
-#: rustconn/src/window/edit_group.rs:1236
+#: rustconn/src/window/edit_group.rs:1223
+#: rustconn/src/window/edit_group.rs:1244
 msgid "Enter text to test"
 msgstr "Zadajte text na testovanie"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:191
-#: rustconn/src/window/edit_group.rs:1225
+#: rustconn/src/window/edit_group.rs:1233
 msgid "Result"
 msgstr "Výsledok"
 
@@ -1042,8 +1042,8 @@ msgid "Logging"
 msgstr "Protokolovanie"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:372
-#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:980
-#: rustconn/src/window/edit_group.rs:1419
+#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:981
+#: rustconn/src/window/edit_group.rs:1427
 msgid "Automation"
 msgstr "Automatizácia"
 
@@ -1462,52 +1462,52 @@ msgid "Protected value (masked)"
 msgstr "Chránená hodnota (maskovaná)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:272
-#: rustconn/src/window/edit_group.rs:1941
+#: rustconn/src/window/edit_group.rs:1957
 msgid "Move up (higher priority)"
 msgstr "Posunúť hore (vyššia priorita)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:274
-#: rustconn/src/window/edit_group.rs:1943
+#: rustconn/src/window/edit_group.rs:1959
 msgid "Move rule up"
 msgstr "Presunúť pravidlo nahor"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:278
-#: rustconn/src/window/edit_group.rs:1947
+#: rustconn/src/window/edit_group.rs:1963
 msgid "Move down (lower priority)"
 msgstr "Posunúť dole (nižšia priorita)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:281
-#: rustconn/src/window/edit_group.rs:1949
+#: rustconn/src/window/edit_group.rs:1965
 msgid "Move rule down"
 msgstr "Presunúť pravidlo nadol"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:296
-#: rustconn/src/window/edit_group.rs:1964
+#: rustconn/src/window/edit_group.rs:1980
 msgid "Pattern:"
 msgstr "Vzor:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:302
-#: rustconn/src/window/edit_group.rs:1970
+#: rustconn/src/window/edit_group.rs:1986
 msgid "Regex pattern (e.g., password:\\s*$)"
 msgstr "Regex vzor (napr. password:\\s*$)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:303
-#: rustconn/src/window/edit_group.rs:1971
+#: rustconn/src/window/edit_group.rs:1987
 msgid "Regular expression to match against terminal output"
 msgstr "Regulárny výraz na porovnanie s výstupom terminálu"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:312
-#: rustconn/src/window/edit_group.rs:1980
+#: rustconn/src/window/edit_group.rs:1996
 msgid "Response:"
 msgstr "Odpoveď:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:318
-#: rustconn/src/window/edit_group.rs:1986
+#: rustconn/src/window/edit_group.rs:2002
 msgid "Text to send (e.g., ${password}\\n)"
 msgstr "Text na odoslanie (napr. ${password}\\n)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:320
-#: rustconn/src/window/edit_group.rs:1988
+#: rustconn/src/window/edit_group.rs:2004
 msgid ""
 "Response to send when pattern matches. Use ${password}, ${username}, or $"
 "{VAR_NAME} for variables."
@@ -1516,84 +1516,84 @@ msgstr ""
 "${VAR_NAME} pre premenné."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:328
-#: rustconn/src/window/edit_group.rs:1996
+#: rustconn/src/window/edit_group.rs:2012
 msgid "Insert a variable placeholder"
 msgstr "Vložiť zástupný symbol premennej"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
-#: rustconn/src/window/edit_group.rs:1998
+#: rustconn/src/window/edit_group.rs:2014
 msgid "Insert variable"
 msgstr "Vložiť premennú"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:342
-#: rustconn/src/window/edit_group.rs:2010
+#: rustconn/src/window/edit_group.rs:2026
 msgid "Built-in"
 msgstr "Vstavané"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:349
-#: rustconn/src/window/edit_group.rs:2017
+#: rustconn/src/window/edit_group.rs:2033
 msgid "Connection password"
 msgstr "Heslo pripojenia"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:350
-#: rustconn/src/window/edit_group.rs:2018
+#: rustconn/src/window/edit_group.rs:2034
 msgid "Connection username"
 msgstr "Používateľské meno pripojenia"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:351
-#: rustconn/src/window/edit_group.rs:2019
+#: rustconn/src/window/edit_group.rs:2035
 msgid "Connection host"
 msgstr "Hostiteľ pripojenia"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:352
-#: rustconn/src/window/edit_group.rs:2020
+#: rustconn/src/window/edit_group.rs:2036
 msgid "Connection port"
 msgstr "Port pripojenia"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:380
 #: rustconn/src/dialogs/password_generator.rs:224
-#: rustconn/src/window/edit_group.rs:2050
+#: rustconn/src/window/edit_group.rs:2066
 msgid "Special"
 msgstr "Špeciálne znaky"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:390
-#: rustconn/src/window/edit_group.rs:2060
+#: rustconn/src/window/edit_group.rs:2076
 msgid "Newline (Enter key)"
 msgstr "Nový riadok (kláves Enter)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:421
-#: rustconn/src/window/edit_group.rs:2091
+#: rustconn/src/window/edit_group.rs:2107
 msgid "Priority:"
 msgstr "Priorita:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:430
-#: rustconn/src/window/edit_group.rs:2100
+#: rustconn/src/window/edit_group.rs:2116
 msgid "Higher priority rules are checked first"
 msgstr "Pravidlá s vyššou prioritou sú kontrolované prvé"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:434
-#: rustconn/src/window/edit_group.rs:2104
+#: rustconn/src/window/edit_group.rs:2120
 msgid "Timeout:"
 msgstr "Časový limit:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:443
-#: rustconn/src/window/edit_group.rs:2113
+#: rustconn/src/window/edit_group.rs:2129
 msgid "Timeout in milliseconds (0 = no timeout)"
 msgstr "Časový limit v milisekundách (0 = bez limitu)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:447
 #: rustconn/src/dialogs/settings/ui_tab.rs:409
-#: rustconn/src/window/edit_group.rs:2117
+#: rustconn/src/window/edit_group.rs:2133
 msgid "Enabled"
 msgstr "Povolené"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:452
-#: rustconn/src/window/edit_group.rs:2121
+#: rustconn/src/window/edit_group.rs:2137
 msgid "One-shot"
 msgstr "Jednorazové"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:454
-#: rustconn/src/window/edit_group.rs:2123
+#: rustconn/src/window/edit_group.rs:2139
 msgid "Fire only once, then remove the rule"
 msgstr "Spustiť iba raz, potom pravidlo odstrániť"
 
@@ -1652,7 +1652,7 @@ msgid "(Inherited from global - override value below)"
 msgstr "(Zdedené z globálnych — prepísať hodnotu nižšie)"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:90
-#: rustconn/src/window/edit_group.rs:1375
+#: rustconn/src/window/edit_group.rs:1383
 msgid "Identity"
 msgstr "Identita"
 
@@ -1915,7 +1915,7 @@ msgstr "Skupina"
 #: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:186
 #: rustconn/src/dialogs/template.rs:515
 #: rustconn/src/window/connection_dialogs.rs:849
-#: rustconn/src/window/edit_group.rs:1342
+#: rustconn/src/window/edit_group.rs:1350
 msgid "Description"
 msgstr "Popis"
 
@@ -1928,7 +1928,7 @@ msgid "Registered"
 msgstr "Registrovaný"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:541
-#: rustconn/src/window/edit_group.rs:1410
+#: rustconn/src/window/edit_group.rs:1418
 msgid "Dynamic"
 msgstr "Dynamický"
 
@@ -3965,7 +3965,7 @@ msgstr "Vaše šablóny"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
 #: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:430
 #: rustconn/src/sidebar_ui.rs:467 rustconn/src/split_view/bridge.rs:1803
-#: rustconn/src/window/ui.rs:74 rustconn/src/window/ui.rs:233
+#: rustconn/src/window/ui.rs:74 rustconn/src/window/ui.rs:242
 msgid "New Connection"
 msgstr "Nové pripojenie"
 
@@ -4608,7 +4608,7 @@ msgid "All connection history entries will be permanently removed."
 msgstr "Všetky záznamy histórie pripojení budú trvalo odstránené."
 
 #: rustconn/src/dialogs/history.rs:200 rustconn/src/terminal/playback.rs:255
-#: rustconn/src/window/edit_group.rs:593 rustconn/src/window/edit_group.rs:1016
+#: rustconn/src/window/edit_group.rs:593 rustconn/src/window/edit_group.rs:1017
 msgid "Clear"
 msgstr "Vymazať"
 
@@ -5017,7 +5017,7 @@ msgstr "Vybrať natívny súbor RustConn"
 #: rustconn/src/dialogs/import/sources.rs:664
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:38
 #: rustconn/src/window/edit_group.rs:807 rustconn/src/window/edit_group.rs:858
-#: rustconn/src/window/edit_group.rs:1394
+#: rustconn/src/window/edit_group.rs:1402
 msgid "Cloud Sync"
 msgstr "Cloudová synchronizácia"
 
@@ -5702,7 +5702,7 @@ msgstr "Import zlyhal"
 #: rustconn/src/window/connection_dialogs.rs:1024
 #: rustconn/src/window/edit_dialogs.rs:381
 #: rustconn/src/window/edit_dialogs.rs:485
-#: rustconn/src/window/edit_group.rs:1714
+#: rustconn/src/window/edit_group.rs:1730
 msgid "Error"
 msgstr "Chyba"
 
@@ -5770,7 +5770,7 @@ msgid "Choose sync directory"
 msgstr "Vybrať adresár synchronizácie"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:69
-#: rustconn/src/window/edit_group.rs:1854
+#: rustconn/src/window/edit_group.rs:1870
 msgid "Select Sync Directory"
 msgstr "Vybrať adresár synchronizácie"
 
@@ -7354,7 +7354,7 @@ msgstr "Odosielať prefix Escape namiesto zložených znakov (pre vim/emacs)"
 #: rustconn/src/dialogs/settings/ui_tab.rs:619
 #: rustconn/src/dialogs/shortcuts.rs:168
 #: rustconn/src/split_view/adapter.rs:1443 rustconn/src/tray.rs:229
-#: rustconn/src/tray.rs:587 rustconn/src/window/ui.rs:240
+#: rustconn/src/tray.rs:587 rustconn/src/window/ui.rs:249
 msgid "Local Shell"
 msgstr "Miestny shell"
 
@@ -7759,7 +7759,7 @@ msgid "View"
 msgstr "Zobrazenie"
 
 #: rustconn/src/dialogs/shortcuts.rs:154 rustconn/src/tray.rs:258
-#: rustconn/src/tray.rs:600 rustconn/src/window/ui.rs:319
+#: rustconn/src/tray.rs:600 rustconn/src/window/ui.rs:328
 msgid "Quit"
 msgstr "Ukončiť"
 
@@ -7773,14 +7773,14 @@ msgstr "Správca tunelov SSH"
 
 #: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:468
 #: rustconn/src/sidebar_ui.rs:825 rustconn/src/window/connection_dialogs.rs:390
-#: rustconn/src/window/ui.rs:88 rustconn/src/window/ui.rs:238
+#: rustconn/src/window/ui.rs:88 rustconn/src/window/ui.rs:247
 msgid "New Group"
 msgstr "Nová skupina"
 
 #: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:466
 #: rustconn/src/split_view/bridge.rs:1810
 #: rustconn/src/window/edit_dialogs.rs:733 rustconn/src/window/ui.rs:67
-#: rustconn/src/window/ui.rs:239
+#: rustconn/src/window/ui.rs:248
 msgid "Quick Connect"
 msgstr "Rýchle pripojenie"
 
@@ -8381,7 +8381,7 @@ msgid "All"
 msgstr "Všetko"
 
 #: rustconn/src/dialogs/template_manager.rs:69
-#: rustconn/src/window/edit_group.rs:1386
+#: rustconn/src/window/edit_group.rs:1394
 msgid "SSH"
 msgstr "SSH"
 
@@ -9170,8 +9170,8 @@ msgid "Clipboard channel not ready"
 msgstr "Kanál schránky nie je pripravený"
 
 #: rustconn/src/embedded_rdp/connection.rs:146
-#: rustconn/src/embedded_rdp/connection.rs:2052
-#: rustconn/src/embedded_rdp/connection.rs:2056
+#: rustconn/src/embedded_rdp/connection.rs:2066
+#: rustconn/src/embedded_rdp/connection.rs:2070
 msgid "Authentication failed: invalid username or password."
 msgstr "Overenie zlyhalo: neplatné meno používateľa alebo heslo."
 
@@ -9210,7 +9210,7 @@ msgstr ""
 "Pripojenie RDP zlyhalo ({}). Spustite s RUST_LOG=debug pre podrobnosti."
 
 #: rustconn/src/embedded_rdp/connection.rs:386
-#: rustconn/src/embedded_rdp/connection.rs:1890
+#: rustconn/src/embedded_rdp/connection.rs:1904
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Pripojenie bolo zrušené, pretože server vyžaduje zastarané zabezpečenie RDP."
@@ -9224,89 +9224,89 @@ msgstr ""
 "Vstavaný klient ignoruje vlastné argumenty FreeRDP. Ak ich chcete použiť, "
 "prepnite režim klienta RDP na Externý."
 
-#: rustconn/src/embedded_rdp/connection.rs:1927
+#: rustconn/src/embedded_rdp/connection.rs:1941
 msgid "Could not prepare the external RDP compatibility client."
 msgstr ""
 "Nepodarilo sa pripraviť externého klienta RDP na zabezpečenie kompatibility."
 
-#: rustconn/src/embedded_rdp/connection.rs:1938
+#: rustconn/src/embedded_rdp/connection.rs:1952
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Používa sa externý RDP klient (server vyžaduje licencovanie RDS)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1940
+#: rustconn/src/embedded_rdp/connection.rs:1954
 msgid "Using external RDP client (server incompatible)"
 msgstr "Používa sa externý RDP klient (server nekompatibilný)"
 
-#: rustconn/src/embedded_rdp/connection.rs:1958
-#: rustconn/src/embedded_rdp/connection.rs:2435
+#: rustconn/src/embedded_rdp/connection.rs:1972
+#: rustconn/src/embedded_rdp/connection.rs:2449
 msgid "The external RDP client could not be started."
 msgstr "Externého klienta RDP sa nepodarilo spustiť."
 
-#: rustconn/src/embedded_rdp/connection.rs:1991
+#: rustconn/src/embedded_rdp/connection.rs:2005
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Externého klienta RDP sa nepodarilo spustiť. Nainštalujte FreeRDP 3 a skúste "
 "to znova."
 
-#: rustconn/src/embedded_rdp/connection.rs:2060
+#: rustconn/src/embedded_rdp/connection.rs:2074
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "Overenie zlyhalo: obmedzenia účtu bránia prihláseniu."
 
-#: rustconn/src/embedded_rdp/connection.rs:2064
+#: rustconn/src/embedded_rdp/connection.rs:2078
 msgid "Authentication failed: password must be changed before first login."
 msgstr "Overenie zlyhalo: heslo je potrebné zmeniť pred prvým prihlásením."
 
-#: rustconn/src/embedded_rdp/connection.rs:2068
+#: rustconn/src/embedded_rdp/connection.rs:2082
 msgid "Authentication failed: account is disabled."
 msgstr "Overenie zlyhalo: účet je zakázaný."
 
-#: rustconn/src/embedded_rdp/connection.rs:2072
+#: rustconn/src/embedded_rdp/connection.rs:2086
 msgid "Authentication failed: account is locked out."
 msgstr "Overenie zlyhalo: účet je uzamknutý."
 
-#: rustconn/src/embedded_rdp/connection.rs:2076
+#: rustconn/src/embedded_rdp/connection.rs:2090
 msgid "Authentication failed: password has expired."
 msgstr "Overenie zlyhalo: platnosť hesla vypršala."
 
-#: rustconn/src/embedded_rdp/connection.rs:2080
+#: rustconn/src/embedded_rdp/connection.rs:2094
 msgid "Authentication failed: account has expired."
 msgstr "Overenie zlyhalo: platnosť účtu vypršala."
 
-#: rustconn/src/embedded_rdp/connection.rs:2084
+#: rustconn/src/embedded_rdp/connection.rs:2098
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Overenie zlyhalo: používateľ nemá oprávnenie prihlásiť sa na tomto počítači."
 
-#: rustconn/src/embedded_rdp/connection.rs:2088
+#: rustconn/src/embedded_rdp/connection.rs:2102
 msgid "NLA authentication failed. Check username and password."
 msgstr "Overenie NLA zlyhalo. Skontrolujte meno používateľa a heslo."
 
-#: rustconn/src/embedded_rdp/connection.rs:2092
+#: rustconn/src/embedded_rdp/connection.rs:2106
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Pripojenie TLS zlyhalo. Server nemusí podporovať túto úroveň zabezpečenia."
 
-#: rustconn/src/embedded_rdp/connection.rs:2096
+#: rustconn/src/embedded_rdp/connection.rs:2110
 msgid "Connection refused. Check host and port."
 msgstr "Pripojenie odmietnuté. Skontrolujte hostiteľa a port."
 
-#: rustconn/src/embedded_rdp/connection.rs:2099
+#: rustconn/src/embedded_rdp/connection.rs:2113
 #: rustconn/src/embedded_web/mod.rs:581
 msgid "Connection timed out. Check that the host is reachable."
 msgstr ""
 "Časový limit pripojenia vypršal. Skontrolujte, či je hostiteľ dostupný."
 
-#: rustconn/src/embedded_rdp/connection.rs:2415
+#: rustconn/src/embedded_rdp/connection.rs:2429
 msgid "RDP session will open in an external window"
 msgstr "Relácia RDP sa otvorí v externom okne"
 
-#: rustconn/src/embedded_rdp/connection.rs:2474
+#: rustconn/src/embedded_rdp/connection.rs:2488
 msgid "RDP connection failed. Install FreeRDP 3 for external RDP sessions."
 msgstr ""
 "Pripojenie RDP zlyhalo. Pre externé relácie RDP nainštalujte FreeRDP 3."
 
-#: rustconn/src/embedded_rdp/connection.rs:2476
+#: rustconn/src/embedded_rdp/connection.rs:2490
 msgid "Failed to start FreeRDP: {}"
 msgstr "Nepodarilo sa spustiť FreeRDP: {}"
 
@@ -9480,45 +9480,49 @@ msgstr "Spustiť"
 msgid "Select folder to save files"
 msgstr "Vybrať priečinok na uloženie súborov"
 
-#: rustconn/src/embedded_rdp/mod.rs:1478
+#: rustconn/src/embedded_rdp/mod.rs:1480
 msgid "Downloading…"
 msgstr "Sťahovanie…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1511
+#: rustconn/src/embedded_rdp/mod.rs:1510
 msgid "Downloading files…"
 msgstr "Sťahovanie súborov…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1929
+#: rustconn/src/embedded_rdp/mod.rs:1928
 msgid "Connection may have been lost while the computer slept"
 msgstr "Pripojenie sa mohlo prerušiť, kým bol počítač uspaný"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:152
+#: rustconn/src/embedded_rdp/polling_handlers.rs:159
 #: rustconn/src/embedded_vnc/mod.rs:672 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "Kopírovať vzdialenú schránku do miestnej"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:200
-#: rustconn/src/embedded_rdp/polling_handlers.rs:273
+#: rustconn/src/embedded_rdp/polling_handlers.rs:225
+#: rustconn/src/embedded_rdp/polling_handlers.rs:397
 msgid "Save {} Files"
 msgstr "Uložiť {} súborov"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:202
+#: rustconn/src/embedded_rdp/polling_handlers.rs:227
 msgid "Save {} files from remote clipboard"
 msgstr "Uložiť {} súborov zo vzdialenej schránky"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:243
+#: rustconn/src/embedded_rdp/polling_handlers.rs:312
 msgid "Downloaded {}/{} files"
 msgstr "Stiahnutých {}/{} súborov"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:276
+#: rustconn/src/embedded_rdp/polling_handlers.rs:402
 msgid "Saved {} files"
 msgstr "Uložených {} súborov"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:300
+#: rustconn/src/embedded_rdp/polling_handlers.rs:405
+msgid "Saved {} files, {} could not be saved"
+msgstr "Uložených {} súborov, {} sa nepodarilo uložiť"
+
+#: rustconn/src/embedded_rdp/polling_handlers.rs:455
 msgid "RTT: {} ms | {} | MPTCP"
 msgstr "RTT: {} ms | {} | MPTCP"
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:305
+#: rustconn/src/embedded_rdp/polling_handlers.rs:460
 msgid "RTT: {} ms | {}"
 msgstr "RTT: {} ms | {}"
 
@@ -9825,7 +9829,7 @@ msgstr "Rýchlosť"
 msgid "Fit to screen"
 msgstr "Prispôsobiť obrazovke"
 
-#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:311
+#: rustconn/src/i18n_markers.rs:76 rustconn/src/window/ui.rs:320
 msgid "Fullscreen"
 msgstr "Celá obrazovka"
 
@@ -10575,7 +10579,7 @@ msgid "{} Active Session(s)"
 msgstr "{} aktívna(-e) relácia(-e)"
 
 #: rustconn/src/tray.rs:251 rustconn/src/tray.rs:594
-#: rustconn/src/window/ui.rs:318
+#: rustconn/src/window/ui.rs:327
 msgid "About RustConn"
 msgstr "O aplikácii RustConn"
 
@@ -10871,12 +10875,12 @@ msgid "Select Vault to load password"
 msgstr "Vyberte trezor na načítanie hesla"
 
 #: rustconn/src/window/connection_dialogs.rs:850
-#: rustconn/src/window/edit_group.rs:1343
+#: rustconn/src/window/edit_group.rs:1351
 msgid "Notes, contacts, project info"
 msgstr "Poznámky, kontakty, informácie o projekte"
 
 #: rustconn/src/window/connection_dialogs.rs:890
-#: rustconn/src/window/edit_group.rs:1459
+#: rustconn/src/window/edit_group.rs:1468
 msgid "Group name cannot be empty"
 msgstr "Názov skupiny nemôže byť prázdny"
 
@@ -11118,7 +11122,7 @@ msgid "Name cannot be empty"
 msgstr "Názov nemôže byť prázdny"
 
 #: rustconn/src/window/edit_dialogs.rs:360
-#: rustconn/src/window/edit_group.rs:1518
+#: rustconn/src/window/edit_group.rs:1527
 msgid "Group with name '{}' already exists"
 msgstr "Skupina s názvom '{}' už existuje"
 
@@ -11169,7 +11173,7 @@ msgstr ""
 "Zakázanie vymaže všetky nastavenia SSH pre túto skupinu. Túto akciu nemožno "
 "vrátiť späť."
 
-#: rustconn/src/window/edit_group.rs:592 rustconn/src/window/edit_group.rs:1015
+#: rustconn/src/window/edit_group.rs:592 rustconn/src/window/edit_group.rs:1016
 msgid "Keep"
 msgstr "Ponechať"
 
@@ -11241,15 +11245,15 @@ msgstr "Interval obnovy (sekundy)"
 msgid "0 = manual only"
 msgstr "0 = iba manuálne"
 
-#: rustconn/src/window/edit_group.rs:982
+#: rustconn/src/window/edit_group.rs:983
 msgid "Expect rules and post-login scripts inherited by connections"
 msgstr "Pravidlá očakávania a skripty po prihlásení dedené pripojeniami"
 
-#: rustconn/src/window/edit_group.rs:1008
+#: rustconn/src/window/edit_group.rs:1009
 msgid "Clear Automation?"
 msgstr "Vymazať automatizáciu?"
 
-#: rustconn/src/window/edit_group.rs:1010
+#: rustconn/src/window/edit_group.rs:1011
 msgid ""
 "Disabling will clear all expect rules and post-login scripts for this group. "
 "This cannot be undone."
@@ -11257,55 +11261,55 @@ msgstr ""
 "Vypnutie vymaže všetky pravidlá očakávania a skripty po prihlásení pre túto "
 "skupinu. Túto akciu nie je možné vrátiť späť."
 
-#: rustconn/src/window/edit_group.rs:1170
+#: rustconn/src/window/edit_group.rs:1178
 msgid "Clear All"
 msgstr "Vymazať všetko"
 
-#: rustconn/src/window/edit_group.rs:1172
+#: rustconn/src/window/edit_group.rs:1180
 msgid "Remove all expect rules"
 msgstr "Odstrániť všetky pravidlá očakávania"
 
-#: rustconn/src/window/edit_group.rs:1205
+#: rustconn/src/window/edit_group.rs:1213
 msgid "Test text against your expect rules"
 msgstr "Testovať text proti pravidlám očakávania"
 
-#: rustconn/src/window/edit_group.rs:1212
+#: rustconn/src/window/edit_group.rs:1220
 msgid "Enter text to test against patterns"
 msgstr "Zadajte text na testovanie proti vzorom"
 
-#: rustconn/src/window/edit_group.rs:1249
+#: rustconn/src/window/edit_group.rs:1257
 msgid "Match: pattern '{}' → response '{}'"
 msgstr "Zhoda: vzor '{}' → odpoveď '{}'"
 
-#: rustconn/src/window/edit_group.rs:1261
+#: rustconn/src/window/edit_group.rs:1269
 msgid "No match"
 msgstr "Žiadna zhoda"
 
-#: rustconn/src/window/edit_group.rs:1276
+#: rustconn/src/window/edit_group.rs:1284
 msgid "Post-login Scripts"
 msgstr "Skripty po prihlásení"
 
-#: rustconn/src/window/edit_group.rs:1278
+#: rustconn/src/window/edit_group.rs:1286
 msgid "Commands executed after login (inherited by connections)"
 msgstr "Príkazy spúšťané po prihlásení (dedené pripojeniami)"
 
-#: rustconn/src/window/edit_group.rs:1286
+#: rustconn/src/window/edit_group.rs:1294
 msgid "No post-login scripts"
 msgstr "Žiadne skripty po prihlásení"
 
-#: rustconn/src/window/edit_group.rs:1295
+#: rustconn/src/window/edit_group.rs:1303
 msgid "Add Script"
 msgstr "Pridať skript"
 
-#: rustconn/src/window/edit_group.rs:1492
+#: rustconn/src/window/edit_group.rs:1501
 msgid "Select a variable"
 msgstr "Vyberte premennú"
 
-#: rustconn/src/window/edit_group.rs:1641
+#: rustconn/src/window/edit_group.rs:1650
 msgid "Dynamic Folder script cannot be empty"
 msgstr "Skript dynamického priečinka nesmie byť prázdny"
 
-#: rustconn/src/window/edit_group.rs:1782
+#: rustconn/src/window/edit_group.rs:1798
 msgid ""
 "This group will be exported to {}. Other team members with read access can "
 "import it."
@@ -11313,23 +11317,23 @@ msgstr ""
 "Táto skupina bude exportovaná do {}. Ostatní členovia tímu s prístupom na "
 "čítanie ju môžu importovať."
 
-#: rustconn/src/window/edit_group.rs:1786
+#: rustconn/src/window/edit_group.rs:1802
 msgid "Enable Cloud Sync?"
 msgstr "Povoliť cloudovú synchronizáciu?"
 
-#: rustconn/src/window/edit_group.rs:1788
+#: rustconn/src/window/edit_group.rs:1804
 msgid "Enable"
 msgstr "Povoliť"
 
-#: rustconn/src/window/edit_group.rs:1819
+#: rustconn/src/window/edit_group.rs:1835
 msgid "Choose Directory"
 msgstr "Vybrať adresár"
 
-#: rustconn/src/window/edit_group.rs:1826
+#: rustconn/src/window/edit_group.rs:1842
 msgid "Set Up Cloud Sync"
 msgstr "Nastaviť cloudovú synchronizáciu"
 
-#: rustconn/src/window/edit_group.rs:1828
+#: rustconn/src/window/edit_group.rs:1844
 msgid ""
 "Choose a directory synced with your cloud service (Google Drive, Nextcloud, "
 "Syncthing, etc.)"
@@ -11337,16 +11341,16 @@ msgstr ""
 "Vyberte adresár synchronizovaný s vašou cloudovou službou (Google Drive, "
 "Nextcloud, Syncthing atď.)"
 
-#: rustconn/src/window/edit_group.rs:2343
+#: rustconn/src/window/edit_group.rs:2359
 msgid "Shell command (e.g., export TERM=xterm-256color)"
 msgstr "Príkaz shellu (napr. export TERM=xterm-256color)"
 
-#: rustconn/src/window/edit_group.rs:2344
+#: rustconn/src/window/edit_group.rs:2360
 msgid "Command to execute after login"
 msgstr "Príkaz na spustenie po prihlásení"
 
-#: rustconn/src/window/edit_group.rs:2354
-#: rustconn/src/window/edit_group.rs:2357
+#: rustconn/src/window/edit_group.rs:2370
+#: rustconn/src/window/edit_group.rs:2373
 msgid "Delete script"
 msgstr "Zmazať skript"
 
@@ -12093,103 +12097,103 @@ msgstr "Priechod"
 msgid "Keyboard passthrough active — click to disable"
 msgstr "Priechod klávesnice aktívny — kliknite pre zakázanie"
 
-#: rustconn/src/window/ui.rs:235
+#: rustconn/src/window/ui.rs:244
 msgid "New Connection (Advanced)…"
 msgstr "Nové pripojenie (pokročilé)…"
 
-#: rustconn/src/window/ui.rs:255
+#: rustconn/src/window/ui.rs:264
 msgid "Snippets…"
 msgstr "Snippety…"
 
-#: rustconn/src/window/ui.rs:256
+#: rustconn/src/window/ui.rs:265
 msgid "Clusters…"
 msgstr "Klastre…"
 
-#: rustconn/src/window/ui.rs:257
+#: rustconn/src/window/ui.rs:266
 msgid "Workspaces…"
 msgstr "Pracovné priestory…"
 
-#: rustconn/src/window/ui.rs:258
+#: rustconn/src/window/ui.rs:267
 msgid "Templates…"
 msgstr "Šablóny…"
 
-#: rustconn/src/window/ui.rs:259
+#: rustconn/src/window/ui.rs:268
 msgid "Variables…"
 msgstr "Premenné…"
 
-#: rustconn/src/window/ui.rs:263
+#: rustconn/src/window/ui.rs:272
 msgid "Password Generator…"
 msgstr "Generátor hesiel…"
 
-#: rustconn/src/window/ui.rs:266
+#: rustconn/src/window/ui.rs:275
 msgid "Wake On LAN…"
 msgstr "Wake On LAN…"
 
-#: rustconn/src/window/ui.rs:267
+#: rustconn/src/window/ui.rs:276
 msgid "SSH Tunnels…"
 msgstr "SSH tunely…"
 
-#: rustconn/src/window/ui.rs:271
+#: rustconn/src/window/ui.rs:280
 msgid "Tools"
 msgstr "Nástroje"
 
-#: rustconn/src/window/ui.rs:276
+#: rustconn/src/window/ui.rs:285
 msgid "Active Sessions…"
 msgstr "Aktívne relácie…"
 
-#: rustconn/src/window/ui.rs:277
+#: rustconn/src/window/ui.rs:286
 msgid "Connection History…"
 msgstr "História pripojení…"
 
-#: rustconn/src/window/ui.rs:278
+#: rustconn/src/window/ui.rs:287
 msgid "Statistics…"
 msgstr "Štatistiky…"
 
-#: rustconn/src/window/ui.rs:279
+#: rustconn/src/window/ui.rs:288
 msgid "Recordings…"
 msgstr "Nahrávky…"
 
-#: rustconn/src/window/ui.rs:280
+#: rustconn/src/window/ui.rs:289
 msgid "Session Logs…"
 msgstr "Záznamy sedení…"
 
-#: rustconn/src/window/ui.rs:283
+#: rustconn/src/window/ui.rs:292
 msgid "Sessions"
 msgstr "Relácie"
 
-#: rustconn/src/window/ui.rs:288
+#: rustconn/src/window/ui.rs:297
 msgid "Import Connections…"
 msgstr "Importovať pripojenia…"
 
-#: rustconn/src/window/ui.rs:289
+#: rustconn/src/window/ui.rs:298
 msgid "Export Connections…"
 msgstr "Exportovať pripojenia…"
 
-#: rustconn/src/window/ui.rs:290
+#: rustconn/src/window/ui.rs:299
 msgid "Copy Connection"
 msgstr "Kopírovať pripojenie"
 
-#: rustconn/src/window/ui.rs:292
+#: rustconn/src/window/ui.rs:301
 msgid "Paste Connection"
 msgstr "Vložiť pripojenie"
 
-#: rustconn/src/window/ui.rs:299
+#: rustconn/src/window/ui.rs:308
 msgid "Settings…"
 msgstr "Nastavenia…"
 
-#: rustconn/src/window/ui.rs:305
+#: rustconn/src/window/ui.rs:314
 msgid "Components…"
 msgstr "Komponenty…"
 
-#: rustconn/src/window/ui.rs:312
+#: rustconn/src/window/ui.rs:321
 msgid "Compact Interface"
 msgstr "Kompaktné rozhranie"
 
-#: rustconn/src/window/ui.rs:314
+#: rustconn/src/window/ui.rs:323
 msgid "Keyboard Passthrough"
 msgstr "Priechod klávesnice"
 
-#: rustconn/src/window/ui.rs:317
+#: rustconn/src/window/ui.rs:326
 msgid "Keyboard Shortcuts…"
 msgstr "Klávesové skratky…"
 
@@ -12331,9 +12335,6 @@ msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;
 
 #~ msgid "Can be a cloud-synced directory"
 #~ msgstr "Môže byť priečinok synchronizovaný s cloudom"
-
-#~ msgid "Copied {} credentials, {} could not be read"
-#~ msgstr "Skopírovaných {} prihlasovacích údajov, {} sa nepodarilo prečítať"
 
 #~ msgid "Could not copy credentials: {}"
 #~ msgstr "Prihlasovacie údaje sa nepodarilo skopírovať: {}"

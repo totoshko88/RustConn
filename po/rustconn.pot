@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.21.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 11:29+0200\n"
+"POT-Creation-Date: 2026-09-07 14:24+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -150,7 +150,7 @@ msgid "{} — RustConn"
 msgstr ""
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:746
-#: rustconn/src/embedded_rdp/mod.rs:1941
+#: rustconn/src/embedded_rdp/mod.rs:1943
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -9179,15 +9179,15 @@ msgstr ""
 msgid "Select folder to save files"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:1478
+#: rustconn/src/embedded_rdp/mod.rs:1480
 msgid "Downloading…"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:1508
+#: rustconn/src/embedded_rdp/mod.rs:1510
 msgid "Downloading files…"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/mod.rs:1926
+#: rustconn/src/embedded_rdp/mod.rs:1928
 msgid "Connection may have been lost while the computer slept"
 msgstr ""
 
@@ -9196,37 +9196,32 @@ msgstr ""
 msgid "Copy remote clipboard to local"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:207
-#: rustconn/src/embedded_rdp/polling_handlers.rs:343
-#: rustconn/src/embedded_rdp/polling_handlers.rs:387
+#: rustconn/src/embedded_rdp/polling_handlers.rs:225
+#: rustconn/src/embedded_rdp/polling_handlers.rs:397
 msgid "Save {} Files"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:209
+#: rustconn/src/embedded_rdp/polling_handlers.rs:227
 msgid "Save {} files from remote clipboard"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:294
+#: rustconn/src/embedded_rdp/polling_handlers.rs:312
 msgid "Downloaded {}/{} files"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:348
+#: rustconn/src/embedded_rdp/polling_handlers.rs:402
 msgid "Saved {} files"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:351
-msgid "Saved {} files, {} could not be written"
+#: rustconn/src/embedded_rdp/polling_handlers.rs:405
+msgid "Saved {} files, {} could not be saved"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:390
-msgid "Some files could not be downloaded"
-msgstr ""
-
-#: rustconn/src/embedded_rdp/polling_handlers.rs:409
+#: rustconn/src/embedded_rdp/polling_handlers.rs:455
 msgid "RTT: {} ms | {} | MPTCP"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/polling_handlers.rs:414
+#: rustconn/src/embedded_rdp/polling_handlers.rs:460
 msgid "RTT: {} ms | {}"
 msgstr ""
 
