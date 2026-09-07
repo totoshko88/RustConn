@@ -905,20 +905,27 @@ pub enum RdpClientCommand {
         initial_delay_ms: u32,
     },
 
-    /// Store local file paths in the clipboard backend for file DnD transfer.
+    /// Offer dropped files to the server via CLIPRDR file copy.
     ///
-    /// Called by the GUI after files are dropped onto the RDP widget.
-    /// The paths are indexed by position matching the `FileGroupDescriptorW`
-    /// announcement order. When the server requests file contents, the
-    /// session loop reads from these stored paths.
-    StoreLocalFiles {
-        /// Local file paths in the same order as announced in FileGroupDescriptorW
+    /// Called by the GUI after files are dropped onto the RDP widget. The
+    /// session loop stores the local paths (so a later File Contents Request can
+    /// be answered by reading them by index) and then hands the file list to
+    /// IronRDP's `Cliprdr::initiate_file_copy`.
+    ///
+    /// The descriptor is deliberately **not** built here. IronRDP keeps its own
+    /// `local_file_list` and only forwards a File Contents Request to the backend
+    /// when that list is populated — which happens only through
+    /// `initiate_file_copy`. Hand-building a `FILEGROUPDESCRIPTORW` and parking it
+    /// under a private format id left IronRDP's list empty, so it answered the
+    /// server's contents request with an error PDU before the backend ever saw
+    /// it (the file appeared offered, then failed with "Unspecified error").
+    InitiateFileCopy {
+        /// Local file paths, in the same order as `files`. Read by index when
+        /// the server requests contents.
         paths: Vec<std::path::PathBuf>,
-        /// The encoded `FILEGROUPDESCRIPTORW` blob, parked so that
-        /// `on_format_data_request` can answer the peer when it asks for the
-        /// listing. Sending it unprompted (as we did before 0.19.12) is not a
-        /// legal Format Data Response — the peer has to request it first.
-        descriptor: Vec<u8>,
+        /// File metadata (name, size, attributes) used to build the CLIPRDR file
+        /// descriptors. Order matches `paths`.
+        files: Vec<ClipboardFileInfo>,
     },
 }
 

@@ -280,19 +280,8 @@ pub(super) async fn process_command<W: FramedWrite>(
         RdpClientCommand::RequestClipboardData { format_id } => {
             handle_clipboard_request(active_stage, writer, format_id).await;
         }
-        RdpClientCommand::StoreLocalFiles { paths, descriptor } => {
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
-                && let Some(backend) = cliprdr
-                    .downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
-            {
-                backend.set_local_file_paths(paths);
-                // Park the listing so `on_format_data_request` can serve it the
-                // moment the peer asks for FileGroupDescriptorW.
-                backend.set_pending_copy_data(
-                    super::super::ClipboardFormatInfo::FILE_GROUP_DESCRIPTOR_W,
-                    descriptor,
-                );
-            }
+        RdpClientCommand::InitiateFileCopy { paths, files } => {
+            handle_initiate_file_copy(active_stage, writer, paths, files).await;
         }
         RdpClientCommand::RequestFileContents {
             stream_id,
@@ -483,6 +472,93 @@ async fn handle_clipboard_copy<W: FramedWrite>(
         format_count = formats.len(),
         "Clipboard copy initiated (format list sent to server)"
     );
+}
+
+/// Offers dropped files to the server through IronRDP's file-copy API.
+///
+/// Two things must happen and they are not the same: the backend keeps the local
+/// *paths* so a later File Contents Request can be answered by reading the file
+/// by index, and IronRDP's own `local_file_list` must be populated so it forwards
+/// that request to the backend at all. Only `Cliprdr::initiate_file_copy` does the
+/// second — it also builds and sends the FileGroupDescriptorW FormatList itself,
+/// so we must not send a competing one. Doing it by hand (a parked descriptor +
+/// `initiate_copy`) left the list empty and IronRDP rejected the contents request
+/// with an error PDU, which surfaced on Windows as "Unspecified error".
+async fn handle_initiate_file_copy<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    paths: Vec<std::path::PathBuf>,
+    files: Vec<super::super::ClipboardFileInfo>,
+) {
+    use ironrdp::cliprdr::pdu::{ClipboardFileAttributes, FileDescriptor};
+
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        tracing::warn!(
+            protocol = "rdp",
+            file_count = files.len(),
+            "File copy dropped: CLIPRDR channel not present (clipboard disabled or not negotiated)"
+        );
+        return;
+    };
+
+    // Store the paths so `handle_provide_file_contents` can read the bytes by
+    // index when the server asks. Order matches the descriptor list below.
+    if let Some(backend) =
+        cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.set_local_file_paths(paths);
+    }
+
+    let descriptors: Vec<FileDescriptor> = files
+        .iter()
+        .map(|f| {
+            FileDescriptor::new(f.name.clone())
+                .with_file_size(f.size)
+                .with_attributes(ClipboardFileAttributes::from_bits_truncate(f.attributes))
+                // FILETIME is unsigned on the wire; the model stores i64. A
+                // negative value would be a bad timestamp, so clamp to 0 rather
+                // than wrap.
+                .with_last_write_time(u64::try_from(f.last_write_time).unwrap_or(0))
+        })
+        .collect();
+
+    let messages = match cliprdr.initiate_file_copy(descriptors) {
+        Ok(messages) => messages,
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                file_count = files.len(),
+                "initiate_file_copy failed (channel not ready, or file clipboard not negotiated)"
+            );
+            return;
+        }
+    };
+
+    match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => {
+            if let Err(e) = writer.write_all(&frame).await {
+                tracing::warn!(
+                    protocol = "rdp",
+                    error = %e,
+                    "Writing the file-copy format list to the wire failed"
+                );
+                return;
+            }
+            tracing::debug!(
+                protocol = "rdp",
+                file_count = files.len(),
+                "File copy offered to server (IronRDP file list populated)"
+            );
+        }
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                error = %e,
+                "Encoding the file-copy format list failed"
+            );
+        }
+    }
 }
 
 async fn handle_clipboard_request<W: FramedWrite>(
