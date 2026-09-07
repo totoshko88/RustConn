@@ -884,6 +884,7 @@ impl EmbeddedRdpWidget {
             let toast_overlay_ref = self.toast_overlay.clone();
             let config = self.config.clone();
             let file_offer_active = self.file_offer_active.clone();
+            let toast_for_success = self.toast_overlay.clone();
 
             file_dnd::setup_rdp_file_drop_target(
                 self.drawing_area.upcast_ref::<gtk4::Widget>(),
@@ -992,23 +993,35 @@ impl EmbeddedRdpWidget {
                         // Say what actually happened and what to do next. RDP has
                         // no drag-to-desktop: a dropped file goes onto the remote
                         // *clipboard*, and the user must press Ctrl+V in the remote
-                        // session to place it. Without this instruction the drop
-                        // looks like it did nothing (the file never appears on the
-                        // remote desktop on its own).
+                        // session to place it. Without this the drop looks like it
+                        // did nothing (the file never appears on the remote desktop
+                        // on its own).
                         let file_count = files.len().to_string();
-                        status_label.set_text(&crate::i18n::i18n_f(
+                        let message = crate::i18n::i18n_f(
                             "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to paste",
                             &[&file_count],
-                        ));
-                        status_label.set_visible(true);
-                        let hide_label = status_label.clone();
-                        // 6 s: long enough to read a one-line instruction.
-                        glib::timeout_add_local_once(
-                            std::time::Duration::from_secs(6),
-                            move || {
-                                hide_label.set_visible(false);
-                            },
                         );
+
+                        // A toast is the HIG-correct surface for the result of an
+                        // action, and it is far harder to miss than the inline
+                        // status line. Show it when the overlay is available; keep
+                        // the status line as the fallback (and for the brief moment
+                        // before the overlay is wired after the widget is parented).
+                        if let Some(ref overlay) = *toast_for_success.borrow() {
+                            let toast = libadwaita::Toast::new(&message);
+                            toast.set_timeout(6);
+                            overlay.add_toast(toast);
+                        } else {
+                            status_label.set_text(&message);
+                            status_label.set_visible(true);
+                            let hide_label = status_label.clone();
+                            glib::timeout_add_local_once(
+                                std::time::Duration::from_secs(6),
+                                move || {
+                                    hide_label.set_visible(false);
+                                },
+                            );
+                        }
 
                         // "Queued", not "done": whether the format list actually
                         // reaches the server is decided in the session loop
