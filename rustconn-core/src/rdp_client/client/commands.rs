@@ -515,8 +515,7 @@ async fn handle_download_file_contents<W: FramedWrite>(
     offset: u64,
     length: u32,
 ) {
-    let Some(request) =
-        build_download_request(stream_id, file_index, request_size, offset, length)
+    let Some(request) = build_download_request(stream_id, file_index, request_size, offset, length)
     else {
         tracing::warn!(
             protocol = "rdp",
@@ -527,6 +526,15 @@ async fn handle_download_file_contents<W: FramedWrite>(
     };
 
     if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
+        // Record the size expectation *before* sending, so the response — which
+        // can arrive on the very next read — is classified by request type
+        // rather than by guessing from an 8-byte payload.
+        if request_size
+            && let Some(backend) =
+                cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+        {
+            backend.expect_size_response(stream_id);
+        }
         match cliprdr.request_file_contents(request) {
             Ok(messages) => {
                 if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {

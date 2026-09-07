@@ -127,6 +127,12 @@ impl ClipboardFileTransfer {
         }
     }
 
+    /// Drops a download the server refused, so the batch is not left waiting on
+    /// a stream that will never deliver data. Returns whether one was removed.
+    pub fn cancel_download(&mut self, stream_id: u32) -> bool {
+        self.downloads.remove(&stream_id).is_some()
+    }
+
     /// Appends data to a download
     pub fn append_data(&mut self, stream_id: u32, data: &[u8], is_last: bool) {
         if let Some(state) = self.downloads.get_mut(&stream_id) {

@@ -573,6 +573,14 @@ pub enum RdpClientEvent {
         size: u64,
     },
 
+    /// The server refused a file-contents request (`CB_FILECONTENTS_RESPONSE`
+    /// with the fail flag). The matching download must be abandoned rather than
+    /// left waiting for data that will never arrive.
+    ClipboardFileError {
+        /// Stream ID of the request the server rejected
+        stream_id: u32,
+    },
+
     /// Authentication required (for NLA)
     AuthRequired,
 

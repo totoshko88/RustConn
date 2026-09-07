@@ -16,7 +16,7 @@
 //! - `CF_DIB` (8): Device-independent bitmap (future)
 //! - `CF_HDROP` (15): File list (future)
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::Sender;
 
 use ironrdp::cliprdr::backend::{ClipboardMessage, ClipboardMessageProxy, CliprdrBackend};
@@ -109,6 +109,11 @@ pub struct RustConnClipboardBackend {
     /// Local file paths for client → server file transfer (DnD).
     /// Indexed by file_index as announced in `FileGroupDescriptorW`.
     local_file_paths: Vec<std::path::PathBuf>,
+    /// Stream IDs of our own outstanding download requests that asked for a file
+    /// *size* rather than data. The wire response carries no flag telling the two
+    /// apart, so the request type is what disambiguates them — see
+    /// [`Self::expect_size_response`].
+    pending_size_requests: HashSet<u32>,
 }
 
 impl_as_any!(RustConnClipboardBackend);
@@ -124,6 +129,7 @@ impl RustConnClipboardBackend {
             pending_copy_data: HashMap::new(),
             server_capabilities: ClipboardGeneralCapabilityFlags::empty(),
             local_file_paths: Vec::new(),
+            pending_size_requests: HashSet::new(),
         }
     }
 
@@ -175,6 +181,25 @@ impl RustConnClipboardBackend {
     #[must_use]
     pub fn local_file_paths(&self) -> &[std::path::PathBuf] {
         &self.local_file_paths
+    }
+
+    /// Records that the download request on `stream_id` asked for a file size.
+    ///
+    /// Called from the session loop when it emits a SIZE File Contents Request,
+    /// so [`Self::on_file_contents_response`] can classify the reply by what was
+    /// asked rather than by guessing from the payload length — an 8-byte *data*
+    /// chunk is otherwise indistinguishable from an 8-byte size field.
+    pub fn expect_size_response(&mut self, stream_id: u32) {
+        self.pending_size_requests.insert(stream_id);
+    }
+
+    /// Returns whether `stream_id` was a size request, consuming the record.
+    ///
+    /// Consuming it keeps the set bounded to genuinely outstanding size requests
+    /// and means a stream id reused for a later data request is not mistaken for
+    /// a size request.
+    fn take_size_expectation(&mut self, stream_id: u32) -> bool {
+        self.pending_size_requests.remove(&stream_id)
     }
 
     /// Returns the server's negotiated capabilities
@@ -442,26 +467,49 @@ impl CliprdrBackend for RustConnClipboardBackend {
 
     fn on_file_contents_response(&mut self, response: FileContentsResponse<'_>) {
         let stream_id = response.stream_id();
-        let data = response.data();
 
+        // A rejected request carries the fail flag and no usable payload. The
+        // download waiting on this stream must be told, or it hangs forever;
+        // clear any size expectation so a later reuse of the id starts clean.
+        if response.is_error() {
+            self.pending_size_requests.remove(&stream_id);
+            warn!("File contents request rejected by server: stream_id={stream_id}");
+            let _ = self
+                .proxy
+                .event_tx
+                .send(RdpClientEvent::ClipboardFileError { stream_id });
+            return;
+        }
+
+        let data = response.data();
         debug!(
             "File contents response: stream_id={}, data_len={}",
             stream_id,
             data.len()
         );
 
-        // Check if this is a size response (8 bytes = u64 file size)
-        if data.len() == 8 {
-            let size = u64::from_le_bytes([
-                data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
-            ]);
-            debug!("File size response: stream_id={}, size={}", stream_id, size);
-            let _ = self
-                .proxy
-                .event_tx
-                .send(RdpClientEvent::ClipboardFileSize { stream_id, size });
+        // A size response and an 8-byte data chunk look identical on the wire —
+        // both are eight bytes. What tells them apart is which kind of request we
+        // sent, tracked in `pending_size_requests`, not the length (the old
+        // `data.len() == 8` guess corrupted any 8-byte file).
+        if self.take_size_expectation(stream_id) {
+            match response.data_as_size() {
+                Ok(size) => {
+                    debug!("File size response: stream_id={stream_id}, size={size}");
+                    let _ = self
+                        .proxy
+                        .event_tx
+                        .send(RdpClientEvent::ClipboardFileSize { stream_id, size });
+                }
+                Err(e) => {
+                    warn!("Malformed file size response on stream_id={stream_id}: {e}");
+                    let _ = self
+                        .proxy
+                        .event_tx
+                        .send(RdpClientEvent::ClipboardFileError { stream_id });
+                }
+            }
         } else {
-            // This is file data
             debug!(
                 "File data response: stream_id={}, bytes={}",
                 stream_id,
@@ -473,7 +521,9 @@ impl CliprdrBackend for RustConnClipboardBackend {
                 .send(RdpClientEvent::ClipboardFileContents {
                     stream_id,
                     data: data.to_vec(),
-                    is_last: true, // For now, assume single chunk
+                    // Single-chunk assumption; RANGE-based chunking is a
+                    // follow-up (the download requests the whole file at once).
+                    is_last: true,
                 });
         }
     }
@@ -681,5 +731,93 @@ mod tests {
 
         // Removing an absent format is a no-op, not a panic.
         backend.clear_pending_format(ClipboardFormatInfo::UNICODE_TEXT);
+    }
+
+    /// An 8-byte reply to a SIZE request is a file size, not file data — the
+    /// request type decides, not the length (the old `data.len() == 8` guess
+    /// corrupted any 8-byte file).
+    #[test]
+    fn size_expectation_classifies_an_eight_byte_reply_as_size() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        backend.expect_size_response(42);
+        backend.on_file_contents_response(FileContentsResponse::new_size_response(42, 4096));
+
+        match rx.try_recv() {
+            Ok(RdpClientEvent::ClipboardFileSize { stream_id, size }) => {
+                assert_eq!(stream_id, 42);
+                assert_eq!(size, 4096);
+            }
+            other => panic!("expected ClipboardFileSize, got {other:?}"),
+        }
+    }
+
+    /// The same eight bytes, with no size request outstanding, are file data —
+    /// a file whose contents happen to be eight bytes long.
+    #[test]
+    fn eight_byte_data_without_expectation_is_treated_as_data() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        let payload = vec![1u8, 2, 3, 4, 5, 6, 7, 8];
+        backend
+            .on_file_contents_response(FileContentsResponse::new_data_response(9, payload.clone()));
+
+        match rx.try_recv() {
+            Ok(RdpClientEvent::ClipboardFileContents {
+                stream_id,
+                data,
+                is_last,
+            }) => {
+                assert_eq!(stream_id, 9);
+                assert_eq!(data, payload);
+                assert!(is_last);
+            }
+            other => panic!("expected ClipboardFileContents, got {other:?}"),
+        }
+    }
+
+    /// A size expectation is consumed once, so a stream id reused for a later
+    /// data request is not mistaken for another size reply.
+    #[test]
+    fn size_expectation_is_consumed_once() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        backend.expect_size_response(5);
+        backend.on_file_contents_response(FileContentsResponse::new_size_response(5, 16));
+        // Second reply on the same id, now a data chunk.
+        backend.on_file_contents_response(FileContentsResponse::new_data_response(5, vec![0u8; 8]));
+
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(RdpClientEvent::ClipboardFileSize { .. })
+        ));
+        assert!(
+            matches!(
+                rx.try_recv(),
+                Ok(RdpClientEvent::ClipboardFileContents { .. })
+            ),
+            "a reused stream id must fall through to data, not size"
+        );
+    }
+
+    /// A rejected request must surface as an error, never a phantom size or an
+    /// empty data chunk that leaves the download waiting forever.
+    #[test]
+    fn error_response_emits_file_error_and_clears_expectation() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        backend.expect_size_response(7);
+        backend.on_file_contents_response(FileContentsResponse::new_error(7));
+
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(RdpClientEvent::ClipboardFileError { stream_id: 7 })
+        ));
+        // The expectation is gone, so a later reuse of id 7 is a clean data path.
+        assert!(!backend.pending_size_requests.contains(&7));
     }
 }

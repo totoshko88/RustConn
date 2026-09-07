@@ -1595,6 +1595,11 @@ impl super::EmbeddedRdpWidget {
                                 );
                                 file_transfer.borrow_mut().update_size(stream_id, size);
                             }
+                            RdpClientEvent::ClipboardFileError { stream_id } => {
+                                super::polling_handlers::handle_clipboard_file_error(
+                                    &file_ctx, stream_id,
+                                );
+                            }
                             RdpClientEvent::DisplayControlReady => {
                                 // The Display Control channel is negotiated → run the
                                 // initial snap now, so the resize goes over MS-RDPEDISP

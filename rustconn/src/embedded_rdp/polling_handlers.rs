@@ -287,6 +287,35 @@ pub(super) fn handle_clipboard_file_contents(
     }
 }
 
+/// Handles a file the server refused to hand over during a "Save N Files" batch.
+///
+/// Drops the affected download so the batch is not left waiting on a stream that
+/// will never deliver, and restores the button and status line rather than
+/// leaving them stuck on "Downloading…". The rest of the batch continues.
+pub(super) fn handle_clipboard_file_error(ctx: &FileTransferContext<'_>, stream_id: u32) {
+    let removed = ctx.file_transfer.borrow_mut().cancel_download(stream_id);
+    tracing::warn!(
+        protocol = "rdp",
+        stream_id,
+        removed,
+        "Server refused a clipboard file; skipping it"
+    );
+
+    let file_count = ctx.file_transfer.borrow().available_files.len();
+    ctx.save_files_button.set_sensitive(true);
+    ctx.save_files_button
+        .set_label(&i18n_f("Save {} Files", &[&file_count.to_string()]));
+
+    ctx.status_label
+        .set_text(&i18n("Some files could not be downloaded"));
+    ctx.status_label.set_visible(true);
+    let status_hide = ctx.status_label.clone();
+    // Same 3 s transient dwell the "Saved N files" confirmation uses.
+    glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
+        status_hide.set_visible(false);
+    });
+}
+
 /// Handles an RTT measurement reported by the server's Auto-Detect sequence.
 pub(super) fn handle_rtt(
     config: &Rc<RefCell<Option<super::types::RdpConfig>>>,
