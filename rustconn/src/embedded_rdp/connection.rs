@@ -1240,10 +1240,37 @@ impl super::EmbeddedRdpWidget {
                                     // generation before installing this one; the
                                     // slot holds a single entry (issue #261).
                                     remove_clipboard_monitor(&clipboard_monitor, None);
-                                    let handler_id = clipboard.connect_changed(move |_cb| {
+                                    let handler_id = clipboard.connect_changed(move |cb| {
                                         // Skip if this change was triggered by our own
                                         // server→client sync (Phase 2)
                                         if *suppressed.borrow() {
+                                            return;
+                                        }
+                                        // Only announce text when the clipboard
+                                        // actually offers text. CLIPRDR keeps a single
+                                        // current offer, so every Format List PDU
+                                        // *replaces* the previous one — announcing text
+                                        // unconditionally clobbered an in-flight file
+                                        // offer from a drag-and-drop the moment any
+                                        // owner-change landed (a file drop leaves the
+                                        // clipboard advertising URIs, not text, yet this
+                                        // fired a text announce ~2 s later and the server
+                                        // then requested text instead of the file
+                                        // descriptor — so file upload silently never
+                                        // completed). Reading the *advertised formats* is
+                                        // metadata only; it does not transfer data and so
+                                        // does not hit the #261 GTK text-converter crash,
+                                        // which is in the data-read path.
+                                        let offers_text = cb
+                                            .formats()
+                                            .contains_type(gtk4::glib::types::Type::STRING)
+                                            || cb.formats().contain_mime_type("text/plain");
+                                        if !offers_text {
+                                            tracing::trace!(
+                                                protocol = "rdp",
+                                                "[Clipboard] Local change does not offer text; \
+                                                 not announcing (avoids clobbering a file offer)"
+                                            );
                                             return;
                                         }
                                         // Announce availability only — deliberately
