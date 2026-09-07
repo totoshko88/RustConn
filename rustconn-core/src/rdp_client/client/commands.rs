@@ -565,9 +565,22 @@ async fn handle_download_file_contents<W: FramedWrite>(
         backend.expect_size_response(stream_id);
     }
     match cliprdr.request_file_contents(request) {
-        Ok(messages) => {
-            if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
-                let _ = writer.write_all(&frame).await;
+        Ok(messages) => match active_stage.process_svc_processor_messages(messages) {
+            Ok(frame) => {
+                if let Err(e) = writer.write_all(&frame).await {
+                    tracing::warn!(
+                        protocol = "rdp",
+                        stream_id,
+                        error = %e,
+                        "writing the file contents request failed"
+                    );
+                    // The request never reached the wire, so no reply is coming
+                    // and the size expectation recorded above would sit parked
+                    // forever. Unwind the download instead of leaving the batch
+                    // waiting on a stream that is already lost.
+                    fail_download(active_stage, stream_id);
+                    return;
+                }
                 tracing::debug!(
                     protocol = "rdp",
                     stream_id,
@@ -576,7 +589,16 @@ async fn handle_download_file_contents<W: FramedWrite>(
                     "File contents request sent to server"
                 );
             }
-        }
+            Err(e) => {
+                tracing::warn!(
+                    protocol = "rdp",
+                    stream_id,
+                    error = %e,
+                    "encoding the file contents request failed"
+                );
+                fail_download(active_stage, stream_id);
+            }
+        },
         Err(e) => {
             tracing::warn!(
                 protocol = "rdp",
@@ -590,6 +612,15 @@ async fn handle_download_file_contents<W: FramedWrite>(
         }
     }
 }
+
+/// Largest slice of a local file returned in one File Contents Response.
+///
+/// The request's `requested_size` is a `u32` chosen by the peer, so an
+/// unclamped allocation is a 4 GiB buffer on request. 8 MiB is generous next to
+/// the 1 MiB the client's own download loop asks for, and a peer that wants more
+/// simply asks again from a later offset — a response shorter than requested is
+/// how MS-RDPECLIP expresses a partial read.
+const MAX_UPLOAD_CHUNK: u32 = 8 * 1024 * 1024;
 
 /// Answers the server's file-contents request with our *local* file
 /// (client → server), for a file we announced via `FileGroupDescriptorW`.
@@ -663,12 +694,27 @@ async fn handle_provide_file_contents<W: FramedWrite>(
     } else {
         // Return file data chunk — delegate I/O to a blocking thread so
         // large clipboard file transfers don't stall the RDP event loop.
+        // `length` is whatever the server asked for — up to 4 GiB — and it was
+        // allocated in full before a single byte was read. Clamp it: the reply is
+        // a single File Contents Response, and a peer wanting more asks again
+        // with a later offset. A short reply is already the protocol's way of
+        // saying "that is all for now", so answering less than requested is
+        // legal and the client-side download loop does exactly this.
+        let capped_length = length.min(MAX_UPLOAD_CHUNK) as usize;
+        if capped_length < length as usize {
+            tracing::debug!(
+                protocol = "rdp",
+                requested = length,
+                capped = capped_length,
+                "Capping an oversized file contents request"
+            );
+        }
         let path_clone = path.clone();
         let io_result = tokio::task::spawn_blocking(move || {
             use std::io::{Read, Seek, SeekFrom};
             let mut file = std::fs::File::open(&path_clone)?;
             file.seek(SeekFrom::Start(offset))?;
-            let mut buf = vec![0u8; length as usize];
+            let mut buf = vec![0u8; capped_length];
             let bytes_read = file.read(&mut buf)?;
             buf.truncate(bytes_read);
             Ok::<Vec<u8>, std::io::Error>(buf)

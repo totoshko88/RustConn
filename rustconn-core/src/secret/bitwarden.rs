@@ -176,6 +176,11 @@ pub fn get_bw_cmd() -> String {
 fn bw_command(bw_cmd: &str) -> Command {
     let mut cmd = Command::new(bw_cmd);
     cmd.env("PATH", crate::cli_download::get_extended_path());
+    // Every call here is wrapped in a timeout, and a timeout drops the `output()`
+    // future rather than signalling the child. `tokio::process` does not kill on
+    // drop by default, so without this a `bw` that hung on an unreachable server
+    // outlived the timeout as an orphan — still holding a vault session.
+    cmd.kill_on_drop(true);
     cmd
 }
 
@@ -389,6 +394,9 @@ impl BitwardenBackend {
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new(&self.bw_cmd);
         cmd.env("PATH", crate::cli_download::get_extended_path());
+        // See `bw_command`: a dropped timeout future does not signal the child
+        // unless this is set.
+        cmd.kill_on_drop(true);
         // --nointeraction prevents CLI from prompting for input or performing
         // implicit network operations that can hang in sandboxed environments.
         cmd.arg("--nointeraction");

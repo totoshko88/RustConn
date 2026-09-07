@@ -867,10 +867,12 @@ mod tests {
         assert!(!backend.pending_size_requests.contains(&3));
     }
 
-    /// A new file list supersedes the previous batch, whose stream ids the GUI
-    /// resets to 1. A size expectation left over from the old batch would then
-    /// be consumed by the new batch's stream id 1 and misclassify its first data
-    /// chunk as a size reply. Announcing a new list must drop the stale ones.
+    /// A new file list supersedes the previous batch, so any size expectation
+    /// left over from it must go: an expectation is consumed by stream id, and a
+    /// stale one would misclassify a later data chunk as a size reply. The GUI
+    /// now also keeps stream ids monotonic across batches, which closes the same
+    /// hole from the other side — this remains the backstop, since the two sides
+    /// are separate crates and only this one owns the expectation set.
     #[test]
     fn a_new_file_list_drops_stale_size_expectations() {
         let (tx, _rx) = std::sync::mpsc::channel();
@@ -880,10 +882,12 @@ mod tests {
         backend.expect_size_response(1);
         assert!(backend.pending_size_requests.contains(&1));
 
-        // The server announces a fresh file list. A count of zero is enough:
-        // `parse_file_group_descriptor` returns `Some(empty)`, which is what
-        // drives the clear — the point under test is that announcing a list
-        // clears stale expectations, not how many files it names.
+        // The server announces a fresh file list. A count of zero is enough
+        // *because* the clear happens before the parse: an empty descriptor makes
+        // `parse_file_group_descriptor` return `None`, so no file-list event is
+        // emitted, and the expectations are still dropped. That ordering is the
+        // point under test — a malformed or empty list must supersede the old
+        // batch just as a well-formed one does.
         let descriptor = 0u32.to_le_bytes().to_vec();
         backend.pending_paste_format = Some(ClipboardFormatId::CF_HDROP);
         backend.on_format_data_response(FormatDataResponse::new_data(&descriptor));

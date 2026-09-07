@@ -141,6 +141,11 @@ impl PassboltBackend {
     fn build_command(&self, args: &[&str]) -> Command {
         let mut cmd = Command::new("passbolt");
         cmd.env("PATH", crate::cli_download::get_extended_path());
+        // `PASSBOLT_INVOCATION_TIMEOUT` drops the future when it fires, and
+        // `tokio::process` does not kill the child on drop by default. This
+        // matters more here than elsewhere: the passphrase is on this command's
+        // argv, so an orphan leaves it visible in `/proc/PID/cmdline`.
+        cmd.kill_on_drop(true);
         cmd.args(args);
 
         if let Some(ref addr) = self.server_address {
@@ -496,6 +501,8 @@ pub async fn get_passbolt_status() -> PassboltStatus {
         PASSBOLT_INVOCATION_TIMEOUT,
         Command::new("passbolt")
             .env("PATH", crate::cli_download::get_extended_path())
+            // Bounded below, so the child must not outlive the timeout.
+            .kill_on_drop(true)
             .args(["list", "user", "--json"])
             .output(),
     )
