@@ -205,6 +205,24 @@ impl RustConnClipboardBackend {
         self.pending_size_requests.remove(&stream_id)
     }
 
+    /// Reports that a download request never reached the server.
+    ///
+    /// When the session loop cannot build or submit the File Contents Request —
+    /// the file clipboard was not negotiated, the CLIPRDR channel is gone — no
+    /// size or data reply will ever arrive for `stream_id`. Without this the
+    /// batch's "Save N Files" button sits on "Downloading…" forever for that
+    /// file. Clears any size expectation first so a reused id starts clean, then
+    /// raises the same [`RdpClientEvent::ClipboardFileError`] a server refusal
+    /// does, which the GUI already handles by dropping the download and freeing
+    /// the button.
+    pub fn emit_download_failed(&mut self, stream_id: u32) {
+        self.pending_size_requests.remove(&stream_id);
+        let _ = self
+            .proxy
+            .event_tx
+            .send(RdpClientEvent::ClipboardFileError { stream_id });
+    }
+
     /// Returns the server's negotiated capabilities
     #[must_use]
     pub const fn server_capabilities(&self) -> ClipboardGeneralCapabilityFlags {
@@ -386,15 +404,30 @@ impl CliprdrBackend for RustConnClipboardBackend {
         );
 
         // Check for file list format (CF_HDROP = 15 or FileGroupDescriptorW)
-        if format_id == Some(ClipboardFormatId::CF_HDROP)
-            && let Some(files) = parse_file_group_descriptor(data)
-        {
-            debug!("Parsed {} files from clipboard", files.len());
-            let _ = self
-                .proxy
-                .event_tx
-                .send(RdpClientEvent::ClipboardFileList(files));
-            return;
+        if format_id == Some(ClipboardFormatId::CF_HDROP) {
+            // A new file list supersedes the previous batch: the GUI resets its
+            // stream-id counter to 1 for it. Any size expectation still parked
+            // from the old batch would then be consumed by the new batch's
+            // stream id 1, classifying its first *data* chunk as a size reply.
+            // Drop them the moment a new list is announced — before the parse,
+            // so even an empty or malformed descriptor still supersedes the
+            // stale batch — so classification stays sound across successive
+            // "Save N Files" runs.
+            if !self.pending_size_requests.is_empty() {
+                debug!(
+                    "Dropping {} stale size expectation(s) on a new file list",
+                    self.pending_size_requests.len()
+                );
+                self.pending_size_requests.clear();
+            }
+            if let Some(files) = parse_file_group_descriptor(data) {
+                debug!("Parsed {} files from clipboard", files.len());
+                let _ = self
+                    .proxy
+                    .event_tx
+                    .send(RdpClientEvent::ClipboardFileList(files));
+                return;
+            }
         }
 
         match format_id {
@@ -814,5 +847,50 @@ mod tests {
         ));
         // The expectation is gone, so a later reuse of id 7 is a clean data path.
         assert!(!backend.pending_size_requests.contains(&7));
+    }
+
+    /// A download that never reached the server must surface as a file error,
+    /// so the GUI stops waiting on a stream id no reply is coming for, and the
+    /// size expectation is cleared so a reused id starts clean.
+    #[test]
+    fn emit_download_failed_reports_the_error_and_clears_the_expectation() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        backend.expect_size_response(3);
+        backend.emit_download_failed(3);
+
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(RdpClientEvent::ClipboardFileError { stream_id: 3 })
+        ));
+        assert!(!backend.pending_size_requests.contains(&3));
+    }
+
+    /// A new file list supersedes the previous batch, whose stream ids the GUI
+    /// resets to 1. A size expectation left over from the old batch would then
+    /// be consumed by the new batch's stream id 1 and misclassify its first data
+    /// chunk as a size reply. Announcing a new list must drop the stale ones.
+    #[test]
+    fn a_new_file_list_drops_stale_size_expectations() {
+        let (tx, _rx) = std::sync::mpsc::channel();
+        let mut backend = RustConnClipboardBackend::new(tx);
+
+        // An outstanding size request from a previous "Save N Files" batch.
+        backend.expect_size_response(1);
+        assert!(backend.pending_size_requests.contains(&1));
+
+        // The server announces a fresh file list. A count of zero is enough:
+        // `parse_file_group_descriptor` returns `Some(empty)`, which is what
+        // drives the clear — the point under test is that announcing a list
+        // clears stale expectations, not how many files it names.
+        let descriptor = 0u32.to_le_bytes().to_vec();
+        backend.pending_paste_format = Some(ClipboardFormatId::CF_HDROP);
+        backend.on_format_data_response(FormatDataResponse::new_data(&descriptor));
+
+        assert!(
+            backend.pending_size_requests.is_empty(),
+            "a new file list must clear expectations from the superseded batch"
+        );
     }
 }

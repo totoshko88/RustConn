@@ -309,41 +309,60 @@ pub(super) fn handle_clipboard_file_contents(
         super::thread::ChunkOutcome::Complete => {}
     }
 
+    // The bytes arrived; writing them is a separate step that can fail on a
+    // full disk or a read-only target. A failed write is a lost file the user
+    // asked for, so it must reach the status line — not only the log — and the
+    // batch summary below must not paper over it with "Saved N files".
     match ctx.file_transfer.borrow().save_download(stream_id) {
         Ok(path) => {
             tracing::info!(protocol = "rdp", path = %path.display(), "Saved clipboard file");
         }
         Err(e) => {
             tracing::error!(protocol = "rdp", error = %e, "Failed to save clipboard file");
+            ctx.file_transfer.borrow_mut().record_save_failure();
         }
     }
 
     if ctx.file_transfer.borrow().all_complete() {
-        let count = ctx.file_transfer.borrow().completed_count;
-        let target = ctx
-            .file_transfer
-            .borrow()
-            .target_directory
-            .as_ref()
-            .map(|p| p.display().to_string())
-            .unwrap_or_default();
+        let (saved, failed, target, file_count) = {
+            let transfer = ctx.file_transfer.borrow();
+            (
+                transfer.saved_count(),
+                transfer.save_failures(),
+                transfer
+                    .target_directory
+                    .as_ref()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_default(),
+                transfer.available_files.len(),
+            )
+        };
 
         ctx.save_files_button.set_sensitive(true);
-        let file_count = ctx.file_transfer.borrow().available_files.len();
         ctx.save_files_button
             .set_label(&i18n_f("Save {} Files", &[&file_count.to_string()]));
 
-        ctx.status_label
-            .set_text(&i18n_f("Saved {} files", &[&count.to_string()]));
+        // When every file wrote, say so; when some did not, name how many, so
+        // the user is not told "saved" about a file that is not on disk.
+        let summary = if failed == 0 {
+            i18n_f("Saved {} files", &[&saved.to_string()])
+        } else {
+            i18n_f(
+                "Saved {} files, {} could not be written",
+                &[&saved.to_string(), &failed.to_string()],
+            )
+        };
+        ctx.status_label.set_text(&summary);
+        ctx.status_label.set_visible(true);
         let status_hide = ctx.status_label.clone();
-        // The "Saved N files" confirmation is transient — 3 s is the same
-        // dwell time the other inline status messages use.
+        // The confirmation is transient — 3 s is the same dwell time the other
+        // inline status messages use.
         glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
             status_hide.set_visible(false);
         });
 
         if let Some(ref callback) = *ctx.on_file_complete.borrow() {
-            callback(count, &target);
+            callback(saved, &target);
         }
     }
 }

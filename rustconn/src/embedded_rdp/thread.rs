@@ -62,7 +62,12 @@ pub struct FileDownloadState {
     pub total_size: u64,
     /// Bytes received so far
     pub bytes_received: u64,
-    /// Accumulated data chunks
+    /// Accumulated data chunks.
+    // ponytail: the whole file is buffered in RAM before it is written, so a
+    // multi-gigabyte clipboard file costs that much memory. Fine for the
+    // config files and logs that are the realistic clipboard payload; stream
+    // straight to a temp file (write each chunk in `append_data`, rename on
+    // Complete) if a size limit ever needs lifting.
     pub data: Vec<u8>,
     /// Whether download is complete
     pub complete: bool,
@@ -108,8 +113,15 @@ pub struct ClipboardFileTransfer {
     pub target_directory: Option<PathBuf>,
     /// Total files to download
     pub total_files: usize,
-    /// Completed downloads count
+    /// Completed downloads count (bytes fully received, before the disk write)
     pub completed_count: usize,
+    /// Files that were received in full but could not be written to disk.
+    ///
+    /// Separate from `completed_count` because the download succeeding and the
+    /// save succeeding are two different things: a full disk or a read-only
+    /// target fails the write after every byte has arrived. Without this the
+    /// batch reported "Saved N files" even when the write threw the file away.
+    pub save_failures: usize,
 }
 
 #[cfg(feature = "rdp-embedded")]
@@ -123,6 +135,7 @@ impl ClipboardFileTransfer {
             target_directory: None,
             total_files: 0,
             completed_count: 0,
+            save_failures: 0,
         }
     }
 
@@ -133,6 +146,7 @@ impl ClipboardFileTransfer {
         self.next_stream_id = 1;
         self.total_files = 0;
         self.completed_count = 0;
+        self.save_failures = 0;
     }
 
     /// Starts download for a file, returns stream_id
@@ -193,6 +207,26 @@ impl ClipboardFileTransfer {
         }
     }
 
+    /// Records that a fully received file could not be written to disk.
+    ///
+    /// The bytes arrived, so `completed_count` already counted it; this notes
+    /// that the save step failed so the batch summary can say "saved N, M
+    /// failed" instead of a bare "Saved N files".
+    pub const fn record_save_failure(&mut self) {
+        self.save_failures += 1;
+    }
+
+    /// Number of files that downloaded in full but could not be saved.
+    pub const fn save_failures(&self) -> usize {
+        self.save_failures
+    }
+
+    /// Files actually written to disk: everything that completed, minus the
+    /// ones whose disk write failed.
+    pub const fn saved_count(&self) -> usize {
+        self.completed_count.saturating_sub(self.save_failures)
+    }
+
     /// Saves a completed download to disk
     pub fn save_download(&self, stream_id: u32) -> Result<PathBuf, std::io::Error> {
         let state = self.downloads.get(&stream_id).ok_or_else(|| {
@@ -237,6 +271,7 @@ impl ClipboardFileTransfer {
         self.target_directory = None;
         self.total_files = 0;
         self.completed_count = 0;
+        self.save_failures = 0;
     }
 }
 
@@ -630,5 +665,58 @@ mod tests {
         assert!(t.cancel_download(sid));
         assert_eq!(t.file_index_of(sid), None);
         assert!(!t.cancel_download(sid));
+    }
+
+    /// A file whose bytes all arrived but whose disk write failed counts as
+    /// completed (the download did finish) yet not as saved, so the batch
+    /// summary can say "N saved, M failed" instead of claiming success.
+    #[test]
+    fn a_save_failure_is_counted_apart_from_a_saved_file() {
+        let (mut t, sid) = transfer_with_file(1000);
+        assert_eq!(
+            t.append_data(sid, &vec![0u8; 1000], false),
+            ChunkOutcome::Complete
+        );
+        // Downloaded, but the write to disk failed.
+        t.record_save_failure();
+
+        assert_eq!(t.completed_count, 1, "the download itself did complete");
+        assert_eq!(t.save_failures(), 1);
+        assert_eq!(t.saved_count(), 0, "nothing actually reached the disk");
+        // The batch is still settled, so the button is freed and the summary
+        // shown — it just reports the failure rather than a phantom success.
+        assert!(t.all_complete());
+    }
+
+    /// With no write failures, every completed file counts as saved.
+    #[test]
+    fn without_a_failure_saved_equals_completed() {
+        let (mut t, sid) = transfer_with_file(500);
+        assert_eq!(
+            t.append_data(sid, &vec![0u8; 500], false),
+            ChunkOutcome::Complete
+        );
+        assert_eq!(t.save_failures(), 0);
+        assert_eq!(t.saved_count(), 1);
+    }
+
+    /// A fresh file list resets the failure tally along with the rest, so a
+    /// later batch does not inherit an earlier one's failures.
+    #[test]
+    fn a_new_file_list_resets_the_save_failure_tally() {
+        let (mut t, sid) = transfer_with_file(100);
+        let _ = t.append_data(sid, &[0u8; 100], false);
+        t.record_save_failure();
+        assert_eq!(t.save_failures(), 1);
+
+        t.set_available_files(vec![ClipboardFileInfo::new(
+            "next.bin".to_string(),
+            10,
+            0,
+            0,
+            0,
+        )]);
+        assert_eq!(t.save_failures(), 0);
+        assert_eq!(t.saved_count(), 0);
     }
 }

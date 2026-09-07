@@ -499,6 +499,24 @@ fn build_download_request(
     })
 }
 
+/// Tells the GUI a download request never reached the server.
+///
+/// The download paths that fail before a request goes out — an out-of-range file
+/// index, `request_file_contents` refusing because the file clipboard was not
+/// negotiated — otherwise leave the batch's "Save N Files" button on
+/// "Downloading…" for that stream, because no size or data reply is coming.
+/// Routes through the backend so the same `ClipboardFileError` a server refusal
+/// raises is emitted here, which the GUI already knows how to unwind. A no-op
+/// when the CLIPRDR channel is gone, since there is then no backend to reach.
+fn fail_download(active_stage: &mut ActiveStage, stream_id: u32) {
+    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
+        && let Some(backend) =
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.emit_download_failed(stream_id);
+    }
+}
+
 /// Downloads a file from the *server's* clipboard (server → client).
 ///
 /// Turns a "Save N Files" request into a CLIPRDR File Contents *Request* PDU via
@@ -522,46 +540,54 @@ async fn handle_download_file_contents<W: FramedWrite>(
             file_index,
             "file index exceeds i32 range; skipping download request"
         );
+        // The GUI is waiting on this stream id; tell it the download will never
+        // arrive so its "Save N Files" button does not stay on "Downloading…".
+        fail_download(active_stage, stream_id);
         return;
     };
 
-    if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-        // Record the size expectation *before* sending, so the response — which
-        // can arrive on the very next read — is classified by request type
-        // rather than by guessing from an 8-byte payload.
-        if request_size
-            && let Some(backend) =
-                cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
-        {
-            backend.expect_size_response(stream_id);
-        }
-        match cliprdr.request_file_contents(request) {
-            Ok(messages) => {
-                if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
-                    let _ = writer.write_all(&frame).await;
-                    tracing::debug!(
-                        protocol = "rdp",
-                        stream_id,
-                        file_index,
-                        request_size,
-                        "File contents request sent to server"
-                    );
-                }
-            }
-            Err(e) => {
-                tracing::warn!(
+    let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
+        tracing::warn!(
+            protocol = "rdp",
+            stream_id,
+            "CLIPRDR channel not available for download"
+        );
+        return;
+    };
+
+    // Record the size expectation *before* sending, so the response — which
+    // can arrive on the very next read — is classified by request type
+    // rather than by guessing from an 8-byte payload.
+    if request_size
+        && let Some(backend) =
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+    {
+        backend.expect_size_response(stream_id);
+    }
+    match cliprdr.request_file_contents(request) {
+        Ok(messages) => {
+            if let Ok(frame) = active_stage.process_svc_processor_messages(messages) {
+                let _ = writer.write_all(&frame).await;
+                tracing::debug!(
                     protocol = "rdp",
                     stream_id,
-                    error = %e,
-                    "request_file_contents failed (file clipboard not negotiated?)"
+                    file_index,
+                    request_size,
+                    "File contents request sent to server"
                 );
             }
         }
-    } else {
-        tracing::warn!(
-            protocol = "rdp",
-            "CLIPRDR channel not available for download"
-        );
+        Err(e) => {
+            tracing::warn!(
+                protocol = "rdp",
+                stream_id,
+                error = %e,
+                "request_file_contents failed (file clipboard not negotiated?)"
+            );
+            // No request went out, so no reply is coming. Surface it as a failed
+            // download rather than leaving the batch waiting forever.
+            fail_download(active_stage, stream_id);
+        }
     }
 }
 
