@@ -358,6 +358,16 @@ pub struct EmbeddedRdpWidget {
     /// Flag to suppress clipboard change events when we set the clipboard
     /// ourselves (Copy button or Phase 2 auto-sync), preventing feedback loops.
     clipboard_sync_suppressed: Rc<RefCell<bool>>,
+    /// True while a file drag-and-drop offer is outstanding, i.e. between the
+    /// drop and the server either pulling the file or the offer timing out.
+    ///
+    /// CLIPRDR keeps a single current clipboard offer, so the local-clipboard
+    /// text-sync must not announce text while this is set — a text announce
+    /// replaces the file offer and the server then asks for text instead of the
+    /// file descriptor, so the transfer silently never happens. Cleared when the
+    /// server requests the file contents (offer consumed) or by a safety timeout,
+    /// so a drop cannot disable text sync for the rest of the session.
+    file_offer_active: Rc<Cell<bool>>,
     /// Mouse jiggler timer source ID (sends periodic mouse moves to prevent idle disconnect)
     jiggler_timer: Rc<RefCell<Option<glib::SourceId>>>,
     /// Circuit breaker for file drag-and-drop (auto-disables after repeated failures)
@@ -828,6 +838,7 @@ impl EmbeddedRdpWidget {
             last_resize_request_css: Rc::new(RefCell::new(None)),
             clipboard_monitor: Rc::new(RefCell::new(None)),
             clipboard_sync_suppressed: Rc::new(RefCell::new(false)),
+            file_offer_active: Rc::new(Cell::new(false)),
             jiggler_timer: Rc::new(RefCell::new(None)),
             file_dnd_circuit_breaker: Rc::new(RefCell::new(file_dnd::FileDndCircuitBreaker::new())),
             toast_overlay: Rc::new(RefCell::new(None)),
@@ -872,6 +883,7 @@ impl EmbeddedRdpWidget {
             let cb_for_callback = self.file_dnd_circuit_breaker.clone();
             let toast_overlay_ref = self.toast_overlay.clone();
             let config = self.config.clone();
+            let file_offer_active = self.file_offer_active.clone();
 
             file_dnd::setup_rdp_file_drop_target(
                 self.drawing_area.upcast_ref::<gtk4::Widget>(),
@@ -950,6 +962,29 @@ impl EmbeddedRdpWidget {
                                 Some("FileContents".to_string()),
                             ),
                         ];
+
+                        // Mark the file offer outstanding so the local-clipboard
+                        // text-sync does not replace it before the server pulls
+                        // the file (CLIPRDR keeps a single current offer). Cleared
+                        // when the server requests the contents, or by the safety
+                        // timeout below so a drop cannot mute text sync forever.
+                        file_offer_active.set(true);
+                        let clear_offer = file_offer_active.clone();
+                        // 30 s comfortably covers a server's request round-trip;
+                        // past that, assume the offer went unclaimed and let text
+                        // sync resume rather than stay muted for the session.
+                        glib::timeout_add_local_once(
+                            std::time::Duration::from_secs(30),
+                            move || {
+                                if clear_offer.replace(false) {
+                                    tracing::debug!(
+                                        protocol = "rdp",
+                                        "File clipboard offer expired unclaimed; \
+                                         re-enabling local clipboard text sync"
+                                    );
+                                }
+                            },
+                        );
 
                         // Announce the formats. The peer answers with a Format
                         // Data Request, which the backend serves from the parked

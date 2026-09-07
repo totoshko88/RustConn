@@ -931,6 +931,10 @@ impl super::EmbeddedRdpWidget {
         // Use the struct-level suppression flag so both the Copy button handler
         // and the Phase 2 auto-sync can suppress the clipboard-changed callback.
         let clipboard_sync_suppressed = self.clipboard_sync_suppressed.clone();
+        // Threaded into the local-clipboard monitor so a text change cannot
+        // replace an outstanding file drag-and-drop offer, and cleared when the
+        // server requests the file (offer consumed).
+        let file_offer_active = self.file_offer_active.clone();
 
         // Capture fallback-related state for auto-fallback on protocol errors
         // (e.g. xrdp ServerDemandActive incompatibility — IronRDP issue #139)
@@ -1236,6 +1240,7 @@ impl super::EmbeddedRdpWidget {
                                     let clipboard = display.clipboard();
                                     let tx = ironrdp_tx.clone();
                                     let suppressed = clipboard_sync_suppressed.clone();
+                                    let offer_active = file_offer_active.clone();
                                     // Drop a monitor left behind by an earlier
                                     // generation before installing this one; the
                                     // slot holds a single entry (issue #261).
@@ -1244,6 +1249,24 @@ impl super::EmbeddedRdpWidget {
                                         // Skip if this change was triggered by our own
                                         // server→client sync (Phase 2)
                                         if *suppressed.borrow() {
+                                            return;
+                                        }
+                                        // Skip while a file drag-and-drop offer is
+                                        // outstanding. CLIPRDR keeps a single current
+                                        // offer, so announcing text here would replace
+                                        // the file offer before the server pulled it —
+                                        // the server would then request text and the
+                                        // file would never transfer. A real text change
+                                        // during the drop is deferred rather than
+                                        // dropped: whatever ends up on the clipboard
+                                        // after the offer is consumed will announce
+                                        // itself on the next owner-change.
+                                        if offer_active.get() {
+                                            tracing::debug!(
+                                                protocol = "rdp",
+                                                "Local clipboard change ignored: a file offer is \
+                                                 outstanding (would override it)"
+                                            );
                                             return;
                                         }
                                         // Only announce text when the clipboard
@@ -1527,6 +1550,11 @@ impl super::EmbeddedRdpWidget {
                                 // that received the PDU has no writer, so it raised
                                 // this event; answer it by asking the session loop
                                 // to read the local file and submit the response.
+                                //
+                                // The offer has now been consumed, so lift the
+                                // text-sync hold — a later copy may legitimately
+                                // replace the clipboard once the file is on its way.
+                                file_offer_active.set(false);
                                 if let Some(ref sender) = *ironrdp_tx.borrow() {
                                     let _ = sender.send(RdpClientCommand::ProvideFileContents {
                                         stream_id,
