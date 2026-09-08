@@ -559,6 +559,44 @@ pub fn shell_single_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 
+/// Joins an `argv` array into one shell-safe line for a human-readable echo.
+///
+/// The command is spawned as a real `argv` array (`Command::args`), so an
+/// argument that contains spaces — such as `ProxyCommand=nc -X 5 %h %p` — is a
+/// single element and reaches `ssh` intact. A naive `join(" ")` for the
+/// "Executing:" echo loses that word boundary, making the value look split
+/// across several arguments and suggesting (wrongly) that the option was
+/// dropped (issue #322). Each element that is not already a bare shell word is
+/// single-quoted so the printed line is both accurate and copy-paste safe;
+/// simple tokens like `ssh`, `-o` or `user@host` are left unquoted for
+/// readability.
+#[must_use]
+pub fn format_argv_for_display(argv: &[String]) -> String {
+    argv.iter()
+        .map(|arg| {
+            if arg.is_empty() || arg.chars().any(is_shell_unsafe_char) {
+                shell_single_quote(arg)
+            } else {
+                arg.clone()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Reports whether a character forces an argument to be quoted for display.
+///
+/// Anything outside the conservative "bare word" set — letters, digits and the
+/// punctuation that routinely appears unquoted in an `ssh` invocation
+/// (`@`, `:`, `.`, `/`, `-`, `_`, `%`, `,`, `=`, `+`) — triggers quoting. A
+/// space is the common trigger (`ProxyCommand=nc -X 5 %h %p`); the rest keeps
+/// values with shell metacharacters safe to paste.
+fn is_shell_unsafe_char(c: char) -> bool {
+    let is_bare_word_char = c.is_ascii_alphanumeric()
+        || matches!(c, '@' | ':' | '.' | '/' | '-' | '_' | '%' | ',' | '=' | '+');
+    !is_bare_word_char
+}
+
 /// Converts a RustConn jump-host chain into the value for OpenSSH's `-J`
 /// (`ProxyJump`) option, fixing the hop direction.
 ///
@@ -1082,6 +1120,44 @@ mod tests {
         // The classic close-quote / escaped-quote / reopen-quote dance, so a
         // nested ProxyCommand survives the `sh -c` re-parse intact.
         assert_eq!(shell_single_quote("a'b"), "'a'\\''b'");
+    }
+
+    #[test]
+    fn test_format_argv_display_quotes_only_args_with_spaces() {
+        // issue #322: the ProxyCommand value has spaces and must be quoted so
+        // the echoed line does not look like several separate ssh arguments.
+        let argv = vec![
+            "ssh".to_string(),
+            "-o".to_string(),
+            "ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p".to_string(),
+            "user@host".to_string(),
+        ];
+        assert_eq!(
+            format_argv_for_display(&argv),
+            "ssh -o 'ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p' user@host"
+        );
+    }
+
+    #[test]
+    fn test_format_argv_display_leaves_bare_words_unquoted() {
+        let argv = vec![
+            "ssh".to_string(),
+            "-p".to_string(),
+            "2222".to_string(),
+            "-i".to_string(),
+            "/home/u/.ssh/id_ed25519".to_string(),
+            "admin@host".to_string(),
+        ];
+        assert_eq!(
+            format_argv_for_display(&argv),
+            "ssh -p 2222 -i /home/u/.ssh/id_ed25519 admin@host"
+        );
+    }
+
+    #[test]
+    fn test_format_argv_display_quotes_empty_arg() {
+        let argv = vec!["ssh".to_string(), String::new(), "host".to_string()];
+        assert_eq!(format_argv_for_display(&argv), "ssh '' host");
     }
 
     #[test]

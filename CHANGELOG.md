@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **The "Executing:" echo split a `ProxyCommand` value across arguments, making it look ignored (issue #322)** — an SSH connection with a custom `ProxyCommand` (e.g. `nc -X 5 -x 127.0.0.1:1080 %h %p`) is spawned as a real `argv` array, so the whole value is one element and reaches `ssh` intact — the proxy is applied. The human-readable "⚡ Executing:" line, however, was built with a plain `join(" ")`, which dropped the word boundary and printed `-o ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p user@host`. That reads as if only `ProxyCommand=nc` was passed and the rest were separate `ssh` arguments, so the option looks dropped even though it is not. The echo now quotes any argument containing spaces or shell metacharacters (via the new `ssh_tunnel::format_argv_for_display`), so it prints `-o 'ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p'` — accurate and copy-paste safe. Display-only change; the spawned command was already correct.
+
 ## [0.21.8] - 2026-09-07
 
 ### Fixed

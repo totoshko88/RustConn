@@ -1402,7 +1402,11 @@ fn start_ssh_connection_internal(
         host.clone()
     };
     ssh_cmd_parts.push(destination);
-    let ssh_command = ssh_cmd_parts.join(" ");
+    // Quote arguments with spaces (e.g. a ProxyCommand value) so the echoed
+    // line matches the single argv element that is actually spawned and is
+    // copy-paste safe — a plain join(" ") split it and read as if the option
+    // were dropped (issue #322).
+    let ssh_command = rustconn_core::ssh_tunnel::format_argv_for_display(&ssh_cmd_parts);
 
     // Display CLI output feedback before executing command
     let conn_msg = format_connection_message("SSH", &host);
@@ -1780,7 +1784,11 @@ pub fn reconnect_ssh_in_place(
         host.clone()
     };
     ssh_cmd_parts.push(destination);
-    let ssh_command = ssh_cmd_parts.join(" ");
+    // Quote arguments with spaces (e.g. a ProxyCommand value) so the echoed
+    // line matches the single argv element that is actually spawned and is
+    // copy-paste safe — a plain join(" ") split it and read as if the option
+    // were dropped (issue #322).
+    let ssh_command = rustconn_core::ssh_tunnel::format_argv_for_display(&ssh_cmd_parts);
 
     // Display CLI output feedback
     let conn_msg = format_connection_message("SSH", &host);
