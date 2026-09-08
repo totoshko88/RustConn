@@ -1270,12 +1270,9 @@ fn start_ssh_connection_internal(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution (secret values resolved from vault)
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution (secret values resolved from vault),
+    // overlaid with this connection's interactive `@ask:` answers.
+    let global_variables = super::protocols::resolve_globals_with_ask(state, connection_id);
 
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
@@ -1717,12 +1714,10 @@ pub fn reconnect_ssh_in_place(
         notebook.set_history_entry_id(session_id, entry_id);
     }
 
-    // Get global variables for substitution
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution, overlaid with this connection's
+    // interactive `@ask:` answers (kept from the initial connect so a reconnect
+    // does not re-prompt).
+    let global_variables = super::protocols::resolve_globals_with_ask(state, connection_id);
 
     let host = substitute_variables(&conn.host, &global_variables);
     let username = conn

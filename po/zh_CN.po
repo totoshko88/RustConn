@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 18:21+0300\n"
+"POT-Creation-Date: 2026-09-08 12:26+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -24,7 +24,7 @@ msgid "OK"
 msgstr "确定"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/cluster.rs:623
+#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:623
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:298
@@ -155,7 +155,7 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:756
-#: rustconn/src/embedded_rdp/mod.rs:2018
+#: rustconn/src/embedded_rdp/mod.rs:2031
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -165,6 +165,21 @@ msgstr "会话已断开"
 #: rustconn/src/detached_window.rs:411
 msgid "Move to Main Window"
 msgstr "移动到主窗口"
+
+#: rustconn/src/dialogs/ask_prompt.rs:63
+msgid "Enter Connection Details"
+msgstr "输入连接详情"
+
+#: rustconn/src/dialogs/ask_prompt.rs:65
+msgid "‘{}’ needs the following before it can connect."
+msgstr "“{}” 连接前需要以下信息。"
+
+#: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
+#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
+#: rustconn/src/window/edit_dialogs.rs:741
+msgid "Connect"
+msgstr "连接"
 
 #: rustconn/src/dialogs/backend_missing.rs:47
 msgid "Could not read the password from {}"
@@ -4506,13 +4521,6 @@ msgstr "您打开的连接将显示在此处"
 #: rustconn/src/dialogs/history.rs:97
 msgid "Clear History"
 msgstr "清除历史"
-
-#: rustconn/src/dialogs/history.rs:105 rustconn/src/dialogs/widgets.rs:466
-#: rustconn/src/sidebar_ui.rs:345 rustconn/src/smart_folder_ui.rs:431
-#: rustconn/src/window/edit_dialogs.rs:740
-#: rustconn/src/window/edit_dialogs.rs:741
-msgid "Connect"
-msgstr "连接"
 
 #: rustconn/src/dialogs/history.rs:194
 msgid "Clear History?"
@@ -9162,19 +9170,19 @@ msgstr "资源监视器"
 msgid "Computer Management"
 msgstr "计算机管理"
 
-#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1073
+#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1086
 msgid "Shell Launchers"
 msgstr "Shell 启动器"
 
-#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1090
+#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1103
 msgid "Scripts"
 msgstr "脚本"
 
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1068
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1081
 msgid "PowerShell (Admin)"
 msgstr "PowerShell（管理员）"
 
-#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1072
+#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1085
 msgid "CMD (Admin)"
 msgstr "CMD（管理员）"
 
@@ -9246,38 +9254,38 @@ msgstr "重连"
 msgid "Reconnect to this session"
 msgstr "重新连接到此会话"
 
-#: rustconn/src/embedded_rdp/mod.rs:924
+#: rustconn/src/embedded_rdp/mod.rs:925
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "启用剪贴板共享以将文件发送到远程会话"
 
-#: rustconn/src/embedded_rdp/mod.rs:1000
+#: rustconn/src/embedded_rdp/mod.rs:1001
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
 msgstr "已复制 {} 个文件到远程剪贴板 — 在会话中按 Ctrl+V 粘贴"
 
-#: rustconn/src/embedded_rdp/mod.rs:1066
+#: rustconn/src/embedded_rdp/mod.rs:1079
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1071
+#: rustconn/src/embedded_rdp/mod.rs:1084
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1150 rustconn/src/embedded_rdp/mod.rs:1221
-#: rustconn/src/embedded_rdp/mod.rs:1479
+#: rustconn/src/embedded_rdp/mod.rs:1163 rustconn/src/embedded_rdp/mod.rs:1234
+#: rustconn/src/embedded_rdp/mod.rs:1492
 msgid "Channel not ready"
 msgstr "通道未就绪"
 
-#: rustconn/src/embedded_rdp/mod.rs:1195 rustconn/src/embedded_rdp/mod.rs:1248
+#: rustconn/src/embedded_rdp/mod.rs:1208 rustconn/src/embedded_rdp/mod.rs:1261
 msgid "Script sent"
 msgstr "脚本已发送"
 
-#: rustconn/src/embedded_rdp/mod.rs:1294 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "运行代码片段？"
 
-#: rustconn/src/embedded_rdp/mod.rs:1301 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1314 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -9287,23 +9295,23 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:113
+#: rustconn/src/embedded_rdp/mod.rs:1320 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "运行"
 
-#: rustconn/src/embedded_rdp/mod.rs:1524
+#: rustconn/src/embedded_rdp/mod.rs:1537
 msgid "Select folder to save files"
 msgstr "选择保存文件的文件夹"
 
-#: rustconn/src/embedded_rdp/mod.rs:1555
+#: rustconn/src/embedded_rdp/mod.rs:1568
 msgid "Downloading…"
 msgstr "下载中…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1585
+#: rustconn/src/embedded_rdp/mod.rs:1598
 msgid "Downloading files…"
 msgstr "正在下载文件…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2003
+#: rustconn/src/embedded_rdp/mod.rs:2016
 msgid "Connection may have been lost while the computer slept"
 msgstr "计算机睡眠期间连接可能已断开"
 
@@ -10723,8 +10731,8 @@ msgstr "无法将变量保存到保险库：{}"
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr "未找到 '{}' 的密码库条目。系统将提示您输入密码。"
 
-#: rustconn/src/window/credentials.rs:871
-#: rustconn/src/window/credentials.rs:1098
+#: rustconn/src/window/credentials.rs:983
+#: rustconn/src/window/credentials.rs:1210
 #: rustconn/src/window/edit_actions.rs:1376
 msgid "Connection failed. Host unreachable."
 msgstr "连接失败。主机不可达。"
@@ -11477,39 +11485,39 @@ msgstr "已移动 {} 个项目。"
 msgid "Failed to move {} item(s):"
 msgstr "移动 {} 个项目失败："
 
-#: rustconn/src/window/protocols.rs:598
+#: rustconn/src/window/protocols.rs:692
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "无法启动外部查看器 ‘{}’：{}"
 
-#: rustconn/src/window/protocols.rs:1064 rustconn/src/window/rdp_vnc.rs:1376
+#: rustconn/src/window/protocols.rs:1155 rustconn/src/window/rdp_vnc.rs:1376
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "未找到 VNC 查看器。请安装 TigerVNC 或 Remmina。"
 
-#: rustconn/src/window/protocols.rs:1398
+#: rustconn/src/window/protocols.rs:1486
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "未找到 SPICE 查看器。请安装 virt-viewer。"
 
-#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/protocols.rs:2086
+#: rustconn/src/window/protocols.rs:1666 rustconn/src/window/protocols.rs:2167
 msgid "Invalid variable: {}"
 msgstr "无效变量：{}"
 
-#: rustconn/src/window/protocols.rs:2003
+#: rustconn/src/window/protocols.rs:2087
 msgid "Invalid config: {}"
 msgstr "配置无效：{}"
 
-#: rustconn/src/window/protocols.rs:2183
+#: rustconn/src/window/protocols.rs:2264
 msgid "Install picocom for Serial connections"
 msgstr "安装 picocom 以支持串口连接"
 
-#: rustconn/src/window/protocols.rs:2364
+#: rustconn/src/window/protocols.rs:2442
 msgid "Install kubectl for Kubernetes connections"
 msgstr "安装 kubectl 以支持 Kubernetes 连接"
 
-#: rustconn/src/window/protocols.rs:2382
+#: rustconn/src/window/protocols.rs:2460
 msgid "Configure pod and container for Kubernetes"
 msgstr "为 Kubernetes 配置 pod 和容器"
 
-#: rustconn/src/window/protocols.rs:2627
+#: rustconn/src/window/protocols.rs:2702
 msgid "Install mosh for MOSH connections"
 msgstr "安装 mosh 以支持 MOSH 连接"
 

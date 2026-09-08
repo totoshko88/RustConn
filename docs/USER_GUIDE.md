@@ -383,6 +383,16 @@ A set of **dynamic built-ins** is also available without defining anything, usef
 
 The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values), not in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
 
+**Ask at connect time (`@ask:`).** Give a variable a value that starts with `@ask:` and RustConn asks you for it in a dialog every time a connection that references it opens, then substitutes what you type. This lets one connection serve several targets without duplicating it — the classic case is a host that changes:
+
+| Variable value | What happens at connect |
+|----------------|-------------------------|
+| `@ask:Enter the ticket number` | A text field asks for the value |
+| `@ask?:One-time code` | A hidden field (input not shown), for a token or PIN |
+| `@ask:Select host\|prod.example\|staging.example` | A dropdown to pick one of the listed options |
+
+Set a connection's Host to `${target}` and define a local variable `target` = `@ask:Select host|prod.example.com|staging.example.com`; on connect you choose the host from a dropdown. The prompt is collected from every field substituted at launch — Host, Username, an SSH startup command, a Custom Command, and enabled Expect responses — and all a connection's questions appear in one dialog. Answers apply to that connect only (the stored variable keeps its `@ask:` directive, so the next connect asks again) and are reused if the session reconnects. A hidden (`@ask?:`) answer is never written to disk. Cancelling the dialog cancels the connection.
+
 Behaviour worth knowing:
 
 - Undefined variables remain as literal text (e.g. `${UNKNOWN}` is sent as-is), and a warning naming them goes to the log. A `${password}` that stays literal means the connection has no Password Source configured.

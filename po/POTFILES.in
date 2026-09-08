@@ -41,6 +41,7 @@ rustconn/src/window/split_view_actions.rs
 rustconn/src/window/ui.rs
 rustconn/src/window/workspaces.rs
 rustconn/src/dialogs/mod.rs
+rustconn/src/dialogs/ask_prompt.rs
 rustconn/src/dialogs/connection/advanced_tab.rs
 rustconn/src/dialogs/connection/automation_tab.rs
 rustconn/src/dialogs/connection/builders.rs

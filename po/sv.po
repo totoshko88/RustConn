@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 18:21+0300\n"
+"POT-Creation-Date: 2026-09-08 12:26+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -23,7 +23,7 @@ msgid "OK"
 msgstr "OK"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/cluster.rs:623
+#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:623
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:298
@@ -160,7 +160,7 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:756
-#: rustconn/src/embedded_rdp/mod.rs:2018
+#: rustconn/src/embedded_rdp/mod.rs:2031
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -170,6 +170,21 @@ msgstr "Session frånkopplad"
 #: rustconn/src/detached_window.rs:411
 msgid "Move to Main Window"
 msgstr "Flytta till huvudfönstret"
+
+#: rustconn/src/dialogs/ask_prompt.rs:63
+msgid "Enter Connection Details"
+msgstr "Ange anslutningsuppgifter"
+
+#: rustconn/src/dialogs/ask_prompt.rs:65
+msgid "‘{}’ needs the following before it can connect."
+msgstr "”{}” behöver följande innan anslutning kan ske."
+
+#: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
+#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
+#: rustconn/src/window/edit_dialogs.rs:741
+msgid "Connect"
+msgstr "Anslut"
 
 #: rustconn/src/dialogs/backend_missing.rs:47
 msgid "Could not read the password from {}"
@@ -4579,13 +4594,6 @@ msgstr "Anslutningar du öppnar visas här"
 #: rustconn/src/dialogs/history.rs:97
 msgid "Clear History"
 msgstr "Rensa historik"
-
-#: rustconn/src/dialogs/history.rs:105 rustconn/src/dialogs/widgets.rs:466
-#: rustconn/src/sidebar_ui.rs:345 rustconn/src/smart_folder_ui.rs:431
-#: rustconn/src/window/edit_dialogs.rs:740
-#: rustconn/src/window/edit_dialogs.rs:741
-msgid "Connect"
-msgstr "Anslut"
 
 #: rustconn/src/dialogs/history.rs:194
 msgid "Clear History?"
@@ -9342,19 +9350,19 @@ msgstr "Resursövervakaren"
 msgid "Computer Management"
 msgstr "Datorhantering"
 
-#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1073
+#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1086
 msgid "Shell Launchers"
 msgstr "Skalstartare"
 
-#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1090
+#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1103
 msgid "Scripts"
 msgstr "Skript"
 
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1068
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1081
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1072
+#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1085
 msgid "CMD (Admin)"
 msgstr "CMD (Admin)"
 
@@ -9427,38 +9435,40 @@ msgstr "Återanslut"
 msgid "Reconnect to this session"
 msgstr "Återanslut till denna session"
 
-#: rustconn/src/embedded_rdp/mod.rs:924
+#: rustconn/src/embedded_rdp/mod.rs:925
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "Aktivera delning av urklipp för att skicka filer till fjärrsessionen"
 
-#: rustconn/src/embedded_rdp/mod.rs:1000
+#: rustconn/src/embedded_rdp/mod.rs:1001
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
-msgstr "{} fil(er) kopierade till fjärrurklipp — tryck Ctrl+V i sessionen för att klistra in"
+msgstr ""
+"{} fil(er) kopierade till fjärrurklipp — tryck Ctrl+V i sessionen för att "
+"klistra in"
 
-#: rustconn/src/embedded_rdp/mod.rs:1066
+#: rustconn/src/embedded_rdp/mod.rs:1079
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1071
+#: rustconn/src/embedded_rdp/mod.rs:1084
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1150 rustconn/src/embedded_rdp/mod.rs:1221
-#: rustconn/src/embedded_rdp/mod.rs:1479
+#: rustconn/src/embedded_rdp/mod.rs:1163 rustconn/src/embedded_rdp/mod.rs:1234
+#: rustconn/src/embedded_rdp/mod.rs:1492
 msgid "Channel not ready"
 msgstr "Kanal inte redo"
 
-#: rustconn/src/embedded_rdp/mod.rs:1195 rustconn/src/embedded_rdp/mod.rs:1248
+#: rustconn/src/embedded_rdp/mod.rs:1208 rustconn/src/embedded_rdp/mod.rs:1261
 msgid "Script sent"
 msgstr "Skript skickat"
 
-#: rustconn/src/embedded_rdp/mod.rs:1294 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Kör utdrag?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1301 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1314 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -9468,23 +9478,23 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:113
+#: rustconn/src/embedded_rdp/mod.rs:1320 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Kör"
 
-#: rustconn/src/embedded_rdp/mod.rs:1524
+#: rustconn/src/embedded_rdp/mod.rs:1537
 msgid "Select folder to save files"
 msgstr "Välj mapp för att spara filer"
 
-#: rustconn/src/embedded_rdp/mod.rs:1555
+#: rustconn/src/embedded_rdp/mod.rs:1568
 msgid "Downloading…"
 msgstr "Laddar ner…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1585
+#: rustconn/src/embedded_rdp/mod.rs:1598
 msgid "Downloading files…"
 msgstr "Laddar ner filer…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2003
+#: rustconn/src/embedded_rdp/mod.rs:2016
 msgid "Connection may have been lost while the computer slept"
 msgstr "Anslutningen kan ha brutits medan datorn sov"
 
@@ -10917,8 +10927,8 @@ msgstr ""
 "Valvpost hittades inte för '{}'. Du kommer att uppmanas att ange ett "
 "lösenord."
 
-#: rustconn/src/window/credentials.rs:871
-#: rustconn/src/window/credentials.rs:1098
+#: rustconn/src/window/credentials.rs:983
+#: rustconn/src/window/credentials.rs:1210
 #: rustconn/src/window/edit_actions.rs:1376
 msgid "Connection failed. Host unreachable."
 msgstr "Anslutning misslyckades. Värd onåbar."
@@ -11699,39 +11709,39 @@ msgstr "Flyttade {} objekt."
 msgid "Failed to move {} item(s):"
 msgstr "Kunde inte flytta {} objekt:"
 
-#: rustconn/src/window/protocols.rs:598
+#: rustconn/src/window/protocols.rs:692
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "Det gick inte att starta den externa visaren ‘{}’: {}"
 
-#: rustconn/src/window/protocols.rs:1064 rustconn/src/window/rdp_vnc.rs:1376
+#: rustconn/src/window/protocols.rs:1155 rustconn/src/window/rdp_vnc.rs:1376
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Ingen VNC-visare hittades. Installera TigerVNC eller Remmina."
 
-#: rustconn/src/window/protocols.rs:1398
+#: rustconn/src/window/protocols.rs:1486
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Ingen SPICE-visare hittades. Installera virt-viewer."
 
-#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/protocols.rs:2086
+#: rustconn/src/window/protocols.rs:1666 rustconn/src/window/protocols.rs:2167
 msgid "Invalid variable: {}"
 msgstr "Ogiltig variabel: {}"
 
-#: rustconn/src/window/protocols.rs:2003
+#: rustconn/src/window/protocols.rs:2087
 msgid "Invalid config: {}"
 msgstr "Ogiltig konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:2183
+#: rustconn/src/window/protocols.rs:2264
 msgid "Install picocom for Serial connections"
 msgstr "Installera picocom för seriella anslutningar"
 
-#: rustconn/src/window/protocols.rs:2364
+#: rustconn/src/window/protocols.rs:2442
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installera kubectl för Kubernetes-anslutningar"
 
-#: rustconn/src/window/protocols.rs:2382
+#: rustconn/src/window/protocols.rs:2460
 msgid "Configure pod and container for Kubernetes"
 msgstr "Konfigurera pod och container för Kubernetes"
 
-#: rustconn/src/window/protocols.rs:2627
+#: rustconn/src/window/protocols.rs:2702
 msgid "Install mosh for MOSH connections"
 msgstr "Installera mosh för MOSH-anslutningar"
 

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-07 18:21+0300\n"
+"POT-Creation-Date: 2026-09-08 12:26+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -29,7 +29,7 @@ msgid "OK"
 msgstr "Гаразд"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/cluster.rs:623
+#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:623
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:298
@@ -165,7 +165,7 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:140 rustconn/src/embedded_rdp/mod.rs:756
-#: rustconn/src/embedded_rdp/mod.rs:2018
+#: rustconn/src/embedded_rdp/mod.rs:2031
 #: rustconn/src/embedded_rdp/polling_handlers.rs:69
 #: rustconn/src/embedded_vnc/ui.rs:142
 #: rustconn/src/terminal/session_lifecycle.rs:337
@@ -175,6 +175,21 @@ msgstr "Сеанс від'єднано"
 #: rustconn/src/detached_window.rs:411
 msgid "Move to Main Window"
 msgstr "Перемісти до головного вікна"
+
+#: rustconn/src/dialogs/ask_prompt.rs:63
+msgid "Enter Connection Details"
+msgstr "Введи параметри з’єднанка"
+
+#: rustconn/src/dialogs/ask_prompt.rs:65
+msgid "‘{}’ needs the following before it can connect."
+msgstr "«{}» потребує такого перед з’єднуванням."
+
+#: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
+#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
+#: rustconn/src/window/edit_dialogs.rs:741
+msgid "Connect"
+msgstr "З'єднайся"
 
 #: rustconn/src/dialogs/backend_missing.rs:47
 msgid "Could not read the password from {}"
@@ -4588,13 +4603,6 @@ msgstr "З'єднки, які ви відкриваєте, з'являться �
 #: rustconn/src/dialogs/history.rs:97
 msgid "Clear History"
 msgstr "Очисть історію"
-
-#: rustconn/src/dialogs/history.rs:105 rustconn/src/dialogs/widgets.rs:466
-#: rustconn/src/sidebar_ui.rs:345 rustconn/src/smart_folder_ui.rs:431
-#: rustconn/src/window/edit_dialogs.rs:740
-#: rustconn/src/window/edit_dialogs.rs:741
-msgid "Connect"
-msgstr "З'єднайся"
 
 #: rustconn/src/dialogs/history.rs:194
 msgid "Clear History?"
@@ -9344,19 +9352,19 @@ msgstr "Монітор ресурсів"
 msgid "Computer Management"
 msgstr "Керування комп'ютером"
 
-#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1073
+#: rustconn/src/embedded_rdp/mod.rs:406 rustconn/src/embedded_rdp/mod.rs:1086
 msgid "Shell Launchers"
 msgstr "Запуск оболонок"
 
-#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1090
+#: rustconn/src/embedded_rdp/mod.rs:408 rustconn/src/embedded_rdp/mod.rs:1103
 msgid "Scripts"
 msgstr "Скрипти"
 
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1068
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1081
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Адмін)"
 
-#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1072
+#: rustconn/src/embedded_rdp/mod.rs:411 rustconn/src/embedded_rdp/mod.rs:1085
 msgid "CMD (Admin)"
 msgstr "CMD (Адмін)"
 
@@ -9428,38 +9436,40 @@ msgstr "Перепід'єднай"
 msgid "Reconnect to this session"
 msgstr "Перез'єднайся із цим сеансом"
 
-#: rustconn/src/embedded_rdp/mod.rs:924
+#: rustconn/src/embedded_rdp/mod.rs:925
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "Увімкни спільний буфер обміну, щоб надсилати файли у віддалений сеанс"
 
-#: rustconn/src/embedded_rdp/mod.rs:1000
+#: rustconn/src/embedded_rdp/mod.rs:1001
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
-msgstr "{} файл(ів) скопійовано у віддалений буфер обміну — натисни Ctrl+V у сеансі, щоб вставити"
+msgstr ""
+"{} файл(ів) скопійовано у віддалений буфер обміну — натисни Ctrl+V у сеансі, "
+"щоб вставити"
 
-#: rustconn/src/embedded_rdp/mod.rs:1066
+#: rustconn/src/embedded_rdp/mod.rs:1079
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1071
+#: rustconn/src/embedded_rdp/mod.rs:1084
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1150 rustconn/src/embedded_rdp/mod.rs:1221
-#: rustconn/src/embedded_rdp/mod.rs:1479
+#: rustconn/src/embedded_rdp/mod.rs:1163 rustconn/src/embedded_rdp/mod.rs:1234
+#: rustconn/src/embedded_rdp/mod.rs:1492
 msgid "Channel not ready"
 msgstr "Канал не готовий"
 
-#: rustconn/src/embedded_rdp/mod.rs:1195 rustconn/src/embedded_rdp/mod.rs:1248
+#: rustconn/src/embedded_rdp/mod.rs:1208 rustconn/src/embedded_rdp/mod.rs:1261
 msgid "Script sent"
 msgstr "Скрипт надіслано"
 
-#: rustconn/src/embedded_rdp/mod.rs:1294 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Запустити сніпета?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1301 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1314 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -9469,23 +9479,23 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1307 rustconn/src/window/snippets.rs:113
+#: rustconn/src/embedded_rdp/mod.rs:1320 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Запусти"
 
-#: rustconn/src/embedded_rdp/mod.rs:1524
+#: rustconn/src/embedded_rdp/mod.rs:1537
 msgid "Select folder to save files"
 msgstr "Обери теку, де зберігатимеш файли"
 
-#: rustconn/src/embedded_rdp/mod.rs:1555
+#: rustconn/src/embedded_rdp/mod.rs:1568
 msgid "Downloading…"
 msgstr "Завантаження…"
 
-#: rustconn/src/embedded_rdp/mod.rs:1585
+#: rustconn/src/embedded_rdp/mod.rs:1598
 msgid "Downloading files…"
 msgstr "Завантаження файлів…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2003
+#: rustconn/src/embedded_rdp/mod.rs:2016
 msgid "Connection may have been lost while the computer slept"
 msgstr "Можливо, з'єднок утрачено, поки комп'ютер спав"
 
@@ -10916,8 +10926,8 @@ msgid "Vault entry not found for '{}'. You will be prompted for a password."
 msgstr ""
 "Запис у сховищі не знайдено для '{}'. Вам буде запропоновано ввести пароль."
 
-#: rustconn/src/window/credentials.rs:871
-#: rustconn/src/window/credentials.rs:1098
+#: rustconn/src/window/credentials.rs:983
+#: rustconn/src/window/credentials.rs:1210
 #: rustconn/src/window/edit_actions.rs:1376
 msgid "Connection failed. Host unreachable."
 msgstr "З'єднок не вдався. Гост недоступний."
@@ -11697,39 +11707,39 @@ msgstr "Переміщено {} складників."
 msgid "Failed to move {} item(s):"
 msgstr "Не вдалося перемістити {} складників:"
 
-#: rustconn/src/window/protocols.rs:598
+#: rustconn/src/window/protocols.rs:692
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "Не вдалося запустити зовнішній переглядач ‘{}’: {}"
 
-#: rustconn/src/window/protocols.rs:1064 rustconn/src/window/rdp_vnc.rs:1376
+#: rustconn/src/window/protocols.rs:1155 rustconn/src/window/rdp_vnc.rs:1376
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Переглядач VNC не знайдено. Встанови TigerVNC або Remmina."
 
-#: rustconn/src/window/protocols.rs:1398
+#: rustconn/src/window/protocols.rs:1486
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Переглядач SPICE не знайдено. Встанови virt-viewer."
 
-#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/protocols.rs:2086
+#: rustconn/src/window/protocols.rs:1666 rustconn/src/window/protocols.rs:2167
 msgid "Invalid variable: {}"
 msgstr "Хибна змінниця: {}"
 
-#: rustconn/src/window/protocols.rs:2003
+#: rustconn/src/window/protocols.rs:2087
 msgid "Invalid config: {}"
 msgstr "Хибна конфігурація: {}"
 
-#: rustconn/src/window/protocols.rs:2183
+#: rustconn/src/window/protocols.rs:2264
 msgid "Install picocom for Serial connections"
 msgstr "Встанови picocom для Serial-з'єднків"
 
-#: rustconn/src/window/protocols.rs:2364
+#: rustconn/src/window/protocols.rs:2442
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Встанови kubectl для Kubernetes-з'єднків"
 
-#: rustconn/src/window/protocols.rs:2382
+#: rustconn/src/window/protocols.rs:2460
 msgid "Configure pod and container for Kubernetes"
 msgstr "Налаштуй pod і контейнер для Kubernetes"
 
-#: rustconn/src/window/protocols.rs:2627
+#: rustconn/src/window/protocols.rs:2702
 msgid "Install mosh for MOSH connections"
 msgstr "Встанови mosh для MOSH-з'єднків"
 
