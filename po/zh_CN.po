@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 15:27+0300\n"
+"POT-Creation-Date: 2026-09-08 15:54+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -10748,7 +10748,7 @@ msgstr "未找到 '{}' 的密码库条目。系统将提示您输入密码。"
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1854
+#: rustconn/src/window/edit_actions.rs:2003
 msgid "Connection failed. Host unreachable."
 msgstr "连接失败。主机不可达。"
 
@@ -10879,7 +10879,7 @@ msgid "Opening mc SFTP…"
 msgstr "正在打开 mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:885
-#: rustconn/src/window/edit_actions.rs:2025
+#: rustconn/src/window/edit_actions.rs:2174
 msgid ""
 "External file managers cannot access SSH agent in Flatpak."
 "                          Enable \"SFTP via mc\" in Settings for reliable "
@@ -10889,7 +10889,7 @@ msgstr ""
 "mc\" 以获得可靠的访问。"
 
 #: rustconn/src/window/edit_actions.rs:901
-#: rustconn/src/window/edit_actions.rs:2043
+#: rustconn/src/window/edit_actions.rs:2192
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "检测到跳转主机。将通过 mc 而不是文件管理器打开 SFTP。"
 
@@ -10909,27 +10909,7 @@ msgstr "应用正忙"
 msgid "the SSH connection it tunnels through is gone"
 msgstr "隧道所经的 SSH 连接已不存在"
 
-#: rustconn/src/window/edit_actions.rs:1295
-#: rustconn/src/window/edit_actions.rs:1503
-#: rustconn/src/window/edit_actions.rs:1586
-msgid "Could not open the SSH tunnel: {}"
-msgstr "无法打开 SSH 隧道：{}"
-
-#: rustconn/src/window/edit_actions.rs:1315
-msgid "{} (tunnel)"
-msgstr "{}（隧道）"
-
-#: rustconn/src/window/edit_actions.rs:1332
-#: rustconn/src/window/edit_actions.rs:1541
-msgid "Could not open the page: {}"
-msgstr "无法打开页面：{}"
-
-#: rustconn/src/window/edit_actions.rs:1344
-#: rustconn/src/window/edit_actions.rs:1403
-msgid "Failed to open browser: {}"
-msgstr "无法打开浏览器：{}"
-
-#: rustconn/src/window/edit_actions.rs:1358
+#: rustconn/src/window/edit_actions.rs:1392
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a "
@@ -10938,40 +10918,65 @@ msgstr ""
 "隧道浏览器命令 ‘{}’ 不是基于 Chromium 的浏览器。只有 Chromium 系浏览器才能通过隧道代理；请在设置中指定 "
 "chromium/chrome/brave/vivaldi/edge 命令。"
 
-#: rustconn/src/window/edit_actions.rs:1365
+#: rustconn/src/window/edit_actions.rs:1399
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
 msgstr "在 PATH 中未找到隧道浏览器命令 ‘{}’。请在设置中检查命令，或清空它以自动检测浏览器。"
 
-#: rustconn/src/window/edit_actions.rs:1372
-msgid ""
-"No Chromium-based browser found. Install one, or enable the embedded "
-"browser, to open a tunnelled browser."
-msgstr "未找到基于 Chromium 的浏览器。请安装一个，或启用内置浏览器。"
+#: rustconn/src/window/edit_actions.rs:1410
+#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1724
+msgid "Could not open the SSH tunnel: {}"
+msgstr "无法打开 SSH 隧道：{}"
 
-#: rustconn/src/window/edit_actions.rs:1398
+#: rustconn/src/window/edit_actions.rs:1435
+msgid ""
+"No Chromium-based browser found; opening the embedded browser instead. "
+"Install a Chromium-based browser to tunnel an external one."
+msgstr "未找到基于 Chromium 的浏览器；改为打开内置浏览器。请安装基于 Chromium 的浏览器以隧道化外部浏览器。"
+
+#: rustconn/src/window/edit_actions.rs:1449
+msgid ""
+"No Chromium-based browser found. Install one to open a tunnelled browser."
+msgstr "未找到基于 Chromium 的浏览器。请安装一个以打开隧道浏览器。"
+
+#: rustconn/src/window/edit_actions.rs:1483
 msgid "Opened a tunnelled browser"
 msgstr "已打开隧道浏览器"
 
-#: rustconn/src/window/edit_actions.rs:1566
-#: rustconn/src/window/edit_actions.rs:1662
-#: rustconn/src/window/edit_actions.rs:1689
+#: rustconn/src/window/edit_actions.rs:1488
+#: rustconn/src/window/edit_actions.rs:1541
+msgid "Failed to open browser: {}"
+msgstr "无法打开浏览器：{}"
+
+#: rustconn/src/window/edit_actions.rs:1518
+msgid "{} (tunnel)"
+msgstr "{}（隧道）"
+
+#: rustconn/src/window/edit_actions.rs:1532
+#: rustconn/src/window/edit_actions.rs:1679
+msgid "Could not open the page: {}"
+msgstr "无法打开页面：{}"
+
+#: rustconn/src/window/edit_actions.rs:1704
+#: rustconn/src/window/edit_actions.rs:1811
+#: rustconn/src/window/edit_actions.rs:1838
 msgid "Failed to open URL: {}"
 msgstr "打开 URL 失败：{}"
 
-#: rustconn/src/window/edit_actions.rs:1611
+#: rustconn/src/window/edit_actions.rs:1757
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
 msgstr "无法从命令行为此浏览器建立隔离隧道。请使用基于 Chromium 的浏览器或嵌入式浏览器进行 SSH 隔离隧道。"
 
-#: rustconn/src/window/edit_actions.rs:1651
-#: rustconn/src/window/edit_actions.rs:1703
+#: rustconn/src/window/edit_actions.rs:1800
+#: rustconn/src/window/edit_actions.rs:1852
 msgid "Opened in browser"
 msgstr "已在浏览器中打开"
 
-#: rustconn/src/window/edit_actions.rs:1676
+#: rustconn/src/window/edit_actions.rs:1825
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
 " browser opens without the tunnel."

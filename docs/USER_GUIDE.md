@@ -1340,12 +1340,19 @@ works; a value without a scheme is treated as `https://`.
 
 For the external (non-embedded) path, **External browser command (tunnelled)**
 lets you name the browser to use, the same way a Web connection's **Custom
-Browser** command does. Leave it empty to auto-detect (`$BROWSER`, then the first
-Chromium-family binary on `PATH`), or set a command or path — for example
-`chromium`, `brave-browser`, or `/opt/foo/chrome`, optionally with extra arguments
-before the proxy flags. It must be a Chromium-family browser, since only those
-take a command-line `--proxy-server`; a non-Chromium or missing command is
-reported as a toast rather than opening un-tunnelled.
+Browser** command does. Set a command or path — for example `chromium`,
+`brave-browser`, or `/opt/foo/chrome`, optionally with extra arguments before the
+proxy flags. It must be a Chromium-family browser, since only those take a
+command-line `--proxy-server`; a non-Chromium or missing command is reported as a
+toast rather than opening un-tunnelled.
+
+Leave the command empty to auto-detect, in this order: your system default
+browser (via `xdg-settings`) when it is Chromium-family, then `$BROWSER`, then the
+first Chromium binary found on `PATH`. So if your default browser is Chrome or
+Brave, that is what opens. When the default is Firefox or another browser that
+cannot take a command-line proxy, RustConn uses an installed Chromium binary
+instead; if none exists, it opens the embedded browser (which can always tunnel)
+and shows a toast suggesting you install a Chromium-based browser.
 
 If the tunnel cannot be raised, or no Chromium-based browser is found for the
 external mode, RustConn shows a toast and opens nothing — it never falls back to

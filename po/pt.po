@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 15:27+0300\n"
+"POT-Creation-Date: 2026-09-08 15:54+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -11050,7 +11050,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1854
+#: rustconn/src/window/edit_actions.rs:2003
 msgid "Connection failed. Host unreachable."
 msgstr "Ligação falhada. Anfitrião inacessível."
 
@@ -11193,7 +11193,7 @@ msgid "Opening mc SFTP…"
 msgstr "A abrir mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:885
-#: rustconn/src/window/edit_actions.rs:2025
+#: rustconn/src/window/edit_actions.rs:2174
 msgid ""
 "External file managers cannot access SSH agent in Flatpak."
 "                          Enable \"SFTP via mc\" in Settings for reliable "
@@ -11204,7 +11204,7 @@ msgstr ""
 "um acesso fiável."
 
 #: rustconn/src/window/edit_actions.rs:901
-#: rustconn/src/window/edit_actions.rs:2043
+#: rustconn/src/window/edit_actions.rs:2192
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Anfitrião de salto detetado. O SFTP é aberto através do mc em vez do gestor "
@@ -11228,27 +11228,7 @@ msgstr "a aplicação está ocupada"
 msgid "the SSH connection it tunnels through is gone"
 msgstr "a ligação SSH através da qual faz o túnel deixou de existir"
 
-#: rustconn/src/window/edit_actions.rs:1295
-#: rustconn/src/window/edit_actions.rs:1503
-#: rustconn/src/window/edit_actions.rs:1586
-msgid "Could not open the SSH tunnel: {}"
-msgstr "Não foi possível abrir o túnel SSH: {}"
-
-#: rustconn/src/window/edit_actions.rs:1315
-msgid "{} (tunnel)"
-msgstr "{} (túnel)"
-
-#: rustconn/src/window/edit_actions.rs:1332
-#: rustconn/src/window/edit_actions.rs:1541
-msgid "Could not open the page: {}"
-msgstr "Não foi possível abrir a página: {}"
-
-#: rustconn/src/window/edit_actions.rs:1344
-#: rustconn/src/window/edit_actions.rs:1403
-msgid "Failed to open browser: {}"
-msgstr "Não foi possível abrir o navegador: {}"
-
-#: rustconn/src/window/edit_actions.rs:1358
+#: rustconn/src/window/edit_actions.rs:1392
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a "
@@ -11258,7 +11238,7 @@ msgstr ""
 "Chromium. Só navegadores da família Chromium podem passar pelo túnel; defina"
 " um comando chromium/chrome/brave/vivaldi/edge nas Definições."
 
-#: rustconn/src/window/edit_actions.rs:1365
+#: rustconn/src/window/edit_actions.rs:1399
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -11267,25 +11247,53 @@ msgstr ""
 "o comando nas Definições ou limpe-o para detetar um navegador "
 "automaticamente."
 
-#: rustconn/src/window/edit_actions.rs:1372
-msgid ""
-"No Chromium-based browser found. Install one, or enable the embedded "
-"browser, to open a tunnelled browser."
-msgstr ""
-"Nenhum navegador baseado em Chromium encontrado. Instale um ou ative o "
-"navegador integrado."
+#: rustconn/src/window/edit_actions.rs:1410
+#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1724
+msgid "Could not open the SSH tunnel: {}"
+msgstr "Não foi possível abrir o túnel SSH: {}"
 
-#: rustconn/src/window/edit_actions.rs:1398
+#: rustconn/src/window/edit_actions.rs:1435
+msgid ""
+"No Chromium-based browser found; opening the embedded browser instead. "
+"Install a Chromium-based browser to tunnel an external one."
+msgstr ""
+"Nenhum navegador baseado em Chromium encontrado; a abrir o navegador "
+"incorporado. Instale um navegador baseado em Chromium para encaminhar um "
+"externo pelo túnel."
+
+#: rustconn/src/window/edit_actions.rs:1449
+msgid ""
+"No Chromium-based browser found. Install one to open a tunnelled browser."
+msgstr ""
+"Nenhum navegador baseado em Chromium encontrado. Instale um para abrir um "
+"navegador por túnel."
+
+#: rustconn/src/window/edit_actions.rs:1483
 msgid "Opened a tunnelled browser"
 msgstr "Navegador em túnel aberto"
 
-#: rustconn/src/window/edit_actions.rs:1566
-#: rustconn/src/window/edit_actions.rs:1662
-#: rustconn/src/window/edit_actions.rs:1689
+#: rustconn/src/window/edit_actions.rs:1488
+#: rustconn/src/window/edit_actions.rs:1541
+msgid "Failed to open browser: {}"
+msgstr "Não foi possível abrir o navegador: {}"
+
+#: rustconn/src/window/edit_actions.rs:1518
+msgid "{} (tunnel)"
+msgstr "{} (túnel)"
+
+#: rustconn/src/window/edit_actions.rs:1532
+#: rustconn/src/window/edit_actions.rs:1679
+msgid "Could not open the page: {}"
+msgstr "Não foi possível abrir a página: {}"
+
+#: rustconn/src/window/edit_actions.rs:1704
+#: rustconn/src/window/edit_actions.rs:1811
+#: rustconn/src/window/edit_actions.rs:1838
 msgid "Failed to open URL: {}"
 msgstr "Falha ao abrir URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1611
+#: rustconn/src/window/edit_actions.rs:1757
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -11293,12 +11301,12 @@ msgstr ""
 "Este navegador não pode ser encaminhado a partir da linha de comandos. Use "
 "um navegador baseado em Chromium ou o navegador integrado para o túnel SSH."
 
-#: rustconn/src/window/edit_actions.rs:1651
-#: rustconn/src/window/edit_actions.rs:1703
+#: rustconn/src/window/edit_actions.rs:1800
+#: rustconn/src/window/edit_actions.rs:1852
 msgid "Opened in browser"
 msgstr "Aberto no navegador"
 
-#: rustconn/src/window/edit_actions.rs:1676
+#: rustconn/src/window/edit_actions.rs:1825
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
 " browser opens without the tunnel."
