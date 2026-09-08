@@ -1324,10 +1324,11 @@ tunnelled browser in the embedded browser**:
   stays up only as long as that tab. Available in builds that ship the embedded
   browser.
 - **Off**, or a build without the embedded browser — an external Chromium-based
-  browser (Chromium, Chrome, Brave, Vivaldi, Edge) launches in incognito mode
-  with `--proxy-server`. RustConn picks it from `$BROWSER` first, then the first
-  such binary on your `PATH`. The tunnel is kept alive behind the browser and
-  released when RustConn exits.
+  browser (Chromium, Chrome, Brave, Vivaldi, Edge) launches with `--proxy-server`
+  in an isolated throwaway profile, so a browser you already have open cannot
+  hijack the launch and drop the proxy. Which browser, and the fallbacks, are
+  described under **External browser command** below. The tunnel is kept alive
+  behind the browser and released when RustConn exits.
 
 The **Tunnelled browser start page** entry just below that switch sets where the
 browser opens (embedded and external alike). It defaults to
@@ -1354,11 +1355,11 @@ cannot take a command-line proxy, RustConn uses an installed Chromium binary
 instead; if none exists, it opens the embedded browser (which can always tunnel)
 and shows a toast suggesting you install a Chromium-based browser.
 
-If the tunnel cannot be raised, or no Chromium-based browser is found for the
-external mode, RustConn shows a toast and opens nothing — it never falls back to
-browsing directly, so traffic meant for the tunnel does not leak. Firefox is not
-usable for the external mode because it takes its proxy from a profile rather than
-the command line.
+If the tunnel cannot be raised, RustConn shows a toast and opens nothing — it
+never falls back to browsing directly, so traffic meant for the tunnel does not
+leak. Firefox is not usable for the external mode because it takes its proxy from
+a profile rather than the command line; when it is your default, RustConn uses an
+installed Chromium browser or the embedded browser instead, as described above.
 
 #### SFTP Troubleshooting
 
