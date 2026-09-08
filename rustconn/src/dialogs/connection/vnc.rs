@@ -320,7 +320,7 @@ pub(super) fn create_vnc_options() -> (
     let vnc_jump_host_list = StringList::new(&none_refs);
     let vnc_jump_host_dropdown = DropDown::new(Some(vnc_jump_host_list), gtk4::Expression::NONE);
     vnc_jump_host_dropdown.set_selected(0);
-    vnc_jump_host_dropdown.set_enable_search(true);
+    crate::dialogs::widgets::enable_string_search(&vnc_jump_host_dropdown);
     vnc_jump_host_dropdown.set_size_request(200, -1);
     vnc_jump_host_dropdown.set_hexpand(false);
 

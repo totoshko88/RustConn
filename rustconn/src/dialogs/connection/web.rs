@@ -97,6 +97,10 @@ pub fn create_web_options() -> WebOptionsWidgets {
     // connection. Wrapped in an ActionRow so it reads like the other rows.
     let tunnel_dropdown = gtk4::DropDown::builder().build();
     tunnel_dropdown.set_valign(gtk4::Align::Center);
+    tunnel_dropdown.set_size_request(200, -1);
+    tunnel_dropdown.set_hexpand(false);
+    // Type-to-search: a long connection list is impractical to scroll (user feedback).
+    crate::dialogs::widgets::enable_string_search(&tunnel_dropdown);
     let tunnel_row = adw::ActionRow::builder()
         .title(i18n("Tunnel Through SSH"))
         .subtitle(i18n(

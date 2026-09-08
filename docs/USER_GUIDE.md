@@ -275,6 +275,10 @@ Three notes on scope:
 - *Jump Host* and *ProxyJump* are two ways of naming a bastion, not two candidates for one slot. A *Jump Host* is a saved connection, so it also carries its port, its identity file and its own bastion chain — none of which fit in the text field. Each of the two resolves its own tier chain independently, so setting both is legitimate: they become two hops of one chain, the *Jump Host* contacted first and the *ProxyJump* value reached through it.
 - An empty *ProxyJump* means "no bastion" at every tier, and falls through to the next one. This matters if you edit `config.toml` or `connections.toml` by hand: a stored empty string is not a value, it is nothing.
 
+> **Tip:** The *Jump Host* dropdown (and the Web "Tunnel Through SSH" picker) is
+> type-to-search. With a long connection list, open it and start typing part of a
+> name or host to filter down to the one you want instead of scrolling.
+
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**

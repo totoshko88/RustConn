@@ -490,7 +490,7 @@ fn create_connection_group() -> ConnectionGroupWidgets {
     let jump_host_list = StringList::new(&none_refs);
     let jump_host_dropdown = DropDown::new(Some(jump_host_list), gtk4::Expression::NONE);
     jump_host_dropdown.set_selected(0);
-    jump_host_dropdown.set_enable_search(true);
+    crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
     // Limit width so long hostnames don't stretch the dialog
     jump_host_dropdown.set_size_request(200, -1);
     jump_host_dropdown.set_hexpand(false);

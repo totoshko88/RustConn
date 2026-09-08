@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Jump Host and Tunnel dropdowns had a search box that filtered nothing** — the connection pickers (SSH/RDP/VNC/SPICE Jump Host, and the Web "Tunnel Through SSH" selector) called `set_enable_search(true)` but were built with `Expression::NONE`, so the search entry appeared and did nothing: with hundreds of connections you had to scroll the whole list to find one (reported from a large-inventory setup). They now carry a property expression over each entry's string, so typing filters the list to matching connections. A new `enable_string_search` helper applies this uniformly, and the Web tunnel picker — which had no search at all — gets it too.
+
 ### Added
 
 - **A Web connection can browse through an SSH host (SOCKS tunnel)** — the embedded-browser Web editor gains a "Tunnel Through SSH" picker listing your SSH connections. Choose one and, when the Web connection opens, RustConn raises a dynamic SOCKS proxy (`ssh -N -D` on an auto-picked free port) to that host and points the embedded WebKit browser's network session at `socks5://127.0.0.1:<port>`, so every request exits through the SSH host — the RustConn-native form of Ásbrú's incognito-browser-over-a-tunnel. The tunnel lives exactly as long as the browsing tab (dropping the tab closes the `ssh -N -D` process), reuses the referenced connection's key, jump-host chain and cached password, and a failure to bring it up aborts the launch rather than silently browsing directly. Applies to the embedded browser; the System and Custom browser modes ignore it. New `rustconn_core::ssh_tunnel::create_socks_tunnel` and a `tunnel_via` field on `WebConfig`.
