@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Built-in Expect templates now cover the newer OpenSSH host-key prompt and bare "any key to continue" banners** — the "SSH Host Key Confirmation" template previously matched only the single-line `Are you sure you want to continue connecting (yes/no/[fingerprint])?` prompt. OpenSSH 8.x can print the accept prompt on a separate follow-up line (`Please type 'yes', 'no' or the fingerprint:`), which the template now also answers, so first-connection host-key acceptance is no longer left hanging on newer servers. The "Press Enter to Continue" template was widened to match the bare `any key to continue` form that pagers and appliance banners emit without a leading "Press". A *changed* host key is deliberately left un-templated: auto-accepting the `REMOTE HOST IDENTIFICATION HAS CHANGED` warning would defeat the man-in-the-middle protection host-key checking exists for, so that decision stays manual. Two tests assert the changed-key warning is never matched by any host-key rule.
+
 ### Fixed
 
 - **The "Executing:" echo split a `ProxyCommand` value across arguments, making it look ignored (issue #322)** — an SSH connection with a custom `ProxyCommand` (e.g. `nc -X 5 -x 127.0.0.1:1080 %h %p`) is spawned as a real `argv` array, so the whole value is one element and reaches `ssh` intact — the proxy is applied. The human-readable "⚡ Executing:" line, however, was built with a plain `join(" ")`, which dropped the word boundary and printed `-o ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p user@host`. That reads as if only `ProxyCommand=nc` was passed and the rest were separate `ssh` arguments, so the option looks dropped even though it is not. The echo now quotes any argument containing spaces or shell metacharacters (via the new `ssh_tunnel::format_argv_for_display`), so it prints `-o 'ProxyCommand=nc -X 5 -x 127.0.0.1:1080 %h %p'` — accurate and copy-paste safe. Display-only change; the spawned command was already correct.

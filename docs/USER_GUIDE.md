@@ -336,11 +336,27 @@ Expect rules automate interactive prompts during connection. Each rule matches a
 |---------|----------|----------|
 | `password:` | `${password}` | Auto-login with vault password |
 | `\[sudo\] password` | `${password}` | Sudo password prompt |
-| `Are you sure.*continue` | `yes` | SSH host key confirmation |
+| `Are you sure.*continue` | `yes` | SSH host key confirmation (first connection) |
 | `Select option:` | `2` | Menu navigation |
 | `Enter token:` | `${MFA_TOKEN}` | Use a global variable for MFA |
 
 Rules execute in priority order. After matching, the response is sent followed by Enter.
+
+**Built-in templates:** the **Test** dialog offers ready-made rule sets you can drop
+in — Sudo Password, SSH Host Key Confirmation, Login Prompt, Press Enter to
+Continue, and a pager (`--More--`) dismisser. The SSH Host Key Confirmation
+template answers both prompt forms OpenSSH uses on a *first* connection: the
+single-line `Are you sure you want to continue connecting (yes/no/[fingerprint])?`
+and the separate follow-up line newer versions print,
+`Please type 'yes', 'no' or the fingerprint:`. The Press Enter to Continue template
+also matches the bare `any key to continue` banner that pagers and appliance
+prompts emit without a leading "Press".
+
+> **Note on changed host keys:** none of the built-in rules answer the
+> `REMOTE HOST IDENTIFICATION HAS CHANGED` warning. A changed key is exactly what a
+> man-in-the-middle attack looks like, so RustConn never auto-accepts it — resolve a
+> legitimate key rotation by hand (`ssh-keygen -R <host>`) so the decision stays
+> explicit.
 
 **Variable Substitution in Responses:**
 
