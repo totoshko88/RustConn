@@ -77,6 +77,18 @@ pub struct EmbeddedWebWidget {
     on_state_changed: Rc<RefCell<Option<StateCallback>>>,
     /// Error callback
     on_error: Rc<RefCell<Option<ErrorCallback>>>,
+    /// Fires when the *first* load fails before any content was committed —
+    /// i.e. the tab never showed a page (bad host, unreachable, DNS failure,
+    /// or a SOCKS-tunnel `Name or service not known`). The window layer uses
+    /// this to close the blank tab and show a toast instead of leaving an empty
+    /// browser behind. A failure after the page has painted (a broken link the
+    /// user clicked) does NOT fire it — that keeps the working tab and its
+    /// reconnect banner.
+    on_initial_load_failed: Rc<RefCell<Option<Box<dyn Fn(String) + 'static>>>>,
+    /// Set once the WebView commits a response (`LoadEvent::Committed`), i.e.
+    /// content has begun painting. Distinguishes an initial load that never
+    /// rendered from a later navigation failure. Reset on a fresh load/reconnect.
+    committed_once: Rc<std::cell::Cell<bool>>,
     /// Reconnect callback
     on_reconnect: Rc<RefCell<Option<ReconnectCallback>>>,
     /// Load timeout source ID
@@ -435,6 +447,9 @@ impl EmbeddedWebWidget {
         // which takes the focus on a press exactly as the RDP drawing area
         // (`embedded_rdp::input`) and the VNC one already do.
         let state = Rc::new(RefCell::new(EmbeddedConnectionState::Disconnected));
+        let committed_once = Rc::new(std::cell::Cell::new(false));
+        let on_initial_load_failed: Rc<RefCell<Option<Box<dyn Fn(String) + 'static>>>> =
+            Rc::new(RefCell::new(None));
         let home_url = Rc::new(RefCell::new(url.to_string()));
         let on_state_changed: Rc<RefCell<Option<StateCallback>>> = Rc::new(RefCell::new(None));
         let on_error: Rc<RefCell<Option<ErrorCallback>>> = Rc::new(RefCell::new(None));
@@ -454,6 +469,8 @@ impl EmbeddedWebWidget {
             connection_uuid,
             on_state_changed,
             on_error,
+            on_initial_load_failed,
+            committed_once,
             on_reconnect,
             load_timeout,
             autofill,
@@ -599,6 +616,10 @@ impl EmbeddedWebWidget {
     /// transitions to Error state with a timeout indication.
     fn start_load_timeout(&self) {
         self.cancel_load_timeout();
+        // A fresh load starts uncommitted, so the next failure is judged as an
+        // initial one until content paints. Reset here because every load path
+        // (first open, Reload, reconnect) goes through this.
+        self.committed_once.set(false);
 
         let state = Rc::clone(&self.state);
         let on_state_changed = Rc::clone(&self.on_state_changed);
@@ -606,6 +627,8 @@ impl EmbeddedWebWidget {
         let banner = self.reconnect_banner.clone();
         let banner_label = self.banner_label.clone();
         let toolbar_auto_hide = Rc::clone(&self.toolbar_auto_hide);
+        let committed_for_timeout = Rc::clone(&self.committed_once);
+        let on_initial_timeout = Rc::clone(&self.on_initial_load_failed);
 
         // 60-second timeout for page load
         let source_id = glib::timeout_add_seconds_local_once(60, move || {
@@ -613,13 +636,23 @@ impl EmbeddedWebWidget {
             if *state.borrow() == EmbeddedConnectionState::Connecting {
                 *state.borrow_mut() = EmbeddedConnectionState::Error;
 
+                let timeout_message =
+                    crate::i18n::i18n("Connection timed out. Check that the host is reachable.");
+
+                // A timeout before any content painted is an initial failure —
+                // close the blank tab and toast, same as a load-failed does.
+                if !committed_for_timeout.get()
+                    && let Some(ref callback) = *on_initial_timeout.borrow()
+                {
+                    callback(timeout_message);
+                    return;
+                }
+
                 // Say so in the banner, the same way a load failure does.
                 // Before this the timeout only fired the callbacks, so a page
                 // that never finished loading left the user with no explanation
                 // and no Reload button.
-                banner_label.set_text(&crate::i18n::i18n(
-                    "Connection timed out. Check that the host is reachable.",
-                ));
+                banner_label.set_text(&timeout_message);
                 Self::apply_state_presentation(
                     EmbeddedConnectionState::Error,
                     &banner,
@@ -698,6 +731,7 @@ impl EmbeddedWebWidget {
         let on_state_changed = Rc::clone(&self.on_state_changed);
         let load_timeout = Rc::clone(&self.load_timeout);
         let banner_for_load = self.reconnect_banner.clone();
+        let committed_for_load = Rc::clone(&self.committed_once);
 
         self.web_view.connect_load_changed(move |_web_view, event| {
             use webkit6::LoadEvent;
@@ -706,7 +740,12 @@ impl EmbeddedWebWidget {
                 LoadEvent::Started | LoadEvent::Redirected => {
                     Some(EmbeddedConnectionState::Connecting)
                 }
-                LoadEvent::Committed => None, // Intermediate, no state change
+                LoadEvent::Committed => {
+                    // The response has begun painting — from here on a failure is
+                    // a *later* navigation error, not a blank initial load.
+                    committed_for_load.set(true);
+                    None // Intermediate, no state change
+                }
                 LoadEvent::Finished => {
                     // Cancel timeout on successful load
                     if let Some(source_id) = load_timeout.borrow_mut().take() {
@@ -740,6 +779,8 @@ impl EmbeddedWebWidget {
         let banner_for_error = self.reconnect_banner.clone();
         let banner_label_for_error = self.banner_label.clone();
         let toolbar_auto_hide_for_error = Rc::clone(&self.toolbar_auto_hide);
+        let committed_for_error = Rc::clone(&self.committed_once);
+        let on_initial_load_failed = Rc::clone(&self.on_initial_load_failed);
 
         self.web_view
             .connect_load_failed(move |_web_view, _event, _uri, error| {
@@ -758,6 +799,20 @@ impl EmbeddedWebWidget {
                 } else {
                     description
                 };
+
+                // The first load never painted: there is nothing to keep. Hand
+                // the reason to the initial-load-failed callback (the window
+                // closes the blank tab and shows a toast) instead of dressing up
+                // an empty page with a banner. Only when the callback is absent
+                // do we fall through to the banner presentation, so a build that
+                // does not wire it still shows *something*.
+                if !committed_for_error.get()
+                    && let Some(ref callback) = *on_initial_load_failed.borrow()
+                {
+                    callback(truncated);
+                    // The tab is going away; do not also paint the banner.
+                    return true;
+                }
 
                 // Update banner label with error, then apply the presentation
                 // that belongs to Error — this is what keeps the toolbar
@@ -1067,6 +1122,19 @@ impl EmbeddedWebWidget {
         F: Fn(&EmbeddedError) + 'static,
     {
         *self.on_error.borrow_mut() = Some(Box::new(callback));
+    }
+
+    /// Connects a callback for a *first* load that failed before any content
+    /// painted (bad host, unreachable, DNS/SOCKS `Name or service not known`).
+    ///
+    /// The window layer uses this to close the blank tab and show a toast
+    /// carrying the error message, rather than leaving an empty browser behind.
+    /// A failure after the page has already rendered does not fire it.
+    pub fn connect_initial_load_failed<F>(&self, callback: F)
+    where
+        F: Fn(String) + 'static,
+    {
+        *self.on_initial_load_failed.borrow_mut() = Some(Box::new(callback));
     }
 
     /// Connects a reconnect callback.

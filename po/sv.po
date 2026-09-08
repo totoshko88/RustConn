@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:44+0300\n"
+"POT-Creation-Date: 2026-09-08 14:30+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -3519,7 +3519,9 @@ msgstr "Tunnel via SSH"
 msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
-msgstr "Surfa via en SOCKS-proxy över den valda SSH-anslutningen (inbäddad eller Chromium-webbläsare)"
+msgstr ""
+"Surfa via en SOCKS-proxy över den valda SSH-anslutningen (inbäddad eller "
+"Chromium-webbläsare)"
 
 #: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
@@ -9302,7 +9304,7 @@ msgid "Connection refused. Check host and port."
 msgstr "Anslutning nekad. Kontrollera värd och port."
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:621
+#: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Anslutningen tog för lång tid. Kontrollera att värden är nåbar."
 
@@ -9607,8 +9609,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Använder extern visare (kryptering stöds inte)"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
-#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "Frånkopplad"
@@ -9622,25 +9624,25 @@ msgstr "Session körs i externt fönster"
 msgid "Connection error"
 msgstr "Anslutningsfel"
 
-#: rustconn/src/embedded_web/mod.rs:355
+#: rustconn/src/embedded_web/mod.rs:367
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "Läs in igen"
 
-#: rustconn/src/embedded_web/mod.rs:503
+#: rustconn/src/embedded_web/mod.rs:520
 msgid "No credentials configured for this connection"
 msgstr "Inga inloggningsuppgifter konfigurerade för denna anslutning"
 
-#: rustconn/src/embedded_web/mod.rs:819
+#: rustconn/src/embedded_web/mod.rs:874
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "TLS-certifikat godkänt (självsignerat eller ej betrott)"
 
-#: rustconn/src/embedded_web/mod.rs:923
+#: rustconn/src/embedded_web/mod.rs:978
 msgid "Downloaded: {}"
 msgstr "Nedladdat: {}"
 
-#: rustconn/src/embedded_web/mod.rs:950
+#: rustconn/src/embedded_web/mod.rs:1005
 msgid "No login form fields found on this page"
 msgstr "Inga inloggningsfält hittades på denna sida"
 
@@ -10939,7 +10941,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1528
+#: rustconn/src/window/edit_actions.rs:1545
 msgid "Connection failed. Host unreachable."
 msgstr "Anslutning misslyckades. Värd onåbar."
 
@@ -11078,7 +11080,7 @@ msgid "Opening mc SFTP…"
 msgstr "Öppnar mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1699
+#: rustconn/src/window/edit_actions.rs:1716
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11089,7 +11091,7 @@ msgstr ""
 "för tillförlitlig åtkomst."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1717
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "Mellanvärd upptäckt. SFTP öppnas via mc i stället för filhanteraren."
 
@@ -11110,32 +11112,40 @@ msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-anslutningen som tunneln går genom finns inte längre"
 
 #: rustconn/src/window/edit_actions.rs:1194
-#: rustconn/src/window/edit_actions.rs:1260
+#: rustconn/src/window/edit_actions.rs:1277
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Det gick inte att öppna SSH-tunneln: {}"
 
-#: rustconn/src/window/edit_actions.rs:1240
-#: rustconn/src/window/edit_actions.rs:1336
-#: rustconn/src/window/edit_actions.rs:1363
+#: rustconn/src/window/edit_actions.rs:1232
+msgid "Could not open the page: {}"
+msgstr "Det gick inte att öppna sidan: {}"
+
+#: rustconn/src/window/edit_actions.rs:1257
+#: rustconn/src/window/edit_actions.rs:1353
+#: rustconn/src/window/edit_actions.rs:1380
 msgid "Failed to open URL: {}"
 msgstr "Kunde inte öppna URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1285
+#: rustconn/src/window/edit_actions.rs:1302
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
-msgstr "Denna webbläsare kan inte tunnlas från kommandoraden. Använd en Chromium-baserad webbläsare eller den inbäddade webbläsaren för SSH-tunnling."
+msgstr ""
+"Denna webbläsare kan inte tunnlas från kommandoraden. Använd en Chromium-"
+"baserad webbläsare eller den inbäddade webbläsaren för SSH-tunnling."
 
-#: rustconn/src/window/edit_actions.rs:1325
-#: rustconn/src/window/edit_actions.rs:1377
+#: rustconn/src/window/edit_actions.rs:1342
+#: rustconn/src/window/edit_actions.rs:1394
 msgid "Opened in browser"
 msgstr "Öppnad i webbläsare"
 
-#: rustconn/src/window/edit_actions.rs:1350
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
-msgstr "SSH-tunnling kräver den inbäddade eller en anpassad (Chromium) webbläsare; systemets webbläsare öppnas utan tunneln."
+msgstr ""
+"SSH-tunnling kräver den inbäddade eller en anpassad (Chromium) webbläsare; "
+"systemets webbläsare öppnas utan tunneln."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

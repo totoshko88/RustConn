@@ -1428,7 +1428,9 @@ When a connection has stored credentials (username/password), the embedded brows
 - Shows an informational toast "No login form fields found on this page" if no fields are detected after 3 seconds
 
 **Reconnect Banner:**
-When a page fails to load (network error, timeout, DNS failure), a banner appears below the toolbar with the error description and a "Reload" button. Clicking Reload navigates back to the configured URL.
+When a page fails to load *after* it has already shown content — a broken link you followed, or a later navigation error — a banner appears below the toolbar with the error description and a "Reload" button. Clicking Reload navigates back to the configured URL.
+
+If the **very first** load never paints (a bad host, an unreachable address, a DNS failure, or a SOCKS-tunnel `Name or service not known`), RustConn does not leave a blank tab: it closes the tab and shows the reason as a toast (`Could not open the page: …`). Only the initial load is treated this way, so a working session is never closed by a later failed navigation.
 
 **Persistent Sessions:**
 Cookies and session data persist across RustConn restarts, so you stay logged in to web services between sessions. Each connection has isolated storage — no cross-connection data leakage.

@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:44+0300\n"
+"POT-Creation-Date: 2026-09-08 14:30+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -3529,7 +3529,9 @@ msgstr "Тунель крізь SSH"
 msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
-msgstr "Переглядай крізь SOCKS-проксі обраного SSH-з’єднанка (вбудований або Chromium оглядач)"
+msgstr ""
+"Переглядай крізь SOCKS-проксі обраного SSH-з’єднанка (вбудований або "
+"Chromium оглядач)"
 
 #: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
@@ -9305,7 +9307,7 @@ msgid "Connection refused. Check host and port."
 msgstr "З'єднування відхилено. Перевір гост і порт."
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:621
+#: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Час з'єднування вичерпано. Перевір, чи гост доступний."
 
@@ -9608,8 +9610,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Задіяно зовнішнього переглядача (непідтримуване шифрування)"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
-#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "Від'єднано"
@@ -9623,25 +9625,25 @@ msgstr "Сеанс працює у зовнішньому вікні"
 msgid "Connection error"
 msgstr "Помилка з'єднування"
 
-#: rustconn/src/embedded_web/mod.rs:355
+#: rustconn/src/embedded_web/mod.rs:367
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "Перезавантаж"
 
-#: rustconn/src/embedded_web/mod.rs:503
+#: rustconn/src/embedded_web/mod.rs:520
 msgid "No credentials configured for this connection"
 msgstr "Облікових відомостей не налаштовано для цього з'єднанка"
 
-#: rustconn/src/embedded_web/mod.rs:819
+#: rustconn/src/embedded_web/mod.rs:874
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "TLS-сертифікат прийнято (самопідписаний або недовірений)"
 
-#: rustconn/src/embedded_web/mod.rs:923
+#: rustconn/src/embedded_web/mod.rs:978
 msgid "Downloaded: {}"
 msgstr "Завантажено: {}"
 
-#: rustconn/src/embedded_web/mod.rs:950
+#: rustconn/src/embedded_web/mod.rs:1005
 msgid "No login form fields found on this page"
 msgstr "На цій сторінці не знайдено полів форми входу"
 
@@ -10938,7 +10940,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1528
+#: rustconn/src/window/edit_actions.rs:1545
 msgid "Connection failed. Host unreachable."
 msgstr "З'єднок не вдався. Гост недоступний."
 
@@ -11075,7 +11077,7 @@ msgid "Opening mc SFTP…"
 msgstr "Відкриття mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1699
+#: rustconn/src/window/edit_actions.rs:1716
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11086,7 +11088,7 @@ msgstr ""
 "надійного доступу."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1717
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Виявлено проміжний гост. Відкривання SFTP через mc замість файлового "
@@ -11110,32 +11112,40 @@ msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-з’єднанка, крізь яке йде тунель, більше нема"
 
 #: rustconn/src/window/edit_actions.rs:1194
-#: rustconn/src/window/edit_actions.rs:1260
+#: rustconn/src/window/edit_actions.rs:1277
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Не вдалося відкрити SSH-тунель: {}"
 
-#: rustconn/src/window/edit_actions.rs:1240
-#: rustconn/src/window/edit_actions.rs:1336
-#: rustconn/src/window/edit_actions.rs:1363
+#: rustconn/src/window/edit_actions.rs:1232
+msgid "Could not open the page: {}"
+msgstr "Не вдалося відкрити сторінку: {}"
+
+#: rustconn/src/window/edit_actions.rs:1257
+#: rustconn/src/window/edit_actions.rs:1353
+#: rustconn/src/window/edit_actions.rs:1380
 msgid "Failed to open URL: {}"
 msgstr "Не вдалося відкрити URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1285
+#: rustconn/src/window/edit_actions.rs:1302
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
-msgstr "Цей оглядач не можна тунелювати з командного рядка. Для SSH-тунелювання візьми оглядач на основі Chromium або вбудований оглядач."
+msgstr ""
+"Цей оглядач не можна тунелювати з командного рядка. Для SSH-тунелювання "
+"візьми оглядач на основі Chromium або вбудований оглядач."
 
-#: rustconn/src/window/edit_actions.rs:1325
-#: rustconn/src/window/edit_actions.rs:1377
+#: rustconn/src/window/edit_actions.rs:1342
+#: rustconn/src/window/edit_actions.rs:1394
 msgid "Opened in browser"
 msgstr "Відкрито в браузері"
 
-#: rustconn/src/window/edit_actions.rs:1350
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
-msgstr "SSH-тунелювання потребує вбудованого або власного (Chromium) оглядача; системний оглядач відкриється без тунелю."
+msgstr ""
+"SSH-тунелювання потребує вбудованого або власного (Chromium) оглядача; "
+"системний оглядач відкриється без тунелю."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

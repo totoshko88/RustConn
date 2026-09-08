@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:44+0300\n"
+"POT-Creation-Date: 2026-09-08 14:30+0300\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -3537,7 +3537,9 @@ msgstr "Tunnel Through SSH"
 msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
-msgstr "Browse via a SOCKS proxy over the chosen SSH connection (embedded or Chromium browser)"
+msgstr ""
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
 
 #: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
@@ -9326,7 +9328,7 @@ msgid "Connection refused. Check host and port."
 msgstr "კავშირი უარყოფილია. შეამოწმეთ ჰოსტი და პორტი."
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:621
+#: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "კავშირის მოლოდინის ვადა ამოიწურა. შეამოწმეთ, წვდომადია, თუ არა ჰოსტი."
 
@@ -9629,8 +9631,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "გამოიყენება გარე დამთვალიერებელი (მხარდაუჭერელი დაშიფვრა)"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
-#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "გათიშულია"
@@ -9644,25 +9646,25 @@ msgstr "სესია გაშვებულია გარე ფანჯ
 msgid "Connection error"
 msgstr "დაკავშირების შეცდომა"
 
-#: rustconn/src/embedded_web/mod.rs:355
+#: rustconn/src/embedded_web/mod.rs:367
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "თავიდან ჩატვირთვა"
 
-#: rustconn/src/embedded_web/mod.rs:503
+#: rustconn/src/embedded_web/mod.rs:520
 msgid "No credentials configured for this connection"
 msgstr "ამ კავშირისთვის ავტორიზაციის დეტალები მორგებული არაა"
 
-#: rustconn/src/embedded_web/mod.rs:819
+#: rustconn/src/embedded_web/mod.rs:874
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "TLS სერტიფიკატი მიღებულია (თვითხელმოწერილი, ან არასანდო)"
 
-#: rustconn/src/embedded_web/mod.rs:923
+#: rustconn/src/embedded_web/mod.rs:978
 msgid "Downloaded: {}"
 msgstr "გადმოწერილია: {}"
 
-#: rustconn/src/embedded_web/mod.rs:950
+#: rustconn/src/embedded_web/mod.rs:1005
 msgid "No login form fields found on this page"
 msgstr "ამ გვერდზე შესვლის ფორმის ველები აღმოჩენილი არაა"
 
@@ -10959,7 +10961,7 @@ msgstr "'{}'-ისთვის საცავის ჩანაწერი �
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1528
+#: rustconn/src/window/edit_actions.rs:1545
 msgid "Connection failed. Host unreachable."
 msgstr "კავშირი ჩავარდა. ჰოსტი ხელმიუწვდომელია."
 
@@ -11100,7 +11102,7 @@ msgid "Opening mc SFTP…"
 msgstr "mc SFTP-ის გახსნა…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1699
+#: rustconn/src/window/edit_actions.rs:1716
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11111,7 +11113,7 @@ msgstr ""
 "წვდომისთვის."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1717
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "აღმოჩენილია გადახტომის ჰოსტი. SFTP-ის გახსნა mc-ის საშუალებით ფაილის "
@@ -11135,32 +11137,40 @@ msgid "the SSH connection it tunnels through is gone"
 msgstr "the SSH connection it tunnels through is gone"
 
 #: rustconn/src/window/edit_actions.rs:1194
-#: rustconn/src/window/edit_actions.rs:1260
+#: rustconn/src/window/edit_actions.rs:1277
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Could not open the SSH tunnel: {}"
 
-#: rustconn/src/window/edit_actions.rs:1240
-#: rustconn/src/window/edit_actions.rs:1336
-#: rustconn/src/window/edit_actions.rs:1363
+#: rustconn/src/window/edit_actions.rs:1232
+msgid "Could not open the page: {}"
+msgstr "Could not open the page: {}"
+
+#: rustconn/src/window/edit_actions.rs:1257
+#: rustconn/src/window/edit_actions.rs:1353
+#: rustconn/src/window/edit_actions.rs:1380
 msgid "Failed to open URL: {}"
 msgstr "ვერ გავხსენი URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1285
+#: rustconn/src/window/edit_actions.rs:1302
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
-msgstr "This browser can't be tunnelled from the command line. Use a Chromium-based browser or the embedded browser for SSH tunnelling."
+msgstr ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
 
-#: rustconn/src/window/edit_actions.rs:1325
-#: rustconn/src/window/edit_actions.rs:1377
+#: rustconn/src/window/edit_actions.rs:1342
+#: rustconn/src/window/edit_actions.rs:1394
 msgid "Opened in browser"
 msgstr "გაიხსნა ბრაუზერში"
 
-#: rustconn/src/window/edit_actions.rs:1350
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
-msgstr "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system browser opens without the tunnel."
+msgstr ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

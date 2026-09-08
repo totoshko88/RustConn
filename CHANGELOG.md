@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **An embedded Web connection to an unreachable host left a blank browser tab open** — when the first page load failed before anything painted (a bad host, an unreachable address, or a SOCKS-tunnel `Name or service not known` arriving from the far side), the tab stayed open showing an empty page with a small banner that was easy to miss. RustConn now closes that tab and shows the reason as a toast (`Could not open the page: …`). The distinction is deliberate: only a *first* load that never rendered closes the tab — a failed navigation after the page is already showing (a broken link you clicked) keeps the tab and its reconnect banner, so a working session is never thrown away. A load that times out before painting is treated the same way.
+
 - **The Jump Host and Tunnel dropdowns had a search box that filtered nothing** — the connection pickers (SSH/RDP/VNC/SPICE Jump Host, and the Web "Tunnel Through SSH" selector) called `set_enable_search(true)` but were built with `Expression::NONE`, so the search entry appeared and did nothing: with hundreds of connections you had to scroll the whole list to find one (reported from a large-inventory setup). They now carry a property expression over each entry's string, so typing filters the list to matching connections. A new `enable_string_search` helper applies this uniformly, and the Web tunnel picker — which had no search at all — gets it too.
 
 ### Added

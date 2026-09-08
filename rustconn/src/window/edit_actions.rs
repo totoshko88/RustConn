@@ -1218,6 +1218,23 @@ impl MainWindow {
                         }
                     });
 
+                    // If the very first load never paints (bad host, DNS/SOCKS
+                    // `Name or service not known`), close the blank tab and toast
+                    // the reason instead of leaving an empty browser behind.
+                    {
+                        let notebook_for_fail = notebook.clone();
+                        let sidebar_for_fail = sidebar.clone();
+                        let conn_id_str = connection_id.to_string();
+                        widget.connect_initial_load_failed(move |message| {
+                            notebook_for_fail.close_session(session_id);
+                            sidebar_for_fail.update_connection_status(&conn_id_str, "");
+                            crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                                "Could not open the page: {}",
+                                &[&message],
+                            ));
+                        });
+                    }
+
                     notebook.add_embedded_web_tab(session_id, connection_id, &conn_name, widget);
                     if let Some(observer) = observer {
                         observer.complete(session_id);

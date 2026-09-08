@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:44+0300\n"
+"POT-Creation-Date: 2026-09-08 14:30+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -9124,7 +9124,7 @@ msgid "Connection refused. Check host and port."
 msgstr "连接被拒绝。请检查主机和端口。"
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:621
+#: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "连接超时。请检查主机是否可达。"
 
@@ -9422,8 +9422,8 @@ msgstr "不支持 VNC 加密。请安装 TigerVNC 并启用「接受证书」。
 msgid "Using external viewer (unsupported encryption)"
 msgstr "使用外部查看器（不支持的加密）"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
-#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "已断开"
@@ -9437,25 +9437,25 @@ msgstr "会话正在外部窗口中运行"
 msgid "Connection error"
 msgstr "连接错误"
 
-#: rustconn/src/embedded_web/mod.rs:355
+#: rustconn/src/embedded_web/mod.rs:367
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "重新加载"
 
-#: rustconn/src/embedded_web/mod.rs:503
+#: rustconn/src/embedded_web/mod.rs:520
 msgid "No credentials configured for this connection"
 msgstr "此连接未配置凭据"
 
-#: rustconn/src/embedded_web/mod.rs:819
+#: rustconn/src/embedded_web/mod.rs:874
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "已接受 TLS 证书（自签名或不受信任）"
 
-#: rustconn/src/embedded_web/mod.rs:923
+#: rustconn/src/embedded_web/mod.rs:978
 msgid "Downloaded: {}"
 msgstr "已下载：{}"
 
-#: rustconn/src/embedded_web/mod.rs:950
+#: rustconn/src/embedded_web/mod.rs:1005
 msgid "No login form fields found on this page"
 msgstr "此页面未找到登录表单字段"
 
@@ -10743,7 +10743,7 @@ msgstr "未找到 '{}' 的密码库条目。系统将提示您输入密码。"
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1528
+#: rustconn/src/window/edit_actions.rs:1545
 msgid "Connection failed. Host unreachable."
 msgstr "连接失败。主机不可达。"
 
@@ -10874,7 +10874,7 @@ msgid "Opening mc SFTP…"
 msgstr "正在打开 mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1699
+#: rustconn/src/window/edit_actions.rs:1716
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -10884,7 +10884,7 @@ msgstr ""
 "设置中启用 \"SFTP via mc\" 以获得可靠的访问。"
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1717
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "检测到跳转主机。将通过 mc 而不是文件管理器打开 SFTP。"
 
@@ -10905,32 +10905,40 @@ msgid "the SSH connection it tunnels through is gone"
 msgstr "隧道所经的 SSH 连接已不存在"
 
 #: rustconn/src/window/edit_actions.rs:1194
-#: rustconn/src/window/edit_actions.rs:1260
+#: rustconn/src/window/edit_actions.rs:1277
 msgid "Could not open the SSH tunnel: {}"
 msgstr "无法打开 SSH 隧道：{}"
 
-#: rustconn/src/window/edit_actions.rs:1240
-#: rustconn/src/window/edit_actions.rs:1336
-#: rustconn/src/window/edit_actions.rs:1363
+#: rustconn/src/window/edit_actions.rs:1232
+msgid "Could not open the page: {}"
+msgstr "无法打开页面：{}"
+
+#: rustconn/src/window/edit_actions.rs:1257
+#: rustconn/src/window/edit_actions.rs:1353
+#: rustconn/src/window/edit_actions.rs:1380
 msgid "Failed to open URL: {}"
 msgstr "打开 URL 失败：{}"
 
-#: rustconn/src/window/edit_actions.rs:1285
+#: rustconn/src/window/edit_actions.rs:1302
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
-msgstr "无法从命令行为此浏览器建立隔离隧道。请使用基于 Chromium 的浏览器或嵌入式浏览器进行 SSH 隔离隧道。"
+msgstr ""
+"无法从命令行为此浏览器建立隔离隧道。请使用基于 Chromium 的浏览器或嵌入式浏览"
+"器进行 SSH 隔离隧道。"
 
-#: rustconn/src/window/edit_actions.rs:1325
-#: rustconn/src/window/edit_actions.rs:1377
+#: rustconn/src/window/edit_actions.rs:1342
+#: rustconn/src/window/edit_actions.rs:1394
 msgid "Opened in browser"
 msgstr "已在浏览器中打开"
 
-#: rustconn/src/window/edit_actions.rs:1350
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
-msgstr "SSH 隔离隧道需要嵌入式或自定义（Chromium）浏览器；系统浏览器将在无隔离隧道的情况下打开。"
+msgstr ""
+"SSH 隔离隧道需要嵌入式或自定义（Chromium）浏览器；系统浏览器将在无隔离隧道的"
+"情况下打开。"
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

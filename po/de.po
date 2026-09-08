@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:44+0300\n"
+"POT-Creation-Date: 2026-09-08 14:30+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -3539,7 +3539,9 @@ msgstr "Tunnel über SSH"
 msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
-msgstr "Über einen SOCKS-Proxy der gewählten SSH-Verbindung surfen (eingebetteter oder Chromium-Browser)"
+msgstr ""
+"Über einen SOCKS-Proxy der gewählten SSH-Verbindung surfen (eingebetteter "
+"oder Chromium-Browser)"
 
 #: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
@@ -9370,7 +9372,7 @@ msgid "Connection refused. Check host and port."
 msgstr "Verbindung abgelehnt. Host und Port überprüfen."
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:621
+#: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr ""
 "Zeitüberschreitung der Verbindung. Überprüfen Sie, ob der Host erreichbar "
@@ -9680,8 +9682,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Externer Viewer wird verwendet (nicht unterstützte Verschlüsselung)"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
-#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "Getrennt"
@@ -9695,25 +9697,25 @@ msgstr "Sitzung läuft im externen Fenster"
 msgid "Connection error"
 msgstr "Verbindungsfehler"
 
-#: rustconn/src/embedded_web/mod.rs:355
+#: rustconn/src/embedded_web/mod.rs:367
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "Neu laden"
 
-#: rustconn/src/embedded_web/mod.rs:503
+#: rustconn/src/embedded_web/mod.rs:520
 msgid "No credentials configured for this connection"
 msgstr "Für diese Verbindung sind keine Anmeldedaten konfiguriert"
 
-#: rustconn/src/embedded_web/mod.rs:819
+#: rustconn/src/embedded_web/mod.rs:874
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "TLS-Zertifikat akzeptiert (selbstsigniert oder nicht vertrauenswürdig)"
 
-#: rustconn/src/embedded_web/mod.rs:923
+#: rustconn/src/embedded_web/mod.rs:978
 msgid "Downloaded: {}"
 msgstr "Heruntergeladen: {}"
 
-#: rustconn/src/embedded_web/mod.rs:950
+#: rustconn/src/embedded_web/mod.rs:1005
 msgid "No login form fields found on this page"
 msgstr "Auf dieser Seite wurden keine Anmeldefelder gefunden"
 
@@ -11018,7 +11020,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1528
+#: rustconn/src/window/edit_actions.rs:1545
 msgid "Connection failed. Host unreachable."
 msgstr "Verbindung fehlgeschlagen. Host nicht erreichbar."
 
@@ -11164,7 +11166,7 @@ msgid "Opening mc SFTP…"
 msgstr "mc SFTP wird geöffnet…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1699
+#: rustconn/src/window/edit_actions.rs:1716
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11175,7 +11177,7 @@ msgstr ""
 "Zugriff."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1717
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Sprunghost erkannt. SFTP wird über mc statt über den Dateimanager geöffnet."
@@ -11199,32 +11201,41 @@ msgid "the SSH connection it tunnels through is gone"
 msgstr "die SSH-Verbindung, über die getunnelt wird, ist nicht mehr vorhanden"
 
 #: rustconn/src/window/edit_actions.rs:1194
-#: rustconn/src/window/edit_actions.rs:1260
+#: rustconn/src/window/edit_actions.rs:1277
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH-Tunnel konnte nicht geöffnet werden: {}"
 
-#: rustconn/src/window/edit_actions.rs:1240
-#: rustconn/src/window/edit_actions.rs:1336
-#: rustconn/src/window/edit_actions.rs:1363
+#: rustconn/src/window/edit_actions.rs:1232
+msgid "Could not open the page: {}"
+msgstr "Die Seite konnte nicht geöffnet werden: {}"
+
+#: rustconn/src/window/edit_actions.rs:1257
+#: rustconn/src/window/edit_actions.rs:1353
+#: rustconn/src/window/edit_actions.rs:1380
 msgid "Failed to open URL: {}"
 msgstr "URL konnte nicht geöffnet werden: {}"
 
-#: rustconn/src/window/edit_actions.rs:1285
+#: rustconn/src/window/edit_actions.rs:1302
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
-msgstr "Dieser Browser kann nicht über die Befehlszeile getunnelt werden. Verwenden Sie für das SSH-Tunneling einen Chromium-basierten oder den eingebetteten Browser."
+msgstr ""
+"Dieser Browser kann nicht über die Befehlszeile getunnelt werden. Verwenden "
+"Sie für das SSH-Tunneling einen Chromium-basierten oder den eingebetteten "
+"Browser."
 
-#: rustconn/src/window/edit_actions.rs:1325
-#: rustconn/src/window/edit_actions.rs:1377
+#: rustconn/src/window/edit_actions.rs:1342
+#: rustconn/src/window/edit_actions.rs:1394
 msgid "Opened in browser"
 msgstr "Im Browser geöffnet"
 
-#: rustconn/src/window/edit_actions.rs:1350
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
-msgstr "SSH-Tunneling erfordert den eingebetteten oder einen benutzerdefinierten (Chromium-)Browser; der Systembrowser öffnet ohne den Tunnel."
+msgstr ""
+"SSH-Tunneling erfordert den eingebetteten oder einen benutzerdefinierten "
+"(Chromium-)Browser; der Systembrowser öffnet ohne den Tunnel."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"
