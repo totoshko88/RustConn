@@ -1134,6 +1134,29 @@ impl MainWindow {
         Ok(tunnel)
     }
 
+    /// Normalises the configured tunnel-browser start URL into something both
+    /// the embedded WebKit view and an external browser accept.
+    ///
+    /// An empty value falls back to `https://www.google.com`. A value with no
+    /// `http(s)://` (or `file://`) scheme is prefixed with `https://`, matching
+    /// what the embedded browser's own address bar does, so a user who typed a
+    /// bare `ifconfig.me` still gets a valid URL.
+    fn normalize_start_url(configured: &str) -> String {
+        let trimmed = configured.trim();
+        if trimmed.is_empty() {
+            return "https://www.google.com".to_string();
+        }
+        let lower = trimmed.to_lowercase();
+        if lower.starts_with("http://")
+            || lower.starts_with("https://")
+            || lower.starts_with("file://")
+        {
+            trimmed.to_string()
+        } else {
+            format!("https://{trimmed}")
+        }
+    }
+
     /// Picks a Chromium-family browser binary that accepts `--proxy-server`.
     ///
     /// Honours `$BROWSER` first when it names a known Chromium binary, then
@@ -1182,9 +1205,10 @@ impl MainWindow {
     /// Uses the embedded browser when this build has it and the
     /// `open_tunnelled_browser_in_embedded` setting is on; otherwise launches an
     /// external Chromium-family browser in incognito mode with
-    /// `--proxy-server=socks5://…`. The start page is `about:blank` — the user
-    /// types where to go. A tunnel failure, or the absence of a usable external
-    /// browser, is reported as a toast and nothing is opened.
+    /// `--proxy-server=socks5://…`. The start page comes from the
+    /// `tunnel_browser_start_url` setting (default `https://www.google.com`), so
+    /// it is visible the tunnel works. A tunnel failure, or the absence of a
+    /// usable external browser, is reported as a toast and nothing is opened.
     fn open_browser_via_tunnel(
         state: &SharedAppState,
         notebook: &SharedNotebook,
@@ -1192,7 +1216,7 @@ impl MainWindow {
         connection_id: Uuid,
     ) {
         // Only SSH-family connections can host a SOCKS tunnel.
-        let (is_ssh, prefer_embedded) = {
+        let (is_ssh, prefer_embedded, start_url) = {
             let Ok(state_ref) = state.try_borrow() else {
                 return;
             };
@@ -1203,9 +1227,11 @@ impl MainWindow {
                         | rustconn_core::models::ProtocolConfig::Sftp(_)
                 )
             });
+            let ui = &state_ref.settings().ui;
             (
                 is_ssh,
-                state_ref.settings().ui.open_tunnelled_browser_in_embedded,
+                ui.open_tunnelled_browser_in_embedded,
+                Self::normalize_start_url(&ui.tunnel_browser_start_url),
             )
         };
         if !is_ssh {
@@ -1241,12 +1267,14 @@ impl MainWindow {
                 .unwrap_or_else(|| "SSH".to_string());
             let title = crate::i18n::i18n_f("{} (tunnel)", &[&conn_name]);
 
-            // A blank page through the proxy; the user navigates from there.
+            // Open the configured start page through the proxy, so it is visible
+            // the tunnel works (a blank page looks dead, and the embedded view
+            // rejects a non-http(s) URL anyway).
             let cfg = rustconn_core::models::WebConfig {
                 browser_mode: rustconn_core::models::WebBrowserMode::Embedded,
                 ..Default::default()
             };
-            match EmbeddedWebWidget::new(connection_id, "about:blank", &cfg, None, Some(tunnel)) {
+            match EmbeddedWebWidget::new(connection_id, &start_url, &cfg, None, Some(tunnel)) {
                 Ok(widget) => {
                     let widget = Rc::new(widget);
                     let session_id = uuid::Uuid::new_v4();
@@ -1286,7 +1314,7 @@ impl MainWindow {
         let mut cmd = std::process::Command::new(&browser);
         cmd.arg("--incognito");
         cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
-        cmd.arg("about:blank");
+        cmd.arg(&start_url);
 
         match cmd.spawn() {
             Ok(child) => {

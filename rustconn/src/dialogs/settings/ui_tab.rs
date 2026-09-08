@@ -52,6 +52,8 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     // open_tunnelled_browser_in_embedded
     adw::SwitchRow,
+    // tunnel_browser_start_url
+    adw::EntryRow,
     adw::ComboRow,
 ) {
     let page = adw::PreferencesPage::builder()
@@ -343,6 +345,41 @@ pub fn create_ui_page() -> (
         .build();
     connections_group.add(&open_tunnelled_browser_in_embedded);
 
+    // Start page for the tunnelled browser. The EntryRow holds the actual value
+    // (what gets saved); a presets dropdown beside it just fills the entry with
+    // one of the common choices for convenience.
+    let tunnel_start_url_row = adw::EntryRow::builder()
+        .title(i18n("Tunnelled browser start page"))
+        .build();
+    tunnel_start_url_row.set_show_apply_button(false);
+
+    let preset_labels = [
+        i18n("Google"),
+        i18n("DuckDuckGo"),
+        i18n("ifconfig.me (show exit IP)"),
+    ];
+    let preset_urls = [
+        "https://www.google.com",
+        "https://duckduckgo.com",
+        "https://ifconfig.me",
+    ];
+    let preset_refs: Vec<&str> = preset_labels.iter().map(String::as_str).collect();
+    let tunnel_start_preset = DropDown::builder()
+        .model(&StringList::new(&preset_refs))
+        .valign(gtk4::Align::Center)
+        .tooltip_text(i18n("Fill in a common start page"))
+        .build();
+    {
+        let entry = tunnel_start_url_row.clone();
+        tunnel_start_preset.connect_selected_notify(move |combo| {
+            if let Some(url) = preset_urls.get(combo.selected() as usize) {
+                entry.set_text(url);
+            }
+        });
+    }
+    tunnel_start_url_row.add_suffix(&tunnel_start_preset);
+    connections_group.add(&tunnel_start_url_row);
+
     page.add(&connections_group);
 
     // === Startup Group ===
@@ -471,6 +508,7 @@ pub fn create_ui_page() -> (
         show_split_pane_labels,
         reveal_toolbar_on_hover,
         open_tunnelled_browser_in_embedded,
+        tunnel_start_url_row,
         // Last so that the neighbouring positional arguments in load/collect
         // are SwitchRows: a ComboRow cannot be swapped with one by mistake.
         renderer_row,
@@ -531,6 +569,7 @@ pub fn load_ui_settings(
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
     open_tunnelled_browser_in_embedded: &adw::SwitchRow,
+    tunnel_start_url_row: &adw::EntryRow,
     renderer_row: &adw::ComboRow,
     settings: &UiSettings,
     connections: &[&Connection],
@@ -613,6 +652,7 @@ pub fn load_ui_settings(
     double_click_opens_new_session.set_active(settings.double_click_opens_new_session);
 
     open_tunnelled_browser_in_embedded.set_active(settings.open_tunnelled_browser_in_embedded);
+    tunnel_start_url_row.set_text(&settings.tunnel_browser_start_url);
 
     show_split_pane_labels.set_active(settings.show_split_pane_labels);
 
@@ -682,6 +722,7 @@ pub fn collect_ui_settings(
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
     open_tunnelled_browser_in_embedded: &adw::SwitchRow,
+    tunnel_start_url_row: &adw::EntryRow,
     renderer_row: &adw::ComboRow,
     connections: &[&Connection],
 ) -> UiSettings {
@@ -752,6 +793,7 @@ pub fn collect_ui_settings(
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
         open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),
+        tunnel_browser_start_url: tunnel_start_url_row.text().to_string(),
         show_split_pane_labels: show_split_pane_labels.is_active(),
         reveal_session_toolbar_on_hover: reveal_toolbar_on_hover.is_active(),
         keyboard_passthrough: keyboard_passthrough.is_active(),

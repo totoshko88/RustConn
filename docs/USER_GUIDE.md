@@ -1314,9 +1314,8 @@ Right-click an SSH connection and choose **Open Browser via Tunnel** to reach we
 services that only that SSH host can see — an internal dashboard, a router admin
 page, a service in a DMZ — without configuring a separate Web connection. RustConn
 raises a dynamic SOCKS proxy (`ssh -N -D`) to the host on a free local port and
-opens a browser on a blank page routed through it; you type where to go and every
-request exits from the SSH host. This is RustConn's equivalent of Ásbrú's
-incognito browser.
+opens a browser on a start page routed through it; every request exits from the
+SSH host. This is RustConn's equivalent of Ásbrú's incognito browser.
 
 Where it opens is a global setting — Settings → Interface → Connections → **Open
 tunnelled browser in the embedded browser**:
@@ -1329,6 +1328,15 @@ tunnelled browser in the embedded browser**:
   with `--proxy-server`. RustConn picks it from `$BROWSER` first, then the first
   such binary on your `PATH`. The tunnel is kept alive behind the browser and
   released when RustConn exits.
+
+The **Tunnelled browser start page** entry just below that switch sets where the
+browser opens (embedded and external alike). It defaults to
+`https://www.google.com` so it is immediately visible the tunnel works — a blank
+page would look dead, and the embedded browser rejects a non-web URL anyway. The
+presets button beside the entry fills it with one of the common choices: Google,
+DuckDuckGo, or `ifconfig.me` (which shows the exit IP, a quick way to confirm the
+page really left through the SSH host). You can also type any URL; a value without
+a scheme is treated as `https://`.
 
 If the tunnel cannot be raised, or no Chromium-based browser is found for the
 external mode, RustConn shows a toast and opens nothing — it never falls back to

@@ -435,6 +435,12 @@ const fn default_true() -> bool {
     true
 }
 
+/// Default start page for the tunnelled browser (see
+/// [`UiSettings::tunnel_browser_start_url`]).
+fn default_tunnel_start_url() -> String {
+    "https://www.google.com".to_string()
+}
+
 /// Default secret backend, chosen per platform.
 ///
 /// macOS ships the system Keychain (Security.framework) and has no libsecret,
@@ -960,6 +966,15 @@ pub struct UiSettings {
     /// Chromium-based browser in incognito mode through the tunnel instead.
     #[serde(default = "default_true")]
     pub open_tunnelled_browser_in_embedded: bool,
+    /// Start page for the "Open Browser via Tunnel" SSH action.
+    ///
+    /// The browser (embedded or external) opens here so it is visible the
+    /// tunnel works — a blank page would look dead. Default
+    /// `https://www.google.com`; the Settings dialog also offers DuckDuckGo and
+    /// `ifconfig.me` (which shows the exit IP, confirming the SOCKS route) or a
+    /// custom URL. A value without a scheme is treated as `https://`.
+    #[serde(default = "default_tunnel_start_url")]
+    pub tunnel_browser_start_url: String,
     /// Show connection name as a compact header on each split-view pane.
     ///
     /// Default `false`. When enabled, a thin colored banner with the connection
@@ -1065,6 +1080,7 @@ impl Default for UiSettings {
             window_title_shows_connection: false,
             double_click_opens_new_session: false,
             open_tunnelled_browser_in_embedded: true,
+            tunnel_browser_start_url: default_tunnel_start_url(),
             show_split_pane_labels: false,
             keyboard_passthrough: false,
         }

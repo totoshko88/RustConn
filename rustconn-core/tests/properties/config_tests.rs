@@ -559,6 +559,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         window_title_shows_connection: false,
                         double_click_opens_new_session: false,
                         open_tunnelled_browser_in_embedded: true,
+                        tunnel_browser_start_url: "https://www.google.com".to_string(),
                         show_split_pane_labels: false,
                         keyboard_passthrough: false,
                     },
