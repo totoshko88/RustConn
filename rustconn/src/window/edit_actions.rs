@@ -4,6 +4,16 @@
 
 use super::*;
 
+/// Why the external tunnel browser could not be resolved.
+enum TunnelBrowserError {
+    /// A command is configured but does not name a Chromium-family browser.
+    NotChromium(String),
+    /// A configured command names a browser that is not present on `PATH`.
+    NotFound(String),
+    /// No command is configured and auto-detection found nothing.
+    NoneFound,
+}
+
 impl MainWindow {
     pub(crate) fn setup_edit_actions(
         &self,
@@ -1160,6 +1170,49 @@ impl MainWindow {
     /// Picks a Chromium-family browser binary that accepts `--proxy-server`.
     ///
     /// Honours `$BROWSER` first when it names a known Chromium binary, then
+    /// True if `name` looks like a Chromium-family binary — the only kind that
+    /// takes `--incognito` and `--proxy-server` on the command line.
+    fn is_chromium_browser(name: &str) -> bool {
+        let lower = name.to_lowercase();
+        ["chrom", "brave", "vivaldi", "edge"]
+            .iter()
+            .any(|marker| lower.contains(marker))
+    }
+
+    /// Resolves the external tunnel browser: the configured command when set,
+    /// otherwise auto-detection.
+    ///
+    /// Returns the binary and any extra arguments to pass before the proxy
+    /// flags. A configured command must name a Chromium-family binary that is
+    /// present (a bare name resolved on `PATH`, a path checked as a file);
+    /// anything else is an error so the caller can explain it rather than browse
+    /// un-tunnelled.
+    fn resolve_tunnel_browser(command: &str) -> Result<(String, Vec<String>), TunnelBrowserError> {
+        let command = command.trim();
+        if command.is_empty() {
+            return Self::find_chromium_browser()
+                .map(|bin| (bin, Vec::new()))
+                .ok_or(TunnelBrowserError::NoneFound);
+        }
+
+        let mut parts = command.split_whitespace();
+        let bin = parts.next().unwrap_or(command).to_string();
+        let extra: Vec<String> = parts.map(str::to_string).collect();
+
+        if !Self::is_chromium_browser(&bin) {
+            return Err(TunnelBrowserError::NotChromium(bin));
+        }
+        let available = if bin.contains('/') {
+            std::path::Path::new(&bin).is_file()
+        } else {
+            rustconn_core::which::is_available(&bin)
+        };
+        if !available {
+            return Err(TunnelBrowserError::NotFound(bin));
+        }
+        Ok((bin, extra))
+    }
+
     /// probes a small candidate list on `PATH`. Returns `None` when none is
     /// found — Firefox and the portal browser cannot take a command-line SOCKS
     /// proxy, so there is nothing to launch through the tunnel.
@@ -1176,18 +1229,11 @@ impl MainWindow {
             "microsoft-edge-stable",
         ];
 
-        let is_chromium = |name: &str| {
-            let lower = name.to_lowercase();
-            ["chrom", "brave", "vivaldi", "edge"]
-                .iter()
-                .any(|marker| lower.contains(marker))
-        };
-
         // $BROWSER may be a colon-separated list; take the first Chromium entry.
         if let Ok(browser_env) = std::env::var("BROWSER") {
             for entry in browser_env.split(':').filter(|s| !s.is_empty()) {
                 let bin = entry.split_whitespace().next().unwrap_or(entry);
-                if is_chromium(bin) && rustconn_core::which::is_available(bin) {
+                if Self::is_chromium_browser(bin) && rustconn_core::which::is_available(bin) {
                     return Some(bin.to_string());
                 }
             }
@@ -1216,7 +1262,7 @@ impl MainWindow {
         connection_id: Uuid,
     ) {
         // Only SSH-family connections can host a SOCKS tunnel.
-        let (is_ssh, prefer_embedded, start_url) = {
+        let (is_ssh, prefer_embedded, start_url, browser_command) = {
             let Ok(state_ref) = state.try_borrow() else {
                 return;
             };
@@ -1232,6 +1278,7 @@ impl MainWindow {
                 is_ssh,
                 ui.open_tunnelled_browser_in_embedded,
                 Self::normalize_start_url(&ui.tunnel_browser_start_url),
+                ui.tunnel_browser_command.trim().to_string(),
             )
         };
         if !is_ssh {
@@ -1303,15 +1350,36 @@ impl MainWindow {
         }
 
         // External browser: a Chromium-family binary in incognito, proxied.
-        let Some(browser) = Self::find_chromium_browser() else {
-            crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
-                "No Chromium-based browser found. Install one, or enable the embedded browser, to open a tunnelled browser.",
-            ));
-            // `tunnel` drops here, closing the unused proxy.
-            return;
+        // A configured command wins over auto-detection; empty falls back to it.
+        let (browser, extra_args) = match Self::resolve_tunnel_browser(&browser_command) {
+            Ok(resolved) => resolved,
+            Err(TunnelBrowserError::NotChromium(bin)) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                    "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only Chromium-family browsers can be proxied through the tunnel; set a chromium/chrome/brave/vivaldi/edge command in Settings.",
+                    &[&bin],
+                ));
+                return;
+            }
+            Err(TunnelBrowserError::NotFound(bin)) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                    "The tunnelled browser command ‘{}’ was not found on PATH. Check the command in Settings, or clear it to auto-detect a browser.",
+                    &[&bin],
+                ));
+                return;
+            }
+            Err(TunnelBrowserError::NoneFound) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                    "No Chromium-based browser found. Install one, or enable the embedded browser, to open a tunnelled browser.",
+                ));
+                // `tunnel` drops here, closing the unused proxy.
+                return;
+            }
         };
 
         let mut cmd = std::process::Command::new(&browser);
+        for arg in &extra_args {
+            cmd.arg(arg);
+        }
         cmd.arg("--incognito");
         cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
         cmd.arg(&start_url);

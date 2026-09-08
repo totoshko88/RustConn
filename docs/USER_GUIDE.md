@@ -1333,10 +1333,19 @@ The **Tunnelled browser start page** entry just below that switch sets where the
 browser opens (embedded and external alike). It defaults to
 `https://www.google.com` so it is immediately visible the tunnel works — a blank
 page would look dead, and the embedded browser rejects a non-web URL anyway. The
-presets button beside the entry fills it with one of the common choices: Google,
+presets button beside the entry fills it with one of the common choices — Google,
 DuckDuckGo, or `ifconfig.me` (which shows the exit IP, a quick way to confirm the
-page really left through the SSH host). You can also type any URL; a value without
-a scheme is treated as `https://`.
+page really left through the SSH host) — or **Custom** to type your own. Any URL
+works; a value without a scheme is treated as `https://`.
+
+For the external (non-embedded) path, **External browser command (tunnelled)**
+lets you name the browser to use, the same way a Web connection's **Custom
+Browser** command does. Leave it empty to auto-detect (`$BROWSER`, then the first
+Chromium-family binary on `PATH`), or set a command or path — for example
+`chromium`, `brave-browser`, or `/opt/foo/chrome`, optionally with extra arguments
+before the proxy flags. It must be a Chromium-family browser, since only those
+take a command-line `--proxy-server`; a non-Chromium or missing command is
+reported as a toast rather than opening un-tunnelled.
 
 If the tunnel cannot be raised, or no Chromium-based browser is found for the
 external mode, RustConn shows a toast and opens nothing — it never falls back to

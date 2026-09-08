@@ -975,6 +975,18 @@ pub struct UiSettings {
     /// custom URL. A value without a scheme is treated as `https://`.
     #[serde(default = "default_tunnel_start_url")]
     pub tunnel_browser_start_url: String,
+    /// External browser command for the "Open Browser via Tunnel" action.
+    ///
+    /// Only consulted for the external (non-embedded) path. Empty (the default)
+    /// means auto-detect: `$BROWSER`, then the first Chromium-family binary on
+    /// `PATH`. A value here overrides that — a command or path to a
+    /// Chromium-family browser binary that accepts `--incognito` and
+    /// `--proxy-server` (e.g. `chromium`, `brave-browser`, `/opt/foo/chrome`).
+    /// Extra arguments after the binary are passed through before the proxy
+    /// flags. A non-Chromium browser (e.g. Firefox) cannot take a command-line
+    /// proxy and is rejected with a toast rather than browsing un-tunnelled.
+    #[serde(default)]
+    pub tunnel_browser_command: String,
     /// Show connection name as a compact header on each split-view pane.
     ///
     /// Default `false`. When enabled, a thin colored banner with the connection
@@ -1081,6 +1093,7 @@ impl Default for UiSettings {
             double_click_opens_new_session: false,
             open_tunnelled_browser_in_embedded: true,
             tunnel_browser_start_url: default_tunnel_start_url(),
+            tunnel_browser_command: String::new(),
             show_split_pane_labels: false,
             keyboard_passthrough: false,
         }

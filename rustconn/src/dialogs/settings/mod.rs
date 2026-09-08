@@ -140,6 +140,10 @@ pub struct SettingsDialog {
     open_tunnelled_browser_in_embedded: adw::SwitchRow,
     // "Open Browser via Tunnel" start page (issue: tunnelled browser start URL)
     tunnel_start_url_row: adw::EntryRow,
+    // Presets dropdown for the tunnel start page (fills the entry)
+    tunnel_start_preset: DropDown,
+    // External browser command for the tunnelled browser (empty = auto-detect)
+    tunnel_browser_command_row: adw::EntryRow,
     // Show connection name header on split-view panes (issue #277)
     show_split_pane_labels: adw::SwitchRow,
     // GSK renderer preference; applies from the next start (issue #274)
@@ -274,6 +278,8 @@ impl SettingsDialog {
             reveal_toolbar_on_hover,
             open_tunnelled_browser_in_embedded,
             tunnel_start_url_row,
+            tunnel_start_preset,
+            tunnel_browser_command_row,
             renderer_row,
         ) = create_ui_page();
         mark("ui_page");
@@ -703,6 +709,8 @@ impl SettingsDialog {
             double_click_opens_new_session,
             open_tunnelled_browser_in_embedded,
             tunnel_start_url_row,
+            tunnel_start_preset,
+            tunnel_browser_command_row,
             show_split_pane_labels,
             reveal_toolbar_on_hover,
             renderer_row,
@@ -1205,6 +1213,8 @@ impl SettingsDialog {
             &self.reveal_toolbar_on_hover,
             &self.open_tunnelled_browser_in_embedded,
             &self.tunnel_start_url_row,
+            &self.tunnel_start_preset,
+            &self.tunnel_browser_command_row,
             &self.renderer_row,
             &settings.ui,
             &conn_refs,
@@ -1374,6 +1384,7 @@ impl SettingsDialog {
         let open_tunnelled_browser_in_embedded_clone =
             self.open_tunnelled_browser_in_embedded.clone();
         let tunnel_start_url_row_clone = self.tunnel_start_url_row.clone();
+        let tunnel_browser_command_row_clone = self.tunnel_browser_command_row.clone();
         let show_split_pane_labels_clone = self.show_split_pane_labels.clone();
         let reveal_toolbar_on_hover_clone = self.reveal_toolbar_on_hover.clone();
         let renderer_row_clone = self.renderer_row.clone();
@@ -1590,6 +1601,7 @@ impl SettingsDialog {
                 &reveal_toolbar_on_hover_clone,
                 &open_tunnelled_browser_in_embedded_clone,
                 &tunnel_start_url_row_clone,
+                &tunnel_browser_command_row_clone,
                 &renderer_row_clone,
                 &conn_refs,
             );
