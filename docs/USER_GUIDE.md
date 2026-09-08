@@ -604,6 +604,14 @@ Forward TCP ports through SSH tunnels. Three modes are supported:
 - Remote: expose local port 3000 on the remote server's port 9000
 - Dynamic: create a SOCKS proxy on local port 1080
 
+**Automatic SOCKS port.** Leave a Dynamic forward's local port at `0` and RustConn
+picks a free local port each time you connect, shown in the summary as
+`D auto (SOCKS)`. This avoids port clashes when the same connection is opened
+twice, or when several tunnels run at once. The chosen port is written to the log
+at connect time (`Assigned a random local SOCKS proxy port …`); point your browser
+or a local command at `socks5://127.0.0.1:<that port>`. A fixed port still works —
+set any non-zero value to keep the same SOCKS port every time.
+
 **Import Support:**
 Port forwarding rules are automatically imported from:
 - SSH config (`LocalForward`, `RemoteForward`, `DynamicForward` directives)

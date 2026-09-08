@@ -353,10 +353,41 @@ fn build_ssh_command_args(
         },
     };
 
+    // A dynamic SOCKS forward stored with local_port == 0 means "pick a free
+    // port now". Assign it before building the args so `-D <port>` carries a
+    // real, non-colliding port; the chosen value is logged so the user can point
+    // a browser at it. Resolving on a clone keeps the stored config untouched
+    // (the sentinel must survive to the next connect). When no random forward is
+    // configured this clones nothing extra of note and assigns nothing.
+    let resolved_socks = if ssh_config.has_random_socks_forward() {
+        let mut resolved = ssh_config.clone();
+        match resolved.assign_random_socks_ports(rustconn_core::ssh_tunnel::find_free_port) {
+            Ok(port) => {
+                if let Some(port) = port {
+                    tracing::info!(
+                        socks_port = port,
+                        "Assigned a random local SOCKS proxy port for the dynamic forward"
+                    );
+                }
+                Some((resolved, port))
+            }
+            Err(e) => {
+                // Could not find a free port — fall back to the config as stored
+                // (a `-D 0` that OpenSSH itself rejects loudly), rather than
+                // failing the whole connection here.
+                tracing::error!(error = %e, "Could not pick a free SOCKS port; leaving the forward as configured");
+                None
+            }
+        }
+    } else {
+        None
+    };
+    let effective_ssh_config = resolved_socks.as_ref().map_or(ssh_config, |(cfg, _)| cfg);
+
     // Use build_command_args() for all SSH-specific flags:
     // identity, IdentitiesOnly, proxy_jump, ControlMaster/Persist,
     // agent forwarding, X11, compression, custom options, port forwards
-    let mut args = ssh_config.build_command_args();
+    let mut args = effective_ssh_config.build_command_args();
 
     // Unlike the old VTE watcher, forced askpass is scoped to OpenSSH's target
     // authentication phase: the helper answers only the prompt OpenSSH generates
