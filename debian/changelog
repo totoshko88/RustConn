@@ -1,3 +1,31 @@
+rustconn (0.21.9-1) unstable; urgency=medium
+
+  * Version bump to 0.21.9
+  * Added: "Open Browser via Tunnel" on an SSH connection — one right-click
+    raises a SOCKS proxy to the host and opens a browser (embedded or external
+    Chromium) routed through it, with a configurable start page (presets for
+    Google/DuckDuckGo/ifconfig.me plus Custom) and an external-browser command;
+    auto-detection respects the system default browser and falls back to the
+    embedded browser with a toast when no Chromium browser is available.
+  * Added: a Web connection can browse through an SSH host (SOCKS tunnel) in the
+    embedded and a Chromium browser.
+  * Added: interactive "ASK" variables — prompt for a value at connect time
+    (@ask:, @ask?:, @ask:|list).
+  * Added: a dynamic SOCKS forward can pick a free local port automatically
+    (stored local port 0).
+  * Added: built-in date, time and environment variables in ${...} substitutions.
+  * Added: built-in Expect templates cover the newer OpenSSH host-key prompt and
+    bare "any key to continue" banners.
+  * Fixed: an embedded Web connection to an unreachable host no longer leaves a
+    blank browser tab open.
+  * Fixed: the Jump Host and Tunnel dropdowns' search box now filters the list.
+  * Fixed: a ProxyCommand relay no longer leaves the target session hung at the
+    password prompt (#322).
+  * Fixed: the "Executing:" echo now quotes a ProxyCommand value so it no longer
+    looks ignored (#322).
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 08 Sep 2026 16:40:00 +0300
+
 rustconn (0.21.8-1) unstable; urgency=medium
 
   * Version bump to 0.21.8
