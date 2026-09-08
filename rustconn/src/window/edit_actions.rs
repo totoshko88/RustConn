@@ -1170,8 +1170,28 @@ impl MainWindow {
     /// Picks a Chromium-family browser binary that accepts `--proxy-server`.
     ///
     /// Honours `$BROWSER` first when it names a known Chromium binary, then
+    /// Builds a `--user-data-dir=<unique temp path>` argument for a proxied
+    /// Chromium launch.
+    ///
+    /// `--proxy-server` only takes effect when Chromium starts a *new* process;
+    /// a bare `chromium --proxy-server=… URL` while a browser is already running
+    /// just forwards the URL to the existing (un-proxied) instance. A throwaway
+    /// profile directory guarantees a separate instance. The directory lives
+    /// under the runtime dir (or the system temp dir) and is left for the OS to
+    /// reap on reboot; the browser is detached and outlives RustConn, so we do
+    /// not delete it ourselves.
+    fn chromium_isolated_profile_arg() -> std::ffi::OsString {
+        let base = std::env::var_os("XDG_RUNTIME_DIR")
+            .filter(|dir| !dir.is_empty())
+            .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+        let dir = base.join(format!("rustconn-tunnel-browser-{}", uuid::Uuid::new_v4()));
+        let mut arg = std::ffi::OsString::from("--user-data-dir=");
+        arg.push(dir);
+        arg
+    }
+
     /// True if `name` looks like a Chromium-family binary — the only kind that
-    /// takes `--incognito` and `--proxy-server` on the command line.
+    /// takes `--proxy-server` on the command line.
     fn is_chromium_browser(name: &str) -> bool {
         let lower = name.to_lowercase();
         ["chrom", "brave", "vivaldi", "edge"]
@@ -1250,7 +1270,7 @@ impl MainWindow {
     ///
     /// Uses the embedded browser when this build has it and the
     /// `open_tunnelled_browser_in_embedded` setting is on; otherwise launches an
-    /// external Chromium-family browser in incognito mode with
+    /// external Chromium-family browser in an isolated throwaway profile with
     /// `--proxy-server=socks5://…`. The start page comes from the
     /// `tunnel_browser_start_url` setting (default `https://www.google.com`), so
     /// it is visible the tunnel works. A tunnel failure, or the absence of a
@@ -1380,7 +1400,14 @@ impl MainWindow {
         for arg in &extra_args {
             cmd.arg(arg);
         }
-        cmd.arg("--incognito");
+        // A running Chrome/Chromium would otherwise hand the URL to the existing
+        // process and ignore `--proxy-server` (it only applies at process
+        // start), so the page would load un-tunnelled. A throwaway
+        // `--user-data-dir` forces a separate instance that honours the proxy;
+        // it is already a clean profile, so no `--incognito` is needed.
+        cmd.arg(Self::chromium_isolated_profile_arg());
+        cmd.arg("--no-first-run");
+        cmd.arg("--no-default-browser-check");
         cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
         cmd.arg(&start_url);
 
@@ -1602,10 +1629,18 @@ impl MainWindow {
             // Chromium family takes a `--proxy-server` flag; Firefox reads proxy
             // settings from its profile, which a one-shot launch cannot set
             // safely, so we surface that rather than pretend it worked.
+            let mut tunnelled_isolated = false;
             if let Some(ref tunnel) = socks_tunnel {
                 let port = tunnel.local_port();
                 if is_chromium {
+                    // A throwaway `--user-data-dir` forces a separate instance:
+                    // a running Chrome would otherwise take over the launch and
+                    // ignore `--proxy-server`, loading the page un-tunnelled.
+                    cmd.arg(Self::chromium_isolated_profile_arg());
+                    cmd.arg("--no-first-run");
+                    cmd.arg("--no-default-browser-check");
                     cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
+                    tunnelled_isolated = true;
                 } else {
                     crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
                         "This browser can't be tunnelled from the command line. Use a Chromium-based browser or the embedded browser for SSH tunnelling.",
@@ -1613,11 +1648,14 @@ impl MainWindow {
                 }
             }
 
-            // Add private mode flag for known browsers
+            // Add private mode flag for known browsers. A Chromium instance
+            // already launched into its own throwaway profile above is clean,
+            // and `--incognito` there would rejoin the running process, so skip
+            // it in that case.
             if web_config.private_mode {
                 if browser_lower.contains("firefox") {
                     cmd.arg("--private-window");
-                } else if is_chromium {
+                } else if is_chromium && !tunnelled_isolated {
                     cmd.arg("--incognito");
                 }
             }
