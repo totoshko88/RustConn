@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 15:54+0300\n"
+"POT-Creation-Date: 2026-09-08 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Uzbek\n"
@@ -5470,7 +5470,7 @@ msgid "{} bits"
 msgstr "{} bit"
 
 #: rustconn/src/dialogs/password_generator.rs:395
-#: rustconn/src/window/edit_actions.rs:183
+#: rustconn/src/window/edit_actions.rs:194
 msgid "Password copied (auto-clears in 30s)"
 msgstr "Parol nusxalandi (30 s dan keyin avtomatik tozalanadi)"
 
@@ -11086,7 +11086,7 @@ msgstr "'{}' uchun ombor yozuvi topilmadi. Sizdan parol soʻraladi."
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:2003
+#: rustconn/src/window/edit_actions.rs:2051
 msgid "Connection failed. Host unreachable."
 msgstr "Ulanish muvaffaqiyatsiz. Xost mavjud emas."
 
@@ -11127,111 +11127,111 @@ msgstr "Seansni oʻz oynasiga koʻchirib boʻlmadi."
 msgid "Could not move the session back to the main window."
 msgstr "Seansni asosiy oynaga qaytarib boʻlmadi."
 
-#: rustconn/src/window/edit_actions.rs:139
+#: rustconn/src/window/edit_actions.rs:150
 msgid "No username configured"
 msgstr "Foydalanuvchi nomi sozlanmagan"
 
-#: rustconn/src/window/edit_actions.rs:144
+#: rustconn/src/window/edit_actions.rs:155
 msgid "Username copied"
 msgstr "Foydalanuvchi nomi nusxalandi"
 
-#: rustconn/src/window/edit_actions.rs:205
+#: rustconn/src/window/edit_actions.rs:216
 msgid "Cached password is empty"
 msgstr "Saqlangan parol bo'sh"
 
-#: rustconn/src/window/edit_actions.rs:229
+#: rustconn/src/window/edit_actions.rs:240
 msgid "Password is empty"
 msgstr "Parol bosh"
 
-#: rustconn/src/window/edit_actions.rs:239
-#: rustconn/src/window/edit_actions.rs:245
+#: rustconn/src/window/edit_actions.rs:250
+#: rustconn/src/window/edit_actions.rs:256
 msgid "No password configured for this connection"
 msgstr "Bu ulanish uchun parol sozlanmagan"
 
-#: rustconn/src/window/edit_actions.rs:251
+#: rustconn/src/window/edit_actions.rs:262
 msgid "Could not retrieve password from secret backend"
 msgstr "Sir backendidan parolni olish imkoni bolmadi"
 
-#: rustconn/src/window/edit_actions.rs:344
+#: rustconn/src/window/edit_actions.rs:355
 msgid "Item restored"
 msgstr "Element tiklandi"
 
-#: rustconn/src/window/edit_actions.rs:478
+#: rustconn/src/window/edit_actions.rs:489
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr ""
 "Wake On LAN sozlanmagan. MAC manzilini belgilash uchun ulanishni tahrirlang."
 
-#: rustconn/src/window/edit_actions.rs:506
+#: rustconn/src/window/edit_actions.rs:517
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN {} ga yuborildi — host onlayn bo’lishi kutilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:547
+#: rustconn/src/window/edit_actions.rs:558
 msgid "{} is online — connecting…"
 msgstr "{} onlayn — ulanilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:562
+#: rustconn/src/window/edit_actions.rs:573
 msgid "{} did not come online after WoL"
 msgstr "{} WoL dan keyin onlayn bo’lmadi"
 
-#: rustconn/src/window/edit_actions.rs:574
+#: rustconn/src/window/edit_actions.rs:585
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr ""
 "Wake On LAN paketini yuborib bolmadi. Tarmoq ruxsatlarini tekshiring.Wake On"
 " LAN paketini yuborish muvaffaqiyatsiz. Tarmoq ruxsatlarini tekshiring.Wake "
 "On LAN paketini yuborish muvaffaqiyatsiz. Tarmoq ruxsatlarini tekshiring."
 
-#: rustconn/src/window/edit_actions.rs:620
+#: rustconn/src/window/edit_actions.rs:631
 msgid "Checking if {} is online…"
 msgstr "{} onlaynmi tekshirilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:651
+#: rustconn/src/window/edit_actions.rs:662
 msgid "{} is online"
 msgstr "{} onlayn"
 
-#: rustconn/src/window/edit_actions.rs:666
+#: rustconn/src/window/edit_actions.rs:677
 msgid "{} did not come online within timeout"
 msgstr "{} belgilangan vaqt ichida onlayn bo’lmadi"
 
-#: rustconn/src/window/edit_actions.rs:673
+#: rustconn/src/window/edit_actions.rs:684
 msgid "Host check failed: {}"
 msgstr "Host tekshiruvi muvaffaqiyatsiz: {}"
 
-#: rustconn/src/window/edit_actions.rs:741
-#: rustconn/src/window/edit_actions.rs:859
-#: rustconn/src/window/edit_actions.rs:914
+#: rustconn/src/window/edit_actions.rs:752
+#: rustconn/src/window/edit_actions.rs:870
+#: rustconn/src/window/edit_actions.rs:925
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP faqat SSH ulanishlari uchun mavjud."
 
-#: rustconn/src/window/edit_actions.rs:751
+#: rustconn/src/window/edit_actions.rs:762
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr ""
 "mc agentda SSH kaliti talab qiladi. Parol bilan autentifikatsiya qoʻllab-"
 "quvvatlanmaydi."
 
-#: rustconn/src/window/edit_actions.rs:759
+#: rustconn/src/window/edit_actions.rs:770
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr ""
 "SSH agenti ishlamayapti. «eval $(ssh-agent)» ni bajaring va qayta urinib "
 "koʻring."
 
-#: rustconn/src/window/edit_actions.rs:785
+#: rustconn/src/window/edit_actions.rs:796
 msgid "SSH key not available"
 msgstr "SSH kalit mavjud emas"
 
-#: rustconn/src/window/edit_actions.rs:793
+#: rustconn/src/window/edit_actions.rs:804
 msgid "Failed to add SSH key to agent."
 msgstr "SSH kalitni agentga qo’shib bo’lmadi."
 
-#: rustconn/src/window/edit_actions.rs:802
+#: rustconn/src/window/edit_actions.rs:813
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) o'rnatilmagan."
 
-#: rustconn/src/window/edit_actions.rs:807
+#: rustconn/src/window/edit_actions.rs:818
 msgid "Opening mc SFTP…"
 msgstr "mc SFTP ochilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:885
-#: rustconn/src/window/edit_actions.rs:2174
+#: rustconn/src/window/edit_actions.rs:896
+#: rustconn/src/window/edit_actions.rs:2222
 msgid ""
 "External file managers cannot access SSH agent in Flatpak."
 "                          Enable \"SFTP via mc\" in Settings for reliable "
@@ -11241,31 +11241,42 @@ msgstr ""
 "                          Ishonchli kirish uchun Sozlamalarda \"SFTP via "
 "mc\" ni yoqing."
 
-#: rustconn/src/window/edit_actions.rs:901
-#: rustconn/src/window/edit_actions.rs:2192
+#: rustconn/src/window/edit_actions.rs:912
+#: rustconn/src/window/edit_actions.rs:2240
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "O‘tish xosti aniqlandi. SFTP fayl menejeri o‘rniga mc orqali ochiladi."
 
-#: rustconn/src/window/edit_actions.rs:964
+#: rustconn/src/window/edit_actions.rs:975
 msgid "Opening SFTP…"
 msgstr "SFTP ochilmoqda…"
 
-#: rustconn/src/window/edit_actions.rs:1031
+#: rustconn/src/window/edit_actions.rs:1042
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "SSH agenti ishlamayapti — fayl menejeri autentifikatsiyadan oʻtmasligi "
 "mumkin."
 
-#: rustconn/src/window/edit_actions.rs:1099
+#: rustconn/src/window/edit_actions.rs:1110
 msgid "application is busy"
 msgstr "ilova band"
 
-#: rustconn/src/window/edit_actions.rs:1101
+#: rustconn/src/window/edit_actions.rs:1112
 msgid "the SSH connection it tunnels through is gone"
 msgstr "tunnel oʻtadigan SSH ulanishi endi mavjud emas"
 
-#: rustconn/src/window/edit_actions.rs:1392
+#: rustconn/src/window/edit_actions.rs:1436
+msgid ""
+"The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
+"tunnelled; opening the embedded browser instead. Set a "
+"chromium/chrome/brave/vivaldi/edge command in Settings to use an external "
+"browser."
+msgstr ""
+"Tunnellangan brauzer buyrug‘i ‘{}’ Chromium asosida emas va tunnellab "
+"bo‘lmaydi; o‘rniga ichki brauzer ochilmoqda. Tashqi brauzerdan foydalanish "
+"uchun Sozlamalarda chromium/chrome/brave/vivaldi/edge buyrug‘ini kiriting."
+
+#: rustconn/src/window/edit_actions.rs:1440
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a "
@@ -11275,7 +11286,17 @@ msgstr ""
 "orqali faqat Chromium oilasidagi brauzerlarni proksilash mumkin; "
 "Sozlamalarda chromium/chrome/brave/vivaldi/edge buyrug‘ini kiriting."
 
-#: rustconn/src/window/edit_actions.rs:1399
+#: rustconn/src/window/edit_actions.rs:1446
+msgid ""
+"The tunnelled browser command ‘{}’ was not found on PATH; opening the "
+"embedded browser instead. Check the command in Settings, or clear it to "
+"auto-detect a browser."
+msgstr ""
+"Tunnellangan brauzer buyrug‘i ‘{}’ PATH’da topilmadi; o‘rniga ichki brauzer "
+"ochilmoqda. Sozlamalardagi buyruqni tekshiring yoki brauzerni avtoaniqlash "
+"uchun uni tozalang."
+
+#: rustconn/src/window/edit_actions.rs:1450
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -11283,13 +11304,7 @@ msgstr ""
 "Tunnellangan brauzer buyrug‘i ‘{}’ PATH’da topilmadi. Sozlamalardagi "
 "buyruqni tekshiring yoki brauzerni avtoaniqlash uchun uni tozalang."
 
-#: rustconn/src/window/edit_actions.rs:1410
-#: rustconn/src/window/edit_actions.rs:1641
-#: rustconn/src/window/edit_actions.rs:1724
-msgid "Could not open the SSH tunnel: {}"
-msgstr "SSH tunnelini ochib boʻlmadi: {}"
-
-#: rustconn/src/window/edit_actions.rs:1435
+#: rustconn/src/window/edit_actions.rs:1456
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -11297,38 +11312,46 @@ msgstr ""
 "Chromium asosidagi brauzer topilmadi; oʻrniga ichki brauzer ochilmoqda. "
 "Tashqi brauzerni tunnellash uchun Chromium asosidagi brauzer oʻrnating."
 
-#: rustconn/src/window/edit_actions.rs:1449
+#: rustconn/src/window/edit_actions.rs:1459
 msgid ""
-"No Chromium-based browser found. Install one to open a tunnelled browser."
+"No Chromium-based browser found. Install a Chromium-based browser, or use a "
+"build with the embedded browser, to open a tunnelled browser."
 msgstr ""
-"Chromium asosidagi brauzer topilmadi. Tunnellangan brauzer ochish uchun uni "
-"oʻrnating."
+"Chromium asosidagi brauzer topilmadi. Tunnellangan brauzer ochish uchun "
+"Chromium asosidagi brauzer o‘rnating yoki ichki brauzerli builddan "
+"foydalaning."
 
-#: rustconn/src/window/edit_actions.rs:1483
+#: rustconn/src/window/edit_actions.rs:1475
+#: rustconn/src/window/edit_actions.rs:1689
+#: rustconn/src/window/edit_actions.rs:1772
+msgid "Could not open the SSH tunnel: {}"
+msgstr "SSH tunnelini ochib boʻlmadi: {}"
+
+#: rustconn/src/window/edit_actions.rs:1531
 msgid "Opened a tunnelled browser"
 msgstr "Tunnellangan brauzer ochildi"
 
-#: rustconn/src/window/edit_actions.rs:1488
-#: rustconn/src/window/edit_actions.rs:1541
+#: rustconn/src/window/edit_actions.rs:1536
+#: rustconn/src/window/edit_actions.rs:1589
 msgid "Failed to open browser: {}"
 msgstr "Brauzerni ochib boʻlmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1518
+#: rustconn/src/window/edit_actions.rs:1566
 msgid "{} (tunnel)"
 msgstr "{} (tunnel)"
 
-#: rustconn/src/window/edit_actions.rs:1532
-#: rustconn/src/window/edit_actions.rs:1679
+#: rustconn/src/window/edit_actions.rs:1580
+#: rustconn/src/window/edit_actions.rs:1727
 msgid "Could not open the page: {}"
 msgstr "Sahifani ochib boʻlmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1704
-#: rustconn/src/window/edit_actions.rs:1811
-#: rustconn/src/window/edit_actions.rs:1838
+#: rustconn/src/window/edit_actions.rs:1752
+#: rustconn/src/window/edit_actions.rs:1859
+#: rustconn/src/window/edit_actions.rs:1886
 msgid "Failed to open URL: {}"
 msgstr "URL ni ochib bo’lmadi: {}"
 
-#: rustconn/src/window/edit_actions.rs:1757
+#: rustconn/src/window/edit_actions.rs:1805
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -11336,12 +11359,12 @@ msgstr ""
 "Bu brauzerni buyruq qatoridan tunnel qilib boʻlmaydi. SSH tunnellash uchun "
 "Chromium asosidagi brauzerdan yoki oʻrnatilgan brauzerdan foydalaning."
 
-#: rustconn/src/window/edit_actions.rs:1800
-#: rustconn/src/window/edit_actions.rs:1852
+#: rustconn/src/window/edit_actions.rs:1848
+#: rustconn/src/window/edit_actions.rs:1900
 msgid "Opened in browser"
 msgstr "Brauzerda ochildi"
 
-#: rustconn/src/window/edit_actions.rs:1825
+#: rustconn/src/window/edit_actions.rs:1873
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
 " browser opens without the tunnel."

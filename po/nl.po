@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 15:54+0300\n"
+"POT-Creation-Date: 2026-09-08 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -5445,7 +5445,7 @@ msgid "{} bits"
 msgstr "{} bits"
 
 #: rustconn/src/dialogs/password_generator.rs:395
-#: rustconn/src/window/edit_actions.rs:183
+#: rustconn/src/window/edit_actions.rs:194
 msgid "Password copied (auto-clears in 30s)"
 msgstr "Wachtwoord gekopieerd (wordt na 30 s gewist)"
 
@@ -11055,7 +11055,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:2003
+#: rustconn/src/window/edit_actions.rs:2051
 msgid "Connection failed. Host unreachable."
 msgstr "Verbinding mislukt. Host onbereikbaar."
 
@@ -11096,108 +11096,108 @@ msgstr "Kan de sessie niet naar een eigen venster verplaatsen."
 msgid "Could not move the session back to the main window."
 msgstr "Kan de sessie niet terugverplaatsen naar het hoofdvenster."
 
-#: rustconn/src/window/edit_actions.rs:139
+#: rustconn/src/window/edit_actions.rs:150
 msgid "No username configured"
 msgstr "Geen gebruikersnaam geconfigureerd"
 
-#: rustconn/src/window/edit_actions.rs:144
+#: rustconn/src/window/edit_actions.rs:155
 msgid "Username copied"
 msgstr "Gebruikersnaam gekopieerd"
 
-#: rustconn/src/window/edit_actions.rs:205
+#: rustconn/src/window/edit_actions.rs:216
 msgid "Cached password is empty"
 msgstr "Opgeslagen wachtwoord is leeg"
 
-#: rustconn/src/window/edit_actions.rs:229
+#: rustconn/src/window/edit_actions.rs:240
 msgid "Password is empty"
 msgstr "Wachtwoord is leeg"
 
-#: rustconn/src/window/edit_actions.rs:239
-#: rustconn/src/window/edit_actions.rs:245
+#: rustconn/src/window/edit_actions.rs:250
+#: rustconn/src/window/edit_actions.rs:256
 msgid "No password configured for this connection"
 msgstr "Geen wachtwoord geconfigureerd voor deze verbinding"
 
-#: rustconn/src/window/edit_actions.rs:251
+#: rustconn/src/window/edit_actions.rs:262
 msgid "Could not retrieve password from secret backend"
 msgstr "Kan wachtwoord niet ophalen uit geheime backend"
 
-#: rustconn/src/window/edit_actions.rs:344
+#: rustconn/src/window/edit_actions.rs:355
 msgid "Item restored"
 msgstr "Item hersteld"
 
-#: rustconn/src/window/edit_actions.rs:478
+#: rustconn/src/window/edit_actions.rs:489
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr ""
 "Geen Wake On LAN geconfigureerd. Bewerk de verbinding om een MAC-adres in te"
 " stellen."
 
-#: rustconn/src/window/edit_actions.rs:506
+#: rustconn/src/window/edit_actions.rs:517
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN verzonden naar {} — wachten tot host online komt…"
 
-#: rustconn/src/window/edit_actions.rs:547
+#: rustconn/src/window/edit_actions.rs:558
 msgid "{} is online — connecting…"
 msgstr "{} is online — verbinden…"
 
-#: rustconn/src/window/edit_actions.rs:562
+#: rustconn/src/window/edit_actions.rs:573
 msgid "{} did not come online after WoL"
 msgstr "{} kwam niet online na WoL"
 
-#: rustconn/src/window/edit_actions.rs:574
+#: rustconn/src/window/edit_actions.rs:585
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr "Kan Wake On LAN-pakket niet verzenden. Controleer de netwerkrechten."
 
-#: rustconn/src/window/edit_actions.rs:620
+#: rustconn/src/window/edit_actions.rs:631
 msgid "Checking if {} is online…"
 msgstr "Controleren of {} online is…"
 
-#: rustconn/src/window/edit_actions.rs:651
+#: rustconn/src/window/edit_actions.rs:662
 msgid "{} is online"
 msgstr "{} is online"
 
-#: rustconn/src/window/edit_actions.rs:666
+#: rustconn/src/window/edit_actions.rs:677
 msgid "{} did not come online within timeout"
 msgstr "{} kwam niet online binnen de timeout"
 
-#: rustconn/src/window/edit_actions.rs:673
+#: rustconn/src/window/edit_actions.rs:684
 msgid "Host check failed: {}"
 msgstr "Hostcontrole mislukt: {}"
 
-#: rustconn/src/window/edit_actions.rs:741
-#: rustconn/src/window/edit_actions.rs:859
-#: rustconn/src/window/edit_actions.rs:914
+#: rustconn/src/window/edit_actions.rs:752
+#: rustconn/src/window/edit_actions.rs:870
+#: rustconn/src/window/edit_actions.rs:925
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP is alleen beschikbaar voor SSH-verbindingen."
 
-#: rustconn/src/window/edit_actions.rs:751
+#: rustconn/src/window/edit_actions.rs:762
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr ""
 "mc vereist een SSH-sleutel in de agent. Wachtwoordauthenticatie wordt niet "
 "ondersteund."
 
-#: rustconn/src/window/edit_actions.rs:759
+#: rustconn/src/window/edit_actions.rs:770
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr ""
 "SSH-agent draait niet. Voer «eval $(ssh-agent)» uit en probeer het opnieuw."
 
-#: rustconn/src/window/edit_actions.rs:785
+#: rustconn/src/window/edit_actions.rs:796
 msgid "SSH key not available"
 msgstr "SSH-sleutel niet beschikbaar"
 
-#: rustconn/src/window/edit_actions.rs:793
+#: rustconn/src/window/edit_actions.rs:804
 msgid "Failed to add SSH key to agent."
 msgstr "Kan SSH-sleutel niet aan agent toevoegen."
 
-#: rustconn/src/window/edit_actions.rs:802
+#: rustconn/src/window/edit_actions.rs:813
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) is niet geïnstalleerd."
 
-#: rustconn/src/window/edit_actions.rs:807
+#: rustconn/src/window/edit_actions.rs:818
 msgid "Opening mc SFTP…"
 msgstr "mc SFTP openen…"
 
-#: rustconn/src/window/edit_actions.rs:885
-#: rustconn/src/window/edit_actions.rs:2174
+#: rustconn/src/window/edit_actions.rs:896
+#: rustconn/src/window/edit_actions.rs:2222
 msgid ""
 "External file managers cannot access SSH agent in Flatpak."
 "                          Enable \"SFTP via mc\" in Settings for reliable "
@@ -11207,31 +11207,43 @@ msgstr ""
 "                          Schakel \"SFTP via mc\" in bij Instellingen voor "
 "betrouwbare toegang."
 
-#: rustconn/src/window/edit_actions.rs:901
-#: rustconn/src/window/edit_actions.rs:2192
+#: rustconn/src/window/edit_actions.rs:912
+#: rustconn/src/window/edit_actions.rs:2240
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Tussenhost gedetecteerd. SFTP wordt via mc geopend in plaats van de "
 "bestandsbeheerder."
 
-#: rustconn/src/window/edit_actions.rs:964
+#: rustconn/src/window/edit_actions.rs:975
 msgid "Opening SFTP…"
 msgstr "SFTP openen…"
 
-#: rustconn/src/window/edit_actions.rs:1031
+#: rustconn/src/window/edit_actions.rs:1042
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "SSH-agent draait niet — bestandsbeheerder kan mogelijk niet authenticeren."
 
-#: rustconn/src/window/edit_actions.rs:1099
+#: rustconn/src/window/edit_actions.rs:1110
 msgid "application is busy"
 msgstr "toepassing is bezig"
 
-#: rustconn/src/window/edit_actions.rs:1101
+#: rustconn/src/window/edit_actions.rs:1112
 msgid "the SSH connection it tunnels through is gone"
 msgstr "de SSH-verbinding waardoor getunneld wordt, bestaat niet meer"
 
-#: rustconn/src/window/edit_actions.rs:1392
+#: rustconn/src/window/edit_actions.rs:1436
+msgid ""
+"The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
+"tunnelled; opening the embedded browser instead. Set a "
+"chromium/chrome/brave/vivaldi/edge command in Settings to use an external "
+"browser."
+msgstr ""
+"De opdracht voor de getunnelde browser ‘{}’ is niet Chromium-gebaseerd en "
+"kan niet worden getunneld; de ingebouwde browser wordt geopend. Stel in "
+"Instellingen een chromium/chrome/brave/vivaldi/edge-opdracht in om een "
+"externe browser te gebruiken."
+
+#: rustconn/src/window/edit_actions.rs:1440
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a "
@@ -11242,7 +11254,17 @@ msgstr ""
 " geproxyd; stel in Instellingen een chromium/chrome/brave/vivaldi/edge-"
 "opdracht in."
 
-#: rustconn/src/window/edit_actions.rs:1399
+#: rustconn/src/window/edit_actions.rs:1446
+msgid ""
+"The tunnelled browser command ‘{}’ was not found on PATH; opening the "
+"embedded browser instead. Check the command in Settings, or clear it to "
+"auto-detect a browser."
+msgstr ""
+"De opdracht voor de getunnelde browser ‘{}’ is niet gevonden in PATH; de "
+"ingebouwde browser wordt geopend. Controleer de opdracht in Instellingen of "
+"wis deze om automatisch een browser te detecteren."
+
+#: rustconn/src/window/edit_actions.rs:1450
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -11251,13 +11273,7 @@ msgstr ""
 "Controleer de opdracht in Instellingen of wis deze om automatisch een "
 "browser te detecteren."
 
-#: rustconn/src/window/edit_actions.rs:1410
-#: rustconn/src/window/edit_actions.rs:1641
-#: rustconn/src/window/edit_actions.rs:1724
-msgid "Could not open the SSH tunnel: {}"
-msgstr "Kon de SSH-tunnel niet openen: {}"
-
-#: rustconn/src/window/edit_actions.rs:1435
+#: rustconn/src/window/edit_actions.rs:1456
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -11266,38 +11282,46 @@ msgstr ""
 "geopend. Installeer een Chromium-gebaseerde browser om een externe te "
 "tunnelen."
 
-#: rustconn/src/window/edit_actions.rs:1449
+#: rustconn/src/window/edit_actions.rs:1459
 msgid ""
-"No Chromium-based browser found. Install one to open a tunnelled browser."
+"No Chromium-based browser found. Install a Chromium-based browser, or use a "
+"build with the embedded browser, to open a tunnelled browser."
 msgstr ""
-"Geen Chromium-gebaseerde browser gevonden. Installeer er een om een "
+"Geen Chromium-gebaseerde browser gevonden. Installeer een Chromium-"
+"gebaseerde browser, of gebruik een build met de ingebouwde browser, om een "
 "getunnelde browser te openen."
 
-#: rustconn/src/window/edit_actions.rs:1483
+#: rustconn/src/window/edit_actions.rs:1475
+#: rustconn/src/window/edit_actions.rs:1689
+#: rustconn/src/window/edit_actions.rs:1772
+msgid "Could not open the SSH tunnel: {}"
+msgstr "Kon de SSH-tunnel niet openen: {}"
+
+#: rustconn/src/window/edit_actions.rs:1531
 msgid "Opened a tunnelled browser"
 msgstr "Getunnelde browser geopend"
 
-#: rustconn/src/window/edit_actions.rs:1488
-#: rustconn/src/window/edit_actions.rs:1541
+#: rustconn/src/window/edit_actions.rs:1536
+#: rustconn/src/window/edit_actions.rs:1589
 msgid "Failed to open browser: {}"
 msgstr "Kon de browser niet openen: {}"
 
-#: rustconn/src/window/edit_actions.rs:1518
+#: rustconn/src/window/edit_actions.rs:1566
 msgid "{} (tunnel)"
 msgstr "{} (tunnel)"
 
-#: rustconn/src/window/edit_actions.rs:1532
-#: rustconn/src/window/edit_actions.rs:1679
+#: rustconn/src/window/edit_actions.rs:1580
+#: rustconn/src/window/edit_actions.rs:1727
 msgid "Could not open the page: {}"
 msgstr "Kon de pagina niet openen: {}"
 
-#: rustconn/src/window/edit_actions.rs:1704
-#: rustconn/src/window/edit_actions.rs:1811
-#: rustconn/src/window/edit_actions.rs:1838
+#: rustconn/src/window/edit_actions.rs:1752
+#: rustconn/src/window/edit_actions.rs:1859
+#: rustconn/src/window/edit_actions.rs:1886
 msgid "Failed to open URL: {}"
 msgstr "Kan URL niet openen: {}"
 
-#: rustconn/src/window/edit_actions.rs:1757
+#: rustconn/src/window/edit_actions.rs:1805
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -11305,12 +11329,12 @@ msgstr ""
 "Deze browser kan niet vanaf de opdrachtregel worden getunneld. Gebruik een "
 "op Chromium gebaseerde browser of de ingebouwde browser voor SSH-tunneling."
 
-#: rustconn/src/window/edit_actions.rs:1800
-#: rustconn/src/window/edit_actions.rs:1852
+#: rustconn/src/window/edit_actions.rs:1848
+#: rustconn/src/window/edit_actions.rs:1900
 msgid "Opened in browser"
 msgstr "Geopend in browser"
 
-#: rustconn/src/window/edit_actions.rs:1825
+#: rustconn/src/window/edit_actions.rs:1873
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
 " browser opens without the tunnel."

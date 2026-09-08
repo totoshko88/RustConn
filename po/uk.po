@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 15:54+0300\n"
+"POT-Creation-Date: 2026-09-08 16:22+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -5436,7 +5436,7 @@ msgid "{} bits"
 msgstr "{} біт"
 
 #: rustconn/src/dialogs/password_generator.rs:395
-#: rustconn/src/window/edit_actions.rs:183
+#: rustconn/src/window/edit_actions.rs:194
 msgid "Password copied (auto-clears in 30s)"
 msgstr "Пароль скопійовано (автоочищення через 30 с)"
 
@@ -11007,7 +11007,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:2003
+#: rustconn/src/window/edit_actions.rs:2051
 msgid "Connection failed. Host unreachable."
 msgstr "З'єднок не вдався. Гост недоступний."
 
@@ -11047,105 +11047,105 @@ msgstr "Не вдалося перемістити сеанс до власно�
 msgid "Could not move the session back to the main window."
 msgstr "Не вдалося перемістити сеанс назад до головного вікна."
 
-#: rustconn/src/window/edit_actions.rs:139
+#: rustconn/src/window/edit_actions.rs:150
 msgid "No username configured"
 msgstr "Ім'я користувача не налаштовано"
 
-#: rustconn/src/window/edit_actions.rs:144
+#: rustconn/src/window/edit_actions.rs:155
 msgid "Username copied"
 msgstr "Ім'я користувача скопійовано"
 
-#: rustconn/src/window/edit_actions.rs:205
+#: rustconn/src/window/edit_actions.rs:216
 msgid "Cached password is empty"
 msgstr "Кешований пароль порожній"
 
-#: rustconn/src/window/edit_actions.rs:229
+#: rustconn/src/window/edit_actions.rs:240
 msgid "Password is empty"
 msgstr "Пароль порожній"
 
-#: rustconn/src/window/edit_actions.rs:239
-#: rustconn/src/window/edit_actions.rs:245
+#: rustconn/src/window/edit_actions.rs:250
+#: rustconn/src/window/edit_actions.rs:256
 msgid "No password configured for this connection"
 msgstr "Пароль не налаштований для цього з'єднанка"
 
-#: rustconn/src/window/edit_actions.rs:251
+#: rustconn/src/window/edit_actions.rs:262
 msgid "Could not retrieve password from secret backend"
 msgstr "Не вдалося отримати пароль з бекенду секретів"
 
-#: rustconn/src/window/edit_actions.rs:344
+#: rustconn/src/window/edit_actions.rs:355
 msgid "Item restored"
 msgstr "Елемент відновлено"
 
-#: rustconn/src/window/edit_actions.rs:478
+#: rustconn/src/window/edit_actions.rs:489
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr ""
 "Wake On LAN не налаштовано. Відредагуй з'єднок, щоб задати MAC-адресу."
 
-#: rustconn/src/window/edit_actions.rs:506
+#: rustconn/src/window/edit_actions.rs:517
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN надіслано до {} — очікування на запуск госта…"
 
-#: rustconn/src/window/edit_actions.rs:547
+#: rustconn/src/window/edit_actions.rs:558
 msgid "{} is online — connecting…"
 msgstr "{} онлайн — з'єднування…"
 
-#: rustconn/src/window/edit_actions.rs:562
+#: rustconn/src/window/edit_actions.rs:573
 msgid "{} did not come online after WoL"
 msgstr "{} не з'явився онлайн після WoL"
 
-#: rustconn/src/window/edit_actions.rs:574
+#: rustconn/src/window/edit_actions.rs:585
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr "Не вдалося надіслати пакет Wake On LAN. Перевір мережеві дозволи."
 
-#: rustconn/src/window/edit_actions.rs:620
+#: rustconn/src/window/edit_actions.rs:631
 msgid "Checking if {} is online…"
 msgstr "Перевірка чи {} онлайн…"
 
-#: rustconn/src/window/edit_actions.rs:651
+#: rustconn/src/window/edit_actions.rs:662
 msgid "{} is online"
 msgstr "{} онлайн"
 
-#: rustconn/src/window/edit_actions.rs:666
+#: rustconn/src/window/edit_actions.rs:677
 msgid "{} did not come online within timeout"
 msgstr "{} не з'явився онлайн протягом часу очікування"
 
-#: rustconn/src/window/edit_actions.rs:673
+#: rustconn/src/window/edit_actions.rs:684
 msgid "Host check failed: {}"
 msgstr "Перевірка госта невдала: {}"
 
-#: rustconn/src/window/edit_actions.rs:741
-#: rustconn/src/window/edit_actions.rs:859
-#: rustconn/src/window/edit_actions.rs:914
+#: rustconn/src/window/edit_actions.rs:752
+#: rustconn/src/window/edit_actions.rs:870
+#: rustconn/src/window/edit_actions.rs:925
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP доступний лише для SSH-з'єднків."
 
-#: rustconn/src/window/edit_actions.rs:751
+#: rustconn/src/window/edit_actions.rs:762
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr ""
 "mc потребує SSH-ключа в агенті. Автентифікація паролем не підтримується."
 
-#: rustconn/src/window/edit_actions.rs:759
+#: rustconn/src/window/edit_actions.rs:770
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "Агент SSH не запущено. Виконайте «eval $(ssh-agent)» і повторіть."
 
-#: rustconn/src/window/edit_actions.rs:785
+#: rustconn/src/window/edit_actions.rs:796
 msgid "SSH key not available"
 msgstr "SSH ключ недоступний"
 
-#: rustconn/src/window/edit_actions.rs:793
+#: rustconn/src/window/edit_actions.rs:804
 msgid "Failed to add SSH key to agent."
 msgstr "Не вдалося додати SSH ключ до агента."
 
-#: rustconn/src/window/edit_actions.rs:802
+#: rustconn/src/window/edit_actions.rs:813
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) не встановлено."
 
-#: rustconn/src/window/edit_actions.rs:807
+#: rustconn/src/window/edit_actions.rs:818
 msgid "Opening mc SFTP…"
 msgstr "Відкриття mc SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:885
-#: rustconn/src/window/edit_actions.rs:2174
+#: rustconn/src/window/edit_actions.rs:896
+#: rustconn/src/window/edit_actions.rs:2222
 msgid ""
 "External file managers cannot access SSH agent in Flatpak."
 "                          Enable \"SFTP via mc\" in Settings for reliable "
@@ -11155,31 +11155,43 @@ msgstr ""
 "                          Увімкни «SFTP через mc» в Уставах для надійного "
 "доступу."
 
-#: rustconn/src/window/edit_actions.rs:901
-#: rustconn/src/window/edit_actions.rs:2192
+#: rustconn/src/window/edit_actions.rs:912
+#: rustconn/src/window/edit_actions.rs:2240
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Виявлено проміжний гост. Відкривання SFTP через mc замість файлового "
 "менеджера."
 
-#: rustconn/src/window/edit_actions.rs:964
+#: rustconn/src/window/edit_actions.rs:975
 msgid "Opening SFTP…"
 msgstr "Відкриття SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:1031
+#: rustconn/src/window/edit_actions.rs:1042
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "Агент SSH не запущено — файловий менеджер може не пройти автентифікацію."
 
-#: rustconn/src/window/edit_actions.rs:1099
+#: rustconn/src/window/edit_actions.rs:1110
 msgid "application is busy"
 msgstr "програма зайнята"
 
-#: rustconn/src/window/edit_actions.rs:1101
+#: rustconn/src/window/edit_actions.rs:1112
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-з’єднанка, крізь яке йде тунель, більше нема"
 
-#: rustconn/src/window/edit_actions.rs:1392
+#: rustconn/src/window/edit_actions.rs:1436
+msgid ""
+"The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
+"tunnelled; opening the embedded browser instead. Set a "
+"chromium/chrome/brave/vivaldi/edge command in Settings to use an external "
+"browser."
+msgstr ""
+"Команда тунельного оглядача ‘{}’ не на основі Chromium і не тунелюється; "
+"відкриваю вбудований оглядач. Задай команду "
+"chromium/chrome/brave/vivaldi/edge в Уставах, щоб користуватися зовнішнім "
+"оглядачем."
+
+#: rustconn/src/window/edit_actions.rs:1440
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a "
@@ -11189,7 +11201,17 @@ msgstr ""
 "тунель можна проксувати лише браузери родини Chromium; задай команду "
 "chromium/chrome/brave/vivaldi/edge в Уставах."
 
-#: rustconn/src/window/edit_actions.rs:1399
+#: rustconn/src/window/edit_actions.rs:1446
+msgid ""
+"The tunnelled browser command ‘{}’ was not found on PATH; opening the "
+"embedded browser instead. Check the command in Settings, or clear it to "
+"auto-detect a browser."
+msgstr ""
+"Команду тунельного оглядача ‘{}’ не знайдено в PATH; відкриваю вбудований "
+"оглядач. Перевір команду в Уставах або очисти її для автовизначення "
+"оглядача."
+
+#: rustconn/src/window/edit_actions.rs:1450
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -11197,13 +11219,7 @@ msgstr ""
 "Команду тунельного браузера ‘{}’ не знайдено в PATH. Перевір команду в "
 "Уставах або очисти її для автовизначення браузера."
 
-#: rustconn/src/window/edit_actions.rs:1410
-#: rustconn/src/window/edit_actions.rs:1641
-#: rustconn/src/window/edit_actions.rs:1724
-msgid "Could not open the SSH tunnel: {}"
-msgstr "Не вдалося відкрити SSH-тунель: {}"
-
-#: rustconn/src/window/edit_actions.rs:1435
+#: rustconn/src/window/edit_actions.rs:1456
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -11211,38 +11227,46 @@ msgstr ""
 "Оглядач на основі Chromium не знайдено; відкриваю вбудований оглядач. "
 "Встанови оглядач на основі Chromium, щоб тунелювати зовнішній."
 
-#: rustconn/src/window/edit_actions.rs:1449
+#: rustconn/src/window/edit_actions.rs:1459
 msgid ""
-"No Chromium-based browser found. Install one to open a tunnelled browser."
+"No Chromium-based browser found. Install a Chromium-based browser, or use a "
+"build with the embedded browser, to open a tunnelled browser."
 msgstr ""
-"Оглядач на основі Chromium не знайдено. Встанови його, щоб відкрити "
-"тунельний оглядач."
+"Оглядач на основі Chromium не знайдено. Встанови оглядач на основі Chromium "
+"або скористайся збіркою з вбудованим оглядачем, щоб відкрити тунельний "
+"оглядач."
 
-#: rustconn/src/window/edit_actions.rs:1483
+#: rustconn/src/window/edit_actions.rs:1475
+#: rustconn/src/window/edit_actions.rs:1689
+#: rustconn/src/window/edit_actions.rs:1772
+msgid "Could not open the SSH tunnel: {}"
+msgstr "Не вдалося відкрити SSH-тунель: {}"
+
+#: rustconn/src/window/edit_actions.rs:1531
 msgid "Opened a tunnelled browser"
 msgstr "Тунельний оглядач відкрито"
 
-#: rustconn/src/window/edit_actions.rs:1488
-#: rustconn/src/window/edit_actions.rs:1541
+#: rustconn/src/window/edit_actions.rs:1536
+#: rustconn/src/window/edit_actions.rs:1589
 msgid "Failed to open browser: {}"
 msgstr "Не вдалося відкрити оглядач: {}"
 
-#: rustconn/src/window/edit_actions.rs:1518
+#: rustconn/src/window/edit_actions.rs:1566
 msgid "{} (tunnel)"
 msgstr "{} (тунель)"
 
-#: rustconn/src/window/edit_actions.rs:1532
-#: rustconn/src/window/edit_actions.rs:1679
+#: rustconn/src/window/edit_actions.rs:1580
+#: rustconn/src/window/edit_actions.rs:1727
 msgid "Could not open the page: {}"
 msgstr "Не вдалося відкрити сторінку: {}"
 
-#: rustconn/src/window/edit_actions.rs:1704
-#: rustconn/src/window/edit_actions.rs:1811
-#: rustconn/src/window/edit_actions.rs:1838
+#: rustconn/src/window/edit_actions.rs:1752
+#: rustconn/src/window/edit_actions.rs:1859
+#: rustconn/src/window/edit_actions.rs:1886
 msgid "Failed to open URL: {}"
 msgstr "Не вдалося відкрити URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1757
+#: rustconn/src/window/edit_actions.rs:1805
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -11250,12 +11274,12 @@ msgstr ""
 "Цей оглядач не можна тунелювати з командного рядка. Для SSH-тунелювання "
 "візьми оглядач на основі Chromium або вбудований оглядач."
 
-#: rustconn/src/window/edit_actions.rs:1800
-#: rustconn/src/window/edit_actions.rs:1852
+#: rustconn/src/window/edit_actions.rs:1848
+#: rustconn/src/window/edit_actions.rs:1900
 msgid "Opened in browser"
 msgstr "Відкрито в браузері"
 
-#: rustconn/src/window/edit_actions.rs:1825
+#: rustconn/src/window/edit_actions.rs:1873
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
 " browser opens without the tunnel."

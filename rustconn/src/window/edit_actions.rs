@@ -14,6 +14,17 @@ enum TunnelBrowserError {
     NoneFound,
 }
 
+/// Which way `open_browser_via_tunnel` will open the tunnelled browser, decided
+/// before the tunnel is raised.
+enum TunnelBrowserPath {
+    /// Use the embedded browser (either preferred, or as a fallback).
+    Embedded,
+    /// Launch this external Chromium binary with these extra args.
+    External(String, Vec<String>),
+    /// Nothing can tunnel; the reason toast is already shown, so stop.
+    Fail,
+}
+
 impl MainWindow {
     pub(crate) fn setup_edit_actions(
         &self,
@@ -1332,8 +1343,14 @@ impl MainWindow {
     /// external Chromium-family browser in an isolated throwaway profile with
     /// `--proxy-server=socks5://…`. The start page comes from the
     /// `tunnel_browser_start_url` setting (default `https://www.google.com`), so
-    /// it is visible the tunnel works. A tunnel failure, or the absence of a
-    /// usable external browser, is reported as a toast and nothing is opened.
+    /// it is visible the tunnel works.
+    ///
+    /// When the external browser cannot be used — a configured command that is
+    /// not Chromium-family or not found, or no Chromium binary at all — RustConn
+    /// explains why in a toast and falls back to the embedded browser if this
+    /// build has it (it can always tunnel), otherwise stops with an error toast
+    /// asking for a Chromium-based browser. A tunnel failure is reported and
+    /// nothing is opened. It never browses un-tunnelled.
     fn open_browser_via_tunnel(
         state: &SharedAppState,
         notebook: &SharedNotebook,
@@ -1364,43 +1381,91 @@ impl MainWindow {
             return;
         }
         // Only consulted by the embedded path; a build without it browses external.
-        #[cfg(not(feature = "web-embedded"))]
-        let _ = prefer_embedded;
-
         // Decide the external browser up front (does not need the tunnel yet).
         // A configured command wins; empty auto-detects, preferring the system
         // default browser when it is Chromium, then $BROWSER, then PATH.
         let external = Self::resolve_tunnel_browser(&browser_command);
 
-        // Choose the path before raising the tunnel so a doomed launch never
-        // opens a proxy it cannot use.
-        //
-        // - Embedded when the setting asks for it (and the build has it).
-        // - Otherwise the external Chromium browser.
-        // - If no external Chromium exists, fall back to embedded (with a toast)
-        //   rather than failing, since the embedded browser can always tunnel.
+        // Embedded first when the setting asks for it. On a build without the
+        // embedded browser this is forced false below, so the external path runs.
         let use_embedded_first = prefer_embedded;
-        #[cfg(not(feature = "web-embedded"))]
-        let _ = use_embedded_first;
 
-        // A configured-but-invalid command is an explicit user choice, so it is
-        // reported rather than silently falling back.
-        match &external {
-            Ok(_) | Err(TunnelBrowserError::NoneFound) => {}
-            Err(TunnelBrowserError::NotChromium(bin)) => {
-                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                    "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only Chromium-family browsers can be proxied through the tunnel; set a chromium/chrome/brave/vivaldi/edge command in Settings.",
-                    &[bin],
-                ));
-                return;
+        // Resolve which path to take *before* raising the tunnel, so a launch
+        // that cannot proceed never opens a proxy it will not use.
+        //
+        // The external-browser choice matters only when we are not using the
+        // embedded browser first. When it is unusable — a configured command
+        // that is not Chromium or not found, or no Chromium at all — the outcome
+        // is the same shape: explain the reason, then fall back to the embedded
+        // browser if this build has it (it can always tunnel), otherwise stop
+        // with an "install a Chromium-based browser" error. The only difference
+        // per case is the wording, so it is computed once here.
+        //
+        // `embedded_available` is a runtime flag rather than raw `cfg!` so the
+        // match arms below read the same on both builds; the compiler prunes the
+        // dead branch.
+        #[cfg(feature = "web-embedded")]
+        let embedded_available = true;
+        #[cfg(not(feature = "web-embedded"))]
+        let embedded_available = false;
+
+        // Emits the reason a chosen/auto external browser is unusable. When the
+        // embedded browser will pick up the slack the message is informational
+        // ("… opening the embedded browser instead"); when nothing can proceed
+        // it is an error. Returns the `Path` to take.
+        let external_unusable =
+            |reason_with_embedded: String, reason_no_embedded: &str| -> TunnelBrowserPath {
+                if embedded_available {
+                    crate::toast::show_info_toast_on_active_window(&reason_with_embedded);
+                    TunnelBrowserPath::Embedded
+                } else {
+                    crate::toast::show_error_toast_on_active_window(reason_no_embedded);
+                    TunnelBrowserPath::Fail
+                }
+            };
+
+        let path = if use_embedded_first && embedded_available {
+            // The command is external-only; an invalid one must not block the
+            // embedded path the user actually asked for.
+            TunnelBrowserPath::Embedded
+        } else {
+            match external {
+                Ok((browser, extra_args)) => TunnelBrowserPath::External(browser, extra_args),
+                Err(TunnelBrowserError::NotChromium(bin)) => external_unusable(
+                    crate::i18n::i18n_f(
+                        "The tunnelled browser command ‘{}’ is not Chromium-based and can't be tunnelled; opening the embedded browser instead. Set a chromium/chrome/brave/vivaldi/edge command in Settings to use an external browser.",
+                        &[&bin],
+                    ),
+                    &crate::i18n::i18n_f(
+                        "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only Chromium-family browsers can be proxied through the tunnel; set a chromium/chrome/brave/vivaldi/edge command in Settings.",
+                        &[&bin],
+                    ),
+                ),
+                Err(TunnelBrowserError::NotFound(bin)) => external_unusable(
+                    crate::i18n::i18n_f(
+                        "The tunnelled browser command ‘{}’ was not found on PATH; opening the embedded browser instead. Check the command in Settings, or clear it to auto-detect a browser.",
+                        &[&bin],
+                    ),
+                    &crate::i18n::i18n_f(
+                        "The tunnelled browser command ‘{}’ was not found on PATH. Check the command in Settings, or clear it to auto-detect a browser.",
+                        &[&bin],
+                    ),
+                ),
+                Err(TunnelBrowserError::NoneFound) => external_unusable(
+                    crate::i18n::i18n(
+                        "No Chromium-based browser found; opening the embedded browser instead. Install a Chromium-based browser to tunnel an external one.",
+                    ),
+                    &crate::i18n::i18n(
+                        "No Chromium-based browser found. Install a Chromium-based browser, or use a build with the embedded browser, to open a tunnelled browser.",
+                    ),
+                ),
             }
-            Err(TunnelBrowserError::NotFound(bin)) => {
-                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
-                    "The tunnelled browser command ‘{}’ was not found on PATH. Check the command in Settings, or clear it to auto-detect a browser.",
-                    &[bin],
-                ));
-                return;
-            }
+        };
+
+        // Nothing viable — the toast is already shown, so stop before opening a
+        // proxy that would go unused.
+        if matches!(path, TunnelBrowserPath::Fail) {
+            return;
         }
 
         let tunnel = match Self::raise_socks_tunnel_for(state, connection_id) {
@@ -1415,43 +1480,26 @@ impl MainWindow {
         };
         let port = tunnel.local_port();
 
-        // Embedded first when preferred. On a build without the embedded browser
-        // this whole block compiles out and control falls through to external.
-        #[cfg(feature = "web-embedded")]
-        if use_embedded_first {
-            Self::open_embedded_tunnel_browser(state, notebook, connection_id, &start_url, tunnel);
-            return;
-        }
-
-        // External browser. If none is available, fall back to the embedded
-        // browser (which always tunnels) when this build has it; otherwise the
-        // user has no proxy-capable browser at all.
-        let (browser, extra_args) = match external {
-            Ok(resolved) => resolved,
-            Err(_none_found) => {
-                #[cfg(feature = "web-embedded")]
-                {
-                    crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
-                        "No Chromium-based browser found; opening the embedded browser instead. Install a Chromium-based browser to tunnel an external one.",
-                    ));
-                    Self::open_embedded_tunnel_browser(
-                        state,
-                        notebook,
-                        connection_id,
-                        &start_url,
-                        tunnel,
-                    );
-                    return;
-                }
-                #[cfg(not(feature = "web-embedded"))]
-                {
-                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
-                        "No Chromium-based browser found. Install one to open a tunnelled browser.",
-                    ));
-                    // `tunnel` drops here, closing the unused proxy.
-                    return;
-                }
+        let (browser, extra_args) = match path {
+            TunnelBrowserPath::External(browser, extra_args) => (browser, extra_args),
+            // Embedded (preferred or fallback). Compiled in only when available;
+            // `Embedded` cannot be produced on a build without it.
+            #[cfg(feature = "web-embedded")]
+            TunnelBrowserPath::Embedded => {
+                Self::open_embedded_tunnel_browser(
+                    state,
+                    notebook,
+                    connection_id,
+                    &start_url,
+                    tunnel,
+                );
+                return;
             }
+            #[cfg(not(feature = "web-embedded"))]
+            TunnelBrowserPath::Embedded => {
+                unreachable!("embedded path is unreachable without the feature")
+            }
+            TunnelBrowserPath::Fail => return,
         };
 
         let mut cmd = std::process::Command::new(&browser);
