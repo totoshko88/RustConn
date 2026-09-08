@@ -371,6 +371,18 @@ Four placeholders are built in and come from the connection you are opening:
 
 Everything else resolves by name against your global variables (Menu → Tools → Variables), so `${MY_VARIABLE}` picks up the value of `MY_VARIABLE`. For the connection being opened a built-in wins over a global of the same name.
 
+A set of **dynamic built-ins** is also available without defining anything, useful for tokens, banners or per-connection log lines:
+
+| Variable | Expands to |
+|----------|-----------|
+| `${DATE_Y}` | Local year (`2026`) |
+| `${DATE_M}` `${DATE_D}` | Local month / day, zero-padded |
+| `${TIME_H}` `${TIME_M}` `${TIME_S}` | Local hour (24h) / minute / second, zero-padded |
+| `${TIMESTAMP}` | Seconds since the Unix epoch |
+| `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) |
+
+The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values), not in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
+
 Behaviour worth knowing:
 
 - Undefined variables remain as literal text (e.g. `${UNKNOWN}` is sent as-is), and a warning naming them goes to the log. A `${password}` that stays literal means the connection has no Password Source configured.

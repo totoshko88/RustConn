@@ -168,8 +168,64 @@ impl VariableManager {
                     Ok(result)
                 }
             }
-            None => Err(VariableError::Undefined(name.to_string())),
+            // A user-defined variable always wins. Only when nothing is defined
+            // do we fall back to the built-in dynamic variables (date/time and
+            // `ENV_*`), so a user who defines e.g. `TIMESTAMP` keeps their value.
+            None => Self::resolve_builtin(name)
+                .ok_or_else(|| VariableError::Undefined(name.to_string())),
         }
+    }
+
+    /// Resolves a built-in dynamic variable, or `None` if `name` is not one.
+    ///
+    /// These need no definition and are computed at substitution time:
+    ///
+    /// | Name | Value |
+    /// |------|-------|
+    /// | `DATE_Y` | local year, e.g. `2026` |
+    /// | `DATE_M` | local month, zero-padded (`01`–`12`) |
+    /// | `DATE_D` | local day of month, zero-padded (`01`–`31`) |
+    /// | `TIME_H` | local hour, 24h, zero-padded (`00`–`23`) |
+    /// | `TIME_M` | local minute, zero-padded (`00`–`59`) |
+    /// | `TIME_S` | local second, zero-padded (`00`–`60`) |
+    /// | `TIMESTAMP` | seconds since the Unix epoch |
+    /// | `ENV_<NAME>` | value of the `<NAME>` environment variable |
+    ///
+    /// The names mirror Ásbrú Connection Manager's `<DATE_Y>` / `<ENV:name>`
+    /// masks, adapted to RustConn's `${...}` syntax — `ENV_HOME` rather than
+    /// `ENV:HOME`, because the reference regex does not admit a colon and
+    /// forking the syntax for one case is not worth it.
+    ///
+    /// An `ENV_` reference to an unset variable resolves to the empty string
+    /// (not `None`), matching how a shell expands `${HOME}` — otherwise the
+    /// caller's undefined-variable handling would leave the literal `${ENV_X}`
+    /// in place, which is never what the user meant.
+    fn resolve_builtin(name: &str) -> Option<String> {
+        use chrono::{Datelike, Local, Timelike};
+
+        if let Some(env_name) = name.strip_prefix("ENV_") {
+            // An empty suffix (`${ENV_}`) is not a real environment reference.
+            if env_name.is_empty() {
+                return None;
+            }
+            return Some(std::env::var(env_name).unwrap_or_default());
+        }
+
+        // Computed once per call. Within a single substitute() pass the sub-second
+        // drift between two date/time references is irrelevant, and TIMESTAMP is
+        // whole seconds regardless.
+        let now = Local::now();
+        let value = match name {
+            "DATE_Y" => format!("{:04}", now.year()),
+            "DATE_M" => format!("{:02}", now.month()),
+            "DATE_D" => format!("{:02}", now.day()),
+            "TIME_H" => format!("{:02}", now.hour()),
+            "TIME_M" => format!("{:02}", now.minute()),
+            "TIME_S" => format!("{:02}", now.second()),
+            "TIMESTAMP" => now.timestamp().to_string(),
+            _ => return None,
+        };
+        Some(value)
     }
 
     /// Looks up a variable in the scope chain
@@ -1004,5 +1060,102 @@ mod tests {
             .substitute_for_command("prefix_${undefined}_suffix", VariableScope::Global)
             .unwrap();
         assert_eq!(result, "prefix__suffix");
+    }
+
+    // ===== Built-in dynamic variables (date/time + ENV_*) =====
+
+    #[test]
+    fn builtin_date_and_time_resolve_to_well_formed_values() {
+        let manager = VariableManager::new();
+        let out = manager
+            .substitute(
+                "${DATE_Y}-${DATE_M}-${DATE_D} ${TIME_H}:${TIME_M}:${TIME_S}",
+                VariableScope::Global,
+            )
+            .unwrap();
+
+        // Shape check rather than exact value — the clock moves. Year is 4
+        // digits, every other field is exactly 2, joined by the literals.
+        let re = regex::Regex::new(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$").unwrap();
+        assert!(re.is_match(&out), "unexpected date/time render: {out}");
+    }
+
+    #[test]
+    fn builtin_timestamp_is_a_positive_epoch_second_count() {
+        let manager = VariableManager::new();
+        let out = manager
+            .substitute("${TIMESTAMP}", VariableScope::Global)
+            .unwrap();
+        let secs: i64 = out.parse().expect("TIMESTAMP must be an integer");
+        // Any real clock is well past the 2020 epoch second.
+        assert!(secs > 1_577_836_800, "timestamp too small: {secs}");
+    }
+
+    #[test]
+    fn builtin_env_resolves_a_set_variable() {
+        // SAFETY of the test: reads only, never mutates process env.
+        // PATH is always set in any environment that runs the test suite.
+        let expected = std::env::var("PATH").expect("PATH is set during tests");
+        let manager = VariableManager::new();
+        let out = manager
+            .substitute("${ENV_PATH}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(out, expected);
+    }
+
+    #[test]
+    fn builtin_env_of_an_unset_variable_is_empty_not_literal() {
+        let manager = VariableManager::new();
+        let out = manager
+            .substitute(
+                "[${ENV_RUSTCONN_DEFINITELY_UNSET_XYZ}]",
+                VariableScope::Global,
+            )
+            .unwrap();
+        // Resolves to empty (shell-like), not left as the literal placeholder.
+        assert_eq!(out, "[]");
+    }
+
+    #[test]
+    fn a_user_variable_shadows_a_builtin_of_the_same_name() {
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("TIMESTAMP", "user-wins"));
+        let out = manager
+            .substitute("${TIMESTAMP}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(out, "user-wins");
+    }
+
+    #[test]
+    fn an_empty_env_suffix_is_not_a_builtin() {
+        // `${ENV_}` is not a real environment reference — it stays undefined
+        // and is blanked by substitute() like any other unknown name.
+        let manager = VariableManager::new();
+        assert!(matches!(
+            manager.resolve("ENV_", VariableScope::Global),
+            Err(VariableError::Undefined(_))
+        ));
+    }
+
+    #[test]
+    fn builtins_resolve_in_command_and_terminal_paths_too() {
+        let manager = VariableManager::new();
+
+        // Command path: a date is metacharacter-free, so it validates.
+        let cmd = manager
+            .substitute_for_command("log-${DATE_Y}.txt", VariableScope::Global)
+            .unwrap();
+        assert!(
+            regex::Regex::new(r"^log-\d{4}\.txt$")
+                .unwrap()
+                .is_match(&cmd)
+        );
+
+        // Terminal-input path: a bare timestamp typed into a PTY.
+        let term = manager
+            .substitute_for_terminal_input("${TIMESTAMP}", VariableScope::Global)
+            .unwrap();
+        assert!(term.unresolved.is_empty());
+        assert!(term.text.as_str().chars().all(|c| c.is_ascii_digit()));
     }
 }
