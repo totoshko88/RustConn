@@ -1028,6 +1028,77 @@ impl MainWindow {
         window.add_action(&sftp_action);
     }
 
+    /// Raises the dynamic SOCKS tunnel a Web connection browses through.
+    ///
+    /// Returns `Ok(None)` when the connection has no `tunnel_via` set (browse
+    /// directly), `Ok(Some(tunnel))` once the `ssh -N -D` proxy is up and
+    /// accepting connections, or `Err(message)` when the referenced SSH
+    /// connection is missing or the tunnel could not be established. The tunnel
+    /// is returned to the caller, which hands it to the embedded widget so its
+    /// lifetime matches the browsing session.
+    #[cfg(feature = "web-embedded")]
+    fn raise_web_socks_tunnel(
+        state: &SharedAppState,
+        web_config: &rustconn_core::models::WebConfig,
+    ) -> Result<Option<rustconn_core::ssh_tunnel::SshTunnel>, String> {
+        let Some(jump_id) = web_config.tunnel_via else {
+            return Ok(None);
+        };
+
+        let params = {
+            let state_ref = state
+                .try_borrow()
+                .map_err(|_| crate::i18n::i18n("application is busy"))?;
+            let jump_conn = state_ref.get_connection(jump_id).ok_or_else(|| {
+                crate::i18n::i18n("the SSH connection it tunnels through is gone")
+            })?;
+
+            let mut jump_dest = jump_conn.host.clone();
+            if let Some(user) = &jump_conn.username {
+                jump_dest = format!("{user}@{jump_dest}");
+            }
+            let groups = state_ref.list_groups_owned();
+            let identity_file = rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(
+                jump_conn, &groups,
+            )
+            .and_then(|p| rustconn_core::resolve_key_path(&p))
+            .map(|p| p.to_string_lossy().to_string());
+            let extra_args = super::protocols::resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+            let password = state_ref
+                .get_cached_credentials(jump_id)
+                .filter(|c| {
+                    use secrecy::ExposeSecret;
+                    !c.password.expose_secret().is_empty()
+                })
+                .map(|c| c.password.clone());
+
+            rustconn_core::ssh_tunnel::SshTunnelParams {
+                jump_host: jump_dest,
+                jump_port: jump_conn.port,
+                // Unused for a SOCKS (`-D`) tunnel, but the struct requires them.
+                remote_host: String::new(),
+                remote_port: 0,
+                identity_file,
+                password,
+                extra_args,
+            }
+        };
+
+        let mut tunnel =
+            rustconn_core::ssh_tunnel::create_socks_tunnel(&params).map_err(|e| e.to_string())?;
+        rustconn_core::ssh_tunnel::wait_for_tunnel_ready(
+            &mut tunnel,
+            40,
+            std::time::Duration::from_millis(250),
+        )
+        .map_err(|e| e.to_string())?;
+        tracing::info!(
+            socks_port = tunnel.local_port(),
+            "SOCKS tunnel ready for embedded web connection"
+        );
+        Ok(Some(tunnel))
+    }
+
     /// Opens a Web bookmark and observes an embedded session it creates.
     pub(crate) fn handle_web_connect_observed(
         state: &SharedAppState,
@@ -1111,8 +1182,31 @@ impl MainWindow {
                     })
             };
 
+            // Raise the SSH SOCKS tunnel this Web connection browses through, if
+            // one is configured. A failure to bring it up aborts the launch
+            // rather than silently browsing directly (which would defeat the
+            // point and could leak traffic the user meant to tunnel).
+            let socks_tunnel = match Self::raise_web_socks_tunnel(state, &web_config) {
+                Ok(tunnel) => tunnel,
+                Err(msg) => {
+                    tracing::error!(connection = %conn_name, error = %msg, "Web SOCKS tunnel failed");
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Could not open the SSH tunnel: {}",
+                        &[&msg],
+                    ));
+                    return;
+                }
+            };
+
             let session_id = uuid::Uuid::new_v4();
-            match EmbeddedWebWidget::new(connection_id, &url, &web_config, credentials) {
+            match EmbeddedWebWidget::new(
+                connection_id,
+                &url,
+                &web_config,
+                credentials,
+                socks_tunnel,
+            ) {
                 Ok(widget) => {
                     let widget = Rc::new(widget);
 

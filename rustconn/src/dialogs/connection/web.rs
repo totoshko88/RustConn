@@ -32,6 +32,10 @@ pub struct WebOptionsWidgets {
     pub user_agent_row: adw::EntryRow,
     /// Floating navigation toolbar toggle (issue #260)
     pub floating_toolbar_switch: adw::SwitchRow,
+    /// SSH connection to browse through as a SOCKS tunnel ("(None)" = direct).
+    /// Populated with SSH connections after construction, like the jump-host
+    /// dropdowns; only meaningful in the embedded browser.
+    pub tunnel_dropdown: gtk4::DropDown,
 }
 
 /// Creates the Web bookmark options panel using libadwaita components.
@@ -88,6 +92,21 @@ pub fn create_web_options() -> WebOptionsWidgets {
     user_agent_row.set_show_apply_button(false);
     embedded_group.add(&user_agent_row);
 
+    // Browse through an SSH host (dynamic SOCKS tunnel). Model is filled with
+    // SSH connections after construction (see populate.rs); "(None)" is a direct
+    // connection. Wrapped in an ActionRow so it reads like the other rows.
+    let tunnel_dropdown = gtk4::DropDown::builder().build();
+    tunnel_dropdown.set_valign(gtk4::Align::Center);
+    let tunnel_row = adw::ActionRow::builder()
+        .title(i18n("Tunnel Through SSH"))
+        .subtitle(i18n(
+            "Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)",
+        ))
+        .build();
+    tunnel_row.add_suffix(&tunnel_dropdown);
+    tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
+    embedded_group.add(&tunnel_row);
+
     // Floating navigation toolbar (issue #260). Positive here, stored as
     // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
     // desktops, most of what this toolbar offers has a keyboard route, which is
@@ -143,6 +162,7 @@ pub fn create_web_options() -> WebOptionsWidgets {
         javascript_switch,
         user_agent_row,
         floating_toolbar_switch,
+        tunnel_dropdown,
     }
 }
 

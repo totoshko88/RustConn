@@ -95,6 +95,15 @@ pub struct EmbeddedWebWidget {
     /// Callback invoked when zoom level changes (debounced). Receives the new
     /// zoom level for persistence to connection config.
     on_zoom_changed: Rc<RefCell<Option<Box<dyn Fn(f64) + 'static>>>>,
+    /// SSH SOCKS tunnel this session browses through, if any.
+    ///
+    /// Held only to keep the `ssh -N -D` process alive for the widget's
+    /// lifetime; dropping the widget drops the tunnel, which closes the proxy.
+    #[expect(
+        dead_code,
+        reason = "field owns the tunnel process; dropping it kills the ssh -D proxy"
+    )]
+    socks_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
 }
 
 /// Validates that a URL has a supported scheme for the embedded web browser.
@@ -134,7 +143,11 @@ pub fn validate_url(url: &str) -> Result<(), EmbeddedError> {
 /// When `accept_invalid_certs` is true, the session's TLS errors policy is set
 /// to `Ignore`, allowing self-signed or expired certificates (common for local
 /// services like Cockpit, Proxmox, or dev environments).
-pub fn create_network_session(uuid: &Uuid, accept_invalid_certs: bool) -> webkit6::NetworkSession {
+pub fn create_network_session(
+    uuid: &Uuid,
+    accept_invalid_certs: bool,
+    socks_port: Option<u16>,
+) -> webkit6::NetworkSession {
     let uuid_str = uuid.to_string();
 
     let data_dir = dirs::data_dir()
@@ -149,6 +162,18 @@ pub fn create_network_session(uuid: &Uuid, accept_invalid_certs: bool) -> webkit
         .join("webkit")
         .join(&uuid_str);
 
+    // Points the session at a local SOCKS5 proxy (the SSH tunnel's port) when
+    // one is configured, so every request the WebView makes exits through the
+    // SSH host. Applied to every session variant, including the ephemeral
+    // fallbacks below, so a directory failure never silently drops the tunnel.
+    let apply_proxy = |session: &webkit6::NetworkSession| {
+        if let Some(port) = socks_port {
+            let proxy_uri = format!("socks5://127.0.0.1:{port}");
+            let settings = webkit6::NetworkProxySettings::new(Some(&proxy_uri), &[]);
+            session.set_proxy_settings(webkit6::NetworkProxyMode::Custom, Some(&settings));
+        }
+    };
+
     // Attempt to create directories
     if let Err(e) = std::fs::create_dir_all(&data_dir) {
         tracing::warn!(
@@ -156,7 +181,9 @@ pub fn create_network_session(uuid: &Uuid, accept_invalid_certs: bool) -> webkit
             error = %e,
             "Failed to create webkit data directory, using ephemeral session"
         );
-        return webkit6::NetworkSession::new_ephemeral();
+        let session = webkit6::NetworkSession::new_ephemeral();
+        apply_proxy(&session);
+        return session;
     }
 
     if let Err(e) = std::fs::create_dir_all(&cache_dir) {
@@ -165,7 +192,9 @@ pub fn create_network_session(uuid: &Uuid, accept_invalid_certs: bool) -> webkit
             error = %e,
             "Failed to create webkit cache directory, using ephemeral session"
         );
-        return webkit6::NetworkSession::new_ephemeral();
+        let session = webkit6::NetworkSession::new_ephemeral();
+        apply_proxy(&session);
+        return session;
     }
 
     let data_str = data_dir.to_string_lossy().to_string();
@@ -196,6 +225,8 @@ pub fn create_network_session(uuid: &Uuid, accept_invalid_certs: bool) -> webkit
     if accept_invalid_certs {
         session.set_tls_errors_policy(webkit6::TLSErrorsPolicy::Ignore);
     }
+
+    apply_proxy(&session);
 
     session
 }
@@ -238,12 +269,20 @@ impl EmbeddedWebWidget {
         url: &str,
         config: &WebConfig,
         credentials: Option<(String, SecretString)>,
+        socks_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
     ) -> Result<Self, EmbeddedError> {
         // Validate URL before proceeding
         validate_url(url)?;
 
+        // When browsing through an SSH host, the tunnel's local SOCKS port is
+        // wired into the network session so every request exits via SSH. The
+        // tunnel handle is kept on the widget so the `ssh -N -D` process lives
+        // exactly as long as this browsing session.
+        let socks_port = socks_tunnel.as_ref().map(|t| t.local_port());
+
         // Create persistent network session for this connection
-        let network_session = create_network_session(&connection_uuid, config.accept_invalid_certs);
+        let network_session =
+            create_network_session(&connection_uuid, config.accept_invalid_certs, socks_port);
 
         // Create WebView with the network session
         let web_view = webkit6::WebView::builder()
@@ -423,6 +462,7 @@ impl EmbeddedWebWidget {
             progress_bar,
             zoom_persist_timer: Rc::new(RefCell::new(None)),
             on_zoom_changed: Rc::new(RefCell::new(None)),
+            socks_tunnel,
         };
 
         // Connect Reload button in the reconnect banner

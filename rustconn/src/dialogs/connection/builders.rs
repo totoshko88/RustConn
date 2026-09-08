@@ -216,6 +216,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub web_javascript_switch: &'a adw::SwitchRow,
     pub web_user_agent_row: &'a adw::EntryRow,
     pub web_floating_toolbar_switch: &'a adw::SwitchRow,
+    pub web_tunnel_dropdown: &'a gtk4::DropDown,
+    pub web_connections_data: &'a Rc<RefCell<Vec<(Option<uuid::Uuid>, String)>>>,
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
     pub expect_rules: &'a Vec<ExpectRule>,
@@ -1297,6 +1299,15 @@ impl ConnectionDialogData<'_> {
         // literals — `zoom_level` used to snap back to 100% and
         // `accept_invalid_certs` to false on every save. A new connection has no
         // seed and correctly gets the defaults.
+        // The "(None)" first entry maps to a direct connection; any other index
+        // resolves to the SSH connection id at that position (same shape as the
+        // jump-host dropdowns).
+        let tunnel_via = {
+            let idx = self.web_tunnel_dropdown.selected() as usize;
+            let conns = self.web_connections_data.borrow();
+            conns.get(idx).and_then(|(id, _)| *id)
+        };
+
         rustconn_core::models::WebConfig {
             browser,
             private_mode: self.web_private_mode_switch.is_active(),
@@ -1304,6 +1315,7 @@ impl ConnectionDialogData<'_> {
             javascript_enabled: self.web_javascript_switch.is_active(),
             user_agent,
             hide_floating_toolbar: !self.web_floating_toolbar_switch.is_active(),
+            tunnel_via,
             ..self.web_config_seed.borrow().clone().unwrap_or_default()
         }
     }

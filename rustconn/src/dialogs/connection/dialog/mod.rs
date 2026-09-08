@@ -318,6 +318,8 @@ pub struct ConnectionDialog {
     web_browser_mode_combo: adw::ComboRow,
     web_javascript_switch: adw::SwitchRow,
     web_user_agent_row: adw::EntryRow,
+    web_tunnel_dropdown: DropDown,
+    web_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     web_floating_toolbar_switch: adw::SwitchRow,
     // Variables fields
     variables_list: ListBox,

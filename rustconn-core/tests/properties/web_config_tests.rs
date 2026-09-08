@@ -49,6 +49,7 @@ fn arb_web_config() -> impl Strategy<Value = WebConfig> {
                     zoom_level,
                     accept_invalid_certs: false,
                     hide_floating_toolbar,
+                    tunnel_via: None,
                 }
             },
         )

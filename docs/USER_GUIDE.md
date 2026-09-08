@@ -586,7 +586,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
-| Web | URL, browser mode (Embedded/System/Custom), credential autofill, JavaScript toggle, accept invalid TLS certs, zoom level |
+| Web | URL, browser mode (Embedded/System/Custom), credential autofill, JavaScript toggle, accept invalid TLS certs, zoom level, tunnel through an SSH connection (embedded, SOCKS) |
 
 ### SSH
 
@@ -1434,6 +1434,20 @@ Disable JavaScript execution for specific connections in the connection dialog's
 
 **Accept Invalid TLS Certificates:**
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
+
+**Tunnel Through SSH (SOCKS proxy):**
+To reach a web service that only a particular SSH host can see — an internal
+dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
+in the Embedded Browser Settings to one of your SSH connections. When the Web
+connection opens, RustConn raises a dynamic SOCKS proxy over that SSH host on an
+automatically-chosen free local port and routes the embedded browser through it,
+so the page loads as if you were browsing from the SSH host. The tunnel stays up
+only while the browser tab is open and comes down with it. The chosen connection's
+key, jump-host chain and (session-cached) password are reused, so no extra
+credentials are needed. If the tunnel cannot be opened the connection does not
+fall back to a direct request — it fails with a message — so traffic you meant to
+tunnel never leaks. This applies to the **embedded** browser only; the System and
+Custom modes hand the URL to another program and ignore the setting.
 
 **Downloads:**
 Files are automatically saved to `~/Downloads/`. A toast notification "Downloaded: {filename}" appears when a download completes.

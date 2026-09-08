@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 12:26+0300\n"
+"POT-Creation-Date: 2026-09-08 13:19+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -55,7 +55,7 @@ msgstr "OK"
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:694
+#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:700
 msgid "Validation Error"
 msgstr "Erro de validação"
 
@@ -462,7 +462,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Detetar atividade ou silêncio na saída do terminal"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:170
+#: rustconn/src/dialogs/connection/web.rs:190
 msgid "Mode"
 msgstr "Modo"
 
@@ -886,32 +886,32 @@ msgid ""
 msgstr ""
 "Executar apenas ao fechar a última ligação numa pasta (útil para limpeza)"
 
-#: rustconn/src/dialogs/connection/builders.rs:292
+#: rustconn/src/dialogs/connection/builders.rs:294
 msgid "Connection name is required"
 msgstr "O nome da ligação é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:306
+#: rustconn/src/dialogs/connection/builders.rs:308
 msgid "Host is required"
 msgstr "O anfitrião é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:311
+#: rustconn/src/dialogs/connection/builders.rs:313
 msgid "Host cannot contain spaces"
 msgstr "O anfitrião não pode conter espaços"
 
-#: rustconn/src/dialogs/connection/builders.rs:321
+#: rustconn/src/dialogs/connection/builders.rs:323
 msgid "Port must be greater than 0"
 msgstr "A porta deve ser superior a 0"
 
-#: rustconn/src/dialogs/connection/builders.rs:329
+#: rustconn/src/dialogs/connection/builders.rs:331
 msgid "Device path is required for serial connections"
 msgstr "É necessário o caminho do dispositivo para ligações série"
 
-#: rustconn/src/dialogs/connection/builders.rs:348
+#: rustconn/src/dialogs/connection/builders.rs:350
 msgid "SSH key path is required for public key authentication"
 msgstr ""
 "O caminho da chave SSH é obrigatório para autenticação por chave pública"
 
-#: rustconn/src/dialogs/connection/builders.rs:360
+#: rustconn/src/dialogs/connection/builders.rs:362
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
@@ -919,70 +919,70 @@ msgstr ""
 "A origem da palavra-passe é 'Nenhuma' mas o método de autenticação é Palavra-"
 "passe. Defina a origem como Pedido ou Cofre."
 
-#: rustconn/src/dialogs/connection/builders.rs:370
+#: rustconn/src/dialogs/connection/builders.rs:372
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "O nome do pod é obrigatório quando o modo Busybox está desativado"
 
-#: rustconn/src/dialogs/connection/builders.rs:379
+#: rustconn/src/dialogs/connection/builders.rs:381
 msgid "MAC address is required when WOL is enabled"
 msgstr "O endereço MAC é obrigatório quando o WOL está ativado"
 
-#: rustconn/src/dialogs/connection/builders.rs:384
+#: rustconn/src/dialogs/connection/builders.rs:386
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr ""
 "Formato de endereço MAC inválido. Use AA:BB:CC:DD:EE:FF ou AA-BB-CC-DD-EE-FF"
 
-#: rustconn/src/dialogs/connection/builders.rs:402
+#: rustconn/src/dialogs/connection/builders.rs:404
 msgid "Browser command is required when Custom mode is selected"
 msgstr ""
 "O comando do navegador é obrigatório quando o modo Personalizado está "
 "selecionado"
 
-#: rustconn/src/dialogs/connection/builders.rs:423
+#: rustconn/src/dialogs/connection/builders.rs:425
 msgid "AWS SSM target instance ID is required"
 msgstr "O ID da instância alvo do AWS SSM é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:428
+#: rustconn/src/dialogs/connection/builders.rs:430
 msgid "GCP instance name and zone are required"
 msgstr "O nome da instância GCP e a zona são obrigatórios"
 
-#: rustconn/src/dialogs/connection/builders.rs:437
+#: rustconn/src/dialogs/connection/builders.rs:439
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr ""
 "O ID do recurso Azure Bastion, o grupo de recursos e o nome do bastião são "
 "obrigatórios"
 
-#: rustconn/src/dialogs/connection/builders.rs:443
+#: rustconn/src/dialogs/connection/builders.rs:445
 msgid "Azure VM name and resource group are required"
 msgstr "O nome da VM Azure e o grupo de recursos são obrigatórios"
 
-#: rustconn/src/dialogs/connection/builders.rs:452
+#: rustconn/src/dialogs/connection/builders.rs:454
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr ""
 "O OCID do bastião OCI, o OCID do alvo e o IP privado do alvo são obrigatórios"
 
-#: rustconn/src/dialogs/connection/builders.rs:458
+#: rustconn/src/dialogs/connection/builders.rs:460
 msgid "Cloudflare Access hostname is required"
 msgstr "O nome de host do Cloudflare Access é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:463
+#: rustconn/src/dialogs/connection/builders.rs:465
 msgid "Teleport host is required"
 msgstr "O host Teleport é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:468
+#: rustconn/src/dialogs/connection/builders.rs:470
 msgid "Tailscale host is required"
 msgstr "O host Tailscale é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:473
+#: rustconn/src/dialogs/connection/builders.rs:475
 msgid "Boundary target is required"
 msgstr "O alvo Boundary é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:478
+#: rustconn/src/dialogs/connection/builders.rs:480
 msgid "Hoop.dev connection name is required"
 msgstr "O nome da conexão Hoop.dev é obrigatório"
 
-#: rustconn/src/dialogs/connection/builders.rs:484
+#: rustconn/src/dialogs/connection/builders.rs:486
 msgid "Command template is required for the Generic provider"
 msgstr "O modelo de comando é obrigatório para o provedor genérico"
 
@@ -1046,22 +1046,22 @@ msgstr "Editar ligação (sincronizada)"
 msgid "Basic"
 msgstr "Básico"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:352
+#: rustconn/src/dialogs/connection/dialog/build.rs:353
 msgid "Data"
 msgstr "Dados"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:362
+#: rustconn/src/dialogs/connection/dialog/build.rs:363
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "Registo"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:372
+#: rustconn/src/dialogs/connection/dialog/build.rs:373
 #: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:981
 #: rustconn/src/window/edit_group.rs:1427
 msgid "Automation"
 msgstr "Automatização"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:413
+#: rustconn/src/dialogs/connection/dialog/build.rs:414
 #: rustconn/src/dialogs/connection/kubernetes.rs:132
 #: rustconn/src/dialogs/connection/rdp.rs:703
 #: rustconn/src/dialogs/connection/vnc.rs:295
@@ -1071,50 +1071,50 @@ msgstr "Automatização"
 msgid "Advanced"
 msgstr "Avançado"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:723
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1107
+#: rustconn/src/dialogs/connection/dialog/build.rs:728
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1112
 #: rustconn/src/dialogs/connection/ssh.rs:507
 #: rustconn/src/dialogs/template.rs:698
 msgid "Jump host for tunneling (-J)"
 msgstr "Host de salto para tunelamento (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1022
+#: rustconn/src/dialogs/connection/dialog/build.rs:1029
 msgid "Username Loaded"
 msgstr "Nome de utilizador carregado"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1023
+#: rustconn/src/dialogs/connection/dialog/build.rs:1030
 msgid "Username loaded from group"
 msgstr "Nome de utilizador carregado do grupo"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1029
+#: rustconn/src/dialogs/connection/dialog/build.rs:1036
 msgid "No Username"
 msgstr "Sem nome de utilizador"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1030
+#: rustconn/src/dialogs/connection/dialog/build.rs:1037
 msgid "Group has no username defined"
 msgstr "O grupo não tem nome de utilizador definido"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1056
+#: rustconn/src/dialogs/connection/dialog/build.rs:1063
 msgid "Domain Loaded"
 msgstr "Domínio carregado"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1057
+#: rustconn/src/dialogs/connection/dialog/build.rs:1064
 msgid "Domain loaded from group"
 msgstr "Domínio carregado do grupo"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1063
+#: rustconn/src/dialogs/connection/dialog/build.rs:1070
 msgid "No Domain"
 msgstr "Sem domínio"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1064
+#: rustconn/src/dialogs/connection/dialog/build.rs:1071
 msgid "Group has no domain defined"
 msgstr "O grupo não tem domínio definido"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1092
+#: rustconn/src/dialogs/connection/dialog/build.rs:1099
 msgid "Zero Trust Connection Test"
 msgstr "Teste de ligação Zero Trust"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1093
+#: rustconn/src/dialogs/connection/dialog/build.rs:1100
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1130,35 +1130,35 @@ msgstr ""
 "2. Use o botão Ligar\n"
 "3. O CLI do fornecedor tratará da autenticação"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1101
-#: rustconn/src/dialogs/connection/dialog/build.rs:1263
-#: rustconn/src/dialogs/connection/dialog/build.rs:1268
+#: rustconn/src/dialogs/connection/dialog/build.rs:1108
+#: rustconn/src/dialogs/connection/dialog/build.rs:1270
+#: rustconn/src/dialogs/connection/dialog/build.rs:1275
 msgid "Connection Test Failed"
 msgstr "Teste de ligação falhou"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1102
+#: rustconn/src/dialogs/connection/dialog/build.rs:1109
 msgid "Fill in the required fields (name and host)"
 msgstr "Preencha os campos obrigatórios (nome e anfitrião)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1144
-#: rustconn/src/dialogs/connection/dialog/build.rs:1314
+#: rustconn/src/dialogs/connection/dialog/build.rs:1151
+#: rustconn/src/dialogs/connection/dialog/build.rs:1321
 msgid "Testing…"
 msgstr "A testar…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1243
+#: rustconn/src/dialogs/connection/dialog/build.rs:1250
 #: rustconn/src/dialogs/connection/general_tab.rs:378
 msgid "Test"
 msgstr "Teste"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1250
+#: rustconn/src/dialogs/connection/dialog/build.rs:1257
 msgid "Connection Test Successful"
 msgstr "Teste de ligação bem-sucedido"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1252
+#: rustconn/src/dialogs/connection/dialog/build.rs:1259
 msgid "Connection successful. Latency: {} ms"
 msgstr "Ligação bem-sucedida. Latência: {} ms"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1261
+#: rustconn/src/dialogs/connection/dialog/build.rs:1268
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1166,52 +1166,52 @@ msgstr ""
 "O teste falhou sem um erro específico. Verifique o endereço do anfitrião e a "
 "porta e tente novamente."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1269
+#: rustconn/src/dialogs/connection/dialog/build.rs:1276
 msgid "Test timed out"
 msgstr "Tempo limite do teste"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1287
-#: rustconn/src/dialogs/connection/dialog/build.rs:1297
-#: rustconn/src/dialogs/connection/dialog/build.rs:1306
-#: rustconn/src/dialogs/connection/dialog/build.rs:1367
-#: rustconn/src/dialogs/connection/dialog/build.rs:1372
+#: rustconn/src/dialogs/connection/dialog/build.rs:1294
+#: rustconn/src/dialogs/connection/dialog/build.rs:1304
+#: rustconn/src/dialogs/connection/dialog/build.rs:1313
+#: rustconn/src/dialogs/connection/dialog/build.rs:1374
+#: rustconn/src/dialogs/connection/dialog/build.rs:1379
 msgid "Script Test Failed"
 msgstr "Teste do script falhado"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1288
+#: rustconn/src/dialogs/connection/dialog/build.rs:1295
 msgid "Script command is empty"
 msgstr "O comando do script está vazio"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1298
+#: rustconn/src/dialogs/connection/dialog/build.rs:1305
 msgid "Script command is empty after parsing"
 msgstr "O comando do script está vazio após análise"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1307
+#: rustconn/src/dialogs/connection/dialog/build.rs:1314
 msgid "Failed to parse command"
 msgstr "Falha ao analisar comando"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1337
+#: rustconn/src/dialogs/connection/dialog/build.rs:1344
 msgid "Test Script"
 msgstr "Testar script"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1344
+#: rustconn/src/dialogs/connection/dialog/build.rs:1351
 msgid "(empty output)"
 msgstr "(saída vazia)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1350
+#: rustconn/src/dialogs/connection/dialog/build.rs:1357
 msgid "Script Test Successful"
 msgstr "Teste do script bem-sucedido"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1351
+#: rustconn/src/dialogs/connection/dialog/build.rs:1358
 #: rustconn/src/dialogs/export.rs:316
 msgid "Output"
 msgstr "Saída"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1358
+#: rustconn/src/dialogs/connection/dialog/build.rs:1365
 msgid "Command failed"
 msgstr "Comando falhou"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1373
+#: rustconn/src/dialogs/connection/dialog/build.rs:1380
 msgid "Script timed out after 30 seconds"
 msgstr "O script excedeu o tempo limite de 30 segundos"
 
@@ -1406,24 +1406,24 @@ msgstr "Editar ligação"
 msgid "(Root)"
 msgstr "(Raiz)"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1068
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1139
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1073
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1144
 msgid "Inherited: {}"
 msgstr "Herdado: {}"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1072
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1076
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1077
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1081
 msgid "Inherited from parent group"
 msgstr "Herdado do grupo pai"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1081
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1086
 #: rustconn/src/dialogs/connection/ssh.rs:258
 msgid "Default tries ~/.ssh/id_rsa, id_ed25519, id_ecdsa automatically"
 msgstr ""
 "Por predefinição tenta ~/.ssh/id_rsa, id_ed25519, id_ecdsa automaticamente"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1147
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1164
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1152
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1169
 msgid "Direct — an inherited jump host is ignored"
 msgstr "Direto — um anfitrião de salto herdado é ignorado"
 
@@ -3483,55 +3483,64 @@ msgstr "Opções adicionais de linha de comando para vncviewer"
 msgid "Tunnel VNC through an SSH connection"
 msgstr "Encaminhar VNC através de uma ligação SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:48
+#: rustconn/src/dialogs/connection/web.rs:52
 msgid "Browser Mode"
 msgstr "Modo do navegador"
 
-#: rustconn/src/dialogs/connection/web.rs:49
+#: rustconn/src/dialogs/connection/web.rs:53
 msgid "Choose how the URL is opened"
 msgstr "Escolha como o URL é aberto"
 
-#: rustconn/src/dialogs/connection/web.rs:59
+#: rustconn/src/dialogs/connection/web.rs:63
 msgid "Custom Browser"
 msgstr "Navegador personalizado"
 
-#: rustconn/src/dialogs/connection/web.rs:61
+#: rustconn/src/dialogs/connection/web.rs:65
 msgid "Specify a browser command when Custom mode is selected."
 msgstr ""
 "Especifique um comando de navegador quando o modo personalizado estiver "
 "selecionado."
 
-#: rustconn/src/dialogs/connection/web.rs:65
+#: rustconn/src/dialogs/connection/web.rs:69
 msgid "Browser Command"
 msgstr "Comando do navegador"
 
-#: rustconn/src/dialogs/connection/web.rs:67
+#: rustconn/src/dialogs/connection/web.rs:71
 msgid "Command or path to browser binary (e.g. firefox, chromium)"
 msgstr "Comando ou caminho para o binário do navegador (ex. firefox, chromium)"
 
-#: rustconn/src/dialogs/connection/web.rs:69
+#: rustconn/src/dialogs/connection/web.rs:73
 msgid "Required for Custom mode"
 msgstr "Obrigatório para o modo personalizado"
 
-#: rustconn/src/dialogs/connection/web.rs:77
+#: rustconn/src/dialogs/connection/web.rs:81
 msgid "Embedded Browser Settings"
 msgstr "Configurações do navegador incorporado"
 
-#: rustconn/src/dialogs/connection/web.rs:78
+#: rustconn/src/dialogs/connection/web.rs:82
 msgid "Settings applied when using the embedded browser"
 msgstr "Configurações aplicadas ao usar o navegador incorporado"
 
-#: rustconn/src/dialogs/connection/web.rs:87
+#: rustconn/src/dialogs/connection/web.rs:91
 msgid "User Agent"
 msgstr "Agente de utilizador"
 
-#: rustconn/src/dialogs/connection/web.rs:107
+#: rustconn/src/dialogs/connection/web.rs:101
+msgid "Tunnel Through SSH"
+msgstr "Túnel através de SSH"
+
+#: rustconn/src/dialogs/connection/web.rs:103
+msgid ""
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
+msgstr "Navegar através de um proxy SOCKS na ligação SSH escolhida (navegador integrado)"
+
+#: rustconn/src/dialogs/connection/web.rs:126
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "Geral"
 
-#: rustconn/src/dialogs/connection/web.rs:171
+#: rustconn/src/dialogs/connection/web.rs:191
 msgid "How the URL is opened"
 msgstr "Como o URL é aberto"
 
@@ -9329,7 +9338,7 @@ msgid "Connection refused. Check host and port."
 msgstr "Conexão recusada. Verifique o anfitrião e a porta."
 
 #: rustconn/src/embedded_rdp/connection.rs:2168
-#: rustconn/src/embedded_web/mod.rs:581
+#: rustconn/src/embedded_web/mod.rs:621
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Conexão expirou. Verifique se o anfitrião está acessível."
 
@@ -9636,8 +9645,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Usando visualizador externo (criptografia não suportada)"
 
-#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:310
-#: rustconn/src/embedded_web/mod.rs:526 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:326 rustconn/src/embedded_web/mod.rs:349
+#: rustconn/src/embedded_web/mod.rs:566 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:399
 msgid "Disconnected"
 msgstr "Desligado"
@@ -9651,25 +9660,25 @@ msgstr "Sessão a correr em janela externa"
 msgid "Connection error"
 msgstr "Erro de ligação"
 
-#: rustconn/src/embedded_web/mod.rs:316
+#: rustconn/src/embedded_web/mod.rs:355
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "Recarregar"
 
-#: rustconn/src/embedded_web/mod.rs:463
+#: rustconn/src/embedded_web/mod.rs:503
 msgid "No credentials configured for this connection"
 msgstr "Não há credenciais configuradas para esta ligação"
 
-#: rustconn/src/embedded_web/mod.rs:779
+#: rustconn/src/embedded_web/mod.rs:819
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "Certificado TLS aceite (autoassinado ou não confiável)"
 
-#: rustconn/src/embedded_web/mod.rs:883
+#: rustconn/src/embedded_web/mod.rs:923
 msgid "Downloaded: {}"
 msgstr "Transferido: {}"
 
-#: rustconn/src/embedded_web/mod.rs:910
+#: rustconn/src/embedded_web/mod.rs:950
 msgid "No login form fields found on this page"
 msgstr "Nenhum campo de formulário de login encontrado nesta página"
 
@@ -10971,7 +10980,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1376
+#: rustconn/src/window/edit_actions.rs:1470
 msgid "Connection failed. Host unreachable."
 msgstr "Ligação falhada. Anfitrião inacessível."
 
@@ -11113,7 +11122,7 @@ msgid "Opening mc SFTP…"
 msgstr "A abrir mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1547
+#: rustconn/src/window/edit_actions.rs:1641
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11124,7 +11133,7 @@ msgstr ""
 "um acesso fiável."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1565
+#: rustconn/src/window/edit_actions.rs:1659
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Anfitrião de salto detetado. O SFTP é aberto através do mc em vez do gestor "
@@ -11140,14 +11149,26 @@ msgstr ""
 "O agente SSH não está em execução — o gestor de ficheiros pode não se "
 "autenticar."
 
-#: rustconn/src/window/edit_actions.rs:1147
-#: rustconn/src/window/edit_actions.rs:1192
-#: rustconn/src/window/edit_actions.rs:1211
+#: rustconn/src/window/edit_actions.rs:1051
+msgid "application is busy"
+msgstr "a aplicação está ocupada"
+
+#: rustconn/src/window/edit_actions.rs:1053
+msgid "the SSH connection it tunnels through is gone"
+msgstr "a ligação SSH através da qual faz o túnel deixou de existir"
+
+#: rustconn/src/window/edit_actions.rs:1195
+msgid "Could not open the SSH tunnel: {}"
+msgstr "Não foi possível abrir o túnel SSH: {}"
+
+#: rustconn/src/window/edit_actions.rs:1241
+#: rustconn/src/window/edit_actions.rs:1286
+#: rustconn/src/window/edit_actions.rs:1305
 msgid "Failed to open URL: {}"
 msgstr "Falha ao abrir URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1183
-#: rustconn/src/window/edit_actions.rs:1225
+#: rustconn/src/window/edit_actions.rs:1277
+#: rustconn/src/window/edit_actions.rs:1319
 msgid "Opened in browser"
 msgstr "Aberto no navegador"
 

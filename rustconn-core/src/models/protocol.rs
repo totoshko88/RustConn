@@ -3813,6 +3813,17 @@ pub struct WebConfig {
     /// the System and Custom modes hand the URL to another program.
     #[serde(default)]
     pub hide_floating_toolbar: bool,
+    /// ID of an SSH connection whose host to browse *through*, via an
+    /// automatically-raised dynamic SOCKS proxy (`ssh -N -D`).
+    ///
+    /// When set, opening this Web connection first brings up a SOCKS tunnel to
+    /// the referenced SSH connection on a free local port, then points the
+    /// browser at `socks5://127.0.0.1:<port>`. The tunnel lives for the
+    /// browsing session. The embedded browser applies it through its
+    /// `NetworkSession`; the Custom-browser mode via a `--proxy-server` flag.
+    /// `None` means a direct connection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tunnel_via: Option<uuid::Uuid>,
 }
 
 // Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
@@ -3830,6 +3841,7 @@ impl Default for WebConfig {
             zoom_level: 1.0,
             accept_invalid_certs: false,
             hide_floating_toolbar: false,
+            tunnel_via: None,
         }
     }
 }
@@ -3862,6 +3874,8 @@ impl<'de> Deserialize<'de> for WebConfig {
             accept_invalid_certs: bool,
             #[serde(default)]
             hide_floating_toolbar: bool,
+            #[serde(default)]
+            tunnel_via: Option<uuid::Uuid>,
         }
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
@@ -3884,6 +3898,7 @@ impl<'de> Deserialize<'de> for WebConfig {
             zoom_level: raw.zoom_level.clamp(0.3, 3.0),
             accept_invalid_certs: raw.accept_invalid_certs,
             hide_floating_toolbar: raw.hide_floating_toolbar,
+            tunnel_via: raw.tunnel_via,
         })
     }
 }
@@ -3908,6 +3923,27 @@ mod web_browser_mode_tests {
             rendered.contains("browser_mode = \"embedded\""),
             "saving must not downgrade the stored mode, got:\n{rendered}"
         );
+    }
+
+    #[test]
+    fn tunnel_via_round_trips_and_defaults_to_none() {
+        // Absent in stored config -> None, and not written back when None.
+        let plain: WebConfig =
+            toml::from_str("browser_mode = \"embedded\"\n").expect("parse without tunnel_via");
+        assert_eq!(plain.tunnel_via, None);
+        let rendered = toml::to_string(&plain).expect("serialize");
+        assert!(
+            !rendered.contains("tunnel_via"),
+            "a None tunnel_via must be skipped, got:\n{rendered}"
+        );
+
+        // A stored id survives the round trip.
+        let id = uuid::Uuid::new_v4();
+        let with_tunnel: WebConfig =
+            toml::from_str(&format!("tunnel_via = \"{id}\"\n")).expect("parse with tunnel_via");
+        assert_eq!(with_tunnel.tunnel_via, Some(id));
+        let rendered = toml::to_string(&with_tunnel).expect("serialize");
+        assert!(rendered.contains(&id.to_string()));
     }
 
     #[test]
