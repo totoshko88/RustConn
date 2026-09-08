@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:19+0300\n"
+"POT-Creation-Date: 2026-09-08 13:44+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -72,7 +72,7 @@ msgstr "Spara inte"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:406
 #: rustconn/src/dialogs/template.rs:2783
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:461
+#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:483
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
 #: rustconn/src/window/workspaces.rs:549
 msgid "Save"
@@ -180,7 +180,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "”{}” behöver följande innan anslutning kan ske."
 
 #: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/dialogs/widgets.rs:488 rustconn/src/sidebar_ui.rs:345
 #: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
 #: rustconn/src/window/edit_dialogs.rs:741
 msgid "Connect"
@@ -224,7 +224,7 @@ msgstr "Nytt kluster"
 #: rustconn/src/dialogs/snippet.rs:76 rustconn/src/dialogs/template.rs:143
 #: rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:462
+#: rustconn/src/dialogs/widgets.rs:484
 #: rustconn/src/window/connection_dialogs.rs:397
 #: rustconn/src/window/connection_dialogs.rs:398
 msgid "Create"
@@ -463,7 +463,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Upptäck terminalaktivitet eller tystnad"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:190
+#: rustconn/src/dialogs/connection/web.rs:194
 msgid "Mode"
 msgstr "Läge"
 
@@ -3511,22 +3511,23 @@ msgstr "Inställningar som tillämpas när den inbäddade webbläsaren används"
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:101
+#: rustconn/src/dialogs/connection/web.rs:105
 msgid "Tunnel Through SSH"
 msgstr "Tunnel via SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:103
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
-msgstr "Surfa via en SOCKS-proxy över den valda SSH-anslutningen (inbäddad webbläsare)"
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
+msgstr "Surfa via en SOCKS-proxy över den valda SSH-anslutningen (inbäddad eller Chromium-webbläsare)"
 
-#: rustconn/src/dialogs/connection/web.rs:126
+#: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "Allmänt"
 
-#: rustconn/src/dialogs/connection/web.rs:191
+#: rustconn/src/dialogs/connection/web.rs:195
 msgid "How the URL is opened"
 msgstr "Hur URL:en öppnas"
 
@@ -4025,7 +4026,7 @@ msgstr "Lösenfras för den portabla filen"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:487
 #: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
@@ -4148,7 +4149,7 @@ msgstr "Kopiering stoppad"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:460 rustconn/src/terminal/tab_menu.rs:407
+#: rustconn/src/dialogs/widgets.rs:482 rustconn/src/terminal/tab_menu.rs:407
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3652
 msgid "Close"
 msgstr "Stäng"
@@ -4183,7 +4184,7 @@ msgid "Export Connections"
 msgstr "Exportera anslutningar"
 
 #: rustconn/src/dialogs/export.rs:101 rustconn/src/dialogs/export.rs:102
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:463
+#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:485
 msgid "Export"
 msgstr "Exportera"
 
@@ -4462,7 +4463,7 @@ msgstr "Export slutförd"
 #: rustconn/src/dialogs/import/sources.rs:1235
 #: rustconn/src/dialogs/import/sources.rs:1351
 #: rustconn/src/dialogs/import/sources.rs:1505
-#: rustconn/src/dialogs/widgets.rs:469
+#: rustconn/src/dialogs/widgets.rs:491
 msgid "Done"
 msgstr "Klar"
 
@@ -4647,7 +4648,7 @@ msgstr "Importera anslutningar"
 
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:464
+#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
 #: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:805
 msgid "Import"
 msgstr "Importera"
@@ -8419,7 +8420,7 @@ msgid "Edit"
 msgstr "Redigera"
 
 #: rustconn/src/dialogs/template_manager.rs:117
-#: rustconn/src/dialogs/widgets.rs:468
+#: rustconn/src/dialogs/widgets.rs:490
 msgid "Use Template"
 msgstr "Använd mall"
 
@@ -8943,25 +8944,25 @@ msgstr "Kunde inte ladda hemlighet. Kontrollera backend i Inställningar."
 msgid "Fetched from vault at connect time"
 msgstr "Hämtas från valvet vid anslutning"
 
-#: rustconn/src/dialogs/widgets.rs:467 rustconn/src/dialogs/wol.rs:44
+#: rustconn/src/dialogs/widgets.rs:489 rustconn/src/dialogs/wol.rs:44
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/window/sessions.rs:341
 msgid "Send"
 msgstr "Skicka"
 
-#: rustconn/src/dialogs/widgets.rs:480
+#: rustconn/src/dialogs/widgets.rs:502
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:481
+#: rustconn/src/dialogs/widgets.rs:503
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr ""
 "Aktivera eller inaktivera JavaScript-körning i den inbäddade webbläsaren"
 
-#: rustconn/src/dialogs/widgets.rs:482
+#: rustconn/src/dialogs/widgets.rs:504
 msgid "Navigation Toolbar"
 msgstr "Navigeringsfält"
 
-#: rustconn/src/dialogs/widgets.rs:484
+#: rustconn/src/dialogs/widgets.rs:506
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -8970,11 +8971,11 @@ msgstr ""
 "Tangentbordsgenvägar för bakåt, framåt, uppdatera och zoom fungerar "
 "fortfarande."
 
-#: rustconn/src/dialogs/widgets.rs:486
+#: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
 msgstr "Privat / inkognitoläge"
 
-#: rustconn/src/dialogs/widgets.rs:487
+#: rustconn/src/dialogs/widgets.rs:509
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Öppna URL i ett privat webbläsarfönster (Firefox, Chrome, Brave)"
 
@@ -10938,7 +10939,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1470
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "Connection failed. Host unreachable."
 msgstr "Anslutning misslyckades. Värd onåbar."
 
@@ -11077,7 +11078,7 @@ msgid "Opening mc SFTP…"
 msgstr "Öppnar mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1699
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11088,7 +11089,7 @@ msgstr ""
 "för tillförlitlig åtkomst."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1659
+#: rustconn/src/window/edit_actions.rs:1717
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "Mellanvärd upptäckt. SFTP öppnas via mc i stället för filhanteraren."
 
@@ -11100,28 +11101,41 @@ msgstr "Öppnar SFTP…"
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "SSH-agenten körs inte — filhanteraren kanske inte kan autentisera."
 
-#: rustconn/src/window/edit_actions.rs:1051
+#: rustconn/src/window/edit_actions.rs:1050
 msgid "application is busy"
 msgstr "programmet är upptaget"
 
-#: rustconn/src/window/edit_actions.rs:1053
+#: rustconn/src/window/edit_actions.rs:1052
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-anslutningen som tunneln går genom finns inte längre"
 
-#: rustconn/src/window/edit_actions.rs:1195
+#: rustconn/src/window/edit_actions.rs:1194
+#: rustconn/src/window/edit_actions.rs:1260
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Det gick inte att öppna SSH-tunneln: {}"
 
-#: rustconn/src/window/edit_actions.rs:1241
-#: rustconn/src/window/edit_actions.rs:1286
-#: rustconn/src/window/edit_actions.rs:1305
+#: rustconn/src/window/edit_actions.rs:1240
+#: rustconn/src/window/edit_actions.rs:1336
+#: rustconn/src/window/edit_actions.rs:1363
 msgid "Failed to open URL: {}"
 msgstr "Kunde inte öppna URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1277
-#: rustconn/src/window/edit_actions.rs:1319
+#: rustconn/src/window/edit_actions.rs:1285
+msgid ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
+msgstr "Denna webbläsare kan inte tunnlas från kommandoraden. Använd en Chromium-baserad webbläsare eller den inbäddade webbläsaren för SSH-tunnling."
+
+#: rustconn/src/window/edit_actions.rs:1325
+#: rustconn/src/window/edit_actions.rs:1377
 msgid "Opened in browser"
 msgstr "Öppnad i webbläsare"
+
+#: rustconn/src/window/edit_actions.rs:1350
+msgid ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
+msgstr "SSH-tunnling kräver den inbäddade eller en anpassad (Chromium) webbläsare; systemets webbläsare öppnas utan tunneln."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

@@ -1034,9 +1034,8 @@ impl MainWindow {
     /// directly), `Ok(Some(tunnel))` once the `ssh -N -D` proxy is up and
     /// accepting connections, or `Err(message)` when the referenced SSH
     /// connection is missing or the tunnel could not be established. The tunnel
-    /// is returned to the caller, which hands it to the embedded widget so its
-    /// lifetime matches the browsing session.
-    #[cfg(feature = "web-embedded")]
+    /// is returned to the caller, which hands it to the embedded widget (whose
+    /// lifetime it then matches) or parks it behind an external browser.
     fn raise_web_socks_tunnel(
         state: &SharedAppState,
         web_config: &rustconn_core::models::WebConfig,
@@ -1094,7 +1093,7 @@ impl MainWindow {
         .map_err(|e| e.to_string())?;
         tracing::info!(
             socks_port = tunnel.local_port(),
-            "SOCKS tunnel ready for embedded web connection"
+            "SOCKS tunnel ready for web connection"
         );
         Ok(Some(tunnel))
     }
@@ -1140,8 +1139,8 @@ impl MainWindow {
         // These are used in the #[cfg(feature = "web-embedded")] block below.
         #[cfg(not(feature = "web-embedded"))]
         {
-            let _ = &notebook;
-            let _ = &conn_name;
+            // `notebook` and `conn_name` are now used by the Custom-browser tunnel
+            // path regardless of the feature; only `observer` is embedded-only.
             let _ = &observer;
 
             // The stored mode is kept as-is even though this build cannot honour
@@ -1250,14 +1249,49 @@ impl MainWindow {
         if web_config.browser_mode == rustconn_core::models::WebBrowserMode::Custom
             && let Some(ref browser) = web_config.browser
         {
+            // Raise the SOCKS tunnel first, if configured. A failure aborts the
+            // launch rather than browsing directly, matching the embedded path.
+            let socks_tunnel = match Self::raise_web_socks_tunnel(state, &web_config) {
+                Ok(tunnel) => tunnel,
+                Err(msg) => {
+                    tracing::error!(connection = %conn_name, error = %msg, "Web SOCKS tunnel failed");
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Could not open the SSH tunnel: {}",
+                        &[&msg],
+                    ));
+                    return;
+                }
+            };
+
             let mut cmd = std::process::Command::new(browser);
+            let browser_lower = browser.to_lowercase();
+            let is_chromium = browser_lower.contains("chrom")
+                || browser_lower.contains("brave")
+                || browser_lower.contains("vivaldi")
+                || browser_lower.contains("edge")
+                || browser_lower.contains("opera");
+
+            // Route the browser through the tunnel's SOCKS proxy. Only the
+            // Chromium family takes a `--proxy-server` flag; Firefox reads proxy
+            // settings from its profile, which a one-shot launch cannot set
+            // safely, so we surface that rather than pretend it worked.
+            if let Some(ref tunnel) = socks_tunnel {
+                let port = tunnel.local_port();
+                if is_chromium {
+                    cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
+                } else {
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                        "This browser can't be tunnelled from the command line. Use a Chromium-based browser or the embedded browser for SSH tunnelling.",
+                    ));
+                }
+            }
 
             // Add private mode flag for known browsers
             if web_config.private_mode {
-                let browser_lower = browser.to_lowercase();
                 if browser_lower.contains("firefox") {
                     cmd.arg("--private-window");
-                } else if browser_lower.contains("chrom") || browser_lower.contains("brave") {
+                } else if is_chromium {
                     cmd.arg("--incognito");
                 }
             }
@@ -1265,9 +1299,23 @@ impl MainWindow {
             cmd.arg(&url);
 
             match cmd.spawn() {
-                Ok(_) => {
+                Ok(child) => {
                     tracing::info!(browser = %browser, "Web bookmark opened in custom browser");
                     sidebar.update_connection_status(&connection_id.to_string(), "");
+                    // Keep the tunnel alive behind the detached browser. There is
+                    // no tab to own it, so it is parked in the notebook tunnel map
+                    // under a synthetic session id and registered with the external
+                    // session registry; both are reclaimed at app exit. The child
+                    // is handed over so the registry reaps it — its exit is when
+                    // the tunnel could be dropped, though today that waits for exit
+                    // of RustConn (documented tradeoff, as for RDP/VNC viewers).
+                    if let Some(tunnel) = socks_tunnel {
+                        let session_id = uuid::Uuid::new_v4();
+                        notebook.store_ssh_tunnel(session_id, tunnel);
+                        if let Some(registry) = super::external_session_registry() {
+                            registry.register(session_id, connection_id, Some(child), None);
+                        }
+                    }
                     if let Some(app) = gtk4::gio::Application::default()
                         && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()
                         && let Some(window) = gtk_app.active_window()
@@ -1282,6 +1330,8 @@ impl MainWindow {
                 Err(e) => {
                     tracing::error!(browser = %browser, error = %e, "Failed to launch custom browser");
                     sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    // The tunnel (if any) drops here with `socks_tunnel`, killing
+                    // its ssh process — nothing is browsing through it.
                     crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
                         "Failed to open URL: {}",
                         &[&e.to_string()],
@@ -1291,7 +1341,15 @@ impl MainWindow {
             return;
         }
 
-        // System mode (default): use gtk4::UriLauncher for portal-aware URL opening
+        // System mode (default): use gtk4::UriLauncher for portal-aware URL opening.
+        // A tunnel cannot be applied here — the portal picks the browser and
+        // RustConn cannot pass it a proxy flag — so say so instead of silently
+        // ignoring the setting.
+        if web_config.tunnel_via.is_some() {
+            crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system browser opens without the tunnel.",
+            ));
+        }
         let launcher = gtk4::UriLauncher::new(&url);
         let sidebar_clone = sidebar.clone();
         launcher.launch(

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:19+0300\n"
+"POT-Creation-Date: 2026-09-08 13:44+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -73,7 +73,7 @@ msgstr "不保存"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:406
 #: rustconn/src/dialogs/template.rs:2783
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:461
+#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:483
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
 #: rustconn/src/window/workspaces.rs:549
 msgid "Save"
@@ -175,7 +175,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "“{}” 连接前需要以下信息。"
 
 #: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/dialogs/widgets.rs:488 rustconn/src/sidebar_ui.rs:345
 #: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
 #: rustconn/src/window/edit_dialogs.rs:741
 msgid "Connect"
@@ -217,7 +217,7 @@ msgstr "新建集群"
 #: rustconn/src/dialogs/snippet.rs:76 rustconn/src/dialogs/template.rs:143
 #: rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:462
+#: rustconn/src/dialogs/widgets.rs:484
 #: rustconn/src/window/connection_dialogs.rs:397
 #: rustconn/src/window/connection_dialogs.rs:398
 msgid "Create"
@@ -456,7 +456,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "检测终端输出活动或静默"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:190
+#: rustconn/src/dialogs/connection/web.rs:194
 msgid "Mode"
 msgstr "模式"
 
@@ -3456,22 +3456,23 @@ msgstr "使用内嵌浏览器时应用的设置"
 msgid "User Agent"
 msgstr "用户代理"
 
-#: rustconn/src/dialogs/connection/web.rs:101
+#: rustconn/src/dialogs/connection/web.rs:105
 msgid "Tunnel Through SSH"
 msgstr "通过 SSH 隧道"
 
-#: rustconn/src/dialogs/connection/web.rs:103
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
-msgstr "通过所选 SSH 连接的 SOCKS 代理浏览（嵌入式浏览器）"
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
+msgstr "通过所选 SSH 连接的 SOCKS 代理浏览（嵌入式或 Chromium 浏览器）"
 
-#: rustconn/src/dialogs/connection/web.rs:126
+#: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "常规"
 
-#: rustconn/src/dialogs/connection/web.rs:191
+#: rustconn/src/dialogs/connection/web.rs:195
 msgid "How the URL is opened"
 msgstr "URL 的打开方式"
 
@@ -3968,7 +3969,7 @@ msgstr "便携文件口令"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:487
 #: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
@@ -4082,7 +4083,7 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:460 rustconn/src/terminal/tab_menu.rs:407
+#: rustconn/src/dialogs/widgets.rs:482 rustconn/src/terminal/tab_menu.rs:407
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3652
 msgid "Close"
 msgstr "关闭"
@@ -4115,7 +4116,7 @@ msgid "Export Connections"
 msgstr "导出连接"
 
 #: rustconn/src/dialogs/export.rs:101 rustconn/src/dialogs/export.rs:102
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:463
+#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:485
 msgid "Export"
 msgstr "导出"
 
@@ -4394,7 +4395,7 @@ msgstr "导出完成"
 #: rustconn/src/dialogs/import/sources.rs:1235
 #: rustconn/src/dialogs/import/sources.rs:1351
 #: rustconn/src/dialogs/import/sources.rs:1505
-#: rustconn/src/dialogs/widgets.rs:469
+#: rustconn/src/dialogs/widgets.rs:491
 msgid "Done"
 msgstr "完成"
 
@@ -4574,7 +4575,7 @@ msgstr "导入连接"
 
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:464
+#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
 #: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:805
 msgid "Import"
 msgstr "导入"
@@ -8268,7 +8269,7 @@ msgid "Edit"
 msgstr "编辑"
 
 #: rustconn/src/dialogs/template_manager.rs:117
-#: rustconn/src/dialogs/widgets.rs:468
+#: rustconn/src/dialogs/widgets.rs:490
 msgid "Use Template"
 msgstr "使用模板"
 
@@ -8781,24 +8782,24 @@ msgstr "加载密钥失败。请在设置中检查密钥后端。"
 msgid "Fetched from vault at connect time"
 msgstr "连接时从保管库获取"
 
-#: rustconn/src/dialogs/widgets.rs:467 rustconn/src/dialogs/wol.rs:44
+#: rustconn/src/dialogs/widgets.rs:489 rustconn/src/dialogs/wol.rs:44
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/window/sessions.rs:341
 msgid "Send"
 msgstr "发送"
 
-#: rustconn/src/dialogs/widgets.rs:480
+#: rustconn/src/dialogs/widgets.rs:502
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:481
+#: rustconn/src/dialogs/widgets.rs:503
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "启用或禁用内嵌浏览器中的 JavaScript 执行"
 
-#: rustconn/src/dialogs/widgets.rs:482
+#: rustconn/src/dialogs/widgets.rs:504
 msgid "Navigation Toolbar"
 msgstr "导航工具栏"
 
-#: rustconn/src/dialogs/widgets.rs:484
+#: rustconn/src/dialogs/widgets.rs:506
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -8806,11 +8807,11 @@ msgstr ""
 "关闭后将移除浮动工具栏及其展开箭头。后退、前进、重新加载和缩放的键盘快捷键仍"
 "然有效。"
 
-#: rustconn/src/dialogs/widgets.rs:486
+#: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
 msgstr "隐私/无痕模式"
 
-#: rustconn/src/dialogs/widgets.rs:487
+#: rustconn/src/dialogs/widgets.rs:509
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "在隐私浏览窗口中打开 URL（Firefox、Chrome、Brave）"
 
@@ -10742,7 +10743,7 @@ msgstr "未找到 '{}' 的密码库条目。系统将提示您输入密码。"
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1470
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "Connection failed. Host unreachable."
 msgstr "连接失败。主机不可达。"
 
@@ -10873,7 +10874,7 @@ msgid "Opening mc SFTP…"
 msgstr "正在打开 mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1699
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -10883,7 +10884,7 @@ msgstr ""
 "设置中启用 \"SFTP via mc\" 以获得可靠的访问。"
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1659
+#: rustconn/src/window/edit_actions.rs:1717
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "检测到跳转主机。将通过 mc 而不是文件管理器打开 SFTP。"
 
@@ -10895,28 +10896,41 @@ msgstr "正在打开 SFTP…"
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "SSH 代理未运行 — 文件管理器可能无法通过认证。"
 
-#: rustconn/src/window/edit_actions.rs:1051
+#: rustconn/src/window/edit_actions.rs:1050
 msgid "application is busy"
 msgstr "应用正忙"
 
-#: rustconn/src/window/edit_actions.rs:1053
+#: rustconn/src/window/edit_actions.rs:1052
 msgid "the SSH connection it tunnels through is gone"
 msgstr "隧道所经的 SSH 连接已不存在"
 
-#: rustconn/src/window/edit_actions.rs:1195
+#: rustconn/src/window/edit_actions.rs:1194
+#: rustconn/src/window/edit_actions.rs:1260
 msgid "Could not open the SSH tunnel: {}"
 msgstr "无法打开 SSH 隧道：{}"
 
-#: rustconn/src/window/edit_actions.rs:1241
-#: rustconn/src/window/edit_actions.rs:1286
-#: rustconn/src/window/edit_actions.rs:1305
+#: rustconn/src/window/edit_actions.rs:1240
+#: rustconn/src/window/edit_actions.rs:1336
+#: rustconn/src/window/edit_actions.rs:1363
 msgid "Failed to open URL: {}"
 msgstr "打开 URL 失败：{}"
 
-#: rustconn/src/window/edit_actions.rs:1277
-#: rustconn/src/window/edit_actions.rs:1319
+#: rustconn/src/window/edit_actions.rs:1285
+msgid ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
+msgstr "无法从命令行为此浏览器建立隔离隧道。请使用基于 Chromium 的浏览器或嵌入式浏览器进行 SSH 隔离隧道。"
+
+#: rustconn/src/window/edit_actions.rs:1325
+#: rustconn/src/window/edit_actions.rs:1377
 msgid "Opened in browser"
 msgstr "已在浏览器中打开"
+
+#: rustconn/src/window/edit_actions.rs:1350
+msgid ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
+msgstr "SSH 隔离隧道需要嵌入式或自定义（Chromium）浏览器；系统浏览器将在无隔离隧道的情况下打开。"
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

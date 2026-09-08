@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:19+0300\n"
+"POT-Creation-Date: 2026-09-08 13:44+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -78,7 +78,7 @@ msgstr "Не зберігай"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:406
 #: rustconn/src/dialogs/template.rs:2783
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:461
+#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:483
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
 #: rustconn/src/window/workspaces.rs:549
 msgid "Save"
@@ -185,7 +185,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "«{}» потребує такого перед з’єднуванням."
 
 #: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/dialogs/widgets.rs:488 rustconn/src/sidebar_ui.rs:345
 #: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
 #: rustconn/src/window/edit_dialogs.rs:741
 msgid "Connect"
@@ -228,7 +228,7 @@ msgstr "Новий кластер"
 #: rustconn/src/dialogs/snippet.rs:76 rustconn/src/dialogs/template.rs:143
 #: rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:462
+#: rustconn/src/dialogs/widgets.rs:484
 #: rustconn/src/window/connection_dialogs.rs:397
 #: rustconn/src/window/connection_dialogs.rs:398
 msgid "Create"
@@ -468,7 +468,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Виявляти активність або тишу у виводі термінала"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:190
+#: rustconn/src/dialogs/connection/web.rs:194
 msgid "Mode"
 msgstr "Режим"
 
@@ -3521,22 +3521,23 @@ msgstr "Устави для вбудованого браузера"
 msgid "User Agent"
 msgstr "Аґент користувача"
 
-#: rustconn/src/dialogs/connection/web.rs:101
+#: rustconn/src/dialogs/connection/web.rs:105
 msgid "Tunnel Through SSH"
 msgstr "Тунель крізь SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:103
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
-msgstr "Переглядай крізь SOCKS-проксі обраного SSH-з’єднанка (вбудований оглядач)"
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
+msgstr "Переглядай крізь SOCKS-проксі обраного SSH-з’єднанка (вбудований або Chromium оглядач)"
 
-#: rustconn/src/dialogs/connection/web.rs:126
+#: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "Загальне"
 
-#: rustconn/src/dialogs/connection/web.rs:191
+#: rustconn/src/dialogs/connection/web.rs:195
 msgid "How the URL is opened"
 msgstr "Як відкривається URL"
 
@@ -4035,7 +4036,7 @@ msgstr "Парольна фраза портативного файла"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:487
 #: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
@@ -4158,7 +4159,7 @@ msgstr "Копіювання зупинено"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:460 rustconn/src/terminal/tab_menu.rs:407
+#: rustconn/src/dialogs/widgets.rs:482 rustconn/src/terminal/tab_menu.rs:407
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3652
 msgid "Close"
 msgstr "Закрий"
@@ -4193,7 +4194,7 @@ msgid "Export Connections"
 msgstr "Експортування з'єднків"
 
 #: rustconn/src/dialogs/export.rs:101 rustconn/src/dialogs/export.rs:102
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:463
+#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:485
 msgid "Export"
 msgstr "Експорт"
 
@@ -4472,7 +4473,7 @@ msgstr "Експортування завершено"
 #: rustconn/src/dialogs/import/sources.rs:1235
 #: rustconn/src/dialogs/import/sources.rs:1351
 #: rustconn/src/dialogs/import/sources.rs:1505
-#: rustconn/src/dialogs/widgets.rs:469
+#: rustconn/src/dialogs/widgets.rs:491
 msgid "Done"
 msgstr "Готово"
 
@@ -4656,7 +4657,7 @@ msgstr "Імпортування з'єднувань"
 
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:464
+#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
 #: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:805
 msgid "Import"
 msgstr "Імпорт"
@@ -8425,7 +8426,7 @@ msgid "Edit"
 msgstr "Редагуй"
 
 #: rustconn/src/dialogs/template_manager.rs:117
-#: rustconn/src/dialogs/widgets.rs:468
+#: rustconn/src/dialogs/widgets.rs:490
 msgid "Use Template"
 msgstr "Використай шаблон"
 
@@ -8949,24 +8950,24 @@ msgstr "Не вдалося завантажити секрет. Перевір 
 msgid "Fetched from vault at connect time"
 msgstr "Отримується зі сховища під час з'єднування"
 
-#: rustconn/src/dialogs/widgets.rs:467 rustconn/src/dialogs/wol.rs:44
+#: rustconn/src/dialogs/widgets.rs:489 rustconn/src/dialogs/wol.rs:44
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/window/sessions.rs:341
 msgid "Send"
 msgstr "Надішли"
 
-#: rustconn/src/dialogs/widgets.rs:480
+#: rustconn/src/dialogs/widgets.rs:502
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:481
+#: rustconn/src/dialogs/widgets.rs:503
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "Увімкни або вимкни виконування JavaScript у вбудованому браузері"
 
-#: rustconn/src/dialogs/widgets.rs:482
+#: rustconn/src/dialogs/widgets.rs:504
 msgid "Navigation Toolbar"
 msgstr "Панель навігації"
 
-#: rustconn/src/dialogs/widgets.rs:484
+#: rustconn/src/dialogs/widgets.rs:506
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -8975,11 +8976,11 @@ msgstr ""
 "скоротини для переходу назад і вперед, перезавантаження та масштабу працюють "
 "і далі."
 
-#: rustconn/src/dialogs/widgets.rs:486
+#: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
 msgstr "Приватний / інкоґніто режим"
 
-#: rustconn/src/dialogs/widgets.rs:487
+#: rustconn/src/dialogs/widgets.rs:509
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Відкрий URL у приватному вікні браузера (Firefox, Chrome, Brave)"
 
@@ -10937,7 +10938,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1470
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "Connection failed. Host unreachable."
 msgstr "З'єднок не вдався. Гост недоступний."
 
@@ -11074,7 +11075,7 @@ msgid "Opening mc SFTP…"
 msgstr "Відкриття mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1699
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11085,7 +11086,7 @@ msgstr ""
 "надійного доступу."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1659
+#: rustconn/src/window/edit_actions.rs:1717
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Виявлено проміжний гост. Відкривання SFTP через mc замість файлового "
@@ -11100,28 +11101,41 @@ msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "Агент SSH не запущено — файловий менеджер може не пройти автентифікацію."
 
-#: rustconn/src/window/edit_actions.rs:1051
+#: rustconn/src/window/edit_actions.rs:1050
 msgid "application is busy"
 msgstr "програма зайнята"
 
-#: rustconn/src/window/edit_actions.rs:1053
+#: rustconn/src/window/edit_actions.rs:1052
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-з’єднанка, крізь яке йде тунель, більше нема"
 
-#: rustconn/src/window/edit_actions.rs:1195
+#: rustconn/src/window/edit_actions.rs:1194
+#: rustconn/src/window/edit_actions.rs:1260
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Не вдалося відкрити SSH-тунель: {}"
 
-#: rustconn/src/window/edit_actions.rs:1241
-#: rustconn/src/window/edit_actions.rs:1286
-#: rustconn/src/window/edit_actions.rs:1305
+#: rustconn/src/window/edit_actions.rs:1240
+#: rustconn/src/window/edit_actions.rs:1336
+#: rustconn/src/window/edit_actions.rs:1363
 msgid "Failed to open URL: {}"
 msgstr "Не вдалося відкрити URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1277
-#: rustconn/src/window/edit_actions.rs:1319
+#: rustconn/src/window/edit_actions.rs:1285
+msgid ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
+msgstr "Цей оглядач не можна тунелювати з командного рядка. Для SSH-тунелювання візьми оглядач на основі Chromium або вбудований оглядач."
+
+#: rustconn/src/window/edit_actions.rs:1325
+#: rustconn/src/window/edit_actions.rs:1377
 msgid "Opened in browser"
 msgstr "Відкрито в браузері"
+
+#: rustconn/src/window/edit_actions.rs:1350
+msgid ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
+msgstr "SSH-тунелювання потребує вбудованого або власного (Chromium) оглядача; системний оглядач відкриється без тунелю."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

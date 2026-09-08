@@ -1442,16 +1442,26 @@ Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow s
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
 dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
-in the Embedded Browser Settings to one of your SSH connections. When the Web
-connection opens, RustConn raises a dynamic SOCKS proxy over that SSH host on an
-automatically-chosen free local port and routes the embedded browser through it,
-so the page loads as if you were browsing from the SSH host. The tunnel stays up
-only while the browser tab is open and comes down with it. The chosen connection's
-key, jump-host chain and (session-cached) password are reused, so no extra
-credentials are needed. If the tunnel cannot be opened the connection does not
-fall back to a direct request — it fails with a message — so traffic you meant to
-tunnel never leaks. This applies to the **embedded** browser only; the System and
-Custom modes hand the URL to another program and ignore the setting.
+to one of your SSH connections. When the Web connection opens, RustConn raises a
+dynamic SOCKS proxy over that SSH host on an automatically-chosen free local port
+and routes the browser through it, so the page loads as if you were browsing from
+the SSH host. The chosen connection's key, jump-host chain and (session-cached)
+password are reused, so no extra credentials are needed. If the tunnel cannot be
+opened the connection does not fall back to a direct request — it fails with a
+message — so traffic you meant to tunnel never leaks.
+
+Which browser modes honour it:
+
+- **Embedded** — fully supported. The tunnel is applied to the browser's network
+  session and stays up only while the browser tab is open, coming down with it.
+- **Custom**, when the command is a Chromium-based browser (Chromium, Chrome,
+  Brave, Vivaldi, Edge, Opera) — supported via `--proxy-server`. The tunnel is
+  kept alive behind the launched browser and released when RustConn exits.
+- **Custom** with Firefox, or **System** (portal) — *not* tunnelled: Firefox
+  takes its proxy from a profile rather than the command line, and the system
+  browser is chosen by the desktop portal, which RustConn cannot hand a proxy to.
+  In both cases a toast tells you the page opened without the tunnel; use the
+  embedded or a Chromium-based Custom browser to tunnel.
 
 **Downloads:**
 Files are automatically saved to `~/Downloads/`. A toast notification "Downloaded: {filename}" appears when a download completes.

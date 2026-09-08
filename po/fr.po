@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:19+0300\n"
+"POT-Creation-Date: 2026-09-08 13:44+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: French\n"
@@ -72,7 +72,7 @@ msgstr "Ne pas enregistrer"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:406
 #: rustconn/src/dialogs/template.rs:2783
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:461
+#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:483
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
 #: rustconn/src/window/workspaces.rs:549
 msgid "Save"
@@ -180,7 +180,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "« {} » a besoin des éléments suivants avant de se connecter."
 
 #: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/dialogs/widgets.rs:488 rustconn/src/sidebar_ui.rs:345
 #: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
 #: rustconn/src/window/edit_dialogs.rs:741
 msgid "Connect"
@@ -224,7 +224,7 @@ msgstr "Nouveau cluster"
 #: rustconn/src/dialogs/snippet.rs:76 rustconn/src/dialogs/template.rs:143
 #: rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:462
+#: rustconn/src/dialogs/widgets.rs:484
 #: rustconn/src/window/connection_dialogs.rs:397
 #: rustconn/src/window/connection_dialogs.rs:398
 msgid "Create"
@@ -469,7 +469,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Détecter l'activité ou le silence de la sortie du terminal"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:190
+#: rustconn/src/dialogs/connection/web.rs:194
 msgid "Mode"
 msgstr "Mode"
 
@@ -3539,22 +3539,23 @@ msgstr "Paramètres appliqués lors de l'utilisation du navigateur intégré"
 msgid "User Agent"
 msgstr "Agent utilisateur"
 
-#: rustconn/src/dialogs/connection/web.rs:101
+#: rustconn/src/dialogs/connection/web.rs:105
 msgid "Tunnel Through SSH"
 msgstr "Tunnel via SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:103
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
-msgstr "Naviguer via un proxy SOCKS sur la connexion SSH choisie (navigateur intégré)"
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
+msgstr "Naviguer via un proxy SOCKS sur la connexion SSH choisie (navigateur intégré ou Chromium)"
 
-#: rustconn/src/dialogs/connection/web.rs:126
+#: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "Général"
 
-#: rustconn/src/dialogs/connection/web.rs:191
+#: rustconn/src/dialogs/connection/web.rs:195
 msgid "How the URL is opened"
 msgstr "Comment l'URL est ouverte"
 
@@ -4054,7 +4055,7 @@ msgstr "Phrase secrète du fichier portable"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:487
 #: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
@@ -4179,7 +4180,7 @@ msgstr "Copie arrêtée"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:460 rustconn/src/terminal/tab_menu.rs:407
+#: rustconn/src/dialogs/widgets.rs:482 rustconn/src/terminal/tab_menu.rs:407
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3652
 msgid "Close"
 msgstr "Fermer"
@@ -4216,7 +4217,7 @@ msgid "Export Connections"
 msgstr "Exporter les connexions"
 
 #: rustconn/src/dialogs/export.rs:101 rustconn/src/dialogs/export.rs:102
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:463
+#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:485
 msgid "Export"
 msgstr "Exporter"
 
@@ -4495,7 +4496,7 @@ msgstr "Export terminé"
 #: rustconn/src/dialogs/import/sources.rs:1235
 #: rustconn/src/dialogs/import/sources.rs:1351
 #: rustconn/src/dialogs/import/sources.rs:1505
-#: rustconn/src/dialogs/widgets.rs:469
+#: rustconn/src/dialogs/widgets.rs:491
 msgid "Done"
 msgstr "Terminé"
 
@@ -4684,7 +4685,7 @@ msgstr "Importer des connexions"
 
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:464
+#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
 #: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:805
 msgid "Import"
 msgstr "Importer"
@@ -8504,7 +8505,7 @@ msgid "Edit"
 msgstr "Modifier"
 
 #: rustconn/src/dialogs/template_manager.rs:117
-#: rustconn/src/dialogs/widgets.rs:468
+#: rustconn/src/dialogs/widgets.rs:490
 msgid "Use Template"
 msgstr "Utiliser le modèle"
 
@@ -9035,25 +9036,25 @@ msgstr ""
 msgid "Fetched from vault at connect time"
 msgstr "Récupéré depuis le coffre au moment de la connexion"
 
-#: rustconn/src/dialogs/widgets.rs:467 rustconn/src/dialogs/wol.rs:44
+#: rustconn/src/dialogs/widgets.rs:489 rustconn/src/dialogs/wol.rs:44
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/window/sessions.rs:341
 msgid "Send"
 msgstr "Envoyer"
 
-#: rustconn/src/dialogs/widgets.rs:480
+#: rustconn/src/dialogs/widgets.rs:502
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:481
+#: rustconn/src/dialogs/widgets.rs:503
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr ""
 "Activer ou désactiver l’exécution de JavaScript dans le navigateur intégré"
 
-#: rustconn/src/dialogs/widgets.rs:482
+#: rustconn/src/dialogs/widgets.rs:504
 msgid "Navigation Toolbar"
 msgstr "Barre de navigation"
 
-#: rustconn/src/dialogs/widgets.rs:484
+#: rustconn/src/dialogs/widgets.rs:506
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -9062,11 +9063,11 @@ msgstr ""
 "d’ouverture. Les raccourcis clavier pour reculer, avancer, recharger et "
 "zoomer continuent de fonctionner."
 
-#: rustconn/src/dialogs/widgets.rs:486
+#: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
 msgstr "Mode privé / Navigation privée"
 
-#: rustconn/src/dialogs/widgets.rs:487
+#: rustconn/src/dialogs/widgets.rs:509
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr ""
 "Ouvrir l'URL dans une fenêtre de navigation privée (Firefox, Chrome, Brave)"
@@ -11045,7 +11046,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1470
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "Connection failed. Host unreachable."
 msgstr "Connexion échouée. Hôte injoignable."
 
@@ -11191,7 +11192,7 @@ msgid "Opening mc SFTP…"
 msgstr "Ouverture mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1699
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11202,7 +11203,7 @@ msgstr ""
 "fiable."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1659
+#: rustconn/src/window/edit_actions.rs:1717
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Hôte de rebond détecté. SFTP est ouvert via mc au lieu du gestionnaire de "
@@ -11218,28 +11219,41 @@ msgstr ""
 "L'agent SSH n'est pas en cours d'exécution — le gestionnaire de fichiers "
 "pourrait ne pas s'authentifier."
 
-#: rustconn/src/window/edit_actions.rs:1051
+#: rustconn/src/window/edit_actions.rs:1050
 msgid "application is busy"
 msgstr "l’application est occupée"
 
-#: rustconn/src/window/edit_actions.rs:1053
+#: rustconn/src/window/edit_actions.rs:1052
 msgid "the SSH connection it tunnels through is gone"
 msgstr "la connexion SSH par laquelle le tunnel passe n’existe plus"
 
-#: rustconn/src/window/edit_actions.rs:1195
+#: rustconn/src/window/edit_actions.rs:1194
+#: rustconn/src/window/edit_actions.rs:1260
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Impossible d’ouvrir le tunnel SSH : {}"
 
-#: rustconn/src/window/edit_actions.rs:1241
-#: rustconn/src/window/edit_actions.rs:1286
-#: rustconn/src/window/edit_actions.rs:1305
+#: rustconn/src/window/edit_actions.rs:1240
+#: rustconn/src/window/edit_actions.rs:1336
+#: rustconn/src/window/edit_actions.rs:1363
 msgid "Failed to open URL: {}"
 msgstr "Impossible d'ouvrir l'URL : {}"
 
-#: rustconn/src/window/edit_actions.rs:1277
-#: rustconn/src/window/edit_actions.rs:1319
+#: rustconn/src/window/edit_actions.rs:1285
+msgid ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
+msgstr "Ce navigateur ne peut pas être tunnelisé depuis la ligne de commande. Utilisez un navigateur basé sur Chromium ou le navigateur intégré pour le tunnel SSH."
+
+#: rustconn/src/window/edit_actions.rs:1325
+#: rustconn/src/window/edit_actions.rs:1377
 msgid "Opened in browser"
 msgstr "Ouvert dans le navigateur"
+
+#: rustconn/src/window/edit_actions.rs:1350
+msgid ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
+msgstr "Le tunnel SSH nécessite le navigateur intégré ou un navigateur personnalisé (Chromium) ; le navigateur système s’ouvre sans le tunnel."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

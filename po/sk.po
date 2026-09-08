@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 13:19+0300\n"
+"POT-Creation-Date: 2026-09-08 13:44+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -72,7 +72,7 @@ msgstr "Neukladať"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:406
 #: rustconn/src/dialogs/template.rs:2783
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:461
+#: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:483
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
 #: rustconn/src/window/workspaces.rs:549
 msgid "Save"
@@ -179,7 +179,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "„{}“ pred pripojením vyžaduje nasledovné."
 
 #: rustconn/src/dialogs/ask_prompt.rs:102 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:466 rustconn/src/sidebar_ui.rs:345
+#: rustconn/src/dialogs/widgets.rs:488 rustconn/src/sidebar_ui.rs:345
 #: rustconn/src/smart_folder_ui.rs:431 rustconn/src/window/edit_dialogs.rs:740
 #: rustconn/src/window/edit_dialogs.rs:741
 msgid "Connect"
@@ -222,7 +222,7 @@ msgstr "Nový klaster"
 #: rustconn/src/dialogs/snippet.rs:76 rustconn/src/dialogs/template.rs:143
 #: rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:462
+#: rustconn/src/dialogs/widgets.rs:484
 #: rustconn/src/window/connection_dialogs.rs:397
 #: rustconn/src/window/connection_dialogs.rs:398
 msgid "Create"
@@ -465,7 +465,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Detekovať aktivitu alebo ticho výstupu terminálu"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:334
-#: rustconn/src/dialogs/connection/web.rs:190
+#: rustconn/src/dialogs/connection/web.rs:194
 msgid "Mode"
 msgstr "Režim"
 
@@ -3525,22 +3525,23 @@ msgstr "Nastavenia použité pri používaní vstavaného prehliadača"
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:101
+#: rustconn/src/dialogs/connection/web.rs:105
 msgid "Tunnel Through SSH"
 msgstr "Tunel cez SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:103
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)"
-msgstr "Prehliadať cez SOCKS proxy zvoleného SSH pripojenia (vstavaný prehliadač)"
+"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+"Chromium browser)"
+msgstr "Prehliadať cez SOCKS proxy zvoleného SSH pripojenia (vstavaný alebo Chromium prehliadač)"
 
-#: rustconn/src/dialogs/connection/web.rs:126
+#: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "General"
 msgstr "Všeobecné"
 
-#: rustconn/src/dialogs/connection/web.rs:191
+#: rustconn/src/dialogs/connection/web.rs:195
 msgid "How the URL is opened"
 msgstr "Ako sa URL otvorí"
 
@@ -4039,7 +4040,7 @@ msgstr "Prístupová fráza prenosného súboru"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:465
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:487
 #: rustconn/src/embedded_rdp/mod.rs:573 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/terminal/config.rs:252
 msgid "Copy"
@@ -4162,7 +4163,7 @@ msgstr "Kopírovanie zastavené"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:460 rustconn/src/terminal/tab_menu.rs:407
+#: rustconn/src/dialogs/widgets.rs:482 rustconn/src/terminal/tab_menu.rs:407
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3652
 msgid "Close"
 msgstr "Zavrieť"
@@ -4195,7 +4196,7 @@ msgid "Export Connections"
 msgstr "Exportovať pripojenia"
 
 #: rustconn/src/dialogs/export.rs:101 rustconn/src/dialogs/export.rs:102
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:463
+#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/dialogs/widgets.rs:485
 msgid "Export"
 msgstr "Export"
 
@@ -4474,7 +4475,7 @@ msgstr "Export dokončený"
 #: rustconn/src/dialogs/import/sources.rs:1235
 #: rustconn/src/dialogs/import/sources.rs:1351
 #: rustconn/src/dialogs/import/sources.rs:1505
-#: rustconn/src/dialogs/widgets.rs:469
+#: rustconn/src/dialogs/widgets.rs:491
 msgid "Done"
 msgstr "Hotovo"
 
@@ -4659,7 +4660,7 @@ msgstr "Importovať pripojenia"
 
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:464
+#: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
 #: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:805
 msgid "Import"
 msgstr "Importovať"
@@ -8432,7 +8433,7 @@ msgid "Edit"
 msgstr "Upraviť"
 
 #: rustconn/src/dialogs/template_manager.rs:117
-#: rustconn/src/dialogs/widgets.rs:468
+#: rustconn/src/dialogs/widgets.rs:490
 msgid "Use Template"
 msgstr "Použiť šablónu"
 
@@ -8954,24 +8955,24 @@ msgstr "Nepodarilo sa načítať tajomstvo. Skontrolujte backend v Nastaveniach.
 msgid "Fetched from vault at connect time"
 msgstr "Získané z trezora pri pripojení"
 
-#: rustconn/src/dialogs/widgets.rs:467 rustconn/src/dialogs/wol.rs:44
+#: rustconn/src/dialogs/widgets.rs:489 rustconn/src/dialogs/wol.rs:44
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/window/sessions.rs:341
 msgid "Send"
 msgstr "Odoslať"
 
-#: rustconn/src/dialogs/widgets.rs:480
+#: rustconn/src/dialogs/widgets.rs:502
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:481
+#: rustconn/src/dialogs/widgets.rs:503
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "Povoliť alebo zakázať spúšťanie JavaScriptu vo vstavanom prehliadači"
 
-#: rustconn/src/dialogs/widgets.rs:482
+#: rustconn/src/dialogs/widgets.rs:504
 msgid "Navigation Toolbar"
 msgstr "Navigačný panel"
 
-#: rustconn/src/dialogs/widgets.rs:484
+#: rustconn/src/dialogs/widgets.rs:506
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -8979,11 +8980,11 @@ msgstr ""
 "Vypnutím odstránite plávajúci panel nástrojov aj jeho rozbaľovaciu šípku. "
 "Klávesové skratky pre späť, dopredu, obnovenie a priblíženie fungujú ďalej."
 
-#: rustconn/src/dialogs/widgets.rs:486
+#: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
 msgstr "Súkromný / inkognito režim"
 
-#: rustconn/src/dialogs/widgets.rs:487
+#: rustconn/src/dialogs/widgets.rs:509
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Otvoriť URL v súkromnom okne prehliadača (Firefox, Chrome, Brave)"
 
@@ -10954,7 +10955,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:1470
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "Connection failed. Host unreachable."
 msgstr "Pripojenie zlyhalo. Hostiteľ nedostupný."
 
@@ -11094,7 +11095,7 @@ msgid "Opening mc SFTP…"
 msgstr "Otváranie mc SFTP…"
 
 #: rustconn/src/window/edit_actions.rs:875
-#: rustconn/src/window/edit_actions.rs:1641
+#: rustconn/src/window/edit_actions.rs:1699
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -11104,7 +11105,7 @@ msgstr ""
 "spoľahlivý prístup povoľte \"SFTP cez mc\" v Nastaveniach."
 
 #: rustconn/src/window/edit_actions.rs:891
-#: rustconn/src/window/edit_actions.rs:1659
+#: rustconn/src/window/edit_actions.rs:1717
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Zistený prestupný hostiteľ. SFTP sa otvára cez mc namiesto správcu súborov."
@@ -11117,28 +11118,41 @@ msgstr "Otváranie SFTP…"
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "Agent SSH nebeží — správca súborov sa nemusí overiť."
 
-#: rustconn/src/window/edit_actions.rs:1051
+#: rustconn/src/window/edit_actions.rs:1050
 msgid "application is busy"
 msgstr "aplikácia je zaneprázdnená"
 
-#: rustconn/src/window/edit_actions.rs:1053
+#: rustconn/src/window/edit_actions.rs:1052
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH pripojenie, cez ktoré tuneluje, už neexistuje"
 
-#: rustconn/src/window/edit_actions.rs:1195
+#: rustconn/src/window/edit_actions.rs:1194
+#: rustconn/src/window/edit_actions.rs:1260
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Nepodarilo sa otvoriť SSH tunel: {}"
 
-#: rustconn/src/window/edit_actions.rs:1241
-#: rustconn/src/window/edit_actions.rs:1286
-#: rustconn/src/window/edit_actions.rs:1305
+#: rustconn/src/window/edit_actions.rs:1240
+#: rustconn/src/window/edit_actions.rs:1336
+#: rustconn/src/window/edit_actions.rs:1363
 msgid "Failed to open URL: {}"
 msgstr "Nepodarilo sa otvoriť URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1277
-#: rustconn/src/window/edit_actions.rs:1319
+#: rustconn/src/window/edit_actions.rs:1285
+msgid ""
+"This browser can't be tunnelled from the command line. Use a Chromium-based "
+"browser or the embedded browser for SSH tunnelling."
+msgstr "Tento prehliadač nemožno tunelovať z príkazového riadka. Na tunelovanie cez SSH použite prehliadač založený na Chromiu alebo vstavaný prehliadač."
+
+#: rustconn/src/window/edit_actions.rs:1325
+#: rustconn/src/window/edit_actions.rs:1377
 msgid "Opened in browser"
 msgstr "Otvorené v prehliadači"
+
+#: rustconn/src/window/edit_actions.rs:1350
+msgid ""
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
+msgstr "Tunelovanie cez SSH vyžaduje vstavaný alebo vlastný (Chromium) prehliadač; systémový prehliadač sa otvorí bez tunela."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"

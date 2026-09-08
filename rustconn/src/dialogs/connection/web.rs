@@ -104,7 +104,7 @@ pub fn create_web_options() -> WebOptionsWidgets {
     let tunnel_row = adw::ActionRow::builder()
         .title(i18n("Tunnel Through SSH"))
         .subtitle(i18n(
-            "Browse via a SOCKS proxy over the chosen SSH connection (embedded browser)",
+            "Browse via a SOCKS proxy over the chosen SSH connection (embedded or Chromium browser)",
         ))
         .build();
     tunnel_row.add_suffix(&tunnel_dropdown);
