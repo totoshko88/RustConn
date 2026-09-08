@@ -517,6 +517,11 @@ impl ConnectionDialog {
         *self.spice_connections_data.borrow_mut() = connections_data.clone();
         let spice_model = StringList::new(&display_strings);
         self.spice_jump_host_dropdown.set_model(Some(&spice_model));
+
+        // Web "Tunnel Through SSH" dropdown uses the same SSH connection list.
+        *self.web_connections_data.borrow_mut() = connections_data.clone();
+        let web_model = StringList::new(&display_strings);
+        self.web_tunnel_dropdown.set_model(Some(&web_model));
     }
 
     pub(super) fn set_groups_list(&self, groups_data: &[(Option<Uuid>, String)]) {
@@ -1666,5 +1671,22 @@ impl ConnectionDialog {
         // Inverted: the switch offers the toolbar, the field hides it.
         self.web_floating_toolbar_switch
             .set_active(!web.hide_floating_toolbar);
+
+        // Select the stored SSH tunnel, or "(None)" (index 0) for a direct
+        // connection. Same id→index resolution as the jump-host dropdowns.
+        if let Some(tunnel_id) = web.tunnel_via {
+            let conns = self.web_connections_data.borrow();
+            let idx = conns
+                .iter()
+                .position(|(id, _)| *id == Some(tunnel_id))
+                .unwrap_or(0);
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "connection count never approaches u32::MAX"
+            )]
+            self.web_tunnel_dropdown.set_selected(idx as u32);
+        } else {
+            self.web_tunnel_dropdown.set_selected(0);
+        }
     }
 }

@@ -339,7 +339,7 @@ pub(super) fn create_spice_options() -> (
     let spice_jump_host_dropdown =
         DropDown::new(Some(spice_jump_host_list), gtk4::Expression::NONE);
     spice_jump_host_dropdown.set_selected(0);
-    spice_jump_host_dropdown.set_enable_search(true);
+    crate::dialogs::widgets::enable_string_search(&spice_jump_host_dropdown);
     spice_jump_host_dropdown.set_size_request(200, -1);
     spice_jump_host_dropdown.set_hexpand(false);
 

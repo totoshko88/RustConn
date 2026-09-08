@@ -435,6 +435,12 @@ const fn default_true() -> bool {
     true
 }
 
+/// Default start page for the tunnelled browser (see
+/// [`UiSettings::tunnel_browser_start_url`]).
+fn default_tunnel_start_url() -> String {
+    "https://www.google.com".to_string()
+}
+
 /// Default secret backend, chosen per platform.
 ///
 /// macOS ships the system Keychain (Security.framework) and has no libsecret,
@@ -951,6 +957,36 @@ pub struct UiSettings {
     /// host (issue #242).
     #[serde(default)]
     pub double_click_opens_new_session: bool,
+    /// Open the "Open Browser via Tunnel" SSH action in the embedded browser
+    /// rather than an external one.
+    ///
+    /// Default `true`: use the in-app WebKit browser when this build has it, so
+    /// the tunnel's lifetime matches the tab. When `false` (or on a build
+    /// without the embedded browser) the action launches an external
+    /// Chromium-based browser in incognito mode through the tunnel instead.
+    #[serde(default = "default_true")]
+    pub open_tunnelled_browser_in_embedded: bool,
+    /// Start page for the "Open Browser via Tunnel" SSH action.
+    ///
+    /// The browser (embedded or external) opens here so it is visible the
+    /// tunnel works — a blank page would look dead. Default
+    /// `https://www.google.com`; the Settings dialog also offers DuckDuckGo and
+    /// `ifconfig.me` (which shows the exit IP, confirming the SOCKS route) or a
+    /// custom URL. A value without a scheme is treated as `https://`.
+    #[serde(default = "default_tunnel_start_url")]
+    pub tunnel_browser_start_url: String,
+    /// External browser command for the "Open Browser via Tunnel" action.
+    ///
+    /// Only consulted for the external (non-embedded) path. Empty (the default)
+    /// means auto-detect: `$BROWSER`, then the first Chromium-family binary on
+    /// `PATH`. A value here overrides that — a command or path to a
+    /// Chromium-family browser binary that accepts `--incognito` and
+    /// `--proxy-server` (e.g. `chromium`, `brave-browser`, `/opt/foo/chrome`).
+    /// Extra arguments after the binary are passed through before the proxy
+    /// flags. A non-Chromium browser (e.g. Firefox) cannot take a command-line
+    /// proxy and is rejected with a toast rather than browsing un-tunnelled.
+    #[serde(default)]
+    pub tunnel_browser_command: String,
     /// Show connection name as a compact header on each split-view pane.
     ///
     /// Default `false`. When enabled, a thin colored banner with the connection
@@ -1055,6 +1091,9 @@ impl Default for UiSettings {
             terminal_passthrough_ctrl: true,
             window_title_shows_connection: false,
             double_click_opens_new_session: false,
+            open_tunnelled_browser_in_embedded: true,
+            tunnel_browser_start_url: default_tunnel_start_url(),
+            tunnel_browser_command: String::new(),
             show_split_pane_labels: false,
             keyboard_passthrough: false,
         }

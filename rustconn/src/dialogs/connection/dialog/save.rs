@@ -201,6 +201,8 @@ impl ConnectionDialog {
         web_javascript_switch: &adw::SwitchRow,
         web_user_agent_row: &adw::EntryRow,
         web_floating_toolbar_switch: &adw::SwitchRow,
+        web_tunnel_dropdown: &DropDown,
+        web_connections_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
@@ -410,6 +412,8 @@ impl ConnectionDialog {
         let web_javascript_switch = web_javascript_switch.clone();
         let web_user_agent_row = web_user_agent_row.clone();
         let web_floating_toolbar_switch = web_floating_toolbar_switch.clone();
+        let web_tunnel_dropdown = web_tunnel_dropdown.clone();
+        let web_connections_data = web_connections_data.clone();
         let variables_rows = variables_rows.clone();
         let logging_enabled_switch = logging_tab.enabled_switch.clone();
         let logging_path_entry = logging_tab.path_entry.clone();
@@ -631,6 +635,8 @@ impl ConnectionDialog {
                 web_javascript_switch: &web_javascript_switch,
                 web_user_agent_row: &web_user_agent_row,
                 web_floating_toolbar_switch: &web_floating_toolbar_switch,
+                web_tunnel_dropdown: &web_tunnel_dropdown,
+                web_connections_data: &web_connections_data,
                 local_variables: &local_variables,
                 logging_tab: &logging_tab::LoggingTab {
                     enabled_switch: logging_enabled_switch.clone(),

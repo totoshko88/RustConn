@@ -1,4 +1,29 @@
 -------------------------------------------------------------------
+Tue Sep 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.9
+
+- Version bump to 0.21.9
+- Added: "Open Browser via Tunnel" on an SSH connection — one right-click raises
+  a SOCKS proxy to the host and opens a browser (embedded or external Chromium)
+  routed through it, with a configurable start page (Google/DuckDuckGo/ifconfig.me
+  presets plus Custom) and an external-browser command; auto-detection respects
+  the system default browser and falls back to the embedded browser with a toast
+  when no Chromium browser is available
+- Added: a Web connection can browse through an SSH host (SOCKS tunnel) in the
+  embedded and a Chromium browser
+- Added: interactive "ASK" variables — prompt for a value at connect time
+- Added: a dynamic SOCKS forward can pick a free local port automatically
+- Added: built-in date, time and environment variables in ${...} substitutions
+- Added: built-in Expect templates for the newer OpenSSH host-key prompt and
+  bare "any key to continue" banners
+- Fixed: an embedded Web connection to an unreachable host no longer leaves a
+  blank browser tab open
+- Fixed: the Jump Host and Tunnel dropdowns' search box now filters the list
+- Fixed: a ProxyCommand relay no longer leaves the target session hung at the
+  password prompt (#322)
+- Fixed: the "Executing:" echo now quotes a ProxyCommand value so it no longer
+  looks ignored (#322)
+
+-------------------------------------------------------------------
 Mon Sep 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.8
 
 - Version bump to 0.21.8

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.21.8** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.21.9** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -275,6 +275,10 @@ Three notes on scope:
 - *Jump Host* and *ProxyJump* are two ways of naming a bastion, not two candidates for one slot. A *Jump Host* is a saved connection, so it also carries its port, its identity file and its own bastion chain — none of which fit in the text field. Each of the two resolves its own tier chain independently, so setting both is legitimate: they become two hops of one chain, the *Jump Host* contacted first and the *ProxyJump* value reached through it.
 - An empty *ProxyJump* means "no bastion" at every tier, and falls through to the next one. This matters if you edit `config.toml` or `connections.toml` by hand: a stored empty string is not a value, it is nothing.
 
+> **Tip:** The *Jump Host* dropdown (and the Web "Tunnel Through SSH" picker) is
+> type-to-search. With a long connection list, open it and start typing part of a
+> name or host to filter down to the one you want instead of scrolling.
+
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
 **Advanced Tabs:**
@@ -336,11 +340,27 @@ Expect rules automate interactive prompts during connection. Each rule matches a
 |---------|----------|----------|
 | `password:` | `${password}` | Auto-login with vault password |
 | `\[sudo\] password` | `${password}` | Sudo password prompt |
-| `Are you sure.*continue` | `yes` | SSH host key confirmation |
+| `Are you sure.*continue` | `yes` | SSH host key confirmation (first connection) |
 | `Select option:` | `2` | Menu navigation |
 | `Enter token:` | `${MFA_TOKEN}` | Use a global variable for MFA |
 
 Rules execute in priority order. After matching, the response is sent followed by Enter.
+
+**Built-in templates:** the **Test** dialog offers ready-made rule sets you can drop
+in — Sudo Password, SSH Host Key Confirmation, Login Prompt, Press Enter to
+Continue, and a pager (`--More--`) dismisser. The SSH Host Key Confirmation
+template answers both prompt forms OpenSSH uses on a *first* connection: the
+single-line `Are you sure you want to continue connecting (yes/no/[fingerprint])?`
+and the separate follow-up line newer versions print,
+`Please type 'yes', 'no' or the fingerprint:`. The Press Enter to Continue template
+also matches the bare `any key to continue` banner that pagers and appliance
+prompts emit without a leading "Press".
+
+> **Note on changed host keys:** none of the built-in rules answer the
+> `REMOTE HOST IDENTIFICATION HAS CHANGED` warning. A changed key is exactly what a
+> man-in-the-middle attack looks like, so RustConn never auto-accepts it — resolve a
+> legitimate key rotation by hand (`ssh-keygen -R <host>`) so the decision stays
+> explicit.
 
 **Variable Substitution in Responses:**
 
@@ -354,6 +374,28 @@ Four placeholders are built in and come from the connection you are opening:
 - `${port}` — the connection's Port
 
 Everything else resolves by name against your global variables (Menu → Tools → Variables), so `${MY_VARIABLE}` picks up the value of `MY_VARIABLE`. For the connection being opened a built-in wins over a global of the same name.
+
+A set of **dynamic built-ins** is also available without defining anything, useful for tokens, banners or per-connection log lines:
+
+| Variable | Expands to |
+|----------|-----------|
+| `${DATE_Y}` | Local year (`2026`) |
+| `${DATE_M}` `${DATE_D}` | Local month / day, zero-padded |
+| `${TIME_H}` `${TIME_M}` `${TIME_S}` | Local hour (24h) / minute / second, zero-padded |
+| `${TIMESTAMP}` | Seconds since the Unix epoch |
+| `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) |
+
+The environment form uses an underscore — `${ENV_HOME}`, not `${ENV:HOME}` — because a `${...}` reference cannot contain a colon. A variable *you* define with one of these names shadows the built-in, so defining `TIMESTAMP` yourself keeps your value. These resolve wherever `${...}` substitution runs (Expect responses, custom commands, and variable values), not in the [session-log Log Path](#session-logging) template, which has its own `${date}` / `${time}` set.
+
+**Ask at connect time (`@ask:`).** Give a variable a value that starts with `@ask:` and RustConn asks you for it in a dialog every time a connection that references it opens, then substitutes what you type. This lets one connection serve several targets without duplicating it — the classic case is a host that changes:
+
+| Variable value | What happens at connect |
+|----------------|-------------------------|
+| `@ask:Enter the ticket number` | A text field asks for the value |
+| `@ask?:One-time code` | A hidden field (input not shown), for a token or PIN |
+| `@ask:Select host\|prod.example\|staging.example` | A dropdown to pick one of the listed options |
+
+Set a connection's Host to `${target}` and define a local variable `target` = `@ask:Select host|prod.example.com|staging.example.com`; on connect you choose the host from a dropdown. The prompt is collected from every field substituted at launch — Host, Username, an SSH startup command, a Custom Command, and enabled Expect responses — and all a connection's questions appear in one dialog. Answers apply to that connect only (the stored variable keeps its `@ask:` directive, so the next connect asks again) and are reused if the session reconnects. A hidden (`@ask?:`) answer is never written to disk. Cancelling the dialog cancels the connection.
 
 Behaviour worth knowing:
 
@@ -548,7 +590,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
-| Web | URL, browser mode (Embedded/System/Custom), credential autofill, JavaScript toggle, accept invalid TLS certs, zoom level |
+| Web | URL, browser mode (Embedded/System/Custom), credential autofill, JavaScript toggle, accept invalid TLS certs, zoom level, tunnel through an SSH connection (embedded, SOCKS) |
 
 ### SSH
 
@@ -575,6 +617,14 @@ Forward TCP ports through SSH tunnels. Three modes are supported:
 - Local: forward local port 8080 to remote `db-server:5432` → access the database at `localhost:8080`
 - Remote: expose local port 3000 on the remote server's port 9000
 - Dynamic: create a SOCKS proxy on local port 1080
+
+**Automatic SOCKS port.** Leave a Dynamic forward's local port at `0` and RustConn
+picks a free local port each time you connect, shown in the summary as
+`D auto (SOCKS)`. This avoids port clashes when the same connection is opened
+twice, or when several tunnels run at once. The chosen port is written to the log
+at connect time (`Assigned a random local SOCKS proxy port …`); point your browser
+or a local command at `socks5://127.0.0.1:<that port>`. A fixed port still works —
+set any non-zero value to keep the same SOCKS port every time.
 
 **Import Support:**
 Port forwarding rules are automatically imported from:
@@ -1258,6 +1308,59 @@ SFTP can also be created as a standalone connection type. This is useful when yo
 
 SFTP connections use the `folder-remote-symbolic` icon in the sidebar and behave identically to the "Open SFTP" action on SSH connections, but the file manager opens automatically on Connect.
 
+#### Open Browser via Tunnel
+
+Right-click an SSH connection and choose **Open Browser via Tunnel** to reach web
+services that only that SSH host can see — an internal dashboard, a router admin
+page, a service in a DMZ — without configuring a separate Web connection. RustConn
+raises a dynamic SOCKS proxy (`ssh -N -D`) to the host on a free local port and
+opens a browser on a start page routed through it; every request exits from the
+SSH host. This is RustConn's equivalent of Ásbrú's incognito browser.
+
+Where it opens is a global setting — Settings → Interface → Connections → **Open
+tunnelled browser in the embedded browser**:
+
+- **On** (default) — the in-app WebKit browser opens in a tab, and the tunnel
+  stays up only as long as that tab. Available in builds that ship the embedded
+  browser.
+- **Off**, or a build without the embedded browser — an external Chromium-based
+  browser (Chromium, Chrome, Brave, Vivaldi, Edge) launches with `--proxy-server`
+  in an isolated throwaway profile, so a browser you already have open cannot
+  hijack the launch and drop the proxy. Which browser, and the fallbacks, are
+  described under **External browser command** below. The tunnel is kept alive
+  behind the browser and released when RustConn exits.
+
+The **Tunnelled browser start page** entry just below that switch sets where the
+browser opens (embedded and external alike). It defaults to
+`https://www.google.com` so it is immediately visible the tunnel works — a blank
+page would look dead, and the embedded browser rejects a non-web URL anyway. The
+presets button beside the entry fills it with one of the common choices — Google,
+DuckDuckGo, or `ifconfig.me` (which shows the exit IP, a quick way to confirm the
+page really left through the SSH host) — or **Custom** to type your own. Any URL
+works; a value without a scheme is treated as `https://`.
+
+For the external (non-embedded) path, **External browser command (tunnelled)**
+lets you name the browser to use, the same way a Web connection's **Custom
+Browser** command does. Set a command or path — for example `chromium`,
+`brave-browser`, or `/opt/foo/chrome`, optionally with extra arguments before the
+proxy flags. It must be a Chromium-family browser, since only those take a
+command-line `--proxy-server`; a non-Chromium or missing command is reported as a
+toast rather than opening un-tunnelled.
+
+Leave the command empty to auto-detect, in this order: your system default
+browser (via `xdg-settings`) when it is Chromium-family, then `$BROWSER`, then the
+first Chromium binary found on `PATH`. So if your default browser is Chrome or
+Brave, that is what opens. When the default is Firefox or another browser that
+cannot take a command-line proxy, RustConn uses an installed Chromium binary
+instead; if none exists, it opens the embedded browser (which can always tunnel)
+and shows a toast suggesting you install a Chromium-based browser.
+
+If the tunnel cannot be raised, RustConn shows a toast and opens nothing — it
+never falls back to browsing directly, so traffic meant for the tunnel does not
+leak. Firefox is not usable for the external mode because it takes its proxy from
+a profile rather than the command line; when it is your default, RustConn uses an
+installed Chromium browser or the embedded browser instead, as described above.
+
 #### SFTP Troubleshooting
 
 **Choosing the Default SFTP Client (KDE / GNOME / other):**
@@ -1378,7 +1481,9 @@ When a connection has stored credentials (username/password), the embedded brows
 - Shows an informational toast "No login form fields found on this page" if no fields are detected after 3 seconds
 
 **Reconnect Banner:**
-When a page fails to load (network error, timeout, DNS failure), a banner appears below the toolbar with the error description and a "Reload" button. Clicking Reload navigates back to the configured URL.
+When a page fails to load *after* it has already shown content — a broken link you followed, or a later navigation error — a banner appears below the toolbar with the error description and a "Reload" button. Clicking Reload navigates back to the configured URL.
+
+If the **very first** load never paints (a bad host, an unreachable address, a DNS failure, or a SOCKS-tunnel `Name or service not known`), RustConn does not leave a blank tab: it closes the tab and shows the reason as a toast (`Could not open the page: …`). Only the initial load is treated this way, so a working session is never closed by a later failed navigation.
 
 **Persistent Sessions:**
 Cookies and session data persist across RustConn restarts, so you stay logged in to web services between sessions. Each connection has isolated storage — no cross-connection data leakage.
@@ -1388,6 +1493,30 @@ Disable JavaScript execution for specific connections in the connection dialog's
 
 **Accept Invalid TLS Certificates:**
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
+
+**Tunnel Through SSH (SOCKS proxy):**
+To reach a web service that only a particular SSH host can see — an internal
+dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
+to one of your SSH connections. When the Web connection opens, RustConn raises a
+dynamic SOCKS proxy over that SSH host on an automatically-chosen free local port
+and routes the browser through it, so the page loads as if you were browsing from
+the SSH host. The chosen connection's key, jump-host chain and (session-cached)
+password are reused, so no extra credentials are needed. If the tunnel cannot be
+opened the connection does not fall back to a direct request — it fails with a
+message — so traffic you meant to tunnel never leaks.
+
+Which browser modes honour it:
+
+- **Embedded** — fully supported. The tunnel is applied to the browser's network
+  session and stays up only while the browser tab is open, coming down with it.
+- **Custom**, when the command is a Chromium-based browser (Chromium, Chrome,
+  Brave, Vivaldi, Edge, Opera) — supported via `--proxy-server`. The tunnel is
+  kept alive behind the launched browser and released when RustConn exits.
+- **Custom** with Firefox, or **System** (portal) — *not* tunnelled: Firefox
+  takes its proxy from a profile rather than the command line, and the system
+  browser is chosen by the desktop portal, which RustConn cannot hand a proxy to.
+  In both cases a toast tells you the page opened without the tunnel; use the
+  embedded or a Chromium-based Custom browser to tunnel.
 
 **Downloads:**
 Files are automatically saved to `~/Downloads/`. A toast notification "Downloaded: {filename}" appears when a download completes.

@@ -353,10 +353,41 @@ fn build_ssh_command_args(
         },
     };
 
+    // A dynamic SOCKS forward stored with local_port == 0 means "pick a free
+    // port now". Assign it before building the args so `-D <port>` carries a
+    // real, non-colliding port; the chosen value is logged so the user can point
+    // a browser at it. Resolving on a clone keeps the stored config untouched
+    // (the sentinel must survive to the next connect). When no random forward is
+    // configured this clones nothing extra of note and assigns nothing.
+    let resolved_socks = if ssh_config.has_random_socks_forward() {
+        let mut resolved = ssh_config.clone();
+        match resolved.assign_random_socks_ports(rustconn_core::ssh_tunnel::find_free_port) {
+            Ok(port) => {
+                if let Some(port) = port {
+                    tracing::info!(
+                        socks_port = port,
+                        "Assigned a random local SOCKS proxy port for the dynamic forward"
+                    );
+                }
+                Some((resolved, port))
+            }
+            Err(e) => {
+                // Could not find a free port — fall back to the config as stored
+                // (a `-D 0` that OpenSSH itself rejects loudly), rather than
+                // failing the whole connection here.
+                tracing::error!(error = %e, "Could not pick a free SOCKS port; leaving the forward as configured");
+                None
+            }
+        }
+    } else {
+        None
+    };
+    let effective_ssh_config = resolved_socks.as_ref().map_or(ssh_config, |(cfg, _)| cfg);
+
     // Use build_command_args() for all SSH-specific flags:
     // identity, IdentitiesOnly, proxy_jump, ControlMaster/Persist,
     // agent forwarding, X11, compression, custom options, port forwards
-    let mut args = ssh_config.build_command_args();
+    let mut args = effective_ssh_config.build_command_args();
 
     // Unlike the old VTE watcher, forced askpass is scoped to OpenSSH's target
     // authentication phase: the helper answers only the prompt OpenSSH generates
@@ -1000,10 +1031,16 @@ fn build_ssh_command_args(
 /// suppression so the common key-auth-bastion + password-target case still
 /// auto-fills instead of being suppressed alongside the leak-prone case.
 ///
-/// Conservatively returns `true` when the first hop cannot be inspected — a
-/// string `proxy_jump`/`proxy_command` with no backing connection — so a bastion
+/// A connection whose only routing is its own `proxy_command` is inspected by
+/// [`proxy_command_can_prompt_for_password`]: a plain TCP relay (`nc`, `socat`,
+/// …) opens no prompt, so the first VTE prompt is the target's and auto-fill is
+/// safe (issue #322); a nested `ssh` hop or an unrecognised command stays
+/// conservative. Otherwise returns `true` when the first hop cannot be
+/// inspected — a string `proxy_jump` with no backing connection — so a bastion
 /// that might prompt keeps auto-fill suppressed. Returns `false` for non-SSH
 /// protocols (the caller's own `has_jump_host` term already covers them).
+///
+/// [`proxy_command_can_prompt_for_password`]: rustconn_core::ssh_tunnel::proxy_command_can_prompt_for_password
 ///
 /// [`PasswordSource`]: rustconn_core::models::PasswordSource
 fn bastion_may_prompt_for_password(
@@ -1023,19 +1060,32 @@ fn bastion_may_prompt_for_password(
         .try_borrow()
         .ok()
         .and_then(|s| super::protocols::resolve_first_hop_id(&s, conn));
-    match inherited_hop {
+    if let Some(jid) = inherited_hop {
         // Reference hop: inspect its own password source.
-        Some(jid) => state
+        return state
             .try_borrow()
             .ok()
             .and_then(|s| {
                 s.get_connection(jid)
                     .map(|c| c.password_source != PasswordSource::None)
             })
-            .unwrap_or(true),
-        // String proxy_jump / proxy_command / inherited proxy: not inspectable.
-        None => true,
+            .unwrap_or(true);
     }
+
+    // No reference hop. When the only routing is this connection's own
+    // ProxyCommand — and there is no string ProxyJump bastion — inspect the
+    // command: a plain TCP relay (`nc`, `socat`, …) opens no prompt of its own,
+    // so the first VTE prompt is the target's and auto-fill is safe (issue
+    // #322). A nested `ssh` hop or an unrecognised command stays conservative.
+    if let rustconn_core::ProtocolConfig::Ssh(ssh) = &conn.protocol_config
+        && ssh.proxy_jump.is_none()
+        && let Some(proxy_command) = ssh.proxy_command.as_deref()
+    {
+        return rustconn_core::ssh_tunnel::proxy_command_can_prompt_for_password(proxy_command);
+    }
+
+    // String proxy_jump / inherited proxy / anything else: not inspectable.
+    true
 }
 
 /// Installs the terminal auto-fill fallback for a connection askpass does not cover.
@@ -1239,12 +1289,9 @@ fn start_ssh_connection_internal(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution (secret values resolved from vault)
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution (secret values resolved from vault),
+    // overlaid with this connection's interactive `@ask:` answers.
+    let global_variables = super::protocols::resolve_globals_with_ask(state, connection_id);
 
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
@@ -1402,7 +1449,11 @@ fn start_ssh_connection_internal(
         host.clone()
     };
     ssh_cmd_parts.push(destination);
-    let ssh_command = ssh_cmd_parts.join(" ");
+    // Quote arguments with spaces (e.g. a ProxyCommand value) so the echoed
+    // line matches the single argv element that is actually spawned and is
+    // copy-paste safe — a plain join(" ") split it and read as if the option
+    // were dropped (issue #322).
+    let ssh_command = rustconn_core::ssh_tunnel::format_argv_for_display(&ssh_cmd_parts);
 
     // Display CLI output feedback before executing command
     let conn_msg = format_connection_message("SSH", &host);
@@ -1682,12 +1733,10 @@ pub fn reconnect_ssh_in_place(
         notebook.set_history_entry_id(session_id, entry_id);
     }
 
-    // Get global variables for substitution
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution, overlaid with this connection's
+    // interactive `@ask:` answers (kept from the initial connect so a reconnect
+    // does not re-prompt).
+    let global_variables = super::protocols::resolve_globals_with_ask(state, connection_id);
 
     let host = substitute_variables(&conn.host, &global_variables);
     let username = conn
@@ -1780,7 +1829,11 @@ pub fn reconnect_ssh_in_place(
         host.clone()
     };
     ssh_cmd_parts.push(destination);
-    let ssh_command = ssh_cmd_parts.join(" ");
+    // Quote arguments with spaces (e.g. a ProxyCommand value) so the echoed
+    // line matches the single argv element that is actually spawned and is
+    // copy-paste safe — a plain join(" ") split it and read as if the option
+    // were dropped (issue #322).
+    let ssh_command = rustconn_core::ssh_tunnel::format_argv_for_display(&ssh_cmd_parts);
 
     // Display CLI output feedback
     let conn_msg = format_connection_message("SSH", &host);

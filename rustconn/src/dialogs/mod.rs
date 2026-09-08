@@ -18,6 +18,7 @@ pub(crate) fn rdp_audio_mode_label(mode: rustconn_core::models::RdpAudioMode) ->
 }
 
 mod adw_dialogs;
+mod ask_prompt;
 mod backend_missing;
 mod cluster;
 mod command_palette;
@@ -57,6 +58,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub use adw_dialogs::*;
+pub use ask_prompt::show_ask_dialog;
 pub use backend_missing::{BackendMissingResponse, show_backend_missing_dialog};
 pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog};
 pub use command_palette::{CommandPaletteDialog, OpenTabInfo};

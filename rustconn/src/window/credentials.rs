@@ -670,15 +670,127 @@ impl MainWindow {
         }
     }
 
-    /// Handles resolved credentials and starts the appropriate connection
+    /// Handles resolved credentials, prompting for interactive `@ask:` variables
+    /// first, then starting the appropriate connection.
     ///
-    /// This is called either immediately (if cached credentials exist) or
-    /// from the async callback (after credential resolution completes).
+    /// This is called either immediately (if cached credentials exist) or from
+    /// the async callback (after credential resolution completes). It is the one
+    /// convergence point every protocol passes through before substitution, so
+    /// the ASK prompt is gathered here: if the connection references any
+    /// interactive variable not already answered, a dialog collects the values,
+    /// stores them on the state (session-only), and re-enters — otherwise the
+    /// launch proceeds straight to [`Self::handle_resolved_credentials_after_ask`].
+    /// Cancelling the dialog aborts the connection and clears the "connecting"
+    /// status.
     #[expect(
         clippy::too_many_arguments,
         reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
     )]
     fn handle_resolved_credentials(
+        state: SharedAppState,
+        notebook: SharedNotebook,
+        split_view: SharedSplitView,
+        sidebar: SharedSidebar,
+        monitoring: types::SharedMonitoring,
+        connection_id: Uuid,
+        protocol_type: rustconn_core::ProtocolType,
+        resolved_credentials: Option<rustconn_core::Credentials>,
+        cached_credentials: Option<(String, zeroize::Zeroizing<String>, String)>,
+        activity: Option<types::SharedActivityCoordinator>,
+        observer: Option<types::SessionStartObserver>,
+    ) {
+        // Gather the interactive prompts this connection still needs. Answers
+        // already stored (this connect's earlier round) are excluded because
+        // they are seeded as connection variables, so a resolved `@ask:` is no
+        // longer a directive and re-entry does not loop.
+        let ask_requests = {
+            let Ok(state_ref) = state.try_borrow() else {
+                return;
+            };
+            let Some(conn) = state_ref.get_connection(connection_id) else {
+                return;
+            };
+            let conn = conn.clone();
+            drop(state_ref);
+            let globals = super::protocols::resolve_globals_with_ask(&state, connection_id);
+            super::protocols::collect_connection_ask_requests(&conn, &globals)
+        };
+
+        if !ask_requests.is_empty() {
+            let conn_name = state
+                .try_borrow()
+                .ok()
+                .and_then(|s| s.get_connection(connection_id).map(|c| c.name.clone()))
+                .unwrap_or_default();
+
+            let state_cb = state.clone();
+            let notebook_cb = notebook.clone();
+            let split_cb = split_view.clone();
+            let sidebar_cb = sidebar.clone();
+            let monitoring_cb = monitoring.clone();
+            let observer_cb = observer.clone();
+            let resolved_cb = resolved_credentials.clone();
+            let cached_cb = cached_credentials.clone();
+            let activity_cb = activity.clone();
+
+            crate::dialogs::show_ask_dialog(
+                notebook.widget(),
+                &conn_name,
+                &ask_requests,
+                move |answers| match answers {
+                    Some(answers) => {
+                        // Store the answers, then re-enter. On re-entry the
+                        // stored answers shadow the `@ask:` directives, so
+                        // collection returns empty and the launch proceeds.
+                        if let Ok(mut state_mut) = state_cb.try_borrow_mut() {
+                            state_mut.set_ask_answers(connection_id, answers);
+                        }
+                        Self::handle_resolved_credentials(
+                            state_cb.clone(),
+                            notebook_cb.clone(),
+                            split_cb.clone(),
+                            sidebar_cb.clone(),
+                            monitoring_cb.clone(),
+                            connection_id,
+                            protocol_type,
+                            resolved_cb.clone(),
+                            cached_cb.clone(),
+                            activity_cb.clone(),
+                            observer_cb.clone(),
+                        );
+                    }
+                    None => {
+                        // Cancelled — do not connect; clear the spinner.
+                        sidebar_cb
+                            .update_connection_status(&connection_id.to_string(), "disconnected");
+                    }
+                },
+            );
+            return;
+        }
+
+        Self::handle_resolved_credentials_after_ask(
+            state,
+            notebook,
+            split_view,
+            sidebar,
+            monitoring,
+            connection_id,
+            protocol_type,
+            resolved_credentials,
+            cached_credentials,
+            activity,
+            observer,
+        );
+    }
+
+    /// Starts the appropriate connection once interactive variables (if any)
+    /// have been answered. See [`Self::handle_resolved_credentials`].
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "function parameters mirror upstream API or struct fields 1:1; bundling into a struct only restates the field list"
+    )]
+    fn handle_resolved_credentials_after_ask(
         state: SharedAppState,
         notebook: SharedNotebook,
         split_view: SharedSplitView,

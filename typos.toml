@@ -63,6 +63,13 @@ Parrallels = "Parrallels"
 flate = "flate"
 writeable = "writeable"
 
+# `gost` is the go-gost proxy relay binary (github.com/go-gost/gost), listed in
+# ssh_tunnel.rs among the recognised byte-relay ProxyCommand front commands
+# (nc/socat/corkscrew/cloudflared/…). It is a real command name, not a
+# misspelling of "ghost" — "correcting" it would stop that relay being
+# recognised and reintroduce the #322 password-prompt hang for gost users.
+gost = "gost"
+
 # Hyphenated prefixes: typos splits "mis-read" and "pre-empted" at the hyphen
 # and then judges the fragments.
 mis = "mis"

@@ -4788,7 +4788,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4828,7 +4828,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "chrono",
  "clap",
@@ -4850,7 +4850,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "aes 0.9.3",
  "ar",
@@ -4909,7 +4909,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4918,18 +4918,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.21.8"
+version = "0.21.9"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.21.8"
+version = "0.21.9"
 dependencies = [
  "libc",
  "nix",

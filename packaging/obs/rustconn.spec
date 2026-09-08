@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.21.8
+Version:        0.21.9
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -387,6 +387,21 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Sep 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.9-0
+- Version bump to 0.21.9
+- Added: "Open Browser via Tunnel" on an SSH connection — SOCKS proxy to the host
+  with a browser (embedded or external Chromium) routed through it, configurable
+  start page and external-browser command, default-browser aware with embedded fallback
+- Added: a Web connection can browse through an SSH host (SOCKS tunnel) in the embedded and a Chromium browser
+- Added: interactive "ASK" variables — prompt for a value at connect time
+- Added: a dynamic SOCKS forward can pick a free local port automatically
+- Added: built-in date, time and environment variables in ${...} substitutions
+- Added: built-in Expect templates for the newer OpenSSH host-key prompt and bare "any key to continue" banners
+- Fixed: an embedded Web connection to an unreachable host no longer leaves a blank browser tab open
+- Fixed: the Jump Host and Tunnel dropdowns' search box now filters the list
+- Fixed: a ProxyCommand relay no longer leaves the target session hung at the password prompt (#322)
+- Fixed: the "Executing:" echo now quotes a ProxyCommand value so it no longer looks ignored (#322)
+
 * Mon Sep 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.8-0
 - Version bump to 0.21.8
 - Fixed (security): a password typed at an interactive prompt could reach the

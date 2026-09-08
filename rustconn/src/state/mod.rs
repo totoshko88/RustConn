@@ -179,6 +179,14 @@ pub struct AppState {
     /// The negative counterpart — which connections the vault had *nothing* for —
     /// deliberately does not live here; see [`crate::vault_miss_cache`] for why.
     password_cache: HashMap<Uuid, CachedCredentials>,
+    /// Transient answers to interactive `@ask:` variables, per connection.
+    ///
+    /// Populated at connect time from the ASK prompt dialog and consumed by the
+    /// variable-substitution builders for that connect. Session-only and never
+    /// serialized — a secret answer must not outlive the process, and every
+    /// connect re-prompts because the stored variable keeps its `@ask:`
+    /// directive. Overwritten on each connect and cleared when the session ends.
+    ask_answers: HashMap<Uuid, Vec<rustconn_core::Variable>>,
     /// Connection clipboard for copy/paste operations
     clipboard: ConnectionClipboard,
     /// Connection history entries
@@ -576,6 +584,7 @@ impl AppState {
             cluster_manager,
             settings,
             password_cache: HashMap::new(),
+            ask_answers: HashMap::new(),
             clipboard: ConnectionClipboard::new(),
             history_entries,
             history_dirty: std::cell::Cell::new(false),
@@ -625,6 +634,30 @@ impl AppState {
         self.password_cache
             .get(&connection_id)
             .filter(|creds| !creds.is_expired())
+    }
+
+    // ========== Interactive (ASK) answers ==========
+
+    /// Stores the answers to a connection's interactive `@ask:` variables for
+    /// the current connect, replacing any previous set.
+    ///
+    /// Each answer is an ordinary (non-directive) [`rustconn_core::Variable`]
+    /// named after the ASK variable it answers, so it shadows the stored
+    /// directive during substitution. Session-only.
+    pub fn set_ask_answers(&mut self, connection_id: Uuid, answers: Vec<rustconn_core::Variable>) {
+        self.ask_answers.insert(connection_id, answers);
+    }
+
+    /// Returns the stored ASK answers for a connection, or an empty slice.
+    ///
+    /// Answers are session-only and reused across a reconnect of the same
+    /// connection; they are overwritten on the next fresh connect and scrubbed
+    /// (secret values via `Variable`'s `Drop`) when the process exits.
+    #[must_use]
+    pub fn ask_answers(&self, connection_id: Uuid) -> &[rustconn_core::Variable] {
+        self.ask_answers
+            .get(&connection_id)
+            .map_or(&[], Vec::as_slice)
     }
 
     // ========== Connection Operations ==========

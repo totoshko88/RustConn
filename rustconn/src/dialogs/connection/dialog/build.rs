@@ -309,6 +309,7 @@ impl ConnectionDialog {
         let web_javascript_switch = web_options.javascript_switch;
         let web_user_agent_row = web_options.user_agent_row;
         let web_floating_toolbar_switch = web_options.floating_toolbar_switch;
+        let web_tunnel_dropdown = web_options.tunnel_dropdown;
 
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
@@ -466,6 +467,8 @@ impl ConnectionDialog {
         let vnc_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
             Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
         let spice_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
+            Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
+        let web_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>> =
             Rc::new(RefCell::new(vec![(None, "(None)".to_string())]));
 
         // Connect save button handler
@@ -637,6 +640,8 @@ impl ConnectionDialog {
             &web_javascript_switch,
             &web_user_agent_row,
             &web_floating_toolbar_switch,
+            &web_tunnel_dropdown,
+            &web_connections_data,
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
@@ -878,6 +883,8 @@ impl ConnectionDialog {
             web_javascript_switch,
             web_user_agent_row,
             web_floating_toolbar_switch,
+            web_tunnel_dropdown,
+            web_connections_data,
             mosh_port_range_entry,
             mosh_predict_dropdown,
             mosh_server_binary_entry,

@@ -42,6 +42,100 @@ pub(super) fn resolve_automation_for_connection(
         .unwrap_or_else(|| conn.automation.clone())
 }
 
+/// Resolves global variables and overlays this connection's interactive
+/// `@ask:` answers on top.
+///
+/// The answers were gathered by the ASK prompt at connect time and stored in
+/// [`crate::state::AppState`]. Appending them after the globals makes them
+/// shadow a same-named global for this connect, and — because every
+/// substitution builder loads this list — makes them resolve everywhere a
+/// `${...}` reference is expanded (host, username, custom command, Expect
+/// responses). When the connection has no ASK answers this returns exactly what
+/// [`crate::state::resolve_global_variables`] returns, so non-ASK connections
+/// are unaffected.
+pub(super) fn resolve_globals_with_ask(
+    state: &SharedAppState,
+    connection_id: Uuid,
+) -> Vec<Variable> {
+    let Ok(state_ref) = state.try_borrow() else {
+        return Vec::new();
+    };
+    let mut vars = crate::state::resolve_global_variables(state_ref.settings());
+    vars.extend(state_ref.ask_answers(connection_id).iter().cloned());
+    vars
+}
+
+/// Collects the interactive `@ask:` prompts a connection needs before it can
+/// launch, deduplicated by variable name and skipping any already answered.
+///
+/// It scans every string that gets `${...}` substitution at connect time — the
+/// host, the username, an SSH startup command, a Custom Command template, and
+/// each enabled Expect-rule response — resolving references against the same
+/// scope chain the launch uses (this connection's local variables over the
+/// globals). `answered` carries names already collected in a prior pass (an
+/// earlier string, or a previous prompt round) so nothing is asked twice.
+///
+/// Returns the requests in first-appearance order. An empty result means the
+/// connection has no outstanding interactive variables and can connect straight
+/// away.
+pub(super) fn collect_connection_ask_requests(
+    conn: &rustconn_core::Connection,
+    global_variables: &[Variable],
+) -> Vec<(String, rustconn_core::AskSpec)> {
+    // Seed a manager exactly like the launch builders: globals, then this
+    // connection's local variables (which hold the `@ask:` directives).
+    let mut manager = VariableManager::new();
+    for var in global_variables {
+        manager.set_global(var.clone());
+    }
+    let conn_id = conn.id;
+    for var in conn.local_variables.values() {
+        manager.set_connection(conn_id, Variable::new(&var.name, &var.value));
+    }
+    let scope = VariableScope::Connection(conn_id);
+
+    // Every string a connection substitutes at launch. Kept in one place so a
+    // new substituted field is one line here, not a missed prompt.
+    let mut sources: Vec<String> = Vec::new();
+    sources.push(conn.host.clone());
+    if let Some(user) = &conn.username {
+        sources.push(user.clone());
+    }
+    match &conn.protocol_config {
+        rustconn_core::ProtocolConfig::Ssh(cfg) | rustconn_core::ProtocolConfig::Sftp(cfg) => {
+            if let Some(startup) = &cfg.startup_command {
+                sources.push(startup.clone());
+            }
+        }
+        rustconn_core::ProtocolConfig::ZeroTrust(zt) => {
+            if let rustconn_core::models::ZeroTrustProviderConfig::Generic(g) = &zt.provider_config
+            {
+                sources.push(g.command_template.clone());
+            }
+        }
+        _ => {}
+    }
+    for rule in &conn.automation.expect_rules {
+        if rule.enabled {
+            sources.push(rule.response.clone());
+        }
+    }
+
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut requests = Vec::new();
+    for source in &sources {
+        let Ok(found) = manager.collect_ask_requests(source, scope) else {
+            continue;
+        };
+        for (name, spec) in found {
+            if seen.insert(name.clone()) {
+                requests.push((name, spec));
+            }
+        }
+    }
+    requests
+}
+
 /// Substitutes variables in a string using global variables from settings
 ///
 /// Converts `${VAR_NAME}` references to their values from global variables.
@@ -1027,12 +1121,9 @@ fn start_vnc_connection_internal(
     let port = conn.port;
     let window_mode = conn.window_mode;
 
-    // Get global variables for substitution (secret values resolved from vault)
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution (secret values resolved from vault),
+    // overlaid with this connection's interactive `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Apply variable substitution to host
     let host = substitute_variables(&conn.host, &global_variables);
@@ -1270,12 +1361,9 @@ fn start_spice_connection_internal(
     let conn_name = conn.name.clone();
     let port = conn.port;
 
-    // Get global variables for substitution (secret values resolved from vault)
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution (secret values resolved from vault),
+    // overlaid with this connection's interactive `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Apply variable substitution to host
     let host = substitute_variables(&conn.host, &global_variables);
@@ -1560,11 +1648,7 @@ pub fn reconnect_generic_vte_in_place(
     // Build and spawn command based on protocol
     match &conn.protocol_config {
         rustconn_core::ProtocolConfig::ZeroTrust(zt_config) => {
-            let global_variables = state
-                .try_borrow()
-                .ok()
-                .map(|s| crate::state::resolve_global_variables(s.settings()))
-                .unwrap_or_default();
+            let global_variables = resolve_globals_with_ask(state, connection_id);
             let password = cached_connection_password(state, connection_id);
             let launch = match build_zerotrust_launch(
                 &conn,
@@ -2062,12 +2146,9 @@ pub fn start_zerotrust_connection(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution in Expect responses
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution in Expect responses / the Custom
+    // Command template, overlaid with this connection's `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Build the command. For a Custom Command this expands the ${var}
     // placeholders — done before opening a tab so an unusable variable value
@@ -2209,12 +2290,9 @@ pub fn start_serial_connection(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution in Expect responses
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution in Expect responses, overlaid with
+    // this connection's interactive `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
@@ -2399,12 +2477,9 @@ pub fn start_kubernetes_connection(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution in Expect responses
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution in Expect responses, overlaid with
+    // this connection's interactive `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
@@ -2653,12 +2728,9 @@ fn start_mosh_connection_internal(
         .map(|s| s.settings().terminal.clone())
         .unwrap_or_default();
 
-    // Get global variables for substitution in Expect responses
-    let global_variables = state
-        .try_borrow()
-        .ok()
-        .map(|s| crate::state::resolve_global_variables(s.settings()))
-        .unwrap_or_default();
+    // Get global variables for substitution in Expect responses, overlaid with
+    // this connection's interactive `@ask:` answers.
+    let global_variables = resolve_globals_with_ask(state, connection_id);
 
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);

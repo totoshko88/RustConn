@@ -315,6 +315,28 @@ impl SpinRowBuilder {
     }
 }
 
+/// Makes a `StringList`-backed [`DropDown`] type-to-search actually work.
+///
+/// `DropDown::set_enable_search(true)` shows a search entry, but it filters on
+/// nothing unless the dropdown has an expression that yields the string to match
+/// against. A dropdown created with `Expression::NONE` therefore shows a dead
+/// search box (the jump-host pickers had exactly this bug). This installs a
+/// property expression reading the `string` of each `StringObject` and turns
+/// search on, so typing filters a long connection list to the matching entries.
+///
+/// Call it on any dropdown whose model is a [`StringList`] and whose list can
+/// grow long — the jump-host / tunnel pickers, where a user may have hundreds of
+/// connections.
+pub fn enable_string_search(dropdown: &DropDown) {
+    let expression = gtk4::PropertyExpression::new(
+        gtk4::StringObject::static_type(),
+        None::<gtk4::Expression>,
+        "string",
+    );
+    dropdown.set_expression(Some(expression));
+    dropdown.set_enable_search(true);
+}
+
 /// Builder for creating `adw::ActionRow` with a `DropDown` suffix.
 ///
 /// # Example

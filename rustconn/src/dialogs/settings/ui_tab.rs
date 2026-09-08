@@ -22,6 +22,29 @@ const RENDERER_ORDER: [RendererPreference; 3] = [
     RendererPreference::Software,
 ];
 
+/// URLs behind the tunnel-browser start-page presets, in dropdown order.
+///
+/// `None` is the trailing "Custom" item, which carries no URL and leaves the
+/// entry as the user typed it. Index positions must match the `preset_labels`
+/// built in [`create_ui_page`].
+const TUNNEL_PRESET_URLS: [Option<&str>; 4] = [
+    Some("https://www.google.com"),
+    Some("https://duckduckgo.com"),
+    Some("https://ifconfig.me"),
+    None,
+];
+
+/// Dropdown index whose preset URL equals `url`, or the "Custom" index when
+/// none matches (so a hand-typed URL shows as Custom rather than Google).
+fn tunnel_preset_index_for(url: &str) -> u32 {
+    let trimmed = url.trim();
+    let custom_index = (TUNNEL_PRESET_URLS.len() - 1) as u32;
+    TUNNEL_PRESET_URLS
+        .iter()
+        .position(|preset| preset.is_some_and(|p| p == trimmed))
+        .map_or(custom_index, |i| i as u32)
+}
+
 /// Creates the UI settings page using AdwPreferencesPage
 #[expect(
     clippy::type_complexity,
@@ -50,6 +73,14 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    // open_tunnelled_browser_in_embedded
+    adw::SwitchRow,
+    // tunnel_browser_start_url
+    adw::EntryRow,
+    // tunnel start-page presets dropdown
+    DropDown,
+    // tunnel_browser_command
+    adw::EntryRow,
     adw::ComboRow,
 ) {
     let page = adw::PreferencesPage::builder()
@@ -332,6 +363,65 @@ pub fn create_ui_page() -> (
         .build();
     connections_group.add(&double_click_opens_new_session);
 
+    // "Open Browser via Tunnel" (SSH context menu) target browser.
+    let open_tunnelled_browser_in_embedded = adw::SwitchRow::builder()
+        .title(i18n("Open tunnelled browser in the embedded browser"))
+        .subtitle(i18n(
+            "‘Open Browser via Tunnel’ uses the in-app browser; turn off to launch an external Chromium browser in incognito mode instead",
+        ))
+        .build();
+    connections_group.add(&open_tunnelled_browser_in_embedded);
+
+    // Start page for the tunnelled browser. The EntryRow holds the actual value
+    // (what gets saved); a presets dropdown beside it just fills the entry with
+    // one of the common choices for convenience.
+    let tunnel_start_url_row = adw::EntryRow::builder()
+        .title(i18n("Tunnelled browser start page"))
+        .build();
+    tunnel_start_url_row.set_show_apply_button(false);
+
+    // Index order must match TUNNEL_PRESET_URLS below; the last item, "Custom",
+    // carries no preset URL and just leaves the entry as the user typed it.
+    let preset_labels = [
+        i18n("Google"),
+        i18n("DuckDuckGo"),
+        i18n("ifconfig.me (show exit IP)"),
+        i18n("Custom"),
+    ];
+    let preset_refs: Vec<&str> = preset_labels.iter().map(String::as_str).collect();
+    let tunnel_start_preset = DropDown::builder()
+        .model(&StringList::new(&preset_refs))
+        .valign(gtk4::Align::Center)
+        .tooltip_text(i18n(
+            "Fill in a common start page, or Custom to type your own",
+        ))
+        .build();
+    // The matching preset is selected later in load_ui_settings, once the saved
+    // URL is known. Here we only wire the fill-on-select behaviour.
+    {
+        let entry = tunnel_start_url_row.clone();
+        tunnel_start_preset.connect_selected_notify(move |combo| {
+            if let Some(Some(url)) = TUNNEL_PRESET_URLS.get(combo.selected() as usize) {
+                entry.set_text(url);
+            }
+            // "Custom" (None) leaves the entry untouched.
+        });
+    }
+    tunnel_start_url_row.add_suffix(&tunnel_start_preset);
+    connections_group.add(&tunnel_start_url_row);
+
+    // External browser command for the tunnelled browser — the counterpart to a
+    // Web connection's "Custom Browser" command. Empty means auto-detect. Only
+    // relevant when the switch above is off (external browser).
+    let tunnel_browser_command_row = adw::EntryRow::builder()
+        .title(i18n("External browser command (tunnelled)"))
+        .build();
+    tunnel_browser_command_row.set_show_apply_button(false);
+    tunnel_browser_command_row.set_tooltip_text(Some(&i18n(
+        "Command or path to a Chromium-based browser for the external tunnelled browser (e.g. chromium, brave-browser). Leave empty to auto-detect.",
+    )));
+    connections_group.add(&tunnel_browser_command_row);
+
     page.add(&connections_group);
 
     // === Startup Group ===
@@ -459,6 +549,10 @@ pub fn create_ui_page() -> (
         double_click_opens_new_session,
         show_split_pane_labels,
         reveal_toolbar_on_hover,
+        open_tunnelled_browser_in_embedded,
+        tunnel_start_url_row,
+        tunnel_start_preset,
+        tunnel_browser_command_row,
         // Last so that the neighbouring positional arguments in load/collect
         // are SwitchRows: a ComboRow cannot be swapped with one by mistake.
         renderer_row,
@@ -518,6 +612,10 @@ pub fn load_ui_settings(
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
+    open_tunnelled_browser_in_embedded: &adw::SwitchRow,
+    tunnel_start_url_row: &adw::EntryRow,
+    tunnel_start_preset: &DropDown,
+    tunnel_browser_command_row: &adw::EntryRow,
     renderer_row: &adw::ComboRow,
     settings: &UiSettings,
     connections: &[&Connection],
@@ -599,6 +697,11 @@ pub fn load_ui_settings(
 
     double_click_opens_new_session.set_active(settings.double_click_opens_new_session);
 
+    open_tunnelled_browser_in_embedded.set_active(settings.open_tunnelled_browser_in_embedded);
+    tunnel_start_url_row.set_text(&settings.tunnel_browser_start_url);
+    tunnel_start_preset.set_selected(tunnel_preset_index_for(&settings.tunnel_browser_start_url));
+    tunnel_browser_command_row.set_text(&settings.tunnel_browser_command);
+
     show_split_pane_labels.set_active(settings.show_split_pane_labels);
 
     // Same shape as the compact toggle above: push the stored value into the
@@ -666,6 +769,9 @@ pub fn collect_ui_settings(
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
+    open_tunnelled_browser_in_embedded: &adw::SwitchRow,
+    tunnel_start_url_row: &adw::EntryRow,
+    tunnel_browser_command_row: &adw::EntryRow,
     renderer_row: &adw::ComboRow,
     connections: &[&Connection],
 ) -> UiSettings {
@@ -735,6 +841,9 @@ pub fn collect_ui_settings(
         window_title_shows_connection: window_title_shows_connection.is_active(),
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
+        open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),
+        tunnel_browser_start_url: tunnel_start_url_row.text().to_string(),
+        tunnel_browser_command: tunnel_browser_command_row.text().to_string(),
         show_split_pane_labels: show_split_pane_labels.is_active(),
         reveal_session_toolbar_on_hover: reveal_toolbar_on_hover.is_active(),
         keyboard_passthrough: keyboard_passthrough.is_active(),

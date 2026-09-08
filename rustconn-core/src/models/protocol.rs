@@ -778,10 +778,23 @@ impl PortForward {
                     self.local_port, self.remote_host, self.remote_port
                 )
             }
+            PortForwardDirection::Dynamic if self.local_port == 0 => "D auto (SOCKS)".to_string(),
             PortForwardDirection::Dynamic => {
                 format!("D {} (SOCKS)", self.local_port)
             }
         }
+    }
+
+    /// Returns `true` for a dynamic SOCKS forward whose local port is to be
+    /// chosen automatically at connection time.
+    ///
+    /// A `Dynamic` forward with `local_port == 0` is the sentinel for "pick a
+    /// free port": zero is never a bindable listening port, so it cannot
+    /// collide with a real request. The chosen port is exposed to the session
+    /// as `${SOCKS5_PORT}`.
+    #[must_use]
+    pub const fn is_random_dynamic(&self) -> bool {
+        matches!(self.direction, PortForwardDirection::Dynamic) && self.local_port == 0
     }
 }
 
@@ -1114,6 +1127,62 @@ impl SshConfig {
         }
 
         args
+    }
+
+    /// Returns `true` if any port forward is a random dynamic SOCKS forward
+    /// (a `Dynamic` rule with `local_port == 0`).
+    #[must_use]
+    pub fn has_random_socks_forward(&self) -> bool {
+        self.port_forwards
+            .iter()
+            .any(PortForward::is_random_dynamic)
+    }
+
+    /// Assigns a concrete local port to every random dynamic SOCKS forward,
+    /// returning the first port assigned (the value for `${SOCKS5_PORT}`).
+    ///
+    /// A `Dynamic` forward stored with `local_port == 0` means "pick a free
+    /// port at connection time" (see [`PortForward::is_random_dynamic`]). The
+    /// port itself is chosen by `pick`, which the caller supplies — typically
+    /// [`crate::ssh_tunnel::find_free_port`] — so this stays deterministic and
+    /// testable without opening a socket. Forwards with an explicit port and
+    /// non-dynamic forwards are left untouched.
+    ///
+    /// Returns `None` when there is no random dynamic forward, or when `pick`
+    /// yields no port (so the caller can fall back or report the failure).
+    ///
+    /// # Errors
+    ///
+    /// Propagates whatever error type `pick` returns on the first failure; the
+    /// config is then left with any ports already assigned before the failure.
+    pub fn assign_random_socks_ports<E>(
+        &mut self,
+        mut pick: impl FnMut() -> Result<u16, E>,
+    ) -> Result<Option<u16>, E> {
+        let mut first_assigned = None;
+        for pf in &mut self.port_forwards {
+            if pf.is_random_dynamic() {
+                let port = pick()?;
+                pf.local_port = port;
+                if first_assigned.is_none() {
+                    first_assigned = Some(port);
+                }
+            }
+        }
+        Ok(first_assigned)
+    }
+
+    /// Returns the effective SOCKS proxy port, if a dynamic forward is
+    /// configured with a concrete (already-assigned) port.
+    ///
+    /// Returns `None` when no dynamic forward exists or its port is still the
+    /// `0` "pick at connection time" sentinel.
+    #[must_use]
+    pub fn socks_proxy_port(&self) -> Option<u16> {
+        self.port_forwards
+            .iter()
+            .find(|pf| matches!(pf.direction, PortForwardDirection::Dynamic) && pf.local_port != 0)
+            .map(|pf| pf.local_port)
     }
 
     /// Checks if this SSH config uses File authentication method
@@ -3744,6 +3813,17 @@ pub struct WebConfig {
     /// the System and Custom modes hand the URL to another program.
     #[serde(default)]
     pub hide_floating_toolbar: bool,
+    /// ID of an SSH connection whose host to browse *through*, via an
+    /// automatically-raised dynamic SOCKS proxy (`ssh -N -D`).
+    ///
+    /// When set, opening this Web connection first brings up a SOCKS tunnel to
+    /// the referenced SSH connection on a free local port, then points the
+    /// browser at `socks5://127.0.0.1:<port>`. The tunnel lives for the
+    /// browsing session. The embedded browser applies it through its
+    /// `NetworkSession`; the Custom-browser mode via a `--proxy-server` flag.
+    /// `None` means a direct connection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tunnel_via: Option<uuid::Uuid>,
 }
 
 // Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
@@ -3761,6 +3841,7 @@ impl Default for WebConfig {
             zoom_level: 1.0,
             accept_invalid_certs: false,
             hide_floating_toolbar: false,
+            tunnel_via: None,
         }
     }
 }
@@ -3793,6 +3874,8 @@ impl<'de> Deserialize<'de> for WebConfig {
             accept_invalid_certs: bool,
             #[serde(default)]
             hide_floating_toolbar: bool,
+            #[serde(default)]
+            tunnel_via: Option<uuid::Uuid>,
         }
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
@@ -3815,6 +3898,7 @@ impl<'de> Deserialize<'de> for WebConfig {
             zoom_level: raw.zoom_level.clamp(0.3, 3.0),
             accept_invalid_certs: raw.accept_invalid_certs,
             hide_floating_toolbar: raw.hide_floating_toolbar,
+            tunnel_via: raw.tunnel_via,
         })
     }
 }
@@ -3839,6 +3923,27 @@ mod web_browser_mode_tests {
             rendered.contains("browser_mode = \"embedded\""),
             "saving must not downgrade the stored mode, got:\n{rendered}"
         );
+    }
+
+    #[test]
+    fn tunnel_via_round_trips_and_defaults_to_none() {
+        // Absent in stored config -> None, and not written back when None.
+        let plain: WebConfig =
+            toml::from_str("browser_mode = \"embedded\"\n").expect("parse without tunnel_via");
+        assert_eq!(plain.tunnel_via, None);
+        let rendered = toml::to_string(&plain).expect("serialize");
+        assert!(
+            !rendered.contains("tunnel_via"),
+            "a None tunnel_via must be skipped, got:\n{rendered}"
+        );
+
+        // A stored id survives the round trip.
+        let id = uuid::Uuid::new_v4();
+        let with_tunnel: WebConfig =
+            toml::from_str(&format!("tunnel_via = \"{id}\"\n")).expect("parse with tunnel_via");
+        assert_eq!(with_tunnel.tunnel_via, Some(id));
+        let rendered = toml::to_string(&with_tunnel).expect("serialize");
+        assert!(rendered.contains(&id.to_string()));
     }
 
     #[test]
@@ -4375,5 +4480,112 @@ mod resolution_parse_tests {
     #[test]
     fn unknown_cli_display_mode_is_rejected() {
         assert_eq!(RdpDisplayMode::from_cli_name("fit-to-screen"), None);
+    }
+}
+
+#[cfg(test)]
+mod port_forward_socks_tests {
+    use super::*;
+
+    fn dynamic(local_port: u16) -> PortForward {
+        PortForward {
+            direction: PortForwardDirection::Dynamic,
+            local_port,
+            remote_host: String::new(),
+            remote_port: 0,
+        }
+    }
+
+    fn local(local_port: u16) -> PortForward {
+        PortForward {
+            direction: PortForwardDirection::Local,
+            local_port,
+            remote_host: "db".to_string(),
+            remote_port: 5432,
+        }
+    }
+
+    #[test]
+    fn a_dynamic_forward_with_port_zero_is_a_random_socks_forward() {
+        assert!(dynamic(0).is_random_dynamic());
+        assert!(!dynamic(1080).is_random_dynamic());
+        assert!(!local(0).is_random_dynamic());
+    }
+
+    #[test]
+    fn display_summary_marks_an_auto_port() {
+        assert_eq!(dynamic(0).display_summary(), "D auto (SOCKS)");
+        assert_eq!(dynamic(1080).display_summary(), "D 1080 (SOCKS)");
+    }
+
+    #[test]
+    fn assign_random_socks_ports_fills_only_the_zero_dynamic_forward() {
+        let mut cfg = SshConfig {
+            port_forwards: vec![local(5432), dynamic(0), dynamic(1080)],
+            ..SshConfig::default()
+        };
+        assert!(cfg.has_random_socks_forward());
+
+        // Deterministic picker standing in for find_free_port().
+        let mut next = 40000u16;
+        let assigned = cfg
+            .assign_random_socks_ports::<std::convert::Infallible>(|| {
+                let p = next;
+                next += 1;
+                Ok(p)
+            })
+            .unwrap();
+
+        // The first (and here only zero) dynamic forward gets the first port.
+        assert_eq!(assigned, Some(40000));
+        // The explicit local and explicit dynamic ports are untouched.
+        assert_eq!(cfg.port_forwards[0].local_port, 5432);
+        assert_eq!(cfg.port_forwards[1].local_port, 40000);
+        assert_eq!(cfg.port_forwards[2].local_port, 1080);
+        // After assignment nothing is random anymore.
+        assert!(!cfg.has_random_socks_forward());
+    }
+
+    #[test]
+    fn assign_returns_none_when_there_is_no_random_forward() {
+        let mut cfg = SshConfig {
+            port_forwards: vec![local(5432), dynamic(1080)],
+            ..SshConfig::default()
+        };
+        let assigned = cfg
+            .assign_random_socks_ports::<std::convert::Infallible>(|| {
+                unreachable!("no random forward")
+            })
+            .unwrap();
+        assert_eq!(assigned, None);
+    }
+
+    #[test]
+    fn socks_proxy_port_reports_a_concrete_port_only() {
+        // Still the sentinel — no concrete port yet.
+        let unresolved = SshConfig {
+            port_forwards: vec![dynamic(0)],
+            ..SshConfig::default()
+        };
+        assert_eq!(unresolved.socks_proxy_port(), None);
+
+        // Explicit / already-assigned port is reported.
+        let resolved = SshConfig {
+            port_forwards: vec![dynamic(1080)],
+            ..SshConfig::default()
+        };
+        assert_eq!(resolved.socks_proxy_port(), Some(1080));
+
+        // No dynamic forward at all.
+        let none = SshConfig {
+            port_forwards: vec![local(5432)],
+            ..SshConfig::default()
+        };
+        assert_eq!(none.socks_proxy_port(), None);
+    }
+
+    #[test]
+    fn to_ssh_arg_renders_a_bare_d_flag_for_dynamic() {
+        assert_eq!(dynamic(1080).to_ssh_arg(), vec!["-D", "1080"]);
     }
 }

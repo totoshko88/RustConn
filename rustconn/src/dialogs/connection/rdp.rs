@@ -552,7 +552,7 @@ pub(super) fn create_rdp_options() -> (
     let rdp_jump_host_list = StringList::new(&none_refs);
     let rdp_jump_host_dropdown = DropDown::new(Some(rdp_jump_host_list), gtk4::Expression::NONE);
     rdp_jump_host_dropdown.set_selected(0);
-    rdp_jump_host_dropdown.set_enable_search(true);
+    crate::dialogs::widgets::enable_string_search(&rdp_jump_host_dropdown);
     rdp_jump_host_dropdown.set_size_request(200, -1);
     rdp_jump_host_dropdown.set_hexpand(false);
 

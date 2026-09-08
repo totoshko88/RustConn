@@ -404,6 +404,10 @@ pub fn show_context_menu_for_item(
         ));
         if is_ssh {
             items.push(ContextMenuItem::action(&i18n("Open SFTP"), "open-sftp"));
+            items.push(ContextMenuItem::action(
+                &i18n("Open Browser via Tunnel"),
+                "open-browser-via-tunnel",
+            ));
         }
         items.push(ContextMenuItem::action(&i18n("Wake On LAN"), "wake-on-lan"));
         items.push(ContextMenuItem::action(
