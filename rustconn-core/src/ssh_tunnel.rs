@@ -214,16 +214,52 @@ pub fn find_free_port() -> SshTunnelResult<u16> {
 /// Returns an error if no free port is found or the SSH process fails to spawn.
 pub fn create_tunnel(params: &SshTunnelParams) -> SshTunnelResult<SshTunnel> {
     let local_port = find_free_port()?;
-
     let forward_spec = format!(
         "{}:{}:{}",
         local_port, params.remote_host, params.remote_port
     );
+    let remote_desc = format!("{}:{}", params.remote_host, params.remote_port);
+    spawn_tunnel(params, local_port, &["-L", &forward_spec], &remote_desc)
+}
 
+/// Creates a dynamic SOCKS tunnel by spawning `ssh -N -D <local_port> <jump_host>`.
+///
+/// Unlike [`create_tunnel`], which forwards a single destination, this opens a
+/// local SOCKS5 proxy on a free port: any client pointed at
+/// `socks5://127.0.0.1:<local_port>` reaches the network the jump host sits on.
+/// It is what an embedded Web connection uses to browse through an SSH host
+/// (issue: Ásbrú-style incognito browser). `remote_host`/`remote_port` on
+/// `params` are ignored — a SOCKS proxy has no single destination.
+///
+/// The tunnel runs in the background; keep the returned [`SshTunnel`] alive for
+/// the life of the browsing session — dropping it kills the SSH process and
+/// closes the proxy.
+///
+/// # Errors
+///
+/// Returns an error if no free port is found or the SSH process fails to spawn.
+pub fn create_socks_tunnel(params: &SshTunnelParams) -> SshTunnelResult<SshTunnel> {
+    let local_port = find_free_port()?;
+    let port_str = local_port.to_string();
+    spawn_tunnel(params, local_port, &["-D", &port_str], "SOCKS proxy")
+}
+
+/// Shared spawn path for [`create_tunnel`] and [`create_socks_tunnel`].
+///
+/// `forward_args` is the forwarding flag and its value (`["-L", spec]` or
+/// `["-D", port]`); `remote_desc` is a human-readable destination for the log.
+/// Everything else — jump-host port, identity, askpass, Flatpak known_hosts,
+/// `ExitOnForwardFailure`, stderr capture — is identical between the two.
+fn spawn_tunnel(
+    params: &SshTunnelParams,
+    local_port: u16,
+    forward_args: &[&str; 2],
+    remote_desc: &str,
+) -> SshTunnelResult<SshTunnel> {
     let mut cmd = Command::new("ssh");
     cmd.arg("-N") // No remote command — just forward
-        .arg("-L")
-        .arg(&forward_spec);
+        .arg(forward_args[0])
+        .arg(forward_args[1]);
 
     // Jump host port
     if params.jump_port != 22 {
@@ -289,7 +325,7 @@ pub fn create_tunnel(params: &SshTunnelParams) -> SshTunnelResult<SshTunnel> {
 
     tracing::info!(
         local_port,
-        remote = %format!("{}:{}", params.remote_host, params.remote_port),
+        remote = %remote_desc,
         jump_host = %params.jump_host,
         "Starting SSH tunnel"
     );
@@ -632,6 +668,65 @@ pub fn has_unmanaged_proxy_route(config: &SshConfig) -> bool {
         || config.custom_options.keys().any(|key| {
             key.eq_ignore_ascii_case("ProxyCommand") || key.eq_ignore_ascii_case("ProxyJump")
         })
+}
+
+/// Reports whether a `ProxyCommand` string can itself prompt for a password.
+///
+/// A `ProxyCommand` set under Connection settings is not necessarily an SSH
+/// bastion. The common case (issue #322) is a plain TCP relay —
+/// `nc -X 5 -x 127.0.0.1:1080 %h %p`, `ncat`, `socat`, `connect`, `corkscrew`,
+/// `proxytunnel` — which forwards bytes and never
+/// speaks SSH, so it opens no interactive prompt of its own. The target host
+/// then asks for the password directly, and answering it hands the credential
+/// to no one but the target: there is nothing to leak to (contrast a nested
+/// `ssh` hop, which #191 protects against).
+///
+/// Returns `false` for a recognised relay so the caller can keep target
+/// password auto-fill enabled. Returns `true` — the conservative, credential-safe
+/// answer — when the relay is unrecognised or the command itself invokes `ssh`
+/// (a hand-written bastion `ProxyCommand`), since that nested `ssh` can prompt
+/// and auto-fill must stay suppressed to avoid the #191 leak.
+#[must_use]
+pub fn proxy_command_can_prompt_for_password(proxy_command: &str) -> bool {
+    // Recognised byte-relay front commands never prompt. Compare the command's
+    // basename (first shell word, path stripped) case-insensitively.
+    const RELAYS: &[&str] = &[
+        "nc",
+        "ncat",
+        "netcat",
+        "socat",
+        "connect",
+        "connect-proxy",
+        "corkscrew",
+        "proxytunnel",
+        "cloudflared",
+        "boringproxy",
+        "gost",
+    ];
+
+    // A nested `ssh` invocation is a bastion hop that can prompt — always
+    // conservative. Matched as a whole word so `sshpass` or a path containing
+    // "ssh" in a relay name does not trip it, and case-insensitively.
+    let mentions_ssh = proxy_command
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .any(|word| word.eq_ignore_ascii_case("ssh") || word.eq_ignore_ascii_case("sshpass"));
+    if mentions_ssh {
+        return true;
+    }
+
+    let front = proxy_command
+        .split_whitespace()
+        .next()
+        .unwrap_or("")
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or("");
+    if !front.is_empty() && RELAYS.iter().any(|r| front.eq_ignore_ascii_case(r)) {
+        return false;
+    }
+
+    // Unknown command: assume it could prompt and keep auto-fill suppressed.
+    true
 }
 
 /// Parses `ssh -G` output and reports whether it declares an effective proxy route.
@@ -1158,6 +1253,61 @@ mod tests {
     fn test_format_argv_display_quotes_empty_arg() {
         let argv = vec!["ssh".to_string(), String::new(), "host".to_string()];
         assert_eq!(format_argv_for_display(&argv), "ssh '' host");
+    }
+
+    #[test]
+    fn test_proxy_command_relay_does_not_prompt() {
+        // issue #322: a SOCKS5 TCP relay never speaks SSH, so it cannot prompt —
+        // the target's own password auto-fill must stay enabled.
+        assert!(!proxy_command_can_prompt_for_password(
+            "nc -X 5 -x 127.0.0.1:1080 %h %p"
+        ));
+        assert!(!proxy_command_can_prompt_for_password(
+            "ncat --proxy 127.0.0.1:9050 %h %p"
+        ));
+        assert!(!proxy_command_can_prompt_for_password(
+            "socat - PROXY:127.0.0.1:%h:%p"
+        ));
+        assert!(!proxy_command_can_prompt_for_password(
+            "corkscrew p 8080 %h %p"
+        ));
+        // Absolute path to the relay binary is stripped to its basename.
+        assert!(!proxy_command_can_prompt_for_password("/usr/bin/nc %h %p"));
+    }
+
+    #[test]
+    fn test_proxy_command_ssh_subcommand_stays_conservative() {
+        // A relay whose command line contains the word `ssh` (e.g. a
+        // `cloudflared access ssh` tunnel) is treated conservatively: the word
+        // match cannot tell an ssh *subcommand* from a nested ssh *hop*, and
+        // suppressing auto-fill on a false positive only means a manual password
+        // entry, never a leak.
+        assert!(proxy_command_can_prompt_for_password(
+            "cloudflared access ssh --hostname %h"
+        ));
+    }
+
+    #[test]
+    fn test_proxy_command_nested_ssh_stays_conservative() {
+        // A hand-written bastion ProxyCommand invokes ssh, which can prompt —
+        // auto-fill must stay suppressed (issue #191 leak guard).
+        assert!(proxy_command_can_prompt_for_password(
+            "ssh -W %h:%p bastion.example.com"
+        ));
+        assert!(proxy_command_can_prompt_for_password(
+            "ssh bastion nc %h %p"
+        ));
+        // sshpass is credential machinery, not a bare relay — stay conservative.
+        assert!(proxy_command_can_prompt_for_password("sshpass -p x ssh %h"));
+    }
+
+    #[test]
+    fn test_proxy_command_unknown_stays_conservative() {
+        // An unrecognised command could prompt; the safe default is to suppress.
+        assert!(proxy_command_can_prompt_for_password(
+            "my-custom-proxy %h %p"
+        ));
+        assert!(proxy_command_can_prompt_for_password(""));
     }
 
     #[test]

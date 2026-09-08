@@ -1031,10 +1031,16 @@ fn build_ssh_command_args(
 /// suppression so the common key-auth-bastion + password-target case still
 /// auto-fills instead of being suppressed alongside the leak-prone case.
 ///
-/// Conservatively returns `true` when the first hop cannot be inspected — a
-/// string `proxy_jump`/`proxy_command` with no backing connection — so a bastion
+/// A connection whose only routing is its own `proxy_command` is inspected by
+/// [`proxy_command_can_prompt_for_password`]: a plain TCP relay (`nc`, `socat`,
+/// …) opens no prompt, so the first VTE prompt is the target's and auto-fill is
+/// safe (issue #322); a nested `ssh` hop or an unrecognised command stays
+/// conservative. Otherwise returns `true` when the first hop cannot be
+/// inspected — a string `proxy_jump` with no backing connection — so a bastion
 /// that might prompt keeps auto-fill suppressed. Returns `false` for non-SSH
 /// protocols (the caller's own `has_jump_host` term already covers them).
+///
+/// [`proxy_command_can_prompt_for_password`]: rustconn_core::ssh_tunnel::proxy_command_can_prompt_for_password
 ///
 /// [`PasswordSource`]: rustconn_core::models::PasswordSource
 fn bastion_may_prompt_for_password(
@@ -1054,19 +1060,32 @@ fn bastion_may_prompt_for_password(
         .try_borrow()
         .ok()
         .and_then(|s| super::protocols::resolve_first_hop_id(&s, conn));
-    match inherited_hop {
+    if let Some(jid) = inherited_hop {
         // Reference hop: inspect its own password source.
-        Some(jid) => state
+        return state
             .try_borrow()
             .ok()
             .and_then(|s| {
                 s.get_connection(jid)
                     .map(|c| c.password_source != PasswordSource::None)
             })
-            .unwrap_or(true),
-        // String proxy_jump / proxy_command / inherited proxy: not inspectable.
-        None => true,
+            .unwrap_or(true);
     }
+
+    // No reference hop. When the only routing is this connection's own
+    // ProxyCommand — and there is no string ProxyJump bastion — inspect the
+    // command: a plain TCP relay (`nc`, `socat`, …) opens no prompt of its own,
+    // so the first VTE prompt is the target's and auto-fill is safe (issue
+    // #322). A nested `ssh` hop or an unrecognised command stays conservative.
+    if let rustconn_core::ProtocolConfig::Ssh(ssh) = &conn.protocol_config
+        && ssh.proxy_jump.is_none()
+        && let Some(proxy_command) = ssh.proxy_command.as_deref()
+    {
+        return rustconn_core::ssh_tunnel::proxy_command_can_prompt_for_password(proxy_command);
+    }
+
+    // String proxy_jump / inherited proxy / anything else: not inspectable.
+    true
 }
 
 /// Installs the terminal auto-fill fallback for a connection askpass does not cover.
