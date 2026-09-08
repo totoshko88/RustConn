@@ -801,14 +801,24 @@ impl SearchEngine {
             }
         }
 
-        if matched == 0 {
+        // Require the WHOLE query to appear as an in-order subsequence. A
+        // partial match (only some query chars found) used to score > 0, which
+        // is why a query like "git" matched connections whose fields merely
+        // contained a "g" and a "t" somewhere — pure noise with no visible
+        // reason. Rejecting partials here is the only tier that changes; exact,
+        // prefix and substring matching above are untouched.
+        if matched != query_len {
             return 0.0;
         }
 
-        let match_ratio = matched as f32 / query_len as f32;
+        // matched == query_len > 0 here: an empty query never reaches this
+        // function (fuzzy_score returns early on an empty query).
         let consecutive_bonus = max_consecutive as f32 / query_len as f32 * 0.2;
 
-        match_ratio.mul_add(0.4, consecutive_bonus).min(0.49)
+        // match_ratio is 1.0 by construction now; keep the 0.4 weight so a
+        // scattered full subsequence still ranks below a real substring match
+        // (which starts at 0.5) — cap unchanged at 0.49.
+        0.4_f32.mul_add(1.0, consecutive_bonus).min(0.49)
     }
 }
 
@@ -1206,6 +1216,32 @@ mod tests {
         let engine = SearchEngine::new();
         let score = engine.fuzzy_score("SERVER", "server");
         assert!((score - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_fuzzy_score_partial_subsequence_rejected() {
+        // Regression: "git" must not match a target that only contains some of
+        // g/i/t out of order or with a gap. Only a *full* in-order subsequence
+        // (or a substring, handled by a higher tier) may score above zero.
+        let engine = SearchEngine::new();
+
+        // "g" and "t" present, but no "i" — previously scored > 0 (noise).
+        assert!(engine.fuzzy_score("git", "great").abs() < f32::EPSILON);
+        // Only "s" of "ssh" present — a single-char partial, previously > 0.
+        assert!(engine.fuzzy_score("ssh", "workstation").abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_fuzzy_score_full_subsequence_still_matches() {
+        // A full in-order subsequence remains a (low) match — deliberate fuzzy
+        // behaviour, kept below the 0.5 floor of a real substring match.
+        let engine = SearchEngine::new();
+        let score = engine.fuzzy_score("git", "g-i-t");
+        assert!(score > 0.0, "full scattered subsequence should score");
+        assert!(
+            score < 0.5,
+            "scattered subsequence must rank below a substring"
+        );
     }
 
     #[test]

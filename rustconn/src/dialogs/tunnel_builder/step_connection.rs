@@ -1,15 +1,16 @@
 //! Step 1: Connection & Name page for the Tunnel Builder wizard
 //!
 //! Provides SSH connection selection, tunnel name input, jump host override,
-//! and a live `TunnelPathDiagram` preview. Filters connections by name/host
-//! with 150ms debounce.
+//! and a live `TunnelPathDiagram` preview. Both the connection and jump-host
+//! pickers are type-to-search `DropDown`s (same pattern as the connection
+//! editor), so a long connection list filters as the user types.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Orientation, StringList, glib};
+use gtk4::{Box as GtkBox, DropDown, Orientation, StringList};
 use libadwaita as adw;
 use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType};
 use uuid::Uuid;
@@ -20,7 +21,7 @@ use crate::state::SharedAppState;
 
 /// Step 1 page — Connection & Name selection
 ///
-/// Displays tunnel name entry, SSH connection combo with search filter,
+/// Displays tunnel name entry, SSH connection picker with type-to-search,
 /// jump host override, "New SSH Connection" button, and a live path diagram.
 #[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct StepConnectionPage {
@@ -28,9 +29,8 @@ pub struct StepConnectionPage {
     state: SharedAppState,
     // Widgets
     name_row: adw::EntryRow,
-    connection_row: adw::ComboRow,
-    search_entry: gtk4::SearchEntry,
-    jump_host_row: adw::ComboRow,
+    connection_dropdown: DropDown,
+    jump_host_dropdown: DropDown,
     new_connection_btn: gtk4::Button,
     next_button: gtk4::Button,
     diagram: TunnelPathDiagram,
@@ -38,8 +38,8 @@ pub struct StepConnectionPage {
     empty_state: adw::StatusPage,
     content_box: GtkBox,
     // Data
-    /// Filtered SSH connection IDs (matches current combo model order)
-    filtered_connection_ids: Rc<RefCell<Vec<Uuid>>>,
+    /// SSH connection IDs in dropdown-model order
+    connection_ids: Rc<RefCell<Vec<Uuid>>>,
     /// All SSH connections (cached on page creation / refresh)
     all_ssh_connections: Rc<RefCell<Vec<Connection>>>,
     /// Jump host IDs (first entry = None for "(None)")
@@ -47,8 +47,6 @@ pub struct StepConnectionPage {
     // Callbacks
     on_next: Rc<RefCell<Option<Box<dyn Fn()>>>>,
     on_new_connection: Rc<RefCell<Option<Box<dyn Fn()>>>>,
-    // Debounce
-    search_timeout_id: Rc<RefCell<Option<glib::SourceId>>>,
 }
 
 impl StepConnectionPage {
@@ -57,10 +55,9 @@ impl StepConnectionPage {
     pub fn new(state: SharedAppState) -> Self {
         let on_next: Rc<RefCell<Option<Box<dyn Fn()>>>> = Rc::new(RefCell::new(None));
         let on_new_connection: Rc<RefCell<Option<Box<dyn Fn()>>>> = Rc::new(RefCell::new(None));
-        let filtered_connection_ids: Rc<RefCell<Vec<Uuid>>> = Rc::new(RefCell::new(Vec::new()));
+        let connection_ids: Rc<RefCell<Vec<Uuid>>> = Rc::new(RefCell::new(Vec::new()));
         let all_ssh_connections: Rc<RefCell<Vec<Connection>>> = Rc::new(RefCell::new(Vec::new()));
         let jump_host_ids: Rc<RefCell<Vec<Option<Uuid>>>> = Rc::new(RefCell::new(Vec::new()));
-        let search_timeout_id: Rc<RefCell<Option<glib::SourceId>>> = Rc::new(RefCell::new(None));
 
         // Main content
         let content_box = GtkBox::new(Orientation::Vertical, 12);
@@ -83,13 +80,21 @@ impl StepConnectionPage {
             .title(i18n("SSH Connection"))
             .build();
 
-        let connection_row = adw::ComboRow::builder().title(i18n("Connection")).build();
-        connection_group.add(&connection_row);
+        // Type-to-search DropDown for the target connection. GTK handles the
+        // filtering internally once an expression is installed, so there is no
+        // separate search entry or per-keystroke model rebuild.
+        let connection_dropdown = DropDown::new(
+            Some(StringList::new(&[] as &[&str])),
+            gtk4::Expression::NONE,
+        );
+        connection_dropdown.set_valign(gtk4::Align::Center);
+        connection_dropdown.set_size_request(240, -1);
+        connection_dropdown.set_hexpand(false);
+        crate::dialogs::widgets::enable_string_search(&connection_dropdown);
 
-        let search_entry = gtk4::SearchEntry::builder()
-            .placeholder_text(i18n("Filter connections…"))
-            .build();
-        connection_group.add(&search_entry);
+        let connection_row = adw::ActionRow::builder().title(i18n("Connection")).build();
+        connection_row.add_suffix(&connection_dropdown);
+        connection_group.add(&connection_row);
         content_box.append(&connection_group);
 
         // Jump host override
@@ -98,10 +103,21 @@ impl StepConnectionPage {
             .description(i18n("Override bastion/proxy host"))
             .build();
 
-        let jump_host_row = adw::ComboRow::builder()
+        let jump_host_dropdown = DropDown::new(
+            Some(StringList::new(&[i18n("(None)").as_str()])),
+            gtk4::Expression::NONE,
+        );
+        jump_host_dropdown.set_selected(0);
+        jump_host_dropdown.set_valign(gtk4::Align::Center);
+        jump_host_dropdown.set_size_request(240, -1);
+        jump_host_dropdown.set_hexpand(false);
+        crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
+
+        let jump_host_row = adw::ActionRow::builder()
             .title(i18n("Jump Host"))
             .subtitle(i18n("Connect via intermediate server"))
             .build();
+        jump_host_row.add_suffix(&jump_host_dropdown);
         jump_host_group.add(&jump_host_row);
 
         // "New SSH Connection" button
@@ -221,20 +237,18 @@ impl StepConnectionPage {
             page,
             state,
             name_row,
-            connection_row,
-            search_entry,
-            jump_host_row,
+            connection_dropdown,
+            jump_host_dropdown,
             new_connection_btn,
             next_button,
             diagram,
             empty_state,
             content_box,
-            filtered_connection_ids,
+            connection_ids,
             all_ssh_connections,
             jump_host_ids,
             on_next,
             on_new_connection,
-            search_timeout_id,
         };
 
         // Load initial data
@@ -242,85 +256,61 @@ impl StepConnectionPage {
 
         // Wire validation on name change
         let next_btn_v = page_obj.next_button.clone();
-        let conn_ids_v = page_obj.filtered_connection_ids.clone();
-        let conn_row_v = page_obj.connection_row.clone();
+        let conn_ids_v = page_obj.connection_ids.clone();
+        let conn_dd_v = page_obj.connection_dropdown.clone();
         let name_row_v = page_obj.name_row.clone();
         page_obj.name_row.connect_changed(move |_| {
             let name_valid = Self::validate_name(&name_row_v);
-            let conn_valid = Self::validate_connection(&conn_row_v, &conn_ids_v);
+            let conn_valid = Self::validate_connection(&conn_dd_v, &conn_ids_v);
             next_btn_v.set_sensitive(name_valid && conn_valid);
         });
 
         // Wire validation + diagram update on connection selection change
         let next_btn_c = page_obj.next_button.clone();
-        let conn_ids_c = page_obj.filtered_connection_ids.clone();
+        let conn_ids_c = page_obj.connection_ids.clone();
         let name_row_c = page_obj.name_row.clone();
         let diagram_c = page_obj.diagram.clone();
         let state_c = page_obj.state.clone();
         let jump_host_ids_c = page_obj.jump_host_ids.clone();
-        let jump_host_row_c = page_obj.jump_host_row.clone();
-        page_obj.connection_row.connect_selected_notify(move |row| {
-            let name_valid = Self::validate_name(&name_row_c);
-            let conn_valid = Self::validate_connection(row, &conn_ids_c);
-            next_btn_c.set_sensitive(name_valid && conn_valid);
+        let jump_host_dd_c = page_obj.jump_host_dropdown.clone();
+        page_obj
+            .connection_dropdown
+            .connect_selected_notify(move |dd| {
+                let name_valid = Self::validate_name(&name_row_c);
+                let conn_valid = Self::validate_connection(dd, &conn_ids_c);
+                next_btn_c.set_sensitive(name_valid && conn_valid);
 
-            // Update diagram with new connection
-            let bastion = Self::resolve_bastion_from_widgets(
-                &state_c,
-                &jump_host_row_c,
-                &jump_host_ids_c,
-                row,
-                &conn_ids_c,
-            );
-            let target = Self::resolve_target_from_widgets(&state_c, row, &conn_ids_c);
-            diagram_c.update(None, bastion.as_deref(), target.as_deref(), None, None);
-        });
+                // Update diagram with new connection
+                let bastion = Self::resolve_bastion_from_widgets(
+                    &state_c,
+                    &jump_host_dd_c,
+                    &jump_host_ids_c,
+                    dd,
+                    &conn_ids_c,
+                );
+                let target = Self::resolve_target_from_widgets(&state_c, dd, &conn_ids_c);
+                diagram_c.update(None, bastion.as_deref(), target.as_deref(), None, None);
+            });
 
         // Wire diagram update on jump host selection change
         let diagram_j = page_obj.diagram.clone();
         let state_j = page_obj.state.clone();
         let jump_host_ids_j = page_obj.jump_host_ids.clone();
-        let conn_row_j = page_obj.connection_row.clone();
-        let conn_ids_j = page_obj.filtered_connection_ids.clone();
+        let conn_dd_j = page_obj.connection_dropdown.clone();
+        let conn_ids_j = page_obj.connection_ids.clone();
         page_obj
-            .jump_host_row
-            .connect_selected_notify(move |jh_row| {
+            .jump_host_dropdown
+            .connect_selected_notify(move |jh_dd| {
                 let bastion = Self::resolve_bastion_from_widgets(
                     &state_j,
-                    jh_row,
+                    jh_dd,
                     &jump_host_ids_j,
-                    &conn_row_j,
+                    &conn_dd_j,
                     &conn_ids_j,
                 );
-                let target = Self::resolve_target_from_widgets(&state_j, &conn_row_j, &conn_ids_j);
+                let target = Self::resolve_target_from_widgets(&state_j, &conn_dd_j, &conn_ids_j);
                 diagram_j.update(None, bastion.as_deref(), target.as_deref(), None, None);
             });
-
-        // Wire search filter with 150ms debounce
-        let conn_row_s = page_obj.connection_row.clone();
-        let conn_ids_s = page_obj.filtered_connection_ids.clone();
-        let all_conns_s = page_obj.all_ssh_connections.clone();
-        let timeout_id_s = page_obj.search_timeout_id.clone();
-        page_obj.search_entry.connect_search_changed(move |entry| {
-            let query = entry.text().to_string();
-            let conn_row_inner = conn_row_s.clone();
-            let conn_ids_inner = conn_ids_s.clone();
-            let all_conns_inner = all_conns_s.clone();
-
-            // Cancel previous timeout
-            if let Some(id) = timeout_id_s.borrow_mut().take() {
-                id.remove();
-            }
-
-            // Debounce 150ms
-            let timeout_id_inner = timeout_id_s.clone();
-            let source_id =
-                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                    Self::apply_filter(&query, &all_conns_inner, &conn_ids_inner, &conn_row_inner);
-                    *timeout_id_inner.borrow_mut() = None;
-                });
-            *timeout_id_s.borrow_mut() = Some(source_id);
-        });
 
         page_obj
     }
@@ -337,10 +327,10 @@ impl StepConnectionPage {
 
     /// Pre-populates the page with an existing connection (edit mode)
     pub fn set_connection(&self, conn: &Connection) {
-        // Find the connection in the filtered list and select it
-        let ids = self.filtered_connection_ids.borrow();
+        // Find the connection in the list and select it
+        let ids = self.connection_ids.borrow();
         if let Some(idx) = ids.iter().position(|id| *id == conn.id) {
-            self.connection_row.set_selected(idx as u32);
+            self.connection_dropdown.set_selected(idx as u32);
         }
     }
 
@@ -357,8 +347,8 @@ impl StepConnectionPage {
     /// Returns the selected SSH connection ID, if any
     #[must_use]
     pub fn selected_connection_id(&self) -> Option<Uuid> {
-        let idx = self.connection_row.selected() as usize;
-        let ids = self.filtered_connection_ids.borrow();
+        let idx = self.connection_dropdown.selected() as usize;
+        let ids = self.connection_ids.borrow();
         ids.get(idx).copied()
     }
 
@@ -372,7 +362,7 @@ impl StepConnectionPage {
     #[must_use]
     pub fn bastion_connection(&self) -> Option<Connection> {
         // First check manual jump host override
-        let jump_idx = self.jump_host_row.selected() as usize;
+        let jump_idx = self.jump_host_dropdown.selected() as usize;
         let jh_ids_ref = self.jump_host_ids.borrow();
         if let Some(Some(bastion_id)) = jh_ids_ref.get(jump_idx) {
             let state_ref = self.state.borrow();
@@ -417,20 +407,36 @@ impl StepConnectionPage {
         self.content_box.set_visible(!is_empty);
         self.next_button.set_visible(!is_empty);
 
-        // Apply current filter (or show all)
-        let query = self.search_entry.text().to_string();
-        Self::apply_filter(
-            &query,
-            &self.all_ssh_connections,
-            &self.filtered_connection_ids,
-            &self.connection_row,
-        );
-
-        // Populate jump host list
+        self.populate_connections();
         self.populate_jump_hosts();
     }
 
-    /// Populates the jump host ComboRow with "(None)" + all SSH connections
+    /// Populates the connection DropDown with all SSH connections
+    fn populate_connections(&self) {
+        let all = self.all_ssh_connections.borrow();
+        let mut ids = Vec::with_capacity(all.len());
+        let mut names = Vec::with_capacity(all.len());
+
+        for conn in all.iter() {
+            ids.push(conn.id);
+            let display = if let Some(ref user) = conn.username {
+                format!("{} ({}@{})", conn.name, user, conn.host)
+            } else {
+                format!("{} ({})", conn.name, conn.host)
+            };
+            names.push(display);
+        }
+
+        let strings: Vec<&str> = names.iter().map(String::as_str).collect();
+        let model = StringList::new(&strings);
+        self.connection_dropdown.set_model(Some(&model));
+        if !ids.is_empty() {
+            self.connection_dropdown.set_selected(0);
+        }
+        *self.connection_ids.borrow_mut() = ids;
+    }
+
+    /// Populates the jump host DropDown with "(None)" + all SSH connections
     fn populate_jump_hosts(&self) {
         let all_conns = self.all_ssh_connections.borrow();
         let mut ids: Vec<Option<Uuid>> = vec![None];
@@ -443,54 +449,9 @@ impl StepConnectionPage {
 
         let strings: Vec<&str> = names.iter().map(String::as_str).collect();
         let model = StringList::new(&strings);
-        self.jump_host_row.set_model(Some(&model));
-        self.jump_host_row.set_selected(0);
+        self.jump_host_dropdown.set_model(Some(&model));
+        self.jump_host_dropdown.set_selected(0);
         *self.jump_host_ids.borrow_mut() = ids;
-    }
-
-    /// Applies the search filter to the connection combo
-    fn apply_filter(
-        query: &str,
-        all_conns: &Rc<RefCell<Vec<Connection>>>,
-        filtered_ids: &Rc<RefCell<Vec<Uuid>>>,
-        combo_row: &adw::ComboRow,
-    ) {
-        let all = all_conns.borrow();
-        let query_lower = query.to_lowercase();
-
-        let filtered: Vec<&Connection> = if query_lower.is_empty() {
-            all.iter().collect()
-        } else {
-            all.iter()
-                .filter(|c| {
-                    c.name.to_lowercase().contains(&query_lower)
-                        || c.host.to_lowercase().contains(&query_lower)
-                })
-                .collect()
-        };
-
-        let mut ids = Vec::with_capacity(filtered.len());
-        let mut names = Vec::with_capacity(filtered.len());
-
-        for conn in &filtered {
-            ids.push(conn.id);
-            let display = if let Some(ref user) = conn.username {
-                format!("{} ({}@{})", conn.name, user, conn.host)
-            } else {
-                format!("{} ({})", conn.name, conn.host)
-            };
-            names.push(display);
-        }
-
-        let strings: Vec<&str> = names.iter().map(String::as_str).collect();
-        let model = StringList::new(&strings);
-        combo_row.set_model(Some(&model));
-
-        if !ids.is_empty() {
-            combo_row.set_selected(0);
-        }
-
-        *filtered_ids.borrow_mut() = ids;
     }
 
     /// Validates the tunnel name (1–128 chars)
@@ -510,12 +471,9 @@ impl StepConnectionPage {
     }
 
     /// Validates that a connection is selected
-    fn validate_connection(
-        combo_row: &adw::ComboRow,
-        filtered_ids: &Rc<RefCell<Vec<Uuid>>>,
-    ) -> bool {
-        let ids = filtered_ids.borrow();
-        let idx = combo_row.selected() as usize;
+    fn validate_connection(dropdown: &DropDown, connection_ids: &Rc<RefCell<Vec<Uuid>>>) -> bool {
+        let ids = connection_ids.borrow();
+        let idx = dropdown.selected() as usize;
         idx < ids.len()
     }
 
@@ -536,7 +494,7 @@ impl StepConnectionPage {
     /// Resolves the bastion host label from jump host override or connection's jump_host_id/proxy_jump
     fn resolve_bastion_label(&self) -> Option<String> {
         // First check manual jump host override
-        let jump_idx = self.jump_host_row.selected() as usize;
+        let jump_idx = self.jump_host_dropdown.selected() as usize;
         let jh_ids_ref = self.jump_host_ids.borrow();
         if let Some(Some(bastion_id)) = jh_ids_ref.get(jump_idx) {
             let state_ref = self.state.borrow();
@@ -583,23 +541,23 @@ impl StepConnectionPage {
         let jump_ids = self.jump_host_ids.borrow();
         if let Some(target_id) = connection_id {
             if let Some(idx) = jump_ids.iter().position(|id| *id == Some(target_id)) {
-                self.jump_host_row.set_selected(idx as u32);
+                self.jump_host_dropdown.set_selected(idx as u32);
             }
         } else {
-            self.jump_host_row.set_selected(0);
+            self.jump_host_dropdown.set_selected(0);
         }
     }
 
     /// Resolves bastion label from widget state (static version for signal closures)
     fn resolve_bastion_from_widgets(
         state: &SharedAppState,
-        jump_host_row: &adw::ComboRow,
+        jump_host_dropdown: &DropDown,
         jump_host_ids: &Rc<RefCell<Vec<Option<Uuid>>>>,
-        conn_row: &adw::ComboRow,
+        conn_dropdown: &DropDown,
         conn_ids: &Rc<RefCell<Vec<Uuid>>>,
     ) -> Option<String> {
         // First check manual jump host override
-        let jump_idx = jump_host_row.selected() as usize;
+        let jump_idx = jump_host_dropdown.selected() as usize;
         let jh_ids = jump_host_ids.borrow();
         if let Some(Some(bastion_id)) = jh_ids.get(jump_idx) {
             let state_ref = state.borrow();
@@ -609,7 +567,7 @@ impl StepConnectionPage {
         }
 
         // Then check selected connection's jump_host_id or proxy_jump
-        let idx = conn_row.selected() as usize;
+        let idx = conn_dropdown.selected() as usize;
         let ids = conn_ids.borrow();
         if let Some(conn_id) = ids.get(idx) {
             let state_ref = state.borrow();
@@ -633,10 +591,10 @@ impl StepConnectionPage {
     /// Resolves target host label from widget state (static version for signal closures)
     fn resolve_target_from_widgets(
         state: &SharedAppState,
-        conn_row: &adw::ComboRow,
+        conn_dropdown: &DropDown,
         conn_ids: &Rc<RefCell<Vec<Uuid>>>,
     ) -> Option<String> {
-        let idx = conn_row.selected() as usize;
+        let idx = conn_dropdown.selected() as usize;
         let ids = conn_ids.borrow();
         if let Some(conn_id) = ids.get(idx) {
             let state_ref = state.borrow();

@@ -723,8 +723,12 @@ pub fn show_edit_group_dialog(
     let ssh_jump_host_dropdown = gtk4::DropDown::builder()
         .model(&jump_host_model)
         .valign(gtk4::Align::Center)
-        .enable_search(true)
         .build();
+    // Type-to-search: `enable_search(true)` alone shows a dead search box because
+    // the dropdown has no expression to match against. `enable_string_search`
+    // installs the StringObject expression and turns search on (same fix as the
+    // connection-editor jump-host pickers).
+    crate::dialogs::widgets::enable_string_search(&ssh_jump_host_dropdown);
     ssh_jump_host_dropdown.set_size_request(200, -1);
     ssh_jump_host_dropdown.set_hexpand(false);
 

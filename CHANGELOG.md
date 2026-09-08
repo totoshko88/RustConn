@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Connection search matched entries with no visible relation to the query** — typing `git` in the sidebar search could surface an entry like `aws sso` that contains no `g`, `i` or `t` in its name. The lowest tier of the fuzzy matcher scored a connection whenever *some* query characters appeared, in order, anywhere across any scored field (host, group, tags, notes, custom properties, username) — a `matched == 0` check was the only thing that returned "no match", so a single stray character was enough. That tier now requires the **whole** query to appear as an in-order subsequence before it scores at all (`fuzzy_score_chars` in `rustconn-core`), which removes the partial-match noise. Exact, prefix and substring matching are unchanged, so real searches behave as before; a full scattered subsequence still ranks, but below any genuine substring hit.
+
+- **The Jump Host picker in the Tunnel wizard and the New/Edit Connection wizard filtered nothing** — the fix that gave the connection editor's Jump Host dropdowns a working type-to-search (0.21.9) did not reach the Tunnel builder's Connection and Jump Host pickers, the connection wizard's Jump Host picker, or a group's SSH Jump Host — those were still plain `ComboRow`/searchless `DropDown`s, so with a large inventory you had to scroll the entire list. They are now `DropDown`s wired through the shared `enable_string_search` helper, matching the connection editor everywhere a jump host or tunnel target is chosen.
+
+### Added
+
+- **The New/Edit Cluster dialog can filter its connection list** — the cluster editor showed every connection as an unsearchable checklist, which is impractical with hundreds of hosts. A filter box above the list now hides rows whose name or host does not contain the typed text; the checkbox state is never touched, so clearing the filter keeps whatever was already ticked. **Select All** / **Deselect All** act on the currently filtered rows only, so narrowing the list and hitting Select All is how you pick a subset.
+
 ## [0.21.9] - 2026-09-08
 
 ### Fixed

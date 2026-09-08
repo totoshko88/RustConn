@@ -32,16 +32,13 @@ pub struct ClusterDialog {
     connection_rows: Rc<RefCell<Vec<ConnectionSelectionRow>>>,
     editing_id: Rc<RefCell<Option<Uuid>>>,
     on_save: ClusterCallback,
+    search_entry: gtk4::SearchEntry,
     select_all_btn: Button,
     deselect_all_btn: Button,
     parent: Option<gtk4::Widget>,
 }
 
 /// Represents a connection selection row in the cluster dialog
-#[expect(
-    dead_code,
-    reason = "Fields kept for GTK widget lifecycle and future use"
-)]
 struct ConnectionSelectionRow {
     /// The row widget
     row: ListBoxRow,
@@ -49,8 +46,10 @@ struct ConnectionSelectionRow {
     selected_check: CheckButton,
     /// Connection ID
     connection_id: Uuid,
-    /// Connection name (for display)
+    /// Connection name (for display and filtering)
     connection_name: String,
+    /// Connection host (for filtering)
+    connection_host: String,
 }
 
 impl ClusterDialog {
@@ -112,7 +111,7 @@ impl ClusterDialog {
         content.append(&details_group);
 
         // Connections selection section
-        let (connections_group, connections_list, select_all_btn, deselect_all_btn) =
+        let (connections_group, connections_list, search_entry, select_all_btn, deselect_all_btn) =
             Self::create_connections_section();
         content.append(&connections_group);
 
@@ -179,6 +178,7 @@ impl ClusterDialog {
             connection_rows,
             editing_id,
             on_save,
+            search_entry,
             select_all_btn,
             deselect_all_btn,
             parent: parent_widget,
@@ -186,12 +186,22 @@ impl ClusterDialog {
     }
 
     /// Creates the connections selection section
-    fn create_connections_section() -> (adw::PreferencesGroup, ListBox, Button, Button) {
+    fn create_connections_section()
+    -> (adw::PreferencesGroup, ListBox, gtk4::SearchEntry, Button, Button) {
         let group = adw::PreferencesGroup::builder()
             .title(i18n("Connections"))
             .description(i18n("Select connections to include in this cluster"))
             .vexpand(true)
             .build();
+
+        // Filter box above the list — a large connection list is impractical
+        // to scan by eye (user feedback). Filtering only hides rows; the
+        // checkbox selection state is untouched, so clearing the filter keeps
+        // whatever was already ticked.
+        let search_entry = gtk4::SearchEntry::builder()
+            .placeholder_text(i18n("Filter connections…"))
+            .build();
+        group.add(&search_entry);
 
         let scrolled = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -220,7 +230,13 @@ impl ClusterDialog {
 
         group.add(&button_box);
 
-        (group, connections_list, select_all_btn, deselect_all_btn)
+        (
+            group,
+            connections_list,
+            search_entry,
+            select_all_btn,
+            deselect_all_btn,
+        )
     }
 
     /// Creates a connection selection row widget
@@ -256,6 +272,7 @@ impl ClusterDialog {
             selected_check,
             connection_id: connection.id,
             connection_name: connection.name.clone(),
+            connection_host: connection.host.clone(),
         }
     }
 
@@ -274,23 +291,67 @@ impl ClusterDialog {
             self.connection_rows.borrow_mut().push(conn_row);
         }
 
-        // Wire up select all / deselect all buttons using stored references
+        // Install the type-to-filter predicate: a row matches when its name or
+        // host contains the (case-insensitive) query. Selection state is not
+        // touched, so hidden rows keep their checkbox value.
         {
             let rows = self.connection_rows.clone();
+            let entry = self.search_entry.clone();
+            self.connections_list.set_filter_func(move |list_row| {
+                let query = entry.text().to_lowercase();
+                if query.is_empty() {
+                    return true;
+                }
+                let rows_ref = rows.borrow();
+                rows_ref
+                    .iter()
+                    .find(|r| r.row == *list_row)
+                    .is_none_or(|r| Self::row_matches(r, &query))
+            });
+        }
+
+        // Re-run the filter as the user types.
+        {
+            let list = self.connections_list.clone();
+            self.search_entry.connect_search_changed(move |_| {
+                list.invalidate_filter();
+            });
+        }
+
+        // Select all / Deselect all act on the currently *filtered* rows only —
+        // narrowing the filter then hitting "Select All" is how a user picks a
+        // subset out of a large list (user feedback). Match against the query
+        // directly rather than widget visibility so the behaviour is exact.
+        {
+            let rows = self.connection_rows.clone();
+            let entry = self.search_entry.clone();
             self.select_all_btn.connect_clicked(move |_| {
+                let query = entry.text().to_lowercase();
                 for row in rows.borrow().iter() {
-                    row.selected_check.set_active(true);
+                    if query.is_empty() || Self::row_matches(row, &query) {
+                        row.selected_check.set_active(true);
+                    }
                 }
             });
         }
         {
             let rows = self.connection_rows.clone();
+            let entry = self.search_entry.clone();
             self.deselect_all_btn.connect_clicked(move |_| {
+                let query = entry.text().to_lowercase();
                 for row in rows.borrow().iter() {
-                    row.selected_check.set_active(false);
+                    if query.is_empty() || Self::row_matches(row, &query) {
+                        row.selected_check.set_active(false);
+                    }
                 }
             });
         }
+    }
+
+    /// Whether a connection row matches a lowercased filter query (name or host).
+    fn row_matches(row: &ConnectionSelectionRow, query_lower: &str) -> bool {
+        row.connection_name.to_lowercase().contains(query_lower)
+            || row.connection_host.to_lowercase().contains(query_lower)
     }
 
     /// Sets the cluster to edit (for editing existing clusters)
