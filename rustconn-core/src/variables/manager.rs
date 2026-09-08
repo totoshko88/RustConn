@@ -351,6 +351,45 @@ impl VariableManager {
         &VARIABLE_REGEX
     }
 
+    // ========== Interactive (ASK) requests ==========
+
+    /// Collects the interactive-prompt requests a string's `${...}` references
+    /// resolve to, in first-appearance order and without duplicates.
+    ///
+    /// A referenced variable whose *stored value* is an ASK directive (see
+    /// [`super::AskSpec`]) cannot be substituted until the user supplies an
+    /// answer. This returns each such `(name, spec)` so a caller — the GUI — can
+    /// prompt, then set the answers as connection-scoped variables and run
+    /// substitution normally. References that resolve to a plain value, and
+    /// undefined references, are skipped: they need no prompt.
+    ///
+    /// The lookup is deliberately shallow — the directive must be the variable's
+    /// own value, not something reached through nesting — so a value that merely
+    /// *contains* `${other}` is never treated as a prompt.
+    ///
+    /// # Errors
+    ///
+    /// Returns `VariableError::InvalidSyntax` (via
+    /// [`Self::parse_references`]) for a malformed reference in `input`.
+    pub fn collect_ask_requests(
+        &self,
+        input: &str,
+        scope: VariableScope,
+    ) -> VariableResult<Vec<(String, super::AskSpec)>> {
+        let refs = Self::parse_references(input)?;
+        let mut requests = Vec::new();
+
+        for name in refs {
+            if let Some(var) = self.lookup_in_scope_chain(&name, scope)
+                && let Some(spec) = super::AskSpec::parse(&var.value)
+            {
+                requests.push((name, spec));
+            }
+        }
+
+        Ok(requests)
+    }
+
     // ========== Validation ==========
 
     /// Detects circular references in the variable definitions
@@ -1157,5 +1196,61 @@ mod tests {
             .unwrap();
         assert!(term.unresolved.is_empty());
         assert!(term.text.as_str().chars().all(|c| c.is_ascii_digit()));
+    }
+
+    // ===== Interactive (ASK) request collection =====
+
+    #[test]
+    fn collect_ask_requests_finds_referenced_ask_variables() {
+        let conn_id = Uuid::new_v4();
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("region", "@ask:Select region|eu|us"));
+        manager.set_connection(conn_id, Variable::new("otp", "@ask?:One-time code"));
+        manager.set_global(Variable::new("plain", "literal-value"));
+
+        let requests = manager
+            .collect_ask_requests(
+                "ssh ${plain} ${region} ${otp}",
+                VariableScope::Connection(conn_id),
+            )
+            .unwrap();
+
+        // Only the two ASK variables, in first-appearance order; `plain` skipped.
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[0].0, "region");
+        assert!(requests[0].1.is_choice());
+        assert_eq!(requests[1].0, "otp");
+        assert!(requests[1].1.secret);
+    }
+
+    #[test]
+    fn collect_ask_requests_ignores_undefined_and_plain_references() {
+        let manager = create_test_manager(); // defines user/host/global_var (plain)
+        let requests = manager
+            .collect_ask_requests("${host} ${undefined_xyz}", VariableScope::Global)
+            .unwrap();
+        assert!(requests.is_empty());
+    }
+
+    #[test]
+    fn collect_ask_requests_does_not_recurse_into_nested_values() {
+        // An ASK directive must be the variable's OWN value; a value that merely
+        // references another variable is not a prompt.
+        let mut manager = VariableManager::new();
+        manager.set_global(Variable::new("indirect", "${target}"));
+        manager.set_global(Variable::new("target", "@ask:Enter target"));
+
+        // Referencing `indirect` does not surface `target`'s prompt...
+        let via_indirect = manager
+            .collect_ask_requests("${indirect}", VariableScope::Global)
+            .unwrap();
+        assert!(via_indirect.is_empty());
+
+        // ...but referencing `target` directly does.
+        let direct = manager
+            .collect_ask_requests("${target}", VariableScope::Global)
+            .unwrap();
+        assert_eq!(direct.len(), 1);
+        assert_eq!(direct[0].0, "target");
     }
 }

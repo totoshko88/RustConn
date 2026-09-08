@@ -6,8 +6,10 @@
 //! - Nested variable resolution with cycle detection
 //! - Secure storage for secret variables
 
+mod ask;
 mod manager;
 
+pub use ask::{AskSpec, is_ask_directive};
 pub use manager::{TerminalSubstitution, VARIABLE_REGEX, VariableManager};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

@@ -317,8 +317,8 @@ pub use testing::{
 };
 pub use tracing::span_names;
 pub use variables::{
-    Variable, VariableError, VariableManager, VariableResult, VariableScope,
-    variable_kdbx_lookup_key, variable_secret_key,
+    AskSpec, Variable, VariableError, VariableManager, VariableResult, VariableScope,
+    is_ask_directive, variable_kdbx_lookup_key, variable_secret_key,
 };
 pub use vnc_client::is_embedded_vnc_available;
 #[cfg(feature = "vnc-embedded")]
