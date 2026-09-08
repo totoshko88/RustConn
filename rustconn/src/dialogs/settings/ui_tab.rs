@@ -50,6 +50,8 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    // open_tunnelled_browser_in_embedded
+    adw::SwitchRow,
     adw::ComboRow,
 ) {
     let page = adw::PreferencesPage::builder()
@@ -332,6 +334,15 @@ pub fn create_ui_page() -> (
         .build();
     connections_group.add(&double_click_opens_new_session);
 
+    // "Open Browser via Tunnel" (SSH context menu) target browser.
+    let open_tunnelled_browser_in_embedded = adw::SwitchRow::builder()
+        .title(i18n("Open tunnelled browser in the embedded browser"))
+        .subtitle(i18n(
+            "‘Open Browser via Tunnel’ uses the in-app browser; turn off to launch an external Chromium browser in incognito mode instead",
+        ))
+        .build();
+    connections_group.add(&open_tunnelled_browser_in_embedded);
+
     page.add(&connections_group);
 
     // === Startup Group ===
@@ -459,6 +470,7 @@ pub fn create_ui_page() -> (
         double_click_opens_new_session,
         show_split_pane_labels,
         reveal_toolbar_on_hover,
+        open_tunnelled_browser_in_embedded,
         // Last so that the neighbouring positional arguments in load/collect
         // are SwitchRows: a ComboRow cannot be swapped with one by mistake.
         renderer_row,
@@ -518,6 +530,7 @@ pub fn load_ui_settings(
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
+    open_tunnelled_browser_in_embedded: &adw::SwitchRow,
     renderer_row: &adw::ComboRow,
     settings: &UiSettings,
     connections: &[&Connection],
@@ -599,6 +612,8 @@ pub fn load_ui_settings(
 
     double_click_opens_new_session.set_active(settings.double_click_opens_new_session);
 
+    open_tunnelled_browser_in_embedded.set_active(settings.open_tunnelled_browser_in_embedded);
+
     show_split_pane_labels.set_active(settings.show_split_pane_labels);
 
     // Same shape as the compact toggle above: push the stored value into the
@@ -666,6 +681,7 @@ pub fn collect_ui_settings(
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
+    open_tunnelled_browser_in_embedded: &adw::SwitchRow,
     renderer_row: &adw::ComboRow,
     connections: &[&Connection],
 ) -> UiSettings {
@@ -735,6 +751,7 @@ pub fn collect_ui_settings(
         window_title_shows_connection: window_title_shows_connection.is_active(),
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
+        open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),
         show_split_pane_labels: show_split_pane_labels.is_active(),
         reveal_session_toolbar_on_hover: reveal_toolbar_on_hover.is_active(),
         keyboard_passthrough: keyboard_passthrough.is_active(),

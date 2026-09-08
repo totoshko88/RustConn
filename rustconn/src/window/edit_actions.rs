@@ -1026,6 +1026,27 @@ impl MainWindow {
             }
         });
         window.add_action(&sftp_action);
+
+        // Open Browser via Tunnel — raises a SOCKS proxy to the selected SSH
+        // connection and opens a fresh browser through it (Ásbrú's incognito
+        // browser). Embedded or external per the Settings toggle.
+        let obt_action = gio::SimpleAction::new("open-browser-via-tunnel", None);
+        let state_obt = state.clone();
+        let sidebar_obt = sidebar.clone();
+        let notebook_obt = self.terminal_notebook.clone();
+        obt_action.connect_activate(move |_, _| {
+            let Some(item) = sidebar_obt.get_selected_item() else {
+                return;
+            };
+            if item.is_group() {
+                return;
+            }
+            let Ok(conn_id) = Uuid::parse_str(&item.id()) else {
+                return;
+            };
+            Self::open_browser_via_tunnel(&state_obt, &notebook_obt, &sidebar_obt, conn_id);
+        });
+        window.add_action(&obt_action);
     }
 
     /// Raises the dynamic SOCKS tunnel a Web connection browses through.
@@ -1043,7 +1064,25 @@ impl MainWindow {
         let Some(jump_id) = web_config.tunnel_via else {
             return Ok(None);
         };
+        Self::raise_socks_tunnel_for(state, jump_id).map(Some)
+    }
 
+    /// Raises a dynamic SOCKS proxy (`ssh -N -D`) to the given SSH connection and
+    /// waits for it to accept connections.
+    ///
+    /// The tunnel reuses that connection's key (resolved through the group
+    /// chain), its own jump-host chain and any session-cached password. It is
+    /// the shared primitive behind both a Web connection's `tunnel_via` and the
+    /// SSH sidebar's "Open Browser via Tunnel" action.
+    ///
+    /// # Errors
+    ///
+    /// Returns a human-readable message when the connection is gone, the state
+    /// is momentarily busy, or `ssh` fails to establish the proxy.
+    fn raise_socks_tunnel_for(
+        state: &SharedAppState,
+        jump_id: Uuid,
+    ) -> Result<rustconn_core::ssh_tunnel::SshTunnel, String> {
         let params = {
             let state_ref = state
                 .try_borrow()
@@ -1091,11 +1130,185 @@ impl MainWindow {
             std::time::Duration::from_millis(250),
         )
         .map_err(|e| e.to_string())?;
-        tracing::info!(
-            socks_port = tunnel.local_port(),
-            "SOCKS tunnel ready for web connection"
-        );
-        Ok(Some(tunnel))
+        tracing::info!(socks_port = tunnel.local_port(), "SOCKS tunnel ready");
+        Ok(tunnel)
+    }
+
+    /// Picks a Chromium-family browser binary that accepts `--proxy-server`.
+    ///
+    /// Honours `$BROWSER` first when it names a known Chromium binary, then
+    /// probes a small candidate list on `PATH`. Returns `None` when none is
+    /// found — Firefox and the portal browser cannot take a command-line SOCKS
+    /// proxy, so there is nothing to launch through the tunnel.
+    fn find_chromium_browser() -> Option<String> {
+        const CANDIDATES: &[&str] = &[
+            "chromium",
+            "chromium-browser",
+            "google-chrome",
+            "google-chrome-stable",
+            "brave-browser",
+            "vivaldi",
+            "vivaldi-stable",
+            "microsoft-edge",
+            "microsoft-edge-stable",
+        ];
+
+        let is_chromium = |name: &str| {
+            let lower = name.to_lowercase();
+            ["chrom", "brave", "vivaldi", "edge"]
+                .iter()
+                .any(|marker| lower.contains(marker))
+        };
+
+        // $BROWSER may be a colon-separated list; take the first Chromium entry.
+        if let Ok(browser_env) = std::env::var("BROWSER") {
+            for entry in browser_env.split(':').filter(|s| !s.is_empty()) {
+                let bin = entry.split_whitespace().next().unwrap_or(entry);
+                if is_chromium(bin) && rustconn_core::which::is_available(bin) {
+                    return Some(bin.to_string());
+                }
+            }
+        }
+
+        CANDIDATES
+            .iter()
+            .find(|bin| rustconn_core::which::is_available(bin))
+            .map(|bin| (*bin).to_string())
+    }
+
+    /// Opens a browser routed through a fresh SOCKS tunnel to the selected SSH
+    /// connection — RustConn's take on Ásbrú's incognito browser.
+    ///
+    /// Uses the embedded browser when this build has it and the
+    /// `open_tunnelled_browser_in_embedded` setting is on; otherwise launches an
+    /// external Chromium-family browser in incognito mode with
+    /// `--proxy-server=socks5://…`. The start page is `about:blank` — the user
+    /// types where to go. A tunnel failure, or the absence of a usable external
+    /// browser, is reported as a toast and nothing is opened.
+    fn open_browser_via_tunnel(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        connection_id: Uuid,
+    ) {
+        // Only SSH-family connections can host a SOCKS tunnel.
+        let (is_ssh, prefer_embedded) = {
+            let Ok(state_ref) = state.try_borrow() else {
+                return;
+            };
+            let is_ssh = state_ref.get_connection(connection_id).is_some_and(|c| {
+                matches!(
+                    c.protocol_config,
+                    rustconn_core::models::ProtocolConfig::Ssh(_)
+                        | rustconn_core::models::ProtocolConfig::Sftp(_)
+                )
+            });
+            (
+                is_ssh,
+                state_ref.settings().ui.open_tunnelled_browser_in_embedded,
+            )
+        };
+        if !is_ssh {
+            return;
+        }
+        // Only consulted by the embedded path; a build without it browses external.
+        #[cfg(not(feature = "web-embedded"))]
+        let _ = prefer_embedded;
+
+        let tunnel = match Self::raise_socks_tunnel_for(state, connection_id) {
+            Ok(tunnel) => tunnel,
+            Err(msg) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                    "Could not open the SSH tunnel: {}",
+                    &[&msg],
+                ));
+                return;
+            }
+        };
+        let port = tunnel.local_port();
+
+        // Embedded browser: only when compiled in and the setting asks for it.
+        #[cfg(feature = "web-embedded")]
+        if prefer_embedded {
+            use std::rc::Rc;
+
+            use crate::embedded_web::EmbeddedWebWidget;
+
+            let conn_name = state
+                .try_borrow()
+                .ok()
+                .and_then(|s| s.get_connection(connection_id).map(|c| c.name.clone()))
+                .unwrap_or_else(|| "SSH".to_string());
+            let title = crate::i18n::i18n_f("{} (tunnel)", &[&conn_name]);
+
+            // A blank page through the proxy; the user navigates from there.
+            let cfg = rustconn_core::models::WebConfig {
+                browser_mode: rustconn_core::models::WebBrowserMode::Embedded,
+                ..Default::default()
+            };
+            match EmbeddedWebWidget::new(connection_id, "about:blank", &cfg, None, Some(tunnel)) {
+                Ok(widget) => {
+                    let widget = Rc::new(widget);
+                    let session_id = uuid::Uuid::new_v4();
+                    let notebook_fail = notebook.clone();
+                    widget.connect_initial_load_failed(move |message| {
+                        notebook_fail.close_session(session_id);
+                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                            "Could not open the page: {}",
+                            &[&message],
+                        ));
+                    });
+                    notebook.add_embedded_web_tab(session_id, connection_id, &title, widget);
+                    return;
+                }
+                Err(e) => {
+                    // The tunnel was consumed by the failed widget; report and
+                    // stop rather than silently browse un-tunnelled.
+                    tracing::error!(error = %e, "Embedded tunnel browser failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                        "Failed to open browser: {}",
+                        &[&e.to_string()],
+                    ));
+                    return;
+                }
+            }
+        }
+
+        // External browser: a Chromium-family binary in incognito, proxied.
+        let Some(browser) = Self::find_chromium_browser() else {
+            crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                "No Chromium-based browser found. Install one, or enable the embedded browser, to open a tunnelled browser.",
+            ));
+            // `tunnel` drops here, closing the unused proxy.
+            return;
+        };
+
+        let mut cmd = std::process::Command::new(&browser);
+        cmd.arg("--incognito");
+        cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
+        cmd.arg("about:blank");
+
+        match cmd.spawn() {
+            Ok(child) => {
+                // Keep the tunnel alive behind the detached browser (reclaimed at
+                // app exit), the same way the Custom web-browser path does.
+                let session_id = uuid::Uuid::new_v4();
+                notebook.store_ssh_tunnel(session_id, tunnel);
+                if let Some(registry) = super::external_session_registry() {
+                    registry.register(session_id, connection_id, Some(child), None);
+                }
+                sidebar.update_connection_status(&connection_id.to_string(), "");
+                crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
+                    "Opened a tunnelled browser",
+                ));
+            }
+            Err(e) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                    "Failed to open browser: {}",
+                    &[&e.to_string()],
+                ));
+            }
+        }
     }
 
     /// Opens a Web bookmark and observes an embedded session it creates.

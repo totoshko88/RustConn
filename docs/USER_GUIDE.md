@@ -1308,6 +1308,34 @@ SFTP can also be created as a standalone connection type. This is useful when yo
 
 SFTP connections use the `folder-remote-symbolic` icon in the sidebar and behave identically to the "Open SFTP" action on SSH connections, but the file manager opens automatically on Connect.
 
+#### Open Browser via Tunnel
+
+Right-click an SSH connection and choose **Open Browser via Tunnel** to reach web
+services that only that SSH host can see — an internal dashboard, a router admin
+page, a service in a DMZ — without configuring a separate Web connection. RustConn
+raises a dynamic SOCKS proxy (`ssh -N -D`) to the host on a free local port and
+opens a browser on a blank page routed through it; you type where to go and every
+request exits from the SSH host. This is RustConn's equivalent of Ásbrú's
+incognito browser.
+
+Where it opens is a global setting — Settings → Interface → Connections → **Open
+tunnelled browser in the embedded browser**:
+
+- **On** (default) — the in-app WebKit browser opens in a tab, and the tunnel
+  stays up only as long as that tab. Available in builds that ship the embedded
+  browser.
+- **Off**, or a build without the embedded browser — an external Chromium-based
+  browser (Chromium, Chrome, Brave, Vivaldi, Edge) launches in incognito mode
+  with `--proxy-server`. RustConn picks it from `$BROWSER` first, then the first
+  such binary on your `PATH`. The tunnel is kept alive behind the browser and
+  released when RustConn exits.
+
+If the tunnel cannot be raised, or no Chromium-based browser is found for the
+external mode, RustConn shows a toast and opens nothing — it never falls back to
+browsing directly, so traffic meant for the tunnel does not leak. Firefox is not
+usable for the external mode because it takes its proxy from a profile rather than
+the command line.
+
 #### SFTP Troubleshooting
 
 **Choosing the Default SFTP Client (KDE / GNOME / other):**

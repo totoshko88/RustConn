@@ -951,6 +951,15 @@ pub struct UiSettings {
     /// host (issue #242).
     #[serde(default)]
     pub double_click_opens_new_session: bool,
+    /// Open the "Open Browser via Tunnel" SSH action in the embedded browser
+    /// rather than an external one.
+    ///
+    /// Default `true`: use the in-app WebKit browser when this build has it, so
+    /// the tunnel's lifetime matches the tab. When `false` (or on a build
+    /// without the embedded browser) the action launches an external
+    /// Chromium-based browser in incognito mode through the tunnel instead.
+    #[serde(default = "default_true")]
+    pub open_tunnelled_browser_in_embedded: bool,
     /// Show connection name as a compact header on each split-view pane.
     ///
     /// Default `false`. When enabled, a thin colored banner with the connection
@@ -1055,6 +1064,7 @@ impl Default for UiSettings {
             terminal_passthrough_ctrl: true,
             window_title_shows_connection: false,
             double_click_opens_new_session: false,
+            open_tunnelled_browser_in_embedded: true,
             show_split_pane_labels: false,
             keyboard_passthrough: false,
         }
