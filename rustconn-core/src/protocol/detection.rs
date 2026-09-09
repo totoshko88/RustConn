@@ -246,7 +246,35 @@ pub fn detect_rdp_client() -> ClientInfo {
         return info;
     }
 
-    ClientInfo::not_installed("RDP Client", "Install freerdp3-wayland (freerdp) package")
+    // macOS: a FreeRDP CLI installed via Homebrew resolves through the extended
+    // PATH above; a GUI FreeRDP shipped as an `.app` does not. Probe the bundle.
+    if let Some(info) = try_detect_macos_app("FreeRDP 3", RDP_CLIENT_BUNDLES, &["--version"]) {
+        return info.with_min_version("3.0.0");
+    }
+
+    ClientInfo::not_installed("RDP Client", rdp_install_hint())
+}
+
+/// RDP clients installed as macOS `.app` bundles.
+///
+/// FreeRDP's SDL client ships as `SDL-freerdp.app` on some macOS builds; the
+/// executable name varies, so the common forms are listed.
+const RDP_CLIENT_BUNDLES: &[(&str, &str)] = &[
+    ("FreeRDP.app", "freerdp"),
+    ("SDL-freerdp.app", "sdl-freerdp"),
+    ("wlfreerdp.app", "wlfreerdp"),
+];
+
+/// Platform-specific install hint for a missing RDP client.
+fn rdp_install_hint() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Install FreeRDP: brew install freerdp"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Install freerdp3-wayland (freerdp) package"
+    }
 }
 
 /// Detects the VNC client on the system
@@ -290,10 +318,35 @@ pub fn detect_vnc_client() -> ClientInfo {
         return info;
     }
 
-    ClientInfo::not_installed(
-        "VNC Client",
-        "Install tigervnc-viewer (tigervnc) package. Alternatives: gvncviewer, remmina, krdc",
-    )
+    // macOS: RealVNC/TigerVNC ship as `.app` bundles, not PATH binaries.
+    if let Some(info) = try_detect_macos_app("VNC Viewer", VNC_VIEWER_BUNDLES, &["-h"]) {
+        return info;
+    }
+
+    ClientInfo::not_installed("VNC Client", vnc_install_hint())
+}
+
+/// VNC viewers installed as macOS `.app` bundles.
+///
+/// RealVNC's "VNC Viewer.app" and TigerVNC's "TigerVNC Viewer.app" are the
+/// common macOS forms; the executable name inside each differs from the bundle
+/// stem, so both are given.
+const VNC_VIEWER_BUNDLES: &[(&str, &str)] = &[
+    ("VNC Viewer.app", "vncviewer"),
+    ("TigerVNC Viewer.app", "TigerVNC Viewer"),
+    ("Screen Sharing.app", "Screen Sharing"),
+];
+
+/// Platform-specific install hint for a missing VNC viewer.
+fn vnc_install_hint() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Install a VNC viewer (RealVNC or TigerVNC), or use macOS Screen Sharing"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Install tigervnc-viewer (tigervnc) package. Alternatives: gvncviewer, remmina, krdc"
+    }
 }
 
 /// Detects the SPICE client on the system
@@ -304,7 +357,30 @@ pub fn detect_spice_client() -> ClientInfo {
     if let Some(info) = try_detect_client("remote-viewer", "remote-viewer", &["--version"]) {
         return info;
     }
-    ClientInfo::not_installed("SPICE Client", "Install virt-viewer package")
+    // macOS: virt-viewer ships as `RemoteViewer.app`, not a PATH binary.
+    if let Some(info) = try_detect_macos_app("remote-viewer", SPICE_CLIENT_BUNDLES, &["--version"])
+    {
+        return info;
+    }
+    ClientInfo::not_installed("SPICE Client", spice_install_hint())
+}
+
+/// SPICE viewers installed as macOS `.app` bundles (virt-viewer's macOS build).
+const SPICE_CLIENT_BUNDLES: &[(&str, &str)] = &[
+    ("RemoteViewer.app", "RemoteViewer"),
+    ("virt-viewer.app", "remote-viewer"),
+];
+
+/// Platform-specific install hint for a missing SPICE viewer.
+fn spice_install_hint() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Install virt-viewer: brew install --cask virt-viewer"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Install virt-viewer package"
+    }
 }
 
 /// Detects the installed Telnet client
@@ -337,7 +413,11 @@ const VNC_VIEWERS: &[&str] = &[
 /// `Some(PathBuf)` with the path to the VNC viewer binary, or `None` if not found
 #[must_use]
 pub fn detect_vnc_viewer_path() -> Option<PathBuf> {
-    VNC_VIEWERS.iter().find_map(|viewer| which_binary(viewer))
+    VNC_VIEWERS
+        .iter()
+        .find_map(|viewer| which_binary(viewer))
+        // macOS: RealVNC/TigerVNC are `.app` bundles, not PATH binaries.
+        .or_else(|| crate::which::find_macos_app(VNC_VIEWER_BUNDLES))
 }
 
 /// Returns the name of the first available VNC viewer
@@ -353,6 +433,12 @@ pub fn detect_vnc_viewer_name() -> Option<String> {
         .iter()
         .find(|viewer| which_binary(viewer).is_some())
         .map(|viewer| (*viewer).to_string())
+        // macOS: fall back to the `.app` bundle's full executable path, which
+        // the launcher runs directly (a bare name would not resolve there).
+        .or_else(|| {
+            crate::which::find_macos_app(VNC_VIEWER_BUNDLES)
+                .and_then(|p| p.into_os_string().into_string().ok())
+        })
 }
 
 // ============================================================================
@@ -502,6 +588,23 @@ fn try_detect_client(name: &str, binary: &str, version_args: &[&str]) -> Option<
     // Try to get version information using the full resolved path
     let version = get_version(path.to_str().unwrap_or(binary), version_args);
 
+    Some(ClientInfo::installed(name, path, version))
+}
+
+/// Attempts to detect a client installed as a macOS `.app` bundle.
+///
+/// The PATH-based [`try_detect_client`] never finds a macOS GUI viewer (RealVNC,
+/// virt-viewer, …) because those are `.app` bundles, not binaries on `PATH`.
+/// This probes the bundle locations via [`crate::which::find_macos_app`] and, on
+/// success, reports the client as installed with the in-bundle executable path.
+/// Always `None` off macOS.
+fn try_detect_macos_app(
+    name: &str,
+    bundles: &[(&str, &str)],
+    version_args: &[&str],
+) -> Option<ClientInfo> {
+    let path = crate::which::find_macos_app(bundles)?;
+    let version = get_version(path.to_str().unwrap_or(name), version_args);
     Some(ClientInfo::installed(name, path, version))
 }
 

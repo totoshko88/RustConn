@@ -65,6 +65,17 @@ pub const SPICE_VIEWERS: &[&str] = &["remote-viewer", "virt-viewer", "spicy"];
 /// the RDP client detection already uses.
 pub const HOST_VIEWER_PREFIX: &str = "host:";
 
+/// SPICE viewers installed as macOS `.app` bundles.
+///
+/// virt-viewer's official macOS build ships `RemoteViewer.app`, whose
+/// executable is `RemoteViewer`; some builds use a `virt-viewer.app` wrapper.
+/// A bare-name PATH lookup never finds these (see [`crate::which::find_macos_app`]).
+#[cfg(target_os = "macos")]
+const SPICE_VIEWER_BUNDLES: &[(&str, &str)] = &[
+    ("RemoteViewer.app", "RemoteViewer"),
+    ("virt-viewer.app", "remote-viewer"),
+];
+
 /// Finds an installed SPICE viewer, or `None` when the user has none.
 ///
 /// Returns the binary name for a viewer RustConn can run directly, or
@@ -84,6 +95,14 @@ pub fn detect_spice_viewer() -> Option<String> {
         .find(|candidate| crate::which::is_available(candidate))
     {
         return Some((*viewer).to_string());
+    }
+
+    // macOS: virt-viewer is a GUI `.app`, not a PATH binary. Return the full
+    // executable path inside the bundle, which the launcher runs directly.
+    #[cfg(target_os = "macos")]
+    if let Some(path) = crate::which::find_macos_app(SPICE_VIEWER_BUNDLES) {
+        tracing::info!(viewer = %path.display(), "using the macOS SPICE viewer bundle");
+        return path.into_os_string().into_string().ok();
     }
 
     for candidate in SPICE_VIEWERS {

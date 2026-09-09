@@ -391,7 +391,7 @@ modules:
         # chicken-and-egg problem and any placeholder would be a fake pin.
         # The immutable commit is added once the tag exists — by hand or by the
         # Flathub bot — in the Flathub repository, not here.
-        tag: v0.21.9
+        tag: v0.21.10
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$

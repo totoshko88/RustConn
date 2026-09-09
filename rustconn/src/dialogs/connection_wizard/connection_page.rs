@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Orientation, ScrolledWindow, StringList};
+use gtk4::{Box as GtkBox, Button, DropDown, Orientation, ScrolledWindow, StringList};
 use libadwaita as adw;
 use rustconn_core::models::ProtocolType;
 use uuid::Uuid;
@@ -27,7 +27,10 @@ pub struct ConnectionPage {
     pub(super) port_row: adw::SpinRow,
     pub(super) username_row: adw::EntryRow,
     pub(super) domain_row: adw::EntryRow,
-    jump_host_row: adw::ComboRow,
+    /// Row wrapping [`Self::jump_host_dropdown`]; visibility is toggled per
+    /// protocol on this row, the dropdown carries the model and selection.
+    jump_host_row: adw::ActionRow,
+    jump_host_dropdown: DropDown,
     // Serial-specific
     device_row: adw::EntryRow,
     baud_row: adw::ComboRow,
@@ -128,11 +131,24 @@ impl ConnectionPage {
             .build();
         connection_group.add(&domain_row);
 
-        let jump_host_row = adw::ComboRow::builder()
+        // Jump Host: a DropDown (not a ComboRow) so type-to-search filters a
+        // long connection list, matching the connection-editor pickers.
+        let jump_host_dropdown = DropDown::new(
+            Some(StringList::new(&[i18n("(None)").as_str()])),
+            gtk4::Expression::NONE,
+        );
+        jump_host_dropdown.set_selected(0);
+        jump_host_dropdown.set_valign(gtk4::Align::Center);
+        jump_host_dropdown.set_size_request(200, -1);
+        jump_host_dropdown.set_hexpand(false);
+        crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
+
+        let jump_host_row = adw::ActionRow::builder()
             .title(i18n("Jump Host"))
             .subtitle(i18n("Connect via SSH tunnel"))
             .visible(false)
             .build();
+        jump_host_row.add_suffix(&jump_host_dropdown);
         connection_group.add(&jump_host_row);
 
         content_box.append(&connection_group);
@@ -497,6 +513,7 @@ impl ConnectionPage {
             username_row,
             domain_row,
             jump_host_row,
+            jump_host_dropdown,
             device_row,
             baud_row,
             k8s_context_row,
@@ -691,8 +708,8 @@ impl ConnectionPage {
 
         let strings: Vec<&str> = names.iter().map(String::as_str).collect();
         let model = StringList::new(&strings);
-        self.jump_host_row.set_model(Some(&model));
-        self.jump_host_row.set_selected(0);
+        self.jump_host_dropdown.set_model(Some(&model));
+        self.jump_host_dropdown.set_selected(0);
         *self.jump_host_ids.borrow_mut() = ids;
     }
 
@@ -772,7 +789,7 @@ impl ConnectionPage {
 
     #[must_use]
     pub fn selected_jump_host(&self) -> Option<Uuid> {
-        let idx = self.jump_host_row.selected() as usize;
+        let idx = self.jump_host_dropdown.selected() as usize;
         self.jump_host_ids.borrow().get(idx).copied().flatten()
     }
 

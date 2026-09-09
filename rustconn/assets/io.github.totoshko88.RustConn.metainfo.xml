@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.21.10" date="2026-09-09">
+      <description>
+        <p>Version 0.21.10 - macOS fixes across external viewers and browsers, and search and jump-host improvements:</p>
+        <ul>
+          <li>Fixed: "Open Browser via Tunnel" now finds a Chromium browser on macOS, where it is an .app bundle rather than a binary on PATH</li>
+          <li>Fixed: external RDP, VNC and SPICE viewers are detected as macOS .app bundles instead of being reported "not installed"</li>
+          <li>Fixed: the System-browser mode and the Cockpit template use the platform URL opener (open on macOS) instead of a hardcoded xdg-open</li>
+          <li>Fixed: a SPICE session on macOS uses the stored password again, falling back to the per-user temp directory when the runtime directory is absent</li>
+          <li>Fixed: connection search no longer matches entries with no visible relation to the query</li>
+          <li>Fixed: the Jump Host pickers in the Tunnel wizard, the connection wizard and a group's SSH settings now filter as you type</li>
+          <li>Added: the New/Edit Cluster dialog can filter its connection list</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.21.9" date="2026-09-08">
       <description>
         <p>Version 0.21.9 - browse through an SSH host in one click, prompt for values at connect time, and connection-picker fixes:</p>

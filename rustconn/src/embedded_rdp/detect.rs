@@ -327,6 +327,13 @@ fn binary_exists(name: &str) -> bool {
 }
 
 pub(crate) fn detect_best_freerdp_with_cancel(cancellation: Option<&AtomicBool>) -> Option<String> {
+    // macOS: a FreeRDP shipped as an `.app` bundle is not on PATH; the in-bundle
+    // executable path is used as a fallback below.
+    const MACOS_BUNDLES: &[(&str, &str)] = &[
+        ("FreeRDP.app", "freerdp"),
+        ("SDL-freerdp.app", "sdl-freerdp"),
+        ("wlfreerdp.app", "wlfreerdp"),
+    ];
     let wayland = is_wayland_session();
     let candidates = if wayland {
         WAYLAND_FIRST_CANDIDATES
@@ -341,9 +348,17 @@ pub(crate) fn detect_best_freerdp_with_cancel(cancellation: Option<&AtomicBool>)
             return Some((*candidate).to_string());
         }
     }
-    if !is_cancelled(cancellation) {
-        tracing::warn!(protocol = "rdp", wayland, "No FreeRDP client found on PATH");
+    if is_cancelled(cancellation) {
+        return None;
     }
+    // macOS: a FreeRDP shipped as an `.app` bundle is not on PATH. Return the
+    // in-bundle executable path, which the external launcher runs directly.
+    if let Some(path) = rustconn_core::which::find_macos_app(MACOS_BUNDLES)
+        .and_then(|p| p.into_os_string().into_string().ok())
+    {
+        return Some(path);
+    }
+    tracing::warn!(protocol = "rdp", wayland, "No FreeRDP client found on PATH");
     None
 }
 

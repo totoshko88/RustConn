@@ -1329,10 +1329,46 @@ impl MainWindow {
             }
         }
 
+        // The CANDIDATES above are Linux binary names resolved on PATH. On macOS
+        // a Chromium-family browser is an `.app` bundle under /Applications, not
+        // a binary on PATH — a GUI app's PATH does not even list it — so the
+        // list never matches and detection silently fails. Probe the bundles
+        // directly and return the executable inside, which still accepts
+        // `--proxy-server`/`--user-data-dir` when launched by its full path.
+        #[cfg(target_os = "macos")]
+        if let Some(path) = Self::find_macos_chromium_app() {
+            return Some(path);
+        }
+
         CANDIDATES
             .iter()
             .find(|bin| rustconn_core::which::is_available(bin))
             .map(|bin| (*bin).to_string())
+    }
+
+    /// Locates a Chromium-family browser installed as a macOS `.app` bundle.
+    ///
+    /// Returns the full path to the executable inside the bundle
+    /// (`…/Contents/MacOS/<Name>`), which — unlike the Linux binary names in
+    /// `find_chromium_browser`'s candidate list — is what actually exists on
+    /// macOS. Both the system `/Applications` and the per-user
+    /// `~/Applications` are checked. Launched by this path, the browser still
+    /// honours `--proxy-server` and `--user-data-dir`.
+    #[cfg(target_os = "macos")]
+    fn find_macos_chromium_app() -> Option<String> {
+        // (bundle name, executable name inside Contents/MacOS). The executable
+        // name is not always the bundle stem — Brave's differs. The bundle probe
+        // itself lives in `rustconn_core::which::find_macos_app`, shared with the
+        // RDP/VNC/SPICE viewer detection.
+        const BUNDLES: &[(&str, &str)] = &[
+            ("Google Chrome.app", "Google Chrome"),
+            ("Chromium.app", "Chromium"),
+            ("Brave Browser.app", "Brave Browser"),
+            ("Microsoft Edge.app", "Microsoft Edge"),
+            ("Vivaldi.app", "Vivaldi"),
+        ];
+        rustconn_core::which::find_macos_app(BUNDLES)
+            .and_then(|p| p.into_os_string().into_string().ok())
     }
 
     /// Opens a browser routed through a fresh SOCKS tunnel to the selected SSH

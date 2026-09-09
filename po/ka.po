@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 16:22+0300\n"
+"POT-Creation-Date: 2026-09-09 16:33+0300\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -23,7 +23,7 @@ msgid "OK"
 msgstr "დიახ"
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:623
+#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:689
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:298
@@ -47,8 +47,8 @@ msgstr "დიახ"
 #: rustconn/src/terminal/tab_menu.rs:203 rustconn/src/terminal/tab_menu.rs:406
 #: rustconn/src/vault_ops.rs:315 rustconn/src/window/batch_edit.rs:69
 #: rustconn/src/window/connection_dialogs.rs:1078
-#: rustconn/src/window/edit_group.rs:1803
-#: rustconn/src/window/edit_group.rs:1851 rustconn/src/window/mod.rs:3651
+#: rustconn/src/window/edit_group.rs:1807
+#: rustconn/src/window/edit_group.rs:1855 rustconn/src/window/mod.rs:3651
 #: rustconn/src/window/operations.rs:82 rustconn/src/window/operations.rs:457
 #: rustconn/src/window/operations.rs:640 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:548
@@ -122,8 +122,7 @@ msgstr ""
 "მართეთ SSH, RDP, VNC, SPICE, Telnet, სერიული, Kubernetes-ის და ნულოვანი "
 "წვდომის კავშირები ერთი აპლიკაციიდან."
 
-#. Translators: Replace this with your name and language, e.g. "John Doe
-#. (German)"
+#. Translators: Replace this with your name and language, e.g. "John Doe (German)"
 #: rustconn/src/app.rs:1737
 msgid "translator-credits"
 msgstr "ეკატერინე პაპავა"
@@ -193,8 +192,8 @@ msgstr "{}-დან პაროლის წაკითხვა ვერ �
 
 #: rustconn/src/dialogs/backend_missing.rs:49
 msgid ""
-"This connection keeps its password in {}, which is not available right now —"
-" it may be locked, not logged in, or not set up on this computer. Open "
+"This connection keeps its password in {}, which is not available right now — "
+"it may be locked, not logged in, or not set up on this computer. Open "
 "Settings, then Secrets, to check its status."
 msgstr ""
 "ეს კავშირი ინახავს პაროლს {}-ში, რომელიც ამჟამად მიუწვდომელია — ის შეიძლება "
@@ -210,12 +209,12 @@ msgstr "შეიყვანეთ პაროლი ხელით"
 msgid "Open Settings"
 msgstr "პარამეტრების გახსნა"
 
-#: rustconn/src/dialogs/cluster.rs:61 rustconn/src/dialogs/cluster.rs:383
-#: rustconn/src/dialogs/cluster.rs:384
+#: rustconn/src/dialogs/cluster.rs:60 rustconn/src/dialogs/cluster.rs:449
+#: rustconn/src/dialogs/cluster.rs:450
 msgid "New Cluster"
 msgstr "ახალი კლასტერი"
 
-#: rustconn/src/dialogs/cluster.rs:69 rustconn/src/dialogs/cluster.rs:70
+#: rustconn/src/dialogs/cluster.rs:68 rustconn/src/dialogs/cluster.rs:69
 #: rustconn/src/dialogs/connection/dialog/construction.rs:138
 #: rustconn/src/dialogs/connection/dialog/construction.rs:139
 #: rustconn/src/dialogs/settings/terminal_tab.rs:789
@@ -230,18 +229,17 @@ msgstr "ახალი კლასტერი"
 msgid "Create"
 msgstr "შექმნა"
 
-#: rustconn/src/dialogs/cluster.rs:102
+#: rustconn/src/dialogs/cluster.rs:101
 msgid "Cluster Details"
 msgstr "კლასტერის დეტალები"
 
-#: rustconn/src/dialogs/cluster.rs:106
+#: rustconn/src/dialogs/cluster.rs:105
 #: rustconn/src/dialogs/connection/advanced_tab.rs:849
 #: rustconn/src/dialogs/connection/general_tab.rs:99
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:101
-#: rustconn/src/dialogs/export.rs:377
-#: rustconn/src/dialogs/settings/mod.rs:1827
-#: rustconn/src/dialogs/smart_folder.rs:121
-#: rustconn/src/dialogs/snippet.rs:179 rustconn/src/dialogs/template.rs:511
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
+#: rustconn/src/dialogs/export.rs:377 rustconn/src/dialogs/settings/mod.rs:1827
+#: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:179
+#: rustconn/src/dialogs/template.rs:511
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
 #: rustconn/src/window/connection_dialogs.rs:428
 #: rustconn/src/window/edit_dialogs.rs:322
@@ -249,42 +247,46 @@ msgstr "კლასტერის დეტალები"
 msgid "Name"
 msgstr "სახელი"
 
-#: rustconn/src/dialogs/cluster.rs:107
+#: rustconn/src/dialogs/cluster.rs:106
 msgid "Enter cluster name"
 msgstr "შეიყვანეთ კლასტერის სახელი"
 
-#: rustconn/src/dialogs/cluster.rs:149
+#: rustconn/src/dialogs/cluster.rs:148
 msgid "Select at least one connection"
 msgstr "აირჩიეთ მინიმუმ ერთი კავშირი"
 
-#: rustconn/src/dialogs/cluster.rs:191
+#: rustconn/src/dialogs/cluster.rs:197
 #: rustconn/src/dialogs/settings/ui_tab.rs:352
 #: rustconn/src/dialogs/shortcuts.rs:148
 msgid "Connections"
 msgstr "კავშირები"
 
-#: rustconn/src/dialogs/cluster.rs:192
+#: rustconn/src/dialogs/cluster.rs:198
 msgid "Select connections to include in this cluster"
 msgstr "აირჩიეთ კავშირები ამ კლასტერში ჩასასმელად"
 
-#: rustconn/src/dialogs/cluster.rs:216 rustconn/src/sidebar_ui.rs:868
+#: rustconn/src/dialogs/cluster.rs:207
+msgid "Filter connections…"
+msgstr "კავშირების გაფილტვრა…"
+
+#: rustconn/src/dialogs/cluster.rs:231 rustconn/src/sidebar_ui.rs:868
 #: rustconn/src/terminal/config.rs:255
 msgid "Select All"
 msgstr "ყველაფრის მონიშვნა"
 
-#: rustconn/src/dialogs/cluster.rs:217
+#: rustconn/src/dialogs/cluster.rs:232
 msgid "Deselect All"
 msgstr "მონიშვნის მოხსნა ყველაფერზე"
 
-#: rustconn/src/dialogs/cluster.rs:299
+#: rustconn/src/dialogs/cluster.rs:365
 msgid "Edit Cluster"
 msgstr "კლასტერის ჩასწორება"
 
-#: rustconn/src/dialogs/cluster.rs:375
+#: rustconn/src/dialogs/cluster.rs:441
 msgid "Manage Clusters"
 msgstr "კლასტერების მართვა"
 
-#: rustconn/src/dialogs/cluster.rs:409
+#: rustconn/src/dialogs/cluster.rs:475
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
@@ -293,40 +295,40 @@ msgstr ""
 "გადაეცეს, დაყავით მიღებული ჩანართები და გამოიყენეთ მაუწყებლობის გადამრთველი "
 "სათაურის პანელზე."
 
-#: rustconn/src/dialogs/cluster.rs:495 rustconn/src/dialogs/workspace.rs:386
+#: rustconn/src/dialogs/cluster.rs:561 rustconn/src/dialogs/workspace.rs:386
 msgid "{} connections"
 msgstr "{} კავშირი"
 
-#: rustconn/src/dialogs/cluster.rs:509 rustconn/src/dialogs/cluster.rs:513
+#: rustconn/src/dialogs/cluster.rs:575 rustconn/src/dialogs/cluster.rs:579
 msgid "Connect to cluster"
 msgstr "კლასტერთან დაკავშირება"
 
-#: rustconn/src/dialogs/cluster.rs:518 rustconn/src/dialogs/cluster.rs:522
+#: rustconn/src/dialogs/cluster.rs:584 rustconn/src/dialogs/cluster.rs:588
 msgid "Disconnect all cluster sessions"
 msgstr "ყველა კლასტერის სესიის გათიშვა"
 
-#: rustconn/src/dialogs/cluster.rs:527 rustconn/src/dialogs/cluster.rs:530
+#: rustconn/src/dialogs/cluster.rs:593 rustconn/src/dialogs/cluster.rs:596
 msgid "Edit cluster"
 msgstr "კლასტერის ჩასწორება"
 
-#: rustconn/src/dialogs/cluster.rs:534 rustconn/src/dialogs/cluster.rs:538
+#: rustconn/src/dialogs/cluster.rs:600 rustconn/src/dialogs/cluster.rs:604
 msgid "Delete cluster"
 msgstr "კლასტერის წაშლა"
 
-#: rustconn/src/dialogs/cluster.rs:571
+#: rustconn/src/dialogs/cluster.rs:637
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 "კლასტერები აღწერილი არაა. შესაქმნელად დააწკაპუნეთ ღილაკზე 'ახალი კლასტერი'."
 
-#: rustconn/src/dialogs/cluster.rs:620 rustconn/src/window/clusters.rs:430
+#: rustconn/src/dialogs/cluster.rs:686 rustconn/src/window/clusters.rs:430
 msgid "Delete Cluster?"
 msgstr "წავშალო კლასტერი?"
 
-#: rustconn/src/dialogs/cluster.rs:621
+#: rustconn/src/dialogs/cluster.rs:687
 msgid "This cluster will be permanently removed."
 msgstr "ეს კლასტერი სამუდამოდ წაიშლება."
 
-#: rustconn/src/dialogs/cluster.rs:624 rustconn/src/dialogs/recording.rs:579
+#: rustconn/src/dialogs/cluster.rs:690 rustconn/src/dialogs/recording.rs:579
 #: rustconn/src/dialogs/template_manager.rs:113
 #: rustconn/src/dialogs/template_manager.rs:191
 #: rustconn/src/dialogs/tunnel.rs:723 rustconn/src/dialogs/workspace.rs:118
@@ -544,8 +546,8 @@ msgid ""
 "reachable via a gateway."
 msgstr ""
 "ჰოსტის TCP ზონდირების გამოტოვება. სასარგებლოა დაბალი გამტარობის "
-"კავშირებისთვის, ან ჰოსტებისთვის, რომლებიც, მხოლოდ, მარშრუტიზატორებით ხედავენ"
-" ერთმანეთს."
+"კავშირებისთვის, ან ჰოსტებისთვის, რომლებიც, მხოლოდ, მარშრუტიზატორებით ხედავენ "
+"ერთმანეთს."
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:475
 msgid "e.g., 7000 8000/tcp 9000/udp"
@@ -637,7 +639,7 @@ msgstr "გამოკვეთის წესების გარეშე"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:620
 #: rustconn/src/dialogs/connection/automation_tab.rs:157
 #: rustconn/src/dialogs/settings/mod.rs:361
-#: rustconn/src/window/edit_group.rs:1166
+#: rustconn/src/window/edit_group.rs:1170
 msgid "Add Rule"
 msgstr "წესის დამატება"
 
@@ -713,8 +715,8 @@ msgstr "წესის ჩართვა"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:285
 #: rustconn/src/dialogs/connection/dialog/rows.rs:287
 #: rustconn/src/dialogs/settings/mod.rs:1808
-#: rustconn/src/window/edit_group.rs:1969
-#: rustconn/src/window/edit_group.rs:1971
+#: rustconn/src/window/edit_group.rs:1973
+#: rustconn/src/window/edit_group.rs:1975
 msgid "Delete rule"
 msgstr "წესის წაშლა"
 
@@ -724,17 +726,17 @@ msgid "Delete highlight rule"
 msgstr "გამოკვეთის წესის წაშლა"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:86
-#: rustconn/src/window/edit_group.rs:1057
+#: rustconn/src/window/edit_group.rs:1061
 msgid "Expect Rules"
 msgstr "წესების მოლოდინი"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:87
-#: rustconn/src/window/edit_group.rs:1058
+#: rustconn/src/window/edit_group.rs:1062
 msgid "Auto-respond to terminal patterns (priority order)"
 msgstr "ავტოპასუხი ტერმინალის ნიმუშებზე (პრიორიტეტის მიმდევრობა)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:98
-#: rustconn/src/window/edit_group.rs:1067
+#: rustconn/src/window/edit_group.rs:1071
 msgid ""
 "Responses support ${password}, ${username}, and ${VARIABLE_NAME} "
 "placeholders resolved at connection time"
@@ -743,22 +745,22 @@ msgstr ""
 "მხარდაჭერა დაკავშირების დროს"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:111
-#: rustconn/src/window/edit_group.rs:1080
+#: rustconn/src/window/edit_group.rs:1084
 msgid "No expect rules"
 msgstr "წესების მოლოდინის გარეშე"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:122
-#: rustconn/src/window/edit_group.rs:1096
+#: rustconn/src/window/edit_group.rs:1100
 msgid "From Template"
 msgstr "ნიმუშიდან"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:123
-#: rustconn/src/window/edit_group.rs:1097
+#: rustconn/src/window/edit_group.rs:1101
 msgid "Add rules from a built-in template"
 msgstr "წესების დამატება ჩაშენებული ნიმუშიდან"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:169
-#: rustconn/src/window/edit_group.rs:1212
+#: rustconn/src/window/edit_group.rs:1216
 msgid "Pattern Tester"
 msgstr "ნიმუშის შემმოწმებელი"
 
@@ -771,18 +773,18 @@ msgid "Test text against patterns"
 msgstr "ტექსტის შემოწმება ნიმუშებზე"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:180
-#: rustconn/src/window/edit_group.rs:1229
+#: rustconn/src/window/edit_group.rs:1233
 msgid "Test Input"
 msgstr "შეყვანის შემოწმება"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:185
-#: rustconn/src/window/edit_group.rs:1223
-#: rustconn/src/window/edit_group.rs:1244
+#: rustconn/src/window/edit_group.rs:1227
+#: rustconn/src/window/edit_group.rs:1248
 msgid "Enter text to test"
 msgstr "შეიყვანეთ შესამოწმებელი ტექსტი"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:191
-#: rustconn/src/window/edit_group.rs:1233
+#: rustconn/src/window/edit_group.rs:1237
 msgid "Result"
 msgstr "შედეგი"
 
@@ -800,8 +802,8 @@ msgstr "ავტომატურად შესვლა"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:267
 msgid ""
-"Telnet and serial sessions log in by typing at the device's own prompts. SSH"
-" types only the password."
+"Telnet and serial sessions log in by typing at the device's own prompts. SSH "
+"types only the password."
 msgstr ""
 "Telnet-ის და სერიული სესიები მოწყობილობის მოთხოვნებში აკრეფით შედის. SSH, "
 "მხოლოდ, პაროლს კრეფს."
@@ -852,7 +854,7 @@ msgstr "მაგ:, /path/to/script.sh ან vpn-connect ${host}"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:351
 #: rustconn/src/dialogs/connection/general_tab.rs:382
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:217
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:233
 #: rustconn/src/dialogs/settings/terminal_tab.rs:480
 #: rustconn/src/dialogs/snippet.rs:259 rustconn/src/dialogs/template.rs:1929
 msgid "Command"
@@ -884,8 +886,7 @@ msgstr "მხოლოდ პირველი კავშირი"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:392
 msgid ""
-"Only run when opening the first connection in a folder (useful for VPN "
-"setup)"
+"Only run when opening the first connection in a folder (useful for VPN setup)"
 msgstr ""
 "გაშვება, მხოლოდ, საქაღალდეში პირველი კავშირის გახსნისას (სასარგებლოა VPN-ის "
 "მოსარგებად)"
@@ -923,16 +924,15 @@ msgstr "სერიული კავშირებისთვის მო�
 
 #: rustconn/src/dialogs/connection/builders.rs:350
 msgid "SSH key path is required for public key authentication"
-msgstr ""
-"საჯარო გასაღებით ავთენტიკაციისთვის SSH-ის გასაღების ბილიკი აუცილებელია"
+msgstr "საჯარო გასაღებით ავთენტიკაციისთვის SSH-ის გასაღების ბილიკი აუცილებელია"
 
 #: rustconn/src/dialogs/connection/builders.rs:362
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
 msgstr ""
-"პაროლის წყაროა 'არაფერი, მაგრამ ავთენტიკაციის მეთოდია პაროლი. დააყენეთ წყარო"
-" კითხვაზე, ან საცავზე."
+"პაროლის წყაროა 'არაფერი, მაგრამ ავთენტიკაციის მეთოდია პაროლი. დააყენეთ წყარო "
+"კითხვაზე, ან საცავზე."
 
 #: rustconn/src/dialogs/connection/builders.rs:372
 msgid "Pod name is required when Busybox mode is disabled"
@@ -945,8 +945,8 @@ msgstr "როცა WOL ჩართულია, MAC მისამართ�
 #: rustconn/src/dialogs/connection/builders.rs:386
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr ""
-"არასწორი MAC მისამართის ფორმატი. გამოიყენეთ AA:BB:CC:DD:EE:FF ან AA-BB-CC-"
-"DD-EE-FF"
+"არასწორი MAC მისამართის ფორმატი. გამოიყენეთ AA:BB:CC:DD:EE:FF ან AA-BB-CC-DD-"
+"EE-FF"
 
 #: rustconn/src/dialogs/connection/builders.rs:404
 msgid "Browser command is required when Custom mode is selected"
@@ -1069,8 +1069,8 @@ msgid "Logging"
 msgstr "ჟურნალში ჩაწერა"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:373
-#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:981
-#: rustconn/src/window/edit_group.rs:1427
+#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:985
+#: rustconn/src/window/edit_group.rs:1431
 msgid "Automation"
 msgstr "ავტომატიზაცია"
 
@@ -1253,7 +1253,7 @@ msgstr "პროტოკოლი"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:297
 #: rustconn/src/dialogs/connection/dialog/rows.rs:71
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:245
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:261
 msgid "URL"
 msgstr "URL"
 
@@ -1264,12 +1264,11 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/connection/dialog/construction.rs:302
 #: rustconn/src/dialogs/connection/general_tab.rs:157
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:105
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:749
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:755
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:766
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:772
 #: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/template.rs:548
-#: rustconn/src/dialogs/template.rs:1780
-#: rustconn/src/split_view/bridge.rs:1576
+#: rustconn/src/dialogs/template.rs:1780 rustconn/src/split_view/bridge.rs:1576
 #: rustconn/src/window/edit_dialogs.rs:799
 msgid "Host"
 msgstr "ჰოსტი"
@@ -1332,8 +1331,7 @@ msgid "Test Not Available"
 msgstr "შემოწმება ხელმისაწვდომი არაა"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:521
-msgid ""
-"Credential test is only available when Password Source is set to Vault."
+msgid "Credential test is only available when Password Source is set to Vault."
 msgstr ""
 "ავტორიზაციის დეტალების ტესტი, მხოლოდ, მაშინაა ხელმისაწვდომი, როცა პაროლების "
 "წყარო საცავია."
@@ -1491,139 +1489,138 @@ msgid "Protected value (masked)"
 msgstr "დაცული მნიშვნელობა (შენიღბული)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:272
-#: rustconn/src/window/edit_group.rs:1957
+#: rustconn/src/window/edit_group.rs:1961
 msgid "Move up (higher priority)"
 msgstr "ატანა (უფრო მაღალი პრიორიტეტი)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:274
-#: rustconn/src/window/edit_group.rs:1959
+#: rustconn/src/window/edit_group.rs:1963
 msgid "Move rule up"
 msgstr "წესის აწევა"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:278
-#: rustconn/src/window/edit_group.rs:1963
+#: rustconn/src/window/edit_group.rs:1967
 msgid "Move down (lower priority)"
 msgstr "ჩამოწევა (უფრო დაბალი პრიორიტეტი)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:281
-#: rustconn/src/window/edit_group.rs:1965
+#: rustconn/src/window/edit_group.rs:1969
 msgid "Move rule down"
 msgstr "წესის ჩამოტანა"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:296
-#: rustconn/src/window/edit_group.rs:1980
+#: rustconn/src/window/edit_group.rs:1984
 msgid "Pattern:"
 msgstr "შაბლონი:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:302
-#: rustconn/src/window/edit_group.rs:1986
+#: rustconn/src/window/edit_group.rs:1990
 msgid "Regex pattern (e.g., password:\\s*$)"
 msgstr "რეგგამოსის ნიმუში (მაგ: password:\\s*$)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:303
-#: rustconn/src/window/edit_group.rs:1987
+#: rustconn/src/window/edit_group.rs:1991
 msgid "Regular expression to match against terminal output"
-msgstr ""
-"რეგულარული გამოსახულება, რომელსაც ტერმინალზე გამოტანილი უნდა დამეთხვეს"
+msgstr "რეგულარული გამოსახულება, რომელსაც ტერმინალზე გამოტანილი უნდა დამეთხვეს"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:312
-#: rustconn/src/window/edit_group.rs:1996
+#: rustconn/src/window/edit_group.rs:2000
 msgid "Response:"
 msgstr "პასუხი:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:318
-#: rustconn/src/window/edit_group.rs:2002
+#: rustconn/src/window/edit_group.rs:2006
 msgid "Text to send (e.g., ${password}\\n)"
 msgstr "გასაგზავნი ტექსტი (მაგ: ${password}\\n)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:320
-#: rustconn/src/window/edit_group.rs:2004
+#: rustconn/src/window/edit_group.rs:2008
 msgid ""
-"Response to send when pattern matches. Use ${password}, ${username}, or "
-"${VAR_NAME} for variables."
+"Response to send when pattern matches. Use ${password}, ${username}, or $"
+"{VAR_NAME} for variables."
 msgstr ""
-"გასაგზავნი პასუხი, როცა ნიმუში ემთხვევა. ცვლადებისთვის გამოიყენეთ "
-"${password}, ${username}, ან ${VAR_NAME}."
+"გასაგზავნი პასუხი, როცა ნიმუში ემთხვევა. ცვლადებისთვის გამოიყენეთ $"
+"{password}, ${username}, ან ${VAR_NAME}."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:328
-#: rustconn/src/window/edit_group.rs:2012
+#: rustconn/src/window/edit_group.rs:2016
 msgid "Insert a variable placeholder"
 msgstr "ჩასვით ცვლადის ადგილმჭერი"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
-#: rustconn/src/window/edit_group.rs:2014
+#: rustconn/src/window/edit_group.rs:2018
 msgid "Insert variable"
 msgstr "ცვლადის ჩასმა"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:342
-#: rustconn/src/window/edit_group.rs:2026
+#: rustconn/src/window/edit_group.rs:2030
 msgid "Built-in"
 msgstr "ჩაშენებული"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:349
-#: rustconn/src/window/edit_group.rs:2033
+#: rustconn/src/window/edit_group.rs:2037
 msgid "Connection password"
 msgstr "კავშირის პაროლი"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:350
-#: rustconn/src/window/edit_group.rs:2034
+#: rustconn/src/window/edit_group.rs:2038
 msgid "Connection username"
 msgstr "კავშირის მომხმარებლის სახელი"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:351
-#: rustconn/src/window/edit_group.rs:2035
+#: rustconn/src/window/edit_group.rs:2039
 msgid "Connection host"
 msgstr "კავშირის ჰოსტი"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:352
-#: rustconn/src/window/edit_group.rs:2036
+#: rustconn/src/window/edit_group.rs:2040
 msgid "Connection port"
 msgstr "კავშირის პორტი"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:380
 #: rustconn/src/dialogs/password_generator.rs:224
-#: rustconn/src/window/edit_group.rs:2066
+#: rustconn/src/window/edit_group.rs:2070
 msgid "Special"
 msgstr "სპეციალური"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:390
-#: rustconn/src/window/edit_group.rs:2076
+#: rustconn/src/window/edit_group.rs:2080
 msgid "Newline (Enter key)"
 msgstr "ახალი ხაზი (ღილაკი Enter)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:421
-#: rustconn/src/window/edit_group.rs:2107
+#: rustconn/src/window/edit_group.rs:2111
 msgid "Priority:"
 msgstr "პრიორიტეტი:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:430
-#: rustconn/src/window/edit_group.rs:2116
+#: rustconn/src/window/edit_group.rs:2120
 msgid "Higher priority rules are checked first"
 msgstr "პირველ რიგში მოწმდება უფრო მაღალი პრიორიტეტის წესები"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:434
-#: rustconn/src/window/edit_group.rs:2120
+#: rustconn/src/window/edit_group.rs:2124
 msgid "Timeout:"
 msgstr "მოლოდინის ვადა:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:443
-#: rustconn/src/window/edit_group.rs:2129
+#: rustconn/src/window/edit_group.rs:2133
 msgid "Timeout in milliseconds (0 = no timeout)"
 msgstr "მოლოდინის ვადა მილიწამებში (0 = მოლოდინის ვადის გარეშე)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:447
 #: rustconn/src/dialogs/settings/ui_tab.rs:499
-#: rustconn/src/window/edit_group.rs:2133
+#: rustconn/src/window/edit_group.rs:2137
 msgid "Enabled"
 msgstr "ჩართულია"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:452
-#: rustconn/src/window/edit_group.rs:2137
+#: rustconn/src/window/edit_group.rs:2141
 msgid "One-shot"
 msgstr "ერთი-ცდით"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:454
-#: rustconn/src/window/edit_group.rs:2139
+#: rustconn/src/window/edit_group.rs:2143
 msgid "Fire only once, then remove the rule"
 msgstr "მხოლოდ ერთხელ გაშვება, შემდეგ კი წესის წაშლა"
 
@@ -1679,11 +1676,10 @@ msgstr "არასავალდებულო აღწერა"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:990
 msgid "(Inherited from global - override value below)"
-msgstr ""
-"(მემკვიდრეობით გლობალურიდან - მნიშვნელობის გადაფარვა ქვემოთ შეგიძლიათ)"
+msgstr "(მემკვიდრეობით გლობალურიდან - მნიშვნელობის გადაფარვა ქვემოთ შეგიძლიათ)"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:90
-#: rustconn/src/window/edit_group.rs:1383
+#: rustconn/src/window/edit_group.rs:1387
 msgid "Identity"
 msgstr "იდენტიფიკაცია"
 
@@ -1716,8 +1712,8 @@ msgid "Optional"
 msgstr "არასავალდებულო"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:126
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:191
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:605
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:207
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:622
 msgid "Zero Trust"
 msgstr "ნულოვანი ნდობა"
 
@@ -1727,10 +1723,9 @@ msgstr "ნულოვანი ნდობა"
 #: rustconn/src/dialogs/connection/ssh.rs:479
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/connection/vnc.rs:315
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:98
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:101
 #: rustconn/src/dialogs/settings/mod.rs:401
 #: rustconn/src/dialogs/template.rs:686
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:86
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:84
 #: rustconn/src/dialogs/wol.rs:64 rustconn/src/dialogs/wol.rs:70
 msgid "Connection"
@@ -1742,7 +1737,7 @@ msgstr "SSH, Well-Known"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:176
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:78
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:110
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
 #: rustconn/src/dialogs/export.rs:389 rustconn/src/dialogs/template.rs:557
 #: rustconn/src/dialogs/wol.rs:92 rustconn/src/window/edit_dialogs.rs:811
 msgid "Port"
@@ -1763,8 +1758,8 @@ msgstr "ქსელის რეჟიმი"
 #: rustconn/src/dialogs/connection/general_tab.rs:192
 msgid "Direct ignores a jump host inherited from a group or globally"
 msgstr ""
-"პირდაპირი უგულებელყოფს ჯგუფიდან ან გლობალურად მემკვიდრეობით მიღებულ შუალედურ"
-" ჰოსტს"
+"პირდაპირი უგულებელყოფს ჯგუფიდან ან გლობალურად მემკვიდრეობით მიღებულ შუალედურ "
+"ჰოსტს"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:214
 #: rustconn/src/dialogs/connection/ssh.rs:220
@@ -1778,7 +1773,7 @@ msgstr "ავთენტიკაცია"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:221
 #: rustconn/src/dialogs/connection/general_tab.rs:241
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:118
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:564
 #: rustconn/src/split_view/bridge.rs:1584
 #: rustconn/src/window/connection_dialogs.rs:498
@@ -1805,7 +1800,7 @@ msgid "Load domain from selected group"
 msgstr "დომენის ჩატვირთვა არჩეული ჯგუფიდან"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:264
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:126
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:129
 #: rustconn/src/dialogs/template.rs:568
 #: rustconn/src/window/connection_dialogs.rs:842
 #: rustconn/src/window/edit_group.rs:532
@@ -1850,7 +1845,7 @@ msgid "None"
 msgstr "არცერთი"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:278
-#: rustconn/src/window/edit_group.rs:909
+#: rustconn/src/window/edit_group.rs:913
 msgid "Script"
 msgstr "სკრიპტი"
 
@@ -1944,7 +1939,7 @@ msgstr "ჯგუფები"
 #: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:186
 #: rustconn/src/dialogs/template.rs:515
 #: rustconn/src/window/connection_dialogs.rs:849
-#: rustconn/src/window/edit_group.rs:1350
+#: rustconn/src/window/edit_group.rs:1354
 msgid "Description"
 msgstr "აღწერა"
 
@@ -1957,12 +1952,12 @@ msgid "Registered"
 msgstr "რეგისტრირებულია"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:541
-#: rustconn/src/window/edit_group.rs:1418
+#: rustconn/src/window/edit_group.rs:1422
 msgid "Dynamic"
 msgstr "დინამიკური"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:47
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:166
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:182
 msgid "Kubernetes"
 msgstr "Kubernetes"
 
@@ -1979,7 +1974,7 @@ msgid "Path to kubeconfig file (default if empty)"
 msgstr "ბილიკი ფაილამდე kubeconfig (ნაგულისხმევი, თუ ცარიელია)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:57
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:170
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:186
 msgid "Context"
 msgstr "კონტექსტი"
 
@@ -1988,7 +1983,7 @@ msgid "Kubernetes context (current-context if empty)"
 msgstr "Kubernetes-ის კონტექსტი (current-context თუ ცარიელია)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:63
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:175
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:191
 msgid "Namespace"
 msgstr "სახელების სივრცე"
 
@@ -1997,7 +1992,7 @@ msgid "Target namespace (default if empty)"
 msgstr "სამიზნე სახელების სივრცე (ნაგულისხმევი, თუ ცარიელია)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:69
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:180
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:196
 msgid "Pod"
 msgstr "Pod"
 
@@ -2006,7 +2001,7 @@ msgid "Pod name to exec into"
 msgstr "პოდ სახელი შიგნით შესასრულებლად"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:75
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:183
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:199
 msgid "Container"
 msgstr "კონტეინერი"
 
@@ -2204,8 +2199,8 @@ msgstr "გრაფიკის კონვეიერი"
 #: rustconn/src/dialogs/connection/rdp.rs:150
 msgid "Automatic uses GFX/H.264 when available. Legacy for older servers."
 msgstr ""
-"ავტომატურად იყენებს GFX/H.264-ს, როცა ხელმისაწვდომია. მოძველებულს უფრო ძველი"
-" სერვერებისთვის."
+"ავტომატურად იყენებს GFX/H.264-ს, როცა ხელმისაწვდომია. მოძველებულს უფრო ძველი "
+"სერვერებისთვის."
 
 #: rustconn/src/dialogs/connection/rdp.rs:171
 msgid "External Window"
@@ -2214,8 +2209,8 @@ msgstr "გარე ფანჯარა"
 #: rustconn/src/dialogs/connection/rdp.rs:173
 msgid "Size of the separate window, also used when embedded mode falls back"
 msgstr ""
-"ცალკე ფანჯრის ზომა, გამოიყენება მაშინაც, როცა ჩაშენებული რეჟიმი გარე კლიენტს"
-" გადასცემს"
+"ცალკე ფანჯრის ზომა, გამოიყენება მაშინაც, როცა ჩაშენებული რეჟიმი გარე კლიენტს "
+"გადასცემს"
 
 #: rustconn/src/dialogs/connection/rdp.rs:200
 #: rustconn/src/dialogs/template.rs:855
@@ -2283,8 +2278,7 @@ msgstr "ჩაშენებული რეჟიმი ავტომატ�
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:213
 #: rustconn/src/dialogs/template.rs:899 rustconn/src/dialogs/template.rs:1094
-#: rustconn/src/dialogs/template.rs:1229
-#: rustconn/src/split_view/bridge.rs:1889
+#: rustconn/src/dialogs/template.rs:1229 rustconn/src/split_view/bridge.rs:1889
 msgid "Features"
 msgstr "თვისებები"
 
@@ -2395,8 +2389,8 @@ msgid ""
 "Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode "
 "only)"
 msgstr ""
-"გამოიყენეთ მრავალი ქსელის ბილიკი უწყვეტი მობილურობისთვის (Linux 5.6+, მხოლოდ"
-" ჩაშენებული რეჟიმი)"
+"გამოიყენეთ მრავალი ქსელის ბილიკი უწყვეტი მობილურობისთვის (Linux 5.6+, მხოლოდ "
+"ჩაშენებული რეჟიმი)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:420
 #: rustconn/src/dialogs/connection/vnc.rs:273
@@ -2488,11 +2482,13 @@ msgstr "თუ განსხვავდება კავშირის მ
 #: rustconn/src/dialogs/connection/spice.rs:336
 #: rustconn/src/dialogs/connection/ssh.rs:488
 #: rustconn/src/dialogs/connection/vnc.rs:318
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:676
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:137
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:693
 #: rustconn/src/dialogs/settings/network_tab.rs:61
 #: rustconn/src/dialogs/settings/network_tab.rs:64
-#: rustconn/src/dialogs/settings/network_tab.rs:119
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:437
+#: rustconn/src/dialogs/settings/network_tab.rs:122
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
 #: rustconn/src/dialogs/widgets.rs:50 rustconn/src/window/edit_dialogs.rs:764
 #: rustconn/src/window/edit_group.rs:698
 msgid "(None)"
@@ -2502,11 +2498,10 @@ msgstr "(არცერთი)"
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/ssh.rs:499
 #: rustconn/src/dialogs/connection/vnc.rs:328
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:132
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:97
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:147
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:102
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:90
-#: rustconn/src/window/edit_group.rs:744
+#: rustconn/src/window/edit_group.rs:748
 msgid "Jump Host"
 msgstr "შუალედური ჰოსტი"
 
@@ -2753,17 +2748,17 @@ msgid "Extra FreeRDP command-line options"
 msgstr "FreeRDP-ის დამატებითი ბრძანების სტრიქონის არგუმენტები"
 
 #: rustconn/src/dialogs/connection/serial.rs:50
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:147
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:163
 msgid "Device"
 msgstr "მოწყობილობა"
 
 #: rustconn/src/dialogs/connection/serial.rs:52
 msgid ""
-"Serial uses picocom as the terminal client.              Ensure your user is"
-" in the 'dialout' group for device access."
+"Serial uses picocom as the terminal client.              Ensure your user is "
+"in the 'dialout' group for device access."
 msgstr ""
-"სერიული კავშირი ტერმინალის კლიენტად picocom-ს იყენებს.       დარწმუნდით, რომ"
-" მოწყობილობასთან წვდომისთვის თქვენი მომხმარებელი 'dialout' ჯგუფის წევრია."
+"სერიული კავშირი ტერმინალის კლიენტად picocom-ს იყენებს.       დარწმუნდით, რომ "
+"მოწყობილობასთან წვდომისთვის თქვენი მომხმარებელი 'dialout' ჯგუფის წევრია."
 
 #: rustconn/src/dialogs/connection/serial.rs:57
 msgid "Device Path"
@@ -2810,7 +2805,7 @@ msgid "Standard serial line configuration (default: 115200 8N1)"
 msgstr "სერიული ხაზის სტანდარტული კონფიგურაცია (ნაგულისხმევი: 115200 8N1)"
 
 #: rustconn/src/dialogs/connection/serial.rs:129
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:156
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:172
 msgid "Baud Rate"
 msgstr "ბოდების სიჩქარე"
 
@@ -3138,7 +3133,7 @@ msgid "Key file not found"
 msgstr "გასაღების ფაილი აღმოჩენილი არაა"
 
 #: rustconn/src/dialogs/connection/ssh.rs:500
-#: rustconn/src/window/edit_group.rs:745
+#: rustconn/src/window/edit_group.rs:749
 msgid "Connect via another SSH connection"
 msgstr "დაკავშირება სხვა SSH კავშირის გავლით"
 
@@ -3258,8 +3253,8 @@ msgid ""
 "Use multiple network paths (mptcpize run). Not available: kernel MPTCP is "
 "disabled"
 msgstr ""
-"გამოიყენეთ მრავალი ქსელის ბილიკი (mptcpize run). მიუწვდომელია: ბირთვის MPTCP"
-" გამორთულია"
+"გამოიყენეთ მრავალი ქსელის ბილიკი (mptcpize run). მიუწვდომელია: ბირთვის MPTCP "
+"გამორთულია"
 
 #: rustconn/src/dialogs/connection/ssh.rs:630
 #: rustconn/src/dialogs/template.rs:739
@@ -3286,15 +3281,14 @@ msgid "Key=Value, comma-separated (-o flags)"
 msgstr "გასაღები=მნიშვნელობა, მძიმით გამოყოფილი (-o ალმები)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:645
-#: rustconn/src/window/edit_group.rs:762
+#: rustconn/src/window/edit_group.rs:766
 msgid "SSH Agent Socket"
 msgstr "SSH აგენტის სოკეტი"
 
 #: rustconn/src/dialogs/connection/ssh.rs:648
 msgid "Overrides global setting and auto-detected socket for this connection"
 msgstr ""
-"გადაფარავს გლობალურ პარამეტრს და ავტომატურად აღმოჩენილ სოკეტს ამ "
-"კავშირისთვის"
+"გადაფარავს გლობალურ პარამეტრს და ავტომატურად აღმოჩენილ სოკეტს ამ კავშირისთვის"
 
 #: rustconn/src/dialogs/connection/ssh.rs:675
 msgid "PKCS#11 Provider"
@@ -3302,11 +3296,11 @@ msgstr "PKCS#11 მომწოდებელი"
 
 #: rustconn/src/dialogs/connection/ssh.rs:678
 msgid ""
-"Path to a PKCS#11 library for hardware-token login (e.g. "
-"/usr/lib64/libykcs11.so.2)"
+"Path to a PKCS#11 library for hardware-token login (e.g. /usr/lib64/"
+"libykcs11.so.2)"
 msgstr ""
-"ბილიკი PKCS#11-ის ბიბლიოთეკამდე აპარატურული ტოკენით შესვლისთვის (მაგ: "
-"/usr/lib64/libykcs11.so.2)"
+"ბილიკი PKCS#11-ის ბიბლიოთეკამდე აპარატურული ტოკენით შესვლისთვის (მაგ: /usr/"
+"lib64/libykcs11.so.2)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:704
 msgid "SFTP Remote Directory"
@@ -3332,8 +3326,8 @@ msgid ""
 "—              devices that reject one default usually reject both"
 msgstr ""
 "თუ Backspace ან Delete არ არის აღიარებული, სცადეთ Backspace (^H) ან Delete "
-"(^?) - მოწყობილობები, რომლებიც უარყოფენ ერთ ნაგულისხმევს, ჩვეულებრივ, ორივეს"
-" უარყოფენ."
+"(^?) - მოწყობილობები, რომლებიც უარყოფენ ერთ ნაგულისხმევს, ჩვეულებრივ, ორივეს "
+"უარყოფენ."
 
 #: rustconn/src/dialogs/connection/ssh.rs:749
 #: rustconn/src/dialogs/connection/telnet.rs:74
@@ -3554,7 +3548,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/web.rs:130
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:52
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "ზოგადი"
 
@@ -3563,7 +3557,7 @@ msgid "How the URL is opened"
 msgstr "როგორ იხსნება URL"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:78
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:210
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:226
 #: rustconn/src/dialogs/template.rs:1349
 msgid "Provider"
 msgstr "მომწოდებელი"
@@ -3663,7 +3657,7 @@ msgid "AWS Profile"
 msgstr "AWS-ის პროფილი"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:261
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:717
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:734
 #: rustconn/src/dialogs/template.rs:1548
 msgid "Region"
 msgstr "რეგიონი"
@@ -3677,13 +3671,13 @@ msgid "Instance Name"
 msgstr "გაშვებული ასლის სახელი"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:282
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:725
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:742
 #: rustconn/src/dialogs/template.rs:1584
 msgid "Zone"
 msgstr "ზონა"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:285
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:727
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:744
 #: rustconn/src/dialogs/template.rs:1596
 msgid "Project"
 msgstr "პროექტი"
@@ -3699,14 +3693,14 @@ msgstr "სამიზნე რესურსის ID"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:307
 #: rustconn/src/dialogs/connection/zerotrust.rs:331
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:733
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:741
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:750
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:758
 #: rustconn/src/dialogs/template.rs:1632 rustconn/src/dialogs/template.rs:1680
 msgid "Resource Group"
 msgstr "რესურსების ჯგუფი"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:311
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:735
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:752
 #: rustconn/src/dialogs/template.rs:1644
 msgid "Bastion Name"
 msgstr "ბასტიონის სახელი"
@@ -3716,7 +3710,7 @@ msgid "Connect via Azure AD authentication"
 msgstr "დაკავშირება Azure AD-ის ავთენტიკაციის გავლით"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:327
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:739
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
 #: rustconn/src/dialogs/template.rs:1668
 msgid "VM Name"
 msgstr "ვმ-ის სახელი"
@@ -3757,7 +3751,7 @@ msgid "Connect via Cloudflare Zero Trust"
 msgstr "დაკავშირება Cloudflare Zero Trust-ის გავლით"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:400
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:745
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:762
 #: rustconn/src/dialogs/template.rs:1756 rustconn/src/monitoring.rs:357
 msgid "Hostname"
 msgstr "ჰოსტის სახელი"
@@ -3771,7 +3765,7 @@ msgid "Node Name"
 msgstr "კვანძის სახელი"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:419
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:751
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:768
 #: rustconn/src/dialogs/template.rs:1792
 msgid "Cluster"
 msgstr "კლასტერი"
@@ -3790,8 +3784,8 @@ msgid "Connect via Boundary proxy"
 msgstr "დაკავშირება Boundary-ის პროქსის გავლით"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:453
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:715
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:759
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:732
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:776
 #: rustconn/src/dialogs/template.rs:1840
 msgid "Target ID"
 msgstr "სამიზნის ID"
@@ -3805,13 +3799,13 @@ msgid "Connect via Hoop.dev zero-trust gateway"
 msgstr "დაკავშირება Hoop.dev-ის ნულოვანი წვდომის მარშრუტიზატორის გავლით"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:475
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:765
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:782
 #: rustconn/src/dialogs/template.rs:1876
 msgid "Connection Name"
 msgstr "შეერთების სახელი"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:479
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:767
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:784
 #: rustconn/src/dialogs/template.rs:1888
 msgid "Gateway URL"
 msgstr "ნაგულისხმები რაუტერის URL"
@@ -3830,7 +3824,7 @@ msgid "Command Template"
 msgstr "ბრძანების ნიმუში"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:502
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:224
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:240
 msgid ""
 "Placeholders such as ${id} are taken from the local variables on the Data "
 "tab; ${host}, ${port}, ${username} and ${name} come from the connection "
@@ -3871,15 +3865,15 @@ msgid "Emoji or icon name (optional)"
 msgstr "ემოჯი, ან ხატულას სახელი (არასავალდებულო)"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:164
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:393
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:409
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:202
 msgid "Advanced…"
 msgstr "დამატებით…"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:167
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:169
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:396
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:398
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:412
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:414
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:205
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:207
 msgid "Open full connection editor"
@@ -3910,97 +3904,97 @@ msgstr "დასრულება"
 msgid "Select SSH Key File"
 msgstr "აირჩიეთ SSH გასაღების ფაილი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:102
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:105
 msgid "Optional — auto-generated if empty"
 msgstr "არასავალდებულო — გენერირდება ავტომატურად, თუ ცარიელია"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:120
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:123
 msgid "Default: {}"
 msgstr "ნაგულისხმევი: {}"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:133
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:148
 msgid "Connect via SSH tunnel"
 msgstr "მიერთება SSH-ის გვირაბის გავლით"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:142
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:158
 msgid "Serial Connection"
 msgstr "სერიული კავშირი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:171
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:187
 msgid "Leave empty for current context"
 msgstr "ცარიელად დატოვება მიმდინა კონტექსტისთვის"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:184
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:200
 msgid "Leave empty for first container"
 msgstr "ცარიელად დატოვება პირველი კონტეინერისთვის"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:196
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:656
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:670
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:212
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:673
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:687
 msgid "Custom Command"
 msgstr "ხელით შეყვანილი ბრძანება"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:211
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:227
 msgid "Run any command for connection"
 msgstr "გაუშვით ნებისმიერი პროგრამა კავშირისთვის"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:240
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:256
 msgid "Web Bookmark"
 msgstr "ვების სანიშნე"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:253
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:178
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:269
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:190
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:219
 msgid "Next"
 msgstr "შემდეგი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:270
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:286
 msgid "Templates"
 msgstr "შაბლონები"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:421
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:437
 msgid "Connection Details"
 msgstr "კავშირის დეტალები"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:553
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:570
 msgid "Uses SSH for handshake, then switches to UDP"
 msgstr "იყენებს SSH-ს კავშირის დასაწყებად, შემდეგ კი გადაერთვება UDP-ზე"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:557
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:574
 msgid "File browser over SSH connection"
 msgstr "ფაილების ბრაუზერი SSH კავშირით"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:641
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:658
 msgid "{} Connection"
 msgstr "{} კავშირი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:719
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:736
 msgid "Profile"
 msgstr "პროფილი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:723
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:740
 #: rustconn/src/dialogs/template.rs:1572
 msgid "Instance"
 msgstr "გაშვებული ასლი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:731
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:748
 msgid "Resource ID"
 msgstr "რესურსის ID"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:761
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:778
 msgid "Address"
 msgstr "მისამართი"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:983
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1000
 msgid "More…"
 msgstr "მეტი…"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:991
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:996
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1013
 msgid "Browse all predefined templates"
 msgstr "ყველა წინასწარ აღწერილი ნიმუშის დათვალიერება"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1047
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1064
 msgid "Your Templates"
 msgstr "თქვენი ნიმუშები"
 
@@ -4029,8 +4023,8 @@ msgid ""
 "Copies the passwords of every connection, group and secret variable that "
 "uses the password store. The originals are left where they are."
 msgstr ""
-"აკოპირებს ყველა კავშირის, ჯგუფის და საიდუმლო ცვლადის პაროლს, რომელიც იყენებს"
-" პაროლის მაღაზიას. ორიგინალები რჩება იქ, სადაც არის."
+"აკოპირებს ყველა კავშირის, ჯგუფის და საიდუმლო ცვლადის პაროლს, რომელიც იყენებს "
+"პაროლის მაღაზიას. ორიგინალები რჩება იქ, სადაც არის."
 
 #: rustconn/src/dialogs/credential_transfer.rs:88
 msgid "From"
@@ -4129,8 +4123,8 @@ msgid ""
 "The copy did not finish. Some entries may already have been copied; running "
 "it again completes it."
 msgstr ""
-"ასლი არ დასრულებულა. ზოგიერთი ჩანაწერი შესაძლოა უკვე დაკოპირებული იყოს; მისი"
-" ხელახლა გაშვება ასრულებს მას."
+"ასლი არ დასრულებულა. ზოგიერთი ჩანაწერი შესაძლოა უკვე დაკოპირებული იყოს; მისი "
+"ხელახლა გაშვება ასრულებს მას."
 
 #: rustconn/src/dialogs/credential_transfer.rs:597
 msgid ""
@@ -4206,8 +4200,8 @@ msgid ""
 "These arrived, but the destination has nowhere to keep part of what they "
 "held:"
 msgstr ""
-"ესენი ჩამოვიდნენ, მაგრამ დანიშნულების ადგილს არსად აქვს შესანახი ნაწილი, რაც"
-" მათ ეჭირათ:"
+"ესენი ჩამოვიდნენ, მაგრამ დანიშნულების ადგილს არსად აქვს შესანახი ნაწილი, რაც "
+"მათ ეჭირათ:"
 
 #: rustconn/src/dialogs/credential_transfer.rs:718
 msgid "Some Passwords Were Not Copied"
@@ -4235,19 +4229,16 @@ msgstr "გატანის ფორმატი"
 msgid "Select the format to export your connections to"
 msgstr "აირჩიეთ ფორმატი, რომელშიც თქვენი კავშირების გატანა მოხდება"
 
-#: rustconn/src/dialogs/export.rs:251
-#: rustconn/src/dialogs/import/sources.rs:52
+#: rustconn/src/dialogs/export.rs:251 rustconn/src/dialogs/import/sources.rs:52
 msgid "RustConn Native (.rcn)"
 msgstr "RustConn-ის საკუთარი (.rcn)"
 
-#: rustconn/src/dialogs/export.rs:252
-#: rustconn/src/dialogs/import/sources.rs:58
+#: rustconn/src/dialogs/export.rs:252 rustconn/src/dialogs/import/sources.rs:58
 #: rustconn/src/dialogs/import/sources.rs:507
 msgid "Ansible Inventory"
 msgstr "Ansible-ის ინვენტარი"
 
-#: rustconn/src/dialogs/export.rs:253
-#: rustconn/src/dialogs/import/sources.rs:70
+#: rustconn/src/dialogs/export.rs:253 rustconn/src/dialogs/import/sources.rs:70
 #: rustconn/src/dialogs/import/sources.rs:239
 msgid "Asbru-CM"
 msgstr "Asbru-CM"
@@ -4517,8 +4508,8 @@ msgid ""
 "Could not write the export file: {}. Check destination permissions and free "
 "disk space."
 msgstr ""
-"საექსპორტო ფაილის ჩაწერა ვერ მოხერხდა: {}. შეამოწმეთ დანიშნულების ნებართვები"
-" და თავისუფალი ადგილი დისკზე."
+"საექსპორტო ფაილის ჩაწერა ვერ მოხერხდა: {}. შეამოწმეთ დანიშნულების ნებართვები "
+"და თავისუფალი ადგილი დისკზე."
 
 #: rustconn/src/dialogs/flatpak_components.rs:72
 msgid "Components"
@@ -4652,8 +4643,7 @@ msgid "All connection history entries will be permanently removed."
 msgstr "კავშირის ისტორიის ჩანაწერები სამუდამოდ წაიშლება."
 
 #: rustconn/src/dialogs/history.rs:200 rustconn/src/terminal/playback.rs:255
-#: rustconn/src/window/edit_group.rs:593
-#: rustconn/src/window/edit_group.rs:1017
+#: rustconn/src/window/edit_group.rs:593 rustconn/src/window/edit_group.rs:1021
 msgid "Clear"
 msgstr "გასუფთავება"
 
@@ -4688,8 +4678,7 @@ msgstr "კავშირების შემოტანა"
 #: rustconn/src/dialogs/import/mod.rs:61 rustconn/src/dialogs/import/mod.rs:62
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
 #: rustconn/src/dialogs/shortcuts.rs:165 rustconn/src/dialogs/widgets.rs:486
-#: rustconn/src/split_view/bridge.rs:1817
-#: rustconn/src/window/edit_group.rs:805
+#: rustconn/src/split_view/bridge.rs:1817 rustconn/src/window/edit_group.rs:809
 msgid "Import"
 msgstr "შემოტანა"
 
@@ -4753,8 +4742,8 @@ msgid ""
 "Connection '{}' has {} automation task(s) and {} expect rule(s) — review "
 "before running"
 msgstr ""
-"\"{}\" კავშირს აქვს {} ავტომატიზაციის დავალება(ები) და {} მოველით წეს(ებ)ს —"
-" გადახედეთ გაშვებამდე"
+"\"{}\" კავშირს აქვს {} ავტომატიზაციის დავალება(ები) და {} მოველით წეს(ებ)ს — "
+"გადახედეთ გაშვებამდე"
 
 #: rustconn/src/dialogs/import/mod.rs:408
 msgid "Connection '{}': ignored unusable Port '{}', using port {}"
@@ -5063,8 +5052,8 @@ msgstr "აირჩიეთ RustConn საკუთარი ფაილი"
 
 #: rustconn/src/dialogs/import/sources.rs:664
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:38
-#: rustconn/src/window/edit_group.rs:807 rustconn/src/window/edit_group.rs:858
-#: rustconn/src/window/edit_group.rs:1402
+#: rustconn/src/window/edit_group.rs:811 rustconn/src/window/edit_group.rs:862
+#: rustconn/src/window/edit_group.rs:1406
 msgid "Cloud Sync"
 msgstr "ღრუბლოვანი სინქრონიზაცია"
 
@@ -5166,7 +5155,8 @@ msgid ""
 "Imported {} connection(s) and {} group(s) from {} files ({} errors).\n"
 "Connections will be added to 'Multiple Files Import' group."
 msgstr ""
-"იმპორტირებულია {} კავშირი(ები) და {} ჯგუფი(ები) {} ფაილებიდან ({} შეცდომები).\n"
+"იმპორტირებულია {} კავშირი(ები) და {} ჯგუფი(ები) {} ფაილებიდან ({} "
+"შეცდომები).\n"
 "კავშირები დაემატება „მრავალჯერადი ფაილის იმპორტის“ ჯგუფს."
 
 #: rustconn/src/dialogs/import/sources.rs:1490
@@ -5210,8 +5200,7 @@ msgstr "დადასტურება…"
 msgid "Verification failed"
 msgstr "შემოწმების შეცდომა"
 
-#: rustconn/src/dialogs/log_viewer.rs:39
-#: rustconn/src/dialogs/log_viewer.rs:134
+#: rustconn/src/dialogs/log_viewer.rs:39 rustconn/src/dialogs/log_viewer.rs:134
 msgid "Session Logs"
 msgstr "სესიის ჟურნალი"
 
@@ -5277,8 +5266,7 @@ msgstr "ავტორიზაციის დეტალების ამ�
 msgid "Domain:"
 msgstr "დომენი:"
 
-#: rustconn/src/dialogs/password.rs:157
-#: rustconn/src/window/edit_dialogs.rs:817
+#: rustconn/src/dialogs/password.rs:157 rustconn/src/window/edit_dialogs.rs:817
 #: rustconn/src/window/edit_dialogs.rs:828
 msgid "(optional)"
 msgstr "(არასავალდებულო)"
@@ -5462,11 +5450,15 @@ msgstr "დააკოპირეთ რწმუნებათა სიგ�
 
 #: rustconn/src/dialogs/portable_migration.rs:52
 msgid ""
-"{} stored passwords are currently protected by a key that only works on this computer. Copying them into the portable file re-encrypts them with your passphrase, so they can be opened on your other devices.\n"
+"{} stored passwords are currently protected by a key that only works on this "
+"computer. Copying them into the portable file re-encrypts them with your "
+"passphrase, so they can be opened on your other devices.\n"
 "\n"
 "The originals are kept, so nothing is lost if you change your mind."
 msgstr ""
-"{} შენახული პაროლები ამჟამად დაცულია გასაღებით, რომელიც მუშაობს მხოლოდ ამ კომპიუტერზე. მათი კოპირება პორტატულ ფაილში ხელახლა დაშიფვრავს მათ თქვენი პაროლით, ასე რომ მათი გახსნა შესაძლებელია სხვა მოწყობილობებზე.\n"
+"{} შენახული პაროლები ამჟამად დაცულია გასაღებით, რომელიც მუშაობს მხოლოდ ამ "
+"კომპიუტერზე. მათი კოპირება პორტატულ ფაილში ხელახლა დაშიფვრავს მათ თქვენი "
+"პაროლით, ასე რომ მათი გახსნა შესაძლებელია სხვა მოწყობილობებზე.\n"
 "\n"
 "ორიგინალები ინახება, ასე რომ, თუ გადაიფიქრებთ, არაფერი დაიკარგება."
 
@@ -5575,8 +5567,8 @@ msgstr ""
 #: rustconn/src/dialogs/portable_passphrase_change.rs:288
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:910
 msgid ""
-"This passphrase would not take long to guess. Several unrelated words make a"
-" much stronger one, and are easier to remember than symbols."
+"This passphrase would not take long to guess. Several unrelated words make a "
+"much stronger one, and are easier to remember than symbols."
 msgstr ""
 "ამ საიდუმლო ფრაზის გამოცნობას დიდი დრო არ დასჭირდება. რამდენიმე "
 "ურთიერთდაკავშირებული სიტყვა გაცილებით ძლიერს ხდის და უფრო ადვილად "
@@ -5603,8 +5595,8 @@ msgid ""
 "Save your settings so the copy of the passphrase kept on this computer is "
 "updated too. Until then this computer still remembers the old one."
 msgstr ""
-"შეინახეთ თქვენი პარამეტრები, რათა განახლდეს ამ კომპიუტერში შენახული საიდუმლო"
-" ფრაზის ასლიც. მანამდე ამ კომპიუტერს ჯერ კიდევ ახსოვს ძველი."
+"შეინახეთ თქვენი პარამეტრები, რათა განახლდეს ამ კომპიუტერში შენახული საიდუმლო "
+"ფრაზის ასლიც. მანამდე ამ კომპიუტერს ჯერ კიდევ ახსოვს ძველი."
 
 #: rustconn/src/dialogs/portable_passphrase_change.rs:375
 msgid "Passphrase Changed"
@@ -5658,11 +5650,11 @@ msgstr "ჩანაწერების გარეშე"
 
 #: rustconn/src/dialogs/recording.rs:141
 msgid ""
-"Session recordings will appear here. Use the context menu to start recording"
-" a session."
+"Session recordings will appear here. Use the context menu to start recording "
+"a session."
 msgstr ""
-"სესიის ჩანაწერები გამოჩნდება აქ. გამოიყენეთ კონტექსტური მენიუ სესიის ჩაწერის"
-" დასაწყებად."
+"სესიის ჩანაწერები გამოჩნდება აქ. გამოიყენეთ კონტექსტური მენიუ სესიის ჩაწერის "
+"დასაწყებად."
 
 #: rustconn/src/dialogs/recording.rs:362 rustconn/src/dialogs/recording.rs:365
 #: rustconn/src/terminal/playback.rs:261
@@ -5746,7 +5738,7 @@ msgstr "შემოტანა ჩავარდა"
 #: rustconn/src/window/connection_dialogs.rs:1024
 #: rustconn/src/window/edit_dialogs.rs:381
 #: rustconn/src/window/edit_dialogs.rs:485
-#: rustconn/src/window/edit_group.rs:1730
+#: rustconn/src/window/edit_group.rs:1734
 msgid "Error"
 msgstr "შეცდომა"
 
@@ -5814,7 +5806,7 @@ msgid "Choose sync directory"
 msgstr "აირჩიეთ სინქრონიზაციის საქაღალდე"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:69
-#: rustconn/src/window/edit_group.rs:1870
+#: rustconn/src/window/edit_group.rs:1874
 msgid "Select Sync Directory"
 msgstr "აირჩიეთ სინქრონიზაციის საქაღალდე"
 
@@ -5868,21 +5860,26 @@ msgstr "სინქრონიზაციის ფაილის შემ�
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:230
 msgid ""
-"The Flatpak sandbox cannot directly access this directory. File monitoring will not work through the document portal.\n"
+"The Flatpak sandbox cannot directly access this directory. File monitoring "
+"will not work through the document portal.\n"
 "\n"
 "To grant access, run in a terminal:\n"
 "\n"
 "flatpak override --user --filesystem={} {}\n"
 "\n"
-"Adjust the path if needed to match the actual location on your filesystem. Then restart RustConn and set the sync directory again."
+"Adjust the path if needed to match the actual location on your filesystem. "
+"Then restart RustConn and set the sync directory again."
 msgstr ""
-"Flatpak sandbox-ს არ შეუძლია პირდაპირ წვდომა ამ დირექტორიაში. ფაილის მონიტორინგი არ იმუშავებს დოკუმენტის პორტალზე.\n"
+"Flatpak sandbox-ს არ შეუძლია პირდაპირ წვდომა ამ დირექტორიაში. ფაილის "
+"მონიტორინგი არ იმუშავებს დოკუმენტის პორტალზე.\n"
 "\n"
 "წვდომის მისაცემად, გაუშვით ტერმინალში:\n"
 "\n"
 "flatpak override --user --filesystem={} {}\n"
 "\n"
-"საჭიროების შემთხვევაში დაარეგულირეთ ბილიკი, რათა შეესაბამებოდეს თქვენს ფაილურ სისტემაში რეალურ მდებარეობას. შემდეგ გადატვირთეთ RustConn და ხელახლა დააყენეთ სინქრონიზაციის დირექტორია."
+"საჭიროების შემთხვევაში დაარეგულირეთ ბილიკი, რათა შეესაბამებოდეს თქვენს "
+"ფაილურ სისტემაში რეალურ მდებარეობას. შემდეგ გადატვირთეთ RustConn და ხელახლა "
+"დააყენეთ სინქრონიზაციის დირექტორია."
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:235
 msgid "Flatpak: filesystem access required"
@@ -6072,8 +6069,7 @@ msgstr "აღდგეს პარამეტრები?"
 
 #: rustconn/src/dialogs/settings/mod.rs:555
 msgid ""
-"This will overwrite current settings. A restart is required to apply "
-"changes."
+"This will overwrite current settings. A restart is required to apply changes."
 msgstr ""
 "ეს გადაწერს მიმდინარე პარამეტრებს. ცვლილებების გამოსაყენებლად საჭიროა "
 "გადატვირთვა."
@@ -6130,13 +6126,13 @@ msgstr "საიდუმლო ფრაზა არ შეინახა"
 
 #: rustconn/src/dialogs/settings/mod.rs:1570
 msgid ""
-"The passphrase for the portable file was not confirmed, so it was not saved."
-" Everything else you changed was. Open Secrets again and type the passphrase"
-" in both fields."
+"The passphrase for the portable file was not confirmed, so it was not saved. "
+"Everything else you changed was. Open Secrets again and type the passphrase "
+"in both fields."
 msgstr ""
 "პორტატული ფაილის საიდუმლო ფრაზა არ დადასტურდა, ამიტომ არ შეინახა. დანარჩენი "
-"ცვლილებები შეინახა. ხელახლა გახსენით საიდუმლოები და შეიყვანეთ საიდუმლო ფრაზა"
-" ორივე ველში."
+"ცვლილებები შეინახა. ხელახლა გახსენით საიდუმლოები და შეიყვანეთ საიდუმლო ფრაზა "
+"ორივე ველში."
 
 #: rustconn/src/dialogs/settings/mod.rs:1774
 msgid "Untitled rule"
@@ -6235,30 +6231,29 @@ msgstr "ქსელი"
 msgid "Applied to connections that inherit their jump host"
 msgstr "ეხება კავშირებს, რომლებიც შუალედურ ჰოსტს მემკვიდრეობით იღებენ"
 
-#: rustconn/src/dialogs/settings/network_tab.rs:71
+#: rustconn/src/dialogs/settings/network_tab.rs:74
 msgid ""
-"A saved connection also carries its port, identity file and its own jump "
-"host"
+"A saved connection also carries its port, identity file and its own jump host"
 msgstr ""
 "შენახული კავშირი ატარებს ასევე თავის პორტს, იდენტიფიკაციის ფაილს და საკუთარ "
 "შუალედურ ჰოსტს"
 
-#: rustconn/src/dialogs/settings/network_tab.rs:75
+#: rustconn/src/dialogs/settings/network_tab.rs:78
 msgid "Global Jump Host"
 msgstr "გლობალური შუალედური ჰოსტი"
 
-#: rustconn/src/dialogs/settings/network_tab.rs:76
+#: rustconn/src/dialogs/settings/network_tab.rs:79
 msgid "Reach every inheriting connection through this one"
 msgstr "ყველა მემკვიდრე კავშირის გატარება ამის გავლით"
 
-#: rustconn/src/dialogs/settings/network_tab.rs:83
+#: rustconn/src/dialogs/settings/network_tab.rs:86
 msgid "Global ProxyJump"
 msgstr "გლობალური ProxyJump"
 
-#: rustconn/src/dialogs/settings/network_tab.rs:96
+#: rustconn/src/dialogs/settings/network_tab.rs:99
 msgid ""
-"OpenSSH syntax, for example user@bastion. Chained after the Global Jump Host"
-" when both are set"
+"OpenSSH syntax, for example user@bastion. Chained after the Global Jump Host "
+"when both are set"
 msgstr ""
 "OpenSSH-ის სინტაქსი, მაგალითად user@bastion. ჯაჭვდება გლობალური შუალედური "
 "ჰოსტის შემდეგ, როცა ორივეა მითითებული"
@@ -6509,8 +6504,8 @@ msgid ""
 "Look for passwords in this computer's encrypted file too, so ones saved "
 "before you switched backend still resolve"
 msgstr ""
-"მოძებნეთ პაროლები ამ კომპიუტერის დაშიფრულ ფაილშიც, რათა backend-ის შეცვლამდე"
-" შენახულები კვლავ მოიძებნოს"
+"მოძებნეთ პაროლები ამ კომპიუტერის დაშიფრულ ფაილშიც, რათა backend-ის შეცვლამდე "
+"შენახულები კვლავ მოიძებნოს"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1018
 msgid "Copy Passwords…"
@@ -6522,11 +6517,11 @@ msgstr "გადაადგილება მაღაზიებს შო�
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1024
 msgid ""
-"Copy the passwords you already have from one store into another, for example"
-" into the portable file"
+"Copy the passwords you already have from one store into another, for example "
+"into the portable file"
 msgstr ""
-"დააკოპირეთ პაროლები, რომლებიც უკვე გაქვთ ერთი მაღაზიიდან მეორეში, მაგალითად,"
-" პორტატულ ფაილში"
+"დააკოპირეთ პაროლები, რომლებიც უკვე გაქვთ ერთი მაღაზიიდან მეორეში, მაგალითად, "
+"პორტატულ ფაილში"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1066
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1085
@@ -6564,8 +6559,8 @@ msgstr "API გასაღებით ავთენტიკაციის 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1107
 msgid "For automation or 2FA methods not supported by CLI (FIDO2, Duo)"
 msgstr ""
-"ავტომატიზაციისთვის, ან 2FA-ის მეთოდებისთვის, რომლის მხარდაჭრაც CLI-ს არ აქვს"
-" (FIDO2, Duo)"
+"ავტომატიზაციისთვის, ან 2FA-ის მეთოდებისთვის, რომლის მხარდაჭრაც CLI-ს არ აქვს "
+"(FIDO2, Duo)"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1114
 msgid "client_id"
@@ -6770,8 +6765,8 @@ msgid ""
 "machine, so the file cannot be opened anywhere else — and cannot be "
 "recovered if the machine is lost."
 msgstr ""
-"რწმუნებათა სიგელები ფაილში ამ კომპიუტერში. გასაღები მიღებულია ამ მანქანიდან,"
-" ამიტომ ფაილის სხვაგან გახსნა შეუძლებელია — და მისი აღდგენა შეუძლებელია, თუ "
+"რწმუნებათა სიგელები ფაილში ამ კომპიუტერში. გასაღები მიღებულია ამ მანქანიდან, "
+"ამიტომ ფაილის სხვაგან გახსნა შეუძლებელია — და მისი აღდგენა შეუძლებელია, თუ "
 "მანქანა დაიკარგება."
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1577
@@ -6829,8 +6824,8 @@ msgstr "დააყენეთ ფაილი"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1884
 msgid ""
-"Create the file now, or check that your passphrase opens one that is already"
-" there"
+"Create the file now, or check that your passphrase opens one that is already "
+"there"
 msgstr ""
 "შექმენით ფაილი ახლა, ან შეამოწმეთ, რომ თქვენი პაროლი ხსნის ისეთს, რომელიც "
 "უკვე არსებობს"
@@ -6870,8 +6865,7 @@ msgstr "პაროლის შეცვლა…"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1971
 msgid ""
-"Choose a new passphrase and encrypt every password in the file again under "
-"it"
+"Choose a new passphrase and encrypt every password in the file again under it"
 msgstr "აირჩიეთ ახალი პაროლი და დაშიფრეთ ყველა პაროლი ფაილში მის ქვეშ"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1982
@@ -6885,8 +6879,7 @@ msgid "Existing passwords"
 msgstr "არსებული პაროლები"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1990
-msgid ""
-"Re-encrypt credentials from the machine-bound file with your passphrase"
+msgid "Re-encrypt credentials from the machine-bound file with your passphrase"
 msgstr ""
 "ხელახლა დაშიფრეთ რწმუნებათა სიგელები მანქანით შეკრული ფაილიდან თქვენი "
 "საიდუმლო ფრაზით"
@@ -7179,11 +7172,14 @@ msgstr "ფაილების ამრჩევი ვერ გაიხს
 msgid ""
 "{}\n"
 "\n"
-"Keys already in ~/.ssh are listed under Available Key Files, and can be added from there without the file chooser."
+"Keys already in ~/.ssh are listed under Available Key Files, and can be "
+"added from there without the file chooser."
 msgstr ""
 "{}\n"
 "\n"
-"~/.ssh-ში უკვე არსებული გასაღებები ჩამოთვლილია განყოფილებაში „ხელმისაწვდომი გასაღების ფაილები“ და მათი დამატება შესაძლებელია აქედან, ფაილების ამრჩევის გარეშე."
+"~/.ssh-ში უკვე არსებული გასაღებები ჩამოთვლილია განყოფილებაში „ხელმისაწვდომი "
+"გასაღების ფაილები“ და მათი დამატება შესაძლებელია აქედან, ფაილების ამრჩევის "
+"გარეშე."
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:746
 msgid "Remove from agent"
@@ -7366,8 +7362,7 @@ msgstr "SFTP-ის გახსნა Midnight Commander-ში (ლოკა�
 #: rustconn/src/dialogs/settings/terminal_tab.rs:430
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
 msgstr ""
-"⚠ გარე ფაილების მმაართველებს Flatpak-ის სენდბოქსში SSH აგენტზე წვდომა არ "
-"აქვს"
+"⚠ გარე ფაილების მმაართველებს Flatpak-ის სენდბოქსში SSH აგენტზე წვდომა არ აქვს"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:440
 msgid "Copy on select"
@@ -7392,8 +7387,7 @@ msgstr "Option როგორც ღილაკი Meta"
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
 msgstr ""
-"სპეციალური პრეფიქსის გაგზავნა შედგენილი სიმბოლოების მაგიერ (vin/emacs-"
-"ისთვის)"
+"სპეციალური პრეფიქსის გაგზავნა შედგენილი სიმბოლოების მაგიერ (vin/emacs-ისთვის)"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:470
 #: rustconn/src/dialogs/settings/ui_tab.rs:437
@@ -7561,8 +7555,8 @@ msgstr "კომპაქტური ინტერფეისი"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:248
 msgid ""
-"Reduce header bar, tab bar, and toolbar height. Applied instantly; useful on"
-" small screens, macOS and KDE"
+"Reduce header bar, tab bar, and toolbar height. Applied instantly; useful on "
+"small screens, macOS and KDE"
 msgstr ""
 "შეამცირეთ სათაურის ზოლი, ჩანართის ზოლი და ხელსაწყოთა ზოლის სიმაღლე. "
 "გამოიყენება მყისიერად; სასარგებლოა პატარა ეკრანებზე, macOS-სა და KDE-ზე"
@@ -7609,8 +7603,7 @@ msgstr "დაიმახსოვრე კლავიატურის გ�
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:308
 msgid "Restore the passthrough state (Ctrl+Shift+Backspace) on the next start"
-msgstr ""
-"აღადგინეთ გავლის მდგომარეობა (Ctrl+Shift+Backspace) მომდევნო დაწყებაზე"
+msgstr "აღადგინეთ გავლის მდგომარეობა (Ctrl+Shift+Backspace) მომდევნო დაწყებაზე"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:317
 msgid "Window"
@@ -7864,9 +7857,8 @@ msgid "SSH Tunnel Manager"
 msgstr "SSH გვირაბის მენეჯერი"
 
 #: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:472
-#: rustconn/src/sidebar_ui.rs:829
-#: rustconn/src/window/connection_dialogs.rs:390 rustconn/src/window/ui.rs:88
-#: rustconn/src/window/ui.rs:247
+#: rustconn/src/sidebar_ui.rs:829 rustconn/src/window/connection_dialogs.rs:390
+#: rustconn/src/window/ui.rs:88 rustconn/src/window/ui.rs:247
 msgid "New Group"
 msgstr "ახალი ჯგუფი"
 
@@ -7881,8 +7873,7 @@ msgstr "სწრაფი დაკავშირება"
 msgid "Move to Group"
 msgstr "ჯგუფში გადატანა"
 
-#: rustconn/src/dialogs/shortcuts.rs:171
-#: rustconn/src/split_view/bridge.rs:1973
+#: rustconn/src/dialogs/shortcuts.rs:171 rustconn/src/split_view/bridge.rs:1973
 msgid "Search"
 msgstr "ძებნა"
 
@@ -7943,8 +7934,7 @@ msgstr "ვერტიკალურად გაყოფა"
 msgid "Close Pane"
 msgstr "პანელის დახურვა"
 
-#: rustconn/src/dialogs/shortcuts.rs:191
-#: rustconn/src/split_view/adapter.rs:965
+#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/split_view/adapter.rs:965
 #: rustconn/src/split_view/adapter.rs:1361
 msgid "Remove from Split"
 msgstr "მოცილება გაყოფილიდან"
@@ -8014,8 +8004,7 @@ msgstr "კავშირი უნდა ემთხვეოდეს ყვ
 
 #: rustconn/src/dialogs/smart_folder.rs:143
 #: rustconn/src/dialogs/smart_folder.rs:182
-#: rustconn/src/dialogs/smart_folder.rs:252
-#: rustconn/src/dialogs/snippet.rs:211
+#: rustconn/src/dialogs/smart_folder.rs:252 rustconn/src/dialogs/snippet.rs:211
 msgid "Any"
 msgstr "ნებისმიერი"
 
@@ -8150,8 +8139,7 @@ msgstr "ფრაგმენტის სახელი აუცილებ�
 msgid "Command is required"
 msgstr "ბრძანება აუცილებელია"
 
-#: rustconn/src/dialogs/statistics.rs:31
-#: rustconn/src/dialogs/statistics.rs:147
+#: rustconn/src/dialogs/statistics.rs:31 rustconn/src/dialogs/statistics.rs:147
 msgid "Connection Statistics"
 msgstr "კავშირის სტატისტიკა"
 
@@ -8477,7 +8465,7 @@ msgid "All"
 msgstr "ყველა"
 
 #: rustconn/src/dialogs/template_manager.rs:69
-#: rustconn/src/window/edit_group.rs:1394
+#: rustconn/src/window/edit_group.rs:1398
 msgid "SSH"
 msgstr "SSH"
 
@@ -8499,8 +8487,7 @@ msgstr "ნიმუშების გარეშე"
 
 #: rustconn/src/dialogs/template_manager.rs:97
 msgid ""
-"Create a template to quickly set up new connections with predefined "
-"settings."
+"Create a template to quickly set up new connections with predefined settings."
 msgstr ""
 "შექმენით ნიმუში, რომ სწრაფად მოირგოთ ახალი კავშირები წინასწარ აღწერილი "
 "პარამეტრებით."
@@ -8664,7 +8651,7 @@ msgid "Unknown connection"
 msgstr "უცნობი კავშირი"
 
 #: rustconn/src/dialogs/tunnel.rs:460
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:83
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:80
 msgid "SSH Connection"
 msgstr "SSH მიერთება"
 
@@ -8751,7 +8738,7 @@ msgid "Tunnel \"{}\" will be permanently removed."
 msgstr "გვირაბი \"{}\" სამუდამოდ წაიშლება."
 
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:120
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:190
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:202
 msgid "New Tunnel"
 msgstr "ახალი გვირაბი"
 
@@ -8781,8 +8768,7 @@ msgstr "კავშირი აღმოჩენილი არაა"
 msgid ""
 "The SSH connection referenced by this tunnel no longer exists. Select a "
 "different connection."
-msgstr ""
-"ამ გვირაბით მითითებულ SSH კავშირი აღარ არსებობს. აირჩიეთ სხვა კავშირი."
+msgstr "ამ გვირაბით მითითებულ SSH კავშირი აღარ არსებობს. აირჩიეთ სხვა კავშირი."
 
 #: rustconn/src/dialogs/tunnel_builder/path_diagram.rs:136
 #: rustconn/src/dialogs/tunnel_builder/path_diagram.rs:203
@@ -8821,37 +8807,29 @@ msgstr "სტატუსი: გაჩერებულია"
 msgid "Tunnel"
 msgstr "გვირაბი"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:77
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:74
 msgid "Tunnel Name"
 msgstr "გვირაბის სახელი"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:90
-msgid "Filter connections…"
-msgstr "კავშირების გაფილტვრა…"
-
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:98
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:103
 msgid "Override bastion/proxy host"
 msgstr "ბასტიონის/პროქსის ჰოსტის გადაფარვა"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:103
-msgid "Connect via intermediate server"
-msgstr "დაკავშირება შუალედური სერვერის გავლით"
-
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:109
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:144
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:121
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:156
 msgid "New SSH Connection"
 msgstr "ახალი SSH კავშირი"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:112
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:114
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:124
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:126
 msgid "Create a new SSH connection"
 msgstr "ახალი SSH კავშირის შექმნა"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:137
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:149
 msgid "No SSH connections available"
 msgstr "SSH კავშირები ხელმისაწვდომი არაა"
 
-#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:138
+#: rustconn/src/dialogs/tunnel_builder/step_connection.rs:150
 msgid "Create an SSH connection first to set up a tunnel"
 msgstr "გვირაბის ასაწყობად ჯერ SSH კავშირი შექმენით"
 
@@ -8973,8 +8951,8 @@ msgstr "გლობალური ცვლადები"
 
 #: rustconn/src/dialogs/variables.rs:170
 msgid ""
-"Define variables that can be used in connections                  with "
-"${variable_name} syntax"
+"Define variables that can be used in connections                  with $"
+"{variable_name} syntax"
 msgstr ""
 "განსაზღვრეთ ცვლადები, რომლებიც შეიძლება გამოყენებულ იქნას ${variable_name} "
 "სინტაქსის კავშირებში"
@@ -8993,9 +8971,9 @@ msgstr "მაგ: ინტერნეტი/MyRouter (არასავა�
 
 #: rustconn/src/dialogs/variables.rs:311
 msgid ""
-"Custom KeePass entry path. If set, the password is read from this"
-"                  existing entry instead of the default "
-"RustConn/rustconn/var/ path."
+"Custom KeePass entry path. If set, the password is read from "
+"this                  existing entry instead of the default RustConn/"
+"rustconn/var/ path."
 msgstr ""
 "მორგებული KeePass შესვლის გზა. თუ დაყენებულია, პაროლი იკითხება ამ არსებული "
 "ჩანაწერიდან ნაგულისხმევი RustConn/rustconn/var/ ბილიკის ნაცვლად."
@@ -9010,13 +8988,13 @@ msgstr "მაგ: AD-ის ავტორიზაციის დეტა�
 
 #: rustconn/src/dialogs/variables.rs:330
 msgid ""
-"Existing vault entry name. If set, the password is fetched from this"
-"                  entry at connection time — no need to enter a password "
+"Existing vault entry name. If set, the password is fetched from "
+"this                  entry at connection time — no need to enter a password "
 "above.                  Nothing is written back to the vault."
 msgstr ""
 "სარდაფში შესვლის არსებული სახელი. თუ დაყენებულია, პაროლი მიიღება ამ "
-"ჩანაწერიდან კავშირის დროს — არ არის საჭირო ზემოთ პაროლის შეყვანა."
-"                  სარდაფში არაფერი წერია."
+"ჩანაწერიდან კავშირის დროს — არ არის საჭირო ზემოთ პაროლის "
+"შეყვანა.                  სარდაფში არაფერი წერია."
 
 #: rustconn/src/dialogs/variables.rs:378 rustconn/src/dialogs/variables.rs:668
 msgid "New variable"
@@ -9059,8 +9037,8 @@ msgid ""
 "shortcuts for back, forward, reload and zoom still work."
 msgstr ""
 "გამორთეთ მცურავი ხელსაწყოთა პანელის და მისი გამოვლენის ისრის მოსაშორებლად. "
-"კლავიატურის მალსახმობები უკანა, წინსვლის, გადატვირთვისა და მასშტაბირებისთვის"
-" კვლავ მუშაობს."
+"კლავიატურის მალსახმობები უკანა, წინსვლის, გადატვირთვისა და მასშტაბირებისთვის "
+"კვლავ მუშაობს."
 
 #: rustconn/src/dialogs/widgets.rs:508
 msgid "Private / Incognito Mode"
@@ -9194,11 +9172,11 @@ msgstr "ეს ჩანართი ავტომატურად დაი
 msgid "Session running in separate window"
 msgstr "სესია გაშვებულია ცალკე ფანჯარაში"
 
-#: rustconn/src/embedded.rs:358
+#: rustconn/src/embedded.rs:370
 msgid "Connecting to {}…"
 msgstr "{}-სთან დაკავშირება…"
 
-#: rustconn/src/embedded.rs:425
+#: rustconn/src/embedded.rs:437
 msgid "Connected to {}"
 msgstr "დაკავშირებულია {}-ისტან"
 
@@ -9240,8 +9218,8 @@ msgid ""
 "Text entered here will be sent as keystrokes to the remote session. It will "
 "not be placed in the system clipboard."
 msgstr ""
-"აქ შეყვანილი ტექსტი გაიგზავნება კლავიშების დაჭერით დისტანციურ სესიაზე. ის არ"
-" განთავსდება სისტემის ბუფერში."
+"აქ შეყვანილი ტექსტი გაიგზავნება კლავიშების დაჭერით დისტანციურ სესიაზე. ის არ "
+"განთავსდება სისტემის ბუფერში."
 
 #: rustconn/src/embedded_rdp/autotype.rs:202
 msgid "Hide text (password mode)"
@@ -9313,16 +9291,16 @@ msgstr ""
 #: rustconn/src/embedded_rdp/connection.rs:386
 #: rustconn/src/embedded_rdp/connection.rs:1959
 msgid "Connection cancelled because the server requires legacy RDP security."
-msgstr ""
-"კავშირი გაუქმდა, რადგან სერვერი საჭიროებს მოძველებულ RDP უსაფრთხოებას."
+msgstr "კავშირი გაუქმდა, რადგან სერვერი საჭიროებს მოძველებულ RDP უსაფრთხოებას."
 
 #: rustconn/src/embedded_rdp/connection.rs:502
 msgid ""
-"Custom FreeRDP arguments are ignored by the embedded client."
-"                          Set the RDP client mode to External to apply them."
+"Custom FreeRDP arguments are ignored by the embedded "
+"client.                          Set the RDP client mode to External to "
+"apply them."
 msgstr ""
-"მორგებული FreeRDP არგუმენტები იგნორირებულია ჩაშენებული კლიენტის მიერ."
-"                          დააყენეთ RDP კლიენტის რეჟიმი გარედან მათი "
+"მორგებული FreeRDP არგუმენტები იგნორირებულია ჩაშენებული კლიენტის "
+"მიერ.                          დააყენეთ RDP კლიენტის რეჟიმი გარედან მათი "
 "გამოსაყენებლად."
 
 #: rustconn/src/embedded_rdp/connection.rs:1996
@@ -9597,7 +9575,7 @@ msgid "Connection may have been lost while the computer slept"
 msgstr "შეიძლება, კავშირი დაიკარგა, სანამ კომპიუტერს ეძინა"
 
 #: rustconn/src/embedded_rdp/polling_handlers.rs:159
-#: rustconn/src/embedded_vnc/mod.rs:672 rustconn/src/embedded_vnc/ui.rs:56
+#: rustconn/src/embedded_vnc/mod.rs:664 rustconn/src/embedded_vnc/ui.rs:56
 msgid "Copy remote clipboard to local"
 msgstr "დაშორებული ბუფერის კოპირება ლოკალურზე"
 
@@ -9683,7 +9661,7 @@ msgstr "მეტი ქმედება"
 msgid "Show session toolbar"
 msgstr "სესიის ხელსაწყოთა პანელის ჩვენება"
 
-#: rustconn/src/embedded_vnc/mod.rs:581
+#: rustconn/src/embedded_vnc/mod.rs:573
 msgid ""
 "VNC encryption not supported. Install TigerVNC and enable 'Accept "
 "Certificate'."
@@ -9691,7 +9669,7 @@ msgstr ""
 "VNC დაშიფვრა მხარდაჭერილი არაა. დააყენეთ TigerVNC და ჩართეთ 'სერტიფიკატის "
 "მიღება'."
 
-#: rustconn/src/embedded_vnc/mod.rs:635
+#: rustconn/src/embedded_vnc/mod.rs:627
 msgid "Using external viewer (unsupported encryption)"
 msgstr "გამოიყენება გარე დამთვალიერებელი (მხარდაუჭერელი დაშიფვრა)"
 
@@ -10708,12 +10686,12 @@ msgstr "პორტატული ფაილი ჩაკეტილია"
 
 #: rustconn/src/vault_ops.rs:59
 msgid ""
-"The password was not saved because the portable credential file has not been"
-" unlocked in this session. Open Settings, then Secrets, and enter its "
+"The password was not saved because the portable credential file has not been "
+"unlocked in this session. Open Settings, then Secrets, and enter its "
 "passphrase."
 msgstr ""
-"პაროლი არ იყო შენახული, რადგან ამ სესიაზე პორტატული რწმუნებათა სიგელის ფაილი"
-" არ განბლოკილა. გახსენით Settings, შემდეგ Secrets და შეიყვანეთ მისი პაროლი."
+"პაროლი არ იყო შენახული, რადგან ამ სესიაზე პორტატული რწმუნებათა სიგელის ფაილი "
+"არ განბლოკილა. გახსენით Settings, შემდეგ Secrets და შეიყვანეთ მისი პაროლი."
 
 #: rustconn/src/vault_ops.rs:114
 msgid "Password saved to {}."
@@ -10746,16 +10724,16 @@ msgid ""
 "Fix {} and save again, or choose a different backend in Settings, then "
 "Secrets."
 msgstr ""
-"გაასწორეთ {} და კვლავ შეინახეთ, ან აირჩიეთ სხვა backend პარამეტრებში, შემდეგ"
-" საიდუმლოებებში."
+"გაასწორეთ {} და კვლავ შეინახეთ, ან აირჩიეთ სხვა backend პარამეტრებში, შემდეგ "
+"საიდუმლოებებში."
 
 #: rustconn/src/vault_ops.rs:301
 msgid ""
 "You can also save it to this computer's encrypted file instead — it will "
 "still be found when you connect."
 msgstr ""
-"მისი შენახვა ამ კომპიუტერის დაშიფრულ ფაილშიც შეგიძლიათ — ის კვლავ მოიძებნება"
-" დაკავშირებისას."
+"მისი შენახვა ამ კომპიუტერის დაშიფრულ ფაილშიც შეგიძლიათ — ის კვლავ მოიძებნება "
+"დაკავშირებისას."
 
 #: rustconn/src/vault_ops.rs:304
 msgid ""
@@ -10875,8 +10853,8 @@ msgstr "სინქრონიზებულია '{}': +{} კავში�
 
 #: rustconn/src/window/connection_actions.rs:194
 msgid ""
-"Sync directory is not configured. In Flatpak, grant filesystem access first:"
-" flatpak override --user --filesystem=/path/to/sync "
+"Sync directory is not configured. In Flatpak, grant filesystem access first: "
+"flatpak override --user --filesystem=/path/to/sync "
 "io.github.totoshko88.RustConn"
 msgstr ""
 "სინქრონიზაციის დირექტორია არ არის კონფიგურირებული. Flatpak-ში ჯერ მიეცით "
@@ -10885,11 +10863,11 @@ msgstr ""
 
 #: rustconn/src/window/connection_actions.rs:200
 msgid ""
-"Sync directory is not accessible from Flatpak sandbox. Run: flatpak override"
-" --user --filesystem={} io.github.totoshko88.RustConn"
+"Sync directory is not accessible from Flatpak sandbox. Run: flatpak override "
+"--user --filesystem={} io.github.totoshko88.RustConn"
 msgstr ""
-"Sync დირექტორია მიუწვდომელია Flatpak sandbox-იდან. გაშვება: flatpak override"
-" --user --filesystem={} io.github.totoshko88.RustConn"
+"Sync დირექტორია მიუწვდომელია Flatpak sandbox-იდან. გაშვება: flatpak override "
+"--user --filesystem={} io.github.totoshko88.RustConn"
 
 #: rustconn/src/window/connection_actions.rs:204
 msgid "Sync failed: {}"
@@ -10978,12 +10956,12 @@ msgid "Select Vault to load password"
 msgstr "აირჩიეთ საცავი პაროლის ჩასატვირთად"
 
 #: rustconn/src/window/connection_dialogs.rs:850
-#: rustconn/src/window/edit_group.rs:1351
+#: rustconn/src/window/edit_group.rs:1355
 msgid "Notes, contacts, project info"
 msgstr "შენიშვნები, კონტაქტები, პროექტის ინფორმაცია"
 
 #: rustconn/src/window/connection_dialogs.rs:890
-#: rustconn/src/window/edit_group.rs:1468
+#: rustconn/src/window/edit_group.rs:1472
 msgid "Group name cannot be empty"
 msgstr "ჯგუფის სახელი არ შეიძლება, ცარიელი იყოს"
 
@@ -11029,7 +11007,7 @@ msgstr "'{}'-ისთვის საცავის ჩანაწერი �
 
 #: rustconn/src/window/credentials.rs:983
 #: rustconn/src/window/credentials.rs:1210
-#: rustconn/src/window/edit_actions.rs:2051
+#: rustconn/src/window/edit_actions.rs:2087
 msgid "Connection failed. Host unreachable."
 msgstr "კავშირი ჩავარდა. ჰოსტი ხელმიუწვდომელია."
 
@@ -11170,18 +11148,18 @@ msgid "Opening mc SFTP…"
 msgstr "mc SFTP-ის გახსნა…"
 
 #: rustconn/src/window/edit_actions.rs:896
-#: rustconn/src/window/edit_actions.rs:2222
+#: rustconn/src/window/edit_actions.rs:2258
 msgid ""
-"External file managers cannot access SSH agent in Flatpak."
-"                          Enable \"SFTP via mc\" in Settings for reliable "
-"access."
+"External file managers cannot access SSH agent in "
+"Flatpak.                          Enable \"SFTP via mc\" in Settings for "
+"reliable access."
 msgstr ""
-"ფაილის გარე მენეჯერებს არ შეუძლიათ წვდომა SSH აგენტზე Flatpak-ში."
-"                          ჩართეთ \"SFTP via mc\" პარამეტრებიდან საიმედო "
+"ფაილის გარე მენეჯერებს არ შეუძლიათ წვდომა SSH აგენტზე Flatpak-"
+"ში.                          ჩართეთ \"SFTP via mc\" პარამეტრებიდან საიმედო "
 "წვდომისთვის."
 
 #: rustconn/src/window/edit_actions.rs:912
-#: rustconn/src/window/edit_actions.rs:2240
+#: rustconn/src/window/edit_actions.rs:2276
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "აღმოჩენილია გადახტომის ჰოსტი. SFTP-ის გახსნა mc-ის საშუალებით ფაილის "
@@ -11204,39 +11182,38 @@ msgstr "application is busy"
 msgid "the SSH connection it tunnels through is gone"
 msgstr "the SSH connection it tunnels through is gone"
 
-#: rustconn/src/window/edit_actions.rs:1436
+#: rustconn/src/window/edit_actions.rs:1472
 msgid ""
 "The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
-"tunnelled; opening the embedded browser instead. Set a "
-"chromium/chrome/brave/vivaldi/edge command in Settings to use an external "
-"browser."
+"tunnelled; opening the embedded browser instead. Set a chromium/chrome/brave/"
+"vivaldi/edge command in Settings to use an external browser."
 msgstr ""
 "გვირაბული ბრაუზერის ბრძანება ‘{}’ არ არის Chromium-ზე დაფუძნებული და "
 "გვირაბით ვერ გაივლის; იხსნება ჩაშენებული ბრაუზერი. გარე ბრაუზერის "
 "გამოსაყენებლად მიუთითე chromium/chrome/brave/vivaldi/edge ბრძანება "
 "პარამეტრებში."
 
-#: rustconn/src/window/edit_actions.rs:1440
+#: rustconn/src/window/edit_actions.rs:1476
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
-"Chromium-family browsers can be proxied through the tunnel; set a "
-"chromium/chrome/brave/vivaldi/edge command in Settings."
+"Chromium-family browsers can be proxied through the tunnel; set a chromium/"
+"chrome/brave/vivaldi/edge command in Settings."
 msgstr ""
 "გვირაბული ბრაუზერის ბრძანება ‘{}’ არ არის Chromium-ზე დაფუძნებული ბრაუზერი. "
 "მხოლოდ Chromium-ის ოჯახის ბრაუზერების პროქსირება შეიძლება გვირაბით; მიუთითე "
 "chromium/chrome/brave/vivaldi/edge ბრძანება პარამეტრებში."
 
-#: rustconn/src/window/edit_actions.rs:1446
+#: rustconn/src/window/edit_actions.rs:1482
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
-"embedded browser instead. Check the command in Settings, or clear it to "
-"auto-detect a browser."
+"embedded browser instead. Check the command in Settings, or clear it to auto-"
+"detect a browser."
 msgstr ""
 "გვირაბული ბრაუზერის ბრძანება ‘{}’ ვერ მოიძებნა PATH-ში; იხსნება ჩაშენებული "
 "ბრაუზერი. შეამოწმე ბრძანება პარამეტრებში ან გაასუფთავე ავტომატური "
 "ამოცნობისთვის."
 
-#: rustconn/src/window/edit_actions.rs:1450
+#: rustconn/src/window/edit_actions.rs:1486
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -11244,7 +11221,7 @@ msgstr ""
 "გვირაბული ბრაუზერის ბრძანება ‘{}’ ვერ მოიძებნა PATH-ში. შეამოწმე ბრძანება "
 "პარამეტრებში ან გაასუფთავე ავტომატური ამოცნობისთვის."
 
-#: rustconn/src/window/edit_actions.rs:1456
+#: rustconn/src/window/edit_actions.rs:1492
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -11253,7 +11230,7 @@ msgstr ""
 "დააინსტალირე Chromium-ზე დაფუძნებული ბრაუზერი გარე ბრაუზერის გვირაბით "
 "გასატარებლად."
 
-#: rustconn/src/window/edit_actions.rs:1459
+#: rustconn/src/window/edit_actions.rs:1495
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -11262,37 +11239,37 @@ msgstr ""
 "გასახსნელად დააინსტალირე Chromium-ზე დაფუძნებული ბრაუზერი ან გამოიყენე "
 "ჩაშენებული ბრაუზერის მქონე ბილდი."
 
-#: rustconn/src/window/edit_actions.rs:1475
-#: rustconn/src/window/edit_actions.rs:1689
-#: rustconn/src/window/edit_actions.rs:1772
+#: rustconn/src/window/edit_actions.rs:1511
+#: rustconn/src/window/edit_actions.rs:1725
+#: rustconn/src/window/edit_actions.rs:1808
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Could not open the SSH tunnel: {}"
 
-#: rustconn/src/window/edit_actions.rs:1531
+#: rustconn/src/window/edit_actions.rs:1567
 msgid "Opened a tunnelled browser"
 msgstr "Opened a tunnelled browser"
 
-#: rustconn/src/window/edit_actions.rs:1536
-#: rustconn/src/window/edit_actions.rs:1589
+#: rustconn/src/window/edit_actions.rs:1572
+#: rustconn/src/window/edit_actions.rs:1625
 msgid "Failed to open browser: {}"
 msgstr "Failed to open browser: {}"
 
-#: rustconn/src/window/edit_actions.rs:1566
+#: rustconn/src/window/edit_actions.rs:1602
 msgid "{} (tunnel)"
 msgstr "{} (tunnel)"
 
-#: rustconn/src/window/edit_actions.rs:1580
-#: rustconn/src/window/edit_actions.rs:1727
+#: rustconn/src/window/edit_actions.rs:1616
+#: rustconn/src/window/edit_actions.rs:1763
 msgid "Could not open the page: {}"
 msgstr "Could not open the page: {}"
 
-#: rustconn/src/window/edit_actions.rs:1752
-#: rustconn/src/window/edit_actions.rs:1859
-#: rustconn/src/window/edit_actions.rs:1886
+#: rustconn/src/window/edit_actions.rs:1788
+#: rustconn/src/window/edit_actions.rs:1895
+#: rustconn/src/window/edit_actions.rs:1922
 msgid "Failed to open URL: {}"
 msgstr "ვერ გავხსენი URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1805
+#: rustconn/src/window/edit_actions.rs:1841
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -11300,18 +11277,18 @@ msgstr ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
 
-#: rustconn/src/window/edit_actions.rs:1848
-#: rustconn/src/window/edit_actions.rs:1900
+#: rustconn/src/window/edit_actions.rs:1884
+#: rustconn/src/window/edit_actions.rs:1936
 msgid "Opened in browser"
 msgstr "გაიხსნა ბრაუზერში"
 
-#: rustconn/src/window/edit_actions.rs:1873
+#: rustconn/src/window/edit_actions.rs:1909
 msgid ""
-"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
-" browser opens without the tunnel."
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
 msgstr ""
-"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system"
-" browser opens without the tunnel."
+"SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
+"browser opens without the tunnel."
 
 #: rustconn/src/window/edit_dialogs.rs:247
 msgid "Failed to update vault entry: {}"
@@ -11334,7 +11311,7 @@ msgid "Name cannot be empty"
 msgstr "სახელი ცარიელი ვერ იქნება"
 
 #: rustconn/src/window/edit_dialogs.rs:360
-#: rustconn/src/window/edit_group.rs:1527
+#: rustconn/src/window/edit_group.rs:1531
 msgid "Group with name '{}' already exists"
 msgstr "ჯგუფი სახელით '{}' უკვე არსებობს"
 
@@ -11386,8 +11363,7 @@ msgstr ""
 "გათიშვა ამ ჯგუფისთვის ყველა SSH-ის პარამეტრს გაწმენდს. ეს ქმედება "
 "შეუქცევადია."
 
-#: rustconn/src/window/edit_group.rs:592
-#: rustconn/src/window/edit_group.rs:1016
+#: rustconn/src/window/edit_group.rs:592 rustconn/src/window/edit_group.rs:1020
 msgid "Keep"
 msgstr "შენარჩუნება"
 
@@ -11407,127 +11383,127 @@ msgstr "SSH-ის გასაღების ბილიკი"
 msgid "Select SSH key file"
 msgstr "აირჩიეთ SSH გასაღების ფაილი"
 
-#: rustconn/src/window/edit_group.rs:752
+#: rustconn/src/window/edit_group.rs:756
 msgid "SSH Proxy Jump"
 msgstr "SSH Proxy Jump"
 
-#: rustconn/src/window/edit_group.rs:756
+#: rustconn/src/window/edit_group.rs:760
 msgid "Manual ProxyJump (-J) — used when Jump Host is (None)"
 msgstr ""
 "ხელით მითითებული შუალედური პროქსი (-J) — გამოიყენება, როცა შუალედური ჰოსტია "
 "(None)"
 
-#: rustconn/src/window/edit_group.rs:805
+#: rustconn/src/window/edit_group.rs:809
 msgid "Not synced"
 msgstr "არაა სინქრონიზებული"
 
-#: rustconn/src/window/edit_group.rs:805
+#: rustconn/src/window/edit_group.rs:809
 msgid "Master"
 msgstr "ოსტატი"
 
-#: rustconn/src/window/edit_group.rs:874
+#: rustconn/src/window/edit_group.rs:878
 msgid "Sync File"
 msgstr "ფაილის სინქრონიზაცია"
 
-#: rustconn/src/window/edit_group.rs:882
+#: rustconn/src/window/edit_group.rs:886
 msgid "Last Synced"
 msgstr "ბოლო სინქრონიზაცია"
 
-#: rustconn/src/window/edit_group.rs:901
+#: rustconn/src/window/edit_group.rs:905
 msgid "Dynamic Folder"
 msgstr "დინამიკური საქაღალდე"
 
-#: rustconn/src/window/edit_group.rs:902
+#: rustconn/src/window/edit_group.rs:906
 msgid "Generate connections from a script"
 msgstr "კავშირების გენერაცია სკრიპტიდან"
 
-#: rustconn/src/window/edit_group.rs:917
+#: rustconn/src/window/edit_group.rs:921
 msgid "Shell command executed via sh -c"
 msgstr "გარსის ბრძანება, რომელიც სრულდება ბრძანებით sh -c"
 
-#: rustconn/src/window/edit_group.rs:921
+#: rustconn/src/window/edit_group.rs:925
 msgid "Working Directory"
 msgstr "სამუშაო საქაღალდე"
 
-#: rustconn/src/window/edit_group.rs:933
+#: rustconn/src/window/edit_group.rs:937
 msgid "Timeout (seconds)"
 msgstr "მოლოდინის ვადა (წმ)"
 
-#: rustconn/src/window/edit_group.rs:949
+#: rustconn/src/window/edit_group.rs:953
 msgid "Refresh Interval (seconds)"
 msgstr "განახლების ინტერვალი (წმ)"
 
-#: rustconn/src/window/edit_group.rs:950
+#: rustconn/src/window/edit_group.rs:954
 msgid "0 = manual only"
 msgstr "0 = მხოლოდ ხელით"
 
-#: rustconn/src/window/edit_group.rs:983
+#: rustconn/src/window/edit_group.rs:987
 msgid "Expect rules and post-login scripts inherited by connections"
 msgstr ""
 "ველით კავშირების მიერ მემკვიდრეობით მიღებულ წესებს და შესვლის შემდგომ "
 "სკრიპტებს"
 
-#: rustconn/src/window/edit_group.rs:1009
+#: rustconn/src/window/edit_group.rs:1013
 msgid "Clear Automation?"
 msgstr "გასუფთავდეს ავტომატიზაცია?"
 
-#: rustconn/src/window/edit_group.rs:1011
+#: rustconn/src/window/edit_group.rs:1015
 msgid ""
-"Disabling will clear all expect rules and post-login scripts for this group."
-" This cannot be undone."
+"Disabling will clear all expect rules and post-login scripts for this group. "
+"This cannot be undone."
 msgstr ""
 "გამორთვა გაასუფთავებს ყველა მოსალოდნელ წესს და შესვლის შემდგომ სკრიპტს ამ "
 "ჯგუფისთვის. ამის გაუქმება შეუძლებელია."
 
-#: rustconn/src/window/edit_group.rs:1178
+#: rustconn/src/window/edit_group.rs:1182
 msgid "Clear All"
 msgstr "ყველას გასუფთავება"
 
-#: rustconn/src/window/edit_group.rs:1180
+#: rustconn/src/window/edit_group.rs:1184
 msgid "Remove all expect rules"
 msgstr "ყველა expect-ის წესის წაშლა"
 
-#: rustconn/src/window/edit_group.rs:1213
+#: rustconn/src/window/edit_group.rs:1217
 msgid "Test text against your expect rules"
 msgstr "ტექსტის შემოწმება expect-ის წესებით"
 
-#: rustconn/src/window/edit_group.rs:1220
+#: rustconn/src/window/edit_group.rs:1224
 msgid "Enter text to test against patterns"
 msgstr "შეიყვანეთ ტექსტი ნიმუშებით შესამოწმებლად"
 
-#: rustconn/src/window/edit_group.rs:1257
+#: rustconn/src/window/edit_group.rs:1261
 msgid "Match: pattern '{}' → response '{}'"
 msgstr "დამთხვევა: ნიმუში '{}' → პასუხი '{}'"
 
-#: rustconn/src/window/edit_group.rs:1269
+#: rustconn/src/window/edit_group.rs:1273
 msgid "No match"
 msgstr "დამთხვევის გარეშე"
 
-#: rustconn/src/window/edit_group.rs:1284
+#: rustconn/src/window/edit_group.rs:1288
 msgid "Post-login Scripts"
 msgstr "შესვლისშემდეგი სკრიპტები"
 
-#: rustconn/src/window/edit_group.rs:1286
+#: rustconn/src/window/edit_group.rs:1290
 msgid "Commands executed after login (inherited by connections)"
 msgstr "შესვლის შემდეგ შესრულებული ბრძანებები (მემკვიდრეობით კავშირებით)"
 
-#: rustconn/src/window/edit_group.rs:1294
+#: rustconn/src/window/edit_group.rs:1298
 msgid "No post-login scripts"
 msgstr "შესვლისშემდეგი სკრიპტების გარეშე"
 
-#: rustconn/src/window/edit_group.rs:1303
+#: rustconn/src/window/edit_group.rs:1307
 msgid "Add Script"
 msgstr "სკრიპტის დამატება"
 
-#: rustconn/src/window/edit_group.rs:1501
+#: rustconn/src/window/edit_group.rs:1505
 msgid "Select a variable"
 msgstr "აირჩიეთ ცვლადი"
 
-#: rustconn/src/window/edit_group.rs:1650
+#: rustconn/src/window/edit_group.rs:1654
 msgid "Dynamic Folder script cannot be empty"
 msgstr "დინამიკური საქაღალდის სკრიპტი ცარიელი ვერ იქნება"
 
-#: rustconn/src/window/edit_group.rs:1798
+#: rustconn/src/window/edit_group.rs:1802
 msgid ""
 "This group will be exported to {}. Other team members with read access can "
 "import it."
@@ -11535,23 +11511,23 @@ msgstr ""
 "ეს ჯგუფი ექსპორტირებული იქნება {}-ში. წაკითხვის წვდომის მქონე გუნდის სხვა "
 "წევრებს შეუძლიათ მისი იმპორტი."
 
-#: rustconn/src/window/edit_group.rs:1802
+#: rustconn/src/window/edit_group.rs:1806
 msgid "Enable Cloud Sync?"
 msgstr "ჩაირთოს ღრუბელთან სინქრონიზაცია?"
 
-#: rustconn/src/window/edit_group.rs:1804
+#: rustconn/src/window/edit_group.rs:1808
 msgid "Enable"
 msgstr "ჩართვა"
 
-#: rustconn/src/window/edit_group.rs:1835
+#: rustconn/src/window/edit_group.rs:1839
 msgid "Choose Directory"
 msgstr "აირჩიეთ საქაღალდე"
 
-#: rustconn/src/window/edit_group.rs:1842
+#: rustconn/src/window/edit_group.rs:1846
 msgid "Set Up Cloud Sync"
 msgstr "ღრუბელთან სინქრონიზაციის მორგება"
 
-#: rustconn/src/window/edit_group.rs:1844
+#: rustconn/src/window/edit_group.rs:1848
 msgid ""
 "Choose a directory synced with your cloud service (Google Drive, Nextcloud, "
 "Syncthing, etc.)"
@@ -11559,16 +11535,16 @@ msgstr ""
 "აირჩიეთ თქვენს ღრუბლოვან სერვისთან სინქრონიზებული დირექტორია (Google Drive, "
 "Nextcloud, Syncthing და ა.შ.)"
 
-#: rustconn/src/window/edit_group.rs:2359
+#: rustconn/src/window/edit_group.rs:2363
 msgid "Shell command (e.g., export TERM=xterm-256color)"
 msgstr "გარსის ბრძანება (მაგ: export TERM=xterm-256color)"
 
-#: rustconn/src/window/edit_group.rs:2360
+#: rustconn/src/window/edit_group.rs:2364
 msgid "Command to execute after login"
 msgstr "შესვლის შემდეგ შესასრულებელი ბრძანება"
 
-#: rustconn/src/window/edit_group.rs:2370
-#: rustconn/src/window/edit_group.rs:2373
+#: rustconn/src/window/edit_group.rs:2374
+#: rustconn/src/window/edit_group.rs:2377
 msgid "Delete script"
 msgstr "სკრიპტის წაშლა"
 
@@ -11670,12 +11646,12 @@ msgstr "პაროლი არ არის შენახული ამ �
 #: rustconn/src/window/mod.rs:3417
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
-"this session only and you will be asked for it again after a restart. Choose"
-" \"System keyring\" instead, or check that RustConn can write to its data "
+"this session only and you will be asked for it again after a restart. Choose "
+"\"System keyring\" instead, or check that RustConn can write to its data "
 "directory."
 msgstr ""
-"საიდუმლო ფრაზის დაშიფვრა ვერ მოხერხდა ადგილობრივი მეხსიერებისთვის, ამიტომ ის"
-" ინახება მხოლოდ ამ სესიისთვის და ხელახლა მოგეთხოვებათ გადატვირთვის შემდეგ. "
+"საიდუმლო ფრაზის დაშიფვრა ვერ მოხერხდა ადგილობრივი მეხსიერებისთვის, ამიტომ ის "
+"ინახება მხოლოდ ამ სესიისთვის და ხელახლა მოგეთხოვებათ გადატვირთვის შემდეგ. "
 "ამის ნაცვლად, აირჩიეთ \"System keyring\" ან შეამოწმეთ, რომ RustConn-ს "
 "შეუძლია ჩაწეროს მონაცემთა დირექტორიაში."
 
@@ -11685,14 +11661,13 @@ msgstr "ავტორიზაციის დეტალები ბრე�
 
 #: rustconn/src/window/mod.rs:3465
 msgid ""
-"The system keyring did not accept the credentials, so they are kept for this"
-" session only and will be gone after a restart. Check that your keyring "
+"The system keyring did not accept the credentials, so they are kept for this "
+"session only and will be gone after a restart. Check that your keyring "
 "service is running and unlocked, then save the settings again."
 msgstr ""
-"სისტემის გასაღებმა არ მიიღო რწმუნებათა სიგელები, ამიტომ ისინი ინახება მხოლოდ"
-" ამ სესიისთვის და გაქრება გადატვირთვის შემდეგ. შეამოწმეთ, რომ თქვენი "
-"გასაღებების სერვისი მუშაობს და განბლოკილია, შემდეგ ისევ შეინახეთ "
-"პარამეტრები."
+"სისტემის გასაღებმა არ მიიღო რწმუნებათა სიგელები, ამიტომ ისინი ინახება მხოლოდ "
+"ამ სესიისთვის და გაქრება გადატვირთვის შემდეგ. შეამოწმეთ, რომ თქვენი "
+"გასაღებების სერვისი მუშაობს და განბლოკილია, შემდეგ ისევ შეინახეთ პარამეტრები."
 
 #: rustconn/src/window/mod.rs:3645
 msgid "Close RustConn?"
@@ -11750,8 +11725,7 @@ msgstr "გამჭოლი კლავიატურა გამორთ�
 
 #: rustconn/src/window/navigation_actions.rs:257
 msgid "Broadcast enabled — keystrokes mirrored to all split panels"
-msgstr ""
-"მაუწყებლობა ჩართულია — ღილაკის დაჭერები მეორდება ყველა გაყოფილ პანელში"
+msgstr "მაუწყებლობა ჩართულია — ღილაკის დაჭერები მეორდება ყველა გაყოფილ პანელში"
 
 #: rustconn/src/window/navigation_actions.rs:259
 msgid "Broadcast disabled — keystrokes go to focused panel only"
@@ -11973,8 +11947,8 @@ msgstr "გამოვიყენო მოძველებული RDP_ი
 
 #: rustconn/src/window/rdp_vnc.rs:729
 msgid ""
-"This server only supports Standard RDP Security, which is weaker than TLS or"
-" Network Level Authentication. Continue with the external RDP client?"
+"This server only supports Standard RDP Security, which is weaker than TLS or "
+"Network Level Authentication. Continue with the external RDP client?"
 msgstr ""
 "ეს სერვერი მხარს უჭერს მხოლოდ სტანდარტულ RDP უსაფრთხოებას, რომელიც უფრო "
 "სუსტია ვიდრე TLS ან ქსელის დონის ავთენტიფიკაცია. გაგრძელდეს გარე RDP "
@@ -12442,10 +12416,11 @@ msgid "RustConn"
 msgstr "RustConn"
 
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
-msgid ""
-"ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
-msgstr ""
-"ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Connect via intermediate server"
+#~ msgstr "დაკავშირება შუალედური სერვერის გავლით"
 
 #~ msgid "{} file(s) ready to paste on remote"
 #~ msgstr "{} ფაილი მზადაა დაშორებულ მანქანაზე ჩასასმელად"
@@ -12470,15 +12445,17 @@ msgstr ""
 
 #~ msgid ""
 #~ "{} is selected, but no system keyring is responding.                      "
-#~ "Open Settings, then Secrets, to choose a backend that works on this system."
+#~ "Open Settings, then Secrets, to choose a backend that works on this "
+#~ "system."
 #~ msgstr ""
 #~ "არჩეულია {}, მაგრამ სისტემური ბრელოკის სერვისი არ პასუხობს. გახსენით "
 #~ "მორგების ფანჯარა, გადართეთ საიდუმლოებზე და აირჩიეთ უკანაბოლო, რომელიც ამ "
 #~ "სისტემაზე მუშაობს."
 
 #~ msgid ""
-#~ "{} is selected, but its keyring client is not installed.              Open "
-#~ "Settings, then Secrets, to choose a backend that works on this system."
+#~ "{} is selected, but its keyring client is not installed.              "
+#~ "Open Settings, then Secrets, to choose a backend that works on this "
+#~ "system."
 #~ msgstr ""
 #~ "არჩეულია {}, მაგრამ სისტემური ბრელოკის სერვისი დაყენებული არაა.         "
 #~ "გახსენით მორგების ფანჯარა, გადართეთ საიდუმლოებზე და აირჩიეთ უკანაბოლო, "
@@ -12488,8 +12465,8 @@ msgstr ""
 #~ msgstr "საიდუმლო უკანაბოლო მორგებული არაა"
 
 #~ msgid ""
-#~ "This connection stores credentials in a secret vault, but no backend is set "
-#~ "up yet."
+#~ "This connection stores credentials in a secret vault, but no backend is "
+#~ "set up yet."
 #~ msgstr ""
 #~ "ეს კავშირი ავტორიზაციის დეტალების საიდუმლო საცავში ინახავს, მაგრამ ჯერ "
 #~ "უკანაბოლო მორგებული არაა."

@@ -271,6 +271,13 @@ pub struct RdpLauncher;
 
 impl RdpLauncher {
     fn find_freerdp_binary() -> Option<String> {
+        // macOS: a FreeRDP shipped as an `.app` bundle is not on PATH; the
+        // in-bundle executable path is used as a fallback below.
+        const MACOS_BUNDLES: &[(&str, &str)] = &[
+            ("FreeRDP.app", "freerdp"),
+            ("SDL-freerdp.app", "sdl-freerdp"),
+            ("wlfreerdp.app", "wlfreerdp"),
+        ];
         let candidates = [
             "sdl-freerdp3", // FreeRDP 3.x SDL3 — versioned (distro packages)
             "sdl-freerdp",  // FreeRDP 3.x SDL3 — unversioned (Flatpak / upstream)
@@ -278,10 +285,15 @@ impl RdpLauncher {
             "xfreerdp",     // FreeRDP 2.x X11
             "freerdp",      // Generic
         ];
-        candidates
+        if let Some(bin) = candidates
             .into_iter()
             .find(|candidate| rustconn_core::which::is_available(candidate))
-            .map(str::to_owned)
+        {
+            return Some(bin.to_owned());
+        }
+
+        rustconn_core::which::find_macos_app(MACOS_BUNDLES)
+            .and_then(|p| p.into_os_string().into_string().ok())
     }
 
     /// Starts an RDP session in an external FreeRDP window.

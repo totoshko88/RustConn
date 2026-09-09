@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.21.9
+Version:        0.21.10
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -387,6 +387,14 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Sep 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.10-0
+- Version bump to 0.21.10
+- Fixed: connection search no longer matches unrelated entries (fuzzy matcher requires the whole query as a subsequence)
+- Fixed: Jump Host pickers in the Tunnel wizard, connection wizard and group SSH settings now filter as you type
+- Added: the New/Edit Cluster dialog can filter its connection list
+- Improved: macOS support for external viewers and browsers
+- Dependencies: reqwest 0.13.4->0.13.5, zerocopy 0.8.56->0.8.57, hybrid-array 0.4.14->0.4.15, font-types 0.12.4->0.12.5
+
 * Tue Sep 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.9-0
 - Version bump to 0.21.9
 - Added: "Open Browser via Tunnel" on an SSH connection — SOCKS proxy to the host

@@ -1,3 +1,17 @@
+rustconn (0.21.10-1) unstable; urgency=medium
+
+  * Version bump to 0.21.10
+  * Fixed: connection search no longer matches entries with no visible relation
+    to the query; the fuzzy matcher now requires the whole query as a subsequence.
+  * Fixed: the Jump Host pickers in the Tunnel wizard, the connection wizard and
+    a group's SSH settings now filter as you type.
+  * Added: the New/Edit Cluster dialog can filter its connection list.
+  * Improved: macOS support for external viewers and browsers.
+  * Dependencies: reqwest 0.13.4→0.13.5, zerocopy 0.8.56→0.8.57,
+    hybrid-array 0.4.14→0.4.15, font-types 0.12.4→0.12.5.
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Wed, 09 Sep 2026 16:00:00 +0300
+
 rustconn (0.21.9-1) unstable; urgency=medium
 
   * Version bump to 0.21.9

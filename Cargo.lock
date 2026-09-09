@@ -1575,9 +1575,9 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "font-types"
-version = "0.12.4"
+version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64eb721ca85a34323425f4041adc5d82704d3782d5f8f03793bc012419dce23"
+checksum = "b8eb065f3251655b3c90e22e5e363f310fc5332fb3402e37bbc94752283248f6"
 dependencies = [
  "bytemuck",
 ]
@@ -2304,9 +2304,9 @@ checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.14"
+version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707114b52a152fa7bdb290cd7cd5912d9467273b6d74e21b8d81aca1f8533f6b"
+checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
 dependencies = [
  "subtle",
  "typenum",
@@ -4632,11 +4632,11 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "bytes",
  "futures-core",
  "futures-util",
@@ -4788,7 +4788,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4828,7 +4828,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "chrono",
  "clap",
@@ -4850,7 +4850,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "aes 0.9.3",
  "ar",
@@ -4882,7 +4882,7 @@ dependencies = [
  "proptest",
  "quick-xml",
  "regex",
- "reqwest 0.13.4",
+ "reqwest 0.13.5",
  "ring",
  "secrecy",
  "security-framework",
@@ -4909,7 +4909,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4918,18 +4918,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.21.9"
+version = "0.21.10"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.21.9"
+version = "0.21.10"
 dependencies = [
  "libc",
  "nix",
@@ -7093,18 +7093,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.56"
+version = "0.8.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "556764e583adb45a9f8d413c2a147fa7e8d821e48e12b14fd560b607998b75eb"
+checksum = "d35102a9f36d089ccae9e4c6802bc118be4487b80aaffc0ab4e0cf5ce92d2873"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.56"
+version = "0.8.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2ab42fc20575779bd240faa45f94a74256f755c0fa9e89f0ede20d91d0cdfc1"
+checksum = "146c01f5ab44258da43cf276c74a2763db2ff3969c9c652c3f2de07041d0b2bc"
 dependencies = [
  "proc-macro2",
  "quote",

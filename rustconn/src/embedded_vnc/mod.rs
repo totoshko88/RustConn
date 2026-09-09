@@ -310,22 +310,14 @@ impl EmbeddedVncWidget {
         is_embedded_vnc_available()
     }
 
-    /// Detects available VNC viewer binaries for external mode
+    /// Detects available VNC viewer binaries for external mode.
+    ///
+    /// Delegates to [`rustconn_core::protocol::detect_vnc_viewer_name`] so the
+    /// candidate list — and the macOS `.app`-bundle fallback — live in one place
+    /// rather than being duplicated here.
     #[must_use]
     pub fn detect_vnc_viewer() -> Option<String> {
-        let candidates = [
-            "vncviewer",   // TigerVNC, TightVNC
-            "gvncviewer",  // GTK-VNC viewer
-            "xvnc4viewer", // RealVNC
-            "vinagre",     // GNOME Vinagre (deprecated but still available)
-            "remmina",     // Remmina (supports VNC)
-            "krdc",        // KDE Remote Desktop Client
-        ];
-
-        candidates
-            .into_iter()
-            .find(|candidate| rustconn_core::which::is_available(candidate))
-            .map(str::to_owned)
+        rustconn_core::protocol::detect_vnc_viewer_name()
     }
 
     /// Connects to a VNC server
