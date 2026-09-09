@@ -13,7 +13,9 @@ use crate::models::{Connection, ProtocolConfig, WebConfig};
 ///
 /// Implements the Protocol trait for web bookmark connections.
 /// These connections delegate to the system's default browser via
-/// UriLauncher (in the GUI crate) or xdg-open (in the CLI crate).
+/// UriLauncher (in the GUI crate) or the platform URL opener in the CLI
+/// (`open` on macOS, `xdg-open` on Linux — see
+/// [`crate::secret::url_open_command`]).
 #[derive(Debug)]
 pub struct WebProtocol;
 
@@ -128,13 +130,18 @@ impl Protocol for WebProtocol {
                         "browser_mode is embedded but this build has no WebView; \
                          opening the URL in the system browser"
                     );
-                    Some(vec!["xdg-open".to_string(), connection.host.clone()])
+                    Some(vec![
+                        crate::secret::url_open_command().to_string(),
+                        connection.host.clone(),
+                    ])
                 }
             }
 
-            // System mode: delegate to xdg-open (Linux) / UriLauncher (GUI)
+            // System mode: delegate to the platform URL opener — `open` on
+            // macOS, `xdg-open` on Linux (in the GUI this is intercepted by
+            // UriLauncher, but the CLI executes this command literally).
             WebBrowserMode::System => {
-                let mut cmd = vec!["xdg-open".to_string()];
+                let mut cmd = vec![crate::secret::url_open_command().to_string()];
                 cmd.push(connection.host.clone());
                 Some(cmd)
             }
@@ -163,5 +170,34 @@ impl Protocol for WebProtocol {
                 Some(cmd)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{Connection, ProtocolType, WebBrowserMode, WebConfig};
+
+    fn web_connection(mode: WebBrowserMode) -> Connection {
+        let mut conn = Connection::new_ssh("Web".to_string(), "https://example.com".to_string(), 443);
+        conn.protocol = ProtocolType::Web;
+        conn.protocol_config = ProtocolConfig::Web(WebConfig {
+            browser_mode: mode,
+            ..WebConfig::default()
+        });
+        conn
+    }
+
+    #[test]
+    fn system_mode_uses_the_platform_url_opener() {
+        // System mode must not hardcode `xdg-open`: on macOS the opener is
+        // `open`. The command's first element is whatever
+        // `url_open_command()` returns for the build target, followed by the URL.
+        let conn = web_connection(WebBrowserMode::System);
+        let cmd = WebProtocol::new()
+            .build_command(&conn)
+            .expect("system mode builds a command");
+        assert_eq!(cmd.first().map(String::as_str), Some(crate::secret::url_open_command()));
+        assert_eq!(cmd.last().map(String::as_str), Some("https://example.com"));
     }
 }

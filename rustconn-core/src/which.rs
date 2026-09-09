@@ -197,6 +197,50 @@ pub fn find_on_host(binary: &str) -> Option<PathBuf> {
     Some(PathBuf::from(path))
 }
 
+/// Locates a macOS application installed as an `.app` bundle.
+///
+/// GUI applications on macOS are `.app` bundles under `/Applications` (or the
+/// per-user `~/Applications`), not binaries on `PATH` — and the `PATH` a bundle
+/// inherits from Finder does not list them anyway. A bare-name [`find_in_path`]
+/// lookup therefore never finds a RealVNC viewer, virt-viewer, a Chromium
+/// browser and the like, which is why every external-viewer probe reported
+/// "not installed" on macOS. This checks the bundle locations directly.
+///
+/// `candidates` is a list of `(bundle_file_name, executable_name)` pairs —
+/// e.g. `("Google Chrome.app", "Google Chrome")`. The executable name is not
+/// always the bundle stem (Brave's differs), so both are given explicitly.
+/// Returns the full path to the executable inside the first bundle found
+/// (`…/Contents/MacOS/<executable>`), which accepts the same command-line
+/// arguments as the binary would.
+///
+/// Always returns `None` off macOS, so a caller can use it as an unconditional
+/// fallback after a `PATH` probe.
+#[must_use]
+pub fn find_macos_app(candidates: &[(&str, &str)]) -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        let mut roots: Vec<PathBuf> = vec![PathBuf::from("/Applications")];
+        if let Some(home) = std::env::var_os("HOME") {
+            roots.push(PathBuf::from(home).join("Applications"));
+        }
+
+        for root in &roots {
+            for (bundle, exe) in candidates {
+                let path = root.join(bundle).join("Contents/MacOS").join(exe);
+                if path.is_file() {
+                    return Some(path);
+                }
+            }
+        }
+        None
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = candidates;
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::os::unix::fs::PermissionsExt;
@@ -258,6 +302,17 @@ mod tests {
     fn a_directory_is_not_a_binary() {
         // `/usr/bin` has every execute bit set and is emphatically not a program.
         assert!(find_in_path("/usr/bin").is_none());
+    }
+
+    #[test]
+    fn the_macos_app_probe_is_a_no_op_off_macos() {
+        // Off macOS the bundle probe must always decline, so callers fall
+        // through to their PATH lookup unchanged.
+        #[cfg(not(target_os = "macos"))]
+        assert!(find_macos_app(&[("Google Chrome.app", "Google Chrome")]).is_none());
+        // On macOS a made-up bundle name must still not resolve.
+        #[cfg(target_os = "macos")]
+        assert!(find_macos_app(&[("RustConn No Such App.app", "Nope")]).is_none());
     }
 
     #[test]

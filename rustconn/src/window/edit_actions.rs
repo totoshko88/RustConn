@@ -1357,7 +1357,9 @@ impl MainWindow {
     #[cfg(target_os = "macos")]
     fn find_macos_chromium_app() -> Option<String> {
         // (bundle name, executable name inside Contents/MacOS). The executable
-        // name is not always the bundle stem — Brave's differs.
+        // name is not always the bundle stem — Brave's differs. The bundle probe
+        // itself lives in `rustconn_core::which::find_macos_app`, shared with the
+        // RDP/VNC/SPICE viewer detection.
         const BUNDLES: &[(&str, &str)] = &[
             ("Google Chrome.app", "Google Chrome"),
             ("Chromium.app", "Chromium"),
@@ -1365,21 +1367,8 @@ impl MainWindow {
             ("Microsoft Edge.app", "Microsoft Edge"),
             ("Vivaldi.app", "Vivaldi"),
         ];
-
-        let mut roots: Vec<std::path::PathBuf> = vec![std::path::PathBuf::from("/Applications")];
-        if let Some(home) = std::env::var_os("HOME") {
-            roots.push(std::path::PathBuf::from(home).join("Applications"));
-        }
-
-        for root in &roots {
-            for (bundle, exe) in BUNDLES {
-                let path = root.join(bundle).join("Contents/MacOS").join(exe);
-                if path.is_file() {
-                    return path.into_os_string().into_string().ok();
-                }
-            }
-        }
-        None
+        rustconn_core::which::find_macos_app(BUNDLES)
+            .and_then(|p| p.into_os_string().into_string().ok())
     }
 
     /// Opens a browser routed through a fresh SOCKS tunnel to the selected SSH

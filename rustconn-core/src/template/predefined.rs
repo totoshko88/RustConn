@@ -10,6 +10,16 @@ use crate::models::{
     ZeroTrustProviderConfig,
 };
 
+/// The Cockpit template command, platform-aware.
+///
+/// It opens a URL in the system browser; `xdg-open` exists only on Linux, so on
+/// macOS the command must be `open`. A `const` array cannot select per target
+/// inside a struct literal, so the whole command string is chosen here.
+#[cfg(target_os = "macos")]
+const COCKPIT_COMMAND: &str = "open https://${host}:9090";
+#[cfg(not(target_os = "macos"))]
+const COCKPIT_COMMAND: &str = "xdg-open https://${host}:9090";
+
 /// A predefined template definition (static data, no heap allocation at rest).
 #[derive(Debug, Clone)]
 pub struct PredefinedTemplate {
@@ -220,7 +230,7 @@ pub const PREDEFINED_TEMPLATES: &[PredefinedTemplate] = &[
         name: "Cockpit",
         description: "Web console for Linux servers",
         icon: "🎛️",
-        command: "xdg-open https://${host}:9090",
+        command: COCKPIT_COMMAND,
         category: TemplateCategory::CloudAccess,
     },
     // === Automation ===
