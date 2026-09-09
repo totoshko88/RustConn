@@ -186,8 +186,13 @@ impl ClusterDialog {
     }
 
     /// Creates the connections selection section
-    fn create_connections_section()
-    -> (adw::PreferencesGroup, ListBox, gtk4::SearchEntry, Button, Button) {
+    fn create_connections_section() -> (
+        adw::PreferencesGroup,
+        ListBox,
+        gtk4::SearchEntry,
+        Button,
+        Button,
+    ) {
         let group = adw::PreferencesGroup::builder()
             .title(i18n("Connections"))
             .description(i18n("Select connections to include in this cluster"))
