@@ -82,19 +82,19 @@ impl StepConnectionPage {
 
         // Type-to-search DropDown for the target connection. GTK handles the
         // filtering internally once an expression is installed, so there is no
-        // separate search entry or per-keystroke model rebuild.
+        // separate search entry or per-keystroke model rebuild. It is added to
+        // the group as a full-width widget rather than as the suffix of a
+        // titled ActionRow: connection display strings ("name (user@host)") are
+        // long, and a long suffix crushes the row title down to a one-char-wide
+        // column that wraps vertically. The group's own "SSH Connection" title
+        // already labels it, so no per-row title is needed.
         let connection_dropdown = DropDown::new(
             Some(StringList::new(&[] as &[&str])),
             gtk4::Expression::NONE,
         );
-        connection_dropdown.set_valign(gtk4::Align::Center);
-        connection_dropdown.set_size_request(240, -1);
-        connection_dropdown.set_hexpand(false);
+        connection_dropdown.set_hexpand(true);
         crate::dialogs::widgets::enable_string_search(&connection_dropdown);
-
-        let connection_row = adw::ActionRow::builder().title(i18n("Connection")).build();
-        connection_row.add_suffix(&connection_dropdown);
-        connection_group.add(&connection_row);
+        connection_group.add(&connection_dropdown);
         content_box.append(&connection_group);
 
         // Jump host override
@@ -103,22 +103,18 @@ impl StepConnectionPage {
             .description(i18n("Override bastion/proxy host"))
             .build();
 
+        // Full-width in its group for the same reason as the connection
+        // picker: a long jump-host name as an ActionRow suffix would crush the
+        // row title. The group title ("Jump Host") + description already label
+        // it, so a per-row title is redundant.
         let jump_host_dropdown = DropDown::new(
             Some(StringList::new(&[i18n("(None)").as_str()])),
             gtk4::Expression::NONE,
         );
         jump_host_dropdown.set_selected(0);
-        jump_host_dropdown.set_valign(gtk4::Align::Center);
-        jump_host_dropdown.set_size_request(240, -1);
-        jump_host_dropdown.set_hexpand(false);
+        jump_host_dropdown.set_hexpand(true);
         crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
-
-        let jump_host_row = adw::ActionRow::builder()
-            .title(i18n("Jump Host"))
-            .subtitle(i18n("Connect via intermediate server"))
-            .build();
-        jump_host_row.add_suffix(&jump_host_dropdown);
-        jump_host_group.add(&jump_host_row);
+        jump_host_group.add(&jump_host_dropdown);
 
         // "New SSH Connection" button
         let new_connection_btn = gtk4::Button::builder()
