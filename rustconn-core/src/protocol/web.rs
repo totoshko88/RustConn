@@ -179,7 +179,8 @@ mod tests {
     use crate::models::{Connection, ProtocolType, WebBrowserMode, WebConfig};
 
     fn web_connection(mode: WebBrowserMode) -> Connection {
-        let mut conn = Connection::new_ssh("Web".to_string(), "https://example.com".to_string(), 443);
+        let mut conn =
+            Connection::new_ssh("Web".to_string(), "https://example.com".to_string(), 443);
         conn.protocol = ProtocolType::Web;
         conn.protocol_config = ProtocolConfig::Web(WebConfig {
             browser_mode: mode,
@@ -197,7 +198,10 @@ mod tests {
         let cmd = WebProtocol::new()
             .build_command(&conn)
             .expect("system mode builds a command");
-        assert_eq!(cmd.first().map(String::as_str), Some(crate::secret::url_open_command()));
+        assert_eq!(
+            cmd.first().map(String::as_str),
+            Some(crate::secret::url_open_command())
+        );
         assert_eq!(cmd.last().map(String::as_str), Some("https://example.com"));
     }
 }

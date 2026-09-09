@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.10] - 2026-09-09
+
 ### Fixed
 
 - **"Open Browser via Tunnel" found no browser on macOS and only showed a toast** — the tunnelled-browser auto-detection added in 0.21.9 was Linux-only: it consulted `xdg-settings` (absent on macOS) and then probed a list of Linux binary names (`google-chrome`, `chromium`, `brave-browser`, …) on `PATH`. On macOS a Chromium-family browser is an `.app` bundle under `/Applications`, not a binary on `PATH` — and a GUI app's `PATH` does not list it anyway — so detection always failed and RustConn fell back to the "No Chromium-based browser found" toast instead of opening a browser. Auto-detection now also probes the macOS bundles directly (`find_macos_chromium_app`), checking both `/Applications` and `~/Applications` for Google Chrome, Chromium, Brave, Microsoft Edge and Vivaldi, and launches the executable inside the bundle by its full path — which still honours `--proxy-server` and `--user-data-dir`. A path configured by hand in Settings already worked and is unchanged.
@@ -24,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **The New/Edit Cluster dialog can filter its connection list** — the cluster editor showed every connection as an unsearchable checklist, which is impractical with hundreds of hosts. A filter box above the list now hides rows whose name or host does not contain the typed text; the checkbox state is never touched, so clearing the filter keeps whatever was already ticked. **Select All** / **Deselect All** act on the currently filtered rows only, so narrowing the list and hitting Select All is how you pick a subset.
+
+### Dependencies
+
+- **Updated**: reqwest 0.13.4→0.13.5, zerocopy 0.8.56→0.8.57, hybrid-array 0.4.14→0.4.15, font-types 0.12.4→0.12.5
 
 ## [0.21.9] - 2026-09-08
 

@@ -358,7 +358,8 @@ pub fn detect_spice_client() -> ClientInfo {
         return info;
     }
     // macOS: virt-viewer ships as `RemoteViewer.app`, not a PATH binary.
-    if let Some(info) = try_detect_macos_app("remote-viewer", SPICE_CLIENT_BUNDLES, &["--version"]) {
+    if let Some(info) = try_detect_macos_app("remote-viewer", SPICE_CLIENT_BUNDLES, &["--version"])
+    {
         return info;
     }
     ClientInfo::not_installed("SPICE Client", spice_install_hint())
