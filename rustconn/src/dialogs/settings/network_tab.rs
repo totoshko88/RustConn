@@ -63,8 +63,11 @@ pub fn create_network_group() -> NetworkPageWidgets {
     let jump_host_dropdown = DropDown::builder()
         .model(&StringList::new(&[i18n("(None)").as_str()]))
         .valign(gtk4::Align::Center)
-        .enable_search(true)
         .build();
+    // `enable_search(true)` alone shows a dead search box — the dropdown needs
+    // an expression to match against (same fix as the connection-editor and
+    // group jump-host pickers).
+    crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
     jump_host_dropdown.set_size_request(200, -1);
     jump_host_dropdown.set_hexpand(false);
     jump_host_dropdown.set_tooltip_text(Some(&i18n(
