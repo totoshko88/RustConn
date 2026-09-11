@@ -8,10 +8,11 @@
 
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use super::logger::{SanitizeConfig, sanitize_output};
+use super::logger::{SanitizeConfig, sanitize_output, sensitive_value_ranges};
 
 // ---------------------------------------------------------------------------
 // SessionRecorder
@@ -366,20 +367,24 @@ fn sanitize_recording_name(name: &str) -> String {
 /// The GUI records by driving `script -q -f --log-out` on the remote (or local)
 /// shell, which writes raw terminal bytes straight to disk — RustConn never sees
 /// the stream, so [`SessionRecorder`]'s own sanitisation could not run. This is
-/// the post-hoc pass that closes that gap: it walks the recording chunk by chunk
-/// using the `.timing` byte counts, runs each chunk through [`sanitize_output`]
-/// (the same redactor session logging uses, in its value-matching mode —
-/// `password: …`, API keys, bearer tokens, AWS keys, PEM blocks, JWTs; see the
-/// note at the top of the body for why whole-line blanking is off here), and
-/// rewrites the
-/// `.data` file together with a `.timing` file whose counts match the new byte
-/// lengths, so `scriptreplay` stays in sync. A chunk that is not valid UTF-8 is
-/// left untouched, exactly as during live recording.
+/// the post-hoc pass that closes that gap.
 ///
-/// The walk starts at [`script_body_start`], not at offset 0: `script` brackets
-/// the timed bytes with a header and a footer that no timing entry accounts for.
-/// Both are copied through verbatim, so the rewrite neither misreads the header
-/// as session output nor truncates the file at `sum(counts)`.
+/// It locates the timed body, matches the redactor's value patterns over it *as a
+/// whole* (`password: …`, API keys, bearer tokens, AWS keys, PEM blocks, JWTs;
+/// see the note at the top of the body for why whole-line blanking is off here),
+/// and rewrites the `.data` file together with a `.timing` file whose counts
+/// describe the same chunks at their new lengths, so `scriptreplay` stays in sync.
+///
+/// Matching spans the whole body rather than each chunk because `script` flushes
+/// per read: a secret typed at a prompt arrives a few bytes at a time, and no
+/// single chunk contains it. Non-UTF-8 stretches are stepped over rather than
+/// ending the scan, so binary output in the middle of a session does not shield a
+/// secret that follows it.
+///
+/// The body is found by [`script_body_start`], not assumed to begin at offset 0:
+/// `script` brackets the timed bytes with a header and a footer that no timing
+/// entry accounts for. Both are copied through verbatim, so the rewrite neither
+/// misreads the header as session output nor truncates the file at `sum(counts)`.
 ///
 /// The rewrite is atomic (temp file + rename) and preserves `0600` on unix, so a
 /// reader never observes a half-scrubbed file and the scrubbed copy is never
@@ -433,64 +438,188 @@ pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Res
     let body_start = script_body_start(&data, body_len);
     let body_end = body_start.saturating_add(body_len).min(data.len());
 
+    let body = &data[body_start..body_end];
+
+    // Match against the whole body at once, not chunk by chunk. `script` flushes
+    // per read, so an interactively typed secret arrives a few bytes at a time and
+    // a per-chunk match never sees it whole — the typed case the User Guide's
+    // promise is mostly about. Decoding the whole body also succeeds where a chunk
+    // would not: a chunk boundary can land mid-character, and a per-chunk pass
+    // skipped such a chunk as non-UTF-8, taking any secret in it along.
+    let redactions = body_redaction_ranges(body, &config);
+
+    // Nothing sensitive matched: leave both files exactly as `script` wrote them
+    // rather than rewriting identical content (and disturbing mtimes).
+    if redactions.is_empty() {
+        return Ok(());
+    }
+
     let mut new_data: Vec<u8> = Vec::with_capacity(data.len());
     // `script`'s header sits before the timed body and is not described by any
     // timing entry, so it is copied through verbatim. Starting the walk at 0
     // instead read the header as the first chunk and never reached the output.
     new_data.extend_from_slice(&data[..body_start]);
 
-    let mut new_timing = String::with_capacity(timing_text.len());
-    let mut position = body_start;
-    let mut any_change = false;
-
-    for (delay, count) in entries {
-        let end = position.saturating_add(count).min(body_end);
-        let chunk = &data[position..end];
-        position = end;
-
-        // Sanitise the UTF-8 interpretation; leave a non-UTF-8 chunk untouched,
-        // matching live recording behaviour in `SessionRecorder::write_chunk`.
-        //
-        // ponytail: matching runs on the raw chunk, so a secret split across two
-        // chunks, or one with an ANSI escape interleaved, is not seen. `script`
-        // flushes per read, so an interactively typed secret arrives a few bytes
-        // at a time and is missed; a secret in command *output* normally arrives
-        // whole and is caught. Closing that would mean reassembling the stream
-        // and mapping redactions back onto chunk boundaries — worth doing if a
-        // report says a typed secret survived.
-        let sanitised: Vec<u8> = match std::str::from_utf8(chunk) {
-            Ok(text) => {
-                let redacted = sanitize_output(text, &config);
-                if redacted.as_bytes() != chunk {
-                    any_change = true;
-                }
-                redacted.into_bytes()
-            }
-            Err(_) => chunk.to_vec(),
-        };
-
-        new_data.extend_from_slice(&sanitised);
-        // Preserve the original delay; only the byte count follows the new length.
-        new_timing.push_str(delay);
-        new_timing.push(' ');
-        new_timing.push_str(&sanitised.len().to_string());
-        new_timing.push('\n');
-    }
+    let new_counts = rewrite_body(
+        &mut new_data,
+        body,
+        &redactions,
+        &entries,
+        &config.replacement,
+    );
 
     // Anything after the timed body — `script`'s footer — is copied through as
     // well. Without this the rewrite truncated the file to `sum(counts)`, which
     // on a real recording meant discarding most of it.
     new_data.extend_from_slice(&data[body_end..]);
 
-    // Nothing sensitive matched: leave both files exactly as `script` wrote them
-    // rather than rewriting identical content (and disturbing mtimes).
-    if !any_change {
-        return Ok(());
+    let mut new_timing = String::with_capacity(timing_text.len());
+    for ((delay, _), count) in entries.iter().zip(new_counts) {
+        // Preserve the original delay; only the byte count follows the new length.
+        new_timing.push_str(delay);
+        new_timing.push(' ');
+        new_timing.push_str(&count.to_string());
+        new_timing.push('\n');
     }
 
     write_file_atomic(data_path, &new_data)?;
     write_file_atomic(timing_path, new_timing.as_bytes())?;
     Ok(())
+}
+
+/// Finds every sensitive-value range in a recording body, as byte offsets.
+///
+/// The body is matched as a whole rather than chunk by chunk, so a secret split
+/// across a chunk boundary is still found. Non-UTF-8 stretches — a recording can
+/// carry arbitrary bytes, and a chunk boundary can fall mid-character — are
+/// stepped over rather than aborting the scan, so binary noise in the middle of a
+/// session does not shield a secret after it.
+fn body_redaction_ranges(body: &[u8], config: &SanitizeConfig) -> Vec<Range<usize>> {
+    let mut ranges: Vec<Range<usize>> = Vec::new();
+    let mut offset = 0usize;
+
+    while offset < body.len() {
+        let rest = &body[offset..];
+        let (valid_len, skip) = match std::str::from_utf8(rest) {
+            Ok(_) => (rest.len(), 0),
+            Err(e) => {
+                let valid = e.valid_up_to();
+                // `error_len() == None` means the input ends mid-character, so
+                // everything after the valid prefix is an incomplete tail.
+                let bad = e.error_len().unwrap_or(rest.len() - valid);
+                (valid, bad.max(1))
+            }
+        };
+
+        if valid_len > 0
+            && let Ok(text) = std::str::from_utf8(&rest[..valid_len])
+        {
+            ranges.extend(
+                sensitive_value_ranges(text, config)
+                    .into_iter()
+                    .map(|r| (offset + r.start)..(offset + r.end)),
+            );
+        }
+
+        // `skip` is at least 1 whenever the scan is not finished, so this
+        // terminates.
+        offset += valid_len + skip;
+        if skip == 0 {
+            break;
+        }
+    }
+
+    ranges
+}
+
+/// Appends the redacted body to `out` and returns the new per-chunk byte counts.
+///
+/// The counts are what keeps the `.timing` file honest: it describes the body as
+/// a sequence of chunks, and after a rewrite each entry has to state how many
+/// bytes its chunk now occupies, or `scriptreplay` drifts out of step with the
+/// recording.
+///
+/// A redaction that straddles a chunk boundary is attributed in full to the chunk
+/// it *starts* in, and contributes nothing to the ones it spills into. Any
+/// attribution would do — the bytes are the same either way — but this one is
+/// unambiguous, so a replacement is emitted exactly once.
+fn rewrite_body(
+    out: &mut Vec<u8>,
+    body: &[u8],
+    redactions: &[Range<usize>],
+    entries: &[(&str, usize)],
+    replacement: &str,
+) -> Vec<usize> {
+    // Tile the body into kept spans and redactions, in order. Both the tiling and
+    // the chunks are sorted and cover the body, so one pass over each suffices.
+    enum Piece {
+        Keep(Range<usize>),
+        Redact(Range<usize>),
+    }
+    impl Piece {
+        const fn range(&self) -> &Range<usize> {
+            match self {
+                Self::Keep(r) | Self::Redact(r) => r,
+            }
+        }
+    }
+
+    let mut pieces: Vec<Piece> = Vec::with_capacity(redactions.len() * 2 + 1);
+    let mut cursor = 0usize;
+    for range in redactions {
+        if range.start > cursor {
+            pieces.push(Piece::Keep(cursor..range.start));
+        }
+        pieces.push(Piece::Redact(range.clone()));
+        cursor = range.end;
+    }
+    if cursor < body.len() {
+        pieces.push(Piece::Keep(cursor..body.len()));
+    }
+
+    let mut new_counts: Vec<usize> = Vec::with_capacity(entries.len());
+    let mut piece_idx = 0usize;
+    let mut body_at = 0usize;
+
+    for (_, count) in entries {
+        let chunk_start = body_at.min(body.len());
+        let chunk_end = body_at.saturating_add(*count).min(body.len());
+        body_at = body_at.saturating_add(*count);
+
+        let mut written = 0usize;
+        while piece_idx < pieces.len() {
+            let piece_range = pieces[piece_idx].range().clone();
+            if piece_range.start >= chunk_end {
+                break; // starts in a later chunk
+            }
+
+            match &pieces[piece_idx] {
+                Piece::Keep(range) => {
+                    let lo = range.start.max(chunk_start);
+                    let hi = range.end.min(chunk_end);
+                    if hi > lo {
+                        out.extend_from_slice(&body[lo..hi]);
+                        written += hi - lo;
+                    }
+                }
+                Piece::Redact(range) => {
+                    if range.start >= chunk_start {
+                        out.extend_from_slice(replacement.as_bytes());
+                        written += replacement.len();
+                    }
+                }
+            }
+
+            if piece_range.end <= chunk_end {
+                piece_idx += 1; // fully consumed by this chunk
+            } else {
+                break; // continues into the next one
+            }
+        }
+        new_counts.push(written);
+    }
+
+    new_counts
 }
 
 /// Writes `bytes` to `path` atomically (temp sibling + rename), `0600` on unix.
@@ -1128,5 +1257,128 @@ mod sanitize_tests {
     fn script_body_start_is_zero_without_a_header() {
         let data = b"exactly the timed bytes\n";
         assert_eq!(script_body_start(data, data.len()), 0);
+    }
+
+    /// Sums the byte counts in a `.timing` file.
+    fn timing_sum(path: &Path) -> usize {
+        fs::read_to_string(path)
+            .expect("read timing")
+            .lines()
+            .filter_map(|l| l.split_whitespace().nth(1))
+            .filter_map(|c| c.parse::<usize>().ok())
+            .sum()
+    }
+
+    /// The case a per-chunk pass could not catch, and the one that matters most:
+    /// `script` flushes per read, so a secret typed at a prompt is spread over
+    /// many tiny chunks and no single one contains it.
+    #[test]
+    fn a_secret_split_across_chunks_is_still_redacted() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("typed.data");
+        let timing_path = dir.path().join("typed.timing");
+
+        // One byte per chunk, as an echoed keystroke arrives.
+        let body = "token: abcdef0123456789abcdef\r\n";
+        fs::write(&data_path, body).expect("write data");
+        let timing: String = body.bytes().map(|_| "0.010000 1\n".to_string()).collect();
+        fs::write(&timing_path, &timing).expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        let rendered = fs::read_to_string(&data_path).expect("read data");
+        assert!(
+            !rendered.contains("abcdef0123456789abcdef"),
+            "a secret spread over single-byte chunks must still be found"
+        );
+        assert!(rendered.contains("[REDACTED]"));
+        assert!(
+            rendered.ends_with("\r\n"),
+            "the terminator after the secret survives"
+        );
+        assert_eq!(
+            timing_sum(&timing_path),
+            rendered.len(),
+            "the counts must still describe the whole rewritten body"
+        );
+    }
+
+    /// The replacement is attributed to the chunk the redaction starts in, and the
+    /// chunks it spills into contribute nothing — so the counts stay in step and
+    /// the entry count is unchanged.
+    #[test]
+    fn a_straddling_redaction_keeps_the_timing_entries_aligned() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("straddle.data");
+        let timing_path = dir.path().join("straddle.timing");
+
+        // Split mid-secret: chunk one ends inside the value.
+        let body = "api_key: ABCDEF0123456789ABCDEF\r\nafter\r\n";
+        let first = 20usize;
+        let second = body.len() - first;
+        fs::write(&data_path, body).expect("write data");
+        fs::write(
+            &timing_path,
+            format!("0.100000 {first}\n0.200000 {second}\n"),
+        )
+        .expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        let rendered = fs::read_to_string(&data_path).expect("read data");
+        assert!(!rendered.contains("ABCDEF0123456789ABCDEF"));
+        assert!(
+            rendered.contains("after\r\n"),
+            "output after the straddling secret is preserved"
+        );
+
+        let timing_text = fs::read_to_string(&timing_path).expect("read timing");
+        assert_eq!(
+            timing_text.lines().count(),
+            2,
+            "the rewrite must not add or drop timing entries"
+        );
+        assert_eq!(timing_sum(&timing_path), rendered.len());
+    }
+
+    /// Binary noise must not end the scan: a secret after it is still found, and
+    /// the invalid bytes themselves come through untouched.
+    #[test]
+    fn non_utf8_bytes_do_not_shield_a_later_secret() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("binary.data");
+        let timing_path = dir.path().join("binary.timing");
+
+        let mut body: Vec<u8> = b"before\r\n".to_vec();
+        body.extend_from_slice(&[0xff, 0xfe]); // not valid UTF-8
+        body.extend_from_slice(b"\r\napi_key: ABCDEF0123456789ABCDEF\r\n");
+        fs::write(&data_path, &body).expect("write data");
+        fs::write(&timing_path, format!("0.010000 {}\n", body.len())).expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        let after = fs::read(&data_path).expect("read data");
+        assert!(
+            !String::from_utf8_lossy(&after).contains("ABCDEF0123456789ABCDEF"),
+            "a secret following non-UTF-8 bytes must still be redacted"
+        );
+        assert!(
+            after.windows(2).any(|w| w == [0xff, 0xfe]),
+            "the invalid bytes are passed through unchanged"
+        );
+        assert_eq!(timing_sum(&timing_path), after.len());
+    }
+
+    /// Two patterns matching the same secret must not produce two replacements.
+    #[test]
+    fn overlapping_matches_collapse_into_one_replacement() {
+        let config = SanitizeConfig::new().with_full_line_sanitization(false);
+        // `password[:\s]+\S+` and `pass[:\s]+\S+` both match this.
+        let ranges = body_redaction_ranges(b"password: hunter2trustno1", &config);
+        assert_eq!(
+            ranges.len(),
+            1,
+            "overlapping matches merge into a single range"
+        );
     }
 }

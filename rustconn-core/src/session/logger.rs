@@ -1236,6 +1236,58 @@ fn sanitize_output_zeroizing(output: &str, config: &SanitizeConfig) -> Zeroizing
     result
 }
 
+/// Returns the byte ranges of `text` that hold a sensitive value, merged.
+///
+/// This is the span-reporting form of the value-matching half of
+/// [`sanitize_output`], for the one caller that needs to know *where* a secret
+/// was rather than only to receive the scrubbed text: session-recording
+/// sanitisation has to rewrite a `.timing` file whose byte counts must keep
+/// describing the same chunks, which is impossible from a replaced string alone.
+///
+/// Ranges are on char boundaries (they come from regex matches over `&str`),
+/// sorted, and non-overlapping — two patterns matching the same secret produce
+/// one range, so a replacement is never emitted twice.
+///
+/// One deliberate difference from [`sanitize_output`]: every pattern is matched
+/// against the original text, whereas `sanitize_output` applies them in sequence
+/// so a later pattern sees the earlier one's replacement. Matching the original
+/// is what makes the ranges meaningful, and it is never less aggressive.
+///
+/// The whole-line prompt-blanking pass has no equivalent here on purpose. It
+/// blanks a line that merely *contains* a prompt word, which is meaningful for a
+/// text log and destructive for a byte stream that gets replayed into a terminal
+/// — see the note in `recording::sanitize_recording_files`.
+#[must_use]
+pub(super) fn sensitive_value_ranges(
+    text: &str,
+    config: &SanitizeConfig,
+) -> Vec<std::ops::Range<usize>> {
+    if !config.enabled {
+        return Vec::new();
+    }
+
+    let mut ranges: Vec<std::ops::Range<usize>> = Vec::new();
+    for re in COMPILED_SENSITIVE_PATTERNS.iter() {
+        ranges.extend(re.find_iter(text).map(|m| m.range()));
+    }
+    for re in &config.compiled_custom {
+        ranges.extend(re.find_iter(text).map(|m| m.range()));
+    }
+
+    ranges.sort_by_key(|r| (r.start, r.end));
+    let mut merged: Vec<std::ops::Range<usize>> = Vec::with_capacity(ranges.len());
+    for range in ranges {
+        match merged.last_mut() {
+            // `<=` rather than `<` also coalesces two ranges that merely touch,
+            // so `api_key: X` immediately followed by `token: Y` becomes one
+            // replacement instead of two adjacent ones.
+            Some(last) if range.start <= last.end => last.end = last.end.max(range.end),
+            _ => merged.push(range),
+        }
+    }
+    merged
+}
+
 /// Checks if a line contains sensitive data prompts
 ///
 /// This is a quick check that doesn't perform full sanitization,
