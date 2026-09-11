@@ -353,6 +353,116 @@ fn sanitize_recording_name(name: &str) -> String {
         .collect()
 }
 
+/// Redacts secrets from a completed recording, rewriting both files in place.
+///
+/// The GUI records by driving `script -q -f --log-out` on the remote (or local)
+/// shell, which writes raw terminal bytes straight to disk — RustConn never sees
+/// the stream, so [`SessionRecorder`]'s own sanitisation could not run. This is
+/// the post-hoc pass that closes that gap: it walks the recording chunk by chunk
+/// using the `.timing` byte counts, runs each chunk through [`sanitize_output`]
+/// (the same redactor session logging uses — password prompts and their echoed
+/// answers, API keys, bearer tokens, AWS keys, PEM blocks), and rewrites the
+/// `.data` file together with a `.timing` file whose counts match the new byte
+/// lengths, so `scriptreplay` stays in sync. A chunk that is not valid UTF-8 is
+/// left untouched, exactly as during live recording.
+///
+/// The rewrite is atomic (temp file + rename) and preserves `0600` on unix, so a
+/// reader never observes a half-scrubbed file and the scrubbed copy is never
+/// world-readable. Call it once, after the `.data`/`.timing` pair is complete
+/// (locally: right after `script` exits; remotely: after the SCP retrieval).
+///
+/// # Errors
+///
+/// Returns `io::Error` if either file cannot be read, a timing line is
+/// malformed, or the rewrite cannot be completed.
+pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Result<()> {
+    let config = SanitizeConfig::new();
+    if !config.enabled {
+        return Ok(());
+    }
+
+    let data = fs::read(data_path)?;
+    let timing_text = fs::read_to_string(timing_path)?;
+
+    let mut new_data: Vec<u8> = Vec::with_capacity(data.len());
+    let mut new_timing = String::with_capacity(timing_text.len());
+    let mut position = 0usize;
+    let mut any_change = false;
+
+    for line in timing_text.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let mut parts = trimmed.split_whitespace();
+        let delay = parts.next().unwrap_or("0.000000");
+        let count: usize = parts
+            .next()
+            .and_then(|s| s.parse().ok())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "bad timing count"))?;
+
+        let end = (position + count).min(data.len());
+        let chunk = &data[position..end];
+        position = end;
+
+        // Sanitise the UTF-8 interpretation; leave a non-UTF-8 chunk untouched,
+        // matching live recording behaviour in `SessionRecorder::write_chunk`.
+        let sanitised: Vec<u8> = match std::str::from_utf8(chunk) {
+            Ok(text) => {
+                let redacted = sanitize_output(text, &config);
+                if redacted.as_bytes() != chunk {
+                    any_change = true;
+                }
+                redacted.into_bytes()
+            }
+            Err(_) => chunk.to_vec(),
+        };
+
+        new_data.extend_from_slice(&sanitised);
+        // Preserve the original delay; only the byte count follows the new length.
+        new_timing.push_str(delay);
+        new_timing.push(' ');
+        new_timing.push_str(&sanitised.len().to_string());
+        new_timing.push('\n');
+    }
+
+    // Nothing sensitive matched: leave both files exactly as `script` wrote them
+    // rather than rewriting identical content (and disturbing mtimes).
+    if !any_change {
+        return Ok(());
+    }
+
+    write_file_atomic(data_path, &new_data)?;
+    write_file_atomic(timing_path, new_timing.as_bytes())?;
+    Ok(())
+}
+
+/// Writes `bytes` to `path` atomically (temp sibling + rename), `0600` on unix.
+fn write_file_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let tmp = path.with_extension(format!(
+        "{}.tmp",
+        path.extension()
+            .map(|e| e.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    ));
+
+    let mut open_opts = fs::OpenOptions::new();
+    open_opts.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        open_opts.mode(0o600);
+    }
+    {
+        let mut file = open_opts.open(&tmp)?;
+        file.write_all(bytes)?;
+        file.sync_all()?;
+    }
+    fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = fs::remove_file(&tmp);
+    })
+}
+
 // ---------------------------------------------------------------------------
 // RecordingMetadata & sidecar helpers
 // ---------------------------------------------------------------------------
@@ -794,5 +904,76 @@ impl RecordingManager {
         fs::copy(&timing_path, &dest_timing)?;
 
         Ok((dest_data, dest_timing))
+    }
+}
+
+#[cfg(test)]
+mod sanitize_tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    /// A recorded password prompt and its echoed answer are redacted in the
+    /// `.data` file, and the `.timing` byte counts follow the new lengths so
+    /// the pair stays replayable.
+    #[test]
+    fn sanitize_recording_redacts_and_keeps_timing_aligned() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("rec.data");
+        let timing_path = dir.path().join("rec.timing");
+
+        // Two chunks: a benign banner, then a line carrying a secret.
+        let chunk_a = b"Welcome to host\n";
+        let chunk_b = b"api_key: ABCDEF0123456789ABCDEF\n";
+        let mut data = Vec::new();
+        data.extend_from_slice(chunk_a);
+        data.extend_from_slice(chunk_b);
+        fs::write(&data_path, &data).expect("write data");
+        fs::write(
+            &timing_path,
+            format!("0.100000 {}\n0.200000 {}\n", chunk_a.len(), chunk_b.len()),
+        )
+        .expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        let new_data = fs::read_to_string(&data_path).expect("read data");
+        assert!(
+            !new_data.contains("ABCDEF0123456789ABCDEF"),
+            "the secret value must not survive in the recording"
+        );
+        assert!(
+            new_data.contains("Welcome to host"),
+            "benign output must be preserved"
+        );
+
+        // Timing counts must still sum to the new data length, or scriptreplay
+        // desyncs.
+        let timing_text = fs::read_to_string(&timing_path).expect("read timing");
+        let counted: usize = timing_text
+            .lines()
+            .filter_map(|l| l.split_whitespace().nth(1))
+            .filter_map(|c| c.parse::<usize>().ok())
+            .sum();
+        assert_eq!(
+            counted,
+            new_data.as_bytes().len(),
+            "timing byte counts must match the rewritten data length"
+        );
+    }
+
+    /// A recording with nothing sensitive is left byte-for-byte unchanged.
+    #[test]
+    fn sanitize_recording_leaves_clean_files_untouched() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("clean.data");
+        let timing_path = dir.path().join("clean.timing");
+
+        let data = b"just some ordinary output\n";
+        fs::write(&data_path, data).expect("write data");
+        fs::write(&timing_path, format!("0.050000 {}\n", data.len())).expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        assert_eq!(fs::read(&data_path).expect("read"), data);
     }
 }

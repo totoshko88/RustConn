@@ -248,6 +248,22 @@ impl TerminalNotebook {
         start_time: Instant,
         session_id: Uuid,
     ) {
+        // Redact secrets from the finished recording before anything reads it.
+        // The recording is produced by an external `script` process writing raw
+        // terminal bytes to disk, so RustConn never sees the stream live and the
+        // recorder's own sanitisation cannot run — this post-hoc pass closes that
+        // gap (password prompts and echoed answers, API keys, tokens, PEM blocks).
+        // It runs in every stop path because they all funnel through here: local
+        // stop, remote stop after SCP retrieval, and application shutdown. The
+        // metadata sizes below are read afterwards so they reflect the scrubbed
+        // files. A failure here must not lose the recording, so it is logged, not
+        // propagated.
+        if let Err(e) =
+            rustconn_core::session::recording::sanitize_recording_files(data_path, timing_path)
+        {
+            tracing::warn!(%e, %session_id, "Failed to sanitise session recording; leaving raw file");
+        }
+
         let duration = start_time.elapsed().as_secs_f64();
         let data_size = std::fs::metadata(data_path).map(|m| m.len()).unwrap_or(0);
         let timing_size = std::fs::metadata(timing_path).map(|m| m.len()).unwrap_or(0);
