@@ -163,16 +163,21 @@ pub(super) async fn establish_connection(
         );
         // Gateway password: reuse the session password when no explicit
         // gateway password is set. `ironrdp-mstsgu` requires an owned String,
-        // so erase that allocation immediately after the bounded connect call.
-        let gw_pass = config
-            .password
-            .as_ref()
-            .map(|secret| secret.expose_secret().to_string())
-            .unwrap_or_default();
+        // which `ZeroizingGatewayTarget` erases on every exit path after the
+        // bounded connect call. The exposed intermediate is held in `Zeroizing`
+        // so the plaintext is erased even on the paths that build the target
+        // and then bail out before `Drop` runs on `gw_target`.
+        let gw_pass = {
+            use zeroize::Zeroizing;
+            config.password.as_ref().map_or_else(
+                || Zeroizing::new(String::new()),
+                |secret| Zeroizing::new(secret.expose_secret().to_string()),
+            )
+        };
         let gw_target = ZeroizingGatewayTarget(ironrdp_mstsgu::GwConnectTarget {
             gw_endpoint,
             gw_user,
-            gw_pass,
+            gw_pass: gw_pass.to_string(),
             server: config.host.clone(),
         });
         let client_name = hostname::get().map_or_else(
