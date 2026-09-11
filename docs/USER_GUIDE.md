@@ -700,7 +700,7 @@ You can also paste options in the `-o Key=Value` format directly from the comman
 
 **Note:** Since 0.18.8, `ServerAliveInterval=15` and `ServerAliveCountMax=3` are applied by default to all SSH sessions. You only need to set them in Custom Options if you want a *different* value (e.g. `ServerAliveInterval=60` for a slow satellite link). Setting either option explicitly in Custom Options overrides the default.
 
-**Dangerous directives** (`ProxyCommand`, `LocalCommand`, `PermitLocalCommand`) are filtered for security — they are logged as warnings but still passed through if explicitly set.
+**Dangerous directives** (`ProxyCommand`, `LocalCommand`, `PermitLocalCommand`, `RemoteCommand`, `Match`) are **dropped** from Custom Options for security: if you put one here it is logged as a warning and *not* passed to `ssh`. To route through a proxy command, use the dedicated **ProxyJump / ProxyCommand** field on the Connection page instead — that is honoured, because it is an explicit, single-purpose setting rather than a free-form option list.
 
 #### Startup Command
 
@@ -1695,6 +1695,16 @@ When a terminal session disconnects (SSH, Telnet, Serial, Kubernetes), a "Reconn
 - If the connection fails again, the banner reappears
 - Close the tab normally with Ctrl+W to dismiss
 
+**Automatic reconnect.** Beyond the manual banner, RustConn reconnects on its own
+after a transient drop — the common cases being the machine waking from sleep and
+a network change (Wi-Fi ↔ Ethernet). The banner then shows the attempt count while
+a background probe waits for the host to come back, using exponential backoff, and
+reconnects in place once it does. Automatic reconnect is deliberately *skipped*
+when reconnecting would be wrong: an SSH authentication failure (a stored password
+is stale — retrying only risks a lockout), a session that crashed within a few
+seconds of starting (a reconnect loop), or a tab you closed yourself. In those
+cases the manual banner is shown instead, so the decision stays yours.
+
 ### Session Logging
 
 Logging is armed by either of two switches, and the per-connection one wins when
@@ -1712,7 +1722,7 @@ Three logging modes:
 - **Terminal Output** — Full transcript
 
 Optional timestamps:
-- Enable "Timestamps" to prepend `[HH:MM:SS]` to each line in log files
+- Enable "Timestamps" to prepend a bracketed timestamp to each line in log files. The default format is `[YYYY-MM-DD HH:MM:SS]`; the per-connection **Timestamp Format** dropdown offers other presets (time-only, milliseconds, `DD/MM/YYYY`, and a plain form without brackets).
 
 Per-connection logging options (Connection dialog → Logs tab → Content Options):
 - **Log Activity** — Record connection and disconnection events
@@ -1816,10 +1826,13 @@ Per-session activity and silence detection for terminal tabs, inspired by KDE Ko
 | **Off** | No monitoring (default) | — |
 | **Activity** | Notify when new output appears after a configurable quiet period | 10 seconds |
 | **Silence** | Notify when no output occurs for a configurable duration | 30 seconds |
+| **Command finished** | Notify when the remote shell reports a command completed (with its exit code) | — (event-driven) |
 
 **Activity mode** is useful when you've started a long-running command in a background tab and want to know when it produces output again.
 
 **Silence mode** is useful when you're watching a stream of output (logs, compilation) and want to know when it stops — indicating the process has finished or stalled.
+
+**Command finished mode** is the only event-driven mode: instead of guessing from output timing, it reacts to the shell announcing that a command ended (via the OSC 133 shell-integration sequence), so the notification carries the exit code. It needs two things the timing modes do not — RustConn built with VTE 0.78 or newer, and shell integration sourced on the *remote* side (most modern distributions ship it for bash/zsh/fish). Where either is missing the mode simply never fires. The per-tab quick toggle cycles Off → Activity → Silence → Command finished → Off.
 
 **Notification Channels:**
 1. **Tab indicator icon** — an icon appears on the tab (ℹ for activity, ⚠ for silence)
@@ -2597,6 +2610,25 @@ Connection Password Source: Variable → RADIUS  →  reads from KeePass entry "
 - Undefined variables remain as literal text
 - Combine with Group Credentials for hierarchical credential management
 
+**Built-in variables (no definition needed):**
+
+Some `${...}` names resolve without being defined in the Variables dialog. They
+are handy for tokens, banners and per-connection log lines:
+
+| Variable | Expands to |
+|----------|-----------|
+| `${DATE_Y}` | Local year (e.g. `2026`) |
+| `${DATE_M}` / `${DATE_D}` | Local month / day, zero-padded |
+| `${TIME_H}` / `${TIME_M}` / `${TIME_S}` | Local hour (24h) / minute / second, zero-padded |
+| `${TIMESTAMP}` | Seconds since the Unix epoch |
+| `${ENV_NAME}` | Value of the `NAME` environment variable (empty if unset) — note the underscore, `${ENV_HOME}`, since a `${...}` reference cannot contain a colon |
+
+A variable you define yourself with one of these names shadows the built-in. These
+resolve everywhere `${...}` substitution runs — connection fields, Expect
+responses, custom commands and variable values — but not in the session-log Log
+Path template, which has its own `${date}` / `${time}` set (see
+[Session Logging](#session-logging)).
+
 **Using Variables as Password Source (shared credentials):**
 
 To reuse the same credentials across multiple connections (e.g., one Active Directory account for many RDP sessions):
@@ -3015,20 +3047,30 @@ Double-click source to start import immediately.
 
 **Supported formats:** SSH Config, Remmina profiles, Asbru-CM, Ansible inventory, Royal TS (.rtsz), MobaXterm (.mxtsessions), SecureCRT (.ini), RustConn Native (.rcn).
 
-Options: Include passwords (where supported), Export selected only.
+Options: Export selected only.
+
+> **Passwords are never exported.** No export format writes a password, in any
+> form. A connection stores only a *password source* (Vault, Prompt, Variable,
+> Script, …), not the secret itself — the secret lives in your configured backend
+> — and the exporters serialise the source, never a value. This includes the
+> RustConn Native (`.rcn`) format: it is a full-fidelity backup of the
+> *connections*, but the credentials stay in the vault and must be present (or
+> re-entered) on the machine you import into. To move secrets between machines,
+> use a syncable secret backend (see [Portable Encrypted File](#portable-encrypted-file-cloud-syncable)),
+> not export.
 
 **Format Limitations:**
 
 | Format | Protocols | Passwords | Groups | Notes |
 |--------|-----------|-----------|--------|-------|
-| SSH Config | SSH only | Key paths only | No | Standard `~/.ssh/config` format |
-| Remmina | SSH, RDP, VNC, SFTP | Encrypted | No | One `.remmina` file per connection |
-| Asbru-CM | SSH, VNC, RDP | Encrypted | Yes | YAML-based, supports variables |
-| Ansible | SSH only | No | Yes (groups) | INI or YAML inventory format |
-| Royal TS | All | Encrypted | Yes | XML `.rtsz` archive |
-| MobaXterm | SSH, RDP, VNC, Telnet | Encrypted | Yes | INI-based `.mxtsessions` |
-| SecureCRT | SSH, Telnet, RDP, VNC | No | Yes | Directory of `.ini` files |
-| RustConn Native | All | Encrypted | Yes | Full-fidelity backup format |
+| SSH Config | SSH only | Never (key paths only) | No | Standard `~/.ssh/config` format |
+| Remmina | SSH, RDP, VNC, SFTP | Never | No | One `.remmina` file per connection |
+| Asbru-CM | SSH, VNC, RDP | Never | Yes | YAML-based, supports variables |
+| Ansible | SSH only | Never | Yes (groups) | INI or YAML inventory format |
+| Royal TS | All | Never | Yes | XML `.rtsz` archive |
+| MobaXterm | SSH, RDP, VNC, Telnet | Never | Yes | INI-based `.mxtsessions` |
+| SecureCRT | SSH, Telnet, RDP, VNC | Never | Yes | Directory of `.ini` files |
+| RustConn Native | All | Never (source only) | Yes | Full-fidelity backup of connections |
 
 ### CSV Import/Export
 
