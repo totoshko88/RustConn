@@ -2107,7 +2107,7 @@ Smart Folders are dynamic, filter-based views that automatically group connectio
 |--------|-------------|---------|
 | Protocol | Match connections of a specific protocol | SSH |
 | Tags | Connection must have ALL listed tags | `production`, `web` |
-| Host Pattern | Glob pattern matching against host | `*.prod.example.com` |
+| Host Pattern | Glob pattern matched (case-insensitive) against the host **or** the connection name; a pattern without glob metacharacters also matches as a substring | `*.prod.example.com`, `prod` |
 | Parent Group | Connections in a specific group | Production |
 
 4. Click **Create**

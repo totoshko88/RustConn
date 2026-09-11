@@ -255,6 +255,10 @@ pub fn builtin_defaults() -> Vec<HighlightRule> {
             background_color: None,
             enabled: true,
         },
+        // CRITICAL and FATAL are two separate rules, not one `CRITICAL|FATAL`
+        // rule, on purpose: each has its own stable id, so a per-connection
+        // override can retarget or disable one without touching the other. They
+        // share a look today, but the split keeps that choice the user's.
         HighlightRule {
             id: critical_id,
             name: "CRITICAL".to_string(),
