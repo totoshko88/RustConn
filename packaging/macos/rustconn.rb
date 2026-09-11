@@ -1,5 +1,5 @@
 class Rustconn < Formula
-  desc "Manage remote connections easily - SSH, RDP, VNC, SPICE, Telnet, Serial"
+  desc "Remote connection manager - SSH, RDP, VNC, SPICE, Telnet, Serial, and more"
   homepage "https://github.com/totoshko88/RustConn"
   # This is the canonical formula; the release workflow copies it into the tap
   # and rewrites the two lines below with the release tag and the measured
@@ -32,6 +32,18 @@ class Rustconn < Formula
   depends_on "vte3"
 
   def install
+    # Homebrew's `rust` is not a rustup proxy, so rust-toolchain.toml is ignored
+    # here and this compiles with whatever `rust` Homebrew ships. Guard the floor:
+    # assert rustc is at least the MSRV (`rust-version` in Cargo.toml — keep this
+    # literal in step with it) so a too-old Homebrew rust fails with a clear
+    # message instead of a confusing edition/feature error mid-compile.
+    msrv = "1.95"
+    rustc_version = Utils.safe_popen_read("rustc", "--version").split[1]
+    if Gem::Version.new(rustc_version) < Gem::Version.new(msrv)
+      odie "RustConn needs Rust >= #{msrv}, but Homebrew's rust is #{rustc_version}. " \
+           "Run `brew upgrade rust` and try again."
+    end
+
     # Detected, not written out by hand. Homebrew's gtk4, libadwaita and vte3 move
     # independently of this formula: `adw-1-8` was hardcoded, and no GTK or VTE
     # feature was selected at all, so the Command monitoring mode could not appear
@@ -181,7 +193,7 @@ class Rustconn < Formula
     # Info.plist
     (app_dir/"Info.plist").write <<~EOS
       <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
       <plist version="1.0">
       <dict>
           <key>CFBundleExecutable</key>

@@ -203,6 +203,14 @@ jobs:
       - name: Check the launch paths resolve their bastion
         run: ./scripts/check-jump-host-wiring.sh
 
+      # The GNOME feature ladder (libadwaita/GTK/VTE version -> feature flag) is
+      # duplicated in the Homebrew formula, build-rpm and debian.rules because the
+      # three build systems share no language. When they drift, a channel ships an
+      # old baseline silently — which has happened more than once. This asserts
+      # the version thresholds agree across all three.
+      - name: Check feature ladders agree across packaging channels
+        run: ./scripts/check-feature-ladders.sh
+
       # Also not i18n, also the same shape. `install_glib_css_warning_filter` in
       # main.rs drops every GLib message containing "Theme parser" or "gtk.css",
       # which was added for a genuine flood from a libadwaita stylesheet newer than

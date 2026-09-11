@@ -37,6 +37,16 @@
 #   feature, so a bare cargo never reads it)
 #     - Flatpak / Flathub            -> /usr/lib/sdk/rust-stable/bin/cargo
 #     - debian / OBS                 -> distro cargo, and `--offline` besides
+#     - Homebrew / macOS             -> `depends_on "rust"` installs Homebrew's
+#                                       own cargo, which is not a rustup proxy,
+#                                       so this pin is ignored and the formula
+#                                       compiles with whatever `rust` Homebrew
+#                                       ships today. The formula guards the floor
+#                                       instead: packaging/macos/rustconn.rb
+#                                       asserts rustc is at least the MSRV before
+#                                       building, so a too-old Homebrew rust fails
+#                                       loudly rather than emitting a confusing
+#                                       edition/feature error mid-compile.
 #
 # When bumping: change `channel` only, then re-run clippy across the workspace.
 # Dependabot does not update this file.
