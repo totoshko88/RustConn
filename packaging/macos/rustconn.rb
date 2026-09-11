@@ -23,6 +23,11 @@ class Rustconn < Formula
   depends_on "gtk4"
   depends_on "libadwaita"
   depends_on :macos
+  # The gfx-h264 feature dlopen's libopenh264.dylib at runtime for RDP EGFX/AVC.
+  # Unlike the DMG producer (scripts/macos-build.sh), this formula does not bundle
+  # dylibs into the .app — it relies on the Homebrew keg — so OpenH264 must be a
+  # declared runtime dependency, or H.264 would silently degrade to a non-AVC path.
+  depends_on "openh264"
   depends_on "openssl@3"
   depends_on "vte3"
 
@@ -56,6 +61,28 @@ class Rustconn < Formula
     }.each do |pc_name, ladder|
       rung = ladder.find { |minimum, _| quiet_system("pkg-config", "--atleast-version=#{minimum}", pc_name) }
       features << "rustconn/#{rung.last}" if rung
+
+      # The ladder's ceiling is its highest rung. When Homebrew moves past it
+      # (e.g. libadwaita 1.10 while the top rung is still 1.8), the newer feature
+      # is not selected and its capabilities silently never build — the "shipped
+      # the 1.5 baseline" regression, but quiet. Compare the installed minor
+      # against the top rung's minor and emit a hint when it is ahead, so the
+      # drift shows up in the build log and prompts a new rung here (and in the
+      # OBS/RPM twins) rather than being discovered by a user. Best-effort: an
+      # unparseable version simply skips the check.
+      highest = ladder.keys.first
+      installed = Utils.safe_popen_read("pkg-config", "--modversion", pc_name).strip
+      top_parts = highest.split(".").map(&:to_i)
+      cur_parts = installed.split(".").map(&:to_i)
+      if cur_parts.length >= 2 && top_parts.length >= 2 &&
+         (cur_parts[0] > top_parts[0] ||
+          (cur_parts[0] == top_parts[0] && cur_parts[1] > top_parts[1]))
+        opoo "#{pc_name} #{installed} is newer than the highest known rung " \
+             "(#{highest}); RustConn may be missing features for it — add a rung " \
+             "to this formula and its OBS/RPM twins."
+      end
+    rescue ErrorDuringExecution
+      # pkg-config could not report a version; skip the drift hint.
     end
 
     ohai "RustConn feature set: #{features.join(",")}"
@@ -70,11 +97,14 @@ class Rustconn < Formula
     bin.install "target/release/rustconn"
     bin.install "target/release/rustconn-cli"
 
-    # Install locales
+    # Install locales. `--check` matches the canonical producer
+    # (scripts/macos-build.sh): it validates format placeholders and headers, so
+    # a catalog with a dropped `{}` placeholder fails the build here instead of
+    # silently shipping a broken translation in the main macOS artifact.
     Dir["po/*.po"].each do |po|
       lang = File.basename(po, ".po")
       mkdir_p "#{share}/locale/#{lang}/LC_MESSAGES"
-      system "msgfmt", "-o", "#{share}/locale/#{lang}/LC_MESSAGES/rustconn.mo", po
+      system "msgfmt", "--check", "-o", "#{share}/locale/#{lang}/LC_MESSAGES/rustconn.mo", po
     end
 
     # Install icon
@@ -208,12 +238,24 @@ class Rustconn < Formula
         opoo "Could not register RustConn.app with LaunchServices: #{e.message}"
       end
     end
-    # Compile GSettings schemas (required for GTK4 apps)
-    system "#{Formula["glib"].opt_bin}/glib-compile-schemas",
-           "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
-    # Update icon cache
-    system "#{Formula["gtk4"].opt_bin}/gtk4-update-icon-cache", "-f", "-t",
-           "#{HOMEBREW_PREFIX}/share/icons/hicolor"
+    # Compile GSettings schemas and refresh the icon cache. Both operate on the
+    # shared HOMEBREW_PREFIX/share tree, not the keg, and `system` raises on a
+    # non-zero exit — so a missing/unwritable icons directory or schema dir would
+    # turn a cosmetic refresh into a failed install. Best-effort for the same
+    # reason as lsregister above; the app resolves schemas and icons at runtime
+    # regardless.
+    begin
+      system "#{Formula["glib"].opt_bin}/glib-compile-schemas",
+             "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
+    rescue StandardError => e
+      opoo "Could not compile GSettings schemas: #{e.message}"
+    end
+    begin
+      system "#{Formula["gtk4"].opt_bin}/gtk4-update-icon-cache", "-f", "-t",
+             "#{HOMEBREW_PREFIX}/share/icons/hicolor"
+    rescue StandardError => e
+      opoo "Could not update the icon cache: #{e.message}"
+    end
   end
 
   def caveats
