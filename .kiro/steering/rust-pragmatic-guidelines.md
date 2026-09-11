@@ -192,3 +192,5 @@ reports zero warnings without looking at anything.
 - Safety: <https://microsoft.github.io/rust-guidelines/guidelines/safety/>
 - Docs: <https://microsoft.github.io/rust-guidelines/guidelines/docs/>
 - Rust API Guidelines (upstream): <https://rust-lang.github.io/api-guidelines/>
+- Rust API Guidelines checklist (quick review scan): <https://rust-lang.github.io/api-guidelines/checklist.html>
+- rust-analyzer style (adapted in `rust-analyzer-style.md`): <https://rust-analyzer.github.io/book/contributing/style.html>
