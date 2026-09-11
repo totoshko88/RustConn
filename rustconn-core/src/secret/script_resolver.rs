@@ -35,8 +35,6 @@ const SCRIPT_TIMEOUT: Duration = Duration::from_secs(30);
 /// - The script exits with a non-zero code
 /// - The script exceeds the 30-second timeout
 pub async fn resolve_script(command: &str) -> SecretResult<Option<Credentials>> {
-    debug!(command = %command, "Resolving credentials via script");
-
     let parts = shell_words::split(command)
         .map_err(|e| SecretError::RetrieveFailed(format!("Failed to parse script command: {e}")))?;
 
@@ -48,6 +46,12 @@ pub async fn resolve_script(command: &str) -> SecretResult<Option<Credentials>> 
 
     let program = &parts[0];
     let args = &parts[1..];
+
+    // Log only the program, never the full command line: a credential script's
+    // arguments can themselves carry a secret (e.g. `vault … -token=<secret>`),
+    // and the whole point of this resolver is that the *output* is a secret. The
+    // program name alone is enough to diagnose a misconfiguration.
+    debug!(program = %program, "Resolving credentials via script");
 
     let child = tokio::process::Command::new(program)
         .args(args)
@@ -66,7 +70,7 @@ pub async fn resolve_script(command: &str) -> SecretResult<Option<Credentials>> 
             )));
         }
         Err(_) => {
-            warn!(command = %command, "Script timed out after 30 seconds");
+            warn!(program = %program, "Script timed out after 30 seconds");
             return Err(SecretError::RetrieveFailed(
                 "Script timed out after 30 seconds".to_string(),
             ));
