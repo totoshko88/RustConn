@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.21.11] - 2026-09-11
 
 ### Fixed
 
@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **User Guide corrected against the code** — export: the "Include passwords" option and the "Passwords: Encrypted" column were replaced with an explicit note that **no export format ever writes a password**, the native `.rcn` included, because a connection stores only a password *source*. SSH Custom Options: dangerous directives are dropped rather than "passed through if explicitly set" — only the dedicated ProxyJump/ProxyCommand field is honoured. Session logging: the timestamp example now matches the real default. The Smart Folder "Host Pattern" filter matches the host **or** the connection name, case-insensitively, and a pattern without glob metacharacters also matches as a substring. SPICE clipboard sharing and image compression are documented as having no effect on the external viewer, which has an option for neither: compression is negotiated with the server and clipboard policy belongs to the host. On macOS, SFTP does not open through `xdg-open`/Dolphin/Nautilus — the guide now points at `open(1)` and the built-in Midnight Commander mode, and the desktop-handler section is marked Linux-only. Newly documented though long present in code: the Activity Monitor's **Command finished** mode, **automatic reconnect** after sleep or a network change with its skip rules, and the **built-in dynamic variables**.
 - **Code comments corrected where they described something else** — the `PortableEncryptedFile` backend does not use the machine-bound backend's per-entry format; it derives one key from the passphrase that unwraps a single shared data key, which is what lets a passphrase change rewrap 32 bytes instead of re-encrypting every credential. The built-in `CRITICAL` and `FATAL` highlight rules are deliberately two rules, each independently overridable, not one. The SPICE builders now record why two connection fields never become viewer flags. No behaviour change.
 - **Version strings in the docs no longer go stale** — copy-paste build commands in `docs/MACOS_BUILD.md` and `docs/INSTALL.md` carried a hardcoded `0.21.7` and now use placeholders, the CI-flow diagrams were normalised, and a brittle "relocates 58 Homebrew dylibs" count was replaced with a version-independent description.
+
+### Dependencies
+
+- **Updated**: bitflags 2.13.1→2.13.2, open 5.4.3→5.4.4, smallvec 1.16.0→1.16.1, toml 1.1.5→1.1.6, toml_edit 0.25.13→0.25.15, uuid 1.26.0→1.26.1. All patch-level; `cargo deny check advisories` reports no advisories.
+- **Unchanged, checked**: the bundled Flatpak sources are all current — FreeRDP 3.31.1 (the newest release), cJSON 1.7.19, openh264 2.6.0, VTE 0.80.5, waypipe 0.11.2 — and the local and Flathub manifests carry identical pins. The CLI download catalogue is current on every entry. Snap `stage-packages` are unpinned by design, so each build takes the current Ubuntu 24.04 archive; the `python3.12` security update in USN-8744-1 is picked up by rebuilding and needs no manifest change.
 
 ## [0.21.10] - 2026-09-09
 

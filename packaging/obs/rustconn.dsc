@@ -2,7 +2,7 @@ Format: 3.0 (quilt)
 Source: rustconn
 Binary: rustconn
 Architecture: any
-Version: 0.21.10-1
+Version: 0.21.11-1
 Maintainer: Anton Isaiev <totoshko88@gmail.com>
 Homepage: https://github.com/totoshko88/RustConn
 Standards-Version: 4.6.2
@@ -10,5 +10,5 @@ Build-Depends: debhelper-compat (= 13), libgtk-4-dev (>= 4.14), libvte-2.91-gtk4
 Package-List:
  rustconn deb net optional arch=any
 Files:
- 00000000000000000000000000000000 0 rustconn_0.21.10.orig.tar.xz
- 00000000000000000000000000000000 0 rustconn_0.21.10-1.debian.tar.xz
+ 00000000000000000000000000000000 0 rustconn_0.21.11.orig.tar.xz
+ 00000000000000000000000000000000 0 rustconn_0.21.11-1.debian.tar.xz
