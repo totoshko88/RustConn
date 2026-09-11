@@ -2161,7 +2161,7 @@ The script must output a JSON array to stdout:
 | `port` | Protocol default (22, 3389, 5900...) | Connection port |
 | `protocol` | `ssh` | One of: `ssh`, `rdp`, `vnc`, `spice`, `telnet`, `mosh` |
 | `username` | None | Login username |
-| `group` | None | Sub-group path within the dynamic folder |
+| `group` | None | Sub-group path within the dynamic folder — a `/`-separated path (e.g. `web-servers/production`) that nests the connection under auto-created sub-folders of the dynamic folder. Sub-folders are reused across refreshes rather than duplicated, and blank path segments are ignored |
 | `tags` | `[]` | Tags for filtering |
 | `description` | None | Connection description |
 
