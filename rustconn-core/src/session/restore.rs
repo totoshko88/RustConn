@@ -248,6 +248,8 @@ impl SessionRestoreState {
     /// # Errors
     /// Returns an error if writing fails
     pub fn save_to_file(&self, path: &PathBuf) -> Result<(), SessionRestoreError> {
+        use std::io::Write;
+
         let json = self.to_json().map_err(SessionRestoreError::Serialization)?;
 
         // Create parent directories if needed
@@ -255,7 +257,29 @@ impl SessionRestoreState {
             std::fs::create_dir_all(parent).map_err(SessionRestoreError::Io)?;
         }
 
-        std::fs::write(path, json).map_err(SessionRestoreError::Io)
+        // Owner-only (0600) on unix. The restore file holds connection names,
+        // hosts and protocols — session metadata that should not be world-
+        // readable under the process umask. The mode is set in the open itself
+        // so there is no window where the file is created wider and narrowed
+        // afterwards.
+        let mut open_opts = std::fs::OpenOptions::new();
+        open_opts.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            open_opts.mode(0o600);
+        }
+        let mut file = open_opts.open(path).map_err(SessionRestoreError::Io)?;
+        // `mode()` above only takes effect when the file is created. A restore
+        // file written by an earlier build keeps its old, possibly world-
+        // readable bits across the truncating reopen, so tighten it explicitly.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = file.set_permissions(std::fs::Permissions::from_mode(0o600));
+        }
+        file.write_all(json.as_bytes())
+            .map_err(SessionRestoreError::Io)
     }
 
     /// Loads the state from a file

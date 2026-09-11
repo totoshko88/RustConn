@@ -466,14 +466,21 @@ impl SessionLogger {
             })?;
         }
 
-        // Create the log file
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-            .map_err(|e| {
-                LogError::FileCreation(format!("Failed to open {}: {}", log_path.display(), e))
-            })?;
+        // Create the log file. Owner-only (0600) on unix: a session transcript
+        // can hold sensitive output even after redaction, and the path may be an
+        // absolute location outside the 0700 config dir (the guide itself
+        // suggests one for Flatpak), where the process umask would otherwise
+        // leave it world-readable.
+        let mut open_opts = OpenOptions::new();
+        open_opts.create(true).append(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            open_opts.mode(0o600);
+        }
+        let file = open_opts.open(&log_path).map_err(|e| {
+            LogError::FileCreation(format!("Failed to open {}: {}", log_path.display(), e))
+        })?;
 
         let writer = BufWriter::new(file);
 
@@ -883,18 +890,22 @@ impl SessionLogger {
             })?;
         }
 
-        // Create new log file
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.log_path)
-            .map_err(|e| {
-                LogError::FileCreation(format!(
-                    "Failed to create new log file {}: {}",
-                    self.log_path.display(),
-                    e
-                ))
-            })?;
+        // Create new log file, owner-only (0600) on unix — same rationale as the
+        // initial open above.
+        let mut open_opts = OpenOptions::new();
+        open_opts.create(true).append(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            open_opts.mode(0o600);
+        }
+        let file = open_opts.open(&self.log_path).map_err(|e| {
+            LogError::FileCreation(format!(
+                "Failed to create new log file {}: {}",
+                self.log_path.display(),
+                e
+            ))
+        })?;
 
         self.writer = Some(BufWriter::new(file));
         self.bytes_written = 0;
