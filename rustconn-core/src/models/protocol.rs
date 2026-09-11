@@ -893,12 +893,15 @@ pub struct SshConfig {
     pub pkcs11_provider: Option<String>,
     /// SSH keep-alive interval in seconds (`ServerAliveInterval`).
     /// Sends a keep-alive packet every N seconds to prevent idle disconnects.
-    /// `None` means no keep-alive (SSH default behavior).
+    /// `None` means "use the built-in default" — `build_command_args` fills in
+    /// 15 s so a dead peer is noticed promptly, unless the user set the option
+    /// in `custom_options`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keep_alive_interval: Option<u32>,
     /// Maximum number of keep-alive messages without a response (`ServerAliveCountMax`).
     /// Connection is terminated after this many unanswered keep-alive packets.
-    /// `None` uses SSH default (3).
+    /// `None` means "use the built-in default" — `build_command_args` fills in 3,
+    /// unless the user set the option in `custom_options`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keep_alive_count_max: Option<u32>,
     /// Enable verbose/debug output for SSH connections (`-v` flag).
@@ -979,6 +982,12 @@ impl SshConfig {
     ///   still be honored for backward compatibility.
     #[must_use]
     pub fn build_command_args(&self) -> Vec<String> {
+        /// Default `ServerAliveInterval` in seconds — a probe every 15 s.
+        const DEFAULT_SERVER_ALIVE_INTERVAL: u32 = 15;
+        /// Default `ServerAliveCountMax` — give up after 3 unanswered probes,
+        /// so a dead peer is noticed in ~45 s.
+        const DEFAULT_SERVER_ALIVE_COUNT_MAX: u32 = 3;
+
         let mut args = Vec::new();
 
         // Add verbose flag for debugging connection issues
@@ -1080,25 +1089,42 @@ impl SshConfig {
         // and tunnel_manager.rs start_tunnel().
 
         // Add keep-alive options if configured
-        // ServerAliveInterval sends a keep-alive packet every N seconds
-        // ServerAliveCountMax terminates after N unanswered packets
-        if let Some(interval) = self.keep_alive_interval {
-            // Only add if user hasn't already set it via custom_options
-            if !self
-                .custom_options
-                .keys()
-                .any(|k| k.eq_ignore_ascii_case("ServerAliveInterval"))
-            {
-                args.push("-o".to_string());
-                args.push(format!("ServerAliveInterval={interval}"));
-            }
+        // Keep-alive options. `ServerAliveInterval` sends a probe every N
+        // seconds; `ServerAliveCountMax` drops the connection after that many
+        // unanswered probes. The pair lets a dead peer be noticed in about
+        // `interval × count` seconds — with the defaults below, ~45 s — which is
+        // what lets auto-reconnect fire promptly after a network change (#217).
+        //
+        // These defaults are applied here, in the shared argument builder, so
+        // that every SSH command RustConn constructs carries them: the GUI
+        // terminal, the CLI, and the standalone tunnels alike. They used to be
+        // injected only in the GUI terminal, which left CLI sessions and tunnels
+        // without keep-alive despite the User Guide stating the defaults apply to
+        // "all SSH sessions". A value set on the connection (`keep_alive_*`) or in
+        // `custom_options` still wins — the default only fills the gap when
+        // neither is present. (The defaults are declared at the top of this
+        // function to satisfy `clippy::items_after_statements`.)
+
+        let user_set_interval = self
+            .custom_options
+            .keys()
+            .any(|k| k.eq_ignore_ascii_case("ServerAliveInterval"));
+        if !user_set_interval {
+            let interval = self
+                .keep_alive_interval
+                .unwrap_or(DEFAULT_SERVER_ALIVE_INTERVAL);
+            args.push("-o".to_string());
+            args.push(format!("ServerAliveInterval={interval}"));
         }
-        if let Some(count) = self.keep_alive_count_max
-            && !self
-                .custom_options
-                .keys()
-                .any(|k| k.eq_ignore_ascii_case("ServerAliveCountMax"))
-        {
+
+        let user_set_count = self
+            .custom_options
+            .keys()
+            .any(|k| k.eq_ignore_ascii_case("ServerAliveCountMax"));
+        if !user_set_count {
+            let count = self
+                .keep_alive_count_max
+                .unwrap_or(DEFAULT_SERVER_ALIVE_COUNT_MAX);
             args.push("-o".to_string());
             args.push(format!("ServerAliveCountMax={count}"));
         }
@@ -4587,5 +4613,68 @@ mod port_forward_socks_tests {
     #[test]
     fn to_ssh_arg_renders_a_bare_d_flag_for_dynamic() {
         assert_eq!(dynamic(1080).to_ssh_arg(), vec!["-D", "1080"]);
+    }
+}
+
+#[cfg(test)]
+mod keep_alive_default_tests {
+    use super::*;
+
+    /// With nothing configured, the shared builder must still emit the keep-alive
+    /// defaults, so CLI sessions and tunnels get them and not only the GUI
+    /// terminal (#217). This is the case the defaults used to miss.
+    #[test]
+    fn build_command_args_emits_keep_alive_defaults() {
+        let args = SshConfig::default().build_command_args();
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveInterval=15")
+        );
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveCountMax=3")
+        );
+    }
+
+    /// An explicit connection value overrides the default.
+    #[test]
+    fn build_command_args_honours_configured_keep_alive() {
+        let config = SshConfig {
+            keep_alive_interval: Some(60),
+            keep_alive_count_max: Some(5),
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveInterval=60")
+        );
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveCountMax=5")
+        );
+        assert!(
+            !args.iter().any(|a| a == "ServerAliveInterval=15"),
+            "the default must not be emitted alongside the configured value"
+        );
+    }
+
+    /// A value set in custom_options wins and is not duplicated by the default.
+    #[test]
+    fn build_command_args_defers_to_custom_options() {
+        let mut custom = std::collections::HashMap::new();
+        custom.insert("ServerAliveInterval".to_string(), "30".to_string());
+        let config = SshConfig {
+            custom_options: custom,
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+        assert!(args.iter().any(|a| a == "ServerAliveInterval=30"));
+        assert!(
+            !args.iter().any(|a| a == "ServerAliveInterval=15"),
+            "the default must not be emitted when custom_options sets the option"
+        );
+        // The count default still applies — only the interval was overridden.
+        assert!(args.iter().any(|a| a == "ServerAliveCountMax=3"));
     }
 }

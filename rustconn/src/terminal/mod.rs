@@ -1565,25 +1565,12 @@ impl TerminalNotebook {
             argv.push(&kh_option);
         }
 
-        // Default keep-alive: detect dead connections within ~45s (15s × 3)
-        // so auto-reconnect triggers promptly after network changes (#217).
-        // Skip if user already configured via SshConfig.keep_alive_interval
-        // (which lands in extra_args from build_command_args).
-        // NOTE: This overrides any ServerAliveInterval set in ~/.ssh/config
-        // because CLI -o takes precedence. Users who want to respect their
-        // ssh_config value should set the keep-alive in the connection editor
-        // (even to the same value) so it appears in extra_args and skips this.
-        let has_server_alive = extra_args.iter().any(|a| a.contains("ServerAliveInterval"));
-        let has_alive_count = extra_args.iter().any(|a| a.contains("ServerAliveCountMax"));
-        if !has_server_alive {
-            argv.push("-o");
-            argv.push("ServerAliveInterval=15");
-        }
-        if !has_alive_count {
-            argv.push("-o");
-            argv.push("ServerAliveCountMax=3");
-        }
-
+        // Keep-alive defaults (ServerAliveInterval=15, ServerAliveCountMax=3)
+        // are now emitted by `SshConfig::build_command_args` for every SSH
+        // command — the GUI terminal, the CLI, and the tunnels — so they already
+        // sit in `extra_args`. They used to be injected here, which meant only
+        // GUI sessions got them; the fallback moved into the shared builder in
+        // 0.21.11 so "all SSH sessions" is finally true (#217).
         argv.extend(extra_args);
 
         let destination = if let Some(user) = username {

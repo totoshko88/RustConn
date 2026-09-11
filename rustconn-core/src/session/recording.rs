@@ -956,7 +956,7 @@ mod sanitize_tests {
             .sum();
         assert_eq!(
             counted,
-            new_data.as_bytes().len(),
+            new_data.len(),
             "timing byte counts must match the rewritten data length"
         );
     }
