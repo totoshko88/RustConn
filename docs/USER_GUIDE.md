@@ -1281,9 +1281,11 @@ Before opening SFTP, RustConn automatically runs `ssh-add` with your configured 
 - Right-click an SSH connection in sidebar → "Open SFTP"
 - Or use the `win.open-sftp` action while a connection is selected
 
-RustConn tries file managers in this order: `dolphin` (KDE), `nautilus` (GNOME), `xdg-open` (fallback). The `SSH_AUTH_SOCK` environment variable is injected into the spawned process so the file manager can access the SSH agent.
+On Linux, RustConn tries file managers in this order: `dolphin` (KDE), `nautilus` (GNOME), `xdg-open` (fallback). The `SSH_AUTH_SOCK` environment variable is injected into the spawned process so the file manager can access the SSH agent.
 
 On KDE, if `dolphin` is not found (e.g., in Flatpak), `xdg-open` is used — which opens whichever application is registered as the `sftp://` handler. See [SFTP Troubleshooting](#sftp-troubleshooting) if the wrong application opens.
+
+On macOS there is no `xdg-open`, `dolphin` or `nautilus`; RustConn opens locations through `open(1)`, which hands the `sftp://` URI to the default handler registered with Launch Services. The "SFTP via Midnight Commander" mode below is the recommended way to browse SFTP on a Mac, since it does not depend on a `sftp://` handler being installed.
 
 **SFTP via Midnight Commander:**
 
@@ -1363,7 +1365,9 @@ installed Chromium browser or the embedded browser instead, as described above.
 
 #### SFTP Troubleshooting
 
-**Choosing the Default SFTP Client (KDE / GNOME / other):**
+**Choosing the Default SFTP Client (Linux — KDE / GNOME / other):**
+
+This section is Linux-only. On macOS see the `open(1)` / Midnight Commander note above.
 
 RustConn opens `sftp://` URIs via `xdg-open`, which delegates to your desktop's default handler. On KDE, if FileZilla is installed, it may register itself as the default `sftp://` handler instead of Dolphin.
 

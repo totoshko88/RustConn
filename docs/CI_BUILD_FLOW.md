@@ -66,15 +66,15 @@ and updates OBS.
 
 ```mermaid
 graph TD
-    Tag[git push tag v0.21.7] --> BuildDeb[Build .deb]
+    Tag[git push tag vX.Y.Z] --> BuildDeb[Build .deb]
     Tag --> BuildRPM[Build .rpm]
     Tag --> BuildAppImage[Build AppImage]
     Tag --> BuildFlatpak[Build .flatpak]
 
-    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_0.21.7_amd64.deb]
-    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-0.21.7-1.fc44.x86_64.rpm]
-    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-0.21.7-x86_64.AppImage]
-    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-0.21.7.flatpak]
+    BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_X.Y.Z_amd64.deb]
+    BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-X.Y.Z-1.fc44.x86_64.rpm]
+    BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-X.Y.Z-x86_64.AppImage]
+    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-X.Y.Z.flatpak]
 
     DebArtifact --> Release[Create GitHub Release]
     RPMArtifact --> Release
@@ -258,15 +258,15 @@ sequenceDiagram
     participant GH as GitHub Actions
     participant FH as flathub/io.github.totoshko88.RustConn
 
-    Dev->>GH: Push tag v0.21.7
+    Dev->>GH: Push tag vX.Y.Z
     GH->>GH: Generate cargo-sources.json
     GH->>GH: Update manifest tag
-    GH->>GH: Upload artifact: flathub-update-v0.21.7
+    GH->>GH: Upload artifact: flathub-update-vX.Y.Z
 
     Dev->>Dev: Download artifact
     Dev->>FH: Create branch
     Dev->>FH: Upload manifest + cargo-sources.json
-    Dev->>FH: Create PR "Update to v0.21.7"
+    Dev->>FH: Create PR "Update to vX.Y.Z"
     FH->>FH: Flathub CI builds and tests
     FH->>FH: Merge → published to Flathub
 ```

@@ -87,7 +87,7 @@ dist/RustConn.app/Contents/
 └── Info.plist
 ```
 
-The producer recursively discovers non-system Mach-O dependencies, copies them into `Contents/Frameworks`, rewrites their install names and references to `@rpath`, and adds `@executable_path/../Frameworks` to executables. It currently relocates 58 Homebrew-provided dylibs and fails if an absolute `/opt/homebrew` or `/usr/local` dependency remains.
+The producer recursively discovers non-system Mach-O dependencies, copies them into `Contents/Frameworks`, rewrites their install names and references to `@rpath`, and adds `@executable_path/../Frameworks` to executables. It relocates the non-system Homebrew dylibs its binaries depend on (the exact count depends on the installed library versions) and fails if an absolute `/opt/homebrew` or `/usr/local` dependency remains.
 
 `libopenh264.dylib` is bundled explicitly because it is loaded with `dlopen` at runtime rather than recorded as a load command. `rustconn-core` probes `Contents/Frameworks/libopenh264.dylib` first and falls back to Homebrew prefixes only for development runs of the bare `target/` binary, so the producer fails when OpenH264 is missing instead of silently shipping a bundle that degrades H.264 to non-AVC codecs.
 
@@ -135,7 +135,7 @@ spctl --assess --type execute --verbose=4 dist/RustConn.app
 
 ## DMG and Notarization
 
-The DMG packager consumes the canonical bundle and writes `dist/RustConn-0.21.7-macOS-$(uname -m).dmg`.
+The DMG packager consumes the canonical bundle and writes `dist/RustConn-<version>-macOS-$(uname -m).dmg`, where `<version>` is the workspace version from `Cargo.toml`.
 
 ```bash
 # Build and ad-hoc sign a local artifact
@@ -179,7 +179,7 @@ Then build, sign, submit, staple, and validate in one command:
 Inspect a finished DMG:
 
 ```bash
-hdiutil attach dist/RustConn-0.21.7-macOS-$(uname -m).dmg
+hdiutil attach dist/RustConn-<version>-macOS-$(uname -m).dmg
 codesign --verify --deep --strict --verbose=4 /Volumes/RustConn/RustConn.app
 spctl --assess --type execute --verbose=4 /Volumes/RustConn/RustConn.app
 hdiutil detach /Volumes/RustConn
@@ -235,7 +235,7 @@ open dist/RustConn.app
 The repository formula is `packaging/macos/rustconn.rb`. Its tag-only source is a temporary pre-tag state that avoids a fabricated checksum; a Git tag is mutable, so the formula must not be published in that form. Before publishing to a tap, replace the source with the release archive and its measured SHA-256 (or pin the release commit as the Git revision):
 
 ```bash
-curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.7.tar.gz \
+curl -sL https://github.com/totoshko88/RustConn/archive/refs/tags/v<version>.tar.gz \
   | shasum -a 256
 ```
 

@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The Homebrew build failed at the icon step with an opaque `Invalid Iconset`** — the macOS `.app` icon was rendered by invoking `rsvg-convert` for each size with no check that a well-formed PNG came back, then packaged with `iconutil`. When a render in the Homebrew build sandbox came back empty or the wrong pixel size, `iconutil` refused the iconset and reported only `Invalid Iconset` twice, with nothing in the log naming the bad member, so the whole install aborted after a full compile. Icon packaging now goes through a shared `scripts/make-iconset.sh` that renders directly into the canonical Apple names, verifies every PNG is non-empty and exactly the expected pixel size with `sips` before packaging, and fails naming the offending file if a render is bad — turning an intermittent, undiagnosable failure into a clear one. Both the canonical bundle producer (`scripts/macos-build.sh`) and the Homebrew formula now call the same script, so the icon step cannot drift between them.
 
+### Documentation
+
+- **macOS documentation corrected for SFTP and stale version strings** — the User Guide described SFTP as opening through `xdg-open`/Dolphin/Nautilus without noting that none of those exist on macOS, where RustConn uses `open(1)` and the recommended path is the built-in Midnight Commander mode; a macOS note was added and the desktop-handler section marked Linux-only. Stale `0.21.7` version strings in copy-paste build commands (`docs/MACOS_BUILD.md`, `docs/INSTALL.md`) were replaced with `<version>`/`vX.Y.Z` placeholders that do not go stale, the CI-flow diagrams were normalized to `vX.Y.Z`, and the brittle "relocates 58 Homebrew dylibs" count in `MACOS_BUILD.md` was replaced with a version-independent description.
+
 ## [0.21.10] - 2026-09-09
 
 ### Fixed
