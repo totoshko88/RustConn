@@ -5,6 +5,12 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Improved
+
+- **The Homebrew formula gate now checks the formula instead of the file's location** — the `brew style` step added in 0.21.11 shipped without ever running and was red on arrival with 13 offences, seven of which were not defects. Homebrew's RuboCop configuration switches cops off *by path*: `Sorbet/StrictSigil`, `Sorbet/TrueSigil`, `Style/Documentation` and `Style/FrozenStringLiteralComment` all exclude `**/{Formula,Casks}/**/*.rb`, so pointing the gate at `packaging/macos/rustconn.rb` made RuboCop treat a formula as ordinary Ruby and demand a type sigil, a magic comment and a class doc comment — none of which any formula in homebrew-core carries. The other three were the `sha256 "PLACEHOLDER_SHA256"` template line, which `release.sh` gates on and the release workflow rewrites with the measured hash of a tarball that does not exist until the tag is pushed. The step now lints a copy placed under a `Formula/` directory with a valid dummy hash substituted, so only real findings remain, and it asserts the substitution happened rather than silently testing the placeholder. Five genuine offences were fixed in the formula (hash-rocket alignment in the feature ladder, and three `rescue StandardError` that Homebrew wants written implicitly); `FormulaAudit/Text` is waived on the command line, with the reason recorded at the `cargo build` call it concerns. `FormulaAuditStrict` stays excluded because `--except-cops` replaces `brew style`'s default rather than adding to it.
+
 ## [0.21.11] - 2026-09-11
 
 ### Fixed

@@ -585,8 +585,55 @@ jobs:
       - name: Formula syntax (ruby -c)
         run: ruby -c packaging/macos/rustconn.rb
 
+      # `brew style` must be pointed at a path that *looks like* a tap, not at the
+      # file where it lives. Its first version ran
+      # `brew style packaging/macos/rustconn.rb` and was red on arrival with 13
+      # offences, seven of which were not defects at all:
+      #
+      #   * Homebrew's Library/.rubocop.yml switches cops off by path. Sorbet/
+      #     StrictSigil, Sorbet/TrueSigil, Style/Documentation and Style/Frozen
+      #     StringLiteralComment all carry `Exclude: **/{Formula,Casks}/**/*.rb`.
+      #     Outside such a path rubocop treats a formula as ordinary Ruby and
+      #     demands a type sigil, a magic comment and a class doc comment — none of
+      #     which any formula in homebrew-core has, `wget.rb` included.
+      #   * The three FormulaAudit/Checksum offences were about
+      #     `sha256 "PLACEHOLDER_SHA256"`, which is deliberate and required:
+      #     release.sh gates on it and release.yml rewrites it with the measured
+      #     hash of the release tarball — a tarball that does not exist until the
+      #     tag is pushed, so a real hash cannot live in-tree.
+      #
+      # So: copy the formula under a `Formula/` directory and substitute a
+      # syntactically valid dummy hash. What is left is the offences that are
+      # really about the formula. Two flags are load-bearing:
+      #
+      #   * `FormulaAuditStrict` is `brew style`'s own default exclusion — passing
+      #     `--except-cops` *replaces* that default rather than adding to it
+      #     (see `dev-cmd/style.rb`), so dropping it here would silently enable a
+      #     whole cop department.
+      #   * `FormulaAudit/Text` wants `cargo install *std_cargo_args`, which this
+      #     formula cannot use; the reason is documented at the `system "cargo"`
+      #     call. It is waived here rather than with a `rubocop:disable` comment
+      #     because Style/DisableCopsWithinSourceCodeDirective is *enabled* for
+      #     `Formula/` paths, so the directive would itself be an offence.
       - name: Formula style (brew style)
-        run: brew style packaging/macos/rustconn.rb
+        run: |
+          set -euo pipefail
+          tap_dir="${RUNNER_TEMP}/formula-style/Formula"
+          mkdir -p "$tap_dir"
+          # Any 64-char lowercase hex satisfies the checksum cops. The formula's
+          # own digest is deterministic and obviously not a tarball hash, so a
+          # reader of this log cannot mistake it for the real one.
+          dummy_sha="$(shasum -a 256 packaging/macos/rustconn.rb | cut -d' ' -f1)"
+          sed "s|^\(  sha256 \"\)PLACEHOLDER_SHA256\(\".*\)|\1${dummy_sha}\2|" \
+              packaging/macos/rustconn.rb > "$tap_dir/rustconn.rb"
+          # Prove the substitution happened. Without this the step would silently
+          # keep testing the placeholder if release.sh's template shape ever moves.
+          if ! grep -qE '^  sha256 "[a-f0-9]{64}"$' "$tap_dir/rustconn.rb"; then
+            echo "::error::could not substitute PLACEHOLDER_SHA256 — has the template changed?"
+            exit 1
+          fi
+          brew style --except-cops=FormulaAuditStrict,FormulaAudit/Text \
+                     "$tap_dir/rustconn.rb"
 
       # Non-gating: a real build of the formula, so a packaging or dependency
       # break shows up here rather than in a user's terminal. The formula builds

@@ -67,8 +67,8 @@ class Rustconn < Formula
     ]
 
     {
-      "libadwaita-1" => { "1.8" => "adw-1-8", "1.7" => "adw-1-7", "1.6" => "adw-1-6" },
-      "gtk4" => { "4.22" => "gtk-4-22", "4.20" => "gtk-4-20", "4.18" => "gtk-4-18" },
+      "libadwaita-1"  => { "1.8" => "adw-1-8", "1.7" => "adw-1-7", "1.6" => "adw-1-6" },
+      "gtk4"          => { "4.22" => "gtk-4-22", "4.20" => "gtk-4-20", "4.18" => "gtk-4-18" },
       "vte-2.91-gtk4" => { "0.78" => "vte-0-78" },
     }.each do |pc_name, ladder|
       rung = ladder.find { |minimum, _| quiet_system("pkg-config", "--atleast-version=#{minimum}", pc_name) }
@@ -101,6 +101,20 @@ class Rustconn < Formula
 
     # Build both binaries in a single cargo invocation to avoid
     # duplicate dependency resolution and share compilation artifacts.
+    #
+    # `FormulaAudit/Text` asks for `"cargo", "install", *std_cargo_args` here and
+    # this formula cannot comply. `std_cargo_args` expands to
+    # `--locked --root <prefix> --path .`: the default feature set of one crate,
+    # installed straight into the keg. RustConn needs the opposite of all three —
+    # `--no-default-features` plus the feature list computed above from the
+    # installed GNOME versions, two workspace members from one invocation, and the
+    # binaries left in `target/release` because the steps below assemble them into
+    # a `.app` bundle instead of only dropping them in `bin`.
+    #
+    # The waiver lives in the CI step (`--except-cops`) rather than in a
+    # `rubocop:disable` comment here, because Homebrew enables
+    # `Style/DisableCopsWithinSourceCodeDirective` for anything under a `Formula/`
+    # path — a directive would itself be an offence.
     system "cargo", "build", "--release",
            "-p", "rustconn", "-p", "rustconn-cli",
            "--no-default-features",
@@ -246,7 +260,7 @@ class Rustconn < Formula
     if File.executable?(lsregister)
       begin
         system lsregister, "-f", "#{prefix}/RustConn.app"
-      rescue StandardError => e
+      rescue => e
         opoo "Could not register RustConn.app with LaunchServices: #{e.message}"
       end
     end
@@ -259,13 +273,13 @@ class Rustconn < Formula
     begin
       system "#{Formula["glib"].opt_bin}/glib-compile-schemas",
              "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
-    rescue StandardError => e
+    rescue => e
       opoo "Could not compile GSettings schemas: #{e.message}"
     end
     begin
       system "#{Formula["gtk4"].opt_bin}/gtk4-update-icon-cache", "-f", "-t",
              "#{HOMEBREW_PREFIX}/share/icons/hicolor"
-    rescue StandardError => e
+    rescue => e
       opoo "Could not update the icon cache: #{e.message}"
     end
   end
