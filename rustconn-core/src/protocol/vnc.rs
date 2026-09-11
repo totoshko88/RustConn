@@ -18,6 +18,29 @@ impl VncProtocol {
         Self
     }
 
+    /// Returns whether a custom VNC argument is one RustConn refuses to pass on.
+    ///
+    /// These prefixes can turn an imported connection or a shared config into an
+    /// attack: `-via`/`-proxyserver` reroute the connection, `-passwd`/
+    /// `-passwordfile` point the viewer at an arbitrary file, `-securitytypes`
+    /// weakens authentication, and `-listen` turns the viewer into a server. The
+    /// check is shared by both the external-viewer builder and the fallback
+    /// `build_command` so the two cannot drift in strictness (they did: the
+    /// external-viewer path used to filter only NUL/newline).
+    #[must_use]
+    fn is_dangerous_vnc_arg(arg: &str) -> bool {
+        const DANGEROUS_PREFIXES: [&str; 6] = [
+            "-via",
+            "-passwd",
+            "-passwordfile",
+            "-securitytypes",
+            "-proxyserver",
+            "-listen",
+        ];
+        let lower = arg.to_lowercase();
+        DANGEROUS_PREFIXES.iter().any(|p| lower.starts_with(p))
+    }
+
     /// Extracts VNC config from a connection, returning an error if not VNC
     fn get_vnc_config(connection: &Connection) -> ProtocolResult<&VncConfig> {
         match &connection.protocol_config {
@@ -123,10 +146,16 @@ impl VncProtocol {
             }
         }
 
-        // Add custom arguments from config (filter unsafe characters).
+        // Add custom arguments from config (filter unsafe characters and the
+        // dangerous rerouting/auth-weakening prefixes — same set the fallback
+        // `build_command` blocks).
         for arg in &config.custom_args {
             if arg.contains('\0') || arg.contains('\n') {
                 tracing::warn!(arg = %arg, "Skipping VNC custom arg with unsafe characters");
+                continue;
+            }
+            if Self::is_dangerous_vnc_arg(arg) {
+                tracing::warn!(arg = %arg, "Blocked dangerous VNC custom arg");
                 continue;
             }
             args.push(arg.clone());
@@ -222,17 +251,8 @@ impl Protocol for VncProtocol {
                     continue;
                 }
                 // Block dangerous VNC viewer arguments that could be
-                // exploited via imported connections or shared configs
-                let lower = arg.to_lowercase();
-                let dangerous_prefixes = [
-                    "-via",
-                    "-passwd",
-                    "-passwordfile",
-                    "-securitytypes",
-                    "-proxyserver",
-                    "-listen",
-                ];
-                if dangerous_prefixes.iter().any(|p| lower.starts_with(p)) {
+                // exploited via imported connections or shared configs.
+                if Self::is_dangerous_vnc_arg(arg) {
                     tracing::warn!(arg = %arg, "Blocked dangerous VNC custom arg");
                     continue;
                 }
@@ -452,5 +472,33 @@ mod tests {
             VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
         assert!(args.contains(&"-Fullscreen".to_string()));
         assert!(!args.iter().any(|a| a.contains('\n')));
+    }
+
+    /// The external-viewer path must block the same dangerous rerouting/auth
+    /// arguments the fallback `build_command` does — previously it did not, so a
+    /// malicious imported connection could smuggle `-via`/`-passwordfile` into
+    /// the GUI viewer launch (the strictness asymmetry the 0.21.11 audit found).
+    #[test]
+    fn external_viewer_blocks_dangerous_custom_args() {
+        let config = VncConfig {
+            custom_args: vec![
+                "-Fullscreen".to_string(),
+                "-via".to_string(),
+                "attacker:22".to_string(),
+                "-passwordfile".to_string(),
+                "/etc/shadow".to_string(),
+                "-Listen".to_string(),
+            ],
+            ..Default::default()
+        };
+        let (_program, args) =
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+        assert!(args.contains(&"-Fullscreen".to_string()), "benign arg kept");
+        for blocked in ["-via", "-passwordfile", "-Listen"] {
+            assert!(
+                !args.iter().any(|a| a.eq_ignore_ascii_case(blocked)),
+                "{blocked} must be blocked on the external-viewer path"
+            );
+        }
     }
 }
