@@ -142,21 +142,26 @@ fn askpass_script_for_env(env_var_name: &str) -> Option<std::path::PathBuf> {
         return Some(path.clone());
     }
 
-    let path = match std::env::var_os("XDG_RUNTIME_DIR") {
-        Some(dir) if !dir.is_empty() => {
+    // Shared resolver: `$XDG_RUNTIME_DIR` on Linux, `$TMPDIR` on macOS. When a
+    // user-private directory exists the script gets a stable per-env name so a
+    // reconnect reuses it; only when the resolver declines (a Linux box with no
+    // runtime dir) do we fall back to a randomized `temp_dir()` path to avoid a
+    // fixed name in world-writable `/tmp`.
+    let path = match rustconn_core::secret_file_dir() {
+        Some(dir) => {
             if env_var_name == TARGET_PASSWORD_ENV {
-                std::path::PathBuf::from(dir).join("rustconn-target-askpass.sh")
+                dir.join("rustconn-target-askpass.sh")
             } else if env_var_name == JUMP_HOST_PW_ENV {
-                std::path::PathBuf::from(dir).join("rustconn-jh-askpass.sh")
+                dir.join("rustconn-jh-askpass.sh")
             } else {
                 // Unique file per hop index: rustconn-jh-askpass-1.sh, etc.
                 let suffix = env_var_name
                     .strip_prefix("_RC_JH_PW_FILE_")
                     .unwrap_or(env_var_name);
-                std::path::PathBuf::from(dir).join(format!("rustconn-jh-askpass-{suffix}.sh"))
+                dir.join(format!("rustconn-jh-askpass-{suffix}.sh"))
             }
         }
-        _ => std::env::temp_dir().join(format!("rc-askpass-{}.sh", Uuid::new_v4())),
+        None => std::env::temp_dir().join(format!("rc-askpass-{}.sh", Uuid::new_v4())),
     };
 
     let script = askpass_script_contents(env_var_name);
@@ -182,9 +187,11 @@ fn create_askpass_secret_file(password: &SecretString) -> std::io::Result<std::p
     use secrecy::ExposeSecret;
     use std::io::Write;
 
-    let directory = std::env::var_os("XDG_RUNTIME_DIR")
-        .filter(|dir| !dir.is_empty())
-        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+    // Shared resolver: `$XDG_RUNTIME_DIR` on Linux, `$TMPDIR` on macOS (which has
+    // no runtime dir). Only when it declines — a Linux box with no runtime dir,
+    // unusual — do we accept the weaker `temp_dir()` so a password can still be
+    // delivered rather than dropped.
+    let directory = rustconn_core::secret_file_dir().unwrap_or_else(std::env::temp_dir);
     let path = directory.join(format!("rustconn-askpass-secret-{}", Uuid::new_v4()));
     let mut options = std::fs::OpenOptions::new();
     options.create_new(true).write(true);
