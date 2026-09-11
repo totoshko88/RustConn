@@ -211,6 +211,18 @@ fn create_askpass_secret_file(password: &SecretString) -> std::io::Result<std::p
     Ok(path)
 }
 
+/// Builds the per-child askpass environment for one SSH launch.
+///
+/// Concurrency invariant (why this cannot race between simultaneous sessions):
+/// the environment is returned as a plain `Vec` and applied only to the one
+/// child process spawned for this connection (through `build_child_env` →
+/// the VTE spawn's env vector). Nothing here touches the *process-global*
+/// environment — there is deliberately no `std::env::set_var`, which Rust 2024
+/// forbids anyway. Although the variable *names* are fixed (`_RC_TGT_PW_FILE`,
+/// `_RC_JH_PW_FILE`), their *values* are freshly randomised secret-file paths
+/// from `create_askpass_secret_file`, so two connections opened at the same time
+/// each carry their own file in their own child environment and cannot read each
+/// other's password. Keep it that way: never promote these to a global set.
 fn ssh_askpass_env(
     jump_host_passwords: &[(String, SecretString)],
     target_password: Option<(&SecretString, &std::path::Path)>,
