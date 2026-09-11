@@ -267,6 +267,82 @@ pub fn plan_dynamic_refresh(
     }
 }
 
+/// Returns the ids of refresh-created sub-groups under `base` that are now empty.
+///
+/// A refresh deletes its old connections and re-creates them from the entries'
+/// `group` paths. When an entry stops naming a path, or names a different one,
+/// the sub-group it used to live in is left behind empty — so a folder whose
+/// upstream reorganises accumulates dead folders forever.
+///
+/// Only sub-groups the refresh itself created are candidates, identified by the
+/// property that makes the refresh idempotent in the first place: their id equals
+/// [`stable_subgroup_id`] of their parent and name. A folder the *user* made by
+/// hand inside a dynamic folder has a random id, does not match, and is never
+/// touched however empty it is — deleting a user's folder to tidy up is not this
+/// function's business.
+///
+/// Results are ordered deepest-first, so deleting them in order empties a parent
+/// before it is itself considered — a two-level path (`web/production`) whose
+/// entries all disappeared is removed in full by one pass.
+#[must_use]
+pub fn empty_dynamic_subgroup_ids(
+    base: Uuid,
+    groups: &[crate::models::ConnectionGroup],
+    connections: &[Connection],
+) -> Vec<Uuid> {
+    // Depth of each descendant, so the sweep can run bottom-up.
+    let mut depth: std::collections::HashMap<Uuid, usize> = std::collections::HashMap::new();
+    depth.insert(base, 0);
+    for id in descendant_group_ids(base, groups) {
+        if id == base {
+            continue;
+        }
+        // `descendant_group_ids` is breadth-first, so a parent's depth is already
+        // known by the time its child is reached.
+        if let Some(group) = groups.iter().find(|g| g.id == id)
+            && let Some(parent) = group.parent_id
+            && let Some(parent_depth) = depth.get(&parent).copied()
+        {
+            depth.insert(id, parent_depth + 1);
+        }
+    }
+
+    let mut candidates: Vec<(usize, Uuid)> = Vec::new();
+    for group in groups {
+        let Some(&group_depth) = depth.get(&group.id) else {
+            continue;
+        };
+        if group.id == base {
+            continue;
+        }
+        let Some(parent) = group.parent_id else {
+            continue;
+        };
+        // Created by a refresh, not by the user.
+        if stable_subgroup_id(parent, &group.name) != group.id {
+            continue;
+        }
+        candidates.push((group_depth, group.id));
+    }
+
+    // Deepest first, so a child is considered before the parent it empties.
+    candidates.sort_by_key(|(group_depth, _)| std::cmp::Reverse(*group_depth));
+
+    let mut removed: std::collections::HashSet<Uuid> = std::collections::HashSet::new();
+    let mut result = Vec::new();
+    for (_, id) in candidates {
+        let has_connection = connections.iter().any(|c| c.group_id == Some(id));
+        let has_live_child = groups
+            .iter()
+            .any(|g| g.parent_id == Some(id) && !removed.contains(&g.id));
+        if !has_connection && !has_live_child {
+            removed.insert(id);
+            result.push(id);
+        }
+    }
+    result
+}
+
 /// Collects `base` and every group descended from it.
 ///
 /// A dynamic refresh removes its old connections before applying the new plan.
@@ -497,6 +573,86 @@ mod tests {
         assert!(
             !subtree.contains(&unrelated.id),
             "an unrelated root is excluded"
+        );
+    }
+
+    /// Builds the sub-group a refresh would create for `segment` under `parent`,
+    /// with the deterministic id that marks it as refresh-created.
+    fn refresh_made_subgroup(parent: Uuid, segment: &str) -> crate::models::ConnectionGroup {
+        let mut group = crate::models::ConnectionGroup::with_parent(segment.to_string(), parent);
+        group.id = stable_subgroup_id(parent, segment);
+        group
+    }
+
+    #[test]
+    fn empty_refresh_made_subgroups_are_swept() {
+        let base = Uuid::new_v4();
+        let web = refresh_made_subgroup(base, "web");
+        let db = refresh_made_subgroup(base, "db");
+
+        // `web` still holds a connection; `db` no longer does.
+        let mut kept = Connection::new(
+            "srv".to_string(),
+            "srv.example.com".to_string(),
+            22,
+            crate::models::ProtocolConfig::Ssh(crate::models::SshConfig::default()),
+        );
+        kept.group_id = Some(web.id);
+
+        let db_id = db.id;
+        let stale = empty_dynamic_subgroup_ids(base, &[web, db], &[kept]);
+
+        assert_eq!(stale, vec![db_id], "only the empty sub-group is swept");
+    }
+
+    #[test]
+    fn a_user_made_subgroup_is_never_swept() {
+        let base = Uuid::new_v4();
+        // Random id — the marker of a folder the user created by hand.
+        let manual = crate::models::ConnectionGroup::with_parent("mine".to_string(), base);
+
+        let stale = empty_dynamic_subgroup_ids(base, &[manual], &[]);
+
+        assert!(
+            stale.is_empty(),
+            "an empty folder the user made is theirs to delete, not ours"
+        );
+    }
+
+    #[test]
+    fn a_nested_empty_path_is_swept_deepest_first() {
+        let base = Uuid::new_v4();
+        let web = refresh_made_subgroup(base, "web");
+        let prod = refresh_made_subgroup(web.id, "production");
+
+        let stale = empty_dynamic_subgroup_ids(base, &[web.clone(), prod.clone()], &[]);
+
+        assert_eq!(
+            stale,
+            vec![prod.id, web.id],
+            "the child is reported before the parent, so one pass removes both"
+        );
+    }
+
+    #[test]
+    fn a_subgroup_with_a_live_child_is_kept() {
+        let base = Uuid::new_v4();
+        let web = refresh_made_subgroup(base, "web");
+        let prod = refresh_made_subgroup(web.id, "production");
+
+        let mut kept = Connection::new(
+            "srv".to_string(),
+            "srv.example.com".to_string(),
+            22,
+            crate::models::ProtocolConfig::Ssh(crate::models::SshConfig::default()),
+        );
+        kept.group_id = Some(prod.id);
+
+        let stale = empty_dynamic_subgroup_ids(base, &[web, prod], &[kept]);
+
+        assert!(
+            stale.is_empty(),
+            "a parent whose child still holds a connection stays"
         );
     }
 }

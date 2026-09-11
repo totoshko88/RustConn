@@ -261,8 +261,22 @@ fn anchor_template(template: &str, base_dir: &Path) -> String {
 ///
 /// Returns the number of files removed. Does nothing when `retention_days` is
 /// `0` (retain forever) or when `dir` cannot be read. Only the directory it is
-/// given is scanned — never a parent, never recursively — so callers must pass
-/// a directory that belongs to `RustConn`.
+/// given is scanned — never a parent, never recursively.
+///
+/// **`dir` must be a directory RustConn owns**, and that is the caller's
+/// responsibility to establish: this function deletes by age and extension, not
+/// by whether RustConn wrote the file, so pointing it at a directory a user also
+/// keeps their own logs in destroys them. In particular it must never be handed
+/// `log_path.parent()` — a log path comes from a user-supplied template and the
+/// User Guide suggests `~/Downloads` for the Flatpak case. That mistake was made
+/// twice (a rotation-time cleanup, and a session-start prune added in 0.21.11),
+/// which is why `SessionLogger` no longer calls this at all; the GUI passes the
+/// managed log directory explicitly in `setup_session_logging`.
+///
+/// The guarantee this preserves is the one the User Guide states: "Retention
+/// (days) deletes `*.log` files older than the limit, and only inside the log
+/// directory RustConn manages. A log written to a path of your own is never
+/// deleted automatically."
 pub fn prune_logs(dir: &Path, retention_days: u32) -> usize {
     if retention_days == 0 {
         return 0;
@@ -487,24 +501,14 @@ impl SessionLogger {
         // Get current file size
         let bytes_written = fs::metadata(&log_path).map(|m| m.len()).unwrap_or(0);
 
-        // Apply the retention policy at session start, not only during size
-        // rotation. Age-based pruning used to run solely from `rotate()`, so a
-        // configuration that never rotates by size — including global logging,
-        // whose UI has no size limit and therefore stores `max_size_mb = 0` —
-        // never deleted an aged log despite the retention days being set. The
-        // just-created file is younger than any cutoff, so it is never its own
-        // victim; `prune_logs` is a no-op when `retention_days == 0`.
-        if let Some(parent) = log_path.parent() {
-            let removed = prune_logs(parent, config.retention_days);
-            if removed > 0 {
-                tracing::debug!(
-                    removed,
-                    dir = %parent.display(),
-                    "Pruned aged session logs at startup"
-                );
-            }
-        }
-
+        // Deliberately no age-based pruning here. `log_path` comes from a
+        // user-supplied template and may point anywhere — the User Guide even
+        // suggests `~/Downloads` for Flatpak — so deleting every `*.log` older
+        // than the retention window in its parent would delete files RustConn
+        // never wrote. Retention is the caller's call, against a directory it
+        // knows RustConn owns: see `prune_logs` and its call in the GUI's
+        // `setup_session_logging`, which runs at every session start and so does
+        // not depend on size rotation happening.
         Ok(Self {
             config,
             log_path,
@@ -928,9 +932,11 @@ impl SessionLogger {
         self.writer = Some(BufWriter::new(file));
         self.bytes_written = 0;
 
-        // Clean up old rotated files based on retention policy
-        self.cleanup_old_logs();
-
+        // No pruning here either — same reason as in `new`. Rotation used to
+        // call `prune_logs` on this file's parent, which for a user-supplied log
+        // path meant a size rotation could delete unrelated `*.log` files in the
+        // user's own directory. Rotated files inside the managed directory are
+        // still cleaned up, by the caller-side prune at the next session start.
         Ok(())
     }
 
@@ -950,13 +956,6 @@ impl SessionLogger {
         let rotated_name = format!("{stem}.{timestamp}.{}{ext}", self.rotation_count);
 
         self.log_path.with_file_name(rotated_name)
-    }
-
-    /// Cleans up old log files based on retention policy
-    fn cleanup_old_logs(&self) {
-        if let Some(parent) = self.log_path.parent() {
-            prune_logs(parent, self.config.retention_days);
-        }
     }
 
     /// Closes the log file, flushing any buffered data
@@ -1170,12 +1169,39 @@ fn sanitize_output_zeroizing(output: &str, config: &SanitizeConfig) -> Zeroizing
     let mut result = Zeroizing::new(output.to_string());
 
     // Check for sensitive prompt patterns and optionally sanitize full lines.
+    //
+    // Each line keeps its *own* terminator. `str::lines()` cannot be used for
+    // this: it yields `\r\n`-terminated lines without the `\r`, so reassembling
+    // with `\n` rewrites every CRLF to LF. In a text log that is invisible, but
+    // this function is also the redactor for session *recordings*, whose bytes
+    // are replayed straight into a terminal — PTY output is CRLF, so the
+    // normalisation turned every recording into a staircase and, because the
+    // bytes differed, made the recording sanitiser believe it had found
+    // something to redact in every single file.
     if config.sanitize_full_lines {
         let mut sanitized = Zeroizing::new(String::with_capacity(result.len()));
-        for (index, line) in result.lines().enumerate() {
-            if index > 0 {
-                sanitized.push('\n');
-            }
+        let mut rest: &str = result.as_str();
+        while !rest.is_empty() {
+            // `find('\n')` returns the index of an ASCII byte, and a `\r`
+            // directly before it is ASCII too, so both split points are on char
+            // boundaries.
+            let (line, terminator, remainder) = match rest.find('\n') {
+                Some(idx) => {
+                    let content_end = if idx > 0 && rest.as_bytes()[idx - 1] == b'\r' {
+                        idx - 1
+                    } else {
+                        idx
+                    };
+                    (
+                        &rest[..content_end],
+                        &rest[content_end..=idx],
+                        &rest[idx + 1..],
+                    )
+                }
+                // Trailing line with no terminator of its own.
+                None => (rest, "", ""),
+            };
+
             let line_lower = Zeroizing::new(line.to_lowercase());
             if SENSITIVE_PATTERNS
                 .iter()
@@ -1185,10 +1211,8 @@ fn sanitize_output_zeroizing(output: &str, config: &SanitizeConfig) -> Zeroizing
             } else {
                 sanitized.push_str(line);
             }
-        }
-        // Preserve trailing newline if original had one.
-        if output.ends_with('\n') && !sanitized.ends_with('\n') {
-            sanitized.push('\n');
+            sanitized.push_str(terminator);
+            rest = remainder;
         }
         result = sanitized;
     }
@@ -1514,6 +1538,44 @@ mod tests {
     }
 
     #[test]
+    fn sanitize_output_preserves_crlf_terminators() {
+        // PTY output is CRLF. The full-line pass used to reassemble via
+        // `str::lines()`, which drops the `\r` — harmless in a text log, but this
+        // same function redacts session recordings, whose bytes are replayed into
+        // a terminal.
+        let config = SanitizeConfig::new();
+        let input = "first line\r\nsecond line\r\n";
+        let result = sanitize_output(input, &config);
+        assert_eq!(
+            result, input,
+            "a clean CRLF stream must pass through intact"
+        );
+    }
+
+    #[test]
+    fn sanitize_output_keeps_crlf_around_a_redacted_line() {
+        let config = SanitizeConfig::new();
+        let input = "before\r\nEnter password: \r\nafter\r\n";
+        let result = sanitize_output(input, &config);
+        assert!(result.contains("[REDACTED]"), "the prompt line is redacted");
+        assert!(result.starts_with("before\r\n"));
+        assert!(result.ends_with("after\r\n"));
+        assert_eq!(
+            result.matches("\r\n").count(),
+            3,
+            "every CRLF terminator survives the substitution"
+        );
+    }
+
+    #[test]
+    fn sanitize_output_leaves_a_lone_lf_stream_alone() {
+        // The LF-only case must keep behaving exactly as before.
+        let config = SanitizeConfig::new();
+        let input = "alpha\nbeta\n";
+        assert_eq!(sanitize_output(input, &config), input);
+    }
+
+    #[test]
     fn test_sanitize_output_custom_pattern() {
         let config = SanitizeConfig::new().with_custom_pattern(r"secret_\d+");
         let input = "Found secret_12345 in config";
@@ -1703,15 +1765,16 @@ mod tests {
     }
 
     #[test]
-    fn opening_a_logger_prunes_aged_siblings_without_size_rotation() {
-        // A logger with `max_size_mb = 0` never rotates by size, so retention
-        // used to never run for it — the case that matters because global
-        // logging always stores 0. Opening a session log must still enforce the
-        // retention window on its directory, and must not delete its own fresh
-        // file.
+    fn opening_a_logger_never_deletes_anything_beside_it() {
+        // The log path comes from a user-supplied template and may point at a
+        // directory the user keeps their own logs in — the guide suggests
+        // `~/Downloads` for Flatpak. Opening a session log must therefore not
+        // prune its parent, however aged the neighbours are and whatever the
+        // retention window says. Retention is applied by the caller, against the
+        // directory RustConn manages.
         let dir = TempDir::new().expect("temp dir");
-        let aged = dir.path().join("old-session.log");
-        write_aged_file(&aged, 40);
+        let neighbour = dir.path().join("the-users-own.log");
+        write_aged_file(&neighbour, 400);
 
         let active = dir.path().join("active.log");
         let config = LogConfig::new(active.to_string_lossy().into_owned())
@@ -1720,10 +1783,32 @@ mod tests {
         let _logger = SessionLogger::new(config, &LogContext::new("host", "ssh"), None)
             .expect("logger opens");
 
-        assert!(!aged.exists(), "an aged sibling log is pruned at startup");
         assert!(
-            active.exists(),
-            "the just-opened log is never its own victim"
+            neighbour.exists(),
+            "a log RustConn did not write must survive, whatever its age"
+        );
+        assert!(active.exists(), "the session log itself is created");
+    }
+
+    #[test]
+    fn rotation_never_deletes_anything_beside_the_log() {
+        // Same guarantee across a size rotation, which is where the destructive
+        // prune used to live.
+        let dir = TempDir::new().expect("temp dir");
+        let neighbour = dir.path().join("the-users-own.log");
+        write_aged_file(&neighbour, 400);
+
+        let active = dir.path().join("rotating.log");
+        let config = LogConfig::new(active.to_string_lossy().into_owned())
+            .with_max_size_mb(1)
+            .with_retention_days(30);
+        let mut logger = SessionLogger::new(config, &LogContext::new("host", "ssh"), None)
+            .expect("logger opens");
+        logger.rotate().expect("rotation succeeds");
+
+        assert!(
+            neighbour.exists(),
+            "rotation must not prune the user's own directory"
         );
     }
 

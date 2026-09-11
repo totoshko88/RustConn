@@ -267,6 +267,19 @@ fn cmd_dynamic_folder_refresh(config_path: Option<&Path>, name: &str) -> Result<
         let _ = conn_manager.create_connection_from(conn);
     }
 
+    // Sweep sub-groups a previous refresh created that no entry lands in any
+    // more, so an upstream reorganisation does not leave dead folders behind.
+    // Only refresh-created folders are candidates — a folder the user made by
+    // hand inside the dynamic folder is never removed.
+    let stale_subgroups = dynamic_folder::empty_dynamic_subgroup_ids(
+        group_id,
+        &conn_manager.list_groups_owned(),
+        &conn_manager.list_connections_owned(),
+    );
+    for subgroup_id in stale_subgroups {
+        let _ = conn_manager.delete_group(subgroup_id);
+    }
+
     // Update group's last_refreshed_at
     if let Some(mut group) = conn_manager.get_group(group_id).cloned() {
         if let Some(ref mut df) = group.dynamic_folder {

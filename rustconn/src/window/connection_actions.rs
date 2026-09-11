@@ -343,6 +343,30 @@ impl MainWindow {
                                     }
                                 }
 
+                                // Sweep sub-groups a previous refresh created that
+                                // no entry lands in any more, so an upstream
+                                // reorganisation does not leave dead folders in the
+                                // sidebar. Only refresh-created folders qualify — a
+                                // folder the user made by hand is left alone.
+                                let stale_subgroups =
+                                    rustconn_core::dynamic_folder::empty_dynamic_subgroup_ids(
+                                        group_id,
+                                        &state_mut.list_groups_owned(),
+                                        &state_mut.connection_manager().list_connections_owned(),
+                                    );
+                                for subgroup_id in stale_subgroups {
+                                    if let Err(e) = state_mut
+                                        .connection_manager()
+                                        .delete_group(subgroup_id)
+                                    {
+                                        tracing::warn!(
+                                            group = %subgroup_id,
+                                            error = %e,
+                                            "failed to remove empty dynamic sub-group"
+                                        );
+                                    }
+                                }
+
                                 // Update group's last_refreshed_at
                                 if let Some(mut group) = state_mut.get_group(group_id).cloned()
                                     && let Some(ref mut df) = group.dynamic_folder

@@ -593,6 +593,15 @@ jobs:
       # with --no-default-features (web-embedded cannot build on macOS), so this
       # is the same feature set users get. Runs only on push to main and manual
       # dispatch, not on every PR, to keep runner minutes reasonable.
+      #
+      # What this does NOT check, so nobody reads more into a green tick than is
+      # there: `brew install` fetches the tarball named by the formula's `url` and
+      # `sha256`, which point at the last *published* release. So this validates
+      # the formula's packaging steps — dependencies, the feature ladder, msgfmt,
+      # the iconset, post_install — against released source, not against the code
+      # on this branch. A break introduced by a commit here surfaces on the next
+      # release's run, not this one. Catching it earlier would mean overriding
+      # `url` to the checkout, which changes what the formula under test is.
       - name: Build from source (informational)
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         continue-on-error: true

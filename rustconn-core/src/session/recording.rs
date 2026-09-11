@@ -169,40 +169,48 @@ impl RecordingReader {
     }
 }
 
-/// Strip the `Script started on …` header that `script --log-out` writes to
-/// the data file.  Returns the trimmed data and adjusted timing entries so
-/// that byte offsets stay consistent.
+/// Returns the offset in a `script(1)` log at which the timed body begins.
+///
+/// `script --log-out` writes a one-line header before the session bytes and a
+/// footer line after them, and **neither is counted in the `.timing` file**.
+/// Measured on util-linux 2.41.3: a session whose only output was a 33-byte line
+/// produced a 309-byte `.data` against a single timing entry of `33`. Walking the
+/// data from offset 0 with the timing counts therefore treats the header as the
+/// first chunk and never reaches the real output at all.
+///
+/// The offset is derived arithmetically rather than by matching the header text,
+/// because that text is localised — this machine writes `Скрипт запущено на …`,
+/// not `Script started on …`, so a literal prefix match silently does nothing
+/// outside an English locale. The rule instead: if the data is longer than the
+/// timing counts can explain and it opens with a complete line that still leaves
+/// room for the whole body, that opening line is the header.
+///
+/// A recording written by [`SessionRecorder`] has no header and its length
+/// matches the counts exactly, so this correctly returns `0` for it.
+fn script_body_start(data: &[u8], body_len: usize) -> usize {
+    if data.len() <= body_len {
+        return 0;
+    }
+    match data.iter().position(|&b| b == b'\n') {
+        Some(idx) if idx + 1 + body_len <= data.len() => idx + 1,
+        _ => 0,
+    }
+}
+
+/// Strip the header line that `script --log-out` writes to the data file.
+///
+/// Returns the trimmed data and the timing entries **unchanged**: the header is
+/// not covered by the timing counts (see [`script_body_start`]), so deducting
+/// its length from the first entries — as this function used to do — consumed
+/// the first chunk of real output instead.
 fn strip_script_header(
     mut data: Vec<u8>,
-    mut timing: Vec<(Duration, usize)>,
+    timing: Vec<(Duration, usize)>,
 ) -> (Vec<u8>, Vec<(Duration, usize)>) {
-    const PREFIX: &[u8] = b"Script started on ";
-    if !data.starts_with(PREFIX) {
-        return (data, timing);
-    }
-    // Find the end of the header line (first '\n')
-    let header_len = data.iter().position(|&b| b == b'\n').map_or(0, |i| i + 1);
-    if header_len == 0 {
-        return (data, timing);
-    }
-    data.drain(..header_len);
-
-    // Adjust timing entries: subtract the stripped bytes from the first
-    // entries until the full header_len is accounted for.
-    let mut remaining = header_len;
-    while remaining > 0 && !timing.is_empty() {
-        let (delay, count) = timing[0];
-        if count <= remaining {
-            remaining -= count;
-            timing.remove(0);
-            // Shift the delay of the removed entry to the next one
-            if !timing.is_empty() {
-                timing[0].0 += delay;
-            }
-        } else {
-            timing[0] = (delay, count - remaining);
-            remaining = 0;
-        }
+    let body_len: usize = timing.iter().map(|(_, count)| *count).sum();
+    let header_len = script_body_start(&data, body_len);
+    if header_len > 0 {
+        data.drain(..header_len);
     }
     (data, timing)
 }
@@ -360,11 +368,18 @@ fn sanitize_recording_name(name: &str) -> String {
 /// the stream, so [`SessionRecorder`]'s own sanitisation could not run. This is
 /// the post-hoc pass that closes that gap: it walks the recording chunk by chunk
 /// using the `.timing` byte counts, runs each chunk through [`sanitize_output`]
-/// (the same redactor session logging uses — password prompts and their echoed
-/// answers, API keys, bearer tokens, AWS keys, PEM blocks), and rewrites the
+/// (the same redactor session logging uses, in its value-matching mode —
+/// `password: …`, API keys, bearer tokens, AWS keys, PEM blocks, JWTs; see the
+/// note at the top of the body for why whole-line blanking is off here), and
+/// rewrites the
 /// `.data` file together with a `.timing` file whose counts match the new byte
 /// lengths, so `scriptreplay` stays in sync. A chunk that is not valid UTF-8 is
 /// left untouched, exactly as during live recording.
+///
+/// The walk starts at [`script_body_start`], not at offset 0: `script` brackets
+/// the timed bytes with a header and a footer that no timing entry accounts for.
+/// Both are copied through verbatim, so the rewrite neither misreads the header
+/// as session output nor truncates the file at `sum(counts)`.
 ///
 /// The rewrite is atomic (temp file + rename) and preserves `0600` on unix, so a
 /// reader never observes a half-scrubbed file and the scrubbed copy is never
@@ -376,7 +391,20 @@ fn sanitize_recording_name(name: &str) -> String {
 /// Returns `io::Error` if either file cannot be read, a timing line is
 /// malformed, or the rewrite cannot be completed.
 pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Result<()> {
-    let config = SanitizeConfig::new();
+    // Value-level redaction only. The redactor's other pass blanks a whole line
+    // that merely *contains* a prompt marker, which is right for a text log and
+    // wrong here for two measured reasons. A "line" in a raw PTY stream is not a
+    // line of output: a single one carries the shell prompt, several OSC
+    // sequences, the echoed command and its first line of output together, so
+    // blanking it destroys benign output and the control codes that make the
+    // recording replayable — a probe against real `script` output lost an
+    // unrelated `hello world` that shared a line with a prompt. And it buys
+    // nothing, because it blanks the line holding the *marker*, not the answer
+    // that follows; the arming logic that catches a typed answer lives in
+    // `SessionLogger`, not here. The value patterns — `password: …`, api keys,
+    // bearer tokens, AWS keys, PEM blocks, JWTs — all still apply, and they are
+    // what actually matches a secret.
+    let config = SanitizeConfig::new().with_full_line_sanitization(false);
     if !config.enabled {
         return Ok(());
     }
@@ -384,11 +412,9 @@ pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Res
     let data = fs::read(data_path)?;
     let timing_text = fs::read_to_string(timing_path)?;
 
-    let mut new_data: Vec<u8> = Vec::with_capacity(data.len());
-    let mut new_timing = String::with_capacity(timing_text.len());
-    let mut position = 0usize;
-    let mut any_change = false;
-
+    // Parse every timing entry before touching the data: the body's offset
+    // within the file can only be derived once the total byte count is known.
+    let mut entries: Vec<(&str, usize)> = Vec::new();
     for line in timing_text.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() {
@@ -400,13 +426,38 @@ pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Res
             .next()
             .and_then(|s| s.parse().ok())
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "bad timing count"))?;
+        entries.push((delay, count));
+    }
 
-        let end = (position + count).min(data.len());
+    let body_len: usize = entries.iter().map(|(_, count)| *count).sum();
+    let body_start = script_body_start(&data, body_len);
+    let body_end = body_start.saturating_add(body_len).min(data.len());
+
+    let mut new_data: Vec<u8> = Vec::with_capacity(data.len());
+    // `script`'s header sits before the timed body and is not described by any
+    // timing entry, so it is copied through verbatim. Starting the walk at 0
+    // instead read the header as the first chunk and never reached the output.
+    new_data.extend_from_slice(&data[..body_start]);
+
+    let mut new_timing = String::with_capacity(timing_text.len());
+    let mut position = body_start;
+    let mut any_change = false;
+
+    for (delay, count) in entries {
+        let end = position.saturating_add(count).min(body_end);
         let chunk = &data[position..end];
         position = end;
 
         // Sanitise the UTF-8 interpretation; leave a non-UTF-8 chunk untouched,
         // matching live recording behaviour in `SessionRecorder::write_chunk`.
+        //
+        // ponytail: matching runs on the raw chunk, so a secret split across two
+        // chunks, or one with an ANSI escape interleaved, is not seen. `script`
+        // flushes per read, so an interactively typed secret arrives a few bytes
+        // at a time and is missed; a secret in command *output* normally arrives
+        // whole and is caught. Closing that would mean reassembling the stream
+        // and mapping redactions back onto chunk boundaries — worth doing if a
+        // report says a typed secret survived.
         let sanitised: Vec<u8> = match std::str::from_utf8(chunk) {
             Ok(text) => {
                 let redacted = sanitize_output(text, &config);
@@ -425,6 +476,11 @@ pub fn sanitize_recording_files(data_path: &Path, timing_path: &Path) -> io::Res
         new_timing.push_str(&sanitised.len().to_string());
         new_timing.push('\n');
     }
+
+    // Anything after the timed body — `script`'s footer — is copied through as
+    // well. Without this the rewrite truncated the file to `sum(counts)`, which
+    // on a real recording meant discarding most of it.
+    new_data.extend_from_slice(&data[body_end..]);
 
     // Nothing sensitive matched: leave both files exactly as `script` wrote them
     // rather than rewriting identical content (and disturbing mtimes).
@@ -975,5 +1031,102 @@ mod sanitize_tests {
         sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
 
         assert_eq!(fs::read(&data_path).expect("read"), data);
+    }
+
+    /// The shape a real `script(1)` log actually has: a header line and a footer
+    /// line that no timing entry covers, wrapped around CRLF-terminated output.
+    /// This is what the first implementation could not handle — it read the
+    /// header as chunk one, so the secret was never reached, and had a chunk
+    /// changed it would have truncated the file to `sum(counts)`.
+    #[test]
+    fn sanitize_recording_handles_script_header_and_footer() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("real.data");
+        let timing_path = dir.path().join("real.timing");
+
+        // Deliberately localised, as util-linux writes it on this machine — the
+        // header must be recognised without matching English text.
+        let header = "Скрипт запущено на 2026-09-11 16:27:35+03:00 [COMMAND=\"bash\"]\n";
+        let chunk_a = "user@host:~$ ls\r\n";
+        let chunk_b = "api_key: ABCDEF0123456789ABCDEF\r\n";
+        let footer = "\nСкрипт завершено на 2026-09-11 16:28:02+03:00 [COMMAND_EXIT_CODE=\"0\"]\n";
+
+        let mut data = Vec::new();
+        data.extend_from_slice(header.as_bytes());
+        data.extend_from_slice(chunk_a.as_bytes());
+        data.extend_from_slice(chunk_b.as_bytes());
+        data.extend_from_slice(footer.as_bytes());
+        fs::write(&data_path, &data).expect("write data");
+        fs::write(
+            &timing_path,
+            format!("0.100000 {}\n0.200000 {}\n", chunk_a.len(), chunk_b.len()),
+        )
+        .expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        let new_data = fs::read(&data_path).expect("read data");
+        let rendered = String::from_utf8(new_data.clone()).expect("utf-8");
+
+        assert!(
+            !rendered.contains("ABCDEF0123456789ABCDEF"),
+            "the secret must be reached and redacted despite the header"
+        );
+        assert!(
+            rendered.starts_with(header),
+            "the script header must survive verbatim"
+        );
+        assert!(
+            rendered.ends_with(footer),
+            "the script footer must survive rather than being truncated away"
+        );
+        assert!(
+            rendered.contains("user@host:~$ ls\r\n"),
+            "benign output keeps its CRLF terminator so replay is not a staircase"
+        );
+
+        // The counts must describe the body only, and still sum to the rewritten
+        // body length, or scriptreplay desyncs.
+        let timing_text = fs::read_to_string(&timing_path).expect("read timing");
+        let counted: usize = timing_text
+            .lines()
+            .filter_map(|l| l.split_whitespace().nth(1))
+            .filter_map(|c| c.parse::<usize>().ok())
+            .sum();
+        assert_eq!(
+            counted,
+            new_data.len() - header.len() - footer.len(),
+            "timing counts must match the rewritten body, excluding header/footer"
+        );
+    }
+
+    /// A clean CRLF recording must not be rewritten at all. Before the line
+    /// terminators were preserved, the reassembly turned every `\r\n` into `\n`,
+    /// which made `any_change` true for *every* recording and rewrote them all.
+    #[test]
+    fn sanitize_recording_does_not_rewrite_clean_crlf_output() {
+        let dir = tempdir().expect("tempdir");
+        let data_path = dir.path().join("crlf.data");
+        let timing_path = dir.path().join("crlf.timing");
+
+        let data = b"first line\r\nsecond line\r\n";
+        fs::write(&data_path, data).expect("write data");
+        fs::write(&timing_path, format!("0.010000 {}\n", data.len())).expect("write timing");
+
+        sanitize_recording_files(&data_path, &timing_path).expect("sanitize");
+
+        assert_eq!(
+            fs::read(&data_path).expect("read"),
+            data,
+            "CRLF output carries nothing sensitive and must stay byte-identical"
+        );
+    }
+
+    /// A recording produced by `SessionRecorder` has no `script` header, and its
+    /// length matches the timing counts exactly — the body must then start at 0.
+    #[test]
+    fn script_body_start_is_zero_without_a_header() {
+        let data = b"exactly the timed bytes\n";
+        assert_eq!(script_body_start(data, data.len()), 0);
     }
 }
