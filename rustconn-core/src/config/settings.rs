@@ -687,10 +687,15 @@ pub enum SecretBackendType {
     EncryptedFile,
     /// Portable encrypted file — passphrase-based, cloud-syncable.
     ///
-    /// Same AES-256-GCM per-entry blob format as [`Self::EncryptedFile`], but
-    /// the encryption key is derived from a user-supplied passphrase (Argon2id)
-    /// instead of a machine-specific key. The file can live in a cloud-synced
-    /// directory and be opened on any machine with the same passphrase.
+    /// Uses the same AES-256-GCM primitive as [`Self::EncryptedFile`], but a
+    /// different key scheme: instead of deriving a key per entry from a
+    /// machine-specific key, it derives one key-encryption-key from a
+    /// user-supplied passphrase (Argon2id) that unwraps a single random
+    /// data-encryption key shared by every entry (see
+    /// `secret::portable_encrypted_file`). That is what lets the file live in a
+    /// cloud-synced directory and open on any machine with the same passphrase,
+    /// and what makes a passphrase change rewrap 32 bytes rather than
+    /// re-encrypt every credential.
     PortableEncryptedFile,
 }
 

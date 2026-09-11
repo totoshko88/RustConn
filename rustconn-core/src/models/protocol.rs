@@ -893,12 +893,22 @@ pub struct SshConfig {
     pub pkcs11_provider: Option<String>,
     /// SSH keep-alive interval in seconds (`ServerAliveInterval`).
     /// Sends a keep-alive packet every N seconds to prevent idle disconnects.
-    /// `None` means no keep-alive (SSH default behavior).
+    /// `None` means "use the built-in default" — `build_command_args` fills in
+    /// 15 s so a dead peer is noticed promptly, unless the user set the option
+    /// in `custom_options`.
+    ///
+    /// To defer to `ServerAliveInterval` from `~/.ssh/config` instead, add
+    /// `ServerAliveInterval` to `custom_options` with an **empty value**: a `-o`
+    /// on the command line always beats the config file, so suppressing the
+    /// option entirely is the only way to let the file's value apply.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keep_alive_interval: Option<u32>,
     /// Maximum number of keep-alive messages without a response (`ServerAliveCountMax`).
     /// Connection is terminated after this many unanswered keep-alive packets.
-    /// `None` uses SSH default (3).
+    /// `None` means "use the built-in default" — `build_command_args` fills in 3,
+    /// unless the user set the option in `custom_options`. An empty
+    /// `custom_options` entry defers to `~/.ssh/config`, as for
+    /// [`Self::keep_alive_interval`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keep_alive_count_max: Option<u32>,
     /// Enable verbose/debug output for SSH connections (`-v` flag).
@@ -979,6 +989,12 @@ impl SshConfig {
     ///   still be honored for backward compatibility.
     #[must_use]
     pub fn build_command_args(&self) -> Vec<String> {
+        /// Default `ServerAliveInterval` in seconds — a probe every 15 s.
+        const DEFAULT_SERVER_ALIVE_INTERVAL: u32 = 15;
+        /// Default `ServerAliveCountMax` — give up after 3 unanswered probes,
+        /// so a dead peer is noticed in ~45 s.
+        const DEFAULT_SERVER_ALIVE_COUNT_MAX: u32 = 3;
+
         let mut args = Vec::new();
 
         // Add verbose flag for debugging connection issues
@@ -1080,32 +1096,76 @@ impl SshConfig {
         // and tunnel_manager.rs start_tunnel().
 
         // Add keep-alive options if configured
-        // ServerAliveInterval sends a keep-alive packet every N seconds
-        // ServerAliveCountMax terminates after N unanswered packets
-        if let Some(interval) = self.keep_alive_interval {
-            // Only add if user hasn't already set it via custom_options
-            if !self
-                .custom_options
-                .keys()
-                .any(|k| k.eq_ignore_ascii_case("ServerAliveInterval"))
-            {
-                args.push("-o".to_string());
-                args.push(format!("ServerAliveInterval={interval}"));
-            }
+        // Keep-alive options. `ServerAliveInterval` sends a probe every N
+        // seconds; `ServerAliveCountMax` drops the connection after that many
+        // unanswered probes. The pair lets a dead peer be noticed in about
+        // `interval × count` seconds — with the defaults below, ~45 s — which is
+        // what lets auto-reconnect fire promptly after a network change (#217).
+        //
+        // These defaults are applied here, in the shared argument builder, so
+        // that every SSH command RustConn constructs carries them: the GUI
+        // terminal, the CLI, and the standalone tunnels alike. They used to be
+        // injected only in the GUI terminal, which left CLI sessions and tunnels
+        // without keep-alive despite the User Guide stating the defaults apply to
+        // "all SSH sessions". A value set on the connection (`keep_alive_*`) or in
+        // `custom_options` still wins — the default only fills the gap when
+        // neither is present. (The defaults are declared at the top of this
+        // function to satisfy `clippy::items_after_statements`.)
+
+        let user_set_interval = self
+            .custom_options
+            .keys()
+            .any(|k| k.eq_ignore_ascii_case("ServerAliveInterval"));
+        if !user_set_interval {
+            let interval = self
+                .keep_alive_interval
+                .unwrap_or(DEFAULT_SERVER_ALIVE_INTERVAL);
+            args.push("-o".to_string());
+            args.push(format!("ServerAliveInterval={interval}"));
         }
-        if let Some(count) = self.keep_alive_count_max
-            && !self
-                .custom_options
-                .keys()
-                .any(|k| k.eq_ignore_ascii_case("ServerAliveCountMax"))
-        {
+
+        let user_set_count = self
+            .custom_options
+            .keys()
+            .any(|k| k.eq_ignore_ascii_case("ServerAliveCountMax"));
+        if !user_set_count {
+            let count = self
+                .keep_alive_count_max
+                .unwrap_or(DEFAULT_SERVER_ALIVE_COUNT_MAX);
             args.push("-o".to_string());
             args.push(format!("ServerAliveCountMax={count}"));
         }
 
         // Add custom options (filter out dangerous directives)
+        self.push_custom_options(&mut args);
+
+        // Add port forwarding rules
+        for pf in &self.port_forwards {
+            args.extend(pf.to_ssh_arg());
+        }
+
+        args
+    }
+
+    /// Appends the user's Custom Options as `-o KEY=VALUE` pairs.
+    ///
+    /// Two kinds of entry are dropped rather than emitted. Directives that can
+    /// execute an arbitrary command (`ProxyCommand`, `LocalCommand`,
+    /// `PermitLocalCommand`, `RemoteCommand`, `Match`) are refused here — the
+    /// dedicated ProxyJump/ProxyCommand field is the only supported route for
+    /// that.
+    ///
+    /// An entry with an **empty value** is also dropped, which is what lets a
+    /// value from the user's own `~/.ssh/config` stand. A `-o` on the command
+    /// line always overrides the config file, so an option RustConn supplies a
+    /// default for — `ServerAliveInterval`, `ServerAliveCountMax` — cannot
+    /// otherwise be deferred to it: naming it in `custom_options` suppresses the
+    /// built-in default (that check keys on presence, not value) and this skip
+    /// suppresses the option itself, so nothing reaches the command line. It has
+    /// to be dropped in any case: `-o Name=` is a syntax error to OpenSSH, so
+    /// emitting it turned a blank field into a connection that refuses to start.
+    fn push_custom_options(&self, args: &mut Vec<String>) {
         for (key, value) in &self.custom_options {
-            // Block directives that could execute arbitrary commands
             let key_lower = key.to_lowercase();
             if matches!(
                 key_lower.as_str(),
@@ -1117,16 +1177,16 @@ impl SshConfig {
                 );
                 continue;
             }
+            if value.is_empty() {
+                tracing::debug!(
+                    option = %key,
+                    "Custom SSH option left empty; deferring it to ssh_config"
+                );
+                continue;
+            }
             args.push("-o".to_string());
             args.push(format!("{key}={value}"));
         }
-
-        // Add port forwarding rules
-        for pf in &self.port_forwards {
-            args.extend(pf.to_ssh_arg());
-        }
-
-        args
     }
 
     /// Returns `true` if any port forward is a random dynamic SOCKS forward
@@ -4587,5 +4647,109 @@ mod port_forward_socks_tests {
     #[test]
     fn to_ssh_arg_renders_a_bare_d_flag_for_dynamic() {
         assert_eq!(dynamic(1080).to_ssh_arg(), vec!["-D", "1080"]);
+    }
+}
+
+#[cfg(test)]
+mod keep_alive_default_tests {
+    use super::*;
+
+    /// With nothing configured, the shared builder must still emit the keep-alive
+    /// defaults, so CLI sessions and tunnels get them and not only the GUI
+    /// terminal (#217). This is the case the defaults used to miss.
+    #[test]
+    fn build_command_args_emits_keep_alive_defaults() {
+        let args = SshConfig::default().build_command_args();
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveInterval=15")
+        );
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveCountMax=3")
+        );
+    }
+
+    /// An explicit connection value overrides the default.
+    #[test]
+    fn build_command_args_honours_configured_keep_alive() {
+        let config = SshConfig {
+            keep_alive_interval: Some(60),
+            keep_alive_count_max: Some(5),
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveInterval=60")
+        );
+        assert!(
+            args.windows(2)
+                .any(|w| w[0] == "-o" && w[1] == "ServerAliveCountMax=5")
+        );
+        assert!(
+            !args.iter().any(|a| a == "ServerAliveInterval=15"),
+            "the default must not be emitted alongside the configured value"
+        );
+    }
+
+    /// A value set in custom_options wins and is not duplicated by the default.
+    #[test]
+    fn build_command_args_defers_to_custom_options() {
+        let mut custom = std::collections::HashMap::new();
+        custom.insert("ServerAliveInterval".to_string(), "30".to_string());
+        let config = SshConfig {
+            custom_options: custom,
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+        assert!(args.iter().any(|a| a == "ServerAliveInterval=30"));
+        assert!(
+            !args.iter().any(|a| a == "ServerAliveInterval=15"),
+            "the default must not be emitted when custom_options sets the option"
+        );
+        // The count default still applies — only the interval was overridden.
+        assert!(args.iter().any(|a| a == "ServerAliveCountMax=3"));
+    }
+
+    /// An empty `custom_options` value is the escape hatch for deferring to
+    /// `~/.ssh/config`: it suppresses both the built-in default and the option
+    /// itself, so nothing on the command line overrides the config file. Without
+    /// it there was no way at all to honour a user's own `ServerAliveInterval`,
+    /// because every route ends in a `-o`.
+    #[test]
+    fn an_empty_custom_option_defers_to_ssh_config() {
+        let mut custom = std::collections::HashMap::new();
+        custom.insert("ServerAliveInterval".to_string(), String::new());
+        let config = SshConfig {
+            custom_options: custom,
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+
+        assert!(
+            !args.iter().any(|a| a.starts_with("ServerAliveInterval")),
+            "the option must not reach the command line in any form"
+        );
+        // The other default is untouched — the hatch is per option.
+        assert!(args.iter().any(|a| a == "ServerAliveCountMax=3"));
+    }
+
+    /// `-o Name=` is a syntax error to OpenSSH, so an empty custom option must
+    /// never be emitted — whatever the option is.
+    #[test]
+    fn an_empty_custom_option_never_emits_a_bare_assignment() {
+        let mut custom = std::collections::HashMap::new();
+        custom.insert("Ciphers".to_string(), String::new());
+        let config = SshConfig {
+            custom_options: custom,
+            ..SshConfig::default()
+        };
+        let args = config.build_command_args();
+
+        assert!(
+            !args.iter().any(|a| a == "Ciphers="),
+            "an empty assignment would make ssh refuse to start"
+        );
     }
 }

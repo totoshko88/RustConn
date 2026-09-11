@@ -279,11 +279,22 @@ impl MainWindow {
 
                             // Convert entries to connections and update state
                             if let Ok(mut state_mut) = state_for_task.try_borrow_mut() {
-                                // Remove old dynamic connections for this group
+                                // Remove old dynamic connections across the
+                                // folder's whole subtree — a previous refresh may
+                                // have placed entries in sub-groups (via their
+                                // `group` path), not only directly under the base.
+                                let subtree = rustconn_core::dynamic_folder::descendant_group_ids(
+                                    group_id,
+                                    &state_mut.list_groups_owned(),
+                                );
                                 let old_dynamic: Vec<uuid::Uuid> = state_mut
-                                    .get_connections_by_group(group_id)
-                                    .iter()
-                                    .filter(|c| c.is_dynamic)
+                                    .connection_manager()
+                                    .list_connections()
+                                    .into_iter()
+                                    .filter(|c| {
+                                        c.is_dynamic
+                                            && c.group_id.is_some_and(|g| subtree.contains(&g))
+                                    })
                                     .map(|c| c.id)
                                     .collect();
                                 for conn_id in old_dynamic {
@@ -302,15 +313,56 @@ impl MainWindow {
                                     }
                                 }
 
-                                // Add new dynamic connections
-                                for entry in &folder_result.entries {
-                                    let conn = rustconn_core::dynamic_folder::entry_to_connection(
-                                        entry, group_id,
-                                    );
+                                // Materialise the refresh: create any sub-groups
+                                // the entries' `group` paths ask for (idempotent —
+                                // stable ids, skip existing), then the connections.
+                                let plan = rustconn_core::dynamic_folder::plan_dynamic_refresh(
+                                    group_id,
+                                    &folder_result.entries,
+                                );
+                                let existing_group_ids: std::collections::HashSet<uuid::Uuid> =
+                                    state_mut.list_groups().iter().map(|g| g.id).collect();
+                                for subgroup in plan.subgroups {
+                                    if !existing_group_ids.contains(&subgroup.id)
+                                        && let Err(e) = state_mut
+                                            .connection_manager()
+                                            .create_group_from(subgroup)
+                                    {
+                                        tracing::warn!(
+                                            error = %e,
+                                            "failed to create dynamic sub-group during refresh"
+                                        );
+                                    }
+                                }
+                                for conn in plan.connections {
                                     if let Err(e) = state_mut.create_connection(conn) {
                                         tracing::warn!(
                                             error = %e,
                                             "failed to create dynamic connection during refresh"
+                                        );
+                                    }
+                                }
+
+                                // Sweep sub-groups a previous refresh created that
+                                // no entry lands in any more, so an upstream
+                                // reorganisation does not leave dead folders in the
+                                // sidebar. Only refresh-created folders qualify — a
+                                // folder the user made by hand is left alone.
+                                let stale_subgroups =
+                                    rustconn_core::dynamic_folder::empty_dynamic_subgroup_ids(
+                                        group_id,
+                                        &state_mut.list_groups_owned(),
+                                        &state_mut.connection_manager().list_connections_owned(),
+                                    );
+                                for subgroup_id in stale_subgroups {
+                                    if let Err(e) = state_mut
+                                        .connection_manager()
+                                        .delete_group(subgroup_id)
+                                    {
+                                        tracing::warn!(
+                                            group = %subgroup_id,
+                                            error = %e,
+                                            "failed to remove empty dynamic sub-group"
                                         );
                                     }
                                 }

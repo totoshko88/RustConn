@@ -124,11 +124,27 @@ impl RdpProtocol {
             if let Some(level) = rdp_config.tls_security_level {
                 args.push(format!("/tls-seclevel:{level}"));
             }
-            if let Some(ref gateway) = rdp_config.gateway {
-                args.push(format!("/g:{}:{}", gateway.hostname, gateway.port));
-                if let Some(ref gw_user) = gateway.username {
-                    args.push(format!("/gu:{gw_user}"));
+            // RD Gateway. FreeRDP 3.x removed the short `/g:` / `/gu:` aliases
+            // in favour of the unified `/gateway:` option; the old aliases are
+            // rejected as "Unexpected keyword" and the client exits before
+            // connecting (issue #187). This path is the CLI/standalone builder
+            // and used to still emit the 2.x aliases, so a gateway connection
+            // launched through it broke on a modern FreeRDP. It now matches the
+            // embedded/external builder in `freerdp::push_gateway_args`: reuse
+            // the session credentials, add an explicit gateway user only when it
+            // differs from the session user, and skip an empty hostname.
+            if let Some(ref gateway) = rdp_config.gateway
+                && !gateway.hostname.is_empty()
+            {
+                let mut value = format!("g:{}:{}", gateway.hostname, gateway.port);
+                if let Some(ref gw_user) = gateway.username
+                    && !gw_user.is_empty()
+                    && connection.username.as_deref() != Some(gw_user.as_str())
+                {
+                    value.push_str(",u:");
+                    value.push_str(gw_user);
                 }
+                args.push(format!("/gateway:{value}"));
             }
             for folder in &rdp_config.shared_folders {
                 if folder.share_name.contains(',') || folder.share_name.contains('/') {
@@ -300,5 +316,71 @@ mod custom_argument_security_tests {
         ] {
             assert!(args.iter().all(|arg| !arg.contains(secret)));
         }
+    }
+}
+
+#[cfg(test)]
+mod gateway_syntax_tests {
+    use super::*;
+    use crate::models::RdpGateway;
+
+    fn rdp_connection_with_user(gateway: RdpGateway, username: &str) -> Connection {
+        let config = RdpConfig {
+            gateway: Some(gateway),
+            ..RdpConfig::default()
+        };
+        let mut connection = Connection::new(
+            "GW RDP".to_string(),
+            "target.example.com".to_string(),
+            3389,
+            ProtocolConfig::Rdp(config),
+        );
+        connection.username = Some(username.to_string());
+        connection
+    }
+
+    /// The CLI/standalone builder must emit the FreeRDP 3.x `/gateway:` option,
+    /// not the 2.x `/g:` + `/gu:` aliases that a modern client rejects with
+    /// "Unexpected keyword" before connecting (issue #187).
+    #[test]
+    fn build_args_emits_unified_gateway_option() {
+        let connection = rdp_connection_with_user(
+            RdpGateway {
+                hostname: "gw.example.com".to_string(),
+                port: 443,
+                username: Some("gwuser".to_string()),
+            },
+            "alice",
+        );
+
+        let args = RdpProtocol::build_args(&connection).expect("RDP arguments");
+
+        assert!(args.contains(&"/gateway:g:gw.example.com:443,u:gwuser".to_string()));
+        assert!(
+            args.iter().all(|arg| !arg.starts_with("/g:")),
+            "the removed 2.x /g: alias must not be emitted"
+        );
+        assert!(
+            args.iter().all(|arg| !arg.starts_with("/gu:")),
+            "the removed 2.x /gu: alias must not be emitted"
+        );
+    }
+
+    /// A gateway user identical to the session user is redundant — FreeRDP
+    /// reuses the session credentials for the gateway — so it is omitted.
+    #[test]
+    fn build_args_omits_redundant_gateway_user() {
+        let connection = rdp_connection_with_user(
+            RdpGateway {
+                hostname: "gw.example.com".to_string(),
+                port: 443,
+                username: Some("alice".to_string()),
+            },
+            "alice",
+        );
+
+        let args = RdpProtocol::build_args(&connection).expect("RDP arguments");
+
+        assert!(args.contains(&"/gateway:g:gw.example.com:443".to_string()));
     }
 }

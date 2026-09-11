@@ -28,35 +28,7 @@ use std::path::{Path, PathBuf};
 
 use secrecy::{ExposeSecret, SecretString};
 
-/// Resolves the user-private directory for an ephemeral mode-0600 secret file.
-///
-/// `$XDG_RUNTIME_DIR` (`/run/user/<uid>`, tmpfs and user-private) is the right
-/// home on Linux. macOS has no `XDG_RUNTIME_DIR`, so there we fall back to the
-/// per-user temp directory (`$TMPDIR`, a `/var/folders/…` path that is
-/// `0700`-owned by the user) — without this the SPICE `.vv` password file could
-/// never be written on macOS and every SPICE launch fell back to a prompt.
-///
-/// The fallback is deliberately macOS-only: on Linux a missing
-/// `$XDG_RUNTIME_DIR` is unusual, and `std::env::temp_dir()` there is the
-/// world-writable `/tmp`, a weaker location than the caller assumes. The files
-/// are created `0600` regardless, so their contents stay private either way.
-fn secret_file_dir() -> Option<PathBuf> {
-    if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .filter(|path| path.is_dir())
-    {
-        return Some(dir);
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let tmp = std::env::temp_dir();
-        return tmp.is_dir().then_some(tmp);
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        None
-    }
-}
+use rustconn_core::secret_file_dir;
 
 /// Builds a validated `NAME=VALUE` environment entry.
 ///

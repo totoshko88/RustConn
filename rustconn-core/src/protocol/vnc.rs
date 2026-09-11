@@ -18,6 +18,87 @@ impl VncProtocol {
         Self
     }
 
+    /// Returns whether a custom VNC argument is one RustConn refuses to pass on.
+    ///
+    /// These options can turn an imported connection or a shared config into an
+    /// attack: `via`/`proxyserver` reroute the connection through a host of the
+    /// attacker's choice, `passwd`/`passwordfile` point the viewer at an
+    /// arbitrary file, `securitytypes` weakens authentication, and `listen` turns
+    /// the viewer into a server.
+    ///
+    /// The option *name* is isolated before comparison, because a viewer accepts
+    /// more than one spelling of the same option. Measured on TigerVNC 1.15.0:
+    /// `--via=gw` is accepted exactly like `-via gw`, while `--NoSuchParam` is
+    /// rejected as an unknown parameter — so the double-dash form is real, and a
+    /// prefix test against the literal `"-via"` let it through untouched. An
+    /// argument that is not an option at all is never treated as one, so a value
+    /// that merely happens to begin with these letters is unaffected.
+    #[must_use]
+    fn is_dangerous_vnc_arg(arg: &str) -> bool {
+        const DANGEROUS_OPTIONS: [&str; 6] = [
+            "via",
+            "passwd",
+            "passwordfile",
+            "securitytypes",
+            "proxyserver",
+            "listen",
+        ];
+
+        // Only an option can be a dangerous option. One or two leading dashes are
+        // both accepted spellings, and the value may be attached with `=`, which
+        // the prefix comparison below covers.
+        let Some(name) = arg.strip_prefix('-') else {
+            return false;
+        };
+        let name = name.trim_start_matches('-').to_lowercase();
+
+        DANGEROUS_OPTIONS.iter().any(|opt| name.starts_with(opt))
+    }
+
+    /// Filters user-supplied viewer arguments down to those safe to pass on.
+    ///
+    /// Both argument builders — the external-viewer one the GUI uses and the
+    /// fallback `build_command` — call this, so their strictness cannot drift.
+    /// It rejects NUL/newline injection and every option
+    /// [`is_dangerous_vnc_arg`](Self::is_dangerous_vnc_arg) names, and it drops a
+    /// blocked option's separate value as well: `-via attacker` arrives as two
+    /// argv entries, and removing only the flag left `attacker` behind as a bare
+    /// positional argument — which is exactly how a VNC viewer is told which
+    /// server to connect to.
+    #[must_use]
+    fn filter_custom_args(custom_args: &[String]) -> Vec<String> {
+        let mut safe = Vec::with_capacity(custom_args.len());
+        let mut drop_next_value = false;
+
+        for arg in custom_args {
+            // Consume any pending "the previous option was blocked" state up
+            // front, so every branch below either uses it or discards it.
+            let value_of_blocked_option = std::mem::take(&mut drop_next_value);
+
+            if arg.contains('\0') || arg.contains('\n') {
+                tracing::warn!(arg = %arg, "Skipping VNC custom arg with unsafe characters");
+                continue;
+            }
+
+            if Self::is_dangerous_vnc_arg(arg) {
+                tracing::warn!(arg = %arg, "Blocked dangerous VNC custom arg");
+                // `--via=gw` already carries its value; `-via gw` does not, so
+                // the next entry has to go too.
+                drop_next_value = !arg.contains('=');
+                continue;
+            }
+
+            if value_of_blocked_option && !arg.starts_with('-') {
+                tracing::warn!(arg = %arg, "Dropped the orphaned value of a blocked VNC custom arg");
+                continue;
+            }
+
+            safe.push(arg.clone());
+        }
+
+        safe
+    }
+
     /// Extracts VNC config from a connection, returning an error if not VNC
     fn get_vnc_config(connection: &Connection) -> ProtocolResult<&VncConfig> {
         match &connection.protocol_config {
@@ -123,14 +204,9 @@ impl VncProtocol {
             }
         }
 
-        // Add custom arguments from config (filter unsafe characters).
-        for arg in &config.custom_args {
-            if arg.contains('\0') || arg.contains('\n') {
-                tracing::warn!(arg = %arg, "Skipping VNC custom arg with unsafe characters");
-                continue;
-            }
-            args.push(arg.clone());
-        }
+        // Custom arguments from config, through the shared filter so this path
+        // and `build_command` block exactly the same set.
+        args.extend(Self::filter_custom_args(&config.custom_args));
 
         (viewer.to_string(), args)
     }
@@ -216,28 +292,10 @@ impl Protocol for VncProtocol {
                 args.push("-SecurityTypes".to_string());
                 args.push("VeNCrypt,TLSVnc,X509Vnc,VncAuth,None".to_string());
             }
-            for arg in &vnc_config.custom_args {
-                if arg.contains('\0') || arg.contains('\n') {
-                    tracing::warn!(arg = %arg, "Skipping suspicious VNC custom arg");
-                    continue;
-                }
-                // Block dangerous VNC viewer arguments that could be
-                // exploited via imported connections or shared configs
-                let lower = arg.to_lowercase();
-                let dangerous_prefixes = [
-                    "-via",
-                    "-passwd",
-                    "-passwordfile",
-                    "-securitytypes",
-                    "-proxyserver",
-                    "-listen",
-                ];
-                if dangerous_prefixes.iter().any(|p| lower.starts_with(p)) {
-                    tracing::warn!(arg = %arg, "Blocked dangerous VNC custom arg");
-                    continue;
-                }
-                args.push(arg.clone());
-            }
+            // Same shared filter as the external-viewer path: NUL/newline
+            // injection, dangerous rerouting/auth-weakening options, and the
+            // orphaned value of anything blocked.
+            args.extend(Self::filter_custom_args(&vnc_config.custom_args));
         }
 
         let display = if connection.port >= 5900 {
@@ -452,5 +510,130 @@ mod tests {
             VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
         assert!(args.contains(&"-Fullscreen".to_string()));
         assert!(!args.iter().any(|a| a.contains('\n')));
+    }
+
+    /// The external-viewer path must block the same dangerous rerouting/auth
+    /// arguments the fallback `build_command` does — previously it did not, so a
+    /// malicious imported connection could smuggle `-via`/`-passwordfile` into
+    /// the GUI viewer launch (the strictness asymmetry the 0.21.11 audit found).
+    #[test]
+    fn external_viewer_blocks_dangerous_custom_args() {
+        let config = VncConfig {
+            custom_args: vec![
+                "-Fullscreen".to_string(),
+                "-via".to_string(),
+                "attacker:22".to_string(),
+                "-passwordfile".to_string(),
+                "/etc/shadow".to_string(),
+                "-Listen".to_string(),
+            ],
+            ..Default::default()
+        };
+        let (_program, args) =
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+        assert!(args.contains(&"-Fullscreen".to_string()), "benign arg kept");
+        for blocked in ["-via", "-passwordfile", "-Listen"] {
+            assert!(
+                !args.iter().any(|a| a.eq_ignore_ascii_case(blocked)),
+                "{blocked} must be blocked on the external-viewer path"
+            );
+        }
+    }
+
+    /// A viewer accepts an option with two leading dashes just as readily as
+    /// with one — verified on TigerVNC 1.15.0, where `--via=gw` is accepted and
+    /// `--NoSuchParam` is refused. The prefix test against the literal `"-via"`
+    /// therefore let the whole double-dash family through.
+    #[test]
+    fn dangerous_args_cannot_be_smuggled_with_a_double_dash() {
+        for smuggled in [
+            "--via=attacker",
+            "--Via=attacker",
+            "--passwordfile=/etc/shadow",
+            "--securitytypes=None",
+            "--listen",
+            "--proxyserver=attacker:5900",
+        ] {
+            assert!(
+                VncProtocol::is_dangerous_vnc_arg(smuggled),
+                "{smuggled} must be recognised as dangerous"
+            );
+        }
+    }
+
+    /// Blocking a flag but keeping its value is not blocking it: a VNC viewer
+    /// reads a bare positional argument as the server to connect to, so a
+    /// leftover `attacker:22` still reroutes the session.
+    #[test]
+    fn the_value_of_a_blocked_option_is_dropped_too() {
+        let filtered = VncProtocol::filter_custom_args(&[
+            "-via".to_string(),
+            "attacker:22".to_string(),
+            "-Fullscreen".to_string(),
+        ]);
+        assert_eq!(
+            filtered,
+            vec!["-Fullscreen".to_string()],
+            "only the benign option survives; the orphaned value is gone"
+        );
+    }
+
+    /// A blocked option that carries its own value must not then eat the next,
+    /// unrelated argument.
+    #[test]
+    fn an_attached_value_does_not_consume_the_following_argument() {
+        let filtered = VncProtocol::filter_custom_args(&[
+            "--via=attacker".to_string(),
+            "-Fullscreen".to_string(),
+        ]);
+        assert_eq!(filtered, vec!["-Fullscreen".to_string()]);
+    }
+
+    /// The blocked set applies to options, not to values. A benign argument that
+    /// merely starts with the same letters is not an option and stays.
+    #[test]
+    fn a_non_option_value_is_not_mistaken_for_a_dangerous_option() {
+        assert!(!VncProtocol::is_dangerous_vnc_arg("viaduct.example.com"));
+        let filtered =
+            VncProtocol::filter_custom_args(&["-encoding".to_string(), "listenable".to_string()]);
+        assert_eq!(
+            filtered,
+            vec!["-encoding".to_string(), "listenable".to_string()]
+        );
+    }
+
+    /// The two builders must agree, for the same input, on exactly what survives.
+    #[test]
+    fn both_builders_filter_identically() {
+        let custom = vec![
+            "-Fullscreen".to_string(),
+            "--via=attacker".to_string(),
+            "-passwd".to_string(),
+            "/tmp/pw".to_string(),
+        ];
+        let config = VncConfig {
+            custom_args: custom.clone(),
+            ..Default::default()
+        };
+
+        let (_program, external) =
+            VncProtocol::build_external_viewer_command("vncviewer", "host", 5900, &config);
+        let mut connection = Connection::new(
+            "vnc".to_string(),
+            "host".to_string(),
+            5900,
+            ProtocolConfig::Vnc(config),
+        );
+        connection.username = None;
+        let fallback = VncProtocol.build_command(&connection).expect("command");
+
+        let survived = |args: &[String]| -> Vec<String> {
+            args.iter()
+                .filter(|a| custom.iter().any(|c| c == *a))
+                .cloned()
+                .collect()
+        };
+        assert_eq!(survived(&external), survived(&fallback));
+        assert_eq!(survived(&external), vec!["-Fullscreen".to_string()]);
     }
 }

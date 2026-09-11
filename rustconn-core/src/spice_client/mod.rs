@@ -191,6 +191,15 @@ pub fn build_spice_viewer_args(config: &SpiceClientConfig) -> Vec<String> {
         args.push("--spice-disable-audio".to_string());
     }
 
+    // ponytail: `image_compression` and `clipboard_enabled` are intentionally
+    // not translated to arguments. Spice-GTK's CLI (spice-client(1)) exposes no
+    // option to pick an image compressor — it is negotiated with the server —
+    // and no option to disable clipboard sharing; copy-paste is governed
+    // host-side (libvirt `<clipboard copypaste='no'/>`) or by the guest agent.
+    // The fields are kept because they are meaningful for the embedded client
+    // and for `.vv`-less future viewers, but remote-viewer cannot honour them.
+    // If a viewer ever grows the flags, emit them here.
+
     // SPICE proxy for tunnelled connections (e.g. Proxmox VE)
     if let Some(ref proxy) = config.proxy {
         args.push("--spice-proxy".to_string());
@@ -231,6 +240,11 @@ pub fn build_spice_extra_flags(config: &SpiceClientConfig) -> Vec<String> {
     if !config.audio_playback {
         args.push("--spice-disable-audio".to_string());
     }
+
+    // ponytail: `image_compression` and `clipboard_enabled` are not emitted —
+    // spice-client(1) has no flag for either (compression is server-negotiated,
+    // clipboard is a host/guest-agent setting). Same rationale as in
+    // `build_spice_viewer_args`; the `.vv` format carries neither field.
 
     args
 }

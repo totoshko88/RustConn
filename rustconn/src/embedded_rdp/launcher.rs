@@ -336,8 +336,10 @@ impl SafeFreeRdpLauncher {
             }
         }
 
-        // Session password is always passed via a single-use args file in
-        // $XDG_RUNTIME_DIR (mode 0600) consumed by `/args-from:`.
+        // Session password is always passed via a single-use args file (mode
+        // 0600) consumed by `/args-from:`, placed in the shared user-private
+        // runtime directory (`$XDG_RUNTIME_DIR` on Linux, `$TMPDIR` on macOS —
+        // see `rustconn_core::secret_file_dir`).
         //
         // FreeRDP (PR #12697) requires `/args-from:` to be the ONLY argument on
         // the command line — it cannot be combined with other CLI arguments.

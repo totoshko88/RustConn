@@ -140,6 +140,23 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.21.11" date="2026-09-11">
+      <description>
+        <p>Version 0.21.11 - a security-focused release: recordings and session logs no longer keep secrets readable, and three launch paths were hardened:</p>
+        <ul>
+          <li>Security: session recordings now redact passwords, API keys and tokens as the documentation promised; previously they were stored in clear text</li>
+          <li>Security: session log files and the session-restore file are created owner-only instead of world-readable</li>
+          <li>Security: dangerous VNC viewer arguments coming from an imported connection are blocked on both launch paths, including spellings that previously slipped past the filter</li>
+          <li>Security: a Script password source no longer logs its command line, whose arguments can carry a token</li>
+          <li>Fixed: a log rotation could delete log files you own when the log path pointed outside the directory RustConn manages</li>
+          <li>Fixed: RDP gateway connections launched outside the GUI work on FreeRDP 3.x</li>
+          <li>Fixed: external FreeRDP starts on macOS, which has no XDG_RUNTIME_DIR</li>
+          <li>Fixed: SSH keep-alive defaults now reach command-line sessions and tunnels, not only GUI terminals</li>
+          <li>Fixed: an empty SSH Custom Option no longer breaks the connection, and now leaves that option to your ~/.ssh/config</li>
+          <li>Fixed: Dynamic Folder entries honour their documented sub-group path, and generated sub-groups nothing uses any more are cleaned up</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.21.10" date="2026-09-09">
       <description>
         <p>Version 0.21.10 - macOS fixes across external viewers and browsers, and search and jump-host improvements:</p>

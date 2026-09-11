@@ -5,6 +5,9 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  # Allows the non-gating macOS formula build to be triggered on demand
+  # (see the macos-formula job) without waiting for a push to main.
+  workflow_dispatch:
 
 # Least privilege: CI only needs to read the repo contents.
 permissions:
@@ -199,6 +202,14 @@ jobs:
       # inheritance "reads the same for every protocol".
       - name: Check the launch paths resolve their bastion
         run: ./scripts/check-jump-host-wiring.sh
+
+      # The GNOME feature ladder (libadwaita/GTK/VTE version -> feature flag) is
+      # duplicated in the Homebrew formula, build-rpm and debian.rules because the
+      # three build systems share no language. When they drift, a channel ships an
+      # old baseline silently — which has happened more than once. This asserts
+      # the version thresholds agree across all three.
+      - name: Check feature ladders agree across packaging channels
+        run: ./scripts/check-feature-ladders.sh
 
       # Also not i18n, also the same shape. `install_glib_css_warning_filter` in
       # main.rs drops every GLib message containing "Theme parser" or "gtk.css",
@@ -549,3 +560,49 @@ jobs:
             -p rustconn-locale-sys \
             -p rustconn-env-sys \
             -p rustconn-dock-sys
+
+  macos-formula:
+    name: macOS Homebrew formula
+    runs-on: macos-latest
+    # Why this job exists.
+    #
+    # The Homebrew formula (packaging/macos/rustconn.rb) is the primary macOS
+    # artifact, yet nothing built it in CI: update-homebrew in release.yml runs on
+    # ubuntu, copies the file into the tap and patches url+sha256 — so a formula
+    # that no longer builds (a stale dependency, a broken feature ladder, a
+    # packaging step like the iconutil regression that shipped in 0.21.x) was only
+    # discovered by the first user to `brew install`, after the release. This job
+    # exercises the formula before that.
+    #
+    # The syntax and style checks gate — they are cheap and a red formula must not
+    # merge. The build-from-source step is non-gating (continue-on-error): it is a
+    # ~20-minute Homebrew build of gtk4/libadwaita/vte3/webkit and occasionally
+    # flaky, so it informs rather than blocks, exactly like update-obs and
+    # update-homebrew are kept off the release's critical path.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Formula syntax (ruby -c)
+        run: ruby -c packaging/macos/rustconn.rb
+
+      - name: Formula style (brew style)
+        run: brew style packaging/macos/rustconn.rb
+
+      # Non-gating: a real build of the formula, so a packaging or dependency
+      # break shows up here rather than in a user's terminal. The formula builds
+      # with --no-default-features (web-embedded cannot build on macOS), so this
+      # is the same feature set users get. Runs only on push to main and manual
+      # dispatch, not on every PR, to keep runner minutes reasonable.
+      #
+      # What this does NOT check, so nobody reads more into a green tick than is
+      # there: `brew install` fetches the tarball named by the formula's `url` and
+      # `sha256`, which point at the last *published* release. So this validates
+      # the formula's packaging steps — dependencies, the feature ladder, msgfmt,
+      # the iconset, post_install — against released source, not against the code
+      # on this branch. A break introduced by a commit here surfaces on the next
+      # release's run, not this one. Catching it earlier would mean overriding
+      # `url` to the checkout, which changes what the formula under test is.
+      - name: Build from source (informational)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: brew install --build-from-source --verbose ./packaging/macos/rustconn.rb

@@ -327,33 +327,15 @@ impl ClusterSession {
         })
     }
 
-    /// Queues input to be broadcast to all sessions
-    /// Returns the list of connection IDs that should receive the input
-    #[must_use]
-    pub fn broadcast_input(&self, _input: &str) -> Vec<Uuid> {
-        if !self.broadcast_mode {
-            return Vec::new();
-        }
-
-        // Return IDs of all connected sessions
-        self.sessions
-            .iter()
-            .filter(|(_, state)| state.status == ClusterSessionStatus::Connected)
-            .map(|(id, _)| *id)
-            .collect()
-    }
-
-    /// Returns the IDs of all sessions that should receive input
-    /// In broadcast mode, returns all connected sessions
-    /// Otherwise, returns an empty vec (caller should handle single session focus)
-    #[must_use]
-    pub fn get_input_targets(&self) -> Vec<Uuid> {
-        if self.broadcast_mode {
-            self.broadcast_input("")
-        } else {
-            Vec::new()
-        }
-    }
+    // The `broadcast_input` / `get_input_targets` pair that used to live here was
+    // removed in 0.21.11. It computed the set of connected sessions that a typed
+    // line should be mirrored to, from the days when a cluster owned the
+    // broadcast. Since 0.14.8 broadcast is a split-view feature that mirrors VTE
+    // `commit` events directly to the visible terminal panels
+    // (`wire_broadcast_for_session` in the GUI), and nothing called this path —
+    // the `broadcast_mode` flag survives only to feed `ClusterSessionSummary`.
+    // Keeping the dead computation invited a future editor to wire it back in
+    // parallel to the real one.
 
     /// Returns connection IDs of sessions that failed
     #[must_use]
@@ -466,39 +448,6 @@ mod tests {
             session.get_session_state(conn_id).unwrap().error_message,
             Some("Connection lost".to_string())
         );
-    }
-
-    #[test]
-    fn test_cluster_session_broadcast_input() {
-        let mut cluster = Cluster::new("Test".to_string());
-        let conn1 = Uuid::new_v4();
-        let conn2 = Uuid::new_v4();
-        cluster.add_connection(conn1);
-        cluster.add_connection(conn2);
-
-        let mut session = ClusterSession::new(&cluster);
-
-        // Without broadcast mode, no targets
-        let targets = session.broadcast_input("test");
-        assert!(targets.is_empty());
-
-        // Enable broadcast mode
-        session.set_broadcast_mode(true);
-
-        // Still no targets because sessions aren't connected
-        let targets = session.broadcast_input("test");
-        assert!(targets.is_empty());
-
-        // Connect one session
-        session.update_session_status(conn1, ClusterSessionStatus::Connected);
-        let targets = session.broadcast_input("test");
-        assert_eq!(targets.len(), 1);
-        assert!(targets.contains(&conn1));
-
-        // Connect second session
-        session.update_session_status(conn2, ClusterSessionStatus::Connected);
-        let targets = session.broadcast_input("test");
-        assert_eq!(targets.len(), 2);
     }
 }
 
@@ -663,14 +612,10 @@ impl ClusterManager {
         }
     }
 
-    /// Gets the broadcast targets for a cluster (if in broadcast mode)
-    #[must_use]
-    pub fn get_broadcast_targets(&self, cluster_id: Uuid) -> Vec<Uuid> {
-        self.active_sessions
-            .get(&cluster_id)
-            .map(ClusterSession::get_input_targets)
-            .unwrap_or_default()
-    }
+    // `get_broadcast_targets` was removed in 0.21.11 together with the
+    // `ClusterSession` broadcast pair it delegated to — a legacy path with no
+    // callers, superseded by split-view broadcast. See the note in
+    // `ClusterSession`.
 
     /// Checks if a cluster session has any failures
     #[must_use]

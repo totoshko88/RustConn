@@ -343,93 +343,13 @@ fn test_session_recovery_independence() {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
-    /// **Feature: rustconn-enhancements, Broadcast Mode**
-    /// **Validates: Requirements 3.3**
-    ///
-    /// When broadcast mode is enabled, input should be distributed to all
-    /// connected sessions.
-    #[test]
-    fn prop_broadcast_mode_distributes_to_all_connected(
-        cluster in arb_cluster_with_connections(2, 10),
-        connect_flags in prop::collection::vec(any::<bool>(), 2..=10),
-    ) {
-        prop_assume!(!cluster.is_empty());
-        prop_assume!(cluster.connection_count() >= 2);
-
-        let conn_ids: Vec<Uuid> = cluster.connection_ids.clone();
-        let mut session = ClusterSession::new(&cluster);
-
-        // Enable broadcast mode
-        session.set_broadcast_mode(true);
-
-        // Connect some sessions based on flags
-        let num_to_process = conn_ids.len().min(connect_flags.len());
-        let mut expected_connected = 0;
-        for i in 0..num_to_process {
-            if connect_flags[i] {
-                session.update_session_status(conn_ids[i], ClusterSessionStatus::Connected);
-                expected_connected += 1;
-            }
-        }
-
-        // Get broadcast targets
-        let targets = session.broadcast_input("test input");
-
-        // Should have exactly the number of connected sessions
-        prop_assert_eq!(
-            targets.len(),
-            expected_connected,
-            "Broadcast should target all {} connected sessions",
-            expected_connected
-        );
-
-        // All targets should be connected
-        for target in &targets {
-            let state = session.get_session_state(*target).unwrap();
-            prop_assert_eq!(
-                state.status,
-                ClusterSessionStatus::Connected,
-                "Broadcast target {} should be connected",
-                target
-            );
-        }
-    }
-
-    /// **Feature: rustconn-enhancements, Broadcast Mode**
-    /// **Validates: Requirements 3.3**
-    ///
-    /// When broadcast mode is disabled, no targets should be returned.
-    #[test]
-    fn prop_broadcast_mode_disabled_returns_no_targets(
-        cluster in arb_cluster_with_connections(1, 10),
-    ) {
-        prop_assume!(!cluster.is_empty());
-
-        let conn_ids: Vec<Uuid> = cluster.connection_ids.clone();
-        let mut session = ClusterSession::new(&cluster);
-
-        // Ensure broadcast mode is disabled
-        session.set_broadcast_mode(false);
-
-        // Connect all sessions
-        for &conn_id in &conn_ids {
-            session.update_session_status(conn_id, ClusterSessionStatus::Connected);
-        }
-
-        // Get broadcast targets - should be empty
-        let targets = session.broadcast_input("test input");
-        prop_assert!(
-            targets.is_empty(),
-            "Broadcast should return no targets when disabled"
-        );
-
-        // get_input_targets should also return empty
-        let input_targets = session.get_input_targets();
-        prop_assert!(
-            input_targets.is_empty(),
-            "get_input_targets should return empty when broadcast disabled"
-        );
-    }
+    // The `prop_broadcast_mode_distributes_to_all_connected` and
+    // `prop_broadcast_mode_disabled_returns_no_targets` properties were removed in
+    // 0.21.11 together with `ClusterSession::broadcast_input` /
+    // `get_input_targets`, the legacy cluster-owned broadcast that split-view
+    // broadcast superseded in 0.14.8. The `broadcast_mode` flag it toggled still
+    // exists (it feeds `ClusterSessionSummary`), so the toggle property below
+    // stays.
 
     /// **Feature: rustconn-enhancements, Broadcast Mode**
     /// **Validates: Requirements 3.6**
@@ -491,37 +411,10 @@ fn test_broadcast_mode_in_summary() {
     assert!(summary.broadcast_mode);
 }
 
-/// Test that broadcast targets exclude disconnected and error sessions
-#[test]
-fn test_broadcast_excludes_inactive_sessions() {
-    let mut cluster = Cluster::new("Test".to_string());
-    let conn1 = Uuid::new_v4();
-    let conn2 = Uuid::new_v4();
-    let conn3 = Uuid::new_v4();
-    let conn4 = Uuid::new_v4();
-    cluster.add_connection(conn1);
-    cluster.add_connection(conn2);
-    cluster.add_connection(conn3);
-    cluster.add_connection(conn4);
-
-    let mut session = ClusterSession::new(&cluster);
-    session.set_broadcast_mode(true);
-
-    // Set different statuses
-    session.update_session_status(conn1, ClusterSessionStatus::Connected);
-    session.update_session_status(conn2, ClusterSessionStatus::Disconnected);
-    session.update_session_status(conn3, ClusterSessionStatus::Connected);
-    session.set_session_error(conn4, "Error".to_string());
-
-    let targets = session.broadcast_input("test");
-
-    // Should only include connected sessions
-    assert_eq!(targets.len(), 2);
-    assert!(targets.contains(&conn1));
-    assert!(targets.contains(&conn3));
-    assert!(!targets.contains(&conn2));
-    assert!(!targets.contains(&conn4));
-}
+// `test_broadcast_excludes_inactive_sessions` was removed in 0.21.11 with the
+// `broadcast_input` method it exercised (see the note above). The
+// "connected sessions only" filtering it checked now lives in split-view
+// broadcast wiring in the GUI crate, not in the cluster model.
 
 // ============================================================================
 // Cluster Serialization Tests

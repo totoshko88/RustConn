@@ -71,6 +71,7 @@ pub mod performance;
 pub mod proc;
 pub mod progress;
 pub mod protocol;
+pub mod runtime_dir;
 pub mod search;
 pub mod secret;
 pub mod session;
@@ -166,6 +167,7 @@ pub use flatpak::{
 pub use highlight::{
     CompiledHighlightRules, HighlightMatch, Rgb, builtin_defaults, parse_hex_color,
 };
+pub use runtime_dir::secret_file_dir;
 // Deprecated flatpak-spawn functions (host_command, host_exec, host_has_command,
 // host_spawn, host_which) are no longer re-exported since Flathub policy change in v0.7.7.
 pub use import::{

@@ -32,16 +32,18 @@ impl EphemeralRdpArgs {
         secret_args: &[(&str, &SecretString)],
     ) -> SecretResult<Self> {
         use rustconn_core::error::SecretError;
-        let dir = std::env::var_os("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .filter(|path| path.is_dir())
-            .ok_or_else(|| {
-                SecretError::Pass(
-                    "XDG_RUNTIME_DIR is not set or is not a directory; \
-                     cannot create ephemeral RDP args file"
-                        .to_string(),
-                )
-            })?;
+        // `secret_file_dir()` is `$XDG_RUNTIME_DIR` on Linux and `$TMPDIR` on
+        // macOS, which has no runtime dir — the shared resolver SPICE already
+        // uses. Reading `XDG_RUNTIME_DIR` directly here hard-failed on macOS
+        // (the runtime dir is absent by default), so external FreeRDP never
+        // started with a stored password because this file could not be written.
+        let dir = rustconn_core::secret_file_dir().ok_or_else(|| {
+            SecretError::Pass(
+                "no user-private runtime directory is available; \
+                 cannot create ephemeral RDP args file"
+                    .to_string(),
+            )
+        })?;
         Self::write_all_in_dir(&dir, plain_args, secret_args)
     }
 

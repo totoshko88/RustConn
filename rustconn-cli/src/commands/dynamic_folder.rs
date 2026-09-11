@@ -238,11 +238,14 @@ fn cmd_dynamic_folder_refresh(config_path: Option<&Path>, name: &str) -> Result<
         eprintln!("  Warning: {warning}");
     }
 
-    // Remove old dynamic connections
+    // Remove old dynamic connections across the folder's whole subtree —
+    // entries may have been placed in sub-groups by a previous refresh, not
+    // only directly under the base group.
+    let subtree = dynamic_folder::descendant_group_ids(group_id, &conn_manager.list_groups_owned());
     let old_dynamic: Vec<uuid::Uuid> = conn_manager
         .list_connections()
         .into_iter()
-        .filter(|c| c.group_id == Some(group_id) && c.is_dynamic)
+        .filter(|c| c.is_dynamic && c.group_id.is_some_and(|g| subtree.contains(&g)))
         .map(|c| c.id)
         .collect();
 
@@ -250,10 +253,31 @@ fn cmd_dynamic_folder_refresh(config_path: Option<&Path>, name: &str) -> Result<
         let _ = conn_manager.delete_connection(conn_id);
     }
 
-    // Add new dynamic connections
-    for entry in &result.entries {
-        let conn = dynamic_folder::entry_to_connection(entry, group_id);
+    // Materialise the refresh: create any sub-groups the entries' `group` paths
+    // ask for (idempotent — stable ids, skip existing), then the connections.
+    let plan = dynamic_folder::plan_dynamic_refresh(group_id, &result.entries);
+    let existing_group_ids: std::collections::HashSet<uuid::Uuid> =
+        conn_manager.list_groups().iter().map(|g| g.id).collect();
+    for subgroup in plan.subgroups {
+        if !existing_group_ids.contains(&subgroup.id) {
+            let _ = conn_manager.create_group_from(subgroup);
+        }
+    }
+    for conn in plan.connections {
         let _ = conn_manager.create_connection_from(conn);
+    }
+
+    // Sweep sub-groups a previous refresh created that no entry lands in any
+    // more, so an upstream reorganisation does not leave dead folders behind.
+    // Only refresh-created folders are candidates — a folder the user made by
+    // hand inside the dynamic folder is never removed.
+    let stale_subgroups = dynamic_folder::empty_dynamic_subgroup_ids(
+        group_id,
+        &conn_manager.list_groups_owned(),
+        &conn_manager.list_connections_owned(),
+    );
+    for subgroup_id in stale_subgroups {
+        let _ = conn_manager.delete_group(subgroup_id);
     }
 
     // Update group's last_refreshed_at

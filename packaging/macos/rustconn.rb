@@ -1,5 +1,5 @@
 class Rustconn < Formula
-  desc "Manage remote connections easily - SSH, RDP, VNC, SPICE, Telnet, Serial"
+  desc "Remote connection manager - SSH, RDP, VNC, SPICE, Telnet, Serial, and more"
   homepage "https://github.com/totoshko88/RustConn"
   # This is the canonical formula; the release workflow copies it into the tap
   # and rewrites the two lines below with the release tag and the measured
@@ -7,7 +7,7 @@ class Rustconn < Formula
   # active `sha256` at this indentation — the sed patterns and the CI
   # verification gate are anchored to `^  url` and `^  sha256` (issue #251).
   # PLACEHOLDER_SHA256 is expected here in-tree; only the tap copy has a hash.
-  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.10.tar.gz"
+  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.11.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "GPL-3.0-or-later"
   head "https://github.com/totoshko88/RustConn.git", branch: "main"
@@ -23,10 +23,27 @@ class Rustconn < Formula
   depends_on "gtk4"
   depends_on "libadwaita"
   depends_on :macos
+  # The gfx-h264 feature dlopen's libopenh264.dylib at runtime for RDP EGFX/AVC.
+  # Unlike the DMG producer (scripts/macos-build.sh), this formula does not bundle
+  # dylibs into the .app — it relies on the Homebrew keg — so OpenH264 must be a
+  # declared runtime dependency, or H.264 would silently degrade to a non-AVC path.
+  depends_on "openh264"
   depends_on "openssl@3"
   depends_on "vte3"
 
   def install
+    # Homebrew's `rust` is not a rustup proxy, so rust-toolchain.toml is ignored
+    # here and this compiles with whatever `rust` Homebrew ships. Guard the floor:
+    # assert rustc is at least the MSRV (`rust-version` in Cargo.toml — keep this
+    # literal in step with it) so a too-old Homebrew rust fails with a clear
+    # message instead of a confusing edition/feature error mid-compile.
+    msrv = "1.95"
+    rustc_version = Utils.safe_popen_read("rustc", "--version").split[1]
+    if Gem::Version.new(rustc_version) < Gem::Version.new(msrv)
+      odie "RustConn needs Rust >= #{msrv}, but Homebrew's rust is #{rustc_version}. " \
+           "Run `brew upgrade rust` and try again."
+    end
+
     # Detected, not written out by hand. Homebrew's gtk4, libadwaita and vte3 move
     # independently of this formula: `adw-1-8` was hardcoded, and no GTK or VTE
     # feature was selected at all, so the Command monitoring mode could not appear
@@ -56,6 +73,28 @@ class Rustconn < Formula
     }.each do |pc_name, ladder|
       rung = ladder.find { |minimum, _| quiet_system("pkg-config", "--atleast-version=#{minimum}", pc_name) }
       features << "rustconn/#{rung.last}" if rung
+
+      # The ladder's ceiling is its highest rung. When Homebrew moves past it
+      # (e.g. libadwaita 1.10 while the top rung is still 1.8), the newer feature
+      # is not selected and its capabilities silently never build — the "shipped
+      # the 1.5 baseline" regression, but quiet. Compare the installed minor
+      # against the top rung's minor and emit a hint when it is ahead, so the
+      # drift shows up in the build log and prompts a new rung here (and in the
+      # OBS/RPM twins) rather than being discovered by a user. Best-effort: an
+      # unparseable version simply skips the check.
+      highest = ladder.keys.first
+      installed = Utils.safe_popen_read("pkg-config", "--modversion", pc_name).strip
+      top_parts = highest.split(".").map(&:to_i)
+      cur_parts = installed.split(".").map(&:to_i)
+      if cur_parts.length >= 2 && top_parts.length >= 2 &&
+         (cur_parts[0] > top_parts[0] ||
+          (cur_parts[0] == top_parts[0] && cur_parts[1] > top_parts[1]))
+        opoo "#{pc_name} #{installed} is newer than the highest known rung " \
+             "(#{highest}); RustConn may be missing features for it — add a rung " \
+             "to this formula and its OBS/RPM twins."
+      end
+    rescue ErrorDuringExecution
+      # pkg-config could not report a version; skip the drift hint.
     end
 
     ohai "RustConn feature set: #{features.join(",")}"
@@ -70,11 +109,14 @@ class Rustconn < Formula
     bin.install "target/release/rustconn"
     bin.install "target/release/rustconn-cli"
 
-    # Install locales
+    # Install locales. `--check` matches the canonical producer
+    # (scripts/macos-build.sh): it validates format placeholders and headers, so
+    # a catalog with a dropped `{}` placeholder fails the build here instead of
+    # silently shipping a broken translation in the main macOS artifact.
     Dir["po/*.po"].each do |po|
       lang = File.basename(po, ".po")
       mkdir_p "#{share}/locale/#{lang}/LC_MESSAGES"
-      system "msgfmt", "-o", "#{share}/locale/#{lang}/LC_MESSAGES/rustconn.mo", po
+      system "msgfmt", "--check", "-o", "#{share}/locale/#{lang}/LC_MESSAGES/rustconn.mo", po
     end
 
     # Install icon
@@ -115,25 +157,20 @@ class Rustconn < Formula
     # `i18n::locale_dir()`, which looks here and nowhere else inside a bundle.
     cp_r "#{share}/locale", "#{app_dir}/Resources/locale"
 
-    # Icon
-    mkdir_p buildpath/"iconset/RustConn.iconset"
-    [16, 32, 64, 128, 256, 512, 1024].each do |size|
-      system "rsvg-convert", "-w", size.to_s, "-h", size.to_s,
-             "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
-             "-o", buildpath/"iconset/icon_#{size}.png"
-    end
-    cp buildpath/"iconset/icon_16.png", buildpath/"iconset/RustConn.iconset/icon_16x16.png"
-    cp buildpath/"iconset/icon_32.png", buildpath/"iconset/RustConn.iconset/icon_16x16@2x.png"
-    cp buildpath/"iconset/icon_32.png", buildpath/"iconset/RustConn.iconset/icon_32x32.png"
-    cp buildpath/"iconset/icon_64.png", buildpath/"iconset/RustConn.iconset/icon_32x32@2x.png"
-    cp buildpath/"iconset/icon_128.png", buildpath/"iconset/RustConn.iconset/icon_128x128.png"
-    cp buildpath/"iconset/icon_256.png", buildpath/"iconset/RustConn.iconset/icon_128x128@2x.png"
-    cp buildpath/"iconset/icon_256.png", buildpath/"iconset/RustConn.iconset/icon_256x256.png"
-    cp buildpath/"iconset/icon_512.png", buildpath/"iconset/RustConn.iconset/icon_256x256@2x.png"
-    cp buildpath/"iconset/icon_512.png", buildpath/"iconset/RustConn.iconset/icon_512x512.png"
-    cp buildpath/"iconset/icon_1024.png", buildpath/"iconset/RustConn.iconset/icon_512x512@2x.png"
-    system "iconutil", "-c", "icns", buildpath/"iconset/RustConn.iconset",
-           "-o", "#{app_dir}/Resources/RustConn.icns"
+    # Icon. Delegated to scripts/make-iconset.sh, the same script the canonical
+    # producer uses, so the render-and-package logic cannot drift between the two.
+    #
+    # The previous inline version rendered each size through `system
+    # rsvg-convert` with no check that a well-formed PNG came back, then packaged
+    # with `iconutil`. In the build sandbox that surfaced as an opaque
+    # "Invalid Iconset" from iconutil whenever a render came back empty or the
+    # wrong size, with nothing in the log to say which member was bad. The shared
+    # script renders directly into the canonical Apple names, verifies every PNG
+    # with `sips` before packaging, and fails naming the offending file — turning
+    # an intermittent, undiagnosable packaging failure into a clear one.
+    system "bash", "scripts/make-iconset.sh",
+           "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
+           "#{app_dir}/Resources/RustConn.icns"
 
     # Optional manual-terminal launcher. Under Resources/bin, not MacOS/, so it is
     # not mistaken for the bundle executable and does not interfere with
@@ -156,7 +193,7 @@ class Rustconn < Formula
     # Info.plist
     (app_dir/"Info.plist").write <<~EOS
       <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
       <plist version="1.0">
       <dict>
           <key>CFBundleExecutable</key>
@@ -213,12 +250,24 @@ class Rustconn < Formula
         opoo "Could not register RustConn.app with LaunchServices: #{e.message}"
       end
     end
-    # Compile GSettings schemas (required for GTK4 apps)
-    system "#{Formula["glib"].opt_bin}/glib-compile-schemas",
-           "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
-    # Update icon cache
-    system "#{Formula["gtk4"].opt_bin}/gtk4-update-icon-cache", "-f", "-t",
-           "#{HOMEBREW_PREFIX}/share/icons/hicolor"
+    # Compile GSettings schemas and refresh the icon cache. Both operate on the
+    # shared HOMEBREW_PREFIX/share tree, not the keg, and `system` raises on a
+    # non-zero exit — so a missing/unwritable icons directory or schema dir would
+    # turn a cosmetic refresh into a failed install. Best-effort for the same
+    # reason as lsregister above; the app resolves schemas and icons at runtime
+    # regardless.
+    begin
+      system "#{Formula["glib"].opt_bin}/glib-compile-schemas",
+             "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
+    rescue StandardError => e
+      opoo "Could not compile GSettings schemas: #{e.message}"
+    end
+    begin
+      system "#{Formula["gtk4"].opt_bin}/gtk4-update-icon-cache", "-f", "-t",
+             "#{HOMEBREW_PREFIX}/share/icons/hicolor"
+    rescue StandardError => e
+      opoo "Could not update the icon cache: #{e.message}"
+    end
   end
 
   def caveats

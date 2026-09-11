@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.21.10
+Version:        0.21.11
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -387,6 +387,21 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Sep 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.11-0
+- Version bump to 0.21.11
+- Security: session recordings now redact passwords, API keys and tokens as documented; previously stored in clear text
+- Security: session log files and the session-restore file are created 0600 instead of world-readable
+- Security: dangerous VNC viewer arguments from an imported connection are blocked on both launch paths, including the double-dash spelling and a blocked option's value
+- Security: a Script password source no longer logs its command line, whose arguments can carry a token
+- Fixed: a log rotation could delete *.log files the user owns outside the directory RustConn manages
+- Fixed: RDP gateway connections launched through the CLI work on FreeRDP 3.x
+- Fixed: external FreeRDP starts on macOS, which has no XDG_RUNTIME_DIR
+- Fixed: SSH keep-alive defaults now reach CLI sessions and tunnels, not only GUI terminals
+- Fixed: an empty SSH Custom Option no longer breaks the connection and now defers that option to ~/.ssh/config
+- Fixed: Dynamic Folder entries honour their documented sub-group path; unused generated sub-groups are cleaned up
+- Fixed: macOS packaging - H.264 accelerated RDP has its runtime dependency, and the icon step names the bad file
+- Improved: the packaging feature-ladder gate now covers every channel, including the Flatpak manifests
+- Dependencies: bitflags 2.13.1->2.13.2, open 5.4.3->5.4.4, smallvec 1.16.0->1.16.1, toml 1.1.5->1.1.6, toml_edit 0.25.13->0.25.15, uuid 1.26.0->1.26.1
 * Wed Sep 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.10-0
 - Version bump to 0.21.10
 - Fixed: connection search no longer matches unrelated entries (fuzzy matcher requires the whole query as a subsequence)

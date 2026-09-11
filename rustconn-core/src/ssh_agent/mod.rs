@@ -942,8 +942,13 @@ impl SshAgentManager {
     pub fn materialize_agent_identity(&self, fingerprint: &str) -> AgentResult<PathBuf> {
         let public_key = self.get_public_key_by_fingerprint(fingerprint)?;
 
-        let base = std::env::var_os("XDG_RUNTIME_DIR")
-            .map_or_else(std::env::temp_dir, PathBuf::from)
+        // Shared resolver: `$XDG_RUNTIME_DIR` on Linux, `$TMPDIR` on macOS.
+        // `prune_stale_agent_keys` resolves the same base, so both must stay in
+        // step. The `temp_dir` fallback only applies on a Linux box with no
+        // runtime dir; the file holds public-key material, so a weaker location
+        // is acceptable and a directory must always be produced.
+        let base = crate::secret_file_dir()
+            .unwrap_or_else(std::env::temp_dir)
             .join("rustconn")
             .join("agent-keys");
         std::fs::create_dir_all(&base)?;
@@ -1000,8 +1005,11 @@ impl SshAgentManager {
 pub fn prune_stale_agent_keys() {
     use std::time::{Duration, SystemTime};
 
-    let base = std::env::var_os("XDG_RUNTIME_DIR")
-        .map_or_else(std::env::temp_dir, std::path::PathBuf::from)
+    // Must resolve the same base as `materialize_agent_identity` — see the note
+    // there. Shared resolver, with the `temp_dir` fallback for a Linux box
+    // lacking a runtime dir.
+    let base = crate::secret_file_dir()
+        .unwrap_or_else(std::env::temp_dir)
         .join("rustconn")
         .join("agent-keys");
 
