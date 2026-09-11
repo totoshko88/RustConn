@@ -84,7 +84,7 @@ if [[ "$SIGN_MODE" == "developer" ]]; then
     [[ -f "$ENTITLEMENTS" ]] || fail "Missing entitlements: $ENTITLEMENTS"
 fi
 
-for tool in cargo brew otool install_name_tool codesign file iconutil rsvg-convert msgfmt awk sed grep cmp; do
+for tool in cargo brew otool install_name_tool codesign file iconutil rsvg-convert sips msgfmt awk sed grep cmp; do
     require_tool "$tool"
 done
 
@@ -115,28 +115,11 @@ mkdir -p "$APP_DIR/Contents/MacOS" \
 cp "$TARGET_DIR/rustconn" "$APP_DIR/Contents/MacOS/rustconn"
 cp "$TARGET_DIR/rustconn-cli" "$APP_DIR/Contents/MacOS/rustconn-cli"
 
-# Build the native application icon.
-ICON_TMP="$(mktemp -d)"
-trap 'rm -rf "$ICON_TMP"' EXIT
-ICONSET="$ICON_TMP/RustConn.iconset"
-mkdir -p "$ICONSET"
-for size in 16 32 64 128 256 512 1024; do
-    rsvg-convert -w "$size" -h "$size" "$ICON_SVG" -o "$ICONSET/icon_${size}.png"
-done
-cp "$ICONSET/icon_16.png" "$ICONSET/icon_16x16.png"
-cp "$ICONSET/icon_32.png" "$ICONSET/icon_16x16@2x.png"
-cp "$ICONSET/icon_32.png" "$ICONSET/icon_32x32.png"
-cp "$ICONSET/icon_64.png" "$ICONSET/icon_32x32@2x.png"
-cp "$ICONSET/icon_128.png" "$ICONSET/icon_128x128.png"
-cp "$ICONSET/icon_256.png" "$ICONSET/icon_128x128@2x.png"
-cp "$ICONSET/icon_256.png" "$ICONSET/icon_256x256.png"
-cp "$ICONSET/icon_512.png" "$ICONSET/icon_256x256@2x.png"
-cp "$ICONSET/icon_512.png" "$ICONSET/icon_512x512.png"
-cp "$ICONSET/icon_1024.png" "$ICONSET/icon_512x512@2x.png"
-rm "$ICONSET"/icon_16.png "$ICONSET"/icon_32.png "$ICONSET"/icon_64.png \
-   "$ICONSET"/icon_128.png "$ICONSET"/icon_256.png "$ICONSET"/icon_512.png \
-   "$ICONSET"/icon_1024.png
-iconutil -c icns "$ICONSET" -o "$APP_DIR/Contents/Resources/RustConn.icns"
+# Build the native application icon. The render-and-validate logic lives in a
+# shared script so the icon step cannot drift between this producer and the
+# Homebrew formula, and so a broken render fails with a named file rather than
+# an opaque "Invalid Iconset" from iconutil.
+"$SCRIPT_DIR/make-iconset.sh" "$ICON_SVG" "$APP_DIR/Contents/Resources/RustConn.icns"
 
 # Compile all translations; a broken catalog must fail packaging.
 for catalog in "$PROJECT_DIR"/po/*.po; do

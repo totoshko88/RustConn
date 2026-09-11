@@ -115,25 +115,20 @@ class Rustconn < Formula
     # `i18n::locale_dir()`, which looks here and nowhere else inside a bundle.
     cp_r "#{share}/locale", "#{app_dir}/Resources/locale"
 
-    # Icon
-    mkdir_p buildpath/"iconset/RustConn.iconset"
-    [16, 32, 64, 128, 256, 512, 1024].each do |size|
-      system "rsvg-convert", "-w", size.to_s, "-h", size.to_s,
-             "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
-             "-o", buildpath/"iconset/icon_#{size}.png"
-    end
-    cp buildpath/"iconset/icon_16.png", buildpath/"iconset/RustConn.iconset/icon_16x16.png"
-    cp buildpath/"iconset/icon_32.png", buildpath/"iconset/RustConn.iconset/icon_16x16@2x.png"
-    cp buildpath/"iconset/icon_32.png", buildpath/"iconset/RustConn.iconset/icon_32x32.png"
-    cp buildpath/"iconset/icon_64.png", buildpath/"iconset/RustConn.iconset/icon_32x32@2x.png"
-    cp buildpath/"iconset/icon_128.png", buildpath/"iconset/RustConn.iconset/icon_128x128.png"
-    cp buildpath/"iconset/icon_256.png", buildpath/"iconset/RustConn.iconset/icon_128x128@2x.png"
-    cp buildpath/"iconset/icon_256.png", buildpath/"iconset/RustConn.iconset/icon_256x256.png"
-    cp buildpath/"iconset/icon_512.png", buildpath/"iconset/RustConn.iconset/icon_256x256@2x.png"
-    cp buildpath/"iconset/icon_512.png", buildpath/"iconset/RustConn.iconset/icon_512x512.png"
-    cp buildpath/"iconset/icon_1024.png", buildpath/"iconset/RustConn.iconset/icon_512x512@2x.png"
-    system "iconutil", "-c", "icns", buildpath/"iconset/RustConn.iconset",
-           "-o", "#{app_dir}/Resources/RustConn.icns"
+    # Icon. Delegated to scripts/make-iconset.sh, the same script the canonical
+    # producer uses, so the render-and-package logic cannot drift between the two.
+    #
+    # The previous inline version rendered each size through `system
+    # rsvg-convert` with no check that a well-formed PNG came back, then packaged
+    # with `iconutil`. In the build sandbox that surfaced as an opaque
+    # "Invalid Iconset" from iconutil whenever a render came back empty or the
+    # wrong size, with nothing in the log to say which member was bad. The shared
+    # script renders directly into the canonical Apple names, verifies every PNG
+    # with `sips` before packaging, and fails naming the offending file — turning
+    # an intermittent, undiagnosable packaging failure into a clear one.
+    system "bash", "scripts/make-iconset.sh",
+           "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
+           "#{app_dir}/Resources/RustConn.icns"
 
     # Optional manual-terminal launcher. Under Resources/bin, not MacOS/, so it is
     # not mistaken for the bundle executable and does not interfere with
