@@ -487,6 +487,24 @@ impl SessionLogger {
         // Get current file size
         let bytes_written = fs::metadata(&log_path).map(|m| m.len()).unwrap_or(0);
 
+        // Apply the retention policy at session start, not only during size
+        // rotation. Age-based pruning used to run solely from `rotate()`, so a
+        // configuration that never rotates by size — including global logging,
+        // whose UI has no size limit and therefore stores `max_size_mb = 0` —
+        // never deleted an aged log despite the retention days being set. The
+        // just-created file is younger than any cutoff, so it is never its own
+        // victim; `prune_logs` is a no-op when `retention_days == 0`.
+        if let Some(parent) = log_path.parent() {
+            let removed = prune_logs(parent, config.retention_days);
+            if removed > 0 {
+                tracing::debug!(
+                    removed,
+                    dir = %parent.display(),
+                    "Pruned aged session logs at startup"
+                );
+            }
+        }
+
         Ok(Self {
             config,
             log_path,
@@ -1682,6 +1700,31 @@ mod tests {
 
         assert_eq!(prune_logs(dir.path(), 0), 0);
         assert!(path.exists(), "retention 0 means keep forever");
+    }
+
+    #[test]
+    fn opening_a_logger_prunes_aged_siblings_without_size_rotation() {
+        // A logger with `max_size_mb = 0` never rotates by size, so retention
+        // used to never run for it — the case that matters because global
+        // logging always stores 0. Opening a session log must still enforce the
+        // retention window on its directory, and must not delete its own fresh
+        // file.
+        let dir = TempDir::new().expect("temp dir");
+        let aged = dir.path().join("old-session.log");
+        write_aged_file(&aged, 40);
+
+        let active = dir.path().join("active.log");
+        let config = LogConfig::new(active.to_string_lossy().into_owned())
+            .with_max_size_mb(0)
+            .with_retention_days(30);
+        let _logger = SessionLogger::new(config, &LogContext::new("host", "ssh"), None)
+            .expect("logger opens");
+
+        assert!(!aged.exists(), "an aged sibling log is pruned at startup");
+        assert!(
+            active.exists(),
+            "the just-opened log is never its own victim"
+        );
     }
 
     // ===== Redaction of what lands on disk (issue #247) =====
