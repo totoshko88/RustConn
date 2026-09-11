@@ -1160,6 +1160,15 @@ An embedded VNC session carries the same floating toolbar as RDP — Copy, Paste
 
 SPICE connections support TLS encryption, CA certificate validation, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, and shared folders. SPICE opens in an external viewer (remote-viewer / virt-viewer).
 
+> **Note — clipboard sharing and image compression.** These two settings are
+> stored on the connection, but `remote-viewer` (Spice-GTK) exposes no
+> command-line option for either: image compression is negotiated with the SPICE
+> server, and clipboard copy-paste is controlled host-side (in the libvirt domain
+> XML, `<clipboard copypaste='no'/>`) or by the guest agent. So with the external
+> viewer these fields have no client-side effect — set clipboard policy on the
+> host. They remain in the connection for the embedded client and for viewers
+> that may expose the controls in future.
+
 **Password (fixed in 0.21.2):**
 
 The connection's **Password Source** now reaches the viewer, so a SPICE session with a stored password connects without asking for it. Before 0.21.2 the password was resolved and then discarded at launch, and `remote-viewer` prompted every time whatever the Password Source was set to — changing it made no difference, which is what made the behaviour confusing rather than merely missing.
