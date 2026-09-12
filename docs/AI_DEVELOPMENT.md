@@ -121,7 +121,7 @@ enough that the number was off by thirteen.
 
 ## Hooks
 
-`.kiro/hooks/` currently holds **17** hooks, one JSON file each, in the v2 format
+`.kiro/hooks/` currently holds **18** hooks, one JSON file each, in the v2 format
 the agent executes directly. Triggers are PascalCase.
 
 | Trigger | Hooks | What the group is for |

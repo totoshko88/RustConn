@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "AI Doc Counts",
+      "trigger": "PostFileCreate",
+      "description": "When a steering file or a hook is created, checks that the counts docs/AI_DEVELOPMENT.md asserts still match .kiro/ and that every hook has a row in hooks-map.md. PostFileCreate rather than PostFileSave because creating a file is the event that breaks a count; editing one cannot. Command action, so it costs no credits, and its stdout goes nowhere on this trigger — the finding is appended to target/.kiro-session-report and printed by the Session Report (deliver) hook on the next turn. Exists because the CI Hygiene job was the only thing checking these numbers: a8bdb01e added the 30th steering file, the count stayed at 29, and the failure surfaced on main after v0.21.12 was already tagged and published. Reports the wrong number, never rewrites the sentence around it. Fails open and silent. Logic: bin/ai-doc-counts.sh.",
+      "matcher": "\\.kiro/(steering/[^/]*\\.md|hooks/[^/]*\\.json)$",
+      "action": {
+        "type": "command",
+        "command": ".kiro/hooks/bin/ai-doc-counts.sh",
+        "timeout": 15
+      }
+    }
+  ]
+}

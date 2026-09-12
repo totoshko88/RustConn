@@ -114,6 +114,7 @@ anything containing `!`.
 | Hook | Matcher | Type | Latency | Side-effects |
 |------|---------|------|---------|--------------|
 | **kirograph-mark-dirty-on-create** | `\.(rs\|toml)$` | command | <100ms | Writes `.kirograph/dirty`; logs to `.kirograph/hook.log` |
+| **ai-doc-counts** | `\.kiro/(steering/[^/]*\.md\|hooks/[^/]*\.json)$` | command | <100ms | Appends to `target/.kiro-session-report` when the counts in `docs/AI_DEVELOPMENT.md` no longer match `.kiro/`, or a hook has no row in this file. Create, not save: adding a file is what breaks a count, editing one cannot. Exists because CI was the only thing checking — a8bdb01e added the 30th steering file, the count stayed at 29, and Hygiene went red on main after v0.21.12 was already tagged and published, the third time that number had gone stale. Reports the wrong number; never rewrites the sentence around it. Silent when clean; fails open. Logic: `bin/ai-doc-counts.sh`. |
 
 ## PostFileDelete
 
