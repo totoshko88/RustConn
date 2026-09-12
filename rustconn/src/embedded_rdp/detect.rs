@@ -596,22 +596,33 @@ mod tests {
         // wall-clock timeout — under a saturated `cargo test --workspace` the
         // spawned shell can miss the deadline and cache `None`, which is a
         // property of the machine's load, not of the code under test. Whatever
-        // the first call resolved, the second must equal it, and the script must
-        // have run exactly once.
+        // the first call resolved, the second must equal it.
         let first = freerdp_version(&binary);
         let second = freerdp_version(&binary);
         assert_eq!(first, second, "the second lookup must reuse the cache");
-        assert_eq!(
-            std::fs::read_to_string(&counter).expect("read probe count"),
-            "x",
-            "the binary must be probed exactly once, then served from cache"
-        );
 
-        // When the probe did win its race, confirm the banner parsed correctly —
-        // this keeps the version-parsing assertion whenever the machine allowed
-        // it, without turning a starved subprocess into a test failure.
-        if let Some(version) = first {
-            assert_eq!(version, (3, 26, 1));
+        // The counter has to tolerate that same starvation, and for a while it
+        // did not: it read the file with `.expect("read probe count")`, so a
+        // probe killed before the shell reached its first `printf` left no file
+        // at all and failed the test on a machine's load. Absent means "the
+        // script never ran", which is not a cache defect.
+        let probes = std::fs::read_to_string(&counter).unwrap_or_default();
+        match first {
+            // The banner parsed, so the script ran to completion and its mark is
+            // on disk. Exactly one is the whole claim.
+            Some(version) => {
+                assert_eq!(version, (3, 26, 1));
+                assert_eq!(
+                    probes, "x",
+                    "the binary must be probed exactly once, then served from cache"
+                );
+            }
+            // The probe lost its race, so the script may have run partly or not
+            // at all. What survives of the claim is that it did not run twice.
+            None => assert!(
+                probes.len() <= 1,
+                "a starved probe may leave no mark, but the cache must stop a second spawn; got {probes:?}"
+            ),
         }
     }
 
