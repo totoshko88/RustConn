@@ -28,9 +28,16 @@ If you ever set a steering file to `inclusion: auto`, give it both `name` and
 | Tool | Path |
 |------|------|
 | cargo | `~/.cargo/bin/cargo` |
+| typos | `~/.cargo/bin/typos` |
 | gh | system, authenticated |
 | flatpak-builder | system |
 | kirograph | `~/.nvm/.../bin/kirograph` (when `.kirograph/` exists) |
+
+`typos` is in that table because `AGENTS.md` and `core-rules.md` both list the
+Definition-of-Done gate as a bare `typos`, and a bare `typos` is
+`command not found` here. It is a cargo-installed binary like `cargo` itself, so
+the same absolute path applies — and unlike a missing `cargo`, a missing `typos`
+does not stop anything: it looks like a gate that ran and found nothing.
 
 ## Multiline text in shell commands
 
