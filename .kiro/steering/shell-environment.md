@@ -17,13 +17,19 @@ If you ever set a steering file to `inclusion: auto`, give it both `name` and
 `bash --noprofile --norc` with PATH injected by the terminal profile:
 
 - No `.bashrc`, `.profile` or `/etc/profile` is sourced
-- `cargo`, `rustfmt`, `clippy` at `~/.cargo/bin/`
 - `~/.local/bin/` in PATH (`uv`, `pipx`, `kiro-cli`, user scripts)
 - `direnv` is **not** active
 
-**Sub-agents do not reliably inherit that PATH.** Use the absolute
-`~/.cargo/bin/cargo` in anything a sub-agent runs. A sub-agent reporting
-`cargo: command not found` is this, not a broken toolchain.
+**`~/.cargo/bin` is not in PATH.** Not "unreliably", not "only for sub-agents" —
+it is absent, so a bare `cargo`, `rustfmt`, `clippy` or `typos` is
+`command not found` in the main agent's own bash. Always write the absolute path.
+
+That sentence used to read "sub-agents do not reliably inherit that PATH", which
+put the blame in the wrong place and cost a misdiagnosis: a `release.sh` run
+failing with `[fail] Missing tool: cargo` was written off as a `nohup`/`sh`
+quirk. Measured, `$PATH` is byte-identical in bash, in `sh -c` and under
+`nohup sh -c`; none of them has `~/.cargo/bin`. A sub-agent reporting
+`cargo: command not found` is the same single cause, not a second one.
 
 | Tool | Path |
 |------|------|
@@ -34,10 +40,20 @@ If you ever set a steering file to `inclusion: auto`, give it both `name` and
 | kirograph | `~/.nvm/.../bin/kirograph` (when `.kirograph/` exists) |
 
 `typos` is in that table because `AGENTS.md` and `core-rules.md` both list the
-Definition-of-Done gate as a bare `typos`, and a bare `typos` is
-`command not found` here. It is a cargo-installed binary like `cargo` itself, so
-the same absolute path applies — and unlike a missing `cargo`, a missing `typos`
-does not stop anything: it looks like a gate that ran and found nothing.
+Definition-of-Done gate as a bare `typos`. Unlike a missing `cargo`, a missing
+`typos` does not stop anything: it looks like a gate that ran and found nothing.
+
+**A script that calls `cargo` itself needs the PATH prepended**, because the
+absolute path cannot be written on its behalf. `scripts/release.sh` is the one
+that matters, and it fails its very first gate without it:
+
+```bash
+PATH="$HOME/.cargo/bin:$PATH" ./scripts/release.sh --dry-run
+```
+
+Left as the caller's job on purpose. `release.sh` refusing to run when `cargo` is
+not on PATH is correct — a release should build with the toolchain the operator
+put there, not one a script went looking for.
 
 ## Multiline text in shell commands
 
