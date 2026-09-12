@@ -585,6 +585,17 @@ jobs:
       - name: Formula syntax (ruby -c)
         run: ruby -c packaging/macos/rustconn.rb
 
+      # The committed .icns is what every build ships, because macOS 27's
+      # iconutil rejects valid iconsets (#323). make-iconset.sh deliberately only
+      # *warns* when the recorded SVG hash no longer matches — a stale icon is
+      # cosmetic and refusing to build over it would reintroduce the failure the
+      # prebuilt exists to avoid. This is where that warning becomes a gate: here
+      # a mismatch costs a red job, not a broken install.
+      - name: Prebuilt icon matches the SVG
+        run: |
+          ./scripts/make-iconset.sh --check \
+            rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
+
       # `brew style` must be pointed at a path that *looks like* a tap, not at the
       # file where it lives. Its first version ran
       # `brew style packaging/macos/rustconn.rb` and was red on arrival with 13

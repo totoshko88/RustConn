@@ -7,7 +7,7 @@ class Rustconn < Formula
   # active `sha256` at this indentation — the sed patterns and the CI
   # verification gate are anchored to `^  url` and `^  sha256` (issue #251).
   # PLACEHOLDER_SHA256 is expected here in-tree; only the tap copy has a hash.
-  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.11.tar.gz"
+  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.21.12.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "GPL-3.0-or-later"
   head "https://github.com/totoshko88/RustConn.git", branch: "main"
@@ -172,16 +172,19 @@ class Rustconn < Formula
     cp_r "#{share}/locale", "#{app_dir}/Resources/locale"
 
     # Icon. Delegated to scripts/make-iconset.sh, the same script the canonical
-    # producer uses, so the render-and-package logic cannot drift between the two.
+    # producer uses, so the icon step cannot drift between the two.
     #
-    # The previous inline version rendered each size through `system
-    # rsvg-convert` with no check that a well-formed PNG came back, then packaged
-    # with `iconutil`. In the build sandbox that surfaced as an opaque
-    # "Invalid Iconset" from iconutil whenever a render came back empty or the
-    # wrong size, with nothing in the log to say which member was bad. The shared
-    # script renders directly into the canonical Apple names, verifies every PNG
-    # with `sips` before packaging, and fails naming the offending file — turning
-    # an intermittent, undiagnosable packaging failure into a clear one.
+    # On this path the script does not render anything: it copies the committed
+    # packaging/macos/RustConn.icns, because macOS 27's iconutil rejects valid
+    # iconsets with "Invalid Iconset" and broke this build even with every member
+    # PNG present and passing `sips` (#323). The rendering path is still there for
+    # FORCE_ICONUTIL=1, which is a development action after an icon change; a CI
+    # job asserts the committed .icns was built from the committed SVG.
+    #
+    # librsvg above is therefore a build dependency of that fallback only. It stays
+    # declared so `FORCE_ICONUTIL=1 brew install --build-from-source` still works,
+    # and because a formula that quietly needs a tool it does not declare is worse
+    # than one build dependency too many.
     system "bash", "scripts/make-iconset.sh",
            "rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg",
            "#{app_dir}/Resources/RustConn.icns"

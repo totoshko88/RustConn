@@ -14,27 +14,56 @@
 ///
 /// Cleans both FreeRDP 2.x (`server/<host>_<port>.pem`) and FreeRDP 3.x
 /// (`known_hosts2`) certificate stores.
+///
+/// Warns when it found nothing to remove. That is the precursor to the one
+/// failure mode this function has: the client re-reads the same unchanged store,
+/// prompts again, and the accept dialog reappears in a loop with no explanation.
+/// It happens legitimately (the entry was already gone) and it happens for a real
+/// reason — under Flatpak with a host FreeRDP, reached via `flatpak-spawn --host`
+/// when the sandbox has no client of its own, the store that matters is the
+/// host's `~/.config/freerdp3/`, which `dirs::config_dir()` does not name and the
+/// sandbox has no permission to write. Either way the log now says so.
 pub fn remove_known_certificate(host: &str, port: u16) {
-    if let Some(config_dir) = dirs::config_dir() {
-        // FreeRDP 2.x: individual PEM files per host
-        let freerdp_dir = config_dir.join("freerdp").join("server");
-        let pem_file = freerdp_dir.join(format!("{host}_{port}.pem"));
-        if pem_file.exists() {
-            tracing::debug!(
-                ?pem_file,
-                "Removing old FreeRDP certificate to accept new one"
-            );
-            let _ = std::fs::remove_file(&pem_file);
-        }
+    let Some(config_dir) = dirs::config_dir() else {
+        tracing::warn!(%host, port, "No config directory — cannot forget the stored certificate");
+        return;
+    };
 
-        // FreeRDP 3.x: known_hosts2 file (one line per host)
-        remove_from_known_hosts2(
-            &config_dir.join("freerdp3").join("known_hosts2"),
-            host,
-            port,
+    // FreeRDP 2.x: individual PEM files per host
+    let pem_file = config_dir
+        .join("freerdp")
+        .join("server")
+        .join(format!("{host}_{port}.pem"));
+    let mut removed = if pem_file.exists() {
+        tracing::debug!(
+            ?pem_file,
+            "Removing old FreeRDP certificate to accept new one"
         );
-        // Some distros still use the freerdp/ path for FreeRDP 3.x
+        std::fs::remove_file(&pem_file).is_ok()
+    } else {
+        false
+    };
+
+    // FreeRDP 3.x: known_hosts2 file (one line per host). Some distros still use
+    // the freerdp/ path for FreeRDP 3.x, so both are cleaned.
+    removed |= remove_from_known_hosts2(
+        &config_dir.join("freerdp3").join("known_hosts2"),
+        host,
+        port,
+    );
+    removed |=
         remove_from_known_hosts2(&config_dir.join("freerdp").join("known_hosts2"), host, port);
+
+    if !removed {
+        tracing::warn!(
+            %host,
+            port,
+            config_dir = %config_dir.display(),
+            "No stored FreeRDP certificate found to remove. If the confirmation \
+             dialog keeps returning, the client is reading a different store — \
+             under Flatpak a host FreeRDP uses the host's ~/.config/freerdp3/, \
+             which the sandbox cannot write; clear that entry manually."
+        );
     }
 }
 
@@ -43,12 +72,14 @@ pub fn remove_known_certificate(host: &str, port: u16) {
 /// Uses exact field comparison (first two whitespace-separated fields must
 /// match `host` and `port` exactly) to avoid false positives when one hostname
 /// is a substring of another (e.g. `db.example.com` vs `my-db.example.com`).
-fn remove_from_known_hosts2(known_hosts: &std::path::Path, host: &str, port: u16) {
+///
+/// Returns whether an entry was actually removed.
+fn remove_from_known_hosts2(known_hosts: &std::path::Path, host: &str, port: u16) -> bool {
     if !known_hosts.exists() {
-        return;
+        return false;
     }
     let Ok(content) = std::fs::read_to_string(known_hosts) else {
-        return;
+        return false;
     };
 
     let port_str = port.to_string();
@@ -60,15 +91,19 @@ fn remove_from_known_hosts2(known_hosts: &std::path::Path, host: &str, port: u16
         })
         .collect();
 
-    if filtered.len() < content.lines().count() {
-        tracing::debug!(
-            ?known_hosts,
-            %host,
-            port,
-            "Removing host entry from FreeRDP known_hosts2"
-        );
-        let _ = std::fs::write(known_hosts, filtered.join("\n") + "\n");
+    if content.lines().count() <= filtered.len() {
+        return false;
     }
+
+    tracing::debug!(
+        ?known_hosts,
+        %host,
+        port,
+        "Removing host entry from FreeRDP known_hosts2"
+    );
+    // A write that fails leaves the entry in place, so the caller must not be
+    // told the certificate was forgotten.
+    std::fs::write(known_hosts, filtered.join("\n") + "\n").is_ok()
 }
 
 #[cfg(test)]

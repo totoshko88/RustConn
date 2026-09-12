@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.21.11
+Version:        0.21.12
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -387,6 +387,19 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Sep 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.12-0
+- Version bump to 0.21.12
+- Fixed: external RDP now shows the certificate confirmation dialog when the server certificate changed; FreeRDP prints its certificate report to stdout while the error codes go to stderr, and only stderr was classified
+- Fixed: the external FreeRDP client no longer inherits stdin, so it cannot block indefinitely on a certificate prompt nobody can answer
+- Fixed: certificate detection uses the banner rather than the prompt, which is printed without a trailing newline and is invisible to a line reader while the client waits
+- Fixed: the confirmation dialog quotes the new and previously trusted fingerprints instead of asking for trust blind
+- Fixed: the external-RDP watchdog now watches thirty seconds for a certificate report while the early-exit check keeps its three-second window
+- Fixed: a changed certificate could leave the session in an error state with no message when no certificate callback was registered
+- Fixed: forgetting a stored certificate for the ignore-certificate path used a stale duplicate that matched host entries by substring and never looked in the FreeRDP 3.x store
+- Fixed: the macOS icon step compares the source SVG's content hash instead of modification time, which git does not record
+- Improved: the embedded-browser autofill path no longer creates an un-zeroized plaintext copy of a cached password
+- Dependencies: bytemuck_derive 1.12.1, crc32fast 1.5.2, libredox 0.1.24, yuv 0.8.18
+
 * Fri Sep 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.21.11-0
 - Version bump to 0.21.11
 - Security: session recordings now redact passwords, API keys and tokens as documented; previously stored in clear text

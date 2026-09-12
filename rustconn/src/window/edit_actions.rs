@@ -1701,15 +1701,10 @@ impl MainWindow {
                 };
                 state_ref
                     .get_cached_credentials(connection_id)
-                    .map(|creds| {
-                        use secrecy::ExposeSecret;
-                        (
-                            creds.username.clone(),
-                            secrecy::SecretString::new(
-                                creds.password.expose_secret().to_string().into(),
-                            ),
-                        )
-                    })
+                    // Clone the `SecretString` directly rather than exposing it
+                    // into a plaintext `String`: the clone copies the protected
+                    // value without ever materializing an un-zeroized allocation.
+                    .map(|creds| (creds.username.clone(), creds.password.clone()))
             };
 
             // Raise the SSH SOCKS tunnel this Web connection browses through, if

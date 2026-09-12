@@ -533,9 +533,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck_derive"
-version = "1.12.0"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc0e56a716f1e132ff6bf4bdac1c944a3fcdc1cae65f70a4a2a1ac3b401d2d1f"
+checksum = "6a1f896587b6f2c069c73d2f0913e2d590c3990285cd2f0b6aa02b786b4c679c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -943,9 +943,9 @@ dependencies = [
 
 [[package]]
 name = "crc32fast"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8498c871161e1742aaa9d52551b2d6ebdd4c3d45a3be423e3728f33b955be550"
+checksum = "01a7799fd6b852db0e61728dde9a204c423b44d689dbd432522543614b490e78"
 dependencies = [
  "cfg-if",
 ]
@@ -3179,9 +3179,9 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libredox"
-version = "0.1.23"
+version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d8f1ea3f21fd3405dcaf6c9b5c1630af9afc422d9073ea39c5f6d6c772e08ed"
+checksum = "6480ccc157a1389bb2e4891b24751b0f798ba640d22386f23143fbcc89da195a"
 dependencies = [
  "libc",
 ]
@@ -4788,7 +4788,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4828,7 +4828,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "chrono",
  "clap",
@@ -4850,7 +4850,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "aes 0.9.3",
  "ar",
@@ -4909,7 +4909,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4918,18 +4918,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.21.11"
+version = "0.21.12"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.21.11"
+version = "0.21.12"
 dependencies = [
  "libc",
  "nix",
@@ -7019,9 +7019,9 @@ dependencies = [
 
 [[package]]
 name = "yuv"
-version = "0.8.17"
+version = "0.8.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "220655e1c245693beb13b377d3174b9efcb1645018d1d4ec53903fc211b135ae"
+checksum = "6ee07950d2f109605ec02cf0208fd5c33d05a36940b9c0cbe7bfd2a8d3b5d390"
 dependencies = [
  "num-traits",
 ]

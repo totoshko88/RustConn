@@ -1,3 +1,37 @@
+rustconn (0.21.12-1) unstable; urgency=medium
+
+  * Version bump to 0.21.12
+  * Fixed: external RDP now shows the certificate confirmation dialog when the
+    server certificate changed. FreeRDP prints its certificate report to stdout
+    while the error codes go to stderr, and only stderr was being classified,
+    so the change produced no dialog, no error and no session. Both streams are
+    now read together, the client no longer inherits stdin so it cannot block
+    on a prompt nobody can answer, and detection uses the banner rather than
+    the prompt, which is printed without a trailing newline and is therefore
+    invisible to a line reader while the client waits. (Closes: #324)
+  * Fixed: the dialog now quotes the new and previously trusted fingerprints,
+    so accepting a changed certificate is no longer done blind.
+  * Fixed: the external-RDP watchdog watched for three seconds, too short for a
+    certificate report arriving behind a gateway or a slow link. The
+    certificate check now runs for thirty seconds while the early-exit check
+    keeps its original window, so a client exiting later is not misreported.
+  * Fixed: a changed certificate could leave the session in an error state with
+    no message when no certificate callback was registered.
+  * Fixed: forgetting a stored certificate for the ignore-certificate path used
+    a stale duplicate that matched host entries by substring, so clearing
+    db.example.com also cleared my-db.example.com, and it never looked in the
+    FreeRDP 3.x store.
+  * Fixed: the macOS icon step no longer decides whether the prebuilt icon is
+    current by modification time, which git does not record and which therefore
+    sent an arbitrary subset of builds into the iconutil failure on macOS 27.
+    It compares the source SVG's content hash instead.
+  * Improved: the embedded-browser autofill path no longer creates an
+    un-zeroized plaintext copy of a cached password.
+  * Dependencies: bytemuck_derive 1.12.1, crc32fast 1.5.2, libredox 0.1.24,
+    yuv 0.8.18.
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 12 Sep 2026 12:00:00 +0300
+
 rustconn (0.21.11-1) unstable; urgency=medium
 
   * Version bump to 0.21.11
