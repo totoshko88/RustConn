@@ -333,9 +333,13 @@ impl RdpLauncher {
         let host = config.host.as_str();
 
         // Forgetting the stored certificate is a local side effect rather than
-        // an argument, so it stays here instead of in the shared builder.
+        // an argument, so it stays here instead of in the shared builder. It goes
+        // through the shared helper: this used to be a second copy of the same
+        // logic, and it kept the substring match (`line.contains("host port")`)
+        // that the helper was written to replace, so `db.example.com` also
+        // dropped `my-db.example.com` — and it never looked in `freerdp3/`.
         if config.ignore_certificate {
-            Self::remove_known_certificate(host, config.port);
+            crate::embedded_rdp::cert::remove_known_certificate(host, config.port);
         }
 
         // Connection arguments are written to a guarded file so credentials
@@ -475,50 +479,5 @@ impl RdpLauncher {
                 line.rsplit("]: ").next().unwrap_or(line).trim().to_string()
             })
             .unwrap_or_else(|| "FreeRDP exited with error (exit code non-zero)".to_string())
-    }
-
-    /// Removes the stored FreeRDP certificate for a host, allowing TOFU to accept a new one.
-    /// This is equivalent to removing a line from SSH known_hosts.
-    fn remove_known_certificate(host: &str, port: u16) {
-        // FreeRDP stores known certificates in ~/.config/freerdp/server/<host>_<port>.pem
-        // and also in ~/.config/freerdp/known_hosts2 (FreeRDP 3.x)
-        if let Some(config_dir) = dirs::config_dir() {
-            let freerdp_dir = config_dir.join("freerdp").join("server");
-            let pem_file = if port == 3389 {
-                freerdp_dir.join(format!("{host}_3389.pem"))
-            } else {
-                freerdp_dir.join(format!("{host}_{port}.pem"))
-            };
-            if pem_file.exists() {
-                tracing::debug!(
-                    ?pem_file,
-                    "Removing old FreeRDP certificate to accept new one"
-                );
-                let _ = std::fs::remove_file(&pem_file);
-            }
-
-            // Also try the known_hosts2 file (FreeRDP 3.x format)
-            let known_hosts = config_dir.join("freerdp").join("known_hosts2");
-            if known_hosts.exists()
-                && let Ok(content) = std::fs::read_to_string(&known_hosts)
-            {
-                let host_pattern = if port == 3389 {
-                    format!("{host} 3389")
-                } else {
-                    format!("{host} {port}")
-                };
-                let filtered: Vec<&str> = content
-                    .lines()
-                    .filter(|line| !line.contains(&host_pattern))
-                    .collect();
-                if filtered.len() < content.lines().count() {
-                    tracing::debug!(
-                        ?known_hosts,
-                        "Removing host entry from FreeRDP known_hosts2"
-                    );
-                    let _ = std::fs::write(&known_hosts, filtered.join("\n") + "\n");
-                }
-            }
-        }
     }
 }

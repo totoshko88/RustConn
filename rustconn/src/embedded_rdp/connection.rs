@@ -128,15 +128,112 @@ fn discard_stale_external_launch(result: FreeRdpLaunchResult) {
     }
 }
 
-/// Classifies FreeRDP stderr output into a user-friendly error message.
+/// Lines FreeRDP prints when a stored certificate no longer matches the one the
+/// server presented.
 ///
-/// Scans accumulated stderr lines for known FreeRDP error patterns and returns
-/// an appropriate localized message. Falls back to a generic message when the
-/// failure reason is unrecognizable.
-fn classify_freerdp_failure(stderr_lines: &StderrLines, status_str: &str) -> FreerdpFailure {
-    let lines = stderr_lines.lock().unwrap_or_else(|e| e.into_inner());
-    let joined = lines.join(" ");
+/// Every entry is a **complete** line: FreeRDP terminates each with a newline, so
+/// `BufReader::lines()` yields them while the client is still running. The prompt
+/// that follows them — "Do you trust the above certificate? (Y/T/N) " — is
+/// deliberately absent. `client_cli_accept_certificate` prints it with no
+/// trailing newline and then reads stdin, so a line-oriented reader cannot
+/// observe it until EOF, which never arrives while the client waits for an
+/// answer. Matching the prompt reads as the obvious choice and can never fire.
+/// (#324)
+const CERTIFICATE_CHANGED_BANNERS: [&str; 2] = [
+    // `!!!Certificate for 172.22.1.1:3389 (RDP-Server) has changed!!!`
+    "has changed!!!",
+    "does not match the certificate used for previous connections",
+];
 
+/// Whether the captured output shows FreeRDP refusing a certificate that no
+/// longer matches the stored one.
+///
+/// Kept separate from the broader matching in [`classify_client_output`] because
+/// the watchdog acts on this before the client exits, and that action kills the
+/// process — so it may only trigger on a banner that unambiguously means the
+/// stored certificate was rejected, never on a warning the client could still
+/// recover from.
+fn reports_changed_certificate(joined: &str) -> bool {
+    CERTIFICATE_CHANGED_BANNERS
+        .iter()
+        .any(|banner| joined.contains(banner))
+}
+
+/// Extracts the new and previously trusted thumbprints from captured stdout.
+///
+/// FreeRDP prints a `New Certificate details:` block and then an
+/// `Old Certificate details:` block, each carrying one `Thumbprint:` line, so
+/// the first two thumbprints in stream order are the new one and the old one.
+/// Returns `None` unless both are present, so a caller can fall back to a
+/// message that names no fingerprint rather than showing an empty field.
+fn certificate_thumbprints(lines: &[String]) -> Option<(String, String)> {
+    let mut thumbprints = lines
+        .iter()
+        .filter_map(|line| line.trim().strip_prefix("Thumbprint:"))
+        .map(|value| value.trim().to_owned())
+        .filter(|value| !value.is_empty());
+    let new_thumbprint = thumbprints.next()?;
+    let old_thumbprint = thumbprints.next()?;
+    Some((new_thumbprint, old_thumbprint))
+}
+
+/// Builds the body of the changed-certificate dialog from captured stdout.
+///
+/// Quotes both thumbprints when FreeRDP reported them: accepting a changed
+/// certificate is a trust decision, and it is not one the user can make without
+/// seeing what they are being asked to trust.
+fn certificate_changed_message(stdout_lines: &StdoutLines) -> String {
+    let thumbprints = {
+        let lines = stdout_lines.lock().unwrap_or_else(|e| e.into_inner());
+        certificate_thumbprints(&lines)
+    };
+    match thumbprints {
+        Some((new_thumbprint, old_thumbprint)) => i18n_f(
+            "Server certificate has changed since the last connection.\n\nNew fingerprint: {}\nPreviously trusted: {}",
+            &[&new_thumbprint, &old_thumbprint],
+        ),
+        None => i18n("Server certificate has changed since the last connection."),
+    }
+}
+
+/// Joins everything the client has printed so far, across both streams.
+///
+/// FreeRDP splits its diagnostics: `WLog` writes the `ERRCONNECT_*` codes to
+/// stderr, while the certificate report goes to stdout through plain `printf`.
+/// Classifying stderr alone therefore missed every certificate failure, which is
+/// what made #324 present as "no errors, no warnings, no connection".
+fn joined_client_output(stderr_lines: &StderrLines, stdout_lines: &StdoutLines) -> String {
+    let mut joined = {
+        let lines = stderr_lines.lock().unwrap_or_else(|e| e.into_inner());
+        lines.join(" ")
+    };
+    {
+        let lines = stdout_lines.lock().unwrap_or_else(|e| e.into_inner());
+        if !lines.is_empty() {
+            joined.push(' ');
+            joined.push_str(&lines.join(" "));
+        }
+    }
+    joined
+}
+
+/// Classifies captured FreeRDP output into a user-friendly error message.
+///
+/// Scans both streams for known FreeRDP failure patterns and returns an
+/// appropriate localized message. Falls back to a generic message when the
+/// failure reason is unrecognizable.
+fn classify_freerdp_failure(
+    stderr_lines: &StderrLines,
+    stdout_lines: &StdoutLines,
+    status_str: &str,
+) -> FreerdpFailure {
+    let joined = joined_client_output(stderr_lines, stdout_lines);
+    classify_client_output(&joined, status_str)
+}
+
+/// Maps joined client output to a failure, split out from the locking so the
+/// pattern table is reachable from tests.
+fn classify_client_output(joined: &str, status_str: &str) -> FreerdpFailure {
     if joined.contains("ERRCONNECT_LOGON_FAILURE")
         || joined.contains("LOGON_FAILURE")
         || joined.contains("ERRCONNECT_AUTHENTICATION_FAILED")
@@ -166,8 +263,8 @@ fn classify_freerdp_failure(stderr_lines: &StderrLines, status_str: &str) -> Fre
         FreerdpFailure::Error(i18n(
             "Connection failed: server is unreachable. Check the host address and port.",
         ))
-    } else if joined.contains("certificate not trusted")
-        || joined.contains("does not match the certificate used for previous connections")
+    } else if reports_changed_certificate(joined)
+        || joined.contains("certificate not trusted")
         || joined.contains("Certificate") && joined.contains("denied")
     {
         FreerdpFailure::CertificateMismatch(i18n(
@@ -190,17 +287,17 @@ fn classify_freerdp_failure(stderr_lines: &StderrLines, status_str: &str) -> Fre
 /// phantom `Connected` state while the user only saw a window flash and close.
 ///
 /// Surfaces the exit as an `Error` (with the process status) instead. The real
-/// failure reason is captured separately from the client's stderr by
+/// failure reason is captured from both of the client's streams by
 /// [`SafeFreeRdpLauncher::launch`]. (Fixes #177 follow-up: "it closes automatically")
 ///
-/// Also monitors stdout for interactive certificate prompts. FreeRDP with
-/// `/cert:tofu` prints "Do you trust the above certificate? (Y/T/N)" when the
-/// server certificate changes. Without stdin connected to a TTY, the process
-/// hangs waiting for input. We detect this prompt, terminate the process, and
-/// show a GUI dialog for the user to accept/reject. (Fixes #324)
+/// Also watches stdout for the changed-certificate banner, which FreeRDP prints
+/// before it stops to ask whether the new certificate is trusted. That is a
+/// second, longer-lived job than catching an early exit — see the two deadlines
+/// below — because a client asking a question can sit there indefinitely.
+/// (Fixes #324)
 #[expect(
     clippy::too_many_arguments,
-    reason = "watchdog needs all shared state refs to detect and report early-exit failures"
+    reason = "watchdog needs all shared state refs to detect and report early-exit and certificate failures"
 )]
 fn arm_external_exit_watchdog(
     process: Rc<RefCell<Option<std::process::Child>>>,
@@ -215,59 +312,65 @@ fn arm_external_exit_watchdog(
     port: u16,
 ) {
     // Poll every 500 ms for ~3 s. Long enough to catch an immediate auth/cert
-    // rejection, short enough not to delay reporting a genuine failure.
+    // Poll every 500 ms, against two deadlines, because the watchdog has two
+    // jobs running on different time constants.
+    //
+    // An early *exit* means the connection failed: a real session never ends
+    // within the first few seconds. Past that point a client that stops is the
+    // user closing its window, so reporting that as a failure would be wrong —
+    // the exit check stops at EXIT_WATCH_POLLS, where it has always stopped.
+    //
+    // A *stall* has no such bound. FreeRDP prints the changed-certificate banner
+    // as soon as the TLS handshake finishes and then waits for an answer, and
+    // behind an RD Gateway or a slow link that is well past three seconds. The
+    // certificate check therefore keeps looking until CERT_WATCH_POLLS. Stdin is
+    // `/dev/null`, so the client normally declines and exits by itself well
+    // inside the exit window; this is the backstop for one that does not.
     const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(500);
-    const MAX_POLLS: u32 = 6;
+    const EXIT_WATCH_POLLS: u32 = 6;
+    const CERT_WATCH_POLLS: u32 = 60;
 
-    let polls = Rc::new(RefCell::new(0u32));
+    let report = ExternalFailureCells {
+        state: state.clone(),
+        on_state_changed,
+        on_error,
+        on_cert_changed,
+        drawing_area,
+        host: host.clone(),
+        port,
+    };
+    let mut polls = 0u32;
     glib::timeout_add_local(POLL_INTERVAL, move || {
         // Stop once we're no longer in the external-connected state (e.g. the
         // user disconnected, or an error was already reported elsewhere).
         if *state.borrow() != RdpConnectionState::Connected {
             return glib::ControlFlow::Break;
         }
+        polls += 1;
 
-        // Check stdout for certificate prompt — FreeRDP prints "Do you trust the
-        // above certificate?" and hangs waiting for stdin. Kill and show dialog.
-        if let Ok(stdout) = stdout_lines.lock() {
-            let stdout_joined = stdout.join(" ");
-            if stdout_joined.contains("Do you trust the above certificate") {
-                drop(stdout);
-                tracing::info!(
-                    protocol = "rdp",
-                    "[FreeRDP] Detected certificate prompt in stdout — terminating process for GUI dialog"
-                );
-
-                // Kill the hanging process
-                if let Some(mut child) = process.borrow_mut().take() {
-                    let _ = child.kill();
-                    std::thread::spawn(move || {
-                        let _ = child.wait();
-                    });
-                }
-
-                *state.borrow_mut() = RdpConnectionState::Error;
-                drawing_area.queue_draw();
-
-                let scb = on_state_changed.borrow_mut().take();
-                if let Some(ref cb) = scb {
-                    cb(RdpConnectionState::Error);
-                }
-                *on_state_changed.borrow_mut() = scb;
-
-                // Trigger cert-changed callback
-                let ccb = on_cert_changed.borrow_mut().take();
-                if let Some(ref cb) = ccb {
-                    cb(
-                        &host,
-                        port,
-                        &i18n("Server certificate has changed since the last connection."),
-                    );
-                }
-                *on_cert_changed.borrow_mut() = ccb;
-
-                return glib::ControlFlow::Break;
+        let certificate_changed = {
+            let lines = stdout_lines.lock().unwrap_or_else(|e| e.into_inner());
+            reports_changed_certificate(&lines.join(" "))
+        };
+        if certificate_changed {
+            tracing::info!(
+                protocol = "rdp",
+                %host,
+                port,
+                "[FreeRDP] Server certificate changed — stopping the client and asking the user"
+            );
+            // Whatever the client is waiting on, it will not arrive through
+            // these pipes. Move the decision into the GUI and stop the process.
+            if let Some(mut child) = process.borrow_mut().take() {
+                let _ = child.kill();
+                std::thread::spawn(move || {
+                    let _ = child.wait();
+                });
             }
+            let failure =
+                FreerdpFailure::CertificateMismatch(certificate_changed_message(&stdout_lines));
+            report_external_failure(&report, &failure);
+            return glib::ControlFlow::Break;
         }
 
         let exit_status = match process.borrow_mut().as_mut() {
@@ -278,8 +381,17 @@ fn arm_external_exit_watchdog(
         if let Some(status) = exit_status {
             // Reap the dead child so disconnect() doesn't try to wait on it again.
             *process.borrow_mut() = None;
-            *state.borrow_mut() = RdpConnectionState::Error;
-            drawing_area.queue_draw();
+
+            if EXIT_WATCH_POLLS < polls {
+                // Outside the early-exit window this is a session ending, not a
+                // connection failing. Reap and stand down without reporting.
+                tracing::debug!(
+                    protocol = "rdp",
+                    status = %status,
+                    "[FreeRDP] External client exited after the early-failure window"
+                );
+                return glib::ControlFlow::Break;
+            }
 
             let status_str = status.to_string();
             tracing::error!(
@@ -288,44 +400,71 @@ fn arm_external_exit_watchdog(
                 "[FreeRDP] External client exited shortly after launch — connection failed"
             );
 
-            let failure = classify_freerdp_failure(&stderr_lines, &status_str);
-
-            // take-invoke-restore: the callbacks may close the tab and re-enter
-            // these cells, which would otherwise panic with BorrowMutError.
-            let scb = on_state_changed.borrow_mut().take();
-            if let Some(ref cb) = scb {
-                cb(RdpConnectionState::Error);
-            }
-            *on_state_changed.borrow_mut() = scb;
-
-            match failure {
-                FreerdpFailure::CertificateMismatch(ref msg) => {
-                    let ccb = on_cert_changed.borrow_mut().take();
-                    if let Some(ref cb) = ccb {
-                        cb(&host, port, msg);
-                    }
-                    *on_cert_changed.borrow_mut() = ccb;
-                }
-                FreerdpFailure::Error(ref msg) => {
-                    let ecb = on_error.borrow_mut().take();
-                    if let Some(ref cb) = ecb {
-                        cb(msg);
-                    }
-                    *on_error.borrow_mut() = ecb;
-                }
-            }
+            let failure = classify_freerdp_failure(&stderr_lines, &stdout_lines, &status_str);
+            report_external_failure(&report, &failure);
 
             return glib::ControlFlow::Break;
         }
 
-        let mut count = polls.borrow_mut();
-        *count += 1;
-        if *count >= MAX_POLLS {
+        if CERT_WATCH_POLLS <= polls {
             glib::ControlFlow::Break
         } else {
             glib::ControlFlow::Continue
         }
     });
+}
+
+/// The widget cells [`report_external_failure`] needs to surface a failure.
+struct ExternalFailureCells {
+    state: Rc<RefCell<RdpConnectionState>>,
+    on_state_changed: Rc<RefCell<Option<super::types::StateCallback>>>,
+    on_error: Rc<RefCell<Option<super::types::ErrorCallback>>>,
+    on_cert_changed: Rc<RefCell<Option<super::types::CertChangedCallback>>>,
+    drawing_area: gtk4::DrawingArea,
+    host: String,
+    port: u16,
+}
+
+/// Moves the widget into the error state and reports the failure to the GUI.
+///
+/// Every callback goes through take-invoke-restore: a callback may close the tab
+/// and re-enter the same cell, which would otherwise panic with `BorrowMutError`.
+///
+/// A `CertificateMismatch` with no certificate callback registered falls through
+/// to the error callback. An `Error` state carrying no message at all is
+/// indistinguishable from a frozen window, and the certificate branch is reached
+/// from the watchdog, which cannot know what the embedder wired up.
+fn report_external_failure(cells: &ExternalFailureCells, failure: &FreerdpFailure) {
+    *cells.state.borrow_mut() = RdpConnectionState::Error;
+    cells.drawing_area.queue_draw();
+
+    let scb = cells.on_state_changed.borrow_mut().take();
+    if let Some(ref cb) = scb {
+        cb(RdpConnectionState::Error);
+    }
+    *cells.on_state_changed.borrow_mut() = scb;
+
+    let message = match *failure {
+        FreerdpFailure::CertificateMismatch(ref msg) => {
+            let ccb = cells.on_cert_changed.borrow_mut().take();
+            let handled = ccb.is_some();
+            if let Some(ref cb) = ccb {
+                cb(&cells.host, cells.port, msg);
+            }
+            *cells.on_cert_changed.borrow_mut() = ccb;
+            if handled {
+                return;
+            }
+            msg
+        }
+        FreerdpFailure::Error(ref msg) => msg,
+    };
+
+    let ecb = cells.on_error.borrow_mut().take();
+    if let Some(ref cb) = ecb {
+        cb(message);
+    }
+    *cells.on_error.borrow_mut() = ecb;
 }
 
 /// Groups the shared state references needed by `handle_ironrdp_error`.
@@ -2817,5 +2956,152 @@ impl super::EmbeddedRdpWidget {
                 _ => {}
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        FreerdpFailure, certificate_thumbprints, classify_client_output,
+        reports_changed_certificate,
+    };
+
+    /// What FreeRDP 3.x actually writes to stdout when a stored certificate no
+    /// longer matches, taken from the report in issue #324. The drain thread
+    /// trims each line, so these are already trimmed.
+    fn changed_certificate_stdout() -> Vec<String> {
+        [
+            "!!!Certificate for 172.22.1.1:3389 (RDP-Server) has changed!!!",
+            "New Certificate details:",
+            "Common Name: WINDOWS-PROXMOX",
+            "Subject:     CN = WINDOWS-PROXMOX",
+            "Issuer:      CN = WINDOWS-PROXMOX",
+            "Valid from:  Sep  1 01:00:33 2026 GMT",
+            "Valid to:    Mar  1 01:00:33 2027 GMT",
+            "Thumbprint:  aa:bb:cc:dd",
+            "Old Certificate details:",
+            "Subject:     CN = WINDOWS-PROXMOX",
+            "Issuer:      CN = WINDOWS-PROXMOX",
+            "Valid from:  Apr  6 01:00:33 2026 GMT",
+            "Valid to:    Oct  6 01:00:33 2026 GMT",
+            "Thumbprint:  11:22:33:44",
+            "The above X.509 certificate does not match the certificate used for previous connections.",
+            "This may indicate that the certificate has been tampered with.",
+            "Please contact the administrator of the RDP server and clarify.",
+        ]
+        .iter()
+        .map(|line| (*line).to_owned())
+        .collect()
+    }
+
+    #[test]
+    fn banner_is_detected_without_the_prompt_line() {
+        // The regression this guards: `client_cli_accept_certificate` prints
+        // "Do you trust the above certificate? (Y/T/N) " with no trailing
+        // newline and then blocks reading stdin, so a line reader never yields
+        // it while the client is stalled. Detection has to work from the banner
+        // alone, which is what this input contains.
+        let lines = changed_certificate_stdout();
+        assert!(reports_changed_certificate(&lines.join(" ")));
+        assert!(
+            !lines
+                .iter()
+                .any(|line| line.contains("Do you trust the above certificate")),
+            "the fixture must not contain the prompt: it is unreachable by a line reader"
+        );
+    }
+
+    #[test]
+    fn first_banner_line_alone_is_enough() {
+        // The banner arrives before the explanatory paragraph, and behind a slow
+        // link the watchdog can tick in between.
+        let first = "!!!Certificate for 10.0.0.5:3389 (RDP-Server) has changed!!!";
+        assert!(reports_changed_certificate(first));
+    }
+
+    #[test]
+    fn ordinary_output_is_not_a_certificate_change() {
+        assert!(!reports_changed_certificate(
+            "[INFO][com.freerdp.gdi] - [gdi_init_ex]: Local framebuffer format PIXEL_FORMAT_BGRX32"
+        ));
+        assert!(!reports_changed_certificate(""));
+        // A first-contact certificate that is merely unknown is a different
+        // condition, and one `/cert:tofu` accepts by itself.
+        assert!(!reports_changed_certificate(
+            "The above X.509 certificate could not be verified, possibly because you do not have \
+             the CA certificate in your certificate store, or the certificate has expired."
+        ));
+    }
+
+    #[test]
+    fn stdout_only_certificate_failure_classifies_as_mismatch() {
+        // #324: the banner is on stdout while stderr carries nothing about it,
+        // so classifying stderr alone fell through to the generic message.
+        let joined = changed_certificate_stdout().join(" ");
+        assert!(matches!(
+            classify_client_output(&joined, "exit status: 1"),
+            FreerdpFailure::CertificateMismatch(_)
+        ));
+    }
+
+    #[test]
+    fn authentication_failure_still_wins_over_certificate_text() {
+        // Both streams are joined now, so ordering inside the pattern table
+        // matters: a logon failure must not be reported as a certificate problem.
+        let joined = format!(
+            "{} ERRCONNECT_LOGON_FAILURE [0x00020014]",
+            changed_certificate_stdout().join(" ")
+        );
+        assert!(matches!(
+            classify_client_output(&joined, "exit status: 1"),
+            FreerdpFailure::Error(_)
+        ));
+    }
+
+    #[test]
+    fn unrecognised_output_falls_back_to_the_status() {
+        match classify_client_output("nothing familiar here", "exit status: 137") {
+            FreerdpFailure::Error(msg) => assert!(msg.contains("exit status: 137")),
+            FreerdpFailure::CertificateMismatch(msg) => {
+                panic!("unexpected certificate classification: {msg}")
+            }
+        }
+    }
+
+    #[test]
+    fn thumbprints_are_read_new_then_old() {
+        let (new_thumbprint, old_thumbprint) =
+            certificate_thumbprints(&changed_certificate_stdout())
+                .expect("both thumbprints are present in the fixture");
+        assert_eq!(new_thumbprint, "aa:bb:cc:dd");
+        assert_eq!(old_thumbprint, "11:22:33:44");
+    }
+
+    #[test]
+    fn a_single_thumbprint_is_not_enough_to_quote() {
+        // A first-contact report carries one thumbprint. Rather than show the
+        // user an empty "previously trusted" field, the caller falls back to the
+        // message that names no fingerprint at all.
+        let lines = vec![
+            "Thumbprint:  aa:bb:cc:dd".to_owned(),
+            "The above X.509 certificate could not be verified".to_owned(),
+        ];
+        assert!(certificate_thumbprints(&lines).is_none());
+        assert!(certificate_thumbprints(&[]).is_none());
+    }
+
+    #[test]
+    fn an_empty_thumbprint_value_is_ignored() {
+        // FreeRDP omits the value when it cannot compute a fingerprint; an empty
+        // field would otherwise be quoted into the dialog as if it were one.
+        let lines = vec![
+            "Thumbprint:".to_owned(),
+            "Thumbprint:  aa:bb:cc:dd".to_owned(),
+            "Thumbprint:  11:22:33:44".to_owned(),
+        ];
+        let (new_thumbprint, old_thumbprint) =
+            certificate_thumbprints(&lines).expect("two non-empty thumbprints remain");
+        assert_eq!(new_thumbprint, "aa:bb:cc:dd");
+        assert_eq!(old_thumbprint, "11:22:33:44");
     }
 }

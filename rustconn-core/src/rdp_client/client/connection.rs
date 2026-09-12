@@ -162,22 +162,28 @@ pub(super) async fn establish_connection(
             config.domain.as_deref(),
         );
         // Gateway password: reuse the session password when no explicit
-        // gateway password is set. `ironrdp-mstsgu` requires an owned String,
-        // which `ZeroizingGatewayTarget` erases on every exit path after the
-        // bounded connect call. The exposed intermediate is held in `Zeroizing`
-        // so the plaintext is erased even on the paths that build the target
-        // and then bail out before `Drop` runs on `gw_target`.
-        let gw_pass = {
-            use zeroize::Zeroizing;
-            config.password.as_ref().map_or_else(
-                || Zeroizing::new(String::new()),
-                |secret| Zeroizing::new(secret.expose_secret().to_string()),
-            )
-        };
+        // gateway password is set. `ironrdp-mstsgu` requires an owned String, and
+        // this is the only allocation holding it: the `String` is *moved* into
+        // `gw_pass`, and moving a `String` transfers the heap buffer rather than
+        // copying it, so `ZeroizingGatewayTarget`'s `Drop` erases the same bytes
+        // `expose_secret().to_string()` wrote. `GwClient::connect` takes the
+        // target by reference, so that `Drop` runs on every exit path below,
+        // including both `return Err`.
+        //
+        // Wrapping this in `Zeroizing` and then copying it into the field looks
+        // like belt and braces and is the opposite: it adds a second plaintext
+        // allocation that did not exist, to guard an early return that cannot
+        // happen — there is no fallible operation between here and the struct
+        // literal. Leave it as a move.
+        let gw_pass = config
+            .password
+            .as_ref()
+            .map(|secret| secret.expose_secret().to_string())
+            .unwrap_or_default();
         let gw_target = ZeroizingGatewayTarget(ironrdp_mstsgu::GwConnectTarget {
             gw_endpoint,
             gw_user,
-            gw_pass: gw_pass.to_string(),
+            gw_pass,
             server: config.host.clone(),
         });
         let client_name = hostname::get().map_or_else(

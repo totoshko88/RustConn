@@ -21,9 +21,10 @@ pub(crate) type StderrLines = Arc<Mutex<Vec<String>>>;
 
 /// Shared buffer collecting stdout lines from the external FreeRDP process.
 ///
-/// Used to detect interactive certificate prompts that FreeRDP prints to stdout
-/// when using `/cert:tofu` and the server certificate has changed. Without this,
-/// the process hangs waiting for stdin input that never comes.
+/// FreeRDP prints its certificate report to stdout via plain `printf` while the
+/// `ERRCONNECT_*` codes go to stderr through `WLog`, so a changed certificate is
+/// invisible to a classifier that reads stderr alone. This buffer carries the
+/// banner naming the host, and the new and previously trusted thumbprints.
 pub(crate) type StdoutLines = Arc<Mutex<Vec<String>>>;
 
 /// Shared result returned by a background FreeRDP launch.
@@ -382,6 +383,20 @@ impl SafeFreeRdpLauncher {
             Self::prepare_args_file_with_cancel(&binary, &plain_args, &secret_args, cancellation)?;
         cmd.arg(prepared_args.argument());
 
+        // The client must never block on a prompt nobody can answer. FreeRDP
+        // asks "Do you trust the above certificate? (Y/T/N)" on a changed
+        // certificate and then reads stdin; with stdin inherited, what happens
+        // next depends entirely on what the app was launched with. From a
+        // terminal the client blocks on the tty forever — the indefinite hang
+        // in #324, with the session stuck in a phantom Connected state.
+        //
+        // `/dev/null` makes that deterministic instead: FreeRDP's
+        // `client_cli_accept_certificate` reads EOF, declines, and exits with a
+        // certificate error, which the exit watchdog classifies into the
+        // confirmation dialog. The prompt is not usable interactively either
+        // way, since stdout is piped below and the user would never see it.
+        cmd.stdin(Stdio::null());
+
         // Capture stderr instead of discarding it. The real FreeRDP failure
         // reason (authentication failure, rejected certificate, missing codec,
         // wrong display backend) is printed to stderr — silencing it made
@@ -389,11 +404,12 @@ impl SafeFreeRdpLauncher {
         // Qt/Wayland noise is already filtered via QT_LOGGING_RULES. (See #177)
         cmd.stderr(Stdio::piped());
 
-        // Capture stdout to detect interactive certificate prompts. FreeRDP with
-        // `/cert:tofu` prints "Do you trust the above certificate? (Y/T/N)" to
-        // stdout when a server certificate changes. Without stdin connected to a
-        // TTY, the process hangs waiting for input. By capturing stdout we can
-        // detect this prompt, terminate the process, and show a GUI dialog. (#324)
+        // Capture stdout as well: FreeRDP splits its diagnostics, sending
+        // `WLog` output with the `ERRCONNECT_*` codes to stderr but printing the
+        // whole certificate report — including which host changed and both
+        // thumbprints — to stdout with plain `printf`. Classifying stderr alone
+        // is why a changed certificate surfaced as "no errors, no warnings, no
+        // connection". (#324)
         cmd.stdout(Stdio::piped());
 
         // Log the chosen binary and full argument vector (the password is sent
@@ -439,9 +455,8 @@ impl SafeFreeRdpLauncher {
             });
         }
 
-        // Drain stdout similarly. FreeRDP prints certificate prompts and other
-        // interactive messages to stdout. We accumulate them so the watchdog can
-        // detect when the process is waiting for a certificate confirmation.
+        // Drain stdout similarly, so the watchdog can classify a certificate
+        // failure and quote the thumbprints back to the user.
         let stdout_lines: StdoutLines = Arc::new(Mutex::new(Vec::new()));
         if let Some(stdout) = child.stdout.take() {
             let client = actual_binary.clone();
