@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Homebrew upgrade fails on macOS 27: iconutil reports "Invalid Iconset" (issue #323)** — macOS 27's `iconutil` introduced a regression or compatibility change that rejects valid iconsets, breaking Homebrew builds even though every PNG is present, correctly sized and passes `sips` validation. The build now ships a prebuilt `.icns` under `packaging/macos/` and uses it by default, avoiding the `iconutil` dependency entirely. Regeneration through `iconutil` remains available as a fallback when the SVG is newer than the prebuilt or when `FORCE_ICONUTIL=1` is set — intended for development after an icon change, after which the new `.icns` should be committed.
+
 ### Improved
 
 - **Cached credentials no longer pass through an un-zeroized plaintext copy in two paths** — two call sites materialized a password into a bare `String` via `expose_secret().to_string()` before rewrapping it, leaving a plaintext allocation whose memory was never scrubbed. The RD Gateway connector now holds that intermediate in `zeroize::Zeroizing` so it is erased on every exit path, alongside the target field that was already scrubbed on drop; the embedded-browser autofill path now clones the `SecretString` directly instead of exposing it, so no plaintext copy is created at all. No behaviour change.

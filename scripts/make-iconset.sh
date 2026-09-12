@@ -4,28 +4,59 @@
 # Usage:
 #   ./scripts/make-iconset.sh <icon.svg> <output.icns>
 #
-# Why this exists as its own script rather than inline in the build:
-# `iconutil -c icns` reports only "Invalid Iconset" and nothing else when any
-# member PNG is missing, zero-length, or the wrong pixel size. In the Homebrew
-# build sandbox that failure was intermittent and impossible to diagnose from
-# the log, because `rsvg-convert` was invoked through `system` with no check
-# that it actually produced a well-formed file. This script renders each icon
-# directly under its canonical Apple name, verifies every PNG is non-empty and
-# exactly the pixel size its name promises, and only then runs `iconutil` — so a
-# broken render fails here, loudly, naming the offending file, instead of
-# surfacing as an opaque `iconutil` error one step later. Both the canonical
-# producer (scripts/macos-build.sh) and the Homebrew formula call it, so the
-# icon step cannot drift between the two.
+# This script prefers a prebuilt .icns shipped with the source tree over
+# generating one at build time. The prebuilt icon lives at
+# packaging/macos/RustConn.icns and is used when:
+#   1. It exists and is non-empty
+#   2. The source SVG has not been modified since the prebuilt was created
+#      (checked via modification time; if SVG is newer, regenerate)
+#
+# Fallback to iconutil generation happens when:
+#   - The prebuilt is missing or empty
+#   - The source SVG is newer than the prebuilt
+#   - The FORCE_ICONUTIL environment variable is set
+#
+# Why prefer prebuilt: macOS 27's iconutil introduced a regression or
+# compatibility change that rejects valid iconsets with "Invalid Iconset",
+# breaking Homebrew builds. Shipping a prebuilt .icns avoids the dependency
+# on iconutil entirely for release builds. See GitHub issue #323.
+#
+# The fallback path remains for development: if you update the SVG, delete
+# the prebuilt (or set FORCE_ICONUTIL=1) to regenerate. Then commit the new
+# .icns so downstream builds use it.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PREBUILT_ICNS="$PROJECT_DIR/packaging/macos/RustConn.icns"
 
 ICON_SVG="${1:-}"
 OUTPUT_ICNS="${2:-}"
 
 die() { printf '%s: %s\n' "$(basename "$0")" "$*" >&2; exit 1; }
+info() { printf '%s: %s\n' "$(basename "$0")" "$*"; }
 
 [[ -n "$ICON_SVG" && -n "$OUTPUT_ICNS" ]] || die "usage: make-iconset.sh <icon.svg> <output.icns>"
 [[ -f "$ICON_SVG" ]] || die "source SVG not found: $ICON_SVG"
+
+# Check if we can use the prebuilt .icns
+use_prebuilt() {
+    [[ -z "${FORCE_ICONUTIL:-}" ]] || return 1
+    [[ -s "$PREBUILT_ICNS" ]] || return 1
+    # If SVG is newer than prebuilt, regenerate
+    [[ ! "$ICON_SVG" -nt "$PREBUILT_ICNS" ]] || return 1
+    return 0
+}
+
+if use_prebuilt; then
+    info "using prebuilt icon from $PREBUILT_ICNS"
+    mkdir -p "$(dirname "$OUTPUT_ICNS")"
+    cp "$PREBUILT_ICNS" "$OUTPUT_ICNS"
+    exit 0
+fi
+
+info "generating icon from SVG (prebuilt not available or SVG is newer)"
 
 for tool in rsvg-convert iconutil sips; do
     command -v "$tool" >/dev/null 2>&1 || die "missing required tool: $tool"
