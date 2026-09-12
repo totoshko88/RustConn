@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.21.12" date="2026-09-12">
+      <description>
+        <p>Version 0.21.12 - external RDP now asks about a changed server certificate instead of doing nothing:</p>
+        <ul>
+          <li>Fixed: connecting to a server whose certificate changed showed no dialog, no error and no session. FreeRDP prints its certificate report to one output stream and its error codes to another, and only the second was being read</li>
+          <li>Fixed: the external RDP client could hang indefinitely waiting for an answer to a prompt it had no way to display</li>
+          <li>Fixed: the confirmation dialog now shows the new and the previously trusted fingerprint, so accepting a changed certificate is no longer done blind</li>
+          <li>Fixed: a slow or gateway connection no longer outruns the watchdog, which gave up three seconds after launch</li>
+          <li>Fixed: a changed certificate could leave a session in an error state with no message at all</li>
+          <li>Fixed: clearing a stored certificate could also clear one for a different host whose name merely contained it</li>
+          <li>Fixed: the macOS Homebrew build no longer fails on macOS 27 because of an unreliable freshness check on the application icon</li>
+          <li>Improved: a cached password no longer passes through an unprotected copy in memory during browser autofill</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.21.11" date="2026-09-11">
       <description>
         <p>Version 0.21.11 - a security-focused release: recordings and session logs no longer keep secrets readable, and three launch paths were hardened:</p>

@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.21.12] - 2026-09-12
 
 ### Fixed
 
@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Cached credentials no longer pass through an un-zeroized plaintext copy** — the embedded-browser autofill path materialized a password into a bare `String` via `expose_secret().to_string()` before rewrapping it in a `SecretString`, leaving a plaintext allocation nothing scrubbed. It now clones the `SecretString` directly, so no unprotected copy is created at all. No behaviour change.
 - **The Homebrew formula gate now checks the formula instead of the file's location** — the `brew style` step added in 0.21.11 shipped without ever running and was red on arrival with 13 offences, seven of which were not defects. Homebrew's RuboCop configuration switches cops off *by path*: `Sorbet/StrictSigil`, `Sorbet/TrueSigil`, `Style/Documentation` and `Style/FrozenStringLiteralComment` all exclude `**/{Formula,Casks}/**/*.rb`, so pointing the gate at `packaging/macos/rustconn.rb` made RuboCop treat a formula as ordinary Ruby and demand a type sigil, a magic comment and a class doc comment — none of which any formula in homebrew-core carries. The other three were the `sha256 "PLACEHOLDER_SHA256"` template line, which `release.sh` gates on and the release workflow rewrites with the measured hash of a tarball that does not exist until the tag is pushed. The step now lints a copy placed under a `Formula/` directory with a valid dummy hash substituted, so only real findings remain, and it asserts the substitution happened rather than silently testing the placeholder. Five genuine offences were fixed in the formula (hash-rocket alignment in the feature ladder, and three `rescue StandardError` that Homebrew wants written implicitly); `FormulaAudit/Text` is waived on the command line, with the reason recorded at the `cargo build` call it concerns. `FormulaAuditStrict` stays excluded because `--except-cops` replaces `brew style`'s default rather than adding to it.
+
+- **The FreeRDP version-cache test no longer fails on a loaded machine** — the test spawns a script that marks a counter file, then asserts the cache stopped a second spawn. It already tolerated the probe losing its race with a wall-clock timeout when checking the parsed version, but not when reading the counter: a probe killed before the script reached its first `printf` left no file, and `read_to_string(...).expect(...)` turned a machine's load into a red `cargo test --workspace`. An absent counter now reads as "the script never ran", which is not a cache defect, and the strict "exactly one probe" assertion still applies whenever the version parsed and the script therefore demonstrably completed.
+
+### Dependencies
+
+- **Updated**: bytemuck_derive 1.12.0→1.12.1, crc32fast 1.5.1→1.5.2, libredox 0.1.23→0.1.24, yuv 0.8.17→0.8.18
+- **Unchanged, checked**: `cargo deny check advisories` is clean. The CLI download catalogue is current on every entry, with all version endpoints reachable. The bundled Flatpak sources are unchanged and still current — FreeRDP 3.31.1, cJSON 1.7.19, openh264 2.6.0, VTE 0.80.5, waypipe 0.11.2 — and the local and Flathub manifests carry identical pins on GNOME runtime 50. Snap stays on `core24` with the `gnome-46-2404` extension because no `core26` GNOME extension exists yet (issue #174).
 
 ## [0.21.11] - 2026-09-11
 
