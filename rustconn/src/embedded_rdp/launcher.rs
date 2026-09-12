@@ -19,8 +19,15 @@ use super::types::{EmbeddedRdpError, RdpConfig};
 /// the generic "client exited unexpectedly" toast.
 pub(crate) type StderrLines = Arc<Mutex<Vec<String>>>;
 
+/// Shared buffer collecting stdout lines from the external FreeRDP process.
+///
+/// Used to detect interactive certificate prompts that FreeRDP prints to stdout
+/// when using `/cert:tofu` and the server certificate has changed. Without this,
+/// the process hangs waiting for stdin input that never comes.
+pub(crate) type StdoutLines = Arc<Mutex<Vec<String>>>;
+
 /// Shared result returned by a background FreeRDP launch.
-pub(crate) type FreeRdpLaunchResult = Result<(Child, StderrLines), EmbeddedRdpError>;
+pub(crate) type FreeRdpLaunchResult = Result<(Child, StderrLines, StdoutLines), EmbeddedRdpError>;
 
 /// Maximum time to reap a FreeRDP process after requesting termination.
 const CANCELLED_CHILD_REAP_TIMEOUT: Duration = Duration::from_millis(500);
@@ -83,7 +90,7 @@ impl PendingFreeRdpLaunch {
 
 impl Drop for PendingFreeRdpLaunch {
     fn drop(&mut self) {
-        if let Some(Ok((child, _))) = self.result.take() {
+        if let Some(Ok((child, _, _))) = self.result.take() {
             cleanup_child_without_blocking(child);
         }
     }
@@ -260,7 +267,10 @@ impl SafeFreeRdpLauncher {
     /// # Errors
     ///
     /// Returns error if FreeRDP cannot be launched.
-    pub fn launch(&self, config: &RdpConfig) -> Result<(Child, StderrLines), EmbeddedRdpError> {
+    pub fn launch(
+        &self,
+        config: &RdpConfig,
+    ) -> Result<(Child, StderrLines, StdoutLines), EmbeddedRdpError> {
         self.launch_with_cancel(config, None)
     }
 
@@ -268,7 +278,7 @@ impl SafeFreeRdpLauncher {
         &self,
         config: &RdpConfig,
         cancellation: Option<&AtomicBool>,
-    ) -> Result<(Child, StderrLines), EmbeddedRdpError> {
+    ) -> Result<(Child, StderrLines, StdoutLines), EmbeddedRdpError> {
         Self::ensure_not_cancelled(cancellation)?;
         super::ephemeral_args::EphemeralRdpArgs::validate_plain_args(&config.extra_args).map_err(
             |error| {
@@ -379,6 +389,13 @@ impl SafeFreeRdpLauncher {
         // Qt/Wayland noise is already filtered via QT_LOGGING_RULES. (See #177)
         cmd.stderr(Stdio::piped());
 
+        // Capture stdout to detect interactive certificate prompts. FreeRDP with
+        // `/cert:tofu` prints "Do you trust the above certificate? (Y/T/N)" to
+        // stdout when a server certificate changes. Without stdin connected to a
+        // TTY, the process hangs waiting for input. By capturing stdout we can
+        // detect this prompt, terminate the process, and show a GUI dialog. (#324)
+        cmd.stdout(Stdio::piped());
+
         // Log the chosen binary and full argument vector (the password is sent
         // via stdin / args-file, never on argv, so this is safe to log).
         tracing::debug!(
@@ -422,6 +439,27 @@ impl SafeFreeRdpLauncher {
             });
         }
 
+        // Drain stdout similarly. FreeRDP prints certificate prompts and other
+        // interactive messages to stdout. We accumulate them so the watchdog can
+        // detect when the process is waiting for a certificate confirmation.
+        let stdout_lines: StdoutLines = Arc::new(Mutex::new(Vec::new()));
+        if let Some(stdout) = child.stdout.take() {
+            let client = actual_binary.clone();
+            let lines_clone = Arc::clone(&stdout_lines);
+            std::thread::spawn(move || {
+                use std::io::{BufRead, BufReader};
+                for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+                    let trimmed = line.trim();
+                    if !trimmed.is_empty() {
+                        tracing::debug!(protocol = "rdp", client = %client, "[FreeRDP stdout] {trimmed}");
+                        if let Ok(mut buf) = lines_clone.lock() {
+                            buf.push(trimmed.to_owned());
+                        }
+                    }
+                }
+            });
+        }
+
         if let Err(error) = Self::ensure_not_cancelled(cancellation) {
             kill_and_reap_child(child);
             return Err(error);
@@ -432,7 +470,7 @@ impl SafeFreeRdpLauncher {
         // can race their argument parser. The guard still guarantees cleanup.
         prepared_args.retain_for_post_spawn_parse();
 
-        Ok((child, stderr_lines))
+        Ok((child, stderr_lines, stdout_lines))
     }
 
     /// Runs FreeRDP detection, version probing, args-file creation, and spawn
@@ -573,7 +611,11 @@ mod tests {
     }
 
     fn pending_child(child: Child) -> PendingFreeRdpLaunch {
-        PendingFreeRdpLaunch::new(Ok((child, Arc::new(Mutex::new(Vec::new())))))
+        PendingFreeRdpLaunch::new(Ok((
+            child,
+            Arc::new(Mutex::new(Vec::new())),
+            Arc::new(Mutex::new(Vec::new())),
+        )))
     }
 
     #[test]

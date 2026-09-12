@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **External RDP did not show certificate confirmation dialog (issue #324)** — when connecting to a server whose certificate had changed since the last connection, FreeRDP with `/cert:tofu` printed "Do you trust the above certificate? (Y/T/N)" to stdout and waited for input. Without stdin connected to a TTY, the process hung indefinitely with no visible error or dialog. The launcher now captures stdout alongside stderr and the exit watchdog monitors it for the certificate prompt. When detected, the hanging process is terminated and the existing certificate-changed callback fires, showing the same confirmation dialog used when FreeRDP exits with a certificate error. On acceptance, the old certificate is removed from FreeRDP's TOFU store and the connection is retried.
 - **Homebrew upgrade fails on macOS 27: iconutil reports "Invalid Iconset" (issue #323)** — macOS 27's `iconutil` introduced a regression or compatibility change that rejects valid iconsets, breaking Homebrew builds even though every PNG is present, correctly sized and passes `sips` validation. The build now ships a prebuilt `.icns` under `packaging/macos/` and uses it by default, avoiding the `iconutil` dependency entirely. Regeneration through `iconutil` remains available as a fallback when the SVG is newer than the prebuilt or when `FORCE_ICONUTIL=1` is set — intended for development after an icon change, after which the new `.icns` should be committed.
 
 ### Improved

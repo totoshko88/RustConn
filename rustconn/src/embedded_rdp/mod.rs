@@ -57,7 +57,7 @@ pub use file_dnd::{FileDndCircuitBreaker, LocalFileInfo};
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, DrawingArea, Label, Orientation, glib};
 pub use launcher::SafeFreeRdpLauncher;
-pub(crate) use launcher::StderrLines;
+pub(crate) use launcher::{StderrLines, StdoutLines};
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;
 pub use thread::FreeRdpThread;
@@ -277,6 +277,8 @@ pub struct EmbeddedRdpWidget {
     process: Rc<RefCell<Option<Child>>>,
     /// Accumulated stderr lines from the external FreeRDP process (for error classification)
     stderr_lines: Rc<RefCell<Option<StderrLines>>>,
+    /// Accumulated stdout lines from the external FreeRDP process (for certificate prompt detection)
+    stdout_lines: Rc<RefCell<Option<StdoutLines>>>,
     /// FreeRDP thread wrapper for embedded mode
     freerdp_thread: Rc<RefCell<Option<FreeRdpThread>>>,
     /// IronRDP command sender for embedded mode
@@ -797,6 +799,7 @@ impl EmbeddedRdpWidget {
             config: Rc::new(RefCell::new(None)),
             process: Rc::new(RefCell::new(None)),
             stderr_lines: Rc::new(RefCell::new(None)),
+            stdout_lines: Rc::new(RefCell::new(None)),
             freerdp_thread: Rc::new(RefCell::new(None)),
             #[cfg(feature = "rdp-embedded")]
             ironrdp_command_tx,

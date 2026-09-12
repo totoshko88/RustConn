@@ -12,7 +12,7 @@ use gtk4::prelude::*;
 use rustconn_core::rdp_client::RdpClientCommand;
 use secrecy::ExposeSecret;
 
-use super::launcher::{FreeRdpLaunchResult, SafeFreeRdpLauncher, StderrLines};
+use super::launcher::{FreeRdpLaunchResult, SafeFreeRdpLauncher, StderrLines, StdoutLines};
 use super::thread::FreeRdpThread;
 use super::types::{
     EmbeddedRdpError, FreeRdpThreadState, RdpCommand, RdpConfig, RdpConnectionState, RdpEvent,
@@ -120,7 +120,7 @@ const MSTSGU_TUNNEL_PORT: u16 = 3389;
 
 /// Terminates a process that finished launching after its connection attempt became stale.
 fn discard_stale_external_launch(result: FreeRdpLaunchResult) {
-    if let Ok((mut child, _)) = result {
+    if let Ok((mut child, _, _)) = result {
         std::thread::spawn(move || {
             let _ = child.kill();
             let _ = child.wait();
@@ -192,6 +192,12 @@ fn classify_freerdp_failure(stderr_lines: &StderrLines, status_str: &str) -> Fre
 /// Surfaces the exit as an `Error` (with the process status) instead. The real
 /// failure reason is captured separately from the client's stderr by
 /// [`SafeFreeRdpLauncher::launch`]. (Fixes #177 follow-up: "it closes automatically")
+///
+/// Also monitors stdout for interactive certificate prompts. FreeRDP with
+/// `/cert:tofu` prints "Do you trust the above certificate? (Y/T/N)" when the
+/// server certificate changes. Without stdin connected to a TTY, the process
+/// hangs waiting for input. We detect this prompt, terminate the process, and
+/// show a GUI dialog for the user to accept/reject. (Fixes #324)
 #[expect(
     clippy::too_many_arguments,
     reason = "watchdog needs all shared state refs to detect and report early-exit failures"
@@ -204,6 +210,7 @@ fn arm_external_exit_watchdog(
     on_cert_changed: Rc<RefCell<Option<super::types::CertChangedCallback>>>,
     drawing_area: gtk4::DrawingArea,
     stderr_lines: StderrLines,
+    stdout_lines: StdoutLines,
     host: String,
     port: u16,
 ) {
@@ -218,6 +225,49 @@ fn arm_external_exit_watchdog(
         // user disconnected, or an error was already reported elsewhere).
         if *state.borrow() != RdpConnectionState::Connected {
             return glib::ControlFlow::Break;
+        }
+
+        // Check stdout for certificate prompt — FreeRDP prints "Do you trust the
+        // above certificate?" and hangs waiting for stdin. Kill and show dialog.
+        if let Ok(stdout) = stdout_lines.lock() {
+            let stdout_joined = stdout.join(" ");
+            if stdout_joined.contains("Do you trust the above certificate") {
+                drop(stdout);
+                tracing::info!(
+                    protocol = "rdp",
+                    "[FreeRDP] Detected certificate prompt in stdout — terminating process for GUI dialog"
+                );
+
+                // Kill the hanging process
+                if let Some(mut child) = process.borrow_mut().take() {
+                    let _ = child.kill();
+                    std::thread::spawn(move || {
+                        let _ = child.wait();
+                    });
+                }
+
+                *state.borrow_mut() = RdpConnectionState::Error;
+                drawing_area.queue_draw();
+
+                let scb = on_state_changed.borrow_mut().take();
+                if let Some(ref cb) = scb {
+                    cb(RdpConnectionState::Error);
+                }
+                *on_state_changed.borrow_mut() = scb;
+
+                // Trigger cert-changed callback
+                let ccb = on_cert_changed.borrow_mut().take();
+                if let Some(ref cb) = ccb {
+                    cb(
+                        &host,
+                        port,
+                        &i18n("Server certificate has changed since the last connection."),
+                    );
+                }
+                *on_cert_changed.borrow_mut() = ccb;
+
+                return glib::ControlFlow::Break;
+            }
         }
 
         let exit_status = match process.borrow_mut().as_mut() {
@@ -317,6 +367,7 @@ pub(super) struct RdpConnectionContext {
 struct ExternalLaunchContext {
     process: Rc<RefCell<Option<std::process::Child>>>,
     stderr_lines: Rc<RefCell<Option<StderrLines>>>,
+    stdout_lines: Rc<RefCell<Option<StdoutLines>>>,
     state: Rc<RefCell<RdpConnectionState>>,
     is_embedded: Rc<RefCell<bool>>,
     drawing_area: gtk4::DrawingArea,
@@ -352,6 +403,7 @@ impl super::EmbeddedRdpWidget {
         ExternalLaunchContext {
             process: self.process.clone(),
             stderr_lines: self.stderr_lines.clone(),
+            stdout_lines: self.stdout_lines.clone(),
             state: self.state.clone(),
             is_embedded: self.is_embedded.clone(),
             drawing_area: self.drawing_area.clone(),
@@ -2036,8 +2088,8 @@ impl super::EmbeddedRdpWidget {
                 return glib::ControlFlow::Break;
             }
 
-            let stderr_buf = match result {
-                Ok((child, stderr_buf)) => {
+            let (stderr_buf, stdout_buf) = match result {
+                Ok((child, stderr_buf, stdout_buf)) => {
                     tracing::info!(
                         protocol = "rdp",
                         host = %config.host,
@@ -2045,7 +2097,7 @@ impl super::EmbeddedRdpWidget {
                         "[IronRDP] Fallback to external FreeRDP"
                     );
                     *context.fallback_process.borrow_mut() = Some(child);
-                    stderr_buf
+                    (stderr_buf, stdout_buf)
                 }
                 Err(error) => {
                     tracing::error!(
@@ -2079,6 +2131,7 @@ impl super::EmbeddedRdpWidget {
                 context.on_cert_changed.clone(),
                 context.drawing_area.clone(),
                 stderr_buf,
+                stdout_buf,
                 config.host.clone(),
                 config.port,
             );
@@ -2513,9 +2566,10 @@ impl super::EmbeddedRdpWidget {
             }
 
             match result {
-                Ok((child, stderr_buf)) => {
+                Ok((child, stderr_buf, stdout_buf)) => {
                     *launch_context.process.borrow_mut() = Some(child);
                     *launch_context.stderr_lines.borrow_mut() = Some(stderr_buf.clone());
+                    *launch_context.stdout_lines.borrow_mut() = Some(stdout_buf.clone());
                     *launch_context.is_embedded.borrow_mut() = false;
                     *launch_context.state.borrow_mut() = RdpConnectionState::Connected;
                     let callback = launch_context.on_state_changed.borrow_mut().take();
@@ -2532,6 +2586,7 @@ impl super::EmbeddedRdpWidget {
                         launch_context.on_cert_changed.clone(),
                         launch_context.drawing_area.clone(),
                         stderr_buf,
+                        stdout_buf,
                         launch_config.host.clone(),
                         launch_config.port,
                     );
