@@ -57,7 +57,7 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"
 async-trait = "0.1"
 secrecy = { version = "0.10", features = ["serde"] }
-dirs = "6.0"
+dirs = "7.0"
 shellexpand = "3.1"
 regex = "1.12"
 zeroize = "1.8"
