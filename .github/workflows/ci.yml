@@ -155,7 +155,7 @@ jobs:
       # SHA — this action downloads and executes a binary, which is the last
       # place to accept a moving tag.
       - name: Install cargo-machete
-        uses: taiki-e/install-action@5bf6ce016fd2e72eefc647cbca1e4213f65955b8 # v2.87.5
+        uses: taiki-e/install-action@4076c08d76dba979c11a7285295b0716c1d67908 # v2.87.15
         with:
           # The tool is version-pinned too, not just the action. An unpinned
           # `cargo-machete` would let a new upstream release turn CI red with no
