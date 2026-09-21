@@ -57,7 +57,7 @@ resvg = { version = "0.48", optional = true }
 # have changed nothing; turning the feature off is what removes them from the
 # graph. On macOS, where these crates are actually used, the disabled features
 # contribute nothing: the tray goes through objc2 and AppKit.
-tray-icon = { version = "0.24", optional = true, default-features = false }
+tray-icon = { version = "0.25", optional = true, default-features = false }
 # Menu builder for macOS tray (companion to tray-icon)
 muda = { version = "0.19", optional = true, default-features = false }
 # Internationalization (gettext). Only the safe part of the API is used here —
