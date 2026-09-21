@@ -59,7 +59,7 @@ resvg = { version = "0.48", optional = true }
 # contribute nothing: the tray goes through objc2 and AppKit.
 tray-icon = { version = "0.24", optional = true, default-features = false }
 # Menu builder for macOS tray (companion to tray-icon)
-muda = { version = "0.19", optional = true, default-features = false }
+muda = { version = "0.20", optional = true, default-features = false }
 # Internationalization (gettext). Only the safe part of the API is used here —
 # `bindtextdomain`, `textdomain`, `gettext`, `ngettext`. `setlocale` is `unsafe`
 # as of 0.8 (RUSTSEC-2026-0244) and `unsafe_code` is forbidden in this crate, so
