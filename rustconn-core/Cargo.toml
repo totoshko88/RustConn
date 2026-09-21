@@ -119,7 +119,7 @@ ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
 # `ironrdp_tls::upgrade` returns the server certificate as an `x509_cert::Certificate`;
 # we re-encode it to DER to compute the TOFU fingerprint. Same version already in the
 # tree via ironrdp-tls, kept as a direct dep so the type is nameable here.
-x509-cert = { version = "0.2", optional = true }
+x509-cert = { version = "0.3", optional = true }
 # GFX pipeline (MS-RDPEGFX) with H.264/AVC decoding via OpenH264 dlopen
 ironrdp-egfx = { version = "0.3", features = ["openh264-libloading"], optional = true }
 # RD Gateway (MS-TSGU) — HTTPS tunneling for RDP through corporate gateways
