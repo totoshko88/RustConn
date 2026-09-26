@@ -6,10 +6,12 @@
 //! on top of the terminal via `gtk4::Overlay`.
 //!
 //! A background rule tints the whole cell behind the match; a foreground rule
-//! paints a lighter translucent wash over the match plus a solid underline.
-//! The overlay cannot recolour VTE's own glyphs, so a foreground colour cannot
-//! literally recolour the text — the wash is the closest visible equivalent
-//! that keeps the text legible (issue #343).
+//! draws a thick coloured underline under the match. The overlay cannot
+//! recolour VTE's own glyphs, so a text colour is *indicated* by the underline
+//! rather than applied literally — and, unlike the translucent full-cell wash
+//! used in 0.22.6, an underline does not read as a background tint, which is
+//! what a user setting a red *text* colour saw instead of coloured text
+//! (issue #343).
 //!
 //! ## Architecture
 //!
@@ -37,11 +39,22 @@
 //! (`vadjustment.value()`), so highlights are computed for the lines that
 //! VTE is actually painting at any given moment.
 //!
+//! ## Cell geometry (issue #343)
+//!
+//! Cell size comes from VTE's own `char_width()`/`char_height()`, and the grid
+//! is anchored past the padding VTE leaves when it centres the grid in its
+//! allocation (`(allocation - grid) / 2` per axis). Dividing the DrawingArea by
+//! the row/column count instead assumed a gap-free grid, so the padding error
+//! accumulated across a row and down the screen and the highlight drifted off
+//! the text. Byte offsets are turned into columns with
+//! [`byte_offset_to_column`], which counts a wide (CJK) glyph as two cells and a
+//! combining mark as zero.
+//!
 //! ## Limitations
 //!
-//! - Wide characters (CJK) occupy 2 terminal columns but `chars().count()`
-//!   treats them as 1 character, so highlight positions may be slightly off
-//!   for lines containing wide characters.
+//! - [`byte_offset_to_column`] approximates Unicode width over the common CJK,
+//!   kana, Hangul and fullwidth ranges; a rarer wide block or an emoji outside
+//!   those ranges can still place a highlight a cell off.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -49,7 +62,7 @@ use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{DrawingArea, Overlay};
-use rustconn_core::highlight::CompiledHighlightRules;
+use rustconn_core::highlight::{CompiledHighlightRules, byte_offset_to_column};
 use uuid::Uuid;
 use vte4::Terminal;
 use vte4::prelude::*;
@@ -119,12 +132,31 @@ impl HighlightOverlay {
                     return;
                 }
 
-                // Compute cell dimensions from the terminal's visible area
-                let cell_w = f64::from(width) / col_count as f64;
-                let cell_h = f64::from(height) / row_count as f64;
+                // Use VTE's real cell size, not the overlay divided by the grid.
+                //
+                // VTE quantises each cell to an integer `char_width` × `char_height`
+                // and centres the resulting grid inside its allocation, leaving
+                // slack as padding on the edges. Dividing the DrawingArea by the
+                // row/column count assumes a perfectly filled grid, so the error
+                // (the padding) accumulates across the line and down the screen —
+                // a highlight late in a row or low on the terminal drifts furthest.
+                // That is the mispositioned wash in issue #343. Reading the true
+                // cell size and adding the padding offset places the rectangle on
+                // the actual glyph instead.
+                let cell_w = term_for_draw.char_width() as f64;
+                let cell_h = term_for_draw.char_height() as f64;
                 if cell_w <= 0.0 || cell_h <= 0.0 {
                     return;
                 }
+
+                // Padding is the leftover once the grid is laid out, split evenly
+                // on both edges (VTE centres the grid). Clamp at zero: the overlay
+                // may momentarily be a hair smaller than the grid mid-resize, and
+                // a negative offset would push highlights off the wrong edge.
+                let grid_w = cell_w * col_count as f64;
+                let grid_h = cell_h * row_count as f64;
+                let pad_x = ((f64::from(width) - grid_w) / 2.0).max(0.0);
+                let pad_y = ((f64::from(height) - grid_h) / 2.0).max(0.0);
 
                 // Anchor the read range to the current viewport top.
                 //
@@ -165,19 +197,21 @@ impl HighlightOverlay {
                         continue;
                     }
 
-                    let y = visible_row as f64 * cell_h;
+                    let y = (visible_row as f64).mul_add(cell_h, pad_y);
 
                     for m in &matches {
-                        // Convert byte offsets to column positions. col_end is
-                        // computed as a delta from col_start so we scan each
-                        // line slice once instead of twice from the start.
-                        let col_start = line[..m.start].chars().count();
-                        let col_end = col_start + line[m.start..m.end].chars().count();
-                        let x = col_start as f64 * cell_w;
+                        // Convert byte offsets to terminal columns, counting a
+                        // wide (CJK) glyph as two cells and a combining mark as
+                        // zero — a plain chars().count() drew a match after a wide
+                        // character half a cell off (issue #343). The offset is
+                        // then anchored past VTE's own padding.
+                        let col_start = byte_offset_to_column(line, m.start);
+                        let col_end = byte_offset_to_column(line, m.end);
+                        let x = (col_start as f64).mul_add(cell_w, pad_x);
                         let w = (col_end - col_start) as f64 * cell_w;
 
-                        // Draw background highlight rectangle (colour pre-parsed).
-                        // A background rule tints the whole cell behind the match.
+                        // Background rule: tint the whole cell behind the match.
+                        // This is the one case that legitimately fills the cell.
                         if let Some((r, g, b)) = m.background_rgb {
                             cr.set_source_rgba(r, g, b, 0.35);
                             cr.rectangle(x, y, w, cell_h);
@@ -186,29 +220,27 @@ impl HighlightOverlay {
                             }
                         }
 
-                        // Draw the foreground highlight (colour pre-parsed).
+                        // Foreground (text) rule: draw a thick coloured underline,
+                        // not a full-cell wash.
                         //
-                        // The overlay cannot recolour VTE's own glyphs — it only
-                        // paints on a transparent layer above the terminal — so a
-                        // foreground rule is shown as a translucent wash over the
-                        // matched text plus a solid underline. Earlier this was a
-                        // 2px underline alone (issue #343): with most rules only
-                        // setting a foreground colour, the sole visible effect was
-                        // a thin line a user did not read as "highlighting". The
-                        // wash keeps the underlying text legible (low alpha) while
-                        // making the match unmistakably coloured; the underline
-                        // stays as a crisp anchor and to distinguish a foreground
-                        // rule from a background one.
+                        // The overlay paints on a transparent layer above VTE and
+                        // cannot recolour VTE's glyphs, so a text colour can only
+                        // be *indicated*, not applied literally. 0.22.6 indicated
+                        // it with a translucent full-cell fill, but that reads as a
+                        // background tint — the user in issue #343 set a red text
+                        // colour and saw a red background. A bold underline in the
+                        // chosen colour marks the run as coloured without masquerading
+                        // as a background fill, and stays visually distinct from a
+                        // background rule (which fills) so the two rule kinds no
+                        // longer look the same. The underline sits on the cell's
+                        // baseline edge and is inset by one pixel so it is not
+                        // clipped at the row boundary.
                         if let Some((r, g, b)) = m.foreground_rgb {
-                            cr.set_source_rgba(r, g, b, 0.25);
-                            cr.rectangle(x, y, w, cell_h);
-                            if cr.fill().is_err() {
-                                return;
-                            }
-                            cr.set_source_rgba(r, g, b, 0.9);
-                            cr.set_line_width(2.0);
-                            cr.move_to(x, y + cell_h - 1.0);
-                            cr.line_to(x + w, y + cell_h - 1.0);
+                            cr.set_source_rgba(r, g, b, 0.95);
+                            cr.set_line_width(3.0);
+                            let underline_y = y + cell_h - 2.0;
+                            cr.move_to(x, underline_y);
+                            cr.line_to(x + w, underline_y);
                             if cr.stroke().is_err() {
                                 return;
                             }

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Terminal highlight was drawn in the wrong place, and a text colour looked like a background fill (issue #343)** — the coloured-highlight overlay sits on a transparent layer above VTE and worked out each cell's size by dividing its own width and height by the column and row count, which assumes the terminal fills its widget edge to edge.
+It does not: VTE rounds every cell to a whole number of pixels and centres the resulting grid, leaving the slack as padding, so the highlight drifted further from the text the further along a line or down the screen the match sat.
+The overlay now uses VTE's real `char_width()`/`char_height()` and offsets every rectangle past that padding, so a highlight lands on its match.
+Byte offsets are converted to columns with a new `byte_offset_to_column` helper in `rustconn-core` that counts an East-Asian wide character as two cells and a combining mark as none, fixing a half-cell drift after CJK text that the previous `chars().count()` caused.
+Separately, a **text colour** (foreground rule) was shown as a translucent wash over the whole cell, which reads as a background tint — a user who set a red text colour saw a red background instead; a foreground rule is now a thick underline in the chosen colour, leaving the solid cell fill to background rules only, so the two rule kinds are no longer confused.
+
 ## [0.22.6] - 2026-09-25
 
 ### Fixed

@@ -39,6 +39,78 @@ pub fn parse_hex_color(hex: &str) -> Option<Rgb> {
 }
 
 // ---------------------------------------------------------------------------
+// Terminal column geometry
+// ---------------------------------------------------------------------------
+
+/// Returns the number of terminal cells a character occupies: 0, 1, or 2.
+///
+/// A VTE terminal lays text out on a fixed grid where each cell is one
+/// [`char_width`](https://gnome.pages.gitlab.gnome.org) wide. A combining mark
+/// adds nothing to the cell it decorates (width 0), most characters take one
+/// cell, and East-Asian wide / fullwidth characters take two. The overlay that
+/// draws highlight rectangles must count in these cells, not in `char`s, or a
+/// rectangle drawn after a wide character lands half a cell too far left.
+///
+/// This is a pragmatic approximation of Unicode UAX#11, covering the ranges that
+/// actually appear in terminal output (CJK, Hangul, kana, fullwidth forms and
+/// common combining blocks) without pulling in a Unicode-width table crate.
+/// Emoji and rarer wide blocks are treated as width 1; a highlight over such a
+/// glyph can still be off by a cell, which is the documented limit.
+#[must_use]
+fn char_cell_width(c: char) -> usize {
+    let cp = c as u32;
+    // Combining marks and zero-width characters occupy no cell of their own.
+    let is_zero_width = matches!(cp,
+        0x0300..=0x036F   // Combining Diacritical Marks
+        | 0x1AB0..=0x1AFF // Combining Diacritical Marks Extended
+        | 0x1DC0..=0x1DFF // Combining Diacritical Marks Supplement
+        | 0x20D0..=0x20FF // Combining Diacritical Marks for Symbols
+        | 0xFE20..=0xFE2F // Combining Half Marks
+        | 0x200B          // Zero Width Space
+        | 0x200C..=0x200F // ZWNJ, ZWJ, LRM, RLM
+        | 0xFEFF,         // Zero Width No-Break Space (BOM)
+    );
+    if is_zero_width {
+        return 0;
+    }
+    // East-Asian wide and fullwidth ranges occupy two cells.
+    let is_wide = matches!(cp,
+        0x1100..=0x115F   // Hangul Jamo
+        | 0x2E80..=0x303E // CJK Radicals, Kangxi, CJK symbols/punctuation
+        | 0x3041..=0x33FF // Hiragana, Katakana, CJK symbols, enclosed
+        | 0x3400..=0x4DBF // CJK Extension A
+        | 0x4E00..=0x9FFF // CJK Unified Ideographs
+        | 0xA000..=0xA4CF // Yi
+        | 0xAC00..=0xD7A3 // Hangul Syllables
+        | 0xF900..=0xFAFF // CJK Compatibility Ideographs
+        | 0xFE30..=0xFE4F // CJK Compatibility Forms
+        | 0xFF00..=0xFF60 // Fullwidth Forms
+        | 0xFFE0..=0xFFE6 // Fullwidth signs
+        | 0x1F300..=0x1FAFF // Emoji / symbols (approx.)
+        | 0x20000..=0x3FFFD, // CJK Extension B+ and supplementary ideographic plane
+    );
+    if is_wide { 2 } else { 1 }
+}
+
+/// Converts a byte offset within `line` to its terminal column (0-based).
+///
+/// Sums the [`char_cell_width`] of every character before `byte_offset`, so the
+/// result is the cell the character at that offset starts in — the value the
+/// overlay multiplies by the cell width to place a highlight rectangle. A byte
+/// offset past the end of the line clamps to the line's total column width.
+///
+/// Wide characters count as two columns and combining marks as zero, unlike a
+/// plain `chars().count()`, which is why a match after a CJK glyph is no longer
+/// drawn half a cell off (issue #343).
+#[must_use]
+pub fn byte_offset_to_column(line: &str, byte_offset: usize) -> usize {
+    line.char_indices()
+        .take_while(|(idx, _)| *idx < byte_offset)
+        .map(|(_, c)| char_cell_width(c))
+        .sum()
+}
+
+// ---------------------------------------------------------------------------
 // HighlightMatch
 // ---------------------------------------------------------------------------
 
@@ -304,7 +376,7 @@ pub fn builtin_defaults() -> Vec<HighlightRule> {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_hex_color;
+    use super::{byte_offset_to_column, parse_hex_color};
 
     #[test]
     fn parse_hex_color_valid_colors() {
@@ -334,5 +406,48 @@ mod tests {
         assert_eq!(parse_hex_color("#GGHHII"), None); // invalid hex chars
         assert_eq!(parse_hex_color(""), None); // empty
         assert_eq!(parse_hex_color("#"), None); // only hash
+    }
+
+    #[test]
+    fn byte_offset_to_column_ascii() {
+        let line = "ERROR: disk full";
+        // One byte per character, so column == byte offset.
+        assert_eq!(byte_offset_to_column(line, 0), 0);
+        assert_eq!(byte_offset_to_column(line, 5), 5); // just past "ERROR"
+        assert_eq!(byte_offset_to_column(line, line.len()), 16);
+    }
+
+    #[test]
+    fn byte_offset_to_column_past_end_clamps_to_width() {
+        let line = "abc";
+        // An offset beyond the line clamps to its total column width.
+        assert_eq!(byte_offset_to_column(line, 99), 3);
+    }
+
+    #[test]
+    fn byte_offset_to_column_wide_chars_count_two() {
+        // "世" and "界" are CJK ideographs: 3 bytes each, 2 columns each.
+        let line = "世界x";
+        assert_eq!(line.len(), 7); // 3 + 3 + 1 bytes
+        assert_eq!(byte_offset_to_column(line, 0), 0);
+        assert_eq!(byte_offset_to_column(line, 3), 2); // after first ideograph
+        assert_eq!(byte_offset_to_column(line, 6), 4); // after second ideograph
+        assert_eq!(byte_offset_to_column(line, 7), 5); // after the ASCII 'x'
+    }
+
+    #[test]
+    fn byte_offset_to_column_combining_marks_count_zero() {
+        // 'e' (1 byte) followed by U+0301 combining acute accent (2 bytes):
+        // the mark adds no column of its own.
+        let line = "e\u{0301}x";
+        assert_eq!(line.len(), 4); // 1 + 2 + 1 bytes
+        assert_eq!(byte_offset_to_column(line, 1), 1); // after 'e'
+        assert_eq!(byte_offset_to_column(line, 3), 1); // after the combining mark
+        assert_eq!(byte_offset_to_column(line, 4), 2); // after 'x'
+    }
+
+    #[test]
+    fn byte_offset_to_column_empty_line() {
+        assert_eq!(byte_offset_to_column("", 0), 0);
     }
 }
