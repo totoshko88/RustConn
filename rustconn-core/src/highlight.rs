@@ -52,10 +52,13 @@ pub fn parse_hex_color(hex: &str) -> Option<Rgb> {
 /// rectangle drawn after a wide character lands half a cell too far left.
 ///
 /// This is a pragmatic approximation of Unicode UAX#11, covering the ranges that
-/// actually appear in terminal output (CJK, Hangul, kana, fullwidth forms and
-/// common combining blocks) without pulling in a Unicode-width table crate.
-/// Emoji and rarer wide blocks are treated as width 1; a highlight over such a
-/// glyph can still be off by a cell, which is the documented limit.
+/// actually appear in terminal output (CJK, Hangul, kana, fullwidth forms, the
+/// main emoji block and common combining blocks) without pulling in a
+/// Unicode-width table crate. Emoji are treated as width 2, matching how most
+/// terminals render them. A multi-scalar emoji sequence (ZWJ or regional-
+/// indicator pairs) is counted per scalar, and rarer wide blocks are missed, so
+/// a highlight over such a glyph can still be off by a cell — the documented
+/// limit.
 #[must_use]
 fn char_cell_width(c: char) -> usize {
     let cp = c as u32;

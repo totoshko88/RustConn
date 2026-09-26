@@ -41,20 +41,22 @@
 //!
 //! ## Cell geometry (issue #343)
 //!
-//! Cell size comes from VTE's own `char_width()`/`char_height()`, and the grid
-//! is anchored past the padding VTE leaves when it centres the grid in its
-//! allocation (`(allocation - grid) / 2` per axis). Dividing the DrawingArea by
-//! the row/column count instead assumed a gap-free grid, so the padding error
-//! accumulated across a row and down the screen and the highlight drifted off
-//! the text. Byte offsets are turned into columns with
+//! Cell size comes from VTE's own `char_width()`/`char_height()`, not from
+//! dividing the DrawingArea by the row/column count (which spread the slack over
+//! every column and drifted). The grid origin comes from
+//! `terminal.compute_bounds(drawing_area)`: the DrawingArea overlays a box that
+//! holds VTE *and* a scrollbar, so it is wider than VTE, and VTE anchors its grid
+//! top-left rather than centring it — computing the origin from VTE's own bounds
+//! sidesteps both. Byte offsets are turned into columns with
 //! [`byte_offset_to_column`], which counts a wide (CJK) glyph as two cells and a
 //! combining mark as zero.
 //!
 //! ## Limitations
 //!
 //! - [`byte_offset_to_column`] approximates Unicode width over the common CJK,
-//!   kana, Hangul and fullwidth ranges; a rarer wide block or an emoji outside
-//!   those ranges can still place a highlight a cell off.
+//!   kana, Hangul, fullwidth and emoji ranges; a rarer wide block, or a
+//!   multi-scalar emoji sequence (ZWJ / regional-indicator pairs) counted per
+//!   scalar, can still place a highlight a cell off.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -113,7 +115,7 @@ impl HighlightOverlay {
         let rules_for_draw = rules;
 
         self.drawing_area
-            .set_draw_func(move |_da, cr, width, height| {
+            .set_draw_func(move |da, cr, _width, _height| {
                 // Clear to fully transparent
                 cr.set_operator(gtk4::cairo::Operator::Clear);
                 if cr.paint().is_err() {
@@ -134,29 +136,39 @@ impl HighlightOverlay {
 
                 // Use VTE's real cell size, not the overlay divided by the grid.
                 //
-                // VTE quantises each cell to an integer `char_width` × `char_height`
-                // and centres the resulting grid inside its allocation, leaving
-                // slack as padding on the edges. Dividing the DrawingArea by the
-                // row/column count assumes a perfectly filled grid, so the error
-                // (the padding) accumulates across the line and down the screen —
-                // a highlight late in a row or low on the terminal drifts furthest.
-                // That is the mispositioned wash in issue #343. Reading the true
-                // cell size and adding the padding offset places the rectangle on
-                // the actual glyph instead.
+                // VTE quantises each cell to an integer `char_width` × `char_height`,
+                // so dividing the DrawingArea by the row/column count spreads the
+                // unused slack across every column and the error accumulates along
+                // the line and down the screen — the mispositioned highlight in
+                // issue #343. The true cell size removes that drift.
                 let cell_w = term_for_draw.char_width() as f64;
                 let cell_h = term_for_draw.char_height() as f64;
                 if cell_w <= 0.0 || cell_h <= 0.0 {
                     return;
                 }
 
-                // Padding is the leftover once the grid is laid out, split evenly
-                // on both edges (VTE centres the grid). Clamp at zero: the overlay
-                // may momentarily be a hair smaller than the grid mid-resize, and
-                // a negative offset would push highlights off the wrong edge.
-                let grid_w = cell_w * col_count as f64;
-                let grid_h = cell_h * row_count as f64;
-                let pad_x = ((f64::from(width) - grid_w) / 2.0).max(0.0);
-                let pad_y = ((f64::from(height) - grid_h) / 2.0).max(0.0);
+                // Anchor the grid to VTE's real position inside the overlay.
+                //
+                // The DrawingArea overlays `terminal_row`, a horizontal box that
+                // holds the VTE terminal *and* (by default) a vertical scrollbar,
+                // so the DrawingArea is wider than VTE. Deriving the origin from
+                // the DrawingArea — e.g. `(overlay_width - grid) / 2` — folds half
+                // the scrollbar column into every x, and assumes VTE centres its
+                // grid when it actually anchors top-left (`Align::Start`), leaving
+                // the slack on the right/bottom edge. Both push highlights off the
+                // text (issue #343).
+                //
+                // `compute_bounds` gives VTE's own rectangle in DrawingArea
+                // coordinates, so its origin already accounts for the scrollbar,
+                // the box layout and any container padding. Under the default
+                // top-left alignment the grid starts at that origin. If VTE has
+                // not been allocated yet the call returns None and we skip the
+                // frame rather than guess.
+                let Some(bounds) = term_for_draw.compute_bounds(da) else {
+                    return;
+                };
+                let pad_x = f64::from(bounds.x());
+                let pad_y = f64::from(bounds.y());
 
                 // Anchor the read range to the current viewport top.
                 //
