@@ -3,11 +3,11 @@
   "hooks": [
     {
       "name": "KiroGraph Deferred Sync",
-      "description": "Sync the KiroGraph index when the agent stops and a dirty marker is present. Hardening notes: (1) runs from the repo root — hook cwd is not guaranteed, a bare `kirograph` in the wrong cwd answers 'not initialized'; (2) skips if another sync is already running — two overlapping syncs fight over kirograph.db.lock and a killed one leaves the lock behind, which silently broke the index for a week (every MCP call answered 'KiroGraph not initialized'); (3) clears such a stale, empty lock older than 30 min; (4) logs to .kirograph/hook.log instead of discarding stderr; (5) runs at low CPU priority — a sync costs ~3-4 min even with nothing to sync (full scan + global resolve of ~47k symbols) and ~20 min after ~130 changed files.",
+      "description": "Sync the KiroGraph index when the agent stops and a dirty marker is present. Hardening notes: (1) runs from the repo root — hook cwd is not guaranteed, a bare `kirograph` in the wrong cwd answers 'not initialized'; (2) skips if another sync is already running — two overlapping syncs fight over kirograph.db.lock and a killed one leaves the lock behind, which silently broke the index for a week (every MCP call answered 'KiroGraph not initialized'); (3) clears a stale lock via `kirograph unlock`, which (since v1.x) releases it only when the owning PID is dead — this replaces the old `find -mmin +30 -empty` heuristic that missed locks held by a zombie/detached sync (non-empty, recent) and let 'database is locked' pile up; (4) logs to .kirograph/hook.log instead of discarding stderr; (5) runs at low CPU priority — a sync costs ~3-4 min even with nothing to sync (full scan + global resolve of ~47k symbols) and ~20 min after ~130 changed files.",
       "trigger": "Stop",
       "action": {
         "type": "command",
-        "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" || exit 0; pgrep -f 'kirograph [s]ync' >/dev/null && exit 0; find .kirograph -maxdepth 1 -type d -name kirograph.db.lock -mmin +30 -empty -delete 2>/dev/null; nice -n 15 kirograph sync-if-dirty --quiet >>.kirograph/hook.log 2>&1 || true"
+        "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" || exit 0; pgrep -f 'kirograph [s]ync' >/dev/null && exit 0; kirograph unlock >>.kirograph/hook.log 2>&1 || true; nice -n 15 kirograph sync-if-dirty --quiet >>.kirograph/hook.log 2>&1 || true"
       },
       "enabled": true
     }
