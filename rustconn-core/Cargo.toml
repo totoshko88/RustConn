@@ -76,7 +76,7 @@ notify = { version = "8.2", default-features = false, features = ["macos_fsevent
 # subscriber invites two subscribers in one process.
 tracing = { workspace = true }
 # Pure Rust VNC client for embedded VNC sessions
-vnc-rs = { version = "0.5", optional = true }
+vnc-rs = { version = "0.6", optional = true }
 # JPEG decoder for VNC Tight encoding (pure Rust, no C deps). Already present
 # transitively; re-exports zune_core so no second direct dependency is needed.
 zune-jpeg = { version = "0.5.15", optional = true }
