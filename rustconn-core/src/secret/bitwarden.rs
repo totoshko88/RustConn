@@ -262,6 +262,9 @@ pub struct BitwardenBackend {
     organization_id: Option<String>,
     /// Folder name for RustConn entries
     folder_name: String,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the vault is left untouched.
+    read_only: bool,
     /// Resolved path to the `bw` CLI binary
     bw_cmd: String,
 }
@@ -345,6 +348,7 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            read_only: false,
             bw_cmd: get_bw_cmd(),
         }
     }
@@ -357,6 +361,7 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            read_only: false,
             bw_cmd: get_bw_cmd(),
         }
     }
@@ -379,6 +384,14 @@ impl BitwardenBackend {
     #[must_use]
     pub fn with_folder_name(mut self, name: impl Into<String>) -> Self {
         self.folder_name = name.into();
+        self
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the vault is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
         self
     }
 
@@ -678,6 +691,7 @@ impl Default for BitwardenBackend {
 #[async_trait]
 impl SecretBackend for BitwardenBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         let entry_name = Self::entry_name(connection_id);
         tracing::debug!(
             connection_id = %connection_id,
@@ -826,6 +840,7 @@ impl SecretBackend for BitwardenBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if vault is unlocked
         if !self.is_unlocked_fast().await {
             return Err(SecretError::BackendUnavailable(
@@ -868,6 +883,10 @@ impl SecretBackend for BitwardenBackend {
 
     fn display_name(&self) -> &'static str {
         "Bitwarden"
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
     }
 }
 
@@ -1678,6 +1697,7 @@ impl std::fmt::Debug for BitwardenBackend {
             .field("server_url", &self.server_url)
             .field("organization_id", &self.organization_id)
             .field("folder_name", &self.folder_name)
+            .field("read_only", &self.read_only)
             .field("bw_cmd", &self.bw_cmd)
             .finish_non_exhaustive()
     }
@@ -1773,5 +1793,38 @@ Invalid master password.";
         sync_on_next_unlock();
 
         assert!(!is_recently_verified());
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!BitwardenBackend::new().is_read_only());
+        assert!(BitwardenBackend::new().with_read_only(true).is_read_only());
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_unlock_check() {
+        // ensure_writable() is the first line of store(), so the read-only
+        // refusal takes precedence over the vault-locked check and no `bw`
+        // process is spawned.
+        let backend = BitwardenBackend::new().with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(name) if name == "Bitwarden"));
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = BitwardenBackend::new().with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
     }
 }

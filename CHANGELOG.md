@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Secret-backend groundwork for read-only vaults and vault-root search (issue [#353](https://github.com/totoshko88/RustConn/issues/353))** — the `SecretBackend` trait gained two capability methods, `is_read_only()` and `searches_from_root()`, both defaulting to the historical behaviour (writable, scoped to the `RustConn` subtree), plus a provided `ensure_writable()` helper that returns the new `SecretError::ReadOnly(backend_name)` so every backend refuses a write identically and the vault is left untouched. `ReadOnly` is distinct from `StoreFailed`/`DeleteFailed`: nothing was attempted, so the UI can say *which* vault refused and why rather than reporting what looks like a write failure. No backend changes behaviour yet — this commit only adds the shared surface the per-backend wiring builds on.
+- **Read-only mode for the Bitwarden, 1Password, Passbolt and `pass` backends (issue [#353](https://github.com/totoshko88/RustConn/issues/353))** — each of the four CLI/vault backends gained a `with_read_only(bool)` builder; when set, `store` and `delete` refuse immediately with `SecretError::ReadOnly` *before* any CLI process is spawned, so a read-only vault is never mutated and reads are unaffected. The refusal names the backend ("Bitwarden is in read-only mode; writes are disabled"). Writes continue to target the `RustConn` scope when enabled.
 
 ## [0.22.15] - 2026-10-03
 

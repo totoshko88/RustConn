@@ -50,6 +50,9 @@ pub struct PassboltBackend {
     server_address: Option<String>,
     /// GPG private key passphrase (overrides config file)
     user_password: Option<SecretString>,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the vault is left untouched.
+    read_only: bool,
 }
 
 /// Passbolt resource from JSON output
@@ -120,6 +123,7 @@ impl PassboltBackend {
         Self {
             server_address: None,
             user_password: None,
+            read_only: false,
         }
     }
 
@@ -127,6 +131,14 @@ impl PassboltBackend {
     #[must_use]
     pub fn with_server_address(mut self, address: impl Into<String>) -> Self {
         self.server_address = Some(address.into());
+        self
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the vault is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
         self
     }
 
@@ -299,6 +311,7 @@ impl Default for PassboltBackend {
 #[async_trait]
 impl SecretBackend for PassboltBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         if !self.is_configured().await {
             return Err(SecretError::BackendUnavailable(
                 "Passbolt CLI not configured. Run \
@@ -378,6 +391,7 @@ impl SecretBackend for PassboltBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         if !self.is_configured().await {
             return Err(SecretError::BackendUnavailable(
                 "Passbolt CLI not configured. Run \
@@ -421,6 +435,10 @@ impl SecretBackend for PassboltBackend {
 
     fn display_name(&self) -> &'static str {
         "Passbolt"
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
     }
 }
 
@@ -598,6 +616,7 @@ impl std::fmt::Debug for PassboltBackend {
                 "user_password",
                 &self.user_password.as_ref().map(|_| "[REDACTED]"),
             )
+            .field("read_only", &self.read_only)
             .finish()
     }
 }
@@ -671,5 +690,37 @@ mod debug_tests {
         let redacted = backend.redact_secrets("unable to reach the server", &args);
 
         assert_eq!(redacted, "unable to reach the server");
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!PassboltBackend::new().is_read_only());
+        assert!(PassboltBackend::new().with_read_only(true).is_read_only());
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_configured_check() {
+        // ensure_writable() precedes the is_configured() check, so no
+        // `passbolt` process is spawned when read-only.
+        let backend = PassboltBackend::new().with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(name) if name == "Passbolt"));
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = PassboltBackend::new().with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
     }
 }

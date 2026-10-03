@@ -22,6 +22,9 @@ use crate::models::Credentials;
 pub struct PassBackend {
     /// Optional custom password store directory (defaults to ~/.password-store)
     store_dir: Option<String>,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the store is left untouched.
+    read_only: bool,
 }
 
 impl Default for PassBackend {
@@ -40,7 +43,18 @@ impl PassBackend {
     /// A new `PassBackend` instance
     #[must_use]
     pub fn new(store_dir: Option<String>) -> Self {
-        Self { store_dir }
+        Self {
+            store_dir,
+            read_only: false,
+        }
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the store is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
+        self
     }
 
     /// Creates a `PassBackend` from an optional store directory path.
@@ -249,6 +263,7 @@ impl PassBackend {
 #[async_trait]
 impl SecretBackend for PassBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Store username if present
         if let Some(username) = &credentials.username {
             self.store_value(connection_id, "username", username)
@@ -296,6 +311,7 @@ impl SecretBackend for PassBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Delete all stored values for this connection
         // Ignore errors for individual fields (they might not exist)
         let _ = self.delete_value(connection_id, "username").await;
@@ -331,12 +347,17 @@ impl SecretBackend for PassBackend {
     fn display_name(&self) -> &'static str {
         "Pass (Unix Password Manager)"
     }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
+    }
 }
 
 impl std::fmt::Debug for PassBackend {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PassBackend")
             .field("store_dir", &self.store_dir)
+            .field("read_only", &self.read_only)
             .finish()
     }
 }
@@ -360,5 +381,40 @@ mod debug_tests {
             rendered.contains("store_dir"),
             "unexpected Debug shape: {rendered}"
         );
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!PassBackend::new(None).is_read_only());
+        assert!(PassBackend::new(None).with_read_only(true).is_read_only());
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_touching_the_store() {
+        // The guard is the first line of store(), so it short-circuits with
+        // ReadOnly whether or not `pass` is installed — a deterministic test
+        // that does not depend on the environment.
+        let backend = PassBackend::new(Some("/nonexistent/store".to_string())).with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, SecretError::ReadOnly(name) if name == "Pass (Unix Password Manager)")
+        );
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = PassBackend::new(Some("/nonexistent/store".to_string())).with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
     }
 }

@@ -49,6 +49,9 @@ pub struct OnePasswordBackend {
     vault_name: String,
     /// Account shorthand (for multi-account setups)
     account: Option<String>,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the vault is left untouched.
+    read_only: bool,
 }
 
 /// 1Password item structure for JSON parsing
@@ -111,6 +114,7 @@ impl OnePasswordBackend {
             service_account_token: None,
             vault_name: "RustConn".to_string(),
             account: None,
+            read_only: false,
         }
     }
 
@@ -121,6 +125,7 @@ impl OnePasswordBackend {
             service_account_token: Some(token),
             vault_name: "RustConn".to_string(),
             account: None,
+            read_only: false,
         }
     }
 
@@ -128,6 +133,14 @@ impl OnePasswordBackend {
     #[must_use]
     pub fn with_vault_name(mut self, name: impl Into<String>) -> Self {
         self.vault_name = name.into();
+        self
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the vault is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
         self
     }
 
@@ -359,6 +372,7 @@ impl Default for OnePasswordBackend {
 #[async_trait]
 impl SecretBackend for OnePasswordBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if signed in
         if !self.is_signed_in().await {
             return Err(SecretError::BackendUnavailable(
@@ -471,6 +485,7 @@ impl SecretBackend for OnePasswordBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if signed in
         if !self.is_signed_in().await {
             return Err(SecretError::BackendUnavailable(
@@ -515,6 +530,10 @@ impl SecretBackend for OnePasswordBackend {
 
     fn display_name(&self) -> &'static str {
         "1Password"
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
     }
 }
 
@@ -733,6 +752,7 @@ impl std::fmt::Debug for OnePasswordBackend {
             )
             .field("vault_name", &self.vault_name)
             .field("account", &self.account)
+            .field("read_only", &self.read_only)
             .finish_non_exhaustive()
     }
 }
@@ -754,5 +774,41 @@ mod debug_tests {
         );
         assert!(rendered.contains("OnePasswordBackend"));
         assert!(rendered.contains("service_account_token_present"));
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!OnePasswordBackend::new().is_read_only());
+        assert!(
+            OnePasswordBackend::new()
+                .with_read_only(true)
+                .is_read_only()
+        );
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_signin_check() {
+        // ensure_writable() precedes the is_signed_in() check, so no `op`
+        // process is spawned when read-only.
+        let backend = OnePasswordBackend::new().with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(name) if name == "1Password"));
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = OnePasswordBackend::new().with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
     }
 }
