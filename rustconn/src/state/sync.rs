@@ -160,6 +160,30 @@ impl AppState {
             }
         }
 
+        // Rename groups matched by id whose name changed on the Master
+        // (SYNC-1). These used to be a delete + create, which orphaned the
+        // connections filed under the group; now the group keeps its id and is
+        // renamed in place. Reparenting on a move is not applied here: the
+        // Import side flattens every synced subgroup directly under the Import
+        // root (see the create loop above), so there is no nested parent to move
+        // between — the group's name is the only mutable attribute on this path.
+        for (group_id, sync_group) in &merge_result.groups_to_update {
+            if let Some(existing) = self.connection_manager.get_group(*group_id)
+                && existing.name != sync_group.name
+            {
+                let mut updated = existing.clone();
+                updated.name.clone_from(&sync_group.name);
+                if let Err(e) = self.connection_manager.update_group(*group_id, updated) {
+                    tracing::warn!(
+                        id = %group_id,
+                        name = %sync_group.name,
+                        ?e,
+                        "Failed to rename synced group"
+                    );
+                }
+            }
+        }
+
         // Create new connections
         for sync_conn in &merge_result.connections_to_create {
             let conn = rustconn_core::sync::group_export::sync_connection_to_connection(
