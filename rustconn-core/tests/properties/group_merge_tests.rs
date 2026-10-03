@@ -20,7 +20,7 @@ use rustconn_core::models::{
     SshConfig,
 };
 use rustconn_core::sync::group_export::{GroupSyncExport, SyncConnection, SyncGroup};
-use rustconn_core::sync::group_merge::{GroupMergeEngine, GroupMergeResult};
+use rustconn_core::sync::group_merge::GroupMergeEngine;
 use rustconn_core::sync::manager::SyncManager;
 use rustconn_core::sync::settings::{SyncMode, SyncSettings};
 use rustconn_core::sync::variable_template::VariableTemplate;
@@ -701,14 +701,26 @@ proptest! {
             &export,
             &no_variables,
         );
-        prop_assert_eq!(&direct, &GroupMergeResult::default());
+        prop_assert!(direct.connections_to_create.is_empty());
+        prop_assert!(direct.connections_to_update.is_empty());
+        prop_assert!(direct.connections_to_delete.is_empty());
+        prop_assert!(direct.groups_to_create.is_empty());
+        prop_assert!(direct.groups_to_update.is_empty());
+        prop_assert!(direct.groups_to_delete.is_empty());
+        prop_assert!(direct.variables_to_create.is_empty());
 
         // ...and through `SyncManager`, which hands the engine the subtree only.
         let mut importer = SyncManager::new(settings);
         let (via_manager, report) = importer
             .import_group(import_root_id, &local_groups, &local_connections, &no_variables)
             .map_err(|e| TestCaseError::fail(e.to_string()))?;
-        prop_assert_eq!(&via_manager, &GroupMergeResult::default());
+        prop_assert!(via_manager.connections_to_create.is_empty());
+        prop_assert!(via_manager.connections_to_update.is_empty());
+        prop_assert!(via_manager.connections_to_delete.is_empty());
+        prop_assert!(via_manager.groups_to_create.is_empty());
+        prop_assert!(via_manager.groups_to_update.is_empty());
+        prop_assert!(via_manager.groups_to_delete.is_empty());
+        prop_assert!(via_manager.variables_to_create.is_empty());
         prop_assert_eq!(report.group_id, import_root_id);
     }
 }

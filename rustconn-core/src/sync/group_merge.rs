@@ -55,6 +55,11 @@ pub struct GroupMergeResult {
     pub groups_to_delete: Vec<Uuid>,
     /// Remote variable templates not present locally — should be created.
     pub variables_to_create: Vec<VariableTemplate>,
+    /// The Master export's root group name, needed by the apply side to turn
+    /// each created group/connection's full `path`/`group_path` into a path
+    /// *relative to the synced root* and so rebuild the nested hierarchy under
+    /// the Import root. Empty on a `Default` (no-op) result.
+    pub remote_root: String,
 }
 
 /// Composite key for connection lookup: `(name, group path inside the synced
@@ -126,6 +131,9 @@ impl GroupMergeEngine {
             local_variable_names,
             &mut result,
         );
+
+        // Carry the Master root name so the apply side can rebuild nesting.
+        result.remote_root = remote_root.to_owned();
 
         result
     }
@@ -355,7 +363,11 @@ fn local_relative_paths(root_id: Uuid, local_groups: &[ConnectionGroup]) -> Hash
 ///
 /// The root's path is removed as a whole string rather than segment by
 /// segment, so a `/` inside a group name cannot shift the split.
-fn relative_path<'a>(path: &'a str, root: &str) -> &'a str {
+/// Returns `path` relative to `root` — the synced-group-internal path with the
+/// root segment stripped (`""` for the root itself). Public so the apply side
+/// can map a created group/connection's full path onto the local tree with the
+/// exact same semantics the merge used.
+pub fn relative_path<'a>(path: &'a str, root: &str) -> &'a str {
     if path == root {
         return "";
     }
@@ -372,6 +384,41 @@ mod tests {
     use crate::models::{
         AutomationConfig, PasswordSource, ProtocolConfig, ProtocolType, SshConfig,
     };
+
+    /// Asserts the merge produced no local changes. Checks the action buckets
+    /// rather than `== GroupMergeResult::default()`, because the result also
+    /// carries metadata (`remote_root`) that is legitimately populated even on
+    /// a no-op merge.
+    fn assert_no_changes(result: &GroupMergeResult) {
+        assert!(
+            result.connections_to_create.is_empty(),
+            "unexpected creates"
+        );
+        assert!(
+            result.connections_to_update.is_empty(),
+            "unexpected updates"
+        );
+        assert!(
+            result.connections_to_delete.is_empty(),
+            "unexpected deletes"
+        );
+        assert!(
+            result.groups_to_create.is_empty(),
+            "unexpected group creates"
+        );
+        assert!(
+            result.groups_to_update.is_empty(),
+            "unexpected group updates"
+        );
+        assert!(
+            result.groups_to_delete.is_empty(),
+            "unexpected group deletes"
+        );
+        assert!(
+            result.variables_to_create.is_empty(),
+            "unexpected variables"
+        );
+    }
 
     /// Helper: create a minimal `SyncConnection`.
     fn make_sync_conn(name: &str, group_path: &str) -> SyncConnection {
@@ -463,7 +510,7 @@ mod tests {
             &make_export(vec![], vec![], vec![]),
             &HashSet::new(),
         );
-        assert_eq!(result, GroupMergeResult::default());
+        assert_no_changes(&result);
     }
 
     #[test]
@@ -763,6 +810,39 @@ mod tests {
         );
     }
 
+    #[test]
+    fn merge_result_carries_remote_root_for_nested_rebuild() {
+        // The apply side rebuilds nesting by stripping the Master root from each
+        // created group's full path. Verify the result exposes that root and
+        // that a nested group arrives with a full path that relative_path turns
+        // into the correct synced-root-relative path.
+        let root = make_local_group("Root", None);
+        // Remote has a nested subgroup Web/Prod that is absent locally.
+        let remote_web = make_sync_group("Web", "Root/Web");
+        let remote_prod = make_sync_group("Prod", "Root/Web/Prod");
+        let export = make_export(vec![remote_web, remote_prod], vec![], vec![]);
+
+        let result = GroupMergeEngine::merge(root.id, &[root], &[], &export, &HashSet::new());
+
+        assert_eq!(result.remote_root, "Root", "root name must be carried");
+        assert_eq!(result.groups_to_create.len(), 2);
+
+        // The deeper group's path, made relative to the carried root, is the
+        // nested path the apply side files it under.
+        let prod = result
+            .groups_to_create
+            .iter()
+            .find(|g| g.name == "Prod")
+            .expect("Prod group created");
+        assert_eq!(relative_path(&prod.path, &result.remote_root), "Web/Prod");
+        let web = result
+            .groups_to_create
+            .iter()
+            .find(|g| g.name == "Web")
+            .expect("Web group created");
+        assert_eq!(relative_path(&web.path, &result.remote_root), "Web");
+    }
+
     // ---------------------------------------------------------------
     // Phase 1: id-based group matching (SYNC-1)
     // ---------------------------------------------------------------
@@ -1035,7 +1115,7 @@ mod tests {
             &HashSet::new(),
         );
 
-        assert_eq!(result, GroupMergeResult::default());
+        assert_no_changes(&result);
     }
 
     /// Renaming the local Import group is a local choice; it must not
@@ -1054,7 +1134,7 @@ mod tests {
             &export,
             &HashSet::new(),
         );
-        assert_eq!(before, GroupMergeResult::default());
+        assert_no_changes(&before);
 
         root.name = "Prod (team copy)".to_owned();
         let after = GroupMergeEngine::merge(
@@ -1064,7 +1144,7 @@ mod tests {
             &export,
             &HashSet::new(),
         );
-        assert_eq!(after, GroupMergeResult::default());
+        assert_no_changes(&after);
     }
 
     /// An Import root inside another local group. With the parent in the
@@ -1088,7 +1168,7 @@ mod tests {
             &export,
             &HashSet::new(),
         );
-        assert_eq!(with_parent, GroupMergeResult::default());
+        assert_no_changes(&with_parent);
 
         let subtree_only = GroupMergeEngine::merge(
             root.id,
@@ -1097,7 +1177,7 @@ mod tests {
             &export,
             &HashSet::new(),
         );
-        assert_eq!(subtree_only, GroupMergeResult::default());
+        assert_no_changes(&subtree_only);
     }
 
     /// Matching inside the synced group must not weaken deletion: a

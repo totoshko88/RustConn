@@ -150,23 +150,47 @@ impl AppState {
         root_group_id: Uuid,
         merge_result: &rustconn_core::sync::GroupMergeResult,
     ) {
-        // Create new groups
-        for sync_group in &merge_result.groups_to_create {
-            if let Err(e) = self
-                .connection_manager
-                .create_group_with_parent(sync_group.name.clone(), root_group_id)
-            {
-                tracing::warn!(name = %sync_group.name, ?e, "Failed to create synced group");
+        // Create new groups, rebuilding the nested hierarchy under the Import
+        // root. Each `sync_group.path` is the Master-side full path; strip the
+        // Master root to get the path relative to the synced group, then resolve
+        // its parent in a running `relative_path -> local_id` map (seeded with
+        // the Import root at `""`). Groups are created shallowest-first so a
+        // parent always exists before its child; a missing intermediate is
+        // created on demand. This replaces the old behaviour that flattened
+        // every synced subgroup directly under the Import root.
+        use rustconn_core::sync::group_merge::relative_path;
+        let remote_root = merge_result.remote_root.as_str();
+        let mut path_to_local: std::collections::HashMap<String, Uuid> =
+            std::collections::HashMap::new();
+        path_to_local.insert(String::new(), root_group_id);
+
+        // Shallowest-first by segment count so parents precede children.
+        let mut groups_sorted: Vec<&rustconn_core::sync::group_export::SyncGroup> =
+            merge_result.groups_to_create.iter().collect();
+        groups_sorted.sort_by_key(|g| {
+            let rel = relative_path(&g.path, remote_root);
+            if rel.is_empty() {
+                0
+            } else {
+                rel.matches('/').count() + 1
             }
+        });
+
+        for sync_group in groups_sorted {
+            let rel = relative_path(&sync_group.path, remote_root);
+            if rel.is_empty() {
+                continue; // the synced root itself is never (re)created
+            }
+            // Creates this group and any missing ancestors, caching each by its
+            // relative path. Idempotent: a group already created (e.g. as an
+            // intermediate for an earlier, deeper sibling) is returned from the
+            // cache rather than created twice.
+            self.ensure_synced_group_path(rel, root_group_id, &mut path_to_local);
         }
 
         // Rename groups matched by id whose name changed on the Master
-        // (SYNC-1). These used to be a delete + create, which orphaned the
-        // connections filed under the group; now the group keeps its id and is
-        // renamed in place. Reparenting on a move is not applied here: the
-        // Import side flattens every synced subgroup directly under the Import
-        // root (see the create loop above), so there is no nested parent to move
-        // between — the group's name is the only mutable attribute on this path.
+        // (SYNC-1). The group keeps its id and is renamed in place so its
+        // connections stay attached, instead of the old delete + create.
         for (group_id, sync_group) in &merge_result.groups_to_update {
             if let Some(existing) = self.connection_manager.get_group(*group_id)
                 && existing.name != sync_group.name
@@ -184,11 +208,15 @@ impl AppState {
             }
         }
 
-        // Create new connections
+        // Create new connections under their real subgroup (resolved from the
+        // connection's `group_path` via the same map), falling back to the
+        // Import root if the path cannot be resolved.
         for sync_conn in &merge_result.connections_to_create {
+            let rel = relative_path(&sync_conn.group_path, remote_root);
+            let target_group = path_to_local.get(rel).copied().unwrap_or(root_group_id);
             let conn = rustconn_core::sync::group_export::sync_connection_to_connection(
                 sync_conn,
-                root_group_id,
+                target_group,
             );
             if let Err(e) = self.connection_manager.create_connection_from(conn) {
                 tracing::warn!(name = %sync_conn.name, ?e, "Failed to create synced connection");
@@ -267,6 +295,46 @@ impl AppState {
         for group_id in &merge_result.groups_to_delete {
             if let Err(e) = self.connection_manager.delete_group(*group_id) {
                 tracing::warn!(id = %group_id, ?e, "Failed to delete synced group");
+            }
+        }
+    }
+
+    /// Resolves a synced-group-relative path (e.g. `"Web/Prod"`, or `""` for the
+    /// Import root) to a local group id, creating any missing intermediate
+    /// groups along the way. `cache` maps already-resolved relative paths to
+    /// local ids and MUST contain `"" -> root_group_id`; newly created groups
+    /// are inserted into it so a sibling chain is built only once.
+    fn ensure_synced_group_path(
+        &mut self,
+        rel_path: &str,
+        root_group_id: Uuid,
+        cache: &mut std::collections::HashMap<String, Uuid>,
+    ) -> Uuid {
+        if rel_path.is_empty() {
+            return root_group_id;
+        }
+        if let Some(id) = cache.get(rel_path) {
+            return *id;
+        }
+        // Resolve (or create) the parent first, then this segment.
+        let (parent_rel, name) = match rel_path.rsplit_once('/') {
+            Some((parent, leaf)) => (parent.to_string(), leaf.to_string()),
+            None => (String::new(), rel_path.to_string()),
+        };
+        let parent_id = self.ensure_synced_group_path(&parent_rel, root_group_id, cache);
+        match self
+            .connection_manager
+            .create_group_with_parent(name, parent_id)
+        {
+            Ok(new_id) => {
+                cache.insert(rel_path.to_string(), new_id);
+                new_id
+            }
+            Err(e) => {
+                tracing::warn!(path = %rel_path, ?e, "Failed to create intermediate synced group");
+                // Fall back to the parent so the connection/group still lands
+                // somewhere reachable rather than being dropped.
+                parent_id
             }
         }
     }

@@ -1697,6 +1697,7 @@ mod tests {
                 is_secret: false,
                 default_value: None,
             }],
+            remote_root: "Prod".to_owned(),
         };
 
         let report = SyncReport::from_merge_result(Uuid::new_v4(), "Prod", &result, Utc::now());
@@ -1886,7 +1887,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(merge_result, GroupMergeResult::default());
+        // No local changes (remote_root metadata aside, which is populated).
+        assert!(merge_result.connections_to_create.is_empty());
+        assert!(merge_result.connections_to_update.is_empty());
+        assert!(merge_result.connections_to_delete.is_empty());
+        assert!(merge_result.groups_to_create.is_empty());
+        assert!(merge_result.groups_to_update.is_empty());
+        assert!(merge_result.groups_to_delete.is_empty());
+        assert!(merge_result.variables_to_create.is_empty());
         assert_eq!(report.group_id, import_root_id);
         assert_eq!(report.connections_added, 0);
         assert_eq!(report.connections_removed, 0);
