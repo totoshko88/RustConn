@@ -1439,6 +1439,9 @@ impl SettingsDialog {
             self.secrets_widgets.bitwarden_client_id_entry.clone();
         let bitwarden_client_secret_entry_clone =
             self.secrets_widgets.bitwarden_client_secret_entry.clone();
+        let bitwarden_read_only_row_clone = self.secrets_widgets.bitwarden_read_only_row.clone();
+        let bitwarden_root_search_row_clone =
+            self.secrets_widgets.bitwarden_root_search_row.clone();
         // Passbolt, 1Password, Pass — collect-only widgets cloned for the
         // close-time settings collection.
         let passbolt_passphrase_entry_clone =
@@ -1446,10 +1449,18 @@ impl SettingsDialog {
         let passbolt_storage_combo_clone = self.secrets_widgets.passbolt_storage_combo.clone();
         let passbolt_server_url_entry_clone =
             self.secrets_widgets.passbolt_server_url_entry.clone();
+        let passbolt_read_only_row_clone = self.secrets_widgets.passbolt_read_only_row.clone();
+        let passbolt_root_search_row_clone = self.secrets_widgets.passbolt_root_search_row.clone();
         let onepassword_token_entry_clone = self.secrets_widgets.onepassword_token_entry.clone();
         let onepassword_storage_combo_clone =
             self.secrets_widgets.onepassword_storage_combo.clone();
+        let onepassword_read_only_row_clone =
+            self.secrets_widgets.onepassword_read_only_row.clone();
+        let onepassword_root_search_row_clone =
+            self.secrets_widgets.onepassword_root_search_row.clone();
         let pass_store_dir_entry_clone = self.secrets_widgets.pass_store_dir_entry.clone();
+        let pass_read_only_row_clone = self.secrets_widgets.pass_read_only_row.clone();
+        let pass_root_search_row_clone = self.secrets_widgets.pass_root_search_row.clone();
         // Portable encrypted file — collect-only widgets.
         let portable_path_entry_clone = self.secrets_widgets.portable_path_entry.clone();
         let portable_passphrase_entry_clone =
@@ -1604,10 +1615,14 @@ impl SettingsDialog {
                 bitwarden_use_api_key_check: bitwarden_use_api_key_check_clone.clone(),
                 bitwarden_client_id_entry: bitwarden_client_id_entry_clone.clone(),
                 bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
+                bitwarden_read_only_row: bitwarden_read_only_row_clone.clone(),
+                bitwarden_root_search_row: bitwarden_root_search_row_clone.clone(),
                 bitwarden_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 onepassword_group: adw::PreferencesGroup::new(),     // dummy
                 onepassword_status_label: Label::new(None),          // dummy
                 onepassword_signin_button: Button::new(),            // dummy
+                onepassword_read_only_row: onepassword_read_only_row_clone.clone(),
+                onepassword_root_search_row: onepassword_root_search_row_clone.clone(),
                 onepassword_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 passbolt_group: adw::PreferencesGroup::new(),        // dummy
                 passbolt_status_label: Label::new(None),             // dummy
@@ -1615,6 +1630,8 @@ impl SettingsDialog {
                 passbolt_open_vault_button: Button::new(), // dummy, не використовується при збиранні
                 passbolt_passphrase_entry: passbolt_passphrase_entry_clone.clone(),
                 passbolt_storage_combo: passbolt_storage_combo_clone.clone(),
+                passbolt_read_only_row: passbolt_read_only_row_clone.clone(),
+                passbolt_root_search_row: passbolt_root_search_row_clone.clone(),
                 onepassword_token_entry: onepassword_token_entry_clone.clone(),
                 onepassword_storage_combo: onepassword_storage_combo_clone.clone(),
                 secret_tool_available: Rc::new(RefCell::new(None)), // dummy, не використовується при збиранні
@@ -1623,6 +1640,8 @@ impl SettingsDialog {
                 pass_store_dir_entry: pass_store_dir_entry_clone.clone(),
                 pass_store_dir_browse_button: Button::new(), // dummy, не використовується при збиранні
                 pass_status_label: Label::new(None), // dummy, не використовується при збиранні
+                pass_read_only_row: pass_read_only_row_clone.clone(),
+                pass_root_search_row: pass_root_search_row_clone.clone(),
                 encrypted_file_group: adw::PreferencesGroup::new(), // dummy
                 portable_group: adw::PreferencesGroup::new(), // dummy
                 portable_path_entry: portable_path_entry_clone.clone(),
