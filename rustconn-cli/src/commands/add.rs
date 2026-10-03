@@ -83,6 +83,8 @@ pub(super) struct AddParams<'a> {
     pub resolution: Option<&'a str>,
     pub color_depth: Option<u8>,
     pub disable_nla: bool,
+    pub kerberos: bool,
+    pub kdc_address: Option<&'a str>,
     pub rdp_no_dynamic_resolution: bool,
     pub rdp_smart_sizing: bool,
     pub keyboard_layout: Option<u32>,
@@ -359,6 +361,8 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         || params.resolution.is_some()
         || params.color_depth.is_some()
         || params.disable_nla
+        || params.kerberos
+        || params.kdc_address.is_some()
         || params.rdp_no_dynamic_resolution
         || params.rdp_smart_sizing
         || params.rdp_freerdp_client.is_some()
@@ -1111,6 +1115,18 @@ pub(super) fn apply_rdp_fields(
     // NLA
     if params.disable_nla {
         cfg.disable_nla = true;
+    }
+
+    // Kerberos for NLA (issue #351). The KDC address is validated through the
+    // same `normalize_kdc_url` the GUI editor uses, so the CLI and GUI accept
+    // exactly the same forms; a malformed address is a hard error here (the CLI
+    // has no live feedback) rather than a value the connect path would drop.
+    if params.kerberos {
+        cfg.kerberos_enabled = true;
+    }
+    if let Some(address) = params.kdc_address {
+        cfg.kdc_proxy_url = rustconn_core::rdp_client::normalize_kdc_url(address)
+            .map_err(|e| CliError::Config(format!("invalid KDC address: {e}")))?;
     }
 
     // Dynamic resolution / smart sizing (issue #341). Dynamic resolution

@@ -510,3 +510,135 @@ fn test_version() {
         stdout
     );
 }
+
+// ============================================================================
+// Kerberos (RDP NLA) flags — issue #351
+// ============================================================================
+
+/// Loads the single saved RDP connection's config from a CLI config dir.
+#[cfg(test)]
+fn load_only_rdp(config_dir: &std::path::Path) -> rustconn_core::models::RdpConfig {
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::models::ProtocolConfig;
+    let manager = ConfigManager::with_config_dir(config_dir.to_path_buf());
+    let connections = manager.load_connections().expect("load connections");
+    let conn = connections.first().expect("one connection was added");
+    match &conn.protocol_config {
+        ProtocolConfig::Rdp(cfg) => cfg.clone(),
+        other => panic!("expected an RDP connection, got {other:?}"),
+    }
+}
+
+#[test]
+fn add_kerberos_stores_and_normalizes_the_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        out.status.success(),
+        "add with --kerberos should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+
+    let cfg = load_only_rdp(config_dir);
+    assert!(cfg.kerberos_enabled, "kerberos should be enabled");
+    assert_eq!(
+        cfg.kdc_proxy_url.as_deref(),
+        Some("tcp://dc1.example.com:88"),
+        "the KDC address must be stored in normalized form"
+    );
+}
+
+#[test]
+fn add_rejects_a_malformed_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "ldap://dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        !out.status.success(),
+        "a malformed KDC address must fail the add rather than store a dropped value"
+    );
+    assert!(
+        stderr_str(&out).contains("invalid KDC address"),
+        "the error should name the problem. stderr: {}",
+        stderr_str(&out)
+    );
+}
+
+#[test]
+fn update_can_disable_kerberos_and_clear_the_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    // Turn Kerberos off and clear the KDC address in one update.
+    let upd = run_cli(
+        &[
+            "update",
+            "win-dc",
+            "--kerberos",
+            "false",
+            "--kdc-address",
+            "",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        upd.status.success(),
+        "update should succeed. stderr: {}",
+        stderr_str(&upd)
+    );
+
+    let cfg = load_only_rdp(config_dir);
+    assert!(!cfg.kerberos_enabled, "kerberos should be disabled");
+    assert_eq!(
+        cfg.kdc_proxy_url, None,
+        "an empty --kdc-address must clear the stored value"
+    );
+}

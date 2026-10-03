@@ -334,6 +334,19 @@ pub enum Commands {
         #[arg(long)]
         disable_nla: bool,
 
+        /// Authenticate RDP NLA (CredSSP) with Kerberos instead of NTLM.
+        /// Needed for Active Directory "Protected Users" accounts. Requires NLA
+        /// and the server's DNS name (not an IP address).
+        #[arg(long)]
+        kerberos: bool,
+
+        /// KDC address for --kerberos: a domain controller or an MS-KKDCP proxy,
+        /// e.g. dc1.example.com, tcp://dc1.example.com:88, or
+        /// https://gw.example.com/KdcProxy. Empty leaves the lookup to the KDC
+        /// discovery order. Validated on save.
+        #[arg(long, value_name = "ADDRESS")]
+        kdc_address: Option<String>,
+
         /// Disable dynamic resolution for external RDP (for legacy servers)
         #[arg(long)]
         rdp_no_dynamic_resolution: bool,
@@ -878,6 +891,17 @@ pub enum Commands {
         /// Disable Network Level Authentication for RDP
         #[arg(long)]
         disable_nla: bool,
+
+        /// Kerberos for RDP NLA (CredSSP). Bare flag enables; `false` disables.
+        /// Needed for Active Directory "Protected Users" accounts.
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        kerberos: Option<bool>,
+
+        /// KDC address for Kerberos: a domain controller or an MS-KKDCP proxy
+        /// (e.g. dc1.example.com or https://gw.example.com/KdcProxy). Pass an
+        /// empty value to clear it. Validated on save.
+        #[arg(long, value_name = "ADDRESS")]
+        kdc_address: Option<String>,
 
         /// Dynamic resolution for external RDP. Bare flag enables; `false` disables.
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
