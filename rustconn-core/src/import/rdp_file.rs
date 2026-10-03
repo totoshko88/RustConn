@@ -24,7 +24,7 @@ use std::path::Path;
 
 use super::traits::{ImportResult, ImportSource, read_import_file};
 use crate::error::ImportError;
-use crate::models::{Connection, ProtocolConfig, RdpConfig, RdpGateway, Resolution};
+use crate::models::{Connection, ProtocolConfig, RdpAudioMode, RdpConfig, RdpGateway, Resolution};
 
 /// Parsed contents of an `.rdp` file.
 #[derive(Debug, Default)]
@@ -119,8 +119,20 @@ impl RdpFileImporter {
             _ => None,
         };
 
-        // Audio
-        let audio_redirect = fields.get("audiomode").is_some_and(|v| v == "0");
+        // Audio. The .rdp `audiomode` is three-way: 0 = play on this computer
+        // (Local), 1 = leave on the remote (Remote), 2 = do not play (None).
+        // Map it to the three-state `audio_mode` so Remote and None round-trip
+        // (the legacy `audio_redirect` boolean cannot tell them apart — both are
+        // "not local" — and the export writes all three modes back out). Keep
+        // `audio_redirect` as the back-compat mirror (true only for Local). A
+        // missing or unrecognised value leaves both at their defaults.
+        let audio_mode = match fields.get("audiomode") {
+            Some("0") => Some(RdpAudioMode::Local),
+            Some("1") => Some(RdpAudioMode::Remote),
+            Some("2") => Some(RdpAudioMode::None),
+            _ => None,
+        };
+        let audio_redirect = audio_mode == Some(RdpAudioMode::Local);
 
         // Clipboard
         let clipboard = fields.get_bool("redirectclipboard").unwrap_or(true);
@@ -146,6 +158,7 @@ impl RdpFileImporter {
         let rdp_config = ProtocolConfig::Rdp(RdpConfig {
             resolution,
             audio_redirect,
+            audio_mode,
             gateway,
             clipboard_enabled: clipboard,
             printer_enabled,
@@ -358,6 +371,42 @@ gatewayhostname:s:gw.example.com
         assert_eq!(conn.host, "server.example.com");
         assert_eq!(conn.port, 3389);
         assert_eq!(conn.name, "test");
+    }
+
+    #[test]
+    fn test_parse_rdp_file_audiomode_three_way() {
+        use crate::models::RdpAudioMode;
+
+        // The .rdp `audiomode` is three-way (0=local, 1=remote, 2=none). The
+        // import used to collapse it to a bool, so Remote and None both became
+        // "not redirected" and were indistinguishable on re-export. Each value
+        // must now map to a distinct `effective_audio_mode()`.
+        let cases = [
+            ("0", RdpAudioMode::Local),
+            ("1", RdpAudioMode::Remote),
+            ("2", RdpAudioMode::None),
+        ];
+        let dir = tempfile::tempdir().unwrap();
+        for (value, expected) in cases {
+            let path = dir.path().join(format!("audio-{value}.rdp"));
+            fs::write(
+                &path,
+                format!("full address:s:server.example.com\naudiomode:i:{value}\n"),
+            )
+            .unwrap();
+
+            let conn = RdpFileImporter::parse_rdp_file(&path).unwrap();
+            let ProtocolConfig::Rdp(ref rdp) = conn.protocol_config else {
+                panic!("expected RDP protocol config for audiomode {value}");
+            };
+            assert_eq!(
+                rdp.effective_audio_mode(),
+                expected,
+                "audiomode:i:{value} should import as {expected:?}"
+            );
+            // Back-compat mirror: the legacy boolean is true only for Local.
+            assert_eq!(rdp.audio_redirect, expected == RdpAudioMode::Local);
+        }
     }
 
     #[test]
