@@ -3328,6 +3328,8 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 - **Version** — whether the backend's client program is installed, and which version
 - **Status** — whether that backend can actually store and read a password *right now*. This is the line to read: a backend can be installed and still be unusable because it is locked, not logged in, has no database file chosen, or has no keyring service answering. Shown for every backend. If you select one that is not ready, a banner appears under the header bar after you close Settings, naming the backend and what is missing.
 - **Also read from the encrypted file** — look in this computer's encrypted credential file as well as in the selected backend when resolving a password, so entries saved before you switched backend keep working. Reading only: saving always targets the selected backend, and a write it refuses is reported so you can choose where the password goes instead of having it moved for you.
+- **Read-only mode** — RustConn reads from this backend but never writes to it. Saving, deleting or renaming a password is refused and reported, so you choose where it goes instead of a silent failure. Use it when another tool owns the vault and RustConn should not modify it. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
+- **Search from vault root** — when a password is not found at RustConn's own scoped path, look through the whole vault before giving up. Reading only: saving always writes back to RustConn's scoped path, so entries you create stay organised and this cannot overwrite another tool's data. Use it to reach credentials another tool stored outside RustConn's area. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
 - **Copy Passwords…** — move passwords you already have from one store into another. This is the supported way to migrate after changing backend.
 - **Credential Encryption** — Backend master passwords encrypted with AES-256-GCM + Argon2id (machine-specific key)
 - **Bitwarden Settings:** Vault status, unlock button, master password persistence, save to system keyring, auto-unlock, API key authentication for 2FA
@@ -3931,6 +3933,8 @@ Instead of storing passwords directly per-connection, you can use **Global Varia
 | Portable encrypted file | Sharing one password set across your own machines, including Linux ↔ macOS | High — AES-256-GCM under an Argon2id passphrase; the key is never written to disk |
 
 Configure your preferred backend in Settings → Secrets. RustConn falls back to the system keyring if the preferred backend is unavailable.
+
+Most backends (Bitwarden, 1Password, Passbolt, Pass and KeePassXC) also carry two per-backend options on their Secrets-page group: **Read-only mode**, so RustConn reads but never writes to a vault another tool owns, and **Search from vault root**, so a lookup that misses RustConn's own scoped path falls back to searching the whole vault. Both widen or restrict *reading* only — saves always target RustConn's scoped path. See [Settings → Secrets](#secrets-page).
 
 ### Portable Encrypted File (cloud-syncable)
 
