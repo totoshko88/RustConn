@@ -26,12 +26,15 @@
 //!
 //! ## Read-only / root-search capabilities
 //!
-//! [`Self::is_read_only`] and [`Self::searches_from_root`] return the trait
-//! defaults (`false`) for now. [`Self::with_read_only`] records the flag so the
-//! builder shape matches the other backends, but **it is not yet consulted** —
-//! `store`/`delete` do not call `ensure_writable()`. Wiring read-only
-//! enforcement (and root-search reads) through this backend lands in step 2;
-//! keeping it out here keeps this step bounded.
+//! [`Self::is_read_only`] returns the stored read-only flag and read-only is
+//! now **enforced**: `store` and `delete` call [`SecretBackend::ensure_writable`]
+//! as their first action, so a backend put into read-only mode via
+//! [`Self::with_read_only`] refuses every mutation with [`SecretError::ReadOnly`] before touching the vault
+//! (mirroring `PassBackend`). The guard runs ahead of the delegated writer's
+//! own path validation, so an invalid path still surfaces as `ReadOnly`.
+//!
+//! [`Self::searches_from_root`] still returns the trait default (`false`);
+//! vault-root search reads are a separate, later addition.
 
 use std::path::{Path, PathBuf};
 
@@ -68,9 +71,8 @@ pub struct KdbxBackend {
     kdbx_path: PathBuf,
     /// How to unlock the database (password / key file / `YubiKey`).
     unlock: UnlockFactors,
-    /// When true, [`Self::is_read_only`] reports read-only. **Stored but not
-    /// yet consulted** — enforcement (`ensure_writable()` in `store`/`delete`)
-    /// is wired in step 2. See the module docs.
+    /// When true, [`Self::is_read_only`] reports read-only and `store`/`delete`
+    /// refuse with [`SecretError::ReadOnly`] via `ensure_writable()`.
     read_only: bool,
 }
 
@@ -109,10 +111,10 @@ impl KdbxBackend {
 
     /// Records whether the backend is read-only.
     ///
-    /// **The flag is stored but not yet enforced.** `store`/`delete` do not
-    /// consult it in this step; step 2 wires `ensure_writable()` through the
-    /// delegated writers. The builder exists now so [`KdbxBackend`] matches the
-    /// `with_read_only` shape of the other backends (e.g. `PassBackend`).
+    /// When `true`, `store` and `delete` are refused with
+    /// [`SecretError::ReadOnly`] (via `ensure_writable()`) before the vault is
+    /// touched, matching the `with_read_only` shape of the other backends (e.g.
+    /// `PassBackend`).
     #[must_use]
     pub const fn with_read_only(mut self, read_only: bool) -> Self {
         self.read_only = read_only;
@@ -149,8 +151,11 @@ impl SecretBackend for KdbxBackend {
     /// sites pass it; `save_password_to_kdbx` applies the `RustConn/` prefixing
     /// internally, so no prefixing is reimplemented here.
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
-        // NOTE: read-only enforcement (`ensure_writable()`) is intentionally
-        // NOT applied here — see the module docs; it is wired in step 2.
+        // Read-only enforcement: refuse before any kdbx side effect, mirroring
+        // `PassBackend::store`. The guard runs ahead of the delegated writer's
+        // own path validation, so a read-only backend returns `ReadOnly` even
+        // for an invalid path.
+        self.ensure_writable()?;
         let username = credentials.username.as_deref().unwrap_or("");
         // Delegate the password write. A `None` password still records the
         // entry/username, matching how the entry would otherwise be created.
@@ -197,8 +202,9 @@ impl SecretBackend for KdbxBackend {
     /// The delete target is the full entry path `RustConn/<connection_id>`,
     /// matching the path `save_password_to_kdbx` writes to.
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
-        // NOTE: read-only enforcement (`ensure_writable()`) is intentionally
-        // NOT applied here — see the module docs; it is wired in step 2.
+        // Read-only enforcement: refuse before computing the entry path or
+        // delegating, so a read-only backend never touches the vault.
+        self.ensure_writable()?;
         let entry_path = format!(
             "{}{}{}",
             super::hierarchy::KEEPASS_ROOT_GROUP,
@@ -232,7 +238,8 @@ impl SecretBackend for KdbxBackend {
     }
 
     fn is_read_only(&self) -> bool {
-        // Reports the stored flag. Enforcement in store/delete is step 2.
+        // Reports the stored flag; `store`/`delete` enforce it via
+        // `ensure_writable()`.
         self.read_only
     }
 
@@ -256,6 +263,7 @@ impl std::fmt::Debug for KdbxBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::SecretError;
 
     #[test]
     fn backend_identity_and_display_name() {
@@ -275,8 +283,8 @@ mod tests {
 
     #[test]
     fn with_read_only_stores_the_flag() {
-        // The flag is recorded and reported by is_read_only(). (Enforcement in
-        // store/delete is deferred to step 2, so this only proves storage.)
+        // The flag is recorded and reported by is_read_only(); enforcement in
+        // store/delete is covered by the read_only_* tests below.
         assert!(!KdbxBackend::new("/tmp/vault.kdbx").is_read_only());
         assert!(
             KdbxBackend::new("/tmp/vault.kdbx")
@@ -326,6 +334,36 @@ mod tests {
         assert!(
             matches!(err, crate::error::SecretError::KeePassXC(ref m) if m.contains(".kdbx")),
             "expected delegated KeePassXC .kdbx validation error, got {err:?}"
+        );
+    }
+
+    /// Read-only enforcement: `store` must return [`SecretError::ReadOnly`]
+    /// naming this backend, and must do so BEFORE the delegated writer's path
+    /// validation — proving the `ensure_writable()` guard is the first action.
+    /// `/nonexistent/x.kdbx` would otherwise yield a `KeePassXC` validation
+    /// error; getting `ReadOnly` instead proves the guard short-circuits first.
+    #[tokio::test]
+    async fn read_only_refuses_store_before_delegating() {
+        let backend = KdbxBackend::new("/nonexistent/x.kdbx").with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, SecretError::ReadOnly(ref name) if name == "KeePass (KDBX file)"),
+            "expected ReadOnly(KeePass (KDBX file)), got {err:?}"
+        );
+    }
+
+    /// Read-only enforcement: `delete` must likewise return
+    /// [`SecretError::ReadOnly`] before touching the vault.
+    #[tokio::test]
+    async fn read_only_refuses_delete_before_delegating() {
+        let backend = KdbxBackend::new("/nonexistent/x.kdbx").with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(
+            matches!(err, SecretError::ReadOnly(ref name) if name == "KeePass (KDBX file)"),
+            "expected ReadOnly(KeePass (KDBX file)), got {err:?}"
         );
     }
 }
