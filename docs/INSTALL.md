@@ -497,6 +497,11 @@ Without it the session simply uses RemoteFX and works. Note this affects the
 uses the distribution package for `/gfx:AVC420`, which is why `libopenh264`
 remains a recommended package.
 
+When H.264 is unavailable the embedded client no longer falls back silently: the
+session shows a one-time warning toast saying it is using RemoteFX. If the cause
+is a refused non-Cisco build, the toast names `RUSTCONN_OPENH264` and
+ciscobinary.openh264.org so the fix is reachable without reading the logs.
+
 ### Optional Password Managers
 
 | Manager | CLI | Installation |
