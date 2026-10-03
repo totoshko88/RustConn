@@ -128,6 +128,24 @@ impl Marked for WorkspaceProfilesFile {
     }
 }
 
+impl Marked for HistoryFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TombstonesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TrashFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
 /// Wrapper for serializing a list of snippets
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct SnippetsFile {
@@ -161,6 +179,9 @@ struct TemplatesFile {
 /// Wrapper for serializing connection history
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct HistoryFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     entries: Vec<ConnectionHistoryEntry>,
 }
@@ -168,6 +189,9 @@ struct HistoryFile {
 /// Wrapper for serializing Simple Sync tombstones
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct TombstonesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     tombstones: Vec<Tombstone>,
 }
@@ -175,6 +199,9 @@ struct TombstonesFile {
 /// Wrapper for serializing trash (deleted items)
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub(super) struct TrashFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
     #[serde(default)]
@@ -842,7 +869,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_history(&self) -> ConfigResult<Vec<ConnectionHistoryEntry>> {
         let path = self.config_dir.join(HISTORY_FILE);
-        Self::load_toml_file::<HistoryFile>(&path).map(|f| f.entries)
+        self.load_marked_toml_file::<HistoryFile>(&path)
+            .map(|f| f.entries)
     }
 
     /// Saves connection history to the configuration file
@@ -856,6 +884,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(HISTORY_FILE);
         let file = HistoryFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             entries: entries.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -872,7 +901,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_tombstones(&self) -> ConfigResult<Vec<Tombstone>> {
         let path = self.config_dir.join(TOMBSTONES_FILE);
-        Self::load_toml_file::<TombstonesFile>(&path).map(|f| f.tombstones)
+        self.load_marked_toml_file::<TombstonesFile>(&path)
+            .map(|f| f.tombstones)
     }
 
     /// Saves Simple Sync tombstones to the configuration file.
@@ -886,6 +916,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TOMBSTONES_FILE);
         let file = TombstonesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             tombstones: tombstones.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -909,7 +940,7 @@ impl ConfigManager {
         Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
     )> {
         let path = self.config_dir.join(TRASH_FILE);
-        let file = Self::load_toml_file::<TrashFile>(&path)?;
+        let file = self.load_marked_toml_file::<TrashFile>(&path)?;
         Ok((file.connections, file.groups))
     }
 
@@ -926,6 +957,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TRASH_FILE);
         let file = TrashFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             connections: connections.to_vec(),
             groups: groups.to_vec(),
         };
@@ -2027,5 +2059,41 @@ mod tests {
         // A legacy file with no marker at all still loads (serde-default).
         fs::write(&path, "clusters = []\n").unwrap();
         assert!(manager.load_clusters().unwrap().is_empty());
+    }
+
+    /// The bookkeeping files (history, tombstones, trash) gained the marker too.
+    /// Tombstones stands in for the group.
+    #[test]
+    fn tombstones_carry_the_version_marker_and_a_newer_one_is_flagged() {
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(TOMBSTONES_FILE);
+
+        // A save stamps the running version.
+        manager.save_tombstones(&[]).unwrap();
+        let on_disk = fs::read_to_string(&path).unwrap();
+        assert!(
+            on_disk.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "save must stamp the running version: {on_disk}"
+        );
+
+        // A newer marker is flagged on load and backed up before the next save.
+        let newer = "written_by = \"99.0.0\"\ntombstones = []\n";
+        fs::write(&path, newer).unwrap();
+        let _ = manager.load_tombstones().unwrap();
+        assert_eq!(
+            manager.newer_version_files(),
+            vec![(path.clone(), "99.0.0".to_string())]
+        );
+        manager.save_tombstones(&[]).unwrap();
+        let backup = manager.config_dir().join("tombstones.toml.99.0.0.bak");
+        assert_eq!(
+            fs::read_to_string(&backup).unwrap(),
+            newer,
+            "the newer file must be backed up before being overwritten"
+        );
+
+        // A legacy file with no marker at all still loads.
+        fs::write(&path, "tombstones = []\n").unwrap();
+        assert!(manager.load_tombstones().unwrap().is_empty());
     }
 }
