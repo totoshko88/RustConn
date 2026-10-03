@@ -629,6 +629,10 @@ fn start_embedded_rdp_session(
     embedded_config.kerberos_enabled = rdp_config.kerberos_enabled;
     embedded_config.kdc_proxy_url = rdp_config.kdc_proxy_url.clone();
 
+    // Carry the per-connection MPTCP opt-in to the embedded client (was dropped
+    // here, so the RDP Multipath TCP toggle was a silent no-op).
+    embedded_config.mptcp = rdp_config.mptcp;
+
     // Wrap in Rc to keep widget alive in notebook
     let embedded_widget = Rc::new(embedded_widget);
 

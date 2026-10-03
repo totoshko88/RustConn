@@ -695,4 +695,31 @@ mod tests {
         let config = RdpClientConfig::new("host.example.com");
         assert!(!config.uses_gateway());
     }
+
+    #[test]
+    fn mptcp_opt_in_is_carried_on_the_client_config() {
+        // Regression guard for the MPTCP toggle being a silent no-op. The
+        // connect path branches on `config.mptcp` (rdp_client/client/connection
+        // .rs: `if config.mptcp { connect_mptcp_async(..) }`), and the GUI
+        // model->embedded mapper (rustconn/src/window/rdp_vnc.rs) used to drop
+        // this field entirely. It must default off, round-trip, and persist
+        // when the user opts in.
+        let default_config = RdpClientConfig::new("rdp.example.com");
+        assert!(
+            !default_config.mptcp,
+            "MPTCP must stay off until the user opts in"
+        );
+
+        let mut config = RdpClientConfig::new("rdp.example.com");
+        config.mptcp = true;
+        assert!(config.mptcp, "an explicit opt-in must be honoured");
+
+        // Survives a serde round-trip (the stored per-connection value).
+        let json = serde_json::to_string(&config).expect("serialize");
+        let restored: RdpClientConfig = serde_json::from_str(&json).expect("deserialize");
+        assert!(
+            restored.mptcp,
+            "MPTCP opt-in must survive serialization round-trip"
+        );
+    }
 }
