@@ -107,6 +107,7 @@ impl ConnectionDialog {
         let ssh_key_button = ssh_widgets.key_button;
         let ssh_agent_key_dropdown = ssh_widgets.agent_key_dropdown;
         let ssh_jump_host_dropdown = ssh_widgets.jump_host_dropdown;
+        let ssh_jump_host_row = ssh_widgets.jump_host_row;
         let ssh_proxy_entry = ssh_widgets.proxy_entry;
         let ssh_proxy_row = ssh_widgets.proxy_row;
         let ssh_proxy_command_entry = ssh_widgets.proxy_command_entry;
@@ -826,6 +827,7 @@ impl ConnectionDialog {
             pending_agent_selection,
             network_mode_row,
             ssh_jump_host_dropdown,
+            ssh_jump_host_row,
             ssh_proxy_entry,
             ssh_proxy_row,
             ssh_proxy_command_entry,

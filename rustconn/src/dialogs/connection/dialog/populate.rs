@@ -1017,11 +1017,24 @@ impl ConnectionDialog {
             let connections = self.connections_data.borrow();
             if let Some(pos) = connections.iter().position(|(id, _)| *id == Some(jump_id)) {
                 self.ssh_jump_host_dropdown.set_selected(pos as u32);
+                self.ssh_jump_host_row
+                    .set_subtitle(&i18n("Connect via another SSH connection"));
             } else {
+                // #345: the stored jump host points at a connection that no
+                // longer exists. The dropdown has no entry for it, so without
+                // this the row would silently show "(None)" and the user would
+                // never learn their bastion is gone — the connect path would
+                // then go direct. Surface it the way the group editor surfaces a
+                // dangling inherited ref ("(unknown connection)").
                 self.ssh_jump_host_dropdown.set_selected(0);
+                self.ssh_jump_host_row.set_subtitle(&i18n(
+                    "Saved jump host is missing — it was deleted; this connection will go direct",
+                ));
             }
         } else {
             self.ssh_jump_host_dropdown.set_selected(0);
+            self.ssh_jump_host_row
+                .set_subtitle(&i18n("Connect via another SSH connection"));
         }
 
         self.ssh_proxy_entry

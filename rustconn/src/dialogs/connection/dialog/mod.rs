@@ -144,6 +144,9 @@ pub struct ConnectionDialog {
     /// protocol stack only ever shows one page.
     network_mode_row: adw::ComboRow,
     ssh_jump_host_dropdown: DropDown,
+    /// Row around `ssh_jump_host_dropdown`, so its subtitle can warn when the
+    /// stored `jump_host_id` points at a deleted connection (issue #345).
+    ssh_jump_host_row: adw::ActionRow,
     ssh_proxy_entry: Entry,
     /// Row around `ssh_proxy_entry`, so its subtitle can name an inherited bastion.
     ssh_proxy_row: adw::ActionRow,
