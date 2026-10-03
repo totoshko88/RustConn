@@ -642,3 +642,76 @@ fn update_can_disable_kerberos_and_clear_the_kdc_address() {
         "an empty --kdc-address must clear the stored value"
     );
 }
+
+#[cfg(feature = "client-launch")]
+#[test]
+fn connect_warns_about_kerberos_with_an_ip_host() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    // Kerberos on, but the host is an IP address — the service principal is
+    // TERMSRV/<dns-name>, which the domain does not know for a bare IP, so
+    // sign-in would fail. The connect preflight must say so.
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "10.0.0.5",
+            "--domain",
+            "example.com",
+            "--kerberos",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    // --dry-run reaches the preflight (which runs before the dry-run short
+    // circuit) without launching a real client.
+    let out = run_cli(&["connect", "win-dc", "--dry-run"], Some(config_dir));
+    assert!(
+        out.status.success(),
+        "dry-run connect should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+    assert!(
+        stderr_str(&out).contains("Kerberos needs the server's DNS name"),
+        "the preflight should warn about the IP host. stderr: {}",
+        stderr_str(&out)
+    );
+}
+
+#[cfg(feature = "client-launch")]
+#[test]
+fn connect_is_quiet_about_kerberos_when_settings_are_fine() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--domain",
+            "example.com",
+            "--kerberos",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    let out = run_cli(&["connect", "win-dc", "--dry-run"], Some(config_dir));
+    assert!(out.status.success(), "dry-run connect should succeed");
+    assert!(
+        !stderr_str(&out).contains("Kerberos needs"),
+        "a DNS host + DNS domain must produce no Kerberos warning. stderr: {}",
+        stderr_str(&out)
+    );
+}

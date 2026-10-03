@@ -70,6 +70,35 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         );
     }
 
+    // Kerberos preflight (#351): when a connection connects RDP NLA with
+    // Kerberos, a few settings make the sign-in fail with errors that do not
+    // point back at them — an IP address instead of a DNS name, a NetBIOS realm
+    // instead of the DNS domain, or no domain at all. The GUI names these up
+    // front; the CLI prints the same hints to stderr and connects anyway
+    // (warn-and-connect), so stdout and --dry-run output stay clean.
+    if let rustconn_core::models::ProtocolConfig::Rdp(rdp) = &connection.protocol_config
+        && rdp.kerberos_enabled
+    {
+        for hint in rustconn_core::rdp_client::kerberos_preflight(
+            &connection.host,
+            connection.username.as_deref(),
+            connection.domain.as_deref(),
+        ) {
+            let detail = match hint {
+                rustconn_core::rdp_client::KerberosHint::HostNotDnsName => {
+                    "Kerberos needs the server's DNS name; an IP address or an SSH tunnel fails"
+                }
+                rustconn_core::rdp_client::KerberosHint::ShortDomainName => {
+                    "Kerberos needs the DNS domain (e.g. EXAMPLE.COM), not the short domain name"
+                }
+                rustconn_core::rdp_client::KerberosHint::MissingDomain => {
+                    "Kerberos needs the DNS domain; set it in the connection's domain field"
+                }
+            };
+            eprintln!("Warning: {detail}.");
+        }
+    }
+
     let command = build_connection_command(connection);
 
     if dry_run {
