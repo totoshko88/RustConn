@@ -413,11 +413,23 @@ jobs:
         with:
           prefix-key: ${{ runner.os }}-cargo-test
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          # Version-pinned like the other tools in this file.
+          tool: cargo-nextest@0.9.146
+
+      # nextest runs each test in its own process with more parallelism and
+      # per-test retry/timeout, but it deliberately does NOT run doctests — so
+      # the `--doc` leg below is required, not optional, to keep that coverage.
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo nextest run --workspace
+
+      - name: Run doctests
+        run: cargo test --workspace --doc
 
       - name: Run CLI tests (full features)
-        run: cargo test -p rustconn-cli --features full
+        run: cargo nextest run -p rustconn-cli --features full
 
   test-core:
     name: Test Core (no GUI)
@@ -435,8 +447,18 @@ jobs:
         with:
           prefix-key: ${{ runner.os }}-cargo-core
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-nextest@0.9.146
+
+      # nextest skips doctests; rustconn-core carries runnable doctests, so the
+      # --doc leg is required to keep them covered.
       - name: Run core tests
-        run: cargo test -p rustconn-core --all-features
+        run: cargo nextest run -p rustconn-core --all-features
+
+      - name: Run core doctests
+        run: cargo test -p rustconn-core --all-features --doc
 
   property-tests:
     name: Property Tests
@@ -458,8 +480,14 @@ jobs:
         with:
           prefix-key: ${{ runner.os }}-cargo-proptest
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-nextest@0.9.146
+
+      # A single integration-test target, so no doctest leg is needed here.
       - name: Run property tests
-        run: cargo test -p rustconn-core --all-features --test property_tests
+        run: cargo nextest run -p rustconn-core --all-features --test property_tests
 
   msrv:
     name: MSRV (1.95)
