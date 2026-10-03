@@ -686,6 +686,54 @@ jobs:
   # cancelled (without it, a failed need would skip this job and branch
   # protection would see a skip, not a failure). The check fails on any need in
   # `failure` or `cancelled`; `skipped` is allowed, because jobs legitimately
+  # Feature-combination check (cargo-hack). The text-level `check-feature-ladders.sh`
+  # guard proves the GNOME version ladders AGREE across packaging channels, but it
+  # does not COMPILE intermediate feature combinations — a combo that builds under
+  # `--all-features` and default can still break in between (web-embedded has broken
+  # on its own before). This job closes that: it compiles the independent,
+  # non-version features of the two library-ish crates in combination.
+  #
+  # Scope is deliberate, not lazy. Only `rustconn-core` (whose features —
+  # system-keyring, vnc-embedded, web-embedded, rdp-embedded, gfx-h264, rd-gateway
+  # — are genuinely independent) and `rustconn-cli` (client-launch × keepass-verify
+  # × secret-management) go through `--feature-powerset`. The GUI crate `rustconn`
+  # is NOT powerset-checked: its adw-1-*/gtk-4-*/vte-0-* features are version
+  # ladders that are mutually exclusive in meaning (you link ONE gtk4), so a
+  # powerset would multiply the matrix with nonsensical combos while adding no
+  # coverage the packaging builds + check-feature-ladders.sh do not already give.
+  # `--depth 2` bounds the combinations (pairs) so the runtime stays sane.
+  feature-powerset:
+    name: Feature powerset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-powerset
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          # Version-pinned like the other tools in this file — a moving upstream
+          # must not change what CI checks without a commit here.
+          tool: cargo-hack@0.6.45
+
+      - name: cargo hack --feature-powerset (rustconn-core)
+        run: cargo hack --package rustconn-core --feature-powerset --depth 2 check
+
+      - name: cargo hack --feature-powerset (rustconn-cli)
+        run: cargo hack --package rustconn-cli --feature-powerset --depth 2 check
+
   # skip on PRs (e.g. the push/dispatch-only macOS legs) and treating a skip as a
   # failure would make every PR red. macos-formula's own build step is
   # `continue-on-error`, so that job reports success regardless — its result is
@@ -705,6 +753,7 @@ jobs:
       - property-tests
       - msrv
       - cargo-deny
+      - feature-powerset
       - macos-sys
       - macos-formula
     steps:
