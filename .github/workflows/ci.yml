@@ -686,6 +686,67 @@ jobs:
   # cancelled (without it, a failed need would skip this job and branch
   # protection would see a skip, not a failure). The check fails on any need in
   # `failure` or `cancelled`; `skipped` is allowed, because jobs legitimately
+  # Public-API drift check for the rustconn-core library (cargo-semver-checks).
+  #
+  # ADVISORY, not a merge gate — and the distinction is deliberate, not timidity.
+  # rustconn-core is a 0.x library and is NOT published to crates.io; its only
+  # consumers are rustconn/rustconn-cli in this same workspace, which catch a real
+  # break at compile time. Under SemVer a 0.x crate may break in a minor bump, so
+  # a genuine, intended API change (new SecretSettings fields, new SecretError /
+  # RdpClientEvent variants — exactly what 0.23.0 adds) legitimately "requires a
+  # new major" by the tool's rules while being a perfectly fine 0.x minor. Gating
+  # on it would redden every normal release. So this job REPORTS the drift (early
+  # warning: make sure the version bump reflects it) via continue-on-error and is
+  # intentionally NOT in the ci-success needs — a red here never blocks a merge.
+  #
+  # Baseline is the latest git tag (the crate has no registry baseline), resolved
+  # at runtime; the check is skipped on the first run before any tag exists.
+  # --only-explicit-features --features default avoids an all-features rustdoc
+  # build that currently trips an upstream `sspi` compile error (not our code) in
+  # the rdp-embedded+rd-gateway+gfx-h264 combination.
+  semver-core:
+    name: Semver (rustconn-core, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-semver
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-semver-checks@0.51.0
+
+      - name: cargo semver-checks (baseline = latest tag)
+        shell: bash
+        run: |
+          set -uo pipefail
+          baseline=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$baseline" ]; then
+            echo "No git tag found — skipping semver baseline comparison (first release)."
+            exit 0
+          fi
+          echo "Comparing rustconn-core public API against baseline tag: $baseline"
+          cargo semver-checks \
+            --baseline-rev "$baseline" \
+            --package rustconn-core \
+            --only-explicit-features --features default
+
   # Feature-combination check (cargo-hack). The text-level `check-feature-ladders.sh`
   # guard proves the GNOME version ladders AGREE across packaging channels, but it
   # does not COMPILE intermediate feature combinations — a combo that builds under
