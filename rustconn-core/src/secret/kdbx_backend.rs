@@ -33,8 +33,12 @@
 //! (mirroring `PassBackend`). The guard runs ahead of the delegated writer's
 //! own path validation, so an invalid path still surfaces as `ReadOnly`.
 //!
-//! [`Self::searches_from_root`] still returns the trait default (`false`);
-//! vault-root search reads are a separate, later addition.
+//! [`Self::searches_from_root`] reports the stored root-search flag. When set
+//! (via [`Self::with_root_search`]), `retrieve` first tries the
+//! `RustConn/`-scoped reader and, only on a miss, widens to a whole-database
+//! search. This widens **reads only** — `store`/`delete` stay `RustConn/`-scoped,
+//! so the root-prefix handling issue #327 fixed is never exercised by a
+//! root-search read.
 
 use std::path::{Path, PathBuf};
 
@@ -74,6 +78,10 @@ pub struct KdbxBackend {
     /// When true, [`Self::is_read_only`] reports read-only and `store`/`delete`
     /// refuse with [`SecretError::ReadOnly`] via `ensure_writable()`.
     read_only: bool,
+    /// When true, [`Self::searches_from_root`] reports root-search and
+    /// `retrieve` widens a missed `RustConn/`-scoped lookup to a whole-database
+    /// search. Reads only — `store`/`delete` stay `RustConn/`-scoped.
+    root_search: bool,
 }
 
 impl KdbxBackend {
@@ -85,6 +93,7 @@ impl KdbxBackend {
             kdbx_path: kdbx_path.into(),
             unlock: UnlockFactors::default(),
             read_only: false,
+            root_search: false,
         }
     }
 
@@ -118,6 +127,19 @@ impl KdbxBackend {
     #[must_use]
     pub const fn with_read_only(mut self, read_only: bool) -> Self {
         self.read_only = read_only;
+        self
+    }
+
+    /// Records whether this backend widens credential reads to the whole vault.
+    ///
+    /// When `true`, [`Self::searches_from_root`] reports root-search and
+    /// `retrieve` first tries the `RustConn/`-scoped reader and, only on a miss,
+    /// falls back to a whole-database search ([`KeePassStatus::get_password_from_kdbx_root`]).
+    /// This widens READS only — `store` and `delete` stay `RustConn/`-scoped, so
+    /// the root-prefix handling issue #327 fixed is never exercised here.
+    #[must_use]
+    pub const fn with_root_search(mut self, root_search: bool) -> Self {
+        self.root_search = root_search;
         self
     }
 
@@ -178,7 +200,15 @@ impl SecretBackend for KdbxBackend {
     /// Retrieves credentials by delegating to
     /// [`KeePassStatus::get_password_from_kdbx_with_key`], which performs the
     /// `RustConn/`-prefixed candidate-path lookup (the issue #327 logic).
+    ///
+    /// When [`Self::searches_from_root`] is on and the scoped lookup misses,
+    /// the read is widened to a whole-database search via
+    /// [`KeePassStatus::get_password_from_kdbx_root`]. This is read-widening
+    /// only; writes stay `RustConn/`-scoped.
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
+        // Scoped lookup first — unchanged behaviour, and found-first for
+        // back-compat: a `RustConn/`-scoped entry wins over an identically-named
+        // one elsewhere in the vault.
         let password = KeePassStatus::get_password_from_kdbx_with_key(
             &self.kdbx_path,
             self.db_password(),
@@ -187,6 +217,23 @@ impl SecretBackend for KdbxBackend {
             None,
             self.yubikey_slot(),
         )?;
+
+        // When root-search is enabled and the scoped lookup missed, widen to a
+        // whole-database search. READ-WIDENING ONLY: this never writes and never
+        // prepends `RustConn/` (the matched path comes verbatim from the vault
+        // listing), so it cannot reintroduce issue #327. When root-search is
+        // off, this branch is skipped and behaviour is byte-identical to today.
+        let password = match password {
+            Some(secret) => Some(secret),
+            None if self.root_search => KeePassStatus::get_password_from_kdbx_root(
+                &self.kdbx_path,
+                self.db_password(),
+                self.key_file(),
+                connection_id,
+                self.yubikey_slot(),
+            )?,
+            None => None,
+        };
 
         Ok(password.map(|secret| Credentials {
             username: None,
@@ -243,8 +290,11 @@ impl SecretBackend for KdbxBackend {
         self.read_only
     }
 
-    // `searches_from_root()` deliberately keeps the trait default (`false`).
-    // Root-search reads are step 2.
+    fn searches_from_root(&self) -> bool {
+        // Reports the stored flag; `retrieve` consults it to decide whether to
+        // widen a scoped miss to a whole-database search.
+        self.root_search
+    }
 }
 
 impl std::fmt::Debug for KdbxBackend {
@@ -256,6 +306,7 @@ impl std::fmt::Debug for KdbxBackend {
             .field("has_key_file", &self.unlock.key_file.is_some())
             .field("has_yubikey_slot", &self.unlock.yubikey_slot.is_some())
             .field("read_only", &self.read_only)
+            .field("root_search", &self.root_search)
             .finish()
     }
 }
@@ -298,6 +349,30 @@ mod tests {
                 .with_read_only(false)
                 .is_read_only()
         );
+    }
+
+    #[test]
+    fn with_root_search_stores_the_flag() {
+        // Default is scoped (false); the builder records true and reports it via
+        // searches_from_root(); setting back to false is honoured.
+        assert!(!KdbxBackend::new("/tmp/vault.kdbx").searches_from_root());
+        assert!(
+            KdbxBackend::new("/tmp/vault.kdbx")
+                .with_root_search(true)
+                .searches_from_root()
+        );
+        assert!(
+            !KdbxBackend::new("/tmp/vault.kdbx")
+                .with_root_search(true)
+                .with_root_search(false)
+                .searches_from_root()
+        );
+        // read-only and root-search are independent flags.
+        let both = KdbxBackend::new("/tmp/vault.kdbx")
+            .with_read_only(true)
+            .with_root_search(true);
+        assert!(both.is_read_only());
+        assert!(both.searches_from_root());
     }
 
     #[test]

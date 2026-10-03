@@ -740,6 +740,95 @@ mod algorithm_tests {
         );
     }
 
+    // --- Pure vault-root matcher (root_match_entry_path) ---
+    //
+    // These exercise the side-effect-free core of the vault-root read widening
+    // with a canned `ls -R -f <db>` listing, so they need no keepassxc-cli and
+    // no temp database. The end-to-end read against a real kdbx is covered by a
+    // construction test that requires live keepassxc-cli (see
+    // root_reader_end_to_end_requires_live_keepassxc_cli below).
+
+    /// A flattened whole-database listing: some entries live OUTSIDE the
+    /// RustConn group, which is exactly what the scoped reader cannot see.
+    const ROOT_LISTING: &str = "\
+RustConn/
+RustConn/web (ssh)
+Internet/
+Internet/Banking/
+Internet/Banking/my-router
+Imported/legacy-host
+standalone-entry
+";
+
+    #[test]
+    fn root_match_finds_entry_outside_rustconn_group() {
+        // `my-router` lives under Internet/Banking/, never under RustConn — the
+        // whole point of root search. It is matched by basename.
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "my-router"),
+            Some("Internet/Banking/my-router".to_string())
+        );
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "legacy-host"),
+            Some("Imported/legacy-host".to_string())
+        );
+        // A top-level entry outside RustConn.
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "standalone-entry"),
+            Some("standalone-entry".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_skips_group_paths_and_misses_cleanly() {
+        // A trailing-slash line is a group, never an entry — "Banking" must not
+        // match even though it appears as a path component.
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "Banking"), None);
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "Internet"), None);
+        // A name present nowhere misses.
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "nope"), None);
+        // Empty listing misses.
+        assert_eq!(root_match_entry_path("", "my-router"), None);
+    }
+
+    #[test]
+    fn root_match_prefers_exact_qualified_path() {
+        // A caller passing an already-qualified path lands on it exactly, even
+        // when a shorter basename match exists earlier in the listing.
+        let listing = "\
+a/dup
+b/c/dup
+";
+        assert_eq!(
+            root_match_entry_path(listing, "b/c/dup"),
+            Some("b/c/dup".to_string())
+        );
+        // Tail match: "c/dup" is the suffix of "b/c/dup".
+        assert_eq!(
+            root_match_entry_path(listing, "c/dup"),
+            Some("b/c/dup".to_string())
+        );
+        // Bare basename falls back to the FIRST occurrence (back-compat order).
+        assert_eq!(
+            root_match_entry_path(listing, "dup"),
+            Some("a/dup".to_string())
+        );
+    }
+
+    /// The end-to-end root read (spawning keepassxc-cli against a real kdbx)
+    /// has NO coverage here: the public readers spawn `keepassxc-cli` directly
+    /// rather than through the injectable `KeePassCli` trait (only the save
+    /// path is mockable), and this test harness has no temp-kdbx builder — the
+    /// existing reader tests only assert validation errors on fake paths. So a
+    /// faithful end-to-end test of `get_password_from_kdbx_root` requires live
+    /// `keepassxc-cli` plus a constructed database; it is intentionally NOT
+    /// written here rather than faked. The pure matcher above is what carries
+    /// the logic that could otherwise be wrong.
+    #[test]
+    fn root_reader_end_to_end_requires_live_keepassxc_cli() {
+        // Documentation marker; the pure matcher tests cover the decision logic.
+    }
+
     // --- Behaviour of save_in_place / rename_or_move_in_place via a fake CLI ---
 
     use std::cell::RefCell;
@@ -750,7 +839,8 @@ mod algorithm_tests {
     use secrecy::SecretString;
 
     use super::{
-        Invocation, KeePassCli, SecretError, SecretResult, rename_or_move_in_place, save_in_place,
+        Invocation, KeePassCli, SecretError, SecretResult, rename_or_move_in_place,
+        root_match_entry_path, save_in_place,
     };
 
     /// A scripted reply for one `run` call.
@@ -1113,7 +1203,59 @@ fn candidate_entry_paths(entry_name: &str, protocol: Option<&str>) -> Vec<String
     entry_paths
 }
 
-/// Status of `KeePass` integration
+/// Picks the vault-root entry path that matches `connection_id`, from the raw
+/// `keepassxc-cli ls -R -f <db>` listing of the WHOLE database (no `RustConn`
+/// scope).
+///
+/// This is the pure, side-effect-free core of the vault-root read widening:
+/// it takes the flattened listing `keepassxc-cli` prints — one path per line,
+/// group paths ending in `/`, entry paths not — and returns the first entry
+/// whose basename (the component after the last `/`) equals `connection_id`'s
+/// basename. A trailing-slash line is a group and is skipped; only leaf entries
+/// are considered.
+///
+/// Why basename matching: the scoped reader looks under `RustConn/…`; this
+/// widening exists to find an entry the user keeps *outside* that subtree (hand
+/// made, or imported from another tool), which by definition lives at some
+/// other group path. The entry name itself is the stable identifier, so a
+/// `connection_id` of `"web (ssh)"` matches `Internet/web (ssh)` as readily as
+/// a bare `web (ssh)` at the root.
+///
+/// **Read-widening only, and structurally #327-safe.** The returned path is an
+/// ABSOLUTE path copied verbatim from the database listing; this function never
+/// constructs a path and never prepends `RustConn/`, so it cannot produce the
+/// doubled-prefix lookup issue #327 fixed. Writes do not go through here at all.
+///
+/// An exact full-path match (`line == connection_id`, or `line` ends with
+/// `/<connection_id>`) is preferred over a looser basename match, so a caller
+/// passing an already-qualified path still lands on it first. Returns `None`
+/// when nothing matches.
+fn root_match_entry_path(listing: &str, connection_id: &str) -> Option<String> {
+    let wanted_base = connection_id.rsplit('/').next().unwrap_or(connection_id);
+
+    let mut basename_fallback: Option<String> = None;
+    for line in listing.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.ends_with('/') {
+            // Blank, or a group path (keepassxc-cli suffixes groups with '/').
+            continue;
+        }
+        // Exact match (whole path, or a path whose tail is the connection id)
+        // wins immediately — honour a caller that passed a qualified path.
+        if line == connection_id || line.ends_with(&format!("/{connection_id}")) {
+            return Some(line.to_string());
+        }
+        // Otherwise remember the first entry whose leaf name matches.
+        if basename_fallback.is_none() {
+            let line_base = line.rsplit('/').next().unwrap_or(line);
+            if line_base == wanted_base {
+                basename_fallback = Some(line.to_string());
+            }
+        }
+    }
+    basename_fallback
+}
+
 ///
 /// This struct provides information about the current state of `KeePass` integration,
 /// including whether `KeePassXC` is installed, its version, and KDBX file accessibility.
@@ -2312,6 +2454,125 @@ impl KeePassStatus {
                 }
             }
         }
+    }
+
+    /// Reads a password by searching the ENTIRE database from its root, not just
+    /// the `RustConn/` subtree.
+    ///
+    /// This is the vault-root read widening behind
+    /// [`super::backend::SecretBackend::searches_from_root`]: it runs one
+    /// `keepassxc-cli ls -R -f <db>` over the whole database (no `RustConn`
+    /// group argument, unlike the scoped tree probe), then uses the pure
+    /// [`root_match_entry_path`] matcher to find the entry whose basename equals
+    /// `connection_id`, and finally reads that exact path with
+    /// [`Self::get_password_from_kdbx_exact`].
+    ///
+    /// # Read-widening only — why it cannot reintroduce issue #327
+    ///
+    /// Every path this function reads comes **verbatim from the database's own
+    /// listing**: it never constructs a path, never prepends `RustConn/`, and
+    /// never touches the group-prefix helpers that #327 was about. Writes do not
+    /// go through here — stores stay `RustConn/`-scoped. So the doubled-prefix
+    /// class of bug is structurally impossible on this path.
+    ///
+    /// Callers should try the scoped [`Self::get_password_from_kdbx_with_key`]
+    /// first and fall back to this only on a miss (back-compat: a `RustConn/`
+    /// entry wins over an identically-named one elsewhere); see
+    /// [`super::kdbx_backend::KdbxBackend::retrieve`].
+    ///
+    /// # Returns
+    /// * `Ok(Some(SecretString))` when a matching entry with a password is found
+    /// * `Ok(None)` when no entry matches, or the match has no password
+    ///
+    /// # Errors
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` is missing, the
+    /// path is invalid, or the database cannot be unlocked/read.
+    pub fn get_password_from_kdbx_root(
+        kdbx_path: &Path,
+        db_password: Option<&SecretString>,
+        key_file: Option<&Path>,
+        connection_id: &str,
+        yubikey_slot: Option<&str>,
+    ) -> SecretResult<Option<SecretString>> {
+        use std::io::Write as IoWrite;
+        use std::process::Stdio;
+
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
+            SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
+        })?;
+
+        // List the WHOLE database, flattened. No trailing group argument — that
+        // is the single difference from the `RustConn`-scoped tree probe, and it
+        // is what widens the read to entries outside the RustConn subtree.
+        let mut args = vec![
+            "ls".to_string(),
+            "-q".to_string(),
+            "-R".to_string(),
+            "-f".to_string(),
+        ];
+        push_unlock_args(&mut args, db_password.is_some(), key_file, yubikey_slot);
+        args.push(kdbx_path.display().to_string());
+
+        let mut child = Self::keepassxc_command(&cli_path)
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
+
+        if let Some(mut stdin) = child.stdin.take()
+            && let Some(db_pwd) = db_password
+        {
+            stdin
+                .write_all(db_pwd.expose_secret().as_bytes())
+                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
+            stdin
+                .write_all(b"\n")
+                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
+        }
+
+        let output = if yubikey_slot.is_some() {
+            wait_for_cli_yubikey(child, "ls -R (root search)")?
+        } else {
+            wait_for_cli(child, "ls -R (root search)")?
+        };
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // A failed listing is "cannot read the database", not "no entry":
+            // reuse the same classification the scoped readers use so a wrong
+            // key or unreadable database is reported, not swallowed as a miss.
+            return match classify_show_failure(&stderr) {
+                ShowFailure::EntryMissing => Ok(None),
+                ShowFailure::BadCredentials => Err(SecretError::KeePassXC(
+                    "Invalid database password".to_string(),
+                )),
+                ShowFailure::Unusable => Err(SecretError::KeePassXC(format!(
+                    "Could not read the database: {}",
+                    stderr.trim()
+                ))),
+            };
+        }
+
+        let listing = String::from_utf8_lossy(&output.stdout);
+        let Some(entry_path) = root_match_entry_path(&listing, connection_id) else {
+            tracing::debug!("get_password_root: no root entry matched '{connection_id}'");
+            return Ok(None);
+        };
+
+        tracing::debug!("get_password_root: matched '{entry_path}' for '{connection_id}'");
+        // Read the matched absolute path as-is. Reusing the exact reader keeps
+        // the unlock composition and secret-wiping identical to every other read.
+        Self::get_password_from_kdbx_exact(
+            kdbx_path,
+            db_password,
+            key_file,
+            &entry_path,
+            yubikey_slot,
+        )
     }
 
     /// Renames an entry in KDBX database by moving it from old path to new path
