@@ -44,6 +44,12 @@ pub struct GroupMergeResult {
     /// Remote groups (by path inside the synced group) not present locally —
     /// should be created. Each keeps the path the export wrote.
     pub groups_to_create: Vec<SyncGroup>,
+    /// Local groups matched to a remote group by **id** whose name or path
+    /// changed on the Master — should be renamed/reparented in place rather
+    /// than deleted and recreated. The tuple is `(local_group_id, remote_data)`.
+    /// Empty until id-based group matching is wired (populated in a later step);
+    /// name/path-only matching never produces entries here.
+    pub groups_to_update: Vec<(Uuid, SyncGroup)>,
     /// Local groups (by path inside the synced group) not present in the
     /// remote export — should be deleted. Never the Import root itself.
     pub groups_to_delete: Vec<Uuid>,

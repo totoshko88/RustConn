@@ -1689,6 +1689,7 @@ mod tests {
                 ssh_auth_method: None,
                 ssh_proxy_jump: None,
             }],
+            groups_to_update: vec![],
             groups_to_delete: vec![],
             variables_to_create: vec![VariableTemplate {
                 name: "v".to_owned(),
