@@ -768,6 +768,51 @@ mod tests {
     // ---------------------------------------------------------------
 
     #[test]
+    fn export_rename_remerge_round_trip_is_an_update_not_a_duplicate() {
+        // End-to-end for SYNC-1: a connection is exported on the "Master" via
+        // the real `SyncConnection::from_connection` (which stamps the id),
+        // renamed on the Master, then re-merged on the "Import" side against the
+        // original local connection. With id matching this is a single update
+        // carrying the new name — not delete(old) + create(new).
+        use super::super::group_export::SyncConnection;
+
+        let root = make_local_group("Root", None);
+        let mut local_conn = make_local_conn("db-prod", root.id);
+        local_conn.updated_at = Utc::now() - Duration::hours(2);
+
+        // Master exports the connection (id is carried), then renames it.
+        let mut exported = SyncConnection::from_connection(&local_conn, "Root");
+        assert_eq!(exported.id, Some(local_conn.id), "export must carry the id");
+        exported.name = "db-production".to_owned();
+        exported.updated_at = Utc::now();
+
+        let export = make_export(vec![], vec![exported], vec![]);
+        let result = GroupMergeEngine::merge(
+            root.id,
+            &[root],
+            std::slice::from_ref(&local_conn),
+            &export,
+            &HashSet::new(),
+        );
+
+        assert_eq!(
+            result.connections_to_update.len(),
+            1,
+            "a Master rename must re-merge as exactly one update"
+        );
+        assert_eq!(result.connections_to_update[0].0, local_conn.id);
+        assert_eq!(result.connections_to_update[0].1.name, "db-production");
+        assert!(
+            result.connections_to_create.is_empty(),
+            "rename round-trip must not create a duplicate"
+        );
+        assert!(
+            result.connections_to_delete.is_empty(),
+            "rename round-trip must not delete the original"
+        );
+    }
+
+    #[test]
     fn renamed_group_matched_by_id_is_updated_not_recreated() {
         // Local "Web" subgroup; the Master renamed it to "Prod" (same id). With
         // id matching this is a single update, not delete("Web") + create("Prod")
