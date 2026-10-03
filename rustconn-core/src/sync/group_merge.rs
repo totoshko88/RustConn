@@ -130,7 +130,17 @@ impl GroupMergeEngine {
         result
     }
 
-    /// Phase 1: diff subgroups by their path inside the synced group.
+    /// Phase 1: diff subgroups, matching by **id** first and falling back to
+    /// path for groups without an id.
+    ///
+    /// Like connections, `SyncGroup` has carried a stable id since 0.22.13.
+    /// Matching on it first means a subgroup **renamed or moved** on the Master
+    /// is recognised as the same group and renamed/reparented in place
+    /// (`groups_to_update`) instead of being deleted and recreated — which lost
+    /// the group's id and every connection filed under it. `SyncGroup` carries
+    /// no `updated_at`, so for a group the Master is authoritative: an id match
+    /// whose path differs is always taken as a Master-side change. The path
+    /// fallback preserves pre-0.22.13 (`id: None`) behaviour exactly.
     fn merge_groups(
         root_id: Uuid,
         local_paths: &HashMap<Uuid, String>,
@@ -138,16 +148,8 @@ impl GroupMergeEngine {
         remote_root: &str,
         result: &mut GroupMergeResult,
     ) {
-        // Remote subgroups. The export carries its root separately, in
-        // `root_group`, never in `groups`.
-        let remote_paths: HashSet<&str> = remote
-            .groups
-            .iter()
-            .map(|g| relative_path(&g.path, remote_root))
-            .collect();
-
-        // Local subgroups, keyed the same way. The root is left out by id, not
-        // by `parent_id`: an Import root nested under another local group has a
+        // Local subgroups keyed by path. The root is left out by id, not by
+        // `parent_id`: an Import root nested under another local group has a
         // parent, and until 0.22.13 that put it on the delete list of its own
         // sync.
         let local_path_map: HashMap<&str, Uuid> = local_paths
@@ -155,16 +157,63 @@ impl GroupMergeEngine {
             .filter(|&(id, _)| *id != root_id)
             .map(|(id, path)| (path.as_str(), *id))
             .collect();
+        // The in-scope local group ids (same exclusion of the root), for id
+        // matching.
+        let local_ids: HashSet<Uuid> = local_paths
+            .keys()
+            .copied()
+            .filter(|id| *id != root_id)
+            .collect();
 
-        // New remote paths → groups_to_create
+        let mut consumed_local: HashSet<Uuid> = HashSet::new();
+        let mut consumed_remote_ids: HashSet<Uuid> = HashSet::new();
+
+        // --- Pass A: match by id ---
         for remote_group in &remote.groups {
+            let Some(remote_id) = remote_group.id else {
+                continue; // legacy export without an id → handled in pass B
+            };
+            if local_ids.contains(&remote_id) {
+                consumed_remote_ids.insert(remote_id);
+                consumed_local.insert(remote_id);
+                // Master authoritative: if the path changed (rename/move),
+                // update in place rather than delete + recreate.
+                let local_path = local_paths.get(&remote_id).map(String::as_str);
+                if local_path != Some(relative_path(&remote_group.path, remote_root)) {
+                    result
+                        .groups_to_update
+                        .push((remote_id, remote_group.clone()));
+                }
+            }
+        }
+
+        // --- Pass B: match the remainder by path ---
+        let remote_paths: HashSet<&str> = remote
+            .groups
+            .iter()
+            .filter(|g| g.id.is_none_or(|id| !consumed_remote_ids.contains(&id)))
+            .map(|g| relative_path(&g.path, remote_root))
+            .collect();
+
+        // New remote paths (not id-consumed, not path-present locally) → create.
+        for remote_group in &remote.groups {
+            if remote_group
+                .id
+                .is_some_and(|id| consumed_remote_ids.contains(&id))
+            {
+                continue;
+            }
             if !local_path_map.contains_key(relative_path(&remote_group.path, remote_root)) {
                 result.groups_to_create.push(remote_group.clone());
             }
         }
 
-        // Missing remote paths → groups_to_delete
+        // Local paths absent from the remote → delete, unless the group was
+        // already matched by id (a rename/move, handled as an update).
         for (path, group_id) in &local_path_map {
+            if consumed_local.contains(group_id) {
+                continue;
+            }
             if !remote_paths.contains(path) {
                 result.groups_to_delete.push(*group_id);
             }
@@ -712,6 +761,64 @@ mod tests {
             1,
             "remote with no in-scope match is created"
         );
+    }
+
+    // ---------------------------------------------------------------
+    // Phase 1: id-based group matching (SYNC-1)
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn renamed_group_matched_by_id_is_updated_not_recreated() {
+        // Local "Web" subgroup; the Master renamed it to "Prod" (same id). With
+        // id matching this is a single update, not delete("Web") + create("Prod")
+        // which would have orphaned every connection filed under it.
+        let root = make_local_group("Root", None);
+        let web = make_local_group("Web", Some(root.id));
+
+        let mut remote_group = make_sync_group("Prod", "Root/Prod");
+        remote_group.id = Some(web.id);
+
+        let export = make_export(vec![remote_group], vec![], vec![]);
+        let result =
+            GroupMergeEngine::merge(root.id, &[root, web.clone()], &[], &export, &HashSet::new());
+
+        assert_eq!(
+            result.groups_to_update.len(),
+            1,
+            "expected one group update"
+        );
+        assert_eq!(result.groups_to_update[0].0, web.id);
+        assert_eq!(result.groups_to_update[0].1.name, "Prod");
+        assert!(
+            result.groups_to_create.is_empty(),
+            "a group rename must not create"
+        );
+        assert!(
+            result.groups_to_delete.is_empty(),
+            "a group rename must not delete"
+        );
+    }
+
+    #[test]
+    fn renamed_group_without_id_falls_back_to_path_create_delete() {
+        // Pre-0.22.13 export (id: None): no id to match on, so the renamed
+        // subgroup still looks like a delete + create by path. This preserves
+        // legacy behaviour exactly.
+        let root = make_local_group("Root", None);
+        let web = make_local_group("Web", Some(root.id));
+
+        let remote_group = make_sync_group("Prod", "Root/Prod"); // id = None
+        let export = make_export(vec![remote_group], vec![], vec![]);
+        let result =
+            GroupMergeEngine::merge(root.id, &[root, web.clone()], &[], &export, &HashSet::new());
+
+        assert!(
+            result.groups_to_update.is_empty(),
+            "no id → no in-place update"
+        );
+        assert_eq!(result.groups_to_create.len(), 1);
+        assert_eq!(result.groups_to_create[0].path, "Root/Prod");
+        assert_eq!(result.groups_to_delete, vec![web.id]);
     }
 
     // ---------------------------------------------------------------
