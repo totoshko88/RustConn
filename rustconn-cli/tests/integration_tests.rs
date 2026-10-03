@@ -340,9 +340,91 @@ fn test_export_invalid_format() {
 }
 
 // ============================================================================
-// Add Command Tests
+// Native export data-preservation (templates / clusters / variables / snippets)
 // ============================================================================
 
+/// Regression guard: `export --format native` used to pass empty vecs for
+/// templates, clusters, variables and snippets, so a CLI native export silently
+/// dropped all four even though the format (and the GUI export) preserve them.
+/// Seed a config with one of each, export through the real binary, read the
+/// `.rcn` back, and assert every collection survived.
+#[test]
+fn native_export_preserves_templates_clusters_variables_snippets() {
+    use rustconn_core::cluster::Cluster;
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::export::NativeExport;
+    use rustconn_core::models::{ConnectionTemplate, Snippet};
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    // Seed the config dir the CLI will read via RUSTCONN_CONFIG_DIR.
+    let manager = ConfigManager::with_config_dir(config_dir.to_path_buf());
+    manager
+        .save_templates(&[ConnectionTemplate::new_ssh("Edge Router".to_string())])
+        .expect("save templates");
+    manager
+        .save_clusters(&[Cluster::new("DC Fleet".to_string())])
+        .expect("save clusters");
+    manager
+        .save_variables(&[Variable::new("region", "eu-central-1")])
+        .expect("save variables");
+    manager
+        .save_snippets(&[Snippet::new(
+            "Tail syslog".to_string(),
+            "tail -f /var/log/syslog".to_string(),
+        )])
+        .expect("save snippets");
+
+    let output_path = config_dir.join("export.rcn");
+    let out = run_cli(
+        &[
+            "export",
+            "--format",
+            "native",
+            "--output",
+            output_path.to_str().unwrap(),
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        out.status.success(),
+        "native export should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+
+    // Read the archive back and assert the four collections survived.
+    let export = NativeExport::from_file(&output_path).expect("parse exported .rcn");
+    assert_eq!(
+        export.templates.len(),
+        1,
+        "templates must survive native CLI export"
+    );
+    assert_eq!(export.templates[0].name, "Edge Router");
+    assert_eq!(
+        export.clusters.len(),
+        1,
+        "clusters must survive native CLI export"
+    );
+    assert_eq!(export.clusters[0].name, "DC Fleet");
+    assert_eq!(
+        export.variables.len(),
+        1,
+        "variables must survive native CLI export"
+    );
+    assert_eq!(export.variables[0].name, "region");
+    assert_eq!(
+        export.snippets.len(),
+        1,
+        "snippets must survive native CLI export"
+    );
+    assert_eq!(export.snippets[0].name, "Tail syslog");
+}
+
+// ============================================================================
+// Add Command Tests
+// ============================================================================
 #[test]
 fn test_add_missing_required_args() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");

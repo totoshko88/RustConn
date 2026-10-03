@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **The RDP "Multipath TCP" toggle no longer silently does nothing on the embedded path** — the per-connection MPTCP opt-in was stored on the model (`RdpConfig.mptcp`) and read by the embedded client (`if config.mptcp { client_config.mptcp = true }`), but the model→embedded config mapper in `rustconn/src/window/rdp_vnc.rs` never copied the field, so `embedded_config.mptcp` always stayed at its `false` default and the toggle was a no-op. The mapper now carries `rdp_config.mptcp` across alongside the FIDO2/Kerberos fields, so enabling MPTCP in the connection editor actually reaches the IronRDP client.
+- **CLI `export --format native` no longer drops templates, clusters, variables and snippets** — `rustconn-cli export --format native` loaded only connections and groups and passed empty vectors for the four remaining data types, so a native `.rcn` written from the CLI silently lost every template, cluster, global variable and snippet even though the format (and the GUI export) preserve them. `cmd_export` now loads all four from the config manager and threads them into `NativeExport::with_data`, matching the GUI export path exactly; reimporting a CLI-written archive restores them.
 
 ## [0.22.15] - 2026-10-03
 
