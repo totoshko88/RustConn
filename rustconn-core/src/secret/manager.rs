@@ -239,17 +239,25 @@ impl SecretManager {
 
         match settings.preferred_backend {
             SecretBackendType::Bitwarden => {
-                backends.push(Arc::new(super::BitwardenBackend::new()));
+                backends.push(Arc::new(
+                    super::BitwardenBackend::new()
+                        .with_read_only(settings.bitwarden_read_only)
+                        .with_root_search(settings.bitwarden_root_search),
+                ));
             }
             SecretBackendType::OnePassword => {
-                let mut backend = super::OnePasswordBackend::new();
+                let mut backend = super::OnePasswordBackend::new()
+                    .with_read_only(settings.onepassword_read_only)
+                    .with_root_search(settings.onepassword_root_search);
                 if let Some(ref token) = settings.onepassword_service_account_token {
                     backend.set_service_account_token(token.clone());
                 }
                 backends.push(Arc::new(backend));
             }
             SecretBackendType::Passbolt => {
-                let mut backend = super::PassboltBackend::new();
+                let mut backend = super::PassboltBackend::new()
+                    .with_read_only(settings.passbolt_read_only)
+                    .with_root_search(settings.passbolt_root_search);
                 if let Some(ref url) = settings.passbolt_server_url {
                     backend = backend.with_server_address(url.clone());
                 }
@@ -1220,5 +1228,88 @@ mod portable_tests {
             matches!(result, Err(SecretError::PassphraseRequired)),
             "expected a passphrase requirement, got {result:?}"
         );
+    }
+}
+
+/// `build_from_settings` must thread the persisted per-backend read-only /
+/// root-search toggles into the CLI backends it constructs. If it did not, a
+/// user's choice would round-trip in config and then be dropped on the floor at
+/// construction — the backend would run with its defaults regardless.
+#[cfg(test)]
+mod cli_backend_toggle_tests {
+    use super::*;
+    use crate::config::{SecretBackendType, SecretSettings};
+
+    /// The preferred backend is first in the chain; read its reported
+    /// capabilities straight off the trait object.
+    fn preferred(settings: &SecretSettings) -> std::sync::Arc<dyn SecretBackend> {
+        let manager = SecretManager::build_from_settings(settings);
+        std::sync::Arc::clone(
+            manager
+                .backends
+                .first()
+                .expect("a preferred backend must be constructed"),
+        )
+    }
+
+    #[test]
+    fn bitwarden_toggles_reach_the_backend() {
+        let defaults = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Bitwarden,
+            ..Default::default()
+        });
+        assert!(!defaults.is_read_only());
+        assert!(!defaults.searches_from_root());
+
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Bitwarden,
+            bitwarden_read_only: true,
+            bitwarden_root_search: true,
+            ..Default::default()
+        });
+        assert!(
+            toggled.is_read_only(),
+            "bitwarden_read_only=true must make the backend read-only"
+        );
+        assert!(
+            toggled.searches_from_root(),
+            "bitwarden_root_search=true must widen the backend's reads"
+        );
+    }
+
+    #[test]
+    fn onepassword_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::OnePassword,
+            onepassword_read_only: true,
+            onepassword_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+
+    #[test]
+    fn passbolt_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Passbolt,
+            passbolt_read_only: true,
+            passbolt_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+
+    #[test]
+    fn pass_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Pass,
+            pass_read_only: true,
+            pass_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
     }
 }

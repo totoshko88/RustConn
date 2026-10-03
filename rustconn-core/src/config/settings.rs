@@ -465,6 +465,30 @@ pub struct SecretSettings {
     /// Pass password store directory (defaults to ~/.password-store)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pass_store_dir: Option<PathBuf>,
+    /// Open the Bitwarden backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub bitwarden_read_only: bool,
+    /// Widen Bitwarden reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub bitwarden_root_search: bool,
+    /// Open the 1Password backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub onepassword_read_only: bool,
+    /// Widen 1Password reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub onepassword_root_search: bool,
+    /// Open the Passbolt backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub passbolt_read_only: bool,
+    /// Widen Passbolt reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub passbolt_root_search: bool,
+    /// Open the Pass backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub pass_read_only: bool,
+    /// Widen Pass reads to the store root, not just the `rustconn/` subtree.
+    #[serde(default)]
+    pub pass_root_search: bool,
     /// Path to the portable encrypted credential file.
     ///
     /// Can point to a cloud-synced directory (Dropbox, Syncthing, etc.) so the
@@ -590,6 +614,14 @@ impl std::fmt::Debug for SecretSettings {
             .field("passbolt_save_to_keyring", &self.passbolt_save_to_keyring)
             .field("passbolt_server_url", &self.passbolt_server_url)
             .field("pass_store_dir", &self.pass_store_dir)
+            .field("bitwarden_read_only", &self.bitwarden_read_only)
+            .field("bitwarden_root_search", &self.bitwarden_root_search)
+            .field("onepassword_read_only", &self.onepassword_read_only)
+            .field("onepassword_root_search", &self.onepassword_root_search)
+            .field("passbolt_read_only", &self.passbolt_read_only)
+            .field("passbolt_root_search", &self.passbolt_root_search)
+            .field("pass_read_only", &self.pass_read_only)
+            .field("pass_root_search", &self.pass_root_search)
             .field("portable_file_path", &self.portable_file_path)
             .field(
                 "portable_passphrase",
@@ -634,6 +666,14 @@ impl Default for SecretSettings {
             passbolt_save_to_keyring: false,
             passbolt_server_url: None,
             pass_store_dir: None,
+            bitwarden_read_only: false,
+            bitwarden_root_search: false,
+            onepassword_read_only: false,
+            onepassword_root_search: false,
+            passbolt_read_only: false,
+            passbolt_root_search: false,
+            pass_read_only: false,
+            pass_root_search: false,
             portable_file_path: None,
             portable_passphrase: None,
             portable_passphrase_encrypted: None,
@@ -666,6 +706,14 @@ impl PartialEq for SecretSettings {
             && self.passbolt_save_to_keyring == other.passbolt_save_to_keyring
             && self.passbolt_server_url == other.passbolt_server_url
             && self.pass_store_dir == other.pass_store_dir
+            && self.bitwarden_read_only == other.bitwarden_read_only
+            && self.bitwarden_root_search == other.bitwarden_root_search
+            && self.onepassword_read_only == other.onepassword_read_only
+            && self.onepassword_root_search == other.onepassword_root_search
+            && self.passbolt_read_only == other.passbolt_read_only
+            && self.passbolt_root_search == other.passbolt_root_search
+            && self.pass_read_only == other.pass_read_only
+            && self.pass_root_search == other.pass_root_search
             && self.portable_file_path == other.portable_file_path
             && self.portable_passphrase_encrypted == other.portable_passphrase_encrypted
             && self.portable_save_to_keyring == other.portable_save_to_keyring
@@ -2124,6 +2172,45 @@ mod tests {
             rendered.contains("<set>"),
             "expected a `<set>` presence marker in: {rendered}"
         );
+    }
+
+    /// Two `SecretSettings` that differ only in one of the new per-backend
+    /// read-only / root-search bools must compare UNEQUAL. `PartialEq` is manual
+    /// here, so a field left out of its `&&` chain would make the settings look
+    /// equal after a toggle — and `rebuild_from_settings` fires only on an
+    /// unequal compare, so the toggle would silently never reach the backend.
+    #[test]
+    fn secret_settings_eq_distinguishes_each_new_backend_toggle() {
+        use super::SecretSettings;
+
+        // One assertion per field so a single omission from the manual `&&`
+        // chain is caught by the exact field it dropped. `assert_ne!` holds
+        // only if that field participates in the comparison.
+        macro_rules! assert_toggle_distinguishes {
+            ($field:ident) => {{
+                let base = SecretSettings::default();
+                let mut toggled = SecretSettings::default();
+                toggled.$field = true;
+                assert_ne!(
+                    base, toggled,
+                    concat!(
+                        "settings differing only in `",
+                        stringify!($field),
+                        "` must not compare equal — the field is missing from \
+                         the manual PartialEq chain"
+                    )
+                );
+            }};
+        }
+
+        assert_toggle_distinguishes!(bitwarden_read_only);
+        assert_toggle_distinguishes!(bitwarden_root_search);
+        assert_toggle_distinguishes!(onepassword_read_only);
+        assert_toggle_distinguishes!(onepassword_root_search);
+        assert_toggle_distinguishes!(passbolt_read_only);
+        assert_toggle_distinguishes!(passbolt_root_search);
+        assert_toggle_distinguishes!(pass_read_only);
+        assert_toggle_distinguishes!(pass_root_search);
     }
 
     /// A fresh install has no hardware-key second factor: the field defaults to

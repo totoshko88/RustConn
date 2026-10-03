@@ -3860,6 +3860,18 @@ pub fn collect_secret_settings(
         },
         // Collect Pass store directory
         pass_store_dir: expand_user_path(widgets.pass_store_dir_entry.text().as_str()),
+        // Per-backend read-only / root-search toggles have no dedicated widgets
+        // in this dialog yet, so preserve whatever is already persisted rather
+        // than resetting it to false on every settings save (which would make a
+        // toggle set elsewhere, e.g. in the config file, impossible to keep).
+        bitwarden_read_only: settings.borrow().secrets.bitwarden_read_only,
+        bitwarden_root_search: settings.borrow().secrets.bitwarden_root_search,
+        onepassword_read_only: settings.borrow().secrets.onepassword_read_only,
+        onepassword_root_search: settings.borrow().secrets.onepassword_root_search,
+        passbolt_read_only: settings.borrow().secrets.passbolt_read_only,
+        passbolt_root_search: settings.borrow().secrets.passbolt_root_search,
+        pass_read_only: settings.borrow().secrets.pass_read_only,
+        pass_root_search: settings.borrow().secrets.pass_root_search,
         // Collect portable encrypted file settings. An empty entry stays `None`,
         // which is what makes the default location the default rather than a
         // path this dialog writes into the config the first time it is opened.

@@ -83,10 +83,15 @@ impl PassBackend {
 
     /// Creates a `PassBackend` from secret settings.
     ///
-    /// Extracts `pass_store_dir` from the provided settings.
+    /// Extracts `pass_store_dir` from the provided settings and applies the
+    /// `pass_read_only` / `pass_root_search` toggles so the persisted choice
+    /// reaches the backend. `from_path` already carries the store directory, so
+    /// `pass_store_dir` still flows through unchanged.
     #[must_use]
     pub fn from_secret_settings(settings: &crate::config::SecretSettings) -> Self {
         Self::from_path(settings.pass_store_dir.as_deref())
+            .with_read_only(settings.pass_read_only)
+            .with_root_search(settings.pass_root_search)
     }
 
     /// Creates a `PassBackend` from app settings.
