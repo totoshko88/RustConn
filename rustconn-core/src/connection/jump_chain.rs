@@ -204,6 +204,153 @@ pub fn resolve_proxy_jump_value(
     resolve_jump_chain(connection, connections, groups, network).proxy_jump_value()
 }
 
+/// Where a `jump_host_id` reference came from, so a warning can point the user
+/// at the editor that owns it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BastionRefOrigin {
+    /// The reference is the connection's (or a hop's) own `jump_host_id` field.
+    Connection,
+    /// The reference was inherited from an ancestor group; the id is the group
+    /// that carried it.
+    Group(Uuid),
+    /// The reference came from the global [`NetworkSettings`].
+    Network,
+}
+
+/// A bastion reference that resolves to no live connection.
+///
+/// Produced by [`find_dangling_bastions`]. Each one is a `jump_host_id` the
+/// connect path would silently drop — the user configured a bastion, the
+/// connection it names is gone, and the session would go direct with no hint
+/// that the hop was skipped.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DanglingBastion {
+    /// The connection whose configuration carries the broken reference. For an
+    /// own-field or inherited first hop this is the connection being validated;
+    /// for a deeper hop it is the bastion that named the missing next hop.
+    pub source_id: Uuid,
+    /// The `jump_host_id` value that matched no connection in the list.
+    pub missing_id: Uuid,
+    /// Where the reference lives, so the surfacing can name the right editor.
+    pub origin: BastionRefOrigin,
+}
+
+/// Classifies where the *first* bastion reference for `connection` comes from,
+/// mirroring the exact precedence of
+/// [`crate::connection::ssh_inheritance::resolve_ssh_jump_host_id`]: the
+/// connection's own `jump_host_id`, then the group chain's `ssh_jump_host_id`,
+/// then [`NetworkSettings::jump_host_id`]. [`crate::models::NetworkMode::Direct`]
+/// suppresses inherited tiers exactly as the resolver does.
+///
+/// Returns `None` when no bastion is configured at any tier. The returned id
+/// equals what `resolve_ssh_jump_host_id` returns; this only adds the origin.
+fn classify_first_bastion_origin(
+    connection: &Connection,
+    groups: &[ConnectionGroup],
+    network: &NetworkSettings,
+) -> Option<(Uuid, BastionRefOrigin)> {
+    use crate::models::NetworkMode;
+
+    if let Some(id) = jump_host_id_of(connection) {
+        return Some((id, BastionRefOrigin::Connection));
+    }
+    if connection.network_mode == NetworkMode::Direct {
+        return None;
+    }
+    // Walk the group chain the same way the resolver does, but record which
+    // group carried the value so the warning can name it.
+    let mut visited = HashSet::new();
+    let mut current = connection.group_id;
+    while let Some(gid) = current {
+        if !visited.insert(gid) {
+            break;
+        }
+        let Some(group) = groups.iter().find(|g| g.id == gid) else {
+            break;
+        };
+        if let Some(id) = group.ssh_jump_host_id {
+            return Some((id, BastionRefOrigin::Group(gid)));
+        }
+        current = group.parent_id;
+    }
+    network
+        .jump_host_id
+        .map(|id| (id, BastionRefOrigin::Network))
+}
+
+/// Returns every dangling bastion reference reachable from `connection`.
+///
+/// A reference dangles when its `jump_host_id` points at a connection id absent
+/// from `connections`. An empty result means every configured `jump_host_id`
+/// resolves to a live connection.
+///
+/// This is the advisory counterpart to [`resolve_jump_chain`]: it walks the same
+/// `jump_host_id` chain, with the same [`MAX_HOPS`] cap and visited-set cycle
+/// guard, and keys the first hop off
+/// [`crate::connection::ssh_inheritance::resolve_ssh_jump_host_id`] so it sees a
+/// bastion set on a group or globally. Where `resolve_jump_chain` silently
+/// `break`s on a missing hop, this records it as a [`DanglingBastion`] instead.
+///
+/// It does **not** change connect-time behaviour — nothing calls it from the
+/// resolve path. A half-resolvable chain still connects as far as it can; this
+/// just lets a caller warn first.
+///
+/// Only reference (`jump_host_id`) bastions can dangle: a free-text `proxy_jump`
+/// is an opaque OpenSSH string with no connection behind it, so it is never a
+/// reference and is skipped here.
+#[must_use]
+pub fn find_dangling_bastions(
+    connection: &Connection,
+    connections: &[Connection],
+    groups: &[ConnectionGroup],
+    network: &NetworkSettings,
+) -> Vec<DanglingBastion> {
+    let mut dangling = Vec::new();
+
+    // First hop: own field, else inherited (group chain, then network).
+    let Some((first_id, origin)) = classify_first_bastion_origin(connection, groups, network)
+    else {
+        return dangling;
+    };
+
+    let mut visited = HashSet::new();
+    visited.insert(connection.id);
+
+    // `source_id` for the first hop is the connection being validated, whether
+    // the reference is its own or inherited — that is the configuration the
+    // user would edit to fix it.
+    let mut source_id = connection.id;
+    let mut current_id = first_id;
+    let mut current_origin = origin;
+
+    for _ in 0..MAX_HOPS {
+        if !visited.insert(current_id) {
+            // Cycle: the resolve path stops here too, and a cycle is a separate
+            // kind of misconfiguration, not a dangling reference.
+            break;
+        }
+        let Some(hop) = connections.iter().find(|c| c.id == current_id) else {
+            dangling.push(DanglingBastion {
+                source_id,
+                missing_id: current_id,
+                origin: current_origin,
+            });
+            break;
+        };
+        // The hop resolved; follow its own `jump_host_id` outward. Deeper hops
+        // are always own-field references (a bastion's bastion), so the origin
+        // is Connection and the source is this hop.
+        let Some(next_id) = jump_host_id_of(hop) else {
+            break;
+        };
+        source_id = hop.id;
+        current_id = next_id;
+        current_origin = BastionRefOrigin::Connection;
+    }
+
+    dangling
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -463,5 +610,167 @@ mod tests {
 
         let chain = resolve_jump_chain(&conn, &hops, &[], &NetworkSettings::default());
         assert_eq!(chain.hops.len(), MAX_HOPS);
+    }
+
+    // ── find_dangling_bastions (#345) ──
+
+    #[test]
+    fn no_bastion_configured_has_no_dangling() {
+        let conn = ssh("target", "target.example.com", 22, Some("me"));
+        assert!(find_dangling_bastions(&conn, &[], &[], &NetworkSettings::default()).is_empty());
+    }
+
+    #[test]
+    fn live_own_reference_is_not_dangling() {
+        let bastion = ssh("bastion", "jump.example.com", 22, Some("ops"));
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        set_jump_host_id(&mut conn, Some(bastion.id));
+
+        let dangling = find_dangling_bastions(
+            &conn,
+            std::slice::from_ref(&bastion),
+            &[],
+            &NetworkSettings::default(),
+        );
+        assert!(dangling.is_empty());
+    }
+
+    #[test]
+    fn own_dangling_reference_is_reported() {
+        let missing = Uuid::new_v4();
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        set_jump_host_id(&mut conn, Some(missing));
+
+        let dangling = find_dangling_bastions(&conn, &[], &[], &NetworkSettings::default());
+        assert_eq!(dangling.len(), 1);
+        assert_eq!(dangling[0].source_id, conn.id);
+        assert_eq!(dangling[0].missing_id, missing);
+        assert_eq!(dangling[0].origin, BastionRefOrigin::Connection);
+    }
+
+    #[test]
+    fn inherited_group_dangling_reference_names_the_group() {
+        let missing = Uuid::new_v4();
+        let mut group = ConnectionGroup::new("prod".to_string());
+        group.ssh_jump_host_id = Some(missing);
+
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        conn.group_id = Some(group.id);
+        // No own jump_host_id → the group's reference is used (NetworkMode
+        // defaults to Inherit, so the inherited tier is consulted).
+
+        let dangling = find_dangling_bastions(
+            &conn,
+            &[],
+            std::slice::from_ref(&group),
+            &NetworkSettings::default(),
+        );
+        assert_eq!(dangling.len(), 1);
+        assert_eq!(dangling[0].source_id, conn.id);
+        assert_eq!(dangling[0].missing_id, missing);
+        assert_eq!(dangling[0].origin, BastionRefOrigin::Group(group.id));
+    }
+
+    #[test]
+    fn inherited_group_dangling_is_ignored_in_direct_mode() {
+        use crate::models::NetworkMode;
+        let missing = Uuid::new_v4();
+        let mut group = ConnectionGroup::new("prod".to_string());
+        group.ssh_jump_host_id = Some(missing);
+
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        conn.group_id = Some(group.id);
+        conn.network_mode = NetworkMode::Direct;
+
+        let dangling = find_dangling_bastions(
+            &conn,
+            &[],
+            std::slice::from_ref(&group),
+            &NetworkSettings::default(),
+        );
+        assert!(
+            dangling.is_empty(),
+            "Direct mode refuses the inherited bastion, so it cannot dangle"
+        );
+    }
+
+    #[test]
+    fn network_dangling_reference_is_reported() {
+        let missing = Uuid::new_v4();
+        let conn = ssh("target", "target.example.com", 22, Some("me"));
+        let network = NetworkSettings {
+            proxy_jump: None,
+            jump_host_id: Some(missing),
+        };
+
+        let dangling = find_dangling_bastions(&conn, &[], &[], &network);
+        assert_eq!(dangling.len(), 1);
+        assert_eq!(dangling[0].missing_id, missing);
+        assert_eq!(dangling[0].origin, BastionRefOrigin::Network);
+    }
+
+    #[test]
+    fn deeper_hop_dangling_names_the_hop_as_source() {
+        // target → near (live) → missing. The near hop names a bastion that is
+        // gone; the dangling entry's source is `near`, not the target.
+        let missing = Uuid::new_v4();
+        let mut near = ssh("near", "near.example.com", 22, Some("b"));
+        set_jump_host_id(&mut near, Some(missing));
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        set_jump_host_id(&mut conn, Some(near.id));
+
+        let dangling = find_dangling_bastions(
+            &conn,
+            std::slice::from_ref(&near),
+            &[],
+            &NetworkSettings::default(),
+        );
+        assert_eq!(dangling.len(), 1);
+        assert_eq!(dangling[0].source_id, near.id);
+        assert_eq!(dangling[0].missing_id, missing);
+        assert_eq!(dangling[0].origin, BastionRefOrigin::Connection);
+    }
+
+    #[test]
+    fn fully_live_two_hop_chain_has_no_dangling() {
+        let far = ssh("far", "far.example.com", 22, Some("a"));
+        let mut near = ssh("near", "near.example.com", 22, Some("b"));
+        set_jump_host_id(&mut near, Some(far.id));
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        set_jump_host_id(&mut conn, Some(near.id));
+
+        let connections = vec![far, near];
+        assert!(
+            find_dangling_bastions(&conn, &connections, &[], &NetworkSettings::default())
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn cycle_is_not_reported_as_dangling() {
+        // A → B → A. Every hop resolves to a live connection; the walk stops on
+        // the cycle without emitting a dangling reference.
+        let mut a = ssh("a", "a.example.com", 22, None);
+        let mut b = ssh("b", "b.example.com", 22, None);
+        set_jump_host_id(&mut a, Some(b.id));
+        set_jump_host_id(&mut b, Some(a.id));
+        let mut conn = ssh("target", "target.example.com", 22, None);
+        set_jump_host_id(&mut conn, Some(a.id));
+
+        let connections = vec![a, b];
+        assert!(
+            find_dangling_bastions(&conn, &connections, &[], &NetworkSettings::default())
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn free_text_proxy_jump_is_never_dangling() {
+        // A string ProxyJump has no connection behind it, so it is never a
+        // reference that can dangle.
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        set_proxy_jump(&mut conn, Some("ops@gw.example.com"));
+
+        assert!(find_dangling_bastions(&conn, &[], &[], &NetworkSettings::default()).is_empty());
     }
 }
