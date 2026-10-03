@@ -16,6 +16,7 @@ mod detection;
 mod encrypted_file;
 pub mod hierarchy;
 mod kdbx;
+mod kdbx_backend;
 mod kdbx_keyring;
 pub mod keyring;
 #[cfg(all(feature = "system-keyring", not(target_os = "macos")))]
@@ -61,6 +62,7 @@ pub use hierarchy::{
     GROUPS_SUBFOLDER, GroupCreationResult, KEEPASS_ROOT_GROUP, KeePassHierarchy, PATH_SEPARATOR,
 };
 pub use kdbx::KdbxExporter;
+pub use kdbx_backend::KdbxBackend;
 pub use kdbx_keyring::{
     delete_kdbx_password_from_keyring, get_kdbx_password_from_keyring,
     store_kdbx_password_in_keyring,
