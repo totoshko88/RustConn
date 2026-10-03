@@ -593,7 +593,12 @@ impl SyncManager {
         let mut reports = Vec::new();
 
         for group in import_groups {
-            let sync_file = group.sync_file.as_ref().expect("filtered above");
+            // `import_groups` is already filtered to `sync_file.is_some()`, so
+            // this binding never fails; prefer a let-else that skips the group
+            // over an `expect` that would panic if that invariant ever changed.
+            let Some(sync_file) = group.sync_file.as_ref() else {
+                continue;
+            };
 
             // Validate filename against path traversal
             if let Err(e) = validate_sync_filename(sync_file) {
