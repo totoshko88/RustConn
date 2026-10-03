@@ -61,16 +61,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo
 
       - name: Run cargo check
         run: cargo check --all-targets
@@ -312,16 +306,18 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      # Swatinem/rust-cache keys on the toolchain + Cargo.lock + job and prunes
+      # stale entries itself, replacing the hand-rolled actions/cache above. It
+      # does NOT weaken the false-green guard below: that guard does not trust
+      # cache freshness at all — it force-`cargo clean`s the workspace members
+      # (so clippy always recompiles them) and then proves a real compile
+      # happened by grepping the log for Checking/Compiling. rust-cache restores
+      # target/ exactly as the old cache did; the clean runs after restore and
+      # removes the workspace crates regardless of how they got there.
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-clippy
 
       # This gate used to be able to pass without looking at anything. The cache
       # above is keyed on Cargo.lock, so any change that leaves the lock alone —
@@ -412,16 +408,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-test
 
       - name: Run tests
         run: cargo test --workspace
@@ -440,16 +430,10 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-core
 
       - name: Run core tests
         run: cargo test -p rustconn-core --all-features
@@ -469,16 +453,10 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-proptest-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-proptest
 
       - name: Run property tests
         run: cargo test -p rustconn-core --all-features --test property_tests
@@ -513,16 +491,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-msrv
 
       - name: Check MSRV
         run: |
@@ -557,15 +529,10 @@ jobs:
       - name: Install gettext
         run: brew install gettext
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-macos-sys-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-macos-sys-
+          prefix-key: ${{ runner.os }}-cargo-macos-sys
 
       # Why this job exists, and why it is this small.
       #
@@ -709,3 +676,61 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: brew install --build-from-source --verbose ./packaging/macos/rustconn.rb
+
+  # Single success-gate. Branch protection should require THIS job alone instead
+  # of enumerating every job above: a new job added to the matrix is then covered
+  # automatically (it just needs adding to `needs` here), closing the hole where
+  # a job outside the protected list could go red without blocking a merge.
+  #
+  # `if: always()` so the gate runs even when an upstream job failed or was
+  # cancelled (without it, a failed need would skip this job and branch
+  # protection would see a skip, not a failure). The check fails on any need in
+  # `failure` or `cancelled`; `skipped` is allowed, because jobs legitimately
+  # skip on PRs (e.g. the push/dispatch-only macOS legs) and treating a skip as a
+  # failure would make every PR red. macos-formula's own build step is
+  # `continue-on-error`, so that job reports success regardless — its result is
+  # intentionally not a merge blocker.
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - check
+      - fmt
+      - hygiene
+      - i18n
+      - clippy
+      - test
+      - test-core
+      - property-tests
+      - msrv
+      - cargo-deny
+      - macos-sys
+      - macos-formula
+    steps:
+      - name: Verify no upstream job failed
+        shell: bash
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "Upstream job results: ${RESULTS}"
+          failed=0
+          for r in ${RESULTS}; do
+            case "$r" in
+              success|skipped) ;;
+              failure|cancelled)
+                echo "::error::an upstream job reported '${r}'"
+                failed=1
+                ;;
+              *)
+                echo "::error::an upstream job reported unexpected result '${r}'"
+                failed=1
+                ;;
+            esac
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "CI gate: FAIL"
+            exit 1
+          fi
+          echo "CI gate: all upstream jobs passed (or legitimately skipped)"
