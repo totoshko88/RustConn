@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - Unreleased
+
+### Added
+- **Secret-backend groundwork for read-only vaults and vault-root search (issue [#353](https://github.com/totoshko88/RustConn/issues/353))** — the `SecretBackend` trait gained two capability methods, `is_read_only()` and `searches_from_root()`, both defaulting to the historical behaviour (writable, scoped to the `RustConn` subtree), plus a provided `ensure_writable()` helper that returns the new `SecretError::ReadOnly(backend_name)` so every backend refuses a write identically and the vault is left untouched. `ReadOnly` is distinct from `StoreFailed`/`DeleteFailed`: nothing was attempted, so the UI can say *which* vault refused and why rather than reporting what looks like a write failure. No backend changes behaviour yet — this commit only adds the shared surface the per-backend wiring builds on.
+
 ## [0.22.15] - 2026-10-03
 
 ### Added
