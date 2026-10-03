@@ -19,8 +19,8 @@ use uuid::Uuid;
 use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, SshAuthMethod,
-    SshConfig, SshKeySource, TelnetConfig, VncConfig,
+    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, RdpConfig, RdpDisplayMode,
+    Resolution, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 
 /// Importer for Asbru-CM configuration files.
@@ -235,6 +235,40 @@ impl AsbruImporter {
             || (s.contains('$') && s.chars().any(|c| c.is_ascii_alphabetic()))
     }
 
+    /// Parses the Ásbrú-CM xfreerdp options string for the two RDP settings
+    /// RustConn can carry: the domain (`/d:DOMAIN`) and a fixed geometry
+    /// (`/size:WIDTHxHEIGHT`).
+    ///
+    /// Ásbrú stores RDP configuration as a literal xfreerdp command line in the
+    /// connection's `options` field (upstream `PACMethod_xfreerdp.pm`), so the
+    /// tokens parsed here are the real wire format, not invented keys. The
+    /// percentage form (`/size:90%`) is a scaling mode with no fixed width/height
+    /// and is intentionally ignored. Returns `(domain, resolution)`.
+    fn parse_asbru_rdp_options(options: &str) -> (Option<String>, Option<Resolution>) {
+        let mut domain = None;
+        let mut resolution = None;
+
+        for token in options.split_whitespace() {
+            if let Some(dom) = token.strip_prefix("/d:") {
+                if !dom.is_empty() {
+                    domain = Some(dom.to_string());
+                }
+            } else if let Some(size) = token.strip_prefix("/size:") {
+                // Only the explicit WIDTHxHEIGHT form maps to a fixed resolution;
+                // `/size:N%` is a scaling percentage.
+                if let Some((w, h)) = size.split_once('x')
+                    && let (Ok(width), Ok(height)) = (w.parse::<u32>(), h.parse::<u32>())
+                    && width > 0
+                    && height > 0
+                {
+                    resolution = Some(Resolution { width, height });
+                }
+            }
+        }
+
+        (domain, resolution)
+    }
+
     /// Parses Asbru YAML content and returns an import result
     #[must_use]
     pub fn parse_config(&self, content: &str, source_path: &str) -> ImportResult {
@@ -401,6 +435,10 @@ impl AsbruImporter {
             "Asbru import protocol detection"
         );
 
+        // RDP domain parsed out of the Ásbrú xfreerdp options string, applied to
+        // the connection after it is constructed (domain lives on Connection).
+        let mut rdp_domain: Option<String> = None;
+
         let (protocol_config, default_port) = match protocol_type.as_str() {
             "ssh" | "sftp" | "scp" => {
                 let auth_method = match entry.auth_type.as_deref() {
@@ -494,7 +532,23 @@ impl AsbruImporter {
                 || s == "freerdp"
                 || s == "rdesktop3" =>
             {
-                (ProtocolConfig::Rdp(RdpConfig::default()), 3389u16)
+                // Ásbrú-CM keeps RDP settings as an xfreerdp command-line string
+                // in the `options` field (see upstream PACMethod_xfreerdp.pm): the
+                // domain as `/d:DOMAIN` and a fixed geometry as `/size:WIDTHxHEIGHT`.
+                // The import used to discard all of it (RdpConfig::default()), so a
+                // domain and a chosen resolution were silently lost. Carry both
+                // across; the domain is applied to the connection below.
+                let mut rdp_config = RdpConfig::default();
+                if let Some(opts) = &entry.options {
+                    let (domain, resolution) = Self::parse_asbru_rdp_options(opts);
+                    rdp_domain = domain;
+                    if let Some(res) = resolution {
+                        rdp_config.resolution = Some(res);
+                        // A fixed geometry is only honoured in Custom mode.
+                        rdp_config.external_display_mode = RdpDisplayMode::Custom;
+                    }
+                }
+                (ProtocolConfig::Rdp(rdp_config), 3389u16)
             }
             // Match VNC protocols - Asbru stores as "vnc (vncviewer)", "vnc (tigervnc)", etc.
             s if s == "vnc"
@@ -524,6 +578,12 @@ impl AsbruImporter {
         if let Some(user) = &entry.user {
             // Convert Asbru global variable syntax <GV:VAR> to RustConn syntax ${VAR}
             connection.username = Some(Self::convert_asbru_variables(user));
+        }
+
+        // Carry the RDP domain parsed from the Ásbrú xfreerdp options (`/d:`);
+        // domain lives on the connection, not on RdpConfig.
+        if let Some(domain) = rdp_domain.filter(|d| !d.is_empty()) {
+            connection.domain = Some(Self::convert_asbru_variables(&domain));
         }
 
         // Handle password import if enabled
@@ -970,6 +1030,72 @@ rdp-xfreerdp-uuid:
 
         let conn = &result.connections[0];
         assert!(matches!(conn.protocol_config, ProtocolConfig::Rdp(_)));
+    }
+
+    #[test]
+    fn test_parse_rdp_imports_domain_and_resolution_from_options() {
+        let importer = AsbruImporter::new();
+        // Ásbrú stores RDP settings as an xfreerdp command line in `options`:
+        // `/d:DOMAIN` for the domain, `/size:WIDTHxHEIGHT` for a fixed geometry.
+        let yaml = r#"
+rdp-domain-uuid:
+  _is_group: 0
+  name: "Windows Dev Box"
+  ip: "192.168.1.100"
+  port: 3389
+  user: "Administrator"
+  method: "rdp (xfreerdp)"
+  options: "/bpp:24 /d:CORP /size:1920x1080 +clipboard"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        // Domain is carried onto the connection (not RdpConfig).
+        assert_eq!(conn.domain.as_deref(), Some("CORP"));
+
+        let ProtocolConfig::Rdp(rdp) = &conn.protocol_config else {
+            panic!("expected RDP protocol config");
+        };
+        assert_eq!(
+            rdp.resolution,
+            Some(Resolution {
+                width: 1920,
+                height: 1080,
+            })
+        );
+        // A fixed geometry is only honoured in Custom display mode.
+        assert_eq!(rdp.external_display_mode, RdpDisplayMode::Custom);
+    }
+
+    #[test]
+    fn test_parse_rdp_without_options_keeps_defaults() {
+        let importer = AsbruImporter::new();
+        // No options string: domain stays unset and the resolution is not forced,
+        // so the display mode keeps its default (not Custom).
+        let yaml = r#"
+rdp-plain-uuid:
+  _is_group: 0
+  name: "Plain RDP"
+  ip: "192.168.1.101"
+  port: 3389
+  user: "Administrator"
+  method: "rdp (xfreerdp)"
+"#;
+
+        let result = importer.parse_config(yaml, "test");
+        assert_eq!(result.connections.len(), 1);
+
+        let conn = &result.connections[0];
+        assert_eq!(conn.domain, None);
+
+        let ProtocolConfig::Rdp(rdp) = &conn.protocol_config else {
+            panic!("expected RDP protocol config");
+        };
+        assert_eq!(rdp.resolution, None);
+        assert_ne!(rdp.external_display_mode, RdpDisplayMode::Custom);
     }
 
     #[test]
