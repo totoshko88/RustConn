@@ -452,6 +452,8 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 passbolt_root_search: false,
                 pass_read_only: false,
                 pass_root_search: false,
+                kdbx_read_only: false,
+                kdbx_root_search: false,
                 portable_file_path: None,
                 portable_passphrase: None,
                 portable_passphrase_encrypted: None,
@@ -558,6 +560,8 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         passbolt_root_search: false,
                         pass_read_only: false,
                         pass_root_search: false,
+                        kdbx_read_only: false,
+                        kdbx_root_search: false,
                     },
                     ui: UiSettings {
                         color_scheme: ColorScheme::default(),

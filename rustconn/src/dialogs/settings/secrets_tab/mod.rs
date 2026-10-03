@@ -165,6 +165,10 @@ pub struct SecretsPageWidgets {
     /// `YubiKey` Challenge-Response slot input (`slot[:serial]`). Empty means no
     /// hardware second factor.
     pub kdbx_yubikey_slot_entry: adw::EntryRow,
+    /// Block writes to the KeePass (kdbx) vault (read-only mode).
+    pub kdbx_read_only_row: adw::SwitchRow,
+    /// Search the whole KeePass (kdbx) vault, not just the RustConn folder.
+    pub kdbx_root_search_row: adw::SwitchRow,
     // Additional rows for visibility control
     pub kdbx_group: adw::PreferencesGroup,
     pub auth_group: adw::PreferencesGroup,
@@ -2235,6 +2239,22 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     kdbx_path_row.add_suffix(&kdbx_path_box);
     kdbx_group.add(&kdbx_path_row);
 
+    // Read-only + root-search toggles, mirroring the CLI backends. They map to
+    // the `SecretSettings::kdbx_read_only` / `kdbx_root_search` fields.
+    let kdbx_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    kdbx_group.add(&kdbx_read_only_row);
+
+    let kdbx_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder",
+        ))
+        .build();
+    kdbx_group.add(&kdbx_root_search_row);
+
     page.add(&kdbx_group);
 
     // === Authentication Group ===
@@ -2985,6 +3005,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         kdbx_use_key_file_check,
         kdbx_use_password_check,
         kdbx_yubikey_slot_entry,
+        kdbx_read_only_row,
+        kdbx_root_search_row,
         kdbx_group,
         auth_group,
         status_group,
@@ -3111,6 +3133,12 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets
         .kdbx_use_key_file_check
         .set_active(settings.kdbx_use_key_file);
+    widgets
+        .kdbx_read_only_row
+        .set_active(settings.kdbx_read_only);
+    widgets
+        .kdbx_root_search_row
+        .set_active(settings.kdbx_root_search);
     set_storage_combo_value(&widgets.kdbx_storage_combo, settings.kdbx_storage());
 
     // Load Bitwarden storage choice
@@ -3983,6 +4011,8 @@ pub fn collect_secret_settings(
         passbolt_root_search: widgets.passbolt_root_search_row.is_active(),
         pass_read_only: widgets.pass_read_only_row.is_active(),
         pass_root_search: widgets.pass_root_search_row.is_active(),
+        kdbx_read_only: widgets.kdbx_read_only_row.is_active(),
+        kdbx_root_search: widgets.kdbx_root_search_row.is_active(),
         // Collect portable encrypted file settings. An empty entry stays `None`,
         // which is what makes the default location the default rather than a
         // path this dialog writes into the config the first time it is opened.

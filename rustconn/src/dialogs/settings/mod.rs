@@ -1431,6 +1431,8 @@ impl SettingsDialog {
         let kdbx_use_key_file_check_clone = self.secrets_widgets.kdbx_use_key_file_check.clone();
         let kdbx_use_password_check_clone = self.secrets_widgets.kdbx_use_password_check.clone();
         let kdbx_yubikey_slot_entry_clone = self.secrets_widgets.kdbx_yubikey_slot_entry.clone();
+        let kdbx_read_only_row_clone = self.secrets_widgets.kdbx_read_only_row.clone();
+        let kdbx_root_search_row_clone = self.secrets_widgets.kdbx_root_search_row.clone();
         let bitwarden_password_entry_clone = self.secrets_widgets.bitwarden_password_entry.clone();
         let bitwarden_storage_combo_clone = self.secrets_widgets.bitwarden_storage_combo.clone();
         let bitwarden_use_api_key_check_clone =
@@ -1602,6 +1604,8 @@ impl SettingsDialog {
                 kdbx_use_key_file_check: kdbx_use_key_file_check_clone.clone(),
                 kdbx_use_password_check: kdbx_use_password_check_clone.clone(),
                 kdbx_yubikey_slot_entry: kdbx_yubikey_slot_entry_clone.clone(),
+                kdbx_read_only_row: kdbx_read_only_row_clone.clone(),
+                kdbx_root_search_row: kdbx_root_search_row_clone.clone(),
                 kdbx_group: adw::PreferencesGroup::new(), // dummy
                 auth_group: adw::PreferencesGroup::new(), // dummy
                 status_group: adw::PreferencesGroup::new(), // dummy

@@ -465,6 +465,15 @@ pub struct SecretSettings {
     /// Pass password store directory (defaults to ~/.password-store)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pass_store_dir: Option<PathBuf>,
+    /// Open the KeePass (kdbx) backend read-only (refuses writes). Default
+    /// false. The resolver read path never mutates, so this is config + GUI
+    /// only for now; kdbx write sites are enforced elsewhere.
+    #[serde(default)]
+    pub kdbx_read_only: bool,
+    /// Widen KeePass (kdbx) reads to the whole vault, not just the RustConn
+    /// scope. Read-widening only (#327-safe).
+    #[serde(default)]
+    pub kdbx_root_search: bool,
     /// Open the Bitwarden backend read-only (refuses writes). Default false.
     #[serde(default)]
     pub bitwarden_read_only: bool,
@@ -564,6 +573,8 @@ impl std::fmt::Debug for SecretSettings {
             .field("kdbx_use_key_file", &self.kdbx_use_key_file)
             .field("kdbx_use_password", &self.kdbx_use_password)
             .field("kdbx_yubikey_slot", &self.kdbx_yubikey_slot)
+            .field("kdbx_read_only", &self.kdbx_read_only)
+            .field("kdbx_root_search", &self.kdbx_root_search)
             .field(
                 "bitwarden_password",
                 &redacted(self.bitwarden_password.as_ref()),
@@ -674,6 +685,8 @@ impl Default for SecretSettings {
             passbolt_root_search: false,
             pass_read_only: false,
             pass_root_search: false,
+            kdbx_read_only: false,
+            kdbx_root_search: false,
             portable_file_path: None,
             portable_passphrase: None,
             portable_passphrase_encrypted: None,
@@ -714,6 +727,8 @@ impl PartialEq for SecretSettings {
             && self.passbolt_root_search == other.passbolt_root_search
             && self.pass_read_only == other.pass_read_only
             && self.pass_root_search == other.pass_root_search
+            && self.kdbx_read_only == other.kdbx_read_only
+            && self.kdbx_root_search == other.kdbx_root_search
             && self.portable_file_path == other.portable_file_path
             && self.portable_passphrase_encrypted == other.portable_passphrase_encrypted
             && self.portable_save_to_keyring == other.portable_save_to_keyring
@@ -2211,6 +2226,41 @@ mod tests {
         assert_toggle_distinguishes!(passbolt_root_search);
         assert_toggle_distinguishes!(pass_read_only);
         assert_toggle_distinguishes!(pass_root_search);
+        assert_toggle_distinguishes!(kdbx_read_only);
+        assert_toggle_distinguishes!(kdbx_root_search);
+    }
+
+    /// The kdbx read-only / root-search toggles default off, so the resolver's
+    /// `if secret_settings.kdbx_root_search` gate is false on a fresh install
+    /// and the root-widening fallback never runs unless the user opts in. This
+    /// is the config half of #327-safe read-widening; the live keepassxc-cli
+    /// path is covered end-to-end only, not in a unit test.
+    #[test]
+    fn secret_settings_kdbx_read_widening_toggles_default_off() {
+        use super::SecretSettings;
+        let d = SecretSettings::default();
+        assert!(!d.kdbx_read_only);
+        assert!(!d.kdbx_root_search);
+    }
+
+    /// A config predating the kdbx read-only / root-search fields must still
+    /// load, with both toggles off — `#[serde(default)]` is what makes the old
+    /// behaviour (scoped reads only) survive the upgrade.
+    #[test]
+    fn secret_settings_without_kdbx_read_widening_fields_still_deserializes() {
+        use super::SecretSettings;
+
+        let older_config = r"
+            kdbx_enabled = true
+            kdbx_use_password = true
+        ";
+
+        let settings: SecretSettings =
+            toml::from_str(older_config).expect("a config predating the fields must still parse");
+
+        assert!(!settings.kdbx_read_only);
+        assert!(!settings.kdbx_root_search);
+        assert!(settings.kdbx_enabled);
     }
 
     /// A fresh install has no hardware-key second factor: the field defaults to

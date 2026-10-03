@@ -1466,6 +1466,50 @@ impl AppState {
                         lookup_key = %lookup_key,
                         "[resolve_credentials_blocking] No password under this key in KeePass"
                     );
+                    // #327-safe read-widening: when the user opted into
+                    // searching from the vault root, retry the SAME lookup key
+                    // against the whole database (no RustConn/ scoping) before
+                    // falling through to the encrypted-file fallback. This never
+                    // mutates and never touches the write path. Scoped-first,
+                    // root only on a scoped miss; a no-op when the flag is off.
+                    if secret_settings.kdbx_root_search {
+                        match KeePassStatus::get_password_from_kdbx_root(
+                            kdbx_path,
+                            db_password,
+                            key_file,
+                            &lookup_key,
+                            secret_settings.kdbx_yubikey_slot.as_deref(),
+                        ) {
+                            Ok(Some(password)) => {
+                                tracing::debug!(
+                                    "[resolve_credentials_blocking] Found password via KeePass root search"
+                                );
+                                let creds = if let Some(ref username) = connection.username {
+                                    Credentials::with_password(username, password.expose_secret())
+                                } else {
+                                    Credentials {
+                                        username: None,
+                                        password: Some(password),
+                                        key_passphrase: None,
+                                        domain: None,
+                                    }
+                                };
+                                return Ok(CredentialResolutionResult::Resolved(creds));
+                            }
+                            Ok(None) => {
+                                tracing::debug!(
+                                    lookup_key = %lookup_key,
+                                    "[resolve_credentials_blocking] KeePass root search also found nothing"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    error = %e,
+                                    "[resolve_credentials_blocking] KeePass root search could not read the database"
+                                );
+                            }
+                        }
+                    }
                     // The flat `rustconn/{name}` key, which is what
                     // `generate_store_key` yields for KeePassXC and for every
                     // other non-keyring backend — so a password saved before the
@@ -1738,6 +1782,58 @@ impl AppState {
                                 "[resolve_credentials_blocking] No password in group '{}'",
                                 group.name
                             );
+                            // #327-safe read-widening for the Inherit path:
+                            // retry the SAME group entry name against the whole
+                            // database when the user enabled root search. Scoped
+                            // group lookup first, root only on its miss; read
+                            // only, never a write path; a no-op when off.
+                            if secret_settings.kdbx_root_search {
+                                match KeePassStatus::get_password_from_kdbx_root(
+                                    kdbx_path,
+                                    db_password,
+                                    key_file,
+                                    &group_name,
+                                    secret_settings.kdbx_yubikey_slot.as_deref(),
+                                ) {
+                                    Ok(Some(password)) => {
+                                        tracing::debug!(
+                                            "[resolve_credentials_blocking] Found inherited password via KeePass root search for group '{}'",
+                                            group.name
+                                        );
+                                        let username = connection
+                                            .username
+                                            .clone()
+                                            .or_else(|| group.username.clone());
+                                        let creds = if let Some(ref uname) = username {
+                                            Credentials::with_password(
+                                                uname,
+                                                password.expose_secret(),
+                                            )
+                                        } else {
+                                            Credentials {
+                                                username: None,
+                                                password: Some(password),
+                                                key_passphrase: None,
+                                                domain: None,
+                                            }
+                                        };
+                                        return Ok(CredentialResolutionResult::Resolved(creds));
+                                    }
+                                    Ok(None) => {
+                                        tracing::debug!(
+                                            "[resolve_credentials_blocking] KeePass root search found nothing for group '{}'",
+                                            group.name
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            "[resolve_credentials_blocking] KeePass root search error for group '{}': {}",
+                                            group.name,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
                         }
                         Err(e) => {
                             tracing::warn!(
