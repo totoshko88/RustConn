@@ -2653,6 +2653,30 @@ impl MainWindow {
             return types::ConnectionStartResult::Failed;
         };
 
+        // Dangling-bastion warning (#345): a `jump_host_id` — the connection's
+        // own, or one inherited from a group or the global network settings —
+        // can point at a connection that has since been deleted. The resolve
+        // path silently drops such a hop and connects direct, which is the one
+        // outcome a bastion exists to prevent. Surface it as a warning and then
+        // proceed direct (warn-and-direct): a user who just deleted the bastion
+        // they are about to re-create must not be blocked, but they must know
+        // the hop was skipped. Advisory only — this never returns early.
+        {
+            let dangling = rustconn_core::connection::jump_chain::find_dangling_bastions(
+                conn,
+                &state_ref.list_connections_owned(),
+                &state_ref.list_groups_owned(),
+                &state_ref.settings().network,
+            );
+            if !dangling.is_empty() {
+                let conn_name = conn.name.clone();
+                crate::toast::show_warning_toast_on_active_window(&crate::i18n::i18n_f(
+                    "Jump host for ‘{}’ is missing — connecting directly",
+                    &[&conn_name],
+                ));
+            }
+        }
+
         // Re-point guard: if this connection now goes somewhere other than the
         // last time it connected — a different host, account, credential source
         // or jump host — ask before carrying the saved credentials there. This
