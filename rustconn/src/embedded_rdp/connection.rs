@@ -2130,6 +2130,32 @@ impl super::EmbeddedRdpWidget {
                                 should_break = true;
                                 break;
                             }
+                            RdpClientEvent::H264Unavailable { reason } => {
+                                // A GFX/H.264 mode was requested but no decoder
+                                // loaded, so the session is on the RemoteFX path.
+                                // Surface it once so the quality drop is visible
+                                // rather than silent (issue #262). No fallback to
+                                // trigger — the session already works on RemoteFX.
+                                use rustconn_core::rdp_client::graphics::H264UnavailableReason;
+                                let message = match reason {
+                                    H264UnavailableReason::RejectedNonCisco => i18n(
+                                        "H.264 is unavailable: the installed OpenH264 is not a \
+                                         Cisco build and was refused. Using RemoteFX. Set \
+                                         RUSTCONN_OPENH264 to a library from \
+                                         ciscobinary.openh264.org to enable H.264.",
+                                    ),
+                                    H264UnavailableReason::NotFound => i18n(
+                                        "H.264 is unavailable: no OpenH264 library was found. \
+                                         Using RemoteFX. See docs/INSTALL.md to enable H.264.",
+                                    ),
+                                };
+                                tracing::info!(
+                                    protocol = "rdp",
+                                    ?reason,
+                                    "H.264 unavailable — using RemoteFX path"
+                                );
+                                crate::toast::show_warning_toast_on_active_window(&message);
+                            }
                         }
                     }
                 }

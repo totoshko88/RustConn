@@ -984,6 +984,7 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
     }
 
     if rejected_hash {
+        REJECTED_NON_CISCO.store(true, std::sync::atomic::Ordering::Relaxed);
         tracing::warn!(
             reason = "openh264_not_cisco_build",
             "No usable OpenH264 — every library found was a non-Cisco build. GFX pipeline will \
@@ -996,6 +997,31 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
         );
     }
     None
+}
+
+/// Set by [`probe_openh264`] when every OpenH264 it found was a non-Cisco build
+/// rejected by the hash check, as opposed to none being found at all. Read via
+/// [`openh264_unavailable_reason`] to tell the user which case they are in.
+static REJECTED_NON_CISCO: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Returns why H.264 is unavailable, or `None` when a decoder DID load.
+///
+/// Runs the one-shot probe (shared with [`try_load_openh264`]) so it reflects
+/// the same decision the session made, without re-walking the filesystem.
+#[must_use]
+pub fn openh264_unavailable_reason() -> Option<super::graphics::H264UnavailableReason> {
+    use super::graphics::H264UnavailableReason;
+    if USABLE_LIBRARY.get_or_init(probe_openh264).is_some() {
+        return None;
+    }
+    Some(
+        if REJECTED_NON_CISCO.load(std::sync::atomic::Ordering::Relaxed) {
+            H264UnavailableReason::RejectedNonCisco
+        } else {
+            H264UnavailableReason::NotFound
+        },
+    )
 }
 
 // ============================================================================

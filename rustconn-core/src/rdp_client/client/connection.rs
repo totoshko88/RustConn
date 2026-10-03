@@ -640,6 +640,13 @@ pub(super) async fn establish_connection(
             tracing::info!("EGFX pipeline registered with H.264/AVC420 decoding");
         } else {
             drop(gfx_update_tx);
+            // Tell the GUI why quality dropped: a GFX/H.264 mode was requested
+            // but no decoder loaded, so the session is on the RemoteFX path
+            // (issue #262). The reason distinguishes "not found" from the
+            // actionable "found but not a Cisco build".
+            if let Some(reason) = super::super::gfx_handler::openh264_unavailable_reason() {
+                let _ = event_tx.send(RdpClientEvent::H264Unavailable { reason });
+            }
             tracing::warn!(
                 reason = "openh264_unavailable",
                 "EGFX pipeline skipped — without an H.264 decoder the GFX channel \

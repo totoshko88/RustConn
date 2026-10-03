@@ -44,6 +44,22 @@ pub enum GraphicsMode {
     GfxAvc444,
 }
 
+/// Why the H.264 (OpenH264) decoder is unavailable, for a user-facing message.
+///
+/// Produced by `gfx_handler::openh264_unavailable_reason` and carried to the GUI
+/// in [`super::RdpClientEvent::H264Unavailable`] so a session that drops to the
+/// RemoteFX path can say *why* instead of silently losing the quality the user
+/// asked for (issue #262).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum H264UnavailableReason {
+    /// No OpenH264 library was found on any search path.
+    NotFound,
+    /// A library was found but rejected because it is not one of Cisco's own
+    /// published binaries (the royalty-bearing hash check). This is the
+    /// actionable case: point `RUSTCONN_OPENH264` at a Cisco blob.
+    RejectedNonCisco,
+}
+
 impl GraphicsMode {
     /// Returns a human-readable name for the graphics mode
     #[must_use]

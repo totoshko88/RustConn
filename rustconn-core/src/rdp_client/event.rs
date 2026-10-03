@@ -689,6 +689,19 @@ pub enum RdpClientEvent {
     /// should disable file drag-and-drop for this session.
     FileClipboardUnsupported,
 
+    /// H.264 (OpenH264) is unavailable, so the GFX H.264 pipeline was not
+    /// opened and the session uses the RemoteFX path.
+    ///
+    /// Emitted once per session when a connection asked for a GFX/H.264 mode
+    /// but no usable OpenH264 decoder loaded. The GUI surfaces it as a warning
+    /// so the quality drop is visible rather than silent (issue #262); the
+    /// `reason` distinguishes "nothing found" from "found but not a Cisco
+    /// build", the latter being the actionable `RUSTCONN_OPENH264` case.
+    H264Unavailable {
+        /// Why no decoder loaded.
+        reason: super::graphics::H264UnavailableReason,
+    },
+
     /// GFX H.264 pipeline persistent decode failure.
     ///
     /// Emitted once when 10+ consecutive bitmap updates deliver empty data,
