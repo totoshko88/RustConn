@@ -33,6 +33,43 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     }
 
     let connection = find_connection(&connections, name)?;
+
+    // Dangling-bastion warning (#345): a `jump_host_id` — the connection's own,
+    // or one inherited from a group or the global network settings — can point
+    // at a connection that has since been deleted. The launch path silently
+    // drops such a hop and connects direct, the one outcome a bastion exists to
+    // prevent. Warn (to stderr, so stdout and --dry-run output stay clean) and
+    // then proceed: warn-and-direct, matching the GUI. The group/network loads
+    // are best-effort — this is advisory and must never block a connection.
+    let groups = config_manager.load_groups().unwrap_or_default();
+    let network = config_manager
+        .load_settings()
+        .map(|settings| settings.network)
+        .unwrap_or_default();
+    for dangling in rustconn_core::connection::jump_chain::find_dangling_bastions(
+        connection,
+        &connections,
+        &groups,
+        &network,
+    ) {
+        let where_set = match dangling.origin {
+            rustconn_core::connection::jump_chain::BastionRefOrigin::Connection => {
+                "its own Jump Host setting".to_string()
+            }
+            rustconn_core::connection::jump_chain::BastionRefOrigin::Group(_) => {
+                "an inherited group Jump Host setting".to_string()
+            }
+            rustconn_core::connection::jump_chain::BastionRefOrigin::Network => {
+                "the global Network Jump Host setting".to_string()
+            }
+        };
+        eprintln!(
+            "Warning: jump host {} is missing (referenced by {where_set}); \
+             connecting directly.",
+            dangling.missing_id
+        );
+    }
+
     let command = build_connection_command(connection);
 
     if dry_run {
