@@ -53,6 +53,11 @@ pub struct PassboltBackend {
     /// When true, every mutating operation is refused with
     /// [`SecretError::ReadOnly`] and the vault is left untouched.
     read_only: bool,
+    /// When true, credential reads also match a resource whose name equals the
+    /// bare connection id, not only the `RustConn: {id}` convention, so a
+    /// resource the user keeps outside RustConn's naming is still found. Writes
+    /// are unaffected.
+    root_search: bool,
 }
 
 /// Passbolt resource from JSON output
@@ -124,6 +129,7 @@ impl PassboltBackend {
             server_address: None,
             user_password: None,
             read_only: false,
+            root_search: false,
         }
     }
 
@@ -139,6 +145,16 @@ impl PassboltBackend {
     #[must_use]
     pub const fn with_read_only(mut self, read_only: bool) -> Self {
         self.read_only = read_only;
+        self
+    }
+
+    /// Widens credential reads to also match a resource whose name equals the
+    /// bare connection id (not only `RustConn: {id}`), so a resource the user
+    /// keeps outside RustConn's naming is still found. Writes are unaffected and
+    /// still create/update the `RustConn: {id}` resource.
+    #[must_use]
+    pub const fn with_root_search(mut self, root_search: bool) -> Self {
+        self.root_search = root_search;
         self
     }
 
@@ -256,10 +272,20 @@ impl PassboltBackend {
         format!("RustConn: {connection_id}")
     }
 
+    /// Decides whether a resource `name` matches the connection, honouring the
+    /// root-search widening.
+    ///
+    /// The scoped form `RustConn: {connection_id}` always matches. When
+    /// `root_search` is on, a resource whose name equals the bare
+    /// `connection_id` matches too — this is the read-widening that finds a
+    /// resource the user keeps outside RustConn's naming convention. Pure (no
+    /// CLI, no `self`) so the widening logic is unit-tested deterministically.
+    fn name_matches(connection_id: &str, name: &str, root_search: bool) -> bool {
+        name == Self::entry_name(connection_id) || (root_search && name == connection_id)
+    }
+
     /// Finds a resource by connection ID (searches by name)
     async fn find_resource(&self, connection_id: &str) -> SecretResult<Option<PassboltResource>> {
-        let name = Self::entry_name(connection_id);
-
         let output = self.run_command(&["list", "resource"]).await;
 
         // If command fails, assume no resources
@@ -270,7 +296,30 @@ impl PassboltBackend {
 
         let resources: Vec<PassboltResource> = serde_json::from_str(&output).unwrap_or_default();
 
-        Ok(resources.into_iter().find(|r| r.name == name))
+        // Scoped match wins first: a `RustConn: {id}` resource is preferred over
+        // a bare-named one even when root-search is on, so enabling the flag
+        // never changes which resource a RustConn-created entry resolves to. A
+        // single pass keeps the first bare-id candidate as a fallback but returns
+        // immediately on the scoped match. The root-search fallback is only
+        // consulted when the flag is on — otherwise behaviour is scoped-only, as
+        // before.
+        let scoped_name = Self::entry_name(connection_id);
+        let mut bare_fallback: Option<PassboltResource> = None;
+        for resource in resources {
+            if resource.name == scoped_name {
+                return Ok(Some(resource));
+            }
+            // `name_matches` with the scoped form already excluded above reduces
+            // to the bare-id test when root-search is on; keep the first such
+            // candidate as the fallback.
+            if bare_fallback.is_none()
+                && Self::name_matches(connection_id, &resource.name, self.root_search)
+            {
+                bare_fallback = Some(resource);
+            }
+        }
+
+        Ok(bare_fallback)
     }
 
     /// Gets full resource details including password
@@ -439,6 +488,10 @@ impl SecretBackend for PassboltBackend {
 
     fn is_read_only(&self) -> bool {
         self.read_only
+    }
+
+    fn searches_from_root(&self) -> bool {
+        self.root_search
     }
 }
 
@@ -617,6 +670,7 @@ impl std::fmt::Debug for PassboltBackend {
                 &self.user_password.as_ref().map(|_| "[REDACTED]"),
             )
             .field("read_only", &self.read_only)
+            .field("root_search", &self.root_search)
             .finish()
     }
 }
@@ -722,5 +776,62 @@ mod read_only_tests {
         let backend = PassboltBackend::new().with_read_only(true);
         let err = backend.delete("conn-1").await.unwrap_err();
         assert!(matches!(err, SecretError::ReadOnly(_)));
+    }
+}
+
+#[cfg(test)]
+mod root_search_tests {
+    use super::*;
+
+    #[test]
+    fn searches_from_root_defaults_false_and_builder_toggles_it() {
+        assert!(!PassboltBackend::new().searches_from_root());
+        assert!(
+            PassboltBackend::new()
+                .with_root_search(true)
+                .searches_from_root()
+        );
+        // Setting it back to false is honoured.
+        assert!(
+            !PassboltBackend::new()
+                .with_root_search(true)
+                .with_root_search(false)
+                .searches_from_root()
+        );
+    }
+
+    #[test]
+    fn read_only_and_root_search_are_independent() {
+        let both = PassboltBackend::new()
+            .with_read_only(true)
+            .with_root_search(true);
+        assert!(both.is_read_only());
+        assert!(both.searches_from_root());
+    }
+
+    /// The pure name-matcher is the whole of the root-search widening decision
+    /// (`find_resource` only orders the scoped-first preference around it), so
+    /// unit-testing it covers the logic without the live `passbolt` CLI.
+    #[test]
+    fn name_matcher_widens_to_bare_id_only_when_root_search_on() {
+        // Scoped `RustConn: {id}` always matches, regardless of the flag.
+        assert!(PassboltBackend::name_matches(
+            "conn-1",
+            "RustConn: conn-1",
+            false
+        ));
+        assert!(PassboltBackend::name_matches(
+            "conn-1",
+            "RustConn: conn-1",
+            true
+        ));
+
+        // The bare id matches ONLY when root-search is on.
+        assert!(!PassboltBackend::name_matches("conn-1", "conn-1", false));
+        assert!(PassboltBackend::name_matches("conn-1", "conn-1", true));
+
+        // An unrelated name never matches either way.
+        assert!(!PassboltBackend::name_matches("conn-1", "other", false));
+        assert!(!PassboltBackend::name_matches("conn-1", "other", true));
     }
 }

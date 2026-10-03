@@ -25,6 +25,10 @@ pub struct PassBackend {
     /// When true, every mutating operation is refused with
     /// [`SecretError::ReadOnly`] and the store is left untouched.
     read_only: bool,
+    /// When true, a missed `rustconn/<id>/<field>` read falls back to
+    /// `<id>/<field>` at the store root, so an entry the user keeps outside the
+    /// `rustconn/` subtree is still found. Writes stay `rustconn/`-prefixed.
+    root_search: bool,
 }
 
 impl Default for PassBackend {
@@ -46,6 +50,7 @@ impl PassBackend {
         Self {
             store_dir,
             read_only: false,
+            root_search: false,
         }
     }
 
@@ -54,6 +59,16 @@ impl PassBackend {
     #[must_use]
     pub const fn with_read_only(mut self, read_only: bool) -> Self {
         self.read_only = read_only;
+        self
+    }
+
+    /// Widens credential reads: when a `rustconn/<id>/<field>` lookup misses,
+    /// `retrieve` also tries `<id>/<field>` at the store root (no `rustconn/`
+    /// prefix), so an entry the user keeps outside the `rustconn/` subtree is
+    /// still found. Writes stay `rustconn/`-prefixed and are unaffected.
+    #[must_use]
+    pub const fn with_root_search(mut self, root_search: bool) -> Self {
+        self.root_search = root_search;
         self
     }
 
@@ -95,6 +110,24 @@ impl PassBackend {
         let safe_id = connection_id.replace(['/', '\\', '.'], "_");
         let safe_field = field.replace(['/', '\\', '.'], "_");
         format!("rustconn/{safe_id}/{safe_field}")
+    }
+
+    /// Builds the root-search fallback path `<connection_id>/<field>` — the same
+    /// entry WITHOUT the `rustconn/` prefix, for an entry the user keeps at the
+    /// store root.
+    ///
+    /// Applies the identical path-traversal sanitization as
+    /// [`Self::build_pass_path`]; the only difference is the dropped `rustconn/`
+    /// prefix. Pure (no `self` state read) so the root-widening path shape is
+    /// unit-tested without the `pass` CLI.
+    #[expect(
+        clippy::unused_self,
+        reason = "mirrors build_pass_path's uniform &self helper signature"
+    )]
+    fn build_root_path(&self, connection_id: &str, field: &str) -> String {
+        let safe_id = connection_id.replace(['/', '\\', '.'], "_");
+        let safe_field = field.replace(['/', '\\', '.'], "_");
+        format!("{safe_id}/{safe_field}")
     }
 
     /// Sets up the Command with optional PASSWORD_STORE_DIR
@@ -159,12 +192,38 @@ impl PassBackend {
         connection_id: &str,
         field: &str,
     ) -> SecretResult<Option<String>> {
-        let path = self.build_pass_path(connection_id, field);
+        // Scoped lookup first — unchanged behaviour. Found-first for back-compat:
+        // a `rustconn/`-scoped entry wins over an identically-named one at the
+        // store root.
+        let scoped = self
+            .show_path(&self.build_pass_path(connection_id, field))
+            .await?;
+        if scoped.is_some() {
+            return Ok(scoped);
+        }
 
+        // Root-search fallback: only on a scoped miss, and only when enabled,
+        // look up `<id>/<field>` at the store root (no `rustconn/` prefix). This
+        // widens READS only — `store`/`delete` stay `rustconn/`-prefixed. When
+        // root-search is off, behaviour is byte-identical to the scoped-only
+        // lookup above.
+        if self.root_search {
+            return self
+                .show_path(&self.build_root_path(connection_id, field))
+                .await;
+        }
+
+        Ok(None)
+    }
+
+    /// Runs `pass show <path>` and returns the first stored line, or `None` for
+    /// a genuine miss. Shared by the scoped lookup and the root-search fallback
+    /// so both treat a missing entry and a not-ready store identically.
+    async fn show_path(&self, path: &str) -> SecretResult<Option<String>> {
         let output = self
             .setup_command()
             .arg("show")
-            .arg(&path)
+            .arg(path)
             .output()
             .await
             .map_err(|e| SecretError::Pass(format!("Failed to run pass: {e}")))?;
@@ -351,6 +410,10 @@ impl SecretBackend for PassBackend {
     fn is_read_only(&self) -> bool {
         self.read_only
     }
+
+    fn searches_from_root(&self) -> bool {
+        self.root_search
+    }
 }
 
 impl std::fmt::Debug for PassBackend {
@@ -358,6 +421,7 @@ impl std::fmt::Debug for PassBackend {
         f.debug_struct("PassBackend")
             .field("store_dir", &self.store_dir)
             .field("read_only", &self.read_only)
+            .field("root_search", &self.root_search)
             .finish()
     }
 }
@@ -416,5 +480,74 @@ mod read_only_tests {
         let backend = PassBackend::new(Some("/nonexistent/store".to_string())).with_read_only(true);
         let err = backend.delete("conn-1").await.unwrap_err();
         assert!(matches!(err, SecretError::ReadOnly(_)));
+    }
+}
+
+#[cfg(test)]
+mod root_search_tests {
+    use super::*;
+
+    #[test]
+    fn searches_from_root_defaults_false_and_builder_toggles_it() {
+        assert!(!PassBackend::new(None).searches_from_root());
+        assert!(
+            PassBackend::new(None)
+                .with_root_search(true)
+                .searches_from_root()
+        );
+        // Setting it back to false is honoured.
+        assert!(
+            !PassBackend::new(None)
+                .with_root_search(true)
+                .with_root_search(false)
+                .searches_from_root()
+        );
+    }
+
+    #[test]
+    fn read_only_and_root_search_are_independent() {
+        let both = PassBackend::new(None)
+            .with_read_only(true)
+            .with_root_search(true);
+        assert!(both.is_read_only());
+        assert!(both.searches_from_root());
+    }
+
+    /// The two path builders are the whole of the root-search widening for pass
+    /// (`retrieve_value` only chooses scoped-first then root on a miss), so
+    /// unit-testing the path shapes covers the logic without the `pass` CLI.
+    /// The scoped path keeps the `rustconn/` prefix; the root path drops it;
+    /// both apply the same path-traversal sanitization.
+    #[test]
+    fn scoped_path_keeps_prefix_and_root_path_drops_it() {
+        let backend = PassBackend::new(None);
+
+        assert_eq!(
+            backend.build_pass_path("conn-1", "password"),
+            "rustconn/conn-1/password"
+        );
+        assert_eq!(
+            backend.build_root_path("conn-1", "password"),
+            "conn-1/password"
+        );
+    }
+
+    /// Both builders must neutralise path-traversal characters identically, so
+    /// the root fallback cannot be a traversal the scoped form rejected.
+    #[test]
+    fn both_builders_sanitize_traversal_characters() {
+        let backend = PassBackend::new(None);
+
+        // `.`, `/` and `\` all collapse to `_` in both id and field, so
+        // `../etc` becomes `___etc` (two dots + one slash) and `pass/word`
+        // becomes `pass_word`.
+        assert_eq!(
+            backend.build_pass_path("../etc", "pass/word"),
+            "rustconn/___etc/pass_word"
+        );
+        assert_eq!(
+            backend.build_root_path("../etc", "pass/word"),
+            "___etc/pass_word"
+        );
     }
 }
