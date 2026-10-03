@@ -104,9 +104,36 @@ impl Marked for GroupsFile {
     }
 }
 
+impl Marked for SnippetsFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for ClustersFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TemplatesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for WorkspaceProfilesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
 /// Wrapper for serializing a list of snippets
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct SnippetsFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     snippets: Vec<Snippet>,
 }
@@ -114,6 +141,9 @@ struct SnippetsFile {
 /// Wrapper for serializing a list of clusters
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct ClustersFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     clusters: Vec<Cluster>,
 }
@@ -121,6 +151,9 @@ struct ClustersFile {
 /// Wrapper for serializing a list of templates
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct TemplatesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     templates: Vec<ConnectionTemplate>,
 }
@@ -151,6 +184,9 @@ pub(super) struct TrashFile {
 /// Wrapper for serializing workspace profiles
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct WorkspaceProfilesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     profiles: Vec<WorkspaceProfile>,
 }
@@ -678,7 +714,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_snippets(&self) -> ConfigResult<Vec<Snippet>> {
         let path = self.config_dir.join(SNIPPETS_FILE);
-        Self::load_toml_file::<SnippetsFile>(&path).map(|f| f.snippets)
+        self.load_marked_toml_file::<SnippetsFile>(&path)
+            .map(|f| f.snippets)
     }
 
     /// Saves snippets to the configuration file
@@ -692,6 +729,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(SNIPPETS_FILE);
         let file = SnippetsFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             snippets: snippets.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -708,7 +746,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
         let path = self.config_dir.join(CLUSTERS_FILE);
-        Self::load_toml_file::<ClustersFile>(&path).map(|f| f.clusters)
+        self.load_marked_toml_file::<ClustersFile>(&path)
+            .map(|f| f.clusters)
     }
 
     /// Saves clusters to the configuration file
@@ -722,6 +761,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(CLUSTERS_FILE);
         let file = ClustersFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             clusters: clusters.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -738,7 +778,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
         let path = self.config_dir.join(TEMPLATES_FILE);
-        Self::load_toml_file::<TemplatesFile>(&path).map(|f| f.templates)
+        self.load_marked_toml_file::<TemplatesFile>(&path)
+            .map(|f| f.templates)
     }
 
     /// Saves templates to the configuration file
@@ -752,6 +793,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TEMPLATES_FILE);
         let file = TemplatesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             templates: templates.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -768,7 +810,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_workspace_profiles(&self) -> ConfigResult<Vec<WorkspaceProfile>> {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
-        Self::load_toml_file::<WorkspaceProfilesFile>(&path).map(|f| f.profiles)
+        self.load_marked_toml_file::<WorkspaceProfilesFile>(&path)
+            .map(|f| f.profiles)
     }
 
     /// Saves workspace profiles to the configuration file
@@ -782,6 +825,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         let file = WorkspaceProfilesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             profiles: profiles.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -1930,5 +1974,58 @@ mod tests {
         manager.restore_from_archive(&archive).unwrap();
 
         assert_eq!(fs::read_to_string(&path).unwrap(), archived);
+    }
+
+    /// The forward-compat marker now covers the secondary collection files, not
+    /// just connections/groups/settings. Clusters stands in for the group:
+    /// SnippetsFile, ClustersFile, TemplatesFile and WorkspaceProfilesFile all
+    /// gained the same `written_by` field, stamp and marked loader.
+    #[test]
+    fn clusters_carry_the_version_marker_and_a_newer_one_is_flagged() {
+        use crate::cluster::Cluster;
+
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(CLUSTERS_FILE);
+
+        // A save stamps the running version.
+        manager
+            .save_clusters(&[Cluster::new("DC Fleet".to_string())])
+            .unwrap();
+        let on_disk = fs::read_to_string(&path).unwrap();
+        assert!(
+            on_disk.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "save must stamp the running version: {on_disk}"
+        );
+
+        // An older/same marker is not flagged, and the file still loads.
+        for marker in ["0.0.1", RUNNING_VERSION] {
+            fs::write(&path, format!("written_by = \"{marker}\"\nclusters = []\n")).unwrap();
+            assert!(manager.load_clusters().unwrap().is_empty());
+            assert!(
+                manager.newer_version_files().is_empty(),
+                "marker {marker} must not be flagged as newer"
+            );
+        }
+
+        // A newer marker is flagged on load and backed up before the next save
+        // overwrites it — the whole point of the forward-compat coverage.
+        let newer = "written_by = \"99.0.0\"\nclusters = []\n";
+        fs::write(&path, newer).unwrap();
+        let _ = manager.load_clusters().unwrap();
+        assert_eq!(
+            manager.newer_version_files(),
+            vec![(path.clone(), "99.0.0".to_string())]
+        );
+        manager.save_clusters(&[]).unwrap();
+        let backup = manager.config_dir().join("clusters.toml.99.0.0.bak");
+        assert_eq!(
+            fs::read_to_string(&backup).unwrap(),
+            newer,
+            "the newer file must be backed up before being overwritten"
+        );
+
+        // A legacy file with no marker at all still loads (serde-default).
+        fs::write(&path, "clusters = []\n").unwrap();
+        assert!(manager.load_clusters().unwrap().is_empty());
     }
 }
