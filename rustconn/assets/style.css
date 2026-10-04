@@ -184,50 +184,7 @@
     opacity: 0.6;
 }
 
-/* Quick Filter button styles */
-.filter-button {
-    min-width: 24px;
-    min-height: 24px;
-    padding: 2px 4px;
-    font-size: 0.9em;
-    font-weight: 500;
-}
-
-/* Pill-style filter buttons (icon-only, GNOME HIG) */
-.filter-button.pill {
-    border-radius: 999px;
-    padding: 4px 6px;
-    min-height: 24px;
-    min-width: 24px;
-}
-
-.filter-button:hover {
-    background-color: alpha(@theme_fg_color, 0.08);
-}
-
-.filter-button.suggested-action {
-    background-color: @accent_color;
-    color: @accent_fg_color;
-}
-
-.filter-button.suggested-action:hover {
-    background-color: alpha(@accent_color, 0.8);
-}
-
-/* Multiple filter active state - shows when 2+ filters are selected */
-.filter-button.filter-active-multiple {
-    background-color: @accent_color;
-    color: @accent_fg_color;
-    border: 2px solid alpha(@accent_color, 0.6);
-    box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
-}
-
-.filter-button.filter-active-multiple:hover {
-    background-color: alpha(@accent_color, 0.9);
-    box-shadow: 0 0 0 2px alpha(@accent_color, 0.4);
-}
-
-/* Bulk action buttons (group operations mode) — pill style matching filters */
+/* Bulk action buttons (group operations mode) — flat symbolic, GNOME HIG */
 .bulk-action {
     min-width: 24px;
     min-height: 24px;
@@ -239,10 +196,13 @@
     background-color: alpha(@theme_fg_color, 0.08);
 }
 
-.bulk-action-destructive {
-    color: @error_color;
-}
-
+/* The "Delete Selected" button is a plain symbolic icon, NOT a permanently
+   red one (GNOME HIG): a destructive affordance is coloured only at the final
+   confirmation step — the Delete menu item carries `.destructive-action`, and
+   the delete dialog's confirm button is red. A toolbar icon tinted
+   @error_color at rest is the "inconsistent coloured trash" this redesign
+   removed, so .bulk-action-destructive now only warms its hover, matching the
+   other bulk actions. */
 .bulk-action-destructive:hover {
     background-color: alpha(@error_color, 0.12);
 }
@@ -807,14 +767,6 @@ window.compact popover.menu contents > box > box > button {
 
 window.compact popover.menu contents {
     padding: 4px;
-}
-
-/* Filter bar buttons — slightly smaller in compact mode */
-window.compact .filter-button {
-    min-height: 24px;
-    min-width: 24px;
-    padding: 2px 4px;
-    font-size: 0.9em;
 }
 
 /* Embedded RDP/VNC/SPICE toolbar — denser in compact mode */
