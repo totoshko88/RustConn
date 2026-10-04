@@ -839,8 +839,8 @@ b/c/dup
     use secrecy::SecretString;
 
     use super::{
-        Invocation, KeePassCli, SecretError, SecretResult, rename_or_move_in_place,
-        root_match_entry_path, save_in_place,
+        Invocation, InvocationKind, KeePassCli, SecretError, SecretResult, push_unlock_args,
+        rename_or_move_in_place, root_match_entry_path, save_in_place,
     };
 
     /// A scripted reply for one `run` call.
@@ -922,6 +922,14 @@ b/c/dup
             _db_password: Option<&SecretString>,
             _entry_secret: Option<&SecretString>,
         ) -> SecretResult<Output> {
+            // Mirror RealKeePassCli::run's touch bracketing so a test can assert
+            // that a `-y` invocation (waits_on_touch) raises the touch cue. The
+            // guard is dropped at the end of this call, exactly as the real one is.
+            let _touch = if invocation.waits_on_touch {
+                Some(crate::secret::touch::TouchGuard::begin())
+            } else {
+                None
+            };
             self.calls.borrow_mut().push(invocation.args.clone());
             let reply = self
                 .replies
@@ -1098,6 +1106,68 @@ b/c/dup
         );
         assert!(err.is_err());
         assert!(!cli.any_arg_contains("Password"));
+    }
+
+    /// #350 follow-up: a reader unlocking with a YubiKey slot builds the SAME
+    /// kind of read invocation the three readers now all route through
+    /// (`InvocationKind::Read`, `waits_on_touch` set because a `-y` slot was
+    /// pushed into the args), and running it through a cli that brackets the
+    /// touch guard raises the "touch your key" cue. Before the readers were
+    /// unified onto `cli.run` they spawned `keepassxc-cli` directly and no cue
+    /// fired on connect / password-load. The invocation shape is built here
+    /// exactly as `get_password_from_kdbx_exact` builds it.
+    #[test]
+    fn a_yubikey_read_raises_the_touch_cue_through_the_chokepoint() {
+        use std::sync::Arc;
+
+        use crate::secret::touch::{
+            TouchObserver, set_touch_observer,
+            test_support::{CountingObserver, exclusive},
+        };
+
+        let _exclusive = exclusive();
+        let observer = Arc::new(CountingObserver::for_this_thread());
+        #[expect(
+            clippy::clone_on_ref_ptr,
+            reason = "the clone must unsize to Arc<dyn TouchObserver>, which Arc::clone cannot"
+        )]
+        let installed: Arc<dyn TouchObserver> = observer.clone();
+        set_touch_observer(Some(installed));
+
+        // Build the read invocation exactly as a `-y` reader does.
+        let mut args = vec![
+            "show".to_string(),
+            "-q".to_string(),
+            "-s".to_string(),
+            "-a".to_string(),
+            "Password".to_string(),
+        ];
+        push_unlock_args(&mut args, true, None, Some("2:12345678"));
+        args.push(kdbx().display().to_string());
+        args.push("RustConn/web (ssh)".to_string());
+
+        let invocation = Invocation::new(
+            "show (exact entry)",
+            args,
+            InvocationKind::Read,
+            true, // yubikey_slot.is_some()
+        );
+
+        let cli = FakeCli::with_replies([Reply::stdout("hunter2\n")]);
+        cli.run(&invocation, Some(&db()), None).unwrap();
+
+        // The `-y` slot reached the argv (so cli.run saw a touch-waiting run)...
+        assert!(
+            cli.any_arg_contains("-y"),
+            "a yubikey read must carry -y so the chokepoint brackets the touch cue"
+        );
+        // ...and the chokepoint raised the touch cue at least once.
+        assert!(
+            observer.started() >= 1,
+            "a yubikey read routed through the chokepoint must raise the touch cue"
+        );
+
+        set_touch_observer(None);
     }
 }
 
@@ -2199,9 +2269,6 @@ impl KeePassStatus {
         protocol: Option<&str>,
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
-        use std::io::Write as IoWrite;
-        use std::process::Stdio;
-
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
 
@@ -2209,6 +2276,12 @@ impl KeePassStatus {
         let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
             SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
         })?;
+
+        // Route the read through the shared chokepoint so a `-y` unlock brackets
+        // the run with the touch cue (#350). `cli.run` feeds the db password on
+        // stdin and picks the budget from (Read, waits_on_touch); the reader no
+        // longer spawns or waits itself.
+        let cli = RealKeePassCli::new(&cli_path);
 
         let entry_paths = candidate_entry_paths(entry_name, protocol);
 
@@ -2242,33 +2315,13 @@ impl KeePassStatus {
 
             tracing::debug!("get_password: trying path '{entry_path}'");
 
-            let mut child = Self::keepassxc_command(&cli_path)
-                .args(&args)
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
-
-            // Only send password if we have one (not using --no-password)
-            if let Some(mut stdin) = child.stdin.take()
-                && let Some(db_pwd) = db_password
-            {
-                stdin
-                    .write_all(db_pwd.expose_secret().as_bytes())
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-                stdin
-                    .write_all(b"\n")
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            }
-
-            // A Challenge-Response unlock blocks on a physical touch, so give it
-            // the longer budget; a password/key-file-only read keeps the tight one.
-            let output = if yubikey_slot.is_some() {
-                wait_for_cli_yubikey(child, "show (with key file)")?
-            } else {
-                wait_for_cli(child, "show (with key file)")?
-            };
+            let invocation = Invocation::new(
+                "show (with key file)",
+                args,
+                InvocationKind::Read,
+                yubikey_slot.is_some(),
+            );
+            let output = cli.run(&invocation, db_password, None)?;
 
             tracing::debug!(
                 "get_password: exit={:?}, stderr='{}'",
@@ -2371,14 +2424,13 @@ impl KeePassStatus {
         entry_path: &str,
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
-        use std::io::Write as IoWrite;
-        use std::process::Stdio;
-
         Self::validate_kdbx_path(kdbx_path)?;
 
         let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
             SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
         })?;
+
+        let cli = RealKeePassCli::new(&cli_path);
 
         let mut args = vec![
             "show".to_string(),
@@ -2395,31 +2447,15 @@ impl KeePassStatus {
 
         tracing::debug!("get_password_exact: trying path '{entry_path}'");
 
-        let mut child = Self::keepassxc_command(&cli_path)
-            .args(&args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
-
-        if let Some(mut stdin) = child.stdin.take()
-            && let Some(db_pwd) = db_password
-        {
-            stdin
-                .write_all(db_pwd.expose_secret().as_bytes())
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            stdin
-                .write_all(b"\n")
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-        }
-
-        // A `-y` read blocks on a physical touch, so give it the touch budget.
-        let output = if yubikey_slot.is_some() {
-            wait_for_cli_yubikey(child, "show (exact entry)")?
-        } else {
-            wait_for_cli(child, "show (exact entry)")?
-        };
+        // Shared chokepoint: `-y` brackets the touch cue, db password on stdin,
+        // Read budget bumped to the YubiKey budget when it waits on a touch (#350).
+        let invocation = Invocation::new(
+            "show (exact entry)",
+            args,
+            InvocationKind::Read,
+            yubikey_slot.is_some(),
+        );
+        let output = cli.run(&invocation, db_password, None)?;
 
         if output.status.success() {
             let password =
@@ -2494,14 +2530,13 @@ impl KeePassStatus {
         connection_id: &str,
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
-        use std::io::Write as IoWrite;
-        use std::process::Stdio;
-
         Self::validate_kdbx_path(kdbx_path)?;
 
         let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
             SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
         })?;
+
+        let cli = RealKeePassCli::new(&cli_path);
 
         // List the WHOLE database, flattened. No trailing group argument — that
         // is the single difference from the `RustConn`-scoped tree probe, and it
@@ -2515,30 +2550,16 @@ impl KeePassStatus {
         push_unlock_args(&mut args, db_password.is_some(), key_file, yubikey_slot);
         args.push(kdbx_path.display().to_string());
 
-        let mut child = Self::keepassxc_command(&cli_path)
-            .args(&args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
-
-        if let Some(mut stdin) = child.stdin.take()
-            && let Some(db_pwd) = db_password
-        {
-            stdin
-                .write_all(db_pwd.expose_secret().as_bytes())
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            stdin
-                .write_all(b"\n")
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-        }
-
-        let output = if yubikey_slot.is_some() {
-            wait_for_cli_yubikey(child, "ls -R (root search)")?
-        } else {
-            wait_for_cli(child, "ls -R (root search)")?
-        };
+        // Through the shared chokepoint so this root `-y` run also gets the
+        // touch cue (#350); the delegated `_exact` read below routes through it
+        // too, so both runs of a two-step root read show the cue.
+        let invocation = Invocation::new(
+            "ls -R (root search)",
+            args,
+            InvocationKind::Read,
+            yubikey_slot.is_some(),
+        );
+        let output = cli.run(&invocation, db_password, None)?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
