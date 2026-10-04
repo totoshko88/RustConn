@@ -26,6 +26,10 @@ pub(super) struct AutomationTabWidgets {
     pub(super) expect_rules_list: ListBox,
     /// Button to add a new expect rule.
     pub(super) add_expect_rule_button: Button,
+    /// Command macros list box.
+    pub(super) command_macros_list: ListBox,
+    /// Button to add a new command macro.
+    pub(super) add_command_macro_button: Button,
     /// Container holding template picker buttons.
     pub(super) template_list_box: GtkBox,
     /// Entry for the pattern tester.
@@ -169,6 +173,34 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
     rules_group.add(&rules_button_box);
     content.append(&rules_group);
 
+    // === Command Macros Section ===
+    let macros_group = adw::PreferencesGroup::builder()
+        .title(i18n("Command Macros"))
+        .description(i18n(
+            "Per-connection commands you can send with a shortcut while the terminal is focused",
+        ))
+        .build();
+
+    let command_macros_list = ListBox::builder()
+        .selection_mode(gtk4::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .build();
+    command_macros_list.set_placeholder(Some(&Label::new(Some(&i18n("No command macros")))));
+    macros_group.add(&command_macros_list);
+
+    let macros_button_box = GtkBox::new(Orientation::Horizontal, 8);
+    macros_button_box.set_halign(gtk4::Align::End);
+    macros_button_box.set_margin_top(12);
+
+    let add_command_macro_button = Button::builder()
+        .label(i18n("Add Macro"))
+        .css_classes(["suggested-action"])
+        .build();
+    macros_button_box.append(&add_command_macro_button);
+
+    macros_group.add(&macros_button_box);
+    content.append(&macros_group);
+
     // Pattern tester (collapsible)
     let tester_group = adw::PreferencesGroup::builder().build();
     let tester_expander = adw::ExpanderRow::builder()
@@ -241,6 +273,8 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
         login_timeout_spin,
         expect_rules_list,
         add_expect_rule_button: add_rule_button,
+        command_macros_list,
+        add_command_macro_button,
         template_list_box,
         expect_pattern_test_entry: test_entry,
         expect_test_result_label: result_label,

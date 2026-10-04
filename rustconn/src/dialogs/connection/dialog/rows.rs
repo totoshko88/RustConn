@@ -16,12 +16,15 @@ use gtk4::{
     Box as GtkBox, Button, CheckButton, DropDown, Entry, Grid, Label, ListBox, ListBoxRow,
     Orientation, PasswordEntry, SpinButton, StringList,
 };
+use libadwaita as adw;
 use rustconn_core::automation::{ExpectRule, builtin_templates};
-use rustconn_core::models::{CustomProperty, PropertyType};
+use rustconn_core::models::{CommandMacro, CustomProperty, PropertyType};
 use rustconn_core::variables::Variable;
 use uuid::Uuid;
 
-use super::{ConnectionDialog, CustomPropertyRow, ExpectRuleRow, LocalVariableRow};
+use super::{
+    CommandMacroRow, ConnectionDialog, CustomPropertyRow, ExpectRuleRow, LocalVariableRow,
+};
 use crate::i18n::i18n;
 
 impl ConnectionDialog {
@@ -570,6 +573,218 @@ impl ConnectionDialog {
 
             list_clone.append(&rule_row.row);
         });
+    }
+
+    /// Creates a command macro row widget.
+    ///
+    /// Mirrors `create_expect_rule_row` but without the move up/down buttons
+    /// (macro order does not matter) and without a template picker. Pre-fills
+    /// the fields from `macro_` when it is `Some`.
+    pub(super) fn create_command_macro_row(macro_: Option<&CommandMacro>) -> CommandMacroRow {
+        let main_box = GtkBox::new(Orientation::Vertical, 6);
+        main_box.set_margin_top(12);
+        main_box.set_margin_bottom(12);
+        main_box.set_margin_start(12);
+        main_box.set_margin_end(12);
+
+        // Row 0: Action buttons (delete) — top-right for visibility
+        let action_box = GtkBox::new(Orientation::Horizontal, 4);
+        action_box.set_halign(gtk4::Align::End);
+
+        let delete_button = Button::builder()
+            .icon_name("user-trash-symbolic")
+            .css_classes(["flat"])
+            .tooltip_text(i18n("Delete macro"))
+            .build();
+        delete_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Delete macro"))]);
+        action_box.append(&delete_button);
+        main_box.append(&action_box);
+
+        // Row 1: Name entry (full width)
+        let name_box = GtkBox::new(Orientation::Horizontal, 6);
+        let name_label = Label::builder()
+            .label(i18n("Name:"))
+            .halign(gtk4::Align::End)
+            .width_chars(10)
+            .build();
+        let name_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text(i18n("Macro name"))
+            .build();
+        name_box.append(&name_label);
+        name_box.append(&name_entry);
+        main_box.append(&name_box);
+
+        // Row 2: Command entry (full width)
+        let command_box = GtkBox::new(Orientation::Horizontal, 6);
+        let command_label = Label::builder()
+            .label(i18n("Command:"))
+            .halign(gtk4::Align::End)
+            .width_chars(10)
+            .build();
+        let command_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text(i18n("Command to send, e.g. sudo -i"))
+            .tooltip_text(i18n(
+                "Command text sent to the terminal. Use ${password}, ${username}, or ${VAR_NAME} for variables.",
+            ))
+            .build();
+        command_box.append(&command_label);
+        command_box.append(&command_entry);
+        main_box.append(&command_box);
+
+        // Row 3: Keybind entry (full width)
+        let keybind_box = GtkBox::new(Orientation::Horizontal, 6);
+        let keybind_label = Label::builder()
+            .label(i18n("Shortcut:"))
+            .halign(gtk4::Align::End)
+            .width_chars(10)
+            .build();
+        let keybind_entry = Entry::builder()
+            .hexpand(true)
+            .placeholder_text(i18n("Shortcut e.g. <Control><Shift>r, optional"))
+            .tooltip_text(i18n(
+                "GTK accelerator that fires this macro while the terminal is focused",
+            ))
+            .build();
+        keybind_box.append(&keybind_label);
+        keybind_box.append(&keybind_entry);
+        main_box.append(&keybind_box);
+
+        // Row 4: Run (append Enter) switch, defaulting ON
+        let send_newline_switch = adw::SwitchRow::builder()
+            .title(i18n("Run (append Enter)"))
+            .subtitle(i18n(
+                "Append a newline so the command runs rather than only being typed",
+            ))
+            .active(true)
+            .build();
+        main_box.append(&send_newline_switch);
+
+        // Populate from existing macro if provided
+        if let Some(m) = macro_ {
+            name_entry.set_text(&m.name);
+            command_entry.set_text(&m.command);
+            keybind_entry.set_text(m.keybind.as_deref().unwrap_or(""));
+            send_newline_switch.set_active(m.send_newline);
+        }
+
+        let row = ListBoxRow::builder().child(&main_box).build();
+
+        CommandMacroRow {
+            row,
+            name_entry,
+            command_entry,
+            keybind_entry,
+            send_newline_switch,
+            delete_button,
+        }
+    }
+
+    /// Wires up the add command macro button.
+    ///
+    /// Mirrors `wire_add_expect_rule_button`: pushes a new default
+    /// [`CommandMacro`], wires the delete button to remove the row's entry, and
+    /// wires the field widgets to update the entry. Lookups are by the row's
+    /// live index in the list box — `CommandMacro` carries no id of its own, so
+    /// the index is read inside each handler (the same scheme the custom-property
+    /// editor uses) to stay correct across deletions.
+    pub(super) fn wire_add_command_macro_button(
+        add_button: &Button,
+        command_macros_list: &ListBox,
+        command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+    ) {
+        let list_clone = command_macros_list.clone();
+        let macros_clone = command_macros.clone();
+
+        add_button.connect_clicked(move |_| {
+            let macro_row = Self::create_command_macro_row(None);
+
+            // Add a new empty macro to the list
+            macros_clone.borrow_mut().push(CommandMacro::default());
+
+            // Connect delete button (remove by the row's current index)
+            let list_for_delete = list_clone.clone();
+            let macros_for_delete = macros_clone.clone();
+            let row_widget = macro_row.row.clone();
+            macro_row.delete_button.connect_clicked(move |_| {
+                if let Ok(idx) = usize::try_from(row_widget.index())
+                    && idx < macros_for_delete.borrow().len()
+                {
+                    macros_for_delete.borrow_mut().remove(idx);
+                }
+                list_for_delete.remove(&row_widget);
+            });
+
+            // Connect entry/switch changes to update the macro entry
+            Self::connect_macro_entry_changes(&macro_row, &macros_clone);
+
+            list_clone.append(&macro_row.row);
+        });
+    }
+
+    /// Connects a command macro row's field widgets to update the macro in the
+    /// list. The entry's current index in the list box identifies which Vec
+    /// entry it edits; an empty keybind is stored as `None`.
+    pub(super) fn connect_macro_entry_changes(
+        macro_row: &CommandMacroRow,
+        command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+    ) {
+        let row_widget = macro_row.row.clone();
+
+        // Name entry
+        let macros_for_name = command_macros.clone();
+        let row_for_name = row_widget.clone();
+        macro_row.name_entry.connect_changed(move |entry| {
+            let text = entry.text().to_string();
+            if let Ok(idx) = usize::try_from(row_for_name.index())
+                && let Some(m) = macros_for_name.borrow_mut().get_mut(idx)
+            {
+                m.name = text;
+            }
+        });
+
+        // Command entry
+        let macros_for_command = command_macros.clone();
+        let row_for_command = row_widget.clone();
+        macro_row.command_entry.connect_changed(move |entry| {
+            let text = entry.text().to_string();
+            if let Ok(idx) = usize::try_from(row_for_command.index())
+                && let Some(m) = macros_for_command.borrow_mut().get_mut(idx)
+            {
+                m.command = text;
+            }
+        });
+
+        // Keybind entry (empty string → None)
+        let macros_for_keybind = command_macros.clone();
+        let row_for_keybind = row_widget.clone();
+        macro_row.keybind_entry.connect_changed(move |entry| {
+            let text = entry.text().to_string();
+            if let Ok(idx) = usize::try_from(row_for_keybind.index())
+                && let Some(m) = macros_for_keybind.borrow_mut().get_mut(idx)
+            {
+                m.keybind = if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text)
+                };
+            }
+        });
+
+        // Send-newline switch
+        let macros_for_newline = command_macros.clone();
+        let row_for_newline = row_widget;
+        macro_row
+            .send_newline_switch
+            .connect_active_notify(move |switch| {
+                let active = switch.is_active();
+                if let Ok(idx) = usize::try_from(row_for_newline.index())
+                    && let Some(m) = macros_for_newline.borrow_mut().get_mut(idx)
+                {
+                    m.send_newline = active;
+                }
+            });
     }
 
     /// Wires up template picker buttons to add preset rules

@@ -268,6 +268,9 @@ impl ConnectionDialog {
         // Set expect rules
         self.set_expect_rules(&conn.automation.expect_rules);
 
+        // Set command macros
+        self.set_command_macros(&conn.automation.command_macros);
+
         // Set the automatic-login prompt overrides (issue #254)
         self.login_username_prompt_entry
             .set_text(conn.automation.username_prompt.as_deref().unwrap_or(""));
@@ -745,6 +748,50 @@ impl ConnectionDialog {
         Self::connect_rule_entry_changes(&rule_row, &self.expect_rules);
 
         self.expect_rules_list.append(&rule_row.row);
+    }
+
+    /// Sets the command macros for this connection
+    pub(super) fn set_command_macros(&self, macros: &[rustconn_core::models::CommandMacro]) {
+        // Clear existing rows
+        while let Some(row) = self.command_macros_list.row_at_index(0) {
+            self.command_macros_list.remove(&row);
+        }
+        self.command_macros.borrow_mut().clear();
+
+        // Add rows for each macro
+        for macro_ in macros {
+            self.add_command_macro_row(Some(macro_));
+        }
+    }
+
+    /// Adds a command macro row to the list
+    pub(super) fn add_command_macro_row(
+        &self,
+        macro_: Option<&rustconn_core::models::CommandMacro>,
+    ) {
+        let macro_row = Self::create_command_macro_row(macro_);
+
+        // If we have an existing macro, use it; otherwise start from the default
+        let new_macro = macro_.cloned().unwrap_or_default();
+        self.command_macros.borrow_mut().push(new_macro);
+
+        // Connect delete button (remove by the row's current index)
+        let list_for_delete = self.command_macros_list.clone();
+        let macros_for_delete = self.command_macros.clone();
+        let row_widget = macro_row.row.clone();
+        macro_row.delete_button.connect_clicked(move |_| {
+            if let Ok(idx) = usize::try_from(row_widget.index())
+                && idx < macros_for_delete.borrow().len()
+            {
+                macros_for_delete.borrow_mut().remove(idx);
+            }
+            list_for_delete.remove(&row_widget);
+        });
+
+        // Connect entry/switch changes to update the macro
+        Self::connect_macro_entry_changes(&macro_row, &self.command_macros);
+
+        self.command_macros_list.append(&macro_row.row);
     }
 
     /// Sets the highlight rules for this connection
