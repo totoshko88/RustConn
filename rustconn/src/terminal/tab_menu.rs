@@ -354,11 +354,11 @@ impl TerminalNotebook {
                 && let Some(ref proto) = protocol
                 && let Some(page) = sessions.borrow().get(&session_id)
             {
-                let (r, g, b) = rustconn_core::get_protocol_color_rgb(proto);
-                if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
-                    page.set_indicator_icon(Some(&icon));
-                    page.set_indicator_activatable(false);
-                }
+                // GNOME HIG §4b: monochrome symbolic protocol glyph, matching
+                // apply_protocol_color — not the former coloured RGB dot.
+                let icon = gio::ThemedIcon::new(Self::get_protocol_icon(proto));
+                page.set_indicator_icon(Some(&icon));
+                page.set_indicator_activatable(false);
             }
 
             // Remove group label prefix from tab title

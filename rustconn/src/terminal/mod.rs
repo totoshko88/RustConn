@@ -1970,11 +1970,18 @@ impl TerminalNotebook {
             if self.split_session_colors.borrow().contains_key(&session_id) {
                 return;
             }
-            let (r, g, b) = rustconn_core::get_protocol_color_rgb(protocol);
-            if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
-                page.set_indicator_icon(Some(&icon));
-                page.set_indicator_activatable(false);
-            }
+            // GNOME HIG §4b: the tab's protocol affordance is a MONOCHROME
+            // symbolic glyph, not a coloured dot. The former solid RGB circle
+            // (green SSH / blue RDP / …) was the one branded, non-symbolic mark
+            // left in the UI — it stood out against the otherwise monochrome
+            // chrome. The indicator now carries the same symbolic icon the tab's
+            // main icon uses (`get_protocol_icon`), so "colour tabs by protocol"
+            // still gives a per-protocol indicator, just a theme-tinted symbolic
+            // one. Split-membership colours (a different slot/meaning) keep their
+            // colour via `split_session_colors`, which is checked above.
+            let icon = gio::ThemedIcon::new(Self::get_protocol_icon(protocol));
+            page.set_indicator_icon(Some(&icon));
+            page.set_indicator_activatable(false);
         }
     }
 
@@ -1987,51 +1994,6 @@ impl TerminalNotebook {
             }
             page.set_indicator_icon(gio::Icon::NONE);
         }
-    }
-
-    /// Creates a colored circle icon for protocol tab indicators
-    fn create_protocol_color_icon(r: u8, g: u8, b: u8, size: u32) -> Option<gio::Icon> {
-        // Reuse the same circle-drawing logic as split colors
-        let mut rgba_data = vec![0u8; (size * size * 4) as usize];
-        let center = size as f32 / 2.0;
-        let radius = center - 1.0;
-
-        for y in 0..size {
-            for x in 0..size {
-                let dx = x as f32 - center;
-                let dy = y as f32 - center;
-                let distance = dx.hypot(dy);
-                let idx = ((y * size + x) * 4) as usize;
-
-                if distance <= radius {
-                    let alpha = if distance > radius - 1.0 {
-                        ((radius - distance + 1.0) * 255.0) as u8
-                    } else {
-                        255
-                    };
-                    rgba_data[idx] = r;
-                    rgba_data[idx + 1] = g;
-                    rgba_data[idx + 2] = b;
-                    rgba_data[idx + 3] = alpha;
-                }
-            }
-        }
-
-        // Straight from the bytes just written, with no `Pixbuf` in between.
-        //
-        // This used to build a `GdkPixbuf` and hand it to `Texture::for_pixbuf`,
-        // which GTK 4.20 deprecates — gdk-pixbuf is on its way out as GTK's image
-        // path (4.20 made glycin the preferred loader). `MemoryTexture` takes the
-        // same premultiplied-alpha RGBA buffer directly, so the conversion that was
-        // there to satisfy an API is simply gone.
-        let texture = gtk4::gdk::MemoryTexture::new(
-            size as i32,
-            size as i32,
-            gtk4::gdk::MemoryFormat::R8g8b8a8,
-            &glib::Bytes::from(&rgba_data),
-            size as usize * 4,
-        );
-        Some(texture.upcast::<gio::Icon>())
     }
 
     /// Gets the terminal widget for a session
