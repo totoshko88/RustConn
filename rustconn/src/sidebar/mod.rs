@@ -194,19 +194,30 @@ impl ConnectionSidebar {
         );
         search_box.append(&protocol_filter_menu);
 
-        // Sidebar's own headerbar — the topmost element of the panel, above the
-        // search box, so the OverlaySplitView reads as two distinct panels
-        // (GNOME HIG, like Files/Settings) rather than a column hanging under one
-        // global header. Fixes the "sidebar looks resizable" confusion.
+        // Sidebar as a proper panel: an AdwToolbarView whose TOP BAR is the
+        // sidebar headerbar and whose content is the search box + connection
+        // list (GNOME HIG §7c, like Files/Settings). This gives the header its
+        // real panel top-bar styling and background and makes the panel read as
+        // a distinct, divided panel beside the content, instead of a plain box
+        // with a header appended into it. `container` (class `sidebar`) stays
+        // the returned widget; the toolbar view is its single child.
         let sidebar_header = sidebar_ui::create_sidebar_header();
-        container.append(&sidebar_header);
+        let sidebar_toolbar = adw::ToolbarView::new();
+        sidebar_toolbar.add_top_bar(&sidebar_header);
+        sidebar_toolbar.set_top_bar_style(adw::ToolbarStyle::Flat);
+        sidebar_toolbar.set_vexpand(true);
+        // All sidebar body widgets go into this content box (the toolbar view's
+        // content), not straight into `container`.
+        let sidebar_body = GtkBox::new(Orientation::Vertical, 0);
+        sidebar_toolbar.set_content(Some(&sidebar_body));
+        container.append(&sidebar_toolbar);
 
-        container.append(&search_box);
+        sidebar_body.append(&search_box);
 
         // Separator between search box and connection list
         let separator = gtk4::Separator::new(Orientation::Horizontal);
         separator.add_css_class("spacer");
-        container.append(&separator);
+        sidebar_body.append(&separator);
 
         // Create search history storage and popover
         let search_history: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
@@ -288,7 +299,7 @@ impl ConnectionSidebar {
             .reveal_child(false)
             .child(&bulk_actions_bar)
             .build();
-        container.append(&bulk_actions_revealer);
+        sidebar_body.append(&bulk_actions_revealer);
 
         // Create the list store for connection items
         let store = gio::ListStore::new::<ConnectionItem>();
@@ -680,7 +691,7 @@ impl ConnectionSidebar {
         toolbar_view.add_bottom_bar(&bottom_toolbar);
         toolbar_view.set_bottom_bar_style(adw::ToolbarStyle::Flat);
         toolbar_view.set_vexpand(true);
-        container.append(&toolbar_view);
+        sidebar_body.append(&toolbar_view);
 
         // Smart Folders section — wrapped in Revealer (hidden by default, toggled via toolbar)
         let smart_folders_sidebar = SmartFoldersSidebar::new();
@@ -700,7 +711,7 @@ impl ConnectionSidebar {
             .build();
         // When revealed, smart folders expand to fill available sidebar space
         smart_folders_revealer.set_vexpand(false);
-        container.append(&smart_folders_revealer);
+        sidebar_body.append(&smart_folders_revealer);
 
         // Create debouncer for search with 100ms delay
         let search_debouncer = Rc::new(Debouncer::for_search());
