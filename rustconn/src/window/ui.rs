@@ -81,22 +81,34 @@ pub fn create_header_bar() -> (
     menu_button.set_menu_model(Some(&menu));
     header_bar.pack_end(&menu_button);
 
-    // Settings is reachable from the primary menu ("Settings…") per GNOME HIG;
-    // a standalone cog in the header was a duplicate and is removed.
+    // Settings — standalone quick-access button (also in the primary menu).
+    // The user relies on one-click Settings; a menu-only entry was a
+    // productivity regression, so the cog is restored to the header.
+    let settings_button = Button::from_icon_name("preferences-system-symbolic");
+    settings_button.set_tooltip_text(Some(&i18n("Settings (Ctrl+,)")));
+    settings_button.set_action_name(Some("win.settings"));
+    settings_button.add_css_class("flat");
+    settings_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Settings"))]);
+    header_bar.pack_end(&settings_button);
 
-    // Split view — a single menu button (icon + popover) instead of two separate
-    // header icons. GNOME HIG: group related low-frequency actions behind one
-    // control rather than spreading icons across the header.
-    let split_menu = gio::Menu::new();
-    split_menu.append(Some(&i18n("Split Right")), Some("win.split-vertical"));
-    split_menu.append(Some(&i18n("Split Down")), Some("win.split-horizontal"));
-    let split_button = MenuButton::builder()
-        .icon_name("view-dual-symbolic")
-        .tooltip_text(i18n("Split View"))
-        .menu_model(&split_menu)
-        .build();
-    split_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Split View"))]);
-    header_bar.pack_end(&split_button);
+    // Split view — two standalone quick-access buttons instead of one grouped
+    // popover. Splitting is a frequent action; a dropdown added a click, so the
+    // separate Split Right / Split Down buttons are restored to the header.
+    let split_horizontal_button = Button::from_icon_name("object-flip-vertical-symbolic");
+    split_horizontal_button.set_tooltip_text(Some(&i18n("Split Down (Ctrl+Shift+H)")));
+    split_horizontal_button.set_action_name(Some("win.split-horizontal"));
+    split_horizontal_button.add_css_class("flat");
+    split_horizontal_button
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Down"))]);
+    header_bar.pack_end(&split_horizontal_button);
+
+    let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
+    split_vertical_button.set_tooltip_text(Some(&i18n("Split Right (Ctrl+Shift+S)")));
+    split_vertical_button.set_action_name(Some("win.split-vertical"));
+    split_vertical_button.add_css_class("flat");
+    split_vertical_button
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Right"))]);
+    header_bar.pack_end(&split_vertical_button);
 
     // Shell button — prominent, icon + label, accent color, leftmost in right group
     let shell_button = Button::new();
@@ -199,7 +211,9 @@ pub fn create_header_bar() -> (
 
     sidebar_toggle.set_size_request(header_button_size, header_button_size);
     menu_button.set_size_request(header_button_size, header_button_size);
-    split_button.set_size_request(header_button_size, header_button_size);
+    settings_button.set_size_request(header_button_size, header_button_size);
+    split_horizontal_button.set_size_request(header_button_size, header_button_size);
+    split_vertical_button.set_size_request(header_button_size, header_button_size);
 
     (
         header_bar,
