@@ -854,6 +854,19 @@ fn openh264_candidates() -> Vec<std::path::PathBuf> {
         candidates.push(explicit);
     }
 
+    // The on-demand Cisco blob the user downloaded via the consent flow
+    // (`openh264_download::download_openh264`). It sits in the user cache and,
+    // being Cisco's own published binary, is the one library on a packaged
+    // Linux install the loader's SHA-256 allow-list actually accepts. It comes
+    // AFTER the explicit env override (which is a deliberate per-run choice) but
+    // BEFORE the system search paths (whose distribution builds the loader
+    // always rejects). `cached_openh264_path` is a pure read — it never triggers
+    // a download — and returns `None` unless the file exists AND its hash
+    // matches, so a corrupt/partial cache entry is simply skipped here.
+    if let Some(cached) = super::openh264_download::cached_openh264_path() {
+        candidates.push(cached);
+    }
+
     #[cfg(target_os = "macos")]
     if let Some(bundled) = bundled_openh264_path() {
         candidates.push(bundled);

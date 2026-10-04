@@ -1272,6 +1272,40 @@ pub enum Commands {
     /// Manage per-connection monitoring
     #[command(subcommand, about = "Manage per-connection monitoring")]
     Monitor(MonitorCommands),
+
+    /// Manage optional media codecs
+    #[command(subcommand, about = "Manage optional media codecs (H.264 for RDP GFX)")]
+    Codec(CodecCommands),
+}
+
+/// Codec management subcommands.
+///
+/// Currently just the on-demand Cisco OpenH264 download, which is the only
+/// library the RDP GFX H.264 loader accepts on a packaged install. The download
+/// requires the user to accept Cisco's license, which is why it is an explicit
+/// subcommand with a required opt-in flag rather than something that ever runs
+/// automatically.
+#[derive(Subcommand)]
+pub enum CodecCommands {
+    /// Download Cisco's official OpenH264 binary to enable H.264 in RDP GFX.
+    ///
+    /// Downloads the official binary from Cisco's CDN
+    /// (ciscobinary.openh264.org) into the user cache. Cisco — not RustConn —
+    /// provides this binary and holds the MPEG-LA patent licence for it; see
+    /// <https://www.openh264.org/BINARY_LICENSE.txt>. The download runs only
+    /// with `--accept-cisco-license`.
+    #[command(
+        name = "download-h264",
+        about = "Download Cisco's OpenH264 binary to enable H.264 RDP GFX decoding"
+    )]
+    DownloadH264 {
+        /// Accept Cisco's OpenH264 binary licence and download the binary.
+        ///
+        /// Required: without it the command prints what it would do and the
+        /// licence URL, and downloads nothing.
+        #[arg(long)]
+        accept_cisco_license: bool,
+    },
 }
 
 /// Output format for the list command

@@ -4862,6 +4862,7 @@ dependencies = [
  "ar",
  "argon2",
  "async-trait",
+ "bzip2",
  "cbc 0.2.1",
  "chrono",
  "criterion",

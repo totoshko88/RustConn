@@ -7,10 +7,11 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Label, Spinner, glib};
+use gtk4::{Align, Button, Label, Spinner, glib};
 use libadwaita as adw;
 use rustconn_core::protocol::ClientDetectionResult;
 
+use crate::async_utils::spawn_async;
 use crate::i18n::{i18n, i18n_f};
 
 /// Client detection info for async loading
@@ -96,6 +97,24 @@ pub fn create_clients_page() -> adw::PreferencesPage {
 
     page.add(&k8s_group);
 
+    // === Media Codecs Group (H.264 for RDP GFX) ===
+    //
+    // On a packaged install the RDP GFX H.264 decoder can only load Cisco's own
+    // published OpenH264 binary — distribution builds are refused by the
+    // loader's SHA-256 allow-list. Cisco holds the MPEG-LA patent licence for
+    // the binary a user downloads on demand from its CDN, so this is a strictly
+    // user-initiated, consent-gated download (openh264.org binary licence).
+    if rustconn_core::rdp_client::openh264_download::artifact().is_some() {
+        let codec_group = adw::PreferencesGroup::builder()
+            .title(i18n("Media Codecs"))
+            .description(i18n(
+                "Optional H.264 decoder for RDP graphics (GFX) sessions",
+            ))
+            .build();
+        codec_group.add(&build_h264_codec_row());
+        page.add(&codec_group);
+    }
+
     // Schedule async detection
     let core_group_clone = core_group.clone();
     let zerotrust_group_clone = zerotrust_group.clone();
@@ -161,6 +180,164 @@ fn create_loading_row(title: &str) -> adw::ActionRow {
     row.add_prefix(&spinner);
 
     row
+}
+
+/// Builds the "Download H.264 codec from Cisco" row.
+///
+/// Behaviour:
+/// * If a valid Cisco blob is already cached, the row shows "Installed ✓" and no
+///   action button.
+/// * Otherwise it shows a Download button. Clicking it opens a confirm dialog
+///   stating what will be downloaded, from where, and that it is Cisco's binary
+///   under Cisco's licence. On confirm it runs the consent-gated downloader with
+///   a spinner, then reports success ("Restart to use") or the error inline.
+///
+/// All download/consent policy lives in `rustconn-core`; this only renders it.
+fn build_h264_codec_row() -> adw::ActionRow {
+    use rustconn_core::rdp_client::openh264_download;
+
+    let already_installed = openh264_download::cached_openh264_path().is_some();
+
+    let row = adw::ActionRow::builder()
+        .title(i18n("Download H.264 codec from Cisco"))
+        .subtitle(i18n(
+            "Downloads Cisco's OpenH264 binary on demand to enable H.264 in RDP \
+             graphics sessions (openh264.org binary licence).",
+        ))
+        .build();
+
+    // Spinner (hidden until a download is in flight).
+    let spinner = Spinner::builder()
+        .valign(Align::Center)
+        .visible(false)
+        .build();
+    row.add_prefix(&spinner);
+
+    // Status label — "Installed" when the cache already holds a valid blob.
+    let status_label = Label::builder()
+        .label(if already_installed {
+            i18n("Installed ✓")
+        } else {
+            String::new()
+        })
+        .valign(Align::Center)
+        .css_classes(if already_installed {
+            vec!["success"]
+        } else {
+            vec![]
+        })
+        .build();
+    row.add_suffix(&status_label);
+
+    // Download button — only when not already installed.
+    let download_button = Button::builder()
+        .label(i18n("Download"))
+        .valign(Align::Center)
+        .visible(!already_installed)
+        .build();
+    download_button.add_css_class("suggested-action");
+
+    let button_for_click = download_button.clone();
+    let spinner_for_click = spinner.clone();
+    let status_for_click = status_label.clone();
+    download_button.connect_clicked(move |btn| {
+        confirm_and_download_h264(
+            btn,
+            &button_for_click,
+            &spinner_for_click,
+            &status_for_click,
+        );
+    });
+    row.add_suffix(&download_button);
+
+    row
+}
+
+/// Shows the consent confirm dialog, then runs the download on confirm.
+fn confirm_and_download_h264(
+    clicked: &Button,
+    download_button: &Button,
+    spinner: &Spinner,
+    status_label: &Label,
+) {
+    use rustconn_core::rdp_client::openh264_download;
+
+    let url = openh264_download::download_url().unwrap_or_default();
+    let dest = openh264_download::cache_path()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+
+    let body = i18n_f(
+        "This downloads Cisco's official OpenH264 binary from:\n{}\n\nand installs it to:\n{}\n\n\
+         Cisco — not RustConn — provides this binary and holds the patent licence for it \
+         (openh264.org binary licence). Download it?",
+        &[&url, &dest],
+    );
+
+    let confirm = adw::AlertDialog::new(Some(&i18n("Download H.264 codec?")), Some(&body));
+    confirm.add_response("cancel", &i18n("Cancel"));
+    confirm.add_response("download", &i18n("Download"));
+    confirm.set_response_appearance("download", adw::ResponseAppearance::Suggested);
+    confirm.set_default_response(Some("download"));
+    confirm.set_close_response("cancel");
+
+    let download_button = download_button.clone();
+    let spinner = spinner.clone();
+    let status_label = status_label.clone();
+    confirm.connect_response(None, move |_, response| {
+        if response == "download" {
+            start_h264_download(&download_button, &spinner, &status_label);
+        }
+    });
+
+    // Present on the row's own window so the dialog is correctly parented.
+    let parent = clicked.root().and_downcast::<gtk4::Window>();
+    confirm.present(parent.as_ref());
+}
+
+/// Runs the consent-gated download async, updating the row as it goes.
+fn start_h264_download(download_button: &Button, spinner: &Spinner, status_label: &Label) {
+    use rustconn_core::rdp_client::openh264_download;
+
+    // Enter in-flight state: spinner on, button disabled.
+    download_button.set_sensitive(false);
+    spinner.set_visible(true);
+    spinner.start();
+    status_label.set_label(&i18n("Downloading…"));
+    status_label.remove_css_class("success");
+    status_label.remove_css_class("error");
+
+    let download_button = download_button.clone();
+    let spinner = spinner.clone();
+    let status_label = status_label.clone();
+
+    spawn_async(async move {
+        // consent == true: this runs only in direct response to the user
+        // confirming the dialog above.
+        let result = openh264_download::download_openh264(true).await;
+
+        glib::idle_add_local_once(move || {
+            spinner.stop();
+            spinner.set_visible(false);
+            match result {
+                Ok(_) => {
+                    status_label.set_label(&i18n("Installed ✓ — restart to use"));
+                    status_label.remove_css_class("error");
+                    status_label.add_css_class("success");
+                    download_button.set_visible(false);
+                }
+                Err(ref error) => {
+                    tracing::error!(?error, "OpenH264 download failed");
+                    status_label.set_label(&i18n("Download failed"));
+                    status_label.remove_css_class("success");
+                    status_label.add_css_class("error");
+                    status_label.set_tooltip_text(Some(&error.to_string()));
+                    // Allow a retry.
+                    download_button.set_sensitive(true);
+                }
+            }
+        });
+    });
 }
 
 /// Updates a row with detected client info

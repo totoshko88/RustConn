@@ -3,6 +3,7 @@
 mod add;
 mod cloud_sync;
 mod cluster;
+mod codec;
 mod completions;
 #[cfg(feature = "client-launch")]
 mod connect;
@@ -576,5 +577,6 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::Tag(subcmd) => tag::cmd_tag(config_path, subcmd),
         Commands::Move { name, group } => move_cmd::cmd_move(config_path, &name, &group),
         Commands::Monitor(subcmd) => monitor::cmd_monitor(config_path, subcmd),
+        Commands::Codec(subcmd) => codec::cmd_codec(subcmd),
     }
 }
