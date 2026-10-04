@@ -852,7 +852,7 @@ mod manager_tests {
         let web1 = crate::Connection::new_ssh("prod-web1".into(), "10.0.0.1".into(), 22);
         cluster.add_connection(web1.id); // explicit AND would match the regex
         cluster.auto_membership = Some(r"^prod-web".to_string());
-        let members = cluster.resolve_members(&[web1.clone()]);
+        let members = cluster.resolve_members(std::slice::from_ref(&web1));
         assert_eq!(
             members,
             vec![web1.id],

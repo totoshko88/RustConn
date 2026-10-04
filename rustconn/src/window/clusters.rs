@@ -272,10 +272,14 @@ fn connect_cluster(
     monitoring: &super::types::SharedMonitoring,
     cluster_id: Uuid,
 ) {
-    // Get cluster info
+    // Get cluster info. Resolve the EFFECTIVE membership (explicit members plus
+    // any regex auto-membership matches) rather than the raw connection_ids, so
+    // an auto-membership rule like `^prod-web\d+` actually pulls matching hosts
+    // into the mass-connect. resolve_members is read-widening and de-duplicated.
     let (connection_ids, cluster_name) = if let Ok(state_ref) = state.try_borrow() {
         if let Some(cluster) = state_ref.get_cluster(cluster_id) {
-            (cluster.connection_ids.clone(), cluster.name.clone())
+            let connections = state_ref.list_connections_owned();
+            (cluster.resolve_members(&connections), cluster.name.clone())
         } else {
             return;
         }
