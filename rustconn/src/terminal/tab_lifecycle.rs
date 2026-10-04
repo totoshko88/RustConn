@@ -43,14 +43,17 @@ impl TerminalNotebook {
 
     /// Removes the welcome page if it exists.
     ///
-    /// Called by every session/tab-creation path *before* the new page is
-    /// appended. The Welcome tab is a placeholder for an empty notebook (issue
-    /// #232), so as soon as any real tab is opening it must go — regardless of
-    /// whether the session map is already populated. (The old guard keyed on
-    /// `sessions.is_empty()`, which left Welcome stranded beside real tabs when
-    /// a page was created through a path that registers its session before this
-    /// runs, or when a prior removal was skipped — exactly the "Welcome ⋮ fish1
-    /// ⋮ fish2" state the user saw.) We simply close any page titled Welcome.
+    /// Called by every session/tab-creation path *after* the new real page has
+    /// been appended **and selected**. The Welcome tab is a placeholder for an
+    /// empty notebook (issue #232), so as soon as any real tab exists it must
+    /// go. Ordering matters: `AdwTabView::close_page` on the currently-selected
+    /// *sole* page defers its reselection to an idle callback, so closing
+    /// Welcome *before* the real page was added left it stranded beside the
+    /// first tab (`Welcome ⋮ fish1`) while the second tab — where Welcome was no
+    /// longer selected — closed synchronously. Running this after the real page
+    /// is appended and selected means Welcome is never the selected page at
+    /// close time, so it closes immediately on the first tab too. We simply
+    /// close any page titled Welcome, independent of the session count.
     pub(super) fn remove_welcome_page(&self) {
         if self.tab_view.n_pages() == 0 {
             return;
@@ -145,7 +148,6 @@ impl TerminalNotebook {
         global_variables: &[rustconn_core::Variable],
     ) -> Uuid {
         let session_id = Uuid::new_v4();
-        self.remove_welcome_page();
 
         let terminal = Terminal::new();
         terminal.set_hexpand(true);
@@ -278,6 +280,11 @@ impl TerminalNotebook {
         // Select the new page
         self.tab_view.set_selected_page(&page);
 
+        // Drop the Welcome placeholder now that a real page exists and is
+        // selected (see `remove_welcome_page`: doing this after the append is
+        // what makes it fire on the very first tab, not only the second).
+        self.remove_welcome_page();
+
         // Auto-focus the terminal so the user can type immediately (#79).
         // Use idle_add_local_once so the focus request runs after the page
         // is fully mapped, and only if this page is still selected (avoids
@@ -327,7 +334,6 @@ impl TerminalNotebook {
         host: &str,
     ) -> Uuid {
         let session_id = Uuid::new_v4();
-        self.remove_welcome_page();
 
         let vnc_widget = Rc::new(VncSessionWidget::new());
 
@@ -381,6 +387,9 @@ impl TerminalNotebook {
         );
 
         self.tab_view.set_selected_page(&page);
+        // Drop the Welcome placeholder after the real page is selected (see
+        // `remove_welcome_page`) so it clears on the first tab, not the second.
+        self.remove_welcome_page();
         // Apply protocol color indicator if enabled
         if *self.color_tabs_by_protocol.borrow() {
             self.apply_protocol_color(session_id, "vnc");
@@ -401,8 +410,6 @@ impl TerminalNotebook {
         title: &str,
         widget: Rc<EmbeddedRdpWidget>,
     ) {
-        self.remove_welcome_page();
-
         // #197: suspend single-Ctrl accelerators while the viewer has focus.
         self.attach_focus_passthrough(widget.widget());
         // #356: in passthrough, desktop shortcuts go to the remote desktop too.
@@ -455,6 +462,9 @@ impl TerminalNotebook {
         );
 
         self.tab_view.set_selected_page(&page);
+        // Drop the Welcome placeholder after the real page is selected (see
+        // `remove_welcome_page`) so it clears on the first tab, not the second.
+        self.remove_welcome_page();
         // Apply protocol color indicator if enabled
         if *self.color_tabs_by_protocol.borrow() {
             self.apply_protocol_color(session_id, "rdp");
@@ -474,8 +484,6 @@ impl TerminalNotebook {
         title: &str,
         widget: Rc<crate::embedded_web::EmbeddedWebWidget>,
     ) {
-        self.remove_welcome_page();
-
         // #197: suspend single-Ctrl accelerators while the viewer has focus.
         self.attach_focus_passthrough(widget.widget());
 
@@ -517,6 +525,9 @@ impl TerminalNotebook {
         );
 
         self.tab_view.set_selected_page(&page);
+        // Drop the Welcome placeholder after the real page is selected (see
+        // `remove_welcome_page`) so it clears on the first tab, not the second.
+        self.remove_welcome_page();
         // Apply protocol color indicator if enabled
         if *self.color_tabs_by_protocol.borrow() {
             self.apply_protocol_color(session_id, "web");
@@ -534,8 +545,6 @@ impl TerminalNotebook {
         widget: &GtkBox,
         process: Option<Rc<RefCell<Option<std::process::Child>>>>,
     ) {
-        self.remove_welcome_page();
-
         let tab_container = TabPageContainer::single(widget);
         let page = self.tab_view.append(tab_container.widget());
         page.set_title(title);
@@ -572,6 +581,9 @@ impl TerminalNotebook {
         );
 
         self.tab_view.set_selected_page(&page);
+        // Drop the Welcome placeholder after the real page is selected (see
+        // `remove_welcome_page`) so it clears on the first tab, not the second.
+        self.remove_welcome_page();
         // Apply protocol color indicator if enabled
         if *self.color_tabs_by_protocol.borrow() {
             self.apply_protocol_color(session_id, protocol);

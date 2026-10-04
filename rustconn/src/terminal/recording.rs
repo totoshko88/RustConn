@@ -292,8 +292,6 @@ impl TerminalNotebook {
     /// Creates a tab containing a VTE terminal with a playback toolbar
     /// overlay. The recording is loaded and playback starts automatically.
     pub fn open_playback_tab(&self, entry: &rustconn_core::session::recording::RecordingEntry) {
-        self.remove_welcome_page();
-
         let display_name = entry
             .metadata
             .display_name
@@ -310,6 +308,10 @@ impl TerminalNotebook {
         page.set_tooltip(&tab_title);
 
         self.tab_view.set_selected_page(&page);
+
+        // Drop the Welcome placeholder after the real page is selected (see
+        // `remove_welcome_page`) so it clears on the first tab, not the second.
+        self.remove_welcome_page();
     }
 
     /// Flushes all active session recorders without removing them.
