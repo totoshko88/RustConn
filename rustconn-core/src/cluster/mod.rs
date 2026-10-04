@@ -124,6 +124,15 @@ pub struct Cluster {
     pub connection_ids: Vec<Uuid>,
     /// Whether broadcast mode is enabled by default
     pub broadcast_enabled: bool,
+    /// Optional regular expression for automatic membership. When set, any
+    /// connection whose name OR host matches is included in the cluster's
+    /// resolved members in addition to the explicit `connection_ids` — so a rule
+    /// like `^prod-web\d+` auto-collects every matching host for
+    /// mass-connect/broadcast. `None` (the default) means explicit membership
+    /// only. Read-widening: it never removes an explicit member and never
+    /// mutates `connection_ids`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_membership: Option<String>,
 }
 
 impl Cluster {
@@ -135,6 +144,7 @@ impl Cluster {
             name,
             connection_ids: Vec::new(),
             broadcast_enabled: false,
+            auto_membership: None,
         }
     }
 
@@ -146,6 +156,7 @@ impl Cluster {
             name,
             connection_ids: Vec::new(),
             broadcast_enabled: false,
+            auto_membership: None,
         }
     }
 
@@ -177,6 +188,54 @@ impl Cluster {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.connection_ids.is_empty()
+    }
+
+    /// Resolves the cluster's effective membership: the explicit
+    /// [`Self::connection_ids`] plus every connection whose name OR host matches
+    /// the [`Self::auto_membership`] regex, de-duplicated and preserving order
+    /// (explicit members first, then regex matches in `connections` order).
+    ///
+    /// This is **read-widening only** — it never mutates `connection_ids` and
+    /// never drops an explicit member. An absent or invalid regex yields just the
+    /// explicit members (an invalid pattern is logged and ignored rather than
+    /// panicking, so a bad rule can never break a mass-connect). The regex is
+    /// compiled once per call.
+    #[must_use]
+    pub fn resolve_members(&self, connections: &[crate::Connection]) -> Vec<Uuid> {
+        let mut members = self.connection_ids.clone();
+
+        let Some(pattern) = self.auto_membership.as_deref() else {
+            return members;
+        };
+        let pattern = pattern.trim();
+        if pattern.is_empty() {
+            return members;
+        }
+
+        let re = match regex::Regex::new(pattern) {
+            Ok(re) => re,
+            Err(e) => {
+                tracing::warn!(
+                    cluster = %self.name,
+                    pattern,
+                    error = %e,
+                    "cluster auto-membership regex is invalid; using explicit members only"
+                );
+                return members;
+            }
+        };
+
+        let explicit: std::collections::HashSet<Uuid> =
+            self.connection_ids.iter().copied().collect();
+        for conn in connections {
+            if explicit.contains(&conn.id) {
+                continue; // already an explicit member, keep it once
+            }
+            if re.is_match(&conn.name) || re.is_match(&conn.host) {
+                members.push(conn.id);
+            }
+        }
+        members
     }
 }
 
@@ -756,5 +815,78 @@ mod manager_tests {
         assert_eq!(summary.total_sessions, 2);
         assert_eq!(summary.connected_count, 0);
         assert!(summary.broadcast_mode);
+    }
+
+    #[test]
+    fn resolve_members_without_pattern_returns_explicit_only() {
+        let mut cluster = Cluster::new("c".to_string());
+        let a = Uuid::new_v4();
+        cluster.add_connection(a);
+        let conns = vec![crate::Connection::new_ssh(
+            "prod-web1".to_string(),
+            "prod-web1.example.com".to_string(),
+            22,
+        )];
+        // No auto_membership -> only the explicit member, regardless of conns.
+        assert_eq!(cluster.resolve_members(&conns), vec![a]);
+    }
+
+    #[test]
+    fn resolve_members_matches_name_or_host_by_regex() {
+        let mut cluster = Cluster::new("c".to_string());
+        cluster.auto_membership = Some(r"^prod-web\d+".to_string());
+        let web1 = crate::Connection::new_ssh("prod-web1".into(), "10.0.0.1".into(), 22);
+        let web2 = crate::Connection::new_ssh("box".into(), "prod-web2".into(), 22);
+        let db = crate::Connection::new_ssh("prod-db1".into(), "10.0.0.9".into(), 22);
+        let conns = vec![web1.clone(), web2.clone(), db];
+        let members = cluster.resolve_members(&conns);
+        // web1 (name match) and web2 (host match) included; db excluded.
+        assert!(members.contains(&web1.id));
+        assert!(members.contains(&web2.id));
+        assert_eq!(members.len(), 2);
+    }
+
+    #[test]
+    fn resolve_members_dedups_explicit_and_matched() {
+        let mut cluster = Cluster::new("c".to_string());
+        let web1 = crate::Connection::new_ssh("prod-web1".into(), "10.0.0.1".into(), 22);
+        cluster.add_connection(web1.id); // explicit AND would match the regex
+        cluster.auto_membership = Some(r"^prod-web".to_string());
+        let members = cluster.resolve_members(&[web1.clone()]);
+        assert_eq!(
+            members,
+            vec![web1.id],
+            "explicit member must not be duplicated"
+        );
+    }
+
+    #[test]
+    fn resolve_members_invalid_regex_falls_back_to_explicit() {
+        let mut cluster = Cluster::new("c".to_string());
+        let a = Uuid::new_v4();
+        cluster.add_connection(a);
+        cluster.auto_membership = Some("[invalid(".to_string()); // unbalanced
+        let conns = vec![crate::Connection::new_ssh(
+            "prod-web1".into(),
+            "h".into(),
+            22,
+        )];
+        // Invalid regex must not panic and must not add matches.
+        assert_eq!(cluster.resolve_members(&conns), vec![a]);
+    }
+
+    #[test]
+    fn auto_membership_absent_not_serialized() {
+        let cluster = Cluster::new("c".to_string());
+        let json = serde_json::to_string(&cluster).unwrap();
+        assert!(!json.contains("auto_membership"));
+    }
+
+    #[test]
+    fn cluster_without_auto_membership_field_still_loads() {
+        // Backward compat: a cluster written before the field existed.
+        let json = r#"{"id":"00000000-0000-0000-0000-000000000000","name":"c","connection_ids":[],"broadcast_enabled":false}"#;
+        let cluster: Cluster = serde_json::from_str(json).unwrap();
+        assert!(cluster.auto_membership.is_none());
     }
 }
