@@ -1861,10 +1861,15 @@ impl ConnectionSidebar {
     pub fn set_smart_folders_visible(&self, visible: bool) {
         self.smart_folders_revealer.set_reveal_child(visible);
         self.smart_folders_revealer.set_vexpand(visible);
-        // Hide the scrolled window (connection tree) but keep toolbar_view
-        // visible so the bottom toolbar with action icons remains accessible
+        // Hide the connection tree AND drop its vexpand so the Overlay stops
+        // reserving vertical space; otherwise the revealed Smart Folders section
+        // only takes its minimum height and sticks to the top of the freed area
+        // instead of filling it (the bug: folders bunched at the top, empty space
+        // below). With the overlay collapsed, the revealer is the sole vexpand
+        // child and grows to fill the sidebar; the bottom toolbar stays pinned.
+        self.scrolled_window.set_vexpand(!visible);
         self.scrolled_window.set_visible(!visible);
-        self.toolbar_view.set_vexpand(!visible);
+        self.toolbar_view.set_vexpand(true);
     }
 
     /// Returns whether the Smart Folders section is currently visible.

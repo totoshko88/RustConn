@@ -84,6 +84,13 @@ impl SmartFoldersSidebar {
         list_box.set_selection_mode(SelectionMode::Single);
         list_box.add_css_class("navigation-sidebar");
         list_box.set_activate_on_single_click(false);
+        // Expand so the folder list fills the revealed Smart Folders area;
+        // without this the section only takes its minimum height and the
+        // sidebar's bottom toolbar bunches up right under the header instead
+        // of staying pinned at the bottom.
+        list_box.set_vexpand(true);
+        list_box.set_valign(gtk4::Align::Fill);
+        container.set_vexpand(true);
         container.append(&list_box);
 
         Self {
