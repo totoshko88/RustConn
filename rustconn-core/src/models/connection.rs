@@ -19,6 +19,38 @@ use crate::session::LogConfig;
 use crate::variables::Variable;
 use crate::wol::WolConfig;
 
+/// A per-connection command macro: a named command string that can be bound to
+/// a keyboard shortcut and sent into the focused terminal of a live session.
+///
+/// Mirrors asbru-cm's per-connection "exec" entries (`PACExecEntry`). The
+/// command is rendered through the variable engine before being sent, so it may
+/// contain `${name}`, `${ENV_…}` and `@ask:` placeholders exactly like other
+/// terminal input. Unlike global snippets (which live in the snippet library and
+/// are inserted from the palette), a macro belongs to one connection and can
+/// fire from a keybind while that connection's terminal is focused.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct CommandMacro {
+    /// Human-readable label shown in the editor and any menu.
+    pub name: String,
+    /// The command text to send. Rendered through the variable engine first.
+    pub command: String,
+    /// Optional GTK accelerator (e.g. `"<Control><Shift>r"`), pipe-free single
+    /// accel. `None` means the macro exists but is not bound to a key — it can
+    /// still be invoked from a menu. Stored as the same accel string format the
+    /// keybindings system already uses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keybind: Option<String>,
+    /// Whether to append a newline (Enter) after the command, i.e. run it rather
+    /// than just type it. Defaults to true — the common case is "run this".
+    #[serde(default = "default_true")]
+    pub send_newline: bool,
+    /// Whether to prompt for `@ask:` variables in the command at fire time.
+    /// When false, an `@ask:` placeholder is left to the engine's non-interactive
+    /// handling (same as other terminal input).
+    #[serde(default)]
+    pub prompt_vars: bool,
+}
+
 /// Automation configuration for a connection
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct AutomationConfig {
@@ -48,6 +80,11 @@ pub struct AutomationConfig {
     /// default" so existing configs are unaffected.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub login_timeout_secs: Option<u32>,
+    /// Per-connection command macros (named commands, optionally key-bound, sent
+    /// into the live terminal). Empty by default; serde-default keeps configs
+    /// written before this field loadable.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub command_macros: Vec<CommandMacro>,
 }
 
 /// Source of password/credentials for a connection
@@ -1627,5 +1664,52 @@ mod tests {
         conn.remove_custom_property("notes");
 
         assert!(conn.updated_at > initial_updated_at);
+    }
+
+    #[test]
+    fn command_macro_defaults_send_newline_true() {
+        // serde-default: a macro deserialized without `send_newline` runs its
+        // command (true), matching the "run this" common case.
+        let json = r#"{"name":"root shell","command":"sudo -i"}"#;
+        let m: CommandMacro = serde_json::from_str(json).unwrap();
+        assert_eq!(m.name, "root shell");
+        assert_eq!(m.command, "sudo -i");
+        assert!(m.send_newline, "send_newline must default to true");
+        assert!(!m.prompt_vars, "prompt_vars must default to false");
+        assert!(m.keybind.is_none());
+    }
+
+    #[test]
+    fn command_macro_round_trips() {
+        let m = CommandMacro {
+            name: "restart nginx".into(),
+            command: "sudo systemctl restart nginx".into(),
+            keybind: Some("<Control><Shift>r".into()),
+            send_newline: true,
+            prompt_vars: false,
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        let back: CommandMacro = serde_json::from_str(&json).unwrap();
+        assert_eq!(m, back);
+    }
+
+    #[test]
+    fn automation_config_without_macros_still_loads() {
+        // Backward compat: a config written before command_macros existed has no
+        // such key; serde-default must yield an empty vec, not an error.
+        let json = r#"{"expect_rules":[],"post_login_scripts":[]}"#;
+        let cfg: AutomationConfig = serde_json::from_str(json).unwrap();
+        assert!(cfg.command_macros.is_empty());
+    }
+
+    #[test]
+    fn automation_config_empty_macros_not_serialized() {
+        // skip_serializing_if keeps the on-disk form clean for the common case.
+        let cfg = AutomationConfig::default();
+        let json = serde_json::to_string(&cfg).unwrap();
+        assert!(
+            !json.contains("command_macros"),
+            "empty command_macros must be omitted, got: {json}"
+        );
     }
 }
