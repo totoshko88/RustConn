@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.22.15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-04 14:50+0300\n"
+"POT-Creation-Date: 2026-10-04 15:47+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid "OK"
 msgstr ""
 
 #: rustconn/src/alert.rs:33 rustconn/src/alert.rs:94
-#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:689
+#: rustconn/src/dialogs/ask_prompt.rs:101 rustconn/src/dialogs/cluster.rs:771
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
 #: rustconn/src/dialogs/flatpak_components.rs:298
@@ -51,8 +51,8 @@ msgstr ""
 #: rustconn/src/window/connection_dialogs.rs:1083
 #: rustconn/src/window/edit_group.rs:1889
 #: rustconn/src/window/edit_group.rs:1937
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3131
-#: rustconn/src/window/mod.rs:4015 rustconn/src/window/operations.rs:116
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3135
+#: rustconn/src/window/mod.rs:4019 rustconn/src/window/operations.rs:116
 #: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
 #: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:548
 msgid "Cancel"
@@ -195,16 +195,16 @@ msgid "Enter Password Manually"
 msgstr ""
 
 #: rustconn/src/dialogs/backend_missing.rs:56 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:912
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:913
 msgid "Open Settings"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:60 rustconn/src/dialogs/cluster.rs:449
-#: rustconn/src/dialogs/cluster.rs:450
+#: rustconn/src/dialogs/cluster.rs:61 rustconn/src/dialogs/cluster.rs:531
+#: rustconn/src/dialogs/cluster.rs:532
 msgid "New Cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:68 rustconn/src/dialogs/cluster.rs:69
+#: rustconn/src/dialogs/cluster.rs:69 rustconn/src/dialogs/cluster.rs:70
 #: rustconn/src/dialogs/connection/dialog/construction.rs:138
 #: rustconn/src/dialogs/connection/dialog/construction.rs:139
 #: rustconn/src/dialogs/settings/terminal_tab.rs:808
@@ -219,11 +219,11 @@ msgstr ""
 msgid "Create"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:101
+#: rustconn/src/dialogs/cluster.rs:102
 msgid "Cluster Details"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:105
+#: rustconn/src/dialogs/cluster.rs:106
 #: rustconn/src/dialogs/connection/advanced_tab.rs:911
 #: rustconn/src/dialogs/connection/general_tab.rs:99
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
@@ -237,90 +237,107 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:106
+#: rustconn/src/dialogs/cluster.rs:107
 msgid "Enter cluster name"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:148
-msgid "Select at least one connection"
+#: rustconn/src/dialogs/cluster.rs:116
+msgid "Auto-membership pattern"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:197
+#: rustconn/src/dialogs/cluster.rs:117
+msgid "Regex on name/host, e.g. ^prod-web\\d+"
+msgstr ""
+
+#: rustconn/src/dialogs/cluster.rs:168
+msgid "{} connection(s) match this pattern"
+msgstr ""
+
+#: rustconn/src/dialogs/cluster.rs:173 rustconn/src/dialogs/cluster.rs:213
+#: rustconn/src/dialogs/terminal_search.rs:333
+msgid "Invalid regex pattern"
+msgstr ""
+
+#: rustconn/src/dialogs/cluster.rs:224
+msgid "Select at least one connection or set an auto-membership pattern"
+msgstr ""
+
+#: rustconn/src/dialogs/cluster.rs:275
 #: rustconn/src/dialogs/settings/ui_tab.rs:353
 #: rustconn/src/dialogs/shortcuts.rs:148
 msgid "Connections"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:198
+#: rustconn/src/dialogs/cluster.rs:276
 msgid "Select connections to include in this cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:207
+#: rustconn/src/dialogs/cluster.rs:285
 msgid "Filter connections…"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:231 rustconn/src/sidebar_ui.rs:1048
+#: rustconn/src/dialogs/cluster.rs:309 rustconn/src/sidebar_ui.rs:1048
 #: rustconn/src/terminal/config.rs:287
 msgid "Select All"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:232
+#: rustconn/src/dialogs/cluster.rs:310
 msgid "Deselect All"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:365
+#: rustconn/src/dialogs/cluster.rs:443
 msgid "Edit Cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:441
+#: rustconn/src/dialogs/cluster.rs:523
 msgid "Manage Clusters"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:475
+#: rustconn/src/dialogs/cluster.rs:557
 msgid ""
 "Clusters open multiple servers together. To mirror keystrokes across them, "
 "split the resulting tabs and use the Broadcast toggle in the header bar."
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:561 rustconn/src/dialogs/workspace.rs:386
+#: rustconn/src/dialogs/cluster.rs:643 rustconn/src/dialogs/workspace.rs:386
 msgid "{} connections"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:575 rustconn/src/dialogs/cluster.rs:579
+#: rustconn/src/dialogs/cluster.rs:657 rustconn/src/dialogs/cluster.rs:661
 msgid "Connect to cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:584 rustconn/src/dialogs/cluster.rs:588
+#: rustconn/src/dialogs/cluster.rs:666 rustconn/src/dialogs/cluster.rs:670
 msgid "Disconnect all cluster sessions"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:593 rustconn/src/dialogs/cluster.rs:596
+#: rustconn/src/dialogs/cluster.rs:675 rustconn/src/dialogs/cluster.rs:678
 msgid "Edit cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:600 rustconn/src/dialogs/cluster.rs:604
+#: rustconn/src/dialogs/cluster.rs:682 rustconn/src/dialogs/cluster.rs:686
 msgid "Delete cluster"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:637
+#: rustconn/src/dialogs/cluster.rs:719
 msgid "No clusters defined. Click 'New Cluster' to create one."
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:686 rustconn/src/window/clusters.rs:430
+#: rustconn/src/dialogs/cluster.rs:768 rustconn/src/window/clusters.rs:434
 msgid "Delete Cluster?"
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:687
+#: rustconn/src/dialogs/cluster.rs:769
 msgid "This cluster will be permanently removed."
 msgstr ""
 
-#: rustconn/src/dialogs/cluster.rs:690 rustconn/src/dialogs/recording.rs:579
+#: rustconn/src/dialogs/cluster.rs:772 rustconn/src/dialogs/recording.rs:579
 #: rustconn/src/dialogs/template_manager.rs:113
 #: rustconn/src/dialogs/template_manager.rs:191
 #: rustconn/src/dialogs/tunnel.rs:723 rustconn/src/dialogs/workspace.rs:118
 #: rustconn/src/dialogs/workspace.rs:291 rustconn/src/sidebar_ui.rs:493
 #: rustconn/src/smart_folder_ui.rs:399 rustconn/src/smart_folder_ui.rs:453
-#: rustconn/src/window/clusters.rs:435 rustconn/src/window/operations.rs:171
+#: rustconn/src/window/clusters.rs:439 rustconn/src/window/operations.rs:171
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
 #: rustconn/src/window/templates.rs:151
 msgid "Delete"
@@ -4239,7 +4256,7 @@ msgid "Copy"
 msgstr ""
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:964
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:965
 msgid "Stop"
 msgstr ""
 
@@ -4343,7 +4360,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
 #: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:501
-#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4016
+#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4020
 msgid "Close"
 msgstr ""
 
@@ -5899,7 +5916,7 @@ msgstr ""
 #: rustconn/src/dialogs/recording.rs:801 rustconn/src/dialogs/recording.rs:813
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:285 rustconn/src/toast.rs:73
 #: rustconn/src/toast.rs:333 rustconn/src/toast.rs:363
-#: rustconn/src/window/clusters.rs:401
+#: rustconn/src/window/clusters.rs:405
 #: rustconn/src/window/connection_dialogs.rs:1029
 #: rustconn/src/window/edit_dialogs.rs:391
 #: rustconn/src/window/edit_dialogs.rs:495
@@ -8777,10 +8794,6 @@ msgstr ""
 msgid "No matches found"
 msgstr ""
 
-#: rustconn/src/dialogs/terminal_search.rs:333
-msgid "Invalid regex pattern"
-msgstr ""
-
 #: rustconn/src/dialogs/terminal_search.rs:336
 msgid "Search error"
 msgstr ""
@@ -10758,7 +10771,7 @@ msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr ""
 
 #: rustconn/src/terminal/mod.rs:510 rustconn/src/terminal/tab_lifecycle.rs:35
-#: rustconn/src/terminal/tab_lifecycle.rs:50 rustconn/src/window/mod.rs:3591
+#: rustconn/src/terminal/tab_lifecycle.rs:50 rustconn/src/window/mod.rs:3595
 msgid "Welcome"
 msgstr ""
 
@@ -11016,7 +11029,7 @@ msgstr ""
 msgid "About RustConn"
 msgstr ""
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4959
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4963
 msgid "Passphrase Does Not Open the Portable File"
 msgstr ""
 
@@ -11143,33 +11156,33 @@ msgstr ""
 msgid "Error Creating Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:237 rustconn/src/window/clusters.rs:394
+#: rustconn/src/window/clusters.rs:237 rustconn/src/window/clusters.rs:398
 msgid "Failed to save cluster: {}"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:287
+#: rustconn/src/window/clusters.rs:291
 msgid "Cluster has no connections"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:393
+#: rustconn/src/window/clusters.rs:397
 msgid "Error Updating Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:402
+#: rustconn/src/window/clusters.rs:406
 msgid "Could not access application state"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:432
+#: rustconn/src/window/clusters.rs:436
 msgid ""
 "Are you sure you want to delete the cluster '{}'?\n"
 "This will not delete the connections in the cluster."
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:455
+#: rustconn/src/window/clusters.rs:459
 msgid "Error Deleting Cluster"
 msgstr ""
 
-#: rustconn/src/window/clusters.rs:456
+#: rustconn/src/window/clusters.rs:460
 msgid "Failed to delete cluster: {}"
 msgstr ""
 
@@ -11899,43 +11912,43 @@ msgstr ""
 msgid "Global variables could not be saved to disk."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:888 rustconn/src/window/mod.rs:899
+#: rustconn/src/window/mod.rs:889 rustconn/src/window/mod.rs:900
 msgid "Dismiss"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:928
+#: rustconn/src/window/mod.rs:929
 msgid "Touch your hardware key to unlock the password database"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2396
+#: rustconn/src/window/mod.rs:2400
 msgid "Already running in an external window"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2547
+#: rustconn/src/window/mod.rs:2551
 msgid "Connection to ‘{}’ failed"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2674
+#: rustconn/src/window/mod.rs:2678
 msgid "Jump host for ‘{}’ is missing — connecting directly"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2824 rustconn/src/window/mod.rs:2838
+#: rustconn/src/window/mod.rs:2828 rustconn/src/window/mod.rs:2842
 msgid "Pre-connect task failed: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2872
+#: rustconn/src/window/mod.rs:2876
 msgid "Port knock failed: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:2921
+#: rustconn/src/window/mod.rs:2925
 msgid "SPA failed: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3117
+#: rustconn/src/window/mod.rs:3121
 msgid "{} (via {})"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3123
+#: rustconn/src/window/mod.rs:3127
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -11949,31 +11962,31 @@ msgid ""
 "credentials to a different machine."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3128
+#: rustconn/src/window/mod.rs:3132
 msgid "Routing changed for “{}”"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3132 rustconn/src/window/rdp_vnc.rs:761
+#: rustconn/src/window/mod.rs:3136 rustconn/src/window/rdp_vnc.rs:761
 msgid "Connect Anyway"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3217 rustconn/src/window/mod.rs:3392
+#: rustconn/src/window/mod.rs:3221 rustconn/src/window/mod.rs:3396
 msgid "Connection “{}” created"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3596
+#: rustconn/src/window/mod.rs:3600
 msgid "RustConn - {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3742
+#: rustconn/src/window/mod.rs:3746
 msgid "Settings saved"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3779
+#: rustconn/src/window/mod.rs:3783
 msgid "Passphrase Not Saved on This Computer"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3781
+#: rustconn/src/window/mod.rs:3785
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -11981,66 +11994,66 @@ msgid ""
 "directory."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3827
+#: rustconn/src/window/mod.rs:3831
 msgid "Credentials Not Saved to Keyring"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:3829
+#: rustconn/src/window/mod.rs:3833
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
 "service is running and unlocked, then save the settings again."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4009
+#: rustconn/src/window/mod.rs:4013
 msgid "Close RustConn?"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4011
+#: rustconn/src/window/mod.rs:4015
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4048
+#: rustconn/src/window/mod.rs:4052
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4053
+#: rustconn/src/window/mod.rs:4057
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4078
+#: rustconn/src/window/mod.rs:4082
 msgid "Cloud sync failed for '{}': {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4259
+#: rustconn/src/window/mod.rs:4263
 msgid "Startup connection not found"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4295
+#: rustconn/src/window/mod.rs:4299
 msgid "Failed to open .rdp file"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4331
+#: rustconn/src/window/mod.rs:4335
 msgid "Failed to open .vv file"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4368
+#: rustconn/src/window/mod.rs:4372
 msgid "Tunnel “{}” stopped: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4384
+#: rustconn/src/window/mod.rs:4388
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4875
+#: rustconn/src/window/mod.rs:4879
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr ""
 
-#: rustconn/src/window/mod.rs:4961
+#: rustconn/src/window/mod.rs:4965
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
