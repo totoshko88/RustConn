@@ -1110,7 +1110,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     ))]);
     toolbar.append(&sort_az_button);
 
-    let sort_recent_button = Button::from_icon_name("document-open-recent-symbolic");
+    let sort_recent_button = Button::from_icon_name("view-sort-descending-symbolic");
     sort_recent_button.add_css_class("flat");
     sort_recent_button.set_tooltip_text(Some(&i18n("Sort by recent usage")));
     sort_recent_button.set_action_name(Some("win.sort-recent"));
@@ -1151,6 +1151,12 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 /// new wiring is needed; they fire the same handlers as the content header.
 pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     let header = adw::HeaderBar::new();
+    // Per-panel window controls: the sidebar header owns the START controls
+    // (the left edge of the system button-layout); the content header owns the
+    // END controls. Together the two panels render the full system layout once,
+    // the way Files/Settings split it, instead of both claiming every control.
+    header.set_show_start_title_buttons(true);
+    header.set_show_end_title_buttons(false);
     // The split view already carries the window title on the content side; a
     // short static title here just labels the panel.
     let title = Label::new(Some(&i18n("Connections")));

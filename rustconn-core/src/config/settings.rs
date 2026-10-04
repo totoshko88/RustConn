@@ -1074,6 +1074,11 @@ pub struct UiSettings {
     /// (issue #211).
     #[serde(default)]
     pub window_title_shows_connection: bool,
+    /// Show the active connection's group hierarchy path as the header
+    /// subtitle (Nautilus-style breadcrumb), e.g. "AWS Test Lab / Prod".
+    /// Independent of the WM window title (issue #211 is unaffected).
+    #[serde(default)]
+    pub window_title_shows_path: bool,
     /// Make a double-click in the sidebar always start another session.
     ///
     /// Default `false`: a double-click focuses the connection's already-open
@@ -1218,6 +1223,7 @@ impl Default for UiSettings {
             compact_auto: false,
             terminal_passthrough_ctrl: true,
             window_title_shows_connection: false,
+            window_title_shows_path: false,
             double_click_opens_new_session: false,
             open_tunnelled_browser_in_embedded: true,
             tunnel_browser_start_url: default_tunnel_start_url(),

@@ -419,7 +419,7 @@ impl MainWindow {
         // the WM title read by time-tracking tools. One-way binding: whenever
         // `update_window_title` sets the window title, the label follows.
         window
-            .bind_property("title", &header_title, "label")
+            .bind_property("title", &header_title, "title")
             .sync_create()
             .build();
 
@@ -655,6 +655,51 @@ impl MainWindow {
                     connection_id,
                 );
             });
+
+            // Hierarchy-path subtitle (Nautilus-style breadcrumb). When the active
+            // tab changes, set the content header's subtitle to the active
+            // connection's group path (e.g. "AWS Test Lab / Prod"), gated on the
+            // `window_title_shows_path` setting. The WM window title (issue #211) is
+            // untouched — this only drives the AdwWindowTitle subtitle. Resolves the
+            // tab's connection by its title against the connection list, then its
+            // group path.
+            {
+                let header_title_for_sub = header_title.clone();
+                let state_for_sub = state.clone();
+                let notebook_weak = Rc::downgrade(&terminal_notebook);
+                terminal_notebook
+                    .tab_view()
+                    .connect_selected_page_notify(move |tab_view| {
+                        let Some(notebook) = notebook_weak.upgrade() else {
+                            return;
+                        };
+                        let _ = &notebook;
+                        let show_path =
+                            with_state(&state_for_sub, |s| s.settings().ui.window_title_shows_path);
+                        let subtitle = if show_path {
+                            (|| {
+                                let page = tab_view.selected_page()?;
+                                let tab_title = page.title().to_string();
+                                if tab_title.is_empty() || tab_title == crate::i18n::i18n("Welcome")
+                                {
+                                    return None;
+                                }
+                                with_state(&state_for_sub, |s| {
+                                    let conn = s
+                                        .list_connections()
+                                        .into_iter()
+                                        .find(|c| c.name == tab_title)?;
+                                    let gid = conn.group_id?;
+                                    s.get_group_path(gid)
+                                })
+                            })()
+                            .unwrap_or_default()
+                        } else {
+                            String::new()
+                        };
+                        header_title_for_sub.set_subtitle(&subtitle);
+                    });
+            }
         }
 
         // Focus-based accelerator suspend (#197): when the VTE gains focus,

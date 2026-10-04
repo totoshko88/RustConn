@@ -134,6 +134,7 @@ pub struct SettingsDialog {
     keyboard_passthrough: adw::SwitchRow,
     // Show active connection name in the window title (issue #211)
     window_title_shows_connection: adw::SwitchRow,
+    window_title_shows_path: adw::SwitchRow,
     // Show Welcome tab on startup (issue #232)
     show_welcome_switch: adw::SwitchRow,
     // Always open a new session on a sidebar double-click (issue #242)
@@ -276,6 +277,7 @@ impl SettingsDialog {
             terminal_passthrough_ctrl,
             keyboard_passthrough,
             window_title_shows_connection,
+            window_title_shows_path,
             show_welcome_switch,
             double_click_opens_new_session,
             show_split_pane_labels,
@@ -723,6 +725,7 @@ impl SettingsDialog {
             terminal_passthrough_ctrl,
             keyboard_passthrough,
             window_title_shows_connection,
+            window_title_shows_path,
             show_welcome_switch,
             double_click_opens_new_session,
             open_tunnelled_browser_in_embedded,
@@ -1301,6 +1304,7 @@ impl SettingsDialog {
             &self.compact_auto,
             &self.terminal_passthrough_ctrl,
             &self.keyboard_passthrough,
+            &self.window_title_shows_path,
             &self.window_title_shows_connection,
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
@@ -1491,6 +1495,7 @@ impl SettingsDialog {
         let terminal_passthrough_ctrl_clone = self.terminal_passthrough_ctrl.clone();
         let keyboard_passthrough_clone = self.keyboard_passthrough.clone();
         let window_title_shows_connection_clone = self.window_title_shows_connection.clone();
+        let window_title_shows_path_clone = self.window_title_shows_path.clone();
         let show_welcome_switch_clone = self.show_welcome_switch.clone();
         let double_click_opens_new_session_clone = self.double_click_opens_new_session.clone();
         let open_tunnelled_browser_in_embedded_clone =
@@ -1721,6 +1726,7 @@ impl SettingsDialog {
                 &terminal_passthrough_ctrl_clone,
                 &keyboard_passthrough_clone,
                 &window_title_shows_connection_clone,
+                &window_title_shows_path_clone,
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,
                 &show_split_pane_labels_clone,

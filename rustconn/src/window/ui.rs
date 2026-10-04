@@ -29,17 +29,27 @@ pub fn create_header_bar() -> (
     gtk4::ToggleButton,
     gtk4::ToggleButton,
     MenuButton,
-    Label,
+    adw::WindowTitle,
 ) {
     let header_bar = adw::HeaderBar::new();
+    // Per-panel window controls: the content header owns the END controls
+    // (close / maximize / minimize on a standard GNOME layout); the sidebar
+    // header owns the START controls. This splits the system button-layout
+    // across the two panels the way Files/Settings do, instead of both headers
+    // claiming the same controls. The system `button-layout` is still honoured
+    // — we only say which panel renders which edge.
+    header_bar.set_show_start_title_buttons(false);
+    header_bar.set_show_end_title_buttons(true);
 
-    // Title area: label + spinner in a horizontal box
+    // Title area: an AdwWindowTitle (title + optional subtitle) in a box with
+    // the busy spinner. The subtitle shows the active connection's hierarchy
+    // path (group breadcrumb) when the user enables it, like Nautilus; the
+    // title mirrors the active connection name.
     let title_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
     title_box.set_halign(gtk4::Align::Center);
     title_box.set_valign(gtk4::Align::Center);
 
-    let title = Label::new(Some("RustConn"));
-    title.add_css_class("title");
+    let title = adw::WindowTitle::new("RustConn", "");
     title_box.append(&title);
 
     let busy_spinner = crate::spinner::new();

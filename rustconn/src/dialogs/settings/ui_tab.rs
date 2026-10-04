@@ -73,6 +73,7 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    adw::SwitchRow,
     // open_tunnelled_browser_in_embedded
     adw::SwitchRow,
     // tunnel_browser_start_url
@@ -334,6 +335,14 @@ pub fn create_ui_page() -> (
         .build();
     window_group.add(&window_title_shows_connection);
 
+    let window_title_shows_path = adw::SwitchRow::builder()
+        .title(i18n("Show hierarchy path in header"))
+        .subtitle(i18n(
+            "Show the active connection's group path as the header subtitle (Nautilus-style breadcrumb)",
+        ))
+        .build();
+    window_group.add(&window_title_shows_path);
+
     // Show connection name as a compact header on each split-view pane (issue #277).
     // On by default (#355): the header also serves as the drag handle for moving a
     // pane between panels/tabs, and is helpful when 3+ panes are open side by side
@@ -546,6 +555,7 @@ pub fn create_ui_page() -> (
         terminal_passthrough_ctrl,
         keyboard_passthrough,
         window_title_shows_connection,
+        window_title_shows_path,
         show_welcome_switch,
         double_click_opens_new_session,
         show_split_pane_labels,
@@ -609,6 +619,7 @@ pub fn load_ui_settings(
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
     window_title_shows_connection: &adw::SwitchRow,
+    window_title_shows_path: &adw::SwitchRow,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
@@ -693,6 +704,7 @@ pub fn load_ui_settings(
     keyboard_passthrough.set_active(settings.keyboard_passthrough);
 
     window_title_shows_connection.set_active(settings.window_title_shows_connection);
+    window_title_shows_path.set_active(settings.window_title_shows_path);
 
     show_welcome_switch.set_active(settings.show_welcome_on_startup);
 
@@ -766,6 +778,7 @@ pub fn collect_ui_settings(
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
     window_title_shows_connection: &adw::SwitchRow,
+    window_title_shows_path: &adw::SwitchRow,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
@@ -840,6 +853,7 @@ pub fn collect_ui_settings(
         compact_auto: compact_auto.is_active(),
         terminal_passthrough_ctrl: terminal_passthrough_ctrl.is_active(),
         window_title_shows_connection: window_title_shows_connection.is_active(),
+        window_title_shows_path: window_title_shows_path.is_active(),
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
         open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),
