@@ -63,6 +63,8 @@ pub const PINNED_GROUP_ID: &str = "__pinned__";
 pub struct ConnectionSidebar {
     container: GtkBox,
     search_entry: SearchEntry,
+    /// Search bar wrapping the search row (collapses behind the header toggle).
+    search_bar: gtk4::SearchBar,
     list_view: ListView,
     /// Store for connection data - will be populated from `ConnectionManager`
     store: gio::ListStore,
@@ -202,7 +204,7 @@ impl ConnectionSidebar {
         // a distinct, divided panel beside the content, instead of a plain box
         // with a header appended into it. `container` (class `sidebar`) stays
         // the returned widget; the toolbar view is its single child.
-        let sidebar_header = sidebar_ui::create_sidebar_header();
+        let (sidebar_header, search_toggle) = sidebar_ui::create_sidebar_header();
         let sidebar_toolbar = adw::ToolbarView::new();
         sidebar_toolbar.add_top_bar(&sidebar_header);
         sidebar_toolbar.set_top_bar_style(adw::ToolbarStyle::Flat);
@@ -213,7 +215,20 @@ impl ConnectionSidebar {
         sidebar_toolbar.set_content(Some(&sidebar_body));
         container.append(&sidebar_toolbar);
 
-        sidebar_body.append(&search_box);
+        // Wrap the search box in a GtkSearchBar so it collapses behind the
+        // header's search toggle (Nautilus/Settings pattern). The toggle's
+        // `active` is two-way bound to the bar's `search-mode-enabled`, so the
+        // row reveals/hides from the icon, Ctrl+F, or type-to-search (the key
+        // capture widget is set to the list view once it exists, below).
+        let search_bar = gtk4::SearchBar::new();
+        search_bar.set_child(Some(&search_box));
+        search_bar.connect_entry(&search_entry);
+        search_toggle
+            .bind_property("active", &search_bar, "search-mode-enabled")
+            .bidirectional()
+            .sync_create()
+            .build();
+        sidebar_body.append(&search_bar);
 
         // Separator between search box and connection list
         let separator = gtk4::Separator::new(Orientation::Horizontal);
@@ -368,6 +383,10 @@ impl ConnectionSidebar {
             }
         };
         list_view.add_css_class("navigation-sidebar");
+
+        // Type-to-search: a keystroke on the connection list reveals the search
+        // bar and routes into the entry (Nautilus/Settings behaviour).
+        search_bar.set_key_capture_widget(Some(&list_view));
 
         // Set accessibility properties
         list_view.update_property(&[gtk4::accessible::Property::Label(&i18n("Connection list"))]);
@@ -752,6 +771,7 @@ impl ConnectionSidebar {
         Self {
             container,
             search_entry,
+            search_bar,
             list_view,
             store,
             tree_model,
@@ -888,6 +908,14 @@ impl ConnectionSidebar {
     #[must_use]
     pub const fn search_entry(&self) -> &SearchEntry {
         &self.search_entry
+    }
+
+    /// Reveals the search bar (if collapsed behind the header toggle) and
+    /// focuses the entry. Used by the Ctrl+F action — grabbing focus on a
+    /// hidden entry would not show the row, so enable search mode first.
+    pub fn focus_search(&self) {
+        self.search_bar.set_search_mode(true);
+        self.search_entry.grab_focus();
     }
 
     /// Returns the search debouncer

@@ -45,7 +45,7 @@ impl MainWindow {
         let search_action = gio::SimpleAction::new("search", None);
         let sidebar_clone = sidebar.clone();
         search_action.connect_activate(move |_, _| {
-            sidebar_clone.search_entry().grab_focus();
+            sidebar_clone.focus_search();
         });
         window.add_action(&search_action);
 

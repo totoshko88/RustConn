@@ -1097,21 +1097,27 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     ))]);
     toolbar.append(&history_button);
 
-    // Sort: the two separate sort icons (alphabetical / recent) are folded into
-    // one "Sort" menu button (GNOME HIG §2c), the way Files surfaces its sort
-    // options — a single affordance with a popover rather than two competing
-    // toolbar icons. The actions are unchanged (`win.sort-connections` /
-    // `win.sort-recent`), so sorting behaviour is identical.
-    let sort_menu_model = gio::Menu::new();
-    sort_menu_model.append(Some(&i18n("Alphabetical")), Some("win.sort-connections"));
-    sort_menu_model.append(Some(&i18n("Recent Usage")), Some("win.sort-recent"));
-    let sort_button = gtk4::MenuButton::new();
-    sort_button.set_icon_name("view-sort-ascending-symbolic");
-    sort_button.add_css_class("flat");
-    sort_button.set_tooltip_text(Some(&i18n("Sort connections")));
-    sort_button.set_menu_model(Some(&sort_menu_model));
-    sort_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Sort connections"))]);
-    toolbar.append(&sort_button);
+    // Sort: two standalone buttons (Alphabetical / Recent Usage) rather than a
+    // single menu button. Five direct icons read more clearly than four icons
+    // plus a dropdown, and sorting is a one-click action either way. Actions
+    // unchanged (`win.sort-connections` / `win.sort-recent`).
+    let sort_az_button = Button::from_icon_name("view-sort-ascending-symbolic");
+    sort_az_button.add_css_class("flat");
+    sort_az_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
+    sort_az_button.set_action_name(Some("win.sort-connections"));
+    sort_az_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Sort connections alphabetically",
+    ))]);
+    toolbar.append(&sort_az_button);
+
+    let sort_recent_button = Button::from_icon_name("document-open-recent-symbolic");
+    sort_recent_button.add_css_class("flat");
+    sort_recent_button.set_tooltip_text(Some(&i18n("Sort by recent usage")));
+    sort_recent_button.set_action_name(Some("win.sort-recent"));
+    sort_recent_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Sort connections by recent usage",
+    ))]);
+    toolbar.append(&sort_recent_button);
 
     let keepass_button = Button::from_icon_name("dialog-password-symbolic");
     keepass_button.add_css_class("flat");
@@ -1143,7 +1149,7 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 /// the visual separation users expect, and the fix for the "sidebar looks
 /// resizable" confusion. The buttons reference existing `win.*` actions, so no
 /// new wiring is needed; they fire the same handlers as the content header.
-pub fn create_sidebar_header() -> adw::HeaderBar {
+pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     let header = adw::HeaderBar::new();
     // The split view already carries the window title on the content side; a
     // short static title here just labels the panel.
@@ -1151,40 +1157,61 @@ pub fn create_sidebar_header() -> adw::HeaderBar {
     title.add_css_class("heading");
     header.set_title_widget(Some(&title));
 
-    // New Connection — primary create action for the list.
-    let new_connection = Button::from_icon_name("list-add-symbolic");
-    new_connection.set_tooltip_text(Some(&i18n("New Connection (Ctrl+N)")));
-    new_connection.set_action_name(Some("win.new-connection"));
-    new_connection.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Create a new connection",
-    ))]);
-    header.pack_start(&new_connection);
+    // Search toggle (leading) — Nautilus/Settings pattern: the search row is
+    // hidden behind an icon in the header and revealed on demand (click,
+    // Ctrl+F, or type-to-search). Returned so the sidebar can bind it to the
+    // GtkSearchBar's search-mode-enabled property.
+    let search_toggle = gtk4::ToggleButton::new();
+    search_toggle.set_icon_name("system-search-symbolic");
+    search_toggle.set_tooltip_text(Some(&i18n("Search (Ctrl+F)")));
+    search_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle search"))]);
+    header.pack_start(&search_toggle);
 
-    // New Group.
-    let new_group = Button::from_icon_name("folder-new-symbolic");
-    new_group.set_tooltip_text(Some(&i18n("New Group")));
-    new_group.set_action_name(Some("win.new-group"));
-    new_group.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Create a new connection group",
-    ))]);
-    header.pack_start(&new_group);
+    // Single hamburger menu (trailing) — the one home for every sidebar action,
+    // the way GNOME Files/Settings keep per-panel actions behind one menu. All
+    // four former header icons (New Connection, New Group, Quick Connect,
+    // Delete) now live here, grouped by purpose.
+    let menu = gio::Menu::new();
 
-    // Quick Connect and Delete act on the CONNECTION LIST, so GNOME HIG puts
-    // them on the list panel's own header, not the content (session) header.
-    // Delete is destructive/secondary -> trailing edge (pack_end); Quick
-    // Connect is a secondary create path -> also trailing, left of Delete.
-    let delete_connection = Button::from_icon_name("list-remove-symbolic");
-    delete_connection.set_tooltip_text(Some(&i18n("Delete Selected (Delete)")));
-    delete_connection.set_action_name(Some("win.delete-connection"));
-    delete_connection
-        .update_property(&[gtk4::accessible::Property::Label(&i18n("Delete Selected"))]);
-    header.pack_end(&delete_connection);
+    // Create section.
+    let create_section = gio::Menu::new();
+    create_section.append(Some(&i18n("New Connection")), Some("win.new-connection"));
+    create_section.append(
+        Some(&i18n("New Connection (Advanced)")),
+        Some("win.new-connection-advanced"),
+    );
+    create_section.append(Some(&i18n("New Group")), Some("win.new-group"));
+    create_section.append(Some(&i18n("New Cluster")), Some("win.manage-clusters"));
+    menu.append_section(None, &create_section);
 
-    let quick_connect = Button::from_icon_name("go-jump-symbolic");
-    quick_connect.set_tooltip_text(Some(&i18n("Quick Connect (Ctrl+Shift+Q)")));
-    quick_connect.set_action_name(Some("win.quick-connect"));
-    quick_connect.update_property(&[gtk4::accessible::Property::Label(&i18n("Quick Connect"))]);
-    header.pack_end(&quick_connect);
+    // Tools section — quick access to cluster / workspace / snippet management.
+    let tools_section = gio::Menu::new();
+    tools_section.append(Some(&i18n("Manage Clusters")), Some("win.manage-clusters"));
+    tools_section.append(
+        Some(&i18n("Manage Workspaces")),
+        Some("win.manage-workspaces"),
+    );
+    tools_section.append(Some(&i18n("Manage Snippets")), Some("win.manage-snippets"));
+    menu.append_section(Some(&i18n("Tools")), &tools_section);
 
-    header
+    // List section — act on the connection list.
+    let list_section = gio::Menu::new();
+    list_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
+    list_section.append(
+        Some(&i18n("Delete Selected")),
+        Some("win.delete-connection"),
+    );
+    list_section.append(Some(&i18n("Import…")), Some("win.import"));
+    list_section.append(Some(&i18n("Export…")), Some("win.export"));
+    menu.append_section(None, &list_section);
+
+    let menu_button = gtk4::MenuButton::builder()
+        .icon_name("open-menu-symbolic")
+        .tooltip_text(i18n("Sidebar Menu"))
+        .menu_model(&menu)
+        .build();
+    menu_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Sidebar menu"))]);
+    header.pack_end(&menu_button);
+
+    (header, search_toggle)
 }
