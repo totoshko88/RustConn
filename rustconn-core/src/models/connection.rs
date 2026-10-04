@@ -17,6 +17,7 @@ use crate::error::ConfigError;
 use crate::monitoring::{MonitoringConfig, MonitoringOverride};
 use crate::session::LogConfig;
 use crate::variables::Variable;
+use crate::variables::{TerminalSubstitution, VariableManager, VariableResult, VariableScope};
 use crate::wol::WolConfig;
 
 /// A per-connection command macro: a named command string that can be bound to
@@ -49,6 +50,45 @@ pub struct CommandMacro {
     /// handling (same as other terminal input).
     #[serde(default)]
     pub prompt_vars: bool,
+}
+
+impl CommandMacro {
+    /// Renders the macro's command for sending into a live terminal.
+    ///
+    /// The command is substituted through the same terminal-input path other
+    /// typed input uses (`${name}` / `${ENV_…}` references resolved, secret
+    /// values validated and scrubbed on drop). When [`Self::send_newline`] is
+    /// set, a carriage return (`\r`) is appended so the command runs rather than
+    /// merely being typed — `\r` is what a terminal expects for Enter, matching
+    /// the rest of the send paths in this codebase.
+    ///
+    /// Returns the substitution result (whose `text` is zeroized on drop) and the
+    /// list of any `${...}` names that were left unresolved, so the caller can
+    /// prompt for them (`prompt_vars`) or report them rather than silently
+    /// sending a half-substituted line. `@ask:` interactive prompting is the
+    /// GUI's responsibility at fire time; this core method does the deterministic
+    /// substitution and newline handling only.
+    ///
+    /// # Errors
+    /// Propagates a [`crate::variables::VariableError`] when a reference resolves
+    /// to a value rejected for terminal input (e.g. one containing a control
+    /// sequence), exactly as `substitute_for_terminal_input` does.
+    pub fn render_for_terminal(
+        &self,
+        variables: &VariableManager,
+        scope: VariableScope,
+    ) -> VariableResult<TerminalSubstitution> {
+        let mut sub = variables.substitute_for_terminal_input(&self.command, scope)?;
+        if self.send_newline {
+            // Append through a fresh zeroizing buffer so the intermediate is not
+            // left unscrubbed; the \r is the Enter a terminal acts on.
+            let mut with_cr = zeroize::Zeroizing::new(String::with_capacity(sub.text.len() + 1));
+            with_cr.push_str(&sub.text);
+            with_cr.push('\r');
+            sub.text = with_cr;
+        }
+        Ok(sub)
+    }
 }
 
 /// Automation configuration for a connection
@@ -1711,5 +1751,69 @@ mod tests {
             !json.contains("command_macros"),
             "empty command_macros must be omitted, got: {json}"
         );
+    }
+
+    #[test]
+    fn macro_render_appends_carriage_return_when_send_newline() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "ls".into(),
+            command: "ls -la".into(),
+            keybind: None,
+            send_newline: true,
+            prompt_vars: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(&*out.text, "ls -la\r");
+        assert!(out.unresolved.is_empty());
+    }
+
+    #[test]
+    fn macro_render_no_newline_when_disabled() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "type".into(),
+            command: "partial".into(),
+            keybind: None,
+            send_newline: false,
+            prompt_vars: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(
+            &*out.text, "partial",
+            "no trailing CR when send_newline=false"
+        );
+    }
+
+    #[test]
+    fn macro_render_substitutes_variables() {
+        let mut vars = VariableManager::new();
+        vars.set_global(Variable::new("svc", "nginx"));
+        let m = CommandMacro {
+            name: "restart".into(),
+            command: "sudo systemctl restart ${svc}".into(),
+            keybind: None,
+            send_newline: true,
+            prompt_vars: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(&*out.text, "sudo systemctl restart nginx\r");
+        assert!(out.unresolved.is_empty());
+    }
+
+    #[test]
+    fn macro_render_reports_unresolved_variable() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "x".into(),
+            command: "echo ${missing}".into(),
+            keybind: None,
+            send_newline: false,
+            prompt_vars: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        // Unresolved placeholder is kept verbatim and reported, not silently dropped.
+        assert!(out.text.contains("${missing}"));
+        assert_eq!(out.unresolved, vec!["missing".to_string()]);
     }
 }
