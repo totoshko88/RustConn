@@ -166,24 +166,16 @@ impl ConnectionSidebar {
         };
         search_box.append(&search_spinner);
 
-        // Help button with popover
-        let help_button = Button::from_icon_name("dialog-question-symbolic");
-        help_button.set_tooltip_text(Some(&i18n("Search syntax help")));
-        help_button.add_css_class("flat");
-        help_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Search syntax help",
-        ))]);
-
-        // Create search help popover
+        // Search syntax help popover. There is no standalone help button in the
+        // search box any more (GNOME HIG §4: a lone "?" icon next to the search
+        // field was the inconsistent help affordance the review flagged). The
+        // popover is kept — it is parented on the search entry and shown when the
+        // user types a bare "?" (handled in connect_search_changed below), the
+        // power-user path documented inside the popover itself. "Keyboard
+        // Shortcuts…" and "About RustConn" already live in the primary menu,
+        // which is where GNOME apps surface help.
         let help_popover = search::create_search_help_popover();
-        help_popover.set_parent(&help_button);
-
-        let help_popover_clone = help_popover.clone();
-        help_button.connect_clicked(move |_| {
-            help_popover_clone.popup();
-        });
-
-        search_box.append(&help_button);
+        help_popover.set_parent(&search_entry);
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
