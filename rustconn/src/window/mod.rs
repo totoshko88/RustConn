@@ -18,6 +18,7 @@ mod fullscreen_header;
 mod group_broadcast;
 mod groups;
 mod history_actions;
+mod macro_dispatch;
 mod navigation_actions;
 mod network_monitor;
 mod operations;
@@ -1435,6 +1436,9 @@ impl MainWindow {
             &state,
             &self.session_split_bridges,
         );
+        // Per-connection command-macro keybinds: dynamic accels that follow the
+        // active tab (asbru-borrow #1 step 3).
+        macro_dispatch::setup_macro_dispatch(window, &terminal_notebook, &state);
         self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_group_broadcast_actions(window, &terminal_notebook);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);

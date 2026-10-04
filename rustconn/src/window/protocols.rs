@@ -421,7 +421,7 @@ fn link_password_reference(text: &str) -> (String, bool) {
 /// itself never enters the manager: it travels through the child environment, so
 /// both the expanded and the masked pass produce the same text and there is
 /// nothing here to mask.
-fn connection_variable_manager(
+pub(super) fn connection_variable_manager(
     conn: &rustconn_core::Connection,
     global_variables: &[Variable],
     has_password: bool,
