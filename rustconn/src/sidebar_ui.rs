@@ -1187,7 +1187,6 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
         Some("win.new-connection-advanced"),
     );
     create_section.append(Some(&i18n("New Group")), Some("win.new-group"));
-    create_section.append(Some(&i18n("New Cluster")), Some("win.manage-clusters"));
     menu.append_section(None, &create_section);
 
     // Tools section — quick access to cluster / workspace / snippet management.
@@ -1200,13 +1199,12 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     tools_section.append(Some(&i18n("Manage Snippets")), Some("win.manage-snippets"));
     menu.append_section(Some(&i18n("Tools")), &tools_section);
 
-    // List section — act on the connection list.
+    // List section — act on the connection list. Delete is intentionally NOT
+    // here: deleting via a hamburger (open menu → aim → click) is a worse path
+    // than the per-row context menu / Delete key, and keeping it out trims the
+    // menu. Destructive deletion lives on the row's right-click menu.
     let list_section = gio::Menu::new();
     list_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
-    list_section.append(
-        Some(&i18n("Delete Selected")),
-        Some("win.delete-connection"),
-    );
     list_section.append(Some(&i18n("Import…")), Some("win.import"));
     list_section.append(Some(&i18n("Export…")), Some("win.export"));
     menu.append_section(None, &list_section);

@@ -42,15 +42,24 @@ impl TerminalNotebook {
     }
 
     /// Removes the welcome page if it exists.
+    ///
+    /// Called by every session/tab-creation path *before* the new page is
+    /// appended. The Welcome tab is a placeholder for an empty notebook (issue
+    /// #232), so as soon as any real tab is opening it must go — regardless of
+    /// whether the session map is already populated. (The old guard keyed on
+    /// `sessions.is_empty()`, which left Welcome stranded beside real tabs when
+    /// a page was created through a path that registers its session before this
+    /// runs, or when a prior removal was skipped — exactly the "Welcome ⋮ fish1
+    /// ⋮ fish2" state the user saw.) We simply close any page titled Welcome.
     pub(super) fn remove_welcome_page(&self) {
-        if self.sessions.borrow().is_empty() && self.tab_view.n_pages() > 0 {
-            // Find and remove welcome page
-            for i in 0..self.tab_view.n_pages() {
-                let page = self.tab_view.nth_page(i);
-                if page.title() == i18n("Welcome") {
-                    self.tab_view.close_page(&page);
-                    break;
-                }
+        if self.tab_view.n_pages() == 0 {
+            return;
+        }
+        for i in 0..self.tab_view.n_pages() {
+            let page = self.tab_view.nth_page(i);
+            if page.title() == i18n("Welcome") {
+                self.tab_view.close_page(&page);
+                break;
             }
         }
     }
