@@ -283,6 +283,19 @@ label.warning {
     transition: opacity 200ms ease-in-out;
 }
 
+/* Sidebar connection row — a calmer, AdwActionRow-like rhythm (HIG §5 mini).
+ * Cosmetic only: the class is applied to the row content box in view.rs and is
+ * never read by the bind path, so it touches no row structure or wiring. */
+.connection-row {
+    border-radius: 6px;
+}
+
+/* The favorite star reads as a quiet trailing suffix, not a loud accent:
+ * dim it a touch so it indicates without competing with the connection name. */
+.pin-icon {
+    opacity: 0.75;
+}
+
 /* Connected status - green checkmark */
 .status-connected {
     color: @success_color;
