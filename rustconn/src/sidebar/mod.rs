@@ -140,6 +140,7 @@ impl ConnectionSidebar {
         // Search box with entry and help button
         // Reduced spacing per GNOME HIG (6px between related elements)
         let search_box = GtkBox::new(Orientation::Horizontal, 4);
+        search_box.add_css_class("sidebar-search-row");
         search_box.set_margin_start(6);
         search_box.set_margin_end(6);
         search_box.set_margin_top(6);
@@ -687,7 +688,14 @@ impl ConnectionSidebar {
         // Use Flat style for transparent background (icons on transparent bg)
         let (bottom_toolbar, keepass_button) = sidebar_ui::create_sidebar_bottom_toolbar();
         let toolbar_view = adw::ToolbarView::new();
-        toolbar_view.set_content(Some(&overlay));
+        // Content = connection list + smart-folders revealer in one vertical box,
+        // so the bottom toolbar (the toolbar view's bottom bar) is ALWAYS pinned
+        // to the very bottom of the sidebar and never moves when smart folders
+        // open (GNOME HIG §8c: a bottom bar is stable; a revealed section grows
+        // in the content area above it, not by pushing the toolbar up).
+        let list_content = GtkBox::new(Orientation::Vertical, 0);
+        list_content.append(&overlay);
+        toolbar_view.set_content(Some(&list_content));
         toolbar_view.add_bottom_bar(&bottom_toolbar);
         toolbar_view.set_bottom_bar_style(adw::ToolbarStyle::Flat);
         toolbar_view.set_vexpand(true);
@@ -711,7 +719,9 @@ impl ConnectionSidebar {
             .build();
         // When revealed, smart folders expand to fill available sidebar space
         smart_folders_revealer.set_vexpand(false);
-        sidebar_body.append(&smart_folders_revealer);
+        // Inside the toolbar view's content (above the pinned bottom toolbar),
+        // so opening it does not push the toolbar icons up (§8c).
+        list_content.append(&smart_folders_revealer);
 
         // Create debouncer for search with 100ms delay
         let search_debouncer = Rc::new(Debouncer::for_search());

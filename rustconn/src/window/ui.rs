@@ -51,10 +51,12 @@ pub fn create_header_bar() -> (
     header_bar.set_title_widget(Some(&title_box));
 
     // === Left side (pack_start) - Primary connection actions ===
-    // Order: Sidebar Toggle, Quick Connect, Remove
-    // New Connection (+) and New Group live in the sidebar's own headerbar
-    // (per-panel headers, GNOME Files/Settings style); they are deliberately
-    // NOT duplicated here.
+    // Order: Sidebar Toggle only.
+    // New Connection (+), New Group, Quick Connect and Delete are list actions
+    // and live in the sidebar's own headerbar (per-panel headers, GNOME
+    // Files/Settings style); the content header carries only session/window
+    // actions. The sidebar toggle stays here — it controls showing the sidebar,
+    // which is the content side's concern (like Files' show-sidebar button).
 
     // Sidebar toggle button
     let sidebar_toggle = Button::from_icon_name("sidebar-show-symbolic");
@@ -62,21 +64,6 @@ pub fn create_header_bar() -> (
     sidebar_toggle.set_action_name(Some("win.toggle-sidebar"));
     sidebar_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle Sidebar"))]);
     header_bar.pack_start(&sidebar_toggle);
-
-    // Quick connect button
-    let quick_connect_button = Button::from_icon_name("go-jump-symbolic");
-    quick_connect_button.set_tooltip_text(Some(&i18n("Quick Connect (Ctrl+Shift+Q)")));
-    quick_connect_button.set_action_name(Some("win.quick-connect"));
-    quick_connect_button
-        .update_property(&[gtk4::accessible::Property::Label(&i18n("Quick Connect"))]);
-    header_bar.pack_start(&quick_connect_button);
-
-    // Remove button (sensitive only when item selected)
-    let remove_button = Button::from_icon_name("list-remove-symbolic");
-    remove_button.set_tooltip_text(Some(&i18n("Delete Selected (Delete)")));
-    remove_button.set_action_name(Some("win.delete-connection"));
-    remove_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Delete Selected"))]);
-    header_bar.pack_start(&remove_button);
 
     // === Right side (pack_end) - Secondary actions ===
 
@@ -210,9 +197,7 @@ pub fn create_header_bar() -> (
     // everywhere else for the tap-target guarantee.
     let header_button_size: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
 
-    for icon_button in [&sidebar_toggle, &quick_connect_button, &remove_button] {
-        icon_button.set_size_request(header_button_size, header_button_size);
-    }
+    sidebar_toggle.set_size_request(header_button_size, header_button_size);
     menu_button.set_size_request(header_button_size, header_button_size);
     split_button.set_size_request(header_button_size, header_button_size);
 

@@ -512,6 +512,17 @@ tabbar > revealer > box {
     background: @headerbar_bg_color;
 }
 
+/* Height alignment (GNOME HIG §8b): the tab bar (second row of the content
+ * panel) and the sidebar search row (second row of the sidebar panel) sit at
+ * the same level, so they must share a height. Pin both to the same min-height
+ * so the two panels' rows line up instead of one being visibly taller. */
+tabbar > revealer > box {
+    min-height: 42px;
+}
+.sidebar-search-row {
+    min-height: 42px;
+}
+
 /* Hide separator lines for seamless flat look */
 .sidebar > separator.spacer {
     min-height: 0;

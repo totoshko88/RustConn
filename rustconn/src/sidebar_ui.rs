@@ -1169,5 +1169,22 @@ pub fn create_sidebar_header() -> adw::HeaderBar {
     ))]);
     header.pack_start(&new_group);
 
+    // Quick Connect and Delete act on the CONNECTION LIST, so GNOME HIG puts
+    // them on the list panel's own header, not the content (session) header.
+    // Delete is destructive/secondary -> trailing edge (pack_end); Quick
+    // Connect is a secondary create path -> also trailing, left of Delete.
+    let delete_connection = Button::from_icon_name("list-remove-symbolic");
+    delete_connection.set_tooltip_text(Some(&i18n("Delete Selected (Delete)")));
+    delete_connection.set_action_name(Some("win.delete-connection"));
+    delete_connection
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Delete Selected"))]);
+    header.pack_end(&delete_connection);
+
+    let quick_connect = Button::from_icon_name("go-jump-symbolic");
+    quick_connect.set_tooltip_text(Some(&i18n("Quick Connect (Ctrl+Shift+Q)")));
+    quick_connect.set_action_name(Some("win.quick-connect"));
+    quick_connect.update_property(&[gtk4::accessible::Property::Label(&i18n("Quick Connect"))]);
+    header.pack_end(&quick_connect);
+
     header
 }
