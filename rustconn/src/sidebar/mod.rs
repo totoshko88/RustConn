@@ -1783,7 +1783,20 @@ impl ConnectionSidebar {
     /// working without modification.
     pub fn set_filter_visible(&self, visible: bool) {
         if visible {
-            self.protocol_filter_menu.popup();
+            // Only pop the popover up if the menu button is actually mapped
+            // (i.e. its surface exists inside a presented toplevel). The
+            // settings-restore path calls this during window construction,
+            // BEFORE the window is presented — at that point the MenuButton has
+            // no surface, and MenuButton::popup() ends up in gdk_surface_new_popup
+            // with a NULL parent surface, which asserts and then SIGSEGVs (the
+            // old revealer-based filter bar tolerated a pre-realize reveal; a
+            // popover does not). Popping a protocol filter up unprompted at
+            // launch was never wanted anyway, so skipping it here is also the
+            // better UX: the user opens the filter from the button or by typing
+            // a `proto:` query.
+            if self.protocol_filter_menu.is_mapped() {
+                self.protocol_filter_menu.popup();
+            }
         } else {
             self.protocol_filter_menu.popdown();
             // Clear active filters when hiding to avoid hidden filtering.
