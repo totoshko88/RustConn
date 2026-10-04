@@ -445,6 +445,13 @@ impl ConnectionSidebar {
             });
         }
 
+        // Sidebar's own headerbar — the topmost element of the panel, above the
+        // search box, so the OverlaySplitView reads as two distinct panels
+        // (GNOME HIG, like Files/Settings) rather than a column hanging under one
+        // global header. Fixes the "sidebar looks resizable" confusion.
+        let sidebar_header = sidebar_ui::create_sidebar_header();
+        container.append(&sidebar_header);
+
         container.append(&search_box);
 
         // Wrap filter_box in a Revealer for animated show/hide

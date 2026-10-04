@@ -7,6 +7,7 @@ use std::cell::RefCell;
 
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 
@@ -1143,4 +1144,41 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.append(&smart_folders_button);
 
     (toolbar, keepass_button)
+}
+
+/// Creates the sidebar's own top `AdwHeaderBar`.
+///
+/// Giving the sidebar a headerbar of its own is what makes the
+/// `AdwOverlaySplitView` read as two distinct panels (like GNOME Files /
+/// Settings) instead of one column hanging under a single global headerbar —
+/// the visual separation users expect, and the fix for the "sidebar looks
+/// resizable" confusion. The buttons reference existing `win.*` actions, so no
+/// new wiring is needed; they fire the same handlers as the content header.
+pub fn create_sidebar_header() -> adw::HeaderBar {
+    let header = adw::HeaderBar::new();
+    // The split view already carries the window title on the content side; a
+    // short static title here just labels the panel.
+    let title = Label::new(Some(&i18n("Connections")));
+    title.add_css_class("heading");
+    header.set_title_widget(Some(&title));
+
+    // New Connection — primary create action for the list.
+    let new_connection = Button::from_icon_name("list-add-symbolic");
+    new_connection.set_tooltip_text(Some(&i18n("New Connection (Ctrl+N)")));
+    new_connection.set_action_name(Some("win.new-connection"));
+    new_connection.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Create a new connection",
+    ))]);
+    header.pack_start(&new_connection);
+
+    // New Group.
+    let new_group = Button::from_icon_name("folder-new-symbolic");
+    new_group.set_tooltip_text(Some(&i18n("New Group")));
+    new_group.set_action_name(Some("win.new-group"));
+    new_group.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Create a new connection group",
+    ))]);
+    header.pack_start(&new_group);
+
+    header
 }
