@@ -299,6 +299,10 @@ pub struct MainWindow {
     split_container: gtk4::Box,
     state: SharedAppState,
     overlay_split_view: adw::OverlaySplitView,
+    /// Content-header title widget. Held so settings-apply can refresh the
+    /// Nautilus-style hierarchy-path subtitle live when the toggle changes,
+    /// not only on the next tab switch.
+    header_title: adw::WindowTitle,
     /// Registry of external viewer sessions (VNC/RDP/SPICE delegated to a
     /// separate viewer process, issue #209). Tracks child processes and drives
     /// sidebar session-count + history via callbacks; watched by a shared timer.
@@ -666,38 +670,15 @@ impl MainWindow {
             {
                 let header_title_for_sub = header_title.clone();
                 let state_for_sub = state.clone();
-                let notebook_weak = Rc::downgrade(&terminal_notebook);
+                let notebook_for_sub = terminal_notebook.clone();
                 terminal_notebook
                     .tab_view()
-                    .connect_selected_page_notify(move |tab_view| {
-                        let Some(notebook) = notebook_weak.upgrade() else {
-                            return;
-                        };
-                        let _ = &notebook;
-                        let show_path =
-                            with_state(&state_for_sub, |s| s.settings().ui.window_title_shows_path);
-                        let subtitle = if show_path {
-                            (|| {
-                                let page = tab_view.selected_page()?;
-                                let tab_title = page.title().to_string();
-                                if tab_title.is_empty() || tab_title == crate::i18n::i18n("Welcome")
-                                {
-                                    return None;
-                                }
-                                with_state(&state_for_sub, |s| {
-                                    let conn = s
-                                        .list_connections()
-                                        .into_iter()
-                                        .find(|c| c.name == tab_title)?;
-                                    let gid = conn.group_id?;
-                                    s.get_group_path(gid)
-                                })
-                            })()
-                            .unwrap_or_default()
-                        } else {
-                            String::new()
-                        };
-                        header_title_for_sub.set_subtitle(&subtitle);
+                    .connect_selected_page_notify(move |_tab_view| {
+                        Self::refresh_header_subtitle(
+                            &header_title_for_sub,
+                            &notebook_for_sub,
+                            &state_for_sub,
+                        );
                     });
             }
         }
@@ -1280,6 +1261,7 @@ impl MainWindow {
             split_container,
             state: state.clone(),
             overlay_split_view,
+            header_title,
             external_sessions,
             detached_windows: Rc::new(crate::detached_window::DetachedWindowRegistry::new()),
             toast_overlay,
@@ -3664,6 +3646,47 @@ impl MainWindow {
         }
     }
 
+    /// Set the content header's Nautilus-style hierarchy-path subtitle to the
+    /// active connection's group path (e.g. "AWS Test Lab / Prod"), gated on
+    /// the `window_title_shows_path` setting. Resolves the selected tab's
+    /// connection by title against the connection list, then its group path;
+    /// clears the subtitle when the setting is off, the tab is Welcome, or the
+    /// connection has no parent group. The WM window title (issue #211) is
+    /// untouched. Shared by the tab-switch hook and the live settings-apply
+    /// path, so toggling the setting updates the subtitle without a tab switch.
+    pub(crate) fn refresh_header_subtitle(
+        header_title: &adw::WindowTitle,
+        notebook: &SharedNotebook,
+        state: &SharedAppState,
+    ) {
+        let show_path = with_state(state, |s| s.settings().ui.window_title_shows_path);
+        let subtitle = if show_path {
+            (|| {
+                let page = notebook.tab_view().selected_page()?;
+                let tab_title = page.title().to_string();
+                if tab_title.is_empty() || tab_title == crate::i18n::i18n("Welcome") {
+                    return None;
+                }
+                with_state(state, |s| {
+                    let conn = s
+                        .list_connections()
+                        .into_iter()
+                        .find(|c| c.name == tab_title)?;
+                    let gid = conn.group_id?;
+                    s.get_group_path(gid)
+                })
+            })()
+            .unwrap_or_default()
+        } else {
+            String::new()
+        };
+        header_title.set_subtitle(&subtitle);
+    }
+
+    // Dialog launcher wiring many independent window dependencies through to
+    // the settings dialog and its live-apply closure; bundling them into a
+    // struct would add indirection without clarifying anything.
+    #[allow(clippy::too_many_arguments)]
     fn show_settings_dialog(
         window: &adw::ApplicationWindow,
         state: SharedAppState,
@@ -3672,6 +3695,7 @@ impl MainWindow {
         sidebar: SharedSidebar,
         overlay_split_view: adw::OverlaySplitView,
         session_split_bridges: SessionSplitBridges,
+        header_title: adw::WindowTitle,
     ) {
         let opened_at = std::time::Instant::now();
         tracing::debug!("settings action activated");
@@ -3703,6 +3727,7 @@ impl MainWindow {
         );
 
         let window_clone = window.clone();
+        let header_title_for_apply = header_title.clone();
         dialog.run(Some(window), move |result| {
             if let Some(settings) = result {
                 // Capture backend and KeePass state for action update
@@ -3788,6 +3813,11 @@ impl MainWindow {
                     &notebook,
                     settings.ui.window_title_shows_connection,
                 );
+
+                // Refresh the hierarchy-path subtitle live so toggling
+                // "Show hierarchy path in header" updates immediately,
+                // without waiting for the next tab switch.
+                Self::refresh_header_subtitle(&header_title_for_apply, &notebook, &state);
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     let simple_sync_was = state_mut.simple_sync_enabled();

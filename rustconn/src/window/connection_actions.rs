@@ -530,6 +530,7 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let overlay_split_view_clone = self.overlay_split_view.clone();
         let session_bridges_clone = self.session_split_bridges.clone();
+        let header_title_clone = self.header_title.clone();
         settings_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 Self::show_settings_dialog(
@@ -540,6 +541,7 @@ impl MainWindow {
                     sidebar_clone.clone(),
                     overlay_split_view_clone.clone(),
                     session_bridges_clone.clone(),
+                    header_title_clone.clone(),
                 );
             }
         });
