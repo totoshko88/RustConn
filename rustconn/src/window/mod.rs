@@ -865,14 +865,21 @@ impl MainWindow {
 
         // Note: drag-and-drop is set up in connect_signals after we have access to notebook
 
-        overlay_split_view.set_content(Some(&terminal_container));
+        // Per-panel headerbars (GNOME Files/Settings style): the window has NO
+        // single full-width titlebar. The content side is an AdwToolbarView
+        // whose top bar is the header + banners and whose content is the
+        // terminal container; it becomes the OverlaySplitView's content, so the
+        // split renders as two distinct panels with their own headers and a
+        // vertical divider between them. (The sidebar carries its own headerbar
+        // from §1.) `terminal_container` is wired into this toolbar view below,
+        // once its top bars are attached.
 
-        // Create toast overlay and wrap the split view
+        // Create toast overlay — wraps the whole split view (set below).
         let toast_overlay = Rc::new(ToastOverlay::new());
-        toast_overlay.set_child(Some(&overlay_split_view));
 
-        // Create main layout using adw::ToolbarView for proper libadwaita integration
-        // This provides better responsive behavior and follows GNOME HIG
+        // Content-panel layout: adw::ToolbarView carrying the header + banners
+        // above the terminal container. This is the content side of the split
+        // (NOT a window-level full-width bar).
         let toolbar_view = adw::ToolbarView::new();
         // The header goes in through the fullscreen chrome, which hides it — and
         // the tab bar it adopts in fullscreen — as one block (issue #354). It
@@ -974,12 +981,22 @@ impl MainWindow {
         });
         toolbar_view.add_top_bar(&group_broadcast_banner);
 
-        toolbar_view.set_content(Some(toast_overlay.widget()));
+        // The content panel's body is the terminal container (header + banners
+        // sit above it in this same toolbar view).
+        toolbar_view.set_content(Some(&terminal_container));
+
+        // The content toolbar view IS the split's content side; the sidebar
+        // side carries its own headerbar. The split then wraps in the toast
+        // overlay, which wraps in the tab overview — no window-level full-width
+        // header anywhere, so the two panels render with their own headers and a
+        // divider between them (GNOME Files/Settings).
+        overlay_split_view.set_content(Some(&toolbar_view));
+        toast_overlay.set_child(Some(&overlay_split_view));
 
         // Wrap everything with TabOverview — must be the outermost widget
         // so it can overlay the entire window content (GNOME Web pattern)
         let tab_overview = terminal_notebook.tab_overview();
-        tab_overview.set_child(Some(&toolbar_view));
+        tab_overview.set_child(Some(toast_overlay.widget()));
         // Clip overflow to prevent the TabOverview from requesting more space
         // than the window provides when embedded RDP sessions have large framebuffers
         tab_overview.set_overflow(gtk4::Overflow::Hidden);
