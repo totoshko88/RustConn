@@ -51,7 +51,10 @@ pub fn create_header_bar() -> (
     header_bar.set_title_widget(Some(&title_box));
 
     // === Left side (pack_start) - Primary connection actions ===
-    // Order: Sidebar Toggle, Quick Connect, Add, Remove, Add Group
+    // Order: Sidebar Toggle, Quick Connect, Remove
+    // New Connection (+) and New Group live in the sidebar's own headerbar
+    // (per-panel headers, GNOME Files/Settings style); they are deliberately
+    // NOT duplicated here.
 
     // Sidebar toggle button
     let sidebar_toggle = Button::from_icon_name("sidebar-show-symbolic");
@@ -68,26 +71,12 @@ pub fn create_header_bar() -> (
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Quick Connect"))]);
     header_bar.pack_start(&quick_connect_button);
 
-    // Add connection button
-    let add_button = Button::from_icon_name("list-add-symbolic");
-    add_button.set_tooltip_text(Some(&i18n("New Connection (Ctrl+N)")));
-    add_button.set_action_name(Some("win.new-connection"));
-    add_button.update_property(&[gtk4::accessible::Property::Label(&i18n("New Connection"))]);
-    header_bar.pack_start(&add_button);
-
     // Remove button (sensitive only when item selected)
     let remove_button = Button::from_icon_name("list-remove-symbolic");
     remove_button.set_tooltip_text(Some(&i18n("Delete Selected (Delete)")));
     remove_button.set_action_name(Some("win.delete-connection"));
     remove_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Delete Selected"))]);
     header_bar.pack_start(&remove_button);
-
-    // Add group button
-    let add_group_button = Button::from_icon_name("folder-new-symbolic");
-    add_group_button.set_tooltip_text(Some(&i18n("New Group (Ctrl+Shift+G)")));
-    add_group_button.set_action_name(Some("win.new-group"));
-    add_group_button.update_property(&[gtk4::accessible::Property::Label(&i18n("New Group"))]);
-    header_bar.pack_start(&add_group_button);
 
     // === Right side (pack_end) - Secondary actions ===
 
@@ -221,13 +210,7 @@ pub fn create_header_bar() -> (
     // everywhere else for the tap-target guarantee.
     let header_button_size: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
 
-    for icon_button in [
-        &sidebar_toggle,
-        &quick_connect_button,
-        &add_button,
-        &remove_button,
-        &add_group_button,
-    ] {
+    for icon_button in [&sidebar_toggle, &quick_connect_button, &remove_button] {
         icon_button.set_size_request(header_button_size, header_button_size);
     }
     menu_button.set_size_request(header_button_size, header_button_size);
