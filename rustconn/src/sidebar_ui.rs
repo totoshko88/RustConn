@@ -6,7 +6,7 @@
 use std::cell::RefCell;
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, glib};
+use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, gio, glib};
 use libadwaita as adw;
 
 use crate::i18n::i18n;
@@ -1088,15 +1088,6 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.set_margin_end(6);
     toolbar.set_halign(gtk4::Align::Center);
 
-    let group_ops_button = Button::from_icon_name("view-list-symbolic");
-    group_ops_button.add_css_class("flat");
-    group_ops_button.set_tooltip_text(Some(&i18n("Group operations mode")));
-    group_ops_button.set_action_name(Some("win.group-operations"));
-    group_ops_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Enable group operations mode for multi-select",
-    ))]);
-    toolbar.append(&group_ops_button);
-
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.add_css_class("flat");
     history_button.set_tooltip_text(Some(&i18n("Connection History")));
@@ -1106,23 +1097,21 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     ))]);
     toolbar.append(&history_button);
 
-    let sort_button = Button::from_icon_name("view-sort-ascending-symbolic");
+    // Sort: the two separate sort icons (alphabetical / recent) are folded into
+    // one "Sort" menu button (GNOME HIG §2c), the way Files surfaces its sort
+    // options — a single affordance with a popover rather than two competing
+    // toolbar icons. The actions are unchanged (`win.sort-connections` /
+    // `win.sort-recent`), so sorting behaviour is identical.
+    let sort_menu_model = gio::Menu::new();
+    sort_menu_model.append(Some(&i18n("Alphabetical")), Some("win.sort-connections"));
+    sort_menu_model.append(Some(&i18n("Recent Usage")), Some("win.sort-recent"));
+    let sort_button = gtk4::MenuButton::new();
+    sort_button.set_icon_name("view-sort-ascending-symbolic");
     sort_button.add_css_class("flat");
-    sort_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
-    sort_button.set_action_name(Some("win.sort-connections"));
-    sort_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Sort connections alphabetically",
-    ))]);
+    sort_button.set_tooltip_text(Some(&i18n("Sort connections")));
+    sort_button.set_menu_model(Some(&sort_menu_model));
+    sort_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Sort connections"))]);
     toolbar.append(&sort_button);
-
-    let sort_recent_button = Button::from_icon_name("view-sort-descending-symbolic");
-    sort_recent_button.add_css_class("flat");
-    sort_recent_button.set_tooltip_text(Some(&i18n("Sort by recent usage")));
-    sort_recent_button.set_action_name(Some("win.sort-recent"));
-    sort_recent_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Sort connections by recent usage",
-    ))]);
-    toolbar.append(&sort_recent_button);
 
     let keepass_button = Button::from_icon_name("dialog-password-symbolic");
     keepass_button.add_css_class("flat");

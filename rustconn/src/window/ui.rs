@@ -265,6 +265,14 @@ pub fn create_app_menu() -> gio::Menu {
         Some("win.new-connection-advanced"),
     );
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));
+    // Multi-select mode (GNOME HIG §2c): moved out of the sidebar's bottom
+    // toolbar into the menu. The stateful `win.group-operations` action renders
+    // here as a checkable toggle (the bulk-actions bar still appears only while
+    // the mode is on, which is HIG-correct).
+    conn_section.append(
+        Some(&i18n("Select Connections")),
+        Some("win.group-operations"),
+    );
     conn_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
     conn_section.append(Some(&i18n("Local Shell")), Some("win.local-shell"));
     menu.append_section(None, &conn_section);
