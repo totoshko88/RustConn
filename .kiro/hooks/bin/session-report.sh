@@ -44,12 +44,31 @@ repo=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 cd "$repo" 2>/dev/null || exit 0
 
 journal="target/.kiro-session-edits"
-report="target/.kiro-session-report"
+report=${KIRO_SESSION_REPORT:-target/.kiro-session-report}
+
+# Flush ceiling. Whatever is printed here is pasted into the user's prompt and
+# then re-read on every later turn of the session, so it has to be bounded.
+# Measured 2026-10-05: one release turn flushed ~1.5k doc-claims lines (~330 KB)
+# in a single block. Lines beyond the cap go to <report>.full, which is named in
+# the last printed line, so nothing is lost — it is one read away, not in-prompt.
+max_lines=40
+max_bytes=4096
 
 case "$mode" in
 flush)
     [ -s "$report" ] || exit 0
-    cat -- "$report" 2>/dev/null || true
+    full="${report}.full"
+    # Exact duplicates first: two producers, or one producer re-appending an
+    # unfixed finding on every Stop, say the same thing twice.
+    # No `--` before the file: mawk rejects it and the fallback would skip dedupe.
+    deduped=$(awk '!seen[$0]++' "$report" 2>/dev/null) || deduped=$(cat -- "$report" 2>/dev/null)
+    total=$(printf '%s\n' "$deduped" | wc -l | tr -d ' ')
+    shown=$(printf '%s\n' "$deduped" | head -n "$max_lines" | head -c "$max_bytes")
+    printf '%s\n' "$shown"
+    if [ "$(printf '%s\n' "$shown" | wc -c)" -lt "$(printf '%s\n' "$deduped" | wc -c)" ]; then
+        printf '%s\n' "$deduped" >"$full" 2>/dev/null || true
+        printf '[session-report: %s lines total, truncated here; the rest is in %s]\n' "$total" "$full"
+    fi
     rm -f -- "$report" 2>/dev/null || true
     exit 0
     ;;
