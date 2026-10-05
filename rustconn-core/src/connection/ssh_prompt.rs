@@ -97,6 +97,22 @@ mod tests {
         assert!(looks_like_password_prompt("PASS: "));
     }
 
+    /// Keyboard-interactive prompts come from the server's PAM stack, not from
+    /// OpenSSH, so they lack the `user@host's password:` shape. ESXi (issue #364)
+    /// is the canonical case: `(root@host) Password:`. These must still match —
+    /// the askpass shell helper in `rustconn` mirrors exactly this behavior.
+    #[test]
+    fn matches_pam_keyboard_interactive_prompts() {
+        assert!(looks_like_password_prompt(
+            "(root@esxi.example.com) Password:"
+        ));
+        assert!(looks_like_password_prompt(
+            "(root@esxi.example.com) Password: "
+        ));
+        assert!(looks_like_password_prompt("Password:"));
+        assert!(looks_like_password_prompt("Password: "));
+    }
+
     #[test]
     fn matches_localized_prompts() {
         assert!(looks_like_password_prompt("Пароль:"));
