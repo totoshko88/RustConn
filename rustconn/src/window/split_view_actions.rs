@@ -139,14 +139,21 @@ impl PanelPlacement {
             return false;
         }
 
-        self.clear_from_other_layouts(session_id);
-
-        // The display widget comes from the notebook — terminal or embedded
-        // viewer — rather than from the bridge's own map.
+        // Resolve the display widget BEFORE detaching the session from any other
+        // layout. The widget comes from the notebook — terminal or embedded
+        // viewer — rather than from the bridge's own map. If it cannot be
+        // resolved we must bail while the session is still intact: clearing it
+        // from its previous split first and only then discovering we cannot
+        // place it would leave the session displayed nowhere (it "was offered
+        // but never appeared"). Picking a session already in another split is
+        // additionally prevented upstream in the Select Tab picker; this
+        // ordering is the defence-in-depth for any other move path.
         let Some(content) = self.notebook.get_session_display_widget(session_id) else {
             tracing::warn!(%session_id, origin, "no content widget for session");
             return false;
         };
+
+        self.clear_from_other_layouts(session_id);
 
         let color_index = match self
             .bridge

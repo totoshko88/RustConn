@@ -2222,8 +2222,8 @@ impl SplitViewBridge {
                     pointing_to.is_some(),
                 );
 
-                // Get sessions already displayed in this split view using the adapter
-                // This is more reliable than using pane.current_session() which may not be updated
+                // Sessions already displayed in THIS split view (via the adapter —
+                // more reliable than pane.current_session(), which may be stale).
                 let sessions_in_split: std::collections::HashSet<Uuid> = {
                     let adapter_ref = adapter.borrow();
                     adapter_ref
@@ -2237,10 +2237,21 @@ impl SplitViewBridge {
                 // Get all sessions from the provider
                 let all_sessions = session_provider();
 
-                // Filter to only those NOT already in this split view
+                // Offer only sessions not already in ANY split view. A session
+                // can live in exactly one pane, so a session shown in another
+                // split must not be offered here: picking it would yank it out
+                // of its current split and, if its content widget cannot be
+                // resolved mid-move, leave it displayed nowhere (it "was
+                // offered but never appeared"). `split_colors` is the global
+                // session_id → colour map kept in sync with every split
+                // placement/clear, so it is the authority on "in some split".
+                let sessions_in_any_split: std::collections::HashSet<Uuid> =
+                    split_colors.borrow().keys().copied().collect();
                 let available_sessions: Vec<(Uuid, String, String)> = all_sessions
                     .into_iter()
-                    .filter(|(id, _, _)| !sessions_in_split.contains(id))
+                    .filter(|(id, _, _)| {
+                        !sessions_in_split.contains(id) && !sessions_in_any_split.contains(id)
+                    })
                     .collect();
 
                 if available_sessions.is_empty() {
