@@ -407,6 +407,7 @@ done
 - Fixed: import/export round-trip fixes (native, Ásbrú, .rdp); the RDP Multipath TCP toggle reaches the client; CLI can set Kerberos NLA (issue #351)
 - Fixed: the stored password now reaches keyboard-interactive logins such as ESXi, not only OpenSSH's own password prompt, while still never answering a passphrase, OTP, sudo or password-change prompt (issue #364)
 - Fixed: the config forward-compat marker now covers every config file, and a startup crash when protocol filters were restored
+- Dependencies: updated async-recursion, cc, font-types, mio, objc2, powerfmt, tokio and uuid to their latest compatible versions
 
 * Sat Oct 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.22.15-0
 - Version bump to 0.22.15

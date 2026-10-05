@@ -28,6 +28,8 @@ Mon Oct 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.0
   OTP, sudo or password-change prompt (issue #364)
 - Fixed: the config forward-compat marker now covers every config file, and a
   startup crash when protocol filters were restored
+- Dependencies: updated async-recursion, cc, font-types, mio, objc2, powerfmt,
+  tokio and uuid to their latest compatible versions
 
 -------------------------------------------------------------------
 Sat Oct 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.22.15

@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **"Color tabs by protocol" and "Show protocol filters" settings** — every tab already shows its protocol's symbolic icon, so the tab indicator only repeated it, and the protocol filters now live behind the sidebar's Filter button with nothing to keep shown. Both switches are gone from Settings → Interface; values saved by older versions are still read and kept, and simply have no effect.
 
+### Dependencies
+- **Updated**: async-recursion 1.1.1 → 1.2.0, cc 1.5.1 → 1.6.0, font-types 0.12.5 → 0.12.6, mio 1.2.3 → 1.2.4, objc2 0.6.4 → 0.6.5, powerfmt 0.2.0 → 0.2.1, tokio 1.53.1 → 1.53.2, uuid 1.26.1 → 1.27.0. Flatpak/Flathub `cargo-sources.json` regenerated to match. No security advisories affected (`cargo deny check advisories` clean). (picky-krb 0.12.5 held back: its new `GssApiMessageError` variant breaks the pinned sspi 0.21.3.)
+
 ## [0.22.15] - 2026-10-03
 
 ### Added

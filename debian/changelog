@@ -29,6 +29,8 @@ rustconn (0.23.0-1) unstable; urgency=medium
     passphrase, OTP, sudo or password-change prompt (issue #364)
   * Fixed: the config forward-compat marker now covers every config file, and a
     startup crash when protocol filters were restored
+  * Dependencies: updated async-recursion, cc, font-types, mio, objc2,
+    powerfmt, tokio and uuid to their latest compatible versions
 
  -- Anton Isaiev <totoshko88@gmail.com>  Mon, 05 Oct 2026 14:00:50 +0300
 
