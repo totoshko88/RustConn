@@ -994,7 +994,10 @@ mod tests {
             args.contains(&"/kerberos:kdc-url:gw.example.com:8443".to_string()),
             "{args:?}"
         );
-        assert_eq!(args.last().map(String::as_str), Some("/v:server.example.com"));
+        assert_eq!(
+            args.last().map(String::as_str),
+            Some("/v:server.example.com")
+        );
     }
 
     /// The KDC Address is read only with Kerberos on, as on the embedded client,
@@ -1032,7 +1035,10 @@ mod tests {
         for (stored, expected) in [
             ("https://gw.example.com/KdcProxy", Some("gw.example.com")),
             ("HTTPS://gw.example.com/kdcproxy/", Some("gw.example.com")),
-            ("https://[2001:db8::1]:443/KdcProxy", Some("[2001:db8::1]:443")),
+            (
+                "https://[2001:db8::1]:443/KdcProxy",
+                Some("[2001:db8::1]:443"),
+            ),
             ("https://gw.example.com", None),
             ("https://gw.example.com/Other/KdcProxy", None),
             ("https://gw.example.com/KdcProxy?x=1", None),

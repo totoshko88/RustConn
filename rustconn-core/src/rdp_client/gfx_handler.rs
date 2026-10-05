@@ -922,8 +922,7 @@ static USABLE_LIBRARY: std::sync::RwLock<ProbeState> = std::sync::RwLock::new(Pr
 /// explicit `RUSTCONN_OPENH264` still wins), so H.264 is disabled without the
 /// blob being deleted — the enable/disable/re-enable path the OpenH264 binary
 /// licence requires. Defaults to enabled (`false`).
-static OPENH264_DISABLED: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
+static OPENH264_DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Enable or disable use of the downloaded OpenH264 codec at runtime.
 ///

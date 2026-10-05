@@ -2060,12 +2060,18 @@ mod tests {
         assert_eq!(fs::read_to_string(&backup).unwrap(), original);
         assert!(manager.newer_version_files().is_empty());
         let ours = fs::read_to_string(&path).unwrap();
-        assert!(ours.contains(&format!("written_by = \"{RUNNING_VERSION}\"")), "{ours}");
+        assert!(
+            ours.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "{ours}"
+        );
 
         // The next save overwrites this version's own file: no second copy, and
         // the first one still holds what the newer version wrote.
         manager.save_history(&[]).unwrap();
-        assert_eq!(backups_in(manager.config_dir()), ["history.toml.99.0.0.bak"]);
+        assert_eq!(
+            backups_in(manager.config_dir()),
+            ["history.toml.99.0.0.bak"]
+        );
         assert_eq!(fs::read_to_string(&backup).unwrap(), original);
     }
 

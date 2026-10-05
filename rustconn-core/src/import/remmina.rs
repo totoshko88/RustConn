@@ -577,8 +577,11 @@ mod tests {
             let exported = RemminaExporter::export_connection(&connection).expect("RDP exports");
 
             let mut group_map = HashMap::new();
-            let result =
-                RemminaImporter::new().parse_remmina_file(&exported, "audio.remmina", &mut group_map);
+            let result = RemminaImporter::new().parse_remmina_file(
+                &exported,
+                "audio.remmina",
+                &mut group_map,
+            );
             let ProtocolConfig::Rdp(ref imported) = result.connections[0].protocol_config else {
                 panic!("expected an RDP connection");
             };
@@ -590,7 +593,10 @@ mod tests {
     fn remmina_sound_values_map_as_remmina_reads_them() {
         assert_eq!(remmina_audio_mode("remote"), RdpAudioMode::Remote);
         assert_eq!(remmina_audio_mode("local"), RdpAudioMode::Local);
-        assert_eq!(remmina_audio_mode("local,quality:high"), RdpAudioMode::Local);
+        assert_eq!(
+            remmina_audio_mode("local,quality:high"),
+            RdpAudioMode::Local
+        );
         assert_eq!(remmina_audio_mode("off"), RdpAudioMode::None);
         assert_eq!(remmina_audio_mode(""), RdpAudioMode::None);
     }
