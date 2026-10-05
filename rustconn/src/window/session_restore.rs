@@ -18,13 +18,11 @@ use rustconn_core::session::{SessionRestoreData, SessionRestoreState, SessionTyp
 
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
+use crate::terminal::LOCAL_SHELL_PROTOCOL;
 use crate::window::types::{SharedNotebook, SharedSidebar};
 
 /// File name of the restore snapshot inside the configuration directory.
 const RESTORE_FILE: &str = "session_restore.json";
-
-/// Protocol marker of a Local Shell tab (its connection id is nil).
-const LOCAL_SHELL_PROTOCOL: &str = "local";
 
 /// Returns the path of the restore snapshot, or `None` if state is unavailable.
 fn restore_path(state: &SharedAppState) -> Option<std::path::PathBuf> {
@@ -204,10 +202,14 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
 
     for entry in &snapshot.sessions {
         if entry.connection_id.is_nil() && entry.protocol == LOCAL_SHELL_PROTOCOL {
+            // The snapshot carries the tab's title, so a local shell the user
+            // relabelled comes back under that name instead of as a second
+            // "Local Shell".
             super::MainWindow::open_local_shell_with_split(
                 &ctx.notebook,
                 &ctx.split_view,
                 Some(&ctx.state),
+                Some(&entry.connection_name),
             );
             restored += 1;
             continue;

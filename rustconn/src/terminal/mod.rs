@@ -53,8 +53,8 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    ClusterTabs, PendingCluster, SessionWidgetStorage, TerminalSession, group_still_in_use,
-    strip_group_prefix, tab_title,
+    ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
+    group_still_in_use, local_shell_label, strip_group_prefix, tab_title,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -2801,30 +2801,16 @@ impl TerminalNotebook {
     /// prefix); the caller updates whatever else names the session — the title
     /// of a detached window, for one (issue #236).
     pub fn rename_connection_sessions(&self, connection_id: Uuid, new_name: &str) -> Vec<Uuid> {
-        let affected: Vec<(Uuid, Option<String>, Option<String>)> = self
+        let affected: Vec<Uuid> = self
             .session_info
-            .borrow_mut()
-            .iter_mut()
+            .borrow()
+            .iter()
             .filter(|(_, info)| info.connection_id == connection_id)
-            .map(|(id, info)| {
-                info.name = new_name.to_owned();
-                (*id, info.tab_group.clone(), info.host.clone())
-            })
+            .map(|(id, _)| *id)
             .collect();
 
-        for (session_id, group, host) in &affected {
-            // The page is bound to its own `let` first: an `if let` scrutinee
-            // temporary would keep the `sessions` borrow alive across the two
-            // GTK setters below.
-            let page = self.sessions.borrow().get(session_id).cloned();
-            if let Some(page) = page {
-                page.set_title(&tab_title(new_name, group.as_deref()));
-                page.set_tooltip(&Self::tab_tooltip(
-                    new_name,
-                    host.as_deref(),
-                    group.as_deref(),
-                ));
-            }
+        for session_id in &affected {
+            Self::apply_session_label(&self.sessions, &self.session_info, *session_id, new_name);
         }
         if !affected.is_empty() {
             tracing::debug!(
@@ -2833,7 +2819,46 @@ impl TerminalNotebook {
                 "renamed open sessions after a connection rename"
             );
         }
-        affected.into_iter().map(|(id, _, _)| id).collect()
+        affected
+    }
+
+    /// Applies a new label to one session: its metadata, the tab title and the
+    /// tooltip.
+    ///
+    /// Takes the two maps rather than `&self` because the tab context menu
+    /// reaches it from a `'static` action closure, which holds clones of both
+    /// and cannot borrow the notebook.
+    ///
+    /// Only the tab chrome is touched, and that is the whole scope: a tab being
+    /// relabelled is by definition one that still has a tab, since a session
+    /// parked in a split or moved to its own window has none for the menu to
+    /// act on. The label does reach those sessions later rather than not at
+    /// all — a split pane header and a detached window title are both read from
+    /// `info.name` when the session is placed, and the session carries the
+    /// label from then on.
+    pub(super) fn apply_session_label(
+        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
+        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+        session_id: Uuid,
+        label: &str,
+    ) {
+        let (group, host) = {
+            let mut info_ref = session_info.borrow_mut();
+            let Some(info) = info_ref.get_mut(&session_id) else {
+                return;
+            };
+            info.name = label.to_owned();
+            (info.tab_group.clone(), info.host.clone())
+        };
+
+        // The page is bound to its own `let` first: an `if let` scrutinee
+        // temporary would keep the `sessions` borrow alive across the two GTK
+        // setters below.
+        let page = sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
+            page.set_title(&tab_title(label, group.as_deref()));
+            page.set_tooltip(&Self::tab_tooltip(label, host.as_deref(), group.as_deref()));
+        }
     }
 
     /// Returns the group name for a session, if any.

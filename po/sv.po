@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 00:39+0300\n"
+"POT-Creation-Date: 2026-10-05 19:52+0400\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -46,15 +46,16 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:236 rustconn/src/dialogs/workspace.rs:290
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:239 rustconn/src/terminal/tab_menu.rs:500
-#: rustconn/src/vault_ops.rs:315 rustconn/src/window/batch_edit.rs:69
+#: rustconn/src/terminal/tab_menu.rs:246 rustconn/src/terminal/tab_menu.rs:352
+#: rustconn/src/terminal/tab_menu.rs:575 rustconn/src/vault_ops.rs:315
+#: rustconn/src/window/batch_edit.rs:69
 #: rustconn/src/window/connection_dialogs.rs:1083
 #: rustconn/src/window/edit_group.rs:1889
 #: rustconn/src/window/edit_group.rs:1937
 #: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3107
 #: rustconn/src/window/mod.rs:3991 rustconn/src/window/operations.rs:116
 #: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
-#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:548
+#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:552
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -77,7 +78,7 @@ msgstr "Spara inte"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
 #: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:599
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
-#: rustconn/src/window/workspaces.rs:549
+#: rustconn/src/window/workspaces.rs:553
 msgid "Save"
 msgstr "Spara"
 
@@ -4294,7 +4295,8 @@ msgstr "Lösenfras för den portabla filen"
 #: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:603
 #: rustconn/src/embedded_rdp/mod.rs:578 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:262 rustconn/src/terminal/config.rs:284
-#: rustconn/src/terminal/tab_menu.rs:952 rustconn/src/terminal/tab_menu.rs:956
+#: rustconn/src/terminal/tab_menu.rs:1038
+#: rustconn/src/terminal/tab_menu.rs:1042
 msgid "Copy"
 msgstr "Kopiera"
 
@@ -4415,7 +4417,7 @@ msgstr "Kopiering stoppad"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:501
+#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:576
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3992
 msgid "Close"
 msgstr "Stäng"
@@ -6380,7 +6382,7 @@ msgstr ""
 "ändringar."
 
 #: rustconn/src/dialogs/settings/mod.rs:576
-#: rustconn/src/window/session_restore.rs:186
+#: rustconn/src/window/session_restore.rs:184
 msgid "Restore"
 msgstr "Återställ"
 
@@ -8279,7 +8281,7 @@ msgstr "Klistra in"
 msgid "Find in Terminal"
 msgstr "Sök i terminalen"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:963
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1049
 msgid "Close Tab"
 msgstr "Stäng flik"
 
@@ -8291,7 +8293,7 @@ msgstr "Nästa flik"
 msgid "Previous Tab"
 msgstr "Föregående flik"
 
-#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:497
+#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:498
 msgid "Tab Overview"
 msgstr "Fliköversikt"
 
@@ -8323,7 +8325,7 @@ msgstr "Ta bort från delad vy"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:896
+#: rustconn/src/terminal/tab_menu.rs:982
 msgid "Remove Split"
 msgstr "Ta bort delning"
 
@@ -10088,14 +10090,14 @@ msgid "Save files from remote clipboard"
 msgstr "Spara filer från fjärrurklipp"
 
 #: rustconn/src/embedded_rdp/mod.rs:764 rustconn/src/embedded_vnc/ui.rs:145
-#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1347
+#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1348
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:846
+#: rustconn/src/terminal/tab_menu.rs:921
 msgid "Reconnect"
 msgstr "Återanslut"
 
 #: rustconn/src/embedded_rdp/mod.rs:766 rustconn/src/embedded_vnc/ui.rs:147
-#: rustconn/src/terminal/mod.rs:1349
+#: rustconn/src/terminal/mod.rs:1350
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Återanslut till denna session"
@@ -11032,33 +11034,33 @@ msgstr "Välj en flik att visa"
 msgid "Execute Snippet…"
 msgstr "Kör kodsnutt…"
 
-#: rustconn/src/terminal/mod.rs:493
+#: rustconn/src/terminal/mod.rs:494
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Fliköversikt (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:510 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:511 rustconn/src/terminal/tab_lifecycle.rs:35
 #: rustconn/src/terminal/tab_lifecycle.rs:50 rustconn/src/window/mod.rs:3567
 msgid "Welcome"
 msgstr "Välkommen"
 
-#: rustconn/src/terminal/mod.rs:1051
+#: rustconn/src/terminal/mod.rs:1052
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Utdatafiltret ”{}” är inte installerat; sessionens utdata filtreras inte"
 
-#: rustconn/src/terminal/mod.rs:1341
+#: rustconn/src/terminal/mod.rs:1342
 msgid "Command not found: {}"
 msgstr "Kommandot hittades inte: {}"
 
-#: rustconn/src/terminal/mod.rs:1343
+#: rustconn/src/terminal/mod.rs:1344
 msgid "Failed to start '{}'"
 msgstr "Det gick inte att starta ”{}”"
 
-#: rustconn/src/terminal/mod.rs:1365
+#: rustconn/src/terminal/mod.rs:1366
 msgid "'{}' is not installed"
 msgstr "”{}” är inte installerat"
 
-#: rustconn/src/terminal/mod.rs:1368
+#: rustconn/src/terminal/mod.rs:1369
 msgid "Failed to start '{}': {}"
 msgstr "Det gick inte att starta ”{}”: {}"
 
@@ -11144,103 +11146,121 @@ msgstr "Logga in på {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Kör ”{}” för att logga in igen i webbläsaren"
 
-#: rustconn/src/terminal/tab_menu.rs:178
+#: rustconn/src/terminal/tab_menu.rs:185
 msgid "Set Tab Group"
 msgstr "Ange flikgrupp"
 
-#: rustconn/src/terminal/tab_menu.rs:186
+#: rustconn/src/terminal/tab_menu.rs:193
 msgid "New group name…"
 msgstr "Nytt gruppnamn…"
 
-#: rustconn/src/terminal/tab_menu.rs:191
+#: rustconn/src/terminal/tab_menu.rs:198
 msgid "Enter a group name for this tab"
 msgstr "Ange ett gruppnamn för denna flik"
 
-#: rustconn/src/terminal/tab_menu.rs:196
+#: rustconn/src/terminal/tab_menu.rs:203
 msgid "Existing groups:"
 msgstr "Befintliga grupper:"
 
-#: rustconn/src/terminal/tab_menu.rs:224
+#: rustconn/src/terminal/tab_menu.rs:231
 msgid "or enter a new name:"
 msgstr "eller ange ett nytt namn:"
 
-#: rustconn/src/terminal/tab_menu.rs:240 rustconn/src/window/batch_edit.rs:71
+#: rustconn/src/terminal/tab_menu.rs:247 rustconn/src/terminal/tab_menu.rs:353
+#: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Tillämpa"
 
-#: rustconn/src/terminal/tab_menu.rs:494 rustconn/src/terminal/tab_menu.rs:867
+#: rustconn/src/terminal/tab_menu.rs:340
+msgid "Rename Tab"
+msgstr "Byt om fliken"
+
+#: rustconn/src/terminal/tab_menu.rs:342
+msgid ""
+"The label names this tab only. Leave it empty to go back to the default name."
+msgstr "Etiketten namnger bara den här fliken. Lämna den tom för att återställa standardnamnet."
+
+#: rustconn/src/terminal/tab_menu.rs:348
+msgid "Tab name"
+msgstr "Fliknamn"
+
+#: rustconn/src/terminal/tab_menu.rs:569 rustconn/src/terminal/tab_menu.rs:953
 msgid "Close All in Group"
 msgstr "Stäng alla i grupp"
 
-#: rustconn/src/terminal/tab_menu.rs:496
+#: rustconn/src/terminal/tab_menu.rs:571
 msgid "Close {} tabs in group '{}'?"
 msgstr "Stäng {} flikar i gruppen '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:809
+#: rustconn/src/terminal/tab_menu.rs:884
 msgid "Move to New Window on {}"
 msgstr "Flytta till nytt fönster på {}"
 
-#: rustconn/src/terminal/tab_menu.rs:829
+#: rustconn/src/terminal/tab_menu.rs:904
 msgid "Monitor {} ({})"
 msgstr "Skärm {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:830
+#: rustconn/src/terminal/tab_menu.rs:905
 msgid "Monitor {}"
 msgstr "Skärm {}"
 
-#: rustconn/src/terminal/tab_menu.rs:853
+#: rustconn/src/terminal/tab_menu.rs:928
 msgid "Unpin Tab"
 msgstr "Lossa flik"
 
-#: rustconn/src/terminal/tab_menu.rs:855
+#: rustconn/src/terminal/tab_menu.rs:930
 msgid "Pin Tab"
 msgstr "Fäst flik"
 
-#: rustconn/src/terminal/tab_menu.rs:863
+#: rustconn/src/terminal/tab_menu.rs:941
+msgid "Rename Tab…"
+msgstr "Byt om fliken…"
+
+#: rustconn/src/terminal/tab_menu.rs:949
 msgid "Set Group…"
 msgstr "Ange grupp…"
 
-#: rustconn/src/terminal/tab_menu.rs:865
+#: rustconn/src/terminal/tab_menu.rs:951
 msgid "Remove from Group"
 msgstr "Ta bort från grupp"
 
-#: rustconn/src/terminal/tab_menu.rs:877
+#: rustconn/src/terminal/tab_menu.rs:963
 msgid "Remove from Broadcast"
 msgstr "Ta bort från sändning"
 
-#: rustconn/src/terminal/tab_menu.rs:879
+#: rustconn/src/terminal/tab_menu.rs:965
 msgid "Add to Broadcast"
 msgstr "Lägg till i sändning"
 
-#: rustconn/src/terminal/tab_menu.rs:887
+#: rustconn/src/terminal/tab_menu.rs:973
 msgid "Monitor: {}"
 msgstr "Övervakning: {}"
 
-#: rustconn/src/terminal/tab_menu.rs:903
+#: rustconn/src/terminal/tab_menu.rs:989
 msgid "Move to New Window"
 msgstr "Flytta till nytt fönster"
 
-#: rustconn/src/terminal/tab_menu.rs:926
+#: rustconn/src/terminal/tab_menu.rs:1012
 msgid "Edit Connection…"
 msgstr "Redigera anslutning…"
 
-#: rustconn/src/terminal/tab_menu.rs:964
+#: rustconn/src/terminal/tab_menu.rs:1050
 msgid "Close Others"
 msgstr "Stäng övriga"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Close to the Left"
 msgstr "Stäng till vänster"
 
-#: rustconn/src/terminal/tab_menu.rs:966
+#: rustconn/src/terminal/tab_menu.rs:1052
 msgid "Close to the Right"
 msgstr "Stäng till höger"
 
-#: rustconn/src/terminal/tab_menu.rs:969
+#: rustconn/src/terminal/tab_menu.rs:1055
 msgid "Close All Ungrouped"
 msgstr "Stäng alla ogrupperade"
 
-#: rustconn/src/terminal/tab_menu.rs:973
+#: rustconn/src/terminal/tab_menu.rs:1059
 msgid "Close All Tabs"
 msgstr "Stäng alla flikar"
 
@@ -11298,7 +11318,7 @@ msgstr "{} aktiv(a) session(er)"
 msgid "About RustConn"
 msgstr "Om RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4935
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4944
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Lösenfrasen öppnar inte den portabla filen"
 
@@ -12402,31 +12422,31 @@ msgstr ""
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Molnsynkronisering misslyckades för '{}': {}"
 
-#: rustconn/src/window/mod.rs:4235
+#: rustconn/src/window/mod.rs:4236
 msgid "Startup connection not found"
 msgstr "Uppstartsanslutning hittades inte"
 
-#: rustconn/src/window/mod.rs:4271
+#: rustconn/src/window/mod.rs:4272
 msgid "Failed to open .rdp file"
 msgstr "Kunde inte öppna .rdp-fil"
 
-#: rustconn/src/window/mod.rs:4307
+#: rustconn/src/window/mod.rs:4308
 msgid "Failed to open .vv file"
 msgstr "Kunde inte öppna .vv-fil"
 
-#: rustconn/src/window/mod.rs:4344
+#: rustconn/src/window/mod.rs:4345
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunneln “{}” stoppades: {}"
 
-#: rustconn/src/window/mod.rs:4360
+#: rustconn/src/window/mod.rs:4361
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Gav upp att återansluta tunneln “{}”: {}"
 
-#: rustconn/src/window/mod.rs:4851
+#: rustconn/src/window/mod.rs:4860
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Exporterade {} anslutning(ar). {} hoppades över."
 
-#: rustconn/src/window/mod.rs:4937
+#: rustconn/src/window/mod.rs:4946
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -12718,19 +12738,19 @@ msgid ""
 msgstr ""
 "Logga in igen i webbläsaren. Sessionen återansluter när inloggningen är klar."
 
-#: rustconn/src/window/session_restore.rs:179
+#: rustconn/src/window/session_restore.rs:177
 msgid "Restore previous session?"
 msgstr "Återställ föregående session?"
 
-#: rustconn/src/window/session_restore.rs:181
+#: rustconn/src/window/session_restore.rs:179
 msgid "Reopen the {} connections that were open when RustConn last closed."
 msgstr "Öppna de {} anslutningar som var öppna när RustConn senast stängdes."
 
-#: rustconn/src/window/session_restore.rs:185
+#: rustconn/src/window/session_restore.rs:183
 msgid "Not Now"
 msgstr "Inte nu"
 
-#: rustconn/src/window/session_restore.rs:245
+#: rustconn/src/window/session_restore.rs:247
 msgid "{} restored connections no longer exist"
 msgstr "{} återställda anslutningar finns inte längre"
 
@@ -12932,7 +12952,7 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "Användare: {}"
 
-#: rustconn/src/window/terminal_actions.rs:427
+#: rustconn/src/window/terminal_actions.rs:428
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Den här visaren körs oberoende och kan inte stängas från RustConn"
 
@@ -13116,27 +13136,27 @@ msgstr "Tangentbords-passthrough"
 msgid "Keyboard Shortcuts…"
 msgstr "Tangentbordsgenvägar…"
 
-#: rustconn/src/window/workspaces.rs:450
+#: rustconn/src/window/workspaces.rs:454
 msgid "No active sessions to save"
 msgstr "Inga aktiva sessioner att spara"
 
-#: rustconn/src/window/workspaces.rs:545
+#: rustconn/src/window/workspaces.rs:549
 msgid "Save Workspace"
 msgstr "Spara arbetsyta"
 
-#: rustconn/src/window/workspaces.rs:546
+#: rustconn/src/window/workspaces.rs:550
 msgid "Enter a name for this workspace profile:"
 msgstr "Ange ett namn för den här arbetsyteprofilen:"
 
-#: rustconn/src/window/workspaces.rs:555
+#: rustconn/src/window/workspaces.rs:559
 msgid "Workspace name"
 msgstr "Arbetsytans namn"
 
-#: rustconn/src/window/workspaces.rs:587
+#: rustconn/src/window/workspaces.rs:591
 msgid "Workspace '{}' saved"
 msgstr "Arbetsytan ”{}” sparad"
 
-#: rustconn/src/window/workspaces.rs:598
+#: rustconn/src/window/workspaces.rs:602
 msgid "Failed to save workspace"
 msgstr "Det gick inte att spara arbetsytan"
 

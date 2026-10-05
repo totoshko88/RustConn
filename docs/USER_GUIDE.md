@@ -2703,6 +2703,22 @@ Groups are visual only — they are session-scoped and not persisted across rest
 
 Opening a [cluster](#clusters) assigns its member tabs to a group named after the cluster automatically, so the operations above work on a cluster without any setup.
 
+### Renaming a Local Shell Tab
+
+Every Local Shell tab is titled **Local Shell**, so two of them are told apart by nothing but the shell they run. Right-click a Local Shell tab → **Rename Tab…** to give it a name of your own — *build logs*, *tails*, *irssi*. The name becomes the tab title and is carried by the session from then on, so it also shows on the split pane header.
+
+1. Right-click the Local Shell tab
+2. Select **Rename Tab…**
+3. Type a name, then click **Apply**
+
+Leaving the field empty restores the default **Local Shell** name.
+
+The label names the tab only — no connection is created, and nothing about the shell or its working directory changes.
+
+The label is remembered across restarts with [Restore sessions on startup](#session-restore) (Settings → Interface): the snapshot stores the title each tab had, and the Local Shell reopens under it. It travels with a saved [workspace](#workspace-profiles) as well, since a workspace records the same title. Without either of those, the tab is gone at the next start along with every other session, and there is nothing left to name.
+
+The item is offered on Local Shell tabs only. A tab with a saved connection is renamed by editing that connection, which keeps the sidebar, the history and every open tab in step.
+
 ---
 
 ## Productivity Tools

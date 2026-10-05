@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 00:39+0300\n"
+"POT-Creation-Date: 2026-10-05 19:52+0400\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Spanish\n"
@@ -46,15 +46,16 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:236 rustconn/src/dialogs/workspace.rs:290
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:239 rustconn/src/terminal/tab_menu.rs:500
-#: rustconn/src/vault_ops.rs:315 rustconn/src/window/batch_edit.rs:69
+#: rustconn/src/terminal/tab_menu.rs:246 rustconn/src/terminal/tab_menu.rs:352
+#: rustconn/src/terminal/tab_menu.rs:575 rustconn/src/vault_ops.rs:315
+#: rustconn/src/window/batch_edit.rs:69
 #: rustconn/src/window/connection_dialogs.rs:1083
 #: rustconn/src/window/edit_group.rs:1889
 #: rustconn/src/window/edit_group.rs:1937
 #: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3107
 #: rustconn/src/window/mod.rs:3991 rustconn/src/window/operations.rs:116
 #: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
-#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:548
+#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:552
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -77,7 +78,7 @@ msgstr "No guardar"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
 #: rustconn/src/dialogs/variables.rs:131 rustconn/src/dialogs/widgets.rs:599
 #: rustconn/src/window/edit_group.rs:48 rustconn/src/window/edit_group.rs:49
-#: rustconn/src/window/workspaces.rs:549
+#: rustconn/src/window/workspaces.rs:553
 msgid "Save"
 msgstr "Guardar"
 
@@ -4317,7 +4318,8 @@ msgstr "Frase de contraseña del archivo portátil"
 #: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:603
 #: rustconn/src/embedded_rdp/mod.rs:578 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:262 rustconn/src/terminal/config.rs:284
-#: rustconn/src/terminal/tab_menu.rs:952 rustconn/src/terminal/tab_menu.rs:956
+#: rustconn/src/terminal/tab_menu.rs:1038
+#: rustconn/src/terminal/tab_menu.rs:1042
 msgid "Copy"
 msgstr "Copiar"
 
@@ -4439,7 +4441,7 @@ msgstr "Copia detenida"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:501
+#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:576
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:3992
 msgid "Close"
 msgstr "Cerrar"
@@ -6417,7 +6419,7 @@ msgstr ""
 "aplicar los cambios."
 
 #: rustconn/src/dialogs/settings/mod.rs:576
-#: rustconn/src/window/session_restore.rs:186
+#: rustconn/src/window/session_restore.rs:184
 msgid "Restore"
 msgstr "Restaurar"
 
@@ -8333,7 +8335,7 @@ msgstr "Pegar"
 msgid "Find in Terminal"
 msgstr "Buscar en el terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:963
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1049
 msgid "Close Tab"
 msgstr "Cerrar pestaña"
 
@@ -8345,7 +8347,7 @@ msgstr "Pestaña siguiente"
 msgid "Previous Tab"
 msgstr "Pestaña anterior"
 
-#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:497
+#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:498
 msgid "Tab Overview"
 msgstr "Vista general de pestañas"
 
@@ -8377,7 +8379,7 @@ msgstr "Quitar de la vista dividida"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:896
+#: rustconn/src/terminal/tab_menu.rs:982
 msgid "Remove Split"
 msgstr "Quitar la división"
 
@@ -10160,14 +10162,14 @@ msgid "Save files from remote clipboard"
 msgstr "Guardar archivos del portapapeles remoto"
 
 #: rustconn/src/embedded_rdp/mod.rs:764 rustconn/src/embedded_vnc/ui.rs:145
-#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1347
+#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1348
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:846
+#: rustconn/src/terminal/tab_menu.rs:921
 msgid "Reconnect"
 msgstr "Reconectar"
 
 #: rustconn/src/embedded_rdp/mod.rs:766 rustconn/src/embedded_vnc/ui.rs:147
-#: rustconn/src/terminal/mod.rs:1349
+#: rustconn/src/terminal/mod.rs:1350
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Reconectar a esta sesión"
@@ -11107,34 +11109,34 @@ msgstr "Seleccionar una pestaña para mostrar"
 msgid "Execute Snippet…"
 msgstr "Ejecutar fragmento…"
 
-#: rustconn/src/terminal/mod.rs:493
+#: rustconn/src/terminal/mod.rs:494
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Vista general de pestañas (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:510 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:511 rustconn/src/terminal/tab_lifecycle.rs:35
 #: rustconn/src/terminal/tab_lifecycle.rs:50 rustconn/src/window/mod.rs:3567
 msgid "Welcome"
 msgstr "Bienvenido"
 
-#: rustconn/src/terminal/mod.rs:1051
+#: rustconn/src/terminal/mod.rs:1052
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "El filtro de salida «{}» no está instalado; la salida de la sesión no se "
 "filtra"
 
-#: rustconn/src/terminal/mod.rs:1341
+#: rustconn/src/terminal/mod.rs:1342
 msgid "Command not found: {}"
 msgstr "Comando no encontrado: {}"
 
-#: rustconn/src/terminal/mod.rs:1343
+#: rustconn/src/terminal/mod.rs:1344
 msgid "Failed to start '{}'"
 msgstr "No se pudo iniciar «{}»"
 
-#: rustconn/src/terminal/mod.rs:1365
+#: rustconn/src/terminal/mod.rs:1366
 msgid "'{}' is not installed"
 msgstr "«{}» no está instalado"
 
-#: rustconn/src/terminal/mod.rs:1368
+#: rustconn/src/terminal/mod.rs:1369
 msgid "Failed to start '{}': {}"
 msgstr "No se pudo iniciar «{}»: {}"
 
@@ -11220,103 +11222,121 @@ msgstr "Iniciar sesión en {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Ejecutar «{}» para volver a iniciar sesión en el navegador"
 
-#: rustconn/src/terminal/tab_menu.rs:178
+#: rustconn/src/terminal/tab_menu.rs:185
 msgid "Set Tab Group"
 msgstr "Establecer grupo de pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:186
+#: rustconn/src/terminal/tab_menu.rs:193
 msgid "New group name…"
 msgstr "Nuevo nombre de grupo…"
 
-#: rustconn/src/terminal/tab_menu.rs:191
+#: rustconn/src/terminal/tab_menu.rs:198
 msgid "Enter a group name for this tab"
 msgstr "Introduzca un nombre de grupo para esta pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:196
+#: rustconn/src/terminal/tab_menu.rs:203
 msgid "Existing groups:"
 msgstr "Grupos existentes:"
 
-#: rustconn/src/terminal/tab_menu.rs:224
+#: rustconn/src/terminal/tab_menu.rs:231
 msgid "or enter a new name:"
 msgstr "o ingrese un nuevo nombre:"
 
-#: rustconn/src/terminal/tab_menu.rs:240 rustconn/src/window/batch_edit.rs:71
+#: rustconn/src/terminal/tab_menu.rs:247 rustconn/src/terminal/tab_menu.rs:353
+#: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Aplicar"
 
-#: rustconn/src/terminal/tab_menu.rs:494 rustconn/src/terminal/tab_menu.rs:867
+#: rustconn/src/terminal/tab_menu.rs:340
+msgid "Rename Tab"
+msgstr "Renombrar pestaña"
+
+#: rustconn/src/terminal/tab_menu.rs:342
+msgid ""
+"The label names this tab only. Leave it empty to go back to the default name."
+msgstr "La etiqueta solo nombra esta pestaña. Déjala vacía para recuperar el nombre predeterminado."
+
+#: rustconn/src/terminal/tab_menu.rs:348
+msgid "Tab name"
+msgstr "Nombre de la pestaña"
+
+#: rustconn/src/terminal/tab_menu.rs:569 rustconn/src/terminal/tab_menu.rs:953
 msgid "Close All in Group"
 msgstr "Cerrar todo en el grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:496
+#: rustconn/src/terminal/tab_menu.rs:571
 msgid "Close {} tabs in group '{}'?"
 msgstr "¿Cerrar {} pestañas en el grupo «{}»?"
 
-#: rustconn/src/terminal/tab_menu.rs:809
+#: rustconn/src/terminal/tab_menu.rs:884
 msgid "Move to New Window on {}"
 msgstr "Mover a una ventana nueva en {}"
 
-#: rustconn/src/terminal/tab_menu.rs:829
+#: rustconn/src/terminal/tab_menu.rs:904
 msgid "Monitor {} ({})"
 msgstr "Monitor {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:830
+#: rustconn/src/terminal/tab_menu.rs:905
 msgid "Monitor {}"
 msgstr "Monitor {}"
 
-#: rustconn/src/terminal/tab_menu.rs:853
+#: rustconn/src/terminal/tab_menu.rs:928
 msgid "Unpin Tab"
 msgstr "Desfijar pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:855
+#: rustconn/src/terminal/tab_menu.rs:930
 msgid "Pin Tab"
 msgstr "Fijar pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:863
+#: rustconn/src/terminal/tab_menu.rs:941
+msgid "Rename Tab…"
+msgstr "Renombrar pestaña…"
+
+#: rustconn/src/terminal/tab_menu.rs:949
 msgid "Set Group…"
 msgstr "Establecer grupo…"
 
-#: rustconn/src/terminal/tab_menu.rs:865
+#: rustconn/src/terminal/tab_menu.rs:951
 msgid "Remove from Group"
 msgstr "Quitar del grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:877
+#: rustconn/src/terminal/tab_menu.rs:963
 msgid "Remove from Broadcast"
 msgstr "Quitar de la difusión"
 
-#: rustconn/src/terminal/tab_menu.rs:879
+#: rustconn/src/terminal/tab_menu.rs:965
 msgid "Add to Broadcast"
 msgstr "Añadir a la difusión"
 
-#: rustconn/src/terminal/tab_menu.rs:887
+#: rustconn/src/terminal/tab_menu.rs:973
 msgid "Monitor: {}"
 msgstr "Monitor: {}"
 
-#: rustconn/src/terminal/tab_menu.rs:903
+#: rustconn/src/terminal/tab_menu.rs:989
 msgid "Move to New Window"
 msgstr "Mover a una ventana nueva"
 
-#: rustconn/src/terminal/tab_menu.rs:926
+#: rustconn/src/terminal/tab_menu.rs:1012
 msgid "Edit Connection…"
 msgstr "Editar conexión…"
 
-#: rustconn/src/terminal/tab_menu.rs:964
+#: rustconn/src/terminal/tab_menu.rs:1050
 msgid "Close Others"
 msgstr "Cerrar otras"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Close to the Left"
 msgstr "Cerrar a la izquierda"
 
-#: rustconn/src/terminal/tab_menu.rs:966
+#: rustconn/src/terminal/tab_menu.rs:1052
 msgid "Close to the Right"
 msgstr "Cerrar a la derecha"
 
-#: rustconn/src/terminal/tab_menu.rs:969
+#: rustconn/src/terminal/tab_menu.rs:1055
 msgid "Close All Ungrouped"
 msgstr "Cerrar todas sin grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:973
+#: rustconn/src/terminal/tab_menu.rs:1059
 msgid "Close All Tabs"
 msgstr "Cerrar todas las pestañas"
 
@@ -11374,7 +11394,7 @@ msgstr "{} sesión(es) activa(s)"
 msgid "About RustConn"
 msgstr "Acerca de RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4935
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:4944
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "La frase de contraseña no abre el archivo portátil"
 
@@ -12490,31 +12510,31 @@ msgstr ""
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Error de sincronización en la nube para «{}»: {}"
 
-#: rustconn/src/window/mod.rs:4235
+#: rustconn/src/window/mod.rs:4236
 msgid "Startup connection not found"
 msgstr "Conexión de inicio no encontrada"
 
-#: rustconn/src/window/mod.rs:4271
+#: rustconn/src/window/mod.rs:4272
 msgid "Failed to open .rdp file"
 msgstr "Error al abrir el archivo .rdp"
 
-#: rustconn/src/window/mod.rs:4307
+#: rustconn/src/window/mod.rs:4308
 msgid "Failed to open .vv file"
 msgstr "Error al abrir el archivo .vv"
 
-#: rustconn/src/window/mod.rs:4344
+#: rustconn/src/window/mod.rs:4345
 msgid "Tunnel “{}” stopped: {}"
 msgstr "El túnel “{}” se detuvo: {}"
 
-#: rustconn/src/window/mod.rs:4360
+#: rustconn/src/window/mod.rs:4361
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Se abandonó la reconexión del túnel “{}”: {}"
 
-#: rustconn/src/window/mod.rs:4851
+#: rustconn/src/window/mod.rs:4860
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Se exportaron {} conexión(es) correctamente. {} omitidas."
 
-#: rustconn/src/window/mod.rs:4937
+#: rustconn/src/window/mod.rs:4946
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -12809,21 +12829,21 @@ msgstr ""
 "Vuelva a iniciar sesión en el navegador. La sesión se reconectará cuando "
 "termine el inicio de sesión."
 
-#: rustconn/src/window/session_restore.rs:179
+#: rustconn/src/window/session_restore.rs:177
 msgid "Restore previous session?"
 msgstr "¿Restaurar la sesión anterior?"
 
-#: rustconn/src/window/session_restore.rs:181
+#: rustconn/src/window/session_restore.rs:179
 msgid "Reopen the {} connections that were open when RustConn last closed."
 msgstr ""
 "Volver a abrir las {} conexiones que estaban abiertas la última vez que se "
 "cerró RustConn."
 
-#: rustconn/src/window/session_restore.rs:185
+#: rustconn/src/window/session_restore.rs:183
 msgid "Not Now"
 msgstr "Ahora no"
 
-#: rustconn/src/window/session_restore.rs:245
+#: rustconn/src/window/session_restore.rs:247
 msgid "{} restored connections no longer exist"
 msgstr "{} conexiones restauradas ya no existen"
 
@@ -13025,7 +13045,7 @@ msgstr "Puerto: {}"
 msgid "User: {}"
 msgstr "Usuario: {}"
 
-#: rustconn/src/window/terminal_actions.rs:427
+#: rustconn/src/window/terminal_actions.rs:428
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr ""
 "Este visor se ejecuta de forma independiente y no se puede cerrar desde "
@@ -13211,27 +13231,27 @@ msgstr "Paso de teclado"
 msgid "Keyboard Shortcuts…"
 msgstr "Atajos de teclado…"
 
-#: rustconn/src/window/workspaces.rs:450
+#: rustconn/src/window/workspaces.rs:454
 msgid "No active sessions to save"
 msgstr "No hay sesiones activas para guardar"
 
-#: rustconn/src/window/workspaces.rs:545
+#: rustconn/src/window/workspaces.rs:549
 msgid "Save Workspace"
 msgstr "Guardar espacio de trabajo"
 
-#: rustconn/src/window/workspaces.rs:546
+#: rustconn/src/window/workspaces.rs:550
 msgid "Enter a name for this workspace profile:"
 msgstr "Escriba un nombre para este perfil de espacio de trabajo:"
 
-#: rustconn/src/window/workspaces.rs:555
+#: rustconn/src/window/workspaces.rs:559
 msgid "Workspace name"
 msgstr "Nombre del espacio de trabajo"
 
-#: rustconn/src/window/workspaces.rs:587
+#: rustconn/src/window/workspaces.rs:591
 msgid "Workspace '{}' saved"
 msgstr "Espacio de trabajo «{}» guardado"
 
-#: rustconn/src/window/workspaces.rs:598
+#: rustconn/src/window/workspaces.rs:602
 msgid "Failed to save workspace"
 msgstr "No se pudo guardar el espacio de trabajo"
 

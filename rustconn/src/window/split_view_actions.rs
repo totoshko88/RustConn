@@ -71,7 +71,7 @@ fn wire_new_shell_button(placement: PanelPlacement, state: SharedAppState) {
         // selection from.
         let host_tab = notebook.get_active_session_id();
 
-        let session_id = MainWindow::spawn_local_shell(notebook, Some(&state));
+        let session_id = MainWindow::spawn_local_shell(notebook, Some(&state), None);
         tracing::debug!(%session_id, %panel_uuid, "local shell requested for an empty panel");
 
         if !placement.place(panel_uuid, session_id) {
