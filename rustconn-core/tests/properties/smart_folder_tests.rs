@@ -92,6 +92,7 @@ fn make_connection(
         knock_sequence: None,
         spa_config: None,
         postpend: None,
+        sync_origin_id: None,
     }
 }
 

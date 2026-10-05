@@ -1046,6 +1046,19 @@ pub fn migrate_vault_credential_for_edit(
             continue;
         }
         if let Ok(Some(creds)) = dispatch_vault_op(&secret_settings, old_key, VaultOp::Retrieve) {
+            // The vault lock is taken per operation, not across this triple, so
+            // a save under the new key can land between the retrieve and the
+            // store (a Group Sync migration runs after the new tree is already
+            // live). A credential already under the new key is the newer one:
+            // keep it and only drop the stale copy.
+            if matches!(
+                dispatch_vault_op(&secret_settings, &plan.new_key, VaultOp::Retrieve),
+                Ok(Some(_))
+            ) {
+                tracing::info!(%old_key, new_key = %plan.new_key, "New vault key already holds a credential; keeping it");
+                let _ = dispatch_vault_op(&secret_settings, old_key, VaultOp::Delete);
+                return Ok(());
+            }
             dispatch_vault_op(&secret_settings, &plan.new_key, VaultOp::Store(&creds))?;
             let _ = dispatch_vault_op(&secret_settings, old_key, VaultOp::Delete);
             return Ok(());
@@ -1139,6 +1152,125 @@ pub fn migrate_vault_entries_on_group_change(
             backend_type,
         );
     }
+}
+
+/// Migrates every vault entry a Group Sync import moved, on one background
+/// thread, one entry after another.
+///
+/// A sync can rename and move groups and connections in a single pass, so the
+/// old keys come from `old_groups` and the pre-sync connections and the new
+/// keys from `new_groups` and the applied connections — the split
+/// [`migrate_vault_credential_for_edit`] makes for an edit. Each pair in
+/// `connections` is `(before, after)`; a pair whose key did not move is
+/// dropped before anything is spawned. For KeePass, the group credentials of
+/// `changed_group_ids` and their descendants are renamed as well, as
+/// [`migrate_vault_entries_on_group_change`] does for an edit.
+///
+/// One thread rather than one per entry: the KDBX writers rewrite the whole
+/// database, and two running at once would lose one of the renames. A failed
+/// migration — a read-only database included — is logged; it never undoes the
+/// sync, and the credential stays readable under its old key.
+pub fn migrate_vault_entries_after_group_sync(
+    settings: &rustconn_core::config::AppSettings,
+    old_groups: Vec<rustconn_core::models::ConnectionGroup>,
+    new_groups: Vec<rustconn_core::models::ConnectionGroup>,
+    connections: Vec<(
+        rustconn_core::models::Connection,
+        rustconn_core::models::Connection,
+    )>,
+    changed_group_ids: &[uuid::Uuid],
+) {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::KeePassHierarchy;
+
+    let connections: Vec<_> = connections
+        .into_iter()
+        .filter(|(old, new)| {
+            new.password_source == rustconn_core::models::PasswordSource::Vault
+                && plan_vault_key_migration(settings, &old_groups, &new_groups, old, new).is_some()
+        })
+        .collect();
+
+    let is_keepass = settings.secrets.kdbx_enabled
+        && matches!(
+            settings.secrets.preferred_backend,
+            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile
+        );
+    let mut group_renames: Vec<(String, String)> = Vec::new();
+    if is_keepass {
+        let mut affected: std::collections::HashSet<uuid::Uuid> = std::collections::HashSet::new();
+        for gid in changed_group_ids {
+            affected.extend(rustconn_core::models::collect_descendant_group_ids(
+                *gid,
+                &new_groups,
+            ));
+        }
+        for new_group in new_groups.iter().filter(|g| affected.contains(&g.id)) {
+            if new_group.password_source != Some(rustconn_core::models::PasswordSource::Vault) {
+                continue;
+            }
+            let Some(old_group) = old_groups.iter().find(|g| g.id == new_group.id) else {
+                continue;
+            };
+            let old_path = KeePassHierarchy::build_group_entry_path(old_group, &old_groups);
+            let new_path = KeePassHierarchy::build_group_entry_path(new_group, &new_groups);
+            if old_path != new_path {
+                group_renames.push((old_path, new_path));
+            }
+        }
+    }
+
+    if connections.is_empty() && group_renames.is_empty() {
+        return;
+    }
+
+    let settings = settings.clone();
+    crate::utils::spawn_blocking_with_callback(
+        move || {
+            let mut errors: Vec<String> = Vec::new();
+            for (old_conn, new_conn) in &connections {
+                if let Err(e) = migrate_vault_credential_for_edit(
+                    &settings,
+                    &old_groups,
+                    &new_groups,
+                    old_conn,
+                    new_conn,
+                ) {
+                    errors.push(format!("{}: {e}", new_conn.name));
+                }
+            }
+            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                let key_file = settings.secrets.kdbx_key_file.clone();
+                for (old_key, new_key) in &group_renames {
+                    tracing::info!(%old_key, %new_key, "Migrating KeePass group entry after Group Sync");
+                    if let Err(e) = rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
+                        std::path::Path::new(kdbx_path),
+                        settings.secrets.kdbx_password.as_ref(),
+                        key_file.as_ref().map(std::path::Path::new),
+                        old_key,
+                        new_key,
+                        settings.secrets.kdbx_yubikey_slot.as_deref(),
+                        settings.secrets.kdbx_read_only,
+                    ) {
+                        errors.push(format!("{old_key} → {new_key}: {e}"));
+                    }
+                }
+            }
+            if errors.is_empty() {
+                Ok(())
+            } else {
+                Err(errors.join("; "))
+            }
+        },
+        |result: Result<(), String>| {
+            if let Err(e) = result {
+                tracing::warn!(
+                    error = %e,
+                    "Group Sync: some vault entries could not follow a rename or move"
+                );
+            }
+        },
+    );
 }
 
 /// Migrates keyring connection entries whose key embeds a renamed group path.

@@ -145,198 +145,110 @@ impl AppState {
     }
 
     /// Applies a `GroupMergeResult` to the local connection manager.
+    ///
+    /// The changes come from [`GroupSyncPlan`], the same plan the CLI applies,
+    /// so both build the same tree: groups and connections are created in the
+    /// subgroup their path names (an existing one included), renamed and moved
+    /// in place, and only then is anything deleted — deleting a group
+    /// ungroups whatever is still in it, so a kept connection has to be out of
+    /// it first. Vault entries whose key the sync moved are migrated last,
+    /// from the pre-sync tree to the post-sync one.
     fn apply_group_merge_result(
         &mut self,
         root_group_id: Uuid,
         merge_result: &rustconn_core::sync::GroupMergeResult,
     ) {
-        // Create new groups, rebuilding the nested hierarchy under the Import
-        // root. Each `sync_group.path` is the Master-side full path; strip the
-        // Master root to get the path relative to the synced group, then resolve
-        // its parent in a running `relative_path -> local_id` map (seeded with
-        // the Import root at `""`). Groups are created shallowest-first so a
-        // parent always exists before its child; a missing intermediate is
-        // created on demand. This replaces the old behaviour that flattened
-        // every synced subgroup directly under the Import root.
-        use rustconn_core::sync::group_merge::relative_path;
-        let remote_root = merge_result.remote_root.as_str();
-        let mut path_to_local: std::collections::HashMap<String, Uuid> =
-            std::collections::HashMap::new();
-        path_to_local.insert(String::new(), root_group_id);
+        use rustconn_core::sync::GroupSyncPlan;
 
-        // Shallowest-first by segment count so parents precede children.
-        let mut groups_sorted: Vec<&rustconn_core::sync::group_export::SyncGroup> =
-            merge_result.groups_to_create.iter().collect();
-        groups_sorted.sort_by_key(|g| {
-            let rel = relative_path(&g.path, remote_root);
-            if rel.is_empty() {
-                0
-            } else {
-                rel.matches('/').count() + 1
-            }
-        });
-
-        for sync_group in groups_sorted {
-            let rel = relative_path(&sync_group.path, remote_root);
-            if rel.is_empty() {
-                continue; // the synced root itself is never (re)created
-            }
-            // Creates this group and any missing ancestors, caching each by its
-            // relative path. Idempotent: a group already created (e.g. as an
-            // intermediate for an earlier, deeper sibling) is returned from the
-            // cache rather than created twice.
-            self.ensure_synced_group_path(rel, root_group_id, &mut path_to_local);
+        let old_groups = self.connection_manager.list_groups_owned();
+        let old_connections = self.connection_manager.list_connections_owned();
+        let plan = GroupSyncPlan::build(root_group_id, &old_groups, &old_connections, merge_result);
+        if plan.is_empty() {
+            return;
         }
 
-        // Rename groups matched by id whose name changed on the Master
-        // (SYNC-1). The group keeps its id and is renamed in place so its
-        // connections stay attached, instead of the old delete + create.
-        for (group_id, sync_group) in &merge_result.groups_to_update {
-            if let Some(existing) = self.connection_manager.get_group(*group_id)
-                && existing.name != sync_group.name
+        for group in &plan.groups_to_create {
+            if let Err(e) = self.connection_manager.create_group_from(group.clone()) {
+                tracing::warn!(name = %group.name, ?e, "Failed to create synced group");
+            }
+        }
+        for group in &plan.groups_to_update {
+            if let Err(e) = self
+                .connection_manager
+                .update_group(group.id, group.clone())
             {
-                let mut updated = existing.clone();
-                updated.name.clone_from(&sync_group.name);
-                if let Err(e) = self.connection_manager.update_group(*group_id, updated) {
-                    tracing::warn!(
-                        id = %group_id,
-                        name = %sync_group.name,
-                        ?e,
-                        "Failed to rename synced group"
-                    );
-                }
+                tracing::warn!(id = %group.id, name = %group.name, ?e, "Failed to update synced group");
             }
         }
-
-        // Create new connections under their real subgroup (resolved from the
-        // connection's `group_path` via the same map), falling back to the
-        // Import root if the path cannot be resolved.
-        for sync_conn in &merge_result.connections_to_create {
-            let rel = relative_path(&sync_conn.group_path, remote_root);
-            let target_group = path_to_local.get(rel).copied().unwrap_or(root_group_id);
-            let conn = rustconn_core::sync::group_export::sync_connection_to_connection(
-                sync_conn,
-                target_group,
-            );
-            if let Err(e) = self.connection_manager.create_connection_from(conn) {
-                tracing::warn!(name = %sync_conn.name, ?e, "Failed to create synced connection");
+        for conn in &plan.connections_to_create {
+            if let Err(e) = self.connection_manager.create_connection_from(conn.clone()) {
+                tracing::warn!(name = %conn.name, ?e, "Failed to create synced connection");
             }
         }
-
-        // Update existing connections
-        for (conn_id, sync_conn) in &merge_result.connections_to_update {
-            if let Some(existing) = self.connection_manager.get_connection(*conn_id) {
-                // ponytail: this name-change branch is unreachable today and
-                // becomes live with id-based matching in 0.23. `merge_connections`
-                // keys an update on `(name, group path)`, so a connection that
-                // reaches `connections_to_update` matched by name — the names are
-                // equal by construction and this `if` is never true. Once 0.23
-                // matches by `SyncConnection::id` instead, a rename on the Master
-                // will arrive here as an update with a different name, and this is
-                // the migration that keeps the vault entry reachable (issue #263).
-                if existing.name != sync_conn.name
-                    && existing.password_source == rustconn_core::models::PasswordSource::Vault
-                {
-                    let old_name = existing.name.clone();
-                    let settings = self.settings.clone();
-                    let groups: Vec<ConnectionGroup> = self
-                        .connection_manager
-                        .list_groups()
-                        .into_iter()
-                        .cloned()
-                        .collect();
-                    let mut updated_conn = existing.clone();
-                    updated_conn.name = sync_conn.name.clone();
-                    let protocol_str = existing
-                        .protocol_config
-                        .protocol_type()
-                        .as_str()
-                        .to_lowercase();
-                    crate::utils::spawn_blocking_with_callback(
-                        move || {
-                            crate::vault_ops::rename_vault_credential(
-                                &settings,
-                                &groups,
-                                &updated_conn,
-                                &old_name,
-                                &protocol_str,
-                            )
-                        },
-                        |result| {
-                            if let Err(e) = result {
-                                tracing::error!(
-                                    error = %e,
-                                    "Group Sync: credential rename failed after connection name change"
-                                );
-                            }
-                        },
-                    );
-                }
-
-                let mut updated = existing.clone();
-                rustconn_core::sync::group_export::apply_sync_connection_update(
-                    &mut updated,
-                    sync_conn,
-                );
-                if let Err(e) = self.connection_manager.update_connection(*conn_id, updated) {
-                    tracing::warn!(id = %conn_id, ?e, "Failed to update synced connection");
-                }
+        for conn in &plan.connections_to_update {
+            if let Err(e) = self
+                .connection_manager
+                .update_connection(conn.id, conn.clone())
+            {
+                tracing::warn!(id = %conn.id, ?e, "Failed to update synced connection");
             }
         }
-
-        // Delete connections
-        for conn_id in &merge_result.connections_to_delete {
+        for conn_id in &plan.connections_to_delete {
             if let Err(e) = self.connection_manager.delete_connection(*conn_id) {
                 tracing::warn!(id = %conn_id, ?e, "Failed to delete synced connection");
             }
         }
-
-        // Delete groups
-        for group_id in &merge_result.groups_to_delete {
+        for group_id in &plan.groups_to_delete {
             if let Err(e) = self.connection_manager.delete_group(*group_id) {
                 tracing::warn!(id = %group_id, ?e, "Failed to delete synced group");
             }
         }
-    }
 
-    /// Resolves a synced-group-relative path (e.g. `"Web/Prod"`, or `""` for the
-    /// Import root) to a local group id, creating any missing intermediate
-    /// groups along the way. `cache` maps already-resolved relative paths to
-    /// local ids and MUST contain `"" -> root_group_id`; newly created groups
-    /// are inserted into it so a sibling chain is built only once.
-    fn ensure_synced_group_path(
-        &mut self,
-        rel_path: &str,
-        root_group_id: Uuid,
-        cache: &mut std::collections::HashMap<String, Uuid>,
-    ) -> Uuid {
-        if rel_path.is_empty() {
-            return root_group_id;
+        // A rename or move on the Master changes the vault key of the
+        // connection, and of every connection below a renamed or moved group
+        // (KeePass and the keyrings embed the group path). The old keys are
+        // taken from the snapshot made before anything above ran; until 0.23
+        // they were computed after the groups had already been renamed, so a
+        // connection in a renamed group looked up a key that never existed.
+        let renamed_groups: Vec<Uuid> = plan
+            .groups_to_update
+            .iter()
+            .filter(|g| {
+                old_groups
+                    .iter()
+                    .find(|old| old.id == g.id)
+                    .is_some_and(|old| old.name != g.name || old.parent_id != g.parent_id)
+            })
+            .map(|g| g.id)
+            .collect();
+        let moved_connections = plan.connections_to_update.iter().any(|c| {
+            old_connections
+                .iter()
+                .find(|old| old.id == c.id)
+                .is_some_and(|old| old.name != c.name || old.group_id != c.group_id)
+        });
+        if renamed_groups.is_empty() && !moved_connections {
+            return;
         }
-        if let Some(id) = cache.get(rel_path) {
-            return *id;
-        }
-        // Resolve (or create) the parent first, then this segment.
-        let (parent_rel, name) = match rel_path.rsplit_once('/') {
-            Some((parent, leaf)) => (parent.to_string(), leaf.to_string()),
-            None => (String::new(), rel_path.to_string()),
-        };
-        let parent_id = self.ensure_synced_group_path(&parent_rel, root_group_id, cache);
-        match self
-            .connection_manager
-            .create_group_with_parent(name, parent_id)
-        {
-            Ok(new_id) => {
-                cache.insert(rel_path.to_string(), new_id);
-                new_id
-            }
-            Err(e) => {
-                tracing::warn!(path = %rel_path, ?e, "Failed to create intermediate synced group");
-                // Fall back to the parent so the connection/group still lands
-                // somewhere reachable rather than being dropped.
-                parent_id
-            }
-        }
+        let new_groups = self.connection_manager.list_groups_owned();
+        let in_tree =
+            rustconn_core::models::collect_descendant_group_ids(root_group_id, &new_groups);
+        let pairs: Vec<(Connection, Connection)> = old_connections
+            .into_iter()
+            .filter_map(|old| {
+                let new = self.connection_manager.get_connection(old.id)?;
+                new.group_id
+                    .is_some_and(|g| in_tree.contains(&g))
+                    .then(|| (old, new.clone()))
+            })
+            .collect();
+        crate::vault_ops::migrate_vault_entries_after_group_sync(
+            &self.settings,
+            old_groups,
+            new_groups,
+            pairs,
+            &renamed_groups,
+        );
     }
 
     /// Runs startup import for all Import groups.

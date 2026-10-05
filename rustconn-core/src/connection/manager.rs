@@ -344,6 +344,13 @@ impl ConnectionManager {
         updated.window_geometry = existing.window_geometry;
         updated.is_pinned = existing.is_pinned;
         updated.pin_order = existing.pin_order;
+        // The connection editor builds a fresh `Connection`, which would drop
+        // the Group Sync link to the Master's copy and turn the next sync's
+        // rename on the Master back into a delete + create. A caller that
+        // sets a link of its own (the sync apply) keeps it.
+        if updated.sync_origin_id.is_none() {
+            updated.sync_origin_id = existing.sync_origin_id;
+        }
 
         // group_id is always taken from the updated connection — callers must set it explicitly
         // (None means "root/ungrouped", not "unchanged")
@@ -694,6 +701,11 @@ impl ConnectionManager {
         // Preserve original ID and creation timestamp
         updated.id = existing.id;
         updated.created_at = existing.created_at;
+        // Same reason as in `update_connection`: a caller that rebuilt the
+        // group must not silently drop its Group Sync link.
+        if updated.sync_origin_id.is_none() {
+            updated.sync_origin_id = existing.sync_origin_id;
+        }
 
         ConfigManager::validate_group(&updated)?;
 
@@ -2063,6 +2075,37 @@ mod tests {
         // Issue #352: a new connection follows the global monitoring switch.
         assert!(conn.monitoring_config.is_none());
         assert_eq!(manager.monitoring_override_count(), 0);
+    }
+
+    /// The connection editor rebuilds a `Connection` from its widgets, and
+    /// the group editor may rebuild a group; saving either must not drop the
+    /// Group Sync link an import recorded, or the next rename on the Master
+    /// would be a delete + create again.
+    #[tokio::test]
+    async fn editing_keeps_the_group_sync_link() {
+        let (mut manager, _temp) = create_test_manager();
+        let origin = Uuid::new_v4();
+
+        let mut conn = Connection::new_ssh("a".to_string(), "h".to_string(), 22);
+        conn.sync_origin_id = Some(origin);
+        let conn_id = manager.create_connection_from(conn).unwrap();
+        let rebuilt = Connection::new_ssh("a2".to_string(), "h".to_string(), 22);
+        manager.update_connection(conn_id, rebuilt).unwrap();
+        assert_eq!(
+            manager.get_connection(conn_id).unwrap().sync_origin_id,
+            Some(origin)
+        );
+
+        let mut group = ConnectionGroup::new("g".to_string());
+        group.sync_origin_id = Some(origin);
+        let group_id = manager.create_group_from(group).unwrap();
+        manager
+            .update_group(group_id, ConnectionGroup::new("g2".to_string()))
+            .unwrap();
+        assert_eq!(
+            manager.get_group(group_id).unwrap().sync_origin_id,
+            Some(origin)
+        );
     }
 
     #[tokio::test]

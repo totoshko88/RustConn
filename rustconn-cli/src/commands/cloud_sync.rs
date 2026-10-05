@@ -7,8 +7,10 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use rustconn_core::sync::SyncManager;
+use rustconn_core::config::ConfigManager;
+use rustconn_core::models::{Connection, ConnectionGroup};
 use rustconn_core::sync::settings::SyncMode;
+use rustconn_core::sync::{GroupSyncPlan, SyncManager};
 
 use super::sync::cmd_sync;
 use crate::cli::{OutputFormat, SyncCommands};
@@ -335,65 +337,48 @@ fn cmd_sync_import(config_path: Option<&Path>, file_path: &str) -> Result<(), Cl
     let reset = if color::enabled() { "\x1b[0m" } else { "" };
 
     println!(
-        "{green}Imported{reset} '{}': +{} connections, ~{} updated, -{} removed, {} variables",
+        "{green}Imported{reset} '{}': +{} connections, ~{} updated, -{} removed; \
+         groups +{} ~{} -{}; {} variables",
         report.group_name,
         report.connections_added,
         report.connections_updated,
         report.connections_removed,
+        report.groups_added,
+        report.groups_updated,
+        report.groups_removed,
         report.variables_created,
     );
 
-    // Apply merge result to local data store
+    // Apply the same plan the GUI applies, so both build the same tree.
     let mut connections = connections;
     let mut groups = groups;
-
-    // Create new connections from remote
-    for sync_conn in &merge_result.connections_to_create {
-        let new_conn = rustconn_core::sync::group_export::sync_connection_to_connection(
-            sync_conn,
-            import_group_id,
-        );
-        connections.push(new_conn);
+    let plan = GroupSyncPlan::build(import_group_id, &groups, &connections, &merge_result);
+    if !plan.is_empty() {
+        plan.apply_to(&mut groups, &mut connections);
+        save_tree(&config_manager, &groups, &connections)?;
     }
 
-    // Update existing connections
-    for (local_id, sync_conn) in &merge_result.connections_to_update {
-        if let Some(conn) = connections.iter_mut().find(|c| c.id == *local_id) {
-            rustconn_core::sync::group_export::apply_sync_connection_update(conn, sync_conn);
-        }
-    }
-
-    // Delete connections removed from remote
-    let delete_ids: std::collections::HashSet<_> =
-        merge_result.connections_to_delete.iter().collect();
-    connections.retain(|c| !delete_ids.contains(&c.id));
-
-    // Delete groups removed from remote
-    let delete_group_ids: std::collections::HashSet<_> =
-        merge_result.groups_to_delete.iter().collect();
-    groups.retain(|g| !delete_group_ids.contains(&g.id));
-
-    // Save updated data
-    config_manager
-        .save_connections(&connections)
-        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
-
-    config_manager
-        .save_groups(&groups)
-        .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
-
-    if !merge_result.connections_to_create.is_empty()
-        || !merge_result.connections_to_update.is_empty()
-        || !merge_result.connections_to_delete.is_empty()
-        || !merge_result.groups_to_create.is_empty()
-        || !merge_result.groups_to_delete.is_empty()
-    {
+    if report.has_changes() {
         println!("\nChanges applied to local data store.");
     } else {
         println!("\nAlready up to date.");
     }
 
     Ok(())
+}
+
+/// Saves the groups and connections a Group Sync import changed.
+fn save_tree(
+    config_manager: &ConfigManager,
+    groups: &[ConnectionGroup],
+    connections: &[Connection],
+) -> Result<(), CliError> {
+    config_manager
+        .save_connections(connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+    config_manager
+        .save_groups(groups)
+        .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))
 }
 
 /// `sync now` — exports all Master groups and imports all Import groups.
@@ -452,9 +437,10 @@ fn cmd_sync_now(config_path: Option<&Path>) -> Result<(), CliError> {
     }
 
     // Phase 2: Import all Import groups
-    let import_groups: Vec<_> = groups
+    let import_groups: Vec<(uuid::Uuid, String)> = groups
         .iter()
         .filter(|g| g.sync_mode == SyncMode::Import && g.sync_file.is_some())
+        .map(|g| (g.id, g.name.clone()))
         .collect();
 
     let local_variable_names: HashSet<String> = variables.iter().map(|v| v.name.clone()).collect();
@@ -463,22 +449,41 @@ fn cmd_sync_now(config_path: Option<&Path>) -> Result<(), CliError> {
         println!("No Import groups to sync.");
     } else {
         println!("\nImporting {} Import group(s)...", import_groups.len());
-        for group in &import_groups {
-            match sync_manager.import_group(group.id, &groups, &connections, &local_variable_names)
+        // Each group is merged against the tree as the previous ones left
+        // it, and the result is applied with the plan `sync import` and the
+        // GUI use. Until 0.23 this loop merged and reported but never applied
+        // or saved anything.
+        let mut groups = groups;
+        let mut connections = connections;
+        let mut changed = false;
+        for (group_id, group_name) in &import_groups {
+            match sync_manager.import_group(*group_id, &groups, &connections, &local_variable_names)
             {
-                Ok((_merge_result, report)) => {
+                Ok((merge_result, report)) => {
                     println!(
-                        "  {green}✓{reset} {} — +{} ~{} -{}",
+                        "  {green}✓{reset} {} — +{} ~{} -{}, groups +{} ~{} -{}",
                         report.group_name,
                         report.connections_added,
                         report.connections_updated,
                         report.connections_removed,
+                        report.groups_added,
+                        report.groups_updated,
+                        report.groups_removed,
                     );
+                    let plan =
+                        GroupSyncPlan::build(*group_id, &groups, &connections, &merge_result);
+                    if !plan.is_empty() {
+                        plan.apply_to(&mut groups, &mut connections);
+                        changed = true;
+                    }
                 }
                 Err(e) => {
-                    println!("  {yellow}⚠{reset} {} — import failed: {e}", group.name);
+                    println!("  {yellow}⚠{reset} {group_name} — import failed: {e}");
                 }
             }
+        }
+        if changed {
+            save_tree(&config_manager, &groups, &connections)?;
         }
     }
 

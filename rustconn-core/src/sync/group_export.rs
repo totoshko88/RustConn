@@ -138,12 +138,13 @@ pub struct GroupSyncExport {
 pub struct SyncGroup {
     /// The group's id on the Master that wrote the file.
     ///
-    /// Written since 0.22.13 and not read yet: Import still matches groups by
-    /// their path inside the synced group. Reserved for id-based matching in
-    /// 0.23, so that renaming or moving a group on the Master stops recreating
-    /// it on the Import side. Files from 0.22.12 and earlier have no `id`, and
-    /// those versions skip it when reading newer files, because no type in
-    /// this format rejects fields it does not know.
+    /// Written since 0.22.13, read since 0.23: Import records it in the
+    /// `sync_origin_id` of the group it creates and matches on it first, so
+    /// renaming or moving a group on the Master renames or moves the Import
+    /// copy in place instead of recreating it. Import never takes it as its
+    /// own `id`. Files from 0.22.12 and earlier have no `id` and are matched by
+    /// path, and those versions skip it when reading newer files, because no
+    /// type in this format rejects fields it does not know.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<Uuid>,
 
@@ -191,16 +192,17 @@ pub struct SyncGroup {
 pub struct SyncConnection {
     /// The connection's id on the Master that wrote the file.
     ///
-    /// Written since 0.22.13 and not read yet: Import still matches a
-    /// connection by its name and its group path inside the synced group, and
-    /// a connection it creates gets an id of its own. Reserved for id-based
-    /// matching in 0.23, so that renaming or moving a connection on the Master
-    /// stops recreating it on the Import side. Files from 0.22.12 and earlier
-    /// have no `id`, and those versions skip it when reading newer files.
+    /// Written since 0.22.13, read since 0.23: a connection Import creates
+    /// gets an id of its own and records this one in `sync_origin_id`, and
+    /// Import matches on it first, so renaming or moving a connection on the
+    /// Master updates the Import copy in place (issue #263). Files from
+    /// 0.22.12 and earlier have no `id` and are matched by name and group
+    /// path, and those versions skip it when reading newer files.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<Uuid>,
 
-    /// Connection name — primary key for merge within a group.
+    /// Connection name. Together with `group_path`, the match key for a
+    /// connection Import has not linked to its Master id yet.
     pub name: String,
 
     /// Hierarchical group path from the top of the Master's tree, the root
@@ -656,7 +658,10 @@ pub fn validate_sync_filename(filename: &str) -> Result<(), SyncError> {
 ///
 /// Local-only fields are set to defaults (e.g. `sort_order = 0`,
 /// `is_pinned = false`, `last_connected = None`). The connection gets an id of
-/// its own; the Master's [`SyncConnection::id`] is not adopted.
+/// its own; the Master's [`SyncConnection::id`] is not adopted, and not
+/// recorded either — a Group Sync import records it in `sync_origin_id`
+/// through [`GroupSyncPlan`](super::group_apply::GroupSyncPlan), while a
+/// one-off file import keeps no link to the Master.
 #[must_use]
 pub fn sync_connection_to_connection(sync_conn: &SyncConnection, group_id: Uuid) -> Connection {
     let mut conn = Connection::new(
@@ -1016,8 +1021,13 @@ mod tests {
         assert_eq!(loaded.connections[0].name, "nginx-1");
     }
 
-    /// Import ignores the Master's ids in 0.22.13: a created connection gets an
-    /// id of its own, and an update keeps the local one.
+    /// Import never takes the Master's id as its own: a created connection gets
+    /// an id of its own, and an update keeps the local one. The Master's
+    /// connection can live on the same device — a Master importing its own
+    /// file, or a Simple Sync peer, which matches by id — and two entities
+    /// sharing one id would overwrite each other. Since 0.23 the Master's id is
+    /// *recorded* in `sync_origin_id` by `GroupSyncPlan` instead (see
+    /// `group_apply::tests::master_rename_and_move_update_the_imported_copy_in_place`).
     #[test]
     fn importing_never_adopts_the_masters_id() {
         let mut sync_conn = sample_connection();

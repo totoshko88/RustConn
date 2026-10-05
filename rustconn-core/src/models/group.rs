@@ -106,6 +106,17 @@ pub struct ConnectionGroup {
     /// default (10 s)".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub login_timeout_secs: Option<u32>,
+    /// The id this group has on the Group Sync Master it was imported from.
+    ///
+    /// Set only on groups inside a Group Sync Import tree. Import matches a
+    /// remote group on it first, so a group renamed or moved on the Master is
+    /// renamed or moved here in place. It is a reference, not an identity: the
+    /// group keeps an `id` of its own, because the Master's group can exist on
+    /// the same device (a Master importing its own file, or a Simple Sync peer)
+    /// and two entities must never share one `id`. Absent in files written
+    /// before 0.23, which load with `None` and are linked on the next sync.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sync_origin_id: Option<Uuid>,
 }
 
 /// Default `updated_at` for groups written before edit-tracking existed.
@@ -150,6 +161,7 @@ impl ConnectionGroup {
             username_prompt: None,
             password_prompt: None,
             login_timeout_secs: None,
+            sync_origin_id: None,
         }
     }
 
@@ -184,6 +196,7 @@ impl ConnectionGroup {
             username_prompt: None,
             password_prompt: None,
             login_timeout_secs: None,
+            sync_origin_id: None,
         }
     }
 

@@ -518,14 +518,13 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 state_mut.run_startup_sync()
             };
             if !reports.is_empty() {
-                let total: usize = reports
-                    .iter()
-                    .map(|r| r.connections_added + r.connections_updated)
-                    .sum();
-                if total > 0 {
+                // Removals and group renames/moves change the sidebar too;
+                // counting only additions and updates left it stale.
+                let changed = reports.iter().filter(|r| r.has_changes()).count();
+                if changed > 0 {
                     tracing::info!(
                         groups = reports.len(),
-                        total_changes = total,
+                        changed_groups = changed,
                         "Startup sync completed"
                     );
                     MainWindow::reload_sidebar_preserving_state(&state_for_sync, &sidebar_for_sync);

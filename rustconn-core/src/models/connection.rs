@@ -636,6 +636,20 @@ pub struct Connection {
     /// the session's stdout is piped through this command before display.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub postpend: Option<PostpendCommand>,
+    /// The id this connection has on the Group Sync Master it was imported
+    /// from.
+    ///
+    /// Set only on connections inside a Group Sync Import tree. Import matches
+    /// a remote connection on it first, so a rename or move on the Master
+    /// updates this connection in place — same `id`, same vault link (issue
+    /// #263) — instead of deleting and recreating it. It is a reference, not
+    /// an identity: the connection keeps an `id` of its own, because the
+    /// Master's connection can exist on the same device (a Master importing
+    /// its own file, or a Simple Sync peer) and two entities must never share
+    /// one `id`. Absent in files written before 0.23, which load with `None`
+    /// and are linked on the next sync.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sync_origin_id: Option<Uuid>,
 }
 
 impl Connection {
@@ -739,6 +753,7 @@ impl Connection {
             knock_sequence: None,
             spa_config: None,
             postpend: None,
+            sync_origin_id: None,
         }
     }
 
@@ -1339,7 +1354,9 @@ impl Connection {
     ///
     /// The copy is also never dynamic (`is_dynamic`): a dynamic folder's
     /// refresh deletes every dynamic connection under it, so a duplicate made
-    /// to customise a generated entry would vanish on the next refresh.
+    /// to customise a generated entry would vanish on the next refresh. Nor
+    /// does it keep `sync_origin_id`: it is not the copy of the Master's
+    /// connection that a Group Sync Import matches.
     #[must_use]
     pub fn duplicate_as(&self, name: String) -> Self {
         let now = Utc::now();
@@ -1352,6 +1369,7 @@ impl Connection {
             is_pinned: false,
             pin_order: 0,
             is_dynamic: false,
+            sync_origin_id: None,
             ..self.clone()
         }
     }

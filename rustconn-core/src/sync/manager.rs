@@ -45,6 +45,8 @@ pub struct SyncReport {
     pub connections_removed: usize,
     /// Number of groups added during this sync.
     pub groups_added: usize,
+    /// Number of groups renamed or moved in place during this sync.
+    pub groups_updated: usize,
     /// Number of groups removed during this sync.
     pub groups_removed: usize,
     /// Number of variable templates created during this sync.
@@ -72,10 +74,26 @@ impl SyncReport {
             connections_updated: result.connections_to_update.len(),
             connections_removed: result.connections_to_delete.len(),
             groups_added: result.groups_to_create.len(),
+            groups_updated: result.groups_to_update.len(),
             groups_removed: result.groups_to_delete.len(),
             variables_created: result.variables_to_create.len(),
             timestamp,
         }
+    }
+
+    /// Returns `true` when the sync added, updated or removed anything a user
+    /// can see — a renamed or moved group included.
+    ///
+    /// Recording a link to the Master's copy of an entity is not counted.
+    #[must_use]
+    pub const fn has_changes(&self) -> bool {
+        self.connections_added > 0
+            || self.connections_updated > 0
+            || self.connections_removed > 0
+            || self.groups_added > 0
+            || self.groups_updated > 0
+            || self.groups_removed > 0
+            || self.variables_created > 0
     }
 }
 
@@ -283,6 +301,7 @@ impl SyncManager {
             connections_updated: 0,
             connections_removed: 0,
             groups_added: sync_groups.len(),
+            groups_updated: 0,
             groups_removed: 0,
             variables_created: variable_templates.len(),
             timestamp: now,
@@ -519,6 +538,7 @@ impl SyncManager {
             updated = report.connections_updated,
             removed = report.connections_removed,
             groups_added = report.groups_added,
+            groups_updated = report.groups_updated,
             groups_removed = report.groups_removed,
             variables = report.variables_created,
             "Import sync completed"
@@ -690,6 +710,7 @@ impl SyncManager {
                 updated = report.connections_updated,
                 removed = report.connections_removed,
                 groups_added = report.groups_added,
+                groups_updated = report.groups_updated,
                 groups_removed = report.groups_removed,
                 variables = report.variables_created,
                 "Startup import completed"
@@ -1689,7 +1710,20 @@ mod tests {
                 ssh_auth_method: None,
                 ssh_proxy_jump: None,
             }],
-            groups_to_update: vec![],
+            groups_to_update: vec![(
+                Uuid::new_v4(),
+                SyncGroup {
+                    id: Some(Uuid::new_v4()),
+                    name: "Renamed".to_owned(),
+                    path: "Root/Renamed".to_owned(),
+                    description: None,
+                    icon: None,
+                    username: None,
+                    domain: None,
+                    ssh_auth_method: None,
+                    ssh_proxy_jump: None,
+                },
+            )],
             groups_to_delete: vec![],
             variables_to_create: vec![VariableTemplate {
                 name: "v".to_owned(),
@@ -1698,6 +1732,7 @@ mod tests {
                 default_value: None,
             }],
             remote_root: "Prod".to_owned(),
+            ..super::GroupMergeResult::default()
         };
 
         let report = SyncReport::from_merge_result(Uuid::new_v4(), "Prod", &result, Utc::now());
@@ -1705,8 +1740,47 @@ mod tests {
         assert_eq!(report.connections_updated, 1);
         assert_eq!(report.connections_removed, 3);
         assert_eq!(report.groups_added, 1);
+        assert_eq!(report.groups_updated, 1);
         assert_eq!(report.groups_removed, 0);
         assert_eq!(report.variables_created, 1);
+        assert!(report.has_changes());
+    }
+
+    /// A sync that only renamed a group is a change — the CLI used to print
+    /// "Already up to date" for it — while one that only recorded links to
+    /// the Master's copies is not.
+    #[test]
+    fn report_counts_a_group_rename_but_not_a_link() {
+        let renamed_only = super::GroupMergeResult {
+            groups_to_update: vec![(
+                Uuid::new_v4(),
+                SyncGroup {
+                    id: None,
+                    name: "B".to_owned(),
+                    path: "Root/B".to_owned(),
+                    description: None,
+                    icon: None,
+                    username: None,
+                    domain: None,
+                    ssh_auth_method: None,
+                    ssh_proxy_jump: None,
+                },
+            )],
+            ..super::GroupMergeResult::default()
+        };
+        let report =
+            SyncReport::from_merge_result(Uuid::new_v4(), "Root", &renamed_only, Utc::now());
+        assert!(report.has_changes());
+
+        let linked_only = super::GroupMergeResult {
+            connections_to_link: vec![(Uuid::new_v4(), Uuid::new_v4())],
+            groups_to_link: vec![(Uuid::new_v4(), Uuid::new_v4())],
+            ..super::GroupMergeResult::default()
+        };
+        assert!(!linked_only.is_empty(), "links still have to be saved");
+        let report =
+            SyncReport::from_merge_result(Uuid::new_v4(), "Root", &linked_only, Utc::now());
+        assert!(!report.has_changes());
     }
 
     // --- collect_group_tree tests ---
