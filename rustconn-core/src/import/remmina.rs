@@ -15,9 +15,9 @@ use super::normalize::parse_host_port;
 use super::traits::{ImportResult, ImportSource, SkippedEntry, read_import_file};
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpConfig,
-    RdpGateway, Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource, TelnetConfig,
-    VncConfig,
+    Connection, ConnectionGroup, Credentials, PasswordSource, ProtocolConfig, RdpAudioMode,
+    RdpConfig, RdpGateway, Resolution, SpiceConfig, SshAuthMethod, SshConfig, SshKeySource,
+    TelnetConfig, VncConfig,
 };
 
 /// Importer for Remmina connection files.
@@ -314,16 +314,16 @@ impl RemminaImporter {
                         }
                     });
 
-                (
-                    ProtocolConfig::Rdp(RdpConfig {
-                        resolution,
-                        color_depth,
-                        audio_redirect: config.get("sound").is_some_and(|s| s != "off"),
-                        gateway,
-                        ..Default::default()
-                    }),
-                    3389u16,
-                )
+                let mut rdp_config = RdpConfig {
+                    resolution,
+                    color_depth,
+                    gateway,
+                    ..Default::default()
+                };
+                if let Some(sound) = config.get("sound") {
+                    rdp_config.set_audio_mode(remmina_audio_mode(sound));
+                }
+                (ProtocolConfig::Rdp(rdp_config), 3389u16)
             }
             Some("VNC") => (ProtocolConfig::Vnc(VncConfig::default()), 5900u16),
             Some("SPICE") => (ProtocolConfig::Spice(SpiceConfig::default()), 5900u16),
@@ -539,9 +539,61 @@ impl RemminaImporter {
     }
 }
 
+/// Maps Remmina's RDP `sound` value to an audio mode the way Remmina does.
+///
+/// Remmina's RDP plugin (`plugins/rdp/rdp_plugin.c`) treats `remote` as audio
+/// left on the server, any value starting with `local` as played here, and
+/// everything else as off. Reading it as "anything but `off` is local" turned
+/// a `remote` profile into local playback.
+fn remmina_audio_mode(sound: &str) -> RdpAudioMode {
+    if sound == "remote" {
+        RdpAudioMode::Remote
+    } else if sound.starts_with("local") {
+        RdpAudioMode::Local
+    } else {
+        RdpAudioMode::None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every audio mode survives a Remmina export and import, `remote`
+    /// included, which the exporter used to write as `off`.
+    #[test]
+    fn audio_mode_round_trips_through_remmina() {
+        use crate::export::remmina::RemminaExporter;
+
+        for mode in RdpAudioMode::all().iter().copied() {
+            let mut rdp = RdpConfig::default();
+            rdp.set_audio_mode(mode);
+            let connection = Connection::new(
+                "Audio".to_string(),
+                "server.example.com".to_string(),
+                3389,
+                ProtocolConfig::Rdp(rdp),
+            );
+            let exported = RemminaExporter::export_connection(&connection).expect("RDP exports");
+
+            let mut group_map = HashMap::new();
+            let result =
+                RemminaImporter::new().parse_remmina_file(&exported, "audio.remmina", &mut group_map);
+            let ProtocolConfig::Rdp(ref imported) = result.connections[0].protocol_config else {
+                panic!("expected an RDP connection");
+            };
+            assert_eq!(imported.effective_audio_mode(), mode, "{exported}");
+        }
+    }
+
+    #[test]
+    fn remmina_sound_values_map_as_remmina_reads_them() {
+        assert_eq!(remmina_audio_mode("remote"), RdpAudioMode::Remote);
+        assert_eq!(remmina_audio_mode("local"), RdpAudioMode::Local);
+        assert_eq!(remmina_audio_mode("local,quality:high"), RdpAudioMode::Local);
+        assert_eq!(remmina_audio_mode("off"), RdpAudioMode::None);
+        assert_eq!(remmina_audio_mode(""), RdpAudioMode::None);
+    }
 
     #[test]
     fn test_parse_ssh_connection() {

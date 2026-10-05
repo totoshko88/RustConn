@@ -474,13 +474,15 @@ pub(super) fn create_rdp_options() -> (
     features_group.add(&rdp_fido2_check);
 
     // Kerberos authentication for NLA (issue #351). Needed for accounts in AD
-    // "Protected Users", which may not use NTLM. Embedded client only. sspi
-    // signs in with the saved password — a `kinit` ticket is not used — and
-    // fails rather than falling back to NTLM when it cannot reach a KDC.
+    // "Protected Users", which may not use NTLM. Embedded client: sspi signs in
+    // with the saved password — a `kinit` ticket is not used — and fails rather
+    // than falling back to NTLM when it cannot reach a KDC. External client:
+    // FreeRDP already negotiates Kerberos before NTLM, so the switch lifts the
+    // NTLM-only restriction of a RemoteApp session and passes on a KDC proxy.
     let rdp_kerberos_check = adw::SwitchRow::builder()
         .title(i18n("Kerberos Authentication"))
         .subtitle(i18n(
-            "Use Kerberos for NLA instead of NTLM (Embedded client). Required for AD \"Protected Users\". Signs in with the saved password; Host must be the server's DNS name",
+            "Required for AD \"Protected Users\"; Host must be the server's DNS name. Embedded client: Kerberos only, with the saved password. External client: FreeRDP tries Kerberos itself, and RemoteApp is no longer limited to NTLM",
         ))
         .active(false)
         .build();
@@ -489,10 +491,12 @@ pub(super) fn create_rdp_options() -> (
     // Where the Kerberos exchange goes (issue #351). Empty means looked up:
     // SSPI_KDC_URL_<REALM>, SSPI_KDC_URL, krb5.conf [realms], then the realm's
     // own DNS name. Stored normalized; an invalid value is flagged here and
-    // refused on save. Only meaningful while the Kerberos switch is on.
+    // refused on save. Only meaningful while the Kerberos switch is on. The
+    // external FreeRDP client can take only an https://…/KdcProxy proxy
+    // (`/kerberos:kdc-url:`); anything else is left to the system krb5.conf.
     let rdp_kdc_address_entry = adw::EntryRow::builder().title(i18n("KDC Address")).build();
     rdp_kdc_address_entry.set_tooltip_text(Some(&i18n(
-        "Optional. A domain controller name or IP address, a tcp:// or udp:// address, or an https:// KDC proxy URL. Leave empty to find it automatically.",
+        "Optional. A domain controller name or IP address, a tcp:// or udp:// address, or an https:// KDC proxy URL. Leave empty to find it automatically. The External client uses only an https://…/KdcProxy proxy and otherwise follows the system Kerberos configuration.",
     )));
     rdp_kdc_address_entry.set_sensitive(false);
     rdp_kdc_address_entry.connect_changed(|entry| {

@@ -236,6 +236,13 @@ pub struct ConfigManager {
     /// workers that hold clones of their own. [`Self::write_locked`] takes a file
     /// out of here the first time it overwrites it, after copying it aside.
     newer_files: std::sync::Arc<std::sync::Mutex<NewerFiles>>,
+    /// Files whose `written_by` marker this process has already read, by a load
+    /// or by [`Self::probe_unseen_marker`].
+    ///
+    /// Shared across clones for the same reason as `newer_files`. A save of a
+    /// path not in here reads the marker on disk first, once, so a file that was
+    /// never loaded still gets its backup.
+    marker_seen: std::sync::Arc<std::sync::Mutex<std::collections::BTreeSet<PathBuf>>>,
 }
 
 impl ConfigManager {
@@ -263,6 +270,7 @@ impl ConfigManager {
             config_dir,
             dir_ensured: std::sync::Arc::new(AtomicBool::new(false)),
             newer_files: std::sync::Arc::default(),
+            marker_seen: std::sync::Arc::default(),
         })
     }
 
@@ -275,6 +283,7 @@ impl ConfigManager {
             config_dir,
             dir_ensured: std::sync::Arc::new(AtomicBool::new(false)),
             newer_files: std::sync::Arc::default(),
+            marker_seen: std::sync::Arc::default(),
         }
     }
 
@@ -520,6 +529,7 @@ impl ConfigManager {
     /// marker that is not a plain release — clears a flag left by an earlier load
     /// of the same file: what is on disk now holds nothing newer.
     fn note_written_by(&self, path: &Path, written_by: Option<&str>) {
+        self.lock_marker_seen().insert(path.to_path_buf());
         let Some(version) = written_by.filter(|v| is_newer_than_running(v)) else {
             self.lock_newer_files().remove(path);
             return;
@@ -538,11 +548,52 @@ impl ConfigManager {
         }
     }
 
+    /// Locks the set of files whose marker was read; see the `marker_seen` field.
+    ///
+    /// A poisoned lock is recovered for the same reason as
+    /// [`Self::lock_newer_files`]: every change is one insert.
+    fn lock_marker_seen(&self) -> std::sync::MutexGuard<'_, std::collections::BTreeSet<PathBuf>> {
+        self.marker_seen
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Reads the marker of a file this process is about to save without having loaded it.
+    ///
+    /// The backup used to depend on a load in the same process having flagged
+    /// the file, so a save with no load before it — `rustconn-cli history
+    /// clear` writes an empty history without reading the old one — replaced a
+    /// newer `RustConn`'s file with no copy. Runs once per path per process:
+    /// after it, either the marker has been noted or this process's own write
+    /// has replaced it. A file that is missing, unreadable or not TOML has no
+    /// marker to go by and is left unflagged, as a load would leave it.
+    fn probe_unseen_marker(&self, path: &Path) {
+        if !self.lock_marker_seen().insert(path.to_path_buf()) {
+            return;
+        }
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+            Err(e) => {
+                tracing::warn!(
+                    file = %path.display(),
+                    error = %e,
+                    "Could not read a config file's version marker before replacing it"
+                );
+                return;
+            }
+        };
+        if let Ok(written_by) = version_skew::probe_written_by(&bytes) {
+            self.note_written_by(path, written_by.as_deref());
+        }
+    }
+
     /// Copies a flagged file to `<file>.<version>.bak` before its first overwrite here.
     ///
     /// Runs inside [`Self::write_locked`] with both locks held, so the copy holds
-    /// exactly the bytes about to be replaced, and only for a file one of this
-    /// process's loads flagged as written by a newer `RustConn`. Once the copy is
+    /// exactly the bytes about to be replaced, and only for a file flagged as
+    /// written by a newer `RustConn` — by one of this process's loads or, for a
+    /// file it never loaded, by [`Self::probe_unseen_marker`]. Once the copy is
     /// on disk the flag is cleared: one backup per file per process, however many
     /// saves follow. An existing backup of the same name is replaced; it holds an
     /// older state of what that same version wrote.
@@ -558,6 +609,8 @@ impl ConfigManager {
     /// cannot be written. The flag stays set, so the next save tries again: a
     /// newer version's file is never overwritten without its copy.
     fn back_up_newer_file(&self, path: &Path) -> ConfigResult<()> {
+        self.probe_unseen_marker(path);
+
         // Bound on its own line so the guard is dropped before anything below
         // takes the lock again.
         let flagged = self.lock_newer_files().get(path).cloned();
@@ -1989,6 +2042,51 @@ mod tests {
         assert!(matches!(error, ConfigError::Write(_)), "{error}");
         assert_eq!(fs::read_to_string(&path).unwrap(), original);
         assert_eq!(manager.newer_version_files().len(), 1);
+    }
+
+    /// A save with no load before it — `rustconn-cli history clear` writes an
+    /// empty history straight away — still backs up a newer version's file,
+    /// once: the marker on disk is read before the first overwrite.
+    #[test]
+    fn a_save_without_a_load_still_backs_up_a_newer_file() {
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(HISTORY_FILE);
+        let original = "written_by = \"99.0.0\"\n\n[[entries]]\nfuture_field = 1\n";
+        fs::write(&path, original).unwrap();
+
+        manager.save_history(&[]).unwrap();
+
+        let backup = manager.config_dir().join("history.toml.99.0.0.bak");
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+        assert!(manager.newer_version_files().is_empty());
+        let ours = fs::read_to_string(&path).unwrap();
+        assert!(ours.contains(&format!("written_by = \"{RUNNING_VERSION}\"")), "{ours}");
+
+        // The next save overwrites this version's own file: no second copy, and
+        // the first one still holds what the newer version wrote.
+        manager.save_history(&[]).unwrap();
+        assert_eq!(backups_in(manager.config_dir()), ["history.toml.99.0.0.bak"]);
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+    }
+
+    /// The probe flags only a newer marker: a file this or an older version
+    /// wrote, or one with no marker, is replaced without a copy.
+    #[test]
+    fn a_save_without_a_load_copies_nothing_that_is_not_newer() {
+        for existing in [
+            format!("written_by = \"{RUNNING_VERSION}\"\n"),
+            "written_by = \"0.0.1\"\n".to_string(),
+            String::new(),
+            "not toml [".to_string(),
+        ] {
+            let (manager, _temp) = create_test_manager();
+            fs::write(manager.config_dir().join(HISTORY_FILE), &existing).unwrap();
+
+            manager.save_history(&[]).unwrap();
+
+            assert!(backups_in(manager.config_dir()).is_empty(), "{existing:?}");
+            assert!(manager.newer_version_files().is_empty(), "{existing:?}");
+        }
     }
 
     /// Restoring writes the archived bytes as they are; the marker is not

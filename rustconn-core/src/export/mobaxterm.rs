@@ -14,7 +14,9 @@ use uuid::Uuid;
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
+use crate::models::{
+    Connection, ConnectionGroup, ProtocolConfig, ProtocolType, RdpAudioMode, SshAuthMethod,
+};
 
 /// Default icon numbers for each session type in MobaXterm.
 const ICON_SSH: u16 = 109;
@@ -151,12 +153,16 @@ impl MobaXtermExporter {
                 .map(|r| Self::resolution_to_moba_id(r.width, r.height))
                 .unwrap_or_else(|| "0".to_string()); // Fit to terminal
 
-            // Audio redirect
-            params[16] = if rdp_config.audio_redirect {
-                "1".to_string()
-            } else {
-                "0".to_string()
-            };
+            // Audio, field 16: 0 = none, 1 = redirect here, 2 = leave on the
+            // remote computer — the layout the importer documents and reads
+            // back. Reading the legacy `audio_redirect` bool exported "remote"
+            // as "none".
+            params[16] = match rdp_config.effective_audio_mode() {
+                RdpAudioMode::None => "0",
+                RdpAudioMode::Local => "1",
+                RdpAudioMode::Remote => "2",
+            }
+            .to_string();
 
             // Clipboard (always enabled by default in MobaXterm)
             params[19] = "-1".to_string();
@@ -726,6 +732,31 @@ mod tests {
         assert!(imported_prod.parent_id.is_none());
         assert_eq!(imported_web.parent_id, Some(imported_prod.id));
         assert_eq!(result.connections[0].group_id, Some(imported_web.id));
+    }
+
+    /// Every audio mode survives a MobaXterm export and import, "remote"
+    /// included, which the exporter used to write as "none".
+    #[test]
+    fn audio_mode_round_trips_through_mobaxterm() {
+        use crate::import::MobaXtermImporter;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("audio.mxtsessions");
+        for mode in RdpAudioMode::all().iter().copied() {
+            let mut conn = create_rdp_connection("windows", "192.168.1.50", 3389);
+            if let ProtocolConfig::Rdp(ref mut rdp_config) = conn.protocol_config {
+                rdp_config.set_audio_mode(mode);
+            }
+
+            MobaXtermExporter::export_to_file(&[conn], &[], &output_path).unwrap();
+            let content = fs::read_to_string(&output_path).unwrap();
+            let result = MobaXtermImporter::new().parse_content(&content, "audio.mxtsessions");
+
+            let ProtocolConfig::Rdp(ref imported) = result.connections[0].protocol_config else {
+                panic!("expected an RDP connection");
+            };
+            assert_eq!(imported.effective_audio_mode(), mode, "{content}");
+        }
     }
 
     #[test]

@@ -117,12 +117,21 @@ pub struct FreeRdpConfig {
     pub client_override: Option<String>,
     /// The connection opted into Kerberos for NLA (`RdpConfig::kerberos_enabled`).
     ///
-    /// Read for `RemoteApp` sessions only, which otherwise restrict NLA to NTLM
-    /// (`/auth-pkg-list:ntlm`). An AD "Protected Users" account has NTLM
-    /// disabled domain-wide and can never sign in through that list, so with
-    /// this set the restriction is left out and FreeRDP negotiates Kerberos
-    /// through the system krb5 configuration (issue #351).
+    /// FreeRDP's own negotiation already tries Kerberos before NTLM, so a
+    /// desktop session needs no argument for it. This switch does two things
+    /// on the external path: it lifts the NTLM-only restriction
+    /// (`/auth-pkg-list:ntlm`) a `RemoteApp` session otherwise gets — an AD
+    /// "Protected Users" account has NTLM disabled domain-wide and can never
+    /// sign in through that list (issue #351) — and it gates
+    /// [`Self::kdc_proxy_url`], exactly as on the embedded client.
     pub kerberos_enabled: bool,
+    /// The connection's KDC Address (`RdpConfig::kdc_proxy_url`), read only
+    /// while [`Self::kerberos_enabled`] is set.
+    ///
+    /// FreeRDP can only be pointed at an MS-KKDCP proxy, and only at one
+    /// served under `/KdcProxy` — see [`freerdp_kerberos_arg`]. Any other
+    /// address leaves the KDC to the system krb5 configuration.
+    pub kdc_proxy_url: Option<String>,
 }
 
 /// Written by hand so that it agrees with [`FreeRdpConfig::new`].
@@ -175,6 +184,7 @@ impl FreeRdpConfig {
             fido2_enabled: false,
             client_override: None,
             kerberos_enabled: false,
+            kdc_proxy_url: None,
         }
     }
 
@@ -616,7 +626,58 @@ fn push_security_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
     // FreeRDP 3.x syntax: disable NLA while leaving the other methods available.
     if config.disable_nla {
         args.push("/sec:nla:off".to_string());
+    } else if let Some(kerberos) =
+        freerdp_kerberos_arg(config.kerberos_enabled, config.kdc_proxy_url.as_deref())
+    {
+        // Without NLA there is no CredSSP exchange for Kerberos to take part in.
+        args.push(kerberos);
     }
+}
+
+/// Path a Windows KDC proxy (MS-KKDCP) is served under, and the only one
+/// FreeRDP can reach — see [`freerdp_kerberos_arg`].
+const FREERDP_KDC_PROXY_PATH: &str = "/KdcProxy";
+
+/// Returns the `FreeRDP` 3 `/kerberos:kdc-url:` argument for a KDC Address.
+///
+/// The option does not take a URL. FreeRDP's MIT krb5 glue
+/// (`winpr/libwinpr/sspi/Kerberos/krb5glue_mit.c`) writes
+/// `kdc = https://<value>/KdcProxy` into a private krb5 profile, so the value
+/// must be the proxy's `host[:port]`. Only a stored `https://host[:port]/KdcProxy`
+/// address can be expressed that way; a domain controller (`tcp://`, `udp://`),
+/// a plain `http://` proxy or any other path cannot, and is left out with a
+/// warning — the KDC then comes from the system krb5 configuration. `None`
+/// as well when Kerberos is off, as on the embedded client, which reads the
+/// address only then.
+///
+/// Shared by both external argument builders, [`build_freerdp_args`] and
+/// `RdpProtocol::build_args`.
+#[must_use]
+pub fn freerdp_kerberos_arg(kerberos_enabled: bool, kdc_proxy_url: Option<&str>) -> Option<String> {
+    if !kerberos_enabled {
+        return None;
+    }
+    let normalized = match crate::rdp_client::normalize_kdc_url(kdc_proxy_url?) {
+        Ok(normalized) => normalized?,
+        Err(error) => {
+            tracing::warn!(%error, "Ignoring an invalid KDC Address for FreeRDP");
+            return None;
+        }
+    };
+    let proxy = normalized.strip_prefix("https://").and_then(|rest| {
+        let (authority, path) = rest.split_at(rest.find(['/', '?', '#'])?);
+        let path = path.strip_suffix('/').unwrap_or(path);
+        path.eq_ignore_ascii_case(FREERDP_KDC_PROXY_PATH)
+            .then_some(authority)
+    });
+    let Some(authority) = proxy else {
+        tracing::warn!(
+            kdc_address = %normalized,
+            "FreeRDP accepts only an https://<host>/KdcProxy KDC proxy; leaving the KDC to the system krb5 configuration"
+        );
+        return None;
+    };
+    Some(format!("/kerberos:kdc-url:{authority}"))
 }
 
 /// Pushes the user's extra arguments that [`filter_extra_args`] keeps.
@@ -899,8 +960,8 @@ mod tests {
         assert!(args.iter().any(|arg| arg.starts_with("/app:")));
     }
 
-    /// Kerberos only changes the RemoteApp restriction; a desktop session gets
-    /// the same command line either way.
+    /// FreeRDP already negotiates Kerberos first, so with no KDC Address a
+    /// desktop session gets the same command line either way.
     #[test]
     fn kerberos_without_remote_app_changes_no_argument() {
         let plain = FreeRdpConfig::new("server.example.com");
@@ -914,6 +975,84 @@ mod tests {
             !build_freerdp_args(&plain)
                 .iter()
                 .any(|arg| arg.starts_with("/auth-pkg-list"))
+        );
+    }
+
+    /// The KDC Address used to reach only the embedded client. An MS-KKDCP
+    /// proxy now reaches the external one as FreeRDP 3's `/kerberos:kdc-url:`,
+    /// which takes the proxy's host and appends `/KdcProxy` itself.
+    #[test]
+    fn kdc_proxy_reaches_the_external_client_as_kerberos_kdc_url() {
+        let config = FreeRdpConfig {
+            kerberos_enabled: true,
+            kdc_proxy_url: Some("https://gw.example.com:8443/KdcProxy".to_string()),
+            ..FreeRdpConfig::new("server.example.com")
+        };
+        let args = build_freerdp_args(&config);
+
+        assert!(
+            args.contains(&"/kerberos:kdc-url:gw.example.com:8443".to_string()),
+            "{args:?}"
+        );
+        assert_eq!(args.last().map(String::as_str), Some("/v:server.example.com"));
+    }
+
+    /// The KDC Address is read only with Kerberos on, as on the embedded client,
+    /// and not at all without NLA, which is what carries Kerberos.
+    #[test]
+    fn kdc_proxy_needs_kerberos_and_nla() {
+        let url = Some("https://gw.example.com/KdcProxy".to_string());
+        let kerberos_off = FreeRdpConfig {
+            kdc_proxy_url: url.clone(),
+            ..FreeRdpConfig::new("server.example.com")
+        };
+        let nla_off = FreeRdpConfig {
+            kerberos_enabled: true,
+            disable_nla: true,
+            kdc_proxy_url: url,
+            ..FreeRdpConfig::new("server.example.com")
+        };
+
+        for config in [kerberos_off, nla_off] {
+            assert!(
+                !build_freerdp_args(&config)
+                    .iter()
+                    .any(|arg| arg.starts_with("/kerberos")),
+                "{config:?}"
+            );
+        }
+    }
+
+    /// FreeRDP cannot be pointed at a domain controller or at a proxy under
+    /// another path, so those addresses produce no argument rather than a wrong
+    /// one; `/KdcProxy` itself matches case-insensitively, with or without a
+    /// trailing slash.
+    #[test]
+    fn freerdp_kerberos_arg_accepts_only_a_kdc_proxy() {
+        for (stored, expected) in [
+            ("https://gw.example.com/KdcProxy", Some("gw.example.com")),
+            ("HTTPS://gw.example.com/kdcproxy/", Some("gw.example.com")),
+            ("https://[2001:db8::1]:443/KdcProxy", Some("[2001:db8::1]:443")),
+            ("https://gw.example.com", None),
+            ("https://gw.example.com/Other/KdcProxy", None),
+            ("https://gw.example.com/KdcProxy?x=1", None),
+            ("http://gw.example.com/KdcProxy", None),
+            ("dc1.example.com", None),
+            ("tcp://dc1.example.com:88", None),
+            ("udp://dc1.example.com:88", None),
+            ("   ", None),
+            ("ldap://dc1.example.com", None),
+        ] {
+            assert_eq!(
+                freerdp_kerberos_arg(true, Some(stored)),
+                expected.map(|authority| format!("/kerberos:kdc-url:{authority}")),
+                "{stored}"
+            );
+        }
+        assert_eq!(freerdp_kerberos_arg(true, None), None);
+        assert_eq!(
+            freerdp_kerberos_arg(false, Some("https://gw.example.com/KdcProxy")),
+            None
         );
     }
 

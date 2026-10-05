@@ -626,6 +626,9 @@ impl SafeFreeRdpLauncher {
             // A RemoteApp fallback negotiates Kerberos instead of being held to
             // NTLM when the connection asked for Kerberos (issue #351).
             kerberos_enabled: config.kerberos_enabled,
+            // The same KDC Address the embedded client was given, as
+            // `/kerberos:kdc-url:` when it is an MS-KKDCP proxy.
+            kdc_proxy_url: config.kdc_proxy_url.clone(),
         }
     }
 
@@ -797,6 +800,23 @@ mod tests {
         ] {
             assert!(args.iter().all(|arg| !arg.contains(secret)));
         }
+    }
+
+    /// The FreeRDP fallback gets the KDC proxy the embedded client was given.
+    #[test]
+    fn connection_args_carry_the_kdc_proxy() {
+        let config = RdpConfig {
+            host: "server.example.com".to_string(),
+            kerberos_enabled: true,
+            kdc_proxy_url: Some("https://gw.example.com/KdcProxy".to_string()),
+            ..RdpConfig::default()
+        };
+
+        let args = connection_args(&config);
+        assert!(
+            args.iter().any(|a| a == "/kerberos:kdc-url:gw.example.com"),
+            "{args:?}"
+        );
     }
 
     #[test]

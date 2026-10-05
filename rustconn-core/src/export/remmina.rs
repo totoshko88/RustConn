@@ -9,7 +9,7 @@ use std::path::Path;
 use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, RdpAudioMode};
 
 /// Remmina connection file exporter.
 ///
@@ -152,12 +152,15 @@ impl RemminaExporter {
                 let _ = writeln!(output, "colordepth={color_depth}");
             }
 
-            // Audio redirect
-            if rdp_config.audio_redirect {
-                let _ = writeln!(output, "sound=local");
-            } else {
-                let _ = writeln!(output, "sound=off");
-            }
+            // Audio output mode. Remmina's RDP plugin offers the same three
+            // states (`sound_list` in plugins/rdp/rdp_plugin.c); reading the
+            // legacy `audio_redirect` bool here exported "remote" as "off".
+            let sound = match rdp_config.effective_audio_mode() {
+                RdpAudioMode::None => "off",
+                RdpAudioMode::Local => "local",
+                RdpAudioMode::Remote => "remote",
+            };
+            let _ = writeln!(output, "sound={sound}");
 
             // RemoteApp (RAIL) settings
             // Note: Remmina does not have a field for RemoteApp display name,

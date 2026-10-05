@@ -990,8 +990,12 @@ fn start_external_rdp_session(
         fido2_enabled: rdp_config.fido2_enabled,
         client_override: rdp_config.freerdp_client_override.clone(),
         // Lets a RemoteApp session negotiate Kerberos instead of NTLM, which an
-        // AD "Protected Users" account cannot use (issue #351).
+        // AD "Protected Users" account cannot use (issue #351), and gates the
+        // KDC Address below.
         kerberos_enabled: rdp_config.kerberos_enabled,
+        // Reaches FreeRDP as `/kerberos:kdc-url:` when it is an MS-KKDCP proxy;
+        // it used to reach only the embedded client.
+        kdc_proxy_url: rdp_config.kdc_proxy_url.clone(),
     };
 
     // A tunnelled session's SshTunnel must outlive every launch attempt: a
