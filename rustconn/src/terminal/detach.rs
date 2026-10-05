@@ -425,13 +425,10 @@ impl TerminalNotebook {
         self.switch_tab_to_single(session_id, &content);
 
         // Re-derive the tab indicators from the surviving session metadata.
-        if let Some(info) = self.get_session_info(session_id) {
-            if let Some(color_index) = info.tab_color_index {
-                self.apply_group_color(session_id, color_index);
-            }
-            if *self.color_tabs_by_protocol.borrow() {
-                self.apply_protocol_color(session_id, &info.protocol);
-            }
+        if let Some(info) = self.get_session_info(session_id)
+            && let Some(color_index) = info.tab_color_index
+        {
+            self.apply_group_color(session_id, color_index);
         }
 
         self.switch_to_tab(session_id);

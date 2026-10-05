@@ -184,7 +184,9 @@
     opacity: 0.6;
 }
 
-/* Bulk action buttons (group operations mode) — flat symbolic, GNOME HIG */
+/* Bulk action buttons (group operations mode) — symbolic icon buttons that
+ * also carry `.pill` (see create_bulk_actions_bar); this rule only trims them
+ * to toolbar size and keeps the round shape. */
 .bulk-action {
     min-width: 24px;
     min-height: 24px;
@@ -281,13 +283,6 @@ label.warning {
 /* Status icon base styles */
 .status-icon {
     transition: opacity 200ms ease-in-out;
-}
-
-/* Sidebar connection row — a calmer, AdwActionRow-like rhythm (HIG §5 mini).
- * Cosmetic only: the class is applied to the row content box in view.rs and is
- * never read by the bind path, so it touches no row structure or wiring. */
-.connection-row {
-    border-radius: 6px;
 }
 
 /* The favorite star reads as a quiet trailing suffix, not a loud accent:
@@ -515,11 +510,11 @@ tabbar > revealer > box {
 /* Height alignment (GNOME HIG §8b): the tab bar (second row of the content
  * panel) and the sidebar search row (second row of the sidebar panel) sit at
  * the same level, so they must share a height. Pin both to the same min-height
- * so the two panels' rows line up instead of one being visibly taller. */
-tabbar > revealer > box {
-    min-height: 42px;
-}
-.sidebar-search-row {
+ * so the two panels' rows line up instead of one being visibly taller.
+ * Regular density only: compact and macOS windows slim both rows further
+ * down, and a 42px floor here would quietly undo that. */
+window:not(.compact):not(.macos) tabbar > revealer > box,
+window:not(.compact):not(.macos) .sidebar-search-row {
     min-height: 42px;
 }
 

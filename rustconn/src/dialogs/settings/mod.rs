@@ -117,10 +117,6 @@ pub struct SettingsDialog {
     max_age_row: adw::SpinRow,
     // Startup action
     startup_action_dropdown: DropDown,
-    // Tab coloring
-    color_tabs_by_protocol: adw::SwitchRow,
-    // Protocol filter visibility
-    show_protocol_filters: adw::SwitchRow,
     // Sidebar width setting
     sidebar_width_row: adw::SpinRow,
     // Compact interface toggle
@@ -132,9 +128,9 @@ pub struct SettingsDialog {
     terminal_passthrough_ctrl: adw::SwitchRow,
     // Remember keyboard passthrough state across restarts (issue #274)
     keyboard_passthrough: adw::SwitchRow,
-    // Show active connection name in the window title (issue #211)
-    window_title_shows_connection: adw::SwitchRow,
-    window_title_shows_path: adw::SwitchRow,
+    // Connection name in the window title (issue #211) and group path in the
+    // header subtitle — named fields so the pair cannot be swapped.
+    window_title_rows: ui_tab::WindowTitleRows,
     // Show Welcome tab on startup (issue #232)
     show_welcome_switch: adw::SwitchRow,
     // Always open a new session on a sidebar double-click (issue #242)
@@ -269,15 +265,12 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
-            color_tabs_by_protocol,
-            show_protocol_filters,
             sidebar_width_row,
             compact_ui,
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
-            window_title_shows_connection,
-            window_title_shows_path,
+            window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
             show_split_pane_labels,
@@ -717,15 +710,12 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
-            color_tabs_by_protocol,
-            show_protocol_filters,
             sidebar_width_row,
             compact_ui,
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
-            window_title_shows_connection,
-            window_title_shows_path,
+            window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
             open_tunnelled_browser_in_embedded,
@@ -1297,15 +1287,12 @@ impl SettingsDialog {
             &self.prompt_on_restore,
             &self.max_age_row,
             &self.startup_action_dropdown,
-            &self.color_tabs_by_protocol,
-            &self.show_protocol_filters,
             &self.sidebar_width_row,
             &self.compact_ui,
             &self.compact_auto,
             &self.terminal_passthrough_ctrl,
             &self.keyboard_passthrough,
-            &self.window_title_shows_path,
-            &self.window_title_shows_connection,
+            &self.window_title_rows,
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
             &self.show_split_pane_labels,
@@ -1487,15 +1474,12 @@ impl SettingsDialog {
         let prompt_on_restore_clone = self.prompt_on_restore.clone();
         let max_age_row_clone = self.max_age_row.clone();
         let startup_action_dropdown_clone = self.startup_action_dropdown.clone();
-        let color_tabs_by_protocol_clone = self.color_tabs_by_protocol.clone();
-        let show_protocol_filters_clone = self.show_protocol_filters.clone();
         let sidebar_width_row_clone = self.sidebar_width_row.clone();
         let compact_ui_clone = self.compact_ui.clone();
         let compact_auto_clone = self.compact_auto.clone();
         let terminal_passthrough_ctrl_clone = self.terminal_passthrough_ctrl.clone();
         let keyboard_passthrough_clone = self.keyboard_passthrough.clone();
-        let window_title_shows_connection_clone = self.window_title_shows_connection.clone();
-        let window_title_shows_path_clone = self.window_title_shows_path.clone();
+        let window_title_rows_clone = self.window_title_rows.clone();
         let show_welcome_switch_clone = self.show_welcome_switch.clone();
         let double_click_opens_new_session_clone = self.double_click_opens_new_session.clone();
         let open_tunnelled_browser_in_embedded_clone =
@@ -1718,15 +1702,12 @@ impl SettingsDialog {
                 &prompt_on_restore_clone,
                 &max_age_row_clone,
                 &startup_action_dropdown_clone,
-                &color_tabs_by_protocol_clone,
-                &show_protocol_filters_clone,
                 &sidebar_width_row_clone,
                 &compact_ui_clone,
                 &compact_auto_clone,
                 &terminal_passthrough_ctrl_clone,
                 &keyboard_passthrough_clone,
-                &window_title_shows_connection_clone,
-                &window_title_shows_path_clone,
+                &window_title_rows_clone,
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,
                 &show_split_pane_labels_clone,
@@ -1749,6 +1730,10 @@ impl SettingsDialog {
                 ui.window_maximized = cur.ui.window_maximized;
                 ui.expanded_groups = cur.ui.expanded_groups.clone();
                 ui.search_history = cur.ui.search_history.clone();
+                // Retired switches (0.23): no row, no effect — keep whatever
+                // the file already holds rather than rewriting it.
+                ui.color_tabs_by_protocol = cur.ui.color_tabs_by_protocol;
+                ui.show_protocol_filters = cur.ui.show_protocol_filters;
                 // A file-based startup action (an RDP/.vv file passed on the CLI)
                 // has no dropdown slot — it shares index 0 with "Do nothing" — so
                 // a Settings round-trip would otherwise collapse it to None.

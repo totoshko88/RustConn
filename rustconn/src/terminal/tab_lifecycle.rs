@@ -52,18 +52,17 @@ impl TerminalNotebook {
     /// first tab (`Welcome ⋮ fish1`) while the second tab — where Welcome was no
     /// longer selected — closed synchronously. Running this after the real page
     /// is appended and selected means Welcome is never the selected page at
-    /// close time, so it closes immediately on the first tab too. We simply
-    /// close any page titled Welcome, independent of the session count.
+    /// close time, so it closes immediately on the first tab too.
+    ///
+    /// The placeholder is found by the marker `TabPageContainer::welcome` puts
+    /// on its child, never by title: a session tab named "Welcome" (or the
+    /// translation of it) is a real session and must not be closed.
     pub(super) fn remove_welcome_page(&self) {
-        if self.tab_view.n_pages() == 0 {
-            return;
-        }
-        for i in 0..self.tab_view.n_pages() {
-            let page = self.tab_view.nth_page(i);
-            if page.title() == i18n("Welcome") {
-                self.tab_view.close_page(&page);
-                break;
-            }
+        let welcome = (0..self.tab_view.n_pages())
+            .map(|i| self.tab_view.nth_page(i))
+            .find(|page| TabPageContainer::is_welcome(&page.child()));
+        if let Some(page) = welcome {
+            self.tab_view.close_page(&page);
         }
     }
 
@@ -298,11 +297,6 @@ impl TerminalNotebook {
             }
         });
 
-        // Apply protocol color indicator if enabled
-        if *self.color_tabs_by_protocol.borrow() {
-            self.apply_protocol_color(session_id, protocol);
-        }
-
         // Notify listeners that a new terminal session was created.
         // Single choke point for per-session wiring (activity monitoring):
         // fires for every terminal protocol and for both synchronous and
@@ -390,10 +384,6 @@ impl TerminalNotebook {
         // Drop the Welcome placeholder after the real page is selected (see
         // `remove_welcome_page`) so it clears on the first tab, not the second.
         self.remove_welcome_page();
-        // Apply protocol color indicator if enabled
-        if *self.color_tabs_by_protocol.borrow() {
-            self.apply_protocol_color(session_id, "vnc");
-        }
         self.notify_tab_added(session_id, connection_id);
         session_id
     }
@@ -465,10 +455,6 @@ impl TerminalNotebook {
         // Drop the Welcome placeholder after the real page is selected (see
         // `remove_welcome_page`) so it clears on the first tab, not the second.
         self.remove_welcome_page();
-        // Apply protocol color indicator if enabled
-        if *self.color_tabs_by_protocol.borrow() {
-            self.apply_protocol_color(session_id, "rdp");
-        }
         self.notify_tab_added(session_id, connection_id);
     }
 
@@ -528,10 +514,6 @@ impl TerminalNotebook {
         // Drop the Welcome placeholder after the real page is selected (see
         // `remove_welcome_page`) so it clears on the first tab, not the second.
         self.remove_welcome_page();
-        // Apply protocol color indicator if enabled
-        if *self.color_tabs_by_protocol.borrow() {
-            self.apply_protocol_color(session_id, "web");
-        }
         self.notify_tab_added(session_id, connection_id);
     }
 
@@ -584,10 +566,6 @@ impl TerminalNotebook {
         // Drop the Welcome placeholder after the real page is selected (see
         // `remove_welcome_page`) so it clears on the first tab, not the second.
         self.remove_welcome_page();
-        // Apply protocol color indicator if enabled
-        if *self.color_tabs_by_protocol.borrow() {
-            self.apply_protocol_color(session_id, protocol);
-        }
         self.notify_tab_added(session_id, connection_id);
     }
 }

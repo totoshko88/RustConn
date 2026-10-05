@@ -293,6 +293,63 @@ pub fn get_protocol_string(config: &rustconn_core::ProtocolConfig) -> String {
     }
 }
 
+/// Whether `protocol` (as returned by [`get_protocol_string`]) matches any of
+/// the `protocol:` / `protocols:` filter names, case-insensitively.
+///
+/// A name matches the protocol string exactly or as its family prefix, so
+/// `zerotrust` matches `zerotrust:aws`, while `zerotrust:aws` still narrows to
+/// one provider. Blank names (a trailing comma) match nothing.
+#[must_use]
+pub fn protocol_matches_filter(protocol: &str, filter_names: &[&str]) -> bool {
+    let protocol = protocol.to_lowercase();
+    filter_names.iter().any(|name| {
+        let name = name.trim().to_lowercase();
+        !name.is_empty()
+            && (protocol == name
+                || protocol
+                    .strip_prefix(name.as_str())
+                    .is_some_and(|rest| rest.starts_with(':')))
+    })
+}
+
+#[cfg(test)]
+mod protocol_filter_tests {
+    use super::protocol_matches_filter;
+
+    #[test]
+    fn exact_name_matches_case_insensitively() {
+        assert!(protocol_matches_filter("ssh", &["SSH"]));
+        assert!(protocol_matches_filter("kubernetes", &["Kubernetes"]));
+        assert!(!protocol_matches_filter("ssh", &["rdp"]));
+    }
+
+    #[test]
+    fn family_name_matches_every_zero_trust_provider() {
+        assert!(protocol_matches_filter("zerotrust:aws", &["zerotrust"]));
+        assert!(protocol_matches_filter(
+            "zerotrust:azure_ssh",
+            &["ZeroTrust"]
+        ));
+        assert!(protocol_matches_filter("zerotrust:aws", &["zerotrust:aws"]));
+        assert!(!protocol_matches_filter(
+            "zerotrust:aws",
+            &["zerotrust:oci"]
+        ));
+    }
+
+    #[test]
+    fn prefix_without_separator_does_not_match() {
+        assert!(!protocol_matches_filter("sftp", &["s"]));
+        assert!(!protocol_matches_filter("zerotrust:aws", &["zero"]));
+    }
+
+    #[test]
+    fn multi_list_is_or_and_ignores_blanks() {
+        assert!(protocol_matches_filter("mosh", &["SSH", " MOSH "]));
+        assert!(!protocol_matches_filter("vnc", &["", " "]));
+    }
+}
+
 #[cfg(test)]
 mod session_start_observer_tests {
     use std::cell::{Cell, RefCell};

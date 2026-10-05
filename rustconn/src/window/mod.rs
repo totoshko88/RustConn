@@ -361,6 +361,18 @@ pub struct MainWindow {
     secret_banner: adw::Banner,
 }
 
+/// Content-header buttons the medium (≤ 820sp) breakpoint hides, by action name.
+const MEDIUM_HIDDEN: [&str; 2] = ["win.split-vertical", "win.split-horizontal"];
+
+/// Content-header buttons the narrow (≤ 600sp) breakpoint hides, by action name.
+/// Repeats the medium tier: only one breakpoint applies at a time.
+const NARROW_HIDDEN: [&str; 4] = [
+    "win.split-vertical",
+    "win.split-horizontal",
+    "win.settings",
+    "win.local-shell",
+];
+
 impl MainWindow {
     /// Creates a new main window for the application
     #[must_use]
@@ -603,17 +615,14 @@ impl MainWindow {
             });
         }
 
-        // Apply initial protocol tab coloring setting
+        // Apply initial reconnect-history and sidebar settings
         if let Ok(state_ref) = state.try_borrow() {
-            terminal_notebook
-                .set_color_tabs_by_protocol(state_ref.settings().ui.color_tabs_by_protocol);
             terminal_notebook.set_keep_history_on_reconnect(
                 state_ref.settings().terminal.keep_history_on_reconnect,
             );
             terminal_notebook.set_max_scrollback_on_reconnect(
                 state_ref.settings().terminal.max_scrollback_on_reconnect,
             );
-            sidebar.set_filter_visible(state_ref.settings().ui.show_protocol_filters);
             sidebar.set_smart_folders_visible(state_ref.settings().ui.show_smart_folders);
         }
 
@@ -660,23 +669,25 @@ impl MainWindow {
                 );
             });
 
-            // Hierarchy-path subtitle (Nautilus-style breadcrumb). When the active
-            // tab changes, set the content header's subtitle to the active
-            // connection's group path (e.g. "AWS Test Lab / Prod"), gated on the
-            // `window_title_shows_path` setting. The WM window title (issue #211) is
-            // untouched — this only drives the AdwWindowTitle subtitle. Resolves the
-            // tab's connection by its title against the connection list, then its
-            // group path.
+            // Group-path subtitle. When the active tab changes, set the content
+            // header's subtitle to the active connection's group path (e.g.
+            // "AWS Test Lab / Prod"), gated on the `window_title_shows_path`
+            // setting. The WM window title (issue #211) is untouched — this only
+            // drives the AdwWindowTitle subtitle. The handler lives on the
+            // notebook's own TabView, so it holds the notebook weakly.
             {
                 let header_title_for_sub = header_title.clone();
                 let state_for_sub = state.clone();
-                let notebook_for_sub = terminal_notebook.clone();
+                let notebook_for_sub = Rc::downgrade(&terminal_notebook);
                 terminal_notebook
                     .tab_view()
                     .connect_selected_page_notify(move |_tab_view| {
+                        let Some(notebook) = notebook_for_sub.upgrade() else {
+                            return;
+                        };
                         Self::refresh_header_subtitle(
                             &header_title_for_sub,
-                            &notebook_for_sub,
+                            &notebook,
                             &state_for_sub,
                         );
                     });
@@ -1036,12 +1047,13 @@ impl MainWindow {
 
         window.set_content(Some(tab_overview));
 
-        // Fullscreen hides the header bar and the tab bar together — the
-        // banners stay — and brings them back on a top-edge hover, F10 or a tab
+        // Fullscreen hides the header bar, the tab bar and the sidebar — the
+        // banners stay — and brings the bars back on a top-edge hover, F10 or a tab
         // switch (issue #354).
         fullscreen_header::install(
             &window,
             &toolbar_view,
+            &overlay_split_view,
             fullscreen_chrome,
             &menu_button,
             &terminal_notebook,
@@ -1065,13 +1077,14 @@ impl MainWindow {
         // Thresholds are chosen so each tier's resulting minimum width is BELOW
         // the next (narrower) tier's threshold — otherwise the window's minimum
         // plateaus at a tier boundary and a single drag "sticks" there, needing
-        // a second drag to continue (the reported jank). With the full header ≈
-        // 794 px:
+        // a second drag to continue (the reported jank). The content header
+        // holds only session/window actions since 0.23 (the list actions moved
+        // to the sidebar and the primary menu):
         // - medium ≤ 820sp: collapse + hide the sidebar (F9-style) and hide the
-        //   split-view buttons, Delete and New Group → header ≈ 578 px (< 600).
-        // - narrow ≤ 600sp: everything above, plus hide Quick Connect, Settings
-        //   and the Shell pill → header ≈ 390 px, leaving only Sidebar toggle,
-        //   New Connection and the menu beside the window controls.
+        //   two split buttons (`MEDIUM_HIDDEN`).
+        // - narrow ≤ 600sp: everything above, plus Settings and the Shell pill
+        //   (`NARROW_HIDDEN`), leaving the Sidebar toggle and the primary menu
+        //   beside the window controls. Both stay reachable from the menu.
         // The sidebar is hidden (show-sidebar = false), not shown as an overlay,
         // when collapsed; F9 / the edge gesture still reveals it as an overlay.
         // Growing the window past a threshold restores the hidden setters.
@@ -1092,12 +1105,7 @@ impl MainWindow {
         if let Some(title) = title_widget.as_ref() {
             bp_medium.add_setter(title, "visible", Some(&hide_flag));
         }
-        for action in [
-            "win.split-vertical",
-            "win.split-horizontal",
-            "win.delete-connection",
-            "win.new-group",
-        ] {
+        for action in MEDIUM_HIDDEN {
             if let Some(btn) = Self::header_button(&header_bar, action) {
                 bp_medium.add_setter(&btn, "visible", Some(&hide_flag));
             }
@@ -1115,15 +1123,7 @@ impl MainWindow {
         if let Some(title) = title_widget.as_ref() {
             bp_narrow.add_setter(title, "visible", Some(&hide_flag));
         }
-        for action in [
-            "win.split-vertical",
-            "win.split-horizontal",
-            "win.delete-connection",
-            "win.new-group",
-            "win.quick-connect",
-            "win.settings",
-            "win.local-shell",
-        ] {
+        for action in NARROW_HIDDEN {
             if let Some(btn) = Self::header_button(&header_bar, action) {
                 bp_narrow.add_setter(&btn, "visible", Some(&hide_flag));
             }
@@ -1144,15 +1144,7 @@ impl MainWindow {
             if let Some(title) = header_bar.title_widget() {
                 widgets.push(title);
             }
-            for action in [
-                "win.split-vertical",
-                "win.split-horizontal",
-                "win.delete-connection",
-                "win.new-group",
-                "win.quick-connect",
-                "win.settings",
-                "win.local-shell",
-            ] {
+            for action in NARROW_HIDDEN {
                 if let Some(btn) = Self::header_button(&header_bar, action) {
                     widgets.push(btn.upcast());
                 }
@@ -1544,22 +1536,6 @@ impl MainWindow {
             split_view_clone.set_show_sidebar(!visible);
         });
         window.add_action(&toggle_sidebar_action);
-
-        // Toggle protocol filters visibility
-        let toggle_filters_action = gio::SimpleAction::new("toggle-protocol-filters", None);
-        let sidebar_clone = sidebar.clone();
-        let state_clone = state.clone();
-        toggle_filters_action.connect_activate(move |_, _| {
-            let new_visible = !sidebar_clone.is_filter_visible();
-            sidebar_clone.set_filter_visible(new_visible);
-            // Persist the setting
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let mut settings = state_mut.settings().clone();
-                settings.ui.show_protocol_filters = new_visible;
-                let _ = state_mut.update_settings(settings);
-            }
-        });
-        window.add_action(&toggle_filters_action);
     }
 
     /// Connects UI signals
@@ -2235,59 +2211,26 @@ impl MainWindow {
         let connections: Vec<&rustconn_core::models::Connection> = state_ref.list_connections();
         let groups: Vec<_> = state_ref.list_groups().iter().cloned().cloned().collect();
 
-        // Check for single protocol filter syntax (protocol:rdp, proto:ssh, p:vnc)
-        let single_protocol = query
+        // Protocol filter syntax: a single name (protocol:rdp, proto:ssh, p:vnc)
+        // or an OR-list (protocols:ssh,mosh). Both go straight to a direct
+        // filter without scoring.
+        let protocol_filter: Option<Vec<&str>> = query
             .strip_prefix("protocol:")
             .or_else(|| query.strip_prefix("proto:"))
-            .or_else(|| query.strip_prefix("p:"));
+            .or_else(|| query.strip_prefix("p:"))
+            .map(|name| vec![name])
+            .or_else(|| {
+                query
+                    .strip_prefix("protocols:")
+                    .map(|names| names.split(',').collect())
+            });
 
-        if let Some(protocol_name) = single_protocol {
-            // Handle single protocol filter — direct filtering without scoring
-            let protocol_names: Vec<&str> = vec![protocol_name.trim()];
-            let mut filtered_connections = Vec::with_capacity(connections.len());
-
+        if let Some(protocol_names) = protocol_filter {
             for conn in &connections {
                 let protocol = get_protocol_string(&conn.protocol_config);
-                let protocol_lower = protocol.to_lowercase();
-
-                if protocol_names
-                    .iter()
-                    .any(|p| p.to_lowercase() == protocol_lower)
-                {
-                    filtered_connections.push(conn);
+                if !types::protocol_matches_filter(&protocol, &protocol_names) {
+                    continue;
                 }
-            }
-
-            for conn in filtered_connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
-                let item = ConnectionItem::new_connection(
-                    &conn.id.to_string(),
-                    &conn.name,
-                    &protocol,
-                    &conn.host,
-                );
-                item.set_description(conn.description.as_deref().unwrap_or(""));
-                store.append(&item);
-            }
-        } else if let Some(protocols_str) = query.strip_prefix("protocols:") {
-            // Handle multiple protocol filters with OR logic
-            let protocol_names: Vec<&str> = protocols_str.split(',').collect();
-            let mut filtered_connections = Vec::with_capacity(connections.len());
-
-            for conn in &connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
-                let protocol_lower = protocol.to_lowercase();
-
-                if protocol_names
-                    .iter()
-                    .any(|p| p.to_lowercase() == protocol_lower)
-                {
-                    filtered_connections.push(conn);
-                }
-            }
-
-            for conn in filtered_connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
                 let item = ConnectionItem::new_connection(
                     &conn.id.to_string(),
                     &conn.name,
@@ -3643,12 +3586,15 @@ impl MainWindow {
         notebook: &SharedNotebook,
         enabled: bool,
     ) {
-        let name = if enabled {
+        // Only a page that belongs to a session counts — the Welcome
+        // placeholder has none, and identifying it by its (translated) title
+        // would also hide a real session that happens to share the word.
+        let name = if enabled && notebook.get_active_session_id().is_some() {
             notebook
                 .tab_view()
                 .selected_page()
                 .map(|page| page.title().to_string())
-                .filter(|title| !title.is_empty() && *title != crate::i18n::i18n("Welcome"))
+                .filter(|title| !title.is_empty())
         } else {
             None
         };
@@ -3658,47 +3604,46 @@ impl MainWindow {
         }
     }
 
-    /// Set the content header's Nautilus-style hierarchy-path subtitle to the
-    /// active connection's group path (e.g. "AWS Test Lab / Prod"), gated on
-    /// the `window_title_shows_path` setting. Resolves the selected tab's
-    /// connection by title against the connection list, then its group path;
-    /// clears the subtitle when the setting is off, the tab is Welcome, or the
-    /// connection has no parent group. The WM window title (issue #211) is
-    /// untouched. Shared by the tab-switch hook and the live settings-apply
-    /// path, so toggling the setting updates the subtitle without a tab switch.
+    /// Sets the content header's subtitle to the active connection's group
+    /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
+    ///
+    /// The connection comes from the selected tab's session metadata, not its
+    /// title: a title carries a "[group] " prefix once the tab is grouped, and
+    /// two connections may share a name. The subtitle is cleared when the
+    /// setting is off, the page has no session (Welcome), the session has no
+    /// saved connection (local shell), or the connection is ungrouped. The WM
+    /// window title (issue #211) is untouched. Shared by the tab-switch hook
+    /// and the live settings-apply path. Leaves the subtitle as it is when the
+    /// state is borrowed elsewhere — the next tab switch catches up.
     pub(crate) fn refresh_header_subtitle(
         header_title: &adw::WindowTitle,
         notebook: &SharedNotebook,
         state: &SharedAppState,
     ) {
-        let show_path = with_state(state, |s| s.settings().ui.window_title_shows_path);
-        let subtitle = if show_path {
-            (|| {
-                let page = notebook.tab_view().selected_page()?;
-                let tab_title = page.title().to_string();
-                if tab_title.is_empty() || tab_title == crate::i18n::i18n("Welcome") {
-                    return None;
-                }
-                with_state(state, |s| {
-                    let conn = s
-                        .list_connections()
-                        .into_iter()
-                        .find(|c| c.name == tab_title)?;
-                    let gid = conn.group_id?;
-                    s.get_group_path(gid)
-                })
-            })()
-            .unwrap_or_default()
+        let connection_id = notebook
+            .get_active_session_id()
+            .and_then(|session_id| notebook.get_session_info(session_id))
+            .map(|info| info.connection_id);
+        let Ok(state_ref) = state.try_borrow() else {
+            return;
+        };
+        let subtitle = if state_ref.settings().ui.window_title_shows_path {
+            connection_id
+                .and_then(|id| state_ref.get_connection(id))
+                .and_then(|conn| conn.group_id)
+                .and_then(|group_id| state_ref.get_group_path(group_id))
+                .unwrap_or_default()
         } else {
             String::new()
         };
+        drop(state_ref);
         header_title.set_subtitle(&subtitle);
     }
 
-    // Dialog launcher wiring many independent window dependencies through to
-    // the settings dialog and its live-apply closure; bundling them into a
-    // struct would add indirection without clarifying anything.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "dialog launcher wiring independent window dependencies into the settings dialog and its live-apply closure; a struct would only restate them"
+    )]
     fn show_settings_dialog(
         window: &adw::ApplicationWindow,
         state: SharedAppState,
@@ -3788,16 +3733,10 @@ impl MainWindow {
                     );
                 }
 
-                // Apply protocol tab coloring setting
-                notebook.set_color_tabs_by_protocol(settings.ui.color_tabs_by_protocol);
-
                 // Apply reconnect history retention setting (#253)
                 notebook.set_keep_history_on_reconnect(settings.terminal.keep_history_on_reconnect);
                 notebook
                     .set_max_scrollback_on_reconnect(settings.terminal.max_scrollback_on_reconnect);
-
-                // Apply protocol filter visibility setting
-                sidebar.set_filter_visible(settings.ui.show_protocol_filters);
 
                 // Apply smart folders visibility setting
                 sidebar.set_smart_folders_visible(settings.ui.show_smart_folders);
@@ -3826,10 +3765,19 @@ impl MainWindow {
                     settings.ui.window_title_shows_connection,
                 );
 
-                // Refresh the hierarchy-path subtitle live so toggling
-                // "Show hierarchy path in header" updates immediately,
-                // without waiting for the next tab switch.
-                Self::refresh_header_subtitle(&header_title_for_apply, &notebook, &state);
+                // Refresh the group-path subtitle live so toggling "Show
+                // hierarchy path in header" updates without a tab switch.
+                // Deferred to idle: it reads the setting from the state, and
+                // the new settings only land there via `update_settings` below,
+                // which also holds the state mutably while it runs.
+                {
+                    let header_title = header_title_for_apply.clone();
+                    let notebook = notebook.clone();
+                    let state = state.clone();
+                    glib::idle_add_local_once(move || {
+                        Self::refresh_header_subtitle(&header_title, &notebook, &state);
+                    });
+                }
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     let simple_sync_was = state_mut.simple_sync_enabled();

@@ -45,6 +45,19 @@ fn tunnel_preset_index_for(url: &str) -> u32 {
         .map_or(custom_index, |i| i as u32)
 }
 
+/// The two "what the window header shows" switches, kept together by name.
+///
+/// They used to travel as two adjacent `&adw::SwitchRow` positional arguments
+/// of the same type, and one call site passed them in the wrong order — the
+/// compiler cannot catch that, a named field can.
+#[derive(Clone)]
+pub struct WindowTitleRows {
+    /// `ui.window_title_shows_connection` — connection name in the WM title.
+    pub shows_connection: adw::SwitchRow,
+    /// `ui.window_title_shows_path` — group path as the header subtitle.
+    pub shows_path: adw::SwitchRow,
+}
+
 /// Creates the UI settings page using AdwPreferencesPage
 #[expect(
     clippy::type_complexity,
@@ -61,15 +74,12 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SpinRow,
     DropDown,
-    adw::SwitchRow,
-    adw::SwitchRow,
     adw::SpinRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
-    adw::SwitchRow,
-    adw::SwitchRow,
+    WindowTitleRows,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -216,22 +226,6 @@ pub fn create_ui_page() -> (
         .build();
     appearance_group.add(&renderer_row);
 
-    // Color tabs by protocol toggle
-    let color_tabs_by_protocol = adw::SwitchRow::builder()
-        .title(i18n("Color tabs by protocol"))
-        .subtitle(i18n(
-            "Show colored indicator on tabs based on protocol type",
-        ))
-        .build();
-    appearance_group.add(&color_tabs_by_protocol);
-
-    // Show protocol filters toggle
-    let show_protocol_filters = adw::SwitchRow::builder()
-        .title(i18n("Show protocol filters"))
-        .subtitle(i18n("Display protocol filter bar in sidebar"))
-        .build();
-    appearance_group.add(&show_protocol_filters);
-
     // Sidebar width SpinRow
     let sidebar_width_row = adw::SpinRow::builder()
         .title(i18n("Sidebar width"))
@@ -338,7 +332,7 @@ pub fn create_ui_page() -> (
     let window_title_shows_path = adw::SwitchRow::builder()
         .title(i18n("Show hierarchy path in header"))
         .subtitle(i18n(
-            "Show the active connection's group path as the header subtitle (Nautilus-style breadcrumb)",
+            "Show the groups that contain the active connection below the window title",
         ))
         .build();
     window_group.add(&window_title_shows_path);
@@ -547,15 +541,15 @@ pub fn create_ui_page() -> (
         prompt_on_restore,
         max_age_row,
         startup_action_dropdown,
-        color_tabs_by_protocol,
-        show_protocol_filters,
         sidebar_width_row,
         compact_ui,
         compact_auto,
         terminal_passthrough_ctrl,
         keyboard_passthrough,
-        window_title_shows_connection,
-        window_title_shows_path,
+        WindowTitleRows {
+            shows_connection: window_title_shows_connection,
+            shows_path: window_title_shows_path,
+        },
         show_welcome_switch,
         double_click_opens_new_session,
         show_split_pane_labels,
@@ -611,15 +605,12 @@ pub fn load_ui_settings(
     prompt_on_restore: &adw::SwitchRow,
     max_age_row: &adw::SpinRow,
     startup_action_dropdown: &DropDown,
-    color_tabs_by_protocol: &adw::SwitchRow,
-    show_protocol_filters: &adw::SwitchRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
     compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
-    window_title_shows_connection: &adw::SwitchRow,
-    window_title_shows_path: &adw::SwitchRow,
+    window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
@@ -687,10 +678,6 @@ pub fn load_ui_settings(
     prompt_on_restore.set_sensitive(settings.session_restore.enabled);
     max_age_row.set_sensitive(settings.session_restore.enabled);
 
-    color_tabs_by_protocol.set_active(settings.color_tabs_by_protocol);
-
-    show_protocol_filters.set_active(settings.show_protocol_filters);
-
     // Load sidebar width (default 320 if not set)
     let sidebar_w = settings.sidebar_width.unwrap_or(320);
     sidebar_width_row.set_value(f64::from(sidebar_w.clamp(180, 500)));
@@ -703,8 +690,12 @@ pub fn load_ui_settings(
     terminal_passthrough_ctrl.set_active(settings.terminal_passthrough_ctrl);
     keyboard_passthrough.set_active(settings.keyboard_passthrough);
 
-    window_title_shows_connection.set_active(settings.window_title_shows_connection);
-    window_title_shows_path.set_active(settings.window_title_shows_path);
+    window_title
+        .shows_connection
+        .set_active(settings.window_title_shows_connection);
+    window_title
+        .shows_path
+        .set_active(settings.window_title_shows_path);
 
     show_welcome_switch.set_active(settings.show_welcome_on_startup);
 
@@ -770,15 +761,12 @@ pub fn collect_ui_settings(
     prompt_on_restore: &adw::SwitchRow,
     max_age_row: &adw::SpinRow,
     startup_action_dropdown: &DropDown,
-    color_tabs_by_protocol: &adw::SwitchRow,
-    show_protocol_filters: &adw::SwitchRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
     compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
-    window_title_shows_connection: &adw::SwitchRow,
-    window_title_shows_path: &adw::SwitchRow,
+    window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
@@ -846,14 +834,16 @@ pub fn collect_ui_settings(
         },
         search_history: Vec::new(), // Preserve existing history from current settings
         startup_action,
-        color_tabs_by_protocol: color_tabs_by_protocol.is_active(),
-        show_protocol_filters: show_protocol_filters.is_active(),
+        // Retired settings with no row any more; the caller copies the stored
+        // values back so a save never rewrites what an older build left.
+        color_tabs_by_protocol: false,
+        show_protocol_filters: false,
         show_smart_folders: false, // Preserved via toggle button, not settings dialog
         compact_ui: compact_ui.is_active(),
         compact_auto: compact_auto.is_active(),
         terminal_passthrough_ctrl: terminal_passthrough_ctrl.is_active(),
-        window_title_shows_connection: window_title_shows_connection.is_active(),
-        window_title_shows_path: window_title_shows_path.is_active(),
+        window_title_shows_connection: window_title.shows_connection.is_active(),
+        window_title_shows_path: window_title.shows_path.is_active(),
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
         open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),

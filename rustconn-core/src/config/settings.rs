@@ -1031,10 +1031,18 @@ pub struct UiSettings {
     /// only the accidental trigger goes away.
     #[serde(default = "default_true")]
     pub reveal_session_toolbar_on_hover: bool,
-    /// Color tab indicators by protocol type
+    /// Retired in 0.23 and ignored: was "colour tab indicators by protocol".
+    ///
+    /// Tabs already show the protocol's symbolic icon, so the indicator only
+    /// repeated it. Kept so configs written by older builds still load and so
+    /// a downgrade finds the value it wrote.
     #[serde(default)]
     pub color_tabs_by_protocol: bool,
-    /// Show protocol filter bar in sidebar
+    /// Retired in 0.23 and ignored: was "show the protocol filter bar".
+    ///
+    /// The filters now live in a popover behind the sidebar's Filter button,
+    /// which has no persistent visible state to remember. Kept for the same
+    /// load/downgrade reason as `color_tabs_by_protocol`.
     #[serde(default)]
     pub show_protocol_filters: bool,
     /// Show Smart Folders section in sidebar

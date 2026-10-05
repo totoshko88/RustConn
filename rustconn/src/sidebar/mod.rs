@@ -107,15 +107,6 @@ pub struct ConnectionSidebar {
     pending_search_query: Rc<RefCell<Option<String>>>,
     /// Saved tree state before search (for restoration when search is cleared)
     pre_search_state: Rc<RefCell<Option<TreeState>>>,
-    /// Active protocol filters (SSH, RDP, VNC, SPICE, Telnet, Serial, ZeroTrust, Kubernetes)
-    active_protocol_filters: Rc<RefCell<HashSet<String>>>,
-    /// The single "Filter" menu button living in the search box (HIG §2a:
-    /// replaces the old row of 9 permanent pill buttons).
-    protocol_filter_menu: gtk4::MenuButton,
-    /// The check buttons inside the filter popover, keyed by protocol name
-    /// (same keys as `active_protocol_filters`). Kept so the "clear" paths can
-    /// uncheck them and so state can be read back.
-    protocol_filter_checks: Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>>,
     /// KeePass button for showing integration status
     keepass_button: Button,
     /// Callback to check if a connection has an active recording session
@@ -244,6 +235,7 @@ impl ConnectionSidebar {
         let help_popover_for_key = help_popover.clone();
         let active_filters_for_clear = active_protocol_filters.clone();
         let checks_for_clear = protocol_filter_checks.clone();
+        let filter_menu_for_clear = protocol_filter_menu.downgrade();
         let programmatic_flag_for_search = programmatic_flag.clone();
         search_entry.connect_search_changed(move |entry| {
             let text = entry.text();
@@ -262,16 +254,18 @@ impl ConnectionSidebar {
                 return;
             }
 
-            // Clear filter buttons when search is manually cleared
-            // Only clear if text is empty and we have active filters
+            // Clear the protocol checkboxes whenever the query is emptied — by
+            // the user, or by the search bar clearing its entry as it closes —
+            // so the boxes, the Filter button and the list never disagree.
             if text.is_empty()
-                && let Ok(filters) = active_filters_for_clear.try_borrow()
+                && let Ok(mut filters) = active_filters_for_clear.try_borrow_mut()
                 && !filters.is_empty()
             {
-                drop(filters); // Release the borrow before clearing
-
-                // Clear the active filters state
-                active_filters_for_clear.borrow_mut().clear();
+                filters.clear();
+                drop(filters);
+                if let Some(menu) = filter_menu_for_clear.upgrade() {
+                    Self::sync_filter_indicator(&menu, false);
+                }
 
                 // Uncheck every protocol checkbox. Guard with the programmatic
                 // flag so each `set_active(false)` does not re-enter the toggled
@@ -792,9 +786,6 @@ impl ConnectionSidebar {
             search_spinner,
             pending_search_query: Rc::new(RefCell::new(None)),
             pre_search_state: Rc::new(RefCell::new(None)),
-            active_protocol_filters,
-            protocol_filter_menu,
-            protocol_filter_checks,
             keepass_button,
             recording_checker,
             smart_folders_sidebar,
@@ -823,9 +814,11 @@ impl ConnectionSidebar {
         gtk4::MenuButton,
         Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>>,
     ) {
-        // Protocol key (HashSet key, must match update_search_with_filters) paired
-        // with its human-readable, translatable label. Note the Kubernetes key is
-        // "K8s" to match the historical filter state keys.
+        // Protocol key paired with its translatable label. The key, lowercased,
+        // becomes the `protocol:`/`protocols:` query (see
+        // `update_search_with_filters`), so it must match the family part of
+        // `window::types::get_protocol_string` — "kubernetes", "zerotrust" (which
+        // the window filter matches against every "zerotrust:<provider>").
         let protocols: [(&str, String); 9] = [
             ("SSH", i18n("SSH")),
             ("RDP", i18n("RDP")),
@@ -834,7 +827,7 @@ impl ConnectionSidebar {
             ("Telnet", i18n("Telnet")),
             ("Serial", i18n("Serial")),
             ("ZeroTrust", i18n("ZeroTrust")),
-            ("K8s", i18n("Kubernetes")),
+            ("Kubernetes", i18n("Kubernetes")),
             ("Web", i18n("Web")),
         ];
 
@@ -847,33 +840,44 @@ impl ConnectionSidebar {
         let checks: Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>> =
             Rc::new(RefCell::new(std::collections::HashMap::new()));
 
+        let menu_button = gtk4::MenuButton::new();
+
         for (key, label) in protocols {
             let check = gtk4::CheckButton::with_label(&label);
-            // Accessibility: mirror the former per-protocol accessible label.
-            let accessible_label = crate::i18n::i18n_f("Filter by {} protocol", &[key]);
+            // Accessibility: built from the translated label, not the key.
+            let accessible_label = crate::i18n::i18n_f("Filter by {} protocol", &[&label]);
             check.update_property(&[gtk4::accessible::Property::Label(&accessible_label)]);
 
             let proto = key.to_string();
             let filters = active_protocol_filters.clone();
             let entry = search_entry.clone();
             let flag = programmatic_flag.clone();
+            // The check lives in the button's own popover: hold it weakly.
+            let button_weak = menu_button.downgrade();
             check.connect_toggled(move |cb| {
                 // Skip programmatic updates (e.g. the clear paths), which would
                 // otherwise re-touch the filter set / search entry recursively.
                 if *flag.borrow() {
                     return;
                 }
-                {
-                    let mut set = filters.borrow_mut();
-                    if cb.is_active() {
-                        set.insert(proto.clone());
-                    } else {
-                        set.remove(&proto);
-                    }
+                let Ok(mut set) = filters.try_borrow_mut() else {
+                    return;
+                };
+                if cb.is_active() {
+                    set.insert(proto.clone());
+                } else {
+                    set.remove(&proto);
+                }
+                let any_active = !set.is_empty();
+                drop(set);
+                if let Some(button) = button_weak.upgrade() {
+                    Self::sync_filter_indicator(&button, any_active);
                 }
                 // Reuse the existing filter application (handles SSH->MOSH and
                 // single/multi protocol query syntax).
-                search::update_search_with_filters(&filters.borrow(), &entry, &flag);
+                if let Ok(set) = filters.try_borrow() {
+                    search::update_search_with_filters(&set, &entry, &flag);
+                }
             });
 
             list_box.append(&check);
@@ -883,19 +887,33 @@ impl ConnectionSidebar {
         let popover = gtk4::Popover::new();
         popover.set_child(Some(&list_box));
 
-        let menu_button = gtk4::MenuButton::new();
         menu_button.set_icon_name(crate::icon_render::theme_icon_or(
             "funnel-symbolic",
             "view-list-bullet-symbolic",
         ));
-        menu_button.set_tooltip_text(Some(&i18n("Filter by protocol")));
         menu_button.add_css_class("flat");
         menu_button.set_popover(Some(&popover));
         menu_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Filter by protocol",
         ))]);
+        Self::sync_filter_indicator(&menu_button, false);
 
         (menu_button, checks)
+    }
+
+    /// Shows on the Filter button whether any protocol filter is on.
+    ///
+    /// Accent colour plus a tooltip, so the state is not carried by colour
+    /// alone. The button's accessible label stays "Filter by protocol"; the
+    /// checked boxes inside report their own state to a screen reader.
+    fn sync_filter_indicator(menu_button: &gtk4::MenuButton, any_active: bool) {
+        if any_active {
+            menu_button.add_css_class("accent");
+            menu_button.set_tooltip_text(Some(&i18n("Filter by protocol (filters active)")));
+        } else {
+            menu_button.remove_css_class("accent");
+            menu_button.set_tooltip_text(Some(&i18n("Filter by protocol")));
+        }
     }
 
     /// Returns the main widget for this sidebar
@@ -1816,55 +1834,6 @@ impl ConnectionSidebar {
                     .set_tooltip_text(Some(&i18n("Password Vault Disabled")));
             }
         }
-    }
-
-    /// Shows or hides the protocol filter popover.
-    ///
-    /// The old implementation revealed a permanent filter *bar*; the filter UI
-    /// is now a single menu button whose popover holds the protocol checkboxes
-    /// (GNOME HIG §2a). `visible == true` pops the popover up; `visible == false`
-    /// pops it down and — preserving the former "hiding clears filters" rule —
-    /// clears the active filters, unchecks the checkboxes and drops any
-    /// protocol-only query from the search entry.
-    ///
-    /// The method name and signature are unchanged so the window-level
-    /// `win.toggle-protocol-filters` action and the settings-restore paths keep
-    /// working without modification.
-    pub fn set_filter_visible(&self, visible: bool) {
-        if visible {
-            // Only pop the popover up if the menu button is actually mapped
-            // (i.e. its surface exists inside a presented toplevel). The
-            // settings-restore path calls this during window construction,
-            // BEFORE the window is presented — at that point the MenuButton has
-            // no surface, and MenuButton::popup() ends up in gdk_surface_new_popup
-            // with a NULL parent surface, which asserts and then SIGSEGVs (the
-            // old revealer-based filter bar tolerated a pre-realize reveal; a
-            // popover does not). Popping a protocol filter up unprompted at
-            // launch was never wanted anyway, so skipping it here is also the
-            // better UX: the user opens the filter from the button or by typing
-            // a `proto:` query.
-            if self.protocol_filter_menu.is_mapped() {
-                self.protocol_filter_menu.popup();
-            }
-        } else {
-            self.protocol_filter_menu.popdown();
-            // Clear active filters when hiding to avoid hidden filtering.
-            self.active_protocol_filters.borrow_mut().clear();
-            for check in self.protocol_filter_checks.borrow().values() {
-                check.set_active(false);
-            }
-            // Clear search entry if it contains only protocol filter text
-            let text = self.search_entry.text();
-            if text.starts_with("proto:") || text.starts_with("p:") {
-                self.search_entry.set_text("");
-            }
-        }
-    }
-
-    /// Returns whether the protocol filter popover is currently shown.
-    #[must_use]
-    pub fn is_filter_visible(&self) -> bool {
-        self.protocol_filter_menu.is_active()
     }
 
     /// Refreshes the Smart Folders section with current data.

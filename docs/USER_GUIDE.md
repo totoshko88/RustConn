@@ -40,7 +40,6 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Smart Folders](#smart-folders)
    - [Dynamic Folders](#dynamic-folders)
    - [Custom Icons](#custom-icons)
-   - [Tab Coloring](#tab-coloring)
    - [Tab Grouping](#tab-grouping)
 7. [Productivity Tools](#productivity-tools)
    - [Templates](#templates)
@@ -110,12 +109,13 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### Layout
 
 RustConn uses a two-panel layout in the GNOME style (like Files or Settings): the
-sidebar and the session area each have their own header bar, with the window
-controls split across them.
+sidebar and the session area each have their own header bar. The window controls
+follow your system's button layout and always sit at the window's edges, whether
+the sidebar is shown or hidden.
 
 ```
 ┌────────────────────────┬────────────────────────────────────┐
-│ 🔍  Connections     ☰  │  Connection Name                  — □ ✕│
+│ 🔍  Connections     ⋯  │  Connection Name                  — □ ✕│
 │                        │  Group / Subgroup (optional path)      │
 ├────────────────────────┼────────────────────────────────────┤
 │  ▼ Production          │  ┌─────┬─────┬─────┐                  │
@@ -131,8 +131,8 @@ controls split across them.
 ```
 
 - **Sidebar header** — a search toggle (🔍) on the left, the "Connections" title
-  in the centre, and a single menu button (☰) on the right. Every create/list
-  action lives in that menu now (see **Components**).
+  in the centre, and a small menu (⋯) on the right for the connection list itself
+  (see **Components**).
 - **Content header** — the active connection's name, with its group path shown
   underneath as a subtitle when **Show hierarchy path in header** is on (Settings
   → Interface).
@@ -141,14 +141,12 @@ controls split across them.
 
 ### Components
 
-- **Sidebar header** — search toggle + "Connections" title + a single hamburger
-  menu (☰). The menu groups every action by purpose:
-  - *Create* — New Connection, New Connection (Advanced), New Group
-  - *Tools* — Manage Clusters, Manage Workspaces, Manage Snippets (quick access
-    to the management dialogs straight from the list panel)
-  - *List* — Quick Connect, Delete Selected, Import…, Export…
+- **Sidebar header** — search toggle + "Connections" title + a list menu (⋯)
+  with **Select Connections**, **Sort Alphabetically** and **Sort by Recent Use**.
 - **Content header** — connection name (and optional group-path subtitle), plus
-  the terminal/shell, split-view and primary-menu buttons on the right.
+  the terminal/shell, split-view and primary-menu (☰) buttons on the right. The
+  primary menu holds everything else: New Connection, New Group, Quick Connect,
+  the Tools and Sessions managers, Import/Export, Settings.
 - **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible
   via F9 or on narrow windows)
 - **Sidebar bottom toolbar** — History, Sort A–Z, Sort by recent usage, Password
@@ -166,8 +164,11 @@ collapses again when you clear it.
 Filter connections by protocol from the **Filter** menu button in the search row:
 - Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
   Serial, ZeroTrust, Kubernetes, Web)
-- Several protocols can be ticked at once (OR logic)
-- Clearing the search field resets the filters and unticks every box
+- Several protocols can be ticked at once (OR logic); ZeroTrust matches every
+  provider
+- The Filter button turns accent-coloured while any protocol is ticked
+- Clearing the search field, or closing the search row, resets the filters and
+  unticks every box
 
 ### Password Vault Button
 
@@ -2346,7 +2347,7 @@ Override terminal colors (background, foreground, cursor) on a per-connection ba
 
 #### Create Group
 
-- **Ctrl+Shift+G**, or the sidebar menu (☰) → *Create* → **New Group**
+- **Ctrl+Shift+G**, or the primary menu (☰) → **New Group**
 - Right-click in sidebar → **New Group**
 - Right-click on group → **New Subgroup**
 
@@ -2373,11 +2374,11 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 #### Group Operations Mode (Bulk Actions)
 
 Group Operations Mode enables bulk actions on multiple connections at once. It is
-toggled from the content header's **primary menu (☰) → Select Connections** (the
-old permanent sidebar icon was removed in 0.23.0); right-click → **Group
+toggled from the sidebar's list menu **(⋯) → Select Connections** (the old
+permanent sidebar icon was removed in 0.23.0); right-click → **Group
 Operations** still works too.
 
-**Activate:** Primary menu (☰) → **Select Connections**, or right-click → Group Operations
+**Activate:** Sidebar list menu (⋯) → **Select Connections**, or right-click → Group Operations
 
 **Available actions in the bulk-actions bar:**
 
@@ -2391,7 +2392,7 @@ Operations** still works too.
 
 **Workflow:**
 
-1. Primary menu (☰) → **Select Connections** to enter Group Operations Mode
+1. Sidebar list menu (⋯) → **Select Connections** to enter Group Operations Mode
 2. Checkboxes appear next to each connection in the sidebar
 3. Select individual connections by clicking their checkboxes, or use **Select All**
 4. Choose an action: **Move to Group** or **Delete**
@@ -2693,21 +2694,6 @@ Multi-codepoint emoji work as well — ZWJ sequences (`👨‍💻`, `❤️‍�
 Leave the field empty to use the default icon (folder for groups, protocol-based for connections).
 
 > **Note:** If the active icon theme does not carry the GTK icon name you entered, RustConn falls back to the default icon (folder or protocol) instead of drawing empty space. Under Flatpak this is the usual case for exotic names: the GNOME runtime ships only the Adwaita theme, so a name you found in a host icon browser may not exist inside the sandbox. See the [Adwaita named icons list](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/named-icons.html) for names that always resolve.
-
-### Tab Coloring
-
-Optional colored circle indicators on terminal tabs to visually distinguish protocols at a glance.
-
-| Protocol | Color |
-|----------|-------|
-| SSH | 🟢 Green |
-| RDP | 🔵 Blue |
-| VNC | 🟣 Purple |
-| SPICE | 🟠 Orange |
-| Serial | 🟡 Yellow |
-| Kubernetes | 🔵 Cyan |
-
-**Enable/Disable:** Settings → Interface page → Appearance → **Color tabs by protocol**
 
 ### Tab Grouping
 
@@ -3335,7 +3321,7 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Interface page
 
-**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Color tabs by protocol, Sidebar width (260–500 pixels, default 320).
+**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (260–500 pixels, default 320).
 
 **Rendering** chooses which GTK renderer draws the interface. Leave it on **Automatic** unless the interface is sluggish: RustConn then uses the GPU renderer, except where it is known to behave worse than software rasterisation — X11 sessions whose compositor paints menus blank until you hover them, and macOS running inside a virtual machine, where the virtual GPU offers no accelerated OpenGL and the GPU path becomes both slow and CPU-hungry. **Software (Cairo)** forces software rasterisation everywhere; pick it if the interface lags, scrolls in steps, or responds late to typing in an environment the automatic choice does not recognise. **Hardware (GPU)** forces the GPU renderer, which is the setting for an X11 session with a driver that works fine. A `GSK_RENDERER` environment variable, if you set one, overrides all three. The choice applies on the next start, because GTK reads it while it opens the first window.
 

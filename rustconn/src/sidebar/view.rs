@@ -174,13 +174,8 @@ pub fn setup_list_item(
     let expander = TreeExpander::new();
 
     let content_box = GtkBox::new(Orientation::Horizontal, 10);
-    // Cosmetic row polish (HIG §5, mini): a comfortable AdwActionRow-like
-    // rhythm — a little more vertical breathing room and leading/trailing
-    // padding — applied via the `connection-row` class (styled in style.css).
-    // This class is NOT read by the bind path's find_child_by_css_class
-    // lookups (status-icon / note-icon / recording-icon / external-session-icon
-    // / split-marker), so it is purely visual and touches no structure.
-    content_box.add_css_class("connection-row");
+    // Row rhythm close to an AdwActionRow: a little more vertical breathing
+    // room and leading/trailing padding than the bare list row.
     content_box.set_margin_start(6);
     content_box.set_margin_end(6);
     content_box.set_margin_top(7);

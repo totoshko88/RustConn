@@ -12,9 +12,11 @@ use crate::i18n::i18n;
 /// Creates the header bar with title and controls
 ///
 /// Layout:
-/// - Left side (pack_start): Quick Connect, Add, Remove, Add Group
+/// - Left side (pack_start): Sidebar toggle
 /// - Center: Title + Spinner
-/// - Right side (pack_end): Menu, Settings, Split Vertical, Split Horizontal
+/// - Right side (pack_end): Menu, Settings, Split Down, Split Right, Shell,
+///   and the Broadcast / Group Broadcast / Passthrough indicators (shown only
+///   while relevant)
 ///
 /// Returns the header bar, the busy spinner widget (initially hidden),
 /// the passthrough indicator button (initially hidden), the
@@ -31,15 +33,12 @@ pub fn create_header_bar() -> (
     MenuButton,
     adw::WindowTitle,
 ) {
+    // Window controls are left to libadwaita: inside an AdwOverlaySplitView an
+    // AdwHeaderBar hides the title buttons that are not at a window edge and
+    // brings them back when the sidebar is hidden or collapsed. Pinning the
+    // start side off here lost the controls for start-side layouts (macOS,
+    // elementary) as soon as the sidebar was hidden.
     let header_bar = adw::HeaderBar::new();
-    // Per-panel window controls: the content header owns the END controls
-    // (close / maximize / minimize on a standard GNOME layout); the sidebar
-    // header owns the START controls. This splits the system button-layout
-    // across the two panels the way Files/Settings do, instead of both headers
-    // claiming the same controls. The system `button-layout` is still honoured
-    // — we only say which panel renders which edge.
-    header_bar.set_show_start_title_buttons(false);
-    header_bar.set_show_end_title_buttons(true);
 
     // Title area: an AdwWindowTitle (title + optional subtitle) in a box with
     // the busy spinner. The subtitle shows the active connection's hierarchy
@@ -97,7 +96,6 @@ pub fn create_header_bar() -> (
     let settings_button = Button::from_icon_name("preferences-system-symbolic");
     settings_button.set_tooltip_text(Some(&i18n("Settings (Ctrl+,)")));
     settings_button.set_action_name(Some("win.settings"));
-    settings_button.add_css_class("flat");
     settings_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Settings"))]);
     header_bar.pack_end(&settings_button);
 
@@ -107,7 +105,6 @@ pub fn create_header_bar() -> (
     let split_horizontal_button = Button::from_icon_name("object-flip-vertical-symbolic");
     split_horizontal_button.set_tooltip_text(Some(&i18n("Split Down (Ctrl+Shift+H)")));
     split_horizontal_button.set_action_name(Some("win.split-horizontal"));
-    split_horizontal_button.add_css_class("flat");
     split_horizontal_button
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Down"))]);
     header_bar.pack_end(&split_horizontal_button);
@@ -115,7 +112,6 @@ pub fn create_header_bar() -> (
     let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
     split_vertical_button.set_tooltip_text(Some(&i18n("Split Right (Ctrl+Shift+S)")));
     split_vertical_button.set_action_name(Some("win.split-vertical"));
-    split_vertical_button.add_css_class("flat");
     split_vertical_button
         .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Right"))]);
     header_bar.pack_end(&split_vertical_button);
@@ -131,7 +127,6 @@ pub fn create_header_bar() -> (
     shell_button.set_child(Some(&shell_box));
     shell_button.set_tooltip_text(Some(&i18n("Local Shell (Ctrl+Shift+T)")));
     shell_button.set_action_name(Some("win.local-shell"));
-    shell_button.add_css_class("flat");
     shell_button.add_css_class("accent");
     shell_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Open Local Shell"))]);
     header_bar.pack_end(&shell_button);
@@ -154,7 +149,6 @@ pub fn create_header_bar() -> (
         "Toggle split broadcast",
     ))]);
     broadcast_toggle.set_action_name(Some("win.toggle-broadcast"));
-    broadcast_toggle.add_css_class("flat");
     broadcast_toggle.add_css_class("pill");
     broadcast_toggle.set_visible(false);
     header_bar.pack_end(&broadcast_toggle);
@@ -179,7 +173,6 @@ pub fn create_header_bar() -> (
         "Toggle group broadcast",
     ))]);
     group_broadcast_toggle.set_action_name(Some("win.toggle-group-broadcast"));
-    group_broadcast_toggle.add_css_class("flat");
     group_broadcast_toggle.add_css_class("pill");
     group_broadcast_toggle.set_visible(false);
     header_bar.pack_end(&group_broadcast_toggle);
@@ -202,22 +195,16 @@ pub fn create_header_bar() -> (
     ))]);
     passthrough_indicator.set_action_name(Some("win.toggle-passthrough"));
     passthrough_indicator.add_css_class("warning");
-    passthrough_indicator.add_css_class("flat");
     passthrough_indicator.add_css_class("pill");
     passthrough_indicator.set_visible(false);
     header_bar.pack_end(&passthrough_indicator);
 
     // GNOME HIG (Pointer & Touch): icon-only buttons must meet the 44×44px
-    // minimum tap target. Buttons with a text label (Shell, Broadcast,
-    // Passthrough) already exceed it via their content.
-    //
-    // macOS has no touch input, and its native AppKit toolbar buttons sit
-    // around 28px. `AdwHeaderBar` derives its (CSS-immovable) minimum height
-    // from the tallest child, so a 44px size request here is exactly what keeps
-    // the header taller than a native window. Drop the floor to 28px on macOS
-    // so the CSS compact/macOS rules can actually take effect; keep 44px
-    // everywhere else for the tap-target guarantee.
-    let header_button_size: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
+    // minimum tap target (28px on macOS — see `HEADER_BUTTON_SIZE`). Buttons
+    // with a text label (Shell, Broadcast, Passthrough) already exceed it via
+    // their content. The sidebar header uses the same constant, so both bars
+    // come out the same height.
+    let header_button_size = crate::sidebar_ui::HEADER_BUTTON_SIZE;
 
     sidebar_toggle.set_size_request(header_button_size, header_button_size);
     menu_button.set_size_request(header_button_size, header_button_size);
@@ -257,14 +244,8 @@ pub fn create_app_menu() -> gio::Menu {
         Some("win.new-connection-advanced"),
     );
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));
-    // Multi-select mode (GNOME HIG §2c): moved out of the sidebar's bottom
-    // toolbar into the menu. The stateful `win.group-operations` action renders
-    // here as a checkable toggle (the bulk-actions bar still appears only while
-    // the mode is on, which is HIG-correct).
-    conn_section.append(
-        Some(&i18n("Select Connections")),
-        Some("win.group-operations"),
-    );
+    // "Select Connections" (multi-select mode) acts on the connection list, so
+    // it lives in the sidebar's secondary menu, not here.
     conn_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
     conn_section.append(Some(&i18n("Local Shell")), Some("win.local-shell"));
     menu.append_section(None, &conn_section);

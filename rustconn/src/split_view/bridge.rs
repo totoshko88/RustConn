@@ -2347,15 +2347,8 @@ impl SplitViewBridge {
                     let icon_name =
                         rustconn_core::protocol::icons::get_protocol_icon_by_name(&protocol);
                     row.add_prefix(&gtk4::Image::from_icon_name(icon_name));
-
-                    // Show split color indicator if session is in any split view
-                    if let Some(&color_index) = split_colors.borrow().get(&session_id)
-                        && let Some(icon) = create_colored_circle_icon(color_index, 12)
-                    {
-                        let color_image = gtk4::Image::from_gicon(&icon);
-                        color_image.set_pixel_size(12);
-                        row.add_suffix(&color_image);
-                    }
+                    // No split-colour badge: every session in some split was
+                    // filtered out of `available_sessions` above.
 
                     let callback = on_session_selected.clone();
                     let popover_weak = popover.downgrade();

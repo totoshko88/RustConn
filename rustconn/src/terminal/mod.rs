@@ -235,10 +235,8 @@ pub struct TerminalNotebook {
     automation_sessions: Rc<RefCell<HashMap<Uuid, AutomationSession>>>,
     /// Session metadata
     session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-    /// Whether to color tab indicators by protocol type
-    color_tabs_by_protocol: Rc<RefCell<bool>>,
     /// Direct tracking of split view colors per session (session_id → color_index).
-    /// Used to prevent protocol/clear operations from overwriting split indicators.
+    /// Used to prevent clear operations from overwriting split indicators.
     split_session_colors: Rc<RefCell<HashMap<Uuid, usize>>>,
     /// Tab group manager for assigning colors to named groups
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
@@ -527,7 +525,6 @@ impl TerminalNotebook {
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_info: Rc::new(RefCell::new(HashMap::new())),
-            color_tabs_by_protocol: Rc::new(RefCell::new(false)),
             split_session_colors: Rc::new(RefCell::new(HashMap::new())),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
             on_reconnect: Rc::new(RefCell::new(None)),
@@ -1939,61 +1936,9 @@ impl TerminalNotebook {
         self.max_scrollback_on_reconnect.set(limit);
     }
 
-    /// Sets whether tabs should be colored by protocol type
-    pub fn set_color_tabs_by_protocol(&self, enabled: bool) {
-        *self.color_tabs_by_protocol.borrow_mut() = enabled;
-        // Apply or remove protocol colors on all existing sessions
-        let sessions: Vec<(Uuid, String)> = self
-            .session_info
-            .borrow()
-            .iter()
-            .map(|(id, info)| (*id, info.protocol.clone()))
-            .collect();
-        for (session_id, protocol) in sessions {
-            if enabled {
-                self.apply_protocol_color(session_id, &protocol);
-            } else {
-                self.clear_protocol_color(session_id);
-            }
-        }
-    }
-
     /// Updates whether the Welcome tab is shown when no sessions are open (issue #232)
     pub fn set_show_welcome(&self, enabled: bool) {
         self.show_welcome.set(enabled);
-    }
-
-    /// Applies protocol-based color indicator to a tab
-    fn apply_protocol_color(&self, session_id: Uuid, protocol: &str) {
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
-            // Don't override split colors — split takes priority
-            if self.split_session_colors.borrow().contains_key(&session_id) {
-                return;
-            }
-            // GNOME HIG §4b: the tab's protocol affordance is a MONOCHROME
-            // symbolic glyph, not a coloured dot. The former solid RGB circle
-            // (green SSH / blue RDP / …) was the one branded, non-symbolic mark
-            // left in the UI — it stood out against the otherwise monochrome
-            // chrome. The indicator now carries the same symbolic icon the tab's
-            // main icon uses (`get_protocol_icon`), so "colour tabs by protocol"
-            // still gives a per-protocol indicator, just a theme-tinted symbolic
-            // one. Split-membership colours (a different slot/meaning) keep their
-            // colour via `split_session_colors`, which is checked above.
-            let icon = gio::ThemedIcon::new(Self::get_protocol_icon(protocol));
-            page.set_indicator_icon(Some(&icon));
-            page.set_indicator_activatable(false);
-        }
-    }
-
-    /// Removes protocol color indicator from a tab
-    fn clear_protocol_color(&self, session_id: Uuid) {
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
-            // Don't clear if split color is active
-            if self.split_session_colors.borrow().contains_key(&session_id) {
-                return;
-            }
-            page.set_indicator_icon(gio::Icon::NONE);
-        }
     }
 
     /// Gets the terminal widget for a session

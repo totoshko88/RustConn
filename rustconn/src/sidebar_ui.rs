@@ -1150,18 +1150,14 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 /// resizable" confusion. The buttons reference existing `win.*` actions, so no
 /// new wiring is needed; they fire the same handlers as the content header.
 pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
+    // Window controls are left to libadwaita: inside an AdwOverlaySplitView an
+    // AdwHeaderBar hides the title buttons that are not at a window edge, and
+    // shows them again when the sidebar is hidden or collapsed. Forcing one
+    // side off here is what lost the controls for start-side layouts.
     let header = adw::HeaderBar::new();
-    // Per-panel window controls: the sidebar header owns the START controls
-    // (the left edge of the system button-layout); the content header owns the
-    // END controls. Together the two panels render the full system layout once,
-    // the way Files/Settings split it, instead of both claiming every control.
-    header.set_show_start_title_buttons(true);
-    header.set_show_end_title_buttons(false);
     // The split view already carries the window title on the content side; a
     // short static title here just labels the panel.
-    let title = Label::new(Some(&i18n("Connections")));
-    title.add_css_class("heading");
-    header.set_title_widget(Some(&title));
+    header.set_title_widget(Some(&adw::WindowTitle::new(&i18n("Connections"), "")));
 
     // Search toggle (leading) — Nautilus/Settings pattern: the search row is
     // hidden behind an icon in the header and revealed on demand (click,
@@ -1171,51 +1167,47 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     search_toggle.set_icon_name("system-search-symbolic");
     search_toggle.set_tooltip_text(Some(&i18n("Search (Ctrl+F)")));
     search_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle search"))]);
+    search_toggle.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
     header.pack_start(&search_toggle);
 
-    // Single hamburger menu (trailing) — the one home for every sidebar action,
-    // the way GNOME Files/Settings keep per-panel actions behind one menu. All
-    // four former header icons (New Connection, New Group, Quick Connect,
-    // Delete) now live here, grouped by purpose.
+    // Secondary menu (trailing). GNOME HIG allows one primary menu per window
+    // — that is the content header's ☰ — so this one carries `view-more` and
+    // only what acts on the connection list itself. Creating connections,
+    // managers and import/export stay in the primary menu.
     let menu = gio::Menu::new();
-
-    // Create section.
-    let create_section = gio::Menu::new();
-    create_section.append(Some(&i18n("New Connection")), Some("win.new-connection"));
-    create_section.append(
-        Some(&i18n("New Connection (Advanced)")),
-        Some("win.new-connection-advanced"),
+    let select_section = gio::Menu::new();
+    // Stateful `win.group-operations`: renders as a checkable item.
+    select_section.append(
+        Some(&i18n("Select Connections")),
+        Some("win.group-operations"),
     );
-    create_section.append(Some(&i18n("New Group")), Some("win.new-group"));
-    menu.append_section(None, &create_section);
-
-    // Tools section — quick access to cluster / workspace / snippet management.
-    let tools_section = gio::Menu::new();
-    tools_section.append(Some(&i18n("Manage Clusters")), Some("win.manage-clusters"));
-    tools_section.append(
-        Some(&i18n("Manage Workspaces")),
-        Some("win.manage-workspaces"),
+    menu.append_section(None, &select_section);
+    let sort_section = gio::Menu::new();
+    sort_section.append(
+        Some(&i18n("Sort Alphabetically")),
+        Some("win.sort-connections"),
     );
-    tools_section.append(Some(&i18n("Manage Snippets")), Some("win.manage-snippets"));
-    menu.append_section(Some(&i18n("Tools")), &tools_section);
+    sort_section.append(Some(&i18n("Sort by Recent Use")), Some("win.sort-recent"));
+    menu.append_section(None, &sort_section);
 
-    // List section — act on the connection list. Delete is intentionally NOT
-    // here: deleting via a hamburger (open menu → aim → click) is a worse path
-    // than the per-row context menu / Delete key, and keeping it out trims the
-    // menu. Destructive deletion lives on the row's right-click menu.
-    let list_section = gio::Menu::new();
-    list_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
-    list_section.append(Some(&i18n("Import…")), Some("win.import"));
-    list_section.append(Some(&i18n("Export…")), Some("win.export"));
-    menu.append_section(None, &list_section);
-
+    let menu_label = i18n("Connection list options");
     let menu_button = gtk4::MenuButton::builder()
-        .icon_name("open-menu-symbolic")
-        .tooltip_text(i18n("Sidebar Menu"))
+        .icon_name("view-more-symbolic")
+        .tooltip_text(menu_label.as_str())
         .menu_model(&menu)
         .build();
-    menu_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Sidebar menu"))]);
+    menu_button.update_property(&[gtk4::accessible::Property::Label(&menu_label)]);
+    menu_button.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
     header.pack_end(&menu_button);
 
     (header, search_toggle)
 }
+
+/// Minimum size of an icon-only header-bar button, shared by the sidebar and
+/// content headers so the two bars come out the same height.
+///
+/// 44px is the GNOME HIG tap target. macOS has no touch input and its native
+/// toolbar buttons are ~28px; `AdwHeaderBar` takes its minimum height from its
+/// tallest child, so 44 there would keep the header taller than any native
+/// window and defeat the compact/macOS CSS.
+pub const HEADER_BUTTON_SIZE: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
