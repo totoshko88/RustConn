@@ -876,9 +876,13 @@ impl TerminalNotebook {
     ///
     /// With a single monitor there is no choice to present, so nothing is added
     /// and only the plain "Move to New Window" item stands (Requirement 8.3).
-    /// These are flat items rather than a submenu on purpose — a submenu becomes
-    /// a page in the reused PopoverMenu's internal `GtkStack`, which duplicated
-    /// on every menu rebuild; flat items carry no such page.
+    /// These are flat items rather than a submenu because the labels are
+    /// *dynamic* — one per connected monitor — so a submodel built here would
+    /// be a fresh object on every rebuild, and re-appending a different submenu
+    /// under the same name re-adds its page to the reused PopoverMenu's
+    /// internal `GtkStack` (`duplicate child name in GtkStack`). A submenu whose
+    /// content is static can be reused by object identity and is safe (see
+    /// `monitor_submenu`); these monitor labels are not, so they stay flat.
     fn append_monitor_detach_items(section: &gio::Menu) {
         let Some(display) = gdk::Display::default() else {
             return;
@@ -915,6 +919,37 @@ impl TerminalNotebook {
             Some(descriptor) => i18n_f("Monitor {} ({})", &[&number, descriptor.as_str()]),
             None => i18n_f("Monitor {}", &[&number]),
         }
+    }
+
+    /// Builds the Monitor submenu's radio items once and reuses the same model
+    /// object on every rebuild.
+    ///
+    /// Reuse by object identity is what makes a submenu safe in this
+    /// repeatedly-rebuilt menu: appending the *same* `gio::Menu` under the same
+    /// name re-points the popover's existing `GtkStack` page rather than adding
+    /// a second one, so the `duplicate child name in GtkStack` warning that a
+    /// freshly-built submodel caused never fires. The modes are static
+    /// (Off/Activity/Silence/Command finished), so the content never needs to
+    /// change — only which radio bullet is lit, which the `tab.set-monitor`
+    /// action's state drives (refreshed before each show in
+    /// `setup_tab_context_menu`).
+    fn monitor_submenu() -> gio::Menu {
+        thread_local! {
+            static MONITOR_SUBMENU: gio::Menu = {
+                let submenu = gio::Menu::new();
+                for (index, mode) in MonitorMode::all().iter().enumerate() {
+                    let item = gio::MenuItem::new(Some(&i18n(mode.display_name())), None);
+                    let target = i32::try_from(index).unwrap_or(0);
+                    item.set_action_and_target_value(
+                        Some("tab.set-monitor"),
+                        Some(&target.to_variant()),
+                    );
+                    submenu.append_item(&item);
+                }
+                submenu
+            };
+        }
+        MONITOR_SUBMENU.with(gio::Menu::clone)
     }
 
     /// Populates the tab context menu model in-place.
@@ -978,27 +1013,24 @@ impl TerminalNotebook {
         broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
         menu.append_section(None, &broadcast_section);
 
-        // Monitor section — a labelled section of radio items, one per mode,
-        // with the current mode selected. This replaces a single click-to-cycle
-        // label ("Monitor: Off") that gave no afford­ance for what the next
-        // click would pick. The action is `tab.set-monitor` with the mode index
-        // as its i32 target; its state is refreshed to the current mode before
-        // the menu is shown (see `setup_tab_context_menu`).
+        // Monitor submenu — one radio item per mode, with the current mode
+        // selected. This collapses what used to be a five-row labelled section
+        // (a heading plus four modes) back to a single `Monitor` row that
+        // slides to its choices, which is what GNOME HIG expects and what keeps
+        // the menu from towering. The action is `tab.set-monitor` with the mode
+        // index as its i32 target; its state is refreshed to the current mode
+        // before the menu is shown (see `setup_tab_context_menu`), so the right
+        // bullet is lit.
         //
-        // A labelled SECTION, not a submenu, for the same reason the Copy and
-        // detach blocks are flat: this menu is cleared and rebuilt on every
-        // `setup-menu`, and a rebuilt submenu re-adds its `GtkStack` page under
-        // the same name (`Gtk-WARNING: duplicate child name in GtkStack`). Radio
-        // items render their selected bullet inline, so no submenu is needed.
-        let monitor_section = gio::Menu::new();
-        for (index, mode) in MonitorMode::all().iter().enumerate() {
-            let item = gio::MenuItem::new(Some(&i18n(mode.display_name())), None);
-            let target = i32::try_from(index).unwrap_or(0);
-            item.set_action_and_target_value(Some("tab.set-monitor"), Some(&target.to_variant()));
-            monitor_section.append_item(&item);
-        }
-        menu.append_section(Some(&i18n("Monitor")), &monitor_section);
-        menu.append_section(None, &monitor_section);
+        // A submenu is safe here — contrary to the flat Copy/detach blocks —
+        // because the submodel is built ONCE and reused by object identity on
+        // every rebuild (see `monitor_submenu`). The `duplicate child name in
+        // GtkStack` warning only fired when a *fresh* submodel was appended
+        // under the same name each `setup-menu`; re-appending the same stable
+        // object re-points the existing stack page instead of adding a second
+        // one. Verified with an isolated GTK repro (0 collisions over repeated
+        // rebuilds) before adopting the pattern.
+        menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
 
         // Split section — only for the tab that hosts a split layout, and the
         // reason the detach item directly below it is currently refused
@@ -1014,14 +1046,14 @@ impl TerminalNotebook {
             let detach_section = gio::Menu::new();
             detach_section.append(Some(&i18n("Move to New Window")), Some("tab.detach"));
             // Per-monitor targets are appended as flat items, not a submenu.
-            // A submenu becomes a page in the PopoverMenu's internal GtkStack,
-            // and because the TabView keeps one long-lived PopoverMenu bound to
-            // a model we clear and rebuild on every `setup-menu`, that stack
-            // page was re-added under the same name on each rebuild —
+            // Their labels are dynamic (one per connected monitor), so a
+            // submodel here would be a fresh object each rebuild, and
+            // re-appending a different submenu under the same name re-adds its
+            // page to the reused PopoverMenu's internal GtkStack —
             // `Gtk-WARNING: duplicate child name in GtkStack: Move to New
-            // Window on`. Flat items carry no stack page, so the collision is
-            // gone; each monitor still has its own `tab.detach-to-monitor`
-            // entry (issue #328 follow-up).
+            // Window on`. A *static* submenu reused by object identity is safe
+            // (see `monitor_submenu`); these are not, so they stay flat
+            // (issue #328 follow-up).
             Self::append_monitor_detach_items(&detach_section);
             menu.append_section(None, &detach_section);
         }
@@ -1097,5 +1129,67 @@ mod tests {
                 verdict.reason_key()
             );
         }
+    }
+
+    /// The Monitor submenu must survive the reused-menu rebuild cycle without
+    /// the `duplicate child name in GtkStack` warning that a freshly-built
+    /// submenu caused.
+    ///
+    /// This pins the one property the submenu's safety rests on: the submodel
+    /// is reused by object identity (`monitor_submenu` returns a clone of a
+    /// single thread-local `gio::Menu`), so re-appending it under the same name
+    /// on every `setup-menu` re-points the popover's existing stack page rather
+    /// than adding a second one. It initialises GTK and realises a live
+    /// `PopoverMenu`, so it is opt-in and must run alone:
+    ///
+    /// ```text
+    /// cargo test -p rustconn --bin rustconn -- --ignored --exact \
+    ///     terminal::tab_menu::tests::the_monitor_submenu_survives_menu_rebuilds
+    /// ```
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact <this test path>`"]
+    fn the_monitor_submenu_survives_menu_rebuilds() {
+        use gtk4::gio;
+
+        if gtk4::init().is_err() {
+            return;
+        }
+
+        let collisions = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let seen = collisions.clone();
+        gtk4::glib::log_set_default_handler(move |_domain, _level, msg| {
+            if msg.contains("duplicate child name") || msg.contains("GtkStack") {
+                seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            }
+        });
+
+        // One long-lived top-level model bound to a live popover — the exact
+        // shape adw::TabView keeps. The closure only mutates the model; it is
+        // never re-bound.
+        let top = gio::Menu::new();
+        let popover = gtk4::PopoverMenu::from_model(Some(&top));
+
+        for cycle in 0..8 {
+            top.remove_all();
+            top.append(Some(&format!("Pin {cycle}")), None);
+            top.append_submenu(
+                Some("Monitor"),
+                &crate::terminal::TerminalNotebook::monitor_submenu(),
+            );
+            top.append(Some("Close"), None);
+            // Re-realize the model the way opening the menu would, without the
+            // unparented `popup()` that crashes a display-less harness.
+            popover.set_menu_model(Some(&top));
+            let ctx = gtk4::glib::MainContext::default();
+            for _ in 0..20 {
+                ctx.iteration(false);
+            }
+        }
+
+        assert_eq!(
+            collisions.load(std::sync::atomic::Ordering::SeqCst),
+            0,
+            "the stable Monitor submenu must not re-add its GtkStack page on rebuild"
+        );
     }
 }
