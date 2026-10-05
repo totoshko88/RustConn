@@ -38,7 +38,7 @@ jobs:
       # Do not add a third copy of the pinned version here: the drift gate in
       # ci.yml only guards the two workflows that build the product.
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
         with:
           toolchain: stable
 
