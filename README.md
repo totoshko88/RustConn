@@ -22,7 +22,7 @@ It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust
 Runs on Linux (GTK4/libadwaita), macOS, FreeBSD, and Windows via WSLg.
 
 <p align="center">
-  <a href="https://youtu.be/yLfYP0I5OIw"><img src="https://img.youtube.com/vi/yLfYP0I5OIw/sddefault.jpg" alt="Demo" width="640"></a>
+  <a href="https://youtu.be/0bSsloXYU7Y"><img src="https://img.youtube.com/vi/0bSsloXYU7Y/sddefault.jpg" alt="Demo" width="640"></a>
 </p>
 
 ## Screenshots
@@ -31,6 +31,8 @@ Runs on Linux (GTK4/libadwaita), macOS, FreeBSD, and Windows via WSLg.
 |---|---|
 | ![Welcome screen](rustconn/assets/screenshots/welcome_light.png) | ![Embedded RDP session](rustconn/assets/screenshots/rdp_session_dark.png) |
 | ![Connection wizard](rustconn/assets/screenshots/connection_wizard_light.png) | ![SFTP file browser](rustconn/assets/screenshots/sftp_mc_light.png) |
+| ![Split view](rustconn/assets/screenshots/split_view_dark.png) | ![Tab overview](rustconn/assets/screenshots/tab_overview_light.png) |
+| ![Settings](rustconn/assets/screenshots/settings_dark.png) | ![Embedded web browser](rustconn/assets/screenshots/web_light.png) |
 
 More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.totoshko88.RustConn).
 
