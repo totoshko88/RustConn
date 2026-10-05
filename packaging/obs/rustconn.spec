@@ -400,7 +400,7 @@ done
 - Added: per-connection command macros and regex cluster auto-membership
 - Changed: CI/release hardening - cargo-nextest, feature-powerset and semver-checks jobs, a SHA256SUMS manifest and an embedded dependency SBOM
 - Fixed: the YubiKey touch cue now fires on KeePass reads (connect, password load, root-search), not only writes (issue #350)
-- Fixed: the RDP frame counter is wired to the real paint path, and a toast reports when H.264 falls back to RemoteFX (issue #262)
+- Fixed: the RDP frame-statistics counter is fed from the real paint path, and a toast reports when H.264 falls back to the software path (issue #262)
 - Fixed: the Welcome tab closes on the first real tab, not only the second
 - Fixed: group sync matches connections and subgroups by stable id, so a rename or move is an update rather than delete+recreate (issue #263)
 - Fixed: a deleted jump host is detected and warned about instead of silently going direct
