@@ -403,8 +403,15 @@ impl ConnectionDialog {
                                                 &secret_settings,
                                             );
                                         crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
                                                 .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::LibSecret
@@ -421,8 +428,15 @@ impl ConnectionDialog {
                                             "rustconn",
                                         );
                                         crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
                                                 .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::EncryptedFile => {
@@ -433,8 +447,15 @@ impl ConnectionDialog {
                                         let backend =
                                             rustconn_core::secret::EncryptedFileBackend::new();
                                         crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
                                                 .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::PortableEncryptedFile => {

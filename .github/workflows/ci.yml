@@ -714,6 +714,11 @@ jobs:
   # cancelled (without it, a failed need would skip this job and branch
   # protection would see a skip, not a failure). The check fails on any need in
   # `failure` or `cancelled`; `skipped` is allowed, because jobs legitimately
+  # skip on PRs (e.g. the push/dispatch-only macOS legs) and treating a skip as a
+  # failure would make every PR red. macos-formula's own build step is
+  # `continue-on-error`, so that job reports success regardless — its result is
+  # intentionally not a merge blocker.
+
   # Public-API drift check for the rustconn-core library (cargo-semver-checks).
   #
   # ADVISORY, not a merge gate — and the distinction is deliberate, not timidity.
@@ -823,10 +828,6 @@ jobs:
       - name: cargo hack --feature-powerset (rustconn-cli)
         run: cargo hack --package rustconn-cli --feature-powerset --depth 2 check
 
-  # skip on PRs (e.g. the push/dispatch-only macOS legs) and treating a skip as a
-  # failure would make every PR red. macos-formula's own build step is
-  # `continue-on-error`, so that job reports success regardless — its result is
-  # intentionally not a merge blocker.
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest

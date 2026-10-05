@@ -60,10 +60,10 @@ flate2 = { workspace = true }
 tar = { workspace = true }
 # bzip2 decompression for the on-demand Cisco OpenH264 blob
 # (rdp_client::openh264_download). Already present transitively via `zip`
-# (bzip2 0.6.1); pinned here as a direct dependency so the module can name it.
-# The default feature uses the pure-Rust `libbz2-rs-sys` backend, so this adds
-# NO C/system dependency and no new crate to the build graph.
-bzip2 = "=0.6.1"
+# (bzip2 0.6.1); declared as a direct workspace dependency so the module can
+# name it. The default feature uses the pure-Rust `libbz2-rs-sys` backend, so
+# this adds NO C/system dependency and no new crate to the build graph.
+bzip2 = { workspace = true }
 # For extracting .deb packages (AWS SSM Plugin)
 # Comment kept on its own line: a trailing comment after a bare version string
 # is not parsed by manifest scanners (KiroGraph sec:cargo), which then skips the dep.
