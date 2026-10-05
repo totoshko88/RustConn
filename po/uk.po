@@ -185,15 +185,15 @@ msgstr ""
 
 #: rustconn/src/command_macros.rs:107
 msgid "Enter the command to send"
-msgstr "Введіть команду для надсилання"
+msgstr "Введи команду для надсилання"
 
 #: rustconn/src/command_macros.rs:109
 msgid ""
 "The command cannot contain line breaks or control characters; use the Run "
 "switch to press Enter"
 msgstr ""
-"Команда не може містити розриви рядків чи керівні символи; використайте "
-"перемикач «Виконати» для Enter"
+"Команда не може містити розриви рядків чи керівні символи; використай "
+"перемикач «Виконай» для Enter"
 
 #: rustconn/src/command_macros.rs:144
 msgid "Another macro already uses this shortcut"
@@ -236,7 +236,7 @@ msgstr "З'єднайся"
 
 #: rustconn/src/dialogs/ask_prompt.rs:90
 msgid "Enter Macro Details"
-msgstr "Введіть параметри макроса"
+msgstr "Введи параметри макроса"
 
 #: rustconn/src/dialogs/ask_prompt.rs:92
 msgid "The command macro ‘{}’ needs the following before it can be sent."
@@ -325,7 +325,7 @@ msgid ""
 "Regular expression matched anywhere in a connection’s name or host; case-"
 "sensitive, prefix (?i) to ignore case"
 msgstr ""
-"Регулярний вираз, що збігається будь-де в імені чи хості з'єднання; з "
+"Регулярний вираз, що збігається будь-де в імені чи гості з'єднанка; з "
 "урахуванням регістру, префікс (?i) ігнорує регістр"
 
 #: rustconn/src/dialogs/cluster.rs:122
@@ -346,7 +346,7 @@ msgstr "Неправильний шаблон реґулярного вираз�
 
 #: rustconn/src/dialogs/cluster.rs:245
 msgid "Select at least one connection or set an auto-membership pattern"
-msgstr "Оберіть хоча б одне з'єднання або задайте шаблон авто-членства"
+msgstr "Обери хоча б один з'єднок або задай шаблон авто-членства"
 
 #: rustconn/src/dialogs/cluster.rs:296
 #: rustconn/src/dialogs/settings/ui_tab.rs:356
@@ -899,16 +899,16 @@ msgid ""
 "Commands sent with a shortcut while this connection's terminal has keyboard "
 "focus"
 msgstr ""
-"Команди, що надсилаються скороченням, поки термінал цього з'єднання має "
-"фокус клавіатури"
+"Команди, що надсилаються скороченням, поки термінал цього з'єднанка має "
+"фокус клавіятури"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:188
 msgid "No command macros"
-msgstr "Немає командних макросів"
+msgstr "Нема командних макросів"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:196
 msgid "Add Macro"
-msgstr "Додати макрос"
+msgstr "Додай макрос"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:205
 #: rustconn/src/window/edit_group.rs:1298
@@ -1700,7 +1700,7 @@ msgstr "Тунелюй SPICE через SSH-з'єднок"
 msgid ""
 "Set to this connection itself, which is ignored — pick another jump host"
 msgstr ""
-"Вказано саме це з'єднання, що ігнорується — оберіть інший проміжний вузол"
+"Вказано саме цей з'єднок, що ігнорується — обери інший проміжний вузол"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1821
 msgid ""
@@ -1708,7 +1708,7 @@ msgid ""
 "another"
 msgstr ""
 "Збережений проміжний вузол більше не існує й пропускається при під'єднанні —"
-" оберіть інший"
+" обери інший"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:49
 #: rustconn/src/dialogs/connection/dialog/rows.rs:580
@@ -1895,7 +1895,7 @@ msgstr "Спрацювати лише раз, потім вилучити пра
 #: rustconn/src/dialogs/connection/dialog/rows.rs:571
 #: rustconn/src/dialogs/connection/dialog/rows.rs:573
 msgid "Delete macro"
-msgstr "Видалити макрос"
+msgstr "Вилучи макрос"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:586
 msgid "Macro name"
@@ -1916,9 +1916,9 @@ msgid ""
 "opened with and is not sent if none is available. A variable whose value "
 "starts with @ask: is asked for first."
 msgstr ""
-"Один рядок, що вводиться в термінал. ${username}, ${host}, ${port} і ваші "
-"змінні підставляються; ${password} використовує пароль, яким відкрито це "
-"з'єднання, і не надсилається, якщо його немає. Змінну, значення якої "
+"Один рядок, що вводиться в термінал. ${username}, ${host}, ${port} і твої "
+"змінниці підставляються; ${password} використовує пароль, яким відкрито цей "
+"з'єднок, і не надсилається, якщо його немає. Змінну, значення якої "
 "починається з @ask:, спершу запитують."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:619
@@ -1936,14 +1936,14 @@ msgid ""
 "must not be one of the application's shortcuts. Without a shortcut the macro"
 " is stored but cannot be sent."
 msgstr ""
-"Прискорювач GTK, що надсилає цей макрос, поки термінал цього з'єднання має "
-"фокус клавіатури. Потребує Ctrl, Alt або Super (F1–F24 можна використати "
+"Прискорювач GTK, що надсилає цей макрос, поки термінал цього з'єднанка має "
+"фокус клавіятури. Потребує Ctrl, Alt або Super (F1–F24 можна використати "
 "окремо) і не має збігатися зі скороченнями програми. Без скорочення макрос "
 "зберігається, але не може бути надісланий."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:639
 msgid "Run (append Enter)"
-msgstr "Виконати (додати Enter)"
+msgstr "Виконай (додай Enter)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:641
 msgid "Append a newline so the command runs rather than only being typed"
@@ -5678,7 +5678,7 @@ msgstr "Пароль бази даних"
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:90
 msgid "Touch your YubiKey when it blinks to complete the unlock."
-msgstr "Торкніться YubiKey, коли він блимає, щоб завершити розблокування."
+msgstr "Торкнись YubiKey, коли він блимає, щоб завершити розблокування."
 
 #: rustconn/src/dialogs/kdbx_unlock.rs:113
 #: rustconn/src/dialogs/portable_unlock.rs:94
@@ -6312,7 +6312,7 @@ msgstr "Встановлено ✓"
 #: rustconn/src/dialogs/settings/clients_tab.rs:266
 #: rustconn/src/dialogs/settings/clients_tab.rs:348
 msgid "Download"
-msgstr "Завантажити"
+msgstr "Завантаж"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:311
 msgid "Remove failed"
@@ -6741,7 +6741,7 @@ msgid ""
 "The connections could not be saved. Check that the configuration folder is "
 "writable."
 msgstr ""
-"Не вдалося зберегти з'єднання. Перевір, що тека конфігурації доступна для "
+"Не вдалося зберегти з'єднки. Перевір, що тека конфігурації доступна для "
 "запису."
 
 #: rustconn/src/dialogs/settings/mod.rs:974
@@ -7517,7 +7517,7 @@ msgstr "Створи файл"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1967
 msgid "Set up the file"
-msgstr "Налаштування файла"
+msgstr "Налаштуй файл"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1969
 msgid ""
@@ -7663,7 +7663,7 @@ msgid ""
 "2 or 2:12345678). Touch the key when it blinks."
 msgstr ""
 "Слот запиту-відповіді YubiKey для розблокування у форматі slot або "
-"slot:serial (напр., 2 або 2:12345678). Торкніться ключа, коли він блимає."
+"slot:serial (напр., 2 або 2:12345678). Торкнись ключа, коли він блимає."
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2353
 msgid "KDBX Status"
@@ -7713,7 +7713,7 @@ msgstr "Базу даних не вибрано"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2754
 msgid "Checking… touch your YubiKey when it blinks"
-msgstr "Перевірка… торкніться YubiKey, коли він блимає"
+msgstr "Перевірка… торкнись YubiKey, коли він блимає"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2777
 #: rustconn/src/embedded_rdp/ui.rs:169 rustconn/src/embedded_vnc/ui.rs:335
@@ -9923,8 +9923,8 @@ msgid ""
 "may be too old for it; update FreeRDP or report this at the RustConn issue "
 "tracker."
 msgstr ""
-"Встановлений клієнт FreeRDP відхилив параметр «{}». Можливо, ваша версія "
-"FreeRDP застаріла для нього; оновіть FreeRDP або повідомте про це в трекері "
+"Встановлений клієнт FreeRDP відхилив параметр «{}». Можливо, твоя версія "
+"FreeRDP застаріла для нього; онови FreeRDP або повідом про це в трекері "
 "проблем RustConn."
 
 #: rustconn/src/embedded.rs:641
@@ -9934,7 +9934,7 @@ msgid ""
 "RustConn issue tracker."
 msgstr ""
 "Встановлений клієнт FreeRDP відхилив один із параметрів з'єднанка. Можливо, "
-"ваша версія FreeRDP застаріла; оновіть FreeRDP або повідомте про це в "
+"твоя версія FreeRDP застаріла; онови FreeRDP або повідом про це в "
 "трекері проблем RustConn."
 
 #: rustconn/src/embedded.rs:650
@@ -10143,24 +10143,24 @@ msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
 msgstr ""
-"H.264 вимкнено — встановлений OpenH264 не є збіркою Cisco. Відкрийте "
-"Налаштування → З'єднання → Медіакодеки, щоб завантажити його."
+"H.264 вимкнено — встановлений OpenH264 не є збіркою Cisco. Відкрий "
+"Устави → З'єднування → Медіакодеки, щоб завантажити його."
 
 #: rustconn/src/embedded_rdp/connection.rs:2146
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
 msgstr ""
-"H.264 вимкнено — кодек OpenH264 не встановлено. Відкрийте Налаштування → "
-"З'єднання → Медіакодеки, щоб завантажити його."
+"H.264 вимкнено — кодек OpenH264 не встановлено. Відкрий Устави → "
+"З'єднування → Медіакодеки, щоб завантажити його."
 
 #: rustconn/src/embedded_rdp/connection.rs:2150
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
 msgstr ""
-"H.264 вимкнено — не вдалося завантажити кодек OpenH264. Відкрийте "
-"Налаштування → З'єднання → Медіакодеки, щоб завантажити його повторно."
+"H.264 вимкнено — не вдалося завантажити кодек OpenH264. Відкрий "
+"Устави → З'єднування → Медіакодеки, щоб завантажити його повторно."
 
 #: rustconn/src/embedded_rdp/connection.rs:2474
 msgid "Could not prepare the external RDP compatibility client."
@@ -10208,7 +10208,7 @@ msgid ""
 msgstr ""
 "Обмеження облікового запису відхилили цей вхід. Учасники групи Protected "
 "Users не можуть використовувати NTLM: увімкни автентифікацію Kerberos в "
-"уставах RDP цього з'єднання."
+"уставах RDP цього з'єднанка."
 
 #: rustconn/src/embedded_rdp/connection.rs:2651
 msgid "Authentication failed: account restrictions prevent this login."
@@ -10252,7 +10252,7 @@ msgid ""
 "connection's RDP settings or add the realm to /etc/krb5.conf."
 msgstr ""
 "Для області {} не знайдено KDC Kerberos. Зазнач адресу KDC в уставах RDP "
-"цього з'єднання або додай область до /etc/krb5.conf."
+"цього з'єднанка або додай область до /etc/krb5.conf."
 
 #: rustconn/src/embedded_rdp/connection.rs:2672
 #: rustconn/src/embedded_rdp/connection.rs:2712
@@ -10269,7 +10269,7 @@ msgid ""
 "address as the KDC Address in the connection's RDP settings."
 msgstr ""
 "Не вдалося зв'язатися з KDC Kerberos. Зазнач ім'я або IP-адресу контролера "
-"домену як адресу KDC в уставах RDP цього з'єднання."
+"домену як адресу KDC в уставах RDP цього з'єднанка."
 
 #: rustconn/src/embedded_rdp/connection.rs:2679
 msgid ""
@@ -10878,7 +10878,7 @@ msgstr "Команда завершена"
 
 #: rustconn/src/monitor_mode.rs:59
 msgid "Command finished needs shell integration on the remote host"
-msgstr "«Команда завершена» потребує інтеграції оболонки на віддаленому хості"
+msgstr "«Команда завершена» потребує інтеграції оболонки на віддаленому гості"
 
 #: rustconn/src/monitoring.rs:84
 msgid "CPU"
@@ -11864,7 +11864,7 @@ msgid ""
 "servers directly. Open a member on its own to see the details."
 msgstr ""
 "Під'єднання зараз пропускає ці проміжні вузли, тож ці учасники можуть "
-"досягати своїх серверів напряму. Відкрийте учасника окремо, щоб побачити "
+"досягати своїх серверів напряму. Відкрий учасника окремо, щоб побачити "
 "деталі."
 
 #: rustconn/src/window/clusters.rs:455
@@ -11919,7 +11919,7 @@ msgid ""
 "Sync directory is not accessible from Flatpak sandbox. Run: flatpak override"
 " --user --filesystem={} io.github.totoshko88.RustConn"
 msgstr ""
-"Теку синхронізації недоступно із пісочниці Flatpak. Виконайте: flatpak "
+"Теку синхронізації недоступно із пісочниці Flatpak. Виконай: flatpak "
 "override --user --filesystem={} io.github.totoshko88.RustConn"
 
 #: rustconn/src/window/connection_actions.rs:204
@@ -12186,7 +12186,7 @@ msgstr ""
 
 #: rustconn/src/window/edit_actions.rs:712
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
-msgstr "Агент SSH не запущено. Виконайте «eval $(ssh-agent)» і повторіть."
+msgstr "Агент SSH не запущено. Виконай «eval $(ssh-agent)» і повтори."
 
 #: rustconn/src/window/edit_actions.rs:738
 msgid "SSH key not available"
@@ -12693,7 +12693,7 @@ msgid ""
 "No password is available for this connection yet. Connect with a saved or "
 "entered password first."
 msgstr ""
-"Для цього з'єднання ще немає пароля. Спершу під'єднайтеся зі збереженим або "
+"Для цього з'єднанка ще нема пароля. Спершу під'єднайся зі збереженим або "
 "введеним паролем."
 
 #: rustconn/src/window/macro_dispatch.rs:387
