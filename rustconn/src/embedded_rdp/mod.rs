@@ -634,7 +634,13 @@ impl EmbeddedRdpWidget {
         toolbar.append(&separator);
 
         let ctrl_alt_del_button = Button::with_label(&i18n("Ctrl+Alt+Del"));
-        ctrl_alt_del_button.add_css_class("suggested-action"); // Blue button style
+        // Flat + accent-coloured text (same pattern as the header Shell button),
+        // not a filled `suggested-action` block: a solid blue button was the only
+        // filled control in a row of flat buttons and read as the screen's primary
+        // action, which Ctrl+Alt+Del is not. `.accent` tints just the label so it
+        // still stands out as a special command without dominating the toolbar.
+        ctrl_alt_del_button.add_css_class("flat");
+        ctrl_alt_del_button.add_css_class("accent");
         ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
 

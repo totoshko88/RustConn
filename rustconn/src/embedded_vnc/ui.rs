@@ -71,7 +71,11 @@ impl EmbeddedVncWidget {
 
         // Ctrl+Alt+Del button
         let ctrl_alt_del_button = Button::with_label(&i18n("Ctrl+Alt+Del"));
-        ctrl_alt_del_button.add_css_class("suggested-action");
+        // Flat + accent-coloured text (matches the header Shell button and the RDP
+        // toolbar), not a filled `suggested-action` block that would be the only
+        // filled control in a row of flat buttons.
+        ctrl_alt_del_button.add_css_class("flat");
+        ctrl_alt_del_button.add_css_class("accent");
         ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
 
