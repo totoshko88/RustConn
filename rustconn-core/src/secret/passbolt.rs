@@ -133,6 +133,27 @@ impl PassboltBackend {
         }
     }
 
+    /// Creates a Passbolt backend configured from secret settings.
+    ///
+    /// Applies the server URL, the GPG passphrase and the
+    /// `passbolt_read_only` / `passbolt_root_search` toggles. Every caller that
+    /// builds this backend for a user operation goes through here, so a
+    /// persisted toggle cannot be dropped by a call site that only copied the
+    /// connection settings across.
+    #[must_use]
+    pub fn from_secret_settings(settings: &crate::config::SecretSettings) -> Self {
+        let mut backend = Self::new()
+            .with_read_only(settings.passbolt_read_only)
+            .with_root_search(settings.passbolt_root_search);
+        if let Some(ref url) = settings.passbolt_server_url {
+            backend = backend.with_server_address(url.clone());
+        }
+        if let Some(ref passphrase) = settings.passbolt_passphrase {
+            backend = backend.with_user_password(passphrase.clone());
+        }
+        backend
+    }
+
     /// Sets a custom server address (overrides config file)
     #[must_use]
     pub fn with_server_address(mut self, address: impl Into<String>) -> Self {

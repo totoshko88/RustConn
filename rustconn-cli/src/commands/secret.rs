@@ -357,7 +357,7 @@ fn cmd_secret_get(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = BitwardenBackend::new();
+            let backend = BitwardenBackend::new().with_settings_toggles(&settings.secrets);
             let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
 
             match result {
@@ -389,10 +389,8 @@ fn cmd_secret_get(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = OnePasswordBackend::new();
-            if let Some(ref token) = settings.secrets.onepassword_service_account_token {
-                backend.set_service_account_token(token.clone());
-            }
+            // Token plus the read-only / root-search toggles from settings.
+            let backend = OnePasswordBackend::from_secret_settings(&settings.secrets);
             let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&lookup_key));
 
             match result {
@@ -424,13 +422,8 @@ fn cmd_secret_get(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = PassboltBackend::new();
-            if let Some(ref url) = settings.secrets.passbolt_server_url {
-                backend = backend.with_server_address(url.clone());
-            }
-            if let Some(ref passphrase) = settings.secrets.passbolt_passphrase {
-                backend = backend.with_user_password(passphrase.clone());
-            }
+            // Server, passphrase and the read-only / root-search toggles.
+            let backend = PassboltBackend::from_secret_settings(&settings.secrets);
             let pb_key = connection.id.to_string();
             let result: Result<Option<Credentials>, _> = rt.block_on(backend.retrieve(&pb_key));
 
@@ -697,6 +690,7 @@ fn cmd_secret_set(
                     connection.port
                 )),
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
+                settings.secrets.kdbx_read_only,
             )
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
@@ -713,7 +707,7 @@ fn cmd_secret_set(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = BitwardenBackend::new();
+            let backend = BitwardenBackend::new().with_settings_toggles(&settings.secrets);
             let creds = Credentials {
                 username: Some(username_value.clone()),
                 password: Some(password_value),
@@ -738,10 +732,8 @@ fn cmd_secret_set(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = OnePasswordBackend::new();
-            if let Some(ref token) = settings.secrets.onepassword_service_account_token {
-                backend.set_service_account_token(token.clone());
-            }
+            // Token plus the read-only / root-search toggles from settings.
+            let backend = OnePasswordBackend::from_secret_settings(&settings.secrets);
             let creds = Credentials {
                 username: Some(username_value.clone()),
                 password: Some(password_value),
@@ -767,13 +759,8 @@ fn cmd_secret_set(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = PassboltBackend::new();
-            if let Some(ref url) = settings.secrets.passbolt_server_url {
-                backend = backend.with_server_address(url.clone());
-            }
-            if let Some(ref passphrase) = settings.secrets.passbolt_passphrase {
-                backend = backend.with_user_password(passphrase.clone());
-            }
+            // Server, passphrase and the read-only / root-search toggles.
+            let backend = PassboltBackend::from_secret_settings(&settings.secrets);
             let creds = Credentials {
                 username: Some(username_value.clone()),
                 password: Some(password_value),
@@ -951,6 +938,7 @@ fn cmd_secret_delete(
                 key_file,
                 &keepass_entry_path,
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
+                settings.secrets.kdbx_read_only,
             )
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
@@ -963,7 +951,7 @@ fn cmd_secret_delete(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let backend = BitwardenBackend::new();
+            let backend = BitwardenBackend::new().with_settings_toggles(&settings.secrets);
             rt.block_on(backend.delete(&lookup_key))
                 .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
 
@@ -979,10 +967,8 @@ fn cmd_secret_delete(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = OnePasswordBackend::new();
-            if let Some(ref token) = settings.secrets.onepassword_service_account_token {
-                backend.set_service_account_token(token.clone());
-            }
+            // Token plus the read-only / root-search toggles from settings.
+            let backend = OnePasswordBackend::from_secret_settings(&settings.secrets);
             let op_key = connection.id.to_string();
             rt.block_on(backend.delete(&op_key))
                 .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
@@ -999,13 +985,8 @@ fn cmd_secret_delete(
             let rt = tokio::runtime::Runtime::new()
                 .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
 
-            let mut backend = PassboltBackend::new();
-            if let Some(ref url) = settings.secrets.passbolt_server_url {
-                backend = backend.with_server_address(url.clone());
-            }
-            if let Some(ref passphrase) = settings.secrets.passbolt_passphrase {
-                backend = backend.with_user_password(passphrase.clone());
-            }
+            // Server, passphrase and the read-only / root-search toggles.
+            let backend = PassboltBackend::from_secret_settings(&settings.secrets);
             let pb_key = connection.id.to_string();
             rt.block_on(backend.delete(&pb_key))
                 .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;

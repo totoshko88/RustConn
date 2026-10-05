@@ -134,6 +134,23 @@ impl OnePasswordBackend {
         }
     }
 
+    /// Creates a 1Password backend configured from secret settings.
+    ///
+    /// Applies the service account token and the `onepassword_read_only` /
+    /// `onepassword_root_search` toggles. Every caller that builds this backend
+    /// for a user operation goes through here, so a persisted toggle cannot be
+    /// dropped by a call site that only copied the token across.
+    #[must_use]
+    pub fn from_secret_settings(settings: &crate::config::SecretSettings) -> Self {
+        let mut backend = Self::new()
+            .with_read_only(settings.onepassword_read_only)
+            .with_root_search(settings.onepassword_root_search);
+        if let Some(ref token) = settings.onepassword_service_account_token {
+            backend.set_service_account_token(token.clone());
+        }
+        backend
+    }
+
     /// Sets the vault name for storing RustConn entries
     #[must_use]
     pub fn with_vault_name(mut self, name: impl Into<String>) -> Self {

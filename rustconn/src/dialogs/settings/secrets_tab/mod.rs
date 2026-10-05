@@ -1315,7 +1315,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let bitwarden_root_search_row = adw::SwitchRow::builder()
         .title(i18n("Search from vault root"))
         .subtitle(i18n(
-            "Look up secrets anywhere in the vault, not just the RustConn folder",
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
         ))
         .build();
     bitwarden_group.add(&bitwarden_root_search_row);
@@ -1430,7 +1430,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let onepassword_root_search_row = adw::SwitchRow::builder()
         .title(i18n("Search from vault root"))
         .subtitle(i18n(
-            "Look up secrets anywhere in the vault, not just the RustConn folder",
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
         ))
         .build();
     onepassword_group.add(&onepassword_root_search_row);
@@ -1543,7 +1543,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let passbolt_root_search_row = adw::SwitchRow::builder()
         .title(i18n("Search from vault root"))
         .subtitle(i18n(
-            "Look up secrets anywhere in the vault, not just the RustConn folder",
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
         ))
         .build();
     passbolt_group.add(&passbolt_root_search_row);
@@ -2250,7 +2250,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
     let kdbx_root_search_row = adw::SwitchRow::builder()
         .title(i18n("Search from vault root"))
         .subtitle(i18n(
-            "Look up secrets anywhere in the vault, not just the RustConn folder",
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
         ))
         .build();
     kdbx_group.add(&kdbx_root_search_row);

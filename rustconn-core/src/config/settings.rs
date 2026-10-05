@@ -466,8 +466,10 @@ pub struct SecretSettings {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pass_store_dir: Option<PathBuf>,
     /// Open the KeePass (kdbx) backend read-only (refuses writes). Default
-    /// false. The resolver read path never mutates, so this is config + GUI
-    /// only for now; kdbx write sites are enforced elsewhere.
+    /// false. Enforced by the `KeePassStatus` writers (save, delete, rename),
+    /// which take this flag as a required parameter and return
+    /// `SecretError::ReadOnly` before running `keepassxc-cli`. Reads are
+    /// unaffected.
     #[serde(default)]
     pub kdbx_read_only: bool,
     /// Widen KeePass (kdbx) reads to the whole vault, not just the RustConn

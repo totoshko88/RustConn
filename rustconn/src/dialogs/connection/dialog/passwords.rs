@@ -15,6 +15,7 @@ use gtk4::{Box as GtkBox, Entry};
 use super::ConnectionDialog;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
+use crate::vault_ops::{BITWARDEN_UNLOCK_TIMEOUT, VAULT_RETRIEVE_TIMEOUT};
 
 impl ConnectionDialog {
     /// Updates password row visibility based on password source
@@ -338,47 +339,62 @@ impl ConnectionDialog {
                                 match backend_type {
                                     SecretBackendType::Bitwarden => {
                                         crate::async_utils::with_runtime(|rt| {
-                                            let backend = rt
-                                                .block_on(rustconn_core::secret::auto_unlock(
-                                                    &secret_settings,
-                                                ))
-                                                .map_err(|e| format!("{e}"))?;
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            let backend = rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    BITWARDEN_UNLOCK_TIMEOUT,
+                                                    rustconn_core::secret::auto_unlock(
+                                                        &secret_settings,
+                                                    ),
+                                                )
+                                                .await
+                                                .map_err(|_| {
+                                                    "Bitwarden auto-unlock timed out".to_string()
+                                                })?
                                                 .map_err(|e| format!("{e}"))
+                                            })?;
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
+                                                .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::OnePassword => {
-                                        let mut backend =
-                                            rustconn_core::secret::OnePasswordBackend::new();
-                                        if let Some(ref token) =
-                                            secret_settings
-                                                .onepassword_service_account_token
-                                        {
-                                            backend.set_service_account_token(token.clone());
-                                        }
+                                        let backend =
+                                            rustconn_core::secret::OnePasswordBackend::from_secret_settings(
+                                                &secret_settings,
+                                            );
                                         crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
                                                 .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::Passbolt => {
-                                        let mut backend =
-                                            rustconn_core::secret::PassboltBackend::new();
-                                        if let Some(ref url) =
-                                            secret_settings.passbolt_server_url
-                                        {
-                                            backend =
-                                                backend.with_server_address(url.clone());
-                                        }
-                                        if let Some(ref passphrase) =
-                                            secret_settings.passbolt_passphrase
-                                        {
-                                            backend =
-                                                backend.with_user_password(passphrase.clone());
-                                        }
+                                        let backend =
+                                            rustconn_core::secret::PassboltBackend::from_secret_settings(
+                                                &secret_settings,
+                                            );
                                         crate::async_utils::with_runtime(|rt| {
-                                            rt.block_on(backend.retrieve(&flat_lookup_key))
+                                            rt.block_on(async {
+                                                tokio::time::timeout(
+                                                    VAULT_RETRIEVE_TIMEOUT,
+                                                    backend.retrieve(&flat_lookup_key),
+                                                )
+                                                .await
+                                                .map_err(|_| "Vault retrieve timed out".to_string())?
                                                 .map_err(|e| format!("{e}"))
+                                            })
                                         })?
                                     }
                                     SecretBackendType::Pass => {

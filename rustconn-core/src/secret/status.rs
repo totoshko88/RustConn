@@ -1210,10 +1210,53 @@ fn classify_show_failure(stderr: &str) -> ShowFailure {
     {
         return ShowFailure::EntryMissing;
     }
-    if stderr.contains("Invalid credentials") || stderr.contains("wrong password") {
+    if is_bad_credentials(stderr) {
         return ShowFailure::BadCredentials;
     }
     ShowFailure::Unusable
+}
+
+/// Whether a failed `keepassxc-cli` run's stderr says the unlock factors were wrong.
+fn is_bad_credentials(stderr: &str) -> bool {
+    stderr.contains("Invalid credentials") || stderr.contains("wrong password")
+}
+
+/// The error for a failed whole-database `keepassxc-cli ls -R -f` listing.
+///
+/// Deliberately not [`classify_show_failure`]: a listing names no entry, so it
+/// has no "entry missing" outcome. If its stderr happens to contain "Could not
+/// find entry" (a group path, a localised build, a future rewording), mapping
+/// that to `Ok(None)` would turn an unreadable database into "no stored
+/// password" — the defect [`ShowFailure`] exists to prevent. A failed listing is
+/// always an error: bad credentials, or the database could not be read.
+fn list_failure_error(stderr: &str) -> SecretError {
+    if is_bad_credentials(stderr) {
+        SecretError::KeePassXC("Invalid database password".to_string())
+    } else {
+        SecretError::KeePassXC(format!("Could not read the database: {}", stderr.trim()))
+    }
+}
+
+/// Display name a read-only KDBX database refuses writes under.
+///
+/// Shared with [`super::kdbx_backend::KdbxBackend::display_name`] so the
+/// [`SecretError::ReadOnly`] message is the same whichever path refused.
+pub(super) const KDBX_DISPLAY_NAME: &str = "KeePass (KDBX file)";
+
+/// Refuses a KDBX write when the user put the database in read-only mode.
+///
+/// The single read-only chokepoint for every KDBX mutation: the three public
+/// writers ([`KeePassStatus::save_password_to_kdbx`],
+/// [`KeePassStatus::delete_entry_from_kdbx`] and
+/// [`KeePassStatus::rename_entry_in_kdbx`]) take the flag as a required
+/// parameter and call this before any validation or `keepassxc-cli` run, so no
+/// caller can write to a read-only database by forgetting a check of its own.
+fn ensure_kdbx_writable(read_only: bool) -> SecretResult<()> {
+    if read_only {
+        Err(SecretError::ReadOnly(KDBX_DISPLAY_NAME.to_string()))
+    } else {
+        Ok(())
+    }
 }
 
 /// The entry paths a lookup tries, in order, for RustConn's own naming schemes.
@@ -1725,6 +1768,8 @@ impl KeePassStatus {
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file. `None` preserves the
     ///   historical password/key-file-only unlock.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the write is
+    ///   refused before anything runs.
     ///
     /// # Returns
     /// * `Ok(())` if the password is saved successfully
@@ -1732,6 +1777,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -1756,9 +1802,14 @@ impl KeePassStatus {
         password: &SecretString,
         url: Option<&str>,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
         use std::io::Write as IoWrite;
         use std::process::Stdio;
+
+        // Read-only first: a read-only database is never touched, and the
+        // refusal is the same whether or not the path would have validated.
+        ensure_kdbx_writable(read_only)?;
 
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
@@ -2202,6 +2253,8 @@ impl KeePassStatus {
     /// * `yubikey_slot` - Optional `YubiKey` Challenge-Response slot as
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the delete
+    ///   is refused before anything runs.
     ///
     /// # Returns
     /// * `Ok(())` if the entry is deleted or doesn't exist
@@ -2209,6 +2262,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -2218,7 +2272,10 @@ impl KeePassStatus {
         key_file: Option<&Path>,
         entry_path: &str,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
+        ensure_kdbx_writable(read_only)?;
+
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
 
@@ -2562,20 +2619,10 @@ impl KeePassStatus {
         let output = cli.run(&invocation, db_password, None)?;
 
         if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            // A failed listing is "cannot read the database", not "no entry":
-            // reuse the same classification the scoped readers use so a wrong
-            // key or unreadable database is reported, not swallowed as a miss.
-            return match classify_show_failure(&stderr) {
-                ShowFailure::EntryMissing => Ok(None),
-                ShowFailure::BadCredentials => Err(SecretError::KeePassXC(
-                    "Invalid database password".to_string(),
-                )),
-                ShowFailure::Unusable => Err(SecretError::KeePassXC(format!(
-                    "Could not read the database: {}",
-                    stderr.trim()
-                ))),
-            };
+            // A failed listing is "cannot read the database", never "no entry":
+            // `list_failure_error` has no entry-missing outcome, so a wrong key or
+            // an unreadable database is reported rather than swallowed as a miss.
+            return Err(list_failure_error(&String::from_utf8_lossy(&output.stderr)));
         }
 
         let listing = String::from_utf8_lossy(&output.stdout);
@@ -2611,6 +2658,8 @@ impl KeePassStatus {
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file for every read and write
     ///   this rename performs.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the rename
+    ///   is refused before anything runs (a no-op rename still returns `Ok`).
     ///
     /// # Returns
     /// * `Ok(())` if the rename is successful or entry doesn't exist
@@ -2618,6 +2667,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -2628,11 +2678,14 @@ impl KeePassStatus {
         old_entry_path: &str,
         new_entry_path: &str,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
         // If paths are the same, nothing to do
         if old_entry_path == new_entry_path {
             return Ok(());
         }
+
+        ensure_kdbx_writable(read_only)?;
 
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
@@ -2731,6 +2784,7 @@ impl KeePassStatus {
             &password,
             url.as_deref(),
             yubikey_slot,
+            read_only,
         )?;
 
         // Delete old entry (use full path for direct CLI call)
@@ -3458,6 +3512,108 @@ mod tests {
             matches!(classify_show_failure(translated), ShowFailure::Unusable),
             "if this ever classifies correctly, the locale pinning is no longer \
              load-bearing and this test should say so"
+        );
+    }
+
+    /// A failed whole-database listing is always an error. Reusing the `show`
+    /// classifier let "Could not find entry" in an `ls` stderr turn an
+    /// unreadable database into `Ok(None)`, i.e. "no stored password".
+    #[test]
+    fn list_failure_never_reports_a_missing_entry() {
+        let missing = list_failure_error("Could not find entry with path RustConn/x (ssh).");
+        assert!(
+            matches!(missing, SecretError::KeePassXC(ref m) if m.starts_with("Could not read the database")),
+            "an ls failure must not read as a miss, got {missing:?}"
+        );
+
+        let bad = list_failure_error("Invalid credentials were provided, please try again.");
+        assert!(
+            matches!(bad, SecretError::KeePassXC(ref m) if m == "Invalid database password"),
+            "got {bad:?}"
+        );
+
+        let unreadable =
+            list_failure_error("Error while reading the database: Not a KeePass database.");
+        assert!(
+            matches!(unreadable, SecretError::KeePassXC(ref m) if m.contains("Not a KeePass database")),
+            "got {unreadable:?}"
+        );
+    }
+
+    /// `kdbx_read_only` is enforced inside the three public writers, ahead of
+    /// path validation: `/nonexistent/x.kdbx` would otherwise fail validation, so
+    /// getting `ReadOnly` proves the guard refused before anything ran. The
+    /// writable runs prove it is the flag, not the path, doing the refusing.
+    #[test]
+    fn kdbx_writers_refuse_read_only_before_touching_the_database() {
+        let path = Path::new("/nonexistent/x.kdbx");
+        let pwd = SecretString::from("p".to_string());
+        let is_read_only = |r: SecretResult<()>| matches!(r, Err(SecretError::ReadOnly(ref n)) if n == KDBX_DISPLAY_NAME);
+
+        assert!(is_read_only(KeePassStatus::save_password_to_kdbx(
+            path,
+            None,
+            None,
+            "conn (ssh)",
+            "user",
+            &pwd,
+            None,
+            None,
+            true,
+        )));
+        assert!(is_read_only(KeePassStatus::delete_entry_from_kdbx(
+            path,
+            None,
+            None,
+            "RustConn/conn (ssh)",
+            None,
+            true,
+        )));
+        assert!(is_read_only(KeePassStatus::rename_entry_in_kdbx(
+            path,
+            None,
+            None,
+            "RustConn/old (ssh)",
+            "RustConn/new (ssh)",
+            None,
+            true,
+        )));
+
+        // Writable: the same calls get as far as path validation.
+        let writable = KeePassStatus::save_password_to_kdbx(
+            path,
+            None,
+            None,
+            "conn (ssh)",
+            "user",
+            &pwd,
+            None,
+            None,
+            false,
+        );
+        assert!(
+            matches!(writable, Err(SecretError::KeePassXC(_))),
+            "got {writable:?}"
+        );
+        let writable =
+            KeePassStatus::delete_entry_from_kdbx(path, None, None, "RustConn/c", None, false);
+        assert!(
+            matches!(writable, Err(SecretError::KeePassXC(_))),
+            "got {writable:?}"
+        );
+
+        // A rename to the same path writes nothing, so it is not refused.
+        assert!(
+            KeePassStatus::rename_entry_in_kdbx(
+                path,
+                None,
+                None,
+                "RustConn/a",
+                "RustConn/a",
+                None,
+                true
+            )
+            .is_ok()
         );
     }
 

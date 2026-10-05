@@ -410,6 +410,18 @@ impl BitwardenBackend {
         self
     }
 
+    /// Applies the persisted `bitwarden_read_only` / `bitwarden_root_search`
+    /// toggles from secret settings.
+    ///
+    /// [`auto_unlock`] applies this to whatever backend it returns, so every
+    /// unlocked backend honours the user's choice without each call site having
+    /// to remember both builders.
+    #[must_use]
+    pub const fn with_settings_toggles(self, settings: &crate::config::SecretSettings) -> Self {
+        self.with_read_only(settings.bitwarden_read_only)
+            .with_root_search(settings.bitwarden_root_search)
+    }
+
     /// Sets the session key
     pub fn set_session_key(&mut self, key: SecretString) {
         self.session_key = Some(key);
@@ -1580,13 +1592,29 @@ async fn try_relogin_and_unlock(
 /// 4. Master password from system keyring
 /// 5. Master password from encrypted settings
 ///
+/// The returned backend carries the `bitwarden_read_only` /
+/// `bitwarden_root_search` toggles from `settings`
+/// ([`BitwardenBackend::with_settings_toggles`]), so a write through it is
+/// refused when the user put Bitwarden in read-only mode.
+///
 /// # Errors
 /// Returns `SecretError::BackendUnavailable` if all strategies fail.
+pub async fn auto_unlock(
+    settings: &crate::config::SecretSettings,
+) -> SecretResult<BitwardenBackend> {
+    // One place for the toggles: the unlock below has many return points, and
+    // each used to hand back a backend with read-only off.
+    unlock_with_saved_credentials(settings)
+        .await
+        .map(|backend| backend.with_settings_toggles(settings))
+}
+
+/// The unlock strategies behind [`auto_unlock`], without the settings toggles.
 #[expect(
     clippy::too_many_lines,
     reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
 )] // multi-strategy unlock with ordered fallbacks
-pub async fn auto_unlock(
+async fn unlock_with_saved_credentials(
     settings: &crate::config::SecretSettings,
 ) -> SecretResult<BitwardenBackend> {
     // 0. Fast path: if session key exists and was recently verified, skip

@@ -19,19 +19,23 @@
 //! doubled-prefix fix in [`super::hierarchy`]. This wrapper never reimplements
 //! prefixing.
 //!
-//! This struct is **additive**: as of this step nothing in the application is
-//! rewired to go through it. The 47 existing call sites keep calling
-//! `KeePassStatus::*` directly. Routing credential resolution through this
-//! backend is a later step.
+//! This struct is **additive**: nothing in the application is rewired to go
+//! through it yet. The GUI and CLI keep calling `KeePassStatus::*` directly.
+//! Routing credential resolution through this backend is a later step.
 //!
 //! ## Read-only / root-search capabilities
 //!
-//! [`Self::is_read_only`] returns the stored read-only flag and read-only is
-//! now **enforced**: `store` and `delete` call [`SecretBackend::ensure_writable`]
-//! as their first action, so a backend put into read-only mode via
-//! [`Self::with_read_only`] refuses every mutation with [`SecretError::ReadOnly`] before touching the vault
-//! (mirroring `PassBackend`). The guard runs ahead of the delegated writer's
-//! own path validation, so an invalid path still surfaces as `ReadOnly`.
+//! Read-only is enforced in two places that agree. The delegated
+//! [`KeePassStatus`] writers take the `kdbx_read_only` flag as a required
+//! parameter and refuse with [`SecretError::ReadOnly`] before anything runs —
+//! that is the chokepoint every direct GUI and CLI write goes through. This
+//! backend additionally calls [`SecretBackend::ensure_writable`] as the first
+//! action of `store` and `delete` (mirroring `PassBackend`), and passes its
+//! [`Self::with_read_only`] flag through to the writers as well. Both refusals
+//! run ahead of path validation, so an invalid path still surfaces as
+//! `ReadOnly`, and both name the backend identically.
+//!
+//! [`SecretError::ReadOnly`]: crate::error::SecretError::ReadOnly
 //!
 //! [`Self::searches_from_root`] reports the stored root-search flag. When set
 //! (via [`Self::with_root_search`]), `retrieve` first tries the
@@ -55,7 +59,7 @@ use crate::models::Credentials;
 ///
 /// Grouped into one struct so [`KdbxBackend`] can hold them as a unit and hand
 /// them to the delegated functions unchanged.
-#[derive(Clone, Default)]
+#[derive(Default)]
 struct UnlockFactors {
     /// Master password, if the database uses one.
     db_password: Option<SecretString>,
@@ -69,7 +73,7 @@ struct UnlockFactors {
 ///
 /// Thin wrapper that delegates every operation to the pre-existing
 /// [`KeePassStatus`] associated functions; see the module docs for the mapping
-/// and for the step-2 deferral of read-only enforcement.
+/// and for how read-only is enforced.
 pub struct KdbxBackend {
     /// Path to the `.kdbx` database file.
     kdbx_path: PathBuf,
@@ -194,6 +198,7 @@ impl SecretBackend for KdbxBackend {
             &password,
             None,
             self.yubikey_slot(),
+            self.read_only,
         )
     }
 
@@ -205,6 +210,13 @@ impl SecretBackend for KdbxBackend {
     /// the read is widened to a whole-database search via
     /// [`KeePassStatus::get_password_from_kdbx_root`]. This is read-widening
     /// only; writes stay `RustConn/`-scoped.
+    ///
+    /// **Password only: `username` is always `None`.** The delegated readers
+    /// return the password and nothing else, and do not report which candidate
+    /// path matched. Reading the username would cost a second `keepassxc-cli`
+    /// run — another full database open (Argon2) and, on a `YubiKey` database,
+    /// another touch — so callers that need it take it from the connection, as
+    /// the existing KeePass call sites do.
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
         // Scoped lookup first — unchanged behaviour, and found-first for
         // back-compat: a `RustConn/`-scoped entry wins over an identically-named
@@ -264,6 +276,7 @@ impl SecretBackend for KdbxBackend {
             self.key_file(),
             &entry_path,
             self.yubikey_slot(),
+            self.read_only,
         )
     }
 
@@ -281,7 +294,7 @@ impl SecretBackend for KdbxBackend {
     }
 
     fn display_name(&self) -> &'static str {
-        "KeePass (KDBX file)"
+        super::status::KDBX_DISPLAY_NAME
     }
 
     fn is_read_only(&self) -> bool {
