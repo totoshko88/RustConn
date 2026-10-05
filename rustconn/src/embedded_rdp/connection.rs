@@ -2140,17 +2140,15 @@ impl super::EmbeddedRdpWidget {
                                 let message = match reason {
                                     H264UnavailableReason::RejectedNonCisco => i18n(
                                         "H.264 is off — the installed OpenH264 isn't a Cisco \
-                                         build. Open Settings → Connection → Media Codecs to \
-                                         download it.",
+build. Open Settings → Connection → Media Codecs to download it.",
                                     ),
                                     H264UnavailableReason::NotFound => i18n(
-                                        "H.264 is off — no OpenH264 codec is installed. Open \
-                                         Settings → Connection → Media Codecs to download it.",
+                                        "H.264 is off — no OpenH264 codec is installed. \
+Open Settings → Connection → Media Codecs to download it.",
                                     ),
                                     H264UnavailableReason::LoadFailed => i18n(
                                         "H.264 is off — the OpenH264 codec could not be loaded. \
-                                         Open Settings → Connection → Media Codecs to re-download \
-                                         it.",
+Open Settings → Connection → Media Codecs to re-download it.",
                                     ),
                                 };
                                 tracing::info!(

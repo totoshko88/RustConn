@@ -108,8 +108,7 @@ pub fn create_clients_page() -> adw::PreferencesPage {
         let codec_group = adw::PreferencesGroup::builder()
             .title(i18n("Media Codecs"))
             .description(i18n(
-                "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 decoder \
-                 for RDP graphics (GFX) sessions.",
+                "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 decoder for RDP graphics (GFX) sessions.",
             ))
             .build();
 
@@ -234,8 +233,7 @@ fn build_h264_codec_row() -> adw::ActionRow {
     let row = adw::ActionRow::builder()
         .title(i18n("H.264 codec (Cisco OpenH264)"))
         .subtitle(i18n(
-            "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand \
-             from openh264.org under Cisco's binary licence.",
+            "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand from openh264.org under Cisco's binary licence.",
         ))
         .subtitle_lines(0)
         .build();
@@ -339,9 +337,9 @@ fn confirm_and_download_h264(
 
     let body = i18n_f(
         "This downloads the OpenH264 Video Codec provided by Cisco Systems, Inc. from:\n{}\n\n\
-         and installs it to:\n{}\n\n\
-         Cisco — not RustConn — provides this binary and holds the MPEG-LA patent licence for \
-         it. By downloading you accept Cisco's binary licence:\n{}\n\nDownload it?",
+and installs it to:\n{}\n\n\
+Cisco — not RustConn — provides this binary and holds the MPEG-LA patent licence for it. \
+By downloading you accept Cisco's binary licence:\n{}\n\nDownload it?",
         &[&url, &dest, &"https://www.openh264.org/BINARY_LICENSE.txt"],
     );
 
