@@ -29,6 +29,18 @@
 //!   (temp file + rename), so a failed or interrupted download leaves no partial
 //!   or corrupt file behind.
 
+/// Clears the GFX loader's cached OpenH264 probe so the next RDP connection
+/// re-scans and finds a freshly downloaded blob — no app restart needed.
+///
+/// Call this right after [`download_openh264`] succeeds. It is a thin, always-
+/// compiled front for `gfx_handler::invalidate_openh264_cache`: when the
+/// `gfx-h264` feature is off there is no loader cache to clear, so it is a
+/// no-op, which lets the GUI call one coherent module regardless of features.
+pub fn invalidate_loader_cache() {
+    #[cfg(feature = "gfx-h264")]
+    super::gfx_handler::invalidate_openh264_cache();
+}
+
 use std::path::{Path, PathBuf};
 
 /// A platform's Cisco OpenH264 artifact: the CDN file name and the SHA-256 of

@@ -877,22 +877,67 @@ fn openh264_candidates() -> Vec<std::path::PathBuf> {
     candidates
 }
 
-/// The outcome of the library search, decided once per process.
+/// The outcome of the library search, cached so the candidate walk does not run
+/// for every RDP connection.
 ///
-/// `Some` is the library that loaded; `None` means nothing usable was found.
+/// `Some(Some(path))` is the library that loaded; `Some(None)` means a completed
+/// walk found nothing usable; the outer `None` means "not probed yet". The
+/// decoder itself cannot be shared — each session needs its own — but the search
+/// result can, and so can the explanation. Without this the whole walk ran again
+/// for every connection: re-`stat`ing every candidate, re-`dlopen`ing each one,
+/// and re-emitting the same warnings — nine identical warning lines from three
+/// connections about an unchangeable property of the machine.
 ///
-/// The decoder itself cannot be shared — each session needs its own — but the
-/// search can, and so can the explanation. Without this the whole walk ran again
-/// for every RDP connection: re-`stat`ing every candidate, re-`dlopen`ing each
-/// one, and re-emitting the same warnings. A log from three connections carried
-/// nine identical lines about an unchangeable property of the machine, at the one
-/// severity users actually read, which is how real warnings get lost.
+/// It is a resettable `RwLock` rather than a one-shot `OnceLock` so that
+/// [`invalidate_openh264_cache`] can clear it after the user downloads Cisco's
+/// blob through the in-app action: the **next** RDP connection then re-probes
+/// and finds the freshly cached library, so H.264 works without restarting the
+/// app. Already-open sessions keep their negotiated RemoteFX path — only new
+/// connections pick up the codec — which is why a reconnect, not a restart, is
+/// all that is needed.
+/// The three states of the OpenH264 search cache, distinguished so a completed
+/// "found nothing" is not re-probed every connection while an invalidation
+/// still forces a fresh walk.
+enum ProbeState {
+    /// Not probed yet (startup, or just invalidated) — the next access probes.
+    Unprobed,
+    /// A completed probe; `Some(path)` loaded, `None` found nothing usable.
+    Probed(Option<std::path::PathBuf>),
+}
+
+static USABLE_LIBRARY: std::sync::RwLock<ProbeState> = std::sync::RwLock::new(ProbeState::Unprobed);
+
+/// Clears the cached OpenH264 search result so the next connection re-probes.
 ///
-/// The trade is that installing a Cisco blob mid-session is not picked up until
-/// restart. That is the right way round: the answer depends on files and an
-/// environment variable that do not change under a running process in practice,
-/// and the alternative is paying the walk on every connection forever.
-static USABLE_LIBRARY: std::sync::OnceLock<Option<std::path::PathBuf>> = std::sync::OnceLock::new();
+/// Called after the in-app downloader installs Cisco's blob, so a user who
+/// enables H.264 can simply open a new RDP session rather than restart the app.
+/// Safe to call at any time; the worst case is one extra candidate walk.
+pub fn invalidate_openh264_cache() {
+    if let Ok(mut guard) = USABLE_LIBRARY.write() {
+        *guard = ProbeState::Unprobed;
+    }
+}
+
+/// Returns the cached probe result, running the probe once if not yet done.
+///
+/// A fast read-locked hit on the common path, falling back to a write-locked
+/// probe when the cache is `Unprobed` (after startup or an invalidation).
+fn usable_library() -> Option<std::path::PathBuf> {
+    if let Ok(guard) = USABLE_LIBRARY.read()
+        && let ProbeState::Probed(cached) = &*guard
+    {
+        return cached.clone();
+    }
+    // Unprobed (or just invalidated): take the write lock and probe.
+    let mut guard = USABLE_LIBRARY.write().ok()?;
+    // Another thread may have probed between the read unlock and this write lock.
+    if let ProbeState::Probed(cached) = &*guard {
+        return cached.clone();
+    }
+    let result = probe_openh264();
+    *guard = ProbeState::Probed(result.clone());
+    result
+}
 
 /// Attempts to load OpenH264 at runtime via dlopen.
 ///
@@ -933,9 +978,9 @@ static USABLE_LIBRARY: std::sync::OnceLock<Option<std::path::PathBuf>> = std::sy
 pub fn try_load_openh264() -> Option<Box<dyn H264Decoder>> {
     use ironrdp_egfx::decode::OpenH264Decoder;
 
-    let path = USABLE_LIBRARY.get_or_init(probe_openh264).as_ref()?;
+    let path = usable_library()?;
 
-    match OpenH264Decoder::from_library_path(path) {
+    match OpenH264Decoder::from_library_path(&path) {
         Ok(decoder) => Some(Box::new(decoder)),
         Err(e) => {
             // The probe already loaded this exact file, so a failure here is a
@@ -1029,7 +1074,7 @@ static REJECTED_NON_CISCO: std::sync::atomic::AtomicBool =
 #[must_use]
 pub fn openh264_unavailable_reason() -> Option<super::graphics::H264UnavailableReason> {
     use super::graphics::H264UnavailableReason;
-    if USABLE_LIBRARY.get_or_init(probe_openh264).is_some() {
+    if usable_library().is_some() {
         return None;
     }
     Some(
@@ -1082,6 +1127,31 @@ mod tests {
     use ironrdp_egfx::pdu::{Codec1Type, Codec2Type, Color, PixelFormat, Point, WireToSurface1Pdu};
 
     use super::*;
+
+    #[test]
+    fn invalidate_resets_the_probe_cache() {
+        // Prime the cache with a probe, then invalidate and confirm the slot is
+        // empty again so the NEXT caller re-probes (this is what lets a freshly
+        // downloaded blob be picked up without an app restart). The probe result
+        // itself is machine-dependent, so this asserts the cache STATE, not which
+        // library was found.
+        let _ = usable_library();
+        assert!(
+            matches!(&*USABLE_LIBRARY.read().unwrap(), ProbeState::Probed(_)),
+            "a completed probe must populate the cache"
+        );
+        invalidate_openh264_cache();
+        assert!(
+            matches!(&*USABLE_LIBRARY.read().unwrap(), ProbeState::Unprobed),
+            "invalidation must clear the cache so the next connection re-probes"
+        );
+        // Re-probing repopulates it (idempotent, no panic).
+        let _ = usable_library();
+        assert!(matches!(
+            &*USABLE_LIBRARY.read().unwrap(),
+            ProbeState::Probed(_)
+        ));
+    }
 
     #[test]
     fn gfx_error_display() {

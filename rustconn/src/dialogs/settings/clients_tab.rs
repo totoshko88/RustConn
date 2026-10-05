@@ -204,6 +204,7 @@ fn build_h264_codec_row() -> adw::ActionRow {
             "Downloads Cisco's OpenH264 binary on demand to enable H.264 in RDP \
              graphics sessions (openh264.org binary licence).",
         ))
+        .subtitle_lines(0)
         .build();
 
     // Spinner (hidden until a download is in flight).
@@ -321,7 +322,14 @@ fn start_h264_download(download_button: &Button, spinner: &Spinner, status_label
             spinner.set_visible(false);
             match result {
                 Ok(_) => {
-                    status_label.set_label(&i18n("Installed ✓ — restart to use"));
+                    // Clear the loader's cached probe so the NEXT RDP connection
+                    // re-scans and finds the freshly downloaded blob — no app
+                    // restart needed (already-open sessions keep RemoteFX).
+                    openh264_download::invalidate_loader_cache();
+                    status_label.set_label(&i18n("Installed ✓"));
+                    status_label.set_tooltip_text(Some(&i18n(
+                        "H.264 is active for new RDP connections. Open sessions keep their current path until reconnected.",
+                    )));
                     status_label.remove_css_class("error");
                     status_label.add_css_class("success");
                     download_button.set_visible(false);
