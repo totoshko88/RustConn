@@ -58,6 +58,11 @@ pub enum H264UnavailableReason {
     /// published binaries (the royalty-bearing hash check). This is the
     /// actionable case: point `RUSTCONN_OPENH264` at a Cisco blob.
     RejectedNonCisco,
+    /// A library was found and passed the hash check, but the decoder failed to
+    /// initialize from it (a corrupt file, an ABI mismatch, a missing
+    /// dependency). Distinct from `NotFound`: the file is there and is Cisco's,
+    /// but unusable, so re-downloading it is the actionable fix.
+    LoadFailed,
 }
 
 impl GraphicsMode {
@@ -449,7 +454,13 @@ impl FrameStatistics {
         }
     }
 
-    /// Records a received frame
+    /// Records a received frame.
+    ///
+    /// Note: on the RemoteFX/legacy path this is called once per painted
+    /// *region* (`GraphicsUpdate`), and a single server frame can carry several
+    /// regions, so `current_fps` is an upper bound on the true frame rate, not an
+    /// exact FPS. It is used only for the internal drop-rate warning, never shown
+    /// to the user as a frame rate.
     pub fn record_frame(&mut self, bytes: usize, decode_time_us: u64) {
         self.frames_received += 1;
         self.frames_decoded += 1;

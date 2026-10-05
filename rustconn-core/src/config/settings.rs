@@ -1253,6 +1253,15 @@ pub struct ConnectionSettings {
     /// Timeout in seconds for port check (default: 3)
     #[serde(default = "default_port_check_timeout")]
     pub port_check_timeout_secs: u32,
+    /// Whether a downloaded Cisco OpenH264 codec may be used for RDP GFX H.264.
+    ///
+    /// Default `true`: an installed codec is used. Turning it off lets the user
+    /// disable H.264 without deleting the blob (the OpenH264 binary licence
+    /// requires an enable/disable/re-enable path), and the loader probe
+    /// (`gfx_handler::openh264_candidates`) honours it via
+    /// `gfx_handler::set_openh264_enabled`.
+    #[serde(default = "default_true")]
+    pub use_openh264: bool,
 }
 
 /// Application-wide bastion settings — the outermost tier of proxy inheritance.
@@ -1302,6 +1311,7 @@ impl Default for ConnectionSettings {
         Self {
             pre_connect_port_check: true,
             port_check_timeout_secs: default_port_check_timeout(),
+            use_openh264: true,
         }
     }
 }

@@ -41,6 +41,19 @@ pub fn invalidate_loader_cache() {
     super::gfx_handler::invalidate_openh264_cache();
 }
 
+/// Enable or disable use of the downloaded OpenH264 codec, an always-compiled
+/// front for `gfx_handler::set_openh264_enabled`.
+///
+/// Called by the GUI from `ConnectionSettings::use_openh264` at startup and on
+/// the Media Codecs switch. A no-op when the `gfx-h264` feature is off (there
+/// is no loader to gate), so the GUI can call one coherent module either way.
+pub fn set_openh264_enabled(enabled: bool) {
+    #[cfg(feature = "gfx-h264")]
+    super::gfx_handler::set_openh264_enabled(enabled);
+    #[cfg(not(feature = "gfx-h264"))]
+    let _ = enabled;
+}
+
 use std::path::{Path, PathBuf};
 
 /// A platform's Cisco OpenH264 artifact: the CDN file name and the SHA-256 of
@@ -63,8 +76,23 @@ pub struct OpenH264Artifact {
 pub const OPENH264_VERSION: &str = "2.6.0";
 
 /// Cisco CDN base URL. Each artifact is served bzip2-compressed as
-/// `<base>/<file>.bz2`.
-const CISCO_CDN_BASE: &str = "http://ciscobinary.openh264.org";
+/// `<base>/<file>.bz2`. HTTPS: the pinned SHA-256 already rejects tampered
+/// bytes, but TLS keeps the request and redirect chain private and unmodified.
+const CISCO_CDN_BASE: &str = "https://ciscobinary.openh264.org";
+
+/// Hard ceiling on the compressed `.bz2` we will buffer from the CDN. Cisco's
+/// blobs are ~700 KiB; 8 MiB is generous headroom and caps a hostile or broken
+/// endpoint streaming an unbounded body into memory.
+const MAX_COMPRESSED_BYTES: u64 = 8 * 1024 * 1024;
+
+/// Hard ceiling on the decompressed library. The real libraries are ~2 MiB;
+/// 16 MiB caps a bzip2 bomb before it exhausts memory.
+const MAX_DECOMPRESSED_BYTES: u64 = 16 * 1024 * 1024;
+
+/// Network timeout for the CDN fetch, matching `cli_download`'s own
+/// `HTTP_DOWNLOAD_TIMEOUT` (15 s) — kept as a local constant because that one is
+/// `pub(crate)` to the `cli_download` module.
+const DOWNLOAD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
 
 /// Returns the Cisco OpenH264 artifact for the platform this binary was built
 /// for, or `None` on an unsupported `(os, arch)` combination.
@@ -86,6 +114,13 @@ pub fn artifact() -> Option<OpenH264Artifact> {
         file: "libopenh264-2.6.0-linux-arm64.8.so",
         sha256: "12e7b33623667cdab0e575170c147b1b36eadb77d0d2aa7ceb5afd3e58902140",
     });
+    // armv7 Linux (hard-float). SHA matches the openh264-sys2 allow-list entry
+    // for `libopenh264-2.6.0-linux-arm.8.so`.
+    #[cfg(all(target_os = "linux", target_arch = "arm"))]
+    let artifact = Some(OpenH264Artifact {
+        file: "libopenh264-2.6.0-linux-arm.8.so",
+        sha256: "df91866de0e93773019e30a8f2bdee8b15de4abe2bf89a228ae9f064ff1e85bb",
+    });
     // aarch64 macOS
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     let artifact = Some(OpenH264Artifact {
@@ -102,6 +137,7 @@ pub fn artifact() -> Option<OpenH264Artifact> {
     #[cfg(not(any(
         all(target_os = "linux", target_arch = "x86_64"),
         all(target_os = "linux", target_arch = "aarch64"),
+        all(target_os = "linux", target_arch = "arm"),
         all(target_os = "macos", target_arch = "aarch64"),
         all(target_os = "macos", target_arch = "x86_64"),
     )))]
@@ -153,17 +189,18 @@ pub enum OpenH264DownloadError {
     Io(#[from] std::io::Error),
 }
 
-/// Directory the cached library lives in: `<cache_dir>/rustconn/openh264`.
+/// Directory the cached library lives in: `<data_dir>/rustconn/openh264`.
 ///
-/// Uses `dirs::cache_dir()` — the same helper the rest of the crate uses for
-/// cache locations (e.g. `protocol::icons`) — so it honours `$XDG_CACHE_HOME`
-/// and the per-OS convention rather than hardcoding `~/.cache`.
+/// Uses `dirs::data_dir()` rather than `cache_dir()`: the blob is a
+/// user-installed, licence-gated artifact that must survive a cache sweep —
+/// a `~/.cache` cleaner wiping it would silently drop H.264 back to the
+/// software path. Honours `$XDG_DATA_HOME` and the per-OS convention.
 fn cache_subdir() -> Option<PathBuf> {
-    Some(dirs::cache_dir()?.join("rustconn").join("openh264"))
+    Some(dirs::data_dir()?.join("rustconn").join("openh264"))
 }
 
-/// Full cache path for the current platform's artifact,
-/// `<cache_dir>/rustconn/openh264/<file>`.
+/// Full install path for the current platform's artifact,
+/// `<data_dir>/rustconn/openh264/<file>`.
 #[must_use]
 pub fn cache_path() -> Option<PathBuf> {
     Some(cache_subdir()?.join(artifact()?.file))
@@ -226,11 +263,20 @@ fn cached_openh264_path_at(path: &Path) -> Option<PathBuf> {
 /// `zip`; this module pins it as a direct dependency.
 fn bunzip2(compressed: &[u8]) -> Result<Vec<u8>, OpenH264DownloadError> {
     use std::io::Read;
-    let mut decoder = bzip2::read::BzDecoder::new(compressed);
+    let decoder = bzip2::read::BzDecoder::new(compressed);
+    // Cap the decompressed size: a crafted .bz2 could otherwise expand without
+    // bound. One byte over the ceiling means the stream is longer than any real
+    // library, so refuse it rather than truncate to a file the loader rejects.
+    let mut limited = decoder.take(MAX_DECOMPRESSED_BYTES + 1);
     let mut out = Vec::new();
-    decoder
+    limited
         .read_to_end(&mut out)
         .map_err(|e| OpenH264DownloadError::Decompress(e.to_string()))?;
+    if out.len() as u64 > MAX_DECOMPRESSED_BYTES {
+        return Err(OpenH264DownloadError::Decompress(format!(
+            "decompressed stream exceeded the {MAX_DECOMPRESSED_BYTES}-byte ceiling"
+        )));
+    }
     Ok(out)
 }
 
@@ -261,7 +307,10 @@ fn atomic_write(dest: &Path, bytes: &[u8]) -> Result<(), OpenH264DownloadError> 
     ));
 
     let write_result = (|| -> std::io::Result<()> {
-        let mut f = std::fs::File::create(&tmp)?;
+        let mut f = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp)?;
         f.write_all(bytes)?;
         f.sync_all()?;
         Ok(())
@@ -286,11 +335,36 @@ pub fn download_url() -> Option<String> {
     Some(format!("{CISCO_CDN_BASE}/{}.bz2", artifact()?.file))
 }
 
+/// Delete the installed OpenH264 blob, if present.
+///
+/// For the Media Codecs "Remove" action. Returns `Ok(true)` when a file was
+/// removed, `Ok(false)` when there was nothing to remove. The loader's probe
+/// cache is the caller's responsibility to invalidate (the GUI calls
+/// [`invalidate_loader_cache`] after this). A missing file is not an error.
+///
+/// # Errors
+///
+/// Returns [`OpenH264DownloadError::Io`] if the file exists but cannot be
+/// deleted (permissions, a filesystem error).
+pub fn remove_openh264() -> Result<bool, OpenH264DownloadError> {
+    let Some(path) = cache_path() else {
+        return Ok(false);
+    };
+    match std::fs::remove_file(&path) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(OpenH264DownloadError::Io(e)),
+    }
+}
+
 /// Fetch the `.bz2` from the Cisco CDN, reusing the same `reqwest` client
 /// configuration (`reqwest`, limited redirects) that
 /// `cli_download::download::download_with_progress` uses.
 async fn fetch_bz2(url: &str) -> Result<Vec<u8>, OpenH264DownloadError> {
+    use futures::StreamExt;
+
     let client = reqwest::Client::builder()
+        .timeout(DOWNLOAD_TIMEOUT)
         .redirect(reqwest::redirect::Policy::limited(10))
         .build()
         .map_err(|e| OpenH264DownloadError::Download(e.to_string()))?;
@@ -310,11 +384,28 @@ async fn fetch_bz2(url: &str) -> Result<Vec<u8>, OpenH264DownloadError> {
         )));
     }
 
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|e| OpenH264DownloadError::Download(e.to_string()))?;
-    Ok(bytes.to_vec())
+    // A declared Content-Length over the ceiling is rejected before any body is
+    // read; the running total below still guards a chunked response that lies.
+    if let Some(len) = response.content_length()
+        && len > MAX_COMPRESSED_BYTES
+    {
+        return Err(OpenH264DownloadError::Download(format!(
+            "refusing a {len}-byte download; the Cisco OpenH264 blob is well under {MAX_COMPRESSED_BYTES} bytes"
+        )));
+    }
+
+    let mut stream = response.bytes_stream();
+    let mut buf: Vec<u8> = Vec::new();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| OpenH264DownloadError::Download(e.to_string()))?;
+        if buf.len() as u64 + chunk.len() as u64 > MAX_COMPRESSED_BYTES {
+            return Err(OpenH264DownloadError::Download(format!(
+                "download exceeded the {MAX_COMPRESSED_BYTES}-byte ceiling"
+            )));
+        }
+        buf.extend_from_slice(&chunk);
+    }
+    Ok(buf)
 }
 
 /// Download, decompress, verify, and atomically install Cisco's OpenH264 binary
@@ -399,7 +490,7 @@ mod tests {
     fn download_url_is_cdn_bz2() {
         let url = download_url().expect("supported platform");
         let a = artifact().expect("supported platform");
-        assert!(url.starts_with("http://ciscobinary.openh264.org/"));
+        assert!(url.starts_with("https://ciscobinary.openh264.org/"));
         // The CDN serves "<file>.bz2"; assert the exact composed suffix rather
         // than an extension comparison (which trips a pedantic lint).
         let expected_suffix = format!("{}.bz2", a.file);

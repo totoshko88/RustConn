@@ -108,9 +108,41 @@ pub fn create_clients_page() -> adw::PreferencesPage {
         let codec_group = adw::PreferencesGroup::builder()
             .title(i18n("Media Codecs"))
             .description(i18n(
-                "Optional H.264 decoder for RDP graphics (GFX) sessions",
+                "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 decoder \
+                 for RDP graphics (GFX) sessions.",
             ))
             .build();
+
+        // Enable/disable switch. The OpenH264 binary licence requires the codec
+        // to be switchable off and back on without re-downloading; this persists
+        // `ConnectionSettings::use_openh264` and gates the loader at runtime.
+        let use_openh264 = rustconn_core::config::ConfigManager::new()
+            .ok()
+            .and_then(|m| m.load_settings().ok())
+            .is_none_or(|s| s.connection.use_openh264);
+        rustconn_core::rdp_client::openh264_download::set_openh264_enabled(use_openh264);
+
+        let use_row = adw::SwitchRow::builder()
+            .title(i18n("Use OpenH264"))
+            .subtitle(i18n(
+                "Decode H.264 in RDP GFX sessions with the Cisco codec when it is installed.",
+            ))
+            .active(use_openh264)
+            .build();
+        use_row.connect_active_notify(|row| {
+            let enabled = row.is_active();
+            if let Ok(manager) = rustconn_core::config::ConfigManager::new()
+                && let Ok(mut settings) = manager.load_settings()
+            {
+                settings.connection.use_openh264 = enabled;
+                if let Err(e) = manager.save_settings(&settings) {
+                    tracing::error!(?e, "Failed to persist use_openh264");
+                }
+            }
+            rustconn_core::rdp_client::openh264_download::set_openh264_enabled(enabled);
+        });
+        codec_group.add(&use_row);
+
         codec_group.add(&build_h264_codec_row());
         page.add(&codec_group);
     }
@@ -190,7 +222,8 @@ fn create_loading_row(title: &str) -> adw::ActionRow {
 /// * Otherwise it shows a Download button. Clicking it opens a confirm dialog
 ///   stating what will be downloaded, from where, and that it is Cisco's binary
 ///   under Cisco's licence. On confirm it runs the consent-gated downloader with
-///   a spinner, then reports success ("Restart to use") or the error inline.
+///   a spinner, then reports success (active on the next RDP connection, no
+///   restart) or the error inline.
 ///
 /// All download/consent policy lives in `rustconn-core`; this only renders it.
 fn build_h264_codec_row() -> adw::ActionRow {
@@ -249,6 +282,42 @@ fn build_h264_codec_row() -> adw::ActionRow {
             &status_for_click,
         );
     });
+
+    // Remove button — only when a blob is installed. Deletes the cached library
+    // (the licence's disable path can also fully remove it) and resets the row
+    // to the Download state.
+    let remove_button = Button::builder()
+        .label(i18n("Remove"))
+        .valign(Align::Center)
+        .visible(already_installed)
+        .build();
+    remove_button.add_css_class("destructive-action");
+    {
+        let status_label = status_label.clone();
+        let download_button = download_button.clone();
+        remove_button.connect_clicked(move |btn| {
+            use rustconn_core::rdp_client::openh264_download;
+            match openh264_download::remove_openh264() {
+                Ok(_) => {
+                    openh264_download::invalidate_loader_cache();
+                    status_label.set_label("");
+                    status_label.remove_css_class("success");
+                    status_label.remove_css_class("error");
+                    status_label.set_tooltip_text(None);
+                    download_button.set_visible(true);
+                    download_button.set_sensitive(true);
+                    btn.set_visible(false);
+                }
+                Err(error) => {
+                    tracing::error!(?error, "OpenH264 remove failed");
+                    status_label.set_label(&i18n("Remove failed"));
+                    status_label.add_css_class("error");
+                    status_label.set_tooltip_text(Some(&error.to_string()));
+                }
+            }
+        });
+    }
+    row.add_suffix(&remove_button);
     row.add_suffix(&download_button);
 
     row
@@ -269,17 +338,20 @@ fn confirm_and_download_h264(
         .unwrap_or_default();
 
     let body = i18n_f(
-        "This downloads Cisco's official OpenH264 binary from:\n{}\n\nand installs it to:\n{}\n\n\
-         Cisco — not RustConn — provides this binary and holds the patent licence for it \
-         (openh264.org binary licence). Download it?",
-        &[&url, &dest],
+        "This downloads the OpenH264 Video Codec provided by Cisco Systems, Inc. from:\n{}\n\n\
+         and installs it to:\n{}\n\n\
+         Cisco — not RustConn — provides this binary and holds the MPEG-LA patent licence for \
+         it. By downloading you accept Cisco's binary licence:\n{}\n\nDownload it?",
+        &[&url, &dest, &"https://www.openh264.org/BINARY_LICENSE.txt"],
     );
 
     let confirm = adw::AlertDialog::new(Some(&i18n("Download H.264 codec?")), Some(&body));
     confirm.add_response("cancel", &i18n("Cancel"));
     confirm.add_response("download", &i18n("Download"));
     confirm.set_response_appearance("download", adw::ResponseAppearance::Suggested);
-    confirm.set_default_response(Some("download"));
+    // Default is Cancel, not Download: a licence-accepting network fetch must
+    // never happen on an accidental Enter.
+    confirm.set_default_response(Some("cancel"));
     confirm.set_close_response("cancel");
 
     let download_button = download_button.clone();
@@ -339,7 +411,16 @@ fn start_h264_download(download_button: &Button, spinner: &Spinner, status_label
                     status_label.set_label(&i18n("Download failed"));
                     status_label.remove_css_class("success");
                     status_label.add_css_class("error");
-                    status_label.set_tooltip_text(Some(&error.to_string()));
+                    let detail = error.to_string();
+                    status_label.set_tooltip_text(Some(&detail));
+                    // Also surface the reason on the row itself, so it is visible
+                    // without hovering the small status label.
+                    if let Some(row) = status_label
+                        .ancestor(adw::ActionRow::static_type())
+                        .and_downcast::<adw::ActionRow>()
+                    {
+                        row.set_subtitle(&i18n_f("Download failed: {}", &[&detail]));
+                    }
                     // Allow a retry.
                     download_button.set_sensitive(true);
                 }

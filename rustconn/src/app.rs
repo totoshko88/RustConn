@@ -1836,6 +1836,22 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         gtk4::License::MitX11,
         None,
     );
+    // OpenH264: not bundled — fetched on demand from Cisco at the user's
+    // request (Settings → Connection → Media Codecs). The exact attribution and
+    // the patent note are required by Cisco's binary licence.
+    about.add_legal_section(
+        "OpenH264 Video Codec provided by Cisco Systems, Inc.",
+        Some("© Cisco Systems, Inc."),
+        gtk4::License::Custom,
+        Some(
+            "OpenH264 Video Codec provided by Cisco Systems, Inc.\n\n\
+             This software is downloaded on demand from Cisco, not bundled with \
+             RustConn. OpenH264 implements the H.264/AVC standard, which is \
+             covered by patents licensed through MPEG-LA; Cisco pays those \
+             royalties for the binaries it distributes. Binary licence: \
+             https://www.openh264.org/BINARY_LICENSE.txt",
+        ),
+    );
 
     about.present(Some(parent));
 }

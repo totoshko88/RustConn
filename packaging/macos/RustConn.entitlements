@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<!-- RustConn is not sandboxed and currently needs no hardened-runtime exceptions. -->
-<dict/>
+<dict>
+    <!-- Permit loading the Cisco OpenH264 dylib the user downloads on demand
+         (Settings → Connection → Media Codecs) into the hardened runtime.
+         Without this, a notarized/hardened build rejects any dylib not signed
+         by the same Team ID, so the downloaded codec would never load.
+         Tradeoff: this weakens library-validation process-wide, not just for
+         that one dylib — the same exception Firefox ships for the same reason.
+         The downloaded blob is still SHA-256-pinned to Cisco's published hash
+         before it is used, so this does not let an arbitrary library load. -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
 </plist>
