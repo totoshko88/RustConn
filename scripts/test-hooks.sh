@@ -390,5 +390,20 @@ for f in .kiro/hooks/*.json; do
     fi
 done
 
+# Every script a hook execs must be executable, in the tree and in git. A
+# 100644 kirograph-sync.sh failed with EACCES on every Stop for a week and looked,
+# from the outside, exactly like a hook that ran and found nothing.
+for f in .kiro/hooks/*.json; do
+    while IFS= read -r s; do
+        [ -n "$s" ] || continue
+        mode=$(git ls-files -s -- "$s" 2>/dev/null | cut -d' ' -f1)
+        if [ -x "$s" ] && { [ -z "$mode" ] || [ "$mode" = 100755 ]; }; then
+            report ok "$(basename "$f"): $s is executable"
+        else
+            report FAIL "$(basename "$f"): $s" "not executable (tree -x: $([ -x "$s" ] && echo yes || echo no), git mode: ${mode:-untracked})"
+        fi
+    done < <(jq -r '.hooks[].action.command // empty' "$f" | grep -oE '\.kiro/hooks/bin/[A-Za-z0-9_.-]+\.sh' | sort -u)
+done
+
 printf 'test-hooks: %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

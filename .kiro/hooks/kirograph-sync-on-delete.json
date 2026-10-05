@@ -3,12 +3,12 @@
   "hooks": [
     {
       "name": "KiroGraph Sync on Delete",
-      "description": "Remove deleted files from the KiroGraph index. Only marks the index dirty — the actual sync is deferred to the Stop hook, because every sync costs ~3-4 min (full scan + global symbol resolve) and running it inline on each delete would both block and collide with a sync already in flight.",
+      "description": "Remove deleted files from the KiroGraph index. Only marks the index dirty — the actual sync is deferred to the Stop hook, because every sync costs ~3-4 min (full scan + global symbol resolve) and running it inline on each delete would both block and collide with a sync already in flight. Writes the marker directly (same content kirograph's LockManager.markDirty writes, String(Date.now())) instead of spawning node: 4 ms vs 1.18 s per save, measured 2026-10-05.",
       "trigger": "PostFileDelete",
       "matcher": "\\.(rs|toml)$",
       "action": {
         "type": "command",
-        "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" || exit 0; kirograph mark-dirty >>.kirograph/hook.log 2>&1 || true"
+        "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" || exit 0; [ -d .kirograph ] && date +%s%3N >.kirograph/dirty 2>/dev/null; exit 0"
       },
       "enabled": true
     }

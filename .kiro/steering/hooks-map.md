@@ -111,20 +111,20 @@ anything containing `!`.
 | **doc-claims-scan** | `\.rs$` | command | <100ms | Notes a doc-comment line **added relative to HEAD** (`git diff -U0`; an untracked file counts as all-added) under some crate's `src/` that names a backticked `snake_case` identifier (≥4 chars) no non-comment line in any `*/src` spells as a word — fields, params and methods count as found; `true`/`self`/keywords are ignored; `target/` is never scanned. Catches the "doc lies" class from the 0.22.12 audit (`search_parallel`). A finding already in the report is not re-appended; ≤20 per save. Rewritten 2026-10-05: the whole-file, definitions-only version produced 610 findings on the 126 `.rs` files of 0.23 (`true` ×34) and ~1.5k lines in one turn's flush; the rewrite gives 4 on the same set. A NOTE, never a block; fails open. Logic: `bin/doc-claims-scan.sh`. |
 | **cargo-security-scan** | `Cargo\.lock$` | command | ~5s | Read-only advisory check, findings to `target/cargo-advisories.log`. Skips silently when `Cargo.lock` matches HEAD. Logic: `bin/cargo-advisory-scan.sh`. Prefers the **bare** `cargo-deny` binary over `cargo deny`, so `rust-toolchain.toml` is not asked to resolve a toolchain for a check that only parses the lockfile — the same reason `ci.yml` invokes `cargo-machete` directly. Presence is probed with `command -v`, never inferred from an exit code: cargo-deny exits non-zero *because* it found an advisory, and the old inline `\|\|` chain therefore reported real findings as "neither tool installed" while `2>/dev/null` discarded the report. Fixed 2026-09-02. |
 | **flatpak-manifest-check** | `Cargo\.lock$` | command | <50ms | Notes that `packaging/*/cargo-sources.json` are older than `Cargo.lock`, so a Flatpak build would vendor the previous dependency set. Never regenerates — that is a deliberate pre-release act on large generated files. Was an `agent` action until 2026-09-06: a full agent loop per `Cargo.lock` save to run `test -f` twice and print a fixed warning. Now a timestamp comparison, delivered through `target/.kiro-session-report`. Fails open. Logic: `bin/flatpak-manifest-check.sh`. |
-| **kirograph-mark-dirty-on-save** | `\.(rs\|toml)$` | command | <100ms | Writes `.kirograph/dirty`; logs to `.kirograph/hook.log` |
+| **kirograph-mark-dirty-on-save** | `\.(rs\|toml)$` | command | ~4ms | Writes `.kirograph/dirty` directly with `date +%s%3N` — the content `kirograph mark-dirty` writes — when `.kirograph/` exists. Was `kirograph mark-dirty`, a node start at 1.18 s per save; 309 saves in the 0.23 turn made that ~6 min (measured 2026-10-05). |
 
 ## PostFileCreate
 
 | Hook | Matcher | Type | Latency | Side-effects |
 |------|---------|------|---------|--------------|
-| **kirograph-mark-dirty-on-create** | `\.(rs\|toml)$` | command | <100ms | Writes `.kirograph/dirty`; logs to `.kirograph/hook.log` |
+| **kirograph-mark-dirty-on-create** | `\.(rs\|toml)$` | command | ~4ms | Same direct marker write as `-on-save`. |
 | **ai-doc-counts** | `\.kiro/(steering/[^/]*\.md\|hooks/[^/]*\.json)$` | command | <100ms | Appends to `target/.kiro-session-report` when the counts in `docs/AI_DEVELOPMENT.md` no longer match `.kiro/`, or a hook has no row in this file. Create, not save: adding a file is what breaks a count, editing one cannot. Exists because CI was the only thing checking — a8bdb01e added the 30th steering file, the count stayed at 29, and Hygiene went red on main after v0.21.12 was already tagged and published, the third time that number had gone stale. Reports the wrong number; never rewrites the sentence around it. Silent when clean; fails open. Logic: `bin/ai-doc-counts.sh`. |
 
 ## PostFileDelete
 
 | Hook | Matcher | Type | Latency | Side-effects |
 |------|---------|------|---------|--------------|
-| **kirograph-sync-on-delete** | `\.(rs\|toml)$` | command | <100ms | Marks dirty only — sync is deferred to the Stop hook |
+| **kirograph-sync-on-delete** | `\.(rs\|toml)$` | command | ~4ms | Marks dirty only (same direct write) — sync is deferred to the Stop hook |
 
 ## PostTaskExec (after spec task completes)
 
@@ -138,7 +138,7 @@ anything containing `!`.
 |------|---------|------|---------|--------------|
 | **session-report** | (none) | command | <100ms | Scans the `.rs` files in the edit journal for debug leftovers on lines this session added, and appends a paragraph to `target/.kiro-session-report`. Silent when clean. Replaced **post-session-diagnostics** on 2026-09-06, an `agent` action that spent a full agent loop on every turn — five in one session, each reporting files the agent had never touched, each ending in a `getDiagnostics` call that does not exist outside the IDE. Compile diagnostics moved to the commit gate, where clippy runs once per feature. Fails open. Logic: `bin/session-report.sh write`. |
 | **patch-litter-scan** | (none) | command | <50ms | Scans the working tree for `*.rej` / `*.orig` — the fingerprint of a partially applied patch — and appends a paragraph to `target/.kiro-session-report` (one of several producers of that shared channel). Added 2026-09-22 after a delegated agent applied a patch to `embedded_vnc_types.rs` that only partly took, corrupting the file and leaving `.rej`/`.orig` behind, caught only when `verify.sh` failed minutes later. Deliberately does **not** flag "changed but not in the edit journal" — that is the normal state in a shared checkout and cost five wasted loops on 2026-09-06. Uses `git ls-files` (respects `.gitignore`, skips `target/`). Silent on a clean tree; fails open. Logic: `bin/patch-litter-scan.sh`. |
-| **kirograph-sync-if-dirty** | (none) | command | returns at once | Runs `bin/kirograph-sync.sh`, which `setsid`-detaches the sync so it outlives the turn (the JSON sets `timeout: 0`), then syncs at low priority if the dirty marker is present. Rewritten 2026-09-28: the old inline command ran the ~3-4 min sync in the hook foreground under the ignored-because-inside-`action` timeout, so the 60 s default cut every run off and the killed process left the lock behind — a week of `hook.log` held only "Database is locked" and no successful sync. The "already syncing?" check now matches the process by name, not a substring of its argv (which matched the hook's own shell). Each run brackets itself with an ISO timestamp in `.kirograph/hook.log`. |
+| **kirograph-sync-if-dirty** | (none) | command | returns at once | Runs `bin/kirograph-sync.sh`, which `setsid`-detaches the sync so it outlives the turn (the JSON sets `timeout: 0`), then syncs at low priority if the dirty marker is present. Rewritten 2026-09-28: the old inline command ran the ~3-4 min sync in the hook foreground under the ignored-because-inside-`action` timeout, so the 60 s default cut every run off and the killed process left the lock behind — a week of `hook.log` held only "Database is locked" and no successful sync. The "already syncing?" check now matches the process by name, not a substring of its argv (which matched the hook's own shell). Each run brackets itself with an ISO timestamp in `.kirograph/hook.log`. 2026-10-05: the script had been committed 100644, so every Stop since 2026-09-28 died with EACCES and no sync ran (`test-hooks.sh` now asserts hook scripts are executable); the unconditional `kirograph unlock` is gone (it deleted the live process lock and never the `kirograph.db.lock` behind "Database is locked"); a present `kirograph.db.lock` is logged as a skip. |
 
 ## UserPromptSubmit
 
@@ -167,10 +167,10 @@ Hardening in the four KiroGraph hooks:
   `kirograph` in a subdirectory reports "not initialized at <subdir>".
 - stdout/stderr go to `.kirograph/hook.log` (gitignored) instead of `2>/dev/null`; the very
   first log line already surfaced two silently skipped `Cargo.toml` dependencies.
-- the Stop hook (`bin/kirograph-sync.sh`) runs `kirograph unlock` before syncing — the
-  current CLI releases the lock when its owning PID is dead, so it clears the stale one the
-  old `find -mmin +30 -empty` heuristic missed — and skips if a sync is genuinely running,
-  matched by process name so the check cannot match its own shell.
+- the Stop hook (`bin/kirograph-sync.sh`) does **not** run `kirograph unlock`: that deletes
+  the process lock a live writer may hold and never the `kirograph.db.lock`. It skips, with a
+  log line, when `kirograph.db.lock` exists or a sync is genuinely running (matched by process
+  name so the check cannot match its own shell).
 - the sync is `setsid`-detached with `timeout: 0`, so the engine reaping the hook at the end
   of the turn does not kill it mid-flight and leave the lock behind.
 
@@ -182,7 +182,7 @@ When editing `rustconn/src/dialogs/password.rs`:
    immediately — not an agent profile). Both command, both <50ms.
 2. After the write: `edit-journal` records the path.
 3. After save, **two** PostFileSave hooks fire simultaneously, both command:
-   - `kirograph-mark-dirty-on-save` (~instant)
+   - `kirograph-mark-dirty-on-save` (~4 ms, a plain file write)
    - `translation-sync` (<100ms — checks for i18n calls)
 4. At `git commit`: `commit-review-gate` asks for `security-reviewer`, because the
    journal contains a `password` filename.
