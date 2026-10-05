@@ -140,6 +140,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.1" date="2026-10-06">
+      <description>
+        <p>Version 0.23.1 - named Local Shell tabs, tab groups kept across Session Restore, and a lighter tab menu:</p>
+        <ul>
+          <li>Added: a Local Shell tab can be named with Rename Tab...; the label is kept across Session Restore and workspace save (issue #365)</li>
+          <li>Added: a tab's group now survives Session Restore (connections from a saved workspace and SPICE with a pre-connect port check still restore ungrouped)</li>
+          <li>Added: opt-in directional tab-close items (Close to the Left/Right) behind a Settings switch, off by default</li>
+          <li>Changed: the tab context menu is lighter - the Copy block moved to the sidebar menu, and Monitor is now a submenu of radio modes</li>
+          <li>Changed: the tab bar's divider is painted in the window background tone so the bar reads as part of the window</li>
+          <li>Dependencies: spki 0.8.0 to 0.8.1, zerocopy 0.8.59 to 0.8.60 (picky-krb held at 0.12.4: 0.12.5 breaks pinned sspi)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.0" date="2026-10-05">
       <description>
         <p>Version 0.23.0 - GNOME HIG redesign, vault read-only/root-search, YubiKey touch cue on reads, on-demand H.264 codec:</p>

@@ -20,8 +20,8 @@ use super::*;
 pub struct TabMenuState {
     /// The saved connection behind the tab and its "Copy" entries, or `None`
     /// for a tab with no saved connection (Welcome, local shell, quick
-    /// connect). Drives the Edit Connection and Copy sections (issue #357).
-    pub connection: Option<(Uuid, Vec<TabCopyEntry>)>,
+    /// connect). Drives the Edit Connection section (issue #357).
+    pub connection: Option<Uuid>,
     /// Activity or silence monitoring mode of the tab's session, if any.
     pub monitor_mode: Option<MonitorMode>,
     /// The tab belongs to a tab group.
@@ -46,13 +46,9 @@ pub struct TabMenuState {
     pub show_directional_close: bool,
 }
 
-/// One "Copy" entry of the tab menu; built by the window, which owns the
-/// connection data.
-pub(crate) type TabCopyEntry = crate::window::copy_field_actions::CopyMenuEntry;
-
-/// Answers "which saved connection, and what can be copied from it" for a
-/// connection id; `None` when no saved connection has that id.
-pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> Option<Vec<TabCopyEntry>>>;
+/// Reports whether a connection id names a saved connection, so the tab menu
+/// can offer **Edit Connection…** only when there is one to edit (issue #357).
+pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> bool>;
 
 /// Reports whether the detach section is offered for a verdict.
 ///
@@ -169,9 +165,11 @@ impl TerminalNotebook {
                         session_id.is_some_and(|sid| disconnected_for_menu.borrow().contains(&sid));
                     let connection = session_id
                         .and_then(|sid| info_ref.get(&sid).map(|i| i.connection_id))
-                        .and_then(|cid| {
-                            let provider = connection_menu_for_menu.borrow().clone()?;
-                            provider(cid).map(|entries| (cid, entries))
+                        .filter(|cid| {
+                            connection_menu_for_menu
+                                .borrow()
+                                .as_ref()
+                                .is_some_and(|has_connection| has_connection(*cid))
                         });
                     TabMenuState {
                         connection,
@@ -1077,7 +1075,7 @@ impl TerminalNotebook {
         // height and buried the tab-specific Close actions. Edit Connection…
         // stays, as the only way to reach the editor from an active tab when the
         // sidebar selection is something else.
-        if let Some((connection_id, _copy_entries)) = &state.connection {
+        if let Some(connection_id) = &state.connection {
             let edit_section = gio::Menu::new();
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(

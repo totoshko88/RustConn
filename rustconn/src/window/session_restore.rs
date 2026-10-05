@@ -239,9 +239,14 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
         // start creates and reapply its tab group once it exists, mirroring the
         // synchronous local-shell path above.
         let group_observer = entry.tab_group.clone().map(|group| {
-            let notebook = ctx.notebook.clone();
+            // Hold the notebook weakly, as the reconnect observer does
+            // (window-guide): the closure outlives the start, so an `Rc` here
+            // would be a cycle back to the notebook that owns the session state.
+            let notebook = std::rc::Rc::downgrade(&ctx.notebook);
             crate::window::types::SessionStartObserver::new(move |session_id| {
-                notebook.set_tab_group(session_id, &group);
+                if let Some(notebook) = notebook.upgrade() {
+                    notebook.set_tab_group(session_id, &group);
+                }
             })
         });
 

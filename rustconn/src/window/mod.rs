@@ -1384,16 +1384,20 @@ impl MainWindow {
                     .unwrap_or_default()
             });
 
-            // The same entries for the session-tab menu, plus Edit Connection.
+            // The tab menu only needs to know whether the tab's connection is a
+            // saved one, to decide whether to offer Edit Connection…. Copy lives
+            // in the sidebar menu, so no copy entries are built here.
             let state_weak = Rc::downgrade(&main_window.state);
             main_window
                 .terminal_notebook
                 .set_tab_connection_menu_provider(move |connection_id| {
-                    let state = state_weak.upgrade()?;
-                    let state_ref = state.try_borrow().ok()?;
-                    state_ref
-                        .get_connection(connection_id)
-                        .map(copy_field_actions::copy_menu_entries)
+                    let Some(state) = state_weak.upgrade() else {
+                        return false;
+                    };
+                    let Ok(state_ref) = state.try_borrow() else {
+                        return false;
+                    };
+                    state_ref.get_connection(connection_id).is_some()
                 });
         }
 

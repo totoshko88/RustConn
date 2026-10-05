@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.23.0** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.23.1** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -629,7 +629,7 @@ For RDP, VNC, and SPICE connections, RustConn performs a fast TCP port check bef
 
 ### Copy Menu
 
-Right-click a connection in the sidebar or in a smart folder → **Copy ▸**, or right-click its session tab and use the **Copy** section. The menu lists only what this connection actually has (0.22.15+):
+Right-click a connection in the sidebar or in a smart folder → **Copy ▸**. The menu lists only what this connection actually has (0.22.15+):
 
 | Entry | Copies | Shown when |
 |-------|--------|------------|
@@ -2277,7 +2277,7 @@ The tab indicator and notification are cleared automatically when you switch to 
 **Per-Connection Override:**
 Edit connection → **Advanced** tab → **Activity Monitor** section.
 
-**Quick Mode Toggle:** Right-click any terminal tab → **Monitor: Off/Activity/Silence** to cycle through modes.
+**Quick Mode Change:** Right-click any terminal tab → **Monitor ▸** and pick **Off**, **Activity**, **Silence** or **Command finished**.
 
 ### Text Highlighting Rules
 
@@ -2713,15 +2713,15 @@ The tab title changes to `[GroupName] ConnectionName` and the tooltip shows the 
 
 **Close All Ungrouped:** Right-click any tab → **Close All Ungrouped** — closes everything that is *not* in a group, which is the quick way to clear scratch tabs while keeping your labelled sets.
 
-**Monitor Mode Toggle:** Right-click any tab → **Monitor: Off/Activity/Silence** to cycle monitoring mode.
+**Monitor Mode:** Right-click any tab → **Monitor ▸** and pick a mode — **Off**, **Activity**, **Silence** or **Command finished** — with the current one shown selected.
 
-Groups are visual only — they are session-scoped and not persisted across restarts.
+Groups are visual only, but a grouped tab does come back grouped after a restart through Session Restore: the snapshot records each tab's group alongside its title and reapplies it when the tab reopens. A saved workspace reapplies the group too, for Local Shell tabs.
 
 Opening a [cluster](#clusters) assigns its member tabs to a group named after the cluster automatically, so the operations above work on a cluster without any setup.
 
 ### Renaming a Local Shell Tab
 
-Every Local Shell tab is titled **Local Shell**, so two of them are told apart by nothing but the shell they run. Right-click a Local Shell tab → **Rename Tab…** to give it a name of your own — *build logs*, *tails*, *irssi*. The name becomes the tab title and is carried by the session from then on, so it also shows on the split pane header.
+Every Local Shell tab is titled **Local Shell**, so two of them are told apart by nothing but the shell they run. Right-click a Local Shell tab → **Rename Tab…** to give it a name of your own — *build logs*, *tails*, *irssi*. The name becomes the tab title and is carried by the session from then on; a split pane header or a detached window picks it up the next time the session is placed there.
 
 1. Right-click the Local Shell tab
 2. Select **Rename Tab…**

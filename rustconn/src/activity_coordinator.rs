@@ -223,21 +223,6 @@ impl ActivityCoordinator {
         }
     }
 
-    /// Cycles the monitoring mode for a session: Off -> Activity -> Silence -> Off.
-    ///
-    /// Returns the new mode. If the session is not tracked, returns `Off`.
-    pub fn cycle_mode(&self, session_id: Uuid) -> MonitorMode {
-        let new_mode = {
-            let inner = self.inner.borrow();
-            match inner.sessions.get(&session_id) {
-                Some(state) => state.mode.next(),
-                None => return MonitorMode::Off,
-            }
-        };
-        self.set_mode(session_id, new_mode);
-        new_mode
-    }
-
     /// Sets the monitoring mode for a session.
     ///
     /// Handles timer lifecycle: cancels silence timers when leaving silence

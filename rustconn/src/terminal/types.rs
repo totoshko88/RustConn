@@ -149,26 +149,6 @@ pub fn tab_title(name: &str, group: Option<&str>) -> String {
     }
 }
 
-/// Strips a `[group] ` prefix composed by [`tab_title`] from a rendered title.
-///
-/// Needed because the group can change on a tab that already has one, and the
-/// only record of the base name in that moment is the title itself.
-///
-/// Deliberately conservative: a name that merely *starts* with `[` is left alone
-/// unless it also contains `"] "`, and even then the caller may be re-splitting a
-/// connection genuinely named `[dc1] web`. That ambiguity is inherent to encoding
-/// the group into the title string and is why the group is also carried
-/// structurally on the session.
-#[must_use]
-pub fn strip_group_prefix(title: &str) -> &str {
-    if !title.starts_with('[') {
-        return title;
-    }
-    title
-        .find("] ")
-        .map_or(title, |pos| &title[pos + "] ".len()..])
-}
-
 /// Protocol marker of a Local Shell tab (its connection id is nil).
 ///
 /// One definition, because three places have to agree on it: the creation
@@ -201,38 +181,13 @@ pub fn local_shell_label(saved: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, strip_group_prefix,
-        tab_title,
-    };
+    use super::{DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, tab_title};
 
     /// The shape the creation paths produce.
     #[test]
     fn a_grouped_tab_is_titled_with_its_group() {
         assert_eq!(tab_title("web1", Some("dc1")), "[dc1] web1");
         assert_eq!(tab_title("web1", None), "web1");
-    }
-
-    /// Round trip: the prefix a grouped title carries is the one that comes off.
-    #[test]
-    fn stripping_undoes_composing() {
-        let titled = tab_title("ssh1 via ssh2", Some("staging"));
-        assert_eq!(strip_group_prefix(&titled), "ssh1 via ssh2");
-    }
-
-    /// An ungrouped title is returned untouched, including one containing
-    /// brackets somewhere other than the start.
-    #[test]
-    fn an_ungrouped_title_is_left_alone() {
-        assert_eq!(strip_group_prefix("web1"), "web1");
-        assert_eq!(strip_group_prefix("web1 [prod]"), "web1 [prod]");
-    }
-
-    /// A leading `[` with no closing `"] "` is not a prefix and must survive.
-    #[test]
-    fn a_bare_leading_bracket_is_not_a_prefix() {
-        assert_eq!(strip_group_prefix("[unclosed"), "[unclosed");
-        assert_eq!(strip_group_prefix("[a]b"), "[a]b");
     }
 
     /// A name is in use while any session carries it.
@@ -320,20 +275,20 @@ mod tests {
             "the snapshot must store the base label, not the [group]-prefixed title"
         );
 
-        // 4. On restart the group is NOT persisted (SessionRestoreData carries
-        //    no group field), so the tab restores ungrouped. Restore reads the
-        //    label back through `local_shell_label`.
+        // 4. On restart the group IS now persisted alongside the title
+        //    (SessionRestoreData carries `tab_group`), so restore reads the base
+        //    label back through `local_shell_label` and reapplies the group.
         let restored_label = local_shell_label(&persisted);
-        let restored_title = tab_title(restored_label, None);
+        let restored_title = tab_title(restored_label, Some(group));
         assert_eq!(
-            restored_title, "build logs",
-            "a restored grouped shell must show the base label, not a double prefix"
+            restored_title, "[ci] build logs",
+            "a restored grouped shell shows the base label under its group prefix"
         );
 
-        // 5. If the user then re-assigns the group, the single prefix returns —
-        //    exactly once, because strip_group_prefix never had a doubled title
-        //    to work from.
-        let regrouped = tab_title(strip_group_prefix(&restored_title), Some(group));
+        // 5. Reapplying the group recomposes from the structural base
+        //    (`info.name`), never from the rendered title, so the prefix stays
+        //    single no matter how many times it is reapplied.
+        let regrouped = tab_title(restored_label, Some(group));
         assert_eq!(regrouped, "[ci] build logs");
     }
 
@@ -353,32 +308,38 @@ mod tests {
 
     /// Regression for the detach -> re-attach title path.
     ///
-    /// Re-attaching a detached grouped tab applies the group prefix TWICE in
+    /// Re-attaching a detached grouped tab composes the title twice in
     /// sequence: `restore_session_tab` composes `[group] name` via `tab_title`,
-    /// and `attach_session` then calls `apply_group_color`, which re-composes
-    /// from the current (already-prefixed) title. That second step must be
-    /// idempotent — `strip_group_prefix` first, then `tab_title` — or an
-    /// attached tab would read `[group] [group] name`. This pins the property
-    /// that keeps the two-step path safe.
+    /// and `attach_session` then calls `apply_group_color`. Both compose from
+    /// the structural base label (`info.name`), never from the rendered title,
+    /// so the prefix stays single no matter how often `apply_group_color` runs
+    /// — an attached tab can never read `[group] [group] name`. This pins the
+    /// property that keeps the two-step path safe.
     #[test]
     fn re_prefixing_an_already_grouped_title_does_not_double_it() {
-        let base = "build logs";
+        let base = "build logs"; // info.name, the structural base label
         let group = "ci";
 
         // Step 1: restore_session_tab composes the title from base + group.
         let after_restore = tab_title(base, Some(group));
         assert_eq!(after_restore, "[ci] build logs");
 
-        // Step 2: apply_group_color re-composes from the CURRENT title, which
-        // already carries the prefix. strip-then-compose must be a no-op.
-        let after_color = tab_title(strip_group_prefix(&after_restore), Some(group));
+        // Step 2: apply_group_color re-composes from `info.name`, not the
+        // rendered title, so re-applying the group is idempotent.
+        let after_color = tab_title(base, Some(group));
         assert_eq!(
             after_color, "[ci] build logs",
-            "re-applying the group to an already-prefixed title must not double it"
+            "re-applying the group from the base label must not double the prefix"
         );
+
+        // A label that itself looks like a prefix survives: composing from
+        // `info.name` keeps the user's `[note]` segment that stripping the
+        // rendered title would have eaten.
+        let honest = "[note] draft";
+        assert_eq!(tab_title(honest, Some(group)), "[ci] [note] draft");
 
         // The detached-window title, taken from the bare `info.name`, never
         // carries the group prefix at all — a window is not a tab-bar member.
-        assert_eq!(base, strip_group_prefix(&after_color));
+        assert_eq!(tab_title(base, None), base);
     }
 }

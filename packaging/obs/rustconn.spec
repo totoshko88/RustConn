@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.0
+Version:        0.23.1
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,15 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Tue Oct 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.1-0
+- Version bump to 0.23.1
+- Added: a Local Shell tab can be named with Rename Tab...; the label is kept across Session Restore and workspace save (issue #365)
+- Added: a tab's group now survives Session Restore (connections from a saved workspace and SPICE with a pre-connect port check still restore ungrouped)
+- Added: opt-in directional tab-close items (Close to the Left/Right) behind a Settings switch, off by default
+- Changed: the tab context menu is lighter - the Copy block moved to the sidebar menu, and Monitor is now a submenu of radio modes
+- Changed: the tab bar's divider is painted in the window background tone so the bar reads as part of the window
+- Dependencies: spki 0.8.0 -> 0.8.1, zerocopy 0.8.59 -> 0.8.60 (picky-krb held at 0.12.4: 0.12.5 breaks pinned sspi)
+
 * Mon Oct 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.0-0
 - Version bump to 0.23.0
 - Added: GNOME HIG sidebar/header redesign - two real panels each with its own headerbar, a hamburger menu grouping every list action, an optional hierarchy-path subtitle, and a Filter menu replacing the protocol pills

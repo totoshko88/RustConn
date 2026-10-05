@@ -54,7 +54,7 @@ use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
     ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
-    group_still_in_use, local_shell_label, strip_group_prefix, tab_title,
+    group_still_in_use, local_shell_label, tab_title,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -2797,13 +2797,10 @@ impl TerminalNotebook {
             && let Some(info) = self.session_info.borrow().get(&session_id)
             && let Some(ref group_name) = info.tab_group
         {
-            // The rendered title is the only record of the base name here, so an
-            // existing prefix comes off before the new one goes on.
-            let current_title = page.title().to_string();
-            page.set_title(&tab_title(
-                strip_group_prefix(&current_title),
-                Some(group_name),
-            ));
+            // Compose from `info.name`, the structural base label, not from the
+            // rendered title: stripping a prefix off the title would eat the
+            // first segment of a user label that happens to look like `[x] y`.
+            page.set_title(&tab_title(&info.name, Some(group_name)));
         }
     }
 
