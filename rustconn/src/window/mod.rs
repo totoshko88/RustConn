@@ -4477,6 +4477,7 @@ impl MainWindow {
                     &self.split_view,
                     Some(&self.state),
                     None,
+                    None,
                 );
             }
             StartupAction::Connection(id) => {
@@ -4773,8 +4774,16 @@ impl MainWindow {
         split_view: &SharedSplitView,
         state: Option<&SharedAppState>,
         label: Option<&str>,
+        group: Option<&str>,
     ) {
         let session_id = Self::spawn_local_shell(notebook, state, label);
+
+        // Reapply the tab group the session carried when the snapshot was taken,
+        // so a grouped local shell restores grouped instead of ungrouped. The id
+        // is known synchronously here because a local shell starts immediately.
+        if let Some(group) = group.filter(|g| !g.is_empty()) {
+            notebook.set_tab_group(session_id, group);
+        }
 
         // Per spec: New connections ALWAYS create independent Root_Tabs
         // Register session for potential drag-and-drop, but don't show in split pane

@@ -337,12 +337,14 @@ pub fn show_workspace_manager(
             for entry in &profile.entries {
                 if entry.connection_id.is_nil() && entry.protocol == LOCAL_SHELL_PROTOCOL {
                     // A workspace carries the tab's title, so a relabelled local
-                    // shell reopens under the name it was saved with.
+                    // shell reopens under the name it was saved with, and its
+                    // tab group is reapplied so it reopens grouped.
                     super::MainWindow::open_local_shell_with_split(
                         &notebook_for_open,
                         &split_view_for_open,
                         Some(&state_for_open),
                         Some(&entry.connection_name),
+                        entry.tab_group.as_deref(),
                     );
                 } else {
                     super::MainWindow::start_connection_with_credential_resolution(

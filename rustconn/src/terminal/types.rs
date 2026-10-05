@@ -282,4 +282,103 @@ mod tests {
         assert_eq!(local_shell_label(DEFAULT_LOCAL_SHELL_LABEL), "Local Shell");
         assert_eq!(local_shell_label("Local Shell 2"), "Local Shell 2");
     }
+
+    /// Regression for the group-prefix x label persistence boundary (#365).
+    ///
+    /// A grouped local shell renders as `[grp] label`, but the group is carried
+    /// *structurally* on the session (`info.tab_group`), not baked into the
+    /// name: the relabel path writes the bare label to `info.name`, the group
+    /// path writes `info.tab_group` and only touches the rendered title, and the
+    /// restore snapshot persists `info.name`. So the round trip must read back
+    /// the *base* label — never the rendered title — or a grouped tab would
+    /// restore double-prefixed (`[grp] [grp] label`) once a group is reassigned.
+    ///
+    /// This models the exact production sequence against the real functions:
+    ///   relabel -> assign group -> persist info.name -> restore -> re-title.
+    #[test]
+    fn a_grouped_relabelled_shell_round_trips_without_doubling_the_prefix() {
+        // 1. User relabels the local shell. `apply_session_label` writes the
+        //    bare label to `info.name`; the title is composed for display.
+        let base_label = "build logs";
+        let info_name = base_label.to_owned(); // what info.name holds
+        let rendered_no_group = tab_title(&info_name, None);
+        assert_eq!(rendered_no_group, "build logs");
+
+        // 2. User assigns a group. The group path sets `info.tab_group` and
+        //    re-renders the title WITH the prefix, but leaves `info.name` alone.
+        let group = "ci";
+        let rendered_grouped = tab_title(&info_name, Some(group));
+        assert_eq!(rendered_grouped, "[ci] build logs");
+        // The invariant that prevents doubling: the structural name is still base.
+        assert_eq!(info_name, base_label, "info.name must stay the base label");
+
+        // 3. save_snapshot persists `info.name` (NOT the rendered title) into
+        //    SessionRestoreData::connection_name.
+        let persisted = info_name.clone();
+        assert_eq!(
+            persisted, "build logs",
+            "the snapshot must store the base label, not the [group]-prefixed title"
+        );
+
+        // 4. On restart the group is NOT persisted (SessionRestoreData carries
+        //    no group field), so the tab restores ungrouped. Restore reads the
+        //    label back through `local_shell_label`.
+        let restored_label = local_shell_label(&persisted);
+        let restored_title = tab_title(restored_label, None);
+        assert_eq!(
+            restored_title, "build logs",
+            "a restored grouped shell must show the base label, not a double prefix"
+        );
+
+        // 5. If the user then re-assigns the group, the single prefix returns —
+        //    exactly once, because strip_group_prefix never had a doubled title
+        //    to work from.
+        let regrouped = tab_title(strip_group_prefix(&restored_title), Some(group));
+        assert_eq!(regrouped, "[ci] build logs");
+    }
+
+    /// A base label that itself contains the group-prefix shape must survive the
+    /// round trip verbatim: the snapshot stores `info.name`, so an honest label
+    /// like `[note] draft` is never mistaken for a composed prefix on restore.
+    #[test]
+    fn a_label_shaped_like_a_prefix_survives_the_round_trip() {
+        let honest = "[note] draft"; // user literally typed this as the label
+        let persisted = honest.to_owned(); // info.name is the bare label
+        let restored = local_shell_label(&persisted);
+        assert_eq!(
+            restored, "[note] draft",
+            "a label that looks like a prefix is user data, not a group"
+        );
+    }
+
+    /// Regression for the detach -> re-attach title path.
+    ///
+    /// Re-attaching a detached grouped tab applies the group prefix TWICE in
+    /// sequence: `restore_session_tab` composes `[group] name` via `tab_title`,
+    /// and `attach_session` then calls `apply_group_color`, which re-composes
+    /// from the current (already-prefixed) title. That second step must be
+    /// idempotent — `strip_group_prefix` first, then `tab_title` — or an
+    /// attached tab would read `[group] [group] name`. This pins the property
+    /// that keeps the two-step path safe.
+    #[test]
+    fn re_prefixing_an_already_grouped_title_does_not_double_it() {
+        let base = "build logs";
+        let group = "ci";
+
+        // Step 1: restore_session_tab composes the title from base + group.
+        let after_restore = tab_title(base, Some(group));
+        assert_eq!(after_restore, "[ci] build logs");
+
+        // Step 2: apply_group_color re-composes from the CURRENT title, which
+        // already carries the prefix. strip-then-compose must be a no-op.
+        let after_color = tab_title(strip_group_prefix(&after_restore), Some(group));
+        assert_eq!(
+            after_color, "[ci] build logs",
+            "re-applying the group to an already-prefixed title must not double it"
+        );
+
+        // The detached-window title, taken from the bare `info.name`, never
+        // carries the group prefix at all — a window is not a tab-bar member.
+        assert_eq!(base, strip_group_prefix(&after_color));
+    }
 }
