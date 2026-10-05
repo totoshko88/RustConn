@@ -268,6 +268,20 @@ pub struct AppState {
     /// Connections whose changed route the user accepted this session, so a
     /// confirmed re-point does not ask again until the app restarts.
     confirmed_reroutes: std::cell::RefCell<std::collections::HashSet<Uuid>>,
+    /// Connections the user chose to connect without their unusable jump host
+    /// this session (issue #345), so the warning does not ask again until the
+    /// app restarts — the same scope as `confirmed_reroutes`.
+    confirmed_bastion_skips: std::cell::RefCell<std::collections::HashSet<Uuid>>,
+}
+
+/// A jump-host reference the connect path would skip, and what the connection
+/// falls back to instead (issue #345).
+#[derive(Debug, Clone)]
+pub struct SkippedBastion {
+    /// The unusable reference (missing or self-referencing).
+    pub dangling: rustconn_core::connection::jump_chain::DanglingBastion,
+    /// What the connection does without it.
+    pub fallback: rustconn_core::connection::jump_chain::BastionFallback,
 }
 
 /// Bundles the parameters needed for blocking credential resolution.
@@ -709,6 +723,7 @@ impl AppState {
                 rustconn_core::connection::RoutingMemory::load_default(),
             ),
             confirmed_reroutes: std::cell::RefCell::new(std::collections::HashSet::new()),
+            confirmed_bastion_skips: std::cell::RefCell::new(std::collections::HashSet::new()),
         })
     }
 
@@ -861,6 +876,63 @@ impl AppState {
     /// session, so the warning is not shown again until restart.
     pub fn confirm_reroute(&self, connection_id: Uuid) {
         self.confirmed_reroutes.borrow_mut().insert(connection_id);
+    }
+
+    /// Returns `true` when the user already chose to connect this connection
+    /// without its unusable jump host during this session.
+    #[must_use]
+    pub fn bastion_skip_confirmed(&self, connection_id: Uuid) -> bool {
+        self.confirmed_bastion_skips
+            .borrow()
+            .contains(&connection_id)
+    }
+
+    /// Records that the user accepted connecting without the unusable jump
+    /// host, for the rest of the session.
+    pub fn confirm_bastion_skip(&self, connection_id: Uuid) {
+        self.confirmed_bastion_skips
+            .borrow_mut()
+            .insert(connection_id);
+    }
+
+    /// Checks each of `connection_ids` for a jump-host reference the connect
+    /// path would skip (issue #345).
+    ///
+    /// Hops are looked up in the connection map, so the connection list is
+    /// never cloned; the group list is cloned at most once for the whole batch,
+    /// and not at all when no connection routes through a jump host. A
+    /// cluster connect checks all its members in one call rather than once per
+    /// member. Connections already confirmed this session are skipped.
+    #[must_use]
+    pub fn skipped_bastions(&self, connection_ids: &[Uuid]) -> Vec<(Uuid, SkippedBastion)> {
+        use rustconn_core::connection::jump_chain::{
+            bastion_fallback, find_dangling_bastions_by, routes_through_jump_host,
+        };
+
+        let candidates: Vec<&Connection> = connection_ids
+            .iter()
+            .filter(|id| !self.bastion_skip_confirmed(**id))
+            .filter_map(|id| self.get_connection(*id))
+            .filter(|conn| routes_through_jump_host(conn))
+            .collect();
+        if candidates.is_empty() {
+            return Vec::new();
+        }
+
+        let groups = self.list_groups_owned();
+        let network = &self.settings().network;
+        candidates
+            .into_iter()
+            .filter_map(|conn| {
+                let dangling =
+                    find_dangling_bastions_by(conn, |id| self.get_connection(id), &groups, network);
+                let fallback = bastion_fallback(conn, &dangling, &groups, network);
+                dangling
+                    .into_iter()
+                    .next()
+                    .map(|dangling| (conn.id, SkippedBastion { dangling, fallback }))
+            })
+            .collect()
     }
 
     /// Records a connection's route as the last one connected to, and persists

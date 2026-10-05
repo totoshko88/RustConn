@@ -373,6 +373,67 @@ const NARROW_HIDDEN: [&str; 4] = [
     "win.local-shell",
 ];
 
+/// Builds the body of the "jump host unavailable" question (issue #345).
+///
+/// Three short paragraphs, each a whole translatable sentence: what is wrong
+/// with which connection's Jump Host setting, where an inherited setting comes
+/// from, and what connecting now actually does — derived from
+/// [`rustconn_core::connection::jump_chain::bastion_fallback`], so it never
+/// says "directly" while a ProxyJump or the live part of the chain still applies.
+pub(crate) fn skipped_bastion_body(
+    state: &crate::state::AppState,
+    conn: &rustconn_core::Connection,
+    skipped: &crate::state::SkippedBastion,
+) -> String {
+    use crate::i18n::{i18n, i18n_f};
+    use rustconn_core::connection::jump_chain::{
+        BastionFallback, BastionRefOrigin, DanglingReason,
+    };
+
+    let dangling = &skipped.dangling;
+    let source_name = state
+        .get_connection(dangling.source_id)
+        .map_or_else(|| conn.name.clone(), |c| c.name.clone());
+
+    let mut paragraphs = vec![match dangling.reason {
+        DanglingReason::Missing => i18n_f(
+            "The jump host set for “{}” no longer exists.",
+            &[&source_name],
+        ),
+        DanglingReason::SelfReference => i18n_f(
+            "“{}” is set to use itself as its jump host.",
+            &[&source_name],
+        ),
+    }];
+    match dangling.origin {
+        BastionRefOrigin::Connection => {}
+        BastionRefOrigin::Group(group_id) => {
+            let group_name = state
+                .get_group(group_id)
+                .map(|g| g.name.clone())
+                .unwrap_or_default();
+            paragraphs.push(i18n_f(
+                "The setting is inherited from the group “{}”.",
+                &[&group_name],
+            ));
+        }
+        BastionRefOrigin::Network => {
+            paragraphs.push(i18n("The setting is the Global Jump Host in Settings."));
+        }
+    }
+    paragraphs.push(match skipped.fallback {
+        BastionFallback::Direct => i18n_f(
+            "Connecting to “{}” now reaches the server directly, without a jump host.",
+            &[&conn.name],
+        ),
+        BastionFallback::RemainingRoute => i18n_f(
+            "Connecting to “{}” now skips that jump host and uses only the rest of its configured route.",
+            &[&conn.name],
+        ),
+    });
+    paragraphs.join("\n\n")
+}
+
 impl MainWindow {
     /// Creates a new main window for the application
     #[must_use]
@@ -2650,34 +2711,89 @@ impl MainWindow {
         connection_id: Uuid,
         observer: Option<types::SessionStartObserver>,
     ) -> types::ConnectionStartResult {
+        Self::start_connection_inner(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            observer,
+            true,
+        )
+    }
+
+    /// Starts a connection whose jump host the caller has already checked.
+    ///
+    /// A cluster connect checks every member's jump host in one pass and asks
+    /// once for the whole set (issue #345), so each member must not repeat the
+    /// check — and must not raise a dialog of its own.
+    pub fn start_connection_bastion_prechecked(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+    ) -> types::ConnectionStartResult {
+        Self::start_connection_inner(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            None,
+            false,
+        )
+    }
+
+    fn start_connection_inner(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+        observer: Option<types::SessionStartObserver>,
+        check_bastion: bool,
+    ) -> types::ConnectionStartResult {
         let state_ref = state.borrow();
 
         let Some(conn) = state_ref.get_connection(connection_id) else {
             return types::ConnectionStartResult::Failed;
         };
 
-        // Dangling-bastion warning (#345): a `jump_host_id` — the connection's
+        // Unusable-bastion guard (#345): a `jump_host_id` — the connection's
         // own, or one inherited from a group or the global network settings —
-        // can point at a connection that has since been deleted. The resolve
-        // path silently drops such a hop and connects direct, which is the one
-        // outcome a bastion exists to prevent. Surface it as a warning and then
-        // proceed direct (warn-and-direct): a user who just deleted the bastion
-        // they are about to re-create must not be blocked, but they must know
-        // the hop was skipped. Advisory only — this never returns early.
+        // can point at a connection that has since been deleted, or at the
+        // connection itself. The resolve path silently skips such a hop, and
+        // for a tunnel protocol or an SSH connection with no other route that
+        // means connecting direct: the one outcome a bastion exists to prevent.
+        // That is a security-relevant route change made without the user, so it
+        // gets a blocking question (default Cancel), the same treatment as the
+        // re-point guard below — a transient toast was easy to miss while the
+        // session was already dialling. Only protocols that route through a
+        // jump host are checked, and a "connect anyway" holds for the session.
+        if check_bastion
+            && let Some((_, skipped)) = state_ref
+                .skipped_bastions(&[connection_id])
+                .into_iter()
+                .next()
         {
-            let dangling = rustconn_core::connection::jump_chain::find_dangling_bastions(
-                conn,
-                &state_ref.list_connections_owned(),
-                &state_ref.list_groups_owned(),
-                &state_ref.settings().network,
+            let body = skipped_bastion_body(&state_ref, conn, &skipped);
+            let conn_name = conn.name.clone();
+            drop(state_ref);
+            Self::show_skipped_bastion_warning(
+                state,
+                notebook,
+                sidebar,
+                monitoring,
+                connection_id,
+                observer,
+                &conn_name,
+                &body,
+                skipped.fallback,
             );
-            if !dangling.is_empty() {
-                let conn_name = conn.name.clone();
-                crate::toast::show_warning_toast_on_active_window(&crate::i18n::i18n_f(
-                    "Jump host for ‘{}’ is missing — connecting directly",
-                    &[&conn_name],
-                ));
-            }
+            // The dialog drives the retry; this attempt stops here without
+            // marking the sidebar failed.
+            return types::ConnectionStartResult::Pending;
         }
 
         // Re-point guard: if this connection now goes somewhere other than the
@@ -3150,6 +3266,75 @@ impl MainWindow {
                     &sidebar_cb,
                     &monitoring_cb,
                     connection_id,
+                );
+            } else {
+                // Cancelled — undo the "connecting" indication the click set.
+                sidebar_cb.update_connection_status(&connection_id.to_string(), "disconnected");
+            }
+        });
+
+        if let Some(root) = notebook.widget().root() {
+            dialog.present(Some(&root));
+        } else {
+            dialog.present(None::<&gtk4::Widget>);
+        }
+    }
+
+    /// Asks before connecting without an unusable jump host (issue #345) and,
+    /// on confirmation, retries the connection.
+    ///
+    /// "Cancel" (the default and the Escape response) leaves the connection
+    /// untouched and clears the sidebar's "connecting" state. Confirming records
+    /// the choice for this session and starts the connection again, which now
+    /// passes the guard. The button names the outcome: "Connect Directly" when
+    /// nothing else routes the connection, "Connect Anyway" when the rest of its
+    /// route still applies.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "mirrors the launch entry points it must call back into"
+    )]
+    fn show_skipped_bastion_warning(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+        observer: Option<types::SessionStartObserver>,
+        conn_name: &str,
+        body: &str,
+        fallback: rustconn_core::connection::jump_chain::BastionFallback,
+    ) {
+        use crate::i18n::{i18n, i18n_f};
+        use rustconn_core::connection::jump_chain::BastionFallback;
+
+        let dialog = adw::AlertDialog::new(
+            Some(&i18n_f("Jump Host Unavailable for “{}”", &[conn_name])),
+            Some(body),
+        );
+        dialog.add_response("cancel", &i18n("Cancel"));
+        let connect_label = match fallback {
+            BastionFallback::Direct => i18n("Connect Directly"),
+            BastionFallback::RemainingRoute => i18n("Connect Anyway"),
+        };
+        dialog.add_response("connect", &connect_label);
+        dialog.set_response_appearance("connect", adw::ResponseAppearance::Destructive);
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_close_response("cancel");
+
+        let state_cb = state.clone();
+        let notebook_cb = notebook.clone();
+        let sidebar_cb = sidebar.clone();
+        let monitoring_cb = Rc::clone(monitoring);
+        dialog.connect_response(None, move |_, response| {
+            if response == "connect" {
+                state_cb.borrow().confirm_bastion_skip(connection_id);
+                Self::start_connection_observed(
+                    &state_cb,
+                    &notebook_cb,
+                    &sidebar_cb,
+                    &monitoring_cb,
+                    connection_id,
+                    observer.clone(),
                 );
             } else {
                 // Cancelled — undo the "connecting" indication the click set.

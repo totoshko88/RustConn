@@ -36,6 +36,50 @@ pub enum ClusterError {
     /// No connections in cluster
     #[error("Cluster has no connections")]
     EmptyCluster,
+
+    /// The auto-membership pattern is not a valid regular expression
+    #[error("Invalid auto-membership pattern: {0}")]
+    InvalidPattern(#[source] regex::Error),
+}
+
+/// A compiled cluster auto-membership rule.
+///
+/// The single definition of what an auto-membership pattern means, shared by
+/// [`Cluster::resolve_members`], the GUI's live preview and its save-time
+/// validation so the three cannot drift apart:
+///
+/// - surrounding whitespace is ignored, and a blank pattern is "no rule";
+/// - the pattern is a [`regex`] crate expression, matched against the
+///   connection's **name** and, separately, its **host** — either is enough;
+/// - matching is **unanchored** (`web` matches `prod-web1`; use `^…$` to pin
+///   it) and **case-sensitive** (prefix `(?i)` to ignore case), i.e. plain
+///   `regex` semantics with nothing added.
+#[derive(Debug, Clone)]
+pub struct AutoMembership {
+    re: regex::Regex,
+}
+
+impl AutoMembership {
+    /// Compiles a pattern, returning `Ok(None)` when it is blank.
+    ///
+    /// # Errors
+    /// Returns [`ClusterError::InvalidPattern`] when the trimmed pattern is not
+    /// a valid regular expression.
+    pub fn parse(pattern: &str) -> ClusterResult<Option<Self>> {
+        let pattern = pattern.trim();
+        if pattern.is_empty() {
+            return Ok(None);
+        }
+        regex::Regex::new(pattern)
+            .map(|re| Some(Self { re }))
+            .map_err(ClusterError::InvalidPattern)
+    }
+
+    /// Returns `true` when the rule matches the connection name or host.
+    #[must_use]
+    pub fn matches(&self, name: &str, host: &str) -> bool {
+        self.re.is_match(name) || self.re.is_match(host)
+    }
 }
 
 /// Result type alias for cluster operations
@@ -130,7 +174,7 @@ pub struct Cluster {
     /// like `^prod-web\d+` auto-collects every matching host for
     /// mass-connect/broadcast. `None` (the default) means explicit membership
     /// only. Read-widening: it never removes an explicit member and never
-    /// mutates `connection_ids`.
+    /// mutates `connection_ids`. Matching semantics are [`AutoMembership`]'s.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auto_membership: Option<String>,
 }
@@ -199,25 +243,23 @@ impl Cluster {
     /// never drops an explicit member. An absent or invalid regex yields just the
     /// explicit members (an invalid pattern is logged and ignored rather than
     /// panicking, so a bad rule can never break a mass-connect). The regex is
-    /// compiled once per call.
+    /// compiled once per call; matching follows [`AutoMembership`].
+    ///
+    /// Takes any iterator of borrowed connections, so a caller holding them in
+    /// a map does not have to clone the whole list first.
     #[must_use]
-    pub fn resolve_members(&self, connections: &[crate::Connection]) -> Vec<Uuid> {
+    pub fn resolve_members<'a>(
+        &self,
+        connections: impl IntoIterator<Item = &'a crate::Connection>,
+    ) -> Vec<Uuid> {
         let mut members = self.connection_ids.clone();
 
-        let Some(pattern) = self.auto_membership.as_deref() else {
-            return members;
-        };
-        let pattern = pattern.trim();
-        if pattern.is_empty() {
-            return members;
-        }
-
-        let re = match regex::Regex::new(pattern) {
-            Ok(re) => re,
+        let rule = match AutoMembership::parse(self.auto_membership.as_deref().unwrap_or("")) {
+            Ok(Some(rule)) => rule,
+            Ok(None) => return members,
             Err(e) => {
                 tracing::warn!(
                     cluster = %self.name,
-                    pattern,
                     error = %e,
                     "cluster auto-membership regex is invalid; using explicit members only"
                 );
@@ -231,7 +273,7 @@ impl Cluster {
             if explicit.contains(&conn.id) {
                 continue; // already an explicit member, keep it once
             }
-            if re.is_match(&conn.name) || re.is_match(&conn.host) {
+            if rule.matches(&conn.name, &conn.host) {
                 members.push(conn.id);
             }
         }
@@ -253,11 +295,21 @@ pub struct ClusterSession {
 }
 
 impl ClusterSession {
-    /// Creates a new cluster session
+    /// Creates a session tracking the cluster's explicit members only.
+    ///
+    /// Auto-membership matches need the connection list; use
+    /// [`Self::with_members`] with [`Cluster::resolve_members`] for those, as
+    /// [`ClusterManager::start_session`] does.
     #[must_use]
     pub fn new(cluster: &Cluster) -> Self {
-        let sessions = cluster
-            .connection_ids
+        Self::with_members(cluster, &cluster.connection_ids)
+    }
+
+    /// Creates a session tracking exactly `members` (normally the cluster's
+    /// resolved membership).
+    #[must_use]
+    pub fn with_members(cluster: &Cluster, members: &[Uuid]) -> Self {
+        let sessions = members
             .iter()
             .map(|id| (*id, ClusterMemberState::new(*id)))
             .collect();
@@ -587,24 +639,34 @@ impl ClusterManager {
         self.clusters.values().cloned().collect()
     }
 
-    /// Starts a cluster session
+    /// Starts a cluster session over the cluster's resolved membership.
+    ///
+    /// Members are [`Cluster::resolve_members`] against `connections`, so a
+    /// cluster whose members all come from its auto-membership pattern starts
+    /// a session like any other.
     ///
     /// # Errors
-    /// Returns an error if the cluster is not found or is empty
+    /// Returns [`ClusterError::NotFound`] if the cluster does not exist, or
+    /// [`ClusterError::EmptyCluster`] if it resolves to no members.
     ///
     /// # Panics
     /// This function will not panic as the session is inserted before retrieval.
-    pub fn start_session(&mut self, cluster_id: Uuid) -> ClusterResult<&mut ClusterSession> {
+    pub fn start_session<'a>(
+        &mut self,
+        cluster_id: Uuid,
+        connections: impl IntoIterator<Item = &'a crate::Connection>,
+    ) -> ClusterResult<&mut ClusterSession> {
         let cluster = self
             .clusters
             .get(&cluster_id)
             .ok_or(ClusterError::NotFound(cluster_id))?;
 
-        if cluster.is_empty() {
+        let members = cluster.resolve_members(connections);
+        if members.is_empty() {
             return Err(ClusterError::EmptyCluster);
         }
 
-        let session = ClusterSession::new(cluster);
+        let session = ClusterSession::with_members(cluster, &members);
         self.active_sessions.insert(cluster_id, session);
 
         // INVARIANT: we just inserted the session above, so get_mut always succeeds.
@@ -752,7 +814,9 @@ mod manager_tests {
 
         manager.add_cluster(cluster);
 
-        let session = manager.start_session(cluster_id).unwrap();
+        let session = manager
+            .start_session(cluster_id, std::iter::empty())
+            .unwrap();
         assert_eq!(session.session_count(), 1);
         assert_eq!(manager.active_session_count(), 1);
     }
@@ -765,7 +829,7 @@ mod manager_tests {
 
         manager.add_cluster(cluster);
 
-        let result = manager.start_session(cluster_id);
+        let result = manager.start_session(cluster_id, std::iter::empty());
         assert!(matches!(result, Err(ClusterError::EmptyCluster)));
     }
 
@@ -780,7 +844,9 @@ mod manager_tests {
         let cluster_id = cluster.id;
 
         manager.add_cluster(cluster);
-        manager.start_session(cluster_id).unwrap();
+        manager
+            .start_session(cluster_id, std::iter::empty())
+            .unwrap();
 
         // Connect both sessions
         manager.update_connection_status(cluster_id, conn1, ClusterSessionStatus::Connected);
@@ -808,7 +874,9 @@ mod manager_tests {
         let cluster_id = cluster.id;
 
         manager.add_cluster(cluster);
-        manager.start_session(cluster_id).unwrap();
+        manager
+            .start_session(cluster_id, std::iter::empty())
+            .unwrap();
 
         let summary = manager.get_session_summary(cluster_id).unwrap();
         assert_eq!(summary.cluster_name, "Test Cluster");
@@ -873,6 +941,75 @@ mod manager_tests {
         )];
         // Invalid regex must not panic and must not add matches.
         assert_eq!(cluster.resolve_members(&conns), vec![a]);
+    }
+
+    #[test]
+    fn auto_only_cluster_starts_a_session_over_its_matches() {
+        // Zero explicit members, everything from the pattern: the session must
+        // track the matched connections instead of failing as EmptyCluster.
+        let web1 = crate::Connection::new_ssh("prod-web1".into(), "10.0.0.1".into(), 22);
+        let web2 = crate::Connection::new_ssh("prod-web2".into(), "10.0.0.2".into(), 22);
+        let db = crate::Connection::new_ssh("prod-db1".into(), "10.0.0.9".into(), 22);
+        let mut cluster = Cluster::new("web".to_string());
+        cluster.auto_membership = Some(r"^prod-web".to_string());
+        let cluster_id = cluster.id;
+
+        let mut manager = ClusterManager::new();
+        manager.add_cluster(cluster);
+        let conns = [web1.clone(), web2.clone(), db.clone()];
+        let session = manager.start_session(cluster_id, &conns).unwrap();
+        assert_eq!(session.session_count(), 2);
+        assert!(session.get_session_state(web1.id).is_some());
+        assert!(session.get_session_state(web2.id).is_some());
+        assert!(session.get_session_state(db.id).is_none());
+    }
+
+    #[test]
+    fn auto_only_cluster_matching_nothing_is_empty() {
+        let mut cluster = Cluster::new("web".to_string());
+        cluster.auto_membership = Some(r"^nothing-matches$".to_string());
+        let cluster_id = cluster.id;
+        let mut manager = ClusterManager::new();
+        manager.add_cluster(cluster);
+        let conns = [crate::Connection::new_ssh(
+            "prod-web1".into(),
+            "h".into(),
+            22,
+        )];
+        assert!(matches!(
+            manager.start_session(cluster_id, &conns),
+            Err(ClusterError::EmptyCluster)
+        ));
+    }
+
+    #[test]
+    fn auto_membership_pattern_is_trimmed() {
+        // The editor saves the trimmed text; the matcher must agree with it so
+        // the live preview and the connect-time result are the same set.
+        let rule = AutoMembership::parse("  ^prod-web  ").unwrap().unwrap();
+        assert!(rule.matches("prod-web1", "10.0.0.1"));
+        assert!(AutoMembership::parse("   ").unwrap().is_none());
+        assert!(AutoMembership::parse("").unwrap().is_none());
+    }
+
+    #[test]
+    fn auto_membership_is_unanchored_and_case_sensitive() {
+        let rule = AutoMembership::parse("web").unwrap().unwrap();
+        assert!(
+            rule.matches("prod-web1", "x"),
+            "unanchored: substring match"
+        );
+        assert!(!rule.matches("PROD-WEB1", "X"), "case-sensitive by default");
+        let ci = AutoMembership::parse("(?i)web").unwrap().unwrap();
+        assert!(ci.matches("PROD-WEB1", "X"), "(?i) opts into ignoring case");
+    }
+
+    #[test]
+    fn auto_membership_invalid_pattern_is_an_error() {
+        assert!(matches!(
+            AutoMembership::parse("[invalid("),
+            Err(ClusterError::InvalidPattern(_))
+        ));
     }
 
     #[test]

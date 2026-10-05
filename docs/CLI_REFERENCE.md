@@ -775,8 +775,8 @@ Clusters group connections for broadcast command execution (send the same input 
 
 | Subcommand | Description |
 |------------|-------------|
-| `cluster list` | List all clusters (`--format`) |
-| `cluster show <name>` | Show cluster and its connections |
+| `cluster list` | List all clusters (`--format`); the table and CSV count resolved members — explicit plus auto-membership matches |
+| `cluster show <name>` | Show cluster, its auto-membership pattern and its resolved connections; pattern matches are marked `(auto)` |
 | `cluster create` | Create a cluster (`--name`, `--connections`, `--broadcast`) |
 | `cluster edit <name>` | Edit a cluster (`--new-name`, `--broadcast true/false`) |
 | `cluster delete <name>` | Delete a cluster |

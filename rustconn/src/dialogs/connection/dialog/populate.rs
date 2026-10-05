@@ -1017,30 +1017,15 @@ impl ConnectionDialog {
             }
         }
 
-        // Set jump host dropdown
-        if let Some(jump_id) = ssh.jump_host_id {
-            let connections = self.connections_data.borrow();
-            if let Some(pos) = connections.iter().position(|(id, _)| *id == Some(jump_id)) {
-                self.ssh_jump_host_dropdown.set_selected(pos as u32);
-                self.ssh_jump_host_row
-                    .set_subtitle(&i18n("Connect via another SSH connection"));
-            } else {
-                // #345: the stored jump host points at a connection that no
-                // longer exists. The dropdown has no entry for it, so without
-                // this the row would silently show "(None)" and the user would
-                // never learn their bastion is gone — the connect path would
-                // then go direct. Surface it the way the group editor surfaces a
-                // dangling inherited ref ("(unknown connection)").
-                self.ssh_jump_host_dropdown.set_selected(0);
-                self.ssh_jump_host_row.set_subtitle(&i18n(
-                    "Saved jump host is missing — it was deleted; this connection will go direct",
-                ));
-            }
-        } else {
-            self.ssh_jump_host_dropdown.set_selected(0);
-            self.ssh_jump_host_row
-                .set_subtitle(&i18n("Connect via another SSH connection"));
-        }
+        // Set jump host dropdown (warns on a missing or self-referencing one).
+        select_jump_host(
+            &self.ssh_jump_host_dropdown,
+            Some(&self.ssh_jump_host_row),
+            &self.connections_data.borrow(),
+            ssh.jump_host_id,
+            *self.editing_id.borrow(),
+            &i18n("Connect via another SSH connection"),
+        );
 
         self.ssh_proxy_entry
             .set_text(ssh.proxy_jump.as_deref().unwrap_or(""));
@@ -1446,17 +1431,15 @@ impl ConnectionDialog {
             self.rdp_keyboard_layout_dropdown.set_selected(0); // Auto
         }
 
-        // Set jump host dropdown
-        if let Some(jump_id) = rdp.jump_host_id {
-            let conns = self.rdp_connections_data.borrow();
-            if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    reason = "value range fits the target type by construction in this code path"
-                )]
-                self.rdp_jump_host_dropdown.set_selected(idx as u32);
-            }
-        }
+        // Set jump host dropdown (warns on a missing or self-referencing one).
+        select_jump_host(
+            &self.rdp_jump_host_dropdown,
+            None,
+            &self.rdp_connections_data.borrow(),
+            rdp.jump_host_id,
+            *self.editing_id.borrow(),
+            &i18n("Tunnel RDP through an SSH connection"),
+        );
     }
 
     pub(super) fn set_vnc_config(&self, vnc: &VncConfig) {
@@ -1518,17 +1501,15 @@ impl ConnectionDialog {
                 .set_text(&vnc.custom_args.join(" "));
         }
 
-        // Set jump host dropdown
-        if let Some(jump_id) = vnc.jump_host_id {
-            let conns = self.vnc_connections_data.borrow();
-            if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    reason = "value range fits the target type by construction in this code path"
-                )]
-                self.vnc_jump_host_dropdown.set_selected(idx as u32);
-            }
-        }
+        // Set jump host dropdown (warns on a missing or self-referencing one).
+        select_jump_host(
+            &self.vnc_jump_host_dropdown,
+            None,
+            &self.vnc_connections_data.borrow(),
+            vnc.jump_host_id,
+            *self.editing_id.borrow(),
+            &i18n("Tunnel VNC through an SSH connection"),
+        );
 
         self.vnc_accept_certificate_check
             .set_active(vnc.accept_certificate);
@@ -1578,17 +1559,15 @@ impl ConnectionDialog {
             );
         }
 
-        // Set jump host dropdown
-        if let Some(jump_id) = spice.jump_host_id {
-            let conns = self.spice_connections_data.borrow();
-            if let Some(idx) = conns.iter().position(|(id, _)| *id == Some(jump_id)) {
-                #[expect(
-                    clippy::cast_possible_truncation,
-                    reason = "value range fits the target type by construction in this code path"
-                )]
-                self.spice_jump_host_dropdown.set_selected(idx as u32);
-            }
-        }
+        // Set jump host dropdown (warns on a missing or self-referencing one).
+        select_jump_host(
+            &self.spice_jump_host_dropdown,
+            None,
+            &self.spice_connections_data.borrow(),
+            spice.jump_host_id,
+            *self.editing_id.borrow(),
+            &i18n("Tunnel SPICE through an SSH connection"),
+        );
 
         // Set unix socket path
         if let Some(ref socket_path) = spice.unix_socket_path {
@@ -1808,4 +1787,65 @@ impl ConnectionDialog {
             self.web_tunnel_dropdown.set_selected(0);
         }
     }
+}
+
+/// Selects the stored jump host in a Jump Host dropdown (issue #345).
+///
+/// When the stored reference cannot be used — the connection it names was
+/// deleted, so the dropdown has no entry for it and would silently show
+/// "(None)", or it names the connection being edited — the row's subtitle says
+/// so. The warning describes the *stored* value, so it is cleared back to
+/// `default_subtitle` the first time the user picks anything; a one-shot
+/// handler that disconnects itself, so repeated populating never stacks
+/// handlers. `row` is the wrapping `adw::ActionRow` when the caller holds it,
+/// otherwise it is found as the dropdown's ancestor.
+fn select_jump_host(
+    dropdown: &gtk4::DropDown,
+    row: Option<&adw::ActionRow>,
+    choices: &[(Option<Uuid>, String)],
+    stored: Option<Uuid>,
+    editing_id: Option<Uuid>,
+    default_subtitle: &str,
+) {
+    let row = row.cloned().or_else(|| {
+        dropdown
+            .ancestor(adw::ActionRow::static_type())
+            .and_downcast::<adw::ActionRow>()
+    });
+    let position = stored.and_then(|id| choices.iter().position(|(c, _)| *c == Some(id)));
+    let warning = match stored {
+        Some(id) if Some(id) == editing_id => Some(i18n(
+            "Set to this connection itself, which is ignored — pick another jump host",
+        )),
+        Some(_) if position.is_none() => Some(i18n(
+            "Saved jump host no longer exists and is skipped when connecting — pick another",
+        )),
+        _ => None,
+    };
+
+    dropdown.set_selected(position.and_then(|p| u32::try_from(p).ok()).unwrap_or(0));
+
+    let Some(row) = row else {
+        return;
+    };
+    let Some(warning) = warning else {
+        row.set_subtitle(default_subtitle);
+        return;
+    };
+    row.set_subtitle(&warning);
+
+    let handler: Rc<RefCell<Option<gtk4::glib::SignalHandlerId>>> = Rc::new(RefCell::new(None));
+    let handler_for_cb = Rc::clone(&handler);
+    let default_subtitle = default_subtitle.to_string();
+    // Weak: the row owns the dropdown, which owns this closure.
+    let row_weak = row.downgrade();
+    let id = dropdown.connect_selected_notify(move |dropdown| {
+        if let Some(row) = row_weak.upgrade() {
+            row.set_subtitle(&default_subtitle);
+        }
+        if let Some(id) = handler_for_cb.borrow_mut().take() {
+            dropdown.disconnect(id);
+        }
+    });
+    *handler.borrow_mut() = Some(id);
 }

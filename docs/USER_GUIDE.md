@@ -2841,7 +2841,9 @@ A cluster is a named set of connections you open together — a rack, a Kubernet
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
-**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol.
+**Auto-membership pattern:** instead of (or as well as) ticking members, enter a regular expression. Every connection whose name *or* host matches joins the cluster when it opens — `^prod-web\d+` collects `prod-web1`, `prod-web2`, … as you add them. The match is anywhere in the text unless you anchor it with `^`/`$`, and it is case-sensitive; start the pattern with `(?i)` to ignore case. The editor shows how many connections the pattern matches as you type, and the cluster list counts ticked and matched members together.
+
+**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
 
 **Every tab of an open cluster joins a tab group named after the cluster.** The tab reads `[ClusterName] ConnectionName`, so you can see at a glance which tabs belong together, and every [tab group](#tab-grouping) operation applies to the cluster:
 

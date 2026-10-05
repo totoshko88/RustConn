@@ -15,11 +15,11 @@ use gtk4::{
     Box as GtkBox, Button, CheckButton, Label, ListBox, ListBoxRow, Orientation, ScrolledWindow,
 };
 use libadwaita as adw;
-use rustconn_core::cluster::Cluster;
+use rustconn_core::cluster::{AutoMembership, Cluster};
 use rustconn_core::models::Connection;
 use uuid::Uuid;
 
-use crate::i18n::{i18n, i18n_f};
+use crate::i18n::{i18n, ni18n_f};
 
 /// Type alias for cluster dialog callback
 pub type ClusterCallback = Rc<RefCell<Option<Box<dyn Fn(Option<Cluster>)>>>>;
@@ -112,9 +112,14 @@ impl ClusterDialog {
         // Auto-membership regex: connections whose name or host matches this
         // pattern join the cluster at connect time, on top of the explicitly
         // ticked ones. Empty = static membership only (old behaviour).
+        // The subtitle states the matching rules `AutoMembership` implements:
+        // name or host, anywhere in the text, case-sensitive.
         let (pattern_row, auto_membership_entry) =
             super::widgets::EntryRowBuilder::new(i18n("Auto-membership pattern"))
-                .placeholder(i18n("Regex on name/host, e.g. ^prod-web\\d+"))
+                .subtitle(i18n(
+                    "Regular expression matched anywhere in a connection’s name or host; case-sensitive, prefix (?i) to ignore case",
+                ))
+                .placeholder(i18n("e.g. ^prod-web\\d+"))
                 .build();
         pattern_row.set_activatable_widget(Some(&auto_membership_entry));
         details_group.add(&pattern_row);
@@ -143,34 +148,49 @@ impl ClusterDialog {
         let editing_id: Rc<RefCell<Option<Uuid>>> = Rc::new(RefCell::new(None));
 
         // Live preview wiring: recount matches on every keystroke against the
-        // rows already loaded into the dialog. Mirrors core resolve_members
-        // (name OR host match, invalid regex matches nothing — never panics).
+        // rows already loaded into the dialog. The matcher is core's
+        // `AutoMembership` — the one `resolve_members` uses at connect time — so
+        // the preview trims, matches and rejects exactly like the real thing.
+        //
+        // The preview label is only visual. A screen-reader user typing in the
+        // entry would otherwise never hear the count, so the same text becomes
+        // the entry's accessible description (read when focus returns) and is
+        // announced politely whenever it changes (GTK 4.14, our floor).
         {
             let preview = preview_label.clone();
             let rows = connection_rows.clone();
             let update = move |entry: &gtk4::Entry| {
-                let pattern = entry.text().to_string();
-                if pattern.trim().is_empty() {
-                    preview.set_text("");
-                    entry.remove_css_class("error");
-                    return;
+                let text = match AutoMembership::parse(&entry.text()) {
+                    Ok(None) => {
+                        entry.remove_css_class("error");
+                        String::new()
+                    }
+                    Ok(Some(rule)) => {
+                        entry.remove_css_class("error");
+                        let count = rows
+                            .borrow()
+                            .iter()
+                            .filter(|r| rule.matches(&r.connection_name, &r.connection_host))
+                            .count();
+                        ni18n_f(
+                            "{} connection matches this pattern",
+                            "{} connections match this pattern",
+                            u32::try_from(count).unwrap_or(u32::MAX),
+                            &[&count.to_string()],
+                        )
+                    }
+                    Err(_) => {
+                        entry.add_css_class("error");
+                        i18n("Invalid regex pattern")
+                    }
+                };
+                if preview.text().as_str() == text {
+                    return; // nothing new to show or announce
                 }
-                if let Ok(re) = regex::Regex::new(&pattern) {
-                    entry.remove_css_class("error");
-                    let count = rows
-                        .borrow()
-                        .iter()
-                        .filter(|r| {
-                            re.is_match(&r.connection_name) || re.is_match(&r.connection_host)
-                        })
-                        .count();
-                    preview.set_text(&i18n_f(
-                        "{} connection(s) match this pattern",
-                        &[&count.to_string()],
-                    ));
-                } else {
-                    entry.add_css_class("error");
-                    preview.set_text(&i18n("Invalid regex pattern"));
+                preview.set_text(&text);
+                entry.update_property(&[gtk4::accessible::Property::Description(&text)]);
+                if !text.is_empty() {
+                    entry.announce(&text, gtk4::AccessibleAnnouncementPriority::Low);
                 }
             };
             auto_membership_entry.connect_changed(update);
@@ -200,21 +220,22 @@ impl ClusterDialog {
                 .map(|row| row.connection_id)
                 .collect();
 
-            // Read the auto-membership pattern (empty = static membership only).
-            let pattern = auto_membership_clone.text().trim().to_string();
-            let auto_membership = if pattern.is_empty() {
-                None
-            } else {
-                // Refuse to save a broken regex — it would silently match
-                // nothing at connect time. Mirror the live-preview check.
-                if regex::Regex::new(&pattern).is_err() {
+            // Read the auto-membership pattern (blank = static membership only).
+            // Refuse to save a broken regex — it would silently match nothing at
+            // connect time. Same parser as the live preview and as core.
+            let text = auto_membership_clone.text();
+            let auto_membership = match AutoMembership::parse(&text) {
+                Ok(None) => None,
+                Ok(Some(_)) => {
+                    auto_membership_clone.remove_css_class("error");
+                    Some(text.trim().to_string())
+                }
+                Err(_) => {
                     auto_membership_clone.add_css_class("error");
                     auto_membership_clone.grab_focus();
                     crate::toast::show_error_toast_on_active_window(&i18n("Invalid regex pattern"));
                     return;
                 }
-                auto_membership_clone.remove_css_class("error");
-                Some(pattern)
             };
 
             // A cluster is valid if it has explicit members OR an
@@ -487,8 +508,17 @@ pub struct ClusterListDialog {
     on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>>,
     on_new: Rc<RefCell<Option<Box<dyn Fn()>>>>,
     /// Callback to get current clusters for refresh
-    clusters_provider: Rc<RefCell<Option<Box<dyn Fn() -> Vec<Cluster>>>>>,
+    clusters_provider: Rc<RefCell<Option<Box<dyn Fn() -> Vec<ClusterSummary>>>>>,
     parent: Option<gtk4::Widget>,
+}
+
+/// A cluster as the list dialog shows it.
+pub struct ClusterSummary {
+    /// The cluster definition.
+    pub cluster: Cluster,
+    /// Resolved member count: explicit members plus auto-membership matches
+    /// (`Cluster::resolve_members`), which is what a connect opens.
+    pub member_count: usize,
 }
 
 /// Represents a cluster row in the list dialog
@@ -583,7 +613,7 @@ impl ClusterListDialog {
         let on_delete: Rc<RefCell<Option<Box<dyn Fn(Uuid)>>>> = Rc::new(RefCell::new(None));
         let on_new: Rc<RefCell<Option<Box<dyn Fn()>>>> = Rc::new(RefCell::new(None));
         let cluster_rows: Rc<RefCell<Vec<ClusterListRow>>> = Rc::new(RefCell::new(Vec::new()));
-        let clusters_provider: Rc<RefCell<Option<Box<dyn Fn() -> Vec<Cluster>>>>> =
+        let clusters_provider: Rc<RefCell<Option<Box<dyn Fn() -> Vec<ClusterSummary>>>>> =
             Rc::new(RefCell::new(None));
 
         // Connect new button
@@ -611,7 +641,7 @@ impl ClusterListDialog {
     }
 
     /// Creates a cluster row widget
-    fn create_cluster_row(cluster: &Cluster) -> ClusterListRow {
+    fn create_cluster_row(cluster: &Cluster, member_count: usize) -> ClusterListRow {
         let hbox = GtkBox::new(Orientation::Horizontal, 8);
         hbox.set_margin_top(12);
         hbox.set_margin_bottom(12);
@@ -638,10 +668,14 @@ impl ClusterListDialog {
         // feature triggered from the header bar. Don't show a stale
         // "(broadcast enabled)" indicator here that promises behaviour
         // the cluster machinery no longer delivers.
+        // The resolved membership (explicit + auto-membership matches), so a
+        // pattern-only cluster does not read "0 connections".
         let count_label = Label::builder()
-            .label(i18n_f(
+            .label(ni18n_f(
+                "{} connection",
                 "{} connections",
-                &[&cluster.connection_count().to_string()],
+                u32::try_from(member_count).unwrap_or(u32::MAX),
+                &[&member_count.to_string()],
             ))
             .halign(gtk4::Align::Start)
             .css_classes(["dim-label", "caption"])
@@ -705,7 +739,7 @@ impl ClusterListDialog {
     }
 
     /// Sets the clusters to display
-    pub fn set_clusters(&self, clusters: &[Cluster]) {
+    pub fn set_clusters(&self, clusters: &[ClusterSummary]) {
         // Clear existing rows
         while let Some(row) = self.clusters_list.row_at_index(0) {
             self.clusters_list.remove(&row);
@@ -731,8 +765,9 @@ impl ClusterListDialog {
         }
 
         // Add rows for each cluster
-        for cluster in clusters {
-            let cluster_row = Self::create_cluster_row(cluster);
+        for summary in clusters {
+            let cluster = &summary.cluster;
+            let cluster_row = Self::create_cluster_row(cluster, summary.member_count);
 
             // Wire up buttons
             let cluster_id = cluster.id;
@@ -818,7 +853,7 @@ impl ClusterListDialog {
     ///
     /// This callback is called when `refresh_list()` is invoked to get the
     /// current list of clusters from the application state.
-    pub fn set_clusters_provider<F: Fn() -> Vec<Cluster> + 'static>(&self, provider: F) {
+    pub fn set_clusters_provider<F: Fn() -> Vec<ClusterSummary> + 'static>(&self, provider: F) {
         *self.clusters_provider.borrow_mut() = Some(Box::new(provider));
     }
 

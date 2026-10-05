@@ -3,6 +3,7 @@
 use std::path::Path;
 
 use rustconn_core::cluster::Cluster;
+use rustconn_core::models::Connection;
 
 use crate::cli::{ClusterCommands, OutputFormat};
 use crate::error::CliError;
@@ -53,16 +54,24 @@ fn cmd_cluster_list(config_path: Option<&Path>, format: OutputFormat) -> Result<
         .load_clusters()
         .map_err(|e| CliError::Cluster(format!("Failed to load clusters: {e}")))?;
 
+    // The count is the resolved membership — explicit members plus whatever the
+    // auto-membership pattern matches — so a pattern-only cluster does not read
+    // as "0 connections" while it opens a dozen. JSON stays the raw cluster
+    // records (connection_ids + auto_membership) for scripts.
+    let connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
     match format {
-        OutputFormat::Table => print_cluster_table(&clusters),
+        OutputFormat::Table => print_cluster_table(&clusters, &connections),
         OutputFormat::Json => print_cluster_json(&clusters)?,
-        OutputFormat::Csv => print_cluster_csv(&clusters),
+        OutputFormat::Csv => print_cluster_csv(&clusters, &connections),
     }
 
     Ok(())
 }
 
-fn print_cluster_table(clusters: &[Cluster]) {
+fn print_cluster_table(clusters: &[Cluster], connections: &[Connection]) {
     if clusters.is_empty() {
         println!("No clusters found.");
         return;
@@ -82,7 +91,7 @@ fn print_cluster_table(clusters: &[Cluster]) {
         println!(
             "{:<name_width$}  {:<11}",
             cluster.name,
-            cluster.connection_count()
+            cluster.resolve_members(connections).len()
         );
     }
 }
@@ -94,11 +103,11 @@ fn print_cluster_json(clusters: &[Cluster]) -> Result<(), CliError> {
     Ok(())
 }
 
-fn print_cluster_csv(clusters: &[Cluster]) {
+fn print_cluster_csv(clusters: &[Cluster], connections: &[Connection]) {
     println!("name,connection_count");
     for cluster in clusters {
         let name = escape_csv_field(&cluster.name);
-        println!("{name},{}", cluster.connection_count());
+        println!("{name},{}", cluster.resolve_members(connections).len());
     }
 }
 
@@ -119,15 +128,27 @@ fn cmd_cluster_show(config_path: Option<&Path>, name: &str) -> Result<(), CliErr
     println!("  ID:        {}", cluster.id);
     println!("  Name:      {}", cluster.name);
 
-    println!("\nConnections ({}):", cluster.connection_count());
-    for conn_id in &cluster.connection_ids {
+    if let Some(pattern) = cluster.auto_membership.as_deref() {
+        println!("  Auto-membership: {pattern}");
+    }
+
+    // Resolved membership: explicit members first, then the pattern's matches,
+    // which are marked so the two kinds of member stay distinguishable.
+    let members = cluster.resolve_members(&connections);
+    println!("\nConnections ({}):", members.len());
+    for conn_id in &members {
+        let auto = if cluster.contains_connection(*conn_id) {
+            ""
+        } else {
+            " (auto)"
+        };
         if let Some(conn) = connections.iter().find(|c| c.id == *conn_id) {
             println!(
-                "  - {} ({} {}:{})",
+                "  - {} ({} {}:{}){auto}",
                 conn.name, conn.protocol, conn.host, conn.port
             );
         } else {
-            println!("  - {conn_id} (not found)");
+            println!("  - {conn_id} (not found){auto}");
         }
     }
 
