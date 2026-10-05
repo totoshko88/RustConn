@@ -66,7 +66,7 @@ use crate::monitoring::MonitoringCoordinator;
 use crate::sidebar::{ConnectionItem, ConnectionSidebar};
 use crate::split_view::{SplitDirection, SplitViewBridge};
 use crate::state::{SharedAppState, try_with_state_mut, with_state};
-use crate::terminal::{ChildExitHook, TerminalNotebook};
+use crate::terminal::{ChildExitHook, LOCAL_SHELL_PROTOCOL, TerminalNotebook, local_shell_label};
 use crate::toast::ToastOverlay;
 
 /// Shared color pool type for global color allocation across all split containers
@@ -4476,6 +4476,7 @@ impl MainWindow {
                     &self.terminal_notebook,
                     &self.split_view,
                     Some(&self.state),
+                    None,
                 );
             }
             StartupAction::Connection(id) => {
@@ -4771,8 +4772,9 @@ impl MainWindow {
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
         state: Option<&SharedAppState>,
+        label: Option<&str>,
     ) {
-        let session_id = Self::spawn_local_shell(notebook, state);
+        let session_id = Self::spawn_local_shell(notebook, state, label);
 
         // Per spec: New connections ALWAYS create independent Root_Tabs
         // Register session for potential drag-and-drop, but don't show in split pane
@@ -4793,6 +4795,10 @@ impl MainWindow {
 
     /// Creates a local shell session and starts the user's shell in it.
     ///
+    /// `label` is the title of the new tab; `None` titles it with the default.
+    /// The restore path passes the label the tab carried when the snapshot was
+    /// taken, which is what carries a user's own name across a restart.
+    ///
     /// Returns the new session id. Nothing beyond the tab and the child process
     /// is touched — no split-view visibility, no tab switching — because the
     /// caller decides where the session belongs: [`Self::open_local_shell_with_split`]
@@ -4801,7 +4807,10 @@ impl MainWindow {
     pub(crate) fn spawn_local_shell(
         notebook: &SharedNotebook,
         state: Option<&SharedAppState>,
+        label: Option<&str>,
     ) -> Uuid {
+        let title = local_shell_label(label.unwrap_or_default());
+
         // Get terminal settings from state if available
         let terminal_settings = state
             .and_then(|s| s.try_borrow().ok())
@@ -4810,8 +4819,8 @@ impl MainWindow {
 
         let session_id = notebook.create_terminal_tab_with_settings(
             Uuid::nil(),
-            "Local Shell",
-            "local",
+            title,
+            LOCAL_SHELL_PROTOCOL,
             None,
             &terminal_settings,
             None,

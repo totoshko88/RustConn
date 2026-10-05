@@ -300,6 +300,7 @@ impl MainWindow {
                 &notebook_clone,
                 &split_view_clone,
                 Some(&state_clone),
+                None,
             );
         });
         window.add_action(&local_shell_action);

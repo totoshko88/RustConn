@@ -15,7 +15,7 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "seven independent per-tab facts, each gating one menu section"
+    reason = "eight independent per-tab facts, each gating one menu section"
 )]
 pub struct TabMenuState {
     /// The saved connection behind the tab and its "Copy" entries, or `None`
@@ -38,6 +38,9 @@ pub struct TabMenuState {
     pub can_detach: bool,
     /// The tab hosts a split layout, so it can be offered "Remove Split".
     pub hosts_split: bool,
+    /// The tab is a local shell, whose title is the only thing that tells it
+    /// apart from another one, and which therefore may be relabelled.
+    pub is_local_shell: bool,
 }
 
 /// One "Copy" entry of the tab menu; built by the window, which owns the
@@ -138,10 +141,14 @@ impl TerminalNotebook {
                         any_groups_exist: info_ref.values().any(|i| i.tab_group.is_some()),
                         can_detach,
                         hosts_split,
+                        is_local_shell: session_id.is_some_and(|sid| {
+                            info_ref
+                                .get(&sid)
+                                .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                        }),
                     }
                 })
                 .unwrap_or_default();
-
             // Mutate the existing menu in-place (clear + re-populate)
             menu_for_setup.remove_all();
             Self::populate_tab_context_menu(&menu_for_setup, state);
@@ -308,6 +315,103 @@ impl TerminalNotebook {
             }
         });
         action_group.add_action(&set_group_action);
+
+        // "Rename Tab…" action — gives a local shell tab a title of its own.
+        // The label lives on the session, so it reaches the tab chrome, the
+        // split pane header and the session-restore snapshot from one place.
+        let rename_label_action = gio::SimpleAction::new("rename-label", None);
+        let context_page_rename = context_page.clone();
+        let session_info = self.session_info.clone();
+        let sessions = self.sessions.clone();
+
+        rename_label_action.connect_activate(move |_, _| {
+            let Some(session_id) = Self::context_menu_session_id(&context_page_rename, &sessions)
+            else {
+                return;
+            };
+
+            let current = session_info
+                .borrow()
+                .get(&session_id)
+                .map_or_else(String::new, |info| info.name.clone());
+
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Rename Tab"))
+                .body(i18n(
+                    "The label names this tab only. Leave it empty to go back to the default name.",
+                ))
+                .build();
+
+            let entry = gtk4::Entry::builder()
+                .text(&current)
+                .placeholder_text(i18n("Tab name"))
+                .hexpand(true)
+                .build();
+            dialog.set_extra_child(Some(&entry));
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("apply", &i18n("Apply"));
+            dialog.set_response_appearance("apply", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("apply"));
+            dialog.set_close_response("cancel");
+
+            // Both maps are cloned per activation: the action closure is `Fn`,
+            // so it may run again and cannot hand its own captures to the
+            // one-shot response handler.
+            let sessions_for_apply = sessions.clone();
+            let session_info_for_apply = session_info.clone();
+
+            // One commit path, reached by the "apply" response and by Enter in
+            // the entry alike. An empty entry resets the title rather than
+            // leaving the tab untitled, which the tab bar cannot show apart
+            // from a broken tab.
+            let commit_entry = entry.clone();
+            let commit: Rc<dyn Fn()> = Rc::new(move || {
+                let label = local_shell_label(&commit_entry.text()).to_owned();
+                Self::apply_session_label(
+                    &sessions_for_apply,
+                    &session_info_for_apply,
+                    session_id,
+                    &label,
+                );
+                tracing::debug!(session_id = %session_id, label, "Tab relabelled");
+            });
+
+            let commit_for_response = commit.clone();
+
+            dialog.connect_response(None, move |_dialog, response| {
+                if response == "apply" {
+                    commit_for_response();
+                }
+            });
+
+            // Enter in the entry saves and closes, matching every other
+            // text-entry dialog in the app. `close()` alone would emit the
+            // close response ("cancel"), so the label would be discarded.
+            let commit_for_enter = commit.clone();
+            let dialog_for_enter = dialog.clone();
+            entry.connect_activate(move |_| {
+                commit_for_enter();
+                dialog_for_enter.close();
+            });
+
+            let Some(target_page) = context_page_rename.borrow().clone() else {
+                return;
+            };
+            if let Some(root) = target_page.child().root()
+                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+            {
+                dialog.present(Some(window));
+            }
+
+            // Focus the entry once the dialog is mapped, so the user can type
+            // immediately without clicking. A grab_focus issued straight after
+            // `present()` lands on a dialog that has no focus yet and is
+            // dropped by GTK.
+            glib::idle_add_local_once(move || {
+                entry.grab_focus();
+            });
+        });
+        action_group.add_action(&rename_label_action);
 
         // "Remove from Group" action
         let remove_group_action = gio::SimpleAction::new("remove-group", None);
@@ -831,6 +935,17 @@ impl TerminalNotebook {
             pin_section.append(Some(&i18n("Pin Tab")), Some("tab.pin"));
         }
         menu.append_section(None, &pin_section);
+
+        // Label section — offered only for a local shell tab. Every local shell
+        // is titled "Local Shell" until the user says otherwise, so without
+        // this two of them are told apart by nothing but the shell they run.
+        // A tab with a saved connection is renamed by editing that connection,
+        // so an item here would be a second, divergent way to do the same job.
+        if state.is_local_shell {
+            let label_section = gio::Menu::new();
+            label_section.append(Some(&i18n("Rename Tab…")), Some("tab.rename-label"));
+            menu.append_section(None, &label_section);
+        }
 
         // Group section — adaptive: only show group actions when groups exist
         let group_section = gio::Menu::new();

@@ -169,9 +169,42 @@ pub fn strip_group_prefix(title: &str) -> &str {
         .map_or(title, |pos| &title[pos + "] ".len()..])
 }
 
+/// Protocol marker of a Local Shell tab (its connection id is nil).
+///
+/// One definition, because three places have to agree on it: the creation
+/// path that stamps the protocol, the tab menu that decides whether a tab may
+/// be relabelled, and the restore path that recognises the entry again.
+pub const LOCAL_SHELL_PROTOCOL: &str = "local";
+
+/// Title of a Local Shell tab that carries no label of its own.
+///
+/// Deliberately not translated at the point of use: the value is written into
+/// the session-restore snapshot and read back on the next start, so a default
+/// that shifted with the locale would restore in the language it was saved in.
+/// A label the user typed is user data and is not translated either.
+const DEFAULT_LOCAL_SHELL_LABEL: &str = "Local Shell";
+
+/// The title a Local Shell tab opens with: the label the user gave it, or the
+/// default when there is none.
+///
+/// Blank and whitespace-only labels fall back rather than producing an empty
+/// tab title, which is indistinguishable from a broken tab in the tab bar.
+#[must_use]
+pub fn local_shell_label(saved: &str) -> &str {
+    let trimmed = saved.trim();
+    if trimmed.is_empty() {
+        DEFAULT_LOCAL_SHELL_LABEL
+    } else {
+        trimmed
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{group_still_in_use, strip_group_prefix, tab_title};
+    use super::{
+        DEFAULT_LOCAL_SHELL_LABEL, group_still_in_use, local_shell_label, strip_group_prefix,
+        tab_title,
+    };
 
     /// The shape the creation paths produce.
     #[test]
@@ -225,5 +258,28 @@ mod tests {
     fn the_in_use_check_matches_the_whole_name() {
         assert!(!group_still_in_use("dc1", std::iter::once(Some("dc10"))));
         assert!(!group_still_in_use("dc1", std::iter::once(Some("DC1"))));
+    }
+
+    /// The label the user typed is the title, trimmed.
+    #[test]
+    fn a_typed_label_becomes_the_title() {
+        assert_eq!(local_shell_label("build logs"), "build logs");
+        assert_eq!(local_shell_label("  build logs  "), "build logs");
+    }
+
+    /// A tab with no usable label must not end up untitled: an empty title is
+    /// indistinguishable from a broken tab in the tab bar.
+    #[test]
+    fn an_empty_label_falls_back_to_the_default() {
+        assert_eq!(local_shell_label(""), DEFAULT_LOCAL_SHELL_LABEL);
+        assert_eq!(local_shell_label("   \t "), DEFAULT_LOCAL_SHELL_LABEL);
+    }
+
+    /// The restore path reads back exactly what was saved, including a label
+    /// that merely looks like the default.
+    #[test]
+    fn a_saved_label_survives_being_read_back() {
+        assert_eq!(local_shell_label(DEFAULT_LOCAL_SHELL_LABEL), "Local Shell");
+        assert_eq!(local_shell_label("Local Shell 2"), "Local Shell 2");
     }
 }

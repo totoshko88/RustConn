@@ -5,6 +5,17 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **A Local Shell tab can be given a name of its own** — right-clicking a Local Shell tab now offers **Rename Tab…**, which titles the tab with whatever is typed (*build logs*, *tails*, *irssi*) instead of leaving every shell titled **Local Shell**. The label names the tab only: no connection is created and the shell itself is untouched. Leaving the field empty restores the default name, because an untitled tab cannot be told apart from a broken one in the tab bar. The label is remembered across restarts with Session Restore, since the snapshot already stores each tab's title and the Local Shell now reopens under it rather than under a hardcoded name; a saved workspace carries it too. The item is offered on Local Shell tabs only — a tab with a saved connection is renamed by editing that connection, which keeps the sidebar, the history and every open tab in step.
+
+### Fixed
+- **Enter did nothing in the Rename Tab dialog, and the field did not take the keyboard focus** — the dialog's entry handled Enter by calling `close()`, which is libadwaita's *close* response, so the typed label was discarded exactly as if **Cancel** had been clicked; the "apply" branch of the response handler never ran. Enter now commits the label through the same single path the **Apply** button uses, and then closes. The field is focused in an idle after `present()` instead of straight away, because a `grab_focus()` issued before the dialog is mapped is dropped by GTK.
+
+### Documentation
+- **User Guide: "Renaming a Local Shell Tab"** — a new subsection under Organization, next to Tab Grouping, covers the **Rename Tab…** item: that it names the tab and nothing else, that an empty field restores the default, that the label survives a restart through Session Restore and a workspace save, and why the item is absent from a tab that has a saved connection.
+
 ## [0.23.0] - 2026-10-05
 
 ### Added
