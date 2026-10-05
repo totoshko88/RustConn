@@ -30,7 +30,7 @@
 # all. What this deliberately no longer does is call getDiagnostics — that is an
 # IDE-side tool, absent in an ACP session, where the old hook produced a dead end
 # every turn. Compile diagnostics moved to the commit gate, where clippy runs once
-# per feature instead of once per turn (core-rules.md, "Finishing a feature").
+# per feature instead of once per turn (core-rules.md, "Committing").
 #
 # Fails OPEN and silent: a broken report must not interrupt a session.
 

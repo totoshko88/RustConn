@@ -1,6 +1,7 @@
 ---
-inclusion: fileMatch
-fileMatchPattern: "**/*.rs"
+inclusion: auto
+name: rust-pragmatic-guidelines
+description: "Microsoft Pragmatic Rust Guidelines adapted for RustConn — the M-* rules: canonical error structs, unsafe and FFI soundness, public Debug that cannot leak secrets, # Errors / # Panics doc sections, M-CONCISE-NAMES, and the workspace lint table. Load when writing, refactoring or reviewing Rust, designing a public API, adding or silencing a lint, or when code or an AGENTS.md cites an M-* rule."
 ---
 
 # Pragmatic Rust Guidelines (Microsoft) — RustConn Adaptation

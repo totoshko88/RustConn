@@ -4,9 +4,8 @@ Domain logic: models, config, CRUD managers, import/export, protocol data,
 credential abstractions. Root `AGENTS.md` still applies; this is what is specific
 to this tree.
 
-- **`gtk4`, `adw` and `vte4` are forbidden here.** Not "discouraged" — a pre-write
-  hook rejects the edit. If a change seems to need a widget, the change belongs in
-  `rustconn/`, and what belongs here is the data it operates on.
+- No GUI crates (root rule). If a change seems to need a widget, it belongs in
+  `rustconn/`; what belongs here is the data it operates on.
 - Default features stay **headless**. Embedded clients, RD Gateway/GFX, host
   keyring support and CLI download support are all behind features, and
   `cargo test -p rustconn-core` with no features must keep passing.
