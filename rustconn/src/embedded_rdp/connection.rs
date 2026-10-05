@@ -2139,15 +2139,12 @@ impl super::EmbeddedRdpWidget {
                                 use rustconn_core::rdp_client::graphics::H264UnavailableReason;
                                 let message = match reason {
                                     H264UnavailableReason::RejectedNonCisco => i18n(
-                                        "H.264 is unavailable: the installed OpenH264 is not a \
-                                         Cisco build and was refused. Using RemoteFX. Enable H.264 \
-                                         from Settings → Connection → Media Codecs → \
-                                         “Download H.264 codec from Cisco”.",
+                                        "H.264 is off — the installed OpenH264 isn't a Cisco \
+                                         build. Using RemoteFX.",
                                     ),
                                     H264UnavailableReason::NotFound => i18n(
-                                        "H.264 is unavailable: no OpenH264 library was found. \
-                                         Using RemoteFX. Enable H.264 from Settings → Connection → \
-                                         Media Codecs → “Download H.264 codec from Cisco”.",
+                                        "H.264 is off — no OpenH264 codec was found. Using \
+                                         RemoteFX.",
                                     ),
                                 };
                                 tracing::info!(
@@ -2155,7 +2152,15 @@ impl super::EmbeddedRdpWidget {
                                     ?reason,
                                     "H.264 unavailable — using RemoteFX path"
                                 );
-                                crate::toast::show_warning_toast_on_active_window(&message);
+                                // Keep the toast to one short line; the
+                                // call-to-action is a button that opens Settings
+                                // (→ Connection → Media Codecs) rather than a long
+                                // sentence the single-line toast would ellipsize.
+                                crate::toast::show_warning_toast_with_action_on_active_window(
+                                    &message,
+                                    &i18n("Open Settings"),
+                                    "win.settings",
+                                );
                             }
                         }
                     }
