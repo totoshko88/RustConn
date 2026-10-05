@@ -89,6 +89,46 @@ impl TerminalNotebook {
         let connection_menu_for_menu = self.tab_connection_menu.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let menu_for_setup = menu;
+
+        // Create the action group and the stateful monitor action up front, so
+        // the setup-menu closure can refresh the radio state to the
+        // right-clicked tab's current mode before each show.
+        let action_group = gio::SimpleActionGroup::new();
+        let set_monitor_action = gio::SimpleAction::new_stateful(
+            "set-monitor",
+            Some(glib::VariantTy::INT32),
+            &0i32.to_variant(),
+        );
+        {
+            let context_page_monitor = context_page.clone();
+            let sessions_for_monitor = self.sessions.clone();
+            let activity_for_action = self.activity_coordinator.clone();
+            set_monitor_action.connect_activate(move |action, target| {
+                let Some(index) = target.and_then(glib::Variant::get::<i32>) else {
+                    return;
+                };
+                let mode = crate::monitor_mode::from_index(u32::try_from(index).unwrap_or(0));
+                let Some(session_id) =
+                    Self::context_menu_session_id(&context_page_monitor, &sessions_for_monitor)
+                else {
+                    return;
+                };
+                let coordinator = activity_for_action.borrow();
+                let Some(coordinator) = coordinator.as_ref() else {
+                    return;
+                };
+                coordinator.set_mode(session_id, mode);
+                action.set_state(&index.to_variant());
+                tracing::debug!(
+                    session_id = %session_id,
+                    mode = ?mode,
+                    "Monitor mode set via context menu"
+                );
+            });
+        }
+        action_group.add_action(&set_monitor_action);
+        let set_monitor_for_setup = set_monitor_action.clone();
+
         self.tab_view.connect_setup_menu(move |_tab_view, page| {
             *context_page_setup.borrow_mut() = page.cloned();
 
@@ -151,11 +191,13 @@ impl TerminalNotebook {
                 .unwrap_or_default();
             // Mutate the existing menu in-place (clear + re-populate)
             menu_for_setup.remove_all();
+            // Refresh the monitor radio to the right-clicked tab's current mode
+            // so the submenu shows the selected bullet correctly on each show.
+            let mode_index =
+                crate::monitor_mode::index_of(state.monitor_mode.unwrap_or(MonitorMode::Off));
+            set_monitor_for_setup.set_state(&i32::try_from(mode_index).unwrap_or(0).to_variant());
             Self::populate_tab_context_menu(&menu_for_setup, state);
         });
-
-        // Create action group
-        let action_group = gio::SimpleActionGroup::new();
 
         // "Set Group..." action — shows an entry dialog
         let set_group_action = gio::SimpleAction::new("set-group", None);
@@ -802,44 +844,8 @@ impl TerminalNotebook {
         });
         action_group.add_action(&detach_monitor_action);
 
-        // "Cycle Monitor" action — one step per activation, through every mode in
-        // `MonitorMode::next()` order: Off → Activity → Silence → Command → Off.
-        // Command joined the cycle when the mode was added; this comment said the
-        // three-mode cycle for a while after that, which matters because reaching
-        // Command from Off takes three activations and a stale list makes that
-        // look like the menu is not working.
-        let cycle_monitor_action = gio::SimpleAction::new("cycle-monitor", None);
-        let context_page_monitor = context_page;
-        let sessions_for_monitor = self.sessions.clone();
-        let activity_for_action = self.activity_coordinator.clone();
-        cycle_monitor_action.connect_activate(move |_, _| {
-            let target_page = context_page_monitor.borrow().clone();
-            let Some(target_page) = target_page else {
-                return;
-            };
-            let session_id = {
-                let sessions_ref = sessions_for_monitor.borrow();
-                sessions_ref
-                    .iter()
-                    .find(|(_, p)| *p == &target_page)
-                    .map(|(id, _)| *id)
-            };
-            let Some(session_id) = session_id else {
-                return;
-            };
-
-            let coordinator = activity_for_action.borrow();
-            let Some(coordinator) = coordinator.as_ref() else {
-                return;
-            };
-            let new_mode = coordinator.cycle_mode(session_id);
-            tracing::debug!(
-                session_id = %session_id,
-                mode = ?new_mode,
-                "Monitor mode cycled via context menu"
-            );
-        });
-        action_group.add_action(&cycle_monitor_action);
+        // "Set Monitor" is created up front (before the setup-menu closure) so
+        // the closure can refresh its radio state; see the top of this function.
 
         // Attach action group to the TabView widget and TabBar
         // The TabBar needs the action group because the context menu popover
@@ -972,11 +978,26 @@ impl TerminalNotebook {
         broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
         menu.append_section(None, &broadcast_section);
 
-        // Monitor section with current mode in label
+        // Monitor section — a labelled section of radio items, one per mode,
+        // with the current mode selected. This replaces a single click-to-cycle
+        // label ("Monitor: Off") that gave no afford­ance for what the next
+        // click would pick. The action is `tab.set-monitor` with the mode index
+        // as its i32 target; its state is refreshed to the current mode before
+        // the menu is shown (see `setup_tab_context_menu`).
+        //
+        // A labelled SECTION, not a submenu, for the same reason the Copy and
+        // detach blocks are flat: this menu is cleared and rebuilt on every
+        // `setup-menu`, and a rebuilt submenu re-adds its `GtkStack` page under
+        // the same name (`Gtk-WARNING: duplicate child name in GtkStack`). Radio
+        // items render their selected bullet inline, so no submenu is needed.
         let monitor_section = gio::Menu::new();
-        let mode = state.monitor_mode.unwrap_or(MonitorMode::Off);
-        let label = i18n_f("Monitor: {}", &[&i18n(mode.display_name())]);
-        monitor_section.append(Some(&label), Some("tab.cycle-monitor"));
+        for (index, mode) in MonitorMode::all().iter().enumerate() {
+            let item = gio::MenuItem::new(Some(&i18n(mode.display_name())), None);
+            let target = i32::try_from(index).unwrap_or(0);
+            item.set_action_and_target_value(Some("tab.set-monitor"), Some(&target.to_variant()));
+            monitor_section.append_item(&item);
+        }
+        menu.append_section(Some(&i18n("Monitor")), &monitor_section);
         menu.append_section(None, &monitor_section);
 
         // Split section — only for the tab that hosts a split layout, and the
@@ -1005,14 +1026,21 @@ impl TerminalNotebook {
             menu.append_section(None, &detach_section);
         }
 
-        // Connection section (issue #357) — edit the tab's saved connection and
-        // copy its fields, addressed by connection id so the sidebar selection
-        // does not matter. Properties-like items, so above Close (GNOME HIG).
+        // Connection section (issue #357) — edit the tab's saved connection,
+        // addressed by connection id so the sidebar selection does not matter.
+        // A properties-like action, so above Close (GNOME HIG).
         //
-        // Copy is a labelled section, not a submenu: this menu is cleared and
-        // rebuilt on every `setup-menu`, and a rebuilt submenu re-adds its
-        // `GtkStack` page under the same name (see the detach section above).
-        if let Some((connection_id, copy_entries)) = &state.connection {
+        // Copy was removed here on purpose: the identical Copy block already
+        // lives in the sidebar's connection menu as a tidy `Copy ▸` submenu, and
+        // copying a connection's host/port/credentials is an operation on the
+        // *connection object*, which belongs where the connection is listed —
+        // not on the live-session tab, whose menu is about the session
+        // (reconnect, monitor, broadcast, split, detach, close). Keeping a flat
+        // six-row Copy list here duplicated the sidebar, doubled the menu's
+        // height and buried the tab-specific Close actions. Edit Connection…
+        // stays, as the only way to reach the editor from an active tab when the
+        // sidebar selection is something else.
+        if let Some((connection_id, _copy_entries)) = &state.connection {
             let edit_section = gio::Menu::new();
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(
@@ -1021,32 +1049,6 @@ impl TerminalNotebook {
             );
             edit_section.append_item(&edit);
             menu.append_section(None, &edit_section);
-
-            let copy_section = gio::Menu::new();
-            let property_section = gio::Menu::new();
-            for entry in copy_entries {
-                let item = gio::MenuItem::new(Some(&entry.label), None);
-                item.set_action_and_target_value(
-                    Some(&format!(
-                        "win.{}",
-                        crate::window::copy_field_actions::COPY_FIELD_ACTION
-                    )),
-                    Some(&entry.target.to_variant()),
-                );
-                if entry.is_property {
-                    property_section.append_item(&item);
-                } else {
-                    copy_section.append_item(&item);
-                }
-            }
-            if copy_section.n_items() > 0 {
-                menu.append_section(Some(&i18n("Copy")), &copy_section);
-            }
-            if property_section.n_items() > 0 {
-                // Under the Copy heading when there are no built-in fields.
-                let heading = (copy_section.n_items() == 0).then(|| i18n("Copy"));
-                menu.append_section(heading.as_deref(), &property_section);
-            }
         }
 
         // Close section — minimal by default, expanded when groups exist
