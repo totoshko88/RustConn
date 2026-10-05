@@ -428,6 +428,77 @@ pub fn accelerators_equivalent(a: &str, b: &str) -> bool {
     }
 }
 
+/// Why an accelerator cannot be used as a per-connection command-macro keybind.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum MacroKeybindError {
+    /// Not a parsable `<Modifier>key` accelerator string.
+    #[error("not a valid accelerator")]
+    Invalid,
+    /// A key other than F1–F24 without Ctrl, Alt or Super. Such a chord is
+    /// ordinary typing (a letter, Shift+letter, Enter, …) and would be stolen
+    /// from the terminal.
+    #[error("a macro shortcut needs Ctrl, Alt or Super; only F1 to F24 may be used alone")]
+    MissingModifier,
+    /// Already bound to one of the application's own actions; the macro would
+    /// either shadow it or never fire.
+    #[error("already used by the application action {action}")]
+    AppShortcut {
+        /// GTK action name, e.g. `win.copy`.
+        action: String,
+        /// Untranslated label of that action, for the GUI to translate.
+        label: String,
+    },
+}
+
+/// Checks whether `accel` may be bound to a command macro.
+///
+/// A macro keybind needs a Ctrl, Alt or Super modifier — only the function keys
+/// F1–F24 may be bound bare (or with Shift alone) — and must not collide with
+/// any of the application's own shortcuts as currently configured: each
+/// default from [`default_keybindings`] with the user's `keybindings`
+/// overrides applied. GTK-level key-name validity is not checked here (that
+/// needs a display); the GUI adds it on top.
+///
+/// # Errors
+/// Returns [`MacroKeybindError::Invalid`] for a malformed string,
+/// [`MacroKeybindError::MissingModifier`] for a chord without a required
+/// modifier and [`MacroKeybindError::AppShortcut`] for a collision.
+pub fn validate_macro_keybind(
+    accel: &str,
+    keybindings: &KeybindingSettings,
+) -> Result<(), MacroKeybindError> {
+    let (modifiers, key) = parse_accelerator(accel).ok_or(MacroKeybindError::Invalid)?;
+
+    let is_function_key = key
+        .strip_prefix('f')
+        .and_then(|n| n.parse::<u8>().ok())
+        .is_some_and(|n| (1..=24).contains(&n));
+    // `parse_accelerator` already folds <Primary>/<Ctrl> into "control"; GTK
+    // also spells Alt as <Mod1>.
+    let has_required_modifier = modifiers
+        .iter()
+        .any(|m| matches!(m.as_str(), "control" | "alt" | "mod1" | "super"));
+    if !is_function_key && !has_required_modifier {
+        return Err(MacroKeybindError::MissingModifier);
+    }
+
+    for def in default_keybindings() {
+        let taken = keybindings
+            .get_accel(&def)
+            .split('|')
+            .map(str::trim)
+            .filter(|a| !a.is_empty())
+            .any(|a| accelerators_equivalent(a, accel));
+        if taken {
+            return Err(MacroKeybindError::AppShortcut {
+                action: def.action,
+                label: def.label,
+            });
+        }
+    }
+    Ok(())
+}
+
 /// Parses an accelerator into its set of modifiers and its key name.
 ///
 /// Returns `None` when the string is empty, has an unterminated `<...>` token,

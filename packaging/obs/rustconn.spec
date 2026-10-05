@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.22.15
+Version:        0.23.0
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,23 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Oct 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.0-0
+- Version bump to 0.23.0
+- Added: GNOME HIG sidebar/header redesign - two real panels each with its own headerbar, a hamburger menu grouping every list action, an optional hierarchy-path subtitle, and a Filter menu replacing the protocol pills
+- Added: read-only mode and search-from-root for every secret backend - Bitwarden, 1Password, Passbolt, pass and KeePass/kdbx (issue #353)
+- Added: on-demand Cisco OpenH264 download for H.264 RDP graphics, opt-in and consent-gated, effective on the next connection with no restart (issue #262)
+- Added: per-connection command macros and regex cluster auto-membership
+- Changed: CI/release hardening - cargo-nextest, feature-powerset and semver-checks jobs, a SHA256SUMS manifest and an embedded dependency SBOM
+- Fixed: the YubiKey touch cue now fires on KeePass reads (connect, password load, root-search), not only writes (issue #350)
+- Fixed: the RDP frame-statistics counter is fed from the real paint path, and a toast reports when H.264 falls back to the software path (issue #262)
+- Fixed: the Welcome tab closes on the first real tab, not only the second
+- Fixed: group sync matches connections and subgroups by stable id, so a rename or move is an update rather than delete+recreate (issue #263)
+- Fixed: a deleted jump host is detected and warned about instead of silently going direct
+- Fixed: import/export round-trip fixes (native, Ásbrú, .rdp); the RDP Multipath TCP toggle reaches the client; CLI can set Kerberos NLA (issue #351)
+- Fixed: the stored password now reaches keyboard-interactive logins such as ESXi, not only OpenSSH's own password prompt, while still never answering a passphrase, OTP, sudo or password-change prompt (issue #364)
+- Fixed: the config forward-compat marker now covers every config file, and a startup crash when protocol filters were restored
+- Dependencies: updated async-recursion, cc, font-types, mio, objc2, powerfmt, tokio and uuid to their latest compatible versions
+
 * Sat Oct 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.22.15-0
 - Version bump to 0.22.15
 - Added: a Copy submenu for connections that lists only what a connection has: host, port, address, username, password (cleared after 30 s), SSH command and custom properties (issue #357)

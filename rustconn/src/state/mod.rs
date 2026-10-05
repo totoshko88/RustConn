@@ -268,6 +268,20 @@ pub struct AppState {
     /// Connections whose changed route the user accepted this session, so a
     /// confirmed re-point does not ask again until the app restarts.
     confirmed_reroutes: std::cell::RefCell<std::collections::HashSet<Uuid>>,
+    /// Connections the user chose to connect without their unusable jump host
+    /// this session (issue #345), so the warning does not ask again until the
+    /// app restarts — the same scope as `confirmed_reroutes`.
+    confirmed_bastion_skips: std::cell::RefCell<std::collections::HashSet<Uuid>>,
+}
+
+/// A jump-host reference the connect path would skip, and what the connection
+/// falls back to instead (issue #345).
+#[derive(Debug, Clone)]
+pub struct SkippedBastion {
+    /// The unusable reference (missing or self-referencing).
+    pub dangling: rustconn_core::connection::jump_chain::DanglingBastion,
+    /// What the connection does without it.
+    pub fallback: rustconn_core::connection::jump_chain::BastionFallback,
 }
 
 /// Bundles the parameters needed for blocking credential resolution.
@@ -709,6 +723,7 @@ impl AppState {
                 rustconn_core::connection::RoutingMemory::load_default(),
             ),
             confirmed_reroutes: std::cell::RefCell::new(std::collections::HashSet::new()),
+            confirmed_bastion_skips: std::cell::RefCell::new(std::collections::HashSet::new()),
         })
     }
 
@@ -861,6 +876,63 @@ impl AppState {
     /// session, so the warning is not shown again until restart.
     pub fn confirm_reroute(&self, connection_id: Uuid) {
         self.confirmed_reroutes.borrow_mut().insert(connection_id);
+    }
+
+    /// Returns `true` when the user already chose to connect this connection
+    /// without its unusable jump host during this session.
+    #[must_use]
+    pub fn bastion_skip_confirmed(&self, connection_id: Uuid) -> bool {
+        self.confirmed_bastion_skips
+            .borrow()
+            .contains(&connection_id)
+    }
+
+    /// Records that the user accepted connecting without the unusable jump
+    /// host, for the rest of the session.
+    pub fn confirm_bastion_skip(&self, connection_id: Uuid) {
+        self.confirmed_bastion_skips
+            .borrow_mut()
+            .insert(connection_id);
+    }
+
+    /// Checks each of `connection_ids` for a jump-host reference the connect
+    /// path would skip (issue #345).
+    ///
+    /// Hops are looked up in the connection map, so the connection list is
+    /// never cloned; the group list is cloned at most once for the whole batch,
+    /// and not at all when no connection routes through a jump host. A
+    /// cluster connect checks all its members in one call rather than once per
+    /// member. Connections already confirmed this session are skipped.
+    #[must_use]
+    pub fn skipped_bastions(&self, connection_ids: &[Uuid]) -> Vec<(Uuid, SkippedBastion)> {
+        use rustconn_core::connection::jump_chain::{
+            bastion_fallback, find_dangling_bastions_by, routes_through_jump_host,
+        };
+
+        let candidates: Vec<&Connection> = connection_ids
+            .iter()
+            .filter(|id| !self.bastion_skip_confirmed(**id))
+            .filter_map(|id| self.get_connection(*id))
+            .filter(|conn| routes_through_jump_host(conn))
+            .collect();
+        if candidates.is_empty() {
+            return Vec::new();
+        }
+
+        let groups = self.list_groups_owned();
+        let network = &self.settings().network;
+        candidates
+            .into_iter()
+            .filter_map(|conn| {
+                let dangling =
+                    find_dangling_bastions_by(conn, |id| self.get_connection(id), &groups, network);
+                let fallback = bastion_fallback(conn, &dangling, &groups, network);
+                dangling
+                    .into_iter()
+                    .next()
+                    .map(|dangling| (conn.id, SkippedBastion { dangling, fallback }))
+            })
+            .collect()
     }
 
     /// Records a connection's route as the last one connected to, and persists
@@ -1466,6 +1538,50 @@ impl AppState {
                         lookup_key = %lookup_key,
                         "[resolve_credentials_blocking] No password under this key in KeePass"
                     );
+                    // #327-safe read-widening: when the user opted into
+                    // searching from the vault root, retry the SAME lookup key
+                    // against the whole database (no RustConn/ scoping) before
+                    // falling through to the encrypted-file fallback. This never
+                    // mutates and never touches the write path. Scoped-first,
+                    // root only on a scoped miss; a no-op when the flag is off.
+                    if secret_settings.kdbx_root_search {
+                        match KeePassStatus::get_password_from_kdbx_root(
+                            kdbx_path,
+                            db_password,
+                            key_file,
+                            &lookup_key,
+                            secret_settings.kdbx_yubikey_slot.as_deref(),
+                        ) {
+                            Ok(Some(password)) => {
+                                tracing::debug!(
+                                    "[resolve_credentials_blocking] Found password via KeePass root search"
+                                );
+                                let creds = if let Some(ref username) = connection.username {
+                                    Credentials::with_password(username, password.expose_secret())
+                                } else {
+                                    Credentials {
+                                        username: None,
+                                        password: Some(password),
+                                        key_passphrase: None,
+                                        domain: None,
+                                    }
+                                };
+                                return Ok(CredentialResolutionResult::Resolved(creds));
+                            }
+                            Ok(None) => {
+                                tracing::debug!(
+                                    lookup_key = %lookup_key,
+                                    "[resolve_credentials_blocking] KeePass root search also found nothing"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    error = %e,
+                                    "[resolve_credentials_blocking] KeePass root search could not read the database"
+                                );
+                            }
+                        }
+                    }
                     // The flat `rustconn/{name}` key, which is what
                     // `generate_store_key` yields for KeePassXC and for every
                     // other non-keyring backend — so a password saved before the
@@ -1738,6 +1854,58 @@ impl AppState {
                                 "[resolve_credentials_blocking] No password in group '{}'",
                                 group.name
                             );
+                            // #327-safe read-widening for the Inherit path:
+                            // retry the SAME group entry name against the whole
+                            // database when the user enabled root search. Scoped
+                            // group lookup first, root only on its miss; read
+                            // only, never a write path; a no-op when off.
+                            if secret_settings.kdbx_root_search {
+                                match KeePassStatus::get_password_from_kdbx_root(
+                                    kdbx_path,
+                                    db_password,
+                                    key_file,
+                                    &group_name,
+                                    secret_settings.kdbx_yubikey_slot.as_deref(),
+                                ) {
+                                    Ok(Some(password)) => {
+                                        tracing::debug!(
+                                            "[resolve_credentials_blocking] Found inherited password via KeePass root search for group '{}'",
+                                            group.name
+                                        );
+                                        let username = connection
+                                            .username
+                                            .clone()
+                                            .or_else(|| group.username.clone());
+                                        let creds = if let Some(ref uname) = username {
+                                            Credentials::with_password(
+                                                uname,
+                                                password.expose_secret(),
+                                            )
+                                        } else {
+                                            Credentials {
+                                                username: None,
+                                                password: Some(password),
+                                                key_passphrase: None,
+                                                domain: None,
+                                            }
+                                        };
+                                        return Ok(CredentialResolutionResult::Resolved(creds));
+                                    }
+                                    Ok(None) => {
+                                        tracing::debug!(
+                                            "[resolve_credentials_blocking] KeePass root search found nothing for group '{}'",
+                                            group.name
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            "[resolve_credentials_blocking] KeePass root search error for group '{}': {}",
+                                            group.name,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
                         }
                         Err(e) => {
                             tracing::warn!(

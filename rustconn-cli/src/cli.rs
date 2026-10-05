@@ -334,6 +334,19 @@ pub enum Commands {
         #[arg(long)]
         disable_nla: bool,
 
+        /// Authenticate RDP NLA (CredSSP) with Kerberos instead of NTLM.
+        /// Needed for Active Directory "Protected Users" accounts. Requires NLA
+        /// and the server's DNS name (not an IP address).
+        #[arg(long)]
+        kerberos: bool,
+
+        /// KDC address for --kerberos: a domain controller or an MS-KKDCP proxy,
+        /// e.g. dc1.example.com, tcp://dc1.example.com:88, or
+        /// https://gw.example.com/KdcProxy. Empty leaves the lookup to the KDC
+        /// discovery order. Validated on save.
+        #[arg(long, value_name = "ADDRESS")]
+        kdc_address: Option<String>,
+
         /// Disable dynamic resolution for external RDP (for legacy servers)
         #[arg(long)]
         rdp_no_dynamic_resolution: bool,
@@ -879,6 +892,17 @@ pub enum Commands {
         #[arg(long)]
         disable_nla: bool,
 
+        /// Kerberos for RDP NLA (CredSSP). Bare flag enables; `false` disables.
+        /// Needed for Active Directory "Protected Users" accounts.
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        kerberos: Option<bool>,
+
+        /// KDC address for Kerberos: a domain controller or an MS-KKDCP proxy
+        /// (e.g. dc1.example.com or https://gw.example.com/KdcProxy). Pass an
+        /// empty value to clear it. Validated on save.
+        #[arg(long, value_name = "ADDRESS")]
+        kdc_address: Option<String>,
+
         /// Dynamic resolution for external RDP. Bare flag enables; `false` disables.
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
         rdp_dynamic_resolution: Option<bool>,
@@ -1248,6 +1272,40 @@ pub enum Commands {
     /// Manage per-connection monitoring
     #[command(subcommand, about = "Manage per-connection monitoring")]
     Monitor(MonitorCommands),
+
+    /// Manage optional media codecs
+    #[command(subcommand, about = "Manage optional media codecs (H.264 for RDP GFX)")]
+    Codec(CodecCommands),
+}
+
+/// Codec management subcommands.
+///
+/// Currently just the on-demand Cisco OpenH264 download, which is the only
+/// library the RDP GFX H.264 loader accepts on a packaged install. The download
+/// requires the user to accept Cisco's license, which is why it is an explicit
+/// subcommand with a required opt-in flag rather than something that ever runs
+/// automatically.
+#[derive(Subcommand)]
+pub enum CodecCommands {
+    /// Download Cisco's official OpenH264 binary to enable H.264 in RDP GFX.
+    ///
+    /// Downloads the official binary from Cisco's CDN
+    /// (ciscobinary.openh264.org) into the user cache. Cisco — not RustConn —
+    /// provides this binary and holds the MPEG-LA patent licence for it; see
+    /// <https://www.openh264.org/BINARY_LICENSE.txt>. The download runs only
+    /// with `--accept-cisco-license`.
+    #[command(
+        name = "download-h264",
+        about = "Download Cisco's OpenH264 binary to enable H.264 RDP GFX decoding"
+    )]
+    DownloadH264 {
+        /// Accept Cisco's OpenH264 binary licence and download the binary.
+        ///
+        /// Required: without it the command prints what it would do and the
+        /// licence URL, and downloads nothing.
+        #[arg(long)]
+        accept_cisco_license: bool,
+    },
 }
 
 /// Output format for the list command

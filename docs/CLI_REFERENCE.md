@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.22.15** | Command-line interface for RustConn connection management
+**Version 0.23.0** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -775,8 +775,8 @@ Clusters group connections for broadcast command execution (send the same input 
 
 | Subcommand | Description |
 |------------|-------------|
-| `cluster list` | List all clusters (`--format`) |
-| `cluster show <name>` | Show cluster and its connections |
+| `cluster list` | List all clusters (`--format`); the table and CSV count resolved members — explicit plus auto-membership matches |
+| `cluster show <name>` | Show cluster, its auto-membership pattern and its resolved connections; pattern matches are marked `(auto)` |
 | `cluster create` | Create a cluster (`--name`, `--connections`, `--broadcast`) |
 | `cluster edit <name>` | Edit a cluster (`--new-name`, `--broadcast true/false`) |
 | `cluster delete <name>` | Delete a cluster |

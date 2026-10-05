@@ -6,7 +6,8 @@
 use std::cell::RefCell;
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, glib};
+use gtk4::{Box as GtkBox, Button, Label, Orientation, Separator, gdk, gio, glib};
+use libadwaita as adw;
 
 use crate::i18n::i18n;
 
@@ -1087,15 +1088,6 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.set_margin_end(6);
     toolbar.set_halign(gtk4::Align::Center);
 
-    let group_ops_button = Button::from_icon_name("view-list-symbolic");
-    group_ops_button.add_css_class("flat");
-    group_ops_button.set_tooltip_text(Some(&i18n("Group operations mode")));
-    group_ops_button.set_action_name(Some("win.group-operations"));
-    group_ops_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Enable group operations mode for multi-select",
-    ))]);
-    toolbar.append(&group_ops_button);
-
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.add_css_class("flat");
     history_button.set_tooltip_text(Some(&i18n("Connection History")));
@@ -1105,14 +1097,18 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     ))]);
     toolbar.append(&history_button);
 
-    let sort_button = Button::from_icon_name("view-sort-ascending-symbolic");
-    sort_button.add_css_class("flat");
-    sort_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
-    sort_button.set_action_name(Some("win.sort-connections"));
-    sort_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+    // Sort: two standalone buttons (Alphabetical / Recent Usage) rather than a
+    // single menu button. Five direct icons read more clearly than four icons
+    // plus a dropdown, and sorting is a one-click action either way. Actions
+    // unchanged (`win.sort-connections` / `win.sort-recent`).
+    let sort_az_button = Button::from_icon_name("view-sort-ascending-symbolic");
+    sort_az_button.add_css_class("flat");
+    sort_az_button.set_tooltip_text(Some(&i18n("Sort alphabetically")));
+    sort_az_button.set_action_name(Some("win.sort-connections"));
+    sort_az_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Sort connections alphabetically",
     ))]);
-    toolbar.append(&sort_button);
+    toolbar.append(&sort_az_button);
 
     let sort_recent_button = Button::from_icon_name("view-sort-descending-symbolic");
     sort_recent_button.add_css_class("flat");
@@ -1144,3 +1140,74 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
 
     (toolbar, keepass_button)
 }
+
+/// Creates the sidebar's own top `AdwHeaderBar`.
+///
+/// Giving the sidebar a headerbar of its own is what makes the
+/// `AdwOverlaySplitView` read as two distinct panels (like GNOME Files /
+/// Settings) instead of one column hanging under a single global headerbar —
+/// the visual separation users expect, and the fix for the "sidebar looks
+/// resizable" confusion. The buttons reference existing `win.*` actions, so no
+/// new wiring is needed; they fire the same handlers as the content header.
+pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
+    // Window controls are left to libadwaita: inside an AdwOverlaySplitView an
+    // AdwHeaderBar hides the title buttons that are not at a window edge, and
+    // shows them again when the sidebar is hidden or collapsed. Forcing one
+    // side off here is what lost the controls for start-side layouts.
+    let header = adw::HeaderBar::new();
+    // The split view already carries the window title on the content side; a
+    // short static title here just labels the panel.
+    header.set_title_widget(Some(&adw::WindowTitle::new(&i18n("Connections"), "")));
+
+    // Search toggle (leading) — Nautilus/Settings pattern: the search row is
+    // hidden behind an icon in the header and revealed on demand (click,
+    // Ctrl+F, or type-to-search). Returned so the sidebar can bind it to the
+    // GtkSearchBar's search-mode-enabled property.
+    let search_toggle = gtk4::ToggleButton::new();
+    search_toggle.set_icon_name("system-search-symbolic");
+    search_toggle.set_tooltip_text(Some(&i18n("Search (Ctrl+F)")));
+    search_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle search"))]);
+    search_toggle.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+    header.pack_start(&search_toggle);
+
+    // Secondary menu (trailing). GNOME HIG allows one primary menu per window
+    // — that is the content header's ☰ — so this one carries `view-more` and
+    // only what acts on the connection list itself. Creating connections,
+    // managers and import/export stay in the primary menu.
+    let menu = gio::Menu::new();
+    let select_section = gio::Menu::new();
+    // Stateful `win.group-operations`: renders as a checkable item.
+    select_section.append(
+        Some(&i18n("Select Connections")),
+        Some("win.group-operations"),
+    );
+    menu.append_section(None, &select_section);
+    let sort_section = gio::Menu::new();
+    sort_section.append(
+        Some(&i18n("Sort Alphabetically")),
+        Some("win.sort-connections"),
+    );
+    sort_section.append(Some(&i18n("Sort by Recent Use")), Some("win.sort-recent"));
+    menu.append_section(None, &sort_section);
+
+    let menu_label = i18n("Connection list options");
+    let menu_button = gtk4::MenuButton::builder()
+        .icon_name("view-more-symbolic")
+        .tooltip_text(menu_label.as_str())
+        .menu_model(&menu)
+        .build();
+    menu_button.update_property(&[gtk4::accessible::Property::Label(&menu_label)]);
+    menu_button.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+    header.pack_end(&menu_button);
+
+    (header, search_toggle)
+}
+
+/// Minimum size of an icon-only header-bar button, shared by the sidebar and
+/// content headers so the two bars come out the same height.
+///
+/// 44px is the GNOME HIG tap target. macOS has no touch input and its native
+/// toolbar buttons are ~28px; `AdwHeaderBar` takes its minimum height from its
+/// tallest child, so 44 there would keep the header taller than any native
+/// window and defeat the compact/macOS CSS.
+pub const HEADER_BUTTON_SIZE: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };

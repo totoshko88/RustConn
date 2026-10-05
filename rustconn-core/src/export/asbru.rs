@@ -6,7 +6,9 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use super::{ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget};
+use super::{
+    ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
+};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType, SshAuthMethod};
 
 /// Asbru-CM YAML exporter.
@@ -335,6 +337,18 @@ impl ExportTarget for AsbruExporter {
     }
 
     fn export_connection(&self, connection: &Connection) -> ExportOperationResult<String> {
+        // Guard the single-connection path the same way the multi-connection
+        // `export` does: a protocol with no round-trippable Asbru `method:`
+        // (SPICE, Serial, Kubernetes, Mosh, Web) must not be written as a dead
+        // entry that neither Asbru-CM nor our own importer can read back. The
+        // bulk path skips+warns; this one has a single connection to report, so
+        // it returns UnsupportedProtocol — the same contract the MobaXterm
+        // exporter uses, which callers already translate into a skip.
+        if !self.supports_protocol(&connection.protocol) {
+            return Err(ExportError::UnsupportedProtocol(
+                connection.protocol.to_string(),
+            ));
+        }
         let group_uuid_map = HashMap::new();
         let asbru_uuid = generate_asbru_uuid();
         let entry = Self::connection_to_entry(connection, &group_uuid_map);
@@ -654,5 +668,27 @@ mod tests {
         let content = std::fs::read_to_string(&output_path).unwrap();
         assert!(content.contains("ssh-server"));
         assert!(!content.contains("SPICE"));
+    }
+
+    #[test]
+    fn test_export_connection_rejects_unsupported_protocol() {
+        // The single-connection export path must apply the same guard as the
+        // bulk `export`: a protocol with no round-trippable Asbru `method:`
+        // (here SPICE) is rejected with UnsupportedProtocol rather than
+        // serialized into a dead entry neither Asbru nor our importer can read.
+        let exporter = AsbruExporter::new();
+
+        let spice = Connection::new_spice("spice-vm".to_string(), "192.168.1.2".to_string(), 5900);
+        let err = exporter
+            .export_connection(&spice)
+            .expect_err("SPICE must be rejected on the single-connection path");
+        assert!(matches!(err, ExportError::UnsupportedProtocol(_)));
+
+        // A supported protocol still exports successfully.
+        let ssh = create_ssh_connection("ssh-server", "192.168.1.1", 22);
+        let out = exporter
+            .export_connection(&ssh)
+            .expect("SSH exports on the single-connection path");
+        assert!(out.contains("ssh-server"));
     }
 }

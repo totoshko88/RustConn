@@ -28,7 +28,7 @@ command that legitimately timed out. This is the reason for three separate rules
 never wait with `sleep`, always pass explicit timeout headroom, and treat a
 terminal with a live foreground job as not yours.
 
-The detached form in recipe 2 was verified by probe on 2026-09-02: it returns
+The detached form was verified by probe on 2026-09-02: it returns
 immediately, so its timeout is never reached, but `bash-serialization-guard` cannot
 distinguish it from a foreground run and blocks it without `timeout=900000`.
 
@@ -131,3 +131,26 @@ Three classes do trigger, all verified by probe — the full list, with workarou
 is in `hooks-map.md` under "Known false positives". The one that bites most often:
 a `cargo <verb>` pair inside a search pattern or a test fixture, including a test
 table in a shell loop.
+
+## Why long cargo runs are detached by default (2026-10-05)
+
+The always file used to offer four recipes "cheapest first", with the blocking
+call first. In the release 0.23 turn (224 min, 802 credits) ten
+`general-task-execution` sub-agents started cargo/verify 44 times and made ~94
+calls that only checked whether a run had finished: a blocking `cargo test`
+returns early, the agent then waits by re-reading or re-asking, and every one of
+those reads is a paid model call. A detached run with a `.rc` sentinel costs one
+call to start and one to collect, so it is now the default for anything that
+does not reliably finish inside one call; blocking is kept for the short runs
+(`check`/`clippy -p`, `fmt`, `test-hooks.sh`, `verify.sh --quick`).
+
+## Details trimmed from the always file
+
+- `typos` sits in the tool table because `AGENTS.md` lists the gate as a bare
+  `typos`; unlike cargo, its absence fails nothing visibly.
+- `release.sh` refusing to run without cargo on PATH is left as the caller's
+  problem on purpose: a release should build with the toolchain the operator put
+  there, not one a script went looking for.
+- The `control_bash_process` route recovered a wedged tty on 2026-09-28 after a
+  queued `nohup verify.sh` had refused to start. The queued copy can still fire
+  later, which is why `bash-serialization-guard` R5 refuses a second runner.

@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: "rustconn/src/**/*.rs"
+fileMatchPattern: "{rustconn/src/dialogs/**/*.rs,rustconn/src/window/**/*.rs,rustconn/src/sidebar/**/*.rs,rustconn/src/split_view/**/*.rs,rustconn/src/*_ui.rs,rustconn/src/alert.rs,rustconn/src/toast.rs,rustconn/src/embedded_toolbar_overflow.rs}"
 ---
 
 # GNOME HIG — RustConn Adaptation

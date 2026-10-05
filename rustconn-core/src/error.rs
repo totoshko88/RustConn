@@ -155,6 +155,17 @@ pub enum SecretError {
     /// and do not prompt at all.
     #[error("Incorrect passphrase for portable credential file")]
     IncorrectPassphrase,
+
+    /// A write (store or delete) was attempted against a backend the user put
+    /// in read-only mode.
+    ///
+    /// Distinct from [`Self::StoreFailed`] / [`Self::DeleteFailed`] (the backend
+    /// tried and the operation failed) because nothing was attempted: the vault
+    /// is left untouched by design. The message names the backend so the UI can
+    /// tell the user which vault refused and why, rather than reporting a generic
+    /// failure that looks like a bug.
+    #[error("{0} is in read-only mode; writes are disabled")]
+    ReadOnly(String),
 }
 
 /// Errors related to configuration import operations

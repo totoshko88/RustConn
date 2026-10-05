@@ -23,10 +23,10 @@ use rustconn_core::activity_monitor::{ActivityMonitorConfig, MonitorMode};
 use rustconn_core::automation::{ConnectionTask, ExpectRule, TaskCondition};
 use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BackspaceSends, BoundaryConfig,
-    CloudflareAccessConfig, Connection, ConnectionThemeOverride, CustomProperty, DeleteSends,
-    GcpIapConfig, GenericZeroTrustConfig, HighlightRule, HoopDevConfig, OciBastionConfig,
-    PasswordSource, ProtocolConfig, RdpAudioMode, RdpClientMode, RdpConfig, RdpDisplayMode,
-    RdpPerformanceMode, Resolution, ScaleOverride, SharedFolder, SpiceConfig,
+    CloudflareAccessConfig, CommandMacro, Connection, ConnectionThemeOverride, CustomProperty,
+    DeleteSends, GcpIapConfig, GenericZeroTrustConfig, HighlightRule, HoopDevConfig,
+    OciBastionConfig, PasswordSource, ProtocolConfig, RdpAudioMode, RdpClientMode, RdpConfig,
+    RdpDisplayMode, RdpPerformanceMode, Resolution, ScaleOverride, SharedFolder, SpiceConfig,
     SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
     TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
     ZeroTrustProvider, ZeroTrustProviderConfig,
@@ -233,6 +233,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
     pub expect_rules: &'a Vec<ExpectRule>,
+    pub command_macros: &'a Vec<CommandMacro>,
     /// Expected text of the device's username prompt for automatic login (issue #254).
     pub login_username_prompt_entry: &'a Entry,
     /// Expected text of the device's password prompt for automatic login.
@@ -617,6 +618,16 @@ impl ConnectionDialogData<'_> {
             .expect_rules
             .iter()
             .filter(|r| !r.pattern.is_empty())
+            .cloned()
+            .collect();
+        // Set command macros, dropping all-blank rows the user added but never
+        // filled in. Everything else was validated before this point
+        // (`command_macros::validate_for_save`), so an empty command is never
+        // stored.
+        conn.automation.command_macros = self
+            .command_macros
+            .iter()
+            .filter(|m| !m.is_blank())
             .cloned()
             .collect();
         // Automatic-login prompt overrides — blank means "use the built-in

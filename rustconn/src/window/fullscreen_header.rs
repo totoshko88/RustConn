@@ -37,6 +37,10 @@
 //!
 //! Touch has no hover, so on a touch screen without a keyboard the top-edge
 //! reveal does not fire and F11 remains the way out of fullscreen.
+//!
+//! The sidebar has a header bar of its own, which this revealer does not hold,
+//! so entering fullscreen hides the sidebar too and leaving it brings the
+//! sidebar back only if it was shown before. F9 still reveals it meanwhile.
 
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
@@ -116,6 +120,7 @@ impl Chrome {
 pub(super) fn install(
     window: &adw::ApplicationWindow,
     toolbar_view: &adw::ToolbarView,
+    split_view: &adw::OverlaySplitView,
     chrome: Chrome,
     menu_button: &gtk4::MenuButton,
     notebook: &TerminalNotebook,
@@ -128,6 +133,8 @@ pub(super) fn install(
     let state = Rc::new(State {
         window: window.downgrade(),
         toolbar_view: toolbar_view.clone(),
+        split_view: split_view.downgrade(),
+        sidebar_before_fullscreen: Cell::new(None),
         revealer: chrome.revealer,
         rows: chrome.rows,
         tab_bar: notebook.tab_bar().clone(),
@@ -258,6 +265,11 @@ pub(super) fn install(
 struct State {
     window: glib::WeakRef<adw::ApplicationWindow>,
     toolbar_view: adw::ToolbarView,
+    /// The window's split view; weak, it is the window's own descendant.
+    split_view: glib::WeakRef<adw::OverlaySplitView>,
+    /// Whether the sidebar was shown when fullscreen began; `None` outside
+    /// fullscreen.
+    sidebar_before_fullscreen: Cell<Option<bool>>,
     revealer: gtk4::Revealer,
     /// The revealer's child: the header bar, and in fullscreen the tab bar.
     rows: gtk4::Box,
@@ -299,9 +311,19 @@ impl State {
             self.toolbar_view.set_extend_content_to_top_edge(true);
             self.dock_tab_bar(true);
             self.set_revealed(false, false);
+            if let Some(split_view) = self.split_view.upgrade() {
+                self.sidebar_before_fullscreen
+                    .set(Some(split_view.shows_sidebar()));
+                split_view.set_show_sidebar(false);
+            }
         } else {
             self.set_revealed(true, false);
             self.dock_tab_bar(false);
+            if self.sidebar_before_fullscreen.take() == Some(true)
+                && let Some(split_view) = self.split_view.upgrade()
+            {
+                split_view.set_show_sidebar(true);
+            }
             self.toolbar_view.set_extend_content_to_top_edge(false);
             self.toolbar_view.set_top_bar_style(adw::ToolbarStyle::Flat);
         }

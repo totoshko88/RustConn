@@ -235,10 +235,8 @@ pub struct TerminalNotebook {
     automation_sessions: Rc<RefCell<HashMap<Uuid, AutomationSession>>>,
     /// Session metadata
     session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-    /// Whether to color tab indicators by protocol type
-    color_tabs_by_protocol: Rc<RefCell<bool>>,
     /// Direct tracking of split view colors per session (session_id → color_index).
-    /// Used to prevent protocol/clear operations from overwriting split indicators.
+    /// Used to prevent clear operations from overwriting split indicators.
     split_session_colors: Rc<RefCell<HashMap<Uuid, usize>>>,
     /// Tab group manager for assigning colors to named groups
     tab_group_manager: Rc<RefCell<TabGroupManager>>,
@@ -527,7 +525,6 @@ impl TerminalNotebook {
             session_widgets: Rc::new(RefCell::new(HashMap::new())),
             automation_sessions: Rc::new(RefCell::new(HashMap::new())),
             session_info: Rc::new(RefCell::new(HashMap::new())),
-            color_tabs_by_protocol: Rc::new(RefCell::new(false)),
             split_session_colors: Rc::new(RefCell::new(HashMap::new())),
             tab_group_manager: Rc::new(RefCell::new(TabGroupManager::new())),
             on_reconnect: Rc::new(RefCell::new(None)),
@@ -1939,99 +1936,9 @@ impl TerminalNotebook {
         self.max_scrollback_on_reconnect.set(limit);
     }
 
-    /// Sets whether tabs should be colored by protocol type
-    pub fn set_color_tabs_by_protocol(&self, enabled: bool) {
-        *self.color_tabs_by_protocol.borrow_mut() = enabled;
-        // Apply or remove protocol colors on all existing sessions
-        let sessions: Vec<(Uuid, String)> = self
-            .session_info
-            .borrow()
-            .iter()
-            .map(|(id, info)| (*id, info.protocol.clone()))
-            .collect();
-        for (session_id, protocol) in sessions {
-            if enabled {
-                self.apply_protocol_color(session_id, &protocol);
-            } else {
-                self.clear_protocol_color(session_id);
-            }
-        }
-    }
-
     /// Updates whether the Welcome tab is shown when no sessions are open (issue #232)
     pub fn set_show_welcome(&self, enabled: bool) {
         self.show_welcome.set(enabled);
-    }
-
-    /// Applies protocol-based color indicator to a tab
-    fn apply_protocol_color(&self, session_id: Uuid, protocol: &str) {
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
-            // Don't override split colors — split takes priority
-            if self.split_session_colors.borrow().contains_key(&session_id) {
-                return;
-            }
-            let (r, g, b) = rustconn_core::get_protocol_color_rgb(protocol);
-            if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
-                page.set_indicator_icon(Some(&icon));
-                page.set_indicator_activatable(false);
-            }
-        }
-    }
-
-    /// Removes protocol color indicator from a tab
-    fn clear_protocol_color(&self, session_id: Uuid) {
-        if let Some(page) = self.sessions.borrow().get(&session_id) {
-            // Don't clear if split color is active
-            if self.split_session_colors.borrow().contains_key(&session_id) {
-                return;
-            }
-            page.set_indicator_icon(gio::Icon::NONE);
-        }
-    }
-
-    /// Creates a colored circle icon for protocol tab indicators
-    fn create_protocol_color_icon(r: u8, g: u8, b: u8, size: u32) -> Option<gio::Icon> {
-        // Reuse the same circle-drawing logic as split colors
-        let mut rgba_data = vec![0u8; (size * size * 4) as usize];
-        let center = size as f32 / 2.0;
-        let radius = center - 1.0;
-
-        for y in 0..size {
-            for x in 0..size {
-                let dx = x as f32 - center;
-                let dy = y as f32 - center;
-                let distance = dx.hypot(dy);
-                let idx = ((y * size + x) * 4) as usize;
-
-                if distance <= radius {
-                    let alpha = if distance > radius - 1.0 {
-                        ((radius - distance + 1.0) * 255.0) as u8
-                    } else {
-                        255
-                    };
-                    rgba_data[idx] = r;
-                    rgba_data[idx + 1] = g;
-                    rgba_data[idx + 2] = b;
-                    rgba_data[idx + 3] = alpha;
-                }
-            }
-        }
-
-        // Straight from the bytes just written, with no `Pixbuf` in between.
-        //
-        // This used to build a `GdkPixbuf` and hand it to `Texture::for_pixbuf`,
-        // which GTK 4.20 deprecates — gdk-pixbuf is on its way out as GTK's image
-        // path (4.20 made glycin the preferred loader). `MemoryTexture` takes the
-        // same premultiplied-alpha RGBA buffer directly, so the conversion that was
-        // there to satisfy an API is simply gone.
-        let texture = gtk4::gdk::MemoryTexture::new(
-            size as i32,
-            size as i32,
-            gtk4::gdk::MemoryFormat::R8g8b8a8,
-            &glib::Bytes::from(&rgba_data),
-            size as usize * 4,
-        );
-        Some(texture.upcast::<gio::Icon>())
     }
 
     /// Gets the terminal widget for a session

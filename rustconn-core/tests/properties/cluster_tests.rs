@@ -224,8 +224,8 @@ proptest! {
         manager.add_cluster(cluster2);
 
         // Start both sessions
-        manager.start_session(cluster1_id).unwrap();
-        manager.start_session(cluster2_id).unwrap();
+        manager.start_session(cluster1_id, std::iter::empty()).unwrap();
+        manager.start_session(cluster2_id, std::iter::empty()).unwrap();
 
         // Connect all sessions in both clusters
         for &conn_id in &cluster1_conns {
@@ -394,7 +394,9 @@ fn test_broadcast_mode_in_summary() {
     let cluster_id = cluster.id;
 
     manager.add_cluster(cluster);
-    manager.start_session(cluster_id).unwrap();
+    manager
+        .start_session(cluster_id, std::iter::empty())
+        .unwrap();
 
     // Initially broadcast should be disabled
     let summary = manager.get_session_summary(cluster_id).unwrap();

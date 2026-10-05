@@ -17,7 +17,133 @@ use crate::error::ConfigError;
 use crate::monitoring::{MonitoringConfig, MonitoringOverride};
 use crate::session::LogConfig;
 use crate::variables::Variable;
+use crate::variables::{TerminalSubstitution, VariableManager, VariableResult, VariableScope};
 use crate::wol::WolConfig;
+
+/// A per-connection command macro: a named command string that can be bound to
+/// a keyboard shortcut and sent into the focused terminal of a live session.
+///
+/// Mirrors asbru-cm's per-connection "exec" entries (`PACExecEntry`). The
+/// command is rendered through the variable engine before being sent, so it may
+/// contain `${name}` references exactly like other terminal input; a referenced
+/// variable whose value is an `@ask:` directive is prompted for by the GUI at
+/// fire time. Unlike global snippets (which live in the snippet library and are
+/// inserted from the palette), a macro belongs to one connection and fires from
+/// its keybind while that connection's terminal has keyboard focus.
+///
+/// Files written by early 0.23 builds may carry a `prompt_vars` key; it was
+/// never read and is ignored on load (this struct does not deny unknown fields).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommandMacro {
+    /// Human-readable label shown in the editor.
+    pub name: String,
+    /// The command text to send. Rendered through the variable engine first.
+    pub command: String,
+    /// Optional GTK accelerator (e.g. `"<Control><Shift>r"`), pipe-free single
+    /// accel. `None` means the macro is stored but not bound to a key, so it
+    /// cannot fire. Stored as the same accel string format the keybindings
+    /// system already uses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keybind: Option<String>,
+    /// Whether to append a newline (Enter) after the command, i.e. run it rather
+    /// than just type it. Defaults to true — the common case is "run this".
+    #[serde(default = "default_true")]
+    pub send_newline: bool,
+}
+
+impl Default for CommandMacro {
+    /// An empty macro that *runs* its command, agreeing with the serde default
+    /// for `send_newline` and the editor switch, which starts on.
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            command: String::new(),
+            keybind: None,
+            send_newline: true,
+        }
+    }
+}
+
+/// Why a [`CommandMacro`]'s command text cannot be sent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum CommandMacroError {
+    /// The command is empty or whitespace only; firing it would send a lone Enter.
+    #[error("the macro command is empty")]
+    EmptyCommand,
+    /// The command contains a control character other than tab (a line break,
+    /// ESC, Ctrl+C, …), which would submit or inject input the user never typed.
+    #[error("the macro command contains a control character")]
+    ControlCharacter,
+}
+
+impl CommandMacro {
+    /// Whether every field the editor shows is blank — a row the user added and
+    /// never filled in, which is dropped on save rather than rejected.
+    #[must_use]
+    pub fn is_blank(&self) -> bool {
+        self.name.trim().is_empty()
+            && self.command.trim().is_empty()
+            && self.keybind.as_deref().is_none_or(|k| k.trim().is_empty())
+    }
+
+    /// Checks that the command text itself is safe to type into a terminal.
+    ///
+    /// Only tab is allowed among control characters: a literal `\r`/`\n` would
+    /// submit a partial line, ESC starts a terminal control sequence and `\x03`
+    /// interrupts the remote program. The trailing Enter is the job of
+    /// [`Self::send_newline`], never of the text.
+    ///
+    /// # Errors
+    /// Returns [`CommandMacroError::EmptyCommand`] for an empty or
+    /// whitespace-only command and [`CommandMacroError::ControlCharacter`] when
+    /// it contains a control character other than tab.
+    pub fn validate_command(&self) -> Result<(), CommandMacroError> {
+        if self.command.trim().is_empty() {
+            return Err(CommandMacroError::EmptyCommand);
+        }
+        if self.command.chars().any(|c| c.is_control() && c != '\t') {
+            return Err(CommandMacroError::ControlCharacter);
+        }
+        Ok(())
+    }
+
+    /// Renders the macro's command for sending into a live terminal.
+    ///
+    /// The command is substituted through the same terminal-input path other
+    /// typed input uses (`${name}` / `${ENV_…}` references resolved, secret
+    /// values validated and scrubbed on drop). When [`Self::send_newline`] is
+    /// set, a carriage return (`\r`) is appended so the command runs rather than
+    /// merely being typed — `\r` is what a terminal expects for Enter, matching
+    /// the rest of the send paths in this codebase.
+    ///
+    /// Returns the substitution result (whose `text` is zeroized on drop) and the
+    /// list of any `${...}` names that were left unresolved, so the caller can
+    /// refuse to send a half-substituted line and name what is missing. Neither
+    /// `@ask:` prompting (answers are loaded into `variables` first) nor
+    /// [`Self::validate_command`] happens here; the caller does both before
+    /// calling this.
+    ///
+    /// # Errors
+    /// Propagates a [`crate::variables::VariableError`] when a reference resolves
+    /// to a value rejected for terminal input (e.g. one containing a control
+    /// sequence), exactly as `substitute_for_terminal_input` does.
+    pub fn render_for_terminal(
+        &self,
+        variables: &VariableManager,
+        scope: VariableScope,
+    ) -> VariableResult<TerminalSubstitution> {
+        let mut sub = variables.substitute_for_terminal_input(&self.command, scope)?;
+        if self.send_newline {
+            // Append through a fresh zeroizing buffer so the intermediate is not
+            // left unscrubbed; the \r is the Enter a terminal acts on.
+            let mut with_cr = zeroize::Zeroizing::new(String::with_capacity(sub.text.len() + 1));
+            with_cr.push_str(&sub.text);
+            with_cr.push('\r');
+            sub.text = with_cr;
+        }
+        Ok(sub)
+    }
+}
 
 /// Automation configuration for a connection
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -48,6 +174,11 @@ pub struct AutomationConfig {
     /// default" so existing configs are unaffected.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub login_timeout_secs: Option<u32>,
+    /// Per-connection command macros (named commands, optionally key-bound, sent
+    /// into the live terminal). Empty by default; serde-default keeps configs
+    /// written before this field loadable.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub command_macros: Vec<CommandMacro>,
 }
 
 /// Source of password/credentials for a connection
@@ -505,6 +636,20 @@ pub struct Connection {
     /// the session's stdout is piped through this command before display.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub postpend: Option<PostpendCommand>,
+    /// The id this connection has on the Group Sync Master it was imported
+    /// from.
+    ///
+    /// Set only on connections inside a Group Sync Import tree. Import matches
+    /// a remote connection on it first, so a rename or move on the Master
+    /// updates this connection in place — same `id`, same vault link (issue
+    /// #263) — instead of deleting and recreating it. It is a reference, not
+    /// an identity: the connection keeps an `id` of its own, because the
+    /// Master's connection can exist on the same device (a Master importing
+    /// its own file, or a Simple Sync peer) and two entities must never share
+    /// one `id`. Absent in files written before 0.23, which load with `None`
+    /// and are linked on the next sync.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sync_origin_id: Option<Uuid>,
 }
 
 impl Connection {
@@ -608,6 +753,7 @@ impl Connection {
             knock_sequence: None,
             spa_config: None,
             postpend: None,
+            sync_origin_id: None,
         }
     }
 
@@ -1208,7 +1354,9 @@ impl Connection {
     ///
     /// The copy is also never dynamic (`is_dynamic`): a dynamic folder's
     /// refresh deletes every dynamic connection under it, so a duplicate made
-    /// to customise a generated entry would vanish on the next refresh.
+    /// to customise a generated entry would vanish on the next refresh. Nor
+    /// does it keep `sync_origin_id`: it is not the copy of the Master's
+    /// connection that a Group Sync Import matches.
     #[must_use]
     pub fn duplicate_as(&self, name: String) -> Self {
         let now = Utc::now();
@@ -1221,6 +1369,7 @@ impl Connection {
             is_pinned: false,
             pin_order: 0,
             is_dynamic: false,
+            sync_origin_id: None,
             ..self.clone()
         }
     }
@@ -1627,5 +1776,248 @@ mod tests {
         conn.remove_custom_property("notes");
 
         assert!(conn.updated_at > initial_updated_at);
+    }
+
+    #[test]
+    fn command_macro_defaults_send_newline_true() {
+        // serde-default: a macro deserialized without `send_newline` runs its
+        // command (true), matching the "run this" common case.
+        let json = r#"{"name":"root shell","command":"sudo -i"}"#;
+        let m: CommandMacro = serde_json::from_str(json).unwrap();
+        assert_eq!(m.name, "root shell");
+        assert_eq!(m.command, "sudo -i");
+        assert!(m.send_newline, "send_newline must default to true");
+        assert!(m.keybind.is_none());
+    }
+
+    #[test]
+    fn command_macro_rust_default_runs_the_command() {
+        // The editor's "Add Macro" pushes `CommandMacro::default()` and only
+        // writes `send_newline` when the switch changes, so the Rust default
+        // must agree with the serde default and the switch (both on).
+        let m = CommandMacro::default();
+        assert!(m.send_newline, "Default must append Enter, like serde does");
+        assert!(m.name.is_empty() && m.command.is_empty() && m.keybind.is_none());
+        assert!(m.is_blank());
+    }
+
+    #[test]
+    fn command_macro_ignores_legacy_prompt_vars_key() {
+        // Early 0.23 builds wrote `prompt_vars`; it must not break loading.
+        let json = r#"{"name":"n","command":"ls","prompt_vars":true,"send_newline":false}"#;
+        let m: CommandMacro = serde_json::from_str(json).unwrap();
+        assert_eq!(m.command, "ls");
+        assert!(!m.send_newline);
+        assert!(!serde_json::to_string(&m).unwrap().contains("prompt_vars"));
+    }
+
+    #[test]
+    fn command_macro_validate_command_rejects_empty_and_control_chars() {
+        let with = |command: &str| CommandMacro {
+            command: command.into(),
+            ..CommandMacro::default()
+        };
+        assert_eq!(
+            with("").validate_command(),
+            Err(CommandMacroError::EmptyCommand)
+        );
+        assert_eq!(
+            with("   ").validate_command(),
+            Err(CommandMacroError::EmptyCommand)
+        );
+        for bad in [
+            "ls\r",
+            "ls\nrm -rf /",
+            "\x1b[201~",
+            "a\x03",
+            "x\0y",
+            "del\x7f",
+        ] {
+            assert_eq!(
+                with(bad).validate_command(),
+                Err(CommandMacroError::ControlCharacter),
+                "{bad:?} must be rejected"
+            );
+        }
+        assert_eq!(with("printf 'a\tb'").validate_command(), Ok(()));
+        assert_eq!(
+            with("sudo systemctl restart ${svc}").validate_command(),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn command_macro_keybind_requires_ctrl_alt_or_super() {
+        use crate::config::{KeybindingSettings, MacroKeybindError, validate_macro_keybind};
+        let kb = KeybindingSettings::default();
+        for ok in [
+            "<Control><Alt>r",
+            "<Alt>F3",
+            "<Super>m",
+            "<Mod1>y",
+            "<Primary><Alt>z",
+            "F5",
+            "<Shift>F24",
+        ] {
+            assert_eq!(
+                validate_macro_keybind(ok, &kb),
+                Ok(()),
+                "{ok} must be accepted"
+            );
+        }
+        for bare in ["r", "<Shift>r", "Return", "F25", "F0", "<Shift>Tab"] {
+            assert_eq!(
+                validate_macro_keybind(bare, &kb),
+                Err(MacroKeybindError::MissingModifier),
+                "{bare} must need a modifier"
+            );
+        }
+        for bad in ["", "<Control>", "<Control"] {
+            assert_eq!(
+                validate_macro_keybind(bad, &kb),
+                Err(MacroKeybindError::Invalid),
+                "{bad:?} must be invalid"
+            );
+        }
+    }
+
+    #[test]
+    fn command_macro_keybind_rejects_app_shortcuts_including_overrides() {
+        use crate::config::{
+            KeybindingSettings, MacroKeybindError, default_keybindings, validate_macro_keybind,
+        };
+        let mut kb = KeybindingSettings::default();
+        // Every default accel is taken, whatever the modifier order or alias.
+        let def = default_keybindings()
+            .into_iter()
+            .find(|d| d.default_accels.contains("<Control><Shift>"))
+            .expect("at least one Ctrl+Shift default exists");
+        let accel = def.default_accel_list()[0].replace("<Control><Shift>", "<Shift><Primary>");
+        assert!(matches!(
+            validate_macro_keybind(&accel, &kb),
+            Err(MacroKeybindError::AppShortcut { ref action, .. }) if *action == def.action
+        ));
+
+        // A user override moves the binding: the old default becomes free and
+        // the new chord becomes taken.
+        let freed = def.default_accel_list()[0].to_string();
+        kb.overrides
+            .insert(def.action, "<Control><Alt><Super>k".into());
+        assert_eq!(validate_macro_keybind(&freed, &kb), Ok(()));
+        assert!(matches!(
+            validate_macro_keybind("<Super><Alt><Control>k", &kb),
+            Err(MacroKeybindError::AppShortcut { .. })
+        ));
+    }
+
+    #[test]
+    fn command_macro_is_blank_counts_the_keybind() {
+        let keybind_only = CommandMacro {
+            keybind: Some("<Control>F5".into()),
+            ..CommandMacro::default()
+        };
+        assert!(
+            !keybind_only.is_blank(),
+            "a keybind-only row must be validated, not dropped"
+        );
+        let whitespace = CommandMacro {
+            name: " ".into(),
+            keybind: Some("  ".into()),
+            ..CommandMacro::default()
+        };
+        assert!(whitespace.is_blank());
+    }
+
+    #[test]
+    fn command_macro_round_trips() {
+        let m = CommandMacro {
+            name: "restart nginx".into(),
+            command: "sudo systemctl restart nginx".into(),
+            keybind: Some("<Control><Shift>r".into()),
+            send_newline: true,
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        let back: CommandMacro = serde_json::from_str(&json).unwrap();
+        assert_eq!(m, back);
+    }
+
+    #[test]
+    fn automation_config_without_macros_still_loads() {
+        // Backward compat: a config written before command_macros existed has no
+        // such key; serde-default must yield an empty vec, not an error.
+        let json = r#"{"expect_rules":[],"post_login_scripts":[]}"#;
+        let cfg: AutomationConfig = serde_json::from_str(json).unwrap();
+        assert!(cfg.command_macros.is_empty());
+    }
+
+    #[test]
+    fn automation_config_empty_macros_not_serialized() {
+        // skip_serializing_if keeps the on-disk form clean for the common case.
+        let cfg = AutomationConfig::default();
+        let json = serde_json::to_string(&cfg).unwrap();
+        assert!(
+            !json.contains("command_macros"),
+            "empty command_macros must be omitted, got: {json}"
+        );
+    }
+
+    #[test]
+    fn macro_render_appends_carriage_return_when_send_newline() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "ls".into(),
+            command: "ls -la".into(),
+            keybind: None,
+            send_newline: true,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(&*out.text, "ls -la\r");
+        assert!(out.unresolved.is_empty());
+    }
+
+    #[test]
+    fn macro_render_no_newline_when_disabled() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "type".into(),
+            command: "partial".into(),
+            keybind: None,
+            send_newline: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(
+            &*out.text, "partial",
+            "no trailing CR when send_newline=false"
+        );
+    }
+
+    #[test]
+    fn macro_render_substitutes_variables() {
+        let mut vars = VariableManager::new();
+        vars.set_global(Variable::new("svc", "nginx"));
+        let m = CommandMacro {
+            name: "restart".into(),
+            command: "sudo systemctl restart ${svc}".into(),
+            keybind: None,
+            send_newline: true,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        assert_eq!(&*out.text, "sudo systemctl restart nginx\r");
+        assert!(out.unresolved.is_empty());
+    }
+
+    #[test]
+    fn macro_render_reports_unresolved_variable() {
+        let vars = VariableManager::new();
+        let m = CommandMacro {
+            name: "x".into(),
+            command: "echo ${missing}".into(),
+            keybind: None,
+            send_newline: false,
+        };
+        let out = m.render_for_terminal(&vars, VariableScope::Global).unwrap();
+        // Unresolved placeholder is kept verbatim and reported, not silently dropped.
+        assert!(out.text.contains("${missing}"));
+        assert_eq!(out.unresolved, vec!["missing".to_string()]);
     }
 }

@@ -21,7 +21,7 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::automation::ExpectRule;
 use rustconn_core::models::{
-    BackspaceSends, CustomProperty, DeleteSends, HighlightRule, SharedFolder,
+    BackspaceSends, CommandMacro, CustomProperty, DeleteSends, HighlightRule, SharedFolder,
 };
 use rustconn_core::variables::Variable;
 use uuid::Uuid;
@@ -144,6 +144,9 @@ pub struct ConnectionDialog {
     /// protocol stack only ever shows one page.
     network_mode_row: adw::ComboRow,
     ssh_jump_host_dropdown: DropDown,
+    /// Row around `ssh_jump_host_dropdown`, so its subtitle can warn when the
+    /// stored `jump_host_id` points at a deleted connection (issue #345).
+    ssh_jump_host_row: adw::ActionRow,
     ssh_proxy_entry: Entry,
     /// Row around `ssh_proxy_entry`, so its subtitle can name an inherited bastion.
     ssh_proxy_row: adw::ActionRow,
@@ -347,6 +350,11 @@ pub struct ConnectionDialog {
     expect_rules: Rc<RefCell<Vec<ExpectRule>>>,
     /// Button to add new expect rules - wired up in `wire_add_expect_rule_button()`
     add_expect_rule_button: Button,
+    // Command macros fields
+    command_macros_list: ListBox,
+    command_macros: Rc<RefCell<Vec<CommandMacro>>>,
+    /// Button to add new command macros - wired up in `wire_add_command_macro_button()`
+    add_command_macro_button: Button,
     /// Entry for testing expect patterns - wired up in `wire_pattern_tester()`
     expect_pattern_test_entry: Entry,
     /// Label showing pattern test results - wired up in `wire_pattern_tester()`
@@ -506,6 +514,24 @@ struct ExpectRuleRow {
     move_up_button: Button,
     /// Move down button
     move_down_button: Button,
+}
+
+/// Represents a command macro row in the connection dialog
+struct CommandMacroRow {
+    /// The row widget
+    row: ListBoxRow,
+    /// Entry for the macro name
+    name_entry: Entry,
+    /// Entry for the command text
+    command_entry: Entry,
+    /// Entry for the optional keybind
+    keybind_entry: Entry,
+    /// Switch for "run" (append Enter) vs "type only"
+    send_newline_switch: adw::SwitchRow,
+    /// Inline reason the macro cannot be saved; hidden while it can
+    validation_label: Label,
+    /// Delete button
+    delete_button: Button,
 }
 
 /// Represents a custom property row in the connection dialog

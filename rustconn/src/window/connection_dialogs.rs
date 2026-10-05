@@ -4,7 +4,6 @@
 //! including template picker and parent group selection.
 
 use std::rc::Rc;
-use std::time::Duration;
 
 use adw::prelude::*;
 use gtk4::glib;
@@ -19,18 +18,7 @@ use crate::dialogs::{ConnectionDialog, ImportDialog};
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-
-/// How long to wait for a `Bitwarden` auto-unlock before reporting timeout.
-///
-/// 30 seconds covers the worst case where the user has to type the master
-/// password in an interactive prompt; below that, slow GPG/keyring backends
-/// would falsely time out.
-const BITWARDEN_UNLOCK_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// How long to wait for a single vault retrieve before reporting timeout.
-///
-/// 10 seconds is the standard project-wide vault budget — see `secrets-guide.md`.
-const VAULT_RETRIEVE_TIMEOUT: Duration = Duration::from_secs(10);
+use crate::vault_ops::{BITWARDEN_UNLOCK_TIMEOUT, VAULT_RETRIEVE_TIMEOUT};
 
 /// Type alias for shared sidebar reference
 pub type SharedSidebar = Rc<ConnectionSidebar>;
@@ -694,12 +682,10 @@ pub fn show_new_group_dialog_with_parent(
                                 })?
                             }
                             SecretBackendType::OnePassword => {
-                                let mut backend = rustconn_core::secret::OnePasswordBackend::new();
-                                if let Some(ref token) =
-                                    secret_settings.onepassword_service_account_token
-                                {
-                                    backend.set_service_account_token(token.clone());
-                                }
+                                let backend =
+                                    rustconn_core::secret::OnePasswordBackend::from_secret_settings(
+                                        &secret_settings,
+                                    );
                                 crate::async_utils::with_runtime(|rt| {
                                     rt.block_on(async {
                                         tokio::time::timeout(
@@ -713,13 +699,10 @@ pub fn show_new_group_dialog_with_parent(
                                 })?
                             }
                             SecretBackendType::Passbolt => {
-                                let mut backend = rustconn_core::secret::PassboltBackend::new();
-                                if let Some(ref url) = secret_settings.passbolt_server_url {
-                                    backend = backend.with_server_address(url.clone());
-                                }
-                                if let Some(ref passphrase) = secret_settings.passbolt_passphrase {
-                                    backend = backend.with_user_password(passphrase.clone());
-                                }
+                                let backend =
+                                    rustconn_core::secret::PassboltBackend::from_secret_settings(
+                                        &secret_settings,
+                                    );
                                 crate::async_utils::with_runtime(|rt| {
                                     rt.block_on(async {
                                         tokio::time::timeout(

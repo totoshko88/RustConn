@@ -970,6 +970,7 @@ impl RdmImporter {
             knock_sequence: None,
             spa_config: None,
             postpend: None,
+            sync_origin_id: None,
         };
 
         Ok((connection, creds))

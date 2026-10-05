@@ -16,9 +16,9 @@ rules alone.
   `crate::i18n`, with `{}` placeholders. A `display_name()` coming out of
   `rustconn-core` is untranslated on purpose — wrap it at the call site, here.
 - A new file containing `i18n()` must appear in `po/POTFILES.in` or
-  `po/update-pot.sh` silently drops its strings. The `translation-sync` hook adds
-  it on save; `./scripts/check-potfiles.sh` is the CI gate that catches it when
-  the hook did not fire.
+  `po/update-pot.sh` silently drops its strings. The `translation-sync` hook
+  notes a missing entry on save (it does not add it);
+  `./scripts/check-potfiles.sh` is the CI gate.
 - Icon-only buttons need **both** a tooltip and an accessible label. One is not
   the other, and a screen reader only sees the second.
 - `adw::` before `gtk::` where both exist. `adw::AlertDialog`, never the
@@ -33,6 +33,3 @@ rules alone.
 - `BorrowMutError` at runtime means a nested `borrow_mut()`, not a race. The fix
   is take-invoke-restore: `take()` the field, call out, put it back — see
   `error-resolution.md`.
-- Never `std::env::set_var`. The startup `GSK_RENDERER` and `LANGUAGE` writes go
-  through `rustconn-env-sys::set_startup_var` from `main()` only, and the second
-  of the two seals the window — a third caller panics.

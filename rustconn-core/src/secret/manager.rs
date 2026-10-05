@@ -239,24 +239,19 @@ impl SecretManager {
 
         match settings.preferred_backend {
             SecretBackendType::Bitwarden => {
-                backends.push(Arc::new(super::BitwardenBackend::new()));
+                backends.push(Arc::new(
+                    super::BitwardenBackend::new().with_settings_toggles(settings),
+                ));
             }
             SecretBackendType::OnePassword => {
-                let mut backend = super::OnePasswordBackend::new();
-                if let Some(ref token) = settings.onepassword_service_account_token {
-                    backend.set_service_account_token(token.clone());
-                }
-                backends.push(Arc::new(backend));
+                backends.push(Arc::new(super::OnePasswordBackend::from_secret_settings(
+                    settings,
+                )));
             }
             SecretBackendType::Passbolt => {
-                let mut backend = super::PassboltBackend::new();
-                if let Some(ref url) = settings.passbolt_server_url {
-                    backend = backend.with_server_address(url.clone());
-                }
-                if let Some(ref passphrase) = settings.passbolt_passphrase {
-                    backend = backend.with_user_password(passphrase.clone());
-                }
-                backends.push(Arc::new(backend));
+                backends.push(Arc::new(super::PassboltBackend::from_secret_settings(
+                    settings,
+                )));
             }
             SecretBackendType::LibSecret => {
                 // macOS never constructs LibSecretBackend (oo7 is not compiled
@@ -513,7 +508,9 @@ impl SecretManager {
     /// Returns `SecretError::BackendUnavailable` when no backends are registered.
     /// When `allow_fallback` is `false` and the primary backend fails, the
     /// primary's original error is returned unchanged — it is neither wrapped nor
-    /// replaced (Requirement 14.2). When `allow_fallback` is `true` and every
+    /// replaced (Requirement 14.2). A primary [`SecretError::ReadOnly`] is
+    /// returned unchanged even when `allow_fallback` is `true`: read-only is a
+    /// refusal, not a failure to route around. When `allow_fallback` is `true` and every
     /// backend in the chain fails, the primary backend's error is returned so the
     /// most relevant cause is surfaced and no write is silently lost.
     pub async fn store_reported(
@@ -539,8 +536,11 @@ impl SecretManager {
         };
 
         // Requirement 14.2: without fallback authorisation, surface the
-        // primary error unchanged.
-        if !allow_fallback {
+        // primary error unchanged. A read-only primary is a refusal the user
+        // configured, not an availability failure, so it is never routed
+        // around either: writing the fallback would violate read-only and leave
+        // a stale copy shadowing the vault's own value on the next read.
+        if !allow_fallback || matches!(primary_error, SecretError::ReadOnly(_)) {
             return Err(primary_error);
         }
 
@@ -668,7 +668,10 @@ impl SecretManager {
     /// * `connection_id` - Unique identifier for the connection
     ///
     /// # Errors
-    /// Returns `SecretError` if deletion fails on all backends
+    /// Returns `SecretError` if deletion fails on all backends, and
+    /// [`SecretError::ReadOnly`] if any backend in the chain is read-only — the
+    /// writable backends are still cleaned, but the read-only vault keeps its
+    /// entry, so reporting success would be false.
     pub async fn delete(&self, connection_id: &str) -> SecretResult<()> {
         // Remove from cache
         if self.cache_enabled {
@@ -679,6 +682,7 @@ impl SecretManager {
         // Try to delete from all available backends
         let mut deleted = false;
         let mut last_error = None;
+        let mut read_only = None;
 
         for backend in &self.backends {
             if !backend.is_available().await {
@@ -687,11 +691,21 @@ impl SecretManager {
 
             match backend.delete(connection_id).await {
                 Ok(()) => deleted = true,
+                // A read-only refusal must not be masked by another backend's
+                // idempotent `Ok` (deleting what it never held): the vault the
+                // user protected still holds the entry and it will still resolve.
+                Err(e @ SecretError::ReadOnly(_)) => {
+                    if read_only.is_none() {
+                        read_only = Some(e);
+                    }
+                }
                 Err(e) => last_error = Some(e),
             }
         }
 
-        if deleted {
+        if let Some(err) = read_only {
+            Err(err)
+        } else if deleted {
             Ok(())
         } else if let Some(err) = last_error {
             Err(err)
@@ -1220,5 +1234,228 @@ mod portable_tests {
             matches!(result, Err(SecretError::PassphraseRequired)),
             "expected a passphrase requirement, got {result:?}"
         );
+    }
+}
+
+/// `build_from_settings` must thread the persisted per-backend read-only /
+/// root-search toggles into the CLI backends it constructs. If it did not, a
+/// user's choice would round-trip in config and then be dropped on the floor at
+/// construction — the backend would run with its defaults regardless.
+#[cfg(test)]
+mod cli_backend_toggle_tests {
+    use super::*;
+    use crate::config::{SecretBackendType, SecretSettings};
+
+    /// The preferred backend is first in the chain; read its reported
+    /// capabilities straight off the trait object.
+    fn preferred(settings: &SecretSettings) -> std::sync::Arc<dyn SecretBackend> {
+        let manager = SecretManager::build_from_settings(settings);
+        std::sync::Arc::clone(
+            manager
+                .backends
+                .first()
+                .expect("a preferred backend must be constructed"),
+        )
+    }
+
+    #[test]
+    fn bitwarden_toggles_reach_the_backend() {
+        let defaults = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Bitwarden,
+            ..Default::default()
+        });
+        assert!(!defaults.is_read_only());
+        assert!(!defaults.searches_from_root());
+
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Bitwarden,
+            bitwarden_read_only: true,
+            bitwarden_root_search: true,
+            ..Default::default()
+        });
+        assert!(
+            toggled.is_read_only(),
+            "bitwarden_read_only=true must make the backend read-only"
+        );
+        assert!(
+            toggled.searches_from_root(),
+            "bitwarden_root_search=true must widen the backend's reads"
+        );
+    }
+
+    #[test]
+    fn onepassword_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::OnePassword,
+            onepassword_read_only: true,
+            onepassword_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+
+    #[test]
+    fn passbolt_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Passbolt,
+            passbolt_read_only: true,
+            passbolt_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+
+    #[test]
+    fn pass_toggles_reach_the_backend() {
+        let toggled = preferred(&SecretSettings {
+            preferred_backend: SecretBackendType::Pass,
+            pass_read_only: true,
+            pass_root_search: true,
+            ..Default::default()
+        });
+        assert!(toggled.is_read_only());
+        assert!(toggled.searches_from_root());
+    }
+}
+
+/// A read-only primary is a refusal, not an outage: the manager must neither
+/// route a write around it nor let a fallback's `Ok` hide it.
+#[cfg(test)]
+mod read_only_chain_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Counts writes so a test can prove a backend was never touched.
+    struct CountingBackend {
+        read_only: bool,
+        stores: AtomicUsize,
+        deletes: AtomicUsize,
+    }
+
+    impl CountingBackend {
+        fn new(read_only: bool) -> Arc<Self> {
+            Arc::new(Self {
+                read_only,
+                stores: AtomicUsize::new(0),
+                deletes: AtomicUsize::new(0),
+            })
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl SecretBackend for CountingBackend {
+        async fn store(&self, _id: &str, _creds: &Credentials) -> SecretResult<()> {
+            self.ensure_writable()?;
+            self.stores.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+        async fn retrieve(&self, _id: &str) -> SecretResult<Option<Credentials>> {
+            Ok(None)
+        }
+        async fn delete(&self, _id: &str) -> SecretResult<()> {
+            self.ensure_writable()?;
+            self.deletes.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+        async fn is_available(&self) -> bool {
+            true
+        }
+        fn backend_id(&self) -> &'static str {
+            "counting"
+        }
+        fn display_name(&self) -> &'static str {
+            "Counting Backend"
+        }
+        fn is_read_only(&self) -> bool {
+            self.read_only
+        }
+    }
+
+    fn chain(primary: &Arc<CountingBackend>, fallback: &Arc<CountingBackend>) -> SecretManager {
+        SecretManager::new(vec![
+            Arc::clone(primary) as Arc<dyn SecretBackend>,
+            Arc::clone(fallback) as Arc<dyn SecretBackend>,
+        ])
+    }
+
+    #[tokio::test]
+    async fn store_with_fallback_does_not_route_around_a_read_only_primary() {
+        let primary = CountingBackend::new(true);
+        let fallback = CountingBackend::new(false);
+        let manager = chain(&primary, &fallback);
+
+        let result = manager
+            .store_reported("conn", &Credentials::default(), true)
+            .await;
+
+        assert!(
+            matches!(result, Err(SecretError::ReadOnly(ref name)) if name == "Counting Backend"),
+            "a read-only primary must be reported, got {result:?}"
+        );
+        assert_eq!(
+            fallback.stores.load(Ordering::SeqCst),
+            0,
+            "the fallback must not receive a write the user's vault refused"
+        );
+    }
+
+    #[tokio::test]
+    async fn delete_reports_read_only_even_when_a_fallback_succeeds() {
+        let primary = CountingBackend::new(true);
+        let fallback = CountingBackend::new(false);
+        let manager = chain(&primary, &fallback);
+
+        let result = manager.delete("conn").await;
+
+        assert!(
+            matches!(result, Err(SecretError::ReadOnly(_))),
+            "the read-only vault still holds the entry, got {result:?}"
+        );
+        // The writable backend is still cleaned up.
+        assert_eq!(fallback.deletes.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn store_still_falls_back_past_a_writable_primary_failure() {
+        // Control: a fallback-able failure keeps the historical behaviour.
+        struct Down;
+        #[async_trait::async_trait]
+        impl SecretBackend for Down {
+            async fn store(&self, _id: &str, _c: &Credentials) -> SecretResult<()> {
+                Err(SecretError::BackendUnavailable("down".to_string()))
+            }
+            async fn retrieve(&self, _id: &str) -> SecretResult<Option<Credentials>> {
+                Ok(None)
+            }
+            async fn delete(&self, _id: &str) -> SecretResult<()> {
+                Ok(())
+            }
+            async fn is_available(&self) -> bool {
+                false
+            }
+            fn backend_id(&self) -> &'static str {
+                "down"
+            }
+            fn display_name(&self) -> &'static str {
+                "Down"
+            }
+        }
+
+        let fallback = CountingBackend::new(false);
+        let manager = SecretManager::new(vec![
+            Arc::new(Down) as Arc<dyn SecretBackend>,
+            Arc::clone(&fallback) as Arc<dyn SecretBackend>,
+        ]);
+
+        let result = manager
+            .store_reported("conn", &Credentials::default(), true)
+            .await;
+        assert!(
+            matches!(result, Ok(StoreOutcome::Fallback { .. })),
+            "got {result:?}"
+        );
+        assert_eq!(fallback.stores.load(Ordering::SeqCst), 1);
     }
 }

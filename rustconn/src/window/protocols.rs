@@ -206,10 +206,11 @@ pub(super) fn substitute_variables(input: &str, global_variables: &[Variable]) -
 
 /// Returns the connection's resolved password, if credential resolution cached one.
 ///
-/// Feeds `${password}` in a Custom Command template (issue #151). `None` when the
+/// Feeds `${password}` in a Custom Command template (issue #151), an Expect
+/// response and a command macro (`macro_dispatch`). `None` when the
 /// password source needs no vault lookup or nothing has been resolved yet — the
 /// placeholder is then left untouched, like any other unknown reference.
-fn cached_connection_password(
+pub(super) fn cached_connection_password(
     state: &SharedAppState,
     connection_id: Uuid,
 ) -> Option<secrecy::SecretString> {
@@ -288,7 +289,7 @@ pub(super) fn automation_variables(
 /// Pulling the connection-local variables in is what lets `${user2_password}`
 /// defined only on the connection resolve in an Expect response instead of being
 /// dropped as undefined and leaving the user stuck at the prompt (issue #317).
-fn automation_variables_base(
+pub(super) fn automation_variables_base(
     conn: &rustconn_core::Connection,
     global_variables: &[Variable],
 ) -> Vec<Variable> {
@@ -421,7 +422,7 @@ fn link_password_reference(text: &str) -> (String, bool) {
 /// itself never enters the manager: it travels through the child environment, so
 /// both the expanded and the masked pass produce the same text and there is
 /// nothing here to mask.
-fn connection_variable_manager(
+pub(super) fn connection_variable_manager(
     conn: &rustconn_core::Connection,
     global_variables: &[Variable],
     has_password: bool,

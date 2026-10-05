@@ -16,8 +16,8 @@ use uuid::Uuid;
 use super::traits::{ImportResult, ImportSource, SkippedEntry};
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ConnectionGroup, ProtocolConfig, RdpConfig, Resolution, SshAuthMethod, SshConfig,
-    SshKeySource, TelnetConfig, VncConfig,
+    Connection, ConnectionGroup, ProtocolConfig, RdpAudioMode, RdpConfig, Resolution,
+    SshAuthMethod, SshConfig, SshKeySource, TelnetConfig, VncConfig,
 };
 
 /// MobaXterm session type identifiers.
@@ -435,15 +435,20 @@ impl MobaXtermImporter {
             }
         });
 
-        // Parse audio redirect
-        let audio_redirect = params.get(16).map(|s| *s == "1").unwrap_or(false);
-
-        let rdp_config = RdpConfig {
+        let mut rdp_config = RdpConfig {
             resolution,
             color_depth,
-            audio_redirect,
             ..Default::default()
         };
+        // Audio, field 16 (see the layout above). Only "1" used to be read, so
+        // "2" — audio left on the remote computer — was imported as none.
+        if let Some(audio) = params.get(16) {
+            rdp_config.set_audio_mode(match *audio {
+                "1" => RdpAudioMode::Local,
+                "2" => RdpAudioMode::Remote,
+                _ => RdpAudioMode::None,
+            });
+        }
 
         let mut connection = Connection::new(
             name.to_string(),

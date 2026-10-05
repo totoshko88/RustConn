@@ -173,11 +173,13 @@ pub fn setup_list_item(
 ) {
     let expander = TreeExpander::new();
 
-    let content_box = GtkBox::new(Orientation::Horizontal, 8);
+    let content_box = GtkBox::new(Orientation::Horizontal, 10);
+    // Row rhythm close to an AdwActionRow: a little more vertical breathing
+    // room and leading/trailing padding than the bare list row.
     content_box.set_margin_start(6);
     content_box.set_margin_end(6);
-    content_box.set_margin_top(6);
-    content_box.set_margin_bottom(6);
+    content_box.set_margin_top(7);
+    content_box.set_margin_bottom(7);
 
     let icon = Image::from_icon_name("network-server-symbolic");
     icon.set_pixel_size(16);
@@ -206,6 +208,10 @@ pub fn setup_list_item(
     pin_icon.set_pixel_size(12);
     pin_icon.set_visible(false);
     pin_icon.add_css_class("pin-icon");
+    // First of the trailing suffix cluster: a small leading margin sets the
+    // indicators off from the (ellipsizing, hexpand) label, the way an
+    // AdwActionRow separates its suffix widgets from the title (cosmetic §5).
+    pin_icon.set_margin_start(4);
     pin_icon.set_tooltip_text(Some(&i18n("Favorite")));
     // A screen reader sees the accessible label, not the tooltip, so an
     // icon-only indicator needs both (house rule in rustconn/AGENTS.md).

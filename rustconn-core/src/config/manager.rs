@@ -104,9 +104,54 @@ impl Marked for GroupsFile {
     }
 }
 
+impl Marked for SnippetsFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for ClustersFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TemplatesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for WorkspaceProfilesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for HistoryFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TombstonesFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
+impl Marked for TrashFile {
+    fn marker(&self) -> Option<&str> {
+        self.written_by.as_deref()
+    }
+}
+
 /// Wrapper for serializing a list of snippets
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct SnippetsFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     snippets: Vec<Snippet>,
 }
@@ -114,6 +159,9 @@ struct SnippetsFile {
 /// Wrapper for serializing a list of clusters
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct ClustersFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     clusters: Vec<Cluster>,
 }
@@ -121,6 +169,9 @@ struct ClustersFile {
 /// Wrapper for serializing a list of templates
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct TemplatesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     templates: Vec<ConnectionTemplate>,
 }
@@ -128,6 +179,9 @@ struct TemplatesFile {
 /// Wrapper for serializing connection history
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct HistoryFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     entries: Vec<ConnectionHistoryEntry>,
 }
@@ -135,6 +189,9 @@ struct HistoryFile {
 /// Wrapper for serializing Simple Sync tombstones
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct TombstonesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     tombstones: Vec<Tombstone>,
 }
@@ -142,6 +199,9 @@ struct TombstonesFile {
 /// Wrapper for serializing trash (deleted items)
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub(super) struct TrashFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     pub connections: Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
     #[serde(default)]
@@ -151,6 +211,9 @@ pub(super) struct TrashFile {
 /// Wrapper for serializing workspace profiles
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct WorkspaceProfilesFile {
+    /// Version of the `RustConn` that wrote the file; see [`AppSettings::written_by`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    written_by: Option<String>,
     #[serde(default)]
     profiles: Vec<WorkspaceProfile>,
 }
@@ -173,6 +236,13 @@ pub struct ConfigManager {
     /// workers that hold clones of their own. [`Self::write_locked`] takes a file
     /// out of here the first time it overwrites it, after copying it aside.
     newer_files: std::sync::Arc<std::sync::Mutex<NewerFiles>>,
+    /// Files whose `written_by` marker this process has already read, by a load
+    /// or by [`Self::probe_unseen_marker`].
+    ///
+    /// Shared across clones for the same reason as `newer_files`. A save of a
+    /// path not in here reads the marker on disk first, once, so a file that was
+    /// never loaded still gets its backup.
+    marker_seen: std::sync::Arc<std::sync::Mutex<std::collections::BTreeSet<PathBuf>>>,
 }
 
 impl ConfigManager {
@@ -200,6 +270,7 @@ impl ConfigManager {
             config_dir,
             dir_ensured: std::sync::Arc::new(AtomicBool::new(false)),
             newer_files: std::sync::Arc::default(),
+            marker_seen: std::sync::Arc::default(),
         })
     }
 
@@ -212,6 +283,7 @@ impl ConfigManager {
             config_dir,
             dir_ensured: std::sync::Arc::new(AtomicBool::new(false)),
             newer_files: std::sync::Arc::default(),
+            marker_seen: std::sync::Arc::default(),
         }
     }
 
@@ -457,6 +529,7 @@ impl ConfigManager {
     /// marker that is not a plain release — clears a flag left by an earlier load
     /// of the same file: what is on disk now holds nothing newer.
     fn note_written_by(&self, path: &Path, written_by: Option<&str>) {
+        self.lock_marker_seen().insert(path.to_path_buf());
         let Some(version) = written_by.filter(|v| is_newer_than_running(v)) else {
             self.lock_newer_files().remove(path);
             return;
@@ -475,11 +548,52 @@ impl ConfigManager {
         }
     }
 
+    /// Locks the set of files whose marker was read; see the `marker_seen` field.
+    ///
+    /// A poisoned lock is recovered for the same reason as
+    /// [`Self::lock_newer_files`]: every change is one insert.
+    fn lock_marker_seen(&self) -> std::sync::MutexGuard<'_, std::collections::BTreeSet<PathBuf>> {
+        self.marker_seen
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Reads the marker of a file this process is about to save without having loaded it.
+    ///
+    /// The backup used to depend on a load in the same process having flagged
+    /// the file, so a save with no load before it — `rustconn-cli history
+    /// clear` writes an empty history without reading the old one — replaced a
+    /// newer `RustConn`'s file with no copy. Runs once per path per process:
+    /// after it, either the marker has been noted or this process's own write
+    /// has replaced it. A file that is missing, unreadable or not TOML has no
+    /// marker to go by and is left unflagged, as a load would leave it.
+    fn probe_unseen_marker(&self, path: &Path) {
+        if !self.lock_marker_seen().insert(path.to_path_buf()) {
+            return;
+        }
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+            Err(e) => {
+                tracing::warn!(
+                    file = %path.display(),
+                    error = %e,
+                    "Could not read a config file's version marker before replacing it"
+                );
+                return;
+            }
+        };
+        if let Ok(written_by) = version_skew::probe_written_by(&bytes) {
+            self.note_written_by(path, written_by.as_deref());
+        }
+    }
+
     /// Copies a flagged file to `<file>.<version>.bak` before its first overwrite here.
     ///
     /// Runs inside [`Self::write_locked`] with both locks held, so the copy holds
-    /// exactly the bytes about to be replaced, and only for a file one of this
-    /// process's loads flagged as written by a newer `RustConn`. Once the copy is
+    /// exactly the bytes about to be replaced, and only for a file flagged as
+    /// written by a newer `RustConn` — by one of this process's loads or, for a
+    /// file it never loaded, by [`Self::probe_unseen_marker`]. Once the copy is
     /// on disk the flag is cleared: one backup per file per process, however many
     /// saves follow. An existing backup of the same name is replaced; it holds an
     /// older state of what that same version wrote.
@@ -495,6 +609,8 @@ impl ConfigManager {
     /// cannot be written. The flag stays set, so the next save tries again: a
     /// newer version's file is never overwritten without its copy.
     fn back_up_newer_file(&self, path: &Path) -> ConfigResult<()> {
+        self.probe_unseen_marker(path);
+
         // Bound on its own line so the guard is dropped before anything below
         // takes the lock again.
         let flagged = self.lock_newer_files().get(path).cloned();
@@ -678,7 +794,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_snippets(&self) -> ConfigResult<Vec<Snippet>> {
         let path = self.config_dir.join(SNIPPETS_FILE);
-        Self::load_toml_file::<SnippetsFile>(&path).map(|f| f.snippets)
+        self.load_marked_toml_file::<SnippetsFile>(&path)
+            .map(|f| f.snippets)
     }
 
     /// Saves snippets to the configuration file
@@ -692,6 +809,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(SNIPPETS_FILE);
         let file = SnippetsFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             snippets: snippets.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -708,7 +826,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_clusters(&self) -> ConfigResult<Vec<Cluster>> {
         let path = self.config_dir.join(CLUSTERS_FILE);
-        Self::load_toml_file::<ClustersFile>(&path).map(|f| f.clusters)
+        self.load_marked_toml_file::<ClustersFile>(&path)
+            .map(|f| f.clusters)
     }
 
     /// Saves clusters to the configuration file
@@ -722,6 +841,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(CLUSTERS_FILE);
         let file = ClustersFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             clusters: clusters.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -738,7 +858,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_templates(&self) -> ConfigResult<Vec<ConnectionTemplate>> {
         let path = self.config_dir.join(TEMPLATES_FILE);
-        Self::load_toml_file::<TemplatesFile>(&path).map(|f| f.templates)
+        self.load_marked_toml_file::<TemplatesFile>(&path)
+            .map(|f| f.templates)
     }
 
     /// Saves templates to the configuration file
@@ -752,6 +873,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TEMPLATES_FILE);
         let file = TemplatesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             templates: templates.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -768,7 +890,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_workspace_profiles(&self) -> ConfigResult<Vec<WorkspaceProfile>> {
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
-        Self::load_toml_file::<WorkspaceProfilesFile>(&path).map(|f| f.profiles)
+        self.load_marked_toml_file::<WorkspaceProfilesFile>(&path)
+            .map(|f| f.profiles)
     }
 
     /// Saves workspace profiles to the configuration file
@@ -782,6 +905,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(WORKSPACE_PROFILES_FILE);
         let file = WorkspaceProfilesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             profiles: profiles.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -798,7 +922,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_history(&self) -> ConfigResult<Vec<ConnectionHistoryEntry>> {
         let path = self.config_dir.join(HISTORY_FILE);
-        Self::load_toml_file::<HistoryFile>(&path).map(|f| f.entries)
+        self.load_marked_toml_file::<HistoryFile>(&path)
+            .map(|f| f.entries)
     }
 
     /// Saves connection history to the configuration file
@@ -812,6 +937,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(HISTORY_FILE);
         let file = HistoryFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             entries: entries.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -828,7 +954,8 @@ impl ConfigManager {
     /// Returns an error if the file exists but cannot be parsed.
     pub fn load_tombstones(&self) -> ConfigResult<Vec<Tombstone>> {
         let path = self.config_dir.join(TOMBSTONES_FILE);
-        Self::load_toml_file::<TombstonesFile>(&path).map(|f| f.tombstones)
+        self.load_marked_toml_file::<TombstonesFile>(&path)
+            .map(|f| f.tombstones)
     }
 
     /// Saves Simple Sync tombstones to the configuration file.
@@ -842,6 +969,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TOMBSTONES_FILE);
         let file = TombstonesFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             tombstones: tombstones.to_vec(),
         };
         self.save_toml_file(&path, &file)
@@ -865,7 +993,7 @@ impl ConfigManager {
         Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
     )> {
         let path = self.config_dir.join(TRASH_FILE);
-        let file = Self::load_toml_file::<TrashFile>(&path)?;
+        let file = self.load_marked_toml_file::<TrashFile>(&path)?;
         Ok((file.connections, file.groups))
     }
 
@@ -882,6 +1010,7 @@ impl ConfigManager {
         self.ensure_config_dir()?;
         let path = self.config_dir.join(TRASH_FILE);
         let file = TrashFile {
+            written_by: Some(RUNNING_VERSION.to_owned()),
             connections: connections.to_vec(),
             groups: groups.to_vec(),
         };
@@ -1915,6 +2044,57 @@ mod tests {
         assert_eq!(manager.newer_version_files().len(), 1);
     }
 
+    /// A save with no load before it — `rustconn-cli history clear` writes an
+    /// empty history straight away — still backs up a newer version's file,
+    /// once: the marker on disk is read before the first overwrite.
+    #[test]
+    fn a_save_without_a_load_still_backs_up_a_newer_file() {
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(HISTORY_FILE);
+        let original = "written_by = \"99.0.0\"\n\n[[entries]]\nfuture_field = 1\n";
+        fs::write(&path, original).unwrap();
+
+        manager.save_history(&[]).unwrap();
+
+        let backup = manager.config_dir().join("history.toml.99.0.0.bak");
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+        assert!(manager.newer_version_files().is_empty());
+        let ours = fs::read_to_string(&path).unwrap();
+        assert!(
+            ours.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "{ours}"
+        );
+
+        // The next save overwrites this version's own file: no second copy, and
+        // the first one still holds what the newer version wrote.
+        manager.save_history(&[]).unwrap();
+        assert_eq!(
+            backups_in(manager.config_dir()),
+            ["history.toml.99.0.0.bak"]
+        );
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+    }
+
+    /// The probe flags only a newer marker: a file this or an older version
+    /// wrote, or one with no marker, is replaced without a copy.
+    #[test]
+    fn a_save_without_a_load_copies_nothing_that_is_not_newer() {
+        for existing in [
+            format!("written_by = \"{RUNNING_VERSION}\"\n"),
+            "written_by = \"0.0.1\"\n".to_string(),
+            String::new(),
+            "not toml [".to_string(),
+        ] {
+            let (manager, _temp) = create_test_manager();
+            fs::write(manager.config_dir().join(HISTORY_FILE), &existing).unwrap();
+
+            manager.save_history(&[]).unwrap();
+
+            assert!(backups_in(manager.config_dir()).is_empty(), "{existing:?}");
+            assert!(manager.newer_version_files().is_empty(), "{existing:?}");
+        }
+    }
+
     /// Restoring writes the archived bytes as they are; the marker is not
     /// stamped again.
     #[test]
@@ -1930,5 +2110,94 @@ mod tests {
         manager.restore_from_archive(&archive).unwrap();
 
         assert_eq!(fs::read_to_string(&path).unwrap(), archived);
+    }
+
+    /// The forward-compat marker now covers the secondary collection files, not
+    /// just connections/groups/settings. Clusters stands in for the group:
+    /// SnippetsFile, ClustersFile, TemplatesFile and WorkspaceProfilesFile all
+    /// gained the same `written_by` field, stamp and marked loader.
+    #[test]
+    fn clusters_carry_the_version_marker_and_a_newer_one_is_flagged() {
+        use crate::cluster::Cluster;
+
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(CLUSTERS_FILE);
+
+        // A save stamps the running version.
+        manager
+            .save_clusters(&[Cluster::new("DC Fleet".to_string())])
+            .unwrap();
+        let on_disk = fs::read_to_string(&path).unwrap();
+        assert!(
+            on_disk.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "save must stamp the running version: {on_disk}"
+        );
+
+        // An older/same marker is not flagged, and the file still loads.
+        for marker in ["0.0.1", RUNNING_VERSION] {
+            fs::write(&path, format!("written_by = \"{marker}\"\nclusters = []\n")).unwrap();
+            assert!(manager.load_clusters().unwrap().is_empty());
+            assert!(
+                manager.newer_version_files().is_empty(),
+                "marker {marker} must not be flagged as newer"
+            );
+        }
+
+        // A newer marker is flagged on load and backed up before the next save
+        // overwrites it — the whole point of the forward-compat coverage.
+        let newer = "written_by = \"99.0.0\"\nclusters = []\n";
+        fs::write(&path, newer).unwrap();
+        let _ = manager.load_clusters().unwrap();
+        assert_eq!(
+            manager.newer_version_files(),
+            vec![(path.clone(), "99.0.0".to_string())]
+        );
+        manager.save_clusters(&[]).unwrap();
+        let backup = manager.config_dir().join("clusters.toml.99.0.0.bak");
+        assert_eq!(
+            fs::read_to_string(&backup).unwrap(),
+            newer,
+            "the newer file must be backed up before being overwritten"
+        );
+
+        // A legacy file with no marker at all still loads (serde-default).
+        fs::write(&path, "clusters = []\n").unwrap();
+        assert!(manager.load_clusters().unwrap().is_empty());
+    }
+
+    /// The bookkeeping files (history, tombstones, trash) gained the marker too.
+    /// Tombstones stands in for the group.
+    #[test]
+    fn tombstones_carry_the_version_marker_and_a_newer_one_is_flagged() {
+        let (manager, _temp) = create_test_manager();
+        let path = manager.config_dir().join(TOMBSTONES_FILE);
+
+        // A save stamps the running version.
+        manager.save_tombstones(&[]).unwrap();
+        let on_disk = fs::read_to_string(&path).unwrap();
+        assert!(
+            on_disk.contains(&format!("written_by = \"{RUNNING_VERSION}\"")),
+            "save must stamp the running version: {on_disk}"
+        );
+
+        // A newer marker is flagged on load and backed up before the next save.
+        let newer = "written_by = \"99.0.0\"\ntombstones = []\n";
+        fs::write(&path, newer).unwrap();
+        let _ = manager.load_tombstones().unwrap();
+        assert_eq!(
+            manager.newer_version_files(),
+            vec![(path.clone(), "99.0.0".to_string())]
+        );
+        manager.save_tombstones(&[]).unwrap();
+        let backup = manager.config_dir().join("tombstones.toml.99.0.0.bak");
+        assert_eq!(
+            fs::read_to_string(&backup).unwrap(),
+            newer,
+            "the newer file must be backed up before being overwritten"
+        );
+
+        // A legacy file with no marker at all still loads.
+        fs::write(&path, "tombstones = []\n").unwrap();
+        assert!(manager.load_tombstones().unwrap().is_empty());
     }
 }

@@ -16,7 +16,7 @@
 //! Two modes are supported:
 //!
 //! - **Group Sync** — per-group `.rcn` files with Master/Import access model
-//!   and name-based merge for team collaboration.
+//!   and an id-first, then name-based merge for team collaboration.
 //! - **Simple Sync** — single-file bidirectional sync with UUID-based merge
 //!   and tombstones for personal multi-device use.
 
@@ -32,6 +32,7 @@ pub mod variable_template;
 pub mod credential_check;
 pub mod full_export;
 pub mod full_merge;
+pub mod group_apply;
 pub mod group_merge;
 pub mod manager;
 pub mod tombstone;
@@ -43,6 +44,7 @@ pub use credential_check::CredentialResolutionResult;
 // Re-export Simple Sync types.
 pub use full_export::FullSyncExport;
 pub use full_merge::{FullMergeEngine, FullMergeResult, LocalState, MergeAction};
+pub use group_apply::GroupSyncPlan;
 pub use group_export::{
     GroupSyncExport, SyncConnection, SyncError, SyncGroup, collect_variable_templates,
     compute_group_path, group_name_to_filename, validate_sync_filename,

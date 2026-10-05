@@ -432,3 +432,36 @@ pub fn show_info_toast_on_active_window(message: &str) {
     };
     show_toast_on_window(&window, message, ToastType::Info);
 }
+
+/// Shows a warning toast with an action button on the active window.
+///
+/// Like [`show_warning_toast_on_active_window`] but the toast carries a
+/// clickable button wired to `action_name` (e.g. `win.settings`). Lets a
+/// transient notice stay short — the call-to-action lives in the button, not
+/// in a long sentence the single-line toast would ellipsize. Falls back to a
+/// log message if no active window is found.
+pub fn show_warning_toast_with_action_on_active_window(
+    message: &str,
+    button_label: &str,
+    action_name: &str,
+) {
+    let Some(app) = gui::gio::Application::default() else {
+        tracing::warn!(toast_message = %message, "No default application, cannot show toast");
+        return;
+    };
+    let Some(gtk_app) = app.downcast_ref::<gui::Application>() else {
+        tracing::warn!(toast_message = %message, "Application is not a GtkApplication");
+        return;
+    };
+    let Some(window) = gtk_app.active_window() else {
+        tracing::warn!(toast_message = %message, "No active window, cannot show toast");
+        return;
+    };
+    show_toast_with_action_on_window(
+        &window,
+        message,
+        button_label,
+        action_name,
+        ToastType::Warning,
+    );
+}

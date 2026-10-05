@@ -11,7 +11,9 @@ rustconn/src/i18n_markers.rs
 rustconn/src/app.rs
 rustconn/src/toast.rs
 rustconn/src/alert.rs
+rustconn/src/command_macros.rs
 rustconn/src/window/mod.rs
+rustconn/src/window/macro_dispatch.rs
 rustconn/src/window/protocols.rs
 rustconn/src/window/rdp_vnc.rs
 rustconn/src/window/session_lifecycle.rs

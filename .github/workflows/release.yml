@@ -53,8 +53,17 @@ jobs:
             dpkg-dev \
             gettext
 
+      # cargo-auditable embeds a dependency SBOM into the binary, so the shipped
+      # file can be scanned post-release with `cargo audit bin <file>` without
+      # the source tree. Version-pinned like cargo-machete in ci.yml — a moving
+      # upstream must not change the build silently.
+      - name: Install cargo-auditable
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-auditable@0.7.7
+
       - name: Build release binary
-        run: cargo build --release -p rustconn -p rustconn-cli --features full
+        run: cargo auditable build --release -p rustconn -p rustconn-cli --features full
 
       - name: Create deb package structure
         run: |
@@ -224,6 +233,12 @@ jobs:
             *" 1.95."*) ;;
             *) echo "::error::RPM must be built on MSRV 1.95 (got: $actual)"; exit 1 ;;
           esac
+          # cargo-auditable embeds a dependency SBOM into the binary (A3). Installed
+          # with `cargo install` rather than taiki-e/install-action: this is a
+          # Fedora container job with a hand-rolled rustup, not a GitHub-hosted
+          # runner, so the prebuilt-binary action is not a safe fit here. Pinned
+          # to match the other jobs. --locked uses the repo lockfile.
+          cargo install cargo-auditable --locked --version 0.7.7
 
       - name: Build release binary
         run: |
@@ -264,7 +279,7 @@ jobs:
                "| libadwaita $(pkg-config --modversion libadwaita-1 2>/dev/null)" \
                "| vte $(pkg-config --modversion vte-2.91-gtk4 2>/dev/null)" \
                "=> --features $FEATURES ==="
-          cargo build --release -p rustconn -p rustconn-cli --features "$FEATURES"
+          cargo auditable build --release -p rustconn -p rustconn-cli --features "$FEATURES"
 
       - name: Create RPM package
         run: |
@@ -378,8 +393,13 @@ jobs:
             libfuse2 \
             gettext
 
+      - name: Install cargo-auditable
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-auditable@0.7.7
+
       - name: Build release
-        run: cargo build --release -p rustconn -p rustconn-cli --features full
+        run: cargo auditable build --release -p rustconn -p rustconn-cli --features full
 
       - name: Download linuxdeploy
         run: |
@@ -777,10 +797,52 @@ jobs:
           \`\`\`
 
           Full installation guide: https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md
+
+          ## Verifying your download
+
+          Every binary on this release (deb, rpm, AppImage, Flatpak) is covered two ways.
+
+          Plain checksums — download \`SHA256SUMS\` alongside the asset, then:
+          \`\`\`bash
+          sha256sum -c SHA256SUMS
+          \`\`\`
+
+          Signed build provenance (SLSA, via Sigstore) — proves the file was built by this
+          workflow from this commit:
+          \`\`\`bash
+          gh attestation verify RustConn-${VERSION}-x86_64.AppImage --repo totoshko88/RustConn
+          \`\`\`
+          (The snap is signed by the Snap Store; the macOS build is delivered via the Homebrew tap.)
           EOF
 
       - name: List artifacts
         run: ls -la dist/
+
+      # Plain-checksum manifest for offline / no-tooling verification. The signed
+      # attestation above (actions/attest-build-provenance) is the stronger trust
+      # signal — this is a convenience layer so a user can run
+      #   sha256sum -c SHA256SUMS
+      # against the downloaded files without `gh attestation verify` or Sigstore.
+      #
+      # Generated AFTER the attestation step on purpose: the files already carry
+      # their final published names here (the Flatpak rename happened), and the
+      # manifest excludes itself so the hash covers only the real artifacts, not
+      # a checksum file hashing a checksum file. Scope matches the attestation:
+      # deb, rpm, AppImage and Flatpak (the files in dist/). The snap is signed
+      # by the Snap Store and the macOS build ships via the Homebrew tap, so
+      # neither is a GitHub-Release asset and neither is covered here.
+      - name: Generate SHA256SUMS
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          # Hash every file in dist/ except the manifest itself; store bare
+          # names (no dist/ prefix) so `sha256sum -c SHA256SUMS` works when run
+          # from the directory the user downloaded the assets into.
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS' -printf '%P\n' \
+            | sort \
+            | xargs -r sha256sum > SHA256SUMS
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS
 
       - name: Create Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3

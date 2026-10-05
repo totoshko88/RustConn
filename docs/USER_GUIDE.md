@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.22.15** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.23.0** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -40,7 +40,6 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
    - [Smart Folders](#smart-folders)
    - [Dynamic Folders](#dynamic-folders)
    - [Custom Icons](#custom-icons)
-   - [Tab Coloring](#tab-coloring)
    - [Tab Grouping](#tab-grouping)
 7. [Productivity Tools](#productivity-tools)
    - [Templates](#templates)
@@ -109,43 +108,72 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 
 ### Layout
 
+RustConn uses a two-panel layout in the GNOME style (like Files or Settings): the
+sidebar and the session area each have their own header bar. The window controls
+follow your system's button layout and always sit at the window's edges, whether
+the sidebar is shown or hidden.
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Header Bar: Menu | Search | + | Quick Connect | Split      │
-├──────────────────┬──────────────────────────────────────────┤
-│                  │                                          │
-│    Sidebar       │         Session Area                     │
-│                  │                                          │
-│  ▼ Production    │  ┌─────┬─────┬─────┐                    │
-│    ├─ Web-01     │  │ Tab1│ Tab2│ Tab3│                    │
-│    ├─ Web-02     │  └─────┴─────┴─────┘                    │
-│    └─ DB-01      │                                          │
-│  ▼ Development   │    Terminal / Embedded RDP / VNC         │
-│    └─ Dev-VM     │                                          │
-│                  │                                          │
-├──────────────────┤                                          │
-│ Toolbar: 🗑️ 📁 ⚙️ │                                          │
-└──────────────────┴──────────────────────────────────────────┘
+┌────────────────────────┬────────────────────────────────────┐
+│ 🔍  Connections     ⋯  │  Connection Name                  — □ ✕│
+│                        │  Group / Subgroup (optional path)      │
+├────────────────────────┼────────────────────────────────────┤
+│  ▼ Production          │  ┌─────┬─────┬─────┐                  │
+│    ├─ Web-01           │  │ Tab1│ Tab2│ Tab3│                  │
+│    ├─ Web-02           │  └─────┴─────┴─────┘                  │
+│    └─ DB-01            │                                        │
+│  ▼ Development         │    Terminal / Embedded RDP / VNC       │
+│    └─ Dev-VM           │                                        │
+│                        │                                        │
+├────────────────────────┤                                        │
+│ 🕐  ↑  ↓  🔑  📁        │                                        │
+└────────────────────────┴────────────────────────────────────┘
 ```
+
+- **Sidebar header** — a search toggle (🔍) on the left, the "Connections" title
+  in the centre, and a small menu (⋯) on the right for the connection list itself
+  (see **Components**).
+- **Content header** — the active connection's name, with its group path shown
+  underneath as a subtitle when **Show hierarchy path in header** is on (Settings
+  → Interface).
+- **Sidebar bottom toolbar** — five one-click icons: History, Sort A–Z, Sort by
+  recent, Password Vault, Smart Folders.
 
 ### Components
 
-- **Header Bar** — Application menu, search, action buttons
-- **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible via F9 or on narrow windows)
-- **Sidebar Toolbar** — Delete, Add Group, Group Operations, Sort, Import, Export, KeePass status
+- **Sidebar header** — search toggle + "Connections" title + a list menu (⋯)
+  with **Select Connections**, **Sort Alphabetically** and **Sort by Recent Use**.
+- **Content header** — connection name (and optional group-path subtitle), plus
+  the terminal/shell, split-view and primary-menu (☰) buttons on the right. The
+  primary menu holds everything else: New Connection, New Group, Quick Connect,
+  the Tools and Sessions managers, Import/Export, Settings.
+- **Sidebar** — Connection tree with groups (alphabetically sorted, collapsible
+  via F9 or on narrow windows)
+- **Sidebar bottom toolbar** — History, Sort A–Z, Sort by recent usage, Password
+  Vault, Smart Folders (five standalone icons)
 - **Session Area** — Active sessions in tabs
 - **Toast Overlay** — Non-blocking notifications
 
-### Quick Filter
+### Search & Quick Filter
 
-Filter connections by protocol using the filter bar below search:
-- Click protocol buttons (SSH, RDP, VNC, SPICE, Telnet, K8s, ZeroTrust)
-- Multiple protocols can be selected (OR logic)
-- Clear search field to reset filters
+The search row is hidden behind the search toggle (🔍) in the sidebar header, the
+way GNOME apps surface search. Reveal it by clicking the toggle, pressing
+**Ctrl+F**, or simply starting to type while the connection list has focus; it
+collapses again when you clear it.
+
+Filter connections by protocol from the **Filter** menu button in the search row:
+- Open the menu and tick one or more protocols (SSH, RDP, VNC, SPICE, Telnet,
+  Serial, ZeroTrust, Kubernetes, Web)
+- Several protocols can be ticked at once (OR logic); ZeroTrust matches every
+  provider
+- The Filter button turns accent-coloured while any protocol is ticked
+- Clearing the search field, or closing the search row, resets the filters and
+  unticks every box
 
 ### Password Vault Button
 
-Shows integration status in sidebar toolbar:
+The Password Vault button lives in the sidebar's bottom toolbar and shows
+integration status:
 - **Highlighted** — Password manager enabled and configured
 - **Dimmed** — Disabled or not configured
 - Click to open appropriate password manager:
@@ -2319,7 +2347,7 @@ Override terminal colors (background, foreground, cursor) on a per-connection ba
 
 #### Create Group
 
-- **Ctrl+Shift+G** or click folder icon
+- **Ctrl+Shift+G**, or the primary menu (☰) → **New Group**
 - Right-click in sidebar → **New Group**
 - Right-click on group → **New Subgroup**
 
@@ -2345,11 +2373,14 @@ A folder cannot be dropped into itself or into one of its own subfolders — suc
 
 #### Group Operations Mode (Bulk Actions)
 
-The sidebar toolbar has a **list icon** button (view-list-symbolic) that activates Group Operations Mode for bulk actions on multiple connections at once.
+Group Operations Mode enables bulk actions on multiple connections at once. It is
+toggled from the sidebar's list menu **(⋯) → Select Connections** (the old
+permanent sidebar icon was removed in 0.23.0); right-click → **Group
+Operations** still works too.
 
-**Activate:** Click the list icon in the sidebar toolbar (or right-click → Group Operations)
+**Activate:** Sidebar list menu (⋯) → **Select Connections**, or right-click → Group Operations
 
-**Available actions in the toolbar:**
+**Available actions in the bulk-actions bar:**
 
 | Button | Action |
 |--------|--------|
@@ -2361,12 +2392,12 @@ The sidebar toolbar has a **list icon** button (view-list-symbolic) that activat
 
 **Workflow:**
 
-1. Click the list icon to enter Group Operations Mode
+1. Sidebar list menu (⋯) → **Select Connections** to enter Group Operations Mode
 2. Checkboxes appear next to each connection in the sidebar
 3. Select individual connections by clicking their checkboxes, or use **Select All**
 4. Choose an action: **Move to Group** or **Delete**
 5. Confirm the action in the dialog
-6. Click the list icon again (or press Escape) to exit Group Operations Mode
+6. Untick **Select Connections** in the menu (or press Escape) to exit Group Operations Mode
 
 This is useful for reorganizing large numbers of connections, cleaning up after an import, or bulk-deleting obsolete entries.
 
@@ -2664,21 +2695,6 @@ Leave the field empty to use the default icon (folder for groups, protocol-based
 
 > **Note:** If the active icon theme does not carry the GTK icon name you entered, RustConn falls back to the default icon (folder or protocol) instead of drawing empty space. Under Flatpak this is the usual case for exotic names: the GNOME runtime ships only the Adwaita theme, so a name you found in a host icon browser may not exist inside the sandbox. See the [Adwaita named icons list](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/named-icons.html) for names that always resolve.
 
-### Tab Coloring
-
-Optional colored circle indicators on terminal tabs to visually distinguish protocols at a glance.
-
-| Protocol | Color |
-|----------|-------|
-| SSH | 🟢 Green |
-| RDP | 🔵 Blue |
-| VNC | 🟣 Purple |
-| SPICE | 🟠 Orange |
-| Serial | 🟡 Yellow |
-| Kubernetes | 🔵 Cyan |
-
-**Enable/Disable:** Settings → Interface page → Appearance → **Color tabs by protocol**
-
 ### Tab Grouping
 
 Organize open tabs into named groups with a visible `[GroupName]` prefix in the tab title.
@@ -2825,7 +2841,9 @@ A cluster is a named set of connections you open together — a rack, a Kubernet
 
 You can also select several connections in the sidebar and use **Create Cluster** in the bulk-action bar.
 
-**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol.
+**Auto-membership pattern:** instead of (or as well as) ticking members, enter a regular expression. Every connection whose name *or* host matches joins the cluster when it opens — `^prod-web\d+` collects `prod-web1`, `prod-web2`, … as you add them. The match is anywhere in the text unless you anchor it with `^`/`$`, and it is case-sensitive; start the pattern with `(?i)` to ignore case. The editor shows how many connections the pattern matches as you type, and the cluster list counts ticked and matched members together.
+
+**Open a cluster:** Menu → Tools → **Clusters…** → the ▶ button on the cluster's row. RustConn opens a tab for every member, whatever their protocol. A cluster of more than ten members asks before opening them all, so an over-broad pattern (`.` matches everything) cannot open every connection by accident. If any member's jump host no longer exists, RustConn asks once for the whole cluster before connecting those members without it.
 
 **Every tab of an open cluster joins a tab group named after the cluster.** The tab reads `[ClusterName] ConnectionName`, so you can see at a glance which tabs belong together, and every [tab group](#tab-grouping) operation applies to the cluster:
 
@@ -3305,11 +3323,11 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Interface page
 
-**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Color tabs by protocol, Sidebar width (260–500 pixels, default 320).
+**Appearance group:** Theme (System, Light, Dark), Language (UI language selector, restart required), Rendering (see below, restart required), Sidebar width (260–500 pixels, default 320).
 
 **Rendering** chooses which GTK renderer draws the interface. Leave it on **Automatic** unless the interface is sluggish: RustConn then uses the GPU renderer, except where it is known to behave worse than software rasterisation — X11 sessions whose compositor paints menus blank until you hover them, and macOS running inside a virtual machine, where the virtual GPU offers no accelerated OpenGL and the GPU path becomes both slow and CPU-hungry. **Software (Cairo)** forces software rasterisation everywhere; pick it if the interface lags, scrolls in steps, or responds late to typing in an environment the automatic choice does not recognise. **Hardware (GPU)** forces the GPU renderer, which is the setting for an X11 session with a driver that works fine. A `GSK_RENDERER` environment variable, if you set one, overrides all three. The choice applies on the next start, because GTK reads it while it opens the first window.
 
-**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle).
+**Window group:** Remember size (restore window geometry on startup), Show connection in window title (appends the active connection name so time-tracking tools can attribute usage; off by default for privacy), Show hierarchy path in header (shows the active connection's group path — e.g. `AWS Test Lab / Prod` — as a subtitle under the connection name in the content header, GNOME-breadcrumb style; off by default, updates when the active tab changes, and is blank for a connection that sits in the root with no parent group; independent of the window title, so time-tracking tools are unaffected), Show connection name in split panes (compact per-pane header; on by default for new installations, while an existing configuration keeps its stored value — also serves as the pane drag handle).
 
 **Connections group:** Open a new session on every double-click — off by default, so a double-click on a connection that is already running focuses that session instead of duplicating it (hold Shift or Ctrl, or use right-click → Open new session, to force a second one). Turn it on if you routinely keep several concurrent sessions on the same host: every double-click then starts another session, and the modifier is no longer needed.
 
@@ -3328,13 +3346,15 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 - **Version** — whether the backend's client program is installed, and which version
 - **Status** — whether that backend can actually store and read a password *right now*. This is the line to read: a backend can be installed and still be unusable because it is locked, not logged in, has no database file chosen, or has no keyring service answering. Shown for every backend. If you select one that is not ready, a banner appears under the header bar after you close Settings, naming the backend and what is missing.
 - **Also read from the encrypted file** — look in this computer's encrypted credential file as well as in the selected backend when resolving a password, so entries saved before you switched backend keep working. Reading only: saving always targets the selected backend, and a write it refuses is reported so you can choose where the password goes instead of having it moved for you.
+- **Read-only mode** — RustConn reads from this backend but never writes to it. Saving, deleting or renaming a password is refused and reported, so you choose where it goes instead of a silent failure. Use it when another tool owns the vault and RustConn should not modify it. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
+- **Search from vault root** — when a password is not found at RustConn's own scoped path, look through the whole vault before giving up. Reading only: saving always writes back to RustConn's scoped path, so entries you create stay organised and this cannot overwrite another tool's data. Use it to reach credentials another tool stored outside RustConn's area. Available per backend (Bitwarden, 1Password, Passbolt, Pass, KeePassXC).
 - **Copy Passwords…** — move passwords you already have from one store into another. This is the supported way to migrate after changing backend.
 - **Credential Encryption** — Backend master passwords encrypted with AES-256-GCM + Argon2id (machine-specific key)
 - **Bitwarden Settings:** Vault status, unlock button, master password persistence, save to system keyring, auto-unlock, API key authentication for 2FA
 - **1Password Settings:** Account status, sign-in button, biometric auth support, service account token
 - **Passbolt Settings:** CLI detection, server URL, GPG passphrase, server configuration status
 - **Pass Settings:** CLI detection, custom `PASSWORD_STORE_DIR`, GPG-encrypted files
-- **KeePassXC KDBX Settings:** Database path, key file, password/key file authentication
+- **KeePassXC KDBX Settings:** Database path, key file, password/key file authentication. The KeePass group also carries its own **Read-only mode** and **Search from vault root** switches: *Search from vault root* widens a lookup to the whole database when a credential is not found at RustConn's scoped `RustConn/` path (reading only — saves stay scoped, so this can never reintroduce a doubled-prefix write), which is how it reaches entries you created by hand or imported from another tool. *Read-only mode* is recorded and honoured where KeePass is written through the backend chain; note the main credential-resolution path that runs on connect only ever reads a KeePass entry, so there is nothing for read-only to block there — it is a safeguard for the write paths, not the connect path. **YubiKey / Challenge-Response:** when the database is secured with a hardware key, RustConn shows a "touch your key" banner while `keepassxc-cli` waits for the touch — on connect and password load as well as on save (0.23.0).
 - **System Keyring Requirements:** Requires `libsecret-tools` (`secret-tool` binary)
 - **Installed Password Managers** — Auto-detected managers with versions
 
@@ -3345,6 +3365,8 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 **Network group:** *Global Jump Host* (a saved SSH connection) and *Global ProxyJump* (free text, OpenSSH syntax). The outermost of the three bastion tiers — it applies to every connection that inherits, including ungrouped ones, which no group can reach. Set both and they chain: the Jump Host is contacted first and the ProxyJump value is reached through it. A connection set to *Direct* ignores both. See [Network Mode and Where a Jump Host Comes From](#network-mode-and-where-a-jump-host-comes-from).
 
 **Clients group:** Auto-detected CLI tools with versions — Protocol Clients (SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes) and Zero Trust (AWS, GCP, Azure, OCI, Cloudflare, Teleport, Tailscale, Boundary, Hoop.dev). Searches PATH and user directories.
+
+**Media Codecs group:** **H.264 codec (Cisco OpenH264)** — a **Download** button enables hardware-style H.264 for the embedded RDP GFX pipeline on packaged installs. The embedded RDP client's H.264 decoder (OpenH264) only accepts Cisco's own published binary; the copy built into distribution packages is refused, so H.264 GFX otherwise falls back to the slower RemoteFX path. Clicking **Download** opens a confirm dialog naming exactly what will be downloaded, from where (`ciscobinary.openh264.org`), and under whose licence — because Cisco, not RustConn, provides the binary and holds the MPEG-LA patent licence for it, so the download is **user-initiated and opt-in** (nothing is fetched automatically, ever). On consent, RustConn downloads the official v2.6.0 blob, verifies its checksum, and caches it under `~/.cache/rustconn/openh264/`; the RDP GFX decoder picks it up on the **next RDP connection** — no application restart needed (already-open sessions keep their current path until reconnected). Once installed, the row shows **Installed ✓**. The same action is available headless as `rustconn-cli codec download-h264 --accept-cisco-license` (without the flag it only prints the licence and downloads nothing). Supported on x86_64/aarch64 Linux and x86_64/aarch64 macOS. You can also point `RUSTCONN_OPENH264` at a Cisco blob you downloaded yourself; that override still wins over the cached copy.
 
 **Monitoring group:** Enable monitoring (global toggle), Polling interval (1–60 seconds, default: 3), Reset Per-Connection Overrides (makes every connection follow the global toggle; per-connection polling intervals are kept), Visible Metrics (CPU, Memory, Disk, Network, Load Average, System Info).
 
@@ -3757,9 +3779,9 @@ Group Sync is designed for teams. Each root group exports to a dedicated `.rcn` 
 
 Import groups are read-only for synced fields (name, host, port, protocol). Local-only fields (SSH key path, sort order, pinned status) remain editable. Changes from the Master are auto-imported when the file watcher detects updates (3s debounce).
 
-**How Import matches the Master's file:** a connection is matched by its name and its group path *inside* the synced group, and a subgroup by its path inside the synced group. The name of the synced group itself takes no part, so you can rename the local Import group (the "Import" button names it after the file, not after the Master's group) or move it under another group without changing what matches. A newer copy on the Master updates the matched connection and keeps your local-only fields; a connection the Master no longer has goes to Trash.
+**How Import matches the Master's file:** every connection and subgroup an Import creates remembers the ID it has on the Master, and later syncs match on that first. Renaming a connection or subgroup on the Master, or moving it to another group there, therefore renames or moves the Import copy in place: it keeps its history, pins and stored password. Anything without such a link — files written before 0.22.13, and Import groups built by versions before 0.23 — is matched by name and group path *inside* the synced group instead, and linked on that sync. The name of the synced group itself takes no part, so you can rename the local Import group (the "Import" button names it after the file, not after the Master's group) or move it under another group without changing what matches. A newer copy on the Master updates the matched connection and keeps your local-only fields; a connection the Master no longer has goes to Trash. Subgroups are rebuilt at their real depth, so a connection or subgroup the Master adds inside an existing subgroup lands there.
 
-> **Current limitations:** renaming a connection on the Master, or moving it to another group there, looks to an Import device like one connection removed and another added. The Import side moves the old copy to Trash and creates a new one, so its password has to be entered again there. A connection or subgroup that a sync adds *inside a subgroup* is still created directly in the synced group rather than at its path, so the next sync sees it as removed and added again. Matching by connection ID and placing by path are planned for a later release; files written since 0.22.13 already carry the IDs it will use, and older RustConn versions read those files unchanged.
+> **Current limitations:** a subgroup's description, icon and inherited settings are taken from the Master when the subgroup is created, but a later change to them on the Master is not synced. The Import copy is linked to the Master by ID only once a sync has seen it, so a rename on the Master made before the first sync with RustConn 0.23 still looks like one connection removed and another added.
 
 Credentials are never synced — only variable names are included. Each team member configures their own secret backend values locally.
 
@@ -3931,6 +3953,8 @@ Instead of storing passwords directly per-connection, you can use **Global Varia
 | Portable encrypted file | Sharing one password set across your own machines, including Linux ↔ macOS | High — AES-256-GCM under an Argon2id passphrase; the key is never written to disk |
 
 Configure your preferred backend in Settings → Secrets. RustConn falls back to the system keyring if the preferred backend is unavailable.
+
+Most backends (Bitwarden, 1Password, Passbolt, Pass and KeePassXC) also carry two per-backend options on their Secrets-page group: **Read-only mode**, so RustConn reads but never writes to a vault another tool owns, and **Search from vault root**, so a lookup that misses RustConn's own scoped path falls back to searching the whole vault. Both widen or restrict *reading* only — saves always target RustConn's scoped path. See [Settings → Secrets](#secrets-page).
 
 ### Portable Encrypted File (cloud-syncable)
 
@@ -4173,6 +4197,7 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 1. Install KeePassXC (for the `keepassxc-cli` helper and the app itself)
 2. Select the KeePassXC/KDBX backend and set the KDBX path in Settings → Secrets, then unlock with the database password (optionally cached in the system keyring)
 3. Flatpak: `keepassxc-cli` on the host is detected automatically via `flatpak-spawn --host`
+4. **YubiKey / Challenge-Response databases:** supported. Set the slot in the KeePass settings; when a touch is required RustConn shows a "touch your key" banner while `keepassxc-cli` blocks — on connect and password load as well as on save. If the key blinks and nothing happens, press it: the banner confirms RustConn is waiting on the hardware, not stalled.
 
 ### Pass (passwordstore.org) Not Working
 
@@ -4188,6 +4213,7 @@ RustConn opens the KeePass database directly by file (`.kdbx`); it does not use 
 4. HiDPI: use Scale Override in connection dialog
 5. Clipboard not syncing: ensure "Clipboard" is enabled in RDP settings
 6. RD Gateway: the embedded IronRDP client tunnels through the gateway itself; only a target on a port other than 3389 falls back to external FreeRDP
+7. **RDP feels slow / low frame rate (H.264 GFX):** on a packaged install the embedded RDP client's H.264 decoder is refused unless Cisco's own OpenH264 binary is present, so it falls back to the slower RemoteFX path. Enable H.264 with **Settings → Connection → Media Codecs**, then the **Download** button (opt-in, downloads Cisco's binary on your consent), or point `RUSTCONN_OPENH264` at a blob you downloaded from `ciscobinary.openh264.org` yourself. It takes effect on the next RDP connection — reconnect any open session. Headless: `rustconn-cli codec download-h264 --accept-cisco-license`.
 
 ### Session Restore Issues
 
@@ -4376,7 +4402,7 @@ RustConn uses VTE, which passes all keystrokes to the shell. Configure vim/emacs
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+F | Search |
+| Ctrl+F | Reveal/focus search (toggles the search row) |
 | Ctrl+P | Command Palette (Connections) |
 | Ctrl+Shift+P | Command Palette (Commands) |
 | Ctrl+1 / Alt+1 | Focus Sidebar |

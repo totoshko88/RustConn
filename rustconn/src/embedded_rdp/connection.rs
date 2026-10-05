@@ -2130,6 +2130,42 @@ impl super::EmbeddedRdpWidget {
                                 should_break = true;
                                 break;
                             }
+                            RdpClientEvent::H264Unavailable { reason } => {
+                                // A GFX/H.264 mode was requested but no decoder
+                                // loaded, so the session fell back to a software
+                                // codec. Surface it once so the quality drop is
+                                // visible rather than silent (issue #262). No
+                                // fallback to trigger — the session already works.
+                                use rustconn_core::rdp_client::graphics::H264UnavailableReason;
+                                let message = match reason {
+                                    H264UnavailableReason::RejectedNonCisco => i18n(
+                                        "H.264 is off — the installed OpenH264 isn't a Cisco \
+build. Open Settings → Connection → Media Codecs to download it.",
+                                    ),
+                                    H264UnavailableReason::NotFound => i18n(
+                                        "H.264 is off — no OpenH264 codec is installed. \
+Open Settings → Connection → Media Codecs to download it.",
+                                    ),
+                                    H264UnavailableReason::LoadFailed => i18n(
+                                        "H.264 is off — the OpenH264 codec could not be loaded. \
+Open Settings → Connection → Media Codecs to re-download it.",
+                                    ),
+                                };
+                                tracing::info!(
+                                    protocol = "rdp",
+                                    ?reason,
+                                    "H.264 unavailable — using the software graphics path"
+                                );
+                                // Keep the toast to one short line; the
+                                // call-to-action is a button that opens Settings
+                                // (→ Connection → Media Codecs) rather than a long
+                                // sentence the single-line toast would ellipsize.
+                                crate::toast::show_warning_toast_with_action_on_active_window(
+                                    &message,
+                                    &i18n("Open Settings"),
+                                    "win.settings",
+                                );
+                            }
                         }
                     }
                 }

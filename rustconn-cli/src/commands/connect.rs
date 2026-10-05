@@ -33,6 +33,64 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     }
 
     let connection = find_connection(&connections, name)?;
+
+    // Dangling-bastion warning (#345): a `jump_host_id` — the connection's own,
+    // or one inherited from a group or the global network settings — can point
+    // at a connection that has since been deleted. The launch path silently
+    // drops such a hop and connects direct, the one outcome a bastion exists to
+    // prevent. Warn (to stderr, so stdout and --dry-run output stay clean) and
+    // then proceed: warn-and-direct, matching the GUI. The group/network loads
+    // are best-effort — this is advisory and must never block a connection.
+    let groups = config_manager.load_groups().unwrap_or_default();
+    let network = config_manager
+        .load_settings()
+        .map(|settings| settings.network)
+        .unwrap_or_default();
+    //
+    // The protocol gate lives in core: a Telnet/Serial/Kubernetes/… connection
+    // never routes through a bastion, so an inherited dangling one is not
+    // reported for it. The message says the hop is *skipped* rather than
+    // "connecting directly": what is left depends on the rest of the route (a
+    // free-text ProxyJump or ProxyCommand still applies), and claiming "direct"
+    // was wrong whenever one was set.
+    for dangling in rustconn_core::connection::jump_chain::find_dangling_bastions(
+        connection,
+        &connections,
+        &groups,
+        &network,
+    ) {
+        eprintln!("Warning: {}", describe_dangling_bastion(&dangling));
+    }
+
+    // Kerberos preflight (#351): when a connection connects RDP NLA with
+    // Kerberos, a few settings make the sign-in fail with errors that do not
+    // point back at them — an IP address instead of a DNS name, a NetBIOS realm
+    // instead of the DNS domain, or no domain at all. The GUI names these up
+    // front; the CLI prints the same hints to stderr and connects anyway
+    // (warn-and-connect), so stdout and --dry-run output stay clean.
+    if let rustconn_core::models::ProtocolConfig::Rdp(rdp) = &connection.protocol_config
+        && rdp.kerberos_enabled
+    {
+        for hint in rustconn_core::rdp_client::kerberos_preflight(
+            &connection.host,
+            connection.username.as_deref(),
+            connection.domain.as_deref(),
+        ) {
+            let detail = match hint {
+                rustconn_core::rdp_client::KerberosHint::HostNotDnsName => {
+                    "Kerberos needs the server's DNS name; an IP address or an SSH tunnel fails"
+                }
+                rustconn_core::rdp_client::KerberosHint::ShortDomainName => {
+                    "Kerberos needs the DNS domain (e.g. EXAMPLE.COM), not the short domain name"
+                }
+                rustconn_core::rdp_client::KerberosHint::MissingDomain => {
+                    "Kerberos needs the DNS domain; set it in the connection's domain field"
+                }
+            };
+            eprintln!("Warning: {detail}.");
+        }
+    }
+
     let command = build_connection_command(connection);
 
     if dry_run {
@@ -47,6 +105,29 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     );
 
     execute_connection_command(&command)
+}
+
+/// Renders the stderr warning for one unusable bastion reference.
+fn describe_dangling_bastion(
+    dangling: &rustconn_core::connection::jump_chain::DanglingBastion,
+) -> String {
+    use rustconn_core::connection::jump_chain::{BastionRefOrigin, DanglingReason};
+
+    let where_set = match dangling.origin {
+        BastionRefOrigin::Connection => "its own Jump Host setting",
+        BastionRefOrigin::Group(_) => "an inherited group Jump Host setting",
+        BastionRefOrigin::Network => "the global Network Jump Host setting",
+    };
+    match dangling.reason {
+        DanglingReason::Missing => format!(
+            "jump host {} (referenced by {where_set}) no longer exists; this hop is skipped.",
+            dangling.referenced_id
+        ),
+        DanglingReason::SelfReference => format!(
+            "connection {} names itself as its jump host (in {where_set}); this hop is skipped.",
+            dangling.referenced_id
+        ),
+    }
 }
 
 /// Command to execute for a connection
@@ -217,6 +298,31 @@ fn format_command_for_log(command: &ConnectionCommand) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dangling_bastion_warning_does_not_claim_a_direct_connection() {
+        use rustconn_core::connection::jump_chain::{
+            BastionRefOrigin, DanglingBastion, DanglingReason,
+        };
+        let id = uuid::Uuid::new_v4();
+        let missing = describe_dangling_bastion(&DanglingBastion {
+            source_id: id,
+            referenced_id: id,
+            origin: BastionRefOrigin::Group(id),
+            reason: DanglingReason::Missing,
+        });
+        assert!(missing.contains("no longer exists"));
+        assert!(missing.contains("inherited group"));
+        assert!(!missing.contains("directly"));
+
+        let self_ref = describe_dangling_bastion(&DanglingBastion {
+            source_id: id,
+            referenced_id: id,
+            origin: BastionRefOrigin::Connection,
+            reason: DanglingReason::SelfReference,
+        });
+        assert!(self_ref.contains("names itself"));
+    }
 
     #[test]
     fn freerdp_secret_aliases_are_fully_masked() {

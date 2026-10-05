@@ -12,7 +12,7 @@ name = "rustconn-cli"
 path = "src/main.rs"
 
 [dependencies]
-rustconn-core = { path = "../rustconn-core", version = "0.22.15", default-features = false }
+rustconn-core = { path = "../rustconn-core", version = "0.23.0", default-features = false }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

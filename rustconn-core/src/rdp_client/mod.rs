@@ -67,6 +67,13 @@ pub mod input;
 pub mod kerberos;
 pub mod keyboard_layout;
 pub mod multimonitor;
+// Opt-in, explicit-consent downloader for Cisco's official OpenH264 binary.
+// Deliberately NOT gated behind `gfx-h264`: the GUI loader wiring in
+// `gfx_handler` needs it, but so does the headless `rustconn-cli` build (which
+// depends on this crate with `default-features = false`, i.e. without
+// `gfx-h264`). The module pulls in nothing feature-specific — reqwest, ring,
+// bzip2 and dirs are already always-on dependencies.
+pub mod openh264_download;
 #[cfg(feature = "rdp-embedded")]
 pub mod rdpdr;
 

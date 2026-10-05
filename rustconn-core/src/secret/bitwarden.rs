@@ -262,6 +262,13 @@ pub struct BitwardenBackend {
     organization_id: Option<String>,
     /// Folder name for RustConn entries
     folder_name: String,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the vault is left untouched.
+    read_only: bool,
+    /// When true, credential reads also match an entry titled by the bare
+    /// connection id, not only the `RustConn: {id}` convention, so entries
+    /// outside the RustConn folder are found.
+    root_search: bool,
     /// Resolved path to the `bw` CLI binary
     bw_cmd: String,
 }
@@ -345,6 +352,8 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            read_only: false,
+            root_search: false,
             bw_cmd: get_bw_cmd(),
         }
     }
@@ -357,6 +366,8 @@ impl BitwardenBackend {
             server_url: None,
             organization_id: None,
             folder_name: "RustConn".to_string(),
+            read_only: false,
+            root_search: false,
             bw_cmd: get_bw_cmd(),
         }
     }
@@ -380,6 +391,35 @@ impl BitwardenBackend {
     pub fn with_folder_name(mut self, name: impl Into<String>) -> Self {
         self.folder_name = name.into();
         self
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the vault is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
+        self
+    }
+
+    /// Widens credential reads to also match an entry titled by the bare
+    /// connection id (not only `RustConn: {id}`), so an entry the user keeps
+    /// outside the RustConn folder is found. Writes are unaffected.
+    #[must_use]
+    pub const fn with_root_search(mut self, root_search: bool) -> Self {
+        self.root_search = root_search;
+        self
+    }
+
+    /// Applies the persisted `bitwarden_read_only` / `bitwarden_root_search`
+    /// toggles from secret settings.
+    ///
+    /// [`auto_unlock`] applies this to whatever backend it returns, so every
+    /// unlocked backend honours the user's choice without each call site having
+    /// to remember both builders.
+    #[must_use]
+    pub const fn with_settings_toggles(self, settings: &crate::config::SecretSettings) -> Self {
+        self.with_read_only(settings.bitwarden_read_only)
+            .with_root_search(settings.bitwarden_root_search)
     }
 
     /// Sets the session key
@@ -605,14 +645,38 @@ impl BitwardenBackend {
         // Find exact match by name
         let result = items.into_iter().find(|item| item.name == search_term);
 
-        if result.is_none() {
-            tracing::debug!(
-                search_term = %search_term,
-                "Bitwarden find_item: no exact match found"
-            );
+        if let Some(item) = result {
+            return Ok(Some(item));
         }
 
-        Ok(result)
+        tracing::debug!(
+            search_term = %search_term,
+            "Bitwarden find_item: no exact match found"
+        );
+
+        // Root-search fallback: an entry the user keeps outside RustConn's
+        // naming convention is titled by the bare connection id rather than
+        // `RustConn: {id}`. Search for that too and match it exactly. Reads
+        // only — stores still use the `RustConn: {id}` name and RustConn folder.
+        if self.root_search {
+            let bare_output = self
+                .run_command(&["list", "items", "--search", connection_id])
+                .await?;
+            let bare_items: Vec<BitwardenItem> =
+                serde_json::from_str(&bare_output).map_err(|e| {
+                    SecretError::RetrieveFailed(format!(
+                        "Failed to parse items: {} error at line {}, column {}",
+                        serde_error_kind(&e),
+                        e.line(),
+                        e.column()
+                    ))
+                })?;
+            return Ok(bare_items
+                .into_iter()
+                .find(|item| item.name == connection_id));
+        }
+
+        Ok(None)
     }
 
     /// Finds an item by exact vault entry name (without `RustConn:` prefix)
@@ -678,6 +742,7 @@ impl Default for BitwardenBackend {
 #[async_trait]
 impl SecretBackend for BitwardenBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         let entry_name = Self::entry_name(connection_id);
         tracing::debug!(
             connection_id = %connection_id,
@@ -826,6 +891,7 @@ impl SecretBackend for BitwardenBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if vault is unlocked
         if !self.is_unlocked_fast().await {
             return Err(SecretError::BackendUnavailable(
@@ -868,6 +934,14 @@ impl SecretBackend for BitwardenBackend {
 
     fn display_name(&self) -> &'static str {
         "Bitwarden"
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    fn searches_from_root(&self) -> bool {
+        self.root_search
     }
 }
 
@@ -1518,13 +1592,29 @@ async fn try_relogin_and_unlock(
 /// 4. Master password from system keyring
 /// 5. Master password from encrypted settings
 ///
+/// The returned backend carries the `bitwarden_read_only` /
+/// `bitwarden_root_search` toggles from `settings`
+/// ([`BitwardenBackend::with_settings_toggles`]), so a write through it is
+/// refused when the user put Bitwarden in read-only mode.
+///
 /// # Errors
 /// Returns `SecretError::BackendUnavailable` if all strategies fail.
+pub async fn auto_unlock(
+    settings: &crate::config::SecretSettings,
+) -> SecretResult<BitwardenBackend> {
+    // One place for the toggles: the unlock below has many return points, and
+    // each used to hand back a backend with read-only off.
+    unlock_with_saved_credentials(settings)
+        .await
+        .map(|backend| backend.with_settings_toggles(settings))
+}
+
+/// The unlock strategies behind [`auto_unlock`], without the settings toggles.
 #[expect(
     clippy::too_many_lines,
     reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
 )] // multi-strategy unlock with ordered fallbacks
-pub async fn auto_unlock(
+async fn unlock_with_saved_credentials(
     settings: &crate::config::SecretSettings,
 ) -> SecretResult<BitwardenBackend> {
     // 0. Fast path: if session key exists and was recently verified, skip
@@ -1678,6 +1768,8 @@ impl std::fmt::Debug for BitwardenBackend {
             .field("server_url", &self.server_url)
             .field("organization_id", &self.organization_id)
             .field("folder_name", &self.folder_name)
+            .field("read_only", &self.read_only)
+            .field("root_search", &self.root_search)
             .field("bw_cmd", &self.bw_cmd)
             .finish_non_exhaustive()
     }
@@ -1773,5 +1865,86 @@ Invalid master password.";
         sync_on_next_unlock();
 
         assert!(!is_recently_verified());
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!BitwardenBackend::new().is_read_only());
+        assert!(BitwardenBackend::new().with_read_only(true).is_read_only());
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_unlock_check() {
+        // ensure_writable() is the first line of store(), so the read-only
+        // refusal takes precedence over the vault-locked check and no `bw`
+        // process is spawned.
+        let backend = BitwardenBackend::new().with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(name) if name == "Bitwarden"));
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = BitwardenBackend::new().with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
+    }
+}
+
+#[cfg(test)]
+mod root_search_tests {
+    use super::*;
+
+    #[test]
+    fn searches_from_root_defaults_false_and_builder_toggles_it() {
+        assert!(!BitwardenBackend::new().searches_from_root());
+        assert!(
+            BitwardenBackend::new()
+                .with_root_search(true)
+                .searches_from_root()
+        );
+        // Setting it back to false is honoured.
+        assert!(
+            !BitwardenBackend::new()
+                .with_root_search(true)
+                .with_root_search(false)
+                .searches_from_root()
+        );
+    }
+
+    #[test]
+    fn read_only_and_root_search_are_independent() {
+        let both = BitwardenBackend::new()
+            .with_read_only(true)
+            .with_root_search(true);
+        assert!(both.is_read_only());
+        assert!(both.searches_from_root());
+    }
+
+    /// Documents the two names the root-search widening compares against: the
+    /// scoped lookup matches `RustConn: {id}` exactly, and the fallback matches
+    /// the bare `{id}`. The fallback in `find_item` runs a second
+    /// `bw list items --search {id}` and keeps the item whose `name` equals the
+    /// bare id, so these two strings are the whole of the predicate — but the
+    /// list itself requires the live `bw` CLI and an unlocked vault, so the
+    /// end-to-end widening cannot be unit-tested here without faking CLI output
+    /// (which this suite deliberately does not do).
+    #[test]
+    fn entry_name_is_the_scoped_form_and_the_bare_id_is_the_fallback_form() {
+        assert_eq!(BitwardenBackend::entry_name("conn-1"), "RustConn: conn-1");
+        // The bare connection id — the fallback search term and match key — is
+        // distinct from the scoped name, so an entry titled by the bare id is
+        // not already caught by the scoped pass.
+        assert_ne!(BitwardenBackend::entry_name("conn-1"), "conn-1");
     }
 }

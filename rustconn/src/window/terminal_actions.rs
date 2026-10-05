@@ -44,8 +44,16 @@ impl MainWindow {
         // Search action
         let search_action = gio::SimpleAction::new("search", None);
         let sidebar_clone = sidebar.clone();
+        let split_view_weak = self.overlay_split_view.downgrade();
         search_action.connect_activate(move |_, _| {
-            sidebar_clone.search_entry().grab_focus();
+            // Ctrl+F with the sidebar hidden would focus an entry nobody can
+            // see; reveal the sidebar first.
+            if let Some(split_view) = split_view_weak.upgrade()
+                && !split_view.shows_sidebar()
+            {
+                split_view.set_show_sidebar(true);
+            }
+            sidebar_clone.focus_search();
         });
         window.add_action(&search_action);
 

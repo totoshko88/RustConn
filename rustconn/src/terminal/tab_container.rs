@@ -11,6 +11,10 @@
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation};
 
+/// Widget name on the Welcome placeholder's outer box — an identity marker,
+/// never shown and never translated.
+const WELCOME_WIDGET_NAME: &str = "rustconn-welcome-page";
+
 /// Wrapper around the `GtkBox` that serves as `TabPage.child()`.
 ///
 /// The outer box is always `hexpand + vexpand`, so GTK never assigns it
@@ -31,9 +35,21 @@ impl TabPageContainer {
     }
 
     /// Creates a container holding the welcome/status page.
+    ///
+    /// The outer box is tagged so [`Self::is_welcome`] can tell the
+    /// placeholder apart from a session tab without looking at its title — a
+    /// session may be called "Welcome" too, in any language.
     #[must_use]
     pub fn welcome(status_page: &gtk4::Widget) -> Self {
-        Self::wrap(status_page)
+        let container = Self::wrap(status_page);
+        container.outer.set_widget_name(WELCOME_WIDGET_NAME);
+        container
+    }
+
+    /// Whether `child` (a `TabPage.child()`) is the Welcome placeholder.
+    #[must_use]
+    pub fn is_welcome(child: &gtk4::Widget) -> bool {
+        child.widget_name() == WELCOME_WIDGET_NAME
     }
 
     fn wrap(content: &gtk4::Widget) -> Self {

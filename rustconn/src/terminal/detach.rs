@@ -378,12 +378,12 @@ impl TerminalNotebook {
 
     /// Moves a detached session's content back into a tab of the main window.
     ///
-    /// Drops the Welcome tab **before** recreating the session tab (the Welcome
-    /// removal keys off an empty session map), rebuilds the content box around
-    /// the same live widget, re-derives the tab's group and protocol color, and
-    /// selects the restored page. Returns `false` when the session is not
-    /// detached or its tab could not be rebuilt, in which case the caller keeps
-    /// its window open.
+    /// Rebuilds the content box around the same live widget, re-derives the
+    /// tab's group and protocol color, selects the restored page, and only then
+    /// drops the Welcome placeholder (so the removal fires after the real page
+    /// is selected — see `remove_welcome_page`). Returns `false` when the
+    /// session is not detached or its tab could not be rebuilt, in which case
+    /// the caller keeps its window open and the Welcome tab is left untouched.
     pub fn attach_session(&self, session_id: Uuid) -> bool {
         if !self.is_detached(session_id) {
             tracing::warn!(session = %session_id, "attach declined: session is not detached");
@@ -399,9 +399,6 @@ impl TerminalNotebook {
             coordinator.suspend_monitoring(session_id);
         }
 
-        // Order matters: `remove_welcome_page` only fires while the session map
-        // is empty, so it has to run before the tab is inserted.
-        self.remove_welcome_page();
         if !self.restore_session_tab(session_id) {
             self.resume_monitoring_in_place(monitoring.as_ref(), session_id);
             self.ensure_welcome_page();
@@ -428,16 +425,17 @@ impl TerminalNotebook {
         self.switch_tab_to_single(session_id, &content);
 
         // Re-derive the tab indicators from the surviving session metadata.
-        if let Some(info) = self.get_session_info(session_id) {
-            if let Some(color_index) = info.tab_color_index {
-                self.apply_group_color(session_id, color_index);
-            }
-            if *self.color_tabs_by_protocol.borrow() {
-                self.apply_protocol_color(session_id, &info.protocol);
-            }
+        if let Some(info) = self.get_session_info(session_id)
+            && let Some(color_index) = info.tab_color_index
+        {
+            self.apply_group_color(session_id, color_index);
         }
 
         self.switch_to_tab(session_id);
+        // Drop the Welcome placeholder only once the restored tab exists and is
+        // selected (see `remove_welcome_page`): if restore had failed above, the
+        // early returns leave Welcome untouched so the empty window keeps it.
+        self.remove_welcome_page();
         if let Some(ref coordinator) = monitoring {
             coordinator.resume_monitoring(session_id, &content);
         }

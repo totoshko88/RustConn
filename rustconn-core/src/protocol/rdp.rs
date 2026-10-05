@@ -134,6 +134,15 @@ impl RdpProtocol {
             if let Some(level) = rdp_config.tls_security_level {
                 args.push(format!("/tls-seclevel:{level}"));
             }
+            // KDC proxy for Kerberos, the same rule as `build_freerdp_args`.
+            if !rdp_config.disable_nla
+                && let Some(kerberos) = super::freerdp::freerdp_kerberos_arg(
+                    rdp_config.kerberos_enabled,
+                    rdp_config.kdc_proxy_url.as_deref(),
+                )
+            {
+                args.push(kerberos);
+            }
             // RD Gateway. FreeRDP 3.x removed the short `/g:` / `/gu:` aliases
             // in favour of the unified `/gateway:` option; the old aliases are
             // rejected as "Unexpected keyword" and the client exits before
@@ -443,5 +452,40 @@ mod gateway_syntax_tests {
         let args = RdpProtocol::build_args(&connection).expect("RDP arguments");
 
         assert!(args.contains(&"/gateway:g:gw.example.com:443".to_string()));
+    }
+}
+
+#[cfg(test)]
+mod kerberos_kdc_tests {
+    use super::*;
+
+    fn kerberos_connection(kerberos_enabled: bool, disable_nla: bool) -> Connection {
+        Connection::new(
+            "Kerberos RDP".to_string(),
+            "server.example.com".to_string(),
+            3389,
+            ProtocolConfig::Rdp(RdpConfig {
+                kerberos_enabled,
+                disable_nla,
+                kdc_proxy_url: Some("https://gw.example.com/KdcProxy".to_string()),
+                ..RdpConfig::default()
+            }),
+        )
+    }
+
+    /// The CLI builder passes the KDC proxy on exactly as `build_freerdp_args`
+    /// does: only with Kerberos on and NLA left enabled.
+    #[test]
+    fn build_args_passes_the_kdc_proxy_only_with_kerberos_and_nla() {
+        let args = RdpProtocol::build_args(&kerberos_connection(true, false)).expect("RDP args");
+        assert!(args.contains(&"/kerberos:kdc-url:gw.example.com".to_string()));
+
+        for connection in [
+            kerberos_connection(false, false),
+            kerberos_connection(true, true),
+        ] {
+            let args = RdpProtocol::build_args(&connection).expect("RDP args");
+            assert!(!args.iter().any(|arg| arg.starts_with("/kerberos")));
+        }
     }
 }

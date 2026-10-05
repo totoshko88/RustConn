@@ -54,9 +54,45 @@ unrecognised ID is not an error, it is a fallback.
 |-------|-------|---------------|
 | `rust-quality-check` | `qwen3-coder-next` | clippy is the arbiter |
 | `kirograph` | `claude-haiku-4.5` | graph answers are deterministic, but tool selection must not be |
+| `rust-implementer` | `claude-sonnet-4.6` | clippy, tests, two write guards and the caller's diff read are the arbiters; not the floor, because i18n/`SecretString` slips are silent |
 | `security-reviewer` | `claude-sonnet-4.6` | six mechanical checks, zero arbiters — a missed `SecretString` ships |
 | `uk-translation-reviewer` | `claude-sonnet-4.6` | Ukrainian morphology; only a reader can catch a wrong genitive |
+| `config-mapping-reviewer` | `claude-sonnet-4.6` | a stored-but-unread field compiles and passes clippy; only a reader finds it |
 | `unsafe-reviewer` | `claude-opus-4.5` | UB is not a re-run; fires only when a `-sys` crate changes |
+
+Built-in agents (`general-task-execution`, `context-gatherer`) have no profile
+file, so they cannot carry `model:` and `agent-model-guard` cannot see them —
+they run on the session model. That is why the table has local stand-ins.
+
+**Unverified at the time of writing (2026-10-05):** whether the IDE honours a
+profile's `model:` when a profile is invoked as a sub-agent. Session logs record
+no model for any `sub_agent_start`, and
+[kirodotdev/Kiro#6637](https://github.com/kirodotdev/Kiro/issues/6637) reports
+it does not. Probe: give `rust-quality-check` and `general-task-execution` the
+same trivial task and compare the turns' `usage_summary` credits. If the field is
+ignored, the profiles still pay off through their delegation rules below, not
+through their tier.
+
+## Delegation
+
+| Need | Use | Not |
+|------|-----|-----|
+| Implement a change in named files | `rust-implementer` | `general-task-execution` |
+| Find where/how something works | `kirograph_context`, then `kirograph` agent | `context-gatherer` for anything the graph answers |
+| Run the quality gate | `rust-quality-check`, **once** per change, by the caller | a gate run inside each delegate |
+| Judgement nothing re-checks | the reviewer profiles above | a generic agent |
+
+Measured in the 0.23 release turn (802 credits, 224 min): ten
+`general-task-execution` delegates made 1 077 tool calls, started cargo/verify
+44 times between them and spent ~94 calls checking whether a run had finished.
+Rules that follow:
+
+- A delegate compiles what it touched (`cargo check -p <crate>`) and stops. The
+  caller runs `verify.sh` once for the combined change.
+- Long runs are detached with a `.rc` sentinel (`shell-environment.md`), and a
+  delegate never waits on one in a loop.
+- Give a delegate the file list and the expected result, so it does not spend
+  its first calls rediscovering them.
 
 Note what this is: a **reallocation**, not a saving. Two frequently-invoked agents
 got cheaper, three audit agents got more expensive than the 1.0x default. That is

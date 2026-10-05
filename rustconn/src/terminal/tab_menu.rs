@@ -314,9 +314,6 @@ impl TerminalNotebook {
         let context_page_remove = context_page.clone();
         let session_info = self.session_info.clone();
         let sessions = self.sessions.clone();
-        let color_tabs_by_protocol = self.color_tabs_by_protocol.clone();
-        let split_session_colors = self.split_session_colors.clone();
-
         remove_group_action.connect_activate(move |_, _| {
             let target_page = context_page_remove.borrow().clone();
             let Some(target_page) = target_page else {
@@ -333,32 +330,11 @@ impl TerminalNotebook {
                 return;
             };
 
-            // Clear group from session info
-            let protocol = {
-                let mut info_ref = session_info.borrow_mut();
-                if let Some(info) = info_ref.get_mut(&session_id) {
-                    info.tab_group = None;
-                    info.tab_color_index = None;
-                    Some(info.protocol.clone())
-                } else {
-                    None
-                }
-            };
-
-            // Restore appropriate indicator — group no longer uses indicator_icon,
-            // so just restore protocol color if enabled
-            let has_split_color = split_session_colors.borrow().contains_key(&session_id);
-
-            if !has_split_color
-                && *color_tabs_by_protocol.borrow()
-                && let Some(ref proto) = protocol
-                && let Some(page) = sessions.borrow().get(&session_id)
-            {
-                let (r, g, b) = rustconn_core::get_protocol_color_rgb(proto);
-                if let Some(icon) = Self::create_protocol_color_icon(r, g, b, 16) {
-                    page.set_indicator_icon(Some(&icon));
-                    page.set_indicator_activatable(false);
-                }
+            // Clear group from session info. A group never used the indicator
+            // slot, so there is no indicator to restore.
+            if let Some(info) = session_info.borrow_mut().get_mut(&session_id) {
+                info.tab_group = None;
+                info.tab_color_index = None;
             }
 
             // Remove group label prefix from tab title

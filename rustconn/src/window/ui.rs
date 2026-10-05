@@ -12,9 +12,11 @@ use crate::i18n::i18n;
 /// Creates the header bar with title and controls
 ///
 /// Layout:
-/// - Left side (pack_start): Quick Connect, Add, Remove, Add Group
+/// - Left side (pack_start): Sidebar toggle
 /// - Center: Title + Spinner
-/// - Right side (pack_end): Menu, Settings, Split Vertical, Split Horizontal
+/// - Right side (pack_end): Menu, Settings, Split Down, Split Right, Shell,
+///   and the Broadcast / Group Broadcast / Passthrough indicators (shown only
+///   while relevant)
 ///
 /// Returns the header bar, the busy spinner widget (initially hidden),
 /// the passthrough indicator button (initially hidden), the
@@ -29,17 +31,24 @@ pub fn create_header_bar() -> (
     gtk4::ToggleButton,
     gtk4::ToggleButton,
     MenuButton,
-    Label,
+    adw::WindowTitle,
 ) {
+    // Window controls are left to libadwaita: inside an AdwOverlaySplitView an
+    // AdwHeaderBar hides the title buttons that are not at a window edge and
+    // brings them back when the sidebar is hidden or collapsed. Pinning the
+    // start side off here lost the controls for start-side layouts (macOS,
+    // elementary) as soon as the sidebar was hidden.
     let header_bar = adw::HeaderBar::new();
 
-    // Title area: label + spinner in a horizontal box
+    // Title area: an AdwWindowTitle (title + optional subtitle) in a box with
+    // the busy spinner. The subtitle shows the active connection's hierarchy
+    // path (group breadcrumb) when the user enables it, like Nautilus; the
+    // title mirrors the active connection name.
     let title_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
     title_box.set_halign(gtk4::Align::Center);
     title_box.set_valign(gtk4::Align::Center);
 
-    let title = Label::new(Some("RustConn"));
-    title.add_css_class("title");
+    let title = adw::WindowTitle::new("RustConn", "");
     title_box.append(&title);
 
     let busy_spinner = crate::spinner::new();
@@ -51,7 +60,12 @@ pub fn create_header_bar() -> (
     header_bar.set_title_widget(Some(&title_box));
 
     // === Left side (pack_start) - Primary connection actions ===
-    // Order: Sidebar Toggle, Quick Connect, Add, Remove, Add Group
+    // Order: Sidebar Toggle only.
+    // New Connection (+), New Group, Quick Connect and Delete are list actions
+    // and live in the sidebar's own headerbar (per-panel headers, GNOME
+    // Files/Settings style); the content header carries only session/window
+    // actions. The sidebar toggle stays here — it controls showing the sidebar,
+    // which is the content side's concern (like Files' show-sidebar button).
 
     // Sidebar toggle button
     let sidebar_toggle = Button::from_icon_name("sidebar-show-symbolic");
@@ -59,35 +73,6 @@ pub fn create_header_bar() -> (
     sidebar_toggle.set_action_name(Some("win.toggle-sidebar"));
     sidebar_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle Sidebar"))]);
     header_bar.pack_start(&sidebar_toggle);
-
-    // Quick connect button
-    let quick_connect_button = Button::from_icon_name("go-jump-symbolic");
-    quick_connect_button.set_tooltip_text(Some(&i18n("Quick Connect (Ctrl+Shift+Q)")));
-    quick_connect_button.set_action_name(Some("win.quick-connect"));
-    quick_connect_button
-        .update_property(&[gtk4::accessible::Property::Label(&i18n("Quick Connect"))]);
-    header_bar.pack_start(&quick_connect_button);
-
-    // Add connection button
-    let add_button = Button::from_icon_name("list-add-symbolic");
-    add_button.set_tooltip_text(Some(&i18n("New Connection (Ctrl+N)")));
-    add_button.set_action_name(Some("win.new-connection"));
-    add_button.update_property(&[gtk4::accessible::Property::Label(&i18n("New Connection"))]);
-    header_bar.pack_start(&add_button);
-
-    // Remove button (sensitive only when item selected)
-    let remove_button = Button::from_icon_name("list-remove-symbolic");
-    remove_button.set_tooltip_text(Some(&i18n("Delete Selected (Delete)")));
-    remove_button.set_action_name(Some("win.delete-connection"));
-    remove_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Delete Selected"))]);
-    header_bar.pack_start(&remove_button);
-
-    // Add group button
-    let add_group_button = Button::from_icon_name("folder-new-symbolic");
-    add_group_button.set_tooltip_text(Some(&i18n("New Group (Ctrl+Shift+G)")));
-    add_group_button.set_action_name(Some("win.new-group"));
-    add_group_button.update_property(&[gtk4::accessible::Property::Label(&i18n("New Group"))]);
-    header_bar.pack_start(&add_group_button);
 
     // === Right side (pack_end) - Secondary actions ===
 
@@ -105,27 +90,31 @@ pub fn create_header_bar() -> (
     menu_button.set_menu_model(Some(&menu));
     header_bar.pack_end(&menu_button);
 
-    // Add settings button
+    // Settings — standalone quick-access button (also in the primary menu).
+    // The user relies on one-click Settings; a menu-only entry was a
+    // productivity regression, so the cog is restored to the header.
     let settings_button = Button::from_icon_name("preferences-system-symbolic");
     settings_button.set_tooltip_text(Some(&i18n("Settings (Ctrl+,)")));
     settings_button.set_action_name(Some("win.settings"));
     settings_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Settings"))]);
     header_bar.pack_end(&settings_button);
 
-    // Add split view buttons
-    let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
-    split_vertical_button.set_tooltip_text(Some(&i18n("Split Vertical (Ctrl+Shift+S)")));
-    split_vertical_button.set_action_name(Some("win.split-vertical"));
-    split_vertical_button
-        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Vertical"))]);
-    header_bar.pack_end(&split_vertical_button);
-
+    // Split view — two standalone quick-access buttons instead of one grouped
+    // popover. Splitting is a frequent action; a dropdown added a click, so the
+    // separate Split Right / Split Down buttons are restored to the header.
     let split_horizontal_button = Button::from_icon_name("object-flip-vertical-symbolic");
-    split_horizontal_button.set_tooltip_text(Some(&i18n("Split Horizontal (Ctrl+Shift+H)")));
+    split_horizontal_button.set_tooltip_text(Some(&i18n("Split Down (Ctrl+Shift+H)")));
     split_horizontal_button.set_action_name(Some("win.split-horizontal"));
     split_horizontal_button
-        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Horizontal"))]);
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Down"))]);
     header_bar.pack_end(&split_horizontal_button);
+
+    let split_vertical_button = Button::from_icon_name("object-flip-horizontal-symbolic");
+    split_vertical_button.set_tooltip_text(Some(&i18n("Split Right (Ctrl+Shift+S)")));
+    split_vertical_button.set_action_name(Some("win.split-vertical"));
+    split_vertical_button
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Split Right"))]);
+    header_bar.pack_end(&split_vertical_button);
 
     // Shell button — prominent, icon + label, accent color, leftmost in right group
     let shell_button = Button::new();
@@ -138,7 +127,6 @@ pub fn create_header_bar() -> (
     shell_button.set_child(Some(&shell_box));
     shell_button.set_tooltip_text(Some(&i18n("Local Shell (Ctrl+Shift+T)")));
     shell_button.set_action_name(Some("win.local-shell"));
-    shell_button.add_css_class("flat");
     shell_button.add_css_class("accent");
     shell_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Open Local Shell"))]);
     header_bar.pack_end(&shell_button);
@@ -161,7 +149,6 @@ pub fn create_header_bar() -> (
         "Toggle split broadcast",
     ))]);
     broadcast_toggle.set_action_name(Some("win.toggle-broadcast"));
-    broadcast_toggle.add_css_class("flat");
     broadcast_toggle.add_css_class("pill");
     broadcast_toggle.set_visible(false);
     header_bar.pack_end(&broadcast_toggle);
@@ -186,7 +173,6 @@ pub fn create_header_bar() -> (
         "Toggle group broadcast",
     ))]);
     group_broadcast_toggle.set_action_name(Some("win.toggle-group-broadcast"));
-    group_broadcast_toggle.add_css_class("flat");
     group_broadcast_toggle.add_css_class("pill");
     group_broadcast_toggle.set_visible(false);
     header_bar.pack_end(&group_broadcast_toggle);
@@ -209,36 +195,22 @@ pub fn create_header_bar() -> (
     ))]);
     passthrough_indicator.set_action_name(Some("win.toggle-passthrough"));
     passthrough_indicator.add_css_class("warning");
-    passthrough_indicator.add_css_class("flat");
     passthrough_indicator.add_css_class("pill");
     passthrough_indicator.set_visible(false);
     header_bar.pack_end(&passthrough_indicator);
 
     // GNOME HIG (Pointer & Touch): icon-only buttons must meet the 44×44px
-    // minimum tap target. Buttons with a text label (Shell, Broadcast,
-    // Passthrough) already exceed it via their content.
-    //
-    // macOS has no touch input, and its native AppKit toolbar buttons sit
-    // around 28px. `AdwHeaderBar` derives its (CSS-immovable) minimum height
-    // from the tallest child, so a 44px size request here is exactly what keeps
-    // the header taller than a native window. Drop the floor to 28px on macOS
-    // so the CSS compact/macOS rules can actually take effect; keep 44px
-    // everywhere else for the tap-target guarantee.
-    let header_button_size: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };
+    // minimum tap target (28px on macOS — see `HEADER_BUTTON_SIZE`). Buttons
+    // with a text label (Shell, Broadcast, Passthrough) already exceed it via
+    // their content. The sidebar header uses the same constant, so both bars
+    // come out the same height.
+    let header_button_size = crate::sidebar_ui::HEADER_BUTTON_SIZE;
 
-    for icon_button in [
-        &sidebar_toggle,
-        &quick_connect_button,
-        &add_button,
-        &remove_button,
-        &add_group_button,
-        &settings_button,
-        &split_vertical_button,
-        &split_horizontal_button,
-    ] {
-        icon_button.set_size_request(header_button_size, header_button_size);
-    }
+    sidebar_toggle.set_size_request(header_button_size, header_button_size);
     menu_button.set_size_request(header_button_size, header_button_size);
+    settings_button.set_size_request(header_button_size, header_button_size);
+    split_horizontal_button.set_size_request(header_button_size, header_button_size);
+    split_vertical_button.set_size_request(header_button_size, header_button_size);
 
     (
         header_bar,
@@ -272,6 +244,8 @@ pub fn create_app_menu() -> gio::Menu {
         Some("win.new-connection-advanced"),
     );
     conn_section.append(Some(&i18n("New Group")), Some("win.new-group"));
+    // "Select Connections" (multi-select mode) acts on the connection list, so
+    // it lives in the sidebar's secondary menu, not here.
     conn_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
     conn_section.append(Some(&i18n("Local Shell")), Some("win.local-shell"));
     menu.append_section(None, &conn_section);

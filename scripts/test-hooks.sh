@@ -72,6 +72,7 @@ run_hook() {
     tmp=$(mktemp -d "$work/tmp.XXXXXX")
     out=$(printf '%s' "$2" | env PATH="$work/shim:$PATH" TMPDIR="$tmp" \
         FAKE_PGREP_PIDS="${3:-}" KIRO_EDIT_JOURNAL="$journal" \
+        KIRO_SESSION_REPORT="$work/report" \
         "$bin/$1" 2>/dev/null)
     rc=$?
 }
@@ -279,13 +280,71 @@ ceg pass 'a mention is not a commit' 'rustconn-core/src/spice_client/mod.rs' 'ec
 ceg ask 'a commit after git add' 'rustconn-core/src/spice_client/mod.rs' 'git add a && git commit -m x'
 
 # ── doc-claims-scan ──────────────────────────────────────────────────────────
-# A NOTE hook: it writes to the session report and always exits 0. Assert it
-# does not crash and exits 0 on a saved .rs payload (the FP-tolerant contract).
+# A NOTE hook: it writes to the session report and always exits 0. The report is
+# redirected to "$work/report" (run_hook sets KIRO_SESSION_REPORT), so this suite
+# — and verify.sh, which runs it — never writes into the real one.
 g=doc-claims-scan.sh
 dcs_payload=$(jq -cn --arg f "rustconn-core/src/search/mod.rs" '{file_path: $f}')
 expect_exit 0 "$g" 'exits 0 on a real .rs save' "$dcs_payload"
 expect_exit 0 "$g" 'exits 0 on a non-rs file' "$(jq -cn '{file_path: "docs/x.md"}')"
 expect_exit 0 "$g" 'exits 0 with no file_path' '{}'
+
+# What it reports, against a scratch repo so nothing in this checkout is touched.
+sr="$work/scratch-repo"
+mkdir -p "$sr/demo/src" "$sr/target/src"
+git -C "$sr" init -q 2>/dev/null
+cat >"$sr/demo/src/lib.rs" <<'EOF'
+/// Committed claim about `ghost_committed`.
+pub struct Conn { jump_host_id: u32 }
+pub fn open(retry_count: u8) -> bool { let _ = retry_count; true }
+EOF
+git -C "$sr" add -A && git -C "$sr" -c user.name=t -c user.email=t@t commit -qm init 2>/dev/null
+printf '%s\n' '/// Uses `jump_host_id`, `retry_count`, `true` and `self`.' \
+    '/// Mentions `ghost_function` twice: `ghost_function`.' >"$sr/demo/src/new.rs"
+cp "$sr/demo/src/new.rs" "$sr/target/src/new.rs"
+dcs() { # dcs <label> <file> <expected-finding-count>
+    local n
+    run_hook "$g" "$(jq -cn --arg f "$sr/$2" '{file_path: $f}')"
+    n=$(grep -c '^doc-claims:' "$work/report" 2>/dev/null || true)
+    if [ "${n:-0}" = "$3" ]; then
+        report ok "$g: $1"
+    else
+        report FAIL "$g: $1" "expected $3 finding(s), got ${n:-0}"
+    fi
+}
+rm -f "$work/report"
+dcs 'fields, params and literals count as found; only the ghost is reported' demo/src/new.rs 1
+dcs 'a second save of the same file does not duplicate the finding' demo/src/new.rs 1
+rm -f "$work/report"
+dcs 'a claim on an already committed line is not re-reported' demo/src/lib.rs 0
+dcs 'target/ is never scanned' target/src/new.rs 0
+rm -f "$work/report"
+
+# ── session-report flush ─────────────────────────────────────────────────────
+# The flush output lands in the user's prompt: it must be de-duplicated and
+# capped, with the overflow kept in <report>.full rather than dropped.
+g=session-report.sh
+{
+    for i in $(seq 1 30); do printf 'dup line\n'; done
+    for i in $(seq 1 120); do printf 'finding %s\n' "$i"; done
+} >"$work/report"
+out=$(KIRO_SESSION_REPORT="$work/report" "$bin/$g" flush 2>/dev/null)
+lines=$(printf '%s\n' "$out" | wc -l | tr -d ' ')
+dups=$(printf '%s\n' "$out" | grep -cx 'dup line' || true)
+if [ "$lines" -le 41 ] && [ "$dups" = 1 ] && [ ! -e "$work/report" ] &&
+    grep -qx 'finding 120' "$work/report.full" 2>/dev/null; then
+    report ok "$g: flush de-duplicates, caps at 40 lines and keeps the rest in .full"
+else
+    report FAIL "$g: flush cap" "printed $lines lines, 'dup line' x$dups, report gone=$([ -e "$work/report" ] && echo no || echo yes)"
+fi
+printf 'one\n' >"$work/report"
+rm -f "$work/report.full"
+out=$(KIRO_SESSION_REPORT="$work/report" "$bin/$g" flush 2>/dev/null)
+if [ "$out" = one ] && [ ! -e "$work/report.full" ]; then
+    report ok "$g: a short report is printed as-is, with no .full"
+else
+    report FAIL "$g: short flush" "got '$out'"
+fi
 
 # ── matchers in .kiro/hooks/*.json ───────────────────────────────────────────
 # Written anchored, so substring and full-match semantics agree.
@@ -329,6 +388,21 @@ for f in .kiro/hooks/*.json; do
     else
         report FAIL "$(basename "$f")" 'timeout sits inside action, where the engine ignores it'
     fi
+done
+
+# Every script a hook execs must be executable, in the tree and in git. A
+# 100644 kirograph-sync.sh failed with EACCES on every Stop for a week and looked,
+# from the outside, exactly like a hook that ran and found nothing.
+for f in .kiro/hooks/*.json; do
+    while IFS= read -r s; do
+        [ -n "$s" ] || continue
+        mode=$(git ls-files -s -- "$s" 2>/dev/null | cut -d' ' -f1)
+        if [ -x "$s" ] && { [ -z "$mode" ] || [ "$mode" = 100755 ]; }; then
+            report ok "$(basename "$f"): $s is executable"
+        else
+            report FAIL "$(basename "$f"): $s" "not executable (tree -x: $([ -x "$s" ] && echo yes || echo no), git mode: ${mode:-untracked})"
+        fi
+    done < <(jq -r '.hooks[].action.command // empty' "$f" | grep -oE '\.kiro/hooks/bin/[A-Za-z0-9_.-]+\.sh' | sort -u)
 done
 
 printf 'test-hooks: %d passed, %d failed\n' "$pass" "$fail"

@@ -353,6 +353,21 @@ fn show_vault_store_failed_dialog(
     });
 }
 
+/// How long a "Load from vault" button waits for a `Bitwarden` auto-unlock
+/// before reporting timeout.
+///
+/// 30 seconds covers the worst case where the user has to type the master
+/// password in an interactive prompt; below that, slow GPG/keyring backends
+/// would falsely time out. Shared by the connection and group dialogs so the
+/// two load buttons cannot drift apart.
+pub(crate) const BITWARDEN_UNLOCK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// How long a "Load from vault" button waits for a single vault retrieve
+/// before reporting timeout.
+///
+/// 10 seconds is the standard project-wide vault budget — see `secrets-guide.md`.
+pub(crate) const VAULT_RETRIEVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// How long one vault operation may take before the GUI stops waiting for it.
 ///
 /// Two budgets, because the backends are two different kinds of thing and until
@@ -544,6 +559,7 @@ pub fn save_password_to_vault(
             let key_file = settings.secrets.kdbx_key_file.clone();
             let db_password = settings.secrets.kdbx_password.clone();
             let yubikey_slot = settings.secrets.kdbx_yubikey_slot.clone();
+            let read_only = settings.secrets.kdbx_read_only;
             let entry_name = if let Some(c) = conn {
                 let entry_path =
                     rustconn_core::secret::KeePassHierarchy::build_entry_path(c, groups);
@@ -586,6 +602,7 @@ pub fn save_password_to_vault(
                         &pwd,
                         Some(&url),
                         yubikey_slot.as_deref(),
+                        read_only,
                     )
                 },
                 move |result| {
@@ -741,6 +758,7 @@ pub fn save_group_password_to_vault(
             let key_file = settings.secrets.kdbx_key_file.clone();
             let db_password = settings.secrets.kdbx_password.clone();
             let yubikey_slot = settings.secrets.kdbx_yubikey_slot.clone();
+            let read_only = settings.secrets.kdbx_read_only;
             let entry_name = group_path
                 .strip_prefix("RustConn/")
                 .unwrap_or(group_path)
@@ -765,6 +783,7 @@ pub fn save_group_password_to_vault(
                         &password_val,
                         None,
                         yubikey_slot.as_deref(),
+                        read_only,
                     )
                 },
                 move |result| {
@@ -1015,6 +1034,7 @@ pub fn migrate_vault_credential_for_edit(
             old_key,
             &plan.new_key,
             settings.secrets.kdbx_yubikey_slot.as_deref(),
+            settings.secrets.kdbx_read_only,
         )
         .map_err(|e| format!("{e}"));
     }
@@ -1026,6 +1046,19 @@ pub fn migrate_vault_credential_for_edit(
             continue;
         }
         if let Ok(Some(creds)) = dispatch_vault_op(&secret_settings, old_key, VaultOp::Retrieve) {
+            // The vault lock is taken per operation, not across this triple, so
+            // a save under the new key can land between the retrieve and the
+            // store (a Group Sync migration runs after the new tree is already
+            // live). A credential already under the new key is the newer one:
+            // keep it and only drop the stale copy.
+            if matches!(
+                dispatch_vault_op(&secret_settings, &plan.new_key, VaultOp::Retrieve),
+                Ok(Some(_))
+            ) {
+                tracing::info!(%old_key, new_key = %plan.new_key, "New vault key already holds a credential; keeping it");
+                let _ = dispatch_vault_op(&secret_settings, old_key, VaultOp::Delete);
+                return Ok(());
+            }
             dispatch_vault_op(&secret_settings, &plan.new_key, VaultOp::Store(&creds))?;
             let _ = dispatch_vault_op(&secret_settings, old_key, VaultOp::Delete);
             return Ok(());
@@ -1119,6 +1152,125 @@ pub fn migrate_vault_entries_on_group_change(
             backend_type,
         );
     }
+}
+
+/// Migrates every vault entry a Group Sync import moved, on one background
+/// thread, one entry after another.
+///
+/// A sync can rename and move groups and connections in a single pass, so the
+/// old keys come from `old_groups` and the pre-sync connections and the new
+/// keys from `new_groups` and the applied connections — the split
+/// [`migrate_vault_credential_for_edit`] makes for an edit. Each pair in
+/// `connections` is `(before, after)`; a pair whose key did not move is
+/// dropped before anything is spawned. For KeePass, the group credentials of
+/// `changed_group_ids` and their descendants are renamed as well, as
+/// [`migrate_vault_entries_on_group_change`] does for an edit.
+///
+/// One thread rather than one per entry: the KDBX writers rewrite the whole
+/// database, and two running at once would lose one of the renames. A failed
+/// migration — a read-only database included — is logged; it never undoes the
+/// sync, and the credential stays readable under its old key.
+pub fn migrate_vault_entries_after_group_sync(
+    settings: &rustconn_core::config::AppSettings,
+    old_groups: Vec<rustconn_core::models::ConnectionGroup>,
+    new_groups: Vec<rustconn_core::models::ConnectionGroup>,
+    connections: Vec<(
+        rustconn_core::models::Connection,
+        rustconn_core::models::Connection,
+    )>,
+    changed_group_ids: &[uuid::Uuid],
+) {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::KeePassHierarchy;
+
+    let connections: Vec<_> = connections
+        .into_iter()
+        .filter(|(old, new)| {
+            new.password_source == rustconn_core::models::PasswordSource::Vault
+                && plan_vault_key_migration(settings, &old_groups, &new_groups, old, new).is_some()
+        })
+        .collect();
+
+    let is_keepass = settings.secrets.kdbx_enabled
+        && matches!(
+            settings.secrets.preferred_backend,
+            SecretBackendType::KeePassXc | SecretBackendType::KdbxFile
+        );
+    let mut group_renames: Vec<(String, String)> = Vec::new();
+    if is_keepass {
+        let mut affected: std::collections::HashSet<uuid::Uuid> = std::collections::HashSet::new();
+        for gid in changed_group_ids {
+            affected.extend(rustconn_core::models::collect_descendant_group_ids(
+                *gid,
+                &new_groups,
+            ));
+        }
+        for new_group in new_groups.iter().filter(|g| affected.contains(&g.id)) {
+            if new_group.password_source != Some(rustconn_core::models::PasswordSource::Vault) {
+                continue;
+            }
+            let Some(old_group) = old_groups.iter().find(|g| g.id == new_group.id) else {
+                continue;
+            };
+            let old_path = KeePassHierarchy::build_group_entry_path(old_group, &old_groups);
+            let new_path = KeePassHierarchy::build_group_entry_path(new_group, &new_groups);
+            if old_path != new_path {
+                group_renames.push((old_path, new_path));
+            }
+        }
+    }
+
+    if connections.is_empty() && group_renames.is_empty() {
+        return;
+    }
+
+    let settings = settings.clone();
+    crate::utils::spawn_blocking_with_callback(
+        move || {
+            let mut errors: Vec<String> = Vec::new();
+            for (old_conn, new_conn) in &connections {
+                if let Err(e) = migrate_vault_credential_for_edit(
+                    &settings,
+                    &old_groups,
+                    &new_groups,
+                    old_conn,
+                    new_conn,
+                ) {
+                    errors.push(format!("{}: {e}", new_conn.name));
+                }
+            }
+            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+                let key_file = settings.secrets.kdbx_key_file.clone();
+                for (old_key, new_key) in &group_renames {
+                    tracing::info!(%old_key, %new_key, "Migrating KeePass group entry after Group Sync");
+                    if let Err(e) = rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
+                        std::path::Path::new(kdbx_path),
+                        settings.secrets.kdbx_password.as_ref(),
+                        key_file.as_ref().map(std::path::Path::new),
+                        old_key,
+                        new_key,
+                        settings.secrets.kdbx_yubikey_slot.as_deref(),
+                        settings.secrets.kdbx_read_only,
+                    ) {
+                        errors.push(format!("{old_key} → {new_key}: {e}"));
+                    }
+                }
+            }
+            if errors.is_empty() {
+                Ok(())
+            } else {
+                Err(errors.join("; "))
+            }
+        },
+        |result: Result<(), String>| {
+            if let Err(e) = result {
+                tracing::warn!(
+                    error = %e,
+                    "Group Sync: some vault entries could not follow a rename or move"
+                );
+            }
+        },
+    );
 }
 
 /// Migrates keyring connection entries whose key embeds a renamed group path.
@@ -1276,6 +1428,7 @@ fn migrate_keepass_entries_on_group_change(
     let key_file = settings.secrets.kdbx_key_file.clone();
     let db_password = settings.secrets.kdbx_password.clone();
     let yubikey_slot = settings.secrets.kdbx_yubikey_slot.clone();
+    let read_only = settings.secrets.kdbx_read_only;
 
     crate::utils::spawn_blocking_with_callback(
         move || {
@@ -1292,6 +1445,7 @@ fn migrate_keepass_entries_on_group_change(
                     old_key,
                     new_key,
                     yubikey_slot.as_deref(),
+                    read_only,
                 ) {
                     errors.push(format!("{old_key} → {new_key}: {e}"));
                 }
@@ -1361,16 +1515,22 @@ pub fn save_variable_to_vault(
                     password,
                     None,
                     settings.kdbx_yubikey_slot.as_deref(),
-                )
-                .map_err(|e| format!("{e}"));
+                    settings.kdbx_read_only,
+                );
 
-                // If KeePass save failed and fallback is enabled, try LibSecret
-                if result.is_err() && settings.enable_fallback {
-                    tracing::info!(var_name, "KeePass save failed, falling back to LibSecret");
-                    dispatch_vault_op(settings, &lookup_key, VaultOp::Store(&creds))?;
-                    Ok(())
-                } else {
-                    result
+                match result {
+                    Ok(()) => Ok(()),
+                    // Read-only is the user's refusal, not an outage: writing the
+                    // keyring instead would violate it and leave a copy that
+                    // shadows the database's own value.
+                    Err(e @ rustconn_core::error::SecretError::ReadOnly(_)) => Err(format!("{e}")),
+                    // If KeePass save failed and fallback is enabled, try LibSecret
+                    Err(_) if settings.enable_fallback => {
+                        tracing::info!(var_name, "KeePass save failed, falling back to LibSecret");
+                        dispatch_vault_op(settings, &lookup_key, VaultOp::Store(&creds))?;
+                        Ok(())
+                    }
+                    Err(e) => Err(format!("{e}")),
                 }
             } else if settings.enable_fallback {
                 tracing::info!(
@@ -1539,10 +1699,10 @@ fn retrieve_by_vault_entry_name(
                     }
                     SecretBackendType::OnePassword => {
                         // 1Password: use `op item get "{name}" --fields password`
-                        let mut backend = rustconn_core::secret::OnePasswordBackend::new();
-                        if let Some(ref token) = settings.onepassword_service_account_token {
-                            backend.set_service_account_token(token.clone());
-                        }
+                        let backend =
+                            rustconn_core::secret::OnePasswordBackend::from_secret_settings(
+                                settings,
+                            );
                         let creds = backend
                             .retrieve(entry_name)
                             .await
@@ -1566,13 +1726,8 @@ fn retrieve_by_vault_entry_name(
                         }))
                     }
                     SecretBackendType::Passbolt => {
-                        let mut backend = rustconn_core::secret::PassboltBackend::new();
-                        if let Some(ref url) = settings.passbolt_server_url {
-                            backend = backend.with_server_address(url.clone());
-                        }
-                        if let Some(ref passphrase) = settings.passbolt_passphrase {
-                            backend = backend.with_user_password(passphrase.clone());
-                        }
+                        let backend =
+                            rustconn_core::secret::PassboltBackend::from_secret_settings(settings);
                         let creds = backend
                             .retrieve(entry_name)
                             .await
@@ -1820,6 +1975,7 @@ pub fn delete_vault_credential(
                     key,
                     &full_entry_path,
                     settings.secrets.kdbx_yubikey_slot.as_deref(),
+                    settings.secrets.kdbx_read_only,
                 )
                 .map_err(|e| format!("{e}"))
             } else {
@@ -1998,6 +2154,7 @@ pub fn delete_group_vault_credential(
                     key,
                     &group_path,
                     settings.secrets.kdbx_yubikey_slot.as_deref(),
+                    settings.secrets.kdbx_read_only,
                 )
                 .map_err(|e| format!("{e}"))
             } else {
@@ -2084,6 +2241,7 @@ pub fn copy_vault_credential(
                         &pwd,
                         Some(&url),
                         settings.secrets.kdbx_yubikey_slot.as_deref(),
+                        settings.secrets.kdbx_read_only,
                     )
                     .map_err(|e| format!("{e}"))?;
                 }
@@ -2195,23 +2353,15 @@ fn build_single_backend(
             .map_err(|_| "Bitwarden auto-unlock timed out after 30s".to_string())?
             .map_err(|e| format!("{e}"))
         })?),
-        SecretBackendType::OnePassword => {
-            let mut backend = rustconn_core::secret::OnePasswordBackend::new();
-            if let Some(ref token) = secret_settings.onepassword_service_account_token {
-                backend.set_service_account_token(token.clone());
-            }
-            std::sync::Arc::new(backend)
-        }
-        SecretBackendType::Passbolt => {
-            let mut backend = rustconn_core::secret::PassboltBackend::new();
-            if let Some(ref url) = secret_settings.passbolt_server_url {
-                backend = backend.with_server_address(url.clone());
-            }
-            if let Some(ref passphrase) = secret_settings.passbolt_passphrase {
-                backend = backend.with_user_password(passphrase.clone());
-            }
-            std::sync::Arc::new(backend)
-        }
+        // `from_secret_settings` (and `auto_unlock` above) carry the read-only and
+        // root-search toggles; building these by hand dropped them, so every
+        // write routed through here ignored read-only mode.
+        SecretBackendType::OnePassword => std::sync::Arc::new(
+            rustconn_core::secret::OnePasswordBackend::from_secret_settings(secret_settings),
+        ),
+        SecretBackendType::Passbolt => std::sync::Arc::new(
+            rustconn_core::secret::PassboltBackend::from_secret_settings(secret_settings),
+        ),
         SecretBackendType::Pass => std::sync::Arc::new(
             rustconn_core::secret::PassBackend::from_secret_settings(secret_settings),
         ),
@@ -2442,6 +2592,9 @@ enum TransferPort {
         /// `YubiKey` Challenge-Response slot (`slot[:serial]`), when the database
         /// uses one as a second factor. Passed through to `keepassxc-cli` as `-y`.
         yubikey_slot: Option<String>,
+        /// `SecretSettings::kdbx_read_only`. A transfer *into* a read-only
+        /// database is refused per entry by the writer itself.
+        read_only: bool,
     },
 }
 
@@ -2503,6 +2656,7 @@ impl TransferPort {
                 .map(std::sync::Arc::new),
             key_file: settings.secrets.kdbx_key_file.clone(),
             yubikey_slot: settings.secrets.kdbx_yubikey_slot.clone(),
+            read_only: settings.secrets.kdbx_read_only,
         })
     }
 
@@ -2530,6 +2684,7 @@ impl TransferPort {
                     db_password,
                     key_file,
                     yubikey_slot,
+                    read_only: _,
                 } => {
                     let path = path.clone();
                     let db_password = db_password.as_ref().map(std::sync::Arc::clone);
@@ -2613,7 +2768,9 @@ impl TransferPort {
                 db_password,
                 key_file,
                 yubikey_slot,
+                read_only,
             } => {
+                let read_only = *read_only;
                 let Some(password) = creds.password.as_ref() else {
                     return Err("the entry has no password to write".to_string());
                 };
@@ -2641,6 +2798,7 @@ impl TransferPort {
                                 &entry_password,
                                 None,
                                 yubikey_slot.as_deref(),
+                                read_only,
                             )
                         }),
                     )
@@ -3308,6 +3466,43 @@ mod tests {
     fn select_backend_libsecret() {
         let s = default_secret_settings(SecretBackendType::LibSecret);
         assert_eq!(select_backend_for_load(&s), SecretBackendType::LibSecret);
+    }
+
+    /// The direct-dispatch path (migrations, deletes, copies, transfers) must
+    /// build CLI backends with the persisted read-only toggle, or those writes
+    /// ignore read-only mode while the main save path honours it.
+    #[test]
+    fn single_backend_carries_the_read_only_toggle() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        for (backend_type, settings) in [
+            (
+                SecretBackendType::OnePassword,
+                SecretSettings {
+                    onepassword_read_only: true,
+                    ..default_secret_settings(SecretBackendType::OnePassword)
+                },
+            ),
+            (
+                SecretBackendType::Passbolt,
+                SecretSettings {
+                    passbolt_read_only: true,
+                    ..default_secret_settings(SecretBackendType::Passbolt)
+                },
+            ),
+            (
+                SecretBackendType::Pass,
+                SecretSettings {
+                    pass_read_only: true,
+                    ..default_secret_settings(SecretBackendType::Pass)
+                },
+            ),
+        ] {
+            let backend = build_single_backend(&settings, backend_type, &rt).unwrap();
+            assert!(
+                backend.is_read_only(),
+                "{backend_type:?} lost its read-only toggle"
+            );
+        }
     }
 
     #[test]

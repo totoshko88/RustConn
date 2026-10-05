@@ -18,6 +18,7 @@ mod fullscreen_header;
 mod group_broadcast;
 mod groups;
 mod history_actions;
+mod macro_dispatch;
 mod navigation_actions;
 mod network_monitor;
 mod operations;
@@ -298,6 +299,10 @@ pub struct MainWindow {
     split_container: gtk4::Box,
     state: SharedAppState,
     overlay_split_view: adw::OverlaySplitView,
+    /// Content-header title widget. Held so settings-apply can refresh the
+    /// Nautilus-style hierarchy-path subtitle live when the toggle changes,
+    /// not only on the next tab switch.
+    header_title: adw::WindowTitle,
     /// Registry of external viewer sessions (VNC/RDP/SPICE delegated to a
     /// separate viewer process, issue #209). Tracks child processes and drives
     /// sidebar session-count + history via callbacks; watched by a shared timer.
@@ -354,6 +359,79 @@ pub struct MainWindow {
     /// responding). Shown at startup by `check_secret_backend_available`;
     /// its action button opens Settings → Secrets (#201).
     secret_banner: adw::Banner,
+}
+
+/// Content-header buttons the medium (≤ 820sp) breakpoint hides, by action name.
+const MEDIUM_HIDDEN: [&str; 2] = ["win.split-vertical", "win.split-horizontal"];
+
+/// Content-header buttons the narrow (≤ 600sp) breakpoint hides, by action name.
+/// Repeats the medium tier: only one breakpoint applies at a time.
+const NARROW_HIDDEN: [&str; 4] = [
+    "win.split-vertical",
+    "win.split-horizontal",
+    "win.settings",
+    "win.local-shell",
+];
+
+/// Builds the body of the "jump host unavailable" question (issue #345).
+///
+/// Three short paragraphs, each a whole translatable sentence: what is wrong
+/// with which connection's Jump Host setting, where an inherited setting comes
+/// from, and what connecting now actually does — derived from
+/// [`rustconn_core::connection::jump_chain::bastion_fallback`], so it never
+/// says "directly" while a ProxyJump or the live part of the chain still applies.
+pub(crate) fn skipped_bastion_body(
+    state: &crate::state::AppState,
+    conn: &rustconn_core::Connection,
+    skipped: &crate::state::SkippedBastion,
+) -> String {
+    use crate::i18n::{i18n, i18n_f};
+    use rustconn_core::connection::jump_chain::{
+        BastionFallback, BastionRefOrigin, DanglingReason,
+    };
+
+    let dangling = &skipped.dangling;
+    let source_name = state
+        .get_connection(dangling.source_id)
+        .map_or_else(|| conn.name.clone(), |c| c.name.clone());
+
+    let mut paragraphs = vec![match dangling.reason {
+        DanglingReason::Missing => i18n_f(
+            "The jump host set for “{}” no longer exists.",
+            &[&source_name],
+        ),
+        DanglingReason::SelfReference => i18n_f(
+            "“{}” is set to use itself as its jump host.",
+            &[&source_name],
+        ),
+    }];
+    match dangling.origin {
+        BastionRefOrigin::Connection => {}
+        BastionRefOrigin::Group(group_id) => {
+            let group_name = state
+                .get_group(group_id)
+                .map(|g| g.name.clone())
+                .unwrap_or_default();
+            paragraphs.push(i18n_f(
+                "The setting is inherited from the group “{}”.",
+                &[&group_name],
+            ));
+        }
+        BastionRefOrigin::Network => {
+            paragraphs.push(i18n("The setting is the Global Jump Host in Settings."));
+        }
+    }
+    paragraphs.push(match skipped.fallback {
+        BastionFallback::Direct => i18n_f(
+            "Connecting to “{}” now reaches the server directly, without a jump host.",
+            &[&conn.name],
+        ),
+        BastionFallback::RemainingRoute => i18n_f(
+            "Connecting to “{}” now skips that jump host and uses only the rest of its configured route.",
+            &[&conn.name],
+        ),
+    });
+    paragraphs.join("\n\n")
 }
 
 impl MainWindow {
@@ -418,7 +496,7 @@ impl MainWindow {
         // the WM title read by time-tracking tools. One-way binding: whenever
         // `update_window_title` sets the window title, the label follows.
         window
-            .bind_property("title", &header_title, "label")
+            .bind_property("title", &header_title, "title")
             .sync_create()
             .build();
 
@@ -598,17 +676,14 @@ impl MainWindow {
             });
         }
 
-        // Apply initial protocol tab coloring setting
+        // Apply initial reconnect-history and sidebar settings
         if let Ok(state_ref) = state.try_borrow() {
-            terminal_notebook
-                .set_color_tabs_by_protocol(state_ref.settings().ui.color_tabs_by_protocol);
             terminal_notebook.set_keep_history_on_reconnect(
                 state_ref.settings().terminal.keep_history_on_reconnect,
             );
             terminal_notebook.set_max_scrollback_on_reconnect(
                 state_ref.settings().terminal.max_scrollback_on_reconnect,
             );
-            sidebar.set_filter_visible(state_ref.settings().ui.show_protocol_filters);
             sidebar.set_smart_folders_visible(state_ref.settings().ui.show_smart_folders);
         }
 
@@ -654,6 +729,30 @@ impl MainWindow {
                     connection_id,
                 );
             });
+
+            // Group-path subtitle. When the active tab changes, set the content
+            // header's subtitle to the active connection's group path (e.g.
+            // "AWS Test Lab / Prod"), gated on the `window_title_shows_path`
+            // setting. The WM window title (issue #211) is untouched — this only
+            // drives the AdwWindowTitle subtitle. The handler lives on the
+            // notebook's own TabView, so it holds the notebook weakly.
+            {
+                let header_title_for_sub = header_title.clone();
+                let state_for_sub = state.clone();
+                let notebook_for_sub = Rc::downgrade(&terminal_notebook);
+                terminal_notebook
+                    .tab_view()
+                    .connect_selected_page_notify(move |_tab_view| {
+                        let Some(notebook) = notebook_for_sub.upgrade() else {
+                            return;
+                        };
+                        Self::refresh_header_subtitle(
+                            &header_title_for_sub,
+                            &notebook,
+                            &state_for_sub,
+                        );
+                    });
+            }
         }
 
         // Focus-based accelerator suspend (#197): when the VTE gains focus,
@@ -665,7 +764,14 @@ impl MainWindow {
         {
             let state_for_focus = state.clone();
             let app_weak = app.downgrade();
+            let window_for_focus = window.downgrade();
             terminal_notebook.set_on_terminal_focus(move |focused| {
+                // Command-macro accels live only while a terminal has focus, and
+                // follow focus between split panes; the dispatcher re-reads the
+                // focused session on the next idle.
+                if let Some(window) = window_for_focus.upgrade() {
+                    macro_dispatch::request_refresh(&window);
+                }
                 let passthrough = with_state(&state_for_focus, |s| {
                     s.settings().ui.terminal_passthrough_ctrl
                 });
@@ -864,14 +970,21 @@ impl MainWindow {
 
         // Note: drag-and-drop is set up in connect_signals after we have access to notebook
 
-        overlay_split_view.set_content(Some(&terminal_container));
+        // Per-panel headerbars (GNOME Files/Settings style): the window has NO
+        // single full-width titlebar. The content side is an AdwToolbarView
+        // whose top bar is the header + banners and whose content is the
+        // terminal container; it becomes the OverlaySplitView's content, so the
+        // split renders as two distinct panels with their own headers and a
+        // vertical divider between them. (The sidebar carries its own headerbar
+        // from §1.) `terminal_container` is wired into this toolbar view below,
+        // once its top bars are attached.
 
-        // Create toast overlay and wrap the split view
+        // Create toast overlay — wraps the whole split view (set below).
         let toast_overlay = Rc::new(ToastOverlay::new());
-        toast_overlay.set_child(Some(&overlay_split_view));
 
-        // Create main layout using adw::ToolbarView for proper libadwaita integration
-        // This provides better responsive behavior and follows GNOME HIG
+        // Content-panel layout: adw::ToolbarView carrying the header + banners
+        // above the terminal container. This is the content side of the split
+        // (NOT a window-level full-width bar).
         let toolbar_view = adw::ToolbarView::new();
         // The header goes in through the fullscreen chrome, which hides it — and
         // the tab bar it adopts in fullscreen — as one block (issue #354). It
@@ -973,24 +1086,35 @@ impl MainWindow {
         });
         toolbar_view.add_top_bar(&group_broadcast_banner);
 
-        toolbar_view.set_content(Some(toast_overlay.widget()));
+        // The content panel's body is the terminal container (header + banners
+        // sit above it in this same toolbar view).
+        toolbar_view.set_content(Some(&terminal_container));
+
+        // The content toolbar view IS the split's content side; the sidebar
+        // side carries its own headerbar. The split then wraps in the toast
+        // overlay, which wraps in the tab overview — no window-level full-width
+        // header anywhere, so the two panels render with their own headers and a
+        // divider between them (GNOME Files/Settings).
+        overlay_split_view.set_content(Some(&toolbar_view));
+        toast_overlay.set_child(Some(&overlay_split_view));
 
         // Wrap everything with TabOverview — must be the outermost widget
         // so it can overlay the entire window content (GNOME Web pattern)
         let tab_overview = terminal_notebook.tab_overview();
-        tab_overview.set_child(Some(&toolbar_view));
+        tab_overview.set_child(Some(toast_overlay.widget()));
         // Clip overflow to prevent the TabOverview from requesting more space
         // than the window provides when embedded RDP sessions have large framebuffers
         tab_overview.set_overflow(gtk4::Overflow::Hidden);
 
         window.set_content(Some(tab_overview));
 
-        // Fullscreen hides the header bar and the tab bar together — the
-        // banners stay — and brings them back on a top-edge hover, F10 or a tab
+        // Fullscreen hides the header bar, the tab bar and the sidebar — the
+        // banners stay — and brings the bars back on a top-edge hover, F10 or a tab
         // switch (issue #354).
         fullscreen_header::install(
             &window,
             &toolbar_view,
+            &overlay_split_view,
             fullscreen_chrome,
             &menu_button,
             &terminal_notebook,
@@ -1014,13 +1138,14 @@ impl MainWindow {
         // Thresholds are chosen so each tier's resulting minimum width is BELOW
         // the next (narrower) tier's threshold — otherwise the window's minimum
         // plateaus at a tier boundary and a single drag "sticks" there, needing
-        // a second drag to continue (the reported jank). With the full header ≈
-        // 794 px:
+        // a second drag to continue (the reported jank). The content header
+        // holds only session/window actions since 0.23 (the list actions moved
+        // to the sidebar and the primary menu):
         // - medium ≤ 820sp: collapse + hide the sidebar (F9-style) and hide the
-        //   split-view buttons, Delete and New Group → header ≈ 578 px (< 600).
-        // - narrow ≤ 600sp: everything above, plus hide Quick Connect, Settings
-        //   and the Shell pill → header ≈ 390 px, leaving only Sidebar toggle,
-        //   New Connection and the menu beside the window controls.
+        //   two split buttons (`MEDIUM_HIDDEN`).
+        // - narrow ≤ 600sp: everything above, plus Settings and the Shell pill
+        //   (`NARROW_HIDDEN`), leaving the Sidebar toggle and the primary menu
+        //   beside the window controls. Both stay reachable from the menu.
         // The sidebar is hidden (show-sidebar = false), not shown as an overlay,
         // when collapsed; F9 / the edge gesture still reveals it as an overlay.
         // Growing the window past a threshold restores the hidden setters.
@@ -1041,12 +1166,7 @@ impl MainWindow {
         if let Some(title) = title_widget.as_ref() {
             bp_medium.add_setter(title, "visible", Some(&hide_flag));
         }
-        for action in [
-            "win.split-vertical",
-            "win.split-horizontal",
-            "win.delete-connection",
-            "win.new-group",
-        ] {
+        for action in MEDIUM_HIDDEN {
             if let Some(btn) = Self::header_button(&header_bar, action) {
                 bp_medium.add_setter(&btn, "visible", Some(&hide_flag));
             }
@@ -1064,15 +1184,7 @@ impl MainWindow {
         if let Some(title) = title_widget.as_ref() {
             bp_narrow.add_setter(title, "visible", Some(&hide_flag));
         }
-        for action in [
-            "win.split-vertical",
-            "win.split-horizontal",
-            "win.delete-connection",
-            "win.new-group",
-            "win.quick-connect",
-            "win.settings",
-            "win.local-shell",
-        ] {
+        for action in NARROW_HIDDEN {
             if let Some(btn) = Self::header_button(&header_bar, action) {
                 bp_narrow.add_setter(&btn, "visible", Some(&hide_flag));
             }
@@ -1093,15 +1205,7 @@ impl MainWindow {
             if let Some(title) = header_bar.title_widget() {
                 widgets.push(title);
             }
-            for action in [
-                "win.split-vertical",
-                "win.split-horizontal",
-                "win.delete-connection",
-                "win.new-group",
-                "win.quick-connect",
-                "win.settings",
-                "win.local-shell",
-            ] {
+            for action in NARROW_HIDDEN {
                 if let Some(btn) = Self::header_button(&header_bar, action) {
                     widgets.push(btn.upcast());
                 }
@@ -1217,6 +1321,7 @@ impl MainWindow {
             split_container,
             state: state.clone(),
             overlay_split_view,
+            header_title,
             external_sessions,
             detached_windows: Rc::new(crate::detached_window::DetachedWindowRegistry::new()),
             toast_overlay,
@@ -1435,6 +1540,14 @@ impl MainWindow {
             &state,
             &self.session_split_bridges,
         );
+        // Per-connection command-macro keybinds: dynamic accels that follow the
+        // focused terminal session, split panes included (asbru-borrow #1).
+        macro_dispatch::setup_macro_dispatch(
+            window,
+            &terminal_notebook,
+            &self.session_split_bridges,
+            &state,
+        );
         self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_group_broadcast_actions(window, &terminal_notebook);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);
@@ -1484,22 +1597,6 @@ impl MainWindow {
             split_view_clone.set_show_sidebar(!visible);
         });
         window.add_action(&toggle_sidebar_action);
-
-        // Toggle protocol filters visibility
-        let toggle_filters_action = gio::SimpleAction::new("toggle-protocol-filters", None);
-        let sidebar_clone = sidebar.clone();
-        let state_clone = state.clone();
-        toggle_filters_action.connect_activate(move |_, _| {
-            let new_visible = !sidebar_clone.is_filter_visible();
-            sidebar_clone.set_filter_visible(new_visible);
-            // Persist the setting
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                let mut settings = state_mut.settings().clone();
-                settings.ui.show_protocol_filters = new_visible;
-                let _ = state_mut.update_settings(settings);
-            }
-        });
-        window.add_action(&toggle_filters_action);
     }
 
     /// Connects UI signals
@@ -2175,59 +2272,26 @@ impl MainWindow {
         let connections: Vec<&rustconn_core::models::Connection> = state_ref.list_connections();
         let groups: Vec<_> = state_ref.list_groups().iter().cloned().cloned().collect();
 
-        // Check for single protocol filter syntax (protocol:rdp, proto:ssh, p:vnc)
-        let single_protocol = query
+        // Protocol filter syntax: a single name (protocol:rdp, proto:ssh, p:vnc)
+        // or an OR-list (protocols:ssh,mosh). Both go straight to a direct
+        // filter without scoring.
+        let protocol_filter: Option<Vec<&str>> = query
             .strip_prefix("protocol:")
             .or_else(|| query.strip_prefix("proto:"))
-            .or_else(|| query.strip_prefix("p:"));
+            .or_else(|| query.strip_prefix("p:"))
+            .map(|name| vec![name])
+            .or_else(|| {
+                query
+                    .strip_prefix("protocols:")
+                    .map(|names| names.split(',').collect())
+            });
 
-        if let Some(protocol_name) = single_protocol {
-            // Handle single protocol filter — direct filtering without scoring
-            let protocol_names: Vec<&str> = vec![protocol_name.trim()];
-            let mut filtered_connections = Vec::with_capacity(connections.len());
-
+        if let Some(protocol_names) = protocol_filter {
             for conn in &connections {
                 let protocol = get_protocol_string(&conn.protocol_config);
-                let protocol_lower = protocol.to_lowercase();
-
-                if protocol_names
-                    .iter()
-                    .any(|p| p.to_lowercase() == protocol_lower)
-                {
-                    filtered_connections.push(conn);
+                if !types::protocol_matches_filter(&protocol, &protocol_names) {
+                    continue;
                 }
-            }
-
-            for conn in filtered_connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
-                let item = ConnectionItem::new_connection(
-                    &conn.id.to_string(),
-                    &conn.name,
-                    &protocol,
-                    &conn.host,
-                );
-                item.set_description(conn.description.as_deref().unwrap_or(""));
-                store.append(&item);
-            }
-        } else if let Some(protocols_str) = query.strip_prefix("protocols:") {
-            // Handle multiple protocol filters with OR logic
-            let protocol_names: Vec<&str> = protocols_str.split(',').collect();
-            let mut filtered_connections = Vec::with_capacity(connections.len());
-
-            for conn in &connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
-                let protocol_lower = protocol.to_lowercase();
-
-                if protocol_names
-                    .iter()
-                    .any(|p| p.to_lowercase() == protocol_lower)
-                {
-                    filtered_connections.push(conn);
-                }
-            }
-
-            for conn in filtered_connections {
-                let protocol = get_protocol_string(&conn.protocol_config);
                 let item = ConnectionItem::new_connection(
                     &conn.id.to_string(),
                     &conn.name,
@@ -2647,11 +2711,90 @@ impl MainWindow {
         connection_id: Uuid,
         observer: Option<types::SessionStartObserver>,
     ) -> types::ConnectionStartResult {
+        Self::start_connection_inner(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            observer,
+            true,
+        )
+    }
+
+    /// Starts a connection whose jump host the caller has already checked.
+    ///
+    /// A cluster connect checks every member's jump host in one pass and asks
+    /// once for the whole set (issue #345), so each member must not repeat the
+    /// check — and must not raise a dialog of its own.
+    pub fn start_connection_bastion_prechecked(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+    ) -> types::ConnectionStartResult {
+        Self::start_connection_inner(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            None,
+            false,
+        )
+    }
+
+    fn start_connection_inner(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+        observer: Option<types::SessionStartObserver>,
+        check_bastion: bool,
+    ) -> types::ConnectionStartResult {
         let state_ref = state.borrow();
 
         let Some(conn) = state_ref.get_connection(connection_id) else {
             return types::ConnectionStartResult::Failed;
         };
+
+        // Unusable-bastion guard (#345): a `jump_host_id` — the connection's
+        // own, or one inherited from a group or the global network settings —
+        // can point at a connection that has since been deleted, or at the
+        // connection itself. The resolve path silently skips such a hop, and
+        // for a tunnel protocol or an SSH connection with no other route that
+        // means connecting direct: the one outcome a bastion exists to prevent.
+        // That is a security-relevant route change made without the user, so it
+        // gets a blocking question (default Cancel), the same treatment as the
+        // re-point guard below — a transient toast was easy to miss while the
+        // session was already dialling. Only protocols that route through a
+        // jump host are checked, and a "connect anyway" holds for the session.
+        if check_bastion
+            && let Some((_, skipped)) = state_ref
+                .skipped_bastions(&[connection_id])
+                .into_iter()
+                .next()
+        {
+            let body = skipped_bastion_body(&state_ref, conn, &skipped);
+            let conn_name = conn.name.clone();
+            drop(state_ref);
+            Self::show_skipped_bastion_warning(
+                state,
+                notebook,
+                sidebar,
+                monitoring,
+                connection_id,
+                observer,
+                &conn_name,
+                &body,
+                skipped.fallback,
+            );
+            // The dialog drives the retry; this attempt stops here without
+            // marking the sidebar failed.
+            return types::ConnectionStartResult::Pending;
+        }
 
         // Re-point guard: if this connection now goes somewhere other than the
         // last time it connected — a different host, account, credential source
@@ -3137,6 +3280,75 @@ impl MainWindow {
         }
     }
 
+    /// Asks before connecting without an unusable jump host (issue #345) and,
+    /// on confirmation, retries the connection.
+    ///
+    /// "Cancel" (the default and the Escape response) leaves the connection
+    /// untouched and clears the sidebar's "connecting" state. Confirming records
+    /// the choice for this session and starts the connection again, which now
+    /// passes the guard. The button names the outcome: "Connect Directly" when
+    /// nothing else routes the connection, "Connect Anyway" when the rest of its
+    /// route still applies.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "mirrors the launch entry points it must call back into"
+    )]
+    fn show_skipped_bastion_warning(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: &SharedSidebar,
+        monitoring: &types::SharedMonitoring,
+        connection_id: Uuid,
+        observer: Option<types::SessionStartObserver>,
+        conn_name: &str,
+        body: &str,
+        fallback: rustconn_core::connection::jump_chain::BastionFallback,
+    ) {
+        use crate::i18n::{i18n, i18n_f};
+        use rustconn_core::connection::jump_chain::BastionFallback;
+
+        let dialog = adw::AlertDialog::new(
+            Some(&i18n_f("Jump Host Unavailable for “{}”", &[conn_name])),
+            Some(body),
+        );
+        dialog.add_response("cancel", &i18n("Cancel"));
+        let connect_label = match fallback {
+            BastionFallback::Direct => i18n("Connect Directly"),
+            BastionFallback::RemainingRoute => i18n("Connect Anyway"),
+        };
+        dialog.add_response("connect", &connect_label);
+        dialog.set_response_appearance("connect", adw::ResponseAppearance::Destructive);
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_close_response("cancel");
+
+        let state_cb = state.clone();
+        let notebook_cb = notebook.clone();
+        let sidebar_cb = sidebar.clone();
+        let monitoring_cb = Rc::clone(monitoring);
+        dialog.connect_response(None, move |_, response| {
+            if response == "connect" {
+                state_cb.borrow().confirm_bastion_skip(connection_id);
+                Self::start_connection_observed(
+                    &state_cb,
+                    &notebook_cb,
+                    &sidebar_cb,
+                    &monitoring_cb,
+                    connection_id,
+                    observer.clone(),
+                );
+            } else {
+                // Cancelled — undo the "connecting" indication the click set.
+                sidebar_cb.update_connection_status(&connection_id.to_string(), "disconnected");
+            }
+        });
+
+        if let Some(root) = notebook.widget().root() {
+            dialog.present(Some(&root));
+        } else {
+            dialog.present(None::<&gtk4::Widget>);
+        }
+    }
+
     /// Shows the new connection dialog with optional template selection
     fn show_new_connection_dialog(
         window: &adw::ApplicationWindow,
@@ -3559,12 +3771,15 @@ impl MainWindow {
         notebook: &SharedNotebook,
         enabled: bool,
     ) {
-        let name = if enabled {
+        // Only a page that belongs to a session counts — the Welcome
+        // placeholder has none, and identifying it by its (translated) title
+        // would also hide a real session that happens to share the word.
+        let name = if enabled && notebook.get_active_session_id().is_some() {
             notebook
                 .tab_view()
                 .selected_page()
                 .map(|page| page.title().to_string())
-                .filter(|title| !title.is_empty() && *title != crate::i18n::i18n("Welcome"))
+                .filter(|title| !title.is_empty())
         } else {
             None
         };
@@ -3574,6 +3789,46 @@ impl MainWindow {
         }
     }
 
+    /// Sets the content header's subtitle to the active connection's group
+    /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
+    ///
+    /// The connection comes from the selected tab's session metadata, not its
+    /// title: a title carries a "[group] " prefix once the tab is grouped, and
+    /// two connections may share a name. The subtitle is cleared when the
+    /// setting is off, the page has no session (Welcome), the session has no
+    /// saved connection (local shell), or the connection is ungrouped. The WM
+    /// window title (issue #211) is untouched. Shared by the tab-switch hook
+    /// and the live settings-apply path. Leaves the subtitle as it is when the
+    /// state is borrowed elsewhere — the next tab switch catches up.
+    pub(crate) fn refresh_header_subtitle(
+        header_title: &adw::WindowTitle,
+        notebook: &SharedNotebook,
+        state: &SharedAppState,
+    ) {
+        let connection_id = notebook
+            .get_active_session_id()
+            .and_then(|session_id| notebook.get_session_info(session_id))
+            .map(|info| info.connection_id);
+        let Ok(state_ref) = state.try_borrow() else {
+            return;
+        };
+        let subtitle = if state_ref.settings().ui.window_title_shows_path {
+            connection_id
+                .and_then(|id| state_ref.get_connection(id))
+                .and_then(|conn| conn.group_id)
+                .and_then(|group_id| state_ref.get_group_path(group_id))
+                .unwrap_or_default()
+        } else {
+            String::new()
+        };
+        drop(state_ref);
+        header_title.set_subtitle(&subtitle);
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "dialog launcher wiring independent window dependencies into the settings dialog and its live-apply closure; a struct would only restate them"
+    )]
     fn show_settings_dialog(
         window: &adw::ApplicationWindow,
         state: SharedAppState,
@@ -3582,6 +3837,7 @@ impl MainWindow {
         sidebar: SharedSidebar,
         overlay_split_view: adw::OverlaySplitView,
         session_split_bridges: SessionSplitBridges,
+        header_title: adw::WindowTitle,
     ) {
         let opened_at = std::time::Instant::now();
         tracing::debug!("settings action activated");
@@ -3613,6 +3869,7 @@ impl MainWindow {
         );
 
         let window_clone = window.clone();
+        let header_title_for_apply = header_title.clone();
         dialog.run(Some(window), move |result| {
             if let Some(settings) = result {
                 // Capture backend and KeePass state for action update
@@ -3661,16 +3918,10 @@ impl MainWindow {
                     );
                 }
 
-                // Apply protocol tab coloring setting
-                notebook.set_color_tabs_by_protocol(settings.ui.color_tabs_by_protocol);
-
                 // Apply reconnect history retention setting (#253)
                 notebook.set_keep_history_on_reconnect(settings.terminal.keep_history_on_reconnect);
                 notebook
                     .set_max_scrollback_on_reconnect(settings.terminal.max_scrollback_on_reconnect);
-
-                // Apply protocol filter visibility setting
-                sidebar.set_filter_visible(settings.ui.show_protocol_filters);
 
                 // Apply smart folders visibility setting
                 sidebar.set_smart_folders_visible(settings.ui.show_smart_folders);
@@ -3698,6 +3949,20 @@ impl MainWindow {
                     &notebook,
                     settings.ui.window_title_shows_connection,
                 );
+
+                // Refresh the group-path subtitle live so toggling "Show
+                // hierarchy path in header" updates without a tab switch.
+                // Deferred to idle: it reads the setting from the state, and
+                // the new settings only land there via `update_settings` below,
+                // which also holds the state mutably while it runs.
+                {
+                    let header_title = header_title_for_apply.clone();
+                    let notebook = notebook.clone();
+                    let state = state.clone();
+                    glib::idle_add_local_once(move || {
+                        Self::refresh_header_subtitle(&header_title, &notebook, &state);
+                    });
+                }
 
                 if let Ok(mut state_mut) = state.try_borrow_mut() {
                     let simple_sync_was = state_mut.simple_sync_enabled();
@@ -3949,6 +4214,9 @@ impl MainWindow {
     fn reload_sidebar(state: &SharedAppState, sidebar: &SharedSidebar) {
         sidebar.invalidate_search_cache();
         sorting::rebuild_sidebar_sorted(state, sidebar);
+        // Every connection save, import and sync ends in a sidebar reload, so
+        // this is where an edited macro list reaches the registered accels.
+        macro_dispatch::request_refresh(sidebar.widget());
     }
 
     /// Reloads the sidebar while preserving tree state

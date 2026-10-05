@@ -76,6 +76,7 @@ fn create_test_groups(count: usize) -> Vec<ConnectionGroup> {
             username_prompt: None,
             password_prompt: None,
             login_timeout_secs: None,
+            sync_origin_id: None,
         })
         .collect()
 }

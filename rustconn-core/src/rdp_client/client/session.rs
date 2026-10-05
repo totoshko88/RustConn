@@ -54,14 +54,11 @@ pub(super) async fn run_active_session(
     // that never negotiated the GFX channel. The real mode now comes from the
     // EGFX capability-confirm callback as `RdpClientEvent::GraphicsModeActive`
     // (issue #262).
-    #[cfg_attr(
-        not(feature = "gfx-h264"),
-        expect(
-            unused_variables,
-            unused_mut,
-            reason = "only the gfx-h264 blit path uses and mutates the statistics"
-        )
-    )]
+    //
+    // Recorded on every painted frame: the RemoteFX/legacy `GraphicsUpdate`
+    // path (always compiled) and, under `gfx-h264`, the GFX blit path. Before
+    // that wiring `record_frame` had no caller, so `current_fps` stayed 0.0
+    // even in a working session — the other half of issue #262.
     let mut frame_stats = super::super::graphics::FrameStatistics::new();
 
     // Build ActiveStage from ConnectionResult fields (ironrdp 0.17 builder pattern)
@@ -138,6 +135,7 @@ pub(super) async fn run_active_session(
                                         &mut image,
                                         &mut active_stage,
                                         &activation_factory,
+                                        &mut frame_stats,
                                     )
                                     .await?
                                     {
@@ -255,6 +253,10 @@ fn is_ignorable_message_channel_pdu(
         .is_ok_and(|ctx| ctx.channel_id == message_channel_id)
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "stage-output dispatcher: adds the per-frame statistics sink to the existing writer/reader/image/stage/factory set"
+)]
 async fn handle_active_stage_output<S>(
     output: ActiveStageOutput,
     writer: &mut impl FramedWrite,
@@ -263,6 +265,7 @@ async fn handle_active_stage_output<S>(
     image: &mut DecodedImage,
     active_stage: &mut ActiveStage,
     activation_factory: &ConnectionActivationFactory,
+    frame_stats: &mut super::super::graphics::FrameStatistics,
 ) -> Result<bool, RdpClientError>
 where
     S: FramedRead + Unpin + Send,
@@ -282,8 +285,17 @@ where
                 region.right.saturating_sub(region.left),
                 region.bottom.saturating_sub(region.top),
             );
+            // Measure the region extraction (the per-frame CPU work on this
+            // path) and record the painted frame. This is the RemoteFX/legacy
+            // path, the one a session actually uses when H.264 is unavailable —
+            // so without this `current_fps` read 0.0 even in a perfectly
+            // working session (issue #262, the "dead FPS counter" half).
+            let extract_start = std::time::Instant::now();
             let data = extract_region_data(image, rect);
+            let extract_us = extract_start.elapsed().as_micros() as u64;
+            let bytes = data.len();
             let _ = event_tx.send(RdpClientEvent::FrameUpdate { rect, data });
+            frame_stats.record_frame(bytes, extract_us);
         }
         ActiveStageOutput::PointerDefault => {
             let _ = event_tx.send(RdpClientEvent::CursorDefault);
@@ -571,10 +583,14 @@ fn drain_gfx_updates(
         frame_stats.update_h264_decode_time(blit_elapsed_us);
 
         let rect = RdpRect::new(update.x, update.y, clipped_w, clipped_h);
+        let bytes = bgra_data.len();
         let _ = event_tx.send(RdpClientEvent::FrameUpdate {
             rect,
             data: bgra_data,
         });
+        // Record the painted GFX frame so current_fps/frames_decoded track the
+        // H.264 path too, not just the RemoteFX one (issue #262).
+        frame_stats.record_frame(bytes, blit_elapsed_us);
     }
 }
 

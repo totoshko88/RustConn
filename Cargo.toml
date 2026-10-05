@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.22.15"
+version = "0.23.0"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -81,6 +81,9 @@ reqwest = { version = "0.13", features = ["native-tls", "stream"], default-featu
 zip = "8.2"
 flate2 = "1.1"
 tar = "0.4.45"
+# bzip2 decompression for the on-demand Cisco OpenH264 blob. Default feature is
+# the pure-Rust `libbz2-rs-sys` backend, so no C/system dependency is added.
+bzip2 = "=0.6.1"
 
 # TLS — native-tls 0.2.18 fixes the Tlsv13 compile bug from 0.2.17
 # See: https://github.com/rust-native-tls/rust-native-tls/issues/367

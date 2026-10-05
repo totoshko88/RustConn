@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{Button, EventControllerKey, Label, Orientation, Popover, SearchEntry, glib};
+use gtk4::{EventControllerKey, Label, Orientation, Popover, SearchEntry, glib};
 
 use crate::sidebar_types::MAX_SEARCH_HISTORY;
 
@@ -281,49 +281,6 @@ pub fn add_to_history(search_history: &Rc<RefCell<Vec<String>>>, query: &str) {
 
     // Trim to max size
     history.truncate(MAX_SEARCH_HISTORY);
-}
-
-/// Toggles a protocol filter and updates the search
-pub fn toggle_protocol_filter(
-    protocol: &str,
-    button: &Button,
-    active_filters: &Rc<RefCell<HashSet<String>>>,
-    buttons: &Rc<RefCell<std::collections::HashMap<String, Button>>>,
-    search_entry: &SearchEntry,
-    programmatic_flag: &Rc<RefCell<bool>>,
-) {
-    let mut filters = active_filters.borrow_mut();
-
-    if filters.contains(protocol) {
-        // Remove filter
-        filters.remove(protocol);
-        button.remove_css_class("suggested-action");
-    } else {
-        // Add filter
-        filters.insert(protocol.to_string());
-        button.add_css_class("suggested-action");
-    }
-
-    // Update visual feedback for all buttons when multiple filters are active
-    let filter_count = filters.len();
-    if filter_count > 1 {
-        // Multiple filters active - add special styling to show AND relationship
-        for (filter_name, filter_button) in buttons.borrow().iter() {
-            if filters.contains(filter_name) {
-                filter_button.add_css_class("filter-active-multiple");
-            } else {
-                filter_button.remove_css_class("filter-active-multiple");
-            }
-        }
-    } else {
-        // Single or no filters - remove multiple filter styling
-        for filter_button in buttons.borrow().values() {
-            filter_button.remove_css_class("filter-active-multiple");
-        }
-    }
-
-    // Update search with protocol filters
-    update_search_with_filters(&filters, search_entry, programmatic_flag);
 }
 
 /// Compiles a case-insensitive regex for the given search query.

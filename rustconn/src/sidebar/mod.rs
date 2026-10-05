@@ -63,6 +63,8 @@ pub const PINNED_GROUP_ID: &str = "__pinned__";
 pub struct ConnectionSidebar {
     container: GtkBox,
     search_entry: SearchEntry,
+    /// Search bar wrapping the search row (collapses behind the header toggle).
+    search_bar: gtk4::SearchBar,
     list_view: ListView,
     /// Store for connection data - will be populated from `ConnectionManager`
     store: gio::ListStore,
@@ -105,19 +107,11 @@ pub struct ConnectionSidebar {
     pending_search_query: Rc<RefCell<Option<String>>>,
     /// Saved tree state before search (for restoration when search is cleared)
     pre_search_state: Rc<RefCell<Option<TreeState>>>,
-    /// Active protocol filters (SSH, RDP, VNC, SPICE, Telnet, Serial, ZeroTrust, Kubernetes)
-    active_protocol_filters: Rc<RefCell<HashSet<String>>>,
-    /// Quick filter buttons for protocol filtering
-    protocol_filter_buttons: Rc<RefCell<std::collections::HashMap<String, Button>>>,
     /// KeePass button for showing integration status
     keepass_button: Button,
     /// Callback to check if a connection has an active recording session
     /// Takes a connection ID string and returns true if recording is active
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
-    /// Protocol filter bar revealer (animated show/hide, toggled by settings)
-    filter_revealer: gtk4::Revealer,
-    /// Inner filter box (child of revealer, holds protocol buttons)
-    filter_box: GtkBox,
     /// Smart Folders sidebar section (dynamic tag-based grouping)
     smart_folders_sidebar: SmartFoldersSidebar,
     /// Revealer for Smart Folders section (toggled via toolbar button)
@@ -139,6 +133,7 @@ impl ConnectionSidebar {
         // Search box with entry and help button
         // Reduced spacing per GNOME HIG (6px between related elements)
         let search_box = GtkBox::new(Orientation::Horizontal, 4);
+        search_box.add_css_class("sidebar-search-row");
         search_box.set_margin_start(6);
         search_box.set_margin_end(6);
         search_box.set_margin_top(6);
@@ -165,169 +160,16 @@ impl ConnectionSidebar {
         };
         search_box.append(&search_spinner);
 
-        // Help button with popover
-        let help_button = Button::from_icon_name("dialog-question-symbolic");
-        help_button.set_tooltip_text(Some(&i18n("Search syntax help")));
-        help_button.add_css_class("flat");
-        help_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Search syntax help",
-        ))]);
-
-        // Create search help popover
+        // Search syntax help popover. There is no standalone help button in the
+        // search box any more (GNOME HIG §4: a lone "?" icon next to the search
+        // field was the inconsistent help affordance the review flagged). The
+        // popover is kept — it is parented on the search entry and shown when the
+        // user types a bare "?" (handled in connect_search_changed below), the
+        // power-user path documented inside the popover itself. "Keyboard
+        // Shortcuts…" and "About RustConn" already live in the primary menu,
+        // which is where GNOME apps surface help.
         let help_popover = search::create_search_help_popover();
-        help_popover.set_parent(&help_button);
-
-        let help_popover_clone = help_popover.clone();
-        help_button.connect_clicked(move |_| {
-            help_popover_clone.popup();
-        });
-
-        search_box.append(&help_button);
-
-        // Filter toggle button — shows/hides protocol filter bar via window action
-        let filter_toggle = Button::from_icon_name("view-list-bullet-symbolic");
-        filter_toggle.set_tooltip_text(Some(&i18n("Toggle protocol filters")));
-        filter_toggle.add_css_class("flat");
-        filter_toggle.set_action_name(Some("win.toggle-protocol-filters"));
-        filter_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Toggle protocol filters",
-        ))]);
-
-        search_box.append(&filter_toggle);
-
-        // Quick Filter bar: filters left (expand to fill)
-        let filter_box = GtkBox::new(Orientation::Horizontal, 4);
-        filter_box.set_margin_start(6);
-        filter_box.set_margin_end(6);
-        filter_box.set_margin_bottom(6);
-
-        // Protocol filter group — wrapping layout on adw-1-7+, linked buttons fallback
-        #[cfg(feature = "adw-1-7")]
-        let protocol_group = {
-            let wrap_box = adw::WrapBox::new();
-            wrap_box.set_child_spacing(2);
-            wrap_box.set_line_spacing(2);
-            wrap_box.set_hexpand(true);
-            wrap_box.set_halign(gtk4::Align::Fill);
-            wrap_box
-        };
-        #[cfg(not(feature = "adw-1-7"))]
-        let protocol_group = {
-            let group = GtkBox::new(Orientation::Horizontal, 0);
-            group.add_css_class("linked");
-            group.set_hexpand(true);
-            group.set_halign(gtk4::Align::Fill);
-            group
-        };
-
-        // Protocol filter buttons with icons — aligned with icons.rs
-        use rustconn_core::models::ProtocolType;
-        let ssh_filter = filter::create_filter_button(
-            "SSH",
-            rustconn_core::get_protocol_icon(ProtocolType::Ssh),
-            "Filter SSH / MOSH connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        ssh_filter.set_hexpand(true);
-        let rdp_filter = filter::create_filter_button(
-            "RDP",
-            rustconn_core::get_protocol_icon(ProtocolType::Rdp),
-            "Filter RDP connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        rdp_filter.set_hexpand(true);
-        let vnc_filter = filter::create_filter_button(
-            "VNC",
-            rustconn_core::get_protocol_icon(ProtocolType::Vnc),
-            "Filter VNC connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        vnc_filter.set_hexpand(true);
-        let spice_filter = filter::create_filter_button(
-            "SPICE",
-            rustconn_core::get_protocol_icon(ProtocolType::Spice),
-            "Filter SPICE connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        spice_filter.set_hexpand(true);
-        let telnet_filter = filter::create_filter_button(
-            "Telnet",
-            rustconn_core::get_protocol_icon(ProtocolType::Telnet),
-            "Filter Telnet connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        telnet_filter.set_hexpand(true);
-        let serial_filter = filter::create_filter_button(
-            "Serial",
-            rustconn_core::get_protocol_icon(ProtocolType::Serial),
-            "Filter Serial connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        serial_filter.set_hexpand(true);
-        let zerotrust_filter = filter::create_filter_button(
-            "ZeroTrust",
-            rustconn_core::get_protocol_icon(ProtocolType::ZeroTrust),
-            "Filter ZeroTrust connections",
-        );
-        zerotrust_filter.add_css_class("filter-button");
-        #[cfg(not(feature = "adw-1-7"))]
-        zerotrust_filter.set_hexpand(true);
-        let kubernetes_filter = filter::create_filter_button(
-            "K8s",
-            rustconn_core::get_protocol_icon(ProtocolType::Kubernetes),
-            "Filter Kubernetes connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        kubernetes_filter.set_hexpand(true);
-        let web_filter = filter::create_filter_button(
-            "Web",
-            rustconn_core::get_protocol_icon(ProtocolType::Web),
-            "Filter Web bookmark connections",
-        );
-        #[cfg(not(feature = "adw-1-7"))]
-        web_filter.set_hexpand(true);
-
-        protocol_group.append(&ssh_filter);
-        protocol_group.append(&rdp_filter);
-        protocol_group.append(&vnc_filter);
-        protocol_group.append(&spice_filter);
-        protocol_group.append(&telnet_filter);
-        protocol_group.append(&serial_filter);
-        protocol_group.append(&zerotrust_filter);
-        protocol_group.append(&kubernetes_filter);
-        protocol_group.append(&web_filter);
-
-        filter_box.append(&protocol_group);
-
-        // Store filter buttons for later reference
-        let protocol_filter_buttons = Rc::new(RefCell::new(std::collections::HashMap::new()));
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("SSH".to_string(), ssh_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("RDP".to_string(), rdp_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("VNC".to_string(), vnc_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("SPICE".to_string(), spice_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("Telnet".to_string(), telnet_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("Serial".to_string(), serial_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("ZeroTrust".to_string(), zerotrust_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("Kubernetes".to_string(), kubernetes_filter.clone());
-        protocol_filter_buttons
-            .borrow_mut()
-            .insert("Web".to_string(), web_filter.clone());
+        help_popover.set_parent(&search_entry);
 
         // Active protocol filters state
         let active_protocol_filters = Rc::new(RefCell::new(HashSet::new()));
@@ -335,152 +177,54 @@ impl ConnectionSidebar {
         // Create programmatic flag for preventing recursive updates
         let programmatic_flag = Rc::new(RefCell::new(false));
 
-        // Setup filter button handlers using helper function
-        // Each handler pins the sidebar width before toggling so the panel
-        // does not shrink/grow when the filtered item count changes.
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&ssh_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("SSH", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&rdp_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("RDP", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&vnc_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("VNC", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&spice_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("SPICE", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&telnet_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("Telnet", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&serial_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("Serial", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&zerotrust_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("ZeroTrust", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&kubernetes_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter(
-                    "Kubernetes",
-                    btn,
-                    &filters,
-                    &buttons,
-                    &entry,
-                    &flag,
-                );
-            });
-        }
-        {
-            let filters = active_protocol_filters.clone();
-            let buttons = protocol_filter_buttons.clone();
-            let entry = search_entry.clone();
-            let flag = programmatic_flag.clone();
-            let ctr = container.clone();
-            filter::connect_filter_button(&web_filter, move |btn| {
-                ctr.set_width_request(ctr.width());
-                search::toggle_protocol_filter("Web", btn, &filters, &buttons, &entry, &flag);
-            });
-        }
+        // Single "Filter" menu button (HIG §2a) replacing the former row of 9
+        // permanent protocol pill buttons. Its popover holds one GtkCheckButton
+        // per protocol; toggling a checkbox drives the SAME filtering mechanism
+        // (`search::update_search_with_filters`) the old pills used.
+        let (protocol_filter_menu, protocol_filter_checks) = Self::create_protocol_filter_menu(
+            &search_entry,
+            &active_protocol_filters,
+            &programmatic_flag,
+        );
+        search_box.append(&protocol_filter_menu);
 
-        container.append(&search_box);
+        // Sidebar as a proper panel: an AdwToolbarView whose TOP BAR is the
+        // sidebar headerbar and whose content is the search box + connection
+        // list (GNOME HIG §7c, like Files/Settings). This gives the header its
+        // real panel top-bar styling and background and makes the panel read as
+        // a distinct, divided panel beside the content, instead of a plain box
+        // with a header appended into it. `container` (class `sidebar`) stays
+        // the returned widget; the toolbar view is its single child.
+        let (sidebar_header, search_toggle) = sidebar_ui::create_sidebar_header();
+        let sidebar_toolbar = adw::ToolbarView::new();
+        sidebar_toolbar.add_top_bar(&sidebar_header);
+        sidebar_toolbar.set_top_bar_style(adw::ToolbarStyle::Flat);
+        sidebar_toolbar.set_vexpand(true);
+        // All sidebar body widgets go into this content box (the toolbar view's
+        // content), not straight into `container`.
+        let sidebar_body = GtkBox::new(Orientation::Vertical, 0);
+        sidebar_toolbar.set_content(Some(&sidebar_body));
+        container.append(&sidebar_toolbar);
 
-        // Wrap filter_box in a Revealer for animated show/hide
-        let filter_revealer = gtk4::Revealer::builder()
-            .transition_type(gtk4::RevealerTransitionType::SlideDown)
-            .transition_duration(200)
-            .reveal_child(false)
-            .child(&filter_box)
+        // Wrap the search box in a GtkSearchBar so it collapses behind the
+        // header's search toggle (Nautilus/Settings pattern). The toggle's
+        // `active` is two-way bound to the bar's `search-mode-enabled`, so the
+        // row reveals/hides from the icon, Ctrl+F, or type-to-search (the key
+        // capture widget is set to the list view once it exists, below).
+        let search_bar = gtk4::SearchBar::new();
+        search_bar.set_child(Some(&search_box));
+        search_bar.connect_entry(&search_entry);
+        search_toggle
+            .bind_property("active", &search_bar, "search-mode-enabled")
+            .bidirectional()
+            .sync_create()
             .build();
-        container.append(&filter_revealer);
+        sidebar_body.append(&search_bar);
 
-        // Separator between filters and connection list
+        // Separator between search box and connection list
         let separator = gtk4::Separator::new(Orientation::Horizontal);
         separator.add_css_class("spacer");
-        container.append(&separator);
-
-        // Responsive: hide less common protocol filters on narrow sidebar
-        // Only needed without AdwWrapBox — WrapBox wraps automatically
-        #[cfg(not(feature = "adw-1-7"))]
-        {
-            let telnet_c = telnet_filter.clone();
-            let serial_c = serial_filter.clone();
-            let zt_c = zerotrust_filter.clone();
-            let k8s_c = kubernetes_filter.clone();
-            let group_c = protocol_group.clone();
-            container.connect_notify_local(Some("width-request"), move |_container, _| {
-                let width = group_c.width();
-                if width > 0 {
-                    let narrow = width < 280;
-                    telnet_c.set_visible(!narrow);
-                    serial_c.set_visible(!narrow);
-                    zt_c.set_visible(!narrow);
-                    k8s_c.set_visible(!narrow);
-                }
-            });
-        }
+        sidebar_body.append(&separator);
 
         // Create search history storage and popover
         let search_history: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
@@ -490,7 +234,8 @@ impl ConnectionSidebar {
         // Show help popover when user types '?' and handle filter clearing
         let help_popover_for_key = help_popover.clone();
         let active_filters_for_clear = active_protocol_filters.clone();
-        let buttons_for_clear = protocol_filter_buttons.clone();
+        let checks_for_clear = protocol_filter_checks.clone();
+        let filter_menu_for_clear = protocol_filter_menu.downgrade();
         let programmatic_flag_for_search = programmatic_flag.clone();
         search_entry.connect_search_changed(move |entry| {
             let text = entry.text();
@@ -509,22 +254,27 @@ impl ConnectionSidebar {
                 return;
             }
 
-            // Clear filter buttons when search is manually cleared
-            // Only clear if text is empty and we have active filters
+            // Clear the protocol checkboxes whenever the query is emptied — by
+            // the user, or by the search bar clearing its entry as it closes —
+            // so the boxes, the Filter button and the list never disagree.
             if text.is_empty()
-                && let Ok(filters) = active_filters_for_clear.try_borrow()
+                && let Ok(mut filters) = active_filters_for_clear.try_borrow_mut()
                 && !filters.is_empty()
             {
-                drop(filters); // Release the borrow before clearing
-
-                // Clear the active filters state
-                active_filters_for_clear.borrow_mut().clear();
-
-                // Remove CSS classes from all buttons
-                for button in buttons_for_clear.borrow().values() {
-                    button.remove_css_class("suggested-action");
-                    button.remove_css_class("filter-active-multiple");
+                filters.clear();
+                drop(filters);
+                if let Some(menu) = filter_menu_for_clear.upgrade() {
+                    Self::sync_filter_indicator(&menu, false);
                 }
+
+                // Uncheck every protocol checkbox. Guard with the programmatic
+                // flag so each `set_active(false)` does not re-enter the toggled
+                // handler and re-touch the (now empty) filter set / search entry.
+                *programmatic_flag_for_search.borrow_mut() = true;
+                for check in checks_for_clear.borrow().values() {
+                    check.set_active(false);
+                }
+                *programmatic_flag_for_search.borrow_mut() = false;
             }
         });
 
@@ -559,7 +309,7 @@ impl ConnectionSidebar {
             .reveal_child(false)
             .child(&bulk_actions_bar)
             .build();
-        container.append(&bulk_actions_revealer);
+        sidebar_body.append(&bulk_actions_revealer);
 
         // Create the list store for connection items
         let store = gio::ListStore::new::<ConnectionItem>();
@@ -627,6 +377,10 @@ impl ConnectionSidebar {
             }
         };
         list_view.add_css_class("navigation-sidebar");
+
+        // Type-to-search: a keystroke on the connection list reveals the search
+        // bar and routes into the entry (Nautilus/Settings behaviour).
+        search_bar.set_key_capture_widget(Some(&list_view));
 
         // Set accessibility properties
         list_view.update_property(&[gtk4::accessible::Property::Label(&i18n("Connection list"))]);
@@ -947,11 +701,18 @@ impl ConnectionSidebar {
         // Use Flat style for transparent background (icons on transparent bg)
         let (bottom_toolbar, keepass_button) = sidebar_ui::create_sidebar_bottom_toolbar();
         let toolbar_view = adw::ToolbarView::new();
-        toolbar_view.set_content(Some(&overlay));
+        // Content = connection list + smart-folders revealer in one vertical box,
+        // so the bottom toolbar (the toolbar view's bottom bar) is ALWAYS pinned
+        // to the very bottom of the sidebar and never moves when smart folders
+        // open (GNOME HIG §8c: a bottom bar is stable; a revealed section grows
+        // in the content area above it, not by pushing the toolbar up).
+        let list_content = GtkBox::new(Orientation::Vertical, 0);
+        list_content.append(&overlay);
+        toolbar_view.set_content(Some(&list_content));
         toolbar_view.add_bottom_bar(&bottom_toolbar);
         toolbar_view.set_bottom_bar_style(adw::ToolbarStyle::Flat);
         toolbar_view.set_vexpand(true);
-        container.append(&toolbar_view);
+        sidebar_body.append(&toolbar_view);
 
         // Smart Folders section — wrapped in Revealer (hidden by default, toggled via toolbar)
         let smart_folders_sidebar = SmartFoldersSidebar::new();
@@ -971,7 +732,9 @@ impl ConnectionSidebar {
             .build();
         // When revealed, smart folders expand to fill available sidebar space
         smart_folders_revealer.set_vexpand(false);
-        container.append(&smart_folders_revealer);
+        // Inside the toolbar view's content (above the pinned bottom toolbar),
+        // so opening it does not push the toolbar icons up (§8c).
+        list_content.append(&smart_folders_revealer);
 
         // Create debouncer for search with 100ms delay
         let search_debouncer = Rc::new(Debouncer::for_search());
@@ -996,13 +759,13 @@ impl ConnectionSidebar {
                 }
             });
         }
-        drop_when_collapsed(&filter_revealer);
         drop_when_collapsed(&bulk_actions_revealer);
         drop_when_collapsed(&smart_folders_revealer);
 
         Self {
             container,
             search_entry,
+            search_bar,
             list_view,
             store,
             tree_model,
@@ -1023,15 +786,133 @@ impl ConnectionSidebar {
             search_spinner,
             pending_search_query: Rc::new(RefCell::new(None)),
             pre_search_state: Rc::new(RefCell::new(None)),
-            active_protocol_filters,
-            protocol_filter_buttons,
             keepass_button,
             recording_checker,
-            filter_revealer,
-            filter_box,
             smart_folders_sidebar,
             smart_folders_revealer,
             toolbar_view,
+        }
+    }
+
+    /// Builds the single "Filter" menu button (GNOME HIG §2a) and its popover of
+    /// per-protocol check buttons.
+    ///
+    /// Returns the [`gtk4::MenuButton`] (ready to append to the search box) and a
+    /// map of protocol-name -> [`gtk4::CheckButton`] so callers can read and
+    /// clear the checkbox states. Each checkbox's `toggled` handler inserts or
+    /// removes its protocol key in `active_protocol_filters` and then re-applies
+    /// the filter via [`search::update_search_with_filters`] — the exact same
+    /// mechanism the former pill buttons used (including the SSH->MOSH nuance,
+    /// which lives inside `update_search_with_filters`). The `programmatic_flag`
+    /// is honoured so programmatic `set_active` calls (e.g. the clear paths) do
+    /// not re-enter the handler.
+    fn create_protocol_filter_menu(
+        search_entry: &SearchEntry,
+        active_protocol_filters: &Rc<RefCell<HashSet<String>>>,
+        programmatic_flag: &Rc<RefCell<bool>>,
+    ) -> (
+        gtk4::MenuButton,
+        Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>>,
+    ) {
+        // Protocol key paired with its translatable label. The key, lowercased,
+        // becomes the `protocol:`/`protocols:` query (see
+        // `update_search_with_filters`), so it must match the family part of
+        // `window::types::get_protocol_string` — "kubernetes", "zerotrust" (which
+        // the window filter matches against every "zerotrust:<provider>").
+        let protocols: [(&str, String); 9] = [
+            ("SSH", i18n("SSH")),
+            ("RDP", i18n("RDP")),
+            ("VNC", i18n("VNC")),
+            ("SPICE", i18n("SPICE")),
+            ("Telnet", i18n("Telnet")),
+            ("Serial", i18n("Serial")),
+            ("ZeroTrust", i18n("ZeroTrust")),
+            ("Kubernetes", i18n("Kubernetes")),
+            ("Web", i18n("Web")),
+        ];
+
+        let list_box = GtkBox::new(Orientation::Vertical, 2);
+        list_box.set_margin_start(12);
+        list_box.set_margin_end(12);
+        list_box.set_margin_top(12);
+        list_box.set_margin_bottom(12);
+
+        let checks: Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>> =
+            Rc::new(RefCell::new(std::collections::HashMap::new()));
+
+        let menu_button = gtk4::MenuButton::new();
+
+        for (key, label) in protocols {
+            let check = gtk4::CheckButton::with_label(&label);
+            // Accessibility: built from the translated label, not the key.
+            let accessible_label = crate::i18n::i18n_f("Filter by {} protocol", &[&label]);
+            check.update_property(&[gtk4::accessible::Property::Label(&accessible_label)]);
+
+            let proto = key.to_string();
+            let filters = active_protocol_filters.clone();
+            let entry = search_entry.clone();
+            let flag = programmatic_flag.clone();
+            // The check lives in the button's own popover: hold it weakly.
+            let button_weak = menu_button.downgrade();
+            check.connect_toggled(move |cb| {
+                // Skip programmatic updates (e.g. the clear paths), which would
+                // otherwise re-touch the filter set / search entry recursively.
+                if *flag.borrow() {
+                    return;
+                }
+                let Ok(mut set) = filters.try_borrow_mut() else {
+                    return;
+                };
+                if cb.is_active() {
+                    set.insert(proto.clone());
+                } else {
+                    set.remove(&proto);
+                }
+                let any_active = !set.is_empty();
+                drop(set);
+                if let Some(button) = button_weak.upgrade() {
+                    Self::sync_filter_indicator(&button, any_active);
+                }
+                // Reuse the existing filter application (handles SSH->MOSH and
+                // single/multi protocol query syntax).
+                if let Ok(set) = filters.try_borrow() {
+                    search::update_search_with_filters(&set, &entry, &flag);
+                }
+            });
+
+            list_box.append(&check);
+            checks.borrow_mut().insert(key.to_string(), check);
+        }
+
+        let popover = gtk4::Popover::new();
+        popover.set_child(Some(&list_box));
+
+        menu_button.set_icon_name(crate::icon_render::theme_icon_or(
+            "funnel-symbolic",
+            "view-list-bullet-symbolic",
+        ));
+        menu_button.add_css_class("flat");
+        menu_button.set_popover(Some(&popover));
+        menu_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Filter by protocol",
+        ))]);
+        Self::sync_filter_indicator(&menu_button, false);
+
+        (menu_button, checks)
+    }
+
+    /// Shows on the Filter button whether any protocol filter is on.
+    ///
+    /// Accent colour plus a tooltip, so the state is not carried by colour
+    /// alone. The button's accessible label stays "Filter by protocol"; the
+    /// checked boxes inside report their own state to a screen reader.
+    fn sync_filter_indicator(menu_button: &gtk4::MenuButton, any_active: bool) {
+        if any_active {
+            menu_button.add_css_class("accent");
+            menu_button.set_tooltip_text(Some(&i18n("Filter by protocol (filters active)")));
+        } else {
+            menu_button.remove_css_class("accent");
+            menu_button.set_tooltip_text(Some(&i18n("Filter by protocol")));
         }
     }
 
@@ -1045,6 +926,14 @@ impl ConnectionSidebar {
     #[must_use]
     pub const fn search_entry(&self) -> &SearchEntry {
         &self.search_entry
+    }
+
+    /// Reveals the search bar (if collapsed behind the header toggle) and
+    /// focuses the entry. Used by the Ctrl+F action — grabbing focus on a
+    /// hidden entry would not show the row, so enable search mode first.
+    pub fn focus_search(&self) {
+        self.search_bar.set_search_mode(true);
+        self.search_entry.grab_focus();
     }
 
     /// Returns the search debouncer
@@ -1947,32 +1836,6 @@ impl ConnectionSidebar {
         }
     }
 
-    /// Sets the visibility of the protocol filter bar
-    ///
-    /// When hidden, active filters are cleared to avoid confusion.
-    pub fn set_filter_visible(&self, visible: bool) {
-        self.filter_revealer.set_reveal_child(visible);
-        if !visible {
-            // Clear active filters when hiding to avoid hidden filtering
-            self.active_protocol_filters.borrow_mut().clear();
-            for button in self.protocol_filter_buttons.borrow().values() {
-                button.remove_css_class("suggested-action");
-                button.remove_css_class("filter-active-multiple");
-            }
-            // Clear search entry if it contains only protocol filter text
-            let text = self.search_entry.text();
-            if text.starts_with("proto:") || text.starts_with("p:") {
-                self.search_entry.set_text("");
-            }
-        }
-    }
-
-    /// Returns whether the filter bar is currently visible
-    #[must_use]
-    pub fn is_filter_visible(&self) -> bool {
-        self.filter_revealer.reveals_child()
-    }
-
     /// Refreshes the Smart Folders section with current data.
     ///
     /// Evaluates each smart folder's filters against the provided connections
@@ -1995,10 +1858,15 @@ impl ConnectionSidebar {
     pub fn set_smart_folders_visible(&self, visible: bool) {
         self.smart_folders_revealer.set_reveal_child(visible);
         self.smart_folders_revealer.set_vexpand(visible);
-        // Hide the scrolled window (connection tree) but keep toolbar_view
-        // visible so the bottom toolbar with action icons remains accessible
+        // Hide the connection tree AND drop its vexpand so the Overlay stops
+        // reserving vertical space; otherwise the revealed Smart Folders section
+        // only takes its minimum height and sticks to the top of the freed area
+        // instead of filling it (the bug: folders bunched at the top, empty space
+        // below). With the overlay collapsed, the revealer is the sole vexpand
+        // child and grows to fill the sidebar; the bottom toolbar stays pinned.
+        self.scrolled_window.set_vexpand(!visible);
         self.scrolled_window.set_visible(!visible);
-        self.toolbar_view.set_vexpand(!visible);
+        self.toolbar_view.set_vexpand(true);
     }
 
     /// Returns whether the Smart Folders section is currently visible.

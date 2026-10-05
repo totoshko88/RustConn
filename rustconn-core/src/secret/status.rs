@@ -740,6 +740,95 @@ mod algorithm_tests {
         );
     }
 
+    // --- Pure vault-root matcher (root_match_entry_path) ---
+    //
+    // These exercise the side-effect-free core of the vault-root read widening
+    // with a canned `ls -R -f <db>` listing, so they need no keepassxc-cli and
+    // no temp database. The end-to-end read against a real kdbx is covered by a
+    // construction test that requires live keepassxc-cli (see
+    // root_reader_end_to_end_requires_live_keepassxc_cli below).
+
+    /// A flattened whole-database listing: some entries live OUTSIDE the
+    /// RustConn group, which is exactly what the scoped reader cannot see.
+    const ROOT_LISTING: &str = "\
+RustConn/
+RustConn/web (ssh)
+Internet/
+Internet/Banking/
+Internet/Banking/my-router
+Imported/legacy-host
+standalone-entry
+";
+
+    #[test]
+    fn root_match_finds_entry_outside_rustconn_group() {
+        // `my-router` lives under Internet/Banking/, never under RustConn — the
+        // whole point of root search. It is matched by basename.
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "my-router"),
+            Some("Internet/Banking/my-router".to_string())
+        );
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "legacy-host"),
+            Some("Imported/legacy-host".to_string())
+        );
+        // A top-level entry outside RustConn.
+        assert_eq!(
+            root_match_entry_path(ROOT_LISTING, "standalone-entry"),
+            Some("standalone-entry".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_skips_group_paths_and_misses_cleanly() {
+        // A trailing-slash line is a group, never an entry — "Banking" must not
+        // match even though it appears as a path component.
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "Banking"), None);
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "Internet"), None);
+        // A name present nowhere misses.
+        assert_eq!(root_match_entry_path(ROOT_LISTING, "nope"), None);
+        // Empty listing misses.
+        assert_eq!(root_match_entry_path("", "my-router"), None);
+    }
+
+    #[test]
+    fn root_match_prefers_exact_qualified_path() {
+        // A caller passing an already-qualified path lands on it exactly, even
+        // when a shorter basename match exists earlier in the listing.
+        let listing = "\
+a/dup
+b/c/dup
+";
+        assert_eq!(
+            root_match_entry_path(listing, "b/c/dup"),
+            Some("b/c/dup".to_string())
+        );
+        // Tail match: "c/dup" is the suffix of "b/c/dup".
+        assert_eq!(
+            root_match_entry_path(listing, "c/dup"),
+            Some("b/c/dup".to_string())
+        );
+        // Bare basename falls back to the FIRST occurrence (back-compat order).
+        assert_eq!(
+            root_match_entry_path(listing, "dup"),
+            Some("a/dup".to_string())
+        );
+    }
+
+    /// The end-to-end root read (spawning keepassxc-cli against a real kdbx)
+    /// has NO coverage here: the public readers spawn `keepassxc-cli` directly
+    /// rather than through the injectable `KeePassCli` trait (only the save
+    /// path is mockable), and this test harness has no temp-kdbx builder — the
+    /// existing reader tests only assert validation errors on fake paths. So a
+    /// faithful end-to-end test of `get_password_from_kdbx_root` requires live
+    /// `keepassxc-cli` plus a constructed database; it is intentionally NOT
+    /// written here rather than faked. The pure matcher above is what carries
+    /// the logic that could otherwise be wrong.
+    #[test]
+    fn root_reader_end_to_end_requires_live_keepassxc_cli() {
+        // Documentation marker; the pure matcher tests cover the decision logic.
+    }
+
     // --- Behaviour of save_in_place / rename_or_move_in_place via a fake CLI ---
 
     use std::cell::RefCell;
@@ -750,7 +839,8 @@ mod algorithm_tests {
     use secrecy::SecretString;
 
     use super::{
-        Invocation, KeePassCli, SecretError, SecretResult, rename_or_move_in_place, save_in_place,
+        Invocation, InvocationKind, KeePassCli, SecretError, SecretResult, push_unlock_args,
+        rename_or_move_in_place, root_match_entry_path, save_in_place,
     };
 
     /// A scripted reply for one `run` call.
@@ -832,6 +922,14 @@ mod algorithm_tests {
             _db_password: Option<&SecretString>,
             _entry_secret: Option<&SecretString>,
         ) -> SecretResult<Output> {
+            // Mirror RealKeePassCli::run's touch bracketing so a test can assert
+            // that a `-y` invocation (waits_on_touch) raises the touch cue. The
+            // guard is dropped at the end of this call, exactly as the real one is.
+            let _touch = if invocation.waits_on_touch {
+                Some(crate::secret::touch::TouchGuard::begin())
+            } else {
+                None
+            };
             self.calls.borrow_mut().push(invocation.args.clone());
             let reply = self
                 .replies
@@ -1009,6 +1107,68 @@ mod algorithm_tests {
         assert!(err.is_err());
         assert!(!cli.any_arg_contains("Password"));
     }
+
+    /// #350 follow-up: a reader unlocking with a YubiKey slot builds the SAME
+    /// kind of read invocation the three readers now all route through
+    /// (`InvocationKind::Read`, `waits_on_touch` set because a `-y` slot was
+    /// pushed into the args), and running it through a cli that brackets the
+    /// touch guard raises the "touch your key" cue. Before the readers were
+    /// unified onto `cli.run` they spawned `keepassxc-cli` directly and no cue
+    /// fired on connect / password-load. The invocation shape is built here
+    /// exactly as `get_password_from_kdbx_exact` builds it.
+    #[test]
+    fn a_yubikey_read_raises_the_touch_cue_through_the_chokepoint() {
+        use std::sync::Arc;
+
+        use crate::secret::touch::{
+            TouchObserver, set_touch_observer,
+            test_support::{CountingObserver, exclusive},
+        };
+
+        let _exclusive = exclusive();
+        let observer = Arc::new(CountingObserver::for_this_thread());
+        #[expect(
+            clippy::clone_on_ref_ptr,
+            reason = "the clone must unsize to Arc<dyn TouchObserver>, which Arc::clone cannot"
+        )]
+        let installed: Arc<dyn TouchObserver> = observer.clone();
+        set_touch_observer(Some(installed));
+
+        // Build the read invocation exactly as a `-y` reader does.
+        let mut args = vec![
+            "show".to_string(),
+            "-q".to_string(),
+            "-s".to_string(),
+            "-a".to_string(),
+            "Password".to_string(),
+        ];
+        push_unlock_args(&mut args, true, None, Some("2:12345678"));
+        args.push(kdbx().display().to_string());
+        args.push("RustConn/web (ssh)".to_string());
+
+        let invocation = Invocation::new(
+            "show (exact entry)",
+            args,
+            InvocationKind::Read,
+            true, // yubikey_slot.is_some()
+        );
+
+        let cli = FakeCli::with_replies([Reply::stdout("hunter2\n")]);
+        cli.run(&invocation, Some(&db()), None).unwrap();
+
+        // The `-y` slot reached the argv (so cli.run saw a touch-waiting run)...
+        assert!(
+            cli.any_arg_contains("-y"),
+            "a yubikey read must carry -y so the chokepoint brackets the touch cue"
+        );
+        // ...and the chokepoint raised the touch cue at least once.
+        assert!(
+            observer.started() >= 1,
+            "a yubikey read routed through the chokepoint must raise the touch cue"
+        );
+
+        set_touch_observer(None);
+    }
 }
 
 /// Why a `keepassxc-cli show` exited non-zero.
@@ -1050,10 +1210,53 @@ fn classify_show_failure(stderr: &str) -> ShowFailure {
     {
         return ShowFailure::EntryMissing;
     }
-    if stderr.contains("Invalid credentials") || stderr.contains("wrong password") {
+    if is_bad_credentials(stderr) {
         return ShowFailure::BadCredentials;
     }
     ShowFailure::Unusable
+}
+
+/// Whether a failed `keepassxc-cli` run's stderr says the unlock factors were wrong.
+fn is_bad_credentials(stderr: &str) -> bool {
+    stderr.contains("Invalid credentials") || stderr.contains("wrong password")
+}
+
+/// The error for a failed whole-database `keepassxc-cli ls -R -f` listing.
+///
+/// Deliberately not [`classify_show_failure`]: a listing names no entry, so it
+/// has no "entry missing" outcome. If its stderr happens to contain "Could not
+/// find entry" (a group path, a localised build, a future rewording), mapping
+/// that to `Ok(None)` would turn an unreadable database into "no stored
+/// password" — the defect [`ShowFailure`] exists to prevent. A failed listing is
+/// always an error: bad credentials, or the database could not be read.
+fn list_failure_error(stderr: &str) -> SecretError {
+    if is_bad_credentials(stderr) {
+        SecretError::KeePassXC("Invalid database password".to_string())
+    } else {
+        SecretError::KeePassXC(format!("Could not read the database: {}", stderr.trim()))
+    }
+}
+
+/// Display name a read-only KDBX database refuses writes under.
+///
+/// Shared with [`super::kdbx_backend::KdbxBackend::display_name`] so the
+/// [`SecretError::ReadOnly`] message is the same whichever path refused.
+pub(super) const KDBX_DISPLAY_NAME: &str = "KeePass (KDBX file)";
+
+/// Refuses a KDBX write when the user put the database in read-only mode.
+///
+/// The single read-only chokepoint for every KDBX mutation: the three public
+/// writers ([`KeePassStatus::save_password_to_kdbx`],
+/// [`KeePassStatus::delete_entry_from_kdbx`] and
+/// [`KeePassStatus::rename_entry_in_kdbx`]) take the flag as a required
+/// parameter and call this before any validation or `keepassxc-cli` run, so no
+/// caller can write to a read-only database by forgetting a check of its own.
+fn ensure_kdbx_writable(read_only: bool) -> SecretResult<()> {
+    if read_only {
+        Err(SecretError::ReadOnly(KDBX_DISPLAY_NAME.to_string()))
+    } else {
+        Ok(())
+    }
 }
 
 /// The entry paths a lookup tries, in order, for RustConn's own naming schemes.
@@ -1113,7 +1316,59 @@ fn candidate_entry_paths(entry_name: &str, protocol: Option<&str>) -> Vec<String
     entry_paths
 }
 
-/// Status of `KeePass` integration
+/// Picks the vault-root entry path that matches `connection_id`, from the raw
+/// `keepassxc-cli ls -R -f <db>` listing of the WHOLE database (no `RustConn`
+/// scope).
+///
+/// This is the pure, side-effect-free core of the vault-root read widening:
+/// it takes the flattened listing `keepassxc-cli` prints — one path per line,
+/// group paths ending in `/`, entry paths not — and returns the first entry
+/// whose basename (the component after the last `/`) equals `connection_id`'s
+/// basename. A trailing-slash line is a group and is skipped; only leaf entries
+/// are considered.
+///
+/// Why basename matching: the scoped reader looks under `RustConn/…`; this
+/// widening exists to find an entry the user keeps *outside* that subtree (hand
+/// made, or imported from another tool), which by definition lives at some
+/// other group path. The entry name itself is the stable identifier, so a
+/// `connection_id` of `"web (ssh)"` matches `Internet/web (ssh)` as readily as
+/// a bare `web (ssh)` at the root.
+///
+/// **Read-widening only, and structurally #327-safe.** The returned path is an
+/// ABSOLUTE path copied verbatim from the database listing; this function never
+/// constructs a path and never prepends `RustConn/`, so it cannot produce the
+/// doubled-prefix lookup issue #327 fixed. Writes do not go through here at all.
+///
+/// An exact full-path match (`line == connection_id`, or `line` ends with
+/// `/<connection_id>`) is preferred over a looser basename match, so a caller
+/// passing an already-qualified path still lands on it first. Returns `None`
+/// when nothing matches.
+fn root_match_entry_path(listing: &str, connection_id: &str) -> Option<String> {
+    let wanted_base = connection_id.rsplit('/').next().unwrap_or(connection_id);
+
+    let mut basename_fallback: Option<String> = None;
+    for line in listing.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.ends_with('/') {
+            // Blank, or a group path (keepassxc-cli suffixes groups with '/').
+            continue;
+        }
+        // Exact match (whole path, or a path whose tail is the connection id)
+        // wins immediately — honour a caller that passed a qualified path.
+        if line == connection_id || line.ends_with(&format!("/{connection_id}")) {
+            return Some(line.to_string());
+        }
+        // Otherwise remember the first entry whose leaf name matches.
+        if basename_fallback.is_none() {
+            let line_base = line.rsplit('/').next().unwrap_or(line);
+            if line_base == wanted_base {
+                basename_fallback = Some(line.to_string());
+            }
+        }
+    }
+    basename_fallback
+}
+
 ///
 /// This struct provides information about the current state of `KeePass` integration,
 /// including whether `KeePassXC` is installed, its version, and KDBX file accessibility.
@@ -1513,6 +1768,8 @@ impl KeePassStatus {
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file. `None` preserves the
     ///   historical password/key-file-only unlock.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the write is
+    ///   refused before anything runs.
     ///
     /// # Returns
     /// * `Ok(())` if the password is saved successfully
@@ -1520,6 +1777,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -1544,9 +1802,14 @@ impl KeePassStatus {
         password: &SecretString,
         url: Option<&str>,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
         use std::io::Write as IoWrite;
         use std::process::Stdio;
+
+        // Read-only first: a read-only database is never touched, and the
+        // refusal is the same whether or not the path would have validated.
+        ensure_kdbx_writable(read_only)?;
 
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
@@ -1990,6 +2253,8 @@ impl KeePassStatus {
     /// * `yubikey_slot` - Optional `YubiKey` Challenge-Response slot as
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the delete
+    ///   is refused before anything runs.
     ///
     /// # Returns
     /// * `Ok(())` if the entry is deleted or doesn't exist
@@ -1997,6 +2262,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -2006,7 +2272,10 @@ impl KeePassStatus {
         key_file: Option<&Path>,
         entry_path: &str,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
+        ensure_kdbx_writable(read_only)?;
+
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
 
@@ -2057,9 +2326,6 @@ impl KeePassStatus {
         protocol: Option<&str>,
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
-        use std::io::Write as IoWrite;
-        use std::process::Stdio;
-
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
 
@@ -2067,6 +2333,12 @@ impl KeePassStatus {
         let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
             SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
         })?;
+
+        // Route the read through the shared chokepoint so a `-y` unlock brackets
+        // the run with the touch cue (#350). `cli.run` feeds the db password on
+        // stdin and picks the budget from (Read, waits_on_touch); the reader no
+        // longer spawns or waits itself.
+        let cli = RealKeePassCli::new(&cli_path);
 
         let entry_paths = candidate_entry_paths(entry_name, protocol);
 
@@ -2100,33 +2372,13 @@ impl KeePassStatus {
 
             tracing::debug!("get_password: trying path '{entry_path}'");
 
-            let mut child = Self::keepassxc_command(&cli_path)
-                .args(&args)
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
-
-            // Only send password if we have one (not using --no-password)
-            if let Some(mut stdin) = child.stdin.take()
-                && let Some(db_pwd) = db_password
-            {
-                stdin
-                    .write_all(db_pwd.expose_secret().as_bytes())
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-                stdin
-                    .write_all(b"\n")
-                    .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            }
-
-            // A Challenge-Response unlock blocks on a physical touch, so give it
-            // the longer budget; a password/key-file-only read keeps the tight one.
-            let output = if yubikey_slot.is_some() {
-                wait_for_cli_yubikey(child, "show (with key file)")?
-            } else {
-                wait_for_cli(child, "show (with key file)")?
-            };
+            let invocation = Invocation::new(
+                "show (with key file)",
+                args,
+                InvocationKind::Read,
+                yubikey_slot.is_some(),
+            );
+            let output = cli.run(&invocation, db_password, None)?;
 
             tracing::debug!(
                 "get_password: exit={:?}, stderr='{}'",
@@ -2229,14 +2481,13 @@ impl KeePassStatus {
         entry_path: &str,
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
-        use std::io::Write as IoWrite;
-        use std::process::Stdio;
-
         Self::validate_kdbx_path(kdbx_path)?;
 
         let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
             SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
         })?;
+
+        let cli = RealKeePassCli::new(&cli_path);
 
         let mut args = vec![
             "show".to_string(),
@@ -2253,31 +2504,15 @@ impl KeePassStatus {
 
         tracing::debug!("get_password_exact: trying path '{entry_path}'");
 
-        let mut child = Self::keepassxc_command(&cli_path)
-            .args(&args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| SecretError::KeePassXC(format!("Failed to run keepassxc-cli: {e}")))?;
-
-        if let Some(mut stdin) = child.stdin.take()
-            && let Some(db_pwd) = db_password
-        {
-            stdin
-                .write_all(db_pwd.expose_secret().as_bytes())
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-            stdin
-                .write_all(b"\n")
-                .map_err(|e| SecretError::KeePassXC(format!("Failed to send password: {e}")))?;
-        }
-
-        // A `-y` read blocks on a physical touch, so give it the touch budget.
-        let output = if yubikey_slot.is_some() {
-            wait_for_cli_yubikey(child, "show (exact entry)")?
-        } else {
-            wait_for_cli(child, "show (exact entry)")?
-        };
+        // Shared chokepoint: `-y` brackets the touch cue, db password on stdin,
+        // Read budget bumped to the YubiKey budget when it waits on a touch (#350).
+        let invocation = Invocation::new(
+            "show (exact entry)",
+            args,
+            InvocationKind::Read,
+            yubikey_slot.is_some(),
+        );
+        let output = cli.run(&invocation, db_password, None)?;
 
         if output.status.success() {
             let password =
@@ -2314,6 +2549,100 @@ impl KeePassStatus {
         }
     }
 
+    /// Reads a password by searching the ENTIRE database from its root, not just
+    /// the `RustConn/` subtree.
+    ///
+    /// This is the vault-root read widening behind
+    /// [`super::backend::SecretBackend::searches_from_root`]: it runs one
+    /// `keepassxc-cli ls -R -f <db>` over the whole database (no `RustConn`
+    /// group argument, unlike the scoped tree probe), then uses the pure
+    /// [`root_match_entry_path`] matcher to find the entry whose basename equals
+    /// `connection_id`, and finally reads that exact path with
+    /// [`Self::get_password_from_kdbx_exact`].
+    ///
+    /// # Read-widening only — why it cannot reintroduce issue #327
+    ///
+    /// Every path this function reads comes **verbatim from the database's own
+    /// listing**: it never constructs a path, never prepends `RustConn/`, and
+    /// never touches the group-prefix helpers that #327 was about. Writes do not
+    /// go through here — stores stay `RustConn/`-scoped. So the doubled-prefix
+    /// class of bug is structurally impossible on this path.
+    ///
+    /// Callers should try the scoped [`Self::get_password_from_kdbx_with_key`]
+    /// first and fall back to this only on a miss (back-compat: a `RustConn/`
+    /// entry wins over an identically-named one elsewhere); see
+    /// [`super::kdbx_backend::KdbxBackend::retrieve`].
+    ///
+    /// # Returns
+    /// * `Ok(Some(SecretString))` when a matching entry with a password is found
+    /// * `Ok(None)` when no entry matches, or the match has no password
+    ///
+    /// # Errors
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` is missing, the
+    /// path is invalid, or the database cannot be unlocked/read.
+    pub fn get_password_from_kdbx_root(
+        kdbx_path: &Path,
+        db_password: Option<&SecretString>,
+        key_file: Option<&Path>,
+        connection_id: &str,
+        yubikey_slot: Option<&str>,
+    ) -> SecretResult<Option<SecretString>> {
+        Self::validate_kdbx_path(kdbx_path)?;
+
+        let cli_path = Self::find_keepassxc_cli().ok_or_else(|| {
+            SecretError::KeePassXC("keepassxc-cli not found. Please install KeePassXC.".to_string())
+        })?;
+
+        let cli = RealKeePassCli::new(&cli_path);
+
+        // List the WHOLE database, flattened. No trailing group argument — that
+        // is the single difference from the `RustConn`-scoped tree probe, and it
+        // is what widens the read to entries outside the RustConn subtree.
+        let mut args = vec![
+            "ls".to_string(),
+            "-q".to_string(),
+            "-R".to_string(),
+            "-f".to_string(),
+        ];
+        push_unlock_args(&mut args, db_password.is_some(), key_file, yubikey_slot);
+        args.push(kdbx_path.display().to_string());
+
+        // Through the shared chokepoint so this root `-y` run also gets the
+        // touch cue (#350); the delegated `_exact` read below routes through it
+        // too, so both runs of a two-step root read show the cue.
+        let invocation = Invocation::new(
+            "ls -R (root search)",
+            args,
+            InvocationKind::Read,
+            yubikey_slot.is_some(),
+        );
+        let output = cli.run(&invocation, db_password, None)?;
+
+        if !output.status.success() {
+            // A failed listing is "cannot read the database", never "no entry":
+            // `list_failure_error` has no entry-missing outcome, so a wrong key or
+            // an unreadable database is reported rather than swallowed as a miss.
+            return Err(list_failure_error(&String::from_utf8_lossy(&output.stderr)));
+        }
+
+        let listing = String::from_utf8_lossy(&output.stdout);
+        let Some(entry_path) = root_match_entry_path(&listing, connection_id) else {
+            tracing::debug!("get_password_root: no root entry matched '{connection_id}'");
+            return Ok(None);
+        };
+
+        tracing::debug!("get_password_root: matched '{entry_path}' for '{connection_id}'");
+        // Read the matched absolute path as-is. Reusing the exact reader keeps
+        // the unlock composition and secret-wiping identical to every other read.
+        Self::get_password_from_kdbx_exact(
+            kdbx_path,
+            db_password,
+            key_file,
+            &entry_path,
+            yubikey_slot,
+        )
+    }
+
     /// Renames an entry in KDBX database by moving it from old path to new path
     ///
     /// This method retrieves the entry from the old path, creates a new entry at the new path
@@ -2329,6 +2658,8 @@ impl KeePassStatus {
     ///   `slot[:serial]`; when `Some`, passed to `keepassxc-cli` as `-y` and
     ///   composed with the password and/or key file for every read and write
     ///   this rename performs.
+    /// * `read_only` - `SecretSettings::kdbx_read_only`; when `true` the rename
+    ///   is refused before anything runs (a no-op rename still returns `Ok`).
     ///
     /// # Returns
     /// * `Ok(())` if the rename is successful or entry doesn't exist
@@ -2336,6 +2667,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     /// Returns an error if:
+    /// - the database is in read-only mode ([`SecretError::ReadOnly`])
     /// - `keepassxc-cli` is not installed
     /// - The KDBX file path is invalid
     /// - The database password/key file is incorrect
@@ -2346,11 +2678,14 @@ impl KeePassStatus {
         old_entry_path: &str,
         new_entry_path: &str,
         yubikey_slot: Option<&str>,
+        read_only: bool,
     ) -> SecretResult<()> {
         // If paths are the same, nothing to do
         if old_entry_path == new_entry_path {
             return Ok(());
         }
+
+        ensure_kdbx_writable(read_only)?;
 
         // First validate the path
         Self::validate_kdbx_path(kdbx_path)?;
@@ -2449,6 +2784,7 @@ impl KeePassStatus {
             &password,
             url.as_deref(),
             yubikey_slot,
+            read_only,
         )?;
 
         // Delete old entry (use full path for direct CLI call)
@@ -3176,6 +3512,108 @@ mod tests {
             matches!(classify_show_failure(translated), ShowFailure::Unusable),
             "if this ever classifies correctly, the locale pinning is no longer \
              load-bearing and this test should say so"
+        );
+    }
+
+    /// A failed whole-database listing is always an error. Reusing the `show`
+    /// classifier let "Could not find entry" in an `ls` stderr turn an
+    /// unreadable database into `Ok(None)`, i.e. "no stored password".
+    #[test]
+    fn list_failure_never_reports_a_missing_entry() {
+        let missing = list_failure_error("Could not find entry with path RustConn/x (ssh).");
+        assert!(
+            matches!(missing, SecretError::KeePassXC(ref m) if m.starts_with("Could not read the database")),
+            "an ls failure must not read as a miss, got {missing:?}"
+        );
+
+        let bad = list_failure_error("Invalid credentials were provided, please try again.");
+        assert!(
+            matches!(bad, SecretError::KeePassXC(ref m) if m == "Invalid database password"),
+            "got {bad:?}"
+        );
+
+        let unreadable =
+            list_failure_error("Error while reading the database: Not a KeePass database.");
+        assert!(
+            matches!(unreadable, SecretError::KeePassXC(ref m) if m.contains("Not a KeePass database")),
+            "got {unreadable:?}"
+        );
+    }
+
+    /// `kdbx_read_only` is enforced inside the three public writers, ahead of
+    /// path validation: `/nonexistent/x.kdbx` would otherwise fail validation, so
+    /// getting `ReadOnly` proves the guard refused before anything ran. The
+    /// writable runs prove it is the flag, not the path, doing the refusing.
+    #[test]
+    fn kdbx_writers_refuse_read_only_before_touching_the_database() {
+        let path = Path::new("/nonexistent/x.kdbx");
+        let pwd = SecretString::from("p".to_string());
+        let is_read_only = |r: SecretResult<()>| matches!(r, Err(SecretError::ReadOnly(ref n)) if n == KDBX_DISPLAY_NAME);
+
+        assert!(is_read_only(KeePassStatus::save_password_to_kdbx(
+            path,
+            None,
+            None,
+            "conn (ssh)",
+            "user",
+            &pwd,
+            None,
+            None,
+            true,
+        )));
+        assert!(is_read_only(KeePassStatus::delete_entry_from_kdbx(
+            path,
+            None,
+            None,
+            "RustConn/conn (ssh)",
+            None,
+            true,
+        )));
+        assert!(is_read_only(KeePassStatus::rename_entry_in_kdbx(
+            path,
+            None,
+            None,
+            "RustConn/old (ssh)",
+            "RustConn/new (ssh)",
+            None,
+            true,
+        )));
+
+        // Writable: the same calls get as far as path validation.
+        let writable = KeePassStatus::save_password_to_kdbx(
+            path,
+            None,
+            None,
+            "conn (ssh)",
+            "user",
+            &pwd,
+            None,
+            None,
+            false,
+        );
+        assert!(
+            matches!(writable, Err(SecretError::KeePassXC(_))),
+            "got {writable:?}"
+        );
+        let writable =
+            KeePassStatus::delete_entry_from_kdbx(path, None, None, "RustConn/c", None, false);
+        assert!(
+            matches!(writable, Err(SecretError::KeePassXC(_))),
+            "got {writable:?}"
+        );
+
+        // A rename to the same path writes nothing, so it is not refused.
+        assert!(
+            KeePassStatus::rename_entry_in_kdbx(
+                path,
+                None,
+                None,
+                "RustConn/a",
+                "RustConn/a",
+                None,
+                true
+            )
+            .is_ok()
         );
     }
 

@@ -107,6 +107,7 @@ impl ConnectionDialog {
         let ssh_key_button = ssh_widgets.key_button;
         let ssh_agent_key_dropdown = ssh_widgets.agent_key_dropdown;
         let ssh_jump_host_dropdown = ssh_widgets.jump_host_dropdown;
+        let ssh_jump_host_row = ssh_widgets.jump_host_row;
         let ssh_proxy_entry = ssh_widgets.proxy_entry;
         let ssh_proxy_row = ssh_widgets.proxy_row;
         let ssh_proxy_command_entry = ssh_widgets.proxy_command_entry;
@@ -386,6 +387,8 @@ impl ConnectionDialog {
             .set_icon_name(Some("system-run-symbolic"));
 
         let expect_rules: Rc<RefCell<Vec<ExpectRule>>> = Rc::new(RefCell::new(Vec::new()));
+        let command_macros: Rc<RefCell<Vec<rustconn_core::models::CommandMacro>>> =
+            Rc::new(RefCell::new(Vec::new()));
 
         // === Advanced Tab (Display + WOL) ===
         let (
@@ -490,6 +493,14 @@ impl ConnectionDialog {
             &automation_widgets.add_expect_rule_button,
             &automation_widgets.expect_rules_list,
             &expect_rules,
+        );
+
+        // Wire up add command macro button
+        Self::wire_add_command_macro_button(
+            &automation_widgets.add_command_macro_button,
+            &automation_widgets.command_macros_list,
+            &command_macros,
+            &state,
         );
 
         // Wire up template picker buttons
@@ -732,6 +743,7 @@ impl ConnectionDialog {
             &variables_rows,
             &logging_tab_struct,
             &expect_rules,
+            &command_macros,
             &automation_widgets.login_username_prompt_entry,
             &automation_widgets.login_password_prompt_entry,
             &automation_widgets.login_timeout_spin,
@@ -826,6 +838,7 @@ impl ConnectionDialog {
             pending_agent_selection,
             network_mode_row,
             ssh_jump_host_dropdown,
+            ssh_jump_host_row,
             ssh_proxy_entry,
             ssh_proxy_row,
             ssh_proxy_command_entry,
@@ -993,6 +1006,9 @@ impl ConnectionDialog {
             expect_rules_list: automation_widgets.expect_rules_list,
             expect_rules,
             add_expect_rule_button: automation_widgets.add_expect_rule_button,
+            command_macros_list: automation_widgets.command_macros_list,
+            command_macros,
+            add_command_macro_button: automation_widgets.add_command_macro_button,
             expect_pattern_test_entry: automation_widgets.expect_pattern_test_entry,
             expect_test_result_label: automation_widgets.expect_test_result_label,
             login_username_prompt_entry: automation_widgets.login_username_prompt_entry,

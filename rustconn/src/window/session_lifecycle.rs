@@ -631,11 +631,11 @@ impl MainWindow {
 
             // And `needs-attention`, which is what actually survives.
             //
-            // `indicator-icon` above is one slot that five different meanings write
-            // to — split-pane colour, protocol colour, offline, pinned, and this —
-            // with a priority guard between only two of them. So a notification's
-            // icon can be overwritten by `apply_protocol_color` moments later and
-            // the user never learns anything happened. `needs-attention` is a
+            // `indicator-icon` above is one slot that several meanings write
+            // to — split-pane colour, offline, pinned, and this — with a
+            // priority guard between only two of them. So a notification's
+            // icon can be overwritten moments later and the user never learns
+            // anything happened. `needs-attention` is a
             // separate property nothing else touches, and libadwaita surfaces it in
             // all three places this UI has: a line under the tab in AdwTabBar (or a
             // highlighted edge when the tab is scrolled out of view), a dot on the

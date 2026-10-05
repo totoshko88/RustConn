@@ -178,6 +178,8 @@ pub(super) struct UpdateParams<'a> {
     pub resolution: Option<&'a str>,
     pub color_depth: Option<u8>,
     pub disable_nla: bool,
+    pub kerberos: Option<bool>,
+    pub kdc_address: Option<&'a str>,
     pub rdp_dynamic_resolution: Option<bool>,
     pub rdp_smart_sizing: Option<bool>,
     pub keyboard_layout: Option<u32>,
@@ -630,6 +632,8 @@ pub(super) fn cmd_update(
         || params.resolution.is_some()
         || params.color_depth.is_some()
         || params.disable_nla
+        || params.kerberos.is_some()
+        || params.kdc_address.is_some()
         || params.rdp_dynamic_resolution.is_some()
         || params.rdp_smart_sizing.is_some()
         || params.rdp_freerdp_client.is_some()
@@ -970,6 +974,22 @@ fn apply_rdp_fields_update(
     // NLA
     if params.disable_nla {
         cfg.disable_nla = true;
+    }
+
+    // Kerberos for NLA (issue #351). Tri-state: `--kerberos` enables,
+    // `--kerberos false` disables. The KDC address uses the same
+    // `normalize_kdc_url` validator as the GUI; an empty value clears it, a
+    // malformed one is a hard error rather than a silently dropped setting.
+    if let Some(value) = params.kerberos {
+        cfg.kerberos_enabled = value;
+    }
+    if let Some(address) = params.kdc_address {
+        cfg.kdc_proxy_url = if address.trim().is_empty() {
+            None
+        } else {
+            rustconn_core::rdp_client::normalize_kdc_url(address)
+                .map_err(|e| CliError::Config(format!("invalid KDC address: {e}")))?
+        };
     }
 
     // Dynamic resolution / smart sizing (issue #341).

@@ -237,15 +237,17 @@ pub struct RdpConfig {
     pub fido2_enabled: bool,
     /// Authenticate NLA with Kerberos instead of NTLM (issue #351).
     ///
-    /// Only affects the embedded IronRDP path (CredSSP). Needed for accounts in
-    /// the AD "Protected Users" group, which may not use NTLM. Signs in with the
-    /// saved password, not a `kinit` ticket, and has no NTLM fallback when the
-    /// KDC cannot be found or reached.
+    /// On the embedded IronRDP path (CredSSP) this chooses Kerberos: it signs in
+    /// with the saved password, not a `kinit` ticket, and has no NTLM fallback
+    /// when the KDC cannot be found or reached. Needed for accounts in the AD
+    /// "Protected Users" group, which may not use NTLM. On the FreeRDP fallback
+    /// it lifts the `RemoteApp` NTLM restriction and gates the KDC Address.
     pub kerberos_enabled: bool,
     /// KDC address for the Kerberos exchange, used only when
     /// [`Self::kerberos_enabled`] is set: a domain controller or an MS-KKDCP
     /// proxy URL. `None` lets sspi look the KDC up, then tries the realm's own
-    /// DNS name.
+    /// DNS name. The FreeRDP fallback can use only an `https://…/KdcProxy`
+    /// proxy (see `rustconn_core::protocol::freerdp_kerberos_arg`).
     pub kdc_proxy_url: Option<String>,
 }
 

@@ -1,16 +1,12 @@
 use std::path::{Path, PathBuf};
 
-use super::download::{download_with_progress, verify_checksum};
+use super::download::{download_with_progress, enforce_checksum_policy};
 use super::extract::{extract_tar_gz_preserve, extract_zip, find_binary_recursive};
 use super::{
-    ChecksumPolicy, CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
+    CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
     DownloadableComponent, ProgressCallback,
 };
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
-)]
 pub(super) async fn install_gcloud(
     component: &DownloadableComponent,
     cli_dir: &Path,
@@ -35,20 +31,7 @@ pub(super) async fn install_gcloud(
         return Err(CliDownloadError::Cancelled);
     }
 
-    match component.checksum {
-        ChecksumPolicy::Static(expected) => {
-            verify_checksum(&bytes, expected)?;
-        }
-        ChecksumPolicy::SkipLatest => {
-            tracing::warn!(
-                "Skipping checksum for {} (latest URL, no stable hash)",
-                component.name
-            );
-        }
-        ChecksumPolicy::None => {
-            return Err(CliDownloadError::NoChecksum);
-        }
-    }
+    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -140,10 +123,6 @@ pub(super) async fn install_gcloud(
 }
 
 /// Install AWS CLI v2
-#[expect(
-    clippy::too_many_lines,
-    reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
-)]
 pub(super) async fn install_aws_cli(
     component: &DownloadableComponent,
     cli_dir: &Path,
@@ -168,20 +147,7 @@ pub(super) async fn install_aws_cli(
         return Err(CliDownloadError::Cancelled);
     }
 
-    match component.checksum {
-        ChecksumPolicy::Static(expected) => {
-            verify_checksum(&bytes, expected)?;
-        }
-        ChecksumPolicy::SkipLatest => {
-            tracing::warn!(
-                "Skipping checksum for {} (latest URL, no stable hash)",
-                component.name
-            );
-        }
-        ChecksumPolicy::None => {
-            return Err(CliDownloadError::NoChecksum);
-        }
-    }
+    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {

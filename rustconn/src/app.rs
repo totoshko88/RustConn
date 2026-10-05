@@ -518,14 +518,13 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
                 state_mut.run_startup_sync()
             };
             if !reports.is_empty() {
-                let total: usize = reports
-                    .iter()
-                    .map(|r| r.connections_added + r.connections_updated)
-                    .sum();
-                if total > 0 {
+                // Removals and group renames/moves change the sidebar too;
+                // counting only additions and updates left it stale.
+                let changed = reports.iter().filter(|r| r.has_changes()).count();
+                if changed > 0 {
                     tracing::info!(
                         groups = reports.len(),
-                        total_changes = total,
+                        changed_groups = changed,
                         "Startup sync completed"
                     );
                     MainWindow::reload_sidebar_preserving_state(&state_for_sync, &sidebar_for_sync);
@@ -1617,6 +1616,10 @@ pub fn apply_keybindings(app: &adw::Application, state: &SharedAppState) {
 ///
 /// When passthrough is disabled, all keybindings are restored from settings.
 ///
+/// Per-connection command-macro accels are not in that table; the
+/// `win.toggle-passthrough` handler asks `window::macro_dispatch` to drop and
+/// later restore them.
+///
 /// Note: the F10 primary-menu key and `AdwTabView`'s built-in tab shortcuts
 /// are GTK-internal bindings, not application accelerators, so they are
 /// suspended separately — the header-bar menu button's `primary` property and
@@ -1832,6 +1835,22 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         Some("© Devolutions Inc."),
         gtk4::License::MitX11,
         None,
+    );
+    // OpenH264: not bundled — fetched on demand from Cisco at the user's
+    // request (Settings → Connection → Media Codecs). The exact attribution and
+    // the patent note are required by Cisco's binary licence.
+    about.add_legal_section(
+        "OpenH264 Video Codec provided by Cisco Systems, Inc.",
+        Some("© Cisco Systems, Inc."),
+        gtk4::License::Custom,
+        Some(
+            "OpenH264 Video Codec provided by Cisco Systems, Inc.\n\n\
+             This software is downloaded on demand from Cisco, not bundled with \
+             RustConn. OpenH264 implements the H.264/AVC standard, which is \
+             covered by patents licensed through MPEG-LA; Cisco pays those \
+             royalties for the binaries it distributes. Binary licence: \
+             https://www.openh264.org/BINARY_LICENSE.txt",
+        ),
     );
 
     about.present(Some(parent));

@@ -465,6 +465,41 @@ pub struct SecretSettings {
     /// Pass password store directory (defaults to ~/.password-store)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pass_store_dir: Option<PathBuf>,
+    /// Open the KeePass (kdbx) backend read-only (refuses writes). Default
+    /// false. Enforced by the `KeePassStatus` writers (save, delete, rename),
+    /// which take this flag as a required parameter and return
+    /// `SecretError::ReadOnly` before running `keepassxc-cli`. Reads are
+    /// unaffected.
+    #[serde(default)]
+    pub kdbx_read_only: bool,
+    /// Widen KeePass (kdbx) reads to the whole vault, not just the RustConn
+    /// scope. Read-widening only (#327-safe).
+    #[serde(default)]
+    pub kdbx_root_search: bool,
+    /// Open the Bitwarden backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub bitwarden_read_only: bool,
+    /// Widen Bitwarden reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub bitwarden_root_search: bool,
+    /// Open the 1Password backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub onepassword_read_only: bool,
+    /// Widen 1Password reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub onepassword_root_search: bool,
+    /// Open the Passbolt backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub passbolt_read_only: bool,
+    /// Widen Passbolt reads to the whole vault, not just the RustConn scope.
+    #[serde(default)]
+    pub passbolt_root_search: bool,
+    /// Open the Pass backend read-only (refuses writes). Default false.
+    #[serde(default)]
+    pub pass_read_only: bool,
+    /// Widen Pass reads to the store root, not just the `rustconn/` subtree.
+    #[serde(default)]
+    pub pass_root_search: bool,
     /// Path to the portable encrypted credential file.
     ///
     /// Can point to a cloud-synced directory (Dropbox, Syncthing, etc.) so the
@@ -540,6 +575,8 @@ impl std::fmt::Debug for SecretSettings {
             .field("kdbx_use_key_file", &self.kdbx_use_key_file)
             .field("kdbx_use_password", &self.kdbx_use_password)
             .field("kdbx_yubikey_slot", &self.kdbx_yubikey_slot)
+            .field("kdbx_read_only", &self.kdbx_read_only)
+            .field("kdbx_root_search", &self.kdbx_root_search)
             .field(
                 "bitwarden_password",
                 &redacted(self.bitwarden_password.as_ref()),
@@ -590,6 +627,14 @@ impl std::fmt::Debug for SecretSettings {
             .field("passbolt_save_to_keyring", &self.passbolt_save_to_keyring)
             .field("passbolt_server_url", &self.passbolt_server_url)
             .field("pass_store_dir", &self.pass_store_dir)
+            .field("bitwarden_read_only", &self.bitwarden_read_only)
+            .field("bitwarden_root_search", &self.bitwarden_root_search)
+            .field("onepassword_read_only", &self.onepassword_read_only)
+            .field("onepassword_root_search", &self.onepassword_root_search)
+            .field("passbolt_read_only", &self.passbolt_read_only)
+            .field("passbolt_root_search", &self.passbolt_root_search)
+            .field("pass_read_only", &self.pass_read_only)
+            .field("pass_root_search", &self.pass_root_search)
             .field("portable_file_path", &self.portable_file_path)
             .field(
                 "portable_passphrase",
@@ -634,6 +679,16 @@ impl Default for SecretSettings {
             passbolt_save_to_keyring: false,
             passbolt_server_url: None,
             pass_store_dir: None,
+            bitwarden_read_only: false,
+            bitwarden_root_search: false,
+            onepassword_read_only: false,
+            onepassword_root_search: false,
+            passbolt_read_only: false,
+            passbolt_root_search: false,
+            pass_read_only: false,
+            pass_root_search: false,
+            kdbx_read_only: false,
+            kdbx_root_search: false,
             portable_file_path: None,
             portable_passphrase: None,
             portable_passphrase_encrypted: None,
@@ -666,6 +721,16 @@ impl PartialEq for SecretSettings {
             && self.passbolt_save_to_keyring == other.passbolt_save_to_keyring
             && self.passbolt_server_url == other.passbolt_server_url
             && self.pass_store_dir == other.pass_store_dir
+            && self.bitwarden_read_only == other.bitwarden_read_only
+            && self.bitwarden_root_search == other.bitwarden_root_search
+            && self.onepassword_read_only == other.onepassword_read_only
+            && self.onepassword_root_search == other.onepassword_root_search
+            && self.passbolt_read_only == other.passbolt_read_only
+            && self.passbolt_root_search == other.passbolt_root_search
+            && self.pass_read_only == other.pass_read_only
+            && self.pass_root_search == other.pass_root_search
+            && self.kdbx_read_only == other.kdbx_read_only
+            && self.kdbx_root_search == other.kdbx_root_search
             && self.portable_file_path == other.portable_file_path
             && self.portable_passphrase_encrypted == other.portable_passphrase_encrypted
             && self.portable_save_to_keyring == other.portable_save_to_keyring
@@ -966,10 +1031,18 @@ pub struct UiSettings {
     /// only the accidental trigger goes away.
     #[serde(default = "default_true")]
     pub reveal_session_toolbar_on_hover: bool,
-    /// Color tab indicators by protocol type
+    /// Retired in 0.23 and ignored: was "colour tab indicators by protocol".
+    ///
+    /// Tabs already show the protocol's symbolic icon, so the indicator only
+    /// repeated it. Kept so configs written by older builds still load and so
+    /// a downgrade finds the value it wrote.
     #[serde(default)]
     pub color_tabs_by_protocol: bool,
-    /// Show protocol filter bar in sidebar
+    /// Retired in 0.23 and ignored: was "show the protocol filter bar".
+    ///
+    /// The filters now live in a popover behind the sidebar's Filter button,
+    /// which has no persistent visible state to remember. Kept for the same
+    /// load/downgrade reason as `color_tabs_by_protocol`.
     #[serde(default)]
     pub show_protocol_filters: bool,
     /// Show Smart Folders section in sidebar
@@ -1011,6 +1084,11 @@ pub struct UiSettings {
     /// (issue #211).
     #[serde(default)]
     pub window_title_shows_connection: bool,
+    /// Show the active connection's group hierarchy path as the header
+    /// subtitle (Nautilus-style breadcrumb), e.g. "AWS Test Lab / Prod".
+    /// Independent of the WM window title (issue #211 is unaffected).
+    #[serde(default)]
+    pub window_title_shows_path: bool,
     /// Make a double-click in the sidebar always start another session.
     ///
     /// Default `false`: a double-click focuses the connection's already-open
@@ -1155,6 +1233,7 @@ impl Default for UiSettings {
             compact_auto: false,
             terminal_passthrough_ctrl: true,
             window_title_shows_connection: false,
+            window_title_shows_path: false,
             double_click_opens_new_session: false,
             open_tunnelled_browser_in_embedded: true,
             tunnel_browser_start_url: default_tunnel_start_url(),
@@ -1174,6 +1253,15 @@ pub struct ConnectionSettings {
     /// Timeout in seconds for port check (default: 3)
     #[serde(default = "default_port_check_timeout")]
     pub port_check_timeout_secs: u32,
+    /// Whether a downloaded Cisco OpenH264 codec may be used for RDP GFX H.264.
+    ///
+    /// Default `true`: an installed codec is used. Turning it off lets the user
+    /// disable H.264 without deleting the blob (the OpenH264 binary licence
+    /// requires an enable/disable/re-enable path), and the loader probe
+    /// (`gfx_handler::openh264_candidates`) honours it via
+    /// `gfx_handler::set_openh264_enabled`.
+    #[serde(default = "default_true")]
+    pub use_openh264: bool,
 }
 
 /// Application-wide bastion settings — the outermost tier of proxy inheritance.
@@ -1223,6 +1311,7 @@ impl Default for ConnectionSettings {
         Self {
             pre_connect_port_check: true,
             port_check_timeout_secs: default_port_check_timeout(),
+            use_openh264: true,
         }
     }
 }
@@ -2124,6 +2213,80 @@ mod tests {
             rendered.contains("<set>"),
             "expected a `<set>` presence marker in: {rendered}"
         );
+    }
+
+    /// Two `SecretSettings` that differ only in one of the new per-backend
+    /// read-only / root-search bools must compare UNEQUAL. `PartialEq` is manual
+    /// here, so a field left out of its `&&` chain would make the settings look
+    /// equal after a toggle — and `rebuild_from_settings` fires only on an
+    /// unequal compare, so the toggle would silently never reach the backend.
+    #[test]
+    fn secret_settings_eq_distinguishes_each_new_backend_toggle() {
+        use super::SecretSettings;
+
+        // One assertion per field so a single omission from the manual `&&`
+        // chain is caught by the exact field it dropped. `assert_ne!` holds
+        // only if that field participates in the comparison.
+        macro_rules! assert_toggle_distinguishes {
+            ($field:ident) => {{
+                let base = SecretSettings::default();
+                let mut toggled = SecretSettings::default();
+                toggled.$field = true;
+                assert_ne!(
+                    base, toggled,
+                    concat!(
+                        "settings differing only in `",
+                        stringify!($field),
+                        "` must not compare equal — the field is missing from \
+                         the manual PartialEq chain"
+                    )
+                );
+            }};
+        }
+
+        assert_toggle_distinguishes!(bitwarden_read_only);
+        assert_toggle_distinguishes!(bitwarden_root_search);
+        assert_toggle_distinguishes!(onepassword_read_only);
+        assert_toggle_distinguishes!(onepassword_root_search);
+        assert_toggle_distinguishes!(passbolt_read_only);
+        assert_toggle_distinguishes!(passbolt_root_search);
+        assert_toggle_distinguishes!(pass_read_only);
+        assert_toggle_distinguishes!(pass_root_search);
+        assert_toggle_distinguishes!(kdbx_read_only);
+        assert_toggle_distinguishes!(kdbx_root_search);
+    }
+
+    /// The kdbx read-only / root-search toggles default off, so the resolver's
+    /// `if secret_settings.kdbx_root_search` gate is false on a fresh install
+    /// and the root-widening fallback never runs unless the user opts in. This
+    /// is the config half of #327-safe read-widening; the live keepassxc-cli
+    /// path is covered end-to-end only, not in a unit test.
+    #[test]
+    fn secret_settings_kdbx_read_widening_toggles_default_off() {
+        use super::SecretSettings;
+        let d = SecretSettings::default();
+        assert!(!d.kdbx_read_only);
+        assert!(!d.kdbx_root_search);
+    }
+
+    /// A config predating the kdbx read-only / root-search fields must still
+    /// load, with both toggles off — `#[serde(default)]` is what makes the old
+    /// behaviour (scoped reads only) survive the upgrade.
+    #[test]
+    fn secret_settings_without_kdbx_read_widening_fields_still_deserializes() {
+        use super::SecretSettings;
+
+        let older_config = r"
+            kdbx_enabled = true
+            kdbx_use_password = true
+        ";
+
+        let settings: SecretSettings =
+            toml::from_str(older_config).expect("a config predating the fields must still parse");
+
+        assert!(!settings.kdbx_read_only);
+        assert!(!settings.kdbx_root_search);
+        assert!(settings.kdbx_enabled);
     }
 
     /// A fresh install has no hardware-key second factor: the field defaults to

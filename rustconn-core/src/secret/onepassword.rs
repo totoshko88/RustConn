@@ -49,6 +49,12 @@ pub struct OnePasswordBackend {
     vault_name: String,
     /// Account shorthand (for multi-account setups)
     account: Option<String>,
+    /// When true, every mutating operation is refused with
+    /// [`SecretError::ReadOnly`] and the vault is left untouched.
+    read_only: bool,
+    /// When true, credential reads widen to the whole account instead of only
+    /// the `RustConn` vault, so entries living outside it are still found.
+    root_search: bool,
 }
 
 /// 1Password item structure for JSON parsing
@@ -111,6 +117,8 @@ impl OnePasswordBackend {
             service_account_token: None,
             vault_name: "RustConn".to_string(),
             account: None,
+            read_only: false,
+            root_search: false,
         }
     }
 
@@ -121,13 +129,50 @@ impl OnePasswordBackend {
             service_account_token: Some(token),
             vault_name: "RustConn".to_string(),
             account: None,
+            read_only: false,
+            root_search: false,
         }
+    }
+
+    /// Creates a 1Password backend configured from secret settings.
+    ///
+    /// Applies the service account token and the `onepassword_read_only` /
+    /// `onepassword_root_search` toggles. Every caller that builds this backend
+    /// for a user operation goes through here, so a persisted toggle cannot be
+    /// dropped by a call site that only copied the token across.
+    #[must_use]
+    pub fn from_secret_settings(settings: &crate::config::SecretSettings) -> Self {
+        let mut backend = Self::new()
+            .with_read_only(settings.onepassword_read_only)
+            .with_root_search(settings.onepassword_root_search);
+        if let Some(ref token) = settings.onepassword_service_account_token {
+            backend.set_service_account_token(token.clone());
+        }
+        backend
     }
 
     /// Sets the vault name for storing RustConn entries
     #[must_use]
     pub fn with_vault_name(mut self, name: impl Into<String>) -> Self {
         self.vault_name = name.into();
+        self
+    }
+
+    /// Puts the backend in read-only mode, where `store` and `delete` are
+    /// refused with [`SecretError::ReadOnly`] and the vault is never mutated.
+    #[must_use]
+    pub const fn with_read_only(mut self, read_only: bool) -> Self {
+        self.read_only = read_only;
+        self
+    }
+
+    /// Widens credential reads to the whole account instead of only the
+    /// `RustConn` vault. Entries created outside the `RustConn` vault — e.g. by
+    /// hand or imported from another tool — are then found as well. Writes are
+    /// unaffected and still target the `RustConn` vault.
+    #[must_use]
+    pub const fn with_root_search(mut self, root_search: bool) -> Self {
+        self.root_search = root_search;
         self
     }
 
@@ -293,21 +338,59 @@ impl OnePasswordBackend {
     async fn find_item(&self, connection_id: &str) -> SecretResult<Option<OnePasswordItem>> {
         let title = Self::entry_title(connection_id);
 
-        // List items in vault with rustconn tag
-        let output = self
-            .run_command(&[
-                "item",
-                "list",
-                "--vault",
-                &self.vault_name,
-                "--tags",
-                "rustconn",
-            ])
-            .await;
+        // Primary pass: the RustConn vault, tagged items only — the historical,
+        // narrow scope.
+        if let Some(item) = self
+            .find_item_in(
+                &title,
+                connection_id,
+                &[
+                    "item",
+                    "list",
+                    "--vault",
+                    &self.vault_name,
+                    "--tags",
+                    "rustconn",
+                ],
+                /* match_bare_id */ false,
+            )
+            .await?
+        {
+            return Ok(Some(item));
+        }
 
-        // If vault doesn't exist or is empty, return None
-        let output = match output {
+        // Root-search fallback: widen to the whole account (no vault, no tag
+        // filter) and accept either the `RustConn: {id}` title or the bare
+        // connection id, so an entry the user keeps outside the RustConn vault
+        // is still found. Reads only — writes still target the RustConn vault.
+        if self.root_search {
+            return self
+                .find_item_in(
+                    &title,
+                    connection_id,
+                    &["item", "list"],
+                    /* match_bare_id */ true,
+                )
+                .await;
+        }
+
+        Ok(None)
+    }
+
+    /// Runs one `op item list …` query and returns the first item whose title
+    /// matches, resolving it to full detail. When `match_bare_id` is true an
+    /// item titled exactly `connection_id` (not just `RustConn: {id}`) also
+    /// matches, which is what widens a root search to hand-made entries.
+    async fn find_item_in(
+        &self,
+        title: &str,
+        connection_id: &str,
+        list_args: &[&str],
+        match_bare_id: bool,
+    ) -> SecretResult<Option<OnePasswordItem>> {
+        let output = match self.run_command(list_args).await {
             Ok(o) => o,
+            // If vault doesn't exist or is empty, treat as no match.
             Err(_) => return Ok(None),
         };
 
@@ -323,13 +406,12 @@ impl OnePasswordBackend {
             }
         };
 
-        // Find exact match by title
         for item in items {
-            if item.title == title {
-                // Get full item details with fields
-                let details = self
-                    .run_command(&["item", "get", &item.id, "--vault", &self.vault_name])
-                    .await?;
+            let matches = item.title == title || (match_bare_id && item.title == connection_id);
+            if matches {
+                // Get full item details with fields. The item may live in any
+                // vault here, so look it up by id without a --vault constraint.
+                let details = self.run_command(&["item", "get", &item.id]).await?;
                 // Position, not the serde `Display`. `op item get` returns the
                 // item's field *values*, password included, and serde reports a
                 // type mismatch by quoting the value it choked on — which puts
@@ -359,6 +441,7 @@ impl Default for OnePasswordBackend {
 #[async_trait]
 impl SecretBackend for OnePasswordBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if signed in
         if !self.is_signed_in().await {
             return Err(SecretError::BackendUnavailable(
@@ -471,6 +554,7 @@ impl SecretBackend for OnePasswordBackend {
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
+        self.ensure_writable()?;
         // Check if signed in
         if !self.is_signed_in().await {
             return Err(SecretError::BackendUnavailable(
@@ -515,6 +599,14 @@ impl SecretBackend for OnePasswordBackend {
 
     fn display_name(&self) -> &'static str {
         "1Password"
+    }
+
+    fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    fn searches_from_root(&self) -> bool {
+        self.root_search
     }
 }
 
@@ -733,6 +825,8 @@ impl std::fmt::Debug for OnePasswordBackend {
             )
             .field("vault_name", &self.vault_name)
             .field("account", &self.account)
+            .field("read_only", &self.read_only)
+            .field("root_search", &self.root_search)
             .finish_non_exhaustive()
     }
 }
@@ -754,5 +848,89 @@ mod debug_tests {
         );
         assert!(rendered.contains("OnePasswordBackend"));
         assert!(rendered.contains("service_account_token_present"));
+    }
+}
+
+#[cfg(test)]
+mod read_only_tests {
+    use super::*;
+    use crate::error::SecretError;
+    use crate::models::Credentials;
+
+    #[test]
+    fn with_read_only_sets_capability() {
+        assert!(!OnePasswordBackend::new().is_read_only());
+        assert!(
+            OnePasswordBackend::new()
+                .with_read_only(true)
+                .is_read_only()
+        );
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_store_before_signin_check() {
+        // ensure_writable() precedes the is_signed_in() check, so no `op`
+        // process is spawned when read-only.
+        let backend = OnePasswordBackend::new().with_read_only(true);
+        let err = backend
+            .store("conn-1", &Credentials::default())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(name) if name == "1Password"));
+    }
+
+    #[tokio::test]
+    async fn read_only_refuses_delete() {
+        let backend = OnePasswordBackend::new().with_read_only(true);
+        let err = backend.delete("conn-1").await.unwrap_err();
+        assert!(matches!(err, SecretError::ReadOnly(_)));
+    }
+}
+
+#[cfg(test)]
+mod root_search_tests {
+    use super::*;
+
+    #[test]
+    fn searches_from_root_defaults_false_and_builder_toggles_it() {
+        assert!(!OnePasswordBackend::new().searches_from_root());
+        assert!(
+            OnePasswordBackend::new()
+                .with_root_search(true)
+                .searches_from_root()
+        );
+        // Setting it back to false is honoured.
+        assert!(
+            !OnePasswordBackend::new()
+                .with_root_search(true)
+                .with_root_search(false)
+                .searches_from_root()
+        );
+    }
+
+    #[test]
+    fn read_only_and_root_search_are_independent() {
+        let both = OnePasswordBackend::new()
+            .with_read_only(true)
+            .with_root_search(true);
+        assert!(both.is_read_only());
+        assert!(both.searches_from_root());
+    }
+
+    /// Documents the two titles the root-search widening compares against. The
+    /// scoped pass runs `op item list --vault RustConn --tags rustconn` and
+    /// matches `title == "RustConn: {id}"`; the root pass runs `op item list`
+    /// (whole account, no tag) and `find_item_in` is called with
+    /// `match_bare_id = true`, which additionally accepts `title == {id}`. These
+    /// two strings are the whole of the match predicate — but the `op item list`
+    /// calls require the live `op` CLI and a signed-in account, so the
+    /// end-to-end widening is not unit-tested here (CLI output is not faked).
+    #[test]
+    fn entry_title_is_the_scoped_form_and_the_bare_id_is_the_fallback_form() {
+        assert_eq!(
+            OnePasswordBackend::entry_title("conn-1"),
+            "RustConn: conn-1"
+        );
+        assert_ne!(OnePasswordBackend::entry_title("conn-1"), "conn-1");
     }
 }

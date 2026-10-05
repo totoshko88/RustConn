@@ -7,10 +7,11 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Label, Spinner, glib};
+use gtk4::{Align, Button, Label, Spinner, glib};
 use libadwaita as adw;
 use rustconn_core::protocol::ClientDetectionResult;
 
+use crate::async_utils::spawn_async;
 use crate::i18n::{i18n, i18n_f};
 
 /// Client detection info for async loading
@@ -96,6 +97,55 @@ pub fn create_clients_page() -> adw::PreferencesPage {
 
     page.add(&k8s_group);
 
+    // === Media Codecs Group (H.264 for RDP GFX) ===
+    //
+    // On a packaged install the RDP GFX H.264 decoder can only load Cisco's own
+    // published OpenH264 binary — distribution builds are refused by the
+    // loader's SHA-256 allow-list. Cisco holds the MPEG-LA patent licence for
+    // the binary a user downloads on demand from its CDN, so this is a strictly
+    // user-initiated, consent-gated download (openh264.org binary licence).
+    if rustconn_core::rdp_client::openh264_download::artifact().is_some() {
+        let codec_group = adw::PreferencesGroup::builder()
+            .title(i18n("Media Codecs"))
+            .description(i18n(
+                "OpenH264 Video Codec provided by Cisco Systems, Inc. — optional H.264 decoder for RDP graphics (GFX) sessions.",
+            ))
+            .build();
+
+        // Enable/disable switch. The OpenH264 binary licence requires the codec
+        // to be switchable off and back on without re-downloading; this persists
+        // `ConnectionSettings::use_openh264` and gates the loader at runtime.
+        let use_openh264 = rustconn_core::config::ConfigManager::new()
+            .ok()
+            .and_then(|m| m.load_settings().ok())
+            .is_none_or(|s| s.connection.use_openh264);
+        rustconn_core::rdp_client::openh264_download::set_openh264_enabled(use_openh264);
+
+        let use_row = adw::SwitchRow::builder()
+            .title(i18n("Use OpenH264"))
+            .subtitle(i18n(
+                "Decode H.264 in RDP GFX sessions with the Cisco codec when it is installed.",
+            ))
+            .active(use_openh264)
+            .build();
+        use_row.connect_active_notify(|row| {
+            let enabled = row.is_active();
+            if let Ok(manager) = rustconn_core::config::ConfigManager::new()
+                && let Ok(mut settings) = manager.load_settings()
+            {
+                settings.connection.use_openh264 = enabled;
+                if let Err(e) = manager.save_settings(&settings) {
+                    tracing::error!(?e, "Failed to persist use_openh264");
+                }
+            }
+            rustconn_core::rdp_client::openh264_download::set_openh264_enabled(enabled);
+        });
+        codec_group.add(&use_row);
+
+        codec_group.add(&build_h264_codec_row());
+        page.add(&codec_group);
+    }
+
     // Schedule async detection
     let core_group_clone = core_group.clone();
     let zerotrust_group_clone = zerotrust_group.clone();
@@ -161,6 +211,220 @@ fn create_loading_row(title: &str) -> adw::ActionRow {
     row.add_prefix(&spinner);
 
     row
+}
+
+/// Builds the "H.264 codec (Cisco OpenH264)" row with its Download button.
+///
+/// Behaviour:
+/// * If a valid Cisco blob is already cached, the row shows "Installed ✓" and no
+///   action button.
+/// * Otherwise it shows a Download button. Clicking it opens a confirm dialog
+///   stating what will be downloaded, from where, and that it is Cisco's binary
+///   under Cisco's licence. On confirm it runs the consent-gated downloader with
+///   a spinner, then reports success (active on the next RDP connection, no
+///   restart) or the error inline.
+///
+/// All download/consent policy lives in `rustconn-core`; this only renders it.
+fn build_h264_codec_row() -> adw::ActionRow {
+    use rustconn_core::rdp_client::openh264_download;
+
+    let already_installed = openh264_download::cached_openh264_path().is_some();
+
+    let row = adw::ActionRow::builder()
+        .title(i18n("H.264 codec (Cisco OpenH264)"))
+        .subtitle(i18n(
+            "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand from openh264.org under Cisco's binary licence.",
+        ))
+        .subtitle_lines(0)
+        .build();
+
+    // Spinner (hidden until a download is in flight).
+    let spinner = Spinner::builder()
+        .valign(Align::Center)
+        .visible(false)
+        .build();
+    row.add_prefix(&spinner);
+
+    // Status label — "Installed" when the cache already holds a valid blob.
+    let status_label = Label::builder()
+        .label(if already_installed {
+            i18n("Installed ✓")
+        } else {
+            String::new()
+        })
+        .valign(Align::Center)
+        .css_classes(if already_installed {
+            vec!["success"]
+        } else {
+            vec![]
+        })
+        .build();
+    row.add_suffix(&status_label);
+
+    // Download button — only when not already installed.
+    let download_button = Button::builder()
+        .label(i18n("Download"))
+        .valign(Align::Center)
+        .visible(!already_installed)
+        .build();
+    download_button.add_css_class("suggested-action");
+
+    let button_for_click = download_button.clone();
+    let spinner_for_click = spinner.clone();
+    let status_for_click = status_label.clone();
+    download_button.connect_clicked(move |btn| {
+        confirm_and_download_h264(
+            btn,
+            &button_for_click,
+            &spinner_for_click,
+            &status_for_click,
+        );
+    });
+
+    // Remove button — only when a blob is installed. Deletes the cached library
+    // (the licence's disable path can also fully remove it) and resets the row
+    // to the Download state.
+    let remove_button = Button::builder()
+        .label(i18n("Remove"))
+        .valign(Align::Center)
+        .visible(already_installed)
+        .build();
+    remove_button.add_css_class("destructive-action");
+    {
+        let status_label = status_label.clone();
+        let download_button = download_button.clone();
+        remove_button.connect_clicked(move |btn| {
+            use rustconn_core::rdp_client::openh264_download;
+            match openh264_download::remove_openh264() {
+                Ok(_) => {
+                    openh264_download::invalidate_loader_cache();
+                    status_label.set_label("");
+                    status_label.remove_css_class("success");
+                    status_label.remove_css_class("error");
+                    status_label.set_tooltip_text(None);
+                    download_button.set_visible(true);
+                    download_button.set_sensitive(true);
+                    btn.set_visible(false);
+                }
+                Err(error) => {
+                    tracing::error!(?error, "OpenH264 remove failed");
+                    status_label.set_label(&i18n("Remove failed"));
+                    status_label.add_css_class("error");
+                    status_label.set_tooltip_text(Some(&error.to_string()));
+                }
+            }
+        });
+    }
+    row.add_suffix(&remove_button);
+    row.add_suffix(&download_button);
+
+    row
+}
+
+/// Shows the consent confirm dialog, then runs the download on confirm.
+fn confirm_and_download_h264(
+    clicked: &Button,
+    download_button: &Button,
+    spinner: &Spinner,
+    status_label: &Label,
+) {
+    use rustconn_core::rdp_client::openh264_download;
+
+    let url = openh264_download::download_url().unwrap_or_default();
+    let dest = openh264_download::cache_path()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+
+    let body = i18n_f(
+        "This downloads the OpenH264 Video Codec provided by Cisco Systems, Inc. from:\n{}\n\n\
+and installs it to:\n{}\n\n\
+Cisco — not RustConn — provides this binary and holds the MPEG-LA patent licence for it. \
+By downloading you accept Cisco's binary licence:\n{}\n\nDownload it?",
+        &[&url, &dest, &"https://www.openh264.org/BINARY_LICENSE.txt"],
+    );
+
+    let confirm = adw::AlertDialog::new(Some(&i18n("Download H.264 codec?")), Some(&body));
+    confirm.add_response("cancel", &i18n("Cancel"));
+    confirm.add_response("download", &i18n("Download"));
+    confirm.set_response_appearance("download", adw::ResponseAppearance::Suggested);
+    // Default is Cancel, not Download: a licence-accepting network fetch must
+    // never happen on an accidental Enter.
+    confirm.set_default_response(Some("cancel"));
+    confirm.set_close_response("cancel");
+
+    let download_button = download_button.clone();
+    let spinner = spinner.clone();
+    let status_label = status_label.clone();
+    confirm.connect_response(None, move |_, response| {
+        if response == "download" {
+            start_h264_download(&download_button, &spinner, &status_label);
+        }
+    });
+
+    // Present on the row's own window so the dialog is correctly parented.
+    let parent = clicked.root().and_downcast::<gtk4::Window>();
+    confirm.present(parent.as_ref());
+}
+
+/// Runs the consent-gated download async, updating the row as it goes.
+fn start_h264_download(download_button: &Button, spinner: &Spinner, status_label: &Label) {
+    use rustconn_core::rdp_client::openh264_download;
+
+    // Enter in-flight state: spinner on, button disabled.
+    download_button.set_sensitive(false);
+    spinner.set_visible(true);
+    spinner.start();
+    status_label.set_label(&i18n("Downloading…"));
+    status_label.remove_css_class("success");
+    status_label.remove_css_class("error");
+
+    let download_button = download_button.clone();
+    let spinner = spinner.clone();
+    let status_label = status_label.clone();
+
+    spawn_async(async move {
+        // consent == true: this runs only in direct response to the user
+        // confirming the dialog above.
+        let result = openh264_download::download_openh264(true).await;
+
+        glib::idle_add_local_once(move || {
+            spinner.stop();
+            spinner.set_visible(false);
+            match result {
+                Ok(_) => {
+                    // Clear the loader's cached probe so the NEXT RDP connection
+                    // re-scans and finds the freshly downloaded blob — no app
+                    // restart needed (already-open sessions keep RemoteFX).
+                    openh264_download::invalidate_loader_cache();
+                    status_label.set_label(&i18n("Installed ✓"));
+                    status_label.set_tooltip_text(Some(&i18n(
+                        "H.264 is active for new RDP connections. Open sessions keep their current path until reconnected.",
+                    )));
+                    status_label.remove_css_class("error");
+                    status_label.add_css_class("success");
+                    download_button.set_visible(false);
+                }
+                Err(ref error) => {
+                    tracing::error!(?error, "OpenH264 download failed");
+                    status_label.set_label(&i18n("Download failed"));
+                    status_label.remove_css_class("success");
+                    status_label.add_css_class("error");
+                    let detail = error.to_string();
+                    status_label.set_tooltip_text(Some(&detail));
+                    // Also surface the reason on the row itself, so it is visible
+                    // without hovering the small status label.
+                    if let Some(row) = status_label
+                        .ancestor(adw::ActionRow::static_type())
+                        .and_downcast::<adw::ActionRow>()
+                    {
+                        row.set_subtitle(&i18n_f("Download failed: {}", &[&detail]));
+                    }
+                    // Allow a retry.
+                    download_button.set_sensitive(true);
+                }
+            }
+        });
+    });
 }
 
 /// Updates a row with detected client info

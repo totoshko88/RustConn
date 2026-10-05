@@ -36,8 +36,9 @@ pub use detection::{
 };
 pub use freerdp::{
     FreeRdpConfig, FreeRdpSizing, build_freerdp_args, contains_freerdp_secret_field,
-    extract_geometry_from_args, filter_extra_args, freerdp_secret_field_takes_following_value,
-    has_decorations_flag, is_freerdp_shell_or_proxy_arg,
+    extract_geometry_from_args, filter_extra_args, freerdp_kerberos_arg,
+    freerdp_secret_field_takes_following_value, has_decorations_flag,
+    is_freerdp_shell_or_proxy_arg,
 };
 pub use freerdp_version::{
     FreeRdpProbe, FreeRdpSelection, FreeRdpVersion, MIN_SUPPORTED_FREERDP_MAJOR,

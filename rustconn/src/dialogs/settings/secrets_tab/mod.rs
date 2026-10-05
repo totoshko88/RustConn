@@ -165,6 +165,10 @@ pub struct SecretsPageWidgets {
     /// `YubiKey` Challenge-Response slot input (`slot[:serial]`). Empty means no
     /// hardware second factor.
     pub kdbx_yubikey_slot_entry: adw::EntryRow,
+    /// Block writes to the KeePass (kdbx) vault (read-only mode).
+    pub kdbx_read_only_row: adw::SwitchRow,
+    /// Search the whole KeePass (kdbx) vault, not just the RustConn folder.
+    pub kdbx_root_search_row: adw::SwitchRow,
     // Additional rows for visibility control
     pub kdbx_group: adw::PreferencesGroup,
     pub auth_group: adw::PreferencesGroup,
@@ -181,12 +185,20 @@ pub struct SecretsPageWidgets {
     pub bitwarden_use_api_key_check: adw::SwitchRow,
     pub bitwarden_client_id_entry: Entry,
     pub bitwarden_client_secret_entry: adw::PasswordEntryRow,
+    /// Block writes to the Bitwarden vault (read-only mode).
+    pub bitwarden_read_only_row: adw::SwitchRow,
+    /// Search the whole Bitwarden vault, not just the RustConn folder.
+    pub bitwarden_root_search_row: adw::SwitchRow,
     /// Detected Bitwarden CLI command path (updated async)
     pub bitwarden_cmd: Rc<RefCell<String>>,
     // 1Password widgets
     pub onepassword_group: adw::PreferencesGroup,
     pub onepassword_status_label: Label,
     pub onepassword_signin_button: Button,
+    /// Block writes to the 1Password vault (read-only mode).
+    pub onepassword_read_only_row: adw::SwitchRow,
+    /// Search the whole 1Password vault, not just the RustConn folder.
+    pub onepassword_root_search_row: adw::SwitchRow,
     // Passbolt widgets
     pub passbolt_group: adw::PreferencesGroup,
     pub passbolt_status_label: Label,
@@ -195,6 +207,10 @@ pub struct SecretsPageWidgets {
     pub passbolt_passphrase_entry: adw::PasswordEntryRow,
     /// 3-state credential storage selector for Passbolt GPG passphrase.
     pub passbolt_storage_combo: adw::ComboRow,
+    /// Block writes to the Passbolt vault (read-only mode).
+    pub passbolt_read_only_row: adw::SwitchRow,
+    /// Search the whole Passbolt vault, not just the RustConn folder.
+    pub passbolt_root_search_row: adw::SwitchRow,
     // 1Password credential widgets
     pub onepassword_token_entry: adw::PasswordEntryRow,
     /// 3-state credential storage selector for 1Password service account token.
@@ -214,6 +230,10 @@ pub struct SecretsPageWidgets {
     pub pass_store_dir_entry: Entry,
     pub pass_store_dir_browse_button: Button,
     pub pass_status_label: Label,
+    /// Block writes to the pass store (read-only mode).
+    pub pass_read_only_row: adw::SwitchRow,
+    /// Search the whole pass store, not just the RustConn folder.
+    pub pass_root_search_row: adw::SwitchRow,
     /// Machine-bound encrypted file group. It has nothing to configure, but it
     /// tells the user where the file is and what is in it — selecting the backend
     /// used to display nothing at all.
@@ -1283,6 +1303,23 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
     }
 
+    // Per-backend access toggles. Placed at the end of the group so they read
+    // as options for the backend rather than part of the unlock flow. They wire
+    // the `SecretSettings::bitwarden_read_only` / `bitwarden_root_search` fields.
+    let bitwarden_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    bitwarden_group.add(&bitwarden_read_only_row);
+
+    let bitwarden_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
+        ))
+        .build();
+    bitwarden_group.add(&bitwarden_root_search_row);
+
     page.add(&bitwarden_group);
 
     // === 1Password Configuration Group ===
@@ -1383,6 +1420,21 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
     }
 
+    // Per-backend access toggles (see the Bitwarden group for the pattern).
+    let onepassword_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    onepassword_group.add(&onepassword_read_only_row);
+
+    let onepassword_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
+        ))
+        .build();
+    onepassword_group.add(&onepassword_root_search_row);
+
     page.add(&onepassword_group);
 
     // === Passbolt Configuration Group ===
@@ -1481,6 +1533,21 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         });
     }
 
+    // Per-backend access toggles (see the Bitwarden group for the pattern).
+    let passbolt_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    passbolt_group.add(&passbolt_read_only_row);
+
+    let passbolt_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
+        ))
+        .build();
+    passbolt_group.add(&passbolt_root_search_row);
+
     page.add(&passbolt_group);
 
     // === Pass (Unix Password Manager) Group ===
@@ -1559,6 +1626,21 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             }
         });
     }
+
+    // Per-backend access toggles (see the Bitwarden group for the pattern).
+    let pass_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    pass_group.add(&pass_read_only_row);
+
+    let pass_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder",
+        ))
+        .build();
+    pass_group.add(&pass_root_search_row);
 
     page.add(&pass_group);
 
@@ -2156,6 +2238,22 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         .build();
     kdbx_path_row.add_suffix(&kdbx_path_box);
     kdbx_group.add(&kdbx_path_row);
+
+    // Read-only + root-search toggles, mirroring the CLI backends. They map to
+    // the `SecretSettings::kdbx_read_only` / `kdbx_root_search` fields.
+    let kdbx_read_only_row = adw::SwitchRow::builder()
+        .title(i18n("Read-only mode"))
+        .subtitle(i18n("Block writes to this vault; only read secrets"))
+        .build();
+    kdbx_group.add(&kdbx_read_only_row);
+
+    let kdbx_root_search_row = adw::SwitchRow::builder()
+        .title(i18n("Search from vault root"))
+        .subtitle(i18n(
+            "Look up secrets anywhere in the vault, not just the RustConn folder. The first entry with a matching name is used",
+        ))
+        .build();
+    kdbx_group.add(&kdbx_root_search_row);
 
     page.add(&kdbx_group);
 
@@ -2907,6 +3005,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         kdbx_use_key_file_check,
         kdbx_use_password_check,
         kdbx_yubikey_slot_entry,
+        kdbx_read_only_row,
+        kdbx_root_search_row,
         kdbx_group,
         auth_group,
         status_group,
@@ -2920,16 +3020,22 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         bitwarden_use_api_key_check,
         bitwarden_client_id_entry,
         bitwarden_client_secret_entry,
+        bitwarden_read_only_row,
+        bitwarden_root_search_row,
         bitwarden_cmd,
         onepassword_group,
         onepassword_status_label,
         onepassword_signin_button,
+        onepassword_read_only_row,
+        onepassword_root_search_row,
         passbolt_group,
         passbolt_status_label,
         passbolt_server_url_entry,
         passbolt_open_vault_button,
         passbolt_passphrase_entry,
         passbolt_storage_combo,
+        passbolt_read_only_row,
+        passbolt_root_search_row,
         onepassword_token_entry,
         onepassword_storage_combo,
         secret_tool_available,
@@ -2939,6 +3045,8 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         pass_store_dir_entry,
         pass_store_dir_browse_button,
         pass_status_label,
+        pass_read_only_row,
+        pass_root_search_row,
         encrypted_file_group,
         portable_group,
         portable_path_entry,
@@ -3025,6 +3133,12 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets
         .kdbx_use_key_file_check
         .set_active(settings.kdbx_use_key_file);
+    widgets
+        .kdbx_read_only_row
+        .set_active(settings.kdbx_read_only);
+    widgets
+        .kdbx_root_search_row
+        .set_active(settings.kdbx_root_search);
     set_storage_combo_value(&widgets.kdbx_storage_combo, settings.kdbx_storage());
 
     // Load Bitwarden storage choice
@@ -3037,6 +3151,32 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets
         .bitwarden_use_api_key_check
         .set_active(settings.bitwarden_use_api_key);
+
+    // Load per-backend read-only / search-from-root toggles.
+    widgets
+        .bitwarden_read_only_row
+        .set_active(settings.bitwarden_read_only);
+    widgets
+        .bitwarden_root_search_row
+        .set_active(settings.bitwarden_root_search);
+    widgets
+        .onepassword_read_only_row
+        .set_active(settings.onepassword_read_only);
+    widgets
+        .onepassword_root_search_row
+        .set_active(settings.onepassword_root_search);
+    widgets
+        .passbolt_read_only_row
+        .set_active(settings.passbolt_read_only);
+    widgets
+        .passbolt_root_search_row
+        .set_active(settings.passbolt_root_search);
+    widgets
+        .pass_read_only_row
+        .set_active(settings.pass_read_only);
+    widgets
+        .pass_root_search_row
+        .set_active(settings.pass_root_search);
 
     // Load Bitwarden API credentials if available (from encrypted storage)
     if let Some(ref client_id) = settings.bitwarden_client_id {
@@ -3860,6 +4000,19 @@ pub fn collect_secret_settings(
         },
         // Collect Pass store directory
         pass_store_dir: expand_user_path(widgets.pass_store_dir_entry.text().as_str()),
+        // Per-backend read-only / root-search toggles, read from their dialog
+        // widgets. These replaced the stopgap that copied the persisted values
+        // straight back when the Secrets tab had no widgets for them.
+        bitwarden_read_only: widgets.bitwarden_read_only_row.is_active(),
+        bitwarden_root_search: widgets.bitwarden_root_search_row.is_active(),
+        onepassword_read_only: widgets.onepassword_read_only_row.is_active(),
+        onepassword_root_search: widgets.onepassword_root_search_row.is_active(),
+        passbolt_read_only: widgets.passbolt_read_only_row.is_active(),
+        passbolt_root_search: widgets.passbolt_root_search_row.is_active(),
+        pass_read_only: widgets.pass_read_only_row.is_active(),
+        pass_root_search: widgets.pass_root_search_row.is_active(),
+        kdbx_read_only: widgets.kdbx_read_only_row.is_active(),
+        kdbx_root_search: widgets.kdbx_root_search_row.is_active(),
         // Collect portable encrypted file settings. An empty entry stays `None`,
         // which is what makes the default location the default rather than a
         // path this dialog writes into the config the first time it is opened.

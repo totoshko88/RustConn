@@ -16,7 +16,7 @@ use gtk4::{Button, CheckButton, ColorDialogButton, DropDown, Entry, SpinButton, 
 use libadwaita as adw;
 use rustconn_core::automation::ExpectRule;
 use rustconn_core::models::{
-    BackspaceSends, CustomProperty, DeleteSends, HighlightRule, SharedFolder,
+    BackspaceSends, CommandMacro, CustomProperty, DeleteSends, HighlightRule, SharedFolder,
 };
 use uuid::Uuid;
 
@@ -219,6 +219,7 @@ impl ConnectionDialog {
         variables_rows: &Rc<RefCell<Vec<LocalVariableRow>>>,
         logging_tab: &logging_tab::LoggingTab,
         expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
+        command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
         login_username_prompt_entry: &Entry,
         login_password_prompt_entry: &Entry,
         login_timeout_spin: &SpinButton,
@@ -266,7 +267,7 @@ impl ConnectionDialog {
     ) {
         let dialog = dialog.clone();
         let on_save = on_save.clone();
-        let _state = state.clone();
+        let state = state.clone();
         let name_entry = name_entry.clone();
         let icon_entry = icon_entry.clone();
         let description_view = description_view.clone();
@@ -453,6 +454,7 @@ impl ConnectionDialog {
         let logging_output_switch = logging_tab.log_output_switch.clone();
         let logging_timestamps_switch = logging_tab.log_timestamps_switch.clone();
         let expect_rules = expect_rules.clone();
+        let command_macros = command_macros.clone();
         let login_username_prompt_entry = login_username_prompt_entry.clone();
         let login_password_prompt_entry = login_password_prompt_entry.clone();
         let login_timeout_spin = login_timeout_spin.clone();
@@ -504,6 +506,7 @@ impl ConnectionDialog {
         save_btn.connect_clicked(move |_| {
             let local_variables = Self::collect_local_variables(&variables_rows);
             let collected_expect_rules = expect_rules.borrow().clone();
+            let collected_command_macros = command_macros.borrow().clone();
             let collected_custom_properties = custom_properties.borrow().clone();
             let collected_highlight_rules = highlight_rules.borrow().clone();
             let data = ConnectionDialogData {
@@ -694,6 +697,7 @@ impl ConnectionDialog {
                     log_timestamps_switch: logging_timestamps_switch.clone(),
                 },
                 expect_rules: &collected_expect_rules,
+                command_macros: &collected_command_macros,
                 login_username_prompt_entry: &login_username_prompt_entry,
                 login_password_prompt_entry: &login_password_prompt_entry,
                 login_timeout_spin: &login_timeout_spin,
@@ -745,6 +749,19 @@ impl ConnectionDialog {
             };
 
             if let Err(err) = data.validate() {
+                alert::show_error(&dialog, &i18n("Validation Error"), &err);
+                return;
+            }
+            // Command macros: no empty or control-character command, and a
+            // keybind the dispatcher will actually register. The same rules
+            // drive each row's inline message.
+            let keybindings = state
+                .try_borrow()
+                .map(|s| s.settings().keybindings.clone())
+                .unwrap_or_default();
+            if let Err(err) =
+                crate::command_macros::validate_for_save(&collected_command_macros, &keybindings)
+            {
                 alert::show_error(&dialog, &i18n("Validation Error"), &err);
                 return;
             }

@@ -629,6 +629,10 @@ fn start_embedded_rdp_session(
     embedded_config.kerberos_enabled = rdp_config.kerberos_enabled;
     embedded_config.kdc_proxy_url = rdp_config.kdc_proxy_url.clone();
 
+    // Carry the per-connection MPTCP opt-in to the embedded client (was dropped
+    // here, so the RDP Multipath TCP toggle was a silent no-op).
+    embedded_config.mptcp = rdp_config.mptcp;
+
     // Wrap in Rc to keep widget alive in notebook
     let embedded_widget = Rc::new(embedded_widget);
 
@@ -986,8 +990,12 @@ fn start_external_rdp_session(
         fido2_enabled: rdp_config.fido2_enabled,
         client_override: rdp_config.freerdp_client_override.clone(),
         // Lets a RemoteApp session negotiate Kerberos instead of NTLM, which an
-        // AD "Protected Users" account cannot use (issue #351).
+        // AD "Protected Users" account cannot use (issue #351), and gates the
+        // KDC Address below.
         kerberos_enabled: rdp_config.kerberos_enabled,
+        // Reaches FreeRDP as `/kerberos:kdc-url:` when it is an MS-KKDCP proxy;
+        // it used to reach only the embedded client.
+        kdc_proxy_url: rdp_config.kdc_proxy_url.clone(),
     };
 
     // A tunnelled session's SshTunnel must outlive every launch attempt: a

@@ -5,17 +5,19 @@
 
 use std::rc::Rc;
 
+use adw::prelude::*;
 use gtk4::prelude::*;
 use uuid::Uuid;
 
 use super::MainWindow;
 use crate::alert;
-use crate::dialogs::{ClusterDialog, ClusterListDialog};
-use crate::i18n::{i18n, i18n_f};
+use crate::dialogs::{ClusterDialog, ClusterListDialog, ClusterSummary};
+use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
 use crate::terminal::TerminalNotebook;
 use crate::window::SharedToastOverlay;
+use libadwaita as adw;
 
 /// Type alias for shared terminal notebook
 pub type SharedNotebook = Rc<TerminalNotebook>;
@@ -82,11 +84,16 @@ pub fn show_clusters_manager(
     let state_for_provider = state.clone();
     dialog.set_clusters_provider(move || {
         if let Ok(state_ref) = state_for_provider.try_borrow() {
+            // Count the resolved membership, the set a connect opens — a
+            // pattern-only cluster used to read "0 connections" here.
+            let connections = state_ref.list_connections();
             state_ref
                 .get_all_clusters()
-                .iter()
-                .cloned()
-                .cloned()
+                .into_iter()
+                .map(|cluster| ClusterSummary {
+                    member_count: cluster.resolve_members(connections.iter().copied()).len(),
+                    cluster: cluster.clone(),
+                })
                 .collect()
         } else {
             Vec::new()
@@ -267,15 +274,23 @@ fn show_new_cluster_dialog_from_manager(
 fn connect_cluster(
     state: &SharedAppState,
     notebook: &SharedNotebook,
-    _window: &gtk4::Window,
+    window: &gtk4::Window,
     sidebar: &SharedSidebar,
     monitoring: &super::types::SharedMonitoring,
     cluster_id: Uuid,
 ) {
-    // Get cluster info
-    let (connection_ids, cluster_name) = if let Ok(state_ref) = state.try_borrow() {
+    // Get cluster info. Resolve the EFFECTIVE membership (explicit members plus
+    // any regex auto-membership matches) rather than the raw connection_ids, so
+    // an auto-membership rule like `^prod-web\d+` actually pulls matching hosts
+    // into the mass-connect. resolve_members is read-widening and de-duplicated,
+    // and reads the connections in place — no clone of the whole list.
+    let (connection_ids, cluster_name, has_pattern) = if let Ok(state_ref) = state.try_borrow() {
         if let Some(cluster) = state_ref.get_cluster(cluster_id) {
-            (cluster.connection_ids.clone(), cluster.name.clone())
+            (
+                cluster.resolve_members(state_ref.list_connections()),
+                cluster.name.clone(),
+                cluster.auto_membership.is_some(),
+            )
         } else {
             return;
         }
@@ -288,6 +303,185 @@ fn connect_cluster(
         return;
     }
 
+    // Two questions may stand between the click and the connections, asked in
+    // this order and each at most once for the whole cluster: a size check (a
+    // broad pattern such as `.` resolves to every connection), then one
+    // aggregated jump-host check for every member (issue #345).
+    let state = state.clone();
+    let notebook = notebook.clone();
+    let sidebar = sidebar.clone();
+    let monitoring = monitoring.clone();
+    let window_for_bastions = window.clone();
+    let name_for_question = cluster_name.clone();
+    confirm_large_cluster(
+        window,
+        &name_for_question,
+        connection_ids.len(),
+        has_pattern,
+        move || {
+            let state_for_check = state.clone();
+            confirm_cluster_bastions(
+                &window_for_bastions,
+                &state_for_check,
+                connection_ids,
+                move |connection_ids| {
+                    dispatch_cluster_connect(
+                        &state,
+                        &notebook,
+                        &sidebar,
+                        &monitoring,
+                        cluster_id,
+                        &cluster_name,
+                        &connection_ids,
+                    );
+                },
+            );
+        },
+    );
+}
+
+/// Clusters resolving to more members than this ask before connecting.
+///
+/// Ten is a rack or a load-balancer pool — the size clusters are made for. Past
+/// that, opening every member at once is more likely an over-broad
+/// auto-membership pattern (`.` matches every connection) than intent, and the
+/// cost of being wrong is dozens of sessions dialling, prompting for passwords
+/// and, for SSH, offering credentials to hosts nobody meant to touch.
+const LARGE_CLUSTER_CONFIRM_THRESHOLD: usize = 10;
+
+/// Presents `dialog` and runs `on_accept` once, if the `accept` response is
+/// chosen. Any other response — including Escape — does nothing.
+fn present_confirmation(
+    window: &gtk4::Window,
+    dialog: &adw::AlertDialog,
+    accept: &'static str,
+    on_accept: impl FnOnce() + 'static,
+) {
+    let pending = std::cell::Cell::new(Some(on_accept));
+    dialog.connect_response(None, move |_, response| {
+        if response == accept
+            && let Some(on_accept) = pending.take()
+        {
+            on_accept();
+        }
+    });
+    dialog.present(Some(window));
+}
+
+/// Asks before opening a cluster of more than
+/// [`LARGE_CLUSTER_CONFIRM_THRESHOLD`] members; runs `proceed` directly for a
+/// smaller one.
+fn confirm_large_cluster(
+    window: &gtk4::Window,
+    cluster_name: &str,
+    member_count: usize,
+    has_pattern: bool,
+    proceed: impl FnOnce() + 'static,
+) {
+    if member_count <= LARGE_CLUSTER_CONFIRM_THRESHOLD {
+        proceed();
+        return;
+    }
+
+    let count = member_count.to_string();
+    let mut body = ni18n_f(
+        "“{}” opens {} connection at once.",
+        "“{}” opens {} connections at once.",
+        u32::try_from(member_count).unwrap_or(u32::MAX),
+        &[cluster_name, &count],
+    );
+    if has_pattern {
+        body.push_str("\n\n");
+        body.push_str(&i18n(
+            "Most of them may come from its auto-membership pattern. If that is more than you expected, cancel and narrow the pattern.",
+        ));
+    }
+
+    let dialog = adw::AlertDialog::new(Some(&i18n("Open All Connections?")), Some(&body));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("connect", &i18n("Connect All"));
+    dialog.set_response_appearance("connect", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    present_confirmation(window, &dialog, "connect", proceed);
+}
+
+/// Checks every member's jump host in one pass and, when any would be skipped,
+/// asks once for the whole cluster (issue #345); runs `proceed` with the member
+/// list when nothing needs asking or the user confirms.
+///
+/// One question instead of one toast per member, and one check over borrowed
+/// state instead of a full clone of every connection and group per member.
+fn confirm_cluster_bastions(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    connection_ids: Vec<Uuid>,
+    proceed: impl FnOnce(Vec<Uuid>) + 'static,
+) {
+    let affected: Vec<(Uuid, String)> = {
+        let Ok(state_ref) = state.try_borrow() else {
+            return;
+        };
+        state_ref
+            .skipped_bastions(&connection_ids)
+            .into_iter()
+            .filter_map(|(id, _)| state_ref.get_connection(id).map(|c| (id, c.name.clone())))
+            .collect()
+    };
+    if affected.is_empty() {
+        proceed(connection_ids);
+        return;
+    }
+
+    let names = affected
+        .iter()
+        .map(|(_, name)| format!("“{name}”"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let count = affected.len().to_string();
+    let body = format!(
+        "{}\n\n{}",
+        ni18n_f(
+            "{} cluster member has a jump host that no longer exists or points to itself: {}.",
+            "{} cluster members have a jump host that no longer exists or points to itself: {}.",
+            u32::try_from(affected.len()).unwrap_or(u32::MAX),
+            &[&count, &names],
+        ),
+        i18n(
+            "Connecting now skips those jump hosts, so these members may reach their servers directly. Open a member on its own to see the details.",
+        ),
+    );
+
+    let dialog = adw::AlertDialog::new(Some(&i18n("Jump Host Unavailable")), Some(&body));
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("connect", &i18n("Connect Anyway"));
+    dialog.set_response_appearance("connect", adw::ResponseAppearance::Destructive);
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+
+    let state_cb = state.clone();
+    present_confirmation(window, &dialog, "connect", move || {
+        // Same session-scoped acceptance a single connect records, so opening
+        // one of these members again does not ask a second time.
+        if let Ok(state_ref) = state_cb.try_borrow() {
+            for (id, _) in &affected {
+                state_ref.confirm_bastion_skip(*id);
+            }
+        }
+        proceed(connection_ids);
+    });
+}
+
+/// Starts the cluster session and every member connection.
+fn dispatch_cluster_connect(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    cluster_id: Uuid,
+    cluster_name: &str,
+    connection_ids: &[Uuid],
+) {
     tracing::info!(
         cluster = %cluster_name,
         cluster_id = %cluster_id,
@@ -306,16 +500,20 @@ fn connect_cluster(
     // `TerminalNotebook::notify_tab_added` resolves them when each tab actually
     // appears, registering the new session in the cluster's session list and
     // labelling its tab with a tab group named after the cluster.
-    for conn_id in &connection_ids {
-        notebook.mark_cluster_pending(cluster_id, &cluster_name, *conn_id);
+    for conn_id in connection_ids {
+        notebook.mark_cluster_pending(cluster_id, cluster_name, *conn_id);
     }
 
     // Kick off each connection. We don't care whether `start_connection`
     // returns Started, Pending or Failed — registration is driven by the
-    // callback in `create_terminal_tab_with_settings`.
+    // callback in `create_terminal_tab_with_settings`. The jump hosts were
+    // checked for the whole cluster in `confirm_cluster_bastions`, so the
+    // members skip the per-connection check (and its dialog).
     let mut sync_started = 0usize;
-    for conn_id in &connection_ids {
-        match MainWindow::start_connection(state, notebook, sidebar, monitoring, *conn_id) {
+    for conn_id in connection_ids {
+        match MainWindow::start_connection_bastion_prechecked(
+            state, notebook, sidebar, monitoring, *conn_id,
+        ) {
             super::types::ConnectionStartResult::Started(_) => sync_started += 1,
             super::types::ConnectionStartResult::Pending
             | super::types::ConnectionStartResult::Failed => {}

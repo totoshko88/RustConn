@@ -117,13 +117,68 @@ fn parse_jump_host_for_control(jump_host: &str) -> (String, u16) {
     (host.to_string(), port)
 }
 
-/// Builds a helper that releases a credential only for OpenSSH's account-password prompt.
+/// Builds a helper that releases a credential only for an account-password prompt.
 ///
-/// Host-key confirmation, private-key passphrases, keyboard-interactive challenges, OTP/token
-/// prompts, and password-change prompts all exit non-zero without printing the credential.
+/// The matcher mirrors [`rustconn_core::connection::ssh_prompt::looks_like_password_prompt`]
+/// (the terminal-watcher matcher): the shell `case` is **exclusion-first, then a broad
+/// positive match**. It lowercases the prompt, rejects the prompts that must never receive
+/// the account password — host-key confirmation, private-key passphrases, OTP/verification
+/// challenges, and password-*change* prompts (`old`/`current`/`new`/`retype`/`confirm`/
+/// `verify`/`repeat`, incl. uk/ru) — and only then accepts any account-password prompt.
+///
+/// Unlike the old `*"'s password:"*`-only glob, the positive branch accepts the
+/// server-/PAM-defined keyboard-interactive forms (`Password:`, ESXi's
+/// `(root@host) Password:`, localized `пароль:`/`passwort:`/`密码：`/`パスワード:` …),
+/// which is why issue #364 (ESXi via a jump host) was failing.
+///
+/// POSIX `sh` note: `tr '[:upper:]' '[:lower:]'` folds **ASCII only**, so the ASCII
+/// branches match against the folded copy `$lc`, while non-ASCII suffixes match against
+/// the **raw** `$prompt`. To stay case-insensitive without Unicode folding, the localized
+/// suffixes that have an uppercase first letter are matched by their first-letter-agnostic
+/// tail (e.g. `*ароль:` catches both `Пароль:` and `пароль:`); CJK/Kana suffixes are
+/// caseless and matched whole.
 fn askpass_script_contents(env_var_name: &str) -> String {
     format!(
-        "#!/bin/sh\ncase \"${{1-}}\" in\n  *\"'s password:\"*)\n    secret_file=\"${{{env_var_name}}}\"\n    [ -n \"$secret_file\" ] || exit 1\n    exec 3<\"$secret_file\" || exit 1\n    rm -f \"$secret_file\"\n    cat <&3\n    ;;\n  *) exit 1 ;;\nesac\n"
+        "#!/bin/sh\n\
+         prompt=\"${{1-}}\"\n\
+         lc=$(printf '%s' \"$prompt\" | tr '[:upper:]' '[:lower:]')\n\
+         case \"$lc\" in\n\
+         \x20\x20# Not the account password — stay silent (passphrase, host-key, OTP, change).\n\
+         \x20\x20*passphrase*|*\"verification code\"*|*\"(current)\"*|\\\n\
+         \x20\x20*\"old password\"*|*\"current password\"*|*\"new password\"*|\\\n\
+         \x20\x20*\"retype password\"*|*\"retype new password\"*|*\"confirm password\"*|\\\n\
+         \x20\x20*\"verify password\"*|*\"repeat password\"*)\n\
+         \x20\x20\x20\x20exit 1 ;;\n\
+         esac\n\
+         case \"$prompt\" in\n\
+         \x20\x20# Localized password-change prompts (non-ASCII, matched raw, first-letter-agnostic).\n\
+         \x20\x20*\"тарий пароль\"*|*\"тарый пароль\"*|*\"овий пароль\"*|*\"овый пароль\"*)\n\
+         \x20\x20\x20\x20exit 1 ;;\n\
+         esac\n\
+         case \"$lc\" in\n\
+         \x20\x20# OpenSSH `password` auth + ASCII PAM/keyboard-interactive account prompts.\n\
+         \x20\x20*\"'s password:\"*|*\"password:\"|*\"password: \"|*\"pass:\"|*\"pass: \"|\\\n\
+         \x20\x20*\"passwort:\"|*\"passwort: \"|*\"kennwort:\"|*\"kennwort: \"|\\\n\
+         \x20\x20*\"mot de passe:\"|*\"mot de passe :\")\n\
+         \x20\x20\x20\x20_rc_emit=1 ;;\n\
+         \x20\x20*) _rc_emit=0 ;;\n\
+         esac\n\
+         if [ \"$_rc_emit\" = 0 ]; then\n\
+         \x20\x20case \"$prompt\" in\n\
+         \x20\x20\x20\x20# Non-ASCII account prompts, matched raw (first-letter-agnostic where cased).\n\
+         \x20\x20\x20\x20*\"ontraseña:\"|*\"enha:\"|*\"ароль:\"|*\"ароль: \"|*\"asło:\"|*\"eslo:\"|\\\n\
+         \x20\x20\x20\x20*\"achtwoord:\"|*\"ösenord:\"|*\"dgangskode:\"|\\\n\
+         \x20\x20\x20\x20*\"密码:\"|*\"密码：\"|*\"密碼:\"|*\"密碼：\"|\\\n\
+         \x20\x20\x20\x20*\"パスワード:\"|*\"パスワード：\"|*\"비밀번호:\"|*\"비밀번호：\")\n\
+         \x20\x20\x20\x20\x20\x20_rc_emit=1 ;;\n\
+         \x20\x20esac\n\
+         fi\n\
+         [ \"$_rc_emit\" = 1 ] || exit 1\n\
+         secret_file=\"${{{env_var_name}}}\"\n\
+         [ -n \"$secret_file\" ] || exit 1\n\
+         exec 3<\"$secret_file\" || exit 1\n\
+         rm -f \"$secret_file\"\n\
+         cat <&3\n"
     )
 }
 
@@ -2250,23 +2305,62 @@ mod tests {
     }
 
     #[test]
-    fn askpass_helper_releases_password_only_for_openssh_account_prompt() {
-        let (accepted, accepted_secret_path) = run_askpass_script("alice@example.com's password: ");
-        assert!(accepted.status.success());
-        assert_eq!(accepted.stdout, b"test-account-password");
-        assert!(!accepted_secret_path.exists());
+    fn askpass_helper_releases_password_only_for_account_prompt() {
+        // Every account-password prompt the helper must answer: OpenSSH's own
+        // `password` auth, PAM/keyboard-interactive forms (ESXi, generic PAM,
+        // Dropbear), and the localized variants mirrored from the Rust matcher.
+        // Issue #364: ESXi authenticates via keyboard-interactive, so its prompt
+        // is `(root@host) Password:` — the old `'s password:`-only glob missed it.
+        for accepted_prompt in [
+            "alice@example.com's password: ",
+            "Password: ",
+            "Password:",
+            "(root@esxi.example.com) Password: ", // ESXi via jump host (#364)
+            "root@192.0.2.10's password:",
+            "Пароль: ",
+            "Passwort:",
+            "密码：",
+        ] {
+            let (accepted, accepted_secret_path) = run_askpass_script(accepted_prompt);
+            assert!(
+                accepted.status.success(),
+                "should accept account prompt: {accepted_prompt:?}"
+            );
+            assert_eq!(
+                accepted.stdout, b"test-account-password",
+                "wrong output for: {accepted_prompt:?}"
+            );
+            assert!(
+                !accepted_secret_path.exists(),
+                "secret file must be consumed for: {accepted_prompt:?}"
+            );
+        }
 
+        // Prompts that must NEVER receive the account password: key passphrase,
+        // host-key confirmation, OTP/verification, password-change (any stage),
+        // and sudo (sudo asks for the *local* password, not the SSH account).
         for rejected_prompt in [
             "Enter passphrase for key '/home/alice/.ssh/id_ed25519': ",
             "The authenticity of host cannot be established. Continue connecting (yes/no)? ",
             "Verification code: ",
             "Password expired. Enter new password: ",
+            "(current) UNIX password: ",
+            "Old Password: ",
+            "Retype new password: ",
+            "Confirm password: ",
+            "Старий пароль: ",
             "[sudo] password for alice: ",
-            "Password: ",
+            "",
         ] {
             let (rejected, rejected_secret_path) = run_askpass_script(rejected_prompt);
-            assert!(!rejected.status.success(), "accepted: {rejected_prompt}");
-            assert!(rejected.stdout.is_empty(), "leaked for: {rejected_prompt}");
+            assert!(
+                !rejected.status.success(),
+                "must reject prompt: {rejected_prompt:?}"
+            );
+            assert!(
+                rejected.stdout.is_empty(),
+                "leaked password for: {rejected_prompt:?}"
+            );
             std::fs::remove_file(rejected_secret_path)
                 .expect("rejected prompt must leave the test file for owner cleanup");
         }

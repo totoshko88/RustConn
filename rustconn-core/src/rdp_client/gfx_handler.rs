@@ -847,11 +847,34 @@ const OPENH264_PATH_ENV: &str = "RUSTCONN_OPENH264";
 fn openh264_candidates() -> Vec<std::path::PathBuf> {
     let mut candidates = Vec::new();
 
+    // The explicit env override is a deliberate per-run choice and always
+    // applies, even when the stored preference disables OpenH264.
     if let Some(explicit) = std::env::var_os(OPENH264_PATH_ENV)
         .map(std::path::PathBuf::from)
         .filter(|path| !path.as_os_str().is_empty())
     {
         candidates.push(explicit);
+    }
+
+    // The user disabled OpenH264 in Settings → Connection → Media Codecs. The
+    // licence requires an enable/disable path, so honour it: offer no further
+    // candidate (keeping only any explicit env override above) and let the probe
+    // report H.264 unavailable, without deleting the downloaded blob.
+    if OPENH264_DISABLED.load(std::sync::atomic::Ordering::Relaxed) {
+        return candidates;
+    }
+
+    // The on-demand Cisco blob the user downloaded via the consent flow
+    // (`openh264_download::download_openh264`). It sits in the user cache and,
+    // being Cisco's own published binary, is the one library on a packaged
+    // Linux install the loader's SHA-256 allow-list actually accepts. It comes
+    // AFTER the explicit env override (which is a deliberate per-run choice) but
+    // BEFORE the system search paths (whose distribution builds the loader
+    // always rejects). `cached_openh264_path` is a pure read — it never triggers
+    // a download — and returns `None` unless the file exists AND its hash
+    // matches, so a corrupt/partial cache entry is simply skipped here.
+    if let Some(cached) = super::openh264_download::cached_openh264_path() {
+        candidates.push(cached);
     }
 
     #[cfg(target_os = "macos")]
@@ -864,22 +887,93 @@ fn openh264_candidates() -> Vec<std::path::PathBuf> {
     candidates
 }
 
-/// The outcome of the library search, decided once per process.
+/// The outcome of the library search, cached so the candidate walk does not run
+/// for every RDP connection.
 ///
-/// `Some` is the library that loaded; `None` means nothing usable was found.
+/// `Some(Some(path))` is the library that loaded; `Some(None)` means a completed
+/// walk found nothing usable; the outer `None` means "not probed yet". The
+/// decoder itself cannot be shared — each session needs its own — but the search
+/// result can, and so can the explanation. Without this the whole walk ran again
+/// for every connection: re-`stat`ing every candidate, re-`dlopen`ing each one,
+/// and re-emitting the same warnings — nine identical warning lines from three
+/// connections about an unchangeable property of the machine.
 ///
-/// The decoder itself cannot be shared — each session needs its own — but the
-/// search can, and so can the explanation. Without this the whole walk ran again
-/// for every RDP connection: re-`stat`ing every candidate, re-`dlopen`ing each
-/// one, and re-emitting the same warnings. A log from three connections carried
-/// nine identical lines about an unchangeable property of the machine, at the one
-/// severity users actually read, which is how real warnings get lost.
+/// It is a resettable `RwLock` rather than a one-shot `OnceLock` so that
+/// [`invalidate_openh264_cache`] can clear it after the user downloads Cisco's
+/// blob through the in-app action: the **next** RDP connection then re-probes
+/// and finds the freshly cached library, so H.264 works without restarting the
+/// app. Already-open sessions keep their negotiated RemoteFX path — only new
+/// connections pick up the codec — which is why a reconnect, not a restart, is
+/// all that is needed.
+/// The three states of the OpenH264 search cache, distinguished so a completed
+/// "found nothing" is not re-probed every connection while an invalidation
+/// still forces a fresh walk.
+enum ProbeState {
+    /// Not probed yet (startup, or just invalidated) — the next access probes.
+    Unprobed,
+    /// A completed probe; `Some(path)` loaded, `None` found nothing usable.
+    Probed(Option<std::path::PathBuf>),
+}
+
+static USABLE_LIBRARY: std::sync::RwLock<ProbeState> = std::sync::RwLock::new(ProbeState::Unprobed);
+
+/// Set when the user turns OpenH264 off in Settings → Connection → Media
+/// Codecs. [`openh264_candidates`] then offers no cached/system candidate (an
+/// explicit `RUSTCONN_OPENH264` still wins), so H.264 is disabled without the
+/// blob being deleted — the enable/disable/re-enable path the OpenH264 binary
+/// licence requires. Defaults to enabled (`false`).
+static OPENH264_DISABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Enable or disable use of the downloaded OpenH264 codec at runtime.
 ///
-/// The trade is that installing a Cisco blob mid-session is not picked up until
-/// restart. That is the right way round: the answer depends on files and an
-/// environment variable that do not change under a running process in practice,
-/// and the alternative is paying the walk on every connection forever.
-static USABLE_LIBRARY: std::sync::OnceLock<Option<std::path::PathBuf>> = std::sync::OnceLock::new();
+/// Called by the GUI from the stored `ConnectionSettings::use_openh264` at
+/// startup and whenever the Media Codecs switch changes. Invalidates the probe
+/// cache so the next RDP connection re-evaluates — turning the codec on or off
+/// takes effect on the next connection, no restart.
+pub fn set_openh264_enabled(enabled: bool) {
+    let was_disabled = OPENH264_DISABLED.swap(!enabled, std::sync::atomic::Ordering::Relaxed);
+    if was_disabled == enabled {
+        // State actually changed; re-probe on the next connection.
+        invalidate_openh264_cache();
+    }
+}
+
+/// Clears the cached OpenH264 search result so the next connection re-probes.
+///
+/// Called after the in-app downloader installs Cisco's blob, so a user who
+/// enables H.264 can simply open a new RDP session rather than restart the app.
+/// Safe to call at any time; the worst case is one extra candidate walk.
+pub fn invalidate_openh264_cache() {
+    if let Ok(mut guard) = USABLE_LIBRARY.write() {
+        *guard = ProbeState::Unprobed;
+    }
+    // The reason flags describe the last probe; a fresh probe recomputes them,
+    // so clear them here or a stale RejectedNonCisco / LoadFailed could outlive
+    // the download that fixed it.
+    REJECTED_NON_CISCO.store(false, std::sync::atomic::Ordering::Relaxed);
+    FOUND_BUT_LOAD_FAILED.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Returns the cached probe result, running the probe once if not yet done.
+///
+/// A fast read-locked hit on the common path, falling back to a write-locked
+/// probe when the cache is `Unprobed` (after startup or an invalidation).
+fn usable_library() -> Option<std::path::PathBuf> {
+    if let Ok(guard) = USABLE_LIBRARY.read()
+        && let ProbeState::Probed(cached) = &*guard
+    {
+        return cached.clone();
+    }
+    // Unprobed (or just invalidated): take the write lock and probe.
+    let mut guard = USABLE_LIBRARY.write().ok()?;
+    // Another thread may have probed between the read unlock and this write lock.
+    if let ProbeState::Probed(cached) = &*guard {
+        return cached.clone();
+    }
+    let result = probe_openh264();
+    *guard = ProbeState::Probed(result.clone());
+    result
+}
 
 /// Attempts to load OpenH264 at runtime via dlopen.
 ///
@@ -920,9 +1014,9 @@ static USABLE_LIBRARY: std::sync::OnceLock<Option<std::path::PathBuf>> = std::sy
 pub fn try_load_openh264() -> Option<Box<dyn H264Decoder>> {
     use ironrdp_egfx::decode::OpenH264Decoder;
 
-    let path = USABLE_LIBRARY.get_or_init(probe_openh264).as_ref()?;
+    let path = usable_library()?;
 
-    match OpenH264Decoder::from_library_path(path) {
+    match OpenH264Decoder::from_library_path(&path) {
         Ok(decoder) => Some(Box::new(decoder)),
         Err(e) => {
             // The probe already loaded this exact file, so a failure here is a
@@ -942,7 +1036,13 @@ pub fn try_load_openh264() -> Option<Box<dyn H264Decoder>> {
 fn probe_openh264() -> Option<std::path::PathBuf> {
     use ironrdp_egfx::decode::OpenH264Decoder;
 
+    // Each probe recomputes the reason, so start from a clean slate (a prior
+    // probe, or a stale value an invalidation did not clear).
+    REJECTED_NON_CISCO.store(false, std::sync::atomic::Ordering::Relaxed);
+    FOUND_BUT_LOAD_FAILED.store(false, std::sync::atomic::Ordering::Relaxed);
+
     let mut rejected_hash = false;
+    let mut load_failed = false;
 
     for path in openh264_candidates() {
         let path = path.as_path();
@@ -968,11 +1068,14 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
                         path = %path.display(),
                         reason = "openh264_not_cisco_build",
                         "OpenH264 at this path is not one of Cisco's published binaries, so the \
-                         loader refuses it — this is expected for a distribution package. Point \
-                         {} at a library downloaded from ciscobinary.openh264.org to enable H.264.",
+                         loader refuses it — this is expected for a distribution package. Enable \
+                         H.264 from Settings → Connection → Media Codecs → “Download H.264 codec \
+                         from Cisco”, or point {} at a library downloaded from \
+                         ciscobinary.openh264.org.",
                         OPENH264_PATH_ENV
                     );
                 } else {
+                    load_failed = true;
                     tracing::warn!(
                         path = %path.display(),
                         error = %message,
@@ -984,10 +1087,22 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
     }
 
     if rejected_hash {
+        REJECTED_NON_CISCO.store(true, std::sync::atomic::Ordering::Relaxed);
         tracing::warn!(
             reason = "openh264_not_cisco_build",
             "No usable OpenH264 — every library found was a non-Cisco build. GFX pipeline will \
-             use non-AVC codecs; see docs/INSTALL.md for how to enable H.264."
+             use non-AVC codecs; enable H.264 from Settings → Connection → Media Codecs (the \
+             Download button) (or set {}).",
+            OPENH264_PATH_ENV
+        );
+    } else if load_failed {
+        FOUND_BUT_LOAD_FAILED.store(true, std::sync::atomic::Ordering::Relaxed);
+        tracing::warn!(
+            reason = "openh264_load_failed",
+            "OpenH264 found and accepted by the hash check, but the decoder could not initialize \
+             from it — the file may be corrupt or incompatible. Re-download it from Settings → \
+             Connection → Media Codecs, or replace the library {} points at.",
+            OPENH264_PATH_ENV
         );
     } else {
         tracing::warn!(
@@ -996,6 +1111,40 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
         );
     }
     None
+}
+
+/// Set by [`probe_openh264`] when every OpenH264 it found was a non-Cisco build
+/// rejected by the hash check, as opposed to none being found at all. Read via
+/// [`openh264_unavailable_reason`] to tell the user which case they are in.
+static REJECTED_NON_CISCO: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Set by [`probe_openh264`] when an OpenH264 passed the Cisco hash check but
+/// the decoder still could not initialize from it (corrupt file, ABI mismatch).
+/// Distinct from both "not found" and "non-Cisco build". Read via
+/// [`openh264_unavailable_reason`].
+static FOUND_BUT_LOAD_FAILED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Returns why H.264 is unavailable, or `None` when a decoder DID load.
+///
+/// Runs the one-shot probe (shared with [`try_load_openh264`]) so it reflects
+/// the same decision the session made, without re-walking the filesystem.
+#[must_use]
+pub fn openh264_unavailable_reason() -> Option<super::graphics::H264UnavailableReason> {
+    use super::graphics::H264UnavailableReason;
+    if usable_library().is_some() {
+        return None;
+    }
+    Some(
+        if REJECTED_NON_CISCO.load(std::sync::atomic::Ordering::Relaxed) {
+            H264UnavailableReason::RejectedNonCisco
+        } else if FOUND_BUT_LOAD_FAILED.load(std::sync::atomic::Ordering::Relaxed) {
+            H264UnavailableReason::LoadFailed
+        } else {
+            H264UnavailableReason::NotFound
+        },
+    )
 }
 
 // ============================================================================
@@ -1039,6 +1188,31 @@ mod tests {
     use ironrdp_egfx::pdu::{Codec1Type, Codec2Type, Color, PixelFormat, Point, WireToSurface1Pdu};
 
     use super::*;
+
+    #[test]
+    fn invalidate_resets_the_probe_cache() {
+        // Prime the cache with a probe, then invalidate and confirm the slot is
+        // empty again so the NEXT caller re-probes (this is what lets a freshly
+        // downloaded blob be picked up without an app restart). The probe result
+        // itself is machine-dependent, so this asserts the cache STATE, not which
+        // library was found.
+        let _ = usable_library();
+        assert!(
+            matches!(&*USABLE_LIBRARY.read().unwrap(), ProbeState::Probed(_)),
+            "a completed probe must populate the cache"
+        );
+        invalidate_openh264_cache();
+        assert!(
+            matches!(&*USABLE_LIBRARY.read().unwrap(), ProbeState::Unprobed),
+            "invalidation must clear the cache so the next connection re-probes"
+        );
+        // Re-probing repopulates it (idempotent, no panic).
+        let _ = usable_library();
+        assert!(matches!(
+            &*USABLE_LIBRARY.read().unwrap(),
+            ProbeState::Probed(_)
+        ));
+    }
 
     #[test]
     fn gfx_error_display() {

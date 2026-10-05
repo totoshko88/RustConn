@@ -9,7 +9,9 @@
 //!
 //! And, since 0.22.13, that matching happens inside the synced group: an
 //! export merged into a local tree that already mirrors it changes nothing,
-//! whatever either root is called and wherever the Import root sits.
+//! whatever either root is called and wherever the Import root sits. Since
+//! 0.23, merging, applying the shared `GroupSyncPlan` and merging again is a
+//! fixed point, including after renames and moves on the Master.
 
 use std::collections::HashSet;
 
@@ -17,10 +19,13 @@ use chrono::{Duration, Utc};
 use proptest::prelude::*;
 use rustconn_core::models::{
     AutomationConfig, Connection, ConnectionGroup, PasswordSource, ProtocolConfig, ProtocolType,
-    SshConfig,
+    SshConfig, collect_descendant_group_ids,
 };
-use rustconn_core::sync::group_export::{GroupSyncExport, SyncConnection, SyncGroup};
-use rustconn_core::sync::group_merge::{GroupMergeEngine, GroupMergeResult};
+use rustconn_core::sync::GroupSyncPlan;
+use rustconn_core::sync::group_export::{
+    GroupSyncExport, SyncConnection, SyncGroup, compute_group_path,
+};
+use rustconn_core::sync::group_merge::GroupMergeEngine;
 use rustconn_core::sync::manager::SyncManager;
 use rustconn_core::sync::settings::{SyncMode, SyncSettings};
 use rustconn_core::sync::variable_template::VariableTemplate;
@@ -701,14 +706,208 @@ proptest! {
             &export,
             &no_variables,
         );
-        prop_assert_eq!(&direct, &GroupMergeResult::default());
+        prop_assert!(direct.connections_to_create.is_empty());
+        prop_assert!(direct.connections_to_update.is_empty());
+        prop_assert!(direct.connections_to_delete.is_empty());
+        prop_assert!(direct.groups_to_create.is_empty());
+        prop_assert!(direct.groups_to_update.is_empty());
+        prop_assert!(direct.groups_to_delete.is_empty());
+        prop_assert!(direct.variables_to_create.is_empty());
 
         // ...and through `SyncManager`, which hands the engine the subtree only.
         let mut importer = SyncManager::new(settings);
         let (via_manager, report) = importer
             .import_group(import_root_id, &local_groups, &local_connections, &no_variables)
             .map_err(|e| TestCaseError::fail(e.to_string()))?;
-        prop_assert_eq!(&via_manager, &GroupMergeResult::default());
+        prop_assert!(via_manager.connections_to_create.is_empty());
+        prop_assert!(via_manager.connections_to_update.is_empty());
+        prop_assert!(via_manager.connections_to_delete.is_empty());
+        prop_assert!(via_manager.groups_to_create.is_empty());
+        prop_assert!(via_manager.groups_to_update.is_empty());
+        prop_assert!(via_manager.groups_to_delete.is_empty());
+        prop_assert!(via_manager.variables_to_create.is_empty());
         prop_assert_eq!(report.group_id, import_root_id);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Merge → apply → re-merge is a fixed point (0.23)
+// ---------------------------------------------------------------------------
+
+/// What `SyncManager::export_group` writes for the tree under `root`, without
+/// the file round trip (the property above already covers the writer).
+fn export_tree(
+    root: &ConnectionGroup,
+    groups: &[ConnectionGroup],
+    connections: &[Connection],
+) -> GroupSyncExport {
+    let sync_groups = groups
+        .iter()
+        .filter(|g| g.id != root.id)
+        .map(|g| SyncGroup::from_group(g, &compute_group_path(g.id, groups)))
+        .collect();
+    let sync_connections = connections
+        .iter()
+        .filter_map(|c| {
+            let path = compute_group_path(c.group_id?, groups);
+            Some(SyncConnection::from_connection(c, &path))
+        })
+        .collect();
+    GroupSyncExport::from_group_tree(
+        "0.23.0".to_owned(),
+        Uuid::from_u128(7),
+        "master".to_owned(),
+        SyncGroup::from_group(root, &root.name),
+        sync_groups,
+        sync_connections,
+        Vec::new(),
+    )
+}
+
+/// One Import sync on in-memory state: merge, build the shared plan, apply.
+fn sync_into(
+    root_id: Uuid,
+    groups: &mut Vec<ConnectionGroup>,
+    connections: &mut Vec<Connection>,
+    export: &GroupSyncExport,
+) -> rustconn_core::sync::GroupMergeResult {
+    let result = GroupMergeEngine::merge(root_id, groups, connections, export, &HashSet::new());
+    let plan = GroupSyncPlan::build(root_id, groups, connections, &result);
+    plan.apply_to(groups, connections);
+    result
+}
+
+/// A rename or move made on the Master between two syncs. `slot` 0 is the
+/// root, `slot` k + 1 is subgroup k; out-of-range indices wrap.
+#[derive(Debug, Clone)]
+enum MasterEdit {
+    RenameConnection(usize),
+    MoveConnection(usize, usize),
+    RenameGroup(usize),
+    MoveGroup(usize, usize),
+}
+
+fn arb_master_edits() -> impl Strategy<Value = Vec<MasterEdit>> {
+    prop::collection::vec(
+        prop_oneof![
+            (0usize..64).prop_map(MasterEdit::RenameConnection),
+            (0usize..64, 0usize..64).prop_map(|(c, s)| MasterEdit::MoveConnection(c, s)),
+            (0usize..64).prop_map(MasterEdit::RenameGroup),
+            (0usize..64, 0usize..64).prop_map(|(g, s)| MasterEdit::MoveGroup(g, s)),
+        ],
+        0..=6,
+    )
+}
+
+/// Applies `edits` to the Master tree; `groups[0]` is the root.
+fn edit_master(
+    edits: &[MasterEdit],
+    groups: &mut [ConnectionGroup],
+    connections: &mut [Connection],
+) {
+    let slot_id = |groups: &[ConnectionGroup], slot: usize| groups[slot % groups.len()].id;
+    for (n, edit) in edits.iter().enumerate() {
+        match *edit {
+            MasterEdit::RenameConnection(c) if !connections.is_empty() => {
+                let i = c % connections.len();
+                connections[i].name = format!("renamed-conn-{n}");
+                connections[i].updated_at = Utc::now();
+            }
+            MasterEdit::MoveConnection(c, slot) if !connections.is_empty() => {
+                let target = slot_id(groups, slot);
+                let i = c % connections.len();
+                connections[i].group_id = Some(target);
+                connections[i].updated_at = Utc::now();
+            }
+            MasterEdit::RenameGroup(g) if groups.len() > 1 => {
+                let i = 1 + g % (groups.len() - 1);
+                groups[i].name = format!("renamed-group-{n}");
+            }
+            MasterEdit::MoveGroup(g, slot) if groups.len() > 1 => {
+                let i = 1 + g % (groups.len() - 1);
+                let moved = groups[i].id;
+                let target = slot_id(groups, slot);
+                // Never under itself or one of its own descendants.
+                if !collect_descendant_group_ids(moved, groups).contains(&target) {
+                    groups[i].parent_id = Some(target);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+
+    /// Merge → apply the shared plan → merge again changes nothing, both for a
+    /// first import into an empty Import group and after any sequence of
+    /// renames and moves on the Master. And a Master that only renamed and
+    /// moved things never makes Import delete or recreate anything: every
+    /// connection keeps its local id, which is what keeps its vault entry
+    /// (issue #263).
+    #[test]
+    fn merge_apply_remerge_is_a_fixed_point(
+        shape in arb_tree_shape(),
+        edits in arb_master_edits(),
+    ) {
+        let base = Utc::now() - Duration::hours(200);
+        let master_root = ConnectionGroup::new("Production".to_owned());
+        let (mut master_groups, mut master_connections) =
+            build_tree(master_root.clone(), &shape, base);
+
+        let import_root = ConnectionGroup::new("production".to_owned());
+        let import_root_id = import_root.id;
+        let mut groups = vec![import_root];
+        let mut connections: Vec<Connection> = Vec::new();
+
+        // First import, then nothing left to do.
+        let export = export_tree(&master_root, &master_groups, &master_connections);
+        sync_into(import_root_id, &mut groups, &mut connections, &export);
+        prop_assert_eq!(connections.len(), master_connections.len());
+        prop_assert_eq!(groups.len(), master_groups.len());
+        prop_assert!(connections.iter().all(|c| c.sync_origin_id.is_some()));
+        prop_assert!(connections.iter().all(|c| master_connections.iter().all(|m| m.id != c.id)),
+            "Import must never adopt a Master id");
+        let again = GroupMergeEngine::merge(
+            import_root_id, &groups, &connections, &export, &HashSet::new(),
+        );
+        prop_assert!(again.is_empty(), "first import is not a fixed point: {:?}", again);
+
+        // Renames and moves on the Master.
+        edit_master(&edits, &mut master_groups, &mut master_connections);
+        let ids_before: HashSet<Uuid> = connections.iter().map(|c| c.id).collect();
+        let export = export_tree(&master_root, &master_groups, &master_connections);
+        let result = sync_into(import_root_id, &mut groups, &mut connections, &export);
+        prop_assert!(result.connections_to_create.is_empty(), "rename/move created: {:?}", result);
+        prop_assert!(result.connections_to_delete.is_empty(), "rename/move deleted: {:?}", result);
+        prop_assert!(result.groups_to_create.is_empty(), "rename/move created a group: {:?}", result);
+        prop_assert!(result.groups_to_delete.is_empty(), "rename/move deleted a group: {:?}", result);
+        let ids_after: HashSet<Uuid> = connections.iter().map(|c| c.id).collect();
+        prop_assert_eq!(ids_before, ids_after);
+
+        // Every connection sits at the Master's path, relative to each root.
+        for conn in &connections {
+            let master = master_connections
+                .iter()
+                .find(|m| Some(m.id) == conn.sync_origin_id);
+            prop_assert!(master.is_some());
+            if let (Some(master), Some(local_group), Some(master_group)) =
+                (master, conn.group_id, master.and_then(|m| m.group_id))
+            {
+                let local_path = compute_group_path(local_group, &groups);
+                let master_path = compute_group_path(master_group, &master_groups);
+                prop_assert_eq!(
+                    local_path.strip_prefix("production"),
+                    master_path.strip_prefix("Production")
+                );
+                prop_assert_eq!(&conn.name, &master.name);
+            }
+        }
+
+        let again = GroupMergeEngine::merge(
+            import_root_id, &groups, &connections, &export, &HashSet::new(),
+        );
+        prop_assert!(again.is_empty(), "sync after edits is not a fixed point: {:?}", again);
     }
 }

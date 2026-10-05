@@ -340,9 +340,91 @@ fn test_export_invalid_format() {
 }
 
 // ============================================================================
-// Add Command Tests
+// Native export data-preservation (templates / clusters / variables / snippets)
 // ============================================================================
 
+/// Regression guard: `export --format native` used to pass empty vecs for
+/// templates, clusters, variables and snippets, so a CLI native export silently
+/// dropped all four even though the format (and the GUI export) preserve them.
+/// Seed a config with one of each, export through the real binary, read the
+/// `.rcn` back, and assert every collection survived.
+#[test]
+fn native_export_preserves_templates_clusters_variables_snippets() {
+    use rustconn_core::cluster::Cluster;
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::export::NativeExport;
+    use rustconn_core::models::{ConnectionTemplate, Snippet};
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    // Seed the config dir the CLI will read via RUSTCONN_CONFIG_DIR.
+    let manager = ConfigManager::with_config_dir(config_dir.to_path_buf());
+    manager
+        .save_templates(&[ConnectionTemplate::new_ssh("Edge Router".to_string())])
+        .expect("save templates");
+    manager
+        .save_clusters(&[Cluster::new("DC Fleet".to_string())])
+        .expect("save clusters");
+    manager
+        .save_variables(&[Variable::new("region", "eu-central-1")])
+        .expect("save variables");
+    manager
+        .save_snippets(&[Snippet::new(
+            "Tail syslog".to_string(),
+            "tail -f /var/log/syslog".to_string(),
+        )])
+        .expect("save snippets");
+
+    let output_path = config_dir.join("export.rcn");
+    let out = run_cli(
+        &[
+            "export",
+            "--format",
+            "native",
+            "--output",
+            output_path.to_str().unwrap(),
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        out.status.success(),
+        "native export should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+
+    // Read the archive back and assert the four collections survived.
+    let export = NativeExport::from_file(&output_path).expect("parse exported .rcn");
+    assert_eq!(
+        export.templates.len(),
+        1,
+        "templates must survive native CLI export"
+    );
+    assert_eq!(export.templates[0].name, "Edge Router");
+    assert_eq!(
+        export.clusters.len(),
+        1,
+        "clusters must survive native CLI export"
+    );
+    assert_eq!(export.clusters[0].name, "DC Fleet");
+    assert_eq!(
+        export.variables.len(),
+        1,
+        "variables must survive native CLI export"
+    );
+    assert_eq!(export.variables[0].name, "region");
+    assert_eq!(
+        export.snippets.len(),
+        1,
+        "snippets must survive native CLI export"
+    );
+    assert_eq!(export.snippets[0].name, "Tail syslog");
+}
+
+// ============================================================================
+// Add Command Tests
+// ============================================================================
 #[test]
 fn test_add_missing_required_args() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -426,5 +508,210 @@ fn test_version() {
         stdout.contains("rustconn-cli") || stdout.contains(env!("CARGO_PKG_VERSION")),
         "Version output should contain program name or version. Got: {}",
         stdout
+    );
+}
+
+// ============================================================================
+// Kerberos (RDP NLA) flags — issue #351
+// ============================================================================
+
+/// Loads the single saved RDP connection's config from a CLI config dir.
+#[cfg(test)]
+fn load_only_rdp(config_dir: &std::path::Path) -> rustconn_core::models::RdpConfig {
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::models::ProtocolConfig;
+    let manager = ConfigManager::with_config_dir(config_dir.to_path_buf());
+    let connections = manager.load_connections().expect("load connections");
+    let conn = connections.first().expect("one connection was added");
+    match &conn.protocol_config {
+        ProtocolConfig::Rdp(cfg) => cfg.clone(),
+        other => panic!("expected an RDP connection, got {other:?}"),
+    }
+}
+
+#[test]
+fn add_kerberos_stores_and_normalizes_the_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        out.status.success(),
+        "add with --kerberos should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+
+    let cfg = load_only_rdp(config_dir);
+    assert!(cfg.kerberos_enabled, "kerberos should be enabled");
+    assert_eq!(
+        cfg.kdc_proxy_url.as_deref(),
+        Some("tcp://dc1.example.com:88"),
+        "the KDC address must be stored in normalized form"
+    );
+}
+
+#[test]
+fn add_rejects_a_malformed_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "ldap://dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        !out.status.success(),
+        "a malformed KDC address must fail the add rather than store a dropped value"
+    );
+    assert!(
+        stderr_str(&out).contains("invalid KDC address"),
+        "the error should name the problem. stderr: {}",
+        stderr_str(&out)
+    );
+}
+
+#[test]
+fn update_can_disable_kerberos_and_clear_the_kdc_address() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--kerberos",
+            "--kdc-address",
+            "dc1.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    // Turn Kerberos off and clear the KDC address in one update.
+    let upd = run_cli(
+        &[
+            "update",
+            "win-dc",
+            "--kerberos",
+            "false",
+            "--kdc-address",
+            "",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        upd.status.success(),
+        "update should succeed. stderr: {}",
+        stderr_str(&upd)
+    );
+
+    let cfg = load_only_rdp(config_dir);
+    assert!(!cfg.kerberos_enabled, "kerberos should be disabled");
+    assert_eq!(
+        cfg.kdc_proxy_url, None,
+        "an empty --kdc-address must clear the stored value"
+    );
+}
+
+#[cfg(feature = "client-launch")]
+#[test]
+fn connect_warns_about_kerberos_with_an_ip_host() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    // Kerberos on, but the host is an IP address — the service principal is
+    // TERMSRV/<dns-name>, which the domain does not know for a bare IP, so
+    // sign-in would fail. The connect preflight must say so.
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "10.0.0.5",
+            "--domain",
+            "example.com",
+            "--kerberos",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    // --dry-run reaches the preflight (which runs before the dry-run short
+    // circuit) without launching a real client.
+    let out = run_cli(&["connect", "win-dc", "--dry-run"], Some(config_dir));
+    assert!(
+        out.status.success(),
+        "dry-run connect should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+    assert!(
+        stderr_str(&out).contains("Kerberos needs the server's DNS name"),
+        "the preflight should warn about the IP host. stderr: {}",
+        stderr_str(&out)
+    );
+}
+
+#[cfg(feature = "client-launch")]
+#[test]
+fn connect_is_quiet_about_kerberos_when_settings_are_fine() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "win-dc",
+            "--protocol",
+            "rdp",
+            "--host",
+            "rdp1.example.com",
+            "--domain",
+            "example.com",
+            "--kerberos",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    let out = run_cli(&["connect", "win-dc", "--dry-run"], Some(config_dir));
+    assert!(out.status.success(), "dry-run connect should succeed");
+    assert!(
+        !stderr_str(&out).contains("Kerberos needs"),
+        "a DNS host + DNS domain must produce no Kerberos warning. stderr: {}",
+        stderr_str(&out)
     );
 }

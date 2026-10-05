@@ -1,9 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use super::download::{download_with_progress, verify_checksum};
+use super::download::{download_with_progress, enforce_checksum_policy};
 use super::extract::{extract_deb, extract_tar_gz, extract_zip, find_binary_in_dir};
 use super::{
-    ChecksumPolicy, CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
+    CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
     DownloadableComponent, ProgressCallback,
 };
 
@@ -41,21 +41,8 @@ pub(super) async fn install_download_component(
         });
     }
 
-    // Verify checksum based on policy
-    match component.checksum {
-        ChecksumPolicy::Static(expected) => {
-            verify_checksum(&bytes, expected)?;
-        }
-        ChecksumPolicy::SkipLatest => {
-            tracing::warn!(
-                "Skipping checksum for {} (latest URL, no stable hash)",
-                component.name
-            );
-        }
-        ChecksumPolicy::None => {
-            return Err(CliDownloadError::NoChecksum);
-        }
-    }
+    // Verify checksum based on policy (shared with the cloud/custom installers).
+    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {

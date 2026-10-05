@@ -204,6 +204,11 @@ impl MainWindow {
                 if let Some(app) = win.application().and_downcast::<adw::Application>() {
                     crate::app::set_passthrough(&app, &state_clone, new_state);
                 }
+                // Per-connection command-macro accels are not in the keybinding
+                // table `set_passthrough` walks; the dispatcher clears them while
+                // passthrough is on (it reads this action's new state) and
+                // registers them again when it goes off.
+                super::macro_dispatch::request_refresh(&win);
 
                 // Toggle passthrough indicator visibility in header bar
                 passthrough_indicator_clone.set_visible(new_state);

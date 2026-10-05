@@ -117,10 +117,6 @@ pub struct SettingsDialog {
     max_age_row: adw::SpinRow,
     // Startup action
     startup_action_dropdown: DropDown,
-    // Tab coloring
-    color_tabs_by_protocol: adw::SwitchRow,
-    // Protocol filter visibility
-    show_protocol_filters: adw::SwitchRow,
     // Sidebar width setting
     sidebar_width_row: adw::SpinRow,
     // Compact interface toggle
@@ -132,8 +128,9 @@ pub struct SettingsDialog {
     terminal_passthrough_ctrl: adw::SwitchRow,
     // Remember keyboard passthrough state across restarts (issue #274)
     keyboard_passthrough: adw::SwitchRow,
-    // Show active connection name in the window title (issue #211)
-    window_title_shows_connection: adw::SwitchRow,
+    // Connection name in the window title (issue #211) and group path in the
+    // header subtitle — named fields so the pair cannot be swapped.
+    window_title_rows: ui_tab::WindowTitleRows,
     // Show Welcome tab on startup (issue #232)
     show_welcome_switch: adw::SwitchRow,
     // Always open a new session on a sidebar double-click (issue #242)
@@ -268,14 +265,12 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
-            color_tabs_by_protocol,
-            show_protocol_filters,
             sidebar_width_row,
             compact_ui,
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
-            window_title_shows_connection,
+            window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
             show_split_pane_labels,
@@ -715,14 +710,12 @@ impl SettingsDialog {
             prompt_on_restore,
             max_age_row,
             startup_action_dropdown,
-            color_tabs_by_protocol,
-            show_protocol_filters,
             sidebar_width_row,
             compact_ui,
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
-            window_title_shows_connection,
+            window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
             open_tunnelled_browser_in_embedded,
@@ -1294,14 +1287,12 @@ impl SettingsDialog {
             &self.prompt_on_restore,
             &self.max_age_row,
             &self.startup_action_dropdown,
-            &self.color_tabs_by_protocol,
-            &self.show_protocol_filters,
             &self.sidebar_width_row,
             &self.compact_ui,
             &self.compact_auto,
             &self.terminal_passthrough_ctrl,
             &self.keyboard_passthrough,
-            &self.window_title_shows_connection,
+            &self.window_title_rows,
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
             &self.show_split_pane_labels,
@@ -1431,6 +1422,8 @@ impl SettingsDialog {
         let kdbx_use_key_file_check_clone = self.secrets_widgets.kdbx_use_key_file_check.clone();
         let kdbx_use_password_check_clone = self.secrets_widgets.kdbx_use_password_check.clone();
         let kdbx_yubikey_slot_entry_clone = self.secrets_widgets.kdbx_yubikey_slot_entry.clone();
+        let kdbx_read_only_row_clone = self.secrets_widgets.kdbx_read_only_row.clone();
+        let kdbx_root_search_row_clone = self.secrets_widgets.kdbx_root_search_row.clone();
         let bitwarden_password_entry_clone = self.secrets_widgets.bitwarden_password_entry.clone();
         let bitwarden_storage_combo_clone = self.secrets_widgets.bitwarden_storage_combo.clone();
         let bitwarden_use_api_key_check_clone =
@@ -1439,6 +1432,9 @@ impl SettingsDialog {
             self.secrets_widgets.bitwarden_client_id_entry.clone();
         let bitwarden_client_secret_entry_clone =
             self.secrets_widgets.bitwarden_client_secret_entry.clone();
+        let bitwarden_read_only_row_clone = self.secrets_widgets.bitwarden_read_only_row.clone();
+        let bitwarden_root_search_row_clone =
+            self.secrets_widgets.bitwarden_root_search_row.clone();
         // Passbolt, 1Password, Pass — collect-only widgets cloned for the
         // close-time settings collection.
         let passbolt_passphrase_entry_clone =
@@ -1446,10 +1442,18 @@ impl SettingsDialog {
         let passbolt_storage_combo_clone = self.secrets_widgets.passbolt_storage_combo.clone();
         let passbolt_server_url_entry_clone =
             self.secrets_widgets.passbolt_server_url_entry.clone();
+        let passbolt_read_only_row_clone = self.secrets_widgets.passbolt_read_only_row.clone();
+        let passbolt_root_search_row_clone = self.secrets_widgets.passbolt_root_search_row.clone();
         let onepassword_token_entry_clone = self.secrets_widgets.onepassword_token_entry.clone();
         let onepassword_storage_combo_clone =
             self.secrets_widgets.onepassword_storage_combo.clone();
+        let onepassword_read_only_row_clone =
+            self.secrets_widgets.onepassword_read_only_row.clone();
+        let onepassword_root_search_row_clone =
+            self.secrets_widgets.onepassword_root_search_row.clone();
         let pass_store_dir_entry_clone = self.secrets_widgets.pass_store_dir_entry.clone();
+        let pass_read_only_row_clone = self.secrets_widgets.pass_read_only_row.clone();
+        let pass_root_search_row_clone = self.secrets_widgets.pass_root_search_row.clone();
         // Portable encrypted file — collect-only widgets.
         let portable_path_entry_clone = self.secrets_widgets.portable_path_entry.clone();
         let portable_passphrase_entry_clone =
@@ -1470,14 +1474,12 @@ impl SettingsDialog {
         let prompt_on_restore_clone = self.prompt_on_restore.clone();
         let max_age_row_clone = self.max_age_row.clone();
         let startup_action_dropdown_clone = self.startup_action_dropdown.clone();
-        let color_tabs_by_protocol_clone = self.color_tabs_by_protocol.clone();
-        let show_protocol_filters_clone = self.show_protocol_filters.clone();
         let sidebar_width_row_clone = self.sidebar_width_row.clone();
         let compact_ui_clone = self.compact_ui.clone();
         let compact_auto_clone = self.compact_auto.clone();
         let terminal_passthrough_ctrl_clone = self.terminal_passthrough_ctrl.clone();
         let keyboard_passthrough_clone = self.keyboard_passthrough.clone();
-        let window_title_shows_connection_clone = self.window_title_shows_connection.clone();
+        let window_title_rows_clone = self.window_title_rows.clone();
         let show_welcome_switch_clone = self.show_welcome_switch.clone();
         let double_click_opens_new_session_clone = self.double_click_opens_new_session.clone();
         let open_tunnelled_browser_in_embedded_clone =
@@ -1591,6 +1593,8 @@ impl SettingsDialog {
                 kdbx_use_key_file_check: kdbx_use_key_file_check_clone.clone(),
                 kdbx_use_password_check: kdbx_use_password_check_clone.clone(),
                 kdbx_yubikey_slot_entry: kdbx_yubikey_slot_entry_clone.clone(),
+                kdbx_read_only_row: kdbx_read_only_row_clone.clone(),
+                kdbx_root_search_row: kdbx_root_search_row_clone.clone(),
                 kdbx_group: adw::PreferencesGroup::new(), // dummy
                 auth_group: adw::PreferencesGroup::new(), // dummy
                 status_group: adw::PreferencesGroup::new(), // dummy
@@ -1604,10 +1608,14 @@ impl SettingsDialog {
                 bitwarden_use_api_key_check: bitwarden_use_api_key_check_clone.clone(),
                 bitwarden_client_id_entry: bitwarden_client_id_entry_clone.clone(),
                 bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
+                bitwarden_read_only_row: bitwarden_read_only_row_clone.clone(),
+                bitwarden_root_search_row: bitwarden_root_search_row_clone.clone(),
                 bitwarden_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 onepassword_group: adw::PreferencesGroup::new(),     // dummy
                 onepassword_status_label: Label::new(None),          // dummy
                 onepassword_signin_button: Button::new(),            // dummy
+                onepassword_read_only_row: onepassword_read_only_row_clone.clone(),
+                onepassword_root_search_row: onepassword_root_search_row_clone.clone(),
                 onepassword_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 passbolt_group: adw::PreferencesGroup::new(),        // dummy
                 passbolt_status_label: Label::new(None),             // dummy
@@ -1615,6 +1623,8 @@ impl SettingsDialog {
                 passbolt_open_vault_button: Button::new(), // dummy, не використовується при збиранні
                 passbolt_passphrase_entry: passbolt_passphrase_entry_clone.clone(),
                 passbolt_storage_combo: passbolt_storage_combo_clone.clone(),
+                passbolt_read_only_row: passbolt_read_only_row_clone.clone(),
+                passbolt_root_search_row: passbolt_root_search_row_clone.clone(),
                 onepassword_token_entry: onepassword_token_entry_clone.clone(),
                 onepassword_storage_combo: onepassword_storage_combo_clone.clone(),
                 secret_tool_available: Rc::new(RefCell::new(None)), // dummy, не використовується при збиранні
@@ -1623,6 +1633,8 @@ impl SettingsDialog {
                 pass_store_dir_entry: pass_store_dir_entry_clone.clone(),
                 pass_store_dir_browse_button: Button::new(), // dummy, не використовується при збиранні
                 pass_status_label: Label::new(None), // dummy, не використовується при збиранні
+                pass_read_only_row: pass_read_only_row_clone.clone(),
+                pass_root_search_row: pass_root_search_row_clone.clone(),
                 encrypted_file_group: adw::PreferencesGroup::new(), // dummy
                 portable_group: adw::PreferencesGroup::new(), // dummy
                 portable_path_entry: portable_path_entry_clone.clone(),
@@ -1690,14 +1702,12 @@ impl SettingsDialog {
                 &prompt_on_restore_clone,
                 &max_age_row_clone,
                 &startup_action_dropdown_clone,
-                &color_tabs_by_protocol_clone,
-                &show_protocol_filters_clone,
                 &sidebar_width_row_clone,
                 &compact_ui_clone,
                 &compact_auto_clone,
                 &terminal_passthrough_ctrl_clone,
                 &keyboard_passthrough_clone,
-                &window_title_shows_connection_clone,
+                &window_title_rows_clone,
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,
                 &show_split_pane_labels_clone,
@@ -1720,6 +1730,10 @@ impl SettingsDialog {
                 ui.window_maximized = cur.ui.window_maximized;
                 ui.expanded_groups = cur.ui.expanded_groups.clone();
                 ui.search_history = cur.ui.search_history.clone();
+                // Retired switches (0.23): no row, no effect — keep whatever
+                // the file already holds rather than rewriting it.
+                ui.color_tabs_by_protocol = cur.ui.color_tabs_by_protocol;
+                ui.show_protocol_filters = cur.ui.show_protocol_filters;
                 // A file-based startup action (an RDP/.vv file passed on the CLI)
                 // has no dropdown slot — it shares index 0 with "Do nothing" — so
                 // a Settings round-trip would otherwise collapse it to None.

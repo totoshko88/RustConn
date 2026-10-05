@@ -76,6 +76,10 @@ pub fn resolve_automation(connection: &Connection, groups: &[ConnectionGroup]) -
             .automation
             .login_timeout_secs
             .or_else(|| resolve_login_timeout(connection.group_id, groups)),
+        // Command macros are per-connection and are not inherited from groups
+        // (unlike expect_rules / prompts), so carry the connection's own list
+        // through unchanged.
+        command_macros: connection.automation.command_macros.clone(),
     }
 }
 

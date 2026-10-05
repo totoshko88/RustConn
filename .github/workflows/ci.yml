@@ -61,16 +61,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo
 
       - name: Run cargo check
         run: cargo check --all-targets
@@ -312,16 +306,18 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      # Swatinem/rust-cache keys on the toolchain + Cargo.lock + job and prunes
+      # stale entries itself, replacing the hand-rolled actions/cache above. It
+      # does NOT weaken the false-green guard below: that guard does not trust
+      # cache freshness at all — it force-`cargo clean`s the workspace members
+      # (so clippy always recompiles them) and then proves a real compile
+      # happened by grepping the log for Checking/Compiling. rust-cache restores
+      # target/ exactly as the old cache did; the clean runs after restore and
+      # removes the workspace crates regardless of how they got there.
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-clippy
 
       # This gate used to be able to pass without looking at anything. The cache
       # above is keyed on Cargo.lock, so any change that leaves the lock alone —
@@ -412,22 +408,28 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-test
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          # Version-pinned like the other tools in this file.
+          tool: cargo-nextest@0.9.146
+
+      # nextest runs each test in its own process with more parallelism and
+      # per-test retry/timeout, but it deliberately does NOT run doctests — so
+      # the `--doc` leg below is required, not optional, to keep that coverage.
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo nextest run --workspace
+
+      - name: Run doctests
+        run: cargo test --workspace --doc
 
       - name: Run CLI tests (full features)
-        run: cargo test -p rustconn-cli --features full
+        run: cargo nextest run -p rustconn-cli --features full
 
   test-core:
     name: Test Core (no GUI)
@@ -440,19 +442,23 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-core-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-core
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-nextest@0.9.146
+
+      # nextest skips doctests; rustconn-core carries runnable doctests, so the
+      # --doc leg is required to keep them covered.
       - name: Run core tests
-        run: cargo test -p rustconn-core --all-features
+        run: cargo nextest run -p rustconn-core --all-features
+
+      - name: Run core doctests
+        run: cargo test -p rustconn-core --all-features --doc
 
   property-tests:
     name: Property Tests
@@ -469,19 +475,19 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-proptest-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-proptest
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-nextest@0.9.146
+
+      # A single integration-test target, so no doctest leg is needed here.
       - name: Run property tests
-        run: cargo test -p rustconn-core --all-features --test property_tests
+        run: cargo nextest run -p rustconn-core --all-features --test property_tests
 
   msrv:
     name: MSRV (1.95)
@@ -513,16 +519,10 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install-deps
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          prefix-key: ${{ runner.os }}-cargo-msrv
 
       - name: Check MSRV
         run: |
@@ -557,15 +557,10 @@ jobs:
       - name: Install gettext
         run: brew install gettext
 
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-macos-sys-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-macos-sys-
+          prefix-key: ${{ runner.os }}-cargo-macos-sys
 
       # Why this job exists, and why it is this small.
       #
@@ -709,3 +704,172 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: brew install --build-from-source --verbose ./packaging/macos/rustconn.rb
+
+  # Single success-gate. Branch protection should require THIS job alone instead
+  # of enumerating every job above: a new job added to the matrix is then covered
+  # automatically (it just needs adding to `needs` here), closing the hole where
+  # a job outside the protected list could go red without blocking a merge.
+  #
+  # `if: always()` so the gate runs even when an upstream job failed or was
+  # cancelled (without it, a failed need would skip this job and branch
+  # protection would see a skip, not a failure). The check fails on any need in
+  # `failure` or `cancelled`; `skipped` is allowed, because jobs legitimately
+  # skip on PRs (e.g. the push/dispatch-only macOS legs) and treating a skip as a
+  # failure would make every PR red. macos-formula's own build step is
+  # `continue-on-error`, so that job reports success regardless — its result is
+  # intentionally not a merge blocker.
+
+  # Public-API drift check for the rustconn-core library (cargo-semver-checks).
+  #
+  # ADVISORY, not a merge gate — and the distinction is deliberate, not timidity.
+  # rustconn-core is a 0.x library and is NOT published to crates.io; its only
+  # consumers are rustconn/rustconn-cli in this same workspace, which catch a real
+  # break at compile time. Under SemVer a 0.x crate may break in a minor bump, so
+  # a genuine, intended API change (new SecretSettings fields, new SecretError /
+  # RdpClientEvent variants — exactly what 0.23.0 adds) legitimately "requires a
+  # new major" by the tool's rules while being a perfectly fine 0.x minor. Gating
+  # on it would redden every normal release. So this job REPORTS the drift (early
+  # warning: make sure the version bump reflects it) via continue-on-error and is
+  # intentionally NOT in the ci-success needs — a red here never blocks a merge.
+  #
+  # Baseline is the latest git tag (the crate has no registry baseline), resolved
+  # at runtime; the check is skipped on the first run before any tag exists.
+  # --only-explicit-features --features default avoids an all-features rustdoc
+  # build that currently trips an upstream `sspi` compile error (not our code) in
+  # the rdp-embedded+rd-gateway+gfx-h264 combination.
+  semver-core:
+    name: Semver (rustconn-core, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-semver
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          tool: cargo-semver-checks@0.51.0
+
+      - name: cargo semver-checks (baseline = latest tag)
+        shell: bash
+        run: |
+          set -uo pipefail
+          baseline=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$baseline" ]; then
+            echo "No git tag found — skipping semver baseline comparison (first release)."
+            exit 0
+          fi
+          echo "Comparing rustconn-core public API against baseline tag: $baseline"
+          cargo semver-checks \
+            --baseline-rev "$baseline" \
+            --package rustconn-core \
+            --only-explicit-features --features default
+
+  # Feature-combination check (cargo-hack). The text-level `check-feature-ladders.sh`
+  # guard proves the GNOME version ladders AGREE across packaging channels, but it
+  # does not COMPILE intermediate feature combinations — a combo that builds under
+  # `--all-features` and default can still break in between (web-embedded has broken
+  # on its own before). This job closes that: it compiles the independent,
+  # non-version features of the two library-ish crates in combination.
+  #
+  # Scope is deliberate, not lazy. Only `rustconn-core` (whose features —
+  # system-keyring, vnc-embedded, web-embedded, rdp-embedded, gfx-h264, rd-gateway
+  # — are genuinely independent) and `rustconn-cli` (client-launch × keepass-verify
+  # × secret-management) go through `--feature-powerset`. The GUI crate `rustconn`
+  # is NOT powerset-checked: its adw-1-*/gtk-4-*/vte-0-* features are version
+  # ladders that are mutually exclusive in meaning (you link ONE gtk4), so a
+  # powerset would multiply the matrix with nonsensical combos while adding no
+  # coverage the packaging builds + check-feature-ladders.sh do not already give.
+  # `--depth 2` bounds the combinations (pairs) so the runtime stays sane.
+  feature-powerset:
+    name: Feature powerset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-powerset
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        with:
+          # Version-pinned like the other tools in this file — a moving upstream
+          # must not change what CI checks without a commit here.
+          tool: cargo-hack@0.6.45
+
+      - name: cargo hack --feature-powerset (rustconn-core)
+        run: cargo hack --package rustconn-core --feature-powerset --depth 2 check
+
+      - name: cargo hack --feature-powerset (rustconn-cli)
+        run: cargo hack --package rustconn-cli --feature-powerset --depth 2 check
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - check
+      - fmt
+      - hygiene
+      - i18n
+      - clippy
+      - test
+      - test-core
+      - property-tests
+      - msrv
+      - cargo-deny
+      - feature-powerset
+      - macos-sys
+      - macos-formula
+    steps:
+      - name: Verify no upstream job failed
+        shell: bash
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "Upstream job results: ${RESULTS}"
+          failed=0
+          for r in ${RESULTS}; do
+            case "$r" in
+              success|skipped) ;;
+              failure|cancelled)
+                echo "::error::an upstream job reported '${r}'"
+                failed=1
+                ;;
+              *)
+                echo "::error::an upstream job reported unexpected result '${r}'"
+                failed=1
+                ;;
+            esac
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "CI gate: FAIL"
+            exit 1
+          fi
+          echo "CI gate: all upstream jobs passed (or legitimately skipped)"

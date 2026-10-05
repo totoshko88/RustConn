@@ -37,6 +37,10 @@ pub struct SshOptionsWidgets {
     pub key_button: Button,
     pub agent_key_dropdown: DropDown,
     pub jump_host_dropdown: DropDown,
+    /// The row wrapping [`Self::jump_host_dropdown`], so its subtitle can warn
+    /// when the stored `jump_host_id` points at a deleted connection instead of
+    /// silently falling back to "(None)" (issue #345).
+    pub jump_host_row: adw::ActionRow,
     pub proxy_entry: Entry,
     /// The row wrapping [`Self::proxy_entry`], so its subtitle can name an
     /// inherited bastion instead of leaving one invisible.
@@ -108,6 +112,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
     let ConnectionGroupWidgets {
         group: connection_group,
         jump_host_dropdown,
+        jump_host_row,
         proxy_entry,
         proxy_row,
         proxy_command_entry,
@@ -249,6 +254,7 @@ pub fn create_ssh_options() -> SshOptionsWidgets {
         key_button,
         agent_key_dropdown,
         jump_host_dropdown,
+        jump_host_row,
         proxy_entry,
         proxy_row,
         proxy_command_entry,
@@ -538,6 +544,7 @@ fn connect_auth_method_visibility(
 struct ConnectionGroupWidgets {
     group: adw::PreferencesGroup,
     jump_host_dropdown: DropDown,
+    jump_host_row: adw::ActionRow,
     proxy_entry: Entry,
     proxy_row: adw::ActionRow,
     proxy_command_entry: Entry,
@@ -623,6 +630,7 @@ fn create_connection_group() -> ConnectionGroupWidgets {
     ConnectionGroupWidgets {
         group: connection_group,
         jump_host_dropdown,
+        jump_host_row,
         proxy_entry,
         proxy_row,
         proxy_command_entry,

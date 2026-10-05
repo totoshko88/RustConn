@@ -34,6 +34,25 @@ pub(super) fn cmd_export(
         .load_groups()
         .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
 
+    // Native export preserves all five data types (templates, clusters,
+    // variables, snippets) the way the GUI export does; a CLI `--format native`
+    // used to pass empty vecs for them and silently drop them from the archive.
+    let templates = config_manager
+        .load_templates()
+        .map_err(|e| CliError::Config(format!("Failed to load templates: {e}")))?;
+
+    let clusters = config_manager
+        .load_clusters()
+        .map_err(|e| CliError::Config(format!("Failed to load clusters: {e}")))?;
+
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Config(format!("Failed to load variables: {e}")))?;
+
+    let snippets = config_manager
+        .load_snippets()
+        .map_err(|e| CliError::Config(format!("Failed to load snippets: {e}")))?;
+
     let smart_folders = config_manager
         .load_settings()
         .map(|s| s.smart_folders)
@@ -75,7 +94,16 @@ pub(super) fn cmd_export(
         options.csv_fields = Some(fields.split(',').map(|s| s.trim().to_string()).collect());
     }
 
-    let result = export_connections(&connections, &groups, &smart_folders, &options)?;
+    let result = export_connections(
+        &connections,
+        &groups,
+        &smart_folders,
+        &templates,
+        &clusters,
+        &variables,
+        &snippets,
+        &options,
+    )?;
 
     println!(
         "Export complete: {} connections exported, {} skipped",
@@ -99,10 +127,18 @@ pub(super) fn cmd_export(
 }
 
 /// Exports connections using the appropriate exporter based on format
+#[expect(
+    clippy::too_many_arguments,
+    reason = "native export carries five independent data collections (connections, groups, templates, clusters, variables, snippets) plus smart folders and options; bundling them only restates the list"
+)]
 fn export_connections(
     connections: &[Connection],
     groups: &[ConnectionGroup],
     smart_folders: &[rustconn_core::models::SmartFolder],
+    templates: &[rustconn_core::models::ConnectionTemplate],
+    clusters: &[rustconn_core::cluster::Cluster],
+    variables: &[rustconn_core::variables::Variable],
+    snippets: &[rustconn_core::models::Snippet],
     options: &rustconn_core::export::ExportOptions,
 ) -> Result<rustconn_core::export::ExportResult, CliError> {
     use rustconn_core::export::{
@@ -140,10 +176,10 @@ fn export_connections(
             let mut native_export = NativeExport::with_data(
                 connections.to_vec(),
                 groups.to_vec(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
+                templates.to_vec(),
+                clusters.to_vec(),
+                variables.to_vec(),
+                snippets.to_vec(),
             );
             native_export.smart_folders = smart_folders.to_vec();
 
