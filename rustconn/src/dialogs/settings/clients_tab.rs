@@ -182,7 +182,7 @@ fn create_loading_row(title: &str) -> adw::ActionRow {
     row
 }
 
-/// Builds the "Download H.264 codec from Cisco" row.
+/// Builds the "H.264 codec (Cisco OpenH264)" row with its Download button.
 ///
 /// Behaviour:
 /// * If a valid Cisco blob is already cached, the row shows "Installed ✓" and no
@@ -199,10 +199,10 @@ fn build_h264_codec_row() -> adw::ActionRow {
     let already_installed = openh264_download::cached_openh264_path().is_some();
 
     let row = adw::ActionRow::builder()
-        .title(i18n("Download H.264 codec from Cisco"))
+        .title(i18n("H.264 codec (Cisco OpenH264)"))
         .subtitle(i18n(
-            "Downloads Cisco's OpenH264 binary on demand to enable H.264 in RDP \
-             graphics sessions (openh264.org binary licence).",
+            "Enables H.264 in RDP graphics (GFX) sessions. Fetched on demand \
+             from openh264.org under Cisco's binary licence.",
         ))
         .subtitle_lines(0)
         .build();

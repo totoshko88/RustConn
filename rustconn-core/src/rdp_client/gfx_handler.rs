@@ -1048,8 +1048,8 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
         tracing::warn!(
             reason = "openh264_not_cisco_build",
             "No usable OpenH264 — every library found was a non-Cisco build. GFX pipeline will \
-             use non-AVC codecs; enable H.264 from Settings → Connection → Media Codecs → \
-             “Download H.264 codec from Cisco” (or set {}).",
+             use non-AVC codecs; enable H.264 from Settings → Connection → Media Codecs (the \
+             Download button) (or set {}).",
             OPENH264_PATH_ENV
         );
     } else {
