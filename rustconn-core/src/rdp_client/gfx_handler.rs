@@ -981,8 +981,10 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
                         path = %path.display(),
                         reason = "openh264_not_cisco_build",
                         "OpenH264 at this path is not one of Cisco's published binaries, so the \
-                         loader refuses it — this is expected for a distribution package. Point \
-                         {} at a library downloaded from ciscobinary.openh264.org to enable H.264.",
+                         loader refuses it — this is expected for a distribution package. Enable \
+                         H.264 from Settings → Connection → Media Codecs → “Download H.264 codec \
+                         from Cisco”, or point {} at a library downloaded from \
+                         ciscobinary.openh264.org.",
                         OPENH264_PATH_ENV
                     );
                 } else {
@@ -1001,7 +1003,9 @@ fn probe_openh264() -> Option<std::path::PathBuf> {
         tracing::warn!(
             reason = "openh264_not_cisco_build",
             "No usable OpenH264 — every library found was a non-Cisco build. GFX pipeline will \
-             use non-AVC codecs; see docs/INSTALL.md for how to enable H.264."
+             use non-AVC codecs; enable H.264 from Settings → Connection → Media Codecs → \
+             “Download H.264 codec from Cisco” (or set {}).",
+            OPENH264_PATH_ENV
         );
     } else {
         tracing::warn!(

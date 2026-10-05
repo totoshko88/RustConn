@@ -2140,13 +2140,14 @@ impl super::EmbeddedRdpWidget {
                                 let message = match reason {
                                     H264UnavailableReason::RejectedNonCisco => i18n(
                                         "H.264 is unavailable: the installed OpenH264 is not a \
-                                         Cisco build and was refused. Using RemoteFX. Set \
-                                         RUSTCONN_OPENH264 to a library from \
-                                         ciscobinary.openh264.org to enable H.264.",
+                                         Cisco build and was refused. Using RemoteFX. Enable H.264 \
+                                         from Settings → Connection → Media Codecs → \
+                                         “Download H.264 codec from Cisco”.",
                                     ),
                                     H264UnavailableReason::NotFound => i18n(
                                         "H.264 is unavailable: no OpenH264 library was found. \
-                                         Using RemoteFX. See docs/INSTALL.md to enable H.264.",
+                                         Using RemoteFX. Enable H.264 from Settings → Connection → \
+                                         Media Codecs → “Download H.264 codec from Cisco”.",
                                     ),
                                 };
                                 tracing::info!(
