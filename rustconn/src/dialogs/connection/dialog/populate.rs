@@ -716,33 +716,8 @@ impl ConnectionDialog {
         };
         self.expect_rules.borrow_mut().push(new_rule);
 
-        // Connect delete button
-        let list_for_delete = self.expect_rules_list.clone();
-        let rules_for_delete = self.expect_rules.clone();
-        let row_widget = rule_row.row.clone();
-        let delete_id = rule_id;
-        rule_row.delete_button.connect_clicked(move |_| {
-            list_for_delete.remove(&row_widget);
-            rules_for_delete.borrow_mut().retain(|r| r.id != delete_id);
-        });
-
-        // Connect move up button
-        let list_for_up = self.expect_rules_list.clone();
-        let rules_for_up = self.expect_rules.clone();
-        let row_for_up = rule_row.row.clone();
-        let up_id = rule_id;
-        rule_row.move_up_button.connect_clicked(move |_| {
-            Self::move_rule_up(&list_for_up, &rules_for_up, &row_for_up, up_id);
-        });
-
-        // Connect move down button
-        let list_for_down = self.expect_rules_list.clone();
-        let rules_for_down = self.expect_rules.clone();
-        let row_for_down = rule_row.row.clone();
-        let down_id = rule_id;
-        rule_row.move_down_button.connect_clicked(move |_| {
-            Self::move_rule_down(&list_for_down, &rules_for_down, &row_for_down, down_id);
-        });
+        // Delete / move up / move down (weak captures, see the helper)
+        Self::connect_rule_row_buttons(&rule_row, &self.expect_rules_list, &self.expect_rules);
 
         // Connect entry changes to update the rule
         Self::connect_rule_entry_changes(&rule_row, &self.expect_rules);
@@ -769,29 +744,12 @@ impl ConnectionDialog {
         &self,
         macro_: Option<&rustconn_core::models::CommandMacro>,
     ) {
-        let macro_row = Self::create_command_macro_row(macro_);
-
-        // If we have an existing macro, use it; otherwise start from the default
-        let new_macro = macro_.cloned().unwrap_or_default();
-        self.command_macros.borrow_mut().push(new_macro);
-
-        // Connect delete button (remove by the row's current index)
-        let list_for_delete = self.command_macros_list.clone();
-        let macros_for_delete = self.command_macros.clone();
-        let row_widget = macro_row.row.clone();
-        macro_row.delete_button.connect_clicked(move |_| {
-            if let Ok(idx) = usize::try_from(row_widget.index())
-                && idx < macros_for_delete.borrow().len()
-            {
-                macros_for_delete.borrow_mut().remove(idx);
-            }
-            list_for_delete.remove(&row_widget);
-        });
-
-        // Connect entry/switch changes to update the macro
-        Self::connect_macro_entry_changes(&macro_row, &self.command_macros);
-
-        self.command_macros_list.append(&macro_row.row);
+        Self::attach_command_macro_row(
+            &self.command_macros_list,
+            &self.command_macros,
+            &self.state,
+            macro_,
+        );
     }
 
     /// Sets the highlight rules for this connection

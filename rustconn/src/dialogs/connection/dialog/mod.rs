@@ -528,6 +528,8 @@ struct CommandMacroRow {
     keybind_entry: Entry,
     /// Switch for "run" (append Enter) vs "type only"
     send_newline_switch: adw::SwitchRow,
+    /// Inline reason the macro cannot be saved; hidden while it can
+    validation_label: Label,
     /// Delete button
     delete_button: Button,
 }

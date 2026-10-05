@@ -692,7 +692,14 @@ impl MainWindow {
         {
             let state_for_focus = state.clone();
             let app_weak = app.downgrade();
+            let window_for_focus = window.downgrade();
             terminal_notebook.set_on_terminal_focus(move |focused| {
+                // Command-macro accels live only while a terminal has focus, and
+                // follow focus between split panes; the dispatcher re-reads the
+                // focused session on the next idle.
+                if let Some(window) = window_for_focus.upgrade() {
+                    macro_dispatch::request_refresh(&window);
+                }
                 let passthrough = with_state(&state_for_focus, |s| {
                     s.settings().ui.terminal_passthrough_ctrl
                 });
@@ -1481,8 +1488,13 @@ impl MainWindow {
             &self.session_split_bridges,
         );
         // Per-connection command-macro keybinds: dynamic accels that follow the
-        // active tab (asbru-borrow #1 step 3).
-        macro_dispatch::setup_macro_dispatch(window, &terminal_notebook, &state);
+        // focused terminal session, split panes included (asbru-borrow #1).
+        macro_dispatch::setup_macro_dispatch(
+            window,
+            &terminal_notebook,
+            &self.session_split_bridges,
+            &state,
+        );
         self.setup_group_operations_actions(window, &state, &terminal_notebook, &sidebar);
         self.setup_group_broadcast_actions(window, &terminal_notebook);
         self.setup_snippet_actions(window, &state, &terminal_notebook, &sidebar);
@@ -4069,6 +4081,9 @@ impl MainWindow {
     fn reload_sidebar(state: &SharedAppState, sidebar: &SharedSidebar) {
         sidebar.invalidate_search_cache();
         sorting::rebuild_sidebar_sorted(state, sidebar);
+        // Every connection save, import and sync ends in a sidebar reload, so
+        // this is where an edited macro list reaches the registered accels.
+        macro_dispatch::request_refresh(sidebar.widget());
     }
 
     /// Reloads the sidebar while preserving tree state

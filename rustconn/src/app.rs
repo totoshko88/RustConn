@@ -1617,6 +1617,10 @@ pub fn apply_keybindings(app: &adw::Application, state: &SharedAppState) {
 ///
 /// When passthrough is disabled, all keybindings are restored from settings.
 ///
+/// Per-connection command-macro accels are not in that table; the
+/// `win.toggle-passthrough` handler asks `window::macro_dispatch` to drop and
+/// later restore them.
+///
 /// Note: the F10 primary-menu key and `AdwTabView`'s built-in tab shortcuts
 /// are GTK-internal bindings, not application accelerators, so they are
 /// suspended separately — the header-bar menu button's `primary` property and

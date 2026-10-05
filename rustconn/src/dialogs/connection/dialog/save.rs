@@ -267,7 +267,7 @@ impl ConnectionDialog {
     ) {
         let dialog = dialog.clone();
         let on_save = on_save.clone();
-        let _state = state.clone();
+        let state = state.clone();
         let name_entry = name_entry.clone();
         let icon_entry = icon_entry.clone();
         let description_view = description_view.clone();
@@ -749,6 +749,19 @@ impl ConnectionDialog {
             };
 
             if let Err(err) = data.validate() {
+                alert::show_error(&dialog, &i18n("Validation Error"), &err);
+                return;
+            }
+            // Command macros: no empty or control-character command, and a
+            // keybind the dispatcher will actually register. The same rules
+            // drive each row's inline message.
+            let keybindings = state
+                .try_borrow()
+                .map(|s| s.settings().keybindings.clone())
+                .unwrap_or_default();
+            if let Err(err) =
+                crate::command_macros::validate_for_save(&collected_command_macros, &keybindings)
+            {
                 alert::show_error(&dialog, &i18n("Validation Error"), &err);
                 return;
             }

@@ -620,12 +620,14 @@ impl ConnectionDialogData<'_> {
             .filter(|r| !r.pattern.is_empty())
             .cloned()
             .collect();
-        // Set command macros (filter out macros with no name AND no command —
-        // an all-blank row the user added but never filled in).
+        // Set command macros, dropping all-blank rows the user added but never
+        // filled in. Everything else was validated before this point
+        // (`command_macros::validate_for_save`), so an empty command is never
+        // stored.
         conn.automation.command_macros = self
             .command_macros
             .iter()
-            .filter(|m| !(m.name.trim().is_empty() && m.command.trim().is_empty()))
+            .filter(|m| !m.is_blank())
             .cloned()
             .collect();
         // Automatic-login prompt overrides — blank means "use the built-in

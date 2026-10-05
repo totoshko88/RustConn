@@ -9,8 +9,8 @@ pub mod settings;
 mod version_skew;
 
 pub use keybindings::{
-    KeybindingCategory, KeybindingDef, KeybindingSettings, default_keybindings,
-    default_passthrough_exceptions, is_valid_accelerator,
+    KeybindingCategory, KeybindingDef, KeybindingSettings, MacroKeybindError, default_keybindings,
+    default_passthrough_exceptions, is_valid_accelerator, validate_macro_keybind,
 };
 pub use manager::ConfigManager;
 pub use settings::{

@@ -540,33 +540,7 @@ impl ConnectionDialog {
             let new_rule = ExpectRule::with_id(rule_id, "", "");
             rules_clone.borrow_mut().push(new_rule);
 
-            // Connect delete button
-            let list_for_delete = list_clone.clone();
-            let rules_for_delete = rules_clone.clone();
-            let row_widget = rule_row.row.clone();
-            let delete_id = rule_id;
-            rule_row.delete_button.connect_clicked(move |_| {
-                list_for_delete.remove(&row_widget);
-                rules_for_delete.borrow_mut().retain(|r| r.id != delete_id);
-            });
-
-            // Connect move up button
-            let list_for_up = list_clone.clone();
-            let rules_for_up = rules_clone.clone();
-            let row_for_up = rule_row.row.clone();
-            let up_id = rule_id;
-            rule_row.move_up_button.connect_clicked(move |_| {
-                Self::move_rule_up(&list_for_up, &rules_for_up, &row_for_up, up_id);
-            });
-
-            // Connect move down button
-            let list_for_down = list_clone.clone();
-            let rules_for_down = rules_clone.clone();
-            let row_for_down = rule_row.row.clone();
-            let down_id = rule_id;
-            rule_row.move_down_button.connect_clicked(move |_| {
-                Self::move_rule_down(&list_for_down, &rules_for_down, &row_for_down, down_id);
-            });
+            Self::connect_rule_row_buttons(&rule_row, &list_clone, &rules_clone);
 
             // Connect entry changes to update the rule
             Self::connect_rule_entry_changes(&rule_row, &rules_clone);
@@ -611,6 +585,9 @@ impl ConnectionDialog {
             .hexpand(true)
             .placeholder_text(i18n("Macro name"))
             .build();
+        name_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            name_label.upcast_ref()
+        ])]);
         name_box.append(&name_label);
         name_box.append(&name_entry);
         main_box.append(&name_box);
@@ -626,9 +603,12 @@ impl ConnectionDialog {
             .hexpand(true)
             .placeholder_text(i18n("Command to send, e.g. sudo -i"))
             .tooltip_text(i18n(
-                "Command text sent to the terminal. Use ${password}, ${username}, or ${VAR_NAME} for variables.",
+                "Single line typed into the terminal. ${username}, ${host}, ${port} and your variables are filled in; ${password} uses the password this connection was opened with and is not sent if none is available. A variable whose value starts with @ask: is asked for first.",
             ))
             .build();
+        command_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            command_label.upcast_ref()
+        ])]);
         command_box.append(&command_label);
         command_box.append(&command_entry);
         main_box.append(&command_box);
@@ -642,11 +622,14 @@ impl ConnectionDialog {
             .build();
         let keybind_entry = Entry::builder()
             .hexpand(true)
-            .placeholder_text(i18n("Shortcut e.g. <Control><Shift>r, optional"))
+            .placeholder_text(i18n("Shortcut e.g. <Control><Alt>r"))
             .tooltip_text(i18n(
-                "GTK accelerator that fires this macro while the terminal is focused",
+                "GTK accelerator that sends this macro while this connection's terminal has keyboard focus. Needs Ctrl, Alt or Super (F1 to F24 may be used alone) and must not be one of the application's shortcuts. Without a shortcut the macro is stored but cannot be sent.",
             ))
             .build();
+        keybind_entry.update_relation(&[gtk4::accessible::Relation::LabelledBy(&[
+            keybind_label.upcast_ref()
+        ])]);
         keybind_box.append(&keybind_label);
         keybind_box.append(&keybind_entry);
         main_box.append(&keybind_box);
@@ -660,6 +643,16 @@ impl ConnectionDialog {
             .active(true)
             .build();
         main_box.append(&send_newline_switch);
+
+        // Row 5: why the macro cannot be saved, shown only when it cannot
+        let validation_label = Label::builder()
+            .halign(gtk4::Align::Start)
+            .wrap(true)
+            .xalign(0.0)
+            .css_classes(["error"])
+            .visible(false)
+            .build();
+        main_box.append(&validation_label);
 
         // Populate from existing macro if provided
         if let Some(m) = macro_ {
@@ -677,109 +670,164 @@ impl ConnectionDialog {
             command_entry,
             keybind_entry,
             send_newline_switch,
+            validation_label,
             delete_button,
         }
     }
 
     /// Wires up the add command macro button.
     ///
-    /// Mirrors `wire_add_expect_rule_button`: pushes a new default
-    /// [`CommandMacro`], wires the delete button to remove the row's entry, and
-    /// wires the field widgets to update the entry. Lookups are by the row's
-    /// live index in the list box — `CommandMacro` carries no id of its own, so
-    /// the index is read inside each handler (the same scheme the custom-property
-    /// editor uses) to stay correct across deletions.
+    /// Each click appends a [`CommandMacro::default()`] (which runs its command,
+    /// matching the switch) through [`Self::attach_command_macro_row`].
     pub(super) fn wire_add_command_macro_button(
         add_button: &Button,
         command_macros_list: &ListBox,
         command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+        state: &crate::state::SharedAppState,
     ) {
-        let list_clone = command_macros_list.clone();
+        let list_weak = command_macros_list.downgrade();
         let macros_clone = command_macros.clone();
-
+        let state = state.clone();
         add_button.connect_clicked(move |_| {
-            let macro_row = Self::create_command_macro_row(None);
-
-            // Add a new empty macro to the list
-            macros_clone.borrow_mut().push(CommandMacro::default());
-
-            // Connect delete button (remove by the row's current index)
-            let list_for_delete = list_clone.clone();
-            let macros_for_delete = macros_clone.clone();
-            let row_widget = macro_row.row.clone();
-            macro_row.delete_button.connect_clicked(move |_| {
-                if let Ok(idx) = usize::try_from(row_widget.index())
-                    && idx < macros_for_delete.borrow().len()
-                {
-                    macros_for_delete.borrow_mut().remove(idx);
-                }
-                list_for_delete.remove(&row_widget);
-            });
-
-            // Connect entry/switch changes to update the macro entry
-            Self::connect_macro_entry_changes(&macro_row, &macros_clone);
-
-            list_clone.append(&macro_row.row);
+            if let Some(list) = list_weak.upgrade() {
+                Self::attach_command_macro_row(&list, &macros_clone, &state, None);
+            }
         });
     }
 
+    /// Creates a macro row, pushes its macro (a copy of `macro_`, or the
+    /// default) onto `command_macros`, appends the row to `list` and wires it.
+    ///
+    /// Lookups are by the row's live index in the list box — `CommandMacro`
+    /// carries no id of its own, so the index is read inside each handler (the
+    /// same scheme the custom-property editor uses) to stay correct across
+    /// deletions. Handlers on the row's own children hold the row and the list
+    /// weakly, so neither keeps the other alive.
+    pub(super) fn attach_command_macro_row(
+        list: &ListBox,
+        command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+        state: &crate::state::SharedAppState,
+        macro_: Option<&CommandMacro>,
+    ) {
+        let macro_row = Self::create_command_macro_row(macro_);
+        command_macros
+            .borrow_mut()
+            .push(macro_.cloned().unwrap_or_default());
+
+        // Delete button (remove by the row's current index)
+        let list_for_delete = list.downgrade();
+        let macros_for_delete = command_macros.clone();
+        let row_for_delete = macro_row.row.downgrade();
+        macro_row.delete_button.connect_clicked(move |_| {
+            let (Some(list), Some(row)) = (list_for_delete.upgrade(), row_for_delete.upgrade())
+            else {
+                return;
+            };
+            if let Ok(idx) = usize::try_from(row.index())
+                && idx < macros_for_delete.borrow().len()
+            {
+                macros_for_delete.borrow_mut().remove(idx);
+            }
+            list.remove(&row);
+        });
+
+        Self::connect_macro_entry_changes(&macro_row, command_macros, state);
+        list.append(&macro_row.row);
+        // A macro loaded from disk may already break a rule (hand-edited file,
+        // sync, a shortcut taken by the application since); say so up front.
+        Self::update_macro_validation(
+            &macro_row.row,
+            &macro_row.validation_label,
+            command_macros,
+            state,
+        );
+    }
+
+    /// Shows or hides the row's inline reason why its macro cannot be saved.
+    fn update_macro_validation(
+        row: &ListBoxRow,
+        label: &Label,
+        command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+        state: &crate::state::SharedAppState,
+    ) {
+        let Ok(idx) = usize::try_from(row.index()) else {
+            return;
+        };
+        let keybindings = state
+            .try_borrow()
+            .map(|s| s.settings().keybindings.clone())
+            .unwrap_or_default();
+        let problem = {
+            let Ok(macros) = command_macros.try_borrow() else {
+                return;
+            };
+            crate::command_macros::macro_problem(&macros, idx, &keybindings)
+        };
+        match problem {
+            Some(text) => {
+                label.set_text(&text);
+                label.set_visible(true);
+            }
+            None => label.set_visible(false),
+        }
+    }
+
     /// Connects a command macro row's field widgets to update the macro in the
-    /// list. The entry's current index in the list box identifies which Vec
-    /// entry it edits; an empty keybind is stored as `None`.
+    /// list and refresh the row's inline validation. An empty keybind is stored
+    /// as `None`.
     pub(super) fn connect_macro_entry_changes(
         macro_row: &CommandMacroRow,
         command_macros: &Rc<RefCell<Vec<CommandMacro>>>,
+        state: &crate::state::SharedAppState,
     ) {
-        let row_widget = macro_row.row.clone();
-
-        // Name entry
-        let macros_for_name = command_macros.clone();
-        let row_for_name = row_widget.clone();
-        macro_row.name_entry.connect_changed(move |entry| {
-            let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_name.index())
-                && let Some(m) = macros_for_name.borrow_mut().get_mut(idx)
-            {
-                m.name = text;
+        // Applies `edit` to this row's macro, then re-validates the row. All
+        // widget handles are weak: the handlers live on the row's children.
+        let make_editor = |edit: fn(&mut CommandMacro, String)| {
+            let row_weak = macro_row.row.downgrade();
+            let label_weak = macro_row.validation_label.downgrade();
+            let macros = command_macros.clone();
+            let state = state.clone();
+            move |entry: &Entry| {
+                let Some(row) = row_weak.upgrade() else {
+                    return;
+                };
+                let text = entry.text().to_string();
+                if let Ok(idx) = usize::try_from(row.index())
+                    && let Some(m) = macros.borrow_mut().get_mut(idx)
+                {
+                    edit(m, text);
+                }
+                if let Some(label) = label_weak.upgrade() {
+                    Self::update_macro_validation(&row, &label, &macros, &state);
+                }
             }
-        });
+        };
 
-        // Command entry
-        let macros_for_command = command_macros.clone();
-        let row_for_command = row_widget.clone();
-        macro_row.command_entry.connect_changed(move |entry| {
-            let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_command.index())
-                && let Some(m) = macros_for_command.borrow_mut().get_mut(idx)
-            {
-                m.command = text;
-            }
-        });
-
-        // Keybind entry (empty string → None)
-        let macros_for_keybind = command_macros.clone();
-        let row_for_keybind = row_widget.clone();
-        macro_row.keybind_entry.connect_changed(move |entry| {
-            let text = entry.text().to_string();
-            if let Ok(idx) = usize::try_from(row_for_keybind.index())
-                && let Some(m) = macros_for_keybind.borrow_mut().get_mut(idx)
-            {
+        macro_row
+            .name_entry
+            .connect_changed(make_editor(|m, text| m.name = text));
+        macro_row
+            .command_entry
+            .connect_changed(make_editor(|m, text| m.command = text));
+        macro_row
+            .keybind_entry
+            .connect_changed(make_editor(|m, text| {
                 m.keybind = if text.trim().is_empty() {
                     None
                 } else {
                     Some(text)
                 };
-            }
-        });
+            }));
 
         // Send-newline switch
         let macros_for_newline = command_macros.clone();
-        let row_for_newline = row_widget;
+        let row_for_newline = macro_row.row.downgrade();
         macro_row
             .send_newline_switch
             .connect_active_notify(move |switch| {
                 let active = switch.is_active();
-                if let Ok(idx) = usize::try_from(row_for_newline.index())
+                if let Some(row) = row_for_newline.upgrade()
+                    && let Ok(idx) = usize::try_from(row.index())
                     && let Some(m) = macros_for_newline.borrow_mut().get_mut(idx)
                 {
                     m.send_newline = active;
@@ -817,37 +865,7 @@ impl ConnectionDialog {
                     for rule in &new_rules {
                         let rule_row = Self::create_expect_rule_row(Some(rule));
 
-                        // Connect delete button
-                        let list_for_delete = list_clone.clone();
-                        let rules_for_delete = rules_clone.clone();
-                        let row_widget = rule_row.row.clone();
-                        let delete_id = rule_row.id;
-                        rule_row.delete_button.connect_clicked(move |_| {
-                            list_for_delete.remove(&row_widget);
-                            rules_for_delete.borrow_mut().retain(|r| r.id != delete_id);
-                        });
-
-                        // Connect move buttons
-                        let list_for_up = list_clone.clone();
-                        let rules_for_up = rules_clone.clone();
-                        let row_for_up = rule_row.row.clone();
-                        let up_id = rule_row.id;
-                        rule_row.move_up_button.connect_clicked(move |_| {
-                            Self::move_rule_up(&list_for_up, &rules_for_up, &row_for_up, up_id);
-                        });
-
-                        let list_for_down = list_clone.clone();
-                        let rules_for_down = rules_clone.clone();
-                        let row_for_down = rule_row.row.clone();
-                        let down_id = rule_row.id;
-                        rule_row.move_down_button.connect_clicked(move |_| {
-                            Self::move_rule_down(
-                                &list_for_down,
-                                &rules_for_down,
-                                &row_for_down,
-                                down_id,
-                            );
-                        });
+                        Self::connect_rule_row_buttons(&rule_row, &list_clone, &rules_clone);
 
                         Self::connect_rule_entry_changes(&rule_row, &rules_clone);
 
@@ -868,6 +886,47 @@ impl ConnectionDialog {
             }
             child = next;
         }
+    }
+
+    /// Wires an expect rule row's delete, move-up and move-down buttons.
+    ///
+    /// The buttons are children of the row and the row is a child of `list`,
+    /// so the handlers hold both weakly — a strong capture would make each row
+    /// and the list keep each other alive past the dialog.
+    pub(super) fn connect_rule_row_buttons(
+        rule_row: &ExpectRuleRow,
+        list: &ListBox,
+        expect_rules: &Rc<RefCell<Vec<ExpectRule>>>,
+    ) {
+        let rule_id = rule_row.id;
+
+        let list_weak = list.downgrade();
+        let row_weak = rule_row.row.downgrade();
+        let rules = expect_rules.clone();
+        rule_row.delete_button.connect_clicked(move |_| {
+            if let (Some(list), Some(row)) = (list_weak.upgrade(), row_weak.upgrade()) {
+                list.remove(&row);
+            }
+            rules.borrow_mut().retain(|r| r.id != rule_id);
+        });
+
+        let list_weak = list.downgrade();
+        let row_weak = rule_row.row.downgrade();
+        let rules = expect_rules.clone();
+        rule_row.move_up_button.connect_clicked(move |_| {
+            if let (Some(list), Some(row)) = (list_weak.upgrade(), row_weak.upgrade()) {
+                Self::move_rule_up(&list, &rules, &row, rule_id);
+            }
+        });
+
+        let list_weak = list.downgrade();
+        let row_weak = rule_row.row.downgrade();
+        let rules = expect_rules.clone();
+        rule_row.move_down_button.connect_clicked(move |_| {
+            if let (Some(list), Some(row)) = (list_weak.upgrade(), row_weak.upgrade()) {
+                Self::move_rule_down(&list, &rules, &row, rule_id);
+            }
+        });
     }
 
     /// Connects entry changes to update the rule in the list

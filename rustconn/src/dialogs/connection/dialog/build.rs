@@ -500,6 +500,7 @@ impl ConnectionDialog {
             &automation_widgets.add_command_macro_button,
             &automation_widgets.command_macros_list,
             &command_macros,
+            &state,
         );
 
         // Wire up template picker buttons

@@ -177,7 +177,7 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
     let macros_group = adw::PreferencesGroup::builder()
         .title(i18n("Command Macros"))
         .description(i18n(
-            "Per-connection commands you can send with a shortcut while the terminal is focused",
+            "Commands sent with a shortcut while this connection's terminal has keyboard focus",
         ))
         .build();
 
@@ -192,10 +192,8 @@ pub(super) fn create_automation_combined_tab() -> AutomationTabWidgets {
     macros_button_box.set_halign(gtk4::Align::End);
     macros_button_box.set_margin_top(12);
 
-    let add_command_macro_button = Button::builder()
-        .label(i18n("Add Macro"))
-        .css_classes(["suggested-action"])
-        .build();
+    // Default style: the dialog's Save is the one suggested action (GNOME HIG).
+    let add_command_macro_button = Button::builder().label(i18n("Add Macro")).build();
     macros_button_box.append(&add_command_macro_button);
 
     macros_group.add(&macros_button_box);

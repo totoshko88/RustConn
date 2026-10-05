@@ -65,6 +65,7 @@ pub mod async_utils;
 pub mod audio;
 pub mod automation;
 pub mod cairo_buffer;
+pub mod command_macros;
 pub mod detached_window;
 pub mod dialogs;
 pub mod display;

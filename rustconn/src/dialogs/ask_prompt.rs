@@ -4,7 +4,8 @@
 //! [`rustconn_core::AskSpec`]), RustConn asks the user for the value before the
 //! connection launches. One dialog collects every ASK variable the connection
 //! needs, then hands the answers back as ordinary [`Variable`]s that shadow the
-//! stored directives for that connect.
+//! stored directives for that connect. A command macro referencing such a
+//! variable gets the same prompt before its command is sent.
 
 use adw::prelude::*;
 use gtk4::prelude::*;
@@ -65,8 +66,47 @@ pub fn show_ask_dialog<F>(
         "‘{}’ needs the following before it can connect.",
         &[connection_name],
     );
+    present_ask_dialog(
+        parent,
+        &heading,
+        &body,
+        &i18n("Connect"),
+        requests,
+        callback,
+    );
+}
 
-    let dialog = adw::AlertDialog::new(Some(&heading), Some(&body));
+/// Shows the same prompt for the `@ask:` variables a command macro references,
+/// before the macro's command is typed into the terminal. `None` (cancel) means
+/// nothing is sent.
+pub fn show_macro_ask_dialog<F>(
+    parent: &impl IsA<gtk4::Widget>,
+    macro_name: &str,
+    requests: &[(String, AskSpec)],
+    callback: F,
+) where
+    F: Fn(Option<Vec<Variable>>) + 'static,
+{
+    let heading = i18n("Enter Macro Details");
+    let body = i18n_f(
+        "The command macro ‘{}’ needs the following before it can be sent.",
+        &[macro_name],
+    );
+    present_ask_dialog(parent, &heading, &body, &i18n("Send"), requests, callback);
+}
+
+/// Builds and presents the prompt; `confirm_label` names the suggested action.
+fn present_ask_dialog<F>(
+    parent: &impl IsA<gtk4::Widget>,
+    heading: &str,
+    body: &str,
+    confirm_label: &str,
+    requests: &[(String, AskSpec)],
+    callback: F,
+) where
+    F: Fn(Option<Vec<Variable>>) + 'static,
+{
+    let dialog = adw::AlertDialog::new(Some(heading), Some(body));
 
     let prefs_group = adw::PreferencesGroup::new();
 
@@ -99,7 +139,7 @@ pub fn show_ask_dialog<F>(
     dialog.set_extra_child(Some(&prefs_group));
 
     dialog.add_response("cancel", &i18n("Cancel"));
-    dialog.add_response("connect", &i18n("Connect"));
+    dialog.add_response("connect", confirm_label);
     dialog.set_default_response(Some("connect"));
     dialog.set_close_response("cancel");
     dialog.set_response_appearance("connect", adw::ResponseAppearance::Suggested);
