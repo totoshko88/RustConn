@@ -451,6 +451,12 @@ pub struct TerminalNotebook {
     /// Whether to show the Welcome tab when no sessions are open (issue #232).
     /// Shared with signal handlers via `Rc<Cell<bool>>`.
     show_welcome: Rc<std::cell::Cell<bool>>,
+    /// Whether the tab context menu offers "Close to the Left" / "Close to the
+    /// Right". Default `false` (the directional closes are hidden to keep the
+    /// menu short); the window flips it from the user's preference and whenever
+    /// Settings changes it. Read at menu-build time, so a change takes effect on
+    /// the next right-click without rebuilding the notebook.
+    show_directional_close: Rc<std::cell::Cell<bool>>,
 }
 
 impl TerminalNotebook {
@@ -570,6 +576,7 @@ impl TerminalNotebook {
             vte_child_pids: Rc::new(RefCell::new(HashMap::new())),
             child_exited_handlers: Rc::new(RefCell::new(HashMap::new())),
             show_welcome: Rc::new(std::cell::Cell::new(show_welcome)),
+            show_directional_close: Rc::new(std::cell::Cell::new(false)),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -1939,6 +1946,13 @@ impl TerminalNotebook {
     /// Updates whether the Welcome tab is shown when no sessions are open (issue #232)
     pub fn set_show_welcome(&self, enabled: bool) {
         self.show_welcome.set(enabled);
+    }
+
+    /// Updates whether the tab context menu offers the directional "Close to
+    /// the Left" / "Close to the Right" items. Takes effect on the next
+    /// right-click; no rebuild needed.
+    pub fn set_show_directional_close(&self, enabled: bool) {
+        self.show_directional_close.set(enabled);
     }
 
     /// Gets the terminal widget for a session

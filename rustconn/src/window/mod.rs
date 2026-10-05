@@ -685,6 +685,8 @@ impl MainWindow {
                 state_ref.settings().terminal.max_scrollback_on_reconnect,
             );
             sidebar.set_smart_folders_visible(state_ref.settings().ui.show_smart_folders);
+            terminal_notebook
+                .set_show_directional_close(state_ref.settings().ui.show_directional_tab_close);
         }
 
         // Set up callback for when SSH tabs are closed via TabView
@@ -3925,6 +3927,9 @@ impl MainWindow {
 
                 // Apply smart folders visibility setting
                 sidebar.set_smart_folders_visible(settings.ui.show_smart_folders);
+
+                // Apply the tab menu's directional-close visibility setting
+                notebook.set_show_directional_close(settings.ui.show_directional_tab_close);
 
                 // Apply sidebar width setting
                 if let Some(w) = settings.ui.sidebar_width {

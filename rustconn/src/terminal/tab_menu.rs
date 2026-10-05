@@ -15,7 +15,7 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "eight independent per-tab facts, each gating one menu section"
+    reason = "independent per-tab facts, each gating one menu section or item"
 )]
 pub struct TabMenuState {
     /// The saved connection behind the tab and its "Copy" entries, or `None`
@@ -41,6 +41,9 @@ pub struct TabMenuState {
     /// The tab is a local shell, whose title is the only thing that tells it
     /// apart from another one, and which therefore may be relabelled.
     pub is_local_shell: bool,
+    /// The user has enabled the directional "Close to the Left" / "Close to the
+    /// Right" items (hidden by default to keep the close block short).
+    pub show_directional_close: bool,
 }
 
 /// One "Copy" entry of the tab menu; built by the window, which owns the
@@ -88,6 +91,7 @@ impl TerminalNotebook {
         let broadcast_membership_for_menu = self.tab_broadcast_membership.clone();
         let connection_menu_for_menu = self.tab_connection_menu.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
+        let directional_close_for_menu = self.show_directional_close.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -186,6 +190,7 @@ impl TerminalNotebook {
                                 .get(&sid)
                                 .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
                         }),
+                        show_directional_close: directional_close_for_menu.get(),
                     }
                 })
                 .unwrap_or_default();
@@ -1087,8 +1092,13 @@ impl TerminalNotebook {
         let close_section = gio::Menu::new();
         close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
         close_section.append(Some(&i18n("Close Others")), Some("tab.close-others"));
-        close_section.append(Some(&i18n("Close to the Left")), Some("tab.close-left"));
-        close_section.append(Some(&i18n("Close to the Right")), Some("tab.close-right"));
+        // The directional closes are opt-in (Settings → Interface): a narrower
+        // workflow that lengthens the menu for everyone when always shown, so
+        // GNOME-style the default stays short and the user turns them on.
+        if state.show_directional_close {
+            close_section.append(Some(&i18n("Close to the Left")), Some("tab.close-left"));
+            close_section.append(Some(&i18n("Close to the Right")), Some("tab.close-right"));
+        }
         if state.any_groups_exist {
             close_section.append(
                 Some(&i18n("Close All Ungrouped")),
