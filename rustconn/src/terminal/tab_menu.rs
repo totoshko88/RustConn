@@ -15,13 +15,13 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 #[expect(
     clippy::struct_excessive_bools,
-    reason = "seven independent per-tab facts, each gating one menu section"
+    reason = "independent per-tab facts, each gating one menu section or item"
 )]
 pub struct TabMenuState {
     /// The saved connection behind the tab and its "Copy" entries, or `None`
     /// for a tab with no saved connection (Welcome, local shell, quick
-    /// connect). Drives the Edit Connection and Copy sections (issue #357).
-    pub connection: Option<(Uuid, Vec<TabCopyEntry>)>,
+    /// connect). Drives the Edit Connection section (issue #357).
+    pub connection: Option<Uuid>,
     /// Activity or silence monitoring mode of the tab's session, if any.
     pub monitor_mode: Option<MonitorMode>,
     /// The tab belongs to a tab group.
@@ -38,15 +38,17 @@ pub struct TabMenuState {
     pub can_detach: bool,
     /// The tab hosts a split layout, so it can be offered "Remove Split".
     pub hosts_split: bool,
+    /// The tab is a local shell, whose title is the only thing that tells it
+    /// apart from another one, and which therefore may be relabelled.
+    pub is_local_shell: bool,
+    /// The user has enabled the directional "Close to the Left" / "Close to the
+    /// Right" items (hidden by default to keep the close block short).
+    pub show_directional_close: bool,
 }
 
-/// One "Copy" entry of the tab menu; built by the window, which owns the
-/// connection data.
-pub(crate) type TabCopyEntry = crate::window::copy_field_actions::CopyMenuEntry;
-
-/// Answers "which saved connection, and what can be copied from it" for a
-/// connection id; `None` when no saved connection has that id.
-pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> Option<Vec<TabCopyEntry>>>;
+/// Reports whether a connection id names a saved connection, so the tab menu
+/// can offer **Edit Connection…** only when there is one to edit (issue #357).
+pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> bool>;
 
 /// Reports whether the detach section is offered for a verdict.
 ///
@@ -85,7 +87,48 @@ impl TerminalNotebook {
         let broadcast_membership_for_menu = self.tab_broadcast_membership.clone();
         let connection_menu_for_menu = self.tab_connection_menu.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
+        let directional_close_for_menu = self.show_directional_close.clone();
         let menu_for_setup = menu;
+
+        // Create the action group and the stateful monitor action up front, so
+        // the setup-menu closure can refresh the radio state to the
+        // right-clicked tab's current mode before each show.
+        let action_group = gio::SimpleActionGroup::new();
+        let set_monitor_action = gio::SimpleAction::new_stateful(
+            "set-monitor",
+            Some(glib::VariantTy::INT32),
+            &0i32.to_variant(),
+        );
+        {
+            let context_page_monitor = context_page.clone();
+            let sessions_for_monitor = self.sessions.clone();
+            let activity_for_action = self.activity_coordinator.clone();
+            set_monitor_action.connect_activate(move |action, target| {
+                let Some(index) = target.and_then(glib::Variant::get::<i32>) else {
+                    return;
+                };
+                let mode = crate::monitor_mode::from_index(u32::try_from(index).unwrap_or(0));
+                let Some(session_id) =
+                    Self::context_menu_session_id(&context_page_monitor, &sessions_for_monitor)
+                else {
+                    return;
+                };
+                let coordinator = activity_for_action.borrow();
+                let Some(coordinator) = coordinator.as_ref() else {
+                    return;
+                };
+                coordinator.set_mode(session_id, mode);
+                action.set_state(&index.to_variant());
+                tracing::debug!(
+                    session_id = %session_id,
+                    mode = ?mode,
+                    "Monitor mode set via context menu"
+                );
+            });
+        }
+        action_group.add_action(&set_monitor_action);
+        let set_monitor_for_setup = set_monitor_action.clone();
+
         self.tab_view.connect_setup_menu(move |_tab_view, page| {
             *context_page_setup.borrow_mut() = page.cloned();
 
@@ -122,9 +165,11 @@ impl TerminalNotebook {
                         session_id.is_some_and(|sid| disconnected_for_menu.borrow().contains(&sid));
                     let connection = session_id
                         .and_then(|sid| info_ref.get(&sid).map(|i| i.connection_id))
-                        .and_then(|cid| {
-                            let provider = connection_menu_for_menu.borrow().clone()?;
-                            provider(cid).map(|entries| (cid, entries))
+                        .filter(|cid| {
+                            connection_menu_for_menu
+                                .borrow()
+                                .as_ref()
+                                .is_some_and(|has_connection| has_connection(*cid))
                         });
                     TabMenuState {
                         connection,
@@ -138,17 +183,24 @@ impl TerminalNotebook {
                         any_groups_exist: info_ref.values().any(|i| i.tab_group.is_some()),
                         can_detach,
                         hosts_split,
+                        is_local_shell: session_id.is_some_and(|sid| {
+                            info_ref
+                                .get(&sid)
+                                .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                        }),
+                        show_directional_close: directional_close_for_menu.get(),
                     }
                 })
                 .unwrap_or_default();
-
             // Mutate the existing menu in-place (clear + re-populate)
             menu_for_setup.remove_all();
+            // Refresh the monitor radio to the right-clicked tab's current mode
+            // so the submenu shows the selected bullet correctly on each show.
+            let mode_index =
+                crate::monitor_mode::index_of(state.monitor_mode.unwrap_or(MonitorMode::Off));
+            set_monitor_for_setup.set_state(&i32::try_from(mode_index).unwrap_or(0).to_variant());
             Self::populate_tab_context_menu(&menu_for_setup, state);
         });
-
-        // Create action group
-        let action_group = gio::SimpleActionGroup::new();
 
         // "Set Group..." action — shows an entry dialog
         let set_group_action = gio::SimpleAction::new("set-group", None);
@@ -308,6 +360,103 @@ impl TerminalNotebook {
             }
         });
         action_group.add_action(&set_group_action);
+
+        // "Rename Tab…" action — gives a local shell tab a title of its own.
+        // The label lives on the session, so it reaches the tab chrome, the
+        // split pane header and the session-restore snapshot from one place.
+        let rename_label_action = gio::SimpleAction::new("rename-label", None);
+        let context_page_rename = context_page.clone();
+        let session_info = self.session_info.clone();
+        let sessions = self.sessions.clone();
+
+        rename_label_action.connect_activate(move |_, _| {
+            let Some(session_id) = Self::context_menu_session_id(&context_page_rename, &sessions)
+            else {
+                return;
+            };
+
+            let current = session_info
+                .borrow()
+                .get(&session_id)
+                .map_or_else(String::new, |info| info.name.clone());
+
+            let dialog = adw::AlertDialog::builder()
+                .heading(i18n("Rename Tab"))
+                .body(i18n(
+                    "The label names this tab only. Leave it empty to go back to the default name.",
+                ))
+                .build();
+
+            let entry = gtk4::Entry::builder()
+                .text(&current)
+                .placeholder_text(i18n("Tab name"))
+                .hexpand(true)
+                .build();
+            dialog.set_extra_child(Some(&entry));
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("apply", &i18n("Apply"));
+            dialog.set_response_appearance("apply", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("apply"));
+            dialog.set_close_response("cancel");
+
+            // Both maps are cloned per activation: the action closure is `Fn`,
+            // so it may run again and cannot hand its own captures to the
+            // one-shot response handler.
+            let sessions_for_apply = sessions.clone();
+            let session_info_for_apply = session_info.clone();
+
+            // One commit path, reached by the "apply" response and by Enter in
+            // the entry alike. An empty entry resets the title rather than
+            // leaving the tab untitled, which the tab bar cannot show apart
+            // from a broken tab.
+            let commit_entry = entry.clone();
+            let commit: Rc<dyn Fn()> = Rc::new(move || {
+                let label = local_shell_label(&commit_entry.text()).to_owned();
+                Self::apply_session_label(
+                    &sessions_for_apply,
+                    &session_info_for_apply,
+                    session_id,
+                    &label,
+                );
+                tracing::debug!(session_id = %session_id, label, "Tab relabelled");
+            });
+
+            let commit_for_response = commit.clone();
+
+            dialog.connect_response(None, move |_dialog, response| {
+                if response == "apply" {
+                    commit_for_response();
+                }
+            });
+
+            // Enter in the entry saves and closes, matching every other
+            // text-entry dialog in the app. `close()` alone would emit the
+            // close response ("cancel"), so the label would be discarded.
+            let commit_for_enter = commit.clone();
+            let dialog_for_enter = dialog.clone();
+            entry.connect_activate(move |_| {
+                commit_for_enter();
+                dialog_for_enter.close();
+            });
+
+            let Some(target_page) = context_page_rename.borrow().clone() else {
+                return;
+            };
+            if let Some(root) = target_page.child().root()
+                && let Some(window) = root.downcast_ref::<gtk4::Window>()
+            {
+                dialog.present(Some(window));
+            }
+
+            // Focus the entry once the dialog is mapped, so the user can type
+            // immediately without clicking. A grab_focus issued straight after
+            // `present()` lands on a dialog that has no focus yet and is
+            // dropped by GTK.
+            glib::idle_add_local_once(move || {
+                entry.grab_focus();
+            });
+        });
+        action_group.add_action(&rename_label_action);
 
         // "Remove from Group" action
         let remove_group_action = gio::SimpleAction::new("remove-group", None);
@@ -698,44 +847,8 @@ impl TerminalNotebook {
         });
         action_group.add_action(&detach_monitor_action);
 
-        // "Cycle Monitor" action — one step per activation, through every mode in
-        // `MonitorMode::next()` order: Off → Activity → Silence → Command → Off.
-        // Command joined the cycle when the mode was added; this comment said the
-        // three-mode cycle for a while after that, which matters because reaching
-        // Command from Off takes three activations and a stale list makes that
-        // look like the menu is not working.
-        let cycle_monitor_action = gio::SimpleAction::new("cycle-monitor", None);
-        let context_page_monitor = context_page;
-        let sessions_for_monitor = self.sessions.clone();
-        let activity_for_action = self.activity_coordinator.clone();
-        cycle_monitor_action.connect_activate(move |_, _| {
-            let target_page = context_page_monitor.borrow().clone();
-            let Some(target_page) = target_page else {
-                return;
-            };
-            let session_id = {
-                let sessions_ref = sessions_for_monitor.borrow();
-                sessions_ref
-                    .iter()
-                    .find(|(_, p)| *p == &target_page)
-                    .map(|(id, _)| *id)
-            };
-            let Some(session_id) = session_id else {
-                return;
-            };
-
-            let coordinator = activity_for_action.borrow();
-            let Some(coordinator) = coordinator.as_ref() else {
-                return;
-            };
-            let new_mode = coordinator.cycle_mode(session_id);
-            tracing::debug!(
-                session_id = %session_id,
-                mode = ?new_mode,
-                "Monitor mode cycled via context menu"
-            );
-        });
-        action_group.add_action(&cycle_monitor_action);
+        // "Set Monitor" is created up front (before the setup-menu closure) so
+        // the closure can refresh its radio state; see the top of this function.
 
         // Attach action group to the TabView widget and TabBar
         // The TabBar needs the action group because the context menu popover
@@ -766,9 +879,13 @@ impl TerminalNotebook {
     ///
     /// With a single monitor there is no choice to present, so nothing is added
     /// and only the plain "Move to New Window" item stands (Requirement 8.3).
-    /// These are flat items rather than a submenu on purpose — a submenu becomes
-    /// a page in the reused PopoverMenu's internal `GtkStack`, which duplicated
-    /// on every menu rebuild; flat items carry no such page.
+    /// These are flat items rather than a submenu because the labels are
+    /// *dynamic* — one per connected monitor — so a submodel built here would
+    /// be a fresh object on every rebuild, and re-appending a different submenu
+    /// under the same name re-adds its page to the reused PopoverMenu's
+    /// internal `GtkStack` (`duplicate child name in GtkStack`). A submenu whose
+    /// content is static can be reused by object identity and is safe (see
+    /// `monitor_submenu`); these monitor labels are not, so they stay flat.
     fn append_monitor_detach_items(section: &gio::Menu) {
         let Some(display) = gdk::Display::default() else {
             return;
@@ -807,6 +924,37 @@ impl TerminalNotebook {
         }
     }
 
+    /// Builds the Monitor submenu's radio items once and reuses the same model
+    /// object on every rebuild.
+    ///
+    /// Reuse by object identity is what makes a submenu safe in this
+    /// repeatedly-rebuilt menu: appending the *same* `gio::Menu` under the same
+    /// name re-points the popover's existing `GtkStack` page rather than adding
+    /// a second one, so the `duplicate child name in GtkStack` warning that a
+    /// freshly-built submodel caused never fires. The modes are static
+    /// (Off/Activity/Silence/Command finished), so the content never needs to
+    /// change — only which radio bullet is lit, which the `tab.set-monitor`
+    /// action's state drives (refreshed before each show in
+    /// `setup_tab_context_menu`).
+    fn monitor_submenu() -> gio::Menu {
+        thread_local! {
+            static MONITOR_SUBMENU: gio::Menu = {
+                let submenu = gio::Menu::new();
+                for (index, mode) in MonitorMode::all().iter().enumerate() {
+                    let item = gio::MenuItem::new(Some(&i18n(mode.display_name())), None);
+                    let target = i32::try_from(index).unwrap_or(0);
+                    item.set_action_and_target_value(
+                        Some("tab.set-monitor"),
+                        Some(&target.to_variant()),
+                    );
+                    submenu.append_item(&item);
+                }
+                submenu
+            };
+        }
+        MONITOR_SUBMENU.with(gio::Menu::clone)
+    }
+
     /// Populates the tab context menu model in-place.
     ///
     /// The caller must pass an existing `gio::Menu` that has already been set
@@ -831,6 +979,17 @@ impl TerminalNotebook {
             pin_section.append(Some(&i18n("Pin Tab")), Some("tab.pin"));
         }
         menu.append_section(None, &pin_section);
+
+        // Label section — offered only for a local shell tab. Every local shell
+        // is titled "Local Shell" until the user says otherwise, so without
+        // this two of them are told apart by nothing but the shell they run.
+        // A tab with a saved connection is renamed by editing that connection,
+        // so an item here would be a second, divergent way to do the same job.
+        if state.is_local_shell {
+            let label_section = gio::Menu::new();
+            label_section.append(Some(&i18n("Rename Tab…")), Some("tab.rename-label"));
+            menu.append_section(None, &label_section);
+        }
 
         // Group section — adaptive: only show group actions when groups exist
         let group_section = gio::Menu::new();
@@ -857,12 +1016,24 @@ impl TerminalNotebook {
         broadcast_section.append(Some(&broadcast_label), Some("tab.toggle-broadcast"));
         menu.append_section(None, &broadcast_section);
 
-        // Monitor section with current mode in label
-        let monitor_section = gio::Menu::new();
-        let mode = state.monitor_mode.unwrap_or(MonitorMode::Off);
-        let label = i18n_f("Monitor: {}", &[&i18n(mode.display_name())]);
-        monitor_section.append(Some(&label), Some("tab.cycle-monitor"));
-        menu.append_section(None, &monitor_section);
+        // Monitor submenu — one radio item per mode, with the current mode
+        // selected. This collapses what used to be a five-row labelled section
+        // (a heading plus four modes) back to a single `Monitor` row that
+        // slides to its choices, which is what GNOME HIG expects and what keeps
+        // the menu from towering. The action is `tab.set-monitor` with the mode
+        // index as its i32 target; its state is refreshed to the current mode
+        // before the menu is shown (see `setup_tab_context_menu`), so the right
+        // bullet is lit.
+        //
+        // A submenu is safe here — contrary to the flat Copy/detach blocks —
+        // because the submodel is built ONCE and reused by object identity on
+        // every rebuild (see `monitor_submenu`). The `duplicate child name in
+        // GtkStack` warning only fired when a *fresh* submodel was appended
+        // under the same name each `setup-menu`; re-appending the same stable
+        // object re-points the existing stack page instead of adding a second
+        // one. Verified with an isolated GTK repro (0 collisions over repeated
+        // rebuilds) before adopting the pattern.
+        menu.append_submenu(Some(&i18n("Monitor")), &Self::monitor_submenu());
 
         // Split section — only for the tab that hosts a split layout, and the
         // reason the detach item directly below it is currently refused
@@ -878,26 +1049,33 @@ impl TerminalNotebook {
             let detach_section = gio::Menu::new();
             detach_section.append(Some(&i18n("Move to New Window")), Some("tab.detach"));
             // Per-monitor targets are appended as flat items, not a submenu.
-            // A submenu becomes a page in the PopoverMenu's internal GtkStack,
-            // and because the TabView keeps one long-lived PopoverMenu bound to
-            // a model we clear and rebuild on every `setup-menu`, that stack
-            // page was re-added under the same name on each rebuild —
+            // Their labels are dynamic (one per connected monitor), so a
+            // submodel here would be a fresh object each rebuild, and
+            // re-appending a different submenu under the same name re-adds its
+            // page to the reused PopoverMenu's internal GtkStack —
             // `Gtk-WARNING: duplicate child name in GtkStack: Move to New
-            // Window on`. Flat items carry no stack page, so the collision is
-            // gone; each monitor still has its own `tab.detach-to-monitor`
-            // entry (issue #328 follow-up).
+            // Window on`. A *static* submenu reused by object identity is safe
+            // (see `monitor_submenu`); these are not, so they stay flat
+            // (issue #328 follow-up).
             Self::append_monitor_detach_items(&detach_section);
             menu.append_section(None, &detach_section);
         }
 
-        // Connection section (issue #357) — edit the tab's saved connection and
-        // copy its fields, addressed by connection id so the sidebar selection
-        // does not matter. Properties-like items, so above Close (GNOME HIG).
+        // Connection section (issue #357) — edit the tab's saved connection,
+        // addressed by connection id so the sidebar selection does not matter.
+        // A properties-like action, so above Close (GNOME HIG).
         //
-        // Copy is a labelled section, not a submenu: this menu is cleared and
-        // rebuilt on every `setup-menu`, and a rebuilt submenu re-adds its
-        // `GtkStack` page under the same name (see the detach section above).
-        if let Some((connection_id, copy_entries)) = &state.connection {
+        // Copy was removed here on purpose: the identical Copy block already
+        // lives in the sidebar's connection menu as a tidy `Copy ▸` submenu, and
+        // copying a connection's host/port/credentials is an operation on the
+        // *connection object*, which belongs where the connection is listed —
+        // not on the live-session tab, whose menu is about the session
+        // (reconnect, monitor, broadcast, split, detach, close). Keeping a flat
+        // six-row Copy list here duplicated the sidebar, doubled the menu's
+        // height and buried the tab-specific Close actions. Edit Connection…
+        // stays, as the only way to reach the editor from an active tab when the
+        // sidebar selection is something else.
+        if let Some(connection_id) = &state.connection {
             let edit_section = gio::Menu::new();
             let edit = gio::MenuItem::new(Some(&i18n("Edit Connection…")), None);
             edit.set_action_and_target_value(
@@ -906,40 +1084,19 @@ impl TerminalNotebook {
             );
             edit_section.append_item(&edit);
             menu.append_section(None, &edit_section);
-
-            let copy_section = gio::Menu::new();
-            let property_section = gio::Menu::new();
-            for entry in copy_entries {
-                let item = gio::MenuItem::new(Some(&entry.label), None);
-                item.set_action_and_target_value(
-                    Some(&format!(
-                        "win.{}",
-                        crate::window::copy_field_actions::COPY_FIELD_ACTION
-                    )),
-                    Some(&entry.target.to_variant()),
-                );
-                if entry.is_property {
-                    property_section.append_item(&item);
-                } else {
-                    copy_section.append_item(&item);
-                }
-            }
-            if copy_section.n_items() > 0 {
-                menu.append_section(Some(&i18n("Copy")), &copy_section);
-            }
-            if property_section.n_items() > 0 {
-                // Under the Copy heading when there are no built-in fields.
-                let heading = (copy_section.n_items() == 0).then(|| i18n("Copy"));
-                menu.append_section(heading.as_deref(), &property_section);
-            }
         }
 
         // Close section — minimal by default, expanded when groups exist
         let close_section = gio::Menu::new();
         close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
         close_section.append(Some(&i18n("Close Others")), Some("tab.close-others"));
-        close_section.append(Some(&i18n("Close to the Left")), Some("tab.close-left"));
-        close_section.append(Some(&i18n("Close to the Right")), Some("tab.close-right"));
+        // The directional closes are opt-in (Settings → Interface): a narrower
+        // workflow that lengthens the menu for everyone when always shown, so
+        // GNOME-style the default stays short and the user turns them on.
+        if state.show_directional_close {
+            close_section.append(Some(&i18n("Close to the Left")), Some("tab.close-left"));
+            close_section.append(Some(&i18n("Close to the Right")), Some("tab.close-right"));
+        }
         if state.any_groups_exist {
             close_section.append(
                 Some(&i18n("Close All Ungrouped")),
@@ -980,5 +1137,67 @@ mod tests {
                 verdict.reason_key()
             );
         }
+    }
+
+    /// The Monitor submenu must survive the reused-menu rebuild cycle without
+    /// the `duplicate child name in GtkStack` warning that a freshly-built
+    /// submenu caused.
+    ///
+    /// This pins the one property the submenu's safety rests on: the submodel
+    /// is reused by object identity (`monitor_submenu` returns a clone of a
+    /// single thread-local `gio::Menu`), so re-appending it under the same name
+    /// on every `setup-menu` re-points the popover's existing stack page rather
+    /// than adding a second one. It initialises GTK and realises a live
+    /// `PopoverMenu`, so it is opt-in and must run alone:
+    ///
+    /// ```text
+    /// cargo test -p rustconn --bin rustconn -- --ignored --exact \
+    ///     terminal::tab_menu::tests::the_monitor_submenu_survives_menu_rebuilds
+    /// ```
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact <this test path>`"]
+    fn the_monitor_submenu_survives_menu_rebuilds() {
+        use gtk4::gio;
+
+        if gtk4::init().is_err() {
+            return;
+        }
+
+        let collisions = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let seen = collisions.clone();
+        gtk4::glib::log_set_default_handler(move |_domain, _level, msg| {
+            if msg.contains("duplicate child name") || msg.contains("GtkStack") {
+                seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            }
+        });
+
+        // One long-lived top-level model bound to a live popover — the exact
+        // shape adw::TabView keeps. The closure only mutates the model; it is
+        // never re-bound.
+        let top = gio::Menu::new();
+        let popover = gtk4::PopoverMenu::from_model(Some(&top));
+
+        for cycle in 0..8 {
+            top.remove_all();
+            top.append(Some(&format!("Pin {cycle}")), None);
+            top.append_submenu(
+                Some("Monitor"),
+                &crate::terminal::TerminalNotebook::monitor_submenu(),
+            );
+            top.append(Some("Close"), None);
+            // Re-realize the model the way opening the menu would, without the
+            // unparented `popup()` that crashes a display-less harness.
+            popover.set_menu_model(Some(&top));
+            let ctx = gtk4::glib::MainContext::default();
+            for _ in 0..20 {
+                ctx.iteration(false);
+            }
+        }
+
+        assert_eq!(
+            collisions.load(std::sync::atomic::Ordering::SeqCst),
+            0,
+            "the stable Monitor submenu must not re-add its GtkStack page on rebuild"
+        );
     }
 }

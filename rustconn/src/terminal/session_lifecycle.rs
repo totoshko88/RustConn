@@ -664,11 +664,12 @@ impl TerminalNotebook {
     }
 
     /// Wires the query behind the tab menu's Edit Connection and Copy
-    /// sections: the "Copy" entries of a saved connection, or `None` when no
-    /// saved connection has that id (issue #357).
+    /// Wires the predicate the tab menu uses to decide whether the right-clicked
+    /// tab has a saved connection, so **Edit Connection…** is offered only when
+    /// there is one to edit (issue #357).
     pub(crate) fn set_tab_connection_menu_provider<F>(&self, provider: F)
     where
-        F: Fn(Uuid) -> Option<Vec<super::tab_menu::TabCopyEntry>> + 'static,
+        F: Fn(Uuid) -> bool + 'static,
     {
         *self.tab_connection_menu.borrow_mut() = Some(Rc::new(provider));
     }

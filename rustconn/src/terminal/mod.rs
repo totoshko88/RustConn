@@ -53,8 +53,8 @@ use libadwaita::prelude::*;
 use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
-    ClusterTabs, PendingCluster, SessionWidgetStorage, TerminalSession, group_still_in_use,
-    strip_group_prefix, tab_title,
+    ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
+    group_still_in_use, local_shell_label, tab_title,
 };
 use uuid::Uuid;
 use vte4::Terminal;
@@ -451,6 +451,12 @@ pub struct TerminalNotebook {
     /// Whether to show the Welcome tab when no sessions are open (issue #232).
     /// Shared with signal handlers via `Rc<Cell<bool>>`.
     show_welcome: Rc<std::cell::Cell<bool>>,
+    /// Whether the tab context menu offers "Close to the Left" / "Close to the
+    /// Right". Default `false` (the directional closes are hidden to keep the
+    /// menu short); the window flips it from the user's preference and whenever
+    /// Settings changes it. Read at menu-build time, so a change takes effect on
+    /// the next right-click without rebuilding the notebook.
+    show_directional_close: Rc<std::cell::Cell<bool>>,
 }
 
 impl TerminalNotebook {
@@ -570,6 +576,7 @@ impl TerminalNotebook {
             vte_child_pids: Rc::new(RefCell::new(HashMap::new())),
             child_exited_handlers: Rc::new(RefCell::new(HashMap::new())),
             show_welcome: Rc::new(std::cell::Cell::new(show_welcome)),
+            show_directional_close: Rc::new(std::cell::Cell::new(false)),
         };
 
         term_notebook.setup_tab_view_signals();
@@ -1941,6 +1948,13 @@ impl TerminalNotebook {
         self.show_welcome.set(enabled);
     }
 
+    /// Updates whether the tab context menu offers the directional "Close to
+    /// the Left" / "Close to the Right" items. Takes effect on the next
+    /// right-click; no rebuild needed.
+    pub fn set_show_directional_close(&self, enabled: bool) {
+        self.show_directional_close.set(enabled);
+    }
+
     /// Gets the terminal widget for a session
     #[must_use]
     pub fn get_terminal(&self, session_id: Uuid) -> Option<Terminal> {
@@ -2708,30 +2722,16 @@ impl TerminalNotebook {
     /// prefix); the caller updates whatever else names the session — the title
     /// of a detached window, for one (issue #236).
     pub fn rename_connection_sessions(&self, connection_id: Uuid, new_name: &str) -> Vec<Uuid> {
-        let affected: Vec<(Uuid, Option<String>, Option<String>)> = self
+        let affected: Vec<Uuid> = self
             .session_info
-            .borrow_mut()
-            .iter_mut()
+            .borrow()
+            .iter()
             .filter(|(_, info)| info.connection_id == connection_id)
-            .map(|(id, info)| {
-                info.name = new_name.to_owned();
-                (*id, info.tab_group.clone(), info.host.clone())
-            })
+            .map(|(id, _)| *id)
             .collect();
 
-        for (session_id, group, host) in &affected {
-            // The page is bound to its own `let` first: an `if let` scrutinee
-            // temporary would keep the `sessions` borrow alive across the two
-            // GTK setters below.
-            let page = self.sessions.borrow().get(session_id).cloned();
-            if let Some(page) = page {
-                page.set_title(&tab_title(new_name, group.as_deref()));
-                page.set_tooltip(&Self::tab_tooltip(
-                    new_name,
-                    host.as_deref(),
-                    group.as_deref(),
-                ));
-            }
+        for session_id in &affected {
+            Self::apply_session_label(&self.sessions, &self.session_info, *session_id, new_name);
         }
         if !affected.is_empty() {
             tracing::debug!(
@@ -2740,7 +2740,46 @@ impl TerminalNotebook {
                 "renamed open sessions after a connection rename"
             );
         }
-        affected.into_iter().map(|(id, _, _)| id).collect()
+        affected
+    }
+
+    /// Applies a new label to one session: its metadata, the tab title and the
+    /// tooltip.
+    ///
+    /// Takes the two maps rather than `&self` because the tab context menu
+    /// reaches it from a `'static` action closure, which holds clones of both
+    /// and cannot borrow the notebook.
+    ///
+    /// Only the tab chrome is touched, and that is the whole scope: a tab being
+    /// relabelled is by definition one that still has a tab, since a session
+    /// parked in a split or moved to its own window has none for the menu to
+    /// act on. The label does reach those sessions later rather than not at
+    /// all — a split pane header and a detached window title are both read from
+    /// `info.name` when the session is placed, and the session carries the
+    /// label from then on.
+    pub(super) fn apply_session_label(
+        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
+        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+        session_id: Uuid,
+        label: &str,
+    ) {
+        let (group, host) = {
+            let mut info_ref = session_info.borrow_mut();
+            let Some(info) = info_ref.get_mut(&session_id) else {
+                return;
+            };
+            info.name = label.to_owned();
+            (info.tab_group.clone(), info.host.clone())
+        };
+
+        // The page is bound to its own `let` first: an `if let` scrutinee
+        // temporary would keep the `sessions` borrow alive across the two GTK
+        // setters below.
+        let page = sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
+            page.set_title(&tab_title(label, group.as_deref()));
+            page.set_tooltip(&Self::tab_tooltip(label, host.as_deref(), group.as_deref()));
+        }
     }
 
     /// Returns the group name for a session, if any.
@@ -2758,13 +2797,10 @@ impl TerminalNotebook {
             && let Some(info) = self.session_info.borrow().get(&session_id)
             && let Some(ref group_name) = info.tab_group
         {
-            // The rendered title is the only record of the base name here, so an
-            // existing prefix comes off before the new one goes on.
-            let current_title = page.title().to_string();
-            page.set_title(&tab_title(
-                strip_group_prefix(&current_title),
-                Some(group_name),
-            ));
+            // Compose from `info.name`, the structural base label, not from the
+            // rendered title: stripping a prefix off the title would eat the
+            // first segment of a user label that happens to look like `[x] y`.
+            page.set_title(&tab_title(&info.name, Some(group_name)));
         }
     }
 

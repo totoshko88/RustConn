@@ -145,6 +145,8 @@ pub struct SettingsDialog {
     tunnel_browser_command_row: adw::EntryRow,
     // Show connection name header on split-view panes (issue #277)
     show_split_pane_labels: adw::SwitchRow,
+    // Show "Close to the Left"/"Close to the Right" in the tab menu (opt-in)
+    show_directional_tab_close: adw::SwitchRow,
     // GSK renderer preference; applies from the next start (issue #274)
     renderer_row: adw::ComboRow,
     // SSH Agent settings
@@ -274,6 +276,7 @@ impl SettingsDialog {
             show_welcome_switch,
             double_click_opens_new_session,
             show_split_pane_labels,
+            show_directional_tab_close,
             reveal_toolbar_on_hover,
             open_tunnelled_browser_in_embedded,
             tunnel_start_url_row,
@@ -723,6 +726,7 @@ impl SettingsDialog {
             tunnel_start_preset,
             tunnel_browser_command_row,
             show_split_pane_labels,
+            show_directional_tab_close,
             reveal_toolbar_on_hover,
             renderer_row,
             ssh_agent_status_label,
@@ -1296,6 +1300,7 @@ impl SettingsDialog {
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
             &self.show_split_pane_labels,
+            &self.show_directional_tab_close,
             &self.reveal_toolbar_on_hover,
             &self.open_tunnelled_browser_in_embedded,
             &self.tunnel_start_url_row,
@@ -1487,6 +1492,7 @@ impl SettingsDialog {
         let tunnel_start_url_row_clone = self.tunnel_start_url_row.clone();
         let tunnel_browser_command_row_clone = self.tunnel_browser_command_row.clone();
         let show_split_pane_labels_clone = self.show_split_pane_labels.clone();
+        let show_directional_tab_close_clone = self.show_directional_tab_close.clone();
         let reveal_toolbar_on_hover_clone = self.reveal_toolbar_on_hover.clone();
         let renderer_row_clone = self.renderer_row.clone();
         let connections_clone = self.connections.clone();
@@ -1711,6 +1717,7 @@ impl SettingsDialog {
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,
                 &show_split_pane_labels_clone,
+                &show_directional_tab_close_clone,
                 &reveal_toolbar_on_hover_clone,
                 &open_tunnelled_browser_in_embedded_clone,
                 &tunnel_start_url_row_clone,

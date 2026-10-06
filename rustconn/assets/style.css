@@ -1002,3 +1002,29 @@ window.macos list.boxed-list row image {
     margin-top: 2px;
     margin-bottom: 2px;
 }
+
+/* GNOME-native tab bar: the line under the tabs should read as the same
+ * surface as the window body, the way Nautilus' tab bar blends into its
+ * content rather than being fenced off by a lighter rule.
+ *
+ * libadwaita's own stylesheet draws that line on the AdwTabBar's inner box as
+ *     tabbar .box { box-shadow: inset 0 -1px var(--headerbar-shade-color); }
+ * — a DESCENDANT selector (`tabbar .box`, not `tabbar > .box`) and a
+ * bottom-edge INSET box-shadow, not a border. We override exactly that: repaint
+ * the box in the window tone and remove the shade so the seam disappears, with
+ * the same specificity libadwaita uses. The `prefers-contrast: more` media
+ * query re-adds the shadow from --headerbar-border-color, so it is neutralised
+ * there too, otherwise a high-contrast session keeps the line. The tabs keep
+ * their own selected/hover/focus states — only the dividing line under the
+ * whole bar goes. --window-bg-color is the libadwaita 1.8 custom-property form
+ * of @window_bg_color, so it still follows light/dark and any theme pack. */
+tabbar .box {
+    background-color: @window_bg_color;
+    box-shadow: none;
+}
+
+@media (prefers-contrast: more) {
+    tabbar .box {
+        box-shadow: none;
+    }
+}

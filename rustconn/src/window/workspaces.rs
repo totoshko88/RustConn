@@ -11,6 +11,7 @@ use rustconn_core::models::{WorkspaceEntry, WorkspaceProfile, WorkspaceSplitLayo
 use crate::dialogs::WorkspaceManagerDialog;
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
+use crate::terminal::LOCAL_SHELL_PROTOCOL;
 use crate::toast::{ToastType, show_toast_on_window};
 use crate::window::types::{SessionSplitBridges, SharedMonitoring, SharedNotebook, SharedSidebar};
 
@@ -334,11 +335,16 @@ pub fn show_workspace_manager(
             // Now start connections — on_tab_added is already registered to
             // capture both sync (Local Shell) and async (SSH/RDP) sessions.
             for entry in &profile.entries {
-                if entry.connection_id.is_nil() && entry.protocol == "local" {
+                if entry.connection_id.is_nil() && entry.protocol == LOCAL_SHELL_PROTOCOL {
+                    // A workspace carries the tab's title, so a relabelled local
+                    // shell reopens under the name it was saved with, and its
+                    // tab group is reapplied so it reopens grouped.
                     super::MainWindow::open_local_shell_with_split(
                         &notebook_for_open,
                         &split_view_for_open,
                         Some(&state_for_open),
+                        Some(&entry.connection_name),
+                        entry.tab_group.as_deref(),
                     );
                 } else {
                     super::MainWindow::start_connection_with_credential_resolution(

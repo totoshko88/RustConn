@@ -30,6 +30,14 @@ pub struct SessionRestoreData {
     pub panel_id: Option<String>,
     /// Tab index in the notebook (for ordering)
     pub tab_index: Option<usize>,
+    /// Tab group the session belonged to, if any.
+    ///
+    /// Carried structurally rather than baked into `connection_name`, so a
+    /// grouped tab restores under its base label and the `[group]` prefix is
+    /// recomposed on restore. `#[serde(default)]` keeps snapshots written
+    /// before this field was added loadable: they restore ungrouped.
+    #[serde(default)]
+    pub tab_group: Option<String>,
 }
 
 impl SessionRestoreData {
@@ -50,6 +58,7 @@ impl SessionRestoreData {
             saved_at: Utc::now(),
             panel_id: None,
             tab_index: None,
+            tab_group: None,
         }
     }
 
@@ -57,6 +66,13 @@ impl SessionRestoreData {
     #[must_use]
     pub fn with_panel_id(mut self, panel_id: impl Into<String>) -> Self {
         self.panel_id = Some(panel_id.into());
+        self
+    }
+
+    /// Sets the tab group the session belonged to.
+    #[must_use]
+    pub fn with_tab_group(mut self, group: impl Into<String>) -> Self {
+        self.tab_group = Some(group.into());
         self
     }
 
@@ -469,5 +485,69 @@ mod tests {
 
         assert_eq!(panel.panel_id, "main");
         assert!(panel.session.is_some());
+    }
+
+    /// A tab group set on the entry survives a JSON round trip, so a grouped
+    /// tab restores grouped. The base name is persisted untouched (the group
+    /// is carried structurally, never baked into `connection_name`).
+    #[test]
+    fn a_tab_group_survives_a_serde_round_trip() {
+        let data = SessionRestoreData::new(
+            Uuid::nil(),
+            "build logs".to_string(),
+            "local".to_string(),
+            SessionType::Embedded,
+        )
+        .with_tab_group("ci");
+        assert_eq!(data.tab_group.as_deref(), Some("ci"));
+        assert_eq!(
+            data.connection_name, "build logs",
+            "the group must not be baked into the stored name"
+        );
+
+        let json = serde_json::to_string(&data).expect("serialize");
+        let back: SessionRestoreData = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(back.tab_group.as_deref(), Some("ci"));
+        assert_eq!(back.connection_name, "build logs");
+    }
+
+    /// A session with no group round-trips as ungrouped.
+    #[test]
+    fn no_group_round_trips_as_none() {
+        let data = SessionRestoreData::new(
+            Uuid::new_v4(),
+            "web1".to_string(),
+            "ssh".to_string(),
+            SessionType::External,
+        );
+        assert!(data.tab_group.is_none());
+        let json = serde_json::to_string(&data).expect("serialize");
+        let back: SessionRestoreData = serde_json::from_str(&json).expect("deserialize");
+        assert!(back.tab_group.is_none());
+    }
+
+    /// A snapshot written before the `tab_group` field existed still loads:
+    /// `#[serde(default)]` fills the missing field as `None` (restores
+    /// ungrouped) rather than failing the whole restore.
+    #[test]
+    fn an_old_snapshot_without_the_field_loads_ungrouped() {
+        // A pre-field entry: note the absence of any `tab_group` key.
+        let legacy = serde_json::json!({
+            "connection_id": Uuid::nil(),
+            "connection_name": "legacy shell",
+            "protocol": "local",
+            "session_type": "Embedded",
+            "original_start_time": "2026-01-01T00:00:00Z",
+            "saved_at": "2026-01-01T00:00:00Z",
+            "panel_id": null,
+            "tab_index": 0
+        });
+        let back: SessionRestoreData =
+            serde_json::from_value(legacy).expect("legacy snapshot must still load");
+        assert!(
+            back.tab_group.is_none(),
+            "a snapshot predating the field restores ungrouped"
+        );
+        assert_eq!(back.connection_name, "legacy shell");
     }
 }

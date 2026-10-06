@@ -18,13 +18,11 @@ use rustconn_core::session::{SessionRestoreData, SessionRestoreState, SessionTyp
 
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
+use crate::terminal::LOCAL_SHELL_PROTOCOL;
 use crate::window::types::{SharedNotebook, SharedSidebar};
 
 /// File name of the restore snapshot inside the configuration directory.
 const RESTORE_FILE: &str = "session_restore.json";
-
-/// Protocol marker of a Local Shell tab (its connection id is nil).
-const LOCAL_SHELL_PROTOCOL: &str = "local";
 
 /// Returns the path of the restore snapshot, or `None` if state is unavailable.
 fn restore_path(state: &SharedAppState) -> Option<std::path::PathBuf> {
@@ -72,15 +70,19 @@ pub fn save_snapshot(state: &SharedAppState, notebook: &SharedNotebook) {
         } else {
             SessionType::External
         };
-        snapshot.add_session(
-            SessionRestoreData::new(
-                info.connection_id,
-                info.name.clone(),
-                info.protocol.clone(),
-                session_type,
-            )
-            .with_tab_index(index),
-        );
+        let mut data = SessionRestoreData::new(
+            info.connection_id,
+            info.name.clone(),
+            info.protocol.clone(),
+            session_type,
+        )
+        .with_tab_index(index);
+        // Carry the tab group structurally so a grouped tab restores under its
+        // base label with the `[group]` prefix recomposed, not doubled.
+        if let Some(group) = notebook.get_tab_group(*session_id) {
+            data = data.with_tab_group(group);
+        }
+        snapshot.add_session(data);
     }
 
     if let Some(active) = notebook.get_active_session_id() {
@@ -204,10 +206,15 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
 
     for entry in &snapshot.sessions {
         if entry.connection_id.is_nil() && entry.protocol == LOCAL_SHELL_PROTOCOL {
+            // The snapshot carries the tab's title, so a local shell the user
+            // relabelled comes back under that name instead of as a second
+            // "Local Shell". Its tab group is reapplied so it reopens grouped.
             super::MainWindow::open_local_shell_with_split(
                 &ctx.notebook,
                 &ctx.split_view,
                 Some(&ctx.state),
+                Some(&entry.connection_name),
+                entry.tab_group.as_deref(),
             );
             restored += 1;
             continue;
@@ -227,7 +234,23 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
             continue;
         }
 
-        super::MainWindow::start_connection_with_credential_resolution(
+        // A connection start is asynchronous (credential resolution runs first),
+        // so the session id is not known here. Observe the exact session the
+        // start creates and reapply its tab group once it exists, mirroring the
+        // synchronous local-shell path above.
+        let group_observer = entry.tab_group.clone().map(|group| {
+            // Hold the notebook weakly, as the reconnect observer does
+            // (window-guide): the closure outlives the start, so an `Rc` here
+            // would be a cycle back to the notebook that owns the session state.
+            let notebook = std::rc::Rc::downgrade(&ctx.notebook);
+            crate::window::types::SessionStartObserver::new(move |session_id| {
+                if let Some(notebook) = notebook.upgrade() {
+                    notebook.set_tab_group(session_id, &group);
+                }
+            })
+        });
+
+        super::MainWindow::start_connection_with_credential_resolution_observed(
             ctx.state.clone(),
             ctx.notebook.clone(),
             ctx.split_view.clone(),
@@ -235,6 +258,7 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
             ctx.monitoring.clone(),
             entry.connection_id,
             Some(ctx.activity.clone()),
+            group_observer,
         );
         restored += 1;
     }

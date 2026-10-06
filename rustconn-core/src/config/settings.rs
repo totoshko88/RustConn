@@ -1138,6 +1138,19 @@ pub struct UiSettings {
     /// moving a pane between panels/tabs (issue #355).
     #[serde(default = "default_true")]
     pub show_split_pane_labels: bool,
+    /// Show "Close to the Left" / "Close to the Right" in the tab context menu.
+    ///
+    /// Default `false`. The tab menu's close block is minimal by default —
+    /// "Close Tab", "Close Others" and "Close All Tabs" — because the
+    /// directional closes serve a narrower workflow (closing a run of tabs to
+    /// one side) and, shown unconditionally, they lengthen the menu for
+    /// everyone. GNOME's own apps keep context menus short for this reason.
+    /// Users who rely on the directional closes enable them here, and they then
+    /// appear in the close block alongside the always-present items. Independent
+    /// of "Close All Ungrouped", which is governed by whether any tab group
+    /// exists rather than by a preference.
+    #[serde(default)]
+    pub show_directional_tab_close: bool,
     /// Remember keyboard passthrough state across restarts.
     ///
     /// Default `false`. When `true` at startup the global passthrough mode
@@ -1239,6 +1252,7 @@ impl Default for UiSettings {
             tunnel_browser_start_url: default_tunnel_start_url(),
             tunnel_browser_command: String::new(),
             show_split_pane_labels: true,
+            show_directional_tab_close: false,
             keyboard_passthrough: false,
         }
     }
@@ -2121,6 +2135,22 @@ mod tests {
         let explicit_off: UiSettings = toml::from_str("show_split_pane_labels = false")
             .expect("a config with the key must parse");
         assert!(!explicit_off.show_split_pane_labels);
+    }
+
+    /// The directional tab-close items are opt-in: the default is off, a config
+    /// written before the key existed stays off, and a user who turned them on
+    /// keeps them on across loads.
+    #[test]
+    fn directional_tab_close_default_off_and_explicit_true_is_kept() {
+        assert!(!UiSettings::default().show_directional_tab_close);
+
+        let without_key: UiSettings = toml::from_str(r#"color_scheme = "system""#)
+            .expect("a config without the key must parse");
+        assert!(!without_key.show_directional_tab_close);
+
+        let explicit_on: UiSettings = toml::from_str("show_directional_tab_close = true")
+            .expect("a config with the key must parse");
+        assert!(explicit_on.show_directional_tab_close);
     }
 
     /// The persisted spelling is part of the config format: renaming a variant

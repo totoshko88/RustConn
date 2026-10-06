@@ -593,6 +593,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         tunnel_browser_start_url: "https://www.google.com".to_string(),
                         tunnel_browser_command: String::new(),
                         show_split_pane_labels: true,
+                        show_directional_tab_close: false,
                         keyboard_passthrough: false,
                     },
                     connection: rustconn_core::ConnectionSettings::default(),
