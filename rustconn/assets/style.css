@@ -836,6 +836,22 @@ window.compact .sidebar toolbarview > .bottom-bar button {
     margin-bottom: 0;
 }
 
+/* Compact: AdwToolbarView wraps its bottom bar in a GtkRevealer, and libadwaita
+ * puts the `.bottom-bar` style class on the inner GtkWindowHandle — so the
+ * `.bottom-bar` rules above collapse the handle but NEVER reach the enclosing
+ * revealer, whose own themed min-height stayed reserved as an empty strip below
+ * the sidebar's bottom icon row (visible only in compact). Collapse the revealer
+ * itself so it sizes to the already-shrunk bar inside it. The icons live in the
+ * handle INSIDE this revealer (min-height:0 drops the floor, it does not clip
+ * them) and the GtkWindowHandle is untouched, so bottom-bar window-dragging still
+ * works. Gated on window.compact only — not platform-specific — because the strip
+ * is wrong only in compact. */
+window.compact .sidebar toolbarview > revealer {
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 /* Popover menu items — compact is about SPACING, so collapse the vertical
  * padding (GTK4 modelbutton carries ~10-12px theme padding, which is the real
  * "tall menu" gap) while leaving the font size at normal. */
