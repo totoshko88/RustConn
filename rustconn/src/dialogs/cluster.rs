@@ -19,6 +19,7 @@ use rustconn_core::cluster::{AutoMembership, Cluster};
 use rustconn_core::models::Connection;
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, ni18n_f};
 
 /// Type alias for cluster dialog callback
@@ -69,7 +70,7 @@ impl ClusterDialog {
         save_btn.set_tooltip_text(Some(&i18n("Create")));
         save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
         save_btn.add_css_class("suggested-action");
-        header.pack_start(&save_btn);
+        dialog_pack_action(&header, &save_btn);
 
         // Scrollable content with clamp
         let scrolled = ScrolledWindow::builder()
@@ -560,7 +561,7 @@ impl ClusterListDialog {
         let new_btn = Button::from_icon_name("list-add-symbolic");
         new_btn.set_tooltip_text(Some(&i18n("New Cluster")));
         new_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("New Cluster"))]);
-        header.pack_start(&new_btn);
+        dialog_pack_action(&header, &new_btn);
 
         // Create main content area with clamp
         let clamp = adw::Clamp::builder()

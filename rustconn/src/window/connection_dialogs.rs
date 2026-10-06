@@ -385,7 +385,7 @@ pub fn show_new_group_dialog_with_parent(
     create_btn.set_tooltip_text(Some(&i18n("Create")));
     create_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
     create_btn.add_css_class("suggested-action");
-    header.pack_start(&create_btn);
+    crate::dialogs::widgets::dialog_pack_action(&header, &create_btn);
 
     // Scrollable content with clamp
     let clamp = adw::Clamp::builder()

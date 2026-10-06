@@ -258,21 +258,27 @@ jobs:
           # Fails safe: if a pkg-config file is missing the ladder yields
           # nothing and the build is exactly what it was before.
           FEATURES="full"
-          if pkg-config --atleast-version=1.8 libadwaita-1 2>/dev/null; then
+          if pkg-config --atleast-version=1.10 libadwaita-1 2>/dev/null; then
+            FEATURES="$FEATURES,rustconn/adw-1-10"
+          elif pkg-config --atleast-version=1.8 libadwaita-1 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/adw-1-8"
           elif pkg-config --atleast-version=1.7 libadwaita-1 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/adw-1-7"
           elif pkg-config --atleast-version=1.6 libadwaita-1 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/adw-1-6"
           fi
-          if pkg-config --atleast-version=4.22 gtk4 2>/dev/null; then
+          if pkg-config --atleast-version=4.24 gtk4 2>/dev/null; then
+            FEATURES="$FEATURES,rustconn/gtk-4-24"
+          elif pkg-config --atleast-version=4.22 gtk4 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/gtk-4-22"
           elif pkg-config --atleast-version=4.20 gtk4 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/gtk-4-20"
           elif pkg-config --atleast-version=4.18 gtk4 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/gtk-4-18"
           fi
-          if pkg-config --atleast-version=0.78 vte-2.91-gtk4 2>/dev/null; then
+          if pkg-config --atleast-version=0.84 vte-2.91-gtk4 2>/dev/null; then
+            FEATURES="$FEATURES,rustconn/vte-0-84"
+          elif pkg-config --atleast-version=0.78 vte-2.91-gtk4 2>/dev/null; then
             FEATURES="$FEATURES,rustconn/vte-0-78"
           fi
           echo "=== gtk4 $(pkg-config --modversion gtk4 2>/dev/null)" \

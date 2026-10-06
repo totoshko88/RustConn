@@ -52,7 +52,7 @@ The Flatpak includes all core protocol clients — no separate installation need
 
 | Component | Purpose |
 |-----------|---------|
-| VTE 0.80 | Terminal emulation (SSH, Telnet, Serial, Kubernetes) |
+| VTE 0.84 | Terminal emulation (SSH, Telnet, Serial, Kubernetes) |
 | IronRDP | Embedded RDP client |
 | vnc-rs | Embedded VNC client |
 | inetutils | Telnet client |
@@ -75,11 +75,11 @@ The bundle is available in two places:
 
 #### Prerequisites
 
-The bundle requires GNOME Platform runtime 50. Install it once:
+The bundle requires GNOME Platform runtime 51. Install it once:
 
 ```bash
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub org.gnome.Platform//50
+flatpak install flathub org.gnome.Platform//51
 ```
 
 #### Install

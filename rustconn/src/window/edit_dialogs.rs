@@ -318,7 +318,7 @@ pub fn rename_selected_item(
         .label(i18n("Rename"))
         .css_classes(["suggested-action"])
         .build();
-    header.pack_end(&save_btn);
+    crate::dialogs::widgets::dialog_pack_action(&header, &save_btn);
 
     let content = gtk4::Box::new(Orientation::Vertical, 12);
     content.set_margin_top(12);
@@ -761,7 +761,7 @@ pub fn show_quick_connect_dialog_with_state(
     connect_btn.set_tooltip_text(Some(&i18n("Connect")));
     connect_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Connect"))]);
     connect_btn.add_css_class("suggested-action");
-    header.pack_start(&connect_btn);
+    crate::dialogs::widgets::dialog_pack_action(&header, &connect_btn);
 
     // Main content
     let content = gtk4::Box::new(Orientation::Vertical, 12);

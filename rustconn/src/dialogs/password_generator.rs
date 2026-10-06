@@ -16,6 +16,7 @@ use rustconn_core::password_generator::{
     PasswordGenerator, PasswordGeneratorConfig, PasswordStrength, estimate_crack_time,
 };
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 
 /// Shows the password generator dialog
@@ -33,7 +34,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Widget>>) {
     copy_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Copy to Clipboard",
     ))]);
-    header.pack_start(&copy_btn);
+    dialog_pack_action(&header, &copy_btn);
 
     // Scrollable content with clamp
     let scrolled = gtk4::ScrolledWindow::builder()

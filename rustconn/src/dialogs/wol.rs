@@ -14,6 +14,7 @@ use libadwaita as adw;
 use rustconn_core::models::Connection;
 use rustconn_core::wol::{MacAddress, WolConfig};
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 
 /// Standalone Wake On LAN dialog
@@ -44,7 +45,7 @@ impl WolDialog {
         send_btn.set_tooltip_text(Some(&i18n("Send")));
         send_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Send"))]);
         send_btn.add_css_class("suggested-action");
-        header.pack_start(&send_btn);
+        dialog_pack_action(&header, &send_btn);
 
         let clamp = adw::Clamp::builder()
             .maximum_size(600)

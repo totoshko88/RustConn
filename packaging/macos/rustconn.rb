@@ -7,7 +7,7 @@ class Rustconn < Formula
   # active `sha256` at this indentation — the sed patterns and the CI
   # verification gate are anchored to `^  url` and `^  sha256` (issue #251).
   # PLACEHOLDER_SHA256 is expected here in-tree; only the tap copy has a hash.
-  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.23.1.tar.gz"
+  url "https://github.com/totoshko88/RustConn/archive/refs/tags/v0.23.2.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "GPL-3.0-or-later"
   head "https://github.com/totoshko88/RustConn.git", branch: "main"
@@ -67,15 +67,15 @@ class Rustconn < Formula
     ]
 
     {
-      "libadwaita-1"  => { "1.8" => "adw-1-8", "1.7" => "adw-1-7", "1.6" => "adw-1-6" },
-      "gtk4"          => { "4.22" => "gtk-4-22", "4.20" => "gtk-4-20", "4.18" => "gtk-4-18" },
-      "vte-2.91-gtk4" => { "0.78" => "vte-0-78" },
+      "libadwaita-1"  => { "1.10" => "adw-1-10", "1.8" => "adw-1-8", "1.7" => "adw-1-7", "1.6" => "adw-1-6" },
+      "gtk4"          => { "4.24" => "gtk-4-24", "4.22" => "gtk-4-22", "4.20" => "gtk-4-20", "4.18" => "gtk-4-18" },
+      "vte-2.91-gtk4" => { "0.84" => "vte-0-84", "0.78" => "vte-0-78" },
     }.each do |pc_name, ladder|
       rung = ladder.find { |minimum, _| quiet_system("pkg-config", "--atleast-version=#{minimum}", pc_name) }
       features << "rustconn/#{rung.last}" if rung
 
       # The ladder's ceiling is its highest rung. When Homebrew moves past it
-      # (e.g. libadwaita 1.10 while the top rung is still 1.8), the newer feature
+      # (e.g. libadwaita 1.12 while the top rung is still 1.10), the newer feature
       # is not selected and its capabilities silently never build — the "shipped
       # the 1.5 baseline" regression, but quiet. Compare the installed minor
       # against the top rung's minor and emit a hint when it is ahead, so the

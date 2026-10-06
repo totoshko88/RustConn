@@ -47,14 +47,18 @@ python3 flatpak-cargo-generator.py Cargo.lock -o cargo-sources.json
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 # Install SDK
-flatpak install flathub org.gnome.Sdk//50 org.gnome.Platform//50
-flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+flatpak install flathub org.gnome.Sdk//51 org.gnome.Platform//51
+flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
 
 # Build
 flatpak-builder --force-clean build-dir io.github.totoshko88.RustConn.yml
 
 # Test run
-flatpak-builder --run build-dir io.github.totoshko88.RustConn.yml rustconn
+# GTK_A11Y=none silences a harmless "Unable to acquire the address of the
+# accessibility bus" warning: flatpak-builder --run does not start the a11y
+# D-Bus that a real `flatpak run` has, so GTK cannot reach it. Drop the env var
+# for a normal `flatpak run` on the desktop, where the a11y bus is present.
+GTK_A11Y=none flatpak-builder --run build-dir io.github.totoshko88.RustConn.yml rustconn
 
 # Create bundle for testing
 flatpak-builder --repo=repo --force-clean build-dir io.github.totoshko88.RustConn.yml

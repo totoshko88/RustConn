@@ -12,6 +12,7 @@ use gtk4::{Align, Box as GtkBox, Button, Label, ListBox, Orientation, SelectionM
 use libadwaita as adw;
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 
 /// Callback type for workspace operations
@@ -66,7 +67,7 @@ impl WorkspaceManagerDialog {
         save_current_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Save currently open sessions as a workspace",
         ))]);
-        header.pack_start(&save_current_btn);
+        dialog_pack_action(&header, &save_current_btn);
 
         // Content
         let content = GtkBox::new(Orientation::Vertical, 0);

@@ -19,6 +19,7 @@ use libadwaita as adw;
 use rustconn_core::models::{Snippet, SnippetVariable};
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// The form widgets and state that a [`Snippet`] is built from.
@@ -86,7 +87,7 @@ impl SnippetDialog {
         new_btn.set_tooltip_text(Some(&i18n("Create")));
         new_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
         new_btn.add_css_class("suggested-action");
-        header.pack_start(&new_btn);
+        dialog_pack_action(&header, &new_btn);
 
         // Scrollable content with clamp
         let scrolled = ScrolledWindow::builder()

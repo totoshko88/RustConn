@@ -1,3 +1,22 @@
+rustconn (0.23.2-1) unstable; urgency=medium
+
+  * Version bump to 0.23.2
+  * Fixed: the high-contrast tab-bar divider is neutralised on GTK < 4.22 too -
+    the override now out-specifies libadwaita with a window tabbar .box selector
+    instead of a prefers-contrast media query that old GTK rejected
+  * Changed: compact mode density overhaul - header bars, toolbar buttons, tabs,
+    sidebar rows, search entry, popovers and the monitoring bar all shrink, and
+    the sidebar title is hidden
+  * Changed: on macOS, dialog action buttons (Save, Test, Create, Rename, Move,
+    Connect, Export, Import, Apply) move to the right side, away from the
+    left-side window-close button
+  * Dependencies: feature ladder raised (adw-1-10, gtk-4-24); Flatpak runtime
+    GNOME 50 -> 51, bundled VTE 0.80.5 -> 0.84.1; Snap migrated to core26
+    (libadwaita 1.8); CI runners pinned to ubuntu-26.04; want 0.3.1 -> 0.3.2
+    (picky-krb held at 0.12.4: 0.12.5 breaks pinned sspi)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Tue, 06 Oct 2026 18:00:00 +0300
+
 rustconn (0.23.1-1) unstable; urgency=medium
 
   * Version bump to 0.23.1

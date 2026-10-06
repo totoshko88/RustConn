@@ -24,6 +24,7 @@ use rustconn_core::import::{
 };
 use rustconn_core::progress::LocalProgressReporter;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 
 /// Import dialog for importing connections from external sources
@@ -61,7 +62,7 @@ impl ImportDialog {
         import_button.set_tooltip_text(Some(&i18n("Import")));
         import_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Import"))]);
         import_button.add_css_class("suggested-action");
-        header.pack_start(&import_button);
+        dialog_pack_action(&header, &import_button);
 
         // Create main layout with header at top using ToolbarView
         let toolbar_view = adw::ToolbarView::new();

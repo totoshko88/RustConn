@@ -225,7 +225,7 @@ pub fn show_snippets_manager(
     let new_btn = Button::from_icon_name("list-add-symbolic");
     new_btn.set_tooltip_text(Some(&i18n("New Snippet")));
     new_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("New Snippet"))]);
-    header.pack_start(&new_btn);
+    crate::dialogs::widgets::dialog_pack_action(&header, &new_btn);
 
     // Create main content
     let content = gtk4::Box::new(Orientation::Vertical, 8);

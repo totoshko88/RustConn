@@ -684,7 +684,7 @@ window:not(.compact):not(.macos) .sidebar-search-row {
  * (with small buttons) is enough and matches the standard libadwaita
  * compact pattern. */
 window.compact headerbar {
-    min-height: 32px;
+    min-height: 28px;
     padding-top: 0;
     padding-bottom: 0;
 }
@@ -692,38 +692,83 @@ window.compact headerbar {
 /* Header bar buttons — denser tap targets. Zero vertical margin so the
  * buttons don't push the header taller than its min-height. */
 window.compact headerbar button {
-    min-height: 24px;
-    min-width: 24px;
-    padding: 2px 6px;
+    min-height: 20px;
+    min-width: 20px;
+    padding: 1px 4px;
     margin-top: 0;
     margin-bottom: 0;
 }
 
 window.compact headerbar button.image-button {
-    padding: 2px 4px;
+    padding: 1px 3px;
 }
 
-/* Title label — smaller line-height */
+/* Title label — tighter padding only (compact shrinks spacing, not text). */
 window.compact headerbar .title {
-    font-size: 0.95em;
     padding: 0;
+}
+
+/* Sidebar title ("Connections") — hidden in compact to save horizontal space.
+ * Targets the dedicated `.sidebar-panel-title` class on the AdwWindowTitle
+ * (set in sidebar_ui.rs) so the match is exact. Collapse both the labels and
+ * the title node itself so it reserves no space. */
+window.compact .sidebar-panel-title {
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+window.compact .sidebar-panel-title > label {
+    font-size: 0;
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* AdwWindowTitle nests its labels as `windowtitle > box > label.title`, so a
+ * direct `> label` child selector misses them. Match any descendant label of
+ * the tagged title and collapse it. */
+window.compact .sidebar-panel-title label {
+    font-size: 0;
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Sidebar connection list — remove libadwaita's built-in navigation-sidebar
+ * top/bottom/side padding in compact so the list sits flush under the header
+ * and above the bottom bar (the "top/bottom gap" the user flagged). */
+window.compact .navigation-sidebar {
+    padding: 0;
+}
+
+window.compact .sidebar scrolledwindow {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* Tab bar — slimmer rows and tabs */
 window.compact tabbar tab {
-    min-height: 28px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    min-height: 24px;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 4px;
+    padding-right: 4px;
 }
 
 window.compact tabbar .start-action,
 window.compact tabbar .end-action {
-    min-height: 28px;
-    padding: 0 4px;
+    min-height: 24px;
+    padding: 0 3px;
 }
 
 window.compact tabbar tabbox > tabboxchild {
-    min-height: 28px;
+    min-height: 24px;
 }
 
 /* Tab bar — remove extra padding around the bar itself */
@@ -738,54 +783,90 @@ window.compact preferencespage row.action-row {
     padding-bottom: 4px;
 }
 
-/* Sidebar rows — denser vertical spacing */
+/* Sidebar rows — denser vertical spacing (spacing only, text unchanged) */
 window.compact listview > row {
-    min-height: 28px;
+    min-height: 0;
+    padding-top: 1px;
+    padding-bottom: 1px;
 }
 
 window.compact listview > row treeexpander > box {
-    margin-top: 3px;
-    margin-bottom: 3px;
+    margin-top: 1px;
+    margin-bottom: 1px;
 }
 
-/* Sidebar search entry — slimmer */
-window.compact searchbar {
-    min-height: 32px;
-    padding: 2px 6px;
-}
-
+/* Sidebar search entry — slimmer.
+ * Do NOT set min-height/padding on the `searchbar` node itself: a GtkSearchBar
+ * reserves that height even while collapsed (search hidden), producing a
+ * phantom gap below the header in compact — the same trap documented for
+ * `banner` below. Style only the inner searchentry, which exists in the layout
+ * solely while the bar is revealed. */
 window.compact searchbar searchentry {
-    min-height: 26px;
-    font-size: 0.92em;
+    min-height: 22px;
 }
 
-/* Sidebar bottom toolbar — compact icons */
+window.compact searchbar revealer > box {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+/* Sidebar bottom toolbar — compact icons.
+ * Base .bottom-bar has NO min-height/padding (only a border), so setting them
+ * here ADDED a bottom gap that normal mode does not have. Keep padding minimal
+ * and let the bar size to its (shrunk) buttons. */
 window.compact .sidebar toolbarview > .bottom-bar {
-    min-height: 28px;
-    padding: 2px 4px;
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: 0;
+}
+
+window.compact .sidebar toolbarview > .bottom-bar > box {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* Compact: same reduced icon-button metrics as the header
  * (`window.compact headerbar button.image-button`), so the two toolbars stay
  * identical in compact mode too. */
 window.compact .sidebar toolbarview > .bottom-bar button {
-    min-height: 24px;
-    min-width: 24px;
-    padding: 2px 4px;
+    min-height: 20px;
+    min-width: 20px;
+    padding: 1px 3px;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
-/* Popover menu items — less vertical padding for shorter menus */
+/* Popover menu items — compact is about SPACING, so collapse the vertical
+ * padding (GTK4 modelbutton carries ~10-12px theme padding, which is the real
+ * "tall menu" gap) while leaving the font size at normal. */
+window.compact popover.menu modelbutton,
 window.compact popover.menu box > modelbutton,
 window.compact popover.menu box > button,
 window.compact popover.menu contents modelbutton,
 window.compact popover.menu contents > box > box > button {
-    min-height: 26px;
+    min-height: 0;
     padding-top: 2px;
     padding-bottom: 2px;
 }
 
 window.compact popover.menu contents {
-    padding: 4px;
+    padding: 2px;
+}
+
+/* Connection context menu (right-click on a row) is a CUSTOM popover built in
+ * sidebar_ui.rs — class `.context-menu-popover` with `button.context-menu-item`
+ * rows — NOT a `popover.menu`, so the generic rules never reach it. Tighten the
+ * vertical padding only (text stays normal size). */
+window.compact .context-menu-popover button.context-menu-item {
+    min-height: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+window.compact .context-menu-popover > contents {
+    padding: 2px;
 }
 
 /* Embedded RDP/VNC/SPICE toolbar — denser in compact mode */
@@ -797,9 +878,9 @@ window.compact .embedded-toolbar {
 }
 
 window.compact .embedded-toolbar button {
-    min-height: 24px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    min-height: 20px;
+    padding-top: 1px;
+    padding-bottom: 1px;
 }
 
 window.compact .embedded-toolbar separator {
@@ -811,7 +892,7 @@ window.compact .embedded-toolbar separator {
  * since the Rust code no longer sets a fixed height_request) */
 /* Physical margin properties — see the note on `.monitoring-bar` above. */
 window.compact .monitoring-bar {
-    min-height: 22px;
+    min-height: 18px;
     margin-left: 4px;
     margin-right: 4px;
 }
@@ -1011,20 +1092,22 @@ window.macos list.boxed-list row image {
  *     tabbar .box { box-shadow: inset 0 -1px var(--headerbar-shade-color); }
  * — a DESCENDANT selector (`tabbar .box`, not `tabbar > .box`) and a
  * bottom-edge INSET box-shadow, not a border. We override exactly that: repaint
- * the box in the window tone and remove the shade so the seam disappears, with
- * the same specificity libadwaita uses. The `prefers-contrast: more` media
- * query re-adds the shadow from --headerbar-border-color, so it is neutralised
- * there too, otherwise a high-contrast session keeps the line. The tabs keep
- * their own selected/hover/focus states — only the dividing line under the
- * whole bar goes. --window-bg-color is the libadwaita 1.8 custom-property form
- * of @window_bg_color, so it still follows light/dark and any theme pack. */
-tabbar .box {
+ * the box in the window tone and remove the shade so the seam disappears.
+ *
+ * libadwaita re-adds that shadow under `prefers-contrast: more` (from
+ * --headerbar-border-color), so a bare `tabbar .box` override — equal
+ * specificity (0,2,0) to libadwaita's — loses to it in a high-contrast session
+ * and the seam comes back. The previous fix neutralised that with a matching
+ * `@media (prefers-contrast: more)` block, but GTK < 4.22 has no @media support
+ * and rejects the whole rule as an "Unknown @ rule" (GTK 4.14 on the CI runner
+ * and on Ubuntu 24.04). Instead we out-specify libadwaita unconditionally:
+ * `window tabbar .box` is (0,2,1) > (0,2,0), so our `box-shadow: none` wins in
+ * normal AND high-contrast with no @media, parsing cleanly on every GTK ≥ 4.14.
+ * The tabs keep their own selected/hover/focus states — only the dividing line
+ * under the whole bar goes. --window-bg-color is the libadwaita 1.8
+ * custom-property form of @window_bg_color, so it still follows light/dark and
+ * any theme pack. */
+window tabbar .box {
     background-color: @window_bg_color;
     box-shadow: none;
-}
-
-@media (prefers-contrast: more) {
-    tabbar .box {
-        box-shadow: none;
-    }
 }

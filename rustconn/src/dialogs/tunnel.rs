@@ -22,6 +22,7 @@ use crate::alert;
 use crate::dialogs::tunnel_builder::{
     NewConnectionOpener, TunnelBuilderContext, TunnelBuilderDialog,
 };
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 use crate::state::{SharedAppState, with_state, with_state_mut};
 use crate::window::SharedTunnelManager;
@@ -67,7 +68,7 @@ impl TunnelManagerWindow {
         add_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Add a new SSH tunnel",
         ))]);
-        header.pack_start(&add_button);
+        dialog_pack_action(&header, &add_button);
 
         // Content stack: empty state vs tunnel list
         let content_stack = gtk4::Stack::new();

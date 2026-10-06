@@ -42,6 +42,16 @@ pub fn dialog_header(end_label: &str) -> (adw::HeaderBar, Button) {
     (header, end_btn)
 }
 
+/// Packs an action button into a dialog header bar.  On macOS uses `pack_end`
+/// (right) to keep action buttons away from the left-side close button; on
+/// other platforms `pack_start` (left, GNOME HIG).
+pub fn dialog_pack_action(header: &adw::HeaderBar, button: &impl IsA<gtk4::Widget>) {
+    #[cfg(target_os = "macos")]
+    header.pack_end(button);
+    #[cfg(not(target_os = "macos"))]
+    header.pack_start(button);
+}
+
 /// Common label strings used across dialogs
 pub mod labels {
     use crate::i18n::i18n;
