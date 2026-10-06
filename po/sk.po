@@ -11224,7 +11224,7 @@ msgstr "Nové pripojenie (pokročilé)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Správa pracovných priestorov"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11248,7 +11248,7 @@ msgstr "Zoradiť podľa posledného použitia"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Ponuka zoznamu pripojení"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

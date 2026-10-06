@@ -11216,7 +11216,7 @@ msgstr "Жаңа қосылым (кеңейтілген)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Жұмыс кеңістіктерін басқару"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11240,7 +11240,7 @@ msgstr "Соңғы қолдану бойынша сұрыптау"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Қосылымдар тізімінің мәзірі"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

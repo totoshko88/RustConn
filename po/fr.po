@@ -11338,7 +11338,7 @@ msgstr "Nouvelle connexion (avancé)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Gérer les espaces de travail"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11362,7 +11362,7 @@ msgstr "Trier par utilisation récente"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Menu de la liste des connexions"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

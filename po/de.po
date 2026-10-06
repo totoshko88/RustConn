@@ -11310,7 +11310,7 @@ msgstr "Neue Verbindung (Erweitert)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Arbeitsbereiche verwalten"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11334,7 +11334,7 @@ msgstr "Nach letzter Verwendung sortieren"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Menü der Verbindungsliste"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

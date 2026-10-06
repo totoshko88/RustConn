@@ -11222,7 +11222,7 @@ msgstr "Новае злучэнне (пашыранае)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Кіраванне працоўнымі прасторамі"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11246,7 +11246,7 @@ msgstr "Сартаваць па апошнім выкарыстанні"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Меню спіса злучэнняў"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

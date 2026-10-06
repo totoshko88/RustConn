@@ -11288,7 +11288,7 @@ msgstr "Yangi ulanish (kengaytirilgan)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Ish maydonlarini boshqarish"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11312,7 +11312,7 @@ msgstr "Oxirgi foydalanish boʻyicha saralash"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Ulanishlar ro'yxati menyusi"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

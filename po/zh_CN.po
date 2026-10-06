@@ -10951,7 +10951,7 @@ msgstr "新建连接（高级）…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "管理工作区"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -10975,7 +10975,7 @@ msgstr "按最近使用排序"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "连接列表菜单"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"

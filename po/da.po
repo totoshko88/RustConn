@@ -11202,7 +11202,7 @@ msgstr "Ny forbindelse (avanceret)…"
 
 #: rustconn/src/sidebar_ui.rs:1199
 msgid "Manage Workspaces"
-msgstr ""
+msgstr "Administrér arbejdsområder"
 
 #: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
@@ -11226,7 +11226,7 @@ msgstr "Sortér efter seneste brug"
 
 #: rustconn/src/sidebar_ui.rs:1231
 msgid "Connection list menu"
-msgstr ""
+msgstr "Menu for forbindelsesliste"
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"
