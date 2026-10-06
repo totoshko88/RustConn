@@ -703,7 +703,22 @@ jobs:
       - name: Build from source (informational)
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
-        run: brew install --build-from-source --verbose ./packaging/macos/rustconn.rb
+        # Install from a Formula/ path, not the bare file. `brew install
+        # ./rustconn.rb` rejects a formula outside a tap ("requires formulae to
+        # be in a tap"), which — even behind continue-on-error — surfaces as a
+        # red error annotation on an otherwise-green job and masks real ones.
+        # Copying it under Formula/ (the dummy-sha trick the style step already
+        # uses, since the real sha256 is PLACEHOLDER until release.yml patches
+        # it) makes brew accept it, so the packaging build this step exists for
+        # actually runs.
+        run: |
+          set -uo pipefail
+          tap_dir="${RUNNER_TEMP}/formula-build/Formula"
+          mkdir -p "$tap_dir"
+          dummy_sha="$(shasum -a 256 packaging/macos/rustconn.rb | cut -d' ' -f1)"
+          sed "s|^\(  sha256 \"\)PLACEHOLDER_SHA256\(\".*\)|\1${dummy_sha}\2|" \
+              packaging/macos/rustconn.rb > "$tap_dir/rustconn.rb"
+          brew install --build-from-source --verbose "$tap_dir/rustconn.rb"
 
   # Single success-gate. Branch protection should require THIS job alone instead
   # of enumerating every job above: a new job added to the matrix is then covered
@@ -761,7 +776,9 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-semver
 
       - name: Install cargo-semver-checks
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        # v2.87.25: v2.87.20 had no prebuilt for cargo-semver-checks 0.51.0 and
+        # fell back to a slow cargo-binstall with an "is not supported" warning.
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           tool: cargo-semver-checks@0.51.0
 
@@ -775,6 +792,14 @@ jobs:
             exit 0
           fi
           echo "Comparing rustconn-core public API against baseline tag: $baseline"
+          # Clear any baseline checkouts cached from an earlier run. The tool
+          # extracts each baseline tag under target/semver-checks/git-<tag>/ and
+          # then walks every crate's tests/ dir; a checkout left by a previous
+          # tag (e.g. git-v0_23_1) no longer has the tests/trybuild and
+          # tests/target dirs the current tree does, so the walk logs ~20 noisy
+          # "ENOENT: opendir" annotations that look like failures but are not.
+          # Removing the cache before the run keeps only the current baseline.
+          rm -rf target/semver-checks
           cargo semver-checks \
             --baseline-rev "$baseline" \
             --package rustconn-core \
