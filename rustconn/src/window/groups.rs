@@ -62,7 +62,7 @@ pub fn show_move_to_group_dialog(
         .label(i18n("Move"))
         .css_classes(["suggested-action"])
         .build();
-    header.pack_end(&move_btn);
+    crate::dialogs::widgets::dialog_pack_action(&header, &move_btn);
 
     let content = gtk4::Box::new(Orientation::Vertical, 12);
     content.set_margin_top(12);

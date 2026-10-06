@@ -139,8 +139,21 @@ impl ConnectionDialog {
         save_btn.set_tooltip_text(Some(&i18n("Create")));
         save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
         save_btn.add_css_class("suggested-action");
-        dialog_pack_action(&header, &test_btn);
-        dialog_pack_action(&header, &save_btn);
+        // Pack order so the primary action (Create/Save) sits outermost on both
+        // platforms: on Linux pack_start grows rightward, so test-then-save puts
+        // save to the right of test; on macOS pack_end grows leftward, so
+        // save-then-test puts save at the far right (away from the left close
+        // button) with test to its left.
+        #[cfg(target_os = "macos")]
+        {
+            dialog_pack_action(&header, &save_btn);
+            dialog_pack_action(&header, &test_btn);
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            dialog_pack_action(&header, &test_btn);
+            dialog_pack_action(&header, &save_btn);
+        }
 
         (dialog, header, save_btn, test_btn)
     }

@@ -140,6 +140,17 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.2" date="2026-10-06">
+      <description>
+        <p>Version 0.23.2 - high-contrast tab-bar fix, a compact-mode density overhaul, and macOS dialog button placement:</p>
+        <ul>
+          <li>Fixed: the high-contrast tab-bar divider is neutralised on GTK before 4.22 too - the override now out-specifies libadwaita with a window tabbar .box selector instead of a prefers-contrast media query that old GTK rejected</li>
+          <li>Changed: compact mode density overhaul - header bars, toolbar buttons, tabs, sidebar rows, search entry, popovers and the monitoring bar all shrink, and the sidebar title is hidden</li>
+          <li>Changed: on macOS, dialog action buttons (Save, Test, Create, Rename, Move, Connect, Export, Import, Apply) move to the right side, away from the left-side window-close button</li>
+          <li>Dependencies: feature ladder raised (adw-1-10, gtk-4-24); Flatpak runtime GNOME 50 to 51, bundled VTE 0.80.5 to 0.84.1; Snap migrated to core26 (libadwaita 1.8); CI runners pinned to ubuntu-26.04; want 0.3.1 to 0.3.2 (picky-krb held at 0.12.4: 0.12.5 breaks pinned sspi)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.1" date="2026-10-06">
       <description>
         <p>Version 0.23.1 - named Local Shell tabs, tab groups kept across Session Restore, and a lighter tab menu:</p>
