@@ -1247,4 +1247,3 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
 
     (header, search_toggle)
 }
-

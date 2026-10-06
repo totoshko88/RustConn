@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.23.3] - 2026-10-07
 
 ### Fixed
 - **Compact mode now actually shrinks the header bar on Linux** — the icon-only header buttons (content header: sidebar-toggle, menu, settings, split-H, split-V; sidebar header: search, menu) carried a hard Rust `set_size_request(44, 44)` as their GNOME-HIG tap-target floor. A GTK size request is a floor CSS cannot cross, and `AdwHeaderBar` takes its height from its tallest child, so on Linux the `window.compact headerbar` rules were dead — the header stayed ~44 px tall in compact (macOS was unaffected, its floor is 28 px). The 44 px floor moved to a `.header-icon-button` CSS class, so it still holds by default but can now be overridden. A new `window.compact-manual` class (added only when the user *deliberately* turns compact on via the toggle/menu/shortcut, not when auto-compact engages on a small window) lowers the floor to 28 px, so a deliberate compact finally shrinks the header. Auto-compact — which may be a tablet or touch convertible — keeps the full 44 px tap target. The now-unused `HEADER_BUTTON_SIZE` constant is removed.
@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **CI: informational macOS Homebrew build fixed, and false-positive CI annotations silenced** — the advisory `Build from source` step now installs the formula through a real local tap with the published tarball's real SHA-256 (a bare-path install is rejected by modern Homebrew, and a placeholder hash fails the download check); the advisory semver job clears its stale baseline-checkout cache to stop ~20 spurious `ENOENT` annotations; and `taiki-e/install-action` is bumped to v2.87.25 so `cargo-semver-checks` installs from a prebuilt instead of a slow binstall fallback. All three jobs are non-gating; this only removes red annotations that masked real ones.
+
+### Dependencies
+- **Updated**: either 1.18.0 → 1.19.0, h2 0.4.19 → 0.4.20, hyper 1.11.1 → 1.12.0, zeroize 1.9.0 → 1.9.1. Flatpak/Flathub `cargo-sources.json` regenerated to match. No security advisories affected (`cargo deny check advisories` clean). picky-krb 0.12.5 remains held back for the same reason as 0.23.1/0.23.2: its `GssApiMessageError` variant breaks the pinned sspi 0.21.3, which does not match it exhaustively.
 
 ## [0.23.2] - 2026-10-06
 

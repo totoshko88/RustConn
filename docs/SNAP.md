@@ -3,11 +3,13 @@
 RustConn is available as a Snap package with **strict confinement** for enhanced security.
 Both `rustconn` (GUI) and `rustconn-cli` are included.
 
-> **Build platform:** the snap is built on **core26** (gnome-core26, Ubuntu 26.04
-> base) via the `gnome` extension, which provides GTK 4.22 and libadwaita 1.8.
-> As of 0.23.2 it ships the full libadwaita 1.8 widget tier (AdwSpinner,
-> AdwToggleGroup, AdwShortcutsDialog) — the same polish as the Flatpak — rather
-> than the earlier core24 / libadwaita 1.5 fallback widgets.
+> **Build platform:** the snap is built on **core24** (Ubuntu 24.04 base) via the
+> `gnome-46-2404` extension, which provides GTK 4.14 and libadwaita 1.5. It uses
+> the libadwaita 1.5 cfg-gated fallbacks rather than the full 1.8 widget tier the
+> Flatpak ships. A 0.23.2 migration to core26 (for libadwaita 1.8 parity) was
+> reverted in 0.23.3 because the snapcraft `gnome` extension still rejects
+> `base: core26`; revisit once a snapcraft release lists core26 among the gnome
+> extension's supported bases (snapcraft#6185, issue #174).
 
 ## Installation
 
