@@ -147,6 +147,12 @@ adw-1-7 = ["adw-1-6", "libadwaita/v1_7"]
 # Enable libadwaita 1.8+ widgets (AdwShortcutsDialog, AdwShortcutLabel)
 # Requires libadwaita >= 1.8 at build time (GNOME 49+ Flatpak runtime or Fedora 43+)
 adw-1-8 = ["adw-1-7", "libadwaita/v1_8"]
+# Enable libadwaita 1.10+ bindings. Pure version-ceiling bump: nothing in this
+# crate calls 1.10 API (same reasoning as the adw-1-9 note below). Added so the
+# packaging channels can select it when the installed libadwaita is >= 1.10
+# (GNOME 51), which clears the Homebrew/CI "newer than the highest known rung"
+# drift warning. libadwaita 0.9.2 exposes v1_10.
+adw-1-10 = ["adw-1-8", "libadwaita/v1_10"]
 
 # GTK4 baselines above the `v4_14` floor the workspace pins.
 #
@@ -164,6 +170,11 @@ adw-1-8 = ["adw-1-7", "libadwaita/v1_8"]
 gtk-4-18 = ["gtk4/v4_18"]
 gtk-4-20 = ["gtk-4-18", "gtk4/v4_20"]
 gtk-4-22 = ["gtk-4-20", "gtk4/v4_22"]
+# Version-ceiling bump to GTK 4.24 (GNOME 51). No 4.24-gated API is called; the
+# value is the wider deprecation-warning surface described above, and clearing the
+# Homebrew/CI drift warning once the installed GTK is >= 4.24. gtk4 0.11.5 exposes
+# v4_24.
+gtk-4-24 = ["gtk-4-22", "gtk4/v4_24"]
 
 # Deliberately absent: an `adw-1-9` feature. libadwaita 1.9 is what GNOME 50 ships
 # and RustConn already links against it there, but a cargo feature only widens the

@@ -15,6 +15,7 @@ use gtk4::{
 use libadwaita as adw;
 
 use super::ConnectionDialog;
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Index of the Custom Command entry in the Zero Trust provider dropdown.
@@ -138,8 +139,8 @@ impl ConnectionDialog {
         save_btn.set_tooltip_text(Some(&i18n("Create")));
         save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
         save_btn.add_css_class("suggested-action");
-        header.pack_start(&test_btn);
-        header.pack_start(&save_btn);
+        dialog_pack_action(&header, &test_btn);
+        dialog_pack_action(&header, &save_btn);
 
         (dialog, header, save_btn, test_btn)
     }

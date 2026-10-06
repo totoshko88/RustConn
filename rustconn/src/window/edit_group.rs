@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use super::MainWindow;
 use crate::alert;
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
@@ -48,7 +49,7 @@ pub fn show_edit_group_dialog(
     save_btn.set_tooltip_text(Some(&i18n("Save")));
     save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Save"))]);
     save_btn.add_css_class("suggested-action");
-    header.pack_start(&save_btn);
+    dialog_pack_action(&header, &save_btn);
 
     // Header shows title only — no switcher (consistent with connection dialog)
     header.set_title_widget(None::<&gtk4::Widget>);

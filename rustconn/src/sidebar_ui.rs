@@ -1156,8 +1156,12 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     // side off here is what lost the controls for start-side layouts.
     let header = adw::HeaderBar::new();
     // The split view already carries the window title on the content side; a
-    // short static title here just labels the panel.
-    header.set_title_widget(Some(&adw::WindowTitle::new(&i18n("Connections"), "")));
+    // short static title here just labels the panel. Tagged `sidebar-panel-title`
+    // so compact mode can collapse it by an exact class match rather than
+    // guessing the internal AdwWindowTitle node structure.
+    let sidebar_title = adw::WindowTitle::new(&i18n("Connections"), "");
+    sidebar_title.add_css_class("sidebar-panel-title");
+    header.set_title_widget(Some(&sidebar_title));
 
     // Search toggle (leading) — Nautilus/Settings pattern: the search row is
     // hidden behind an icon in the header and revealed on demand (click,

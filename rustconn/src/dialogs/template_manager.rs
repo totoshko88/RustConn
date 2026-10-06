@@ -15,6 +15,7 @@ use libadwaita as adw;
 use rustconn_core::models::{ConnectionTemplate, ProtocolType};
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Template manager dialog for listing and managing templates
@@ -47,7 +48,7 @@ impl TemplateManagerDialog {
         let add_btn = Button::from_icon_name("list-add-symbolic");
         add_btn.set_tooltip_text(Some(&i18n("New Template")));
         add_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("New Template"))]);
-        header.pack_start(&add_btn);
+        dialog_pack_action(&header, &add_btn);
 
         let clamp = adw::Clamp::builder()
             .maximum_size(600)

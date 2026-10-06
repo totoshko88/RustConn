@@ -40,9 +40,9 @@ rebuild without a commit here.
 
 | Flag | Enabled when |
 |------|--------------|
-| `adw-1-8` / `adw-1-7` / `adw-1-6` | `libadwaita-1` ≥ 1.8 / 1.7 / 1.6 |
-| `gtk-4-22` / `gtk-4-20` / `gtk-4-18` | `gtk4` ≥ 4.22 / 4.20 / 4.18 |
-| `vte-0-78` | `vte-2.91-gtk4` ≥ 0.78 |
+| `adw-1-10` / `adw-1-8` / `adw-1-7` / `adw-1-6` | `libadwaita-1` ≥ 1.10 / 1.8 / 1.7 / 1.6 |
+| `gtk-4-24` / `gtk-4-22` / `gtk-4-20` / `gtk-4-18` | `gtk4` ≥ 4.24 / 4.22 / 4.20 / 4.18 |
+| `vte-0-84` / `vte-0-78` | `vte-2.91-gtk4` ≥ 0.84 / 0.78 |
 | `web-embedded` | `webkitgtk-6.0` present |
 | (none of the above) | the workspace floor: GTK 4.14, libadwaita 1.5, VTE 0.76 |
 

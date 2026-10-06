@@ -13,6 +13,7 @@ use libadwaita as adw;
 use rustconn_core::models::ConnectionStatistics;
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Connection statistics dialog
@@ -39,7 +40,7 @@ impl StatisticsDialog {
         reset_btn.add_css_class("flat");
         reset_btn.set_tooltip_text(Some(&i18n("Reset Statistics")));
         reset_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Reset Statistics"))]);
-        header.pack_start(&reset_btn);
+        dialog_pack_action(&header, &reset_btn);
 
         // Scrolled content with clamp
         let scrolled = ScrolledWindow::builder()

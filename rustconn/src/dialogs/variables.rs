@@ -21,6 +21,7 @@ use rustconn_core::config::AppSettings;
 use rustconn_core::variables::Variable;
 
 use super::VariablesCallback;
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Shared settings reference for variable rows
@@ -76,7 +77,7 @@ impl VariablesDialog {
         let add_header_btn = Button::from_icon_name("list-add-symbolic");
         add_header_btn.set_tooltip_text(Some(&i18n("Add Variable")));
         add_header_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Add Variable"))]);
-        header.pack_start(&add_header_btn);
+        dialog_pack_action(&header, &add_header_btn);
 
         // Create main content area with clamp
         let clamp = adw::Clamp::builder()

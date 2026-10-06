@@ -26,6 +26,7 @@ use rustconn_core::cli_download::{
 use rustconn_core::is_sandboxed;
 
 use crate::async_utils::spawn_async;
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Dialog for managing Flatpak components
@@ -119,7 +120,7 @@ impl FlatpakComponentsDialog {
                 }
             }
         });
-        header.pack_start(&refresh_btn);
+        dialog_pack_action(&header, &refresh_btn);
 
         header
     }

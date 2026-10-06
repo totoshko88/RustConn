@@ -26,6 +26,7 @@ use rustconn_core::models::{
 };
 use rustconn_core::variables::Variable;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::{i18n, i18n_f};
 
 /// Callback type for export dialog completion
@@ -101,7 +102,7 @@ impl ExportDialog {
         export_button.set_tooltip_text(Some(&i18n("Export")));
         export_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Export"))]);
         export_button.add_css_class("suggested-action");
-        header.pack_start(&export_button);
+        dialog_pack_action(&header, &export_button);
 
         // Create main content area
         let content = GtkBox::new(Orientation::Vertical, 0);

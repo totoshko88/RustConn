@@ -20,6 +20,7 @@ use gtk4::{
 use libadwaita as adw;
 use rustconn_core::session::recording::{RecordingEntry, RecordingManager, default_recordings_dir};
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 // ---------------------------------------------------------------------------
@@ -95,7 +96,7 @@ impl RecordingsDialog {
             .tooltip_text(i18n("Import recording"))
             .build();
         import_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Import recording"))]);
-        header.pack_start(&import_btn);
+        dialog_pack_action(&header, &import_btn);
 
         // Main content box
         let content = GtkBox::new(Orientation::Vertical, 0);

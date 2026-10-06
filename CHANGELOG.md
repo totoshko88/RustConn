@@ -5,6 +5,15 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.2] - 2026-10-06
+
+### Changed
+- **Compact mode density overhaul** — in compact mode the sidebar title ("Connections") is now hidden, header bars shrink from 32 px to 28 px, toolbar buttons from 24 px to 20 px, tab items from 28 px to 24 px (with a proportionally smaller font), sidebar rows from 28 px to 24 px, the search entry from 32 px to 28 px (inner from 26 px to 22 px), popover items from 26 px to 22 px (with a smaller font), the monitoring bar from 22 px to 18 px, and embedded toolbar buttons from 24 px to 20 px. The bottom-bar icon float is fixed by adding explicit box margins and a reduced bar height. Two sidebar header buttons (search, menu) retain their Rust `set_size_request` floor (28 px on macOS, 44 px on Linux) and are not affected by these CSS changes.
+- **macOS dialog button placement** — on macOS, action buttons (Save, Test, Create, Export, Import, Apply, etc.) in all custom dialog headers are now placed on the right side (`pack_end`) away from the window-close button on the left, reducing the risk of accidentally closing a dialog instead of confirming an action. A new `dialog_pack_action()` helper in `dialogs/widgets.rs` centralises the platform check (`#[cfg(target_os = "macos")]`). Cancel-only buttons (credential transfer, SSH agent, portable passphrase change) are intentionally left on the start side. 19 files, 21 call sites updated.
+
+### Dependencies
+- **Feature ladder raised** — added `adw-1-10` and `gtk-4-24` rungs to `Cargo.toml` features (pure version-ceiling bumps; the crate does not call any 1.10- or 4.24-specific API). The Homebrew formula, CI release workflow, OBS `debian.rules`, OBS `README.md`, and all three Flatpak manifests are updated to match. Flatpak runtime bumped from GNOME 50 to GNOME 51; bundled VTE raised from 0.80.5 to 0.84.1 (the `< 0.81` ceiling is removed). The `macos-build.sh` feature set now includes `adw-1-10,gtk-4-24`.
+
 ## [0.23.1] - 2026-10-06
 
 ### Added

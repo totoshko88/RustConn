@@ -29,6 +29,7 @@ use rustconn_core::models::{
 };
 use uuid::Uuid;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Callback type for template dialog
@@ -143,7 +144,7 @@ impl TemplateDialog {
         save_btn.set_tooltip_text(Some(&i18n("Create")));
         save_btn.update_property(&[gtk4::accessible::Property::Label(&i18n("Create"))]);
         save_btn.add_css_class("suggested-action");
-        header.pack_start(&save_btn);
+        dialog_pack_action(&header, &save_btn);
 
         // Create ViewStack for tabs (libadwaita style)
         let view_stack = adw::ViewStack::new();

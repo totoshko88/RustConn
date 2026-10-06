@@ -14,7 +14,7 @@ use rustconn_core::ProtocolType;
 use rustconn_core::models::{ConnectionGroup, SmartFolder};
 use uuid::Uuid;
 
-use crate::dialogs::widgets::{DropdownRowBuilder, EntryRowBuilder};
+use crate::dialogs::widgets::{DropdownRowBuilder, EntryRowBuilder, dialog_pack_action};
 use crate::i18n::i18n;
 
 /// Callback type for smart folder dialog results.
@@ -89,7 +89,7 @@ impl SmartFolderDialog {
             btn
         };
         save_btn.add_css_class("suggested-action");
-        header.pack_start(&save_btn);
+        dialog_pack_action(&header, &save_btn);
 
         // Content with clamp (no scroll needed — content fits naturally)
         let clamp = adw::Clamp::builder()

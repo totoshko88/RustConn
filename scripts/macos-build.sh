@@ -16,7 +16,7 @@ cd "$PROJECT_DIR"
 
 APP_DIR="$PROJECT_DIR/dist/RustConn.app"
 BUNDLE_ID="io.github.totoshko88.RustConn"
-MACOS_FEATURES="tray-macos,system-keyring,vnc-embedded,rdp-embedded,gfx-h264,rdp-audio,rd-gateway,adw-1-8"
+MACOS_FEATURES="tray-macos,system-keyring,vnc-embedded,rdp-embedded,gfx-h264,rdp-audio,rd-gateway,adw-1-10,gtk-4-24"
 ENTITLEMENTS="$PROJECT_DIR/packaging/macos/RustConn.entitlements"
 ICON_SVG="$PROJECT_DIR/rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"
 VERSION="$(awk -F'"' '/^\[workspace\.package\]/{p=1} p&&/^version[[:space:]]*=/{print $2; exit}' Cargo.toml)"

@@ -1,6 +1,6 @@
 app-id: io.github.totoshko88.RustConn
 runtime: org.gnome.Platform
-runtime-version: '50'
+runtime-version: '51'
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
@@ -84,18 +84,14 @@ modules:
       - -Ddocs=false
     sources:
       - type: archive
-        url: https://download.gnome.org/sources/vte/0.80/vte-0.80.5.tar.xz
-        sha256: 58a4e00ab5d4a95b4be4dc57b48308deafd72d6839dbbd076648fa353321cc41
-        # Ceiling deliberate but unexplained until 0.21.0; the evidence, and the
-        # steps to lift it, are recorded once in
-        # packaging/flatpak/io.github.totoshko88.RustConn.yml rather than three
-        # times here.
+        url: https://download.gnome.org/sources/vte/0.84/vte-0.84.1.tar.xz
+        sha256: aca1caa8478aebcdbb1d67897fb3511eb7601debae6810e16a15b6fa25f31ac8
+        # Ceiling lifted in 0.23.2 — see the evidence in
+        # packaging/flatpak/io.github.totoshko88.RustConn.yml.
         x-checker-data:
           type: gnome
           name: vte
           stable-only: true
-          versions:
-            <: '0.81.0'
 
   - name: inetutils
     buildsystem: autotools
@@ -341,8 +337,9 @@ modules:
       - if [ -f cargo/config ]; then mv cargo/config cargo/config.toml; fi
       # Keep in sync with the Flathub manifest, which carries the reasoning for
       # each of the three: GTK 4.22.4 and libadwaita 1.9.3 come from the GNOME 50
-      # runtime, VTE 0.78+ from the bundled 0.80.5 module above.
-      - CC=/app/bin/cc-wrap cargo build --release -p rustconn --features 'adw-1-8,vte-0-78,gtk-4-22'
+      # Features the GNOME 51 runtime backs. VTE comes from the bundled 0.84.1
+      # module above; libadwaita and GTK come from the runtime.
+      - CC=/app/bin/cc-wrap cargo build --release -p rustconn --features 'adw-1-10,vte-0-84,gtk-4-24'
       - CC=/app/bin/cc-wrap cargo build --release -p rustconn-cli --features full
       - install -Dm755 target/release/rustconn /app/bin/rustconn
       - install -Dm755 target/release/rustconn-cli /app/bin/rustconn-cli

@@ -66,7 +66,9 @@ override_dh_auto_build:
 	# Highest match wins, so each ladder is ordered newest-first.
 	ADW_VERSION=$$(pkg-config --modversion libadwaita-1 2>/dev/null); \
 	ADW_FEATURES=""; \
-	if pkg-config --atleast-version=1.8 libadwaita-1 2>/dev/null; then \
+	if pkg-config --atleast-version=1.10 libadwaita-1 2>/dev/null; then \
+		ADW_FEATURES="--features adw-1-10"; \
+	elif pkg-config --atleast-version=1.8 libadwaita-1 2>/dev/null; then \
 		ADW_FEATURES="--features adw-1-8"; \
 	elif pkg-config --atleast-version=1.7 libadwaita-1 2>/dev/null; then \
 		ADW_FEATURES="--features adw-1-7"; \
@@ -79,12 +81,16 @@ override_dh_auto_build:
 	fi; \
 	VTE_VERSION=$$(pkg-config --modversion vte-2.91-gtk4 2>/dev/null); \
 	VTE_FEATURES=""; \
-	if pkg-config --atleast-version=0.78 vte-2.91-gtk4 2>/dev/null; then \
+	if pkg-config --atleast-version=0.84 vte-2.91-gtk4 2>/dev/null; then \
+		VTE_FEATURES=",vte-0-84"; \
+	elif pkg-config --atleast-version=0.78 vte-2.91-gtk4 2>/dev/null; then \
 		VTE_FEATURES=",vte-0-78"; \
 	fi; \
 	GTK_VERSION=$$(pkg-config --modversion gtk4 2>/dev/null); \
 	GTK_FEATURES=""; \
-	if pkg-config --atleast-version=4.22 gtk4 2>/dev/null; then \
+	if pkg-config --atleast-version=4.24 gtk4 2>/dev/null; then \
+		GTK_FEATURES=",gtk-4-24"; \
+	elif pkg-config --atleast-version=4.22 gtk4 2>/dev/null; then \
 		GTK_FEATURES=",gtk-4-22"; \
 	elif pkg-config --atleast-version=4.20 gtk4 2>/dev/null; then \
 		GTK_FEATURES=",gtk-4-20"; \

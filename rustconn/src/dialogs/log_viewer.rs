@@ -14,6 +14,7 @@ use gtk4::{
 };
 use libadwaita as adw;
 
+use crate::dialogs::widgets::dialog_pack_action;
 use crate::i18n::i18n;
 
 /// Log viewer dialog for browsing and viewing session logs
@@ -139,7 +140,7 @@ impl LogViewerDialog {
         refresh_btn.set_tooltip_text(Some(&i18n("Refresh log list")));
         refresh_btn
             .update_property(&[gtk4::accessible::Property::Label(&i18n("Refresh log list"))]);
-        header.pack_start(&refresh_btn);
+        dialog_pack_action(&header, &refresh_btn);
 
         let split = adw::OverlaySplitView::builder()
             .min_sidebar_width(200.0)
@@ -166,7 +167,7 @@ impl LogViewerDialog {
             .bind_property("collapsed", &sidebar_toggle, "visible")
             .sync_create()
             .build();
-        header.pack_start(&sidebar_toggle);
+        dialog_pack_action(&header, &sidebar_toggle);
 
         let toolbar_view = adw::ToolbarView::new();
         toolbar_view.add_top_bar(&header);
