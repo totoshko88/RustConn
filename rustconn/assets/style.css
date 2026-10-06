@@ -1092,20 +1092,22 @@ window.macos list.boxed-list row image {
  *     tabbar .box { box-shadow: inset 0 -1px var(--headerbar-shade-color); }
  * — a DESCENDANT selector (`tabbar .box`, not `tabbar > .box`) and a
  * bottom-edge INSET box-shadow, not a border. We override exactly that: repaint
- * the box in the window tone and remove the shade so the seam disappears, with
- * the same specificity libadwaita uses. The `prefers-contrast: more` media
- * query re-adds the shadow from --headerbar-border-color, so it is neutralised
- * there too, otherwise a high-contrast session keeps the line. The tabs keep
- * their own selected/hover/focus states — only the dividing line under the
- * whole bar goes. --window-bg-color is the libadwaita 1.8 custom-property form
- * of @window_bg_color, so it still follows light/dark and any theme pack. */
-tabbar .box {
+ * the box in the window tone and remove the shade so the seam disappears.
+ *
+ * libadwaita re-adds that shadow under `prefers-contrast: more` (from
+ * --headerbar-border-color), so a bare `tabbar .box` override — equal
+ * specificity (0,2,0) to libadwaita's — loses to it in a high-contrast session
+ * and the seam comes back. The previous fix neutralised that with a matching
+ * `@media (prefers-contrast: more)` block, but GTK < 4.22 has no @media support
+ * and rejects the whole rule as an "Unknown @ rule" (GTK 4.14 on the CI runner
+ * and on Ubuntu 24.04). Instead we out-specify libadwaita unconditionally:
+ * `window tabbar .box` is (0,2,1) > (0,2,0), so our `box-shadow: none` wins in
+ * normal AND high-contrast with no @media, parsing cleanly on every GTK ≥ 4.14.
+ * The tabs keep their own selected/hover/focus states — only the dividing line
+ * under the whole bar goes. --window-bg-color is the libadwaita 1.8
+ * custom-property form of @window_bg_color, so it still follows light/dark and
+ * any theme pack. */
+window tabbar .box {
     background-color: @window_bg_color;
     box-shadow: none;
-}
-
-@media (prefers-contrast: more) {
-    tabbar .box {
-        box-shadow: none;
-    }
 }
