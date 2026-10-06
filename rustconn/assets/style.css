@@ -184,6 +184,37 @@
     opacity: 0.6;
 }
 
+/* Icon-only header buttons (content header: sidebar-toggle, menu, settings,
+ * split-H, split-V; sidebar header: search, menu). GNOME HIG Pointer & Touch
+ * wants a 44×44px minimum tap target. This floor used to be a Rust
+ * `set_size_request(44,44)`, but a size request is a hard floor CSS cannot
+ * cross, which left the compact header-bar rules dead on Linux. As a CSS
+ * min-size the 44px floor still holds, and the compact-manual rule below can
+ * lower it. */
+.header-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* macOS has no touch tap-target requirement here, so its header buttons match
+ * the 28px the macOS header already uses (parity with the old
+ * HEADER_BUTTON_SIZE macOS value). */
+window.macos .header-icon-button {
+    min-width: 28px;
+    min-height: 28px;
+}
+
+/* DELIBERATE compact only (the user turned compact on via toggle/menu/shortcut,
+ * not auto-compact from a small window): trade the 44px tap target down to 28px
+ * for a denser header. Auto-compact (which may be a tablet/touch convertible)
+ * keeps the full 44px — it carries `.compact` but NOT `.compact-manual`
+ * (app.rs::set_window_compact). This is what finally lets compact actually
+ * shrink the header bar on Linux. */
+window.compact-manual .header-icon-button {
+    min-width: 28px;
+    min-height: 28px;
+}
+
 /* Bulk action buttons (group operations mode) — symbolic icon buttons that
  * also carry `.pill` (see create_bulk_actions_bar); this rule only trims them
  * to toolbar size and keeps the round shape. */
@@ -836,6 +867,56 @@ window.compact .sidebar toolbarview > .bottom-bar button {
     margin-bottom: 0;
 }
 
+/* Compact: AdwToolbarView wraps its bottom bar in a GtkRevealer, and libadwaita
+ * puts the `.bottom-bar` style class on the inner GtkWindowHandle — so the
+ * `.bottom-bar` rules above collapse the handle but NEVER reach the enclosing
+ * revealer, whose own themed min-height stayed reserved as an empty strip below
+ * the sidebar's bottom icon row (visible only in compact). Collapse the revealer
+ * itself so it sizes to the already-shrunk bar inside it. The icons live in the
+ * handle INSIDE this revealer (min-height:0 drops the floor, it does not clip
+ * them) and the GtkWindowHandle is untouched, so bottom-bar window-dragging still
+ * works. Gated on window.compact only — not platform-specific — because the strip
+ * is wrong only in compact. */
+window.compact .sidebar toolbarview > revealer {
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Compact: the bulk-actions bar (revealed in group-ops mode) kept its full
+ * size while the rest of the sidebar slimmed down. The revealer itself
+ * collapses cleanly when hidden (no reserved-height trap), but when revealed
+ * the inner bar's Rust-set 6px margins and the base `.bulk-action` pill
+ * metrics (24px, 4px 6px padding) left it visibly taller than the compact
+ * list below it. Slim the bar's margins and its pills to match compact
+ * density. A CSS margin overrides the Box's Rust-set margin. */
+window.compact .bulk-actions-bar {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+window.compact .bulk-action {
+    min-height: 20px;
+    min-width: 20px;
+    padding: 1px 4px;
+}
+
+/* Compact: welcome-screen rows. adw::ActionRow has a ~56px default height from
+ * the padding around its title/prefix. The `window.macos` block already slims
+ * these; compact had no counterpart, so the Welcome tab — the surface that most
+ * needs vertical savings on the small screens compact targets — stayed full
+ * height while the header, tabs and sidebar shrank. Mirror the macOS rule. */
+window.compact list.boxed-list row .header {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 28px;
+}
+
+window.compact list.boxed-list row image {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
 /* Popover menu items — compact is about SPACING, so collapse the vertical
  * padding (GTK4 modelbutton carries ~10-12px theme padding, which is the real
  * "tall menu" gap) while leaving the font size at normal. */
@@ -897,13 +978,15 @@ window.compact .monitoring-bar {
     margin-right: 4px;
 }
 
-/* NOTE: Do NOT set `min-height` on `banner`. The two AdwBanners
- * (sync/secret) are always present but collapsed (revealed = false) by
- * default. A `min-height` on the banner node forces GTK to allocate that
- * height even while the banner is hidden, producing a ~56px phantom band
- * (2 banners × 28px) below the header — which looks like a tripled header.
+/* NOTE: Do NOT set `min-height` on `banner`. The FIVE AdwBanners
+ * (config, sync, secret, touch, group-broadcast — all added as content
+ * top-bars in window/mod.rs) are always present but collapsed (revealed =
+ * false) by default. A `min-height` on the banner node forces GTK to allocate
+ * that height even while the banner is hidden, producing a phantom band
+ * (5 banners × 28px) below the header — which looks like a multiplied header.
  * A revealed banner already sizes to its content, so no compact rule is
- * needed here. */
+ * needed here. AdwBanner collapses via its own internal GtkRevealer, so the
+ * revealer-min-height trap fixed for the sidebar bottom bar does not apply. */
 
 /* Split panel margins — tighter in compact mode for more content area */
 window.compact .split-panel {

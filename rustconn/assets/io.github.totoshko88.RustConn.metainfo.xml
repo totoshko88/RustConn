@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.3" date="2026-10-07">
+      <description>
+        <p>Version 0.23.3 - a compact-mode fix round plus a robust external-FreeRDP version probe:</p>
+        <ul>
+          <li>Fixed: compact mode now actually shrinks the header bar on Linux - the 44 px tap-target floor moved from a Rust set_size_request to a CSS class, and a deliberate compact lowers it to 28 px (auto-compact keeps the 44 px touch target)</li>
+          <li>Fixed: compact-mode density made consistent for the Welcome rows, the sidebar bulk-actions bar and the banner note</li>
+          <li>Fixed: external FreeRDP no longer exits 255 after an embedded-client hand-off - the version probe timeout is raised to 5 s and a failed probe is no longer cached as unknown for the whole process</li>
+          <li>Fixed: the empty strip below the sidebar's bottom toolbar in compact mode is collapsed</li>
+          <li>Changed: the informational macOS Homebrew CI build is fixed and false-positive CI annotations are silenced (all non-gating)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.2" date="2026-10-06">
       <description>
         <p>Version 0.23.2 - high-contrast tab-bar fix, a compact-mode density overhaul, and macOS dialog button placement:</p>

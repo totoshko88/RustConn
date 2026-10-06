@@ -200,17 +200,26 @@ pub fn create_header_bar() -> (
     header_bar.pack_end(&passthrough_indicator);
 
     // GNOME HIG (Pointer & Touch): icon-only buttons must meet the 44×44px
-    // minimum tap target (28px on macOS — see `HEADER_BUTTON_SIZE`). Buttons
-    // with a text label (Shell, Broadcast, Passthrough) already exceed it via
-    // their content. The sidebar header uses the same constant, so both bars
-    // come out the same height.
-    let header_button_size = crate::sidebar_ui::HEADER_BUTTON_SIZE;
-
-    sidebar_toggle.set_size_request(header_button_size, header_button_size);
-    menu_button.set_size_request(header_button_size, header_button_size);
-    settings_button.set_size_request(header_button_size, header_button_size);
-    split_horizontal_button.set_size_request(header_button_size, header_button_size);
-    split_vertical_button.set_size_request(header_button_size, header_button_size);
+    // minimum tap target (28px on macOS). Buttons with a text label (Shell,
+    // Broadcast, Passthrough) already exceed it via their content. The sidebar
+    // header uses the same `.header-icon-button` class, so both bars come out
+    // the same height.
+    //
+    // The floor is applied as the `.header-icon-button` CSS class instead of a
+    // Rust `set_size_request`: a size request is a hard floor CSS cannot cross,
+    // which left the compact header-bar rules dead on Linux (the header kept its
+    // 44px height). As a CSS min-size the 44px floor still holds everywhere, but
+    // `window.compact-manual .header-icon-button` can lower it to 28px when the
+    // user deliberately asks for compact density (app.rs::set_window_compact).
+    for button in [
+        &sidebar_toggle,
+        &settings_button,
+        &split_horizontal_button,
+        &split_vertical_button,
+    ] {
+        button.add_css_class("header-icon-button");
+    }
+    menu_button.add_css_class("header-icon-button");
 
     (
         header_bar,

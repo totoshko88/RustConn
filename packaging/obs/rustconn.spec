@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.2
+Version:        0.23.3
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,14 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Oct 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.3-0
+- Version bump to 0.23.3
+- Fixed: compact mode now actually shrinks the header bar on Linux - the 44 px tap-target floor moved from a Rust set_size_request to a CSS class, and a deliberate compact lowers it to 28 px (auto-compact keeps the 44 px target)
+- Fixed: compact-mode density made consistent for the Welcome rows, the sidebar bulk-actions bar and the banner note
+- Fixed: external FreeRDP no longer exits 255 after an embedded-client hand-off - the version probe timeout is raised to 5 s and a failed probe is no longer cached as unknown for the whole process
+- Fixed: the empty strip below the sidebar's bottom toolbar in compact mode is collapsed
+- Changed: the informational macOS Homebrew CI build is fixed and false-positive CI annotations are silenced (all non-gating)
+
 * Tue Oct 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.2-0
 - Version bump to 0.23.2
 - Fixed: the high-contrast tab-bar divider is neutralised on GTK < 4.22 too - the override now out-specifies libadwaita with a window tabbar .box selector instead of a prefers-contrast media query that old GTK rejected

@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.23.2** | Last updated: October 2026
+**Version 0.23.3** | Last updated: October 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
