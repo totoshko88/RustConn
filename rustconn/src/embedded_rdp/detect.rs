@@ -19,7 +19,14 @@ use rustconn_core::protocol::{
 };
 
 /// Maximum time allowed for a FreeRDP `--version` process.
-const VERSION_PROBE_TIMEOUT: Duration = Duration::from_secs(2);
+///
+/// Raised from 2s: under load, or when the probe is relayed out of a Flatpak
+/// sandbox through `flatpak-spawn --host`, `--version` can take several seconds
+/// to print its banner. A probe that times out returns no version, and a
+/// client whose version is unknown is then trusted or refused by name alone —
+/// the gap that launched a FreeRDP 2 with a command line it rejects (exit 255).
+/// 5s keeps the probe bounded while giving a slow but healthy client room.
+const VERSION_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 /// Maximum time allowed for one `which` process during binary detection.
 const BINARY_DETECTION_TIMEOUT: Duration = Duration::from_millis(500);
 /// Maximum time allowed to reap a probe after sending it a kill request.
@@ -37,7 +44,8 @@ const EMBEDDED_FREERDP_CLIENTS: &[&str] = &["wlfreerdp3", "wlfreerdp"];
 /// The FreeRDP clients that can host a RemoteApp (RAIL) session, preferred first.
 const REMOTEAPP_FREERDP_CLIENTS: &[&str] = &["xfreerdp3", "xfreerdp"];
 
-/// Includes failed probes. Exact keys distinguish host and sandbox targets.
+/// Only successfully-read versions are cached; a failed probe is left uncached
+/// so a later attempt can re-probe. Exact keys distinguish host and sandbox targets.
 static VERSION_CACHE: OnceLock<Mutex<HashMap<String, Option<FreeRdpVersion>>>> = OnceLock::new();
 
 fn is_cancelled(cancellation: Option<&AtomicBool>) -> bool {
@@ -192,10 +200,20 @@ fn freerdp_version_with_cancel(
     if is_cancelled(cancellation) {
         return None;
     }
-    cache
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .insert(binary.to_string(), version);
+    // Cache a version that was actually READ, never a `None`. A `None` means the
+    // probe timed out, could not start, or printed no parseable banner — all
+    // transient or load-sensitive conditions. Caching it would poison every
+    // later probe of this binary for the whole process lifetime, so a client
+    // whose first probe was starved stays "version unknown" forever and is then
+    // trusted/refused purely by name. Leaving `None` uncached lets the next
+    // attempt re-probe, which is cheap relative to launching the wrong FreeRDP
+    // (issue: external FreeRDP exit 255 after an IronRDP hand-off).
+    if let Some(read) = version {
+        cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(binary.to_string(), Some(read));
+    }
     tracing::debug!(
         protocol = "rdp",
         binary,

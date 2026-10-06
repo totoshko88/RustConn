@@ -110,12 +110,34 @@ fn parse_version_token(token: &str) -> Option<FreeRdpVersion> {
 /// are FreeRDP 3 by construction. An unsuffixed `xfreerdp` or `wlfreerdp` is
 /// FreeRDP 2 on Debian and Ubuntu, so without a version it is refused rather
 /// than handed a command line it may reject, which is the failure this rule
-/// exists to stop. `binary` may carry a `host:` marker or be a full path; only
-/// its file name counts.
+/// exists to stop.
+///
+/// Trusting a `3`-suffixed name without a version is NOT free of risk: on
+/// Debian and Ubuntu `xfreerdp3`/`wlfreerdp3` are alternatives that can point
+/// at a FreeRDP **2** build, which then rejects the `/args-from:` command line
+/// and exits 255. We keep the trust (refusing it would turn a slow-but-healthy
+/// FreeRDP 3 probe into a spurious "install FreeRDP 3" error) but the caller
+/// should make the probe reliable first — the real guard is not caching a
+/// failed probe and giving `--version` enough time — and log the name-only
+/// launch so this path is visible in a bug report. `binary` may carry a
+/// `host:` marker or be a full path; only its file name counts.
 #[must_use]
 pub fn is_supported_freerdp_client(binary: &str, version: Option<FreeRdpVersion>) -> bool {
     version.map_or_else(
-        || freerdp_file_name(binary).ends_with('3'),
+        || {
+            let trusted_by_name = freerdp_file_name(binary).ends_with('3');
+            if trusted_by_name {
+                tracing::warn!(
+                    protocol = "rdp",
+                    binary,
+                    "FreeRDP version could not be read; trusting the '3'-suffixed \
+                     name as FreeRDP 3. If this is a FreeRDP 2 behind the name \
+                     (Debian/Ubuntu alternatives), the external client will exit \
+                     255 — install a real FreeRDP 3 or set an explicit client."
+                );
+            }
+            trusted_by_name
+        },
         FreeRdpVersion::is_supported,
     )
 }
