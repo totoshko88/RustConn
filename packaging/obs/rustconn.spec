@@ -399,6 +399,7 @@ done
 - Added: opt-in directional tab-close items (Close to the Left/Right) behind a Settings switch, off by default
 - Changed: the tab context menu is lighter - the Copy block moved to the sidebar menu, and Monitor is now a submenu of radio modes
 - Changed: the tab bar's divider is painted in the window background tone so the bar reads as part of the window
+- Changed: New Connection, New Group, the Tools managers and Import/Export are back in the sidebar menu (beside the list they act on), not only in the main menu
 - Dependencies: spki 0.8.0 -> 0.8.1, zerocopy 0.8.59 -> 0.8.60 (picky-krb held at 0.12.4: 0.12.5 breaks pinned sspi)
 
 * Mon Oct 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.0-0
