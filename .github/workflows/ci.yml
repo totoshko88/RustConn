@@ -703,23 +703,33 @@ jobs:
       - name: Build from source (informational)
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
-        # Install through a real local tap, not a bare file or a loose Formula/
-        # dir. Modern Homebrew removed `brew install ./file.rb`: it rejects any
-        # formula not inside a registered tap ("requires formulae to be in a
-        # tap"), and a tap is a git repo under Library/Taps, not just a folder
-        # named Formula/ — so an earlier attempt that only copied the file into
-        # a Formula/ subdir still tripped the same error, red even behind
-        # continue-on-error and masking real annotations. `brew tap-new` creates
-        # that repo; we drop the formula in (with the dummy sha the style step
-        # already uses, since the real sha256 stays PLACEHOLDER until release.yml
-        # patches it) and install it by its tap-qualified name.
+        # Install through a real local tap with the real tarball hash. Two traps
+        # had to be cleared, both of which showed up as red annotations on this
+        # otherwise-green (continue-on-error) job and masked real ones:
+        #   1. Modern Homebrew removed `brew install ./file.rb` — it rejects any
+        #      formula not inside a registered tap ("requires formulae to be in a
+        #      tap"), and a tap is a git repo under Library/Taps, not just a dir
+        #      named Formula/. `brew tap-new` creates that repo.
+        #   2. The in-tree formula carries sha256 "PLACEHOLDER_SHA256" (release.yml
+        #      patches it only at release time). `--build-from-source` still
+        #      downloads the tarball named by `url` and verifies its hash, so a
+        #      placeholder or a dummy makes brew abort with "different checksum".
+        #      We compute the real hash of that tarball and substitute it, the
+        #      same thing release.yml's own `sha` step does. The url points at a
+        #      published tag; if that tag's tarball is not reachable (e.g. on a PR
+        #      before any release), skip rather than fail — this step is advisory.
         run: |
           set -uo pipefail
+          url="$(awk -F'"' '/^  url /{print $2; exit}' packaging/macos/rustconn.rb)"
+          if ! curl --retry 3 --retry-all-errors -fsSL "$url" -o source.tar.gz; then
+            echo "::notice::formula tarball not reachable ($url) — skipping informational build"
+            exit 0
+          fi
+          real_sha="$(shasum -a 256 source.tar.gz | cut -d' ' -f1)"
           brew tap-new local/rustconn
           tap_dir="$(brew --repository local/rustconn)/Formula"
           mkdir -p "$tap_dir"
-          dummy_sha="$(shasum -a 256 packaging/macos/rustconn.rb | cut -d' ' -f1)"
-          sed "s|^\(  sha256 \"\)PLACEHOLDER_SHA256\(\".*\)|\1${dummy_sha}\2|" \
+          sed "s|^\(  sha256 \"\)PLACEHOLDER_SHA256\(\".*\)|\1${real_sha}\2|" \
               packaging/macos/rustconn.rb > "$tap_dir/rustconn.rb"
           brew install --build-from-source --verbose local/rustconn/rustconn
 
