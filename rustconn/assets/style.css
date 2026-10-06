@@ -852,6 +852,40 @@ window.compact .sidebar toolbarview > revealer {
     padding-bottom: 0;
 }
 
+/* Compact: the bulk-actions bar (revealed in group-ops mode) kept its full
+ * size while the rest of the sidebar slimmed down. The revealer itself
+ * collapses cleanly when hidden (no reserved-height trap), but when revealed
+ * the inner bar's Rust-set 6px margins and the base `.bulk-action` pill
+ * metrics (24px, 4px 6px padding) left it visibly taller than the compact
+ * list below it. Slim the bar's margins and its pills to match compact
+ * density. A CSS margin overrides the Box's Rust-set margin. */
+window.compact .bulk-actions-bar {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+window.compact .bulk-action {
+    min-height: 20px;
+    min-width: 20px;
+    padding: 1px 4px;
+}
+
+/* Compact: welcome-screen rows. adw::ActionRow has a ~56px default height from
+ * the padding around its title/prefix. The `window.macos` block already slims
+ * these; compact had no counterpart, so the Welcome tab — the surface that most
+ * needs vertical savings on the small screens compact targets — stayed full
+ * height while the header, tabs and sidebar shrank. Mirror the macOS rule. */
+window.compact list.boxed-list row .header {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 28px;
+}
+
+window.compact list.boxed-list row image {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
 /* Popover menu items — compact is about SPACING, so collapse the vertical
  * padding (GTK4 modelbutton carries ~10-12px theme padding, which is the real
  * "tall menu" gap) while leaving the font size at normal. */
@@ -913,13 +947,15 @@ window.compact .monitoring-bar {
     margin-right: 4px;
 }
 
-/* NOTE: Do NOT set `min-height` on `banner`. The two AdwBanners
- * (sync/secret) are always present but collapsed (revealed = false) by
- * default. A `min-height` on the banner node forces GTK to allocate that
- * height even while the banner is hidden, producing a ~56px phantom band
- * (2 banners × 28px) below the header — which looks like a tripled header.
+/* NOTE: Do NOT set `min-height` on `banner`. The FIVE AdwBanners
+ * (config, sync, secret, touch, group-broadcast — all added as content
+ * top-bars in window/mod.rs) are always present but collapsed (revealed =
+ * false) by default. A `min-height` on the banner node forces GTK to allocate
+ * that height even while the banner is hidden, producing a phantom band
+ * (5 banners × 28px) below the header — which looks like a multiplied header.
  * A revealed banner already sizes to its content, so no compact rule is
- * needed here. */
+ * needed here. AdwBanner collapses via its own internal GtkRevealer, so the
+ * revealer-min-height trap fixed for the sidebar bottom bar does not apply. */
 
 /* Split panel margins — tighter in compact mode for more content area */
 window.compact .split-panel {
