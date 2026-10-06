@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Snap build reverted from core26 back to core24** — the 0.23.2 snap migration to `base: core26` (for libadwaita 1.8 parity) never built: the snapcraft `gnome` extension, which provides the whole GTK4 platform, still rejects `base: core26` even on current stable Snapcraft 9.1.3 (`Extension 'gnome' does not support base: 'core26'`). Snapcraft 9.0 added the core26 *base*, but not core26 support in the *gnome extension*, so the published 0.23.2 release notes' "Snap migrated to the core26 base" claim could not hold. The snap returns to `base: core24` + the `gnome-46-2404` platform and drops `--features adw-1-8` (back to the libadwaita 1.5 cfg-gated fallbacks), the last known-good configuration. The Flatpak keeps its GNOME 51 / libadwaita 1.8 build; only the Snap is affected. Revisit once a snapcraft release lists core26 among the gnome extension's supported bases (snapcraft#6185, issue #174).
+
+### Changed
+- **CI: informational macOS Homebrew build fixed, and false-positive CI annotations silenced** — the advisory `Build from source` step now installs the formula through a real local tap with the published tarball's real SHA-256 (a bare-path install is rejected by modern Homebrew, and a placeholder hash fails the download check); the advisory semver job clears its stale baseline-checkout cache to stop ~20 spurious `ENOENT` annotations; and `taiki-e/install-action` is bumped to v2.87.25 so `cargo-semver-checks` installs from a prebuilt instead of a slow binstall fallback. All three jobs are non-gating; this only removes red annotations that masked real ones.
+
 ## [0.23.2] - 2026-10-06
 
 ### Fixed
