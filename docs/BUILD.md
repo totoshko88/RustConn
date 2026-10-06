@@ -109,8 +109,9 @@ cargo build --release      # release, all crates
 | `adw-1-7` | — | libadwaita 1.7+ (AdwWrapBox); enables `adw-1-6` |
 | `adw-1-8` | — | libadwaita 1.8+ (AdwShortcutsDialog); enables `adw-1-7` |
 
-The default build targets **libadwaita 1.5**, which is what Ubuntu 24.04 and the
-snap's `core24` platform ship. The `adw-1-*` flags each raise the required
+The default build targets **libadwaita 1.5** (the workspace floor, e.g.
+Ubuntu 24.04 LTS). The snap now builds on **core26** (gnome-core26 ships
+libadwaita 1.8) with `adw-1-8`. The `adw-1-*` flags each raise the required
 system libadwaita, so a build with one of them fails at the `libadwaita-sys`
 build script — not at the dependency solver — on a system below that version.
 `crate::spinner` is the single place that switches between `AdwSpinner` and
@@ -344,7 +345,7 @@ cargo fmt
 
 ```bash
 # Flatpak SDK and runtime
-flatpak install flathub org.gnome.Sdk//50 org.gnome.Platform//50
+flatpak install flathub org.gnome.Sdk//51 org.gnome.Platform//51
 flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
 ```
 

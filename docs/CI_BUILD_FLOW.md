@@ -74,7 +74,7 @@ graph TD
     BuildDeb --> |ubuntu-24.04| DebArtifact[rustconn_X.Y.Z_amd64.deb]
     BuildRPM --> |fedora:44 container| RPMArtifact[rustconn-X.Y.Z-1.fc44.x86_64.rpm]
     BuildAppImage --> |ubuntu-24.04| AppImageArtifact[RustConn-X.Y.Z-x86_64.AppImage]
-    BuildFlatpak --> |GNOME 50 container| FlatpakArtifact[RustConn-X.Y.Z.flatpak]
+    BuildFlatpak --> |GNOME 51 container| FlatpakArtifact[RustConn-X.Y.Z.flatpak]
 
     DebArtifact --> Release[Create GitHub Release]
     RPMArtifact --> Release
@@ -112,7 +112,7 @@ graph TD
 | `build-rpm` | fedora:44 container | `rustconn-X.Y.Z-1.fc44.x86_64.rpm` |
 | `build-appimage` | ubuntu-24.04 + linuxdeploy | `RustConn-X.Y.Z-x86_64.AppImage` |
 | `build-snap` | matrix: ubuntu-24.04 (amd64) + ubuntu-24.04-arm (arm64), each with LXD + snapcraft | `rustconn_X.Y.Z_amd64.snap` + `rustconn_X.Y.Z_arm64.snap` |
-| `build-flatpak` | GNOME 50 Flatpak container | `RustConn-X.Y.Z.flatpak` |
+| `build-flatpak` | GNOME 51 Flatpak container | `RustConn-X.Y.Z.flatpak` |
 
 ### Snap Store Channels
 

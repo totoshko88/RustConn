@@ -1973,7 +1973,7 @@ Available via the "⋯" menu → "Open in System Browser" — opens the current 
 - WebKitGTK does not support WebCodecs (needed for Selkies/WebRTC streaming)
 - No DRM/EME content (Widevine not available in WebKitGTK)
 - Embedded mode is Linux-only (requires WebKitGTK 6.0)
-- Not available in the snap package: the core24 GNOME platform provides no WebKitGTK 6.0, and bundling it is still pending (issue [#244](https://github.com/totoshko88/RustConn/issues/244)). Web connections there use System or Custom mode; a connection saved with Embedded mode falls back to the system browser.
+- Not available in the snap package: the core26 GNOME platform (gnome-core26) still provides no GTK4 WebKitGTK 6.0, and bundling it is still pending (issue [#244](https://github.com/totoshko88/RustConn/issues/244)). Web connections there use System or Custom mode; a connection saved with Embedded mode falls back to the system browser.
 
 **Context menu actions:**
 - **Copy ▸ Host / Username / Password** — copies the URL or stored credentials to the clipboard; the password auto-clears after 30 seconds (see [Copy Menu](#copy-menu))
