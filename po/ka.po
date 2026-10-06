@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 01:58+0300\n"
+"POT-Creation-Date: 2026-10-06 03:08+0300\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -48,15 +48,15 @@ msgstr "დიახ"
 #: rustconn/src/dialogs/workspace.rs:236 rustconn/src/dialogs/workspace.rs:290
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:293 rustconn/src/terminal/tab_menu.rs:398
-#: rustconn/src/terminal/tab_menu.rs:627 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:291 rustconn/src/terminal/tab_menu.rs:396
+#: rustconn/src/terminal/tab_menu.rs:625 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:1066
 #: rustconn/src/window/edit_group.rs:1889
 #: rustconn/src/window/edit_group.rs:1937
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3252
-#: rustconn/src/window/mod.rs:3316 rustconn/src/window/mod.rs:4264
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3256
+#: rustconn/src/window/mod.rs:3320 rustconn/src/window/mod.rs:4268
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
@@ -368,7 +368,7 @@ msgstr "მონიშვნის მოხსნა ყველაფერ�
 msgid "Edit Cluster"
 msgstr "კლასტერის ჩასწორება"
 
-#: rustconn/src/dialogs/cluster.rs:553
+#: rustconn/src/dialogs/cluster.rs:553 rustconn/src/sidebar_ui.rs:1197
 msgid "Manage Clusters"
 msgstr "კლასტერების მართვა"
 
@@ -4449,8 +4449,8 @@ msgstr "თქვენი ნიმუშები"
 #: rustconn/src/dialogs/connection_wizard/mod.rs:453
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
 #: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:472
-#: rustconn/src/sidebar_ui.rs:509 rustconn/src/split_view/bridge.rs:1830
-#: rustconn/src/window/ui.rs:241
+#: rustconn/src/sidebar_ui.rs:509 rustconn/src/sidebar_ui.rs:1187
+#: rustconn/src/split_view/bridge.rs:1830 rustconn/src/window/ui.rs:241
 msgid "New Connection"
 msgstr "ახალი შეერთება"
 
@@ -4621,8 +4621,8 @@ msgstr "კოპირება შეჩერდა"
 #: rustconn/src/dialogs/recording.rs:804 rustconn/src/dialogs/recording.rs:816
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:628
-#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4265
+#: rustconn/src/dialogs/widgets.rs:598 rustconn/src/terminal/tab_menu.rs:626
+#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4269
 msgid "Close"
 msgstr "დახურვა"
 
@@ -8596,13 +8596,13 @@ msgid "SSH Tunnel Manager"
 msgstr "SSH გვირაბის მენეჯერი"
 
 #: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:510
-#: rustconn/src/sidebar_ui.rs:1010
+#: rustconn/src/sidebar_ui.rs:1010 rustconn/src/sidebar_ui.rs:1192
 #: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:246
 msgid "New Group"
 msgstr "ახალი ჯგუფი"
 
 #: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:508
-#: rustconn/src/split_view/bridge.rs:1837
+#: rustconn/src/sidebar_ui.rs:1210 rustconn/src/split_view/bridge.rs:1837
 #: rustconn/src/window/edit_dialogs.rs:754 rustconn/src/window/ui.rs:249
 msgid "Quick Connect"
 msgstr "სწრაფი დაკავშირება"
@@ -8637,7 +8637,7 @@ msgstr "ჩასმა"
 msgid "Find in Terminal"
 msgstr "იპოვნეთ ტერმინალში"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1093
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1091
 msgid "Close Tab"
 msgstr "ჩანართის დახურვა"
 
@@ -8681,7 +8681,7 @@ msgstr "მოცილება გაყოფილიდან"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:1045
+#: rustconn/src/terminal/tab_menu.rs:1043
 msgid "Remove Split"
 msgstr "გაყოფის წაშლა"
 
@@ -10464,7 +10464,7 @@ msgstr "ფაილების შენახვა დაშორებუ�
 #: rustconn/src/embedded_rdp/mod.rs:770 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1351
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:972
+#: rustconn/src/terminal/tab_menu.rs:970
 msgid "Reconnect"
 msgstr "თავიდან დაკავშირება"
 
@@ -11137,11 +11137,11 @@ msgstr "ჩაწერის დაწყება"
 msgid "Stop tracking"
 msgstr "ტრეკინგის გაჩერება"
 
-#: rustconn/src/sidebar_ui.rs:513
+#: rustconn/src/sidebar_ui.rs:513 rustconn/src/sidebar_ui.rs:1211
 msgid "Import…"
 msgstr "შემოტანა…"
 
-#: rustconn/src/sidebar_ui.rs:514
+#: rustconn/src/sidebar_ui.rs:514 rustconn/src/sidebar_ui.rs:1212
 msgid "Export…"
 msgstr "გატანა…"
 
@@ -11233,21 +11233,37 @@ msgstr "ძებნა (Ctrl+F)"
 msgid "Toggle search"
 msgstr "ძებნის გადართვა"
 
-#: rustconn/src/sidebar_ui.rs:1181
+#: rustconn/src/sidebar_ui.rs:1189 rustconn/src/window/ui.rs:243
+msgid "New Connection (Advanced)…"
+msgstr "ახალი კავშირი (გაფართოებული)…"
+
+#: rustconn/src/sidebar_ui.rs:1199
+msgid "Manage Workspaces"
+msgstr ""
+
+#: rustconn/src/sidebar_ui.rs:1202 rustconn/src/window/snippets.rs:218
+msgid "Manage Snippets"
+msgstr "ფრაგმენტების ნახვა"
+
+#: rustconn/src/sidebar_ui.rs:1203 rustconn/src/window/ui.rs:281
+msgid "Tools"
+msgstr "ხელსაწყოები"
+
+#: rustconn/src/sidebar_ui.rs:1219
 msgid "Select Connections"
 msgstr "კავშირების არჩევა"
 
-#: rustconn/src/sidebar_ui.rs:1187
+#: rustconn/src/sidebar_ui.rs:1225
 msgid "Sort Alphabetically"
 msgstr "ანბანურად დალაგება"
 
-#: rustconn/src/sidebar_ui.rs:1190
+#: rustconn/src/sidebar_ui.rs:1228
 msgid "Sort by Recent Use"
 msgstr "ბოლო გამოყენებით დალაგება"
 
-#: rustconn/src/sidebar_ui.rs:1193
-msgid "Connection list options"
-msgstr "კავშირების სიის პარამეტრები"
+#: rustconn/src/sidebar_ui.rs:1231
+msgid "Connection list menu"
+msgstr ""
 
 #: rustconn/src/smart_folder_ui.rs:62
 msgid "Smart Folders"
@@ -11543,123 +11559,123 @@ msgstr "{}-ში შესვლა"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "გაუშვით „{}“ ბრაუზერში ხელახლა შესასვლელად"
 
-#: rustconn/src/terminal/tab_menu.rs:232
+#: rustconn/src/terminal/tab_menu.rs:230
 msgid "Set Tab Group"
 msgstr "ჩანართების ჯგუფის დაყენება"
 
-#: rustconn/src/terminal/tab_menu.rs:240
+#: rustconn/src/terminal/tab_menu.rs:238
 msgid "New group name…"
 msgstr "ახალი ჯგუფის სახელი…"
 
-#: rustconn/src/terminal/tab_menu.rs:245
+#: rustconn/src/terminal/tab_menu.rs:243
 msgid "Enter a group name for this tab"
 msgstr "შეიყვანეთ ჯგუფის სახელი ამ ჩანართისთვის"
 
-#: rustconn/src/terminal/tab_menu.rs:250
+#: rustconn/src/terminal/tab_menu.rs:248
 msgid "Existing groups:"
 msgstr "არსებული ჯგუფები:"
 
-#: rustconn/src/terminal/tab_menu.rs:278
+#: rustconn/src/terminal/tab_menu.rs:276
 msgid "or enter a new name:"
 msgstr "ან შეიყვანეთ ახალი სახელი:"
 
-#: rustconn/src/terminal/tab_menu.rs:294 rustconn/src/terminal/tab_menu.rs:399
+#: rustconn/src/terminal/tab_menu.rs:292 rustconn/src/terminal/tab_menu.rs:397
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "გადატარება"
 
-#: rustconn/src/terminal/tab_menu.rs:386
+#: rustconn/src/terminal/tab_menu.rs:384
 msgid "Rename Tab"
 msgstr "ჩანართის გადარქმნა"
 
-#: rustconn/src/terminal/tab_menu.rs:388
+#: rustconn/src/terminal/tab_menu.rs:386
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "მინიშნება სახელდებს მხოლოდ ამ ჩანართს. დატოვეთ ცარიელი, რომ ნაგულისხმევა "
 "დაბრუნდეს."
 
-#: rustconn/src/terminal/tab_menu.rs:394
+#: rustconn/src/terminal/tab_menu.rs:392
 msgid "Tab name"
 msgstr "ჩანართის სახელი"
 
-#: rustconn/src/terminal/tab_menu.rs:621 rustconn/src/terminal/tab_menu.rs:1004
+#: rustconn/src/terminal/tab_menu.rs:619 rustconn/src/terminal/tab_menu.rs:1002
 msgid "Close All in Group"
 msgstr "ჯგუფში ყველას დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:623
+#: rustconn/src/terminal/tab_menu.rs:621
 msgid "Close {} tabs in group '{}'?"
 msgstr "დაიხუროს {} ჩანართი ჯგუფში '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:904
+#: rustconn/src/terminal/tab_menu.rs:902
 msgid "Move to New Window on {}"
 msgstr "ახალ ფანჯარაში გადატანა {}"
 
-#: rustconn/src/terminal/tab_menu.rs:924
+#: rustconn/src/terminal/tab_menu.rs:922
 msgid "Monitor {} ({})"
 msgstr "{}-ის მონიტორინგი ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:925
+#: rustconn/src/terminal/tab_menu.rs:923
 msgid "Monitor {}"
 msgstr "{}-ის მონიტორინგი"
 
-#: rustconn/src/terminal/tab_menu.rs:979
+#: rustconn/src/terminal/tab_menu.rs:977
 msgid "Unpin Tab"
 msgstr "ჩანართის ჩამოხსნა"
 
-#: rustconn/src/terminal/tab_menu.rs:981
+#: rustconn/src/terminal/tab_menu.rs:979
 msgid "Pin Tab"
 msgstr "ჩანართის მიმაგრება"
 
-#: rustconn/src/terminal/tab_menu.rs:992
+#: rustconn/src/terminal/tab_menu.rs:990
 msgid "Rename Tab…"
 msgstr "ჩანართის გადარქმნა…"
 
-#: rustconn/src/terminal/tab_menu.rs:1000
+#: rustconn/src/terminal/tab_menu.rs:998
 msgid "Set Group…"
 msgstr "ჯგუფის დაყენება…"
 
-#: rustconn/src/terminal/tab_menu.rs:1002
+#: rustconn/src/terminal/tab_menu.rs:1000
 msgid "Remove from Group"
 msgstr "ჯგუფიდან წაშლა"
 
-#: rustconn/src/terminal/tab_menu.rs:1014
+#: rustconn/src/terminal/tab_menu.rs:1012
 msgid "Remove from Broadcast"
 msgstr "მაუწყებლობიდან ამოშლა"
 
-#: rustconn/src/terminal/tab_menu.rs:1016
+#: rustconn/src/terminal/tab_menu.rs:1014
 msgid "Add to Broadcast"
 msgstr "მაუწყებლობაში დამატება"
 
-#: rustconn/src/terminal/tab_menu.rs:1038
+#: rustconn/src/terminal/tab_menu.rs:1036
 msgid "Monitor"
 msgstr "მონიტორინგი"
 
-#: rustconn/src/terminal/tab_menu.rs:1052
+#: rustconn/src/terminal/tab_menu.rs:1050
 msgid "Move to New Window"
 msgstr "ახალ ფანჯარაში გადატანა"
 
-#: rustconn/src/terminal/tab_menu.rs:1082
+#: rustconn/src/terminal/tab_menu.rs:1080
 msgid "Edit Connection…"
 msgstr "შეერთების ჩასწორება…"
 
-#: rustconn/src/terminal/tab_menu.rs:1094
+#: rustconn/src/terminal/tab_menu.rs:1092
 msgid "Close Others"
 msgstr "სხვების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1099
+#: rustconn/src/terminal/tab_menu.rs:1097
 msgid "Close to the Left"
 msgstr "მარცხნივ მყოფების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1100
+#: rustconn/src/terminal/tab_menu.rs:1098
 msgid "Close to the Right"
 msgstr "მარჯვნივ მყოფების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1104
+#: rustconn/src/terminal/tab_menu.rs:1102
 msgid "Close All Ungrouped"
 msgstr "ყველა დაუჯგუფებლის დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1108
+#: rustconn/src/terminal/tab_menu.rs:1106
 msgid "Close All Tabs"
 msgstr "ყველა ჩანართის დახურვა"
 
@@ -11717,7 +11733,7 @@ msgstr "{} აქტიური სესია"
 msgid "About RustConn"
 msgstr "RustConn-ის შესახებ"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5226
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5230
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "პაროლი არ ხსნის პორტატულ ფაილს"
 
@@ -11919,8 +11935,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "გადასვლის ჰოსტი მიუწვდომელია"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3253
-#: rustconn/src/window/mod.rs:3319 rustconn/src/window/rdp_vnc.rs:761
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3257
+#: rustconn/src/window/mod.rs:3323 rustconn/src/window/rdp_vnc.rs:761
 msgid "Connect Anyway"
 msgstr "მაინც შეერთება"
 
@@ -12812,31 +12828,31 @@ msgstr "მოცილება"
 msgid "Touch your hardware key to unlock the password database"
 msgstr "შეეხეთ თქვენს აპარატურულ გასაღებს პაროლების ბაზის განსაბლოკად"
 
-#: rustconn/src/window/mod.rs:2462
+#: rustconn/src/window/mod.rs:2466
 msgid "Already running in an external window"
 msgstr "უკვე გაშვებულია გარე ფანჯარაში"
 
-#: rustconn/src/window/mod.rs:2613
+#: rustconn/src/window/mod.rs:2617
 msgid "Connection to ‘{}’ failed"
 msgstr "‘{}’-თან დაკავშირება ჩავარდა"
 
-#: rustconn/src/window/mod.rs:2945 rustconn/src/window/mod.rs:2959
+#: rustconn/src/window/mod.rs:2949 rustconn/src/window/mod.rs:2963
 msgid "Pre-connect task failed: {}"
 msgstr "დაკავშირებამდელი ამოცანა ჩავარდა: {}"
 
-#: rustconn/src/window/mod.rs:2993
+#: rustconn/src/window/mod.rs:2997
 msgid "Port knock failed: {}"
 msgstr "პორტზე დაკაკუნების შეცდომა: {}"
 
-#: rustconn/src/window/mod.rs:3042
+#: rustconn/src/window/mod.rs:3046
 msgid "SPA failed: {}"
 msgstr "SPA ჩავარდა: {}"
 
-#: rustconn/src/window/mod.rs:3238
+#: rustconn/src/window/mod.rs:3242
 msgid "{} (via {})"
 msgstr "{} ({}-ის გავლით)"
 
-#: rustconn/src/window/mod.rs:3244
+#: rustconn/src/window/mod.rs:3248
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -12860,35 +12876,35 @@ msgstr ""
 "თუ ეს ცვლილება თქვენ არ შეგიტანიათ, გააუქმეთ — დაკავშირებამ შესაძლოა "
 "შენახული მონაცემები სხვა მანქანას გაუგზავნოს."
 
-#: rustconn/src/window/mod.rs:3249
+#: rustconn/src/window/mod.rs:3253
 msgid "Routing changed for “{}”"
 msgstr "მარშრუტი შეიცვალა „{}“-სთვის"
 
-#: rustconn/src/window/mod.rs:3313
+#: rustconn/src/window/mod.rs:3317
 msgid "Jump Host Unavailable for “{}”"
 msgstr "გადასვლის ჰოსტი მიუწვდომელია „{}“-სთვის"
 
-#: rustconn/src/window/mod.rs:3318
+#: rustconn/src/window/mod.rs:3322
 msgid "Connect Directly"
 msgstr "პირდაპირ დაკავშირება"
 
-#: rustconn/src/window/mod.rs:3407 rustconn/src/window/mod.rs:3582
+#: rustconn/src/window/mod.rs:3411 rustconn/src/window/mod.rs:3586
 msgid "Connection “{}” created"
 msgstr "კავშირი “{}” შეიქმნა"
 
-#: rustconn/src/window/mod.rs:3789
+#: rustconn/src/window/mod.rs:3793
 msgid "RustConn - {}"
 msgstr "RustConn - {}"
 
-#: rustconn/src/window/mod.rs:3988
+#: rustconn/src/window/mod.rs:3992
 msgid "Settings saved"
 msgstr "პარამეტრები შენახულია"
 
-#: rustconn/src/window/mod.rs:4025
+#: rustconn/src/window/mod.rs:4029
 msgid "Passphrase Not Saved on This Computer"
 msgstr "პაროლი არ არის შენახული ამ კომპიუტერზე"
 
-#: rustconn/src/window/mod.rs:4027
+#: rustconn/src/window/mod.rs:4031
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -12900,11 +12916,11 @@ msgstr ""
 "ამის ნაცვლად, აირჩიეთ \"System keyring\" ან შეამოწმეთ, რომ RustConn-ს "
 "შეუძლია ჩაწეროს მონაცემთა დირექტორიაში."
 
-#: rustconn/src/window/mod.rs:4073
+#: rustconn/src/window/mod.rs:4077
 msgid "Credentials Not Saved to Keyring"
 msgstr "ავტორიზაციის დეტალები ბრელოკში შენახული არაა"
 
-#: rustconn/src/window/mod.rs:4075
+#: rustconn/src/window/mod.rs:4079
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -12914,15 +12930,15 @@ msgstr ""
 "ამ სესიისთვის და გაქრება გადატვირთვის შემდეგ. შეამოწმეთ, რომ თქვენი "
 "გასაღებების სერვისი მუშაობს და განბლოკილია, შემდეგ ისევ შეინახეთ პარამეტრები."
 
-#: rustconn/src/window/mod.rs:4258
+#: rustconn/src/window/mod.rs:4262
 msgid "Close RustConn?"
 msgstr "დაიხუროს RustConn?"
 
-#: rustconn/src/window/mod.rs:4260
+#: rustconn/src/window/mod.rs:4264
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} სესიის ჩანართი(ები) ღიაა. აქტიური კავშირები გაითიშება."
 
-#: rustconn/src/window/mod.rs:4297
+#: rustconn/src/window/mod.rs:4301
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -12930,7 +12946,7 @@ msgstr ""
 "პარამეტრების წაკითხვა ვერ მოხერხდა, ამიტომ გამოიყენება ნაგულისხმევი "
 "მნიშვნელობები. წაუკითხავი ფაილი შენახულია როგორც {}."
 
-#: rustconn/src/window/mod.rs:4302
+#: rustconn/src/window/mod.rs:4306
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -12938,35 +12954,35 @@ msgstr ""
 "ეს პარამეტრები შენახულია RustConn-ის უფრო ახალი ვერსიით ({}). მათ შეცვლამდე "
 "ინახება სარეზერვო ასლი."
 
-#: rustconn/src/window/mod.rs:4327
+#: rustconn/src/window/mod.rs:4331
 msgid "Cloud sync failed for '{}': {}"
 msgstr "ღრუბელთან სინქრონიზაცია ჩავარდა ელემენტისთვის '{}': {}"
 
-#: rustconn/src/window/mod.rs:4510
+#: rustconn/src/window/mod.rs:4514
 msgid "Startup connection not found"
 msgstr "გაშვების კავშირი აღმოჩენილი არაა"
 
-#: rustconn/src/window/mod.rs:4546
+#: rustconn/src/window/mod.rs:4550
 msgid "Failed to open .rdp file"
 msgstr ".rdp ფაილის გახსნის შეცდომა"
 
-#: rustconn/src/window/mod.rs:4582
+#: rustconn/src/window/mod.rs:4586
 msgid "Failed to open .vv file"
 msgstr ".vv ფაილის გახსნის შეცდომა"
 
-#: rustconn/src/window/mod.rs:4619
+#: rustconn/src/window/mod.rs:4623
 msgid "Tunnel “{}” stopped: {}"
 msgstr "გვირაბი “{}” გაჩერდა: {}"
 
-#: rustconn/src/window/mod.rs:4635
+#: rustconn/src/window/mod.rs:4639
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "გვირაბის “{}” ხელახლა მიერთება მიტოვებულია: {}"
 
-#: rustconn/src/window/mod.rs:5142
+#: rustconn/src/window/mod.rs:5146
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "წარმატებით იქნა ექსპორტირებული {} კავშირი(ებ). {} გამოტოვებულია."
 
-#: rustconn/src/window/mod.rs:5228
+#: rustconn/src/window/mod.rs:5232
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13371,10 +13387,6 @@ msgstr "პარამეტრის შენახვა შეუძლე�
 msgid "Could not save preference"
 msgstr "პარამეტრის შენახვა შეუძლებელია"
 
-#: rustconn/src/window/snippets.rs:218
-msgid "Manage Snippets"
-msgstr "ფრაგმენტების ნახვა"
-
 #: rustconn/src/window/snippets.rs:239 rustconn/src/window/snippets.rs:621
 msgid "Search snippets…"
 msgstr "ფრაგმენტების ძებნა…"
@@ -13551,10 +13563,6 @@ msgstr "გამჭოლი"
 msgid "Keyboard passthrough active — click to disable"
 msgstr "კლავიატურის გამჭოლობა აქტიურია — დააწკაპუნეთ გასათიშად"
 
-#: rustconn/src/window/ui.rs:243
-msgid "New Connection (Advanced)…"
-msgstr "ახალი კავშირი (გაფართოებული)…"
-
 #: rustconn/src/window/ui.rs:265
 msgid "Snippets…"
 msgstr "ფრაგმენტები…"
@@ -13586,10 +13594,6 @@ msgstr "ქსელით-გაღვიძება…"
 #: rustconn/src/window/ui.rs:277
 msgid "SSH Tunnels…"
 msgstr "SSH გვირაბები…"
-
-#: rustconn/src/window/ui.rs:281
-msgid "Tools"
-msgstr "ხელსაწყოები"
 
 #: rustconn/src/window/ui.rs:286
 msgid "Active Sessions…"
@@ -13682,6 +13686,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Connection list options"
+#~ msgstr "კავშირების სიის პარამეტრები"
 
 #~ msgid "Monitor: {}"
 #~ msgstr "მინიტორინგი: {}"
