@@ -1171,7 +1171,10 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     search_toggle.set_icon_name("system-search-symbolic");
     search_toggle.set_tooltip_text(Some(&i18n("Search (Ctrl+F)")));
     search_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n("Toggle search"))]);
-    search_toggle.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+    // 44px tap-target floor via CSS class, not set_size_request — see the note
+    // in window/ui.rs; `window.compact-manual` can lower it for deliberate
+    // compact density without a size request CSS cannot override.
+    search_toggle.add_css_class("header-icon-button");
     header.pack_start(&search_toggle);
 
     // Secondary menu (trailing). This is the sidebar's own home for every
@@ -1239,17 +1242,9 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
         .menu_model(&menu)
         .build();
     menu_button.update_property(&[gtk4::accessible::Property::Label(&menu_label)]);
-    menu_button.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+    menu_button.add_css_class("header-icon-button");
     header.pack_end(&menu_button);
 
     (header, search_toggle)
 }
 
-/// Minimum size of an icon-only header-bar button, shared by the sidebar and
-/// content headers so the two bars come out the same height.
-///
-/// 44px is the GNOME HIG tap target. macOS has no touch input and its native
-/// toolbar buttons are ~28px; `AdwHeaderBar` takes its minimum height from its
-/// tallest child, so 44 there would keep the header taller than any native
-/// window and defeat the compact/macOS CSS.
-pub const HEADER_BUTTON_SIZE: i32 = if cfg!(target_os = "macos") { 28 } else { 44 };

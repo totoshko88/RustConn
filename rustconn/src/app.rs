@@ -134,6 +134,18 @@ fn set_window_compact(window: &gtk4::Window, manual: bool, auto: bool) {
     } else {
         window.remove_css_class("compact");
     }
+    // `compact-manual` marks the case where the user DELIBERATELY turned compact
+    // on (the toggle / menu / shortcut), as opposed to auto-compact engaging
+    // because the window got small. Only the manual case trades the GNOME HIG
+    // 44×44 px icon-button tap target (ui.rs / sidebar_ui.rs) down to the denser
+    // 28 px: auto-compact may be a tablet or a touch convertible where the tap
+    // target must stay 44 px, so its header buttons are left full size. Driven
+    // in CSS by `window.compact-manual .header-icon-button` (assets/style.css).
+    if manual {
+        window.add_css_class("compact-manual");
+    } else {
+        window.remove_css_class("compact-manual");
+    }
 }
 
 /// Recomputes the `.compact` class for one window from the stored preferences.

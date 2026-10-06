@@ -184,6 +184,37 @@
     opacity: 0.6;
 }
 
+/* Icon-only header buttons (content header: sidebar-toggle, menu, settings,
+ * split-H, split-V; sidebar header: search, menu). GNOME HIG Pointer & Touch
+ * wants a 44×44px minimum tap target. This floor used to be a Rust
+ * `set_size_request(44,44)`, but a size request is a hard floor CSS cannot
+ * cross, which left the compact header-bar rules dead on Linux. As a CSS
+ * min-size the 44px floor still holds, and the compact-manual rule below can
+ * lower it. */
+.header-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* macOS has no touch tap-target requirement here, so its header buttons match
+ * the 28px the macOS header already uses (parity with the old
+ * HEADER_BUTTON_SIZE macOS value). */
+window.macos .header-icon-button {
+    min-width: 28px;
+    min-height: 28px;
+}
+
+/* DELIBERATE compact only (the user turned compact on via toggle/menu/shortcut,
+ * not auto-compact from a small window): trade the 44px tap target down to 28px
+ * for a denser header. Auto-compact (which may be a tablet/touch convertible)
+ * keeps the full 44px — it carries `.compact` but NOT `.compact-manual`
+ * (app.rs::set_window_compact). This is what finally lets compact actually
+ * shrink the header bar on Linux. */
+window.compact-manual .header-icon-button {
+    min-width: 28px;
+    min-height: 28px;
+}
+
 /* Bulk action buttons (group operations mode) — symbolic icon buttons that
  * also carry `.pill` (see create_bulk_actions_bar); this rule only trims them
  * to toolbar size and keeps the round shape. */
