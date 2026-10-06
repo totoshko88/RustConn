@@ -1170,11 +1170,49 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     search_toggle.set_size_request(HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
     header.pack_start(&search_toggle);
 
-    // Secondary menu (trailing). GNOME HIG allows one primary menu per window
-    // — that is the content header's ☰ — so this one carries `view-more` and
-    // only what acts on the connection list itself. Creating connections,
-    // managers and import/export stay in the primary menu.
+    // Secondary menu (trailing). This is the sidebar's own home for every
+    // action that operates on the connection list — the fast, logical place
+    // users reach for, right beside the list it acts on, instead of crossing to
+    // the content header's primary ☰ and digging through a Tools submenu. The
+    // 0.23 redesign moved these out on a one-menu-per-window reading of the HIG;
+    // in practice that made connection management two clicks farther away, so
+    // Create / Tools / List live here again. The content header's ☰ keeps the
+    // same entries as the app-wide menu — this is a deliberate, convenient
+    // duplication of the list-scoped subset, not a split. Icon stays
+    // `view-more` (⋯): a secondary, panel-scoped menu, not a second hamburger.
     let menu = gio::Menu::new();
+
+    // Create section.
+    let create_section = gio::Menu::new();
+    create_section.append(Some(&i18n("New Connection")), Some("win.new-connection"));
+    create_section.append(
+        Some(&i18n("New Connection (Advanced)…")),
+        Some("win.new-connection-advanced"),
+    );
+    create_section.append(Some(&i18n("New Group")), Some("win.new-group"));
+    menu.append_section(None, &create_section);
+
+    // Tools section — quick access to cluster / workspace / snippet management.
+    let tools_section = gio::Menu::new();
+    tools_section.append(Some(&i18n("Manage Clusters")), Some("win.manage-clusters"));
+    tools_section.append(
+        Some(&i18n("Manage Workspaces")),
+        Some("win.manage-workspaces"),
+    );
+    tools_section.append(Some(&i18n("Manage Snippets")), Some("win.manage-snippets"));
+    menu.append_section(Some(&i18n("Tools")), &tools_section);
+
+    // List section — act on the connection list. Delete is intentionally NOT
+    // here: deleting via a menu (open → aim → click) is a worse path than the
+    // per-row context menu / Delete key, so destructive deletion lives on the
+    // row's right-click menu.
+    let list_section = gio::Menu::new();
+    list_section.append(Some(&i18n("Quick Connect")), Some("win.quick-connect"));
+    list_section.append(Some(&i18n("Import…")), Some("win.import"));
+    list_section.append(Some(&i18n("Export…")), Some("win.export"));
+    menu.append_section(None, &list_section);
+
+    // Select + sort — multi-select mode and the two orderings.
     let select_section = gio::Menu::new();
     // Stateful `win.group-operations`: renders as a checkable item.
     select_section.append(
@@ -1190,7 +1228,7 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     sort_section.append(Some(&i18n("Sort by Recent Use")), Some("win.sort-recent"));
     menu.append_section(None, &sort_section);
 
-    let menu_label = i18n("Connection list options");
+    let menu_label = i18n("Connection list menu");
     let menu_button = gtk4::MenuButton::builder()
         .icon_name("view-more-symbolic")
         .tooltip_text(menu_label.as_str())
