@@ -10,7 +10,7 @@ use secrecy::SecretString;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use super::backend::{BackendAvailability, SecretBackend};
+use super::backend::{BackendAvailability, LookupIdentity, SecretBackend};
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
 
@@ -588,6 +588,29 @@ impl SecretManager {
     /// # Errors
     /// Returns `SecretError` if no backend is available or retrieval fails
     pub async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
+        self.retrieve_identity(LookupIdentity {
+            key: connection_id,
+            name: None,
+            host: None,
+        })
+        .await
+    }
+
+    /// Retrieve credentials using the connection's full identity.
+    ///
+    /// Identical to [`Self::retrieve`] but threads the connection name/host
+    /// aliases to each backend's [`SecretBackend::retrieve_identity`], so a
+    /// root-search-enabled backend can match a vault entry titled by the
+    /// connection name or host (issue #353). The cache is keyed on
+    /// `identity.key`, exactly as [`Self::retrieve`] keys on `connection_id`.
+    ///
+    /// # Errors
+    /// Returns `SecretError` if no backend is available or retrieval fails
+    pub async fn retrieve_identity(
+        &self,
+        identity: LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let connection_id = identity.key;
         // Check cache first (with TTL)
         if self.cache_enabled {
             let cache = self.cache.read().await;
@@ -613,7 +636,7 @@ impl SecretManager {
                 continue;
             }
 
-            match backend.retrieve(connection_id).await {
+            match backend.retrieve_identity(identity).await {
                 Ok(Some(creds)) => {
                     // Cache the result
                     if self.cache_enabled {

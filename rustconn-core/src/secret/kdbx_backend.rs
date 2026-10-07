@@ -166,6 +166,62 @@ impl KdbxBackend {
     fn yubikey_slot(&self) -> Option<&str> {
         self.unlock.yubikey_slot.as_deref()
     }
+
+    /// Shared retrieve path for both [`SecretBackend::retrieve`] and the
+    /// alias-aware [`SecretBackend::retrieve_identity`].
+    ///
+    /// The `RustConn/`-scoped lookup is always by `connection_id` (the UUID),
+    /// unchanged. Only the root-search widening (issue #353) also tries the
+    /// `aliases` (connection name/host); `aliases` is empty on the plain path,
+    /// so behaviour there is byte-identical to before.
+    fn retrieve_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<Credentials>> {
+        // Scoped lookup first — unchanged behaviour, and found-first for
+        // back-compat: a `RustConn/`-scoped entry wins over an identically-named
+        // one elsewhere in the vault.
+        let password = KeePassStatus::get_password_from_kdbx_with_key(
+            &self.kdbx_path,
+            self.db_password(),
+            self.key_file(),
+            connection_id,
+            None,
+            self.yubikey_slot(),
+        )?;
+
+        // When root-search is enabled and the scoped lookup missed, widen to a
+        // whole-database search. READ-WIDENING ONLY: this never writes and never
+        // prepends `RustConn/` (the matched path comes verbatim from the vault
+        // listing), so it cannot reintroduce issue #327. When root-search is
+        // off, this branch is skipped and behaviour is byte-identical to today.
+        let password = match password {
+            Some(secret) => Some(secret),
+            None if self.root_search => {
+                // Candidates in priority order: UUID first (back-compat / UUID
+                // wins), then the connection name and host (issue #353).
+                let mut candidates: Vec<&str> = Vec::with_capacity(1 + aliases.len());
+                candidates.push(connection_id);
+                candidates.extend_from_slice(aliases);
+                KeePassStatus::get_password_from_kdbx_root(
+                    &self.kdbx_path,
+                    self.db_password(),
+                    self.key_file(),
+                    &candidates,
+                    self.yubikey_slot(),
+                )?
+            }
+            None => None,
+        };
+
+        Ok(password.map(|secret| Credentials {
+            username: None,
+            password: Some(secret),
+            key_passphrase: None,
+            domain: None,
+        }))
+    }
 }
 
 #[async_trait]
@@ -218,41 +274,17 @@ impl SecretBackend for KdbxBackend {
     /// another touch — so callers that need it take it from the connection, as
     /// the existing KeePass call sites do.
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        // Scoped lookup first — unchanged behaviour, and found-first for
-        // back-compat: a `RustConn/`-scoped entry wins over an identically-named
-        // one elsewhere in the vault.
-        let password = KeePassStatus::get_password_from_kdbx_with_key(
-            &self.kdbx_path,
-            self.db_password(),
-            self.key_file(),
-            connection_id,
-            None,
-            self.yubikey_slot(),
-        )?;
+        self.retrieve_with_aliases(connection_id, &[])
+    }
 
-        // When root-search is enabled and the scoped lookup missed, widen to a
-        // whole-database search. READ-WIDENING ONLY: this never writes and never
-        // prepends `RustConn/` (the matched path comes verbatim from the vault
-        // listing), so it cannot reintroduce issue #327. When root-search is
-        // off, this branch is skipped and behaviour is byte-identical to today.
-        let password = match password {
-            Some(secret) => Some(secret),
-            None if self.root_search => KeePassStatus::get_password_from_kdbx_root(
-                &self.kdbx_path,
-                self.db_password(),
-                self.key_file(),
-                connection_id,
-                self.yubikey_slot(),
-            )?,
-            None => None,
-        };
-
-        Ok(password.map(|secret| Credentials {
-            username: None,
-            password: Some(secret),
-            key_passphrase: None,
-            domain: None,
-        }))
+    /// Issue #353: widen the whole-database (root) search to also match a vault
+    /// entry titled by the connection's name/host, not only its UUID.
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases = identity.aliases();
+        self.retrieve_with_aliases(identity.key, &aliases)
     }
 
     /// Deletes an entry by delegating to

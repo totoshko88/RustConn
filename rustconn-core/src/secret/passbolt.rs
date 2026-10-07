@@ -301,12 +301,27 @@ impl PassboltBackend {
     /// `connection_id` matches too — this is the read-widening that finds a
     /// resource the user keeps outside RustConn's naming convention. Pure (no
     /// CLI, no `self`) so the widening logic is unit-tested deterministically.
+    #[cfg(test)]
     fn name_matches(connection_id: &str, name: &str, root_search: bool) -> bool {
-        name == Self::entry_name(connection_id) || (root_search && name == connection_id)
+        name == Self::entry_name(connection_id)
+            || (root_search && super::backend::root_alias_eq(name, connection_id))
     }
 
     /// Finds a resource by connection ID (searches by name)
     async fn find_resource(&self, connection_id: &str) -> SecretResult<Option<PassboltResource>> {
+        self.find_resource_with_aliases(connection_id, &[]).await
+    }
+
+    /// Alias-aware form of [`Self::find_resource`] (issue #353). The scoped
+    /// `RustConn: {id}` match still wins first. When root-search is on, a
+    /// resource whose name equals the bare id OR any alias (connection
+    /// name/host) is accepted as the fallback — matched case-insensitively and
+    /// exactly, id first so a bare-id entry wins. Reads only.
+    async fn find_resource_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<PassboltResource>> {
         let output = self.run_command(&["list", "resource"]).await;
 
         // If command fails, assume no resources
@@ -317,10 +332,20 @@ impl PassboltBackend {
 
         let resources: Vec<PassboltResource> = serde_json::from_str(&output).unwrap_or_default();
 
+        // Candidate order for the bare match: id first (back-compat), then the
+        // supplied aliases; de-duplicated case-insensitively, blanks dropped.
+        let mut bare_candidates: Vec<&str> = Vec::with_capacity(1 + aliases.len());
+        for cand in std::iter::once(connection_id).chain(aliases.iter().copied()) {
+            let cand = cand.trim();
+            if !cand.is_empty() && !bare_candidates.iter().any(|c| c.eq_ignore_ascii_case(cand)) {
+                bare_candidates.push(cand);
+            }
+        }
+
         // Scoped match wins first: a `RustConn: {id}` resource is preferred over
         // a bare-named one even when root-search is on, so enabling the flag
         // never changes which resource a RustConn-created entry resolves to. A
-        // single pass keeps the first bare-id candidate as a fallback but returns
+        // single pass keeps the first bare candidate as a fallback but returns
         // immediately on the scoped match. The root-search fallback is only
         // consulted when the flag is on — otherwise behaviour is scoped-only, as
         // before.
@@ -330,11 +355,13 @@ impl PassboltBackend {
             if resource.name == scoped_name {
                 return Ok(Some(resource));
             }
-            // `name_matches` with the scoped form already excluded above reduces
-            // to the bare-id test when root-search is on; keep the first such
-            // candidate as the fallback.
+            // Keep the first resource whose name matches any bare candidate when
+            // root-search is on.
             if bare_fallback.is_none()
-                && Self::name_matches(connection_id, &resource.name, self.root_search)
+                && self.root_search
+                && bare_candidates
+                    .iter()
+                    .any(|cand| super::backend::root_alias_eq(&resource.name, cand))
             {
                 bare_fallback = Some(resource);
             }
@@ -369,6 +396,44 @@ impl PassboltBackend {
     pub async fn is_configured(&self) -> bool {
         // Try listing users as a connectivity check
         self.run_command(&["list", "user"]).await.is_ok()
+    }
+
+    /// Shared retrieve path for both [`SecretBackend::retrieve`] and the
+    /// alias-aware [`SecretBackend::retrieve_identity`]. `aliases` are the
+    /// connection name/host that root-search may also match (issue #353); empty
+    /// for the plain path.
+    async fn retrieve_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<Credentials>> {
+        if !self.is_configured().await {
+            return Err(SecretError::BackendUnavailable(
+                "Passbolt CLI not configured. Run \
+                 'passbolt configure' first"
+                    .to_string(),
+            ));
+        }
+
+        let resource = match self
+            .find_resource_with_aliases(connection_id, aliases)
+            .await?
+        {
+            Some(r) => r,
+            None => return Ok(None),
+        };
+
+        // Get full details including password
+        let detail = self.get_resource_detail(&resource.id).await?;
+
+        Ok(Some(Credentials {
+            username: detail.username.filter(|u| !u.is_empty()),
+            password: detail
+                .password
+                .filter(|p| !ExposeSecret::expose_secret(p).is_empty()),
+            key_passphrase: None,
+            domain: None,
+        }))
     }
 }
 
@@ -434,30 +499,18 @@ impl SecretBackend for PassboltBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        if !self.is_configured().await {
-            return Err(SecretError::BackendUnavailable(
-                "Passbolt CLI not configured. Run \
-                 'passbolt configure' first"
-                    .to_string(),
-            ));
-        }
+        self.retrieve_with_aliases(connection_id, &[]).await
+    }
 
-        let resource = match self.find_resource(connection_id).await? {
-            Some(r) => r,
-            None => return Ok(None),
-        };
-
-        // Get full details including password
-        let detail = self.get_resource_detail(&resource.id).await?;
-
-        Ok(Some(Credentials {
-            username: detail.username.filter(|u| !u.is_empty()),
-            password: detail
-                .password
-                .filter(|p| !ExposeSecret::expose_secret(p).is_empty()),
-            key_passphrase: None,
-            domain: None,
-        }))
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases: Vec<&str> = [identity.name, identity.host]
+            .into_iter()
+            .flatten()
+            .collect();
+        self.retrieve_with_aliases(identity.key, &aliases).await
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {

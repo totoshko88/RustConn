@@ -1549,7 +1549,11 @@ impl AppState {
                             kdbx_path,
                             db_password,
                             key_file,
-                            &lookup_key,
+                            &[
+                                lookup_key.as_str(),
+                                connection.host.as_str(),
+                                connection.name.as_str(),
+                            ],
                             secret_settings.kdbx_yubikey_slot.as_deref(),
                         ) {
                             Ok(Some(password)) => {
@@ -1864,7 +1868,7 @@ impl AppState {
                                     kdbx_path,
                                     db_password,
                                     key_file,
-                                    &group_name,
+                                    &[group_name.as_str()],
                                     secret_settings.kdbx_yubikey_slot.as_deref(),
                                 ) {
                                     Ok(Some(password)) => {

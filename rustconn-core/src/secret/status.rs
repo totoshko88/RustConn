@@ -707,7 +707,10 @@ fn classify_write_failure(stderr: &str) -> SecretError {
 
 #[cfg(test)]
 mod algorithm_tests {
-    use super::{parse_version_major_minor, required_group_levels, version_supports_edit};
+    use super::{
+        parse_version_major_minor, required_group_levels, root_match_entry_path,
+        root_match_entry_path_multi, version_supports_edit,
+    };
 
     #[test]
     fn version_gate_accepts_2_5_and_newer() {
@@ -829,6 +832,104 @@ b/c/dup
         // Documentation marker; the pure matcher tests cover the decision logic.
     }
 
+    // --- Issue #353: the vault-root matcher matches by connection NAME and
+    // HOST, not only the UUID. `root_match_entry_path_multi` is the pure core
+    // of the kdbx root-search read; the backend passes it [key, name, host] in
+    // priority order. These canned-listing tests need no keepassxc-cli. ---
+
+    /// A listing where the connection's secret is stored under an entry titled
+    /// by the HOST and another by the display NAME, neither matching the UUID.
+    const NAMED_LISTING: &str = "\
+RustConn/
+Servers/
+Servers/db.prod.example.com
+Legacy/Prod Database
+other-entry
+";
+
+    #[test]
+    fn root_match_multi_matches_by_host() {
+        // The UUID is nowhere in the vault; the host-titled entry is found.
+        // Caller order is [uuid, host, name] — host before name, as
+        // `LookupIdentity::aliases` produces, so a host-titled entry wins over
+        // a name-titled one.
+        let uuid = "11111111-2222-3333-4444-555555555555";
+        assert_eq!(
+            root_match_entry_path_multi(
+                NAMED_LISTING,
+                &[uuid, "db.prod.example.com", "Prod Database"]
+            ),
+            Some("Servers/db.prod.example.com".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_multi_matches_by_name_when_host_absent() {
+        let uuid = "11111111-2222-3333-4444-555555555555";
+        // Only the display name is present in the vault (host candidate misses).
+        assert_eq!(
+            root_match_entry_path_multi(NAMED_LISTING, &[uuid, "no-such-host", "Prod Database"]),
+            Some("Legacy/Prod Database".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_multi_still_matches_by_uuid_and_uuid_wins() {
+        // Back-compat: when a UUID-titled entry exists it is tried first and
+        // wins over a later name/host candidate.
+        let listing = "\
+Vault/11111111-2222-3333-4444-555555555555
+Vault/Prod Database
+";
+        assert_eq!(
+            root_match_entry_path_multi(
+                listing,
+                &[
+                    "11111111-2222-3333-4444-555555555555",
+                    "db.prod.example.com",
+                    "Prod Database"
+                ]
+            ),
+            Some("Vault/11111111-2222-3333-4444-555555555555".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_multi_is_case_insensitive() {
+        assert_eq!(
+            root_match_entry_path_multi(NAMED_LISTING, &["DB.PROD.EXAMPLE.COM"]),
+            Some("Servers/db.prod.example.com".to_string())
+        );
+        assert_eq!(
+            root_match_entry_path_multi(NAMED_LISTING, &["prod database"]),
+            Some("Legacy/Prod Database".to_string())
+        );
+    }
+
+    #[test]
+    fn root_match_multi_misses_when_no_candidate_matches() {
+        assert_eq!(
+            root_match_entry_path_multi(NAMED_LISTING, &["nope", "also-nope"]),
+            None
+        );
+        // Blank candidates are skipped, not matched against group paths.
+        assert_eq!(
+            root_match_entry_path_multi(NAMED_LISTING, &["", "   "]),
+            None
+        );
+    }
+
+    #[test]
+    fn root_match_multi_is_exact_not_substring() {
+        // An entry whose basename merely CONTAINS the host is not a match — a
+        // short token cannot surface an unrelated credential (issue #353).
+        let listing = "Servers/db.prod.example.com.attacker.test\n";
+        assert_eq!(
+            root_match_entry_path_multi(listing, &["db.prod.example.com"]),
+            None
+        );
+    }
+
     // --- Behaviour of save_in_place / rename_or_move_in_place via a fake CLI ---
 
     use std::cell::RefCell;
@@ -840,7 +941,7 @@ b/c/dup
 
     use super::{
         Invocation, InvocationKind, KeePassCli, SecretError, SecretResult, push_unlock_args,
-        rename_or_move_in_place, root_match_entry_path, save_in_place,
+        rename_or_move_in_place, save_in_place,
     };
 
     /// A scripted reply for one `run` call.
@@ -1343,30 +1444,59 @@ fn candidate_entry_paths(entry_name: &str, protocol: Option<&str>) -> Vec<String
 /// `/<connection_id>`) is preferred over a looser basename match, so a caller
 /// passing an already-qualified path still lands on it first. Returns `None`
 /// when nothing matches.
+#[cfg(test)]
 fn root_match_entry_path(listing: &str, connection_id: &str) -> Option<String> {
-    let wanted_base = connection_id.rsplit('/').next().unwrap_or(connection_id);
+    root_match_entry_path_multi(listing, &[connection_id])
+}
 
-    let mut basename_fallback: Option<String> = None;
-    for line in listing.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.ends_with('/') {
-            // Blank, or a group path (keepassxc-cli suffixes groups with '/').
+/// Candidate-aware variant of [`root_match_entry_path`] for issue #353.
+///
+/// `candidates` are tried in priority order — the backend passes
+/// `[key/uuid, name, host]` — and the first candidate that matches any vault
+/// entry wins, so a UUID-titled entry still takes precedence over a later
+/// name/host candidate (back-compat). Within a single candidate an exact
+/// full-path match (`line == candidate`, or `line` ends with `/<candidate>`)
+/// beats a looser basename match. Matching is case-insensitive and
+/// whitespace-trimmed (vault titles are hand-entered); empty candidates are
+/// skipped. Returns the matched entry's ABSOLUTE path verbatim from the
+/// listing — this never constructs a path, so it stays #327-safe.
+fn root_match_entry_path_multi(listing: &str, candidates: &[&str]) -> Option<String> {
+    for candidate in candidates {
+        let candidate = candidate.trim();
+        if candidate.is_empty() {
             continue;
         }
-        // Exact match (whole path, or a path whose tail is the connection id)
-        // wins immediately — honour a caller that passed a qualified path.
-        if line == connection_id || line.ends_with(&format!("/{connection_id}")) {
-            return Some(line.to_string());
-        }
-        // Otherwise remember the first entry whose leaf name matches.
-        if basename_fallback.is_none() {
-            let line_base = line.rsplit('/').next().unwrap_or(line);
-            if line_base == wanted_base {
-                basename_fallback = Some(line.to_string());
+        let wanted_base = candidate.rsplit('/').next().unwrap_or(candidate);
+
+        let mut basename_fallback: Option<String> = None;
+        for line in listing.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.ends_with('/') {
+                // Blank, or a group path (keepassxc-cli suffixes groups '/').
+                continue;
+            }
+            // Exact match (whole path, or a path whose tail is the candidate)
+            // wins immediately — honour a caller that passed a qualified path.
+            if line.eq_ignore_ascii_case(candidate)
+                || line.len() > candidate.len()
+                    && line[line.len() - candidate.len() - 1..]
+                        .eq_ignore_ascii_case(&format!("/{candidate}"))
+            {
+                return Some(line.to_string());
+            }
+            // Otherwise remember the first entry whose leaf name matches.
+            if basename_fallback.is_none() {
+                let line_base = line.rsplit('/').next().unwrap_or(line);
+                if line_base.eq_ignore_ascii_case(wanted_base) {
+                    basename_fallback = Some(line.to_string());
+                }
             }
         }
+        if basename_fallback.is_some() {
+            return basename_fallback;
+        }
     }
-    basename_fallback
+    None
 }
 
 ///
@@ -2584,7 +2714,7 @@ impl KeePassStatus {
         kdbx_path: &Path,
         db_password: Option<&SecretString>,
         key_file: Option<&Path>,
-        connection_id: &str,
+        candidates: &[&str],
         yubikey_slot: Option<&str>,
     ) -> SecretResult<Option<SecretString>> {
         Self::validate_kdbx_path(kdbx_path)?;
@@ -2626,12 +2756,12 @@ impl KeePassStatus {
         }
 
         let listing = String::from_utf8_lossy(&output.stdout);
-        let Some(entry_path) = root_match_entry_path(&listing, connection_id) else {
-            tracing::debug!("get_password_root: no root entry matched '{connection_id}'");
+        let Some(entry_path) = root_match_entry_path_multi(&listing, candidates) else {
+            tracing::debug!("get_password_root: no root entry matched {candidates:?}");
             return Ok(None);
         };
 
-        tracing::debug!("get_password_root: matched '{entry_path}' for '{connection_id}'");
+        tracing::debug!("get_password_root: matched '{entry_path}' for {candidates:?}");
         // Read the matched absolute path as-is. Reusing the exact reader keeps
         // the unlock composition and secret-wiping identical to every other read.
         Self::get_password_from_kdbx_exact(

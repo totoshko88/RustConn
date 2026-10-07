@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use tracing::{debug, warn};
 
+use super::backend::LookupIdentity;
 use super::hierarchy::KeePassHierarchy;
 use super::manager::SecretManager;
 use super::verification::{CredentialStatus, CredentialVerificationManager, VerifiedCredentials};
@@ -58,6 +59,30 @@ impl CredentialResolver {
             &connection.name
         };
         format!("rustconn/{identifier}")
+    }
+
+    /// Alias-aware primary vault lookup for the manual-vault backends.
+    ///
+    /// Issue #353: a root-search backend should match a vault entry titled by
+    /// the connection's human-readable **name** or **host**, not only by the
+    /// `rustconn/{name}` lookup key or the UUID. This threads the connection's
+    /// name and host alongside `lookup_key` into
+    /// [`SecretManager::retrieve_identity`], so a root-search-enabled backend
+    /// can widen its match to them. A scoped (non root-search) backend ignores
+    /// the aliases and behaves exactly as a plain `retrieve(lookup_key)` call.
+    async fn retrieve_vault_identity(
+        &self,
+        lookup_key: &str,
+        connection: &Connection,
+    ) -> SecretResult<Option<Credentials>> {
+        let name = connection.name.trim();
+        let host = connection.host.trim();
+        let identity = LookupIdentity {
+            key: lookup_key,
+            name: (!name.is_empty()).then_some(name),
+            host: (!host.is_empty()).then_some(host),
+        };
+        self.secret_manager.retrieve_identity(identity).await
     }
 
     /// Generates a lookup key for libsecret/keyring storage (legacy flat format)
@@ -249,7 +274,9 @@ impl CredentialResolver {
         }
 
         let lookup_key = Self::generate_lookup_key(connection);
-        let result = self.secret_manager.retrieve(&lookup_key).await?;
+        let result = self
+            .retrieve_vault_identity(&lookup_key, connection)
+            .await?;
 
         if result.is_some() {
             return Ok(result);
@@ -332,9 +359,14 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        // Primary: use the same key format as store_unified: "rustconn/{name}".
+        // Alias-aware (issue #353): a root-search backend also matches a vault
+        // entry titled by the connection name or host.
         let lookup_key = Self::generate_lookup_key(connection);
-        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+        if let Some(creds) = self
+            .retrieve_vault_identity(&lookup_key, connection)
+            .await?
+        {
             return Ok(Some(creds));
         }
 
@@ -357,9 +389,14 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        // Primary: use the same key format as store_unified: "rustconn/{name}".
+        // Alias-aware (issue #353): a root-search backend also matches a vault
+        // entry titled by the connection name or host.
         let lookup_key = Self::generate_lookup_key(connection);
-        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+        if let Some(creds) = self
+            .retrieve_vault_identity(&lookup_key, connection)
+            .await?
+        {
             return Ok(Some(creds));
         }
 
@@ -381,9 +418,14 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        // Primary: use the same key format as store_unified: "rustconn/{name}".
+        // Alias-aware (issue #353): a root-search backend also matches a vault
+        // entry titled by the connection name or host.
         let lookup_key = Self::generate_lookup_key(connection);
-        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+        if let Some(creds) = self
+            .retrieve_vault_identity(&lookup_key, connection)
+            .await?
+        {
             return Ok(Some(creds));
         }
 
@@ -405,9 +447,14 @@ impl CredentialResolver {
         &self,
         connection: &Connection,
     ) -> SecretResult<Option<Credentials>> {
-        // Primary: use the same key format as store_unified: "rustconn/{name}"
+        // Primary: use the same key format as store_unified: "rustconn/{name}".
+        // Alias-aware (issue #353): a root-search backend also matches a store
+        // entry at the root named by the connection name or host.
         let lookup_key = Self::generate_lookup_key(connection);
-        if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+        if let Some(creds) = self
+            .retrieve_vault_identity(&lookup_key, connection)
+            .await?
+        {
             return Ok(Some(creds));
         }
 
@@ -428,7 +475,10 @@ impl CredentialResolver {
         // Try `KeePass` first if enabled
         if self.settings.kdbx_enabled {
             let lookup_key = Self::generate_lookup_key(connection);
-            if let Some(creds) = self.secret_manager.retrieve(&lookup_key).await? {
+            if let Some(creds) = self
+                .retrieve_vault_identity(&lookup_key, connection)
+                .await?
+            {
                 return Ok(Some(creds));
             }
         }
