@@ -2517,6 +2517,7 @@ impl TemplateDialog {
             freerdp_client_override: None,
             scale_override: ScaleOverride::default(),
             disable_nla: false,
+            admin_session: false,
             security_layer: RdpSecurityLayer::default(),
             tls_security_level: None,
             ignore_certificate: false,

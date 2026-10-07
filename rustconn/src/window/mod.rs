@@ -4778,13 +4778,17 @@ impl MainWindow {
     }
 
     /// Opens a local shell terminal with split view integration
+    ///
+    /// Returns the id of the new session, so the caller that has to reapply
+    /// snapshot state to the tab — the session restore path — can do so without
+    /// a parallel parameter every other caller would have to answer for.
     fn open_local_shell_with_split(
         notebook: &SharedNotebook,
         split_view: &SharedSplitView,
         state: Option<&SharedAppState>,
         label: Option<&str>,
         group: Option<&str>,
-    ) {
+    ) -> Uuid {
         let session_id = Self::spawn_local_shell(notebook, state, label);
 
         // Reapply the tab group the session carried when the snapshot was taken,
@@ -4809,6 +4813,8 @@ impl MainWindow {
 
         // Note: The switch_page signal handler will handle visibility
         // based on whether the session has a split_color assigned
+
+        session_id
     }
 
     /// Creates a local shell session and starts the user's shell in it.

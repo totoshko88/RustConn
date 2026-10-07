@@ -23,6 +23,56 @@ pub enum BackendAvailability {
     ServiceUnavailable,
 }
 
+/// Identity of the connection whose credentials are being looked up.
+///
+/// Issue #353: a root-search backend should be able to match a vault entry
+/// titled by the connection's human-readable **name** or **host**, not only by
+/// the opaque `rustconn/{name}` lookup key or the connection UUID. This struct
+/// carries those extra aliases alongside the primary `key` so a root-search
+/// backend can widen its whole-vault fallback to them.
+///
+/// A scoped (non root-search) backend ignores `name`/`host` entirely: the
+/// default [`SecretBackend::retrieve_identity`] delegates to
+/// [`SecretBackend::retrieve`] with just `key`, so behaviour is unchanged for
+/// every backend that does not opt in.
+#[derive(Debug, Clone, Copy)]
+pub struct LookupIdentity<'a> {
+    /// The primary lookup key (the `rustconn/{name}` key or the bare UUID).
+    pub key: &'a str,
+    /// The connection's human-readable display name, when non-empty.
+    pub name: Option<&'a str>,
+    /// The connection's host, when non-empty.
+    pub host: Option<&'a str>,
+}
+
+impl<'a> LookupIdentity<'a> {
+    /// The bare alias candidates a root-search match may use, in priority
+    /// order, skipping any that are absent.
+    ///
+    /// **Host before name:** a host/IP is a more specific identifier than a
+    /// hand-entered display name, so when a vault holds entries titled both
+    /// ways the host-titled one is the safer match. (The UUID/key is tried
+    /// ahead of both by the caller for back-compat.)
+    #[must_use]
+    pub fn aliases(&self) -> Vec<&'a str> {
+        [self.host, self.name].into_iter().flatten().collect()
+    }
+}
+
+/// Case-insensitive, whitespace-trimmed exact-token equality used by the
+/// root-search fallback to decide whether a vault entry's title matches a
+/// candidate (the UUID, the connection name, or the host).
+///
+/// Issue #353 deliberately uses **exact** (not substring) matching: a substring
+/// match on a bare hostname like `db` would wrongly select an unrelated
+/// `database-prod` entry and hand its credentials to the wrong connection. Only
+/// a full-title match counts; case and surrounding whitespace are ignored
+/// because vault titles are entered by hand.
+#[must_use]
+pub(crate) fn root_alias_eq(entry_title: &str, candidate: &str) -> bool {
+    entry_title.trim().eq_ignore_ascii_case(candidate.trim())
+}
+
 /// Abstraction over secret storage backends
 ///
 /// This trait defines the interface for storing, retrieving, and deleting
@@ -50,6 +100,24 @@ pub trait SecretBackend: Send + Sync {
     /// # Errors
     /// Returns `SecretError` if the retrieval operation fails
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>>;
+
+    /// Retrieve credentials given the connection's full identity (key + name +
+    /// host aliases).
+    ///
+    /// Issue #353: a root-search backend overrides this to also match a vault
+    /// entry titled by the connection's name or host. The default delegates to
+    /// [`Self::retrieve`] with the primary key alone, so a scoped backend — or
+    /// any backend that has not opted in — behaves exactly as before and the
+    /// aliases are ignored.
+    ///
+    /// # Errors
+    /// Returns `SecretError` if the retrieval operation fails.
+    async fn retrieve_identity(
+        &self,
+        identity: LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        self.retrieve(identity.key).await
+    }
 
     /// Delete credentials for a connection
     ///

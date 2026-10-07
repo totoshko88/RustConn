@@ -87,6 +87,13 @@ pub struct FreeRdpConfig {
     pub tls_security_level: Option<u8>,
     /// Disable Network Level Authentication while keeping other methods
     pub disable_nla: bool,
+    /// Request the console/admin session (`/admin`).
+    ///
+    /// Connects to the server's console/administrative session rather than a
+    /// normal RDS session, which bypasses RDS CAL licensing (issue #366).
+    /// External FreeRDP only — the embedded IronRDP path has no equivalent yet
+    /// (IronRDP #1629).
+    pub admin_session: bool,
     /// Request dynamic desktop resizing (`/dynamic-resolution`).
     ///
     /// Mutually exclusive with smart sizing: FreeRDP rejects the two together,
@@ -173,6 +180,7 @@ impl FreeRdpConfig {
             security_layer: RdpSecurityLayer::default(),
             tls_security_level: None,
             disable_nla: false,
+            admin_session: false,
             // Preserves the historical default: every external session asked
             // for dynamic resolution before it became configurable (issue #341).
             dynamic_resolution: true,
@@ -614,6 +622,15 @@ fn push_redirection_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
 
 /// Pushes the security layer, TLS level and NLA arguments.
 fn push_security_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
+    // Console/admin session (issue #366). `/admin` asks the server for its
+    // console/administrative session, which does not consume an RDS CAL — the
+    // workaround for a licensing server that is unavailable or over its limit.
+    // External FreeRDP only; the embedded IronRDP client cannot set this flag
+    // yet (IronRDP #1629), so this field is populated only on the external path.
+    if config.admin_session {
+        args.push("/admin".to_string());
+    }
+
     if let Some(security) = config.security_layer.freerdp_arg() {
         args.push(security.to_string());
     }
@@ -981,6 +998,37 @@ mod tests {
     /// The KDC Address used to reach only the embedded client. An MS-KKDCP
     /// proxy now reaches the external one as FreeRDP 3's `/kerberos:kdc-url:`,
     /// which takes the proxy's host and appends `/KdcProxy` itself.
+    /// Issue #366: the console/admin session flag `/admin` is emitted only when
+    /// the per-connection option is set, and omitted otherwise.
+    #[test]
+    fn admin_session_emits_slash_admin_only_when_enabled() {
+        let on = FreeRdpConfig {
+            admin_session: true,
+            ..FreeRdpConfig::new("server.example.com")
+        };
+        let args_on = build_freerdp_args(&on);
+        assert!(
+            args_on.contains(&"/admin".to_string()),
+            "/admin must be present when admin_session is set: {args_on:?}"
+        );
+
+        let off = FreeRdpConfig {
+            admin_session: false,
+            ..FreeRdpConfig::new("server.example.com")
+        };
+        let args_off = build_freerdp_args(&off);
+        assert!(
+            !args_off.contains(&"/admin".to_string()),
+            "/admin must be absent when admin_session is false: {args_off:?}"
+        );
+
+        // The default config also omits it.
+        assert!(
+            !build_freerdp_args(&FreeRdpConfig::new("server.example.com"))
+                .contains(&"/admin".to_string())
+        );
+    }
+
     #[test]
     fn kdc_proxy_reaches_the_external_client_as_kerberos_kdc_url() {
         let config = FreeRdpConfig {

@@ -184,6 +184,13 @@ pub struct RdpConfig {
     /// or on the fallback. IronRDP decides NLA from whether the credentials are
     /// complete and does not read this.
     pub disable_nla: bool,
+    /// Request the console/admin session (`/admin`) on the external client.
+    ///
+    /// FreeRDP-only (issue #366): bypasses RDS CAL licensing by connecting to
+    /// the server's console/administrative session. The embedded IronRDP client
+    /// cannot request this yet (IronRDP #1629), so it only affects an external
+    /// launch or the FreeRDP fallback.
+    pub admin_session: bool,
     /// TLS security level for FreeRDP (0–5). Level 0 = legacy TLS 1.0 compat.
     /// Only effective with FreeRDP; IronRDP uses rustls (TLS 1.2+ only).
     pub tls_security_level: Option<u8>,
@@ -285,6 +292,7 @@ impl Default for RdpConfig {
             security_layer: rustconn_core::models::RdpSecurityLayer::default(),
             tls_security_level: None,
             disable_nla: false,
+            admin_session: false,
             jiggler_enabled: false,
             jiggler_interval_secs: 60,
             autotype_delay_ms: 20,

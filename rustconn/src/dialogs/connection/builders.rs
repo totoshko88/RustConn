@@ -123,6 +123,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_reconnect_on_resize_check: &'a adw::SwitchRow,
     pub rdp_mptcp_check: &'a adw::SwitchRow,
     pub rdp_fido2_check: &'a adw::SwitchRow,
+    pub rdp_admin_session_check: &'a adw::SwitchRow,
     pub rdp_kerberos_check: &'a adw::SwitchRow,
     pub rdp_kdc_address_entry: &'a adw::EntryRow,
     pub rdp_jump_host_dropdown: &'a DropDown,
@@ -1687,6 +1688,7 @@ impl ConnectionDialogData<'_> {
             },
             scale_override: ScaleOverride::from_index(self.rdp_scale_override_dropdown.selected()),
             disable_nla: self.rdp_disable_nla_check.is_active(),
+            admin_session: self.rdp_admin_session_check.is_active(),
             security_layer: rustconn_core::models::RdpSecurityLayer::from_index(
                 self.rdp_security_layer_dropdown.selected(),
             ),
