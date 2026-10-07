@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **A pinned tab stays pinned across a restart** — pinning is live state of the tab's page in the `AdwTabView` ("Pin Tab" / "Unpin Tab" in the tab context menu calls `set_page_pinned` on the page and nothing else), so the session-restore snapshot had no way to carry it and every pinned tab came back ordinary after a restart — closable again, and closing it lost the session the user had deliberately kept. `SessionRestoreData` gains a `pinned: bool` alongside the tab group it already carried, written from a new `SessionNotebook::is_session_pinned` (which reads the page, the same place the menu writes it) and reapplied through a matching `set_session_pinned`. A local shell restores synchronously, so its pin is set straight after the tab opens; an asynchronous connection start re-applies it through the same `SessionStartObserver` that already reapplies the tab group, rather than a second observer racing the first for one completion. `#[serde(default)]` keeps snapshots written before this field loadable — they restore unpinned. The pin travels with session restore, so it needs Settings → Interface → "Restore sessions on startup" enabled.
+
 ## [0.23.3] - 2026-10-07
 
 ### Fixed
