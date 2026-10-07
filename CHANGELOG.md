@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.23.4] - 2026-10-07
+## [0.23.4] - 2026-10-08
 
 ### Added
 - **A connection can request an Admin/console RDP session (`/admin`)** — a new **Admin/console session (`/admin`)** switch in the RDP options of the connection editor. An RDS-licensing host fails the embedded IronRDP licence exchange (upstream IronRDP #1629: a `SERVER_NEW_LICENSE` `securityHeaderFlags` decode error), and even after the external-client hand-off a plain FreeRDP connect can hit the same wall. A console/admin session (`mstsc /admin`, FreeRDP `/admin`) connects to the server's console/administrative session, which does not consume an RDS CAL, so the licence exchange never happens — the trick the reporter suggested on #366. The flag is a per-connection `admin_session: bool` (`#[serde(default)]`, so profiles written before this load unchanged) threaded from the persisted model through the embedded config into the external `FreeRdpConfig`, which emits `/admin` only when the switch is on. External FreeRDP only for now — the embedded IronRDP path has no admin-session flag yet (IronRDP #1629), noted in a code comment. (#366)
@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Vault root-search now matches a connection's name and host, not only its UUID** — the "search the vault from root" option widened *where* it looked (the whole vault) but still only matched an entry whose title equalled the RustConn connection's internal **UUID**. A user whose existing KeePass/Bitwarden entries are titled by hostname or display name never matched, so the feature read as "doesn't work with keepass/bitwarden" (reported by @EddieSteele73 on #353). Root-search now also matches by the connection's **name** and **host**: a shared `LookupIdentity { key, name, host }` carries the candidates, matched case-insensitively and whitespace-trimmed as an **exact** token (never a substring, so a short name can't surface an unrelated credential), tried in priority order — UUID first for back-compat, then host (more specific than a hand-entered name), then name. All five root-search backends (Bitwarden, KeePass/kdbx, 1Password, pass, Passbolt) honour the wider match through a `retrieve_identity` override; a backend that does not opt in, and any lookup with root-search disabled, is byte-for-byte unchanged (the default delegates to the UUID-keyed path). The `RustConn/`-scoped lookup stays UUID-only — only the whole-vault fallback widens. (#353)
+
+### Dependencies
+- **Updated**: async-recursion 1.1.1 → 1.2.0, cc 1.5.1 → 1.6.0, font-types 0.12.5 → 0.12.6, mio 1.2.3 → 1.2.4, objc2 0.6.4 → 0.6.5, powerfmt 0.2.0 → 0.2.1, tokio 1.53.1 → 1.53.2, uuid 1.26.1 → 1.27.0. All semver-compatible patch/minor bumps; no security advisories affected (`cargo deny check advisories` clean). picky-krb 0.12.5 remains held back for the same reason as 0.23.1–0.23.3: its `GssApiMessageError` variant breaks the pinned sspi 0.21.3, which does not match it exhaustively, so picky-krb stays at 0.12.4.
 
 ## [0.23.3] - 2026-10-07
 
