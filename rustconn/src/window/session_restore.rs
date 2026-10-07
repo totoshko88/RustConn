@@ -11,6 +11,12 @@
 //! detached windows are what the Workspaces feature is for (`window::workspaces`),
 //! and silently rebuilding a layout on every start is more surprising than
 //! useful. A detached or split session comes back as an ordinary tab.
+//!
+//! Tab *state* does come back: the group a tab was in, and whether it was
+//! pinned. Both are properties of the tab rather than of the connection, so they
+//! travel in the snapshot and are reapplied once the tab exists — the pin
+//! included, otherwise a tab the user deliberately kept would come back
+//! closable after every restart.
 
 use adw::prelude::*;
 use libadwaita as adw;
@@ -82,6 +88,11 @@ pub fn save_snapshot(state: &SharedAppState, notebook: &SharedNotebook) {
         if let Some(group) = notebook.get_tab_group(*session_id) {
             data = data.with_tab_group(group);
         }
+        // Pinning is live TabView state, so the snapshot is the only place a
+        // pin can live across a restart. `with_pinned` is unconditional: the
+        // value is written even when false, so a snapshot says what the tab was
+        // rather than staying silent about it.
+        data = data.with_pinned(notebook.is_session_pinned(*session_id));
         snapshot.add_session(data);
     }
 
@@ -209,13 +220,16 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
             // The snapshot carries the tab's title, so a local shell the user
             // relabelled comes back under that name instead of as a second
             // "Local Shell". Its tab group is reapplied so it reopens grouped.
-            super::MainWindow::open_local_shell_with_split(
+            let session_id = super::MainWindow::open_local_shell_with_split(
                 &ctx.notebook,
                 &ctx.split_view,
                 Some(&ctx.state),
                 Some(&entry.connection_name),
                 entry.tab_group.as_deref(),
             );
+            // A local shell starts immediately, so the id is known here and the
+            // pin can be reapplied synchronously.
+            ctx.notebook.set_session_pinned(session_id, entry.pinned);
             restored += 1;
             continue;
         }
@@ -236,19 +250,9 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
 
         // A connection start is asynchronous (credential resolution runs first),
         // so the session id is not known here. Observe the exact session the
-        // start creates and reapply its tab group once it exists, mirroring the
-        // synchronous local-shell path above.
-        let group_observer = entry.tab_group.clone().map(|group| {
-            // Hold the notebook weakly, as the reconnect observer does
-            // (window-guide): the closure outlives the start, so an `Rc` here
-            // would be a cycle back to the notebook that owns the session state.
-            let notebook = std::rc::Rc::downgrade(&ctx.notebook);
-            crate::window::types::SessionStartObserver::new(move |session_id| {
-                if let Some(notebook) = notebook.upgrade() {
-                    notebook.set_tab_group(session_id, &group);
-                }
-            })
-        });
+        // start creates and reapply its tab group and pin once it exists,
+        // mirroring the synchronous local-shell path above.
+        let observer = tab_observer(&ctx.notebook, entry);
 
         super::MainWindow::start_connection_with_credential_resolution_observed(
             ctx.state.clone(),
@@ -258,7 +262,7 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
             ctx.monitoring.clone(),
             entry.connection_id,
             Some(ctx.activity.clone()),
-            group_observer,
+            observer,
         );
         restored += 1;
     }
@@ -270,4 +274,34 @@ fn reopen(ctx: &RestoreContext, snapshot: &SessionRestoreState) {
             &[&missing.to_string()],
         ));
     }
+}
+
+/// Builds the post-start observer that reapplies a snapshot entry's tab state,
+/// or `None` when the entry has no group and no pin to reapply.
+///
+/// One observer carries both, because a connection start is what decides the
+/// session id — a second observer would race the first for the same completion.
+/// Hold the notebook weakly, as the reconnect observer does (window-guide): the
+/// closure outlives the start, so an `Rc` here would be a cycle back to the
+/// notebook that owns the session state.
+fn tab_observer(
+    notebook: &SharedNotebook,
+    entry: &SessionRestoreData,
+) -> Option<crate::window::types::SessionStartObserver> {
+    let group = entry.tab_group.clone().filter(|group| !group.is_empty());
+    if group.is_none() && !entry.pinned {
+        return None;
+    }
+    let pinned = entry.pinned;
+    let notebook = std::rc::Rc::downgrade(notebook);
+    Some(crate::window::types::SessionStartObserver::new(
+        move |session_id| {
+            if let Some(notebook) = notebook.upgrade() {
+                if let Some(group) = group.as_deref() {
+                    notebook.set_tab_group(session_id, group);
+                }
+                notebook.set_session_pinned(session_id, pinned);
+            }
+        },
+    ))
 }

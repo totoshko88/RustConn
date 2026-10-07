@@ -2791,6 +2791,36 @@ impl TerminalNotebook {
             .and_then(|i| i.tab_group.clone())
     }
 
+    /// Returns whether a session's tab is pinned.
+    ///
+    /// Reads the TabView page rather than session metadata: pinning is live
+    /// page state owned by the TabView, and the tab context menu flips it
+    /// through `set_page_pinned` without telling the notebook. A session with
+    /// no page — parked in a split, or in its own window — reports `false`,
+    /// which is what the restore path wants: it comes back as an ordinary tab.
+    #[must_use]
+    pub fn is_session_pinned(&self, session_id: Uuid) -> bool {
+        self.sessions
+            .borrow()
+            .get(&session_id)
+            .is_some_and(|page| page.is_pinned())
+    }
+
+    /// Pins or unpins a session's tab.
+    ///
+    /// The same entry point the session restore path uses to reapply a pin that
+    /// was set before the restart, so there is one way to reach page pinning
+    /// rather than two that can drift. The page is cloned out of the map first:
+    /// `set_page_pinned` emits `page-pinned`, and holding the `sessions` borrow
+    /// across the call would let a handler that reaches the notebook re-borrow
+    /// it.
+    pub fn set_session_pinned(&self, session_id: Uuid, pinned: bool) {
+        let page = self.sessions.borrow().get(&session_id).cloned();
+        if let Some(page) = page {
+            self.tab_view.set_page_pinned(&page, pinned);
+        }
+    }
+
     /// Applies a group label prefix to a tab title.
     fn apply_group_color(&self, session_id: Uuid, _color_index: usize) {
         if let Some(page) = self.sessions.borrow().get(&session_id)

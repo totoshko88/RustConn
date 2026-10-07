@@ -38,6 +38,13 @@ pub struct SessionRestoreData {
     /// before this field was added loadable: they restore ungrouped.
     #[serde(default)]
     pub tab_group: Option<String>,
+    /// Whether the tab was pinned when the snapshot was taken.
+    ///
+    /// Pinning is live state of the TabView page, so without this a pinned tab
+    /// comes back ordinary after a restart. `#[serde(default)]` keeps older
+    /// snapshots loadable: they restore unpinned.
+    #[serde(default)]
+    pub pinned: bool,
 }
 
 impl SessionRestoreData {
@@ -59,6 +66,7 @@ impl SessionRestoreData {
             panel_id: None,
             tab_index: None,
             tab_group: None,
+            pinned: false,
         }
     }
 
@@ -73,6 +81,13 @@ impl SessionRestoreData {
     #[must_use]
     pub fn with_tab_group(mut self, group: impl Into<String>) -> Self {
         self.tab_group = Some(group.into());
+        self
+    }
+
+    /// Records whether the tab was pinned.
+    #[must_use]
+    pub const fn with_pinned(mut self, pinned: bool) -> Self {
+        self.pinned = pinned;
         self
     }
 
@@ -524,6 +539,63 @@ mod tests {
         let json = serde_json::to_string(&data).expect("serialize");
         let back: SessionRestoreData = serde_json::from_str(&json).expect("deserialize");
         assert!(back.tab_group.is_none());
+    }
+
+    /// A pinned tab round-trips pinned, so the pin survives the restart the
+    /// snapshot is written for.
+    #[test]
+    fn a_pinned_tab_survives_a_serde_round_trip() {
+        let data = SessionRestoreData::new(
+            Uuid::new_v4(),
+            "logs".to_string(),
+            "ssh".to_string(),
+            SessionType::Embedded,
+        )
+        .with_pinned(true);
+        assert!(data.pinned);
+
+        let json = serde_json::to_string(&data).expect("serialize");
+        let back: SessionRestoreData = serde_json::from_str(&json).expect("deserialize");
+        assert!(back.pinned, "a pinned tab must restore pinned");
+    }
+
+    /// An ordinary tab round-trips unpinned.
+    #[test]
+    fn an_unpinned_tab_round_trips_unpinned() {
+        let data = SessionRestoreData::new(
+            Uuid::new_v4(),
+            "web1".to_string(),
+            "ssh".to_string(),
+            SessionType::Embedded,
+        );
+        assert!(!data.pinned);
+        let json = serde_json::to_string(&data).expect("serialize");
+        let back: SessionRestoreData = serde_json::from_str(&json).expect("deserialize");
+        assert!(!back.pinned);
+    }
+
+    /// A snapshot written before the `pinned` field existed still loads:
+    /// `#[serde(default)]` fills the missing field as `false` (restores
+    /// unpinned) rather than failing the whole restore.
+    #[test]
+    fn an_old_snapshot_without_the_pinned_field_loads_unpinned() {
+        let legacy = serde_json::json!({
+            "connection_id": Uuid::nil(),
+            "connection_name": "legacy shell",
+            "protocol": "local",
+            "session_type": "Embedded",
+            "original_start_time": "2026-01-01T00:00:00Z",
+            "saved_at": "2026-01-01T00:00:00Z",
+            "panel_id": null,
+            "tab_index": 0
+        });
+        let back: SessionRestoreData =
+            serde_json::from_value(legacy).expect("legacy snapshot must still load");
+        assert!(
+            !back.pinned,
+            "a snapshot predating the field restores unpinned"
+        );
+        assert_eq!(back.connection_name, "legacy shell");
     }
 
     /// A snapshot written before the `tab_group` field existed still loads:
