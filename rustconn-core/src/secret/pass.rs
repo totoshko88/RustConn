@@ -191,10 +191,19 @@ impl PassBackend {
         Ok(())
     }
 
-    /// Retrieves a value using pass show
-    async fn retrieve_value(
+    /// Retrieves a value using pass show, widening to the connection's host and
+    /// name aliases at the store root when root-search is on (issue #353). The
+    /// scoped `rustconn/<id>/<field>` lookup still wins first. When root-search
+    /// is on, a scoped miss falls back to `<candidate>/<field>` at the store
+    /// root for each candidate (the connection id first, then the supplied
+    /// host/name aliases), so an entry the user keeps outside the `rustconn/`
+    /// subtree and titled by host or name is still found. Reads only — writes
+    /// stay `rustconn/`-prefixed. With `aliases` empty, behaviour is
+    /// byte-identical to the id-only scoped-then-root lookup.
+    async fn retrieve_value_with_aliases(
         &self,
         connection_id: &str,
+        aliases: &[&str],
         field: &str,
     ) -> SecretResult<Option<String>> {
         // Scoped lookup first — unchanged behaviour. Found-first for back-compat:
@@ -208,14 +217,27 @@ impl PassBackend {
         }
 
         // Root-search fallback: only on a scoped miss, and only when enabled,
-        // look up `<id>/<field>` at the store root (no `rustconn/` prefix). This
-        // widens READS only — `store`/`delete` stay `rustconn/`-prefixed. When
+        // look up `<candidate>/<field>` at the store root (no `rustconn/`
+        // prefix) for the connection id and each alias (host/name). This widens
+        // READS only — `store`/`delete` stay `rustconn/`-prefixed. When
         // root-search is off, behaviour is byte-identical to the scoped-only
         // lookup above.
         if self.root_search {
-            return self
-                .show_path(&self.build_root_path(connection_id, field))
-                .await;
+            // Candidate order: id first (back-compat), then aliases;
+            // de-duplicated case-insensitively, blanks dropped. Empty aliases
+            // reduces to the single-id root fallback that was here before.
+            let mut candidates: Vec<&str> = Vec::with_capacity(1 + aliases.len());
+            for cand in std::iter::once(connection_id).chain(aliases.iter().copied()) {
+                let cand = cand.trim();
+                if !cand.is_empty() && !candidates.iter().any(|c| c.eq_ignore_ascii_case(cand)) {
+                    candidates.push(cand);
+                }
+            }
+            for cand in candidates {
+                if let Some(value) = self.show_path(&self.build_root_path(cand, field)).await? {
+                    return Ok(Some(value));
+                }
+            }
         }
 
         Ok(None)
@@ -269,6 +291,44 @@ impl PassBackend {
         } else {
             Ok(Some(value))
         }
+    }
+
+    /// Shared retrieve path for both [`SecretBackend::retrieve`] and the
+    /// alias-aware [`SecretBackend::retrieve_identity`]. `aliases` are the
+    /// connection host/name that root-search may also match (issue #353); empty
+    /// for the plain path, in which case behaviour is byte-identical to the old
+    /// `retrieve`. Each field is looked up scoped-first then root-widened
+    /// across the candidate paths.
+    async fn retrieve_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<Credentials>> {
+        let username = self
+            .retrieve_value_with_aliases(connection_id, aliases, "username")
+            .await?;
+        let password = self
+            .retrieve_value_with_aliases(connection_id, aliases, "password")
+            .await?;
+        let key_passphrase = self
+            .retrieve_value_with_aliases(connection_id, aliases, "key_passphrase")
+            .await?;
+        let domain = self
+            .retrieve_value_with_aliases(connection_id, aliases, "domain")
+            .await?;
+
+        // If nothing was found, return None
+        if username.is_none() && password.is_none() && key_passphrase.is_none() && domain.is_none()
+        {
+            return Ok(None);
+        }
+
+        Ok(Some(Credentials {
+            username,
+            password: password.map(SecretString::from),
+            key_passphrase: key_passphrase.map(SecretString::from),
+            domain,
+        }))
     }
 
     /// Deletes a value using pass rm
@@ -355,23 +415,15 @@ impl SecretBackend for PassBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        let username = self.retrieve_value(connection_id, "username").await?;
-        let password = self.retrieve_value(connection_id, "password").await?;
-        let key_passphrase = self.retrieve_value(connection_id, "key_passphrase").await?;
-        let domain = self.retrieve_value(connection_id, "domain").await?;
+        self.retrieve_with_aliases(connection_id, &[]).await
+    }
 
-        // If nothing was found, return None
-        if username.is_none() && password.is_none() && key_passphrase.is_none() && domain.is_none()
-        {
-            return Ok(None);
-        }
-
-        Ok(Some(Credentials {
-            username,
-            password: password.map(SecretString::from),
-            key_passphrase: key_passphrase.map(SecretString::from),
-            domain,
-        }))
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases = identity.aliases();
+        self.retrieve_with_aliases(identity.key, &aliases).await
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
@@ -553,6 +605,41 @@ mod root_search_tests {
         assert_eq!(
             backend.build_root_path("../etc", "pass/word"),
             "___etc/pass_word"
+        );
+    }
+
+    /// Issue #353: the root-search fallback tries `<candidate>/<field>` at the
+    /// store root for the connection id AND each host/name alias, so an entry
+    /// titled by host or name is found. The root path for each alias is the
+    /// alias (sanitized) joined to the field — distinct from the id's root path
+    /// — which is the whole of the per-candidate widening
+    /// (`retrieve_value_with_aliases` only iterates these paths). A host (with a
+    /// dot) is sanitized the same way as any other candidate.
+    #[test]
+    fn root_paths_cover_id_host_and_name_aliases() {
+        let backend = PassBackend::new(None);
+
+        // The connection id (back-compat), still the first candidate tried.
+        assert_eq!(
+            backend.build_root_path("conn-1", "password"),
+            "conn-1/password"
+        );
+        // A host alias — the `.` in a hostname is sanitized to `_`, exactly as
+        // the scoped builder would, so host and scoped share one sanitizer.
+        assert_eq!(
+            backend.build_root_path("db.example.com", "password"),
+            "db_example_com/password"
+        );
+        // A name alias.
+        assert_eq!(
+            backend.build_root_path("Prod Database", "username"),
+            "Prod Database/username"
+        );
+        // Each candidate's root path is distinct from the scoped `rustconn/`
+        // path, so an alias entry is never already caught by the scoped pass.
+        assert_ne!(
+            backend.build_root_path("db.example.com", "password"),
+            backend.build_pass_path("conn-1", "password")
         );
     }
 }
