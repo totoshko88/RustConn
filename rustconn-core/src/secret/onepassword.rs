@@ -364,7 +364,12 @@ impl OnePasswordBackend {
     /// Pure (no CLI, no `self`) so the issue #353 widening is unit-tested
     /// deterministically: it must accept the UUID, name and host, do so
     /// case-insensitively, and reject a mere substring.
-    fn title_matches(scoped_title: &str, item_title: &str, match_bare_id: bool, candidates: &[&str]) -> bool {
+    fn title_matches(
+        scoped_title: &str,
+        item_title: &str,
+        match_bare_id: bool,
+        candidates: &[&str],
+    ) -> bool {
         if item_title == scoped_title {
             return true;
         }
@@ -1019,14 +1024,39 @@ mod root_search_tests {
         let candidates = OnePasswordBackend::bare_candidates(uuid, &[host, name]);
 
         // Scoped `RustConn: {id}` always matches, regardless of match_bare_id.
-        assert!(OnePasswordBackend::title_matches(&scoped, &scoped, false, &[]));
-        assert!(OnePasswordBackend::title_matches(&scoped, &scoped, true, &candidates));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            &scoped,
+            false,
+            &[]
+        ));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            &scoped,
+            true,
+            &candidates
+        ));
 
         // On the root pass (match_bare_id = true) the UUID, host and name all
         // match by bare title.
-        assert!(OnePasswordBackend::title_matches(&scoped, uuid, true, &candidates));
-        assert!(OnePasswordBackend::title_matches(&scoped, host, true, &candidates));
-        assert!(OnePasswordBackend::title_matches(&scoped, name, true, &candidates));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            uuid,
+            true,
+            &candidates
+        ));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            host,
+            true,
+            &candidates
+        ));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            name,
+            true,
+            &candidates
+        ));
         // Case-insensitive and whitespace-trimmed.
         assert!(OnePasswordBackend::title_matches(
             &scoped,
@@ -1043,8 +1073,18 @@ mod root_search_tests {
 
         // But NOT on the scoped pass (match_bare_id = false): only the scoped
         // title matches there, never a bare id/host/name.
-        assert!(!OnePasswordBackend::title_matches(&scoped, uuid, false, &candidates));
-        assert!(!OnePasswordBackend::title_matches(&scoped, host, false, &candidates));
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            uuid,
+            false,
+            &candidates
+        ));
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            host,
+            false,
+            &candidates
+        ));
 
         // Exact, NOT substring, even on the root pass.
         assert!(!OnePasswordBackend::title_matches(
@@ -1059,7 +1099,12 @@ mod root_search_tests {
             true,
             &candidates
         ));
-        assert!(!OnePasswordBackend::title_matches(&scoped, "unrelated", true, &candidates));
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            "unrelated",
+            true,
+            &candidates
+        ));
     }
 
     /// With no aliases the candidate set is just `[id]`, so the root pass is
@@ -1069,7 +1114,17 @@ mod root_search_tests {
         let candidates = OnePasswordBackend::bare_candidates("conn-1", &[]);
         assert_eq!(candidates, vec!["conn-1"]);
         let scoped = OnePasswordBackend::entry_title("conn-1");
-        assert!(OnePasswordBackend::title_matches(&scoped, "conn-1", true, &candidates));
-        assert!(!OnePasswordBackend::title_matches(&scoped, "other-host", true, &candidates));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            "conn-1",
+            true,
+            &candidates
+        ));
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            "other-host",
+            true,
+            &candidates
+        ));
     }
 }

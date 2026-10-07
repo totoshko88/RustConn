@@ -2062,7 +2062,10 @@ mod root_search_tests {
             &candidates
         ));
         // An unrelated title never matches.
-        assert!(!BitwardenBackend::root_search_matches("unrelated", &candidates));
+        assert!(!BitwardenBackend::root_search_matches(
+            "unrelated",
+            &candidates
+        ));
     }
 
     /// With no aliases the candidate set is just `[id]`, so the fallback is
@@ -2073,6 +2076,9 @@ mod root_search_tests {
         let candidates = BitwardenBackend::bare_candidates("conn-1", &[]);
         assert_eq!(candidates, vec!["conn-1"]);
         assert!(BitwardenBackend::root_search_matches("conn-1", &candidates));
-        assert!(!BitwardenBackend::root_search_matches("other-host", &candidates));
+        assert!(!BitwardenBackend::root_search_matches(
+            "other-host",
+            &candidates
+        ));
     }
 }
