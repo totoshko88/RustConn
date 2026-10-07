@@ -336,14 +336,62 @@ impl OnePasswordBackend {
 
     /// Finds an item by connection ID using tags
     async fn find_item(&self, connection_id: &str) -> SecretResult<Option<OnePasswordItem>> {
+        self.find_item_with_aliases(connection_id, &[]).await
+    }
+
+    /// The bare candidate titles a root-search fallback may match, in priority
+    /// order: the connection id first (back-compat), then the supplied aliases
+    /// (connection host/name — issue #353). De-duplicated case-insensitively
+    /// with blanks dropped. Empty `aliases` yields `[id]`, so the fallback is
+    /// byte-identical to the id-only form it replaced.
+    fn bare_candidates<'c>(connection_id: &'c str, aliases: &[&'c str]) -> Vec<&'c str> {
+        let mut candidates: Vec<&str> = Vec::with_capacity(1 + aliases.len());
+        for cand in std::iter::once(connection_id).chain(aliases.iter().copied()) {
+            let cand = cand.trim();
+            if !cand.is_empty() && !candidates.iter().any(|c| c.eq_ignore_ascii_case(cand)) {
+                candidates.push(cand);
+            }
+        }
+        candidates
+    }
+
+    /// The root-search match predicate: does an item titled `item_title` match
+    /// this connection? The scoped `RustConn: {id}` title always matches. When
+    /// `match_bare_id` is set (the root pass), the item also matches if its
+    /// title equals ANY bare `candidate` (the UUID, host or name) under
+    /// case-insensitive, trimmed EXACT matching ([`super::backend::root_alias_eq`]).
+    ///
+    /// Pure (no CLI, no `self`) so the issue #353 widening is unit-tested
+    /// deterministically: it must accept the UUID, name and host, do so
+    /// case-insensitively, and reject a mere substring.
+    fn title_matches(scoped_title: &str, item_title: &str, match_bare_id: bool, candidates: &[&str]) -> bool {
+        if item_title == scoped_title {
+            return true;
+        }
+        match_bare_id
+            && candidates
+                .iter()
+                .any(|cand| super::backend::root_alias_eq(item_title, cand))
+    }
+
+    /// Alias-aware form of [`Self::find_item`] (issue #353). The scoped pass
+    /// (RustConn vault, `rustconn` tag) still wins first and matches only
+    /// `RustConn: {id}`. The root-search fallback widens to the whole account
+    /// and additionally accepts an item titled by the bare connection id OR any
+    /// alias (host/name). Reads only — writes still target the RustConn vault.
+    async fn find_item_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<OnePasswordItem>> {
         let title = Self::entry_title(connection_id);
 
         // Primary pass: the RustConn vault, tagged items only — the historical,
-        // narrow scope.
+        // narrow scope. No bare-id/alias matching here.
         if let Some(item) = self
             .find_item_in(
                 &title,
-                connection_id,
+                &[],
                 &[
                     "item",
                     "list",
@@ -361,13 +409,15 @@ impl OnePasswordBackend {
 
         // Root-search fallback: widen to the whole account (no vault, no tag
         // filter) and accept either the `RustConn: {id}` title or the bare
-        // connection id, so an entry the user keeps outside the RustConn vault
-        // is still found. Reads only — writes still target the RustConn vault.
+        // connection id / host / name, so an entry the user keeps outside the
+        // RustConn vault is still found. Reads only — writes still target the
+        // RustConn vault.
         if self.root_search {
+            let candidates = Self::bare_candidates(connection_id, aliases);
             return self
                 .find_item_in(
                     &title,
-                    connection_id,
+                    &candidates,
                     &["item", "list"],
                     /* match_bare_id */ true,
                 )
@@ -378,13 +428,14 @@ impl OnePasswordBackend {
     }
 
     /// Runs one `op item list …` query and returns the first item whose title
-    /// matches, resolving it to full detail. When `match_bare_id` is true an
-    /// item titled exactly `connection_id` (not just `RustConn: {id}`) also
-    /// matches, which is what widens a root search to hand-made entries.
+    /// matches, resolving it to full detail. The scoped `RustConn: {id}` title
+    /// always matches; when `match_bare_id` is true an item titled exactly by
+    /// any bare `candidate` (the connection id, host or name) also matches,
+    /// which is what widens a root search to hand-made entries (issue #353).
     async fn find_item_in(
         &self,
         title: &str,
-        connection_id: &str,
+        candidates: &[&str],
         list_args: &[&str],
         match_bare_id: bool,
     ) -> SecretResult<Option<OnePasswordItem>> {
@@ -407,8 +458,7 @@ impl OnePasswordBackend {
         };
 
         for item in items {
-            let matches = item.title == title || (match_bare_id && item.title == connection_id);
-            if matches {
+            if Self::title_matches(title, &item.title, match_bare_id, candidates) {
                 // Get full item details with fields. The item may live in any
                 // vault here, so look it up by id without a --vault constraint.
                 let details = self.run_command(&["item", "get", &item.id]).await?;
@@ -429,6 +479,57 @@ impl OnePasswordBackend {
         }
 
         Ok(None)
+    }
+
+    /// Shared retrieve path for both [`SecretBackend::retrieve`] and the
+    /// alias-aware [`SecretBackend::retrieve_identity`]. `aliases` are the
+    /// connection host/name that root-search may also match (issue #353); empty
+    /// for the plain path, in which case behaviour is byte-identical to the old
+    /// `retrieve`.
+    async fn retrieve_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<Credentials>> {
+        // Check if signed in
+        if !self.is_signed_in().await {
+            return Err(SecretError::BackendUnavailable(
+                "Not signed in to 1Password. Run 'op signin' or enable desktop app integration"
+                    .to_string(),
+            ));
+        }
+
+        let item = match self.find_item_with_aliases(connection_id, aliases).await? {
+            Some(item) => item,
+            None => return Ok(None),
+        };
+
+        let mut username = None;
+        let mut password = None;
+
+        for field in &item.fields {
+            match field.id.as_str() {
+                "username" => username = field.value.clone(),
+                "password" => password = field.value.clone(),
+                _ => {
+                    // Also check by label for custom fields
+                    if let Some(ref label) = field.label {
+                        match label.to_lowercase().as_str() {
+                            "username" => username = field.value.clone(),
+                            "password" => password = field.value.clone(),
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(Some(Credentials {
+            username,
+            password: password.map(SecretString::from),
+            key_passphrase: None,
+            domain: None,
+        }))
     }
 }
 
@@ -512,45 +613,15 @@ impl SecretBackend for OnePasswordBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        // Check if signed in
-        if !self.is_signed_in().await {
-            return Err(SecretError::BackendUnavailable(
-                "Not signed in to 1Password. Run 'op signin' or enable desktop app integration"
-                    .to_string(),
-            ));
-        }
+        self.retrieve_with_aliases(connection_id, &[]).await
+    }
 
-        let item = match self.find_item(connection_id).await? {
-            Some(item) => item,
-            None => return Ok(None),
-        };
-
-        let mut username = None;
-        let mut password = None;
-
-        for field in &item.fields {
-            match field.id.as_str() {
-                "username" => username = field.value.clone(),
-                "password" => password = field.value.clone(),
-                _ => {
-                    // Also check by label for custom fields
-                    if let Some(ref label) = field.label {
-                        match label.to_lowercase().as_str() {
-                            "username" => username = field.value.clone(),
-                            "password" => password = field.value.clone(),
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(Some(Credentials {
-            username,
-            password: password.map(SecretString::from),
-            key_passphrase: None,
-            domain: None,
-        }))
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases = identity.aliases();
+        self.retrieve_with_aliases(identity.key, &aliases).await
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
@@ -932,5 +1003,73 @@ mod root_search_tests {
             "RustConn: conn-1"
         );
         assert_ne!(OnePasswordBackend::entry_title("conn-1"), "conn-1");
+    }
+
+    /// Issue #353: the root-search fallback must match an item titled by the
+    /// connection NAME or HOST, not only the UUID — case-insensitively, exact
+    /// (not substring). `title_matches` over the candidate set `[uuid,host,name]`
+    /// is the whole of that predicate (`find_item_in` only runs the `op` query
+    /// around it), so it is unit-tested here without the live CLI.
+    #[test]
+    fn title_matches_uuid_name_and_host_exactly_and_case_insensitively() {
+        let uuid = "550e8400-e29b-41d4-a716-446655440000";
+        let host = "db.example.com";
+        let name = "Prod Database";
+        let scoped = OnePasswordBackend::entry_title(uuid);
+        let candidates = OnePasswordBackend::bare_candidates(uuid, &[host, name]);
+
+        // Scoped `RustConn: {id}` always matches, regardless of match_bare_id.
+        assert!(OnePasswordBackend::title_matches(&scoped, &scoped, false, &[]));
+        assert!(OnePasswordBackend::title_matches(&scoped, &scoped, true, &candidates));
+
+        // On the root pass (match_bare_id = true) the UUID, host and name all
+        // match by bare title.
+        assert!(OnePasswordBackend::title_matches(&scoped, uuid, true, &candidates));
+        assert!(OnePasswordBackend::title_matches(&scoped, host, true, &candidates));
+        assert!(OnePasswordBackend::title_matches(&scoped, name, true, &candidates));
+        // Case-insensitive and whitespace-trimmed.
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            "  DB.EXAMPLE.COM  ",
+            true,
+            &candidates
+        ));
+        assert!(OnePasswordBackend::title_matches(
+            &scoped,
+            "prod database",
+            true,
+            &candidates
+        ));
+
+        // But NOT on the scoped pass (match_bare_id = false): only the scoped
+        // title matches there, never a bare id/host/name.
+        assert!(!OnePasswordBackend::title_matches(&scoped, uuid, false, &candidates));
+        assert!(!OnePasswordBackend::title_matches(&scoped, host, false, &candidates));
+
+        // Exact, NOT substring, even on the root pass.
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            "db.example.com.evil",
+            true,
+            &candidates
+        ));
+        assert!(!OnePasswordBackend::title_matches(
+            &scoped,
+            "Prod Database (old)",
+            true,
+            &candidates
+        ));
+        assert!(!OnePasswordBackend::title_matches(&scoped, "unrelated", true, &candidates));
+    }
+
+    /// With no aliases the candidate set is just `[id]`, so the root pass is
+    /// byte-identical to the pre-#353 bare-id-only behaviour.
+    #[test]
+    fn empty_aliases_reduces_to_id_only_matching() {
+        let candidates = OnePasswordBackend::bare_candidates("conn-1", &[]);
+        assert_eq!(candidates, vec!["conn-1"]);
+        let scoped = OnePasswordBackend::entry_title("conn-1");
+        assert!(OnePasswordBackend::title_matches(&scoped, "conn-1", true, &candidates));
+        assert!(!OnePasswordBackend::title_matches(&scoped, "other-host", true, &candidates));
     }
 }
