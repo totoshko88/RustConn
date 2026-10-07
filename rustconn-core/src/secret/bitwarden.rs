@@ -612,6 +612,50 @@ impl BitwardenBackend {
 
     /// Finds an item by connection ID
     async fn find_item(&self, connection_id: &str) -> SecretResult<Option<BitwardenItem>> {
+        self.find_item_with_aliases(connection_id, &[]).await
+    }
+
+    /// The bare candidate titles a root-search fallback may match, in priority
+    /// order: the connection id first (back-compat), then the supplied aliases
+    /// (connection host/name — issue #353). De-duplicated case-insensitively
+    /// with blanks dropped. When `aliases` is empty this is just `[id]`, so the
+    /// fallback behaves byte-identically to the id-only form it replaced.
+    fn bare_candidates<'c>(connection_id: &'c str, aliases: &[&'c str]) -> Vec<&'c str> {
+        let mut candidates: Vec<&str> = Vec::with_capacity(1 + aliases.len());
+        for cand in std::iter::once(connection_id).chain(aliases.iter().copied()) {
+            let cand = cand.trim();
+            if !cand.is_empty() && !candidates.iter().any(|c| c.eq_ignore_ascii_case(cand)) {
+                candidates.push(cand);
+            }
+        }
+        candidates
+    }
+
+    /// The root-search match predicate: does `item_name` equal ANY of the bare
+    /// `candidates` (the connection id, host or name) under case-insensitive,
+    /// whitespace-trimmed EXACT matching ([`super::backend::root_alias_eq`])?
+    ///
+    /// Pure (no CLI, no `self`) so the issue #353 widening is unit-tested
+    /// deterministically: it must accept the UUID, the name and the host, do so
+    /// case-insensitively, and reject a mere substring.
+    fn root_search_matches(item_name: &str, candidates: &[&str]) -> bool {
+        candidates
+            .iter()
+            .any(|cand| super::backend::root_alias_eq(item_name, cand))
+    }
+
+    /// Alias-aware form of [`Self::find_item`] (issue #353). The scoped
+    /// `RustConn: {id}` match still wins first. When root-search is on, the
+    /// whole-vault fallback accepts an entry titled by the bare connection id
+    /// OR any alias (connection host/name), matched case-insensitively and
+    /// exactly via [`Self::root_search_matches`]. Reads only — stores still use
+    /// the `RustConn: {id}` name and RustConn folder. With `aliases` empty,
+    /// behaviour is byte-identical to the id-only fallback.
+    async fn find_item_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<BitwardenItem>> {
         let search_term = Self::entry_name(connection_id);
         tracing::debug!(
             search_term = %search_term,
@@ -655,28 +699,92 @@ impl BitwardenBackend {
         );
 
         // Root-search fallback: an entry the user keeps outside RustConn's
-        // naming convention is titled by the bare connection id rather than
-        // `RustConn: {id}`. Search for that too and match it exactly. Reads
-        // only — stores still use the `RustConn: {id}` name and RustConn folder.
+        // naming convention is titled by the bare connection id — or, for issue
+        // #353, by the connection's host or name. Search for each candidate and
+        // match it exactly via `root_search_matches`. Reads only — stores still
+        // use the `RustConn: {id}` name and RustConn folder.
         if self.root_search {
-            let bare_output = self
-                .run_command(&["list", "items", "--search", connection_id])
-                .await?;
-            let bare_items: Vec<BitwardenItem> =
-                serde_json::from_str(&bare_output).map_err(|e| {
-                    SecretError::RetrieveFailed(format!(
-                        "Failed to parse items: {} error at line {}, column {}",
-                        serde_error_kind(&e),
-                        e.line(),
-                        e.column()
-                    ))
-                })?;
-            return Ok(bare_items
-                .into_iter()
-                .find(|item| item.name == connection_id));
+            let candidates = Self::bare_candidates(connection_id, aliases);
+            for term in &candidates {
+                let bare_output = self
+                    .run_command(&["list", "items", "--search", term])
+                    .await?;
+                let bare_items: Vec<BitwardenItem> =
+                    serde_json::from_str(&bare_output).map_err(|e| {
+                        SecretError::RetrieveFailed(format!(
+                            "Failed to parse items: {} error at line {}, column {}",
+                            serde_error_kind(&e),
+                            e.line(),
+                            e.column()
+                        ))
+                    })?;
+                if let Some(item) = bare_items
+                    .into_iter()
+                    .find(|item| Self::root_search_matches(&item.name, &candidates))
+                {
+                    return Ok(Some(item));
+                }
+            }
+            return Ok(None);
         }
 
         Ok(None)
+    }
+
+    /// Shared retrieve path for both [`SecretBackend::retrieve`] and the
+    /// alias-aware [`SecretBackend::retrieve_identity`]. `aliases` are the
+    /// connection host/name that root-search may also match (issue #353); empty
+    /// for the plain path, in which case behaviour is byte-identical to the old
+    /// `retrieve`.
+    async fn retrieve_with_aliases(
+        &self,
+        connection_id: &str,
+        aliases: &[&str],
+    ) -> SecretResult<Option<Credentials>> {
+        tracing::debug!(
+            connection_id = %connection_id,
+            "Bitwarden retrieve: starting"
+        );
+
+        // Fast unlock check — skips `bw status` if recently verified
+        if !self.is_unlocked_fast().await {
+            return Err(SecretError::BackendUnavailable(
+                "Bitwarden vault is locked. Please unlock with 'bw unlock'".to_string(),
+            ));
+        }
+
+        // Note: `bw sync` is intentionally NOT called here. The vault is
+        // synced once during `auto_unlock` and on explicit user request.
+        // Skipping the per-retrieve sync eliminates a ~0.5-2s network
+        // round-trip on every credential lookup, which is critical for
+        // fast reconnect and batch operations.
+
+        let item = if let Some(item) = self.find_item_with_aliases(connection_id, aliases).await? {
+            tracing::debug!(
+                item_id = %item.id,
+                item_name = %item.name,
+                "Bitwarden retrieve: item found"
+            );
+            item
+        } else {
+            tracing::debug!(
+                connection_id = %connection_id,
+                "Bitwarden retrieve: no item found"
+            );
+            return Ok(None);
+        };
+
+        let login = match item.login {
+            Some(login) => login,
+            None => return Ok(None),
+        };
+
+        Ok(Some(Credentials {
+            username: login.username,
+            password: login.password,
+            key_passphrase: None,
+            domain: item.notes,
+        }))
     }
 
     /// Finds an item by exact vault entry name (without `RustConn:` prefix)
@@ -844,50 +952,15 @@ impl SecretBackend for BitwardenBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        tracing::debug!(
-            connection_id = %connection_id,
-            "Bitwarden retrieve: starting"
-        );
+        self.retrieve_with_aliases(connection_id, &[]).await
+    }
 
-        // Fast unlock check — skips `bw status` if recently verified
-        if !self.is_unlocked_fast().await {
-            return Err(SecretError::BackendUnavailable(
-                "Bitwarden vault is locked. Please unlock with 'bw unlock'".to_string(),
-            ));
-        }
-
-        // Note: `bw sync` is intentionally NOT called here. The vault is
-        // synced once during `auto_unlock` and on explicit user request.
-        // Skipping the per-retrieve sync eliminates a ~0.5-2s network
-        // round-trip on every credential lookup, which is critical for
-        // fast reconnect and batch operations.
-
-        let item = if let Some(item) = self.find_item(connection_id).await? {
-            tracing::debug!(
-                item_id = %item.id,
-                item_name = %item.name,
-                "Bitwarden retrieve: item found"
-            );
-            item
-        } else {
-            tracing::debug!(
-                connection_id = %connection_id,
-                "Bitwarden retrieve: no item found"
-            );
-            return Ok(None);
-        };
-
-        let login = match item.login {
-            Some(login) => login,
-            None => return Ok(None),
-        };
-
-        Ok(Some(Credentials {
-            username: login.username,
-            password: login.password,
-            key_passphrase: None,
-            domain: item.notes,
-        }))
+    async fn retrieve_identity(
+        &self,
+        identity: super::backend::LookupIdentity<'_>,
+    ) -> SecretResult<Option<Credentials>> {
+        let aliases = identity.aliases();
+        self.retrieve_with_aliases(identity.key, &aliases).await
     }
 
     async fn delete(&self, connection_id: &str) -> SecretResult<()> {
@@ -1946,5 +2019,60 @@ mod root_search_tests {
         // distinct from the scoped name, so an entry titled by the bare id is
         // not already caught by the scoped pass.
         assert_ne!(BitwardenBackend::entry_name("conn-1"), "conn-1");
+    }
+
+    /// Issue #353: the root-search fallback must match a vault entry titled by
+    /// the connection NAME or HOST, not only by the UUID — case-insensitively,
+    /// exact (not substring). `root_search_matches` over the candidate set
+    /// `[uuid, host, name]` is the whole of that predicate (`find_item` only
+    /// runs the `bw` searches around it), so it is unit-tested here without the
+    /// live CLI.
+    #[test]
+    fn root_search_matches_uuid_name_and_host_exactly_and_case_insensitively() {
+        let uuid = "550e8400-e29b-41d4-a716-446655440000";
+        let host = "db.example.com";
+        let name = "Prod Database";
+        // `bare_candidates` is the exact candidate order a real lookup builds:
+        // id first, then the host/name aliases, de-duplicated.
+        let candidates = BitwardenBackend::bare_candidates(uuid, &[host, name]);
+
+        // The UUID still matches (back-compat).
+        assert!(BitwardenBackend::root_search_matches(uuid, &candidates));
+        // The host and name match (the #353 widening).
+        assert!(BitwardenBackend::root_search_matches(host, &candidates));
+        assert!(BitwardenBackend::root_search_matches(name, &candidates));
+        // Case-insensitive and whitespace-trimmed.
+        assert!(BitwardenBackend::root_search_matches(
+            "  DB.EXAMPLE.COM  ",
+            &candidates
+        ));
+        assert!(BitwardenBackend::root_search_matches(
+            "prod database",
+            &candidates
+        ));
+
+        // Exact, NOT substring: a longer title that merely contains a candidate
+        // must not match, or a bare `db` would steal `database-prod`.
+        assert!(!BitwardenBackend::root_search_matches(
+            "db.example.com.evil",
+            &candidates
+        ));
+        assert!(!BitwardenBackend::root_search_matches(
+            "Prod Database (old)",
+            &candidates
+        ));
+        // An unrelated title never matches.
+        assert!(!BitwardenBackend::root_search_matches("unrelated", &candidates));
+    }
+
+    /// With no aliases the candidate set is just `[id]`, so the fallback is
+    /// byte-identical to the pre-#353 id-only behaviour: the id matches, nothing
+    /// else does.
+    #[test]
+    fn empty_aliases_reduces_to_id_only_matching() {
+        let candidates = BitwardenBackend::bare_candidates("conn-1", &[]);
+        assert_eq!(candidates, vec!["conn-1"]);
+        assert!(BitwardenBackend::root_search_matches("conn-1", &candidates));
+        assert!(!BitwardenBackend::root_search_matches("other-host", &candidates));
     }
 }
