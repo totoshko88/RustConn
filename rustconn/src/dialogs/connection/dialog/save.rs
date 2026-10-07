@@ -115,6 +115,7 @@ impl ConnectionDialog {
         rdp_reconnect_on_resize_check: &adw::SwitchRow,
         rdp_mptcp_check: &adw::SwitchRow,
         rdp_fido2_check: &adw::SwitchRow,
+        rdp_admin_session_check: &adw::SwitchRow,
         rdp_kerberos_check: &adw::SwitchRow,
         rdp_kdc_address_entry: &adw::EntryRow,
         rdp_jump_host_dropdown: &DropDown,
@@ -341,6 +342,7 @@ impl ConnectionDialog {
         let rdp_reconnect_on_resize_check = rdp_reconnect_on_resize_check.clone();
         let rdp_mptcp_check = rdp_mptcp_check.clone();
         let rdp_fido2_check = rdp_fido2_check.clone();
+        let rdp_admin_session_check = rdp_admin_session_check.clone();
         let rdp_kerberos_check = rdp_kerberos_check.clone();
         let rdp_kdc_address_entry = rdp_kdc_address_entry.clone();
         let rdp_jump_host_dropdown = rdp_jump_host_dropdown.clone();
@@ -584,6 +586,7 @@ impl ConnectionDialog {
                 rdp_reconnect_on_resize_check: &rdp_reconnect_on_resize_check,
                 rdp_mptcp_check: &rdp_mptcp_check,
                 rdp_fido2_check: &rdp_fido2_check,
+                rdp_admin_session_check: &rdp_admin_session_check,
                 rdp_kerberos_check: &rdp_kerberos_check,
                 rdp_kdc_address_entry: &rdp_kdc_address_entry,
                 rdp_jump_host_dropdown: &rdp_jump_host_dropdown,

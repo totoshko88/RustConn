@@ -618,6 +618,11 @@ fn start_embedded_rdp_session(
     embedded_config.tls_security_level = rdp_config.tls_security_level;
     embedded_config.disable_nla = rdp_config.disable_nla;
 
+    // Console/admin session (issue #366). External FreeRDP only — the embedded
+    // IronRDP client has no admin flag yet (IronRDP #1629) — so this only takes
+    // effect on an external launch or the automatic FreeRDP fallback.
+    embedded_config.admin_session = rdp_config.admin_session;
+
     // FIDO2/WebAuthn device redirection (FreeRDP 3.x only, external mode)
     embedded_config.fido2_enabled = rdp_config.fido2_enabled;
 
@@ -979,6 +984,7 @@ fn start_external_rdp_session(
         security_layer: rdp_config.security_layer,
         tls_security_level: rdp_config.tls_security_level,
         disable_nla: rdp_config.disable_nla,
+        admin_session: rdp_config.admin_session,
         dynamic_resolution: rdp_config.dynamic_resolution,
         smart_sizing: rdp_config.smart_sizing,
         extra_args: rdp_config.custom_args.clone(),

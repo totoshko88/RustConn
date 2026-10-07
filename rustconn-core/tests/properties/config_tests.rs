@@ -198,6 +198,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 freerdp_client_override: None,
                 scale_override: Default::default(),
                 disable_nla: false,
+                admin_session: false,
                 security_layer: Default::default(),
                 tls_security_level: None,
                 ignore_certificate: false,

@@ -2219,6 +2219,17 @@ pub struct RdpConfig {
     /// Disable Network Level Authentication
     #[serde(default)]
     pub disable_nla: bool,
+    /// Connect to the console/admin session (`/admin`).
+    ///
+    /// Passes `/admin` to the external FreeRDP hand-off, which requests the
+    /// server's console/administrative session instead of a normal RDS session.
+    /// This bypasses RDS CAL licensing — useful when a licensing server is
+    /// unavailable or over its limit (issue #366). External FreeRDP only; the
+    /// embedded IronRDP path cannot request the admin session yet (IronRDP
+    /// #1629). Off by default, and stored with a serde default so profiles
+    /// written before this option load unchanged.
+    #[serde(default)]
+    pub admin_session: bool,
     /// Security layer selection (Negotiate/RDP/TLS/NLA).
     /// Legacy servers (Windows 2012/Win7) may need `Rdp` or `Tls`.
     /// `Rdp` and `Tls` force FreeRDP fallback (incompatible with IronRDP).
@@ -2399,6 +2410,7 @@ impl Default for RdpConfig {
             freerdp_client_override: None,
             scale_override: ScaleOverride::default(),
             disable_nla: false,
+            admin_session: false,
             security_layer: RdpSecurityLayer::default(),
             tls_security_level: None,
             ignore_certificate: false,

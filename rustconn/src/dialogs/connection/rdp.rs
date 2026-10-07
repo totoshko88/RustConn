@@ -29,7 +29,7 @@ use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 41-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 42-element tuple matching the fields expected by `ConnectionDialog`.
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -55,6 +55,7 @@ pub(super) fn create_rdp_options() -> (
     SpinButton,
     SpinButton,
     SpinButton,
+    adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -472,6 +473,23 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&rdp_fido2_check);
+
+    // Admin/console session (issue #366). Passes `/admin` to the external
+    // FreeRDP client, requesting the server's console/administrative session.
+    // That session does not consume an RDS CAL, which is the workaround when a
+    // licensing server is unavailable or over its limit. External client only —
+    // the embedded IronRDP path cannot request it yet (IronRDP #1629).
+    let rdp_admin_session_check = adw::SwitchRow::builder()
+        .title(i18n("Admin/console session (/admin)"))
+        .subtitle(i18n(
+            "Connect to the console/admin session (External client). Bypasses RDS CAL licensing",
+        ))
+        .active(false)
+        .build();
+    rdp_admin_session_check.set_tooltip_text(Some(&i18n(
+        "Passes /admin to the external FreeRDP client, connecting to the server's console/administrative session instead of a normal RDS session. This bypasses RDS CAL licensing. External client only; the embedded client cannot request it yet.",
+    )));
+    features_group.add(&rdp_admin_session_check);
 
     // Kerberos authentication for NLA (issue #351). Needed for accounts in AD
     // "Protected Users", which may not use NTLM. Embedded client: sspi signs in
@@ -907,6 +925,7 @@ pub(super) fn create_rdp_options() -> (
         rdp_reconnect_on_resize_check,
         rdp_mptcp_check,
         rdp_fido2_check,
+        rdp_admin_session_check,
         rdp_kerberos_check,
         rdp_kdc_address_entry,
         rdp_jump_host_dropdown,

@@ -166,6 +166,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         freerdp_client_override: None,
         scale_override: Default::default(),
         disable_nla: false,
+        admin_session: false,
         security_layer: Default::default(),
         tls_security_level: None,
         ignore_certificate: false,
