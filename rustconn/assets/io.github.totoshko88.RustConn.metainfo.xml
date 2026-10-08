@@ -140,6 +140,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.5" date="2026-10-08">
+      <description>
+        <p>Version 0.23.5 - the default SSH-config import works under Flatpak, and a GNOME HIG compact/normal UI pass:</p>
+        <ul>
+          <li>Fixed: default ~/.ssh/config import now actually imports under Flatpak - the importer probes both the sandbox $HOME/.ssh and the real host ~/.ssh, so the automatic SSH Config source no longer reports success while importing nothing</li>
+          <li>Fixed: import no longer claims success when it found nothing - an empty import now says "Nothing was imported" instead of "Successfully imported 0 connection(s)"</li>
+          <li>Fixed: header bar height now matches other GNOME apps - the icon-only header button floor drops from 44px to libadwaita's native 34px</li>
+          <li>Fixed: the Shell button stays as an icon on a narrow window instead of disappearing</li>
+          <li>Fixed: auto-compact no longer trips on a normal-height window - the height trigger is lowered from 800px to 600px</li>
+          <li>Changed: compact-interface settings polish - the auto-compact toggle is greyed out while manual compact is on, and compact tap targets stay touch-safe under auto-compact</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.4" date="2026-10-08">
       <description>
         <p>Version 0.23.4 - an Admin/console RDP option, pinned tabs that survive a restart, and a wider vault root-search:</p>

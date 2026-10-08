@@ -101,9 +101,13 @@ thread_local! {
 }
 
 /// Auto-compact engages when the window is no taller than this (logical px).
-// ponytail: fixed height/width heuristic, fine for desktop/laptop screens;
-// promote to a user setting if people on unusual DPIs find the trigger wrong.
-const COMPACT_AUTO_MAX_HEIGHT: i32 = 800;
+// GNOME HIG adapts primarily on WIDTH (narrow → folded), so width is the main
+// trigger below; the height floor is a safety net for genuinely short screens
+// (netbooks, vertically split tiles) only. It was 800px, which flipped a normal
+// 1080p laptop into compact as soon as the window was tiled to half-height —
+// surprising the user with no action on their part (#369 UI/UX audit). Lowered
+// to 600px so an ordinary tall window stays in regular density.
+const COMPACT_AUTO_MAX_HEIGHT: i32 = 600;
 /// ...or no wider than this (logical px). Either dimension being tight engages it.
 const COMPACT_AUTO_MAX_WIDTH: i32 = 900;
 
@@ -136,11 +140,12 @@ fn set_window_compact(window: &gtk4::Window, manual: bool, auto: bool) {
     }
     // `compact-manual` marks the case where the user DELIBERATELY turned compact
     // on (the toggle / menu / shortcut), as opposed to auto-compact engaging
-    // because the window got small. Only the manual case trades the GNOME HIG
-    // 44×44 px icon-button tap target (ui.rs / sidebar_ui.rs) down to the denser
-    // 28 px: auto-compact may be a tablet or a touch convertible where the tap
-    // target must stay 44 px, so its header buttons are left full size. Driven
-    // in CSS by `window.compact-manual .header-icon-button` (assets/style.css).
+    // because the window got small. Only the manual case trades the standard
+    // 34px icon-button size (ui.rs / sidebar_ui.rs, matching libadwaita's native
+    // header buttons) down to the denser 28px. Auto-compact leaves buttons at
+    // 34px. Driven in CSS by `window.compact-manual .header-icon-button`
+    // (assets/style.css). See issue #369 for why the old 44px HIG touch target
+    // was dropped on the desktop pointer case.
     if manual {
         window.add_css_class("compact-manual");
     } else {

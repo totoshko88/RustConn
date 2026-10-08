@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.4
+Version:        0.23.5
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,16 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Oct 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.5-0
+- Version bump to 0.23.5
+- Fixed: default ~/.ssh/config import now actually imports under Flatpak - the importer probes both the sandbox $HOME/.ssh and the real host ~/.ssh (via a new flatpak::host_home_dir helper), so the automatic SSH Config source no longer reports success while importing nothing (#368)
+- Fixed: import no longer claims success when it found nothing - an empty import now says "Nothing was imported" instead of "Successfully imported 0 connection(s)" (#368)
+- Fixed: header bar height now matches other GNOME apps - the icon-only header button floor drops from 44px to libadwaita's native 34px, so the header is no longer taller than native on a pointer session (#369)
+- Fixed: the Shell button stays as an icon on a narrow window instead of disappearing, shrinking to icon-only rather than being dropped (#369)
+- Fixed: auto-compact no longer trips on a normal-height window - the height trigger is lowered from 800px to 600px (#369)
+- Changed: compact-interface settings polish - the auto-compact toggle is greyed out while manual compact is on, and compact header/sidebar tap targets stay touch-safe under auto-compact
+- Dependencies: updated serde_spanned, the toml parser family and the zerocopy pair (semver-compatible patch bumps); picky-krb held at 0.12.4 (0.12.5 breaks the pinned sspi 0.21.3)
+
 * Thu Oct 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.4-0
 - Version bump to 0.23.4
 - Added: a connection can request an Admin/console RDP session (/admin) - a per-connection switch in the RDP editor that connects to the server's console session (no RDS CAL), avoiding the licence exchange that fails embedded IronRDP; external FreeRDP only for now (#366)

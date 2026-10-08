@@ -132,6 +132,10 @@
 /* ============================================================
  * Split Pane Color Indicators
  * Applied via SPLIT_PANE_COLORS in split_view/bridge.rs
+ * NOTE: same DELIBERATE fixed GNOME palette as `.split-panel-color-*`
+ * above — these hex values are intentionally NOT @accent_color-derived
+ * so the six panel/tab identifiers stay mutually distinct and stable
+ * across themes and accent changes. Do not "theme-ify" them.
  * ============================================================ */
 
 .split-color-blue {
@@ -185,15 +189,32 @@
 }
 
 /* Icon-only header buttons (content header: sidebar-toggle, menu, settings,
- * split-H, split-V; sidebar header: search, menu). GNOME HIG Pointer & Touch
- * wants a 44×44px minimum tap target. This floor used to be a Rust
- * `set_size_request(44,44)`, but a size request is a hard floor CSS cannot
- * cross, which left the compact header-bar rules dead on Linux. As a CSS
- * min-size the 44px floor still holds, and the compact-manual rule below can
- * lower it. */
+ * split-H, split-V; sidebar header: search, menu).
+ *
+ * Issue #369: a 44px floor here (the HIG Pointer & Touch touch tap-target)
+ * made the whole headerbar taller than every other GNOME app on a desktop
+ * pointer session. libadwaita's own flat header buttons are 32px; we match that
+ * so the bar sizes exactly like GNOME Settings and friends. GTK CSS cannot tell
+ * a pointer session from a touch one, so forcing 44px on everyone regressed the
+ * common case. Deliberate compact (`.compact-manual`) trims further to 28px,
+ * and macOS keeps 28px. */
 .header-icon-button {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+}
+
+/* Pin the main-window header bars to the GNOME-standard height. Without this
+ * the bar keeps libadwaita's default ~47px min-height even once the buttons are
+ * 32px, leaving RustConn's top bar visibly taller than a standard GNOME
+ * Settings window (issue #369). Scoped to the top-level window's own header
+ * bars via `.header-icon-button`-bearing bars; adw dialogs are untouched. The
+ * 3px vertical padding + a 32px child yields a ~38px bar that lines up with the
+ * platform. */
+window headerbar {
+    min-height: 38px;
+    padding-top: 3px;
+    padding-bottom: 3px;
 }
 
 /* macOS has no touch tap-target requirement here, so its header buttons match
@@ -205,14 +226,18 @@ window.macos .header-icon-button {
 }
 
 /* DELIBERATE compact only (the user turned compact on via toggle/menu/shortcut,
- * not auto-compact from a small window): trade the 44px tap target down to 28px
- * for a denser header. Auto-compact (which may be a tablet/touch convertible)
- * keeps the full 44px — it carries `.compact` but NOT `.compact-manual`
- * (app.rs::set_window_compact). This is what finally lets compact actually
- * shrink the header bar on Linux. */
+ * not auto-compact from a small window): trade the button size down to 28px for
+ * a denser header. Auto-compact (which may be a tablet/touch convertible) keeps
+ * the standard 32px — it carries `.compact` but NOT `.compact-manual`
+ * (app.rs::set_window_compact). */
 window.compact-manual .header-icon-button {
     min-width: 28px;
     min-height: 28px;
+}
+
+/* Compact-manual also tightens the bar itself a little further. */
+window.compact-manual headerbar {
+    min-height: 34px;
 }
 
 /* Bulk action buttons (group operations mode) — symbolic icon buttons that
@@ -720,14 +745,25 @@ window.compact headerbar {
     padding-bottom: 0;
 }
 
-/* Header bar buttons — denser tap targets. Zero vertical margin so the
- * buttons don't push the header taller than its min-height. */
+/* Header bar buttons in compact. Split by WHY compact engaged (p.5 audit):
+ *  - auto-compact (small window, possibly a touch convertible) keeps a
+ *    touch-safe 24px floor — the GNOME HIG minimum tap target;
+ *  - deliberate `.compact-manual` (the user asked for density on a pointer
+ *    desktop) goes down to 20px.
+ * `.compact-manual` always carries `.compact` too (app.rs::set_window_compact),
+ * so the manual rule below just overrides this one. Zero vertical margin either
+ * way so buttons don't push the header past its min-height. */
 window.compact headerbar button {
-    min-height: 20px;
-    min-width: 20px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 1px 4px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+window.compact-manual headerbar button {
+    min-height: 20px;
+    min-width: 20px;
 }
 
 window.compact headerbar button.image-button {
@@ -736,6 +772,24 @@ window.compact headerbar button.image-button {
 
 /* Title label — tighter padding only (compact shrinks spacing, not text). */
 window.compact headerbar .title {
+    padding: 0;
+}
+
+/* Shell header button in compact: hide the "Shell" TEXT, keep the terminal
+ * icon (0.23.5 audit p.6 — the icon must stay reachable on a small window).
+ * The icon↔label 6px gap lives in CSS (`.shell-button-label` margin-start),
+ * not the GtkBox spacing property, so compact can drop it; the label itself is
+ * collapsed (GTK4 CSS has no `display:none`). */
+.shell-button-label {
+    margin-left: 6px;
+}
+
+window.compact .shell-button-label,
+window.narrow .shell-button-label {
+    font-size: 0;
+    opacity: 0;
+    min-width: 0;
+    margin: 0;
     padding: 0;
 }
 
@@ -856,15 +910,20 @@ window.compact .sidebar toolbarview > .bottom-bar > box {
     margin-bottom: 0;
 }
 
-/* Compact: same reduced icon-button metrics as the header
- * (`window.compact headerbar button.image-button`), so the two toolbars stay
- * identical in compact mode too. */
+/* Compact: same reduced icon-button metrics as the header, so the two toolbars
+ * stay identical in compact mode too — including the touch-safe/dense split
+ * (p.5 audit): 24px under auto-compact, 20px only under deliberate manual. */
 window.compact .sidebar toolbarview > .bottom-bar button {
-    min-height: 20px;
-    min-width: 20px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 1px 3px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+window.compact-manual .sidebar toolbarview > .bottom-bar button {
+    min-height: 20px;
+    min-width: 20px;
 }
 
 /* Compact: AdwToolbarView wraps its bottom bar in a GtkRevealer, and libadwaita

@@ -469,10 +469,25 @@ impl ImportSource for SshConfigImporter {
 
         let mut paths = Vec::new();
 
+        // Candidate `~/.ssh` roots. Normally just `dirs::home_dir()`, but inside
+        // a Flatpak sandbox `$HOME` points at the per-app sandbox home while the
+        // host `~/.ssh` (granted via `--filesystem=home/.ssh:ro`) lives at the
+        // real host home. Probing both fixes the default import silently
+        // yielding zero entries under Flatpak (issue #368).
+        let mut ssh_roots: Vec<PathBuf> = Vec::new();
         if let Some(home) = dirs::home_dir() {
-            let ssh_dir = home.join(".ssh");
+            ssh_roots.push(home.join(".ssh"));
+        }
+        if let Some(host_home) = crate::flatpak::host_home_dir() {
+            let host_ssh = host_home.join(".ssh");
+            if !ssh_roots.contains(&host_ssh) {
+                ssh_roots.push(host_ssh);
+            }
+        }
+
+        for ssh_dir in &ssh_roots {
             let config_path = ssh_dir.join("config");
-            if config_path.exists() {
+            if config_path.exists() && !paths.contains(&config_path) {
                 paths.push(config_path);
             }
 
@@ -482,7 +497,7 @@ impl ImportSource for SshConfigImporter {
             {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.is_file() {
+                    if path.is_file() && !paths.contains(&path) {
                         paths.push(path);
                     }
                 }
