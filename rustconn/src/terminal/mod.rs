@@ -1113,25 +1113,34 @@ impl TerminalNotebook {
             // across a chunk boundary and its state belongs to exactly one PTY.
             let mut osc52_filter = osc52::Osc52Filter::default();
             while let Ok(chunk) = output.recv().await {
-                if let Some(terminal) = terminal.upgrade() {
-                    // The length is the only part of a payload worth logging: it
-                    // is remote-supplied output, and it may be a secret the user
-                    // yanked over there.
-                    let mut sink = |text: &str| {
-                        tracing::debug!(
-                            %session_id,
-                            bytes = text.len(),
-                            "OSC 52 clipboard offer from the remote side"
-                        );
-                        osc52::offer_to_clipboard(&terminal, text);
-                    };
-                    let filtered = osc52_filter.push(&chunk, &mut sink);
+                let live_terminal = terminal.upgrade();
+                // The clipboard offer is written here, inside the sink, so it
+                // only fires while the terminal is alive to supply a display.
+                // The length is the only part of a payload worth logging: it is
+                // remote-supplied output and may be a secret the user yanked.
+                let mut sink = |text: &str| {
+                    tracing::debug!(
+                        %session_id,
+                        bytes = text.len(),
+                        "OSC 52 clipboard offer from the remote side"
+                    );
+                    if let Some(terminal) = &live_terminal {
+                        osc52::offer_to_clipboard(terminal, text);
+                    }
+                };
+                // Run the filter on every chunk, alive widget or not — it has to
+                // keep its cross-chunk state consistent. The result is owned so
+                // the same bytes reach VTE *and* the observers: a lifted OSC 52
+                // offer must not survive in the session transcript either, which
+                // is exactly where the raw chunk used to leak it.
+                let filtered = osc52_filter.push(&chunk, &mut sink).to_vec();
+                if let Some(terminal) = &live_terminal {
                     // A chunk that held nothing but an offer filters to nothing,
                     // and `feed` is not called on an empty slice: VTE has been
                     // known to reach an `assert()` on degenerate input, and an
                     // assertion in a library takes the whole process down.
                     if !filtered.is_empty() {
-                        terminal.feed(filtered);
+                        terminal.feed(&filtered);
                     }
                 }
                 // The list is cloned so that no borrow is held while an observer
@@ -1142,7 +1151,7 @@ impl TerminalNotebook {
                     .cloned()
                     .unwrap_or_default();
                 for handler in handlers {
-                    handler(&chunk);
+                    handler(&filtered);
                 }
             }
             // The stream can end inside an OSC string. Hand the remainder to VTE

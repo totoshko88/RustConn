@@ -325,8 +325,16 @@ fn parse(sequence: &[u8]) -> Parsed {
     // boundary (the opt-in is), and a remote can send any well-formed base64 it
     // likes regardless. What does matter is that what comes out is text — a
     // clipboard is asked for text, and raw bytes have no business in one.
-    match String::from_utf8(glib::base64_decode(encoded)) {
-        Ok(text) => Parsed::Write(Zeroizing::new(text)),
+    //
+    // The decoded bytes may be a secret the user yanked, so they are wrapped in
+    // `Zeroizing` the instant they land in Rust — before the `String` is built —
+    // so the intermediate buffer is wiped on drop rather than left in the heap.
+    // (`glib::base64_decode` copies out of its own GLib allocation, which this
+    // cannot wipe; swapping in a pure-Rust decoder would close that last gap but
+    // is not worth a new dependency for a buffer freed microseconds later.)
+    let decoded = Zeroizing::new(glib::base64_decode(encoded));
+    match std::str::from_utf8(&decoded) {
+        Ok(text) => Parsed::Write(Zeroizing::new(text.to_owned())),
         Err(_) => Parsed::Other,
     }
 }

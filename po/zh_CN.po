@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 18:30+0300\n"
+"POT-Creation-Date: 2026-10-08 21:14+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -35,11 +35,11 @@ msgstr "确定"
 #: rustconn/src/dialogs/recording.rs:509 rustconn/src/dialogs/recording.rs:579
 #: rustconn/src/dialogs/settings/clients_tab.rs:347
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:174
-#: rustconn/src/dialogs/settings/mod.rs:573
-#: rustconn/src/dialogs/settings/mod.rs:912
+#: rustconn/src/dialogs/settings/mod.rs:575
+#: rustconn/src/dialogs/settings/mod.rs:915
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:448
-#: rustconn/src/dialogs/settings/terminal_tab.rs:807
-#: rustconn/src/dialogs/settings/terminal_tab.rs:857
+#: rustconn/src/dialogs/settings/terminal_tab.rs:822
+#: rustconn/src/dialogs/settings/terminal_tab.rs:872
 #: rustconn/src/dialogs/statistics.rs:86
 #: rustconn/src/dialogs/template_manager.rs:191
 #: rustconn/src/dialogs/tunnel.rs:723
@@ -48,15 +48,15 @@ msgstr "确定"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:352 rustconn/src/terminal/tab_menu.rs:457
-#: rustconn/src/terminal/tab_menu.rs:686 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:350 rustconn/src/terminal/tab_menu.rs:455
+#: rustconn/src/terminal/tab_menu.rs:684 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:1066
 #: rustconn/src/window/edit_group.rs:1890
 #: rustconn/src/window/edit_group.rs:1938
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3271
-#: rustconn/src/window/mod.rs:3335 rustconn/src/window/mod.rs:4283
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3285
+#: rustconn/src/window/mod.rs:3349 rustconn/src/window/mod.rs:4297
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
@@ -76,7 +76,7 @@ msgstr "不保存"
 #: rustconn/src/dialogs/connection/dialog/populate.rs:90
 #: rustconn/src/dialogs/connection/dialog/populate.rs:92
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:177
-#: rustconn/src/dialogs/settings/terminal_tab.rs:858
+#: rustconn/src/dialogs/settings/terminal_tab.rs:873
 #: rustconn/src/dialogs/smart_folder.rs:82
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2792
@@ -253,7 +253,7 @@ msgstr "手动输入密码"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2165 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1029
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1043
 msgid "Open Settings"
 msgstr "打开设置"
 
@@ -265,7 +265,7 @@ msgstr "新建集群"
 #: rustconn/src/dialogs/cluster.rs:70 rustconn/src/dialogs/cluster.rs:71
 #: rustconn/src/dialogs/connection/dialog/construction.rs:139
 #: rustconn/src/dialogs/connection/dialog/construction.rs:140
-#: rustconn/src/dialogs/settings/terminal_tab.rs:808
+#: rustconn/src/dialogs/settings/terminal_tab.rs:823
 #: rustconn/src/dialogs/smart_folder.rs:87
 #: rustconn/src/dialogs/smart_folder.rs:88 rustconn/src/dialogs/snippet.rs:87
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
@@ -285,7 +285,7 @@ msgstr "集群详情"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:911
 #: rustconn/src/dialogs/connection/general_tab.rs:99
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
-#: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:1957
+#: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:1963
 #: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:512
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
@@ -344,7 +344,7 @@ msgid "Filter connections…"
 msgstr "筛选连接…"
 
 #: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1049
-#: rustconn/src/terminal/config.rs:287
+#: rustconn/src/terminal/config.rs:292
 msgid "Select All"
 msgstr "全选"
 
@@ -476,12 +476,12 @@ msgstr "快速颜色预设用于环境识别"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:121
 #: rustconn/src/dialogs/connection/advanced_tab.rs:957
-#: rustconn/src/dialogs/settings/terminal_tab.rs:881
+#: rustconn/src/dialogs/settings/terminal_tab.rs:896
 msgid "Background"
 msgstr "背景色"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:129
-#: rustconn/src/dialogs/settings/terminal_tab.rs:882
+#: rustconn/src/dialogs/settings/terminal_tab.rs:897
 msgid "Foreground"
 msgstr "前景色"
 
@@ -498,7 +498,7 @@ msgid "Reset Theme"
 msgstr "重置主题"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:286
-#: rustconn/src/dialogs/settings/mod.rs:913
+#: rustconn/src/dialogs/settings/mod.rs:916
 #: rustconn/src/dialogs/statistics.rs:87
 msgid "Reset"
 msgstr "重置"
@@ -694,7 +694,7 @@ msgid "IP address to authorize in the SPA packet"
 msgstr "在 SPA 数据包中授权的 IP 地址"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:606
-#: rustconn/src/dialogs/settings/mod.rs:358
+#: rustconn/src/dialogs/settings/mod.rs:360
 msgid "Highlight Rules"
 msgstr "高亮规则"
 
@@ -703,13 +703,13 @@ msgid "Regex-based text highlighting for this connection"
 msgstr "基于正则表达式的文本高亮"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:621
-#: rustconn/src/dialogs/settings/mod.rs:386
+#: rustconn/src/dialogs/settings/mod.rs:388
 msgid "No highlight rules"
 msgstr "无高亮规则"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:633
 #: rustconn/src/dialogs/connection/automation_tab.rs:167
-#: rustconn/src/dialogs/settings/mod.rs:363
+#: rustconn/src/dialogs/settings/mod.rs:365
 #: rustconn/src/window/edit_group.rs:1253
 msgid "Add Rule"
 msgstr "添加规则"
@@ -800,34 +800,34 @@ msgstr "正则表达式，例如 (?i)\\bINFO\\b。在右侧的字段中设置颜
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:924
 #: rustconn/src/dialogs/connection/advanced_tab.rs:928
-#: rustconn/src/dialogs/settings/mod.rs:1977
+#: rustconn/src/dialogs/settings/mod.rs:1983
 msgid "Pattern (regex)"
 msgstr "模式（正则）"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:943
-#: rustconn/src/dialogs/settings/terminal_tab.rs:221
-#: rustconn/src/dialogs/settings/terminal_tab.rs:258
+#: rustconn/src/dialogs/settings/terminal_tab.rs:222
+#: rustconn/src/dialogs/settings/terminal_tab.rs:259
 msgid "Underline"
 msgstr "下划线"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:972
 #: rustconn/src/dialogs/connection/advanced_tab.rs:975
-#: rustconn/src/dialogs/settings/mod.rs:1921
-#: rustconn/src/dialogs/settings/mod.rs:1923
+#: rustconn/src/dialogs/settings/mod.rs:1927
+#: rustconn/src/dialogs/settings/mod.rs:1929
 msgid "Enable rule"
 msgstr "启用规则"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:980
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
-#: rustconn/src/dialogs/settings/mod.rs:1938
+#: rustconn/src/dialogs/settings/mod.rs:1944
 #: rustconn/src/window/edit_group.rs:2056
 #: rustconn/src/window/edit_group.rs:2058
 msgid "Delete rule"
 msgstr "删除规则"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:984
-#: rustconn/src/dialogs/settings/mod.rs:1942
+#: rustconn/src/dialogs/settings/mod.rs:1948
 msgid "Delete highlight rule"
 msgstr "删除高亮规则"
 
@@ -973,7 +973,7 @@ msgstr "例如：/path/to/script.sh 或 vpn-connect ${host}"
 #: rustconn/src/dialogs/connection/automation_tab.rs:517
 #: rustconn/src/dialogs/connection/general_tab.rs:382
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:233
-#: rustconn/src/dialogs/settings/terminal_tab.rs:490
+#: rustconn/src/dialogs/settings/terminal_tab.rs:500
 #: rustconn/src/dialogs/snippet.rs:273 rustconn/src/dialogs/template.rs:1930
 msgid "Command"
 msgstr "命令"
@@ -1990,7 +1990,7 @@ msgstr "零信任"
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/connection/vnc.rs:338
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:101
-#: rustconn/src/dialogs/settings/mod.rs:416
+#: rustconn/src/dialogs/settings/mod.rs:418
 #: rustconn/src/dialogs/template.rs:687
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:84
 #: rustconn/src/dialogs/wol.rs:65 rustconn/src/dialogs/wol.rs:71
@@ -2324,7 +2324,7 @@ msgid "Additional kubectl arguments"
 msgstr "附加 kubectl 参数"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:65
-#: rustconn/src/dialogs/settings/mod.rs:324
+#: rustconn/src/dialogs/settings/mod.rs:326
 msgid "Session Logging"
 msgstr "会话日志"
 
@@ -3248,8 +3248,8 @@ msgid "Auto"
 msgstr "自动"
 
 #: rustconn/src/dialogs/connection/spice.rs:180
-#: rustconn/src/dialogs/settings/terminal_tab.rs:279
-#: rustconn/src/dialogs/settings/terminal_tab.rs:312
+#: rustconn/src/dialogs/settings/terminal_tab.rs:280
+#: rustconn/src/dialogs/settings/terminal_tab.rs:313
 #: rustconn/src/dialogs/template.rs:1258 rustconn/src/i18n_markers.rs:115
 msgid "Off"
 msgstr "关闭"
@@ -4410,12 +4410,12 @@ msgstr "便携文件口令"
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/widgets.rs:613
 #: rustconn/src/embedded_rdp/mod.rs:578 rustconn/src/embedded_vnc/ui.rs:51
-#: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:284
+#: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
 msgstr "复制"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1081
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1095
 msgid "Stop"
 msgstr "停止"
 
@@ -4522,8 +4522,8 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:687
-#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4284
+#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:685
+#: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4298
 msgid "Close"
 msgstr "关闭"
 
@@ -6467,139 +6467,139 @@ msgstr "时间戳"
 msgid "Prepend [HH:MM:SS] to each line in session logs"
 msgstr "在会话日志的每行前添加 [HH:MM:SS]"
 
-#: rustconn/src/dialogs/settings/mod.rs:325
+#: rustconn/src/dialogs/settings/mod.rs:327
 msgid "Configure session log persistence and content"
 msgstr "配置会话日志持久化和内容"
 
-#: rustconn/src/dialogs/settings/mod.rs:332
+#: rustconn/src/dialogs/settings/mod.rs:334
 msgid "Directory"
 msgstr "目录"
 
-#: rustconn/src/dialogs/settings/mod.rs:338
+#: rustconn/src/dialogs/settings/mod.rs:340
 msgid "Retention"
 msgstr "保留期"
 
-#: rustconn/src/dialogs/settings/mod.rs:339
+#: rustconn/src/dialogs/settings/mod.rs:341
 msgid "Days to keep logs"
 msgstr "保留日志的天数"
 
-#: rustconn/src/dialogs/settings/mod.rs:359
+#: rustconn/src/dialogs/settings/mod.rs:361
 msgid "Global regex-based text highlighting rules"
 msgstr "全局正则表达式文本高亮规则"
 
-#: rustconn/src/dialogs/settings/mod.rs:373
+#: rustconn/src/dialogs/settings/mod.rs:375
 msgid "Highlight ERROR, WARNING, CRITICAL and FATAL"
 msgstr "高亮显示 ERROR、WARNING、CRITICAL 和 FATAL"
 
-#: rustconn/src/dialogs/settings/mod.rs:375
+#: rustconn/src/dialogs/settings/mod.rs:377
 msgid ""
 "Built-in rules that colour common log levels. Turn off to use only your own "
 "rules."
 msgstr "为常见日志级别着色的内置规则。关闭后仅使用您自己的规则。"
 
-#: rustconn/src/dialogs/settings/mod.rs:446
+#: rustconn/src/dialogs/settings/mod.rs:448
 msgid "Backup & Restore"
 msgstr "备份与恢复"
 
-#: rustconn/src/dialogs/settings/mod.rs:447
+#: rustconn/src/dialogs/settings/mod.rs:449
 msgid "Export or import all settings as a ZIP archive"
 msgstr "将所有设置导出或导入为 ZIP 存档"
 
-#: rustconn/src/dialogs/settings/mod.rs:451
+#: rustconn/src/dialogs/settings/mod.rs:453
 msgid "Backup Settings…"
 msgstr "备份设置..."
 
-#: rustconn/src/dialogs/settings/mod.rs:452
+#: rustconn/src/dialogs/settings/mod.rs:454
 msgid "Save all configuration files to a ZIP archive"
 msgstr "将所有配置文件保存到 ZIP 存档"
 
-#: rustconn/src/dialogs/settings/mod.rs:455
+#: rustconn/src/dialogs/settings/mod.rs:457
 msgid "Restore Settings…"
 msgstr "恢复设置..."
 
-#: rustconn/src/dialogs/settings/mod.rs:457
+#: rustconn/src/dialogs/settings/mod.rs:459
 msgid "Load configuration from a ZIP archive (restart required)"
 msgstr "从 ZIP 存档加载配置（需要重启）"
 
-#: rustconn/src/dialogs/settings/mod.rs:485
+#: rustconn/src/dialogs/settings/mod.rs:487
 msgid "Save Backup"
 msgstr "保存备份"
 
-#: rustconn/src/dialogs/settings/mod.rs:490
-#: rustconn/src/dialogs/settings/mod.rs:554
+#: rustconn/src/dialogs/settings/mod.rs:492
+#: rustconn/src/dialogs/settings/mod.rs:556
 msgid "ZIP archives"
 msgstr "ZIP 压缩包"
 
-#: rustconn/src/dialogs/settings/mod.rs:503
+#: rustconn/src/dialogs/settings/mod.rs:505
 msgid "Backup saved ({} files)"
 msgstr "备份已保存（{} 个文件）"
 
-#: rustconn/src/dialogs/settings/mod.rs:516
-#: rustconn/src/dialogs/settings/mod.rs:525
+#: rustconn/src/dialogs/settings/mod.rs:518
+#: rustconn/src/dialogs/settings/mod.rs:527
 msgid "Backup failed"
 msgstr "备份失败"
 
-#: rustconn/src/dialogs/settings/mod.rs:527
-#: rustconn/src/dialogs/settings/mod.rs:660
+#: rustconn/src/dialogs/settings/mod.rs:529
+#: rustconn/src/dialogs/settings/mod.rs:662
 msgid "Cannot access the configuration directory: {}"
 msgstr "无法访问配置目录：{}"
 
-#: rustconn/src/dialogs/settings/mod.rs:550
+#: rustconn/src/dialogs/settings/mod.rs:552
 msgid "Open Backup"
 msgstr "打开备份"
 
-#: rustconn/src/dialogs/settings/mod.rs:568
+#: rustconn/src/dialogs/settings/mod.rs:570
 msgid "Restore Settings?"
 msgstr "恢复设置？"
 
-#: rustconn/src/dialogs/settings/mod.rs:570
+#: rustconn/src/dialogs/settings/mod.rs:572
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
 msgstr "这将覆盖当前设置。需要重启才能应用更改。"
 
-#: rustconn/src/dialogs/settings/mod.rs:574
+#: rustconn/src/dialogs/settings/mod.rs:576
 #: rustconn/src/window/session_restore.rs:199
 msgid "Restore"
 msgstr "恢复"
 
-#: rustconn/src/dialogs/settings/mod.rs:606
+#: rustconn/src/dialogs/settings/mod.rs:608
 msgid "Restored files but failed to reload settings. Please restart."
 msgstr "文件已恢复但无法重新加载设置。请重新启动。"
 
-#: rustconn/src/dialogs/settings/mod.rs:621
+#: rustconn/src/dialogs/settings/mod.rs:623
 msgid "Settings restored"
 msgstr "设置已恢复"
 
-#: rustconn/src/dialogs/settings/mod.rs:623
+#: rustconn/src/dialogs/settings/mod.rs:625
 msgid "Restored {} files. Restart RustConn to apply the restored settings."
 msgstr "已恢复 {} 个文件。请重启 RustConn 以应用恢复的设置。"
 
-#: rustconn/src/dialogs/settings/mod.rs:627
+#: rustconn/src/dialogs/settings/mod.rs:629
 msgid "Restart later"
 msgstr "稍后重启"
 
-#: rustconn/src/dialogs/settings/mod.rs:628
+#: rustconn/src/dialogs/settings/mod.rs:630
 msgid "Quit now"
 msgstr "立即退出"
 
-#: rustconn/src/dialogs/settings/mod.rs:649
-#: rustconn/src/dialogs/settings/mod.rs:658
+#: rustconn/src/dialogs/settings/mod.rs:651
+#: rustconn/src/dialogs/settings/mod.rs:660
 msgid "Restore failed"
 msgstr "恢复失败"
 
-#: rustconn/src/dialogs/settings/mod.rs:898
+#: rustconn/src/dialogs/settings/mod.rs:901
 msgid "No Overrides to Reset"
 msgstr "没有可重置的覆盖项"
 
-#: rustconn/src/dialogs/settings/mod.rs:899
+#: rustconn/src/dialogs/settings/mod.rs:902
 msgid "Every connection already follows the global monitoring switch."
 msgstr "每个连接都已遵循全局监控开关。"
 
-#: rustconn/src/dialogs/settings/mod.rs:906
+#: rustconn/src/dialogs/settings/mod.rs:909
 msgid "Reset Per-Connection Overrides?"
 msgstr "重置各连接的覆盖项？"
 
-#: rustconn/src/dialogs/settings/mod.rs:908
+#: rustconn/src/dialogs/settings/mod.rs:911
 msgid ""
 "Connections that switch monitoring on or off themselves: {}. After the reset "
 "they follow the global switch. Polling intervals set per connection are kept."
@@ -6607,37 +6607,37 @@ msgstr ""
 "自行开启或关闭监控的连接：{}。重置后它们将遵循全局开关。各连接单独设置的轮询"
 "间隔将予以保留。"
 
-#: rustconn/src/dialogs/settings/mod.rs:931
+#: rustconn/src/dialogs/settings/mod.rs:934
 msgid "Connections reset to the global monitoring setting: {}"
 msgstr "已重置为全局监控设置的连接：{}"
 
-#: rustconn/src/dialogs/settings/mod.rs:939
+#: rustconn/src/dialogs/settings/mod.rs:942
 msgid "Could Not Reset Overrides"
 msgstr "无法重置覆盖项"
 
-#: rustconn/src/dialogs/settings/mod.rs:941
+#: rustconn/src/dialogs/settings/mod.rs:944
 msgid ""
 "The connections could not be saved. Check that the configuration folder is "
 "writable."
 msgstr "无法保存连接。请检查配置文件夹是否可写。"
 
-#: rustconn/src/dialogs/settings/mod.rs:978
+#: rustconn/src/dialogs/settings/mod.rs:981
 msgid "There is no portable file at {}. Create it first, or correct the path."
 msgstr "{} 处没有便携文件。请先创建它，或更正路径。"
 
-#: rustconn/src/dialogs/settings/mod.rs:1033
+#: rustconn/src/dialogs/settings/mod.rs:1036
 msgid "Passphrase changed. Passwords encrypted again: {}"
 msgstr "密码短语已更改。重新加密的密码数：{}"
 
-#: rustconn/src/dialogs/settings/mod.rs:1204
+#: rustconn/src/dialogs/settings/mod.rs:1207
 msgid "Failed to start"
 msgstr "启动失败"
 
-#: rustconn/src/dialogs/settings/mod.rs:1689
+#: rustconn/src/dialogs/settings/mod.rs:1695
 msgid "Passphrase was not saved"
 msgstr "密码短语未保存"
 
-#: rustconn/src/dialogs/settings/mod.rs:1691
+#: rustconn/src/dialogs/settings/mod.rs:1697
 msgid ""
 "The passphrase for the portable file was not confirmed, so it was not saved. "
 "Everything else you changed was. Open Secrets again and type the passphrase "
@@ -6646,11 +6646,11 @@ msgstr ""
 "便携文件的密码短语未确认，因此未保存。您更改的其他内容均已保存。请重新打开密"
 "钥，并在两个字段中输入密码短语。"
 
-#: rustconn/src/dialogs/settings/mod.rs:1904
+#: rustconn/src/dialogs/settings/mod.rs:1910
 msgid "Untitled rule"
 msgstr "未命名规则"
 
-#: rustconn/src/dialogs/settings/mod.rs:1984
+#: rustconn/src/dialogs/settings/mod.rs:1990
 msgid ""
 "Regular expression, for example (?i)\\bINFO\\b. Set the colour in the fields "
 "below."
@@ -7734,208 +7734,216 @@ msgstr "从代理中移除"
 msgid "Remove key from SSH agent"
 msgstr "从 SSH 代理中移除密钥"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:42
+#: rustconn/src/dialogs/settings/terminal_tab.rs:43
 #: rustconn/src/dialogs/shortcuts.rs:150
 msgid "Terminal"
 msgstr "终端"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:47
+#: rustconn/src/dialogs/settings/terminal_tab.rs:48
 msgid "Font"
 msgstr "字体"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:55
+#: rustconn/src/dialogs/settings/terminal_tab.rs:56
 msgid "Family"
 msgstr "字体"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:68
+#: rustconn/src/dialogs/settings/terminal_tab.rs:69
 msgid "Size"
 msgstr "大小"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:77
-#: rustconn/src/dialogs/settings/terminal_tab.rs:886
+#: rustconn/src/dialogs/settings/terminal_tab.rs:78
+#: rustconn/src/dialogs/settings/terminal_tab.rs:901
 msgid "Colors"
 msgstr "颜色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:88
+#: rustconn/src/dialogs/settings/terminal_tab.rs:89
 #: rustconn/src/dialogs/settings/ui_tab.rs:137
 #: rustconn/src/dialogs/settings/ui_tab.rs:192
 msgid "Theme"
 msgstr "主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:102
-#: rustconn/src/dialogs/settings/terminal_tab.rs:105
+#: rustconn/src/dialogs/settings/terminal_tab.rs:103
+#: rustconn/src/dialogs/settings/terminal_tab.rs:106
 msgid "New custom theme"
 msgstr "新建自定义主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:109
-#: rustconn/src/dialogs/settings/terminal_tab.rs:114
+#: rustconn/src/dialogs/settings/terminal_tab.rs:110
+#: rustconn/src/dialogs/settings/terminal_tab.rs:115
 msgid "Edit custom theme"
 msgstr "编辑自定义主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:119
-#: rustconn/src/dialogs/settings/terminal_tab.rs:124
+#: rustconn/src/dialogs/settings/terminal_tab.rs:120
+#: rustconn/src/dialogs/settings/terminal_tab.rs:125
 msgid "Delete custom theme"
 msgstr "删除自定义主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:132
+#: rustconn/src/dialogs/settings/terminal_tab.rs:133
 msgid "Custom themes"
 msgstr "自定义主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:212
-#: rustconn/src/dialogs/settings/terminal_tab.rs:883
+#: rustconn/src/dialogs/settings/terminal_tab.rs:213
+#: rustconn/src/dialogs/settings/terminal_tab.rs:898
 msgid "Cursor"
 msgstr "光标"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:219
-#: rustconn/src/dialogs/settings/terminal_tab.rs:248
+#: rustconn/src/dialogs/settings/terminal_tab.rs:220
+#: rustconn/src/dialogs/settings/terminal_tab.rs:249
 msgid "Block"
 msgstr "块"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:220
-#: rustconn/src/dialogs/settings/terminal_tab.rs:253
+#: rustconn/src/dialogs/settings/terminal_tab.rs:221
+#: rustconn/src/dialogs/settings/terminal_tab.rs:254
 msgid "IBeam"
 msgstr "I 型"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:230
-#: rustconn/src/dialogs/settings/terminal_tab.rs:267
+#: rustconn/src/dialogs/settings/terminal_tab.rs:231
+#: rustconn/src/dialogs/settings/terminal_tab.rs:268
 msgid "Shape"
 msgstr "形状"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:278
-#: rustconn/src/dialogs/settings/terminal_tab.rs:307
+#: rustconn/src/dialogs/settings/terminal_tab.rs:279
+#: rustconn/src/dialogs/settings/terminal_tab.rs:308
 msgid "On"
 msgstr "开启"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:280
-#: rustconn/src/dialogs/settings/terminal_tab.rs:317
+#: rustconn/src/dialogs/settings/terminal_tab.rs:281
+#: rustconn/src/dialogs/settings/terminal_tab.rs:318
 #: rustconn/src/dialogs/settings/ui_tab.rs:113
 #: rustconn/src/dialogs/settings/ui_tab.rs:154
 msgid "System"
 msgstr "系统"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:289
-#: rustconn/src/dialogs/settings/terminal_tab.rs:326
+#: rustconn/src/dialogs/settings/terminal_tab.rs:290
+#: rustconn/src/dialogs/settings/terminal_tab.rs:327
 msgid "Blink"
 msgstr "闪烁"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:337
+#: rustconn/src/dialogs/settings/terminal_tab.rs:338
 msgid "Scrolling"
 msgstr "滚动"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:349
+#: rustconn/src/dialogs/settings/terminal_tab.rs:350
 msgid "History"
 msgstr "历史"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:350
+#: rustconn/src/dialogs/settings/terminal_tab.rs:351
 msgid "Number of lines to keep in scrollback"
 msgstr "滚动缓冲区保留的行数"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:358
+#: rustconn/src/dialogs/settings/terminal_tab.rs:359
 msgid "Keep on reconnect"
 msgstr "重新连接时保留"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:359
+#: rustconn/src/dialogs/settings/terminal_tab.rs:360
 msgid "Preserve terminal output when a session reconnects"
 msgstr "会话重新连接时保留终端输出"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:365
+#: rustconn/src/dialogs/settings/terminal_tab.rs:366
 msgid "On output"
 msgstr "输出时"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:366
+#: rustconn/src/dialogs/settings/terminal_tab.rs:367
 msgid "Scroll to bottom when new output appears"
 msgstr "新输出出现时滚动到底部"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:372
+#: rustconn/src/dialogs/settings/terminal_tab.rs:373
 msgid "On keystroke"
 msgstr "按键时"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:373
+#: rustconn/src/dialogs/settings/terminal_tab.rs:374
 msgid "Scroll to bottom when typing"
 msgstr "输入时滚动到底部"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:380
+#: rustconn/src/dialogs/settings/terminal_tab.rs:381
 msgid "Scrollbar"
 msgstr "滚动条"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:381
+#: rustconn/src/dialogs/settings/terminal_tab.rs:382
 msgid "Show a scrollbar next to the terminal"
 msgstr "在终端旁边显示滚动条"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:390
+#: rustconn/src/dialogs/settings/terminal_tab.rs:391
 msgid "Behavior"
 msgstr "行为"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:395
+#: rustconn/src/dialogs/settings/terminal_tab.rs:396
 msgid "Hyperlinks"
 msgstr "超链接"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:396
+#: rustconn/src/dialogs/settings/terminal_tab.rs:397
 msgid "Allow clickable URLs in terminal"
 msgstr "允许终端中的可点击 URL"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:403
+#: rustconn/src/dialogs/settings/terminal_tab.rs:404
 msgid "Hide pointer"
 msgstr "隐藏指针"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:404
+#: rustconn/src/dialogs/settings/terminal_tab.rs:405
 msgid "Hide mouse cursor when typing"
 msgstr "输入时隐藏鼠标光标"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:411
+#: rustconn/src/dialogs/settings/terminal_tab.rs:412
 msgid "Bell"
 msgstr "铃声"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:412
+#: rustconn/src/dialogs/settings/terminal_tab.rs:413
 msgid "Play sound on terminal bell"
 msgstr "终端铃声响起时播放声音"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:418
+#: rustconn/src/dialogs/settings/terminal_tab.rs:419
 msgid "SFTP via mc"
 msgstr "通过 mc 的 SFTP"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:419
-#: rustconn/src/dialogs/settings/terminal_tab.rs:428
+#: rustconn/src/dialogs/settings/terminal_tab.rs:420
+#: rustconn/src/dialogs/settings/terminal_tab.rs:429
 msgid "Open SFTP in Midnight Commander (local shell tab)"
 msgstr "在 Midnight Commander 中打开 SFTP（本地 shell 标签页）"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:431
+#: rustconn/src/dialogs/settings/terminal_tab.rs:432
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
 msgstr "⚠ 外部文件管理器无法访问 Flatpak 沙箱中的 SSH 代理"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:441
+#: rustconn/src/dialogs/settings/terminal_tab.rs:442
 msgid "Copy on select"
 msgstr "选中即复制"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:442
+#: rustconn/src/dialogs/settings/terminal_tab.rs:443
 msgid "Automatically copy selected text to clipboard"
 msgstr "自动将选中的文本复制到剪贴板"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:448
+#: rustconn/src/dialogs/settings/terminal_tab.rs:451
+msgid "Remote clipboard (OSC 52)"
+msgstr "远程剪贴板 (OSC 52)"
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:452
+msgid "Let a remote program put text on the local clipboard"
+msgstr "允许远程程序将文本放入本地剪贴板"
+
+#: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Right-click pastes"
 msgstr "右键粘贴"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:450
+#: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Paste the clipboard on right-click instead of showing the menu"
 msgstr "右键单击时粘贴剪贴板，而不显示菜单"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:457
+#: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"
 msgstr "正常退出时关闭标签"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:459
+#: rustconn/src/dialogs/settings/terminal_tab.rs:469
 msgid "Automatically close the tab when the session exits normally"
 msgstr "会话正常退出时自动关闭标签"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:466
+#: rustconn/src/dialogs/settings/terminal_tab.rs:476
 msgid "Option as Meta key"
 msgstr "Option 用作 Meta 键"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:468
+#: rustconn/src/dialogs/settings/terminal_tab.rs:478
 msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
 msgstr "发送 Escape 前缀而非组合字符（适用于 vim/emacs）"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:480
+#: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:476
 #: rustconn/src/dialogs/settings/ui_tab.rs:767
 #: rustconn/src/dialogs/shortcuts.rs:168
@@ -7944,103 +7952,103 @@ msgstr "发送 Escape 前缀而非组合字符（适用于 vim/emacs）"
 msgid "Local Shell"
 msgstr "本地 Shell"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:481
+#: rustconn/src/dialogs/settings/terminal_tab.rs:491
 msgid "Custom command for the local shell tab"
 msgstr "本地终端标签页的自定义命令"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:485
+#: rustconn/src/dialogs/settings/terminal_tab.rs:495
 msgid "Default system shell"
 msgstr "默认系统终端"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:491
+#: rustconn/src/dialogs/settings/terminal_tab.rs:501
 msgid "e.g. fish, bash --norc, neofetch &amp;&amp; bash"
 msgstr "例如 fish、bash --norc、neofetch &amp;&amp; bash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:777
+#: rustconn/src/dialogs/settings/terminal_tab.rs:792
 msgid "Follow System"
 msgstr "跟随系统"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:801
+#: rustconn/src/dialogs/settings/terminal_tab.rs:816
 msgid "New Custom Theme"
 msgstr "新建自定义主题"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:802
+#: rustconn/src/dialogs/settings/terminal_tab.rs:817
 msgid "Enter a name for the new theme"
 msgstr "输入新主题的名称"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:812
+#: rustconn/src/dialogs/settings/terminal_tab.rs:827
 msgid "Theme name"
 msgstr "主题名称"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:852
+#: rustconn/src/dialogs/settings/terminal_tab.rs:867
 msgid "{} — Theme Editor"
 msgstr "{} — 主题编辑器"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:894
+#: rustconn/src/dialogs/settings/terminal_tab.rs:909
 msgid "Palette"
 msgstr "调色板"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:898
+#: rustconn/src/dialogs/settings/terminal_tab.rs:913
 msgid "Black"
 msgstr "黑色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:899
+#: rustconn/src/dialogs/settings/terminal_tab.rs:914
 msgid "Red"
 msgstr "红色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:900
+#: rustconn/src/dialogs/settings/terminal_tab.rs:915
 msgid "Green"
 msgstr "绿色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:901
+#: rustconn/src/dialogs/settings/terminal_tab.rs:916
 msgid "Yellow"
 msgstr "黄色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:902
+#: rustconn/src/dialogs/settings/terminal_tab.rs:917
 msgid "Blue"
 msgstr "蓝色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:903
+#: rustconn/src/dialogs/settings/terminal_tab.rs:918
 msgid "Magenta"
 msgstr "品红色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:904
+#: rustconn/src/dialogs/settings/terminal_tab.rs:919
 msgid "Cyan"
 msgstr "青色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:905
+#: rustconn/src/dialogs/settings/terminal_tab.rs:920
 msgid "White"
 msgstr "白色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:906
+#: rustconn/src/dialogs/settings/terminal_tab.rs:921
 msgid "Bright Black"
 msgstr "亮黑色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:907
+#: rustconn/src/dialogs/settings/terminal_tab.rs:922
 msgid "Bright Red"
 msgstr "亮红色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:908
+#: rustconn/src/dialogs/settings/terminal_tab.rs:923
 msgid "Bright Green"
 msgstr "亮绿色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:909
+#: rustconn/src/dialogs/settings/terminal_tab.rs:924
 msgid "Bright Yellow"
 msgstr "亮黄色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:910
+#: rustconn/src/dialogs/settings/terminal_tab.rs:925
 msgid "Bright Blue"
 msgstr "亮蓝色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:911
+#: rustconn/src/dialogs/settings/terminal_tab.rs:926
 msgid "Bright Magenta"
 msgstr "亮品红色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:912
+#: rustconn/src/dialogs/settings/terminal_tab.rs:927
 msgid "Bright Cyan"
 msgstr "亮青色"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:913
+#: rustconn/src/dialogs/settings/terminal_tab.rs:928
 msgid "Bright White"
 msgstr "亮白色"
 
@@ -8428,7 +8436,7 @@ msgid "Command Palette (Commands)"
 msgstr "命令面板（命令）"
 
 #: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/embedded_rdp/mod.rs:586
-#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:285
+#: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "粘贴"
@@ -8437,7 +8445,7 @@ msgstr "粘贴"
 msgid "Find in Terminal"
 msgstr "在终端中查找"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1251
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1255
 msgid "Close Tab"
 msgstr "关闭标签页"
 
@@ -8449,7 +8457,7 @@ msgstr "下一个标签页"
 msgid "Previous Tab"
 msgstr "上一个标签页"
 
-#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:501
+#: rustconn/src/dialogs/shortcuts.rs:184 rustconn/src/terminal/mod.rs:513
 msgid "Tab Overview"
 msgstr "标签页概览"
 
@@ -8481,7 +8489,7 @@ msgstr "从拆分视图中移除"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:1192
+#: rustconn/src/terminal/tab_menu.rs:1196
 msgid "Remove Split"
 msgstr "移除拆分"
 
@@ -10209,14 +10217,14 @@ msgid "Save files from remote clipboard"
 msgstr "从远程剪贴板保存文件"
 
 #: rustconn/src/embedded_rdp/mod.rs:770 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1351
+#: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1402
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:1119
+#: rustconn/src/terminal/tab_menu.rs:1123
 msgid "Reconnect"
 msgstr "重连"
 
 #: rustconn/src/embedded_rdp/mod.rs:772 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1353
+#: rustconn/src/terminal/mod.rs:1404
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "重新连接到此会话"
@@ -11188,35 +11196,35 @@ msgstr "所有标签页已在此分屏视图中显示"
 msgid "Select a tab to display"
 msgstr "选择要显示的标签页"
 
-#: rustconn/src/terminal/config.rs:379
+#: rustconn/src/terminal/config.rs:384
 msgid "Execute Snippet…"
 msgstr "执行代码片段…"
 
-#: rustconn/src/terminal/mod.rs:497
+#: rustconn/src/terminal/mod.rs:509
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "标签页概览 (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:514 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:526 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "欢迎"
 
-#: rustconn/src/terminal/mod.rs:1055
+#: rustconn/src/terminal/mod.rs:1068
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "输出过滤器 '{}' 未安装；会话输出未经过滤"
 
-#: rustconn/src/terminal/mod.rs:1345
+#: rustconn/src/terminal/mod.rs:1396
 msgid "Command not found: {}"
 msgstr "命令未找到：{}"
 
-#: rustconn/src/terminal/mod.rs:1347
+#: rustconn/src/terminal/mod.rs:1398
 msgid "Failed to start '{}'"
 msgstr "无法启动 '{}'"
 
-#: rustconn/src/terminal/mod.rs:1369
+#: rustconn/src/terminal/mod.rs:1420
 msgid "'{}' is not installed"
 msgstr "'{}' 未安装"
 
-#: rustconn/src/terminal/mod.rs:1372
+#: rustconn/src/terminal/mod.rs:1423
 msgid "Failed to start '{}': {}"
 msgstr "无法启动 '{}': {}"
 
@@ -11300,141 +11308,141 @@ msgstr "登录到 {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "运行“{}”以在浏览器中重新登录"
 
-#: rustconn/src/terminal/tab_menu.rs:291
+#: rustconn/src/terminal/tab_menu.rs:289
 msgid "Set Tab Group"
 msgstr "设置标签组"
 
-#: rustconn/src/terminal/tab_menu.rs:299
+#: rustconn/src/terminal/tab_menu.rs:297
 msgid "New group name…"
 msgstr "新组名称…"
 
-#: rustconn/src/terminal/tab_menu.rs:304
+#: rustconn/src/terminal/tab_menu.rs:302
 msgid "Enter a group name for this tab"
 msgstr "输入此标签页的组名称"
 
-#: rustconn/src/terminal/tab_menu.rs:309
+#: rustconn/src/terminal/tab_menu.rs:307
 msgid "Existing groups:"
 msgstr "现有组："
 
-#: rustconn/src/terminal/tab_menu.rs:337
+#: rustconn/src/terminal/tab_menu.rs:335
 msgid "or enter a new name:"
 msgstr "或输入新名称："
 
-#: rustconn/src/terminal/tab_menu.rs:353 rustconn/src/terminal/tab_menu.rs:458
+#: rustconn/src/terminal/tab_menu.rs:351 rustconn/src/terminal/tab_menu.rs:456
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "应用"
 
-#: rustconn/src/terminal/tab_menu.rs:445
+#: rustconn/src/terminal/tab_menu.rs:443
 msgid "Rename Tab"
 msgstr "重命名标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:447
+#: rustconn/src/terminal/tab_menu.rs:445
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr "标签仅命名此标签页。留空可恢复默认名称。"
 
-#: rustconn/src/terminal/tab_menu.rs:453
+#: rustconn/src/terminal/tab_menu.rs:451
 msgid "Tab name"
 msgstr "标签页名称"
 
-#: rustconn/src/terminal/tab_menu.rs:680 rustconn/src/terminal/tab_menu.rs:1151
+#: rustconn/src/terminal/tab_menu.rs:678 rustconn/src/terminal/tab_menu.rs:1155
 msgid "Close All in Group"
 msgstr "关闭组内所有"
 
-#: rustconn/src/terminal/tab_menu.rs:682
+#: rustconn/src/terminal/tab_menu.rs:680
 msgid "Close {} tabs in group '{}'?"
 msgstr "关闭组 '{}' 中的 {} 个标签页？"
 
-#: rustconn/src/terminal/tab_menu.rs:943
+#: rustconn/src/terminal/tab_menu.rs:951
 msgid "Save Output"
 msgstr "保存输出"
 
-#: rustconn/src/terminal/tab_menu.rs:949
+#: rustconn/src/terminal/tab_menu.rs:957
 msgid "Text files"
 msgstr "文本文件"
 
-#: rustconn/src/terminal/tab_menu.rs:978
+#: rustconn/src/terminal/tab_menu.rs:983
 msgid "Output saved"
 msgstr "输出已保存"
 
-#: rustconn/src/terminal/tab_menu.rs:988
+#: rustconn/src/terminal/tab_menu.rs:993
 msgid "Could not save output"
 msgstr "无法保存输出"
 
-#: rustconn/src/terminal/tab_menu.rs:1051
+#: rustconn/src/terminal/tab_menu.rs:1055
 msgid "Move to New Window on {}"
 msgstr "移动到指定显示器的新窗口 {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1071
+#: rustconn/src/terminal/tab_menu.rs:1075
 msgid "Monitor {} ({})"
 msgstr "显示器 {}（{}）"
 
-#: rustconn/src/terminal/tab_menu.rs:1072
+#: rustconn/src/terminal/tab_menu.rs:1076
 msgid "Monitor {}"
 msgstr "显示器 {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1126
+#: rustconn/src/terminal/tab_menu.rs:1130
 msgid "Unpin Tab"
 msgstr "取消固定标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:1128
+#: rustconn/src/terminal/tab_menu.rs:1132
 msgid "Pin Tab"
 msgstr "固定标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:1139
+#: rustconn/src/terminal/tab_menu.rs:1143
 msgid "Rename Tab…"
 msgstr "重命名标签页…"
 
-#: rustconn/src/terminal/tab_menu.rs:1147
+#: rustconn/src/terminal/tab_menu.rs:1151
 msgid "Set Group…"
 msgstr "设置组…"
 
-#: rustconn/src/terminal/tab_menu.rs:1149
+#: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Remove from Group"
 msgstr "从组中移除"
 
-#: rustconn/src/terminal/tab_menu.rs:1161
+#: rustconn/src/terminal/tab_menu.rs:1165
 msgid "Remove from Broadcast"
 msgstr "移出广播"
 
-#: rustconn/src/terminal/tab_menu.rs:1163
+#: rustconn/src/terminal/tab_menu.rs:1167
 msgid "Add to Broadcast"
 msgstr "加入广播"
 
-#: rustconn/src/terminal/tab_menu.rs:1185
+#: rustconn/src/terminal/tab_menu.rs:1189
 msgid "Monitor"
 msgstr "监控"
 
-#: rustconn/src/terminal/tab_menu.rs:1199
+#: rustconn/src/terminal/tab_menu.rs:1203
 msgid "Move to New Window"
 msgstr "移动到新窗口"
 
-#: rustconn/src/terminal/tab_menu.rs:1229
+#: rustconn/src/terminal/tab_menu.rs:1233
 msgid "Edit Connection…"
 msgstr "编辑连接…"
 
-#: rustconn/src/terminal/tab_menu.rs:1245
+#: rustconn/src/terminal/tab_menu.rs:1249
 msgid "Save Output…"
 msgstr "保存输出…"
 
-#: rustconn/src/terminal/tab_menu.rs:1252
+#: rustconn/src/terminal/tab_menu.rs:1256
 msgid "Close Others"
 msgstr "关闭其他"
 
-#: rustconn/src/terminal/tab_menu.rs:1257
+#: rustconn/src/terminal/tab_menu.rs:1261
 msgid "Close to the Left"
 msgstr "关闭左侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1258
+#: rustconn/src/terminal/tab_menu.rs:1262
 msgid "Close to the Right"
 msgstr "关闭右侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1262
+#: rustconn/src/terminal/tab_menu.rs:1266
 msgid "Close All Ungrouped"
 msgstr "关闭所有未分组"
 
-#: rustconn/src/terminal/tab_menu.rs:1266
+#: rustconn/src/terminal/tab_menu.rs:1270
 msgid "Close All Tabs"
 msgstr "关闭所有标签页"
 
@@ -11492,7 +11500,7 @@ msgstr "{} 个活动会话"
 msgid "About RustConn"
 msgstr "关于 RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5251
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5265
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "密码短语无法打开便携文件"
 
@@ -11680,8 +11688,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "跳板主机不可用"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3272
-#: rustconn/src/window/mod.rs:3338 rustconn/src/window/rdp_vnc.rs:766
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3286
+#: rustconn/src/window/mod.rs:3352 rustconn/src/window/rdp_vnc.rs:766
 msgid "Connect Anyway"
 msgstr "仍然连接"
 
@@ -12517,39 +12525,39 @@ msgid ""
 "configured route."
 msgstr "现在连接“{}”将跳过该跳板主机，仅使用其配置路由的其余部分。"
 
-#: rustconn/src/window/mod.rs:1005 rustconn/src/window/mod.rs:1016
+#: rustconn/src/window/mod.rs:1019 rustconn/src/window/mod.rs:1030
 msgid "Dismiss"
 msgstr "忽略"
 
-#: rustconn/src/window/mod.rs:1045
+#: rustconn/src/window/mod.rs:1059
 msgid "Touch your hardware key to unlock the password database"
 msgstr "轻触您的硬件密钥以解锁密码数据库"
 
-#: rustconn/src/window/mod.rs:2481
+#: rustconn/src/window/mod.rs:2495
 msgid "Already running in an external window"
 msgstr "已在外部窗口中运行"
 
-#: rustconn/src/window/mod.rs:2632
+#: rustconn/src/window/mod.rs:2646
 msgid "Connection to ‘{}’ failed"
 msgstr "连接到‘{}’失败"
 
-#: rustconn/src/window/mod.rs:2964 rustconn/src/window/mod.rs:2978
+#: rustconn/src/window/mod.rs:2978 rustconn/src/window/mod.rs:2992
 msgid "Pre-connect task failed: {}"
 msgstr "连接前任务失败：{}"
 
-#: rustconn/src/window/mod.rs:3012
+#: rustconn/src/window/mod.rs:3026
 msgid "Port knock failed: {}"
 msgstr "端口敲门失败：{}"
 
-#: rustconn/src/window/mod.rs:3061
+#: rustconn/src/window/mod.rs:3075
 msgid "SPA failed: {}"
 msgstr "SPA 失败：{}"
 
-#: rustconn/src/window/mod.rs:3257
+#: rustconn/src/window/mod.rs:3271
 msgid "{} (via {})"
 msgstr "{}（经由 {}）"
 
-#: rustconn/src/window/mod.rs:3263
+#: rustconn/src/window/mod.rs:3277
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -12572,35 +12580,35 @@ msgstr ""
 "\n"
 "如果这不是你所做的更改，请取消——连接可能会将已保存的凭据发送到另一台机器。"
 
-#: rustconn/src/window/mod.rs:3268
+#: rustconn/src/window/mod.rs:3282
 msgid "Routing changed for “{}”"
 msgstr "“{}”的路由已更改"
 
-#: rustconn/src/window/mod.rs:3332
+#: rustconn/src/window/mod.rs:3346
 msgid "Jump Host Unavailable for “{}”"
 msgstr "“{}”的跳板主机不可用"
 
-#: rustconn/src/window/mod.rs:3337
+#: rustconn/src/window/mod.rs:3351
 msgid "Connect Directly"
 msgstr "直接连接"
 
-#: rustconn/src/window/mod.rs:3426 rustconn/src/window/mod.rs:3601
+#: rustconn/src/window/mod.rs:3440 rustconn/src/window/mod.rs:3615
 msgid "Connection “{}” created"
 msgstr "连接“{}”已创建"
 
-#: rustconn/src/window/mod.rs:3808
+#: rustconn/src/window/mod.rs:3822
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4007
+#: rustconn/src/window/mod.rs:4021
 msgid "Settings saved"
 msgstr "设置已保存"
 
-#: rustconn/src/window/mod.rs:4044
+#: rustconn/src/window/mod.rs:4058
 msgid "Passphrase Not Saved on This Computer"
 msgstr "密码短语未保存在本机"
 
-#: rustconn/src/window/mod.rs:4046
+#: rustconn/src/window/mod.rs:4060
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -12610,11 +12618,11 @@ msgstr ""
 "无法为本地存储加密该密码短语，因此它只在本次会话中保留，重启后会再次询问。请"
 "改选“系统密钥环”，或检查 RustConn 是否可以写入其数据目录。"
 
-#: rustconn/src/window/mod.rs:4092
+#: rustconn/src/window/mod.rs:4106
 msgid "Credentials Not Saved to Keyring"
 msgstr "凭据未保存到密钥环"
 
-#: rustconn/src/window/mod.rs:4094
+#: rustconn/src/window/mod.rs:4108
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -12623,55 +12631,55 @@ msgstr ""
 "系统密钥环未接受该凭据，因此凭据仅在本次会话内保留，重启后将丢失。请确认密钥"
 "环服务正在运行且已解锁，然后重新保存设置。"
 
-#: rustconn/src/window/mod.rs:4277
+#: rustconn/src/window/mod.rs:4291
 msgid "Close RustConn?"
 msgstr "关闭 RustConn？"
 
-#: rustconn/src/window/mod.rs:4279
+#: rustconn/src/window/mod.rs:4293
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "有 {} 个会话标签页处于打开状态。活动连接将被断开。"
 
-#: rustconn/src/window/mod.rs:4316
+#: rustconn/src/window/mod.rs:4330
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr "无法读取设置，因此正在使用默认值。无法读取的文件已保留为 {}。"
 
-#: rustconn/src/window/mod.rs:4321
+#: rustconn/src/window/mod.rs:4335
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr "这些设置由较新版本的 RustConn（{}）保存。更改前会保留备份。"
 
-#: rustconn/src/window/mod.rs:4346
+#: rustconn/src/window/mod.rs:4360
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' 的云同步失败：{}"
 
-#: rustconn/src/window/mod.rs:4529
+#: rustconn/src/window/mod.rs:4543
 msgid "Startup connection not found"
 msgstr "未找到启动连接"
 
-#: rustconn/src/window/mod.rs:4565
+#: rustconn/src/window/mod.rs:4579
 msgid "Failed to open .rdp file"
 msgstr "打开 .rdp 文件失败"
 
-#: rustconn/src/window/mod.rs:4601
+#: rustconn/src/window/mod.rs:4615
 msgid "Failed to open .vv file"
 msgstr "打开 .vv 文件失败"
 
-#: rustconn/src/window/mod.rs:4638
+#: rustconn/src/window/mod.rs:4652
 msgid "Tunnel “{}” stopped: {}"
 msgstr "隧道“{}”已停止：{}"
 
-#: rustconn/src/window/mod.rs:4654
+#: rustconn/src/window/mod.rs:4668
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "已放弃重连隧道“{}”：{}"
 
-#: rustconn/src/window/mod.rs:5167
+#: rustconn/src/window/mod.rs:5181
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "成功导出 {} 个连接。{} 个已跳过。"
 
-#: rustconn/src/window/mod.rs:5253
+#: rustconn/src/window/mod.rs:5267
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
