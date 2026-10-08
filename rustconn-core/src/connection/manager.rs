@@ -640,7 +640,7 @@ impl ConnectionManager {
     /// Creates a group from an existing [`ConnectionGroup`], preserving its ID.
     ///
     /// Used by Simple Sync, which matches entities by UUID and therefore must
-    /// keep the remote group's identifier intact (unlike [`create_group`],
+    /// keep the remote group's identifier intact (unlike [`Self::create_group`],
     /// which mints a fresh ID).
     ///
     /// # Errors

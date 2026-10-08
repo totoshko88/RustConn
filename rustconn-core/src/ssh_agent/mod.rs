@@ -489,7 +489,7 @@ impl SshAgentManager {
     ///
     /// This calls `ssh-add -l` synchronously. On macOS, if the system ssh-agent
     /// is broken or launchd-throttled, this can block indefinitely. Prefer
-    /// [`get_status_timeout`] when calling from a UI thread.
+    /// [`Self::get_status_timeout`] when calling from a UI thread.
     ///
     /// # Errors
     ///

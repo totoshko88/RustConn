@@ -37,7 +37,7 @@ The mechanical Definition of Done is one script; prefer it over reassembling the
 commands below, and never use an inline `sh -c` cargo chain:
 
 ```bash
-scripts/verify.sh --tests   # fmt + machete + clippy -D warnings + tests + i18n/boundary gates
+scripts/verify.sh --tests   # fmt + machete + clippy -D warnings + rustdoc -D warnings + tests + i18n/boundary gates
                             # (log at target/verify.log; ~4 min — run it detached, see shell-environment.md)
 scripts/verify.sh --quick   # fast gates only — .md / .po-only work
 ```

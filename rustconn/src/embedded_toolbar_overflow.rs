@@ -172,7 +172,7 @@ impl ToolbarOverflow {
 
     /// Width the toolbar needs with every secondary action back in place.
     ///
-    /// Answers the same number in both states, which is what lets [`update`] use
+    /// Answers the same number in both states, which is what lets `update` use
     /// one comparison for collapsing and expanding. While expanded that is just
     /// the toolbar's natural width — the overflow button is hidden then, and GTK
     /// does not measure a hidden child. While collapsed the secondary actions are
@@ -281,7 +281,7 @@ impl ToolbarAutoHide {
     ///
     /// The reveal trigger is a small arrow indicator along the top edge —
     /// hovering or clicking it reveals the full toolbar. `handle` decides which
-    /// part of that edge it sits on; see [`RevealHandle`] for why the viewers do
+    /// part of that edge it sits on; see `RevealHandle` for why the viewers do
     /// not agree.
     ///
     /// The hover half of that trigger honours

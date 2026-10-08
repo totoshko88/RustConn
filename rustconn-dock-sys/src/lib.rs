@@ -46,7 +46,7 @@
 //!   is not unsound but leaves GDK adopting an instance it did not configure.
 //!
 //! Both are checked or arranged rather than assumed: the main-thread clause is
-//! enforced by [`objc2::MainThreadMarker`], and a violation is reported as
+//! enforced by `objc2::MainThreadMarker`, and a violation is reported as
 //! [`DockIconOutcome::OffMainThread`] rather than panicking. A wrong Dock icon
 //! does not justify taking the process down (M-PANIC-IS-STOP), which is the one
 //! place this crate's contract differs in kind from [`rustconn-locale-sys`] and

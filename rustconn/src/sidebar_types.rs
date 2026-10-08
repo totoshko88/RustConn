@@ -43,7 +43,7 @@ pub struct SessionStatusInfo {
 /// Row decorations that have to survive a sidebar rebuild.
 ///
 /// `rebuild_sidebar_sorted` throws the whole tree away and builds new
-/// [`ConnectionItem`]s, so any state that only ever arrived through a property
+/// `ConnectionItem`s, so any state that only ever arrived through a property
 /// setter is gone with the old objects. The connected/connecting/failed status
 /// already had [`SessionStatusInfo`] to be read back from; these three had
 /// nothing, so every reload — a rename, a duplicate, a pin toggle, a re-sort, a

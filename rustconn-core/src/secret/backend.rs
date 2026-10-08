@@ -164,7 +164,7 @@ pub trait SecretBackend: Send + Sync {
     /// Whether this backend is in read-only mode.
     ///
     /// A read-only backend refuses every mutating operation ([`Self::store`],
-    /// [`Self::delete`]) with [`SecretError::ReadOnly`] and never touches the
+    /// [`Self::delete`]) with [`SecretError::ReadOnly`](crate::error::SecretError::ReadOnly) and never touches the
     /// vault. Reads ([`Self::retrieve`]) are unaffected. The default is `false`
     /// — writes are allowed — so a backend that cannot be put in read-only mode
     /// (or has not been) keeps its historical behaviour.
@@ -177,7 +177,7 @@ pub trait SecretBackend: Send + Sync {
     }
 
     /// Returns `Ok(())` when a write may proceed, or
-    /// [`SecretError::ReadOnly`] naming this backend when it is read-only.
+    /// [`SecretError::ReadOnly`](crate::error::SecretError::ReadOnly) naming this backend when it is read-only.
     ///
     /// Call this at the top of [`Self::store`] and [`Self::delete`] before any
     /// side effect, so a read-only vault is left completely untouched. Provided
@@ -185,7 +185,7 @@ pub trait SecretBackend: Send + Sync {
     /// consistent.
     ///
     /// # Errors
-    /// Returns [`SecretError::ReadOnly`] when [`Self::is_read_only`] is `true`.
+    /// Returns [`SecretError::ReadOnly`](crate::error::SecretError::ReadOnly) when [`Self::is_read_only`] is `true`.
     fn ensure_writable(&self) -> SecretResult<()> {
         if self.is_read_only() {
             Err(crate::error::SecretError::ReadOnly(

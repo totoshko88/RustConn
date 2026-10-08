@@ -148,6 +148,21 @@ pub struct TerminalSettings {
     /// Automatically copy selected text to clipboard (X11-style)
     #[serde(default)]
     pub copy_on_select: bool,
+    /// Honour OSC 52 clipboard offers from the remote side, opt-in.
+    ///
+    /// A remote program can ask the terminal to put text on the local clipboard
+    /// (`OSC 52 ; c ; <base64>`) — the mechanism tmux's `set-clipboard
+    /// external` and Neovim's OSC 52 provider use. RustConn needs the setting
+    /// because VTE parses that sequence and discards it: through 0.84 its
+    /// `XTERM_SET_XSELECTION` handler is a no-op, so the yank goes nowhere.
+    ///
+    /// Off by default, and it should stay that way — a host that can write the
+    /// clipboard can aim a pastejacking payload at the next terminal the user
+    /// pastes into, and that is a trust decision rather than a preference.
+    /// Reads are never served regardless: an `OSC 52 ; c ; ?` query is dropped
+    /// unanswered, so the local clipboard cannot be exfiltrated this way.
+    #[serde(default)]
+    pub allow_osc52_clipboard: bool,
     /// Right-click pastes the clipboard immediately (xterm-style), opt-in.
     ///
     /// Off by default: a right-click shows VTE's native context menu (Copy,
@@ -302,6 +317,7 @@ impl Default for TerminalSettings {
             log_timestamps: false,
             sftp_use_mc: default_sftp_use_mc(),
             copy_on_select: false,
+            allow_osc52_clipboard: false,
             right_click_pastes: false,
             show_scrollbar: default_show_scrollbar(),
             local_shell_command: String::new(),
@@ -2103,6 +2119,33 @@ mod tests {
             toml::from_str(older_config).expect("a config predating the field must still parse");
 
         assert!(!settings.right_click_pastes);
+    }
+
+    /// OSC 52 clipboard offers are opt-in: a fresh install must default to
+    /// `false`, because a remote host that can write the local clipboard can aim
+    /// a pastejacking payload at the next terminal the user pastes into.
+    #[test]
+    fn allow_osc52_clipboard_defaults_to_false() {
+        use super::TerminalSettings;
+
+        assert!(!TerminalSettings::default().allow_osc52_clipboard);
+    }
+
+    /// A config written before the field existed must still parse, and must load
+    /// with OSC 52 off — the behaviour those users already have.
+    #[test]
+    fn terminal_settings_without_osc52_field_default_to_false() {
+        use super::TerminalSettings;
+
+        let older_config = r#"
+            font_family = "Monospace"
+            font_size = 12
+        "#;
+
+        let settings: TerminalSettings =
+            toml::from_str(older_config).expect("a config predating the field must still parse");
+
+        assert!(!settings.allow_osc52_clipboard);
     }
 
     /// A config written before the renderer preference existed must still load,

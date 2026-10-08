@@ -104,10 +104,10 @@ thread_local! {
         const { RefCell::new(None) };
 }
 
-/// Acquires a busy guard from the thread-local [`BusyStack`].
+/// Acquires a busy guard from the thread-local [`rustconn_core::BusyStack`].
 ///
 /// Returns `None` if the stack has not been initialised yet (before
-/// `MainWindow::new` runs). The returned [`BusyGuard`] keeps the
+/// `MainWindow::new` runs). The returned [`rustconn_core::BusyGuard`] keeps the
 /// header-bar spinner visible until dropped.
 fn acquire_busy_guard() -> Option<rustconn_core::BusyGuard> {
     BUSY_STACK.with(|cell| cell.borrow().as_ref().map(rustconn_core::BusyStack::busy))
@@ -802,6 +802,20 @@ impl MainWindow {
                 bridges
                     .values()
                     .find_map(|bridge| bridge.pane_container_for_session(session_id))
+            });
+        }
+
+        // Resolve the focused pane's session for a split tab, so "Save Output"
+        // saves the pane the user is looking at rather than the tab owner
+        // (issue #371). Keyed by the owner session id — the tab's bridge is the
+        // only one that knows which of its panes has focus.
+        {
+            let bridges_for_focus = session_split_bridges.clone();
+            terminal_notebook.set_focused_session_provider(move |owner_id| {
+                let bridges = bridges_for_focus.borrow();
+                bridges
+                    .get(&owner_id)
+                    .and_then(|bridge| bridge.get_focused_session())
             });
         }
 
@@ -3814,7 +3828,7 @@ impl MainWindow {
     /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
     ///
     /// The connection comes from the selected tab's session metadata, not its
-    /// title: a title carries a "[group] " prefix once the tab is grouped, and
+    /// title: a title carries a "\[group\] " prefix once the tab is grouped, and
     /// two connections may share a name. The subtitle is cleared when the
     /// setting is off, the page has no session (Welcome), the session has no
     /// saved connection (local shell), or the connection is ungrouped. The WM

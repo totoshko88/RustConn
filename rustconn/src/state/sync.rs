@@ -146,7 +146,7 @@ impl AppState {
 
     /// Applies a `GroupMergeResult` to the local connection manager.
     ///
-    /// The changes come from [`GroupSyncPlan`], the same plan the CLI applies,
+    /// The changes come from [`rustconn_core::sync::GroupSyncPlan`], the same plan the CLI applies,
     /// so both build the same tree: groups and connections are created in the
     /// subgroup their path names (an existing one included), renamed and moved
     /// in place, and only then is anything deleted — deleting a group

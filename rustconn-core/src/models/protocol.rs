@@ -4012,7 +4012,7 @@ mod zerotrust_tests {
 /// `default-features = false` and never enables the feature, so a CLI built on
 /// its own did it too, and every distribution build without WebKitGTK 6.0 does
 /// it to a config written by a Flatpak build that has it. See
-/// [`crate::protocol::web`] and the GUI's web connect path for where the
+/// `crate::protocol::web` and the GUI's web connect path for where the
 /// feature is honoured instead: at the point of use, where falling back to the
 /// system browser costs the user nothing permanent.
 ///

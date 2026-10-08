@@ -818,7 +818,7 @@ impl AppState {
 
     // ========== Routing Memory (re-point detection) ==========
 
-    /// Builds the current effective [`Route`] for a connection.
+    /// Builds the current effective [`rustconn_core::connection::Route`] for a connection.
     ///
     /// Resolves the bastion the same way the launcher does, so an inherited or
     /// global jump host is part of the route and a change to it is caught.
@@ -1240,7 +1240,7 @@ impl AppState {
     /// This is extracted from `resolve_credentials` to be callable from a background
     /// thread without needing `&self`.
     ///
-    /// Returns a [`CredentialResolutionResult`] that the UI layer uses to show
+    /// Returns a [`rustconn_core::sync::CredentialResolutionResult`] that the UI layer uses to show
     /// the appropriate dialog (variable setup, backend missing, etc.) instead
     /// of silently returning `None`.
     fn resolve_credentials_blocking(
@@ -1544,6 +1544,15 @@ impl AppState {
                     // falling through to the encrypted-file fallback. This never
                     // mutates and never touches the write path. Scoped-first,
                     // root only on a scoped miss; a no-op when the flag is off.
+                    //
+                    // Logged unconditionally so a "root search never ran" report
+                    // (issue #353) shows the gate's value directly, instead of
+                    // leaving us to infer it from the absence of a later line.
+                    tracing::debug!(
+                        kdbx_root_search = secret_settings.kdbx_root_search,
+                        preferred_backend = ?secret_settings.preferred_backend,
+                        "[resolve_credentials_blocking] scoped KeePass lookup missed; root-search gate about to be evaluated"
+                    );
                     if secret_settings.kdbx_root_search {
                         match KeePassStatus::get_password_from_kdbx_root(
                             kdbx_path,

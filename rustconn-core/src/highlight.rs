@@ -1,7 +1,7 @@
 //! Compiled highlight-rule engine for regex-based terminal text highlighting.
 //!
 //! [`CompiledHighlightRules`] merges global and per-connection
-//! [`HighlightRule`](crate::models::HighlightRule) sets, compiles their regex
+//! [`HighlightRule`] sets, compiles their regex
 //! patterns once, and exposes [`find_matches`](CompiledHighlightRules::find_matches)
 //! to locate all matching regions in a line of terminal output.
 //!

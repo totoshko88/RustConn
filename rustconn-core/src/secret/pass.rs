@@ -104,7 +104,7 @@ impl PassBackend {
 
     /// Builds the pass path for a connection's credential field
     ///
-    /// Structure: rustconn/<connection_id>/<field>
+    /// Structure: `rustconn/<connection_id>/<field>`
     /// Where field is one of: username, password, key_passphrase, domain
     #[expect(
         clippy::unused_self,

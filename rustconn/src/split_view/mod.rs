@@ -22,7 +22,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use rustconn::split_view::{DropSource, ConnectionId, SplitViewAdapter};
+//! use crate::split_view::{DropSource, ConnectionId, SplitViewAdapter};
 //! use rustconn_core::split::{SessionId, SplitDirection};
 //!
 //! // Create a new split view adapter

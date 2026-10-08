@@ -586,6 +586,7 @@ impl SafeFreeRdpLauncher {
             scale_override: config.scale_override,
             system_scale_percent: config.system_scale_percent,
             color_depth: config.color_depth,
+            performance_mode: config.performance_mode,
             clipboard_enabled: config.clipboard_enabled,
             shared_folders: config
                 .shared_folders
@@ -637,7 +638,7 @@ impl SafeFreeRdpLauncher {
     ///
     /// FreeRDP requires all arguments to be in the `/args-from:` file. This
     /// method collects them into a `Vec<String>` so they can be written to the
-    /// ephemeral args file by [`EphemeralRdpArgs::write_all`].
+    /// ephemeral args file by [`super::ephemeral_args::EphemeralRdpArgs::write_all`].
     ///
     /// The argument list itself is built by
     /// [`rustconn_core::protocol::build_freerdp_args`], shared with the

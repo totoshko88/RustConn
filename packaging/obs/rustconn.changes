@@ -1,4 +1,22 @@
 -------------------------------------------------------------------
+Fri Oct 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.6
+
+- Version bump to 0.23.6
+- Added: OSC 52 remote-clipboard support, opt-in - a yank in a remote Neovim or
+  tmux (set-clipboard external) can reach the local clipboard. Off by default;
+  reads are never served, the payload is zeroized, and an enabled offer is kept
+  out of the session transcript too (PR #372)
+- Added: Save Output - a terminal tab's right-click menu can write the session's
+  full scrollback to a text file; in a split tab the focused pane is saved (#371)
+- Fixed: RDP Performance Mode now reaches the external FreeRDP client - a Speed
+  profile emits -wallpaper/-themes to xfreerdp instead of being dropped, mirroring
+  the embedded client and the .rdp exporter (#370)
+- Documentation: API docs no longer link to renamed or removed items; cargo doc
+  now runs with -D warnings in CI
+- Dependencies: updated dirs 6.0->7.0, tray-icon 0.25.1->0.26.1, muda
+  0.20.0->0.21.2; advisories clean
+
+-------------------------------------------------------------------
 Thu Oct 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.5
 
 - Version bump to 0.23.5

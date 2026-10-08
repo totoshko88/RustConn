@@ -28,6 +28,7 @@ mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
 pub mod file_drop;
 pub mod highlight_overlay;
+pub mod osc52;
 pub mod playback;
 pub mod pty_relay;
 pub mod pty_spawn;
@@ -252,6 +253,17 @@ pub struct TerminalNotebook {
     /// bridges. `session_content_box` consults this as a last resort so the
     /// reconnect banner reaches every pane, not only the split owner's.
     split_pane_box_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<GtkBox>>>>>,
+    /// Resolves the focused pane's session for a tab that hosts a split, given
+    /// the tab owner's session id (issue #371).
+    ///
+    /// The focused pane is known only to the tab's `SplitViewBridge`, which
+    /// lives at the window layer in `session_split_bridges`, not in the
+    /// notebook. Wired by the window the same way as
+    /// [`Self::split_pane_box_provider`]. `Save Output` consults it so a split
+    /// tab saves the pane the user is actually looking at, not always the
+    /// owner. Returns `None` for a tab with no split, so the caller falls back
+    /// to the owner session.
+    focused_session_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<Uuid>>>>>,
     /// Toggles a tab's membership in the cross-tab broadcast group (issue #329).
     ///
     /// Wired by the window; the tab context menu calls it to activate the
@@ -536,6 +548,7 @@ impl TerminalNotebook {
             on_reconnect: Rc::new(RefCell::new(None)),
             on_cloud_login: Rc::new(RefCell::new(None)),
             split_pane_box_provider: Rc::new(RefCell::new(None)),
+            focused_session_provider: Rc::new(RefCell::new(None)),
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
@@ -1096,9 +1109,39 @@ impl TerminalNotebook {
         let terminal = terminal.downgrade();
         let observers = Rc::clone(&self.output_observers);
         glib::spawn_future_local(async move {
+            // One filter per stream, because it has to remember a sequence split
+            // across a chunk boundary and its state belongs to exactly one PTY.
+            let mut osc52_filter = osc52::Osc52Filter::default();
             while let Ok(chunk) = output.recv().await {
-                if let Some(terminal) = terminal.upgrade() {
-                    terminal.feed(&chunk);
+                let live_terminal = terminal.upgrade();
+                // The clipboard offer is written here, inside the sink, so it
+                // only fires while the terminal is alive to supply a display.
+                // The length is the only part of a payload worth logging: it is
+                // remote-supplied output and may be a secret the user yanked.
+                let mut sink = |text: &str| {
+                    tracing::debug!(
+                        %session_id,
+                        bytes = text.len(),
+                        "OSC 52 clipboard offer from the remote side"
+                    );
+                    if let Some(terminal) = &live_terminal {
+                        osc52::offer_to_clipboard(terminal, text);
+                    }
+                };
+                // Run the filter on every chunk, alive widget or not — it has to
+                // keep its cross-chunk state consistent. The result is owned so
+                // the same bytes reach VTE *and* the observers: a lifted OSC 52
+                // offer must not survive in the session transcript either, which
+                // is exactly where the raw chunk used to leak it.
+                let filtered = osc52_filter.push(&chunk, &mut sink).to_vec();
+                if let Some(terminal) = &live_terminal {
+                    // A chunk that held nothing but an offer filters to nothing,
+                    // and `feed` is not called on an empty slice: VTE has been
+                    // known to reach an `assert()` on degenerate input, and an
+                    // assertion in a library takes the whole process down.
+                    if !filtered.is_empty() {
+                        terminal.feed(&filtered);
+                    }
                 }
                 // The list is cloned so that no borrow is held while an observer
                 // runs: session logging is then free to touch the notebook.
@@ -1108,7 +1151,15 @@ impl TerminalNotebook {
                     .cloned()
                     .unwrap_or_default();
                 for handler in handlers {
-                    handler(&chunk);
+                    handler(&filtered);
+                }
+            }
+            // The stream can end inside an OSC string. Hand the remainder to VTE
+            // rather than dropping it with the filter.
+            if let Some(terminal) = terminal.upgrade() {
+                let tail = osc52_filter.finish();
+                if !tail.is_empty() {
+                    terminal.feed(tail);
                 }
             }
         });

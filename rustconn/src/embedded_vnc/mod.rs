@@ -76,7 +76,7 @@ fn map_preferred_encoding(name: &str) -> Option<VncEncoding> {
 /// # Example
 ///
 /// ```ignore
-/// use rustconn::embedded_vnc::{EmbeddedVncWidget, VncConfig};
+/// use crate::embedded_vnc::{EmbeddedVncWidget, VncConfig};
 ///
 /// let widget = EmbeddedVncWidget::new();
 ///

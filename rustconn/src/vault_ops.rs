@@ -2301,7 +2301,7 @@ pub enum VaultOp<'a> {
 ///
 /// # See also
 ///
-/// - [`CredentialResolver::resolve_inherited_credentials`] — async equivalent
+/// - `CredentialResolver::resolve_inherited_credentials` — async equivalent
 ///   in `rustconn-core`
 pub fn dispatch_vault_op(
     secret_settings: &rustconn_core::config::SecretSettings,
@@ -2327,7 +2327,7 @@ pub fn dispatch_vault_op(
 /// serialise nothing against each other.
 ///
 /// `KeePassXc` / `KdbxFile` deliberately resolve to the system keyring here,
-/// because KDBX proper is not a [`SecretBackend`] — it goes through
+/// because KDBX proper is not a [`rustconn_core::SecretBackend`] — it goes through
 /// `KeePassStatus` and the `keepassxc-cli` binary. Callers that mean the database
 /// itself must intercept those two variants before calling this.
 ///
@@ -2403,13 +2403,13 @@ fn build_single_backend(
 /// Serialises every vault backend operation across the process.
 ///
 /// The connect path resolves credentials on a background thread
-/// ([`spawn_blocking_with_callback`]), so opening several RDP connections in
+/// ([`crate::utils::spawn_blocking_with_callback`]), so opening several RDP connections in
 /// quick succession fires several `dispatch_vault_op_for` calls at once. Without
 /// a lock they collide on the one backend underneath — a CLI backend runs
 /// `bw`/`op`/`pass` twice, a `keepassxc-cli` database opens twice, Secret Service
 /// gets two concurrent D-Bus round trips — and the loser stalls long enough to
 /// hit [`vault_op_timeout`]. A timed-out or empty resolve then collapses to
-/// [`CredentialResolutionResult::NotNeeded`] and the connection falls through to
+/// [`rustconn_core::sync::CredentialResolutionResult::NotNeeded`] and the connection falls through to
 /// the password prompt, which is exactly the "asks for a password even though it
 /// is saved" race the RDP reporter hit.
 ///
@@ -2561,7 +2561,7 @@ fn timed_out(operation: &str) -> String {
 /// transfer again repairs it, which is why this is a documented edge and not a
 /// refusal to proceed.
 ///
-/// Two reasons this is not just a [`SecretBackendType`] passed to
+/// Two reasons this is not just a [`rustconn_core::SecretBackendType`] passed to
 /// [`dispatch_vault_op_for`] per entry. The portable store caches its
 /// passphrase-derived data key *per backend instance*, so a fresh instance per
 /// credential pays a full Argon2id derivation each time — roughly half a second
@@ -3238,10 +3238,10 @@ pub fn select_backend_for_load(
 ///
 /// LibSecret uses hierarchical `"RustConn/{group_path}/{name} ({protocol})"` format
 /// when `group_path` is provided (matching
-/// [`CredentialResolver::generate_keyring_key_with_hierarchy`]), or falls back to
+/// [`rustconn_core::CredentialResolver::generate_keyring_key_with_hierarchy`]), or falls back to
 /// `"{name} ({protocol})"` for backward compatibility when no group path is given.
 /// All other backends use `"rustconn/{name}"` (matching
-/// [`CredentialResolver::generate_lookup_key`]).
+/// [`rustconn_core::CredentialResolver::generate_lookup_key`]).
 ///
 /// When `conn_name` is empty, falls back to `conn_host` for non-LibSecret
 /// backends, matching the resolver's `generate_lookup_key` behavior.

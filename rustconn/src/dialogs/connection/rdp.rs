@@ -133,7 +133,9 @@ pub(super) fn create_rdp_options() -> (
 
     let performance_mode_row = adw::ActionRow::builder()
         .title(i18n("Performance Mode"))
-        .subtitle(i18n("Quality/speed tradeoff for image rendering"))
+        .subtitle(i18n(
+            "Quality/speed tradeoff for image rendering and visual effects",
+        ))
         .build();
     performance_mode_row.add_suffix(&performance_mode_dropdown);
     display_group.add(&performance_mode_row);

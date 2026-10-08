@@ -27,7 +27,7 @@ const DEBOUNCE_SECS: u64 = 3;
 ///
 /// Uses the `notify` crate's [`RecommendedWatcher`] (inotify on Linux) with
 /// a 3-second debounce. Master group files can be excluded via
-/// [`add_master_file`] to prevent circular export→import.
+/// [`Self::add_master_file`] to prevent circular export→import.
 pub struct SyncFileWatcher {
     /// The underlying notify watcher. Kept alive to maintain the watch.
     _watcher: RecommendedWatcher,
@@ -44,7 +44,7 @@ impl SyncFileWatcher {
     ///
     /// The `callback` is invoked (on a background thread) for each `.rcn`
     /// file that changes, after the 3-second debounce window expires.
-    /// Files registered as Master via [`add_master_file`] are filtered out.
+    /// Files registered as Master via [`Self::add_master_file`] are filtered out.
     ///
     /// # Errors
     ///

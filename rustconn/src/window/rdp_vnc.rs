@@ -966,6 +966,7 @@ fn start_external_rdp_session(
         scale_override: rdp_config.scale_override,
         system_scale_percent: crate::utils::active_display_scale_percent(),
         color_depth: rdp_config.color_depth,
+        performance_mode: rdp_config.performance_mode,
         clipboard_enabled: rdp_config.clipboard_enabled,
         shared_folders: rdp_config
             .shared_folders

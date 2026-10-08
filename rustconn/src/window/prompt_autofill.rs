@@ -8,7 +8,7 @@
 //! Both cases are the same job — watch the line under the cursor, recognize a
 //! prompt, type the matching credential exactly once — so they share this
 //! module. Recognition is delegated to
-//! [`LoginPromptMatcher`](rustconn_core::LoginPromptMatcher), which is
+//! [`LoginPromptMatcher`], which is
 //! GUI-free and unit-tested, and can be overridden per connection or per
 //! group for devices with unusual wording (issue #254).
 //!
@@ -48,7 +48,7 @@ const POLL_INTERVAL: Duration = Duration::from_millis(150);
 /// handshake or a long ProxyCommand is still making progress. It still covers a
 /// device that spends seconds on a login banner, because the banner is output
 /// and so keeps the clock alive. Overridden by
-/// [`AutomationConfig::login_timeout_secs`] when set.
+/// [`rustconn_core::models::AutomationConfig::login_timeout_secs`] when set.
 const DEFAULT_AUTOFILL_DEADLINE: Duration = Duration::from_secs(10);
 
 /// Absolute ceiling: no login watcher survives past this, regardless of

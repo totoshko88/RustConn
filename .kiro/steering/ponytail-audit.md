@@ -4,7 +4,10 @@ description: "Hunts for over-engineering — what can be removed, simplified, or
 ---
 
 Audit RustConn for over-engineering. Adapted from the upstream `ponytail-review`
-and `ponytail-audit` skills (<https://github.com/DietrichGebert/ponytail>, MIT).
+and `ponytail-audit` skills (<https://github.com/DietrichGebert/ponytail>, MIT;
+tags synced with Ponytail 5, 2026-10-07). Upstream renamed the marker to
+`shortcut:` and still reads `ponytail:` as the older form; this repo keeps
+`ponytail:`, which `scripts/ponytail-ledger.sh` collects.
 
 Two modes — pick by what the request names:
 
@@ -20,7 +23,12 @@ One line per finding: `<file>:L<line>: <tag> <what to cut>. <replacement>.`
 - `stdlib:` hand-rolled thing `std` already ships. Name the function.
 - `native:` code or dependency doing what the platform already does. Name the
   GTK4 / libadwaita / glib feature.
+- `reuse:` the repo already has this helper. Name its path.
 - `yagni:` abstraction with one implementation, config nobody sets, layer with one caller.
+- `merge:` near-copies that must change together. Name every copy.
+- `split:` one function doing several unrelated jobs, so it is hard to read or
+  test. Split by job, never by line count, and never into helpers that exist
+  only to shorten a function.
 - `shrink:` same logic, fewer lines. Show the shorter form.
 
 ## Where to hunt in this repo
@@ -33,11 +41,13 @@ One line per finding: `<file>:L<line>: <tag> <what to cut>. <replacement>.`
   anti-pattern list.
 - **`yagni:`** traits with a single impl, `ProtocolConfig` fields nothing reads,
   builder structs wrapping three fields, feature flags with one call site.
-- **`stdlib:`** and the workspace's own helpers — check `rustconn-core` before
-  concluding something is missing. Rung 2 of the ladder ("does it already exist in
-  this repo") is the one most often skipped.
-- **duplication across crates** — a helper reimplemented in `rustconn/` that
-  already exists in `rustconn-core/`.
+- **`reuse:`** — check `rustconn-core` before concluding something is missing.
+  Rung 2 of the ladder ("does it already exist in this repo") is the one most
+  often skipped, and a helper reimplemented in `rustconn/` that already exists in
+  `rustconn-core/` is the common shape here.
+- **`merge:`** — GUI code that maps one enum in several places: combo indices,
+  protocol switches, dialog load/save pairs. `rustconn/src/monitor_mode.rs` exists
+  because one such mapping had seven copies across four files.
 - **`.kiro/` itself is in scope** in repo mode. Steering is not compiler-checked,
   so it rots quietly: rules duplicated across files that each claim to be the
   single source, tables listing hooks that no longer exist, scaffolds that violate

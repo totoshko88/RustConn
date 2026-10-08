@@ -1371,7 +1371,7 @@ impl ConfigManager {
     /// Creates a ZIP backup of all configuration files.
     ///
     /// Only files that exist on disk are included. The archive can be
-    /// restored with [`restore_from_archive`].
+    /// restored with [`Self::restore_from_archive`].
     ///
     /// # Errors
     ///

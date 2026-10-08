@@ -325,7 +325,7 @@ fn cmd_secret_get(
                 .as_ref()
                 .map(std::path::Path::new);
 
-            let result = KeePassStatus::get_password_from_kdbx_with_key(
+            let mut result = KeePassStatus::get_password_from_kdbx_with_key(
                 std::path::Path::new(kdbx_path),
                 settings.secrets.kdbx_password.as_ref(),
                 key_file,
@@ -333,6 +333,28 @@ fn cmd_secret_get(
                 Some(connection.protocol.as_str()),
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
             );
+
+            // Root-search fallback, mirroring the GUI resolver
+            // (`resolve_credentials_blocking_once`): when the user enabled
+            // "Search from vault root" and the scoped `RustConn/…` lookup missed,
+            // widen to a whole-database search keyed by the connection's name and
+            // host as well as the scoped key (issue #353). Read-widening only; it
+            // never writes and never prepends `RustConn/`. Keeping `secret get`
+            // in step with the resolver means the CLI can diagnose exactly what a
+            // connect would find.
+            if settings.secrets.kdbx_root_search && matches!(result, Ok(None)) {
+                result = KeePassStatus::get_password_from_kdbx_root(
+                    std::path::Path::new(kdbx_path),
+                    settings.secrets.kdbx_password.as_ref(),
+                    key_file,
+                    &[
+                        keepass_key.as_str(),
+                        connection.host.as_str(),
+                        connection.name.as_str(),
+                    ],
+                    settings.secrets.kdbx_yubikey_slot.as_deref(),
+                );
+            }
 
             match result {
                 Ok(Some(_)) => {
@@ -630,7 +652,11 @@ fn cmd_secret_set(
         .or_else(|| connection.username.clone())
         .unwrap_or_default();
 
-    match backend_type {
+    // Needed after the store to mark the connection as vault-backed; captured
+    // here while `connection` is still borrowed from the immutable list.
+    let connection_id = connection.id;
+
+    let store_result: Result<(), CliError> = match backend_type {
         SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
             use rustconn_core::models::Credentials;
             use rustconn_core::secret::SecretBackend;
@@ -854,7 +880,29 @@ fn cmd_secret_set(
             );
             Ok(())
         }
+    };
+
+    store_result?;
+
+    // Storing a vault secret for a connection whose password source is still
+    // `None` is pointless: a connect never reads the vault, so the credential
+    // just saved would never be used. Mark the connection vault-backed so the
+    // resolver actually consults the backend. Only `None` is promoted — an
+    // explicit `Prompt`, `Variable`, `Inherit` or `Script` is the user's choice
+    // and is left untouched. (Found while testing issue #353: `add` + `secret
+    // set` left a connection unusable because nothing set the source.)
+    let mut connections = connections;
+    if let Some(conn) = connections.iter_mut().find(|c| c.id == connection_id)
+        && conn.password_source == rustconn_core::models::PasswordSource::None
+    {
+        conn.password_source = rustconn_core::models::PasswordSource::Vault;
+        config_manager
+            .save_connections(&connections)
+            .map_err(|e| CliError::Config(format!("Failed to save connection: {e}")))?;
+        println!("Set password source to Vault for this connection.");
     }
+
+    Ok(())
 }
 
 #[cfg(feature = "secret-management")]

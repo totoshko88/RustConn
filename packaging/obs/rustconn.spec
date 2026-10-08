@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.5
+Version:        0.23.6
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,14 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Oct 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.6-0
+- Version bump to 0.23.6
+- Added OSC 52 remote-clipboard support, opt-in (PR #372)
+- Added Save Output for terminal tabs; split tabs save the focused pane (#371)
+- Fixed RDP Performance Mode now reaching the external FreeRDP client (#370)
+- Fixed API docs linking to renamed or removed items; cargo doc gated in CI
+- Updated dirs 6.0->7.0, tray-icon 0.25.1->0.26.1, muda 0.20.0->0.21.2
+
 * Thu Oct 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.5-0
 - Version bump to 0.23.5
 - Fixed: default ~/.ssh/config import now actually imports under Flatpak - the importer probes both the sandbox $HOME/.ssh and the real host ~/.ssh (via a new flatpak::host_home_dir helper), so the automatic SSH Config source no longer reports success while importing nothing (#368)

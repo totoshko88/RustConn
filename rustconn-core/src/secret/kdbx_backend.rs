@@ -31,14 +31,14 @@
 //! that is the chokepoint every direct GUI and CLI write goes through. This
 //! backend additionally calls [`SecretBackend::ensure_writable`] as the first
 //! action of `store` and `delete` (mirroring `PassBackend`), and passes its
-//! [`Self::with_read_only`] flag through to the writers as well. Both refusals
+//! [`KdbxBackend::with_read_only`] flag through to the writers as well. Both refusals
 //! run ahead of path validation, so an invalid path still surfaces as
 //! `ReadOnly`, and both name the backend identically.
 //!
 //! [`SecretError::ReadOnly`]: crate::error::SecretError::ReadOnly
 //!
-//! [`Self::searches_from_root`] reports the stored root-search flag. When set
-//! (via [`Self::with_root_search`]), `retrieve` first tries the
+//! [`KdbxBackend::searches_from_root`] reports the stored root-search flag. When set
+//! (via [`KdbxBackend::with_root_search`]), `retrieve` first tries the
 //! `RustConn/`-scoped reader and, only on a miss, widens to a whole-database
 //! search. This widens **reads only** — `store`/`delete` stay `RustConn/`-scoped,
 //! so the root-prefix handling issue #327 fixed is never exercised by a
@@ -80,7 +80,7 @@ pub struct KdbxBackend {
     /// How to unlock the database (password / key file / `YubiKey`).
     unlock: UnlockFactors,
     /// When true, [`Self::is_read_only`] reports read-only and `store`/`delete`
-    /// refuse with [`SecretError::ReadOnly`] via `ensure_writable()`.
+    /// refuse with [`SecretError::ReadOnly`](crate::error::SecretError::ReadOnly) via `ensure_writable()`.
     read_only: bool,
     /// When true, [`Self::searches_from_root`] reports root-search and
     /// `retrieve` widens a missed `RustConn/`-scoped lookup to a whole-database
@@ -125,7 +125,7 @@ impl KdbxBackend {
     /// Records whether the backend is read-only.
     ///
     /// When `true`, `store` and `delete` are refused with
-    /// [`SecretError::ReadOnly`] (via `ensure_writable()`) before the vault is
+    /// [`SecretError::ReadOnly`](crate::error::SecretError::ReadOnly) (via `ensure_writable()`) before the vault is
     /// touched, matching the `with_read_only` shape of the other backends (e.g.
     /// `PassBackend`).
     #[must_use]

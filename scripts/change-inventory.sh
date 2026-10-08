@@ -115,13 +115,20 @@ tests=$(printf '%s' "$tests" | sed '/^$/d')
         printf '## Review scope\n\n'
         # Name the specialised reviews the change requires, so the fresh session
         # does not have to work out which invariants are in play.
+        #
+        # The patterns are the ones .kiro/hooks/bin/commit-review-gate.sh asks on,
+        # kept identical: the rustconn-review workflow skips a reviewer when its
+        # line is absent here, so a narrower pattern here means a review that the
+        # commit gate demands and the workflow silently never runs. Change both.
         needed=""
-        printf '%s\n' "$changed" | grep -qE '^rustconn-(pty|locale|env|dock)-sys/.*\.rs$' &&
+        printf '%s\n' "$changed" | grep -qE '^rustconn-[a-z0-9-]+-sys/(.*\.rs|Cargo\.toml)$' &&
             needed="$needed- \`unsafe-reviewer\` — a rustconn-*-sys crate changed\n"
         printf '%s\n' "$changed" | grep -qE '^(rustconn-core/src/secret/.*\.rs|.*credential[^/]*\.rs|.*credentials[^/]*\.rs|.*password[^/]*\.rs)$' &&
             needed="$needed- \`security-reviewer\` — credential-handling code changed\n"
         printf '%s\n' "$changed" | grep -qxF 'po/uk.po' &&
             needed="$needed- \`uk-translation-reviewer\` — po/uk.po changed\n"
+        printf '%s\n' "$changed" | grep -qE '^(rustconn-core/src/models/protocol\.rs|rustconn-core/src/[a-z_]+_client/config\.rs|rustconn-core/src/protocol/freerdp\.rs|rustconn/src/window/(protocols|rdp_vnc)\.rs|rustconn/src/embedded_rdp/launcher\.rs|rustconn-core/src/(export|import)/.*\.rs)$' &&
+            needed="$needed- \`config-mapping-reviewer\` — a persisted config, runtime config, launch mapper or import/export converter changed\n"
         printf '%s\n' "$changed" | grep -q '^CHANGELOG\.md$' ||
             needed="$needed- No CHANGELOG.md entry in this range — confirm the change is not user-facing\n"
         if [ -n "$needed" ]; then

@@ -38,6 +38,10 @@ pub struct TabMenuState {
     pub can_detach: bool,
     /// The tab hosts a split layout, so it can be offered "Remove Split".
     pub hosts_split: bool,
+    /// The tab is a VTE terminal (SSH, local shell, telnet, serial), so its
+    /// scrollback can be offered for saving (issue #371). An embedded viewer
+    /// (RDP/VNC/Web) and the Welcome tab have no VTE buffer and clear this.
+    pub is_terminal: bool,
     /// The tab is a local shell, whose title is the only thing that tells it
     /// apart from another one, and which therefore may be relabelled.
     pub is_local_shell: bool,
@@ -61,6 +65,55 @@ const fn offers_detach(verdict: DetachVerdict) -> bool {
     matches!(verdict, DetachVerdict::Allowed | DetachVerdict::SplitOwner)
 }
 
+/// A filesystem-safe default file name for a session's saved output (#371).
+///
+/// Built from the session's display name so the save dialog opens with a
+/// recognisable name rather than a blank field. Every character that is not
+/// alphanumeric is replaced with `_` — covering path separators, spaces and
+/// shell metacharacters in one rule — and an empty or whitespace-only name
+/// falls back to a generic stem. Always carries a `.txt` suffix because the
+/// dump is plain text.
+fn session_output_filename(name: Option<&str>) -> String {
+    let stem = name.filter(|name| !name.trim().is_empty()).map_or_else(
+        || "terminal-output".to_string(),
+        |name| {
+            name.chars()
+                .map(|c| if c.is_alphanumeric() { c } else { '_' })
+                .collect()
+        },
+    );
+    format!("{stem}.txt")
+}
+
+/// Writes a terminal's full scrollback to `path` as plain text (#371).
+///
+/// Dumps the whole VTE buffer (scrollback plus the visible screen) through
+/// `write_contents_sync`, not just the viewport `get_terminal_text` returns —
+/// the buffer is already bounded by the user's scrollback-lines setting, so this
+/// is the full record the user asked to save. The file is created or truncated.
+///
+// ponytail: dumps the entire buffer in one synchronous call; fine for a
+// scrollback bounded by the history limit. If a "last N lines" option is added
+// later, extract the tail with `text_range_format` (as `get_terminal_text`
+// does) and write that string instead.
+fn write_terminal_contents(terminal: &Terminal, path: &std::path::Path) -> Result<(), glib::Error> {
+    let file = gio::File::for_path(path);
+    // `replace` truncates an existing file; the save dialog already handled the
+    // overwrite confirmation.
+    let stream = file.replace(
+        None,
+        false,
+        gio::FileCreateFlags::REPLACE_DESTINATION,
+        gio::Cancellable::NONE,
+    )?;
+    let write_result =
+        terminal.write_contents_sync(&stream, vte4::WriteFlags::Default, gio::Cancellable::NONE);
+    // Close the stream regardless of the write outcome, but surface the write
+    // error first — a close error on an already-failed write is noise.
+    let close_result = stream.close(gio::Cancellable::NONE);
+    write_result.and(close_result)
+}
+
 impl TerminalNotebook {
     /// Sets up the tab context menu with group management actions.
     ///
@@ -82,6 +135,7 @@ impl TerminalNotebook {
         let context_page_setup = context_page.clone();
         let sessions_for_menu = self.sessions.clone();
         let session_info_for_menu = self.session_info.clone();
+        let terminals_for_menu = self.terminals.clone();
         let activity_for_menu = self.activity_coordinator.clone();
         let detach_hooks_for_menu = self.detach_hooks();
         let broadcast_membership_for_menu = self.tab_broadcast_membership.clone();
@@ -183,6 +237,11 @@ impl TerminalNotebook {
                         any_groups_exist: info_ref.values().any(|i| i.tab_group.is_some()),
                         can_detach,
                         hosts_split,
+                        // A VTE terminal is exactly a session with an entry in
+                        // the terminals map; embedded viewers live in
+                        // session_widgets and the Welcome tab has no session.
+                        is_terminal: session_id
+                            .is_some_and(|sid| terminals_for_menu.borrow().contains_key(&sid)),
                         is_local_shell: session_id.is_some_and(|sid| {
                             info_ref
                                 .get(&sid)
@@ -847,6 +906,100 @@ impl TerminalNotebook {
         });
         action_group.add_action(&detach_monitor_action);
 
+        // "Save Output…" — dump the right-clicked terminal's scrollback to a
+        // text file (issue #371). Offered only for VTE terminal tabs (the menu
+        // gates on `is_terminal`), so the terminal lookup here should always
+        // succeed; it still bails quietly if the tab closed between the menu
+        // showing and the action firing.
+        let save_output_action = gio::SimpleAction::new("save-output", None);
+        let context_page_save = context_page.clone();
+        let sessions_for_save = self.sessions.clone();
+        let terminals_for_save = self.terminals.clone();
+        let session_info_for_save = self.session_info.clone();
+        let focused_provider_for_save = self.focused_session_provider.clone();
+        let tab_view_for_save = self.tab_view.clone();
+        save_output_action.connect_activate(move |_, _| {
+            let Some(owner_id) =
+                Self::context_menu_session_id(&context_page_save, &sessions_for_save)
+            else {
+                return;
+            };
+            // In a split tab, save the focused pane's session rather than the
+            // tab owner (the first pane) — the pane the user is looking at
+            // (issue #371). The provider is wired by the window; without it, or
+            // for a normal tab, this is the owner session itself.
+            let session_id = focused_provider_for_save
+                .borrow()
+                .as_ref()
+                .and_then(|resolve| resolve(owner_id))
+                .unwrap_or(owner_id);
+            let Some(terminal) = terminals_for_save.borrow().get(&session_id).cloned() else {
+                tracing::warn!(%session_id, "tab.save-output: no terminal for session");
+                return;
+            };
+            let initial_name = session_output_filename(
+                session_info_for_save
+                    .borrow()
+                    .get(&session_id)
+                    .map(|info| info.name.as_str()),
+            );
+            let window = tab_view_for_save
+                .root()
+                .and_then(|root| root.downcast::<gtk4::Window>().ok());
+
+            let file_dialog = gtk4::FileDialog::builder()
+                .title(i18n("Save Output"))
+                .initial_name(initial_name)
+                .modal(true)
+                .build();
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.txt");
+            filter.set_name(Some(&i18n("Text files")));
+            let filters = gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            file_dialog.set_filters(Some(&filters));
+
+            let window_for_result = window.clone();
+            file_dialog.save(window.as_ref(), gio::Cancellable::NONE, move |result| {
+                // A cancelled dialog returns Err(Dismissed); only a real
+                // error is worth reporting.
+                let file = match result {
+                    Ok(file) => file,
+                    Err(error) => {
+                        if !error.matches(gtk4::DialogError::Dismissed) {
+                            tracing::warn!(?error, "tab.save-output: save dialog failed");
+                        }
+                        return;
+                    }
+                };
+                let Some(path) = file.path() else {
+                    return;
+                };
+                match write_terminal_contents(&terminal, &path) {
+                    Ok(()) => {
+                        if let Some(window) = &window_for_result {
+                            crate::toast::show_toast_on_window(
+                                window,
+                                &i18n("Output saved"),
+                                crate::toast::ToastType::Success,
+                            );
+                        }
+                    }
+                    Err(error) => {
+                        tracing::error!(?error, "tab.save-output: write failed");
+                        if let Some(window) = &window_for_result {
+                            crate::alert::show_error(
+                                window,
+                                &i18n("Could not save output"),
+                                &error.to_string(),
+                            );
+                        }
+                    }
+                }
+            });
+        });
+        action_group.add_action(&save_output_action);
+
         // "Set Monitor" is created up front (before the setup-menu closure) so
         // the closure can refresh its radio state; see the top of this function.
 
@@ -1086,6 +1239,17 @@ impl TerminalNotebook {
             menu.append_section(None, &edit_section);
         }
 
+        // Save Output section — only for a VTE terminal tab, whose scrollback
+        // can be dumped to a text file (issue #371). An embedded viewer has no
+        // text buffer, so the item is omitted there rather than shown inert. A
+        // utility action, so it sits above the Close block (GNOME HIG). The
+        // ellipsis marks that it opens a file chooser.
+        if state.is_terminal {
+            let save_section = gio::Menu::new();
+            save_section.append(Some(&i18n("Save Output…")), Some("tab.save-output"));
+            menu.append_section(None, &save_section);
+        }
+
         // Close section — minimal by default, expanded when groups exist
         let close_section = gio::Menu::new();
         close_section.append(Some(&i18n("Close Tab")), Some("tab.close"));
@@ -1112,11 +1276,29 @@ impl TerminalNotebook {
 mod tests {
     use rustconn_core::DetachVerdict;
 
-    use super::offers_detach;
+    use super::{offers_detach, session_output_filename};
 
     #[test]
     fn a_detachable_session_gets_the_menu_item() {
         assert!(offers_detach(DetachVerdict::Allowed));
+    }
+
+    #[test]
+    fn output_filename_sanitises_and_suffixes_the_session_name() {
+        // Spaces, slashes and dots all collapse to `_`, and the `.txt` suffix
+        // is always added — so the result can never be a path or a dotfile.
+        assert_eq!(
+            session_output_filename(Some("prod/web 01.example")),
+            "prod_web_01_example.txt"
+        );
+        // Non-ASCII letters are alphanumeric and kept verbatim.
+        assert_eq!(session_output_filename(Some("Сервер")), "Сервер.txt");
+    }
+
+    #[test]
+    fn output_filename_falls_back_when_the_name_is_missing_or_blank() {
+        assert_eq!(session_output_filename(None), "terminal-output.txt");
+        assert_eq!(session_output_filename(Some("   ")), "terminal-output.txt");
     }
 
     #[test]

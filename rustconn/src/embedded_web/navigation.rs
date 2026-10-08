@@ -26,7 +26,7 @@ const ZOOM_DEFAULT: f64 = 1.0;
 
 /// Web browser navigation toolbar.
 ///
-/// Layout: [Back] [Forward] [Reload] [Home] | [URL Entry] | [Autofill] [Zoom+] [Zoom-] [Menu]
+/// Layout: \[Back\] \[Forward\] \[Reload\] \[Home\] | \[URL Entry\] | \[Autofill\] \[Zoom+\] \[Zoom-\] \[Menu\]
 ///
 /// The toolbar floats as an overlay above the WebView and auto-hides after
 /// inactivity. A reveal zone (arrow button) appears at the top center when

@@ -930,6 +930,33 @@ Vault/Prod Database
         );
     }
 
+    #[test]
+    fn root_match_multi_handles_non_ascii_paths_without_panic() {
+        // Regression (issue #353): the tail test used to byte-slice `line` at
+        // `line.len() - candidate.len() - 1`, which lands inside a multi-byte
+        // char when a KeePass path holds non-ASCII — a Cyrillic recycle-bin
+        // name (`Смітник/…`) or a database titled `Паролі`. That panicked and
+        // took the whole root search down. The listing below reproduces it: a
+        // Cyrillic group path precedes the real match.
+        let listing = "\
+Смітник/ec2-34-253-187-235.eu-west-1.compute.amazonaws.com\n\
+Смітник/kp353-test (ssh)\n\
+Servers/kp353-test\n";
+        // The connection name matches the out-of-scope entry, by basename.
+        assert_eq!(
+            root_match_entry_path_multi(listing, &["kp353-test"]),
+            Some("Servers/kp353-test".to_string())
+        );
+        // A candidate that is itself the leaf of a Cyrillic-prefixed path still
+        // matches via the tail test, with no byte-boundary panic.
+        assert_eq!(
+            root_match_entry_path_multi(listing, &["kp353-test (ssh)"]),
+            Some("Смітник/kp353-test (ssh)".to_string())
+        );
+        // A candidate present nowhere misses cleanly rather than panicking.
+        assert_eq!(root_match_entry_path_multi(listing, &["відсутній"]), None);
+    }
+
     // --- Behaviour of save_in_place / rename_or_move_in_place via a fake CLI ---
 
     use std::cell::RefCell;
@@ -1340,7 +1367,7 @@ fn list_failure_error(stderr: &str) -> SecretError {
 
 /// Display name a read-only KDBX database refuses writes under.
 ///
-/// Shared with [`super::kdbx_backend::KdbxBackend::display_name`] so the
+/// Shared with `KdbxBackend::display_name` so the
 /// [`SecretError::ReadOnly`] message is the same whichever path refused.
 pub(super) const KDBX_DISPLAY_NAME: &str = "KeePass (KDBX file)";
 
@@ -1449,7 +1476,7 @@ fn root_match_entry_path(listing: &str, connection_id: &str) -> Option<String> {
     root_match_entry_path_multi(listing, &[connection_id])
 }
 
-/// Candidate-aware variant of [`root_match_entry_path`] for issue #353.
+/// Candidate-aware variant of `root_match_entry_path` for issue #353.
 ///
 /// `candidates` are tried in priority order — the backend passes
 /// `[key/uuid, name, host]` — and the first candidate that matches any vault
@@ -1477,10 +1504,18 @@ fn root_match_entry_path_multi(listing: &str, candidates: &[&str]) -> Option<Str
             }
             // Exact match (whole path, or a path whose tail is the candidate)
             // wins immediately — honour a caller that passed a qualified path.
+            // The tail test is `line` ends with `/<candidate>`, matched
+            // case-insensitively. It must be expressed with `ends_with` on the
+            // whole string, NOT by byte-slicing `line` at `line.len() -
+            // candidate.len() - 1`: a KeePass path may hold non-ASCII (a
+            // Cyrillic recycle-bin name such as `Смітник/…`), and that index can
+            // land inside a multi-byte char and panic (issue #353 — this crashed
+            // root-search on a vault with Cyrillic entries).
+            let suffix = format!("/{candidate}");
             if line.eq_ignore_ascii_case(candidate)
-                || line.len() > candidate.len()
-                    && line[line.len() - candidate.len() - 1..]
-                        .eq_ignore_ascii_case(&format!("/{candidate}"))
+                || line
+                    .to_ascii_lowercase()
+                    .ends_with(&suffix.to_ascii_lowercase())
             {
                 return Some(line.to_string());
             }
@@ -2444,7 +2479,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] if `keepassxc-cli` cannot be spawned,
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` cannot be spawned,
     /// the database cannot be unlocked (wrong password or key file), or the
     /// CLI returns a non-zero exit code for any reason other than "entry not
     /// found".
@@ -2579,7 +2614,7 @@ impl KeePassStatus {
 
     /// Retrieves a password from KDBX database at an exact path (no fallbacks).
     ///
-    /// Unlike [`get_password_from_kdbx_with_key`] which tries multiple path
+    /// Unlike [`Self::get_password_from_kdbx_with_key`] which tries multiple path
     /// variants with `RustConn/` prefix, this function queries the entry at
     /// `entry_path` **as-is**. Use for user-specified custom KeePass paths.
     ///
@@ -2600,7 +2635,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] if `keepassxc-cli` cannot be spawned,
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` cannot be spawned,
     /// the database cannot be unlocked (wrong password or key file), or the
     /// CLI returns a non-zero exit code for any reason other than "entry not
     /// found".
@@ -2686,7 +2721,7 @@ impl KeePassStatus {
     /// [`super::backend::SecretBackend::searches_from_root`]: it runs one
     /// `keepassxc-cli ls -R -f <db>` over the whole database (no `RustConn`
     /// group argument, unlike the scoped tree probe), then uses the pure
-    /// [`root_match_entry_path`] matcher to find the entry whose basename equals
+    /// `root_match_entry_path` matcher to find the entry whose basename equals
     /// `connection_id`, and finally reads that exact path with
     /// [`Self::get_password_from_kdbx_exact`].
     ///
@@ -2701,7 +2736,7 @@ impl KeePassStatus {
     /// Callers should try the scoped [`Self::get_password_from_kdbx_with_key`]
     /// first and fall back to this only on a miss (back-compat: a `RustConn/`
     /// entry wins over an identically-named one elsewhere); see
-    /// [`super::kdbx_backend::KdbxBackend::retrieve`].
+    /// `KdbxBackend::retrieve`.
     ///
     /// # Returns
     /// * `Ok(Some(SecretString))` when a matching entry with a password is found
@@ -3097,7 +3132,7 @@ impl KeePassStatus {
     /// # Errors
     ///
     /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` is not installed
-    /// or fails, or [`SecretError::Backend`] if the password / key file is
+    /// or fails, or [`SecretError::KeePassXC`] if the password / key file is
     /// rejected by the database.
     pub fn verify_kdbx_credentials(
         kdbx_path: &Path,
@@ -3188,7 +3223,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] when the file does not exist, is not a
+    /// Returns [`SecretError::KeePassXC`] when the file does not exist, is not a
     /// regular file, or is not readable.
     pub fn validate_key_file_path(path: &Path) -> SecretResult<()> {
         // Check if file exists

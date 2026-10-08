@@ -85,7 +85,7 @@ pub fn looks_like_username_prompt(line: &str) -> bool {
 /// Built from the optional per-connection expected texts. An absent (or
 /// blank) expected text falls back to the built-in matchers —
 /// [`looks_like_username_prompt`] and
-/// [`looks_like_password_prompt`](super::looks_like_password_prompt).
+/// [`looks_like_password_prompt`].
 ///
 /// A supplied expected text is matched as a **case-insensitive substring**,
 /// not a regex: the user is expected to paste the literal wording the device
@@ -129,7 +129,7 @@ impl LoginPromptMatcher {
     /// Returns `true` if `line` asks for the password.
     ///
     /// With no configured expected text this is
-    /// [`looks_like_password_prompt`](super::looks_like_password_prompt),
+    /// [`looks_like_password_prompt`],
     /// which also rejects key-passphrase prompts.
     #[must_use]
     pub fn matches_password(&self, line: &str) -> bool {

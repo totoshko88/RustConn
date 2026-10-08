@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.23.5"
+version = "0.23.6"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -57,7 +57,7 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"
 async-trait = "0.1"
 secrecy = { version = "0.10", features = ["serde"] }
-dirs = "6.0"
+dirs = "7.0"
 shellexpand = "3.1"
 regex = "1.12"
 zeroize = "1.8"
@@ -144,6 +144,18 @@ redundant_lifetimes = "warn"
 unreachable_pub = "warn"
 # IronRDP-inspired: catch redundant `use` imports
 redundant_imports = "warn"
+
+# rustdoc lints fire only under `cargo doc`, never under check or clippy. Until
+# 0.23.6 nothing ran `cargo doc`, and 106 warnings piled up — 67 of them links to
+# items that had been renamed or removed, so the prose described code that no
+# longer existed. The gate is `scripts/verify.sh` (default mode) plus the CI
+# clippy job, both with RUSTDOCFLAGS="-D warnings" and --document-private-items.
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+# An application, not a published library: the docs are read with private items
+# (cargo already documents them for the two binaries), so a public item linking a
+# private constant is the documentation working, not leaking.
+private_intra_doc_links = "allow"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }

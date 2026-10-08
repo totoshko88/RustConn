@@ -35,7 +35,7 @@ const UNKNOWN_DISPLAY_SCALE_PERCENT: u16 = 100;
 /// application's own window is the best available proxy — the client is placed
 /// by the compositor and lands on the focused monitor in practice.
 ///
-/// Reads [`gdk::Surface::scale`] for the true fractional value rather than the
+/// Reads `gdk::Surface::scale` for the true fractional value rather than the
 /// integer `scale_factor()`, which rounds 125% up to 2 and so would report a
 /// fractional display as double.
 #[must_use]
@@ -172,7 +172,7 @@ pub fn set_labelled_by(
 ///
 /// Matches patterns like `${variable_name}` and captures the variable name.
 ///
-/// Re-exported from [`rustconn_core::variables::manager::VARIABLE_REGEX`].
+/// Re-exported from [`rustconn_core::variables::VARIABLE_REGEX`].
 pub use rustconn_core::variables::VARIABLE_REGEX as VARIABLE_PATTERN;
 
 /// Extracts variable names from a template string

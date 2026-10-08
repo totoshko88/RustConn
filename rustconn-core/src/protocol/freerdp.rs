@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use secrecy::SecretString;
 
 use crate::models::{
-    RdpAudioMode, RdpDisplayMode, RdpGateway, RdpSecurityLayer, Resolution, ScaleOverride,
-    WindowGeometry, build_remote_app_freerdp_args,
+    RdpAudioMode, RdpDisplayMode, RdpGateway, RdpPerformanceMode, RdpSecurityLayer, Resolution,
+    ScaleOverride, WindowGeometry, build_remote_app_freerdp_args,
 };
 
 /// A shared folder for RDP drive redirection
@@ -65,6 +65,17 @@ pub struct FreeRdpConfig {
     pub system_scale_percent: u16,
     /// Session colour depth (`/bpp:`). `None` leaves it to the server.
     pub color_depth: Option<u8>,
+    /// Visual-effect level, mapped to FreeRDP's experience flags.
+    ///
+    /// The same `performance_mode` that the embedded IronRDP client turns into
+    /// `PerformanceFlags` and the `.rdp` exporter turns into `disable
+    /// wallpaper:i:` keys. It used to be dropped on the external path, so a
+    /// Speed profile looked identical to Quality to `xfreerdp` — wallpaper,
+    /// themes and full-window drag all on — which is the opposite of what the
+    /// user picked (issue #370). Mapped in [`push_experience_args`] to
+    /// `-wallpaper`/`-themes`/`+window-drag`/`+menu-anims`, mirroring the two
+    /// other paths so the three cannot drift.
+    pub performance_mode: RdpPerformanceMode,
     /// Enable clipboard sharing
     pub clipboard_enabled: bool,
     /// Shared folders for drive redirection
@@ -169,6 +180,7 @@ impl FreeRdpConfig {
             scale_override: ScaleOverride::default(),
             system_scale_percent: 100,
             color_depth: None,
+            performance_mode: RdpPerformanceMode::default(),
             clipboard_enabled: true,
             shared_folders: Vec::new(),
             printer_enabled: false,
@@ -510,6 +522,7 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     // the args file and passing the /args-from: switch separately.
 
     push_display_args(&mut args, config);
+    push_experience_args(&mut args, config);
 
     // Certificate handling — conditional based on connection settings.
     // Default is TOFU (trust-on-first-use), matching SSH known_hosts behavior.
@@ -589,6 +602,39 @@ fn push_display_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
             .scale_override
             .freerdp_scale_args(config.system_scale_percent),
     );
+}
+
+/// Pushes the visual-effect ("experience") flags for the session's performance
+/// mode.
+///
+/// FreeRDP's defaults are wallpaper and themes **on**, full-window drag and menu
+/// animations **off** (`xfreerdp3(1)`: `-wallpaper`/`-themes` default on,
+/// `+window-drag`/`+menu-anims` default off). Only the flags that differ from
+/// those defaults are emitted, which keeps the argument list short and lets a
+/// hand-written override in `extra_args` still win.
+///
+/// The three rows map 1:1 to [`RdpPerformanceMode`] the same way the embedded
+/// client's `build_performance_flags` and the `.rdp` exporter's
+/// `write_performance_settings` do — Quality keeps every effect, Balanced is
+/// FreeRDP's own default, Speed strips them. `freerdp_experience_args_match_mode`
+/// pins all three so the paths cannot drift (issue #370).
+fn push_experience_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
+    match config.performance_mode {
+        // Every visual effect on: turn on the two that FreeRDP defaults off.
+        RdpPerformanceMode::Quality => {
+            args.push("+window-drag".to_string());
+            args.push("+menu-anims".to_string());
+        }
+        // FreeRDP's own default experience — wallpaper and themes on, drag and
+        // menu animations off. Nothing to emit.
+        RdpPerformanceMode::Balanced => {}
+        // Strip every visual effect: turn off the two that FreeRDP defaults on.
+        // Drag and menu animations are already off by default.
+        RdpPerformanceMode::Speed => {
+            args.push("-wallpaper".to_string());
+            args.push("-themes".to_string());
+        }
+    }
 }
 
 /// Pushes drive and printer redirection arguments.
@@ -881,6 +927,47 @@ mod tests {
         let args = build_freerdp_args(&config);
 
         assert!(args.contains(&"/multimon".to_string()));
+    }
+
+    /// The performance mode used to be dropped on the external path: a Speed
+    /// profile reached `xfreerdp` with wallpaper, themes and full-window drag
+    /// all on, identical to Quality (issue #370). Pin the three modes to the
+    /// experience flags, mirroring the embedded `build_performance_flags` and
+    /// the `.rdp` exporter's `write_performance_settings`.
+    #[test]
+    fn freerdp_experience_args_match_mode() {
+        let mode_args = |mode| {
+            build_freerdp_args(&FreeRdpConfig {
+                performance_mode: mode,
+                ..FreeRdpConfig::new("server.example.com")
+            })
+        };
+
+        // Quality: every effect on. Wallpaper and themes are FreeRDP defaults,
+        // so only the two off-by-default effects are turned on, and nothing is
+        // ever disabled.
+        let quality = mode_args(RdpPerformanceMode::Quality);
+        assert!(quality.contains(&"+window-drag".to_string()));
+        assert!(quality.contains(&"+menu-anims".to_string()));
+        assert!(!quality.iter().any(|arg| arg == "-wallpaper"));
+        assert!(!quality.iter().any(|arg| arg == "-themes"));
+
+        // Balanced: FreeRDP's own default experience — no experience flag at all.
+        let balanced = mode_args(RdpPerformanceMode::Balanced);
+        assert!(!balanced.iter().any(|arg| {
+            matches!(
+                arg.as_str(),
+                "+window-drag" | "+menu-anims" | "-wallpaper" | "-themes"
+            )
+        }));
+
+        // Speed: every effect off. Drag and menu animations are already off by
+        // default, so only wallpaper and themes are disabled.
+        let speed = mode_args(RdpPerformanceMode::Speed);
+        assert!(speed.contains(&"-wallpaper".to_string()));
+        assert!(speed.contains(&"-themes".to_string()));
+        assert!(!speed.iter().any(|arg| arg == "+window-drag"));
+        assert!(!speed.iter().any(|arg| arg == "+menu-anims"));
     }
 
     /// The colour depth and the display scale the connection editor collects

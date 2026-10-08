@@ -96,7 +96,7 @@ impl AsyncCredentialResult {
         matches!(self, Self::Timeout)
     }
 
-    /// Converts to Option<Credentials> if successful
+    /// Converts to `Option<Credentials>` if successful
     #[must_use]
     pub fn into_credentials(self) -> Option<Credentials> {
         match self {

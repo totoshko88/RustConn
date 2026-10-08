@@ -89,6 +89,7 @@ pub struct SettingsDialog {
     audible_bell_check: adw::SwitchRow,
     sftp_use_mc_check: adw::SwitchRow,
     copy_on_select_check: adw::SwitchRow,
+    allow_osc52_clipboard_check: adw::SwitchRow,
     right_click_pastes_check: adw::SwitchRow,
     show_scrollbar_check: adw::SwitchRow,
     local_shell_command_entry: Entry,
@@ -232,6 +233,7 @@ impl SettingsDialog {
             audible_bell_check,
             sftp_use_mc_check,
             copy_on_select_check,
+            allow_osc52_clipboard_check,
             right_click_pastes_check,
             show_scrollbar_check,
             local_shell_command_entry,
@@ -690,6 +692,7 @@ impl SettingsDialog {
             audible_bell_check,
             sftp_use_mc_check,
             copy_on_select_check,
+            allow_osc52_clipboard_check,
             right_click_pastes_check,
             show_scrollbar_check,
             local_shell_command_entry,
@@ -1253,6 +1256,7 @@ impl SettingsDialog {
             &self.audible_bell_check,
             &self.sftp_use_mc_check,
             &self.copy_on_select_check,
+            &self.allow_osc52_clipboard_check,
             &self.right_click_pastes_check,
             &self.show_scrollbar_check,
             &self.local_shell_command_entry,
@@ -1400,6 +1404,7 @@ impl SettingsDialog {
         let audible_bell_check_clone = self.audible_bell_check.clone();
         let sftp_use_mc_check_clone = self.sftp_use_mc_check.clone();
         let copy_on_select_check_clone = self.copy_on_select_check.clone();
+        let allow_osc52_clipboard_check_clone = self.allow_osc52_clipboard_check.clone();
         let right_click_pastes_check_clone = self.right_click_pastes_check.clone();
         let show_scrollbar_check_clone = self.show_scrollbar_check.clone();
         let local_shell_command_entry_clone = self.local_shell_command_entry.clone();
@@ -1558,6 +1563,7 @@ impl SettingsDialog {
                 &audible_bell_check_clone,
                 &sftp_use_mc_check_clone,
                 &copy_on_select_check_clone,
+                &allow_osc52_clipboard_check_clone,
                 &right_click_pastes_check_clone,
                 &show_scrollbar_check_clone,
                 &local_shell_command_entry_clone,

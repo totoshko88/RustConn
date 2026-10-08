@@ -344,6 +344,10 @@ pub enum Commands {
         /// e.g. dc1.example.com, tcp://dc1.example.com:88, or
         /// https://gw.example.com/KdcProxy. Empty leaves the lookup to the KDC
         /// discovery order. Validated on save.
+        #[allow(
+            rustdoc::bare_urls,
+            reason = "clap renders this doc comment as --help text, where <...> would print literally"
+        )]
         #[arg(long, value_name = "ADDRESS")]
         kdc_address: Option<String>,
 
@@ -900,6 +904,10 @@ pub enum Commands {
         /// KDC address for Kerberos: a domain controller or an MS-KKDCP proxy
         /// (e.g. dc1.example.com or https://gw.example.com/KdcProxy). Pass an
         /// empty value to clear it. Validated on save.
+        #[allow(
+            rustdoc::bare_urls,
+            reason = "clap renders this doc comment as --help text, where <...> would print literally"
+        )]
         #[arg(long, value_name = "ADDRESS")]
         kdc_address: Option<String>,
 

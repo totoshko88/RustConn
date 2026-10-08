@@ -72,7 +72,7 @@ pub fn intern_username(username: &str) -> Arc<str> {
 ///
 /// # Returns
 ///
-/// A tuple of interned strings: (protocol, hostname, Option<username>)
+/// A tuple of interned strings: (protocol, hostname, `Option<username>`)
 #[must_use]
 pub fn intern_connection_strings(
     protocol_name: &str,
