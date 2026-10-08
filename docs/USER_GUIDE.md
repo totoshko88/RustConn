@@ -3325,9 +3325,16 @@ The settings dialog uses `adw::PreferencesDialog` with built-in search. Settings
 
 ### Terminal page
 
-**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, close tab on clean exit).
+**Terminal group:** Font (family and size), Scrollback (history buffer lines, keep on reconnect), Color Theme (Dark, Light, Solarized, Monokai, Dracula, plus user-created custom themes), Cursor (shape and blink mode), Behavior (scroll on output/keystroke, hyperlinks, mouse autohide, bell, SFTP via mc, copy on select, remote clipboard (OSC 52), close tab on clean exit).
 
 **Close tab on clean exit:** When enabled, tabs are automatically closed when the remote session exits cleanly (exit code 0, e.g. user typed `exit` or `logout`) instead of showing the reconnect overlay. Disabled by default.
+
+**Remote clipboard (OSC 52):** Lets a program on the remote host put text on your local clipboard — the `OSC 52 ; c ; <base64>` sequence that tmux and Neovim use for a clipboard provider over SSH. Disabled by default, and worth reading why before you turn it on: a host that can write your clipboard can also plant a command there, and the next terminal you paste into will run it. Enable it only for hosts you already trust with a shell. Reads never work: a remote asking for your clipboard contents (`OSC 52 ; c ; ?`) is ignored. With tmux, the remote side must be configured to forward the sequence to the outer terminal rather than swallow it:
+
+```tmux
+set -g set-clipboard external   # forward OSC 52 from the pane to the client
+set -g allow-passthrough on     # let wrapped sequences through untouched
+```
 
 **Keep on reconnect:** When enabled (the default), reconnecting a terminal session keeps the previous session's output instead of clearing the terminal, so output from before an idle-timeout disconnect stays readable. A dim `── Reconnected at … ──` rule marks where the new session begins, and the view returns to the bottom. Applies to sessions that reconnect in place — SSH, Telnet, Serial, Kubernetes, Mosh and custom commands — and is bounded by the Scrollback line limit like any other history. Disable it to get a cleared terminal on every reconnect.
 

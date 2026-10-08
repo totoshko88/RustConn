@@ -28,6 +28,7 @@ mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
 pub mod file_drop;
 pub mod highlight_overlay;
+pub mod osc52;
 pub mod playback;
 pub mod pty_relay;
 pub mod pty_spawn;
@@ -1096,9 +1097,30 @@ impl TerminalNotebook {
         let terminal = terminal.downgrade();
         let observers = Rc::clone(&self.output_observers);
         glib::spawn_future_local(async move {
+            // One filter per stream, because it has to remember a sequence split
+            // across a chunk boundary and its state belongs to exactly one PTY.
+            let mut osc52_filter = osc52::Osc52Filter::default();
             while let Ok(chunk) = output.recv().await {
                 if let Some(terminal) = terminal.upgrade() {
-                    terminal.feed(&chunk);
+                    // The length is the only part of a payload worth logging: it
+                    // is remote-supplied output, and it may be a secret the user
+                    // yanked over there.
+                    let mut sink = |text: &str| {
+                        tracing::debug!(
+                            %session_id,
+                            bytes = text.len(),
+                            "OSC 52 clipboard offer from the remote side"
+                        );
+                        osc52::offer_to_clipboard(&terminal, text);
+                    };
+                    let filtered = osc52_filter.push(&chunk, &mut sink);
+                    // A chunk that held nothing but an offer filters to nothing,
+                    // and `feed` is not called on an empty slice: VTE has been
+                    // known to reach an `assert()` on degenerate input, and an
+                    // assertion in a library takes the whole process down.
+                    if !filtered.is_empty() {
+                        terminal.feed(filtered);
+                    }
                 }
                 // The list is cloned so that no borrow is held while an observer
                 // runs: session logging is then free to touch the notebook.
@@ -1109,6 +1131,14 @@ impl TerminalNotebook {
                     .unwrap_or_default();
                 for handler in handlers {
                     handler(&chunk);
+                }
+            }
+            // The stream can end inside an OSC string. Hand the remainder to VTE
+            // rather than dropping it with the filter.
+            if let Some(terminal) = terminal.upgrade() {
+                let tail = osc52_filter.finish();
+                if !tail.is_empty() {
+                    terminal.feed(tail);
                 }
             }
         });
