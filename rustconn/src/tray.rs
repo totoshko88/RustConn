@@ -499,12 +499,15 @@ mod tray_macos_impl {
             let menu = Self::build_menu(&state);
 
             // Create tray icon (must be on main thread)
-            // Note: icon_as_template=false shows the full-color icon in the menu bar.
-            // Template mode (true) requires a monochrome black+alpha image;
-            // our SVG is full-color so template mode would render it invisible.
+            // The icon is left non-template so the full-colour icon shows in the
+            // menu bar. Template mode draws the image as a monochrome mask, which
+            // would render our full-colour SVG invisible — so we rely on the
+            // builder's non-template default rather than opting in with
+            // `with_icon_templated` (tray-icon 0.26 renamed the old
+            // `with_icon_as_template(false)` to that opt-in form; the default is
+            // already what we want).
             let tray_icon = match TrayIconBuilder::new()
                 .with_icon(icon)
-                .with_icon_as_template(false)
                 .with_tooltip("RustConn")
                 .with_menu(Box::new(menu))
                 .build()

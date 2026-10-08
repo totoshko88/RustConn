@@ -1302,6 +1302,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d57d423b3c82e89b9a24ca3091fee61f456a26edbd28d26c65906f4bc1dcd8f"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
 name = "dirs-sys"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3361,9 +3370,9 @@ dependencies = [
 
 [[package]]
 name = "muda"
-version = "0.20.0"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cca139e57da4383727f189e43e66e84fa372347027fc996f9f1a007ec0a37996"
+checksum = "4340e89c178916e62879c5c36b7f699019369be413e496178a6983ce91b8bc03"
 dependencies = [
  "crossbeam-channel",
  "dpi",
@@ -3372,7 +3381,6 @@ dependencies = [
  "objc2-app-kit",
  "objc2-core-foundation",
  "objc2-foundation",
- "once_cell",
  "png",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
@@ -4794,12 +4802,12 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "async-channel",
  "chrono",
  "cpal",
- "dirs",
+ "dirs 7.0.0",
  "gdk4-wayland",
  "gettext-rs",
  "gtk4",
@@ -4834,7 +4842,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "chrono",
  "clap",
@@ -4856,7 +4864,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "aes 0.9.3",
  "ar",
@@ -4868,7 +4876,7 @@ dependencies = [
  "criterion",
  "csv",
  "data-encoding",
- "dirs",
+ "dirs 7.0.0",
  "flate2",
  "fs2",
  "futures",
@@ -4917,7 +4925,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4926,18 +4934,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.23.5"
+version = "0.23.6"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.23.5"
+version = "0.23.6"
 dependencies = [
  "libc",
  "nix",
@@ -5339,7 +5347,7 @@ version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32824fab5e16e6c4d86dc1ba84489390419a39f97699852b66480bb87d297ed8"
 dependencies = [
- "dirs",
+ "dirs 6.0.0",
 ]
 
 [[package]]
@@ -6166,9 +6174,9 @@ dependencies = [
 
 [[package]]
 name = "tray-icon"
-version = "0.25.1"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2b9c52859a94554803ccd4a24b98f74148ebc73b90676d783f3490b1bff9d72"
+checksum = "4f5cc5858ecf9574ddd8f0032a2ff7ffd6f7724d2b81e48b9374984b3fd6ddc9"
 dependencies = [
  "crossbeam-channel",
  "muda",

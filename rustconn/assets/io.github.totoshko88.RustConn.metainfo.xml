@@ -140,6 +140,17 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.6" date="2026-10-09">
+      <description>
+        <p>Version 0.23.6 - remote clipboard over OSC 52, saving terminal output, and an RDP performance fix:</p>
+        <ul>
+          <li>OSC 52: a remote yank can reach the local clipboard, opt-in and off by default</li>
+          <li>Save Output: write a terminal tab's scrollback to a text file (the focused pane in a split)</li>
+          <li>RDP Performance Mode now applies on the external FreeRDP client, not only the embedded one</li>
+          <li>Updated dirs, tray-icon and muda</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.5" date="2026-10-08">
       <description>
         <p>Version 0.23.5 - the default SSH-config import works under Flatpak, and a GNOME HIG compact/normal UI pass:</p>
