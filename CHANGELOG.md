@@ -5,11 +5,6 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Documentation
-- **API docs no longer point at code that is gone, and a gate keeps it that way** — nothing ran `cargo doc`, so rustdoc's own lints never fired and 106 warnings had piled up across `rustconn-core`, `rustconn`, `rustconn-cli` and `rustconn-dock-sys`; 67 of them were links to items that had been renamed, moved or removed. Where the prose had drifted with them it now matches the code: the KeePassXC helpers in `secret/status.rs` documented a `SecretError::Backend` variant that does not exist (they return `SecretError::KeePassXC`), and `CairoBackedBuffer::copy_rect` claimed to mirror a `VncPixelBuffer` that is no longer in the tree. Doc examples in the GUI binary used `rustconn::` paths, which a binary crate does not have, and now use `crate::`. A new `[workspace.lints.rustdoc]` table denies broken intra-doc links and allows public-to-private links, since these docs are read with private items. `scripts/verify.sh` (default mode) and the CI clippy job now run `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`.
-
 ## [0.23.6] - 2026-10-09
 
 ### Added
@@ -25,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **`rustconn-cli secret get` mirrors the GUI resolver's from-root search** — with "Search from vault root" enabled, `secret get --backend keepass` now applies the same whole-database fallback (keyed by the connection's scoped key, host and name) the connect path uses, instead of only the scoped `RustConn/…` lookup. The CLI can now diagnose exactly what a connect would find. (#353)
 - **Added diagnostics for the KeePass "Search from vault root" path** — when a scoped KeePass lookup misses, RustConn now logs the `kdbx_root_search` flag value and the preferred backend right before the from-root search gate, and `collect_secret_settings` logs the read-only / root-search toggle values it collected on save. This turns a "root search never ran" report into a one-line diagnosis of whether the flag reached the connect, while the underlying toggle-persistence issue is tracked. (#353)
+
+### Documentation
+- **API docs no longer point at code that is gone, and a gate keeps it that way** — nothing ran `cargo doc`, so rustdoc's own lints never fired and 106 warnings had piled up across `rustconn-core`, `rustconn`, `rustconn-cli` and `rustconn-dock-sys`; 67 of them were links to items that had been renamed, moved or removed. Where the prose had drifted with them it now matches the code: the KeePassXC helpers in `secret/status.rs` documented a `SecretError::Backend` variant that does not exist (they return `SecretError::KeePassXC`), and `CairoBackedBuffer::copy_rect` claimed to mirror a `VncPixelBuffer` that is no longer in the tree. Doc examples in the GUI binary used `rustconn::` paths, which a binary crate does not have, and now use `crate::`. A new `[workspace.lints.rustdoc]` table denies broken intra-doc links and allows public-to-private links, since these docs are read with private items. `scripts/verify.sh` (default mode) and the CI clippy job now run `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`.
 
 ### Dependencies
 - **Updated**: dirs 6.0→7.0, tray-icon 0.25.1→0.26.1, muda 0.20.0→0.21.2. `dirs` 7.0's only breaking change is `preference_dir` on Windows (RoamingAppData instead of LocalAppData) — RustConn never calls `preference_dir` and does not target Windows, so the upgrade is a no-op here. `tray-icon`/`muda` are macOS-only (behind the `tray-macos` feature, not built by CI); the deprecated `TrayIconBuilder::with_icon_as_template(false)` call was dropped in favour of the builder's non-template default (tray-icon 0.26 renamed it to the `with_icon_templated` opt-in), and `muda` 0.21's removed `TextStyle`/`libxdo` APIs are not used here. All in-range cargo dependencies were already at their latest compatible versions (`cargo update` changed nothing); `cargo deny check advisories` is clean.
