@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compact-interface settings polish** — in Settings → Interface, "Compact automatically on small windows" is now greyed out while "Compact interface" (manual) is on, because manual compact already forces it everywhere and the auto toggle could change nothing — a GNOME HIG dependent-row relationship that two independent-looking switches hid. The "Compact interface" subtitle drops the confusing "useful on … macOS and KDE" phrasing for a plain description. The local-shell action also gains a discoverable `Ctrl+Shift+D` default accelerator entry (already in the keybinding registry; surfaced in the Keyboard Shortcuts overlay).
 - **Touch-safe compact header targets** — compact-mode header and sidebar-bottom buttons now keep a 24px (HIG minimum) tap target under *auto*-compact (which may be a touch convertible) and only drop to the denser 20px under deliberate `window.compact-manual`, mirroring the existing 34/28px split on the regular header buttons.
 
+### Dependencies
+- **Updated**: serde_spanned 1.1.1 → 1.1.2, toml 1.1.6 → 1.1.7, toml_datetime 1.1.1 → 1.1.2, toml_edit 0.25.15 → 0.25.16, toml_parser 1.1.3 → 1.1.4, toml_writer 1.1.2 → 1.1.3, zerocopy 0.8.61 → 0.8.62, zerocopy-derive 0.8.61 → 0.8.62. All semver-compatible patch bumps (the TOML parser family and the zerocopy pair); no security advisories affected (`cargo deny check advisories` clean). CLI download versions all current (TigerVNC pinned at 1.16.2). picky-krb 0.12.5 remains held back for the same reason as 0.23.1–0.23.4: its `GssApiMessageError` variant breaks the pinned sspi 0.21.3, which does not match it exhaustively, so picky-krb stays at 0.12.4.
+
 ## [0.23.4] - 2026-10-08
 
 ### Added

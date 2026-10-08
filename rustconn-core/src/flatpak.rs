@@ -674,7 +674,10 @@ mod tests {
         // A plain host home, and a home that merely contains `.var` elsewhere,
         // must both come back unchanged.
         for raw in ["/home/user", "/home/user/.var/cache", "/root"] {
-            assert_eq!(strip_sandbox_home(Path::new(raw)), Path::new(raw).to_path_buf());
+            assert_eq!(
+                strip_sandbox_home(Path::new(raw)),
+                Path::new(raw).to_path_buf()
+            );
         }
     }
 

@@ -373,11 +373,7 @@ const MEDIUM_HIDDEN: [&str; 2] = ["win.split-vertical", "win.split-horizontal"];
 /// the icon even at the minimum width, and launching a local shell is a primary
 /// action that should not vanish just because the window is narrow (user
 /// request, 0.23.5 UI/UX audit).
-const NARROW_HIDDEN: [&str; 3] = [
-    "win.split-vertical",
-    "win.split-horizontal",
-    "win.settings",
-];
+const NARROW_HIDDEN: [&str; 3] = ["win.split-vertical", "win.split-horizontal", "win.settings"];
 
 /// Builds the body of the "jump host unavailable" question (issue #345).
 ///

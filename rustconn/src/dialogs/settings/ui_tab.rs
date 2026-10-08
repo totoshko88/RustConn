@@ -283,9 +283,8 @@ pub fn create_ui_page() -> (
         move |manual_on: bool| {
             compact_auto.set_sensitive(!manual_on);
             if manual_on {
-                compact_auto.set_subtitle(&i18n(
-                    "Always on while Compact interface is enabled above",
-                ));
+                compact_auto
+                    .set_subtitle(&i18n("Always on while Compact interface is enabled above"));
             } else if let Some(s) = auto_subtitle.as_ref() {
                 compact_auto.set_subtitle(s);
             }
