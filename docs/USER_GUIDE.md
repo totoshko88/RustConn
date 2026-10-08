@@ -1063,6 +1063,24 @@ When MPTCP is enabled on an embedded RDP or VNC session, the toolbar status labe
 
 ### RDP
 
+#### Performance Mode
+
+The **Performance Mode** dropdown in the RDP protocol tab trades image quality
+for responsiveness, and it applies to both the embedded and the external client:
+
+- **Quality** — every visual effect on (desktop wallpaper, themes, full-window
+  drag, menu animations), lossless image compression. Best on a fast LAN.
+- **Balanced** (default) — wallpaper and themes kept, full-window drag and menu
+  animations off, adaptive compression. A sensible middle ground.
+- **Speed** — all visual effects off (no wallpaper, themes, full-window drag or
+  menu animations), maximum compression. Best over a slow or high-latency link.
+
+On the external FreeRDP client these map to its experience flags
+(`-wallpaper`, `-themes`, `+window-drag`, `+menu-anims`); on the embedded client
+they map to the equivalent RDP performance flags. The remote server still has the
+final say — a group policy such as *Enforce Removal of Remote Desktop Wallpaper*
+can override what the client asks for.
+
 #### Session Toolbar
 
 The embedded RDP session provides a floating toolbar with actions like Copy, Paste, Autotype, Ctrl+Alt+Del, Quick Actions, and Scripts. The toolbar auto-hides to keep the full remote desktop visible:
