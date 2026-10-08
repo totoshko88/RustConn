@@ -930,6 +930,33 @@ Vault/Prod Database
         );
     }
 
+    #[test]
+    fn root_match_multi_handles_non_ascii_paths_without_panic() {
+        // Regression (issue #353): the tail test used to byte-slice `line` at
+        // `line.len() - candidate.len() - 1`, which lands inside a multi-byte
+        // char when a KeePass path holds non-ASCII — a Cyrillic recycle-bin
+        // name (`Смітник/…`) or a database titled `Паролі`. That panicked and
+        // took the whole root search down. The listing below reproduces it: a
+        // Cyrillic group path precedes the real match.
+        let listing = "\
+Смітник/ec2-34-253-187-235.eu-west-1.compute.amazonaws.com\n\
+Смітник/kp353-test (ssh)\n\
+Servers/kp353-test\n";
+        // The connection name matches the out-of-scope entry, by basename.
+        assert_eq!(
+            root_match_entry_path_multi(listing, &["kp353-test"]),
+            Some("Servers/kp353-test".to_string())
+        );
+        // A candidate that is itself the leaf of a Cyrillic-prefixed path still
+        // matches via the tail test, with no byte-boundary panic.
+        assert_eq!(
+            root_match_entry_path_multi(listing, &["kp353-test (ssh)"]),
+            Some("Смітник/kp353-test (ssh)".to_string())
+        );
+        // A candidate present nowhere misses cleanly rather than panicking.
+        assert_eq!(root_match_entry_path_multi(listing, &["відсутній"]), None);
+    }
+
     // --- Behaviour of save_in_place / rename_or_move_in_place via a fake CLI ---
 
     use std::cell::RefCell;
@@ -1477,10 +1504,18 @@ fn root_match_entry_path_multi(listing: &str, candidates: &[&str]) -> Option<Str
             }
             // Exact match (whole path, or a path whose tail is the candidate)
             // wins immediately — honour a caller that passed a qualified path.
+            // The tail test is `line` ends with `/<candidate>`, matched
+            // case-insensitively. It must be expressed with `ends_with` on the
+            // whole string, NOT by byte-slicing `line` at `line.len() -
+            // candidate.len() - 1`: a KeePass path may hold non-ASCII (a
+            // Cyrillic recycle-bin name such as `Смітник/…`), and that index can
+            // land inside a multi-byte char and panic (issue #353 — this crashed
+            // root-search on a vault with Cyrillic entries).
+            let suffix = format!("/{candidate}");
             if line.eq_ignore_ascii_case(candidate)
-                || line.len() > candidate.len()
-                    && line[line.len() - candidate.len() - 1..]
-                        .eq_ignore_ascii_case(&format!("/{candidate}"))
+                || line
+                    .to_ascii_lowercase()
+                    .ends_with(&suffix.to_ascii_lowercase())
             {
                 return Some(line.to_string());
             }
