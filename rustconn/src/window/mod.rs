@@ -366,11 +366,17 @@ const MEDIUM_HIDDEN: [&str; 2] = ["win.split-vertical", "win.split-horizontal"];
 
 /// Content-header buttons the narrow (≤ 600sp) breakpoint hides, by action name.
 /// Repeats the medium tier: only one breakpoint applies at a time.
-const NARROW_HIDDEN: [&str; 4] = [
+///
+/// `win.local-shell` is deliberately NOT here: on a narrow window the Shell
+/// button stays, shrinking to icon-only (its "Shell" label is collapsed by the
+/// `.compact` CSS, see `.shell-button-label` in style.css). There is room for
+/// the icon even at the minimum width, and launching a local shell is a primary
+/// action that should not vanish just because the window is narrow (user
+/// request, 0.23.5 UI/UX audit).
+const NARROW_HIDDEN: [&str; 3] = [
     "win.split-vertical",
     "win.split-horizontal",
     "win.settings",
-    "win.local-shell",
 ];
 
 /// Builds the body of the "jump host unavailable" question (issue #345).
@@ -1190,6 +1196,19 @@ impl MainWindow {
             if let Some(btn) = Self::header_button(&header_bar, action) {
                 bp_narrow.add_setter(&btn, "visible", Some(&hide_flag));
             }
+        }
+        // The Shell button stays at narrow width (removed from NARROW_HIDDEN),
+        // but its "Shell" text must give way to icon-only there. The label
+        // collapse lives in CSS keyed on `.compact`, which only engages when
+        // auto-compact is on — so mark the window `.narrow` on this breakpoint
+        // too, and CSS collapses `.shell-button-label` under either class. This
+        // is width-driven and independent of the compact preference (user
+        // request, 0.23.5 audit).
+        {
+            let win = window.clone();
+            bp_narrow.connect_apply(move |_| win.add_css_class("narrow"));
+            let win = window.clone();
+            bp_narrow.connect_unapply(move |_| win.remove_css_class("narrow"));
         }
         window.add_breakpoint(bp_narrow);
 

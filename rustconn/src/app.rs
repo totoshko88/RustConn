@@ -101,9 +101,13 @@ thread_local! {
 }
 
 /// Auto-compact engages when the window is no taller than this (logical px).
-// ponytail: fixed height/width heuristic, fine for desktop/laptop screens;
-// promote to a user setting if people on unusual DPIs find the trigger wrong.
-const COMPACT_AUTO_MAX_HEIGHT: i32 = 800;
+// GNOME HIG adapts primarily on WIDTH (narrow → folded), so width is the main
+// trigger below; the height floor is a safety net for genuinely short screens
+// (netbooks, vertically split tiles) only. It was 800px, which flipped a normal
+// 1080p laptop into compact as soon as the window was tiled to half-height —
+// surprising the user with no action on their part (#369 UI/UX audit). Lowered
+// to 600px so an ordinary tall window stays in regular density.
+const COMPACT_AUTO_MAX_HEIGHT: i32 = 600;
 /// ...or no wider than this (logical px). Either dimension being tight engages it.
 const COMPACT_AUTO_MAX_WIDTH: i32 = 900;
 

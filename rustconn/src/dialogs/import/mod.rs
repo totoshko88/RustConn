@@ -1244,12 +1244,12 @@ mod tests {
             ImportDialog::format_import_details(&result),
             "No connections found in the selected source."
         );
-        // Nothing at all still reads as a zero-count success. Left as-is:
-        // the details already say nothing was found, and only the
-        // warnings-only case was reported as self-contradictory.
+        // An empty import (no connections, no groups, no warnings) must NOT
+        // read as a zero-count success — that is exactly what made #368 look
+        // like it worked. format_summary now says nothing was imported.
         assert_eq!(
             ImportDialog::format_summary(&result, None),
-            "Successfully imported 0 connection(s) and 0 group(s)."
+            "Nothing was imported — no connections were found in the source."
         );
     }
 

@@ -132,6 +132,10 @@
 /* ============================================================
  * Split Pane Color Indicators
  * Applied via SPLIT_PANE_COLORS in split_view/bridge.rs
+ * NOTE: same DELIBERATE fixed GNOME palette as `.split-panel-color-*`
+ * above — these hex values are intentionally NOT @accent_color-derived
+ * so the six panel/tab identifiers stay mutually distinct and stable
+ * across themes and accent changes. Do not "theme-ify" them.
  * ============================================================ */
 
 .split-color-blue {
@@ -741,14 +745,25 @@ window.compact headerbar {
     padding-bottom: 0;
 }
 
-/* Header bar buttons — denser tap targets. Zero vertical margin so the
- * buttons don't push the header taller than its min-height. */
+/* Header bar buttons in compact. Split by WHY compact engaged (p.5 audit):
+ *  - auto-compact (small window, possibly a touch convertible) keeps a
+ *    touch-safe 24px floor — the GNOME HIG minimum tap target;
+ *  - deliberate `.compact-manual` (the user asked for density on a pointer
+ *    desktop) goes down to 20px.
+ * `.compact-manual` always carries `.compact` too (app.rs::set_window_compact),
+ * so the manual rule below just overrides this one. Zero vertical margin either
+ * way so buttons don't push the header past its min-height. */
 window.compact headerbar button {
-    min-height: 20px;
-    min-width: 20px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 1px 4px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+window.compact-manual headerbar button {
+    min-height: 20px;
+    min-width: 20px;
 }
 
 window.compact headerbar button.image-button {
@@ -757,6 +772,24 @@ window.compact headerbar button.image-button {
 
 /* Title label — tighter padding only (compact shrinks spacing, not text). */
 window.compact headerbar .title {
+    padding: 0;
+}
+
+/* Shell header button in compact: hide the "Shell" TEXT, keep the terminal
+ * icon (0.23.5 audit p.6 — the icon must stay reachable on a small window).
+ * The icon↔label 6px gap lives in CSS (`.shell-button-label` margin-start),
+ * not the GtkBox spacing property, so compact can drop it; the label itself is
+ * collapsed (GTK4 CSS has no `display:none`). */
+.shell-button-label {
+    margin-left: 6px;
+}
+
+window.compact .shell-button-label,
+window.narrow .shell-button-label {
+    font-size: 0;
+    opacity: 0;
+    min-width: 0;
+    margin: 0;
     padding: 0;
 }
 
@@ -877,15 +910,20 @@ window.compact .sidebar toolbarview > .bottom-bar > box {
     margin-bottom: 0;
 }
 
-/* Compact: same reduced icon-button metrics as the header
- * (`window.compact headerbar button.image-button`), so the two toolbars stay
- * identical in compact mode too. */
+/* Compact: same reduced icon-button metrics as the header, so the two toolbars
+ * stay identical in compact mode too — including the touch-safe/dense split
+ * (p.5 audit): 24px under auto-compact, 20px only under deliberate manual. */
 window.compact .sidebar toolbarview > .bottom-bar button {
-    min-height: 20px;
-    min-width: 20px;
+    min-height: 24px;
+    min-width: 24px;
     padding: 1px 3px;
     margin-top: 0;
     margin-bottom: 0;
+}
+
+window.compact-manual .sidebar toolbarview > .bottom-bar button {
+    min-height: 20px;
+    min-width: 20px;
 }
 
 /* Compact: AdwToolbarView wraps its bottom bar in a GtkRevealer, and libadwaita

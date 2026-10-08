@@ -118,10 +118,15 @@ pub fn create_header_bar() -> (
 
     // Shell button — prominent, icon + label, accent color, leftmost in right group
     let shell_button = Button::new();
-    let shell_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+    let shell_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
     let shell_icon = gtk4::Image::from_icon_name("utilities-terminal-symbolic");
     shell_icon.set_pixel_size(16);
     let shell_label = Label::new(Some(&i18n("Shell")));
+    // Compact mode hides the "Shell" TEXT but keeps the terminal icon (user
+    // request, 0.23.5 UI/UX audit p.6): the icon alone must stay reachable on a
+    // small window. Collapsed in CSS via `.shell-button-label` so the switch is
+    // live with the compact class, not rebuilt.
+    shell_label.add_css_class("shell-button-label");
     shell_box.append(&shell_icon);
     shell_box.append(&shell_label);
     shell_button.set_child(Some(&shell_box));

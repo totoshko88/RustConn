@@ -242,7 +242,7 @@ pub fn create_ui_page() -> (
     let compact_ui = adw::SwitchRow::builder()
         .title(i18n("Compact interface"))
         .subtitle(i18n(
-            "Reduce header bar, tab bar, and toolbar height. Applied instantly; useful on small screens, macOS and KDE",
+            "Reduce header bar, tab bar, and toolbar height for a denser layout. Applied instantly",
         ))
         .build();
     appearance_group.add(&compact_ui);
@@ -271,10 +271,32 @@ pub fn create_ui_page() -> (
 
     // Live preview: both toggles feed the same recompute so the effect is
     // visible before the dialog is saved.
+    //
+    // Dependency (GNOME HIG dependent-row pattern): when "Compact interface"
+    // (manual) is ON, effective compact is `manual || auto`, so `auto` can no
+    // longer change anything — manual already forces compact everywhere. Grey
+    // the auto row out and say why, instead of leaving two independent-looking
+    // switches where one silently overrides the other (0.23.5 UI/UX audit, p.3).
+    let sync_auto_sensitivity = {
+        let compact_auto = compact_auto.clone();
+        let auto_subtitle = compact_auto.subtitle();
+        move |manual_on: bool| {
+            compact_auto.set_sensitive(!manual_on);
+            if manual_on {
+                compact_auto.set_subtitle(&i18n(
+                    "Always on while Compact interface is enabled above",
+                ));
+            } else if let Some(s) = auto_subtitle.as_ref() {
+                compact_auto.set_subtitle(s);
+            }
+        }
+    };
     {
         let auto = compact_auto.clone();
+        let sync = sync_auto_sensitivity.clone();
         compact_ui.connect_active_notify(move |row| {
             crate::app::set_compact_prefs(row.is_active(), auto.is_active());
+            sync(row.is_active());
         });
     }
     {
@@ -702,6 +724,9 @@ pub fn load_ui_settings(
     compact_ui.set_active(settings.compact_ui);
     compact_auto.set_active(settings.compact_auto);
     crate::app::set_compact_prefs(settings.compact_ui, settings.compact_auto);
+    // Reflect the manual→auto dependency for the loaded state (p.3 audit): auto
+    // can change nothing while manual compact is forced on, so grey it out.
+    compact_auto.set_sensitive(!settings.compact_ui);
 
     terminal_passthrough_ctrl.set_active(settings.terminal_passthrough_ctrl);
     keyboard_passthrough.set_active(settings.keyboard_passthrough);
