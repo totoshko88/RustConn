@@ -397,6 +397,7 @@ done
 - Added OSC 52 remote-clipboard support, opt-in (PR #372)
 - Added Save Output for terminal tabs; split tabs save the focused pane (#371)
 - Fixed RDP Performance Mode now reaching the external FreeRDP client (#370)
+- Fixed API docs linking to renamed or removed items; cargo doc gated in CI
 - Updated dirs 6.0->7.0, tray-icon 0.25.1->0.26.1, muda 0.20.0->0.21.2
 
 * Thu Oct 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.5-0

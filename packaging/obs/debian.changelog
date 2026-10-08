@@ -10,6 +10,8 @@ rustconn (0.23.6-1) unstable; urgency=medium
   * Fixed: RDP Performance Mode now reaches the external FreeRDP client - a Speed
     profile emits -wallpaper/-themes to xfreerdp instead of being dropped, mirroring
     the embedded client and the .rdp exporter (#370)
+  * Documentation: API docs no longer link to renamed or removed items; cargo
+    doc now runs with -D warnings in CI
   * Dependencies: updated dirs 6.0->7.0, tray-icon 0.25.1->0.26.1, muda
     0.20.0->0.21.2; advisories clean
 
