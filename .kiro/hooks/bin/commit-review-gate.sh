@@ -72,6 +72,9 @@ if grep -qxF 'po/uk.po' -- "$journal" 2>/dev/null; then
     needed="$needed uk-translation-reviewer (po/uk.po changed — DSTU terminology, Kharkiv orthography, imperative mood);"
 fi
 
+# scripts/change-inventory.sh repeats these four patterns for the rustconn-review
+# workflow, which skips a reviewer the inventory does not list. Change both.
+#
 # config-mapping-reviewer: persisted<->runtime config drift and export/import
 # round-trips. A stored-but-unread field or a fake export `method:` compiles and
 # passes clippy, so the quality gate never catches it (SPICE proxy, RDP smartcard,

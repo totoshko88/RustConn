@@ -10,6 +10,18 @@ already has get invoked, plus the two steps that were missing: **normalisation**
 and an **adversarial final pass**. Adapted from
 [IronRDP's code-review skill](https://github.com/Devolutions/IronRDP/blob/master/.github/skills/code-review/SKILL.md).
 
+The same order exists as a Kiro Workflow recipe,
+`.kiro/workflows/rustconn-review.workflow.json` (inputs `base`, `goal`; report in
+`target/review/<timestamp>/review.md`), so the runtime holds the sequence instead
+of the agent's memory. It needs `kiroAgent.workflows.enabled` and a new chat
+session. Every focused reviewer runs as a branch and skips itself unless
+`scripts/change-inventory.sh` names it — the inventory's patterns are the
+commit gate's, so the two cannot disagree about which reviews a change needs.
+**Pilot, unverified:** whether this workspace's PreToolUse hooks fire inside
+workflow steps (the setup step writes `hook-probe.txt` to answer it), and
+whether a step's `modelId` is billed as set. Until both are confirmed, do not
+add a writing step to the recipe.
+
 Until now each reviewer fired independently from its own hook and reported
 straight to the developer. Nothing merged duplicate findings, nothing dropped
 claims that had no concrete location, and nothing challenged a reviewer that was
