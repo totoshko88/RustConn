@@ -837,6 +837,19 @@ rustconn-cli secret verify-keepass --database ~/vault.kdbx
 rustconn-cli secret verify-keepass --database ~/vault.kdbx --yubikey 2       # YubiKey Challenge-Response slot (or 2:serial)
 ```
 
+> **`secret set` marks the connection vault-backed.** When the connection's
+> password source is still the default `None`, storing a secret promotes it to
+> `Vault` so a later connect actually reads the backend. A source you set
+> deliberately (`Prompt`, `Variable`, `Inherit`, `Script`) is left unchanged. So
+> `rustconn-cli add` followed by `secret set` produces a connection that resolves
+> its own credential, with no extra step.
+
+> **`secret get --backend keepass` honours "Search from vault root".** When that
+> option is on in Settings → Secrets and the scoped `RustConn/` lookup misses,
+> the command widens to a whole-database search keyed by the connection's name
+> and host — the same fallback the GUI uses at connect — so `secret get` reports
+> exactly what a connect would find.
+
 Backend aliases:
 
 | Backend | Aliases |
