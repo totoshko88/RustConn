@@ -166,7 +166,13 @@ pub fn clear_session_key() {
 pub fn set_bw_cmd(cmd: &str) {
     if let Ok(mut guard) = BW_CMD_STORE.write() {
         *guard = Some(cmd.to_string());
-        tracing::debug!(bw_cmd = %cmd, "Bitwarden: CLI command path stored");
+        // This only caches the resolved `bw` binary path from backend detection
+        // (the Secrets settings page probes every backend to fill its Status
+        // rows). It is NOT a vault lookup — a KeePass user seeing this line in a
+        // credential-resolution log was alarmed into thinking Bitwarden was
+        // being queried for their secret, which it is not (issue #353). The
+        // wording now says so.
+        tracing::debug!(bw_cmd = %cmd, "Bitwarden: cached CLI binary path from backend detection (not a vault lookup)");
     }
 }
 

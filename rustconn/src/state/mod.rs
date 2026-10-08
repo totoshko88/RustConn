@@ -1544,6 +1544,15 @@ impl AppState {
                     // falling through to the encrypted-file fallback. This never
                     // mutates and never touches the write path. Scoped-first,
                     // root only on a scoped miss; a no-op when the flag is off.
+                    //
+                    // Logged unconditionally so a "root search never ran" report
+                    // (issue #353) shows the gate's value directly, instead of
+                    // leaving us to infer it from the absence of a later line.
+                    tracing::debug!(
+                        kdbx_root_search = secret_settings.kdbx_root_search,
+                        preferred_backend = ?secret_settings.preferred_backend,
+                        "[resolve_credentials_blocking] scoped KeePass lookup missed; root-search gate about to be evaluated"
+                    );
                     if secret_settings.kdbx_root_search {
                         match KeePassStatus::get_password_from_kdbx_root(
                             kdbx_path,

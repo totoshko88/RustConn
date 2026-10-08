@@ -4033,6 +4033,18 @@ pub fn collect_secret_settings(
         collected.carry_over_runtime_secrets(&current.secrets);
     }
 
+    // The kdbx read-only / root-search toggles were reported as not persisting
+    // despite the switches showing on (issue #353): the on-disk config kept
+    // both at false. Log what the collect actually read from the switches so a
+    // "saved but not persisted" report can be told apart from the collect never
+    // running at all.
+    tracing::debug!(
+        preferred_backend = ?collected.preferred_backend,
+        kdbx_root_search = collected.kdbx_root_search,
+        kdbx_read_only = collected.kdbx_read_only,
+        "collect_secret_settings: collected secret toggles"
+    );
+
     collected
 }
 

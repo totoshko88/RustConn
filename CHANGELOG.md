@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **The misleading "Bitwarden: CLI command path stored" log line no longer reads like a vault lookup** — a KeePass user who turned on debug logging to diagnose a credential miss saw this line and reasonably concluded RustConn was querying Bitwarden for their secret (reported while investigating #353). It is nothing of the sort: it is the Settings page's backend-detection caching the resolved `bw` binary name, and with KeePass selected no Bitwarden backend is ever part of credential resolution. The line now says so explicitly ("cached CLI binary path from backend detection (not a vault lookup)"). (#353)
+
+### Changed
+- **Added diagnostics for the KeePass "Search from vault root" path** — when a scoped KeePass lookup misses, RustConn now logs the `kdbx_root_search` flag value and the preferred backend right before the from-root search gate, and `collect_secret_settings` logs the read-only / root-search toggle values it collected on save. This turns a "root search never ran" report into a one-line diagnosis of whether the flag reached the connect, while the underlying toggle-persistence issue is tracked. (#353)
+
 ## [0.23.5] - 2026-10-08
 
 ### Fixed
