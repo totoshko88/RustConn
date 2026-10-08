@@ -252,6 +252,17 @@ pub struct TerminalNotebook {
     /// bridges. `session_content_box` consults this as a last resort so the
     /// reconnect banner reaches every pane, not only the split owner's.
     split_pane_box_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<GtkBox>>>>>,
+    /// Resolves the focused pane's session for a tab that hosts a split, given
+    /// the tab owner's session id (issue #371).
+    ///
+    /// The focused pane is known only to the tab's `SplitViewBridge`, which
+    /// lives at the window layer in `session_split_bridges`, not in the
+    /// notebook. Wired by the window the same way as
+    /// [`Self::split_pane_box_provider`]. `Save Output` consults it so a split
+    /// tab saves the pane the user is actually looking at, not always the
+    /// owner. Returns `None` for a tab with no split, so the caller falls back
+    /// to the owner session.
+    focused_session_provider: Rc<RefCell<Option<Rc<dyn Fn(Uuid) -> Option<Uuid>>>>>,
     /// Toggles a tab's membership in the cross-tab broadcast group (issue #329).
     ///
     /// Wired by the window; the tab context menu calls it to activate the
@@ -536,6 +547,7 @@ impl TerminalNotebook {
             on_reconnect: Rc::new(RefCell::new(None)),
             on_cloud_login: Rc::new(RefCell::new(None)),
             split_pane_box_provider: Rc::new(RefCell::new(None)),
+            focused_session_provider: Rc::new(RefCell::new(None)),
             on_tab_broadcast_toggle: Rc::new(RefCell::new(None)),
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),

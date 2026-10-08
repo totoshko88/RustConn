@@ -916,13 +916,23 @@ impl TerminalNotebook {
         let sessions_for_save = self.sessions.clone();
         let terminals_for_save = self.terminals.clone();
         let session_info_for_save = self.session_info.clone();
+        let focused_provider_for_save = self.focused_session_provider.clone();
         let tab_view_for_save = self.tab_view.clone();
         save_output_action.connect_activate(move |_, _| {
-            let Some(session_id) =
+            let Some(owner_id) =
                 Self::context_menu_session_id(&context_page_save, &sessions_for_save)
             else {
                 return;
             };
+            // In a split tab, save the focused pane's session rather than the
+            // tab owner (the first pane) — the pane the user is looking at
+            // (issue #371). The provider is wired by the window; without it, or
+            // for a normal tab, this is the owner session itself.
+            let session_id = focused_provider_for_save
+                .borrow()
+                .as_ref()
+                .and_then(|resolve| resolve(owner_id))
+                .unwrap_or(owner_id);
             let Some(terminal) = terminals_for_save.borrow().get(&session_id).cloned() else {
                 tracing::warn!(%session_id, "tab.save-output: no terminal for session");
                 return;

@@ -647,6 +647,35 @@ impl TerminalNotebook {
         *self.split_pane_box_provider.borrow_mut() = Some(Rc::new(provider));
     }
 
+    /// Sets the resolver for the focused pane's session in a split tab (#371).
+    ///
+    /// The window wires this to the tab's `SplitViewBridge`, which is the only
+    /// thing that knows which pane has focus. `Save Output` uses it so a split
+    /// tab saves the focused pane, not the owner. Returns `None` when the tab
+    /// has no split.
+    pub fn set_focused_session_provider<F>(&self, provider: F)
+    where
+        F: Fn(Uuid) -> Option<Uuid> + 'static,
+    {
+        *self.focused_session_provider.borrow_mut() = Some(Rc::new(provider));
+    }
+
+    /// Resolves the session whose terminal `Save Output` should dump for the
+    /// right-clicked tab (#371).
+    ///
+    /// For a tab that hosts a split this is the focused pane's session (via
+    /// [`Self::set_focused_session_provider`]); for a normal tab, or when the
+    /// provider is unwired or reports no focused pane, it is the tab's own
+    /// `owner` session.
+    #[must_use]
+    pub fn output_target_session(&self, owner: Uuid) -> Uuid {
+        self.focused_session_provider
+            .borrow()
+            .as_ref()
+            .and_then(|resolve| resolve(owner))
+            .unwrap_or(owner)
+    }
+
     /// Wires the tab context menu's broadcast-membership toggle (issue #329).
     pub fn set_on_tab_broadcast_toggle<F>(&self, callback: F)
     where

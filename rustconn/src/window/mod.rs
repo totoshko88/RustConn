@@ -805,6 +805,20 @@ impl MainWindow {
             });
         }
 
+        // Resolve the focused pane's session for a split tab, so "Save Output"
+        // saves the pane the user is looking at rather than the tab owner
+        // (issue #371). Keyed by the owner session id — the tab's bridge is the
+        // only one that knows which of its panes has focus.
+        {
+            let bridges_for_focus = session_split_bridges.clone();
+            terminal_notebook.set_focused_session_provider(move |owner_id| {
+                let bridges = bridges_for_focus.borrow();
+                bridges
+                    .get(&owner_id)
+                    .and_then(|bridge| bridge.get_focused_session())
+            });
+        }
+
         // Set up reconnect callback for VTE sessions
         // When user clicks "Reconnect" in a disconnected tab, reuse the
         // existing terminal tab instead of closing and creating a new one.
