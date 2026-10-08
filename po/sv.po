@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 18:04+0300\n"
+"POT-Creation-Date: 2026-10-08 18:30+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -47,8 +47,8 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:291 rustconn/src/terminal/tab_menu.rs:396
-#: rustconn/src/terminal/tab_menu.rs:625 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:352 rustconn/src/terminal/tab_menu.rs:457
+#: rustconn/src/terminal/tab_menu.rs:686 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:1066
@@ -4626,7 +4626,7 @@ msgstr "Kopiering stoppad"
 #: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:626
+#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:687
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4284
 msgid "Close"
 msgstr "Stäng"
@@ -8642,7 +8642,7 @@ msgstr "Klistra in"
 msgid "Find in Terminal"
 msgstr "Sök i terminalen"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1091
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1251
 msgid "Close Tab"
 msgstr "Stäng flik"
 
@@ -8686,7 +8686,7 @@ msgstr "Ta bort från delad vy"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:1043
+#: rustconn/src/terminal/tab_menu.rs:1192
 msgid "Remove Split"
 msgstr "Ta bort delning"
 
@@ -10472,7 +10472,7 @@ msgstr "Spara filer från fjärrurklipp"
 #: rustconn/src/embedded_rdp/mod.rs:770 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1351
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:970
+#: rustconn/src/terminal/tab_menu.rs:1119
 msgid "Reconnect"
 msgstr "Återanslut"
 
@@ -11569,123 +11569,143 @@ msgstr "Logga in på {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Kör ”{}” för att logga in igen i webbläsaren"
 
-#: rustconn/src/terminal/tab_menu.rs:230
+#: rustconn/src/terminal/tab_menu.rs:291
 msgid "Set Tab Group"
 msgstr "Ange flikgrupp"
 
-#: rustconn/src/terminal/tab_menu.rs:238
+#: rustconn/src/terminal/tab_menu.rs:299
 msgid "New group name…"
 msgstr "Nytt gruppnamn…"
 
-#: rustconn/src/terminal/tab_menu.rs:243
+#: rustconn/src/terminal/tab_menu.rs:304
 msgid "Enter a group name for this tab"
 msgstr "Ange ett gruppnamn för denna flik"
 
-#: rustconn/src/terminal/tab_menu.rs:248
+#: rustconn/src/terminal/tab_menu.rs:309
 msgid "Existing groups:"
 msgstr "Befintliga grupper:"
 
-#: rustconn/src/terminal/tab_menu.rs:276
+#: rustconn/src/terminal/tab_menu.rs:337
 msgid "or enter a new name:"
 msgstr "eller ange ett nytt namn:"
 
-#: rustconn/src/terminal/tab_menu.rs:292 rustconn/src/terminal/tab_menu.rs:397
+#: rustconn/src/terminal/tab_menu.rs:353 rustconn/src/terminal/tab_menu.rs:458
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Tillämpa"
 
-#: rustconn/src/terminal/tab_menu.rs:384
+#: rustconn/src/terminal/tab_menu.rs:445
 msgid "Rename Tab"
 msgstr "Byt om fliken"
 
-#: rustconn/src/terminal/tab_menu.rs:386
+#: rustconn/src/terminal/tab_menu.rs:447
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Etiketten namnger bara den här fliken. Lämna den tom för att återställa "
 "standardnamnet."
 
-#: rustconn/src/terminal/tab_menu.rs:392
+#: rustconn/src/terminal/tab_menu.rs:453
 msgid "Tab name"
 msgstr "Fliknamn"
 
-#: rustconn/src/terminal/tab_menu.rs:619 rustconn/src/terminal/tab_menu.rs:1002
+#: rustconn/src/terminal/tab_menu.rs:680 rustconn/src/terminal/tab_menu.rs:1151
 msgid "Close All in Group"
 msgstr "Stäng alla i grupp"
 
-#: rustconn/src/terminal/tab_menu.rs:621
+#: rustconn/src/terminal/tab_menu.rs:682
 msgid "Close {} tabs in group '{}'?"
 msgstr "Stäng {} flikar i gruppen '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:902
+#: rustconn/src/terminal/tab_menu.rs:943
+msgid "Save Output"
+msgstr "Spara utdata"
+
+#: rustconn/src/terminal/tab_menu.rs:949
+msgid "Text files"
+msgstr "Textfiler"
+
+#: rustconn/src/terminal/tab_menu.rs:978
+msgid "Output saved"
+msgstr "Utdata sparad"
+
+#: rustconn/src/terminal/tab_menu.rs:988
+msgid "Could not save output"
+msgstr "Kunde inte spara utdata"
+
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Move to New Window on {}"
 msgstr "Flytta till nytt fönster på {}"
 
-#: rustconn/src/terminal/tab_menu.rs:922
+#: rustconn/src/terminal/tab_menu.rs:1071
 msgid "Monitor {} ({})"
 msgstr "Skärm {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:923
+#: rustconn/src/terminal/tab_menu.rs:1072
 msgid "Monitor {}"
 msgstr "Skärm {}"
 
-#: rustconn/src/terminal/tab_menu.rs:977
+#: rustconn/src/terminal/tab_menu.rs:1126
 msgid "Unpin Tab"
 msgstr "Lossa flik"
 
-#: rustconn/src/terminal/tab_menu.rs:979
+#: rustconn/src/terminal/tab_menu.rs:1128
 msgid "Pin Tab"
 msgstr "Fäst flik"
 
-#: rustconn/src/terminal/tab_menu.rs:990
+#: rustconn/src/terminal/tab_menu.rs:1139
 msgid "Rename Tab…"
 msgstr "Byt om fliken…"
 
-#: rustconn/src/terminal/tab_menu.rs:998
+#: rustconn/src/terminal/tab_menu.rs:1147
 msgid "Set Group…"
 msgstr "Ange grupp…"
 
-#: rustconn/src/terminal/tab_menu.rs:1000
+#: rustconn/src/terminal/tab_menu.rs:1149
 msgid "Remove from Group"
 msgstr "Ta bort från grupp"
 
-#: rustconn/src/terminal/tab_menu.rs:1012
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Remove from Broadcast"
 msgstr "Ta bort från sändning"
 
-#: rustconn/src/terminal/tab_menu.rs:1014
+#: rustconn/src/terminal/tab_menu.rs:1163
 msgid "Add to Broadcast"
 msgstr "Lägg till i sändning"
 
-#: rustconn/src/terminal/tab_menu.rs:1036
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Monitor"
 msgstr "Övervakning"
 
-#: rustconn/src/terminal/tab_menu.rs:1050
+#: rustconn/src/terminal/tab_menu.rs:1199
 msgid "Move to New Window"
 msgstr "Flytta till nytt fönster"
 
-#: rustconn/src/terminal/tab_menu.rs:1080
+#: rustconn/src/terminal/tab_menu.rs:1229
 msgid "Edit Connection…"
 msgstr "Redigera anslutning…"
 
-#: rustconn/src/terminal/tab_menu.rs:1092
+#: rustconn/src/terminal/tab_menu.rs:1245
+msgid "Save Output…"
+msgstr "Spara utdata…"
+
+#: rustconn/src/terminal/tab_menu.rs:1252
 msgid "Close Others"
 msgstr "Stäng övriga"
 
-#: rustconn/src/terminal/tab_menu.rs:1097
+#: rustconn/src/terminal/tab_menu.rs:1257
 msgid "Close to the Left"
 msgstr "Stäng till vänster"
 
-#: rustconn/src/terminal/tab_menu.rs:1098
+#: rustconn/src/terminal/tab_menu.rs:1258
 msgid "Close to the Right"
 msgstr "Stäng till höger"
 
-#: rustconn/src/terminal/tab_menu.rs:1102
+#: rustconn/src/terminal/tab_menu.rs:1262
 msgid "Close All Ungrouped"
 msgstr "Stäng alla ogrupperade"
 
-#: rustconn/src/terminal/tab_menu.rs:1106
+#: rustconn/src/terminal/tab_menu.rs:1266
 msgid "Close All Tabs"
 msgstr "Stäng alla flikar"
 

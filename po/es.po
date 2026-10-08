@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-08 18:04+0300\n"
+"POT-Creation-Date: 2026-10-08 18:30+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Spanish\n"
@@ -47,8 +47,8 @@ msgstr "OK"
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
 #: rustconn/src/embedded_rdp/autotype.rs:166
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:291 rustconn/src/terminal/tab_menu.rs:396
-#: rustconn/src/terminal/tab_menu.rs:625 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:352 rustconn/src/terminal/tab_menu.rs:457
+#: rustconn/src/terminal/tab_menu.rs:686 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:1066
@@ -2507,7 +2507,8 @@ msgstr "Modo de rendimiento"
 
 #: rustconn/src/dialogs/connection/rdp.rs:137
 msgid "Quality/speed tradeoff for image rendering and visual effects"
-msgstr "Equilibrio calidad/velocidad para renderizado de imágenes y efectos visuales"
+msgstr ""
+"Equilibrio calidad/velocidad para renderizado de imágenes y efectos visuales"
 
 #: rustconn/src/dialogs/connection/rdp.rs:145
 #: rustconn/src/dialogs/connection/rdp.rs:562
@@ -4652,7 +4653,7 @@ msgstr "Copia detenida"
 #: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:626
+#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/terminal/tab_menu.rs:687
 #: rustconn/src/vault_ops.rs:65 rustconn/src/window/mod.rs:4284
 msgid "Close"
 msgstr "Cerrar"
@@ -8701,7 +8702,7 @@ msgstr "Pegar"
 msgid "Find in Terminal"
 msgstr "Buscar en el terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1091
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/terminal/tab_menu.rs:1251
 msgid "Close Tab"
 msgstr "Cerrar pestaña"
 
@@ -8745,7 +8746,7 @@ msgstr "Quitar de la vista dividida"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1486
-#: rustconn/src/terminal/tab_menu.rs:1043
+#: rustconn/src/terminal/tab_menu.rs:1192
 msgid "Remove Split"
 msgstr "Quitar la división"
 
@@ -10549,7 +10550,7 @@ msgstr "Guardar archivos del portapapeles remoto"
 #: rustconn/src/embedded_rdp/mod.rs:770 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1484 rustconn/src/terminal/mod.rs:1351
 #: rustconn/src/terminal/session_lifecycle.rs:401
-#: rustconn/src/terminal/tab_menu.rs:970
+#: rustconn/src/terminal/tab_menu.rs:1119
 msgid "Reconnect"
 msgstr "Reconectar"
 
@@ -11650,123 +11651,143 @@ msgstr "Iniciar sesión en {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Ejecutar «{}» para volver a iniciar sesión en el navegador"
 
-#: rustconn/src/terminal/tab_menu.rs:230
+#: rustconn/src/terminal/tab_menu.rs:291
 msgid "Set Tab Group"
 msgstr "Establecer grupo de pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:238
+#: rustconn/src/terminal/tab_menu.rs:299
 msgid "New group name…"
 msgstr "Nuevo nombre de grupo…"
 
-#: rustconn/src/terminal/tab_menu.rs:243
+#: rustconn/src/terminal/tab_menu.rs:304
 msgid "Enter a group name for this tab"
 msgstr "Introduzca un nombre de grupo para esta pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:248
+#: rustconn/src/terminal/tab_menu.rs:309
 msgid "Existing groups:"
 msgstr "Grupos existentes:"
 
-#: rustconn/src/terminal/tab_menu.rs:276
+#: rustconn/src/terminal/tab_menu.rs:337
 msgid "or enter a new name:"
 msgstr "o ingrese un nuevo nombre:"
 
-#: rustconn/src/terminal/tab_menu.rs:292 rustconn/src/terminal/tab_menu.rs:397
+#: rustconn/src/terminal/tab_menu.rs:353 rustconn/src/terminal/tab_menu.rs:458
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Aplicar"
 
-#: rustconn/src/terminal/tab_menu.rs:384
+#: rustconn/src/terminal/tab_menu.rs:445
 msgid "Rename Tab"
 msgstr "Renombrar pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:386
+#: rustconn/src/terminal/tab_menu.rs:447
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "La etiqueta solo nombra esta pestaña. Déjala vacía para recuperar el nombre "
 "predeterminado."
 
-#: rustconn/src/terminal/tab_menu.rs:392
+#: rustconn/src/terminal/tab_menu.rs:453
 msgid "Tab name"
 msgstr "Nombre de la pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:619 rustconn/src/terminal/tab_menu.rs:1002
+#: rustconn/src/terminal/tab_menu.rs:680 rustconn/src/terminal/tab_menu.rs:1151
 msgid "Close All in Group"
 msgstr "Cerrar todo en el grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:621
+#: rustconn/src/terminal/tab_menu.rs:682
 msgid "Close {} tabs in group '{}'?"
 msgstr "¿Cerrar {} pestañas en el grupo «{}»?"
 
-#: rustconn/src/terminal/tab_menu.rs:902
+#: rustconn/src/terminal/tab_menu.rs:943
+msgid "Save Output"
+msgstr "Guardar salida"
+
+#: rustconn/src/terminal/tab_menu.rs:949
+msgid "Text files"
+msgstr "Archivos de texto"
+
+#: rustconn/src/terminal/tab_menu.rs:978
+msgid "Output saved"
+msgstr "Salida guardada"
+
+#: rustconn/src/terminal/tab_menu.rs:988
+msgid "Could not save output"
+msgstr "No se pudo guardar la salida"
+
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Move to New Window on {}"
 msgstr "Mover a una ventana nueva en {}"
 
-#: rustconn/src/terminal/tab_menu.rs:922
+#: rustconn/src/terminal/tab_menu.rs:1071
 msgid "Monitor {} ({})"
 msgstr "Monitor {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:923
+#: rustconn/src/terminal/tab_menu.rs:1072
 msgid "Monitor {}"
 msgstr "Monitor {}"
 
-#: rustconn/src/terminal/tab_menu.rs:977
+#: rustconn/src/terminal/tab_menu.rs:1126
 msgid "Unpin Tab"
 msgstr "Desfijar pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:979
+#: rustconn/src/terminal/tab_menu.rs:1128
 msgid "Pin Tab"
 msgstr "Fijar pestaña"
 
-#: rustconn/src/terminal/tab_menu.rs:990
+#: rustconn/src/terminal/tab_menu.rs:1139
 msgid "Rename Tab…"
 msgstr "Renombrar pestaña…"
 
-#: rustconn/src/terminal/tab_menu.rs:998
+#: rustconn/src/terminal/tab_menu.rs:1147
 msgid "Set Group…"
 msgstr "Establecer grupo…"
 
-#: rustconn/src/terminal/tab_menu.rs:1000
+#: rustconn/src/terminal/tab_menu.rs:1149
 msgid "Remove from Group"
 msgstr "Quitar del grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:1012
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Remove from Broadcast"
 msgstr "Quitar de la difusión"
 
-#: rustconn/src/terminal/tab_menu.rs:1014
+#: rustconn/src/terminal/tab_menu.rs:1163
 msgid "Add to Broadcast"
 msgstr "Añadir a la difusión"
 
-#: rustconn/src/terminal/tab_menu.rs:1036
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Monitor"
 msgstr "Monitorización"
 
-#: rustconn/src/terminal/tab_menu.rs:1050
+#: rustconn/src/terminal/tab_menu.rs:1199
 msgid "Move to New Window"
 msgstr "Mover a una ventana nueva"
 
-#: rustconn/src/terminal/tab_menu.rs:1080
+#: rustconn/src/terminal/tab_menu.rs:1229
 msgid "Edit Connection…"
 msgstr "Editar conexión…"
 
-#: rustconn/src/terminal/tab_menu.rs:1092
+#: rustconn/src/terminal/tab_menu.rs:1245
+msgid "Save Output…"
+msgstr "Guardar salida…"
+
+#: rustconn/src/terminal/tab_menu.rs:1252
 msgid "Close Others"
 msgstr "Cerrar otras"
 
-#: rustconn/src/terminal/tab_menu.rs:1097
+#: rustconn/src/terminal/tab_menu.rs:1257
 msgid "Close to the Left"
 msgstr "Cerrar a la izquierda"
 
-#: rustconn/src/terminal/tab_menu.rs:1098
+#: rustconn/src/terminal/tab_menu.rs:1258
 msgid "Close to the Right"
 msgstr "Cerrar a la derecha"
 
-#: rustconn/src/terminal/tab_menu.rs:1102
+#: rustconn/src/terminal/tab_menu.rs:1262
 msgid "Close All Ungrouped"
 msgstr "Cerrar todas sin grupo"
 
-#: rustconn/src/terminal/tab_menu.rs:1106
+#: rustconn/src/terminal/tab_menu.rs:1266
 msgid "Close All Tabs"
 msgstr "Cerrar todas las pestañas"
 
