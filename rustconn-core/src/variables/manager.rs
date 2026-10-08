@@ -445,7 +445,7 @@ impl VariableManager {
     /// Substitutes variables and validates the result is safe for use as a
     /// command argument.
     ///
-    /// This method performs the same substitution as [`substitute`], but
+    /// This method performs the same substitution as [`Self::substitute`], but
     /// additionally checks that the resolved values do not contain characters
     /// that could cause unexpected behavior when passed as command-line
     /// arguments.

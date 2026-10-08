@@ -60,7 +60,7 @@ use std::path::{Path, PathBuf};
 /// the **decompressed** `.so`/`.dylib` that the loader's allow-list expects.
 ///
 /// The hash is of the raw library, not the `.bz2` — the CDN serves
-/// `<file>.bz2`, we bunzip2 it, and the result must hash to [`sha256`].
+/// `<file>.bz2`, we bunzip2 it, and the result must hash to `sha256`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpenH264Artifact {
     /// Decompressed library file name, e.g. `libopenh264-2.6.0-linux64.8.so`.

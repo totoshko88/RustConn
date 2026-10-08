@@ -11,7 +11,7 @@
 # decide.
 #
 # Usage:
-#   scripts/verify.sh            fast gates + fmt + machete + clippy
+#   scripts/verify.sh            fast gates + fmt + machete + clippy + rustdoc
 #   scripts/verify.sh --quick    fast gates only (right for .md / .po-only work)
 #   scripts/verify.sh --tests    also cargo test --workspace  (~2.5 min wall)
 #   scripts/verify.sh --cached   do NOT clean the workspace crates first, so
@@ -322,6 +322,14 @@ else
     # and on that day Actions was down and it never ran at all.
     run_gate 'cargo clippy -p rustconn-cli --features full' \
         "$CARGO" clippy -p rustconn-cli --features full --all-targets -- -D warnings
+
+    # rustdoc lints (broken intra-doc links, unclosed HTML, bare URLs) are only
+    # evaluated by rustdoc, so clippy above cannot see them. Same feature set as
+    # clippy, for the same macOS reason. --document-private-items because these
+    # docs are read by people working on the code, not by crate consumers.
+    run_gate 'cargo doc (-D warnings)' \
+        env RUSTDOCFLAGS='-D warnings' \
+        "$CARGO" doc --no-deps --document-private-items "${clippy_features[@]}"
 
     if [ "$tests" -eq 1 ] && [ "$fmt_parse_error" -eq 1 ]; then
         # See the preflight note at the fmt gate: the tree does not parse, so a

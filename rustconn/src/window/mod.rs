@@ -104,10 +104,10 @@ thread_local! {
         const { RefCell::new(None) };
 }
 
-/// Acquires a busy guard from the thread-local [`BusyStack`].
+/// Acquires a busy guard from the thread-local [`rustconn_core::BusyStack`].
 ///
 /// Returns `None` if the stack has not been initialised yet (before
-/// `MainWindow::new` runs). The returned [`BusyGuard`] keeps the
+/// `MainWindow::new` runs). The returned [`rustconn_core::BusyGuard`] keeps the
 /// header-bar spinner visible until dropped.
 fn acquire_busy_guard() -> Option<rustconn_core::BusyGuard> {
     BUSY_STACK.with(|cell| cell.borrow().as_ref().map(rustconn_core::BusyStack::busy))
@@ -3828,7 +3828,7 @@ impl MainWindow {
     /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
     ///
     /// The connection comes from the selected tab's session metadata, not its
-    /// title: a title carries a "[group] " prefix once the tab is grouped, and
+    /// title: a title carries a "\[group\] " prefix once the tab is grouped, and
     /// two connections may share a name. The subtitle is cleared when the
     /// setting is off, the page has no session (Welcome), the session has no
     /// saved connection (local shell), or the connection is ungrouped. The WM

@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- **API docs no longer point at code that is gone, and a gate keeps it that way** — nothing ran `cargo doc`, so rustdoc's own lints never fired and 106 warnings had piled up across `rustconn-core`, `rustconn`, `rustconn-cli` and `rustconn-dock-sys`; 67 of them were links to items that had been renamed, moved or removed. Where the prose had drifted with them it now matches the code: the KeePassXC helpers in `secret/status.rs` documented a `SecretError::Backend` variant that does not exist (they return `SecretError::KeePassXC`), and `CairoBackedBuffer::copy_rect` claimed to mirror a `VncPixelBuffer` that is no longer in the tree. Doc examples in the GUI binary used `rustconn::` paths, which a binary crate does not have, and now use `crate::`. A new `[workspace.lints.rustdoc]` table denies broken intra-doc links and allows public-to-private links, since these docs are read with private items. `scripts/verify.sh` (default mode) and the CI clippy job now run `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`.
+
 ## [0.23.6] - 2026-10-09
 
 ### Added

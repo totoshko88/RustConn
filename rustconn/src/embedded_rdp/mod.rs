@@ -231,7 +231,7 @@ fn with_callback<T>(cell: &RefCell<Option<T>>, f: impl FnOnce(&T)) {
 /// # Example
 ///
 /// ```ignore
-/// use rustconn::embedded_rdp::{EmbeddedRdpWidget, RdpConfig};
+/// use crate::embedded_rdp::{EmbeddedRdpWidget, RdpConfig};
 ///
 /// let widget = EmbeddedRdpWidget::new();
 ///
@@ -1791,7 +1791,7 @@ impl EmbeddedRdpWidget {
     /// Called when FreeRDP detects that the server certificate has changed.
     /// The callback receives `(host, port, message)` and should show a
     /// confirmation dialog. On user acceptance, call
-    /// [`cert::remove_known_certificate`](super::embedded_rdp::cert::remove_known_certificate)
+    /// [`cert::remove_known_certificate`]
     /// then reconnect.
     pub fn connect_cert_changed<F>(&self, callback: F)
     where

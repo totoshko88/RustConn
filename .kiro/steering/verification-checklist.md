@@ -10,7 +10,7 @@ Use after completing a feature or before merge. Adapted from AI-DLC methodology.
 ## 1. Compilation & Quality — one command
 
 ```bash
-scripts/verify.sh --tests     # or without --tests for fmt + machete + clippy only
+scripts/verify.sh --tests     # or without --tests for fmt + machete + clippy + rustdoc only
 scripts/verify.sh --quick     # .md / .po-only work: skips every cargo gate
 scripts/verify.sh --cached    # skip the pre-clippy clean; a cache hit then only warns
 ```

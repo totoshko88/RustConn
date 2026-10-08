@@ -1367,7 +1367,7 @@ fn list_failure_error(stderr: &str) -> SecretError {
 
 /// Display name a read-only KDBX database refuses writes under.
 ///
-/// Shared with [`super::kdbx_backend::KdbxBackend::display_name`] so the
+/// Shared with `KdbxBackend::display_name` so the
 /// [`SecretError::ReadOnly`] message is the same whichever path refused.
 pub(super) const KDBX_DISPLAY_NAME: &str = "KeePass (KDBX file)";
 
@@ -1476,7 +1476,7 @@ fn root_match_entry_path(listing: &str, connection_id: &str) -> Option<String> {
     root_match_entry_path_multi(listing, &[connection_id])
 }
 
-/// Candidate-aware variant of [`root_match_entry_path`] for issue #353.
+/// Candidate-aware variant of `root_match_entry_path` for issue #353.
 ///
 /// `candidates` are tried in priority order — the backend passes
 /// `[key/uuid, name, host]` — and the first candidate that matches any vault
@@ -2479,7 +2479,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] if `keepassxc-cli` cannot be spawned,
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` cannot be spawned,
     /// the database cannot be unlocked (wrong password or key file), or the
     /// CLI returns a non-zero exit code for any reason other than "entry not
     /// found".
@@ -2614,7 +2614,7 @@ impl KeePassStatus {
 
     /// Retrieves a password from KDBX database at an exact path (no fallbacks).
     ///
-    /// Unlike [`get_password_from_kdbx_with_key`] which tries multiple path
+    /// Unlike [`Self::get_password_from_kdbx_with_key`] which tries multiple path
     /// variants with `RustConn/` prefix, this function queries the entry at
     /// `entry_path` **as-is**. Use for user-specified custom KeePass paths.
     ///
@@ -2635,7 +2635,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] if `keepassxc-cli` cannot be spawned,
+    /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` cannot be spawned,
     /// the database cannot be unlocked (wrong password or key file), or the
     /// CLI returns a non-zero exit code for any reason other than "entry not
     /// found".
@@ -2721,7 +2721,7 @@ impl KeePassStatus {
     /// [`super::backend::SecretBackend::searches_from_root`]: it runs one
     /// `keepassxc-cli ls -R -f <db>` over the whole database (no `RustConn`
     /// group argument, unlike the scoped tree probe), then uses the pure
-    /// [`root_match_entry_path`] matcher to find the entry whose basename equals
+    /// `root_match_entry_path` matcher to find the entry whose basename equals
     /// `connection_id`, and finally reads that exact path with
     /// [`Self::get_password_from_kdbx_exact`].
     ///
@@ -2736,7 +2736,7 @@ impl KeePassStatus {
     /// Callers should try the scoped [`Self::get_password_from_kdbx_with_key`]
     /// first and fall back to this only on a miss (back-compat: a `RustConn/`
     /// entry wins over an identically-named one elsewhere); see
-    /// [`super::kdbx_backend::KdbxBackend::retrieve`].
+    /// `KdbxBackend::retrieve`.
     ///
     /// # Returns
     /// * `Ok(Some(SecretString))` when a matching entry with a password is found
@@ -3132,7 +3132,7 @@ impl KeePassStatus {
     /// # Errors
     ///
     /// Returns [`SecretError::KeePassXC`] if `keepassxc-cli` is not installed
-    /// or fails, or [`SecretError::Backend`] if the password / key file is
+    /// or fails, or [`SecretError::KeePassXC`] if the password / key file is
     /// rejected by the database.
     pub fn verify_kdbx_credentials(
         kdbx_path: &Path,
@@ -3223,7 +3223,7 @@ impl KeePassStatus {
     ///
     /// # Errors
     ///
-    /// Returns [`SecretError::Backend`] when the file does not exist, is not a
+    /// Returns [`SecretError::KeePassXC`] when the file does not exist, is not a
     /// regular file, or is not readable.
     pub fn validate_key_file_path(path: &Path) -> SecretResult<()> {
         // Check if file exists

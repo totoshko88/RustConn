@@ -7,7 +7,7 @@
 //!   Service **in process** via the [`oo7`] crate (`oo7::dbus::Service`), so no
 //!   `secret-tool` binary or bundled libsecret C library is required.
 //! - On macOS these generic auxiliary operations delegate to the native
-//!   Keychain implementation in [`super::macos_keychain::keychain_ops`].
+//!   Keychain implementation in `super::macos_keychain::keychain_ops`.
 //!
 //! Linux/BSD entries use the same two attributes — `application` and `key` —
 //! and the same labels as the former `secret-tool` implementation.

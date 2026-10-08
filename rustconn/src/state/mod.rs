@@ -818,7 +818,7 @@ impl AppState {
 
     // ========== Routing Memory (re-point detection) ==========
 
-    /// Builds the current effective [`Route`] for a connection.
+    /// Builds the current effective [`rustconn_core::connection::Route`] for a connection.
     ///
     /// Resolves the bastion the same way the launcher does, so an inherited or
     /// global jump host is part of the route and a change to it is caught.
@@ -1240,7 +1240,7 @@ impl AppState {
     /// This is extracted from `resolve_credentials` to be callable from a background
     /// thread without needing `&self`.
     ///
-    /// Returns a [`CredentialResolutionResult`] that the UI layer uses to show
+    /// Returns a [`rustconn_core::sync::CredentialResolutionResult`] that the UI layer uses to show
     /// the appropriate dialog (variable setup, backend missing, etc.) instead
     /// of silently returning `None`.
     fn resolve_credentials_blocking(

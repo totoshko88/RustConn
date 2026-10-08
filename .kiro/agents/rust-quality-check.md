@@ -2,8 +2,8 @@
 name: rust-quality-check
 description: >
   Runs scripts/verify.sh — the mechanical Definition of Done: typos, i18n and
-  boundary gates, the hook regression suite, fmt, machete, clippy -D warnings and,
-  on request, the workspace tests — and reports the gate list with the real exit
+  boundary gates, the hook regression suite, fmt, machete, clippy -D warnings,
+  rustdoc -D warnings and, on request, the workspace tests — and reports the gate list with the real exit
   code. Check-only unless told to fix. Say "quick" for the fast gates only
   (.md / .po work), "tests" to include cargo test, "fix" to let it run cargo fmt
   and clippy --fix first.

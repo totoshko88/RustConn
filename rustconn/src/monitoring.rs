@@ -471,8 +471,8 @@ fn format_uptime(secs: u64) -> String {
 /// Manages monitoring bars and collectors for all active sessions.
 ///
 /// Owns the mapping from session IDs to monitoring bars and collector handles.
-/// Call [`start_monitoring`] after an SSH session is established and
-/// [`stop_monitoring`] when the session closes.
+/// Call [`Self::start_monitoring`] after an SSH session is established and
+/// [`Self::stop_monitoring`] when the session closes.
 pub struct MonitoringCoordinator {
     /// Active monitoring bars keyed by session ID
     bars: RefCell<HashMap<Uuid, Rc<MonitoringBar>>>,

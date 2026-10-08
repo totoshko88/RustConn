@@ -2,7 +2,7 @@
 //!
 //! This module provides the [`TabGroupManager`] which assigns colors to named
 //! tab groups (e.g. "Production", "Staging", "Development"). Colors are drawn
-//! from the existing [`ColorPool`] palette so that groups are visually distinct.
+//! from the existing [`super::color::ColorPool`] palette so that groups are visually distinct.
 
 use std::collections::HashMap;
 

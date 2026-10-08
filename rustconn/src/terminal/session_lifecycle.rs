@@ -542,7 +542,7 @@ impl TerminalNotebook {
         self.reconnect_shown.borrow_mut().remove(&session_id);
     }
 
-    /// Adds a "Log In to <provider>" button to the session's reconnect banner.
+    /// Adds a "Log In to `<provider>`" button to the session's reconnect banner.
     ///
     /// Shown when the session ended because the cloud CLI's credentials
     /// expired, so reconnecting cannot succeed until the user signs in again.

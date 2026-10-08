@@ -92,7 +92,7 @@ mod tray_impl {
     );
 
     /// Render SVG to ARGB32 pixmap for tray icon
-    /// Returns Vec<Icon> with rendered icon at specified size
+    /// Returns `Vec<Icon>` with rendered icon at specified size
     pub fn render_svg_to_pixmap(size: u32) -> Vec<Icon> {
         let tree = match resvg::usvg::Tree::from_data(ICON_SVG, &resvg::usvg::Options::default()) {
             Ok(tree) => tree,

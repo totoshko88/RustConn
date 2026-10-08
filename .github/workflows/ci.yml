@@ -394,6 +394,15 @@ jobs:
             exit 1
           fi
 
+      # rustdoc lints (broken intra-doc links, unclosed HTML, bare URLs) are
+      # evaluated only by rustdoc, so the clippy step cannot catch them. Placed in
+      # this job to reuse the dependency metadata clippy just built. No
+      # --all-features: the same gtk3 / sspi breakage as everywhere else.
+      - name: Run rustdoc
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --no-deps --document-private-items
+
   test:
     name: Test
     runs-on: ubuntu-26.04

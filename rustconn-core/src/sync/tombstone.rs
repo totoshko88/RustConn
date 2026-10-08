@@ -2,7 +2,7 @@
 //!
 //! When an entity is deleted on one device, a [`Tombstone`] record is created
 //! so that the deletion propagates to other devices during bidirectional merge.
-//! Tombstones are cleaned up after [`SyncSettings::tombstone_retention_days`].
+//! Tombstones are cleaned up after `SyncSettings::tombstone_retention_days`.
 
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};

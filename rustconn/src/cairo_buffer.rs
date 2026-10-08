@@ -156,8 +156,7 @@ impl CairoBackedBuffer {
 
     /// Copies a rectangular region within the surface (VNC/RDP `CopyRect`).
     ///
-    /// Mirrors [`super::embedded_vnc_types::VncPixelBuffer::copy_rect`] so the
-    /// Cairo fast-path stays in sync after a server-side scroll/move: the
+    /// Keeps the Cairo fast-path in sync after a server-side scroll/move: the
     /// source region is staged into a temporary buffer first, so overlapping
     /// source and destination rectangles copy correctly regardless of
     /// direction. Rows and columns that fall outside the surface are skipped.

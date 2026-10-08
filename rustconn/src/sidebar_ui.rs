@@ -1077,7 +1077,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 
 /// Creates the sidebar bottom toolbar with secondary actions
 ///
-/// Layout: [Group Ops] [History] [A-Z Sort] [Recent] [KeePass] [Smart Folders]
+/// Layout: \[Group Ops\] \[History\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     // 6px inter-icon gap matches AdwHeaderBar's built-in child spacing, and the

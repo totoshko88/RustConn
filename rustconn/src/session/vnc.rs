@@ -32,7 +32,7 @@ type StateCallback = Box<dyn Fn(SessionState) + 'static>;
 /// # Example
 ///
 /// ```ignore
-/// use rustconn::session::vnc::VncSessionWidget;
+/// use crate::session::vnc::VncSessionWidget;
 ///
 /// let widget = VncSessionWidget::new();
 ///

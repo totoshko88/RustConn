@@ -119,7 +119,7 @@ fn parse_jump_host_for_control(jump_host: &str) -> (String, u16) {
 
 /// Builds a helper that releases a credential only for an account-password prompt.
 ///
-/// The matcher mirrors [`rustconn_core::connection::ssh_prompt::looks_like_password_prompt`]
+/// The matcher mirrors [`rustconn_core::looks_like_password_prompt`]
 /// (the terminal-watcher matcher): the shell `case` is **exclusion-first, then a broad
 /// positive match**. It lowercases the prompt, rejects the prompts that must never receive
 /// the account password — host-key confirmation, private-key passphrases, OTP/verification

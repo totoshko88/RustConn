@@ -62,6 +62,10 @@ Classify each surviving item:
 - **non-blocking** — a concrete improvement that does not justify rejection
 - **question** — missing context, needs the developer
 
+A `// ponytail:` marker that names its ceiling is a decision, not a finding,
+unless the code now runs beyond that ceiling (e.g. a "fine for <20" scan that is
+now called per host in a loop).
+
 ## 4. Report
 
 Evaluate the final evidence yourself rather than forwarding it. Order:
@@ -70,3 +74,7 @@ retained item needs a location, a concrete impact, and an actionable correction.
 Briefly name which reviewers were skipped and why. If nothing material remains,
 say exactly that — an empty review is a valid outcome and padding it is worse
 than silence.
+
+End with one line, `Not checked: …`, naming whatever mattered and could not be
+verified (a GUI path this terminal cannot exercise, a macOS-only branch, a
+backend with no test fixture). Omit it only when nothing was left unchecked.

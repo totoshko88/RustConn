@@ -1032,7 +1032,7 @@ impl MainWindow {
         Self::spawn_socks_tunnel(&params)
     }
 
-    /// Builds the [`SshTunnelParams`] for a SOCKS tunnel to `jump_id`, reading
+    /// Builds the [`rustconn_core::ssh_tunnel::SshTunnelParams`] for a SOCKS tunnel to `jump_id`, reading
     /// everything the spawn needs from `AppState`.
     ///
     /// Split from [`Self::spawn_socks_tunnel`] so the spawn — which blocks while
@@ -1118,7 +1118,7 @@ impl MainWindow {
     ///
     /// `on_ready` receives `Ok(None)` when the connection browses directly (no
     /// `tunnel_via`), `Ok(Some(tunnel))` once the proxy is up, or `Err(message)`
-    /// when it could not be built — the same shape [`Self::raise_web_socks_tunnel`]
+    /// when it could not be built — the same shape `Self::raise_web_socks_tunnel`
     /// returned synchronously, but without blocking the window while `ssh`
     /// connects. The params are read from `AppState` here (cheap, on the GTK
     /// thread); only the blocking spawn+wait moves to a worker.

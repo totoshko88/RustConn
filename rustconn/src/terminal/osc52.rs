@@ -67,7 +67,7 @@ fn enabled() -> bool {
 ///
 /// Takes the terminal's own display, the way every other clipboard write in this
 /// module does, and must be called on the GTK main thread — which the caller is,
-/// because the only path here is the one [`deliver_output_to`] runs.
+/// because the only path here is the one `deliver_output_to` runs.
 ///
 /// ponytail: silent, like copy-on-select — a remote yank is not worth a toast,
 /// and the paste that follows is the user's own.

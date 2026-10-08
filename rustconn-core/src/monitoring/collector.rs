@@ -1,6 +1,6 @@
 //! Metrics collector that runs periodic polling via a shell command
 //!
-//! The collector sends [`METRICS_COMMAND`] through a callback, parses the
+//! The collector sends [`super::parser::METRICS_COMMAND`] through a callback, parses the
 //! output, computes deltas for CPU and network, and emits [`RemoteMetrics`].
 
 use std::time::Duration;

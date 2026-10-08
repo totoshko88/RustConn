@@ -215,7 +215,7 @@ fn expand_tilde(path: &Path) -> std::path::PathBuf {
     path.to_path_buf()
 }
 
-/// Parses a host:port string, returning (host, Option<port>)
+/// Parses a host:port string, returning (host, `Option<port>`)
 #[must_use]
 pub fn parse_host_port(server: &str) -> (String, Option<u16>) {
     // Handle IPv6 addresses like [::1]:22

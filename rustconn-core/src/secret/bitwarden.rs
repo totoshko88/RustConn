@@ -545,7 +545,7 @@ impl BitwardenBackend {
 
     /// Fast check: returns `true` if the vault was recently verified as
     /// unlocked and a session key is available, without spawning `bw status`.
-    /// Falls back to the full [`is_unlocked`] check when the cached result
+    /// Falls back to the full [`Self::is_unlocked`] check when the cached result
     /// has expired.
     ///
     /// # Bitwarden CLI v2026.4+ compatibility
