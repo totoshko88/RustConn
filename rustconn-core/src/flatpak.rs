@@ -90,6 +90,52 @@ pub fn is_flatpak() -> bool {
     })
 }
 
+/// Returns the user's **real host** home directory as it is visible inside the
+/// sandbox.
+///
+/// Flatpak only grants this app `--filesystem=home/.ssh:ro` (not full
+/// `--filesystem=home`), so the host `~/.ssh` is reachable at its real absolute
+/// path, but `$HOME` — and therefore [`dirs::home_dir`] — points at the per-app
+/// sandbox home `<real_home>/.var/app/<app-id>`. Any importer that resolves
+/// `~/.ssh/config` through `dirs::home_dir()` then looks inside the sandbox home
+/// and finds nothing, which is why the default SSH-config import silently
+/// imported zero entries while picking the same file through the portal worked
+/// (issue #368).
+///
+/// This derives the real home by stripping a trailing `.var/app/<app-id>`
+/// segment from the sandbox home when present. Outside Flatpak (and when no such
+/// segment is present) it is identical to [`dirs::home_dir`].
+#[must_use]
+pub fn host_home_dir() -> Option<std::path::PathBuf> {
+    let home = dirs::home_dir()?;
+
+    if !is_flatpak() {
+        return Some(home);
+    }
+
+    Some(strip_sandbox_home(&home))
+}
+
+/// Recovers the real host home from a sandbox home path.
+///
+/// Flatpak's per-app home is `<real_home>/.var/app/<app-id>`. When the path
+/// ends with a `.var/app/<app-id>` segment this strips it to return
+/// `<real_home>`; otherwise (e.g. `$HOME` was never remapped) the path is
+/// returned unchanged. Pure so it can be unit-tested without a sandbox.
+fn strip_sandbox_home(home: &std::path::Path) -> std::path::PathBuf {
+    let components: Vec<std::ffi::OsString> =
+        home.iter().map(std::ffi::OsStr::to_os_string).collect();
+    if components.len() >= 3
+        && components[components.len() - 3] == std::ffi::OsStr::new(".var")
+        && components[components.len() - 2] == std::ffi::OsStr::new("app")
+    {
+        return components[..components.len() - 3]
+            .iter()
+            .collect::<std::path::PathBuf>();
+    }
+    home.to_path_buf()
+}
+
 /// Checks whether a CLI tool is available in PATH.
 ///
 /// Thin alias for [`crate::which::is_available`], which searches the extended
@@ -608,6 +654,27 @@ mod tests {
                 None,
                 "app id {bad:?} must be refused"
             );
+        }
+    }
+
+    #[test]
+    fn strip_sandbox_home_recovers_real_home() {
+        use std::path::Path;
+        assert_eq!(
+            strip_sandbox_home(Path::new(
+                "/home/user/.var/app/io.github.totoshko88.RustConn"
+            )),
+            Path::new("/home/user").to_path_buf()
+        );
+    }
+
+    #[test]
+    fn strip_sandbox_home_leaves_non_sandbox_paths_untouched() {
+        use std::path::Path;
+        // A plain host home, and a home that merely contains `.var` elsewhere,
+        // must both come back unchanged.
+        for raw in ["/home/user", "/home/user/.var/cache", "/root"] {
+            assert_eq!(strip_sandbox_home(Path::new(raw)), Path::new(raw).to_path_buf());
         }
     }
 

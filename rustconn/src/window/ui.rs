@@ -199,18 +199,20 @@ pub fn create_header_bar() -> (
     passthrough_indicator.set_visible(false);
     header_bar.pack_end(&passthrough_indicator);
 
-    // GNOME HIG (Pointer & Touch): icon-only buttons must meet the 44×44px
-    // minimum tap target (28px on macOS). Buttons with a text label (Shell,
-    // Broadcast, Passthrough) already exceed it via their content. The sidebar
-    // header uses the same `.header-icon-button` class, so both bars come out
-    // the same height.
+    // Icon-only header buttons carry `.header-icon-button`, which sizes them to
+    // libadwaita's native 34px (28px on macOS, and 28px under deliberate
+    // compact). Buttons with a text label (Shell, Broadcast, Passthrough)
+    // already exceed it via their content. The sidebar header uses the same
+    // class, so both bars come out the same height.
     //
-    // The floor is applied as the `.header-icon-button` CSS class instead of a
-    // Rust `set_size_request`: a size request is a hard floor CSS cannot cross,
-    // which left the compact header-bar rules dead on Linux (the header kept its
-    // 44px height). As a CSS min-size the 44px floor still holds everywhere, but
-    // `window.compact-manual .header-icon-button` can lower it to 28px when the
-    // user deliberately asks for compact density (app.rs::set_window_compact).
+    // The floor is CSS, not a Rust `set_size_request`: a size request is a hard
+    // floor CSS cannot cross, which left the compact header-bar rules dead on
+    // Linux (the header kept its full height). As a CSS min-size the floor still
+    // holds everywhere, but `window.compact-manual .header-icon-button` can
+    // lower it to 28px when the user deliberately asks for compact density
+    // (app.rs::set_window_compact). A 44px floor here (the HIG touch tap-target)
+    // made the headerbar taller than every other GNOME app on a pointer session
+    // — see issue #369.
     for button in [
         &sidebar_toggle,
         &settings_button,

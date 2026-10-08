@@ -354,6 +354,14 @@ impl ImportDialog {
             );
         }
 
+        // Nothing imported at all — no connections, no groups, no errors and no
+        // warnings. Reporting "Successfully imported 0 connection(s)" here is
+        // exactly what made the default SSH-config import look like it worked
+        // when it had found nothing (issue #368). Say so plainly instead.
+        if result.connections.is_empty() && result.groups.is_empty() {
+            return i18n("Nothing was imported — no connections were found in the source.");
+        }
+
         let conn_count = result.connections.len().to_string();
         let group_count = result.groups.len().to_string();
         source_name.map_or_else(
