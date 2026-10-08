@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-flatpak:
     name: Build Flatpak
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged

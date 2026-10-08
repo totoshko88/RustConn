@@ -58,7 +58,7 @@ jobs:
       # the source tree. Version-pinned like cargo-machete in ci.yml — a moving
       # upstream must not change the build silently.
       - name: Install cargo-auditable
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           tool: cargo-auditable@0.7.7
 
@@ -400,7 +400,7 @@ jobs:
             gettext
 
       - name: Install cargo-auditable
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           tool: cargo-auditable@0.7.7
 
@@ -572,7 +572,7 @@ jobs:
 
   build-flatpak:
     name: Build Flatpak
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged
@@ -613,7 +613,7 @@ jobs:
   release:
     name: Create Release
     needs: [build-deb, build-rpm, build-appimage, build-flatpak]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
@@ -861,7 +861,7 @@ jobs:
   update-obs:
     name: Update OBS Package
     needs: [release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout
@@ -890,7 +890,7 @@ jobs:
   update-homebrew:
     name: Update Homebrew Tap
     needs: [release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout RustConn

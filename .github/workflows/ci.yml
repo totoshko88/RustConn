@@ -149,7 +149,7 @@ jobs:
       # SHA — this action downloads and executes a binary, which is the last
       # place to accept a moving tag.
       - name: Install cargo-machete
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           # The tool is version-pinned too, not just the action. An unpinned
           # `cargo-machete` would let a new upstream release turn CI red with no
@@ -423,7 +423,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-test
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           # Version-pinned like the other tools in this file.
           tool: cargo-nextest@0.9.146
@@ -457,7 +457,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-core
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           tool: cargo-nextest@0.9.146
 
@@ -490,7 +490,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-proptest
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           tool: cargo-nextest@0.9.146
 
@@ -814,13 +814,25 @@ jobs:
             exit 0
           fi
           echo "Comparing rustconn-core public API against baseline tag: $baseline"
-          # Clear any baseline checkouts cached from an earlier run. The tool
-          # extracts each baseline tag under target/semver-checks/git-<tag>/ and
-          # then walks every crate's tests/ dir; a checkout left by a previous
-          # tag (e.g. git-v0_23_1) no longer has the tests/trybuild and
-          # tests/target dirs the current tree does, so the walk logs ~20 noisy
-          # "ENOENT: opendir" annotations that look like failures but are not.
-          # Removing the cache before the run keeps only the current baseline.
+          # Start from a clean extraction dir. cargo-semver-checks clones each
+          # baseline tag under target/semver-checks/git-<tag>/; a leftover
+          # checkout from a previous run would be a second baseline to walk.
+          #
+          # About the "Error: ENOENT ... opendir .../tests/trybuild" and
+          # ".../tests/target" annotations this job sometimes shows: they are
+          # advisory noise, not a failure, and they are NOT emitted by
+          # cargo-semver-checks. Verified 2026-10-09 on ubuntu-26.04 (the runner
+          # image) with the pinned 0.51.0 — which is the newest release, so there
+          # is nothing to upgrade to — against baseline v0.23.6: the run exits 0
+          # with "202 checks: 202 pass" and prints no ENOENT at all. Those paths
+          # (tests/trybuild, tests/target) do not exist in the baseline tree and
+          # never did (git ls-tree v0.23.6 shows no such dirs); the "opendir"
+          # wording is Node's, so the lines come from a GitHub-side directory
+          # scan over the extracted checkout, not from the Rust tool or from this
+          # workflow (nothing here or in install-deps walks those paths). The job
+          # is continue-on-error and deliberately outside ci-success, so the
+          # annotations never block a merge. Left as-is rather than suppressed:
+          # stripping stderr to hide them would also hide a genuine I/O error.
           rm -rf target/semver-checks
           cargo semver-checks \
             --baseline-rev "$baseline" \
@@ -863,7 +875,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-powerset
 
       - name: Install cargo-hack
-        uses: taiki-e/install-action@9983c65e42da123ff25d1f78505eb6de315aa172 # v2.87.20
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
         with:
           # Version-pinned like the other tools in this file — a moving upstream
           # must not change what CI checks without a commit here.
