@@ -31,6 +31,7 @@ pub fn create_terminal_page() -> (
     adw::SwitchRow,
     adw::SwitchRow, // sftp_use_mc
     adw::SwitchRow, // copy_on_select
+    adw::SwitchRow, // allow_osc52_clipboard
     adw::SwitchRow, // right_click_pastes
     adw::SwitchRow, // show_scrollbar
     Entry,          // local_shell_command
@@ -443,6 +444,15 @@ pub fn create_terminal_page() -> (
         .build();
     behavior_group.add(&copy_on_select_row);
 
+    // OSC 52 clipboard offers from the remote side. Off by default: the remote
+    // host can then write the local clipboard, which is what a pastejacking
+    // payload needs. Reads are never served either way.
+    let allow_osc52_clipboard_row = adw::SwitchRow::builder()
+        .title(i18n("Remote clipboard (OSC 52)"))
+        .subtitle(i18n("Let a remote program put text on the local clipboard"))
+        .build();
+    behavior_group.add(&allow_osc52_clipboard_row);
+
     // Right-click pastes (xterm-style, opt-in; issue #349)
     let right_click_pastes_row = adw::SwitchRow::builder()
         .title(i18n("Right-click pastes"))
@@ -511,6 +521,7 @@ pub fn create_terminal_page() -> (
         audible_bell_row,
         sftp_use_mc_row,
         copy_on_select_row,
+        allow_osc52_clipboard_row,
         right_click_pastes_row,
         show_scrollbar_row,
         local_shell_command_entry,
@@ -539,6 +550,7 @@ pub fn load_terminal_settings(
     audible_bell_row: &adw::SwitchRow,
     sftp_use_mc_row: &adw::SwitchRow,
     copy_on_select_row: &adw::SwitchRow,
+    allow_osc52_clipboard_row: &adw::SwitchRow,
     right_click_pastes_row: &adw::SwitchRow,
     show_scrollbar_row: &adw::SwitchRow,
     local_shell_command_entry: &Entry,
@@ -585,6 +597,7 @@ pub fn load_terminal_settings(
     audible_bell_row.set_active(settings.audible_bell);
     sftp_use_mc_row.set_active(settings.sftp_use_mc);
     copy_on_select_row.set_active(settings.copy_on_select);
+    allow_osc52_clipboard_row.set_active(settings.allow_osc52_clipboard);
     right_click_pastes_row.set_active(settings.right_click_pastes);
     show_scrollbar_row.set_active(settings.show_scrollbar);
     local_shell_command_entry.set_text(&settings.local_shell_command);
@@ -690,6 +703,7 @@ pub fn collect_terminal_settings(
     audible_bell_row: &adw::SwitchRow,
     sftp_use_mc_row: &adw::SwitchRow,
     copy_on_select_row: &adw::SwitchRow,
+    allow_osc52_clipboard_row: &adw::SwitchRow,
     right_click_pastes_row: &adw::SwitchRow,
     show_scrollbar_row: &adw::SwitchRow,
     local_shell_command_entry: &Entry,
@@ -744,6 +758,7 @@ pub fn collect_terminal_settings(
         log_timestamps,
         sftp_use_mc: sftp_use_mc_row.is_active(),
         copy_on_select: copy_on_select_row.is_active(),
+        allow_osc52_clipboard: allow_osc52_clipboard_row.is_active(),
         right_click_pastes: right_click_pastes_row.is_active(),
         show_scrollbar: show_scrollbar_row.is_active(),
         local_shell_command: local_shell_command_entry.text().trim().to_string(),
