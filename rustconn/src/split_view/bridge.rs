@@ -1298,10 +1298,21 @@ impl SplitViewBridge {
                     );
                 } else {
                     tracing::warn!(
-                        "restore_panel_contents: no content widget for session {} in panel {}",
+                        "restore_panel_contents: no content widget for session {} in panel {} \
+                         — showing empty placeholder so the pane keeps its actions",
                         session_uuid,
                         panel_id
                     );
+                    // Defensive fallback (issue #374 follow-up): a panel whose
+                    // session has no resolvable content widget — e.g. a stale
+                    // reused layout pointing at a killed session — would
+                    // otherwise be left with NO content and NO placeholder: a
+                    // dead pane with no header actions, no hover buttons and no
+                    // Select Tab / close X. Clearing it to the empty placeholder
+                    // gives the user a way to act on it (pick a tab, or close
+                    // it) even when the primary fix (dropping the stale bridge
+                    // entry on teardown) is bypassed by some other path.
+                    adapter.clear_panel(panel_id);
                 }
             } else {
                 tracing::debug!("restore_panel_contents: panel {} has no session", panel_id);
@@ -2756,5 +2767,54 @@ mod broadcast_gating_tests {
         expected.sort();
         assert_eq!(sessions, expected);
         assert!(!bridge.has_embedded_panel());
+    }
+
+    #[test]
+    // GTK can only be initialized from one thread per process; the default
+    // multi-threaded test harness makes this unsafe, so this widget-constructing
+    // test is opt-in.
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact <this test path>`"]
+    fn reset_after_split_restores_a_clean_single_panel_model() {
+        // Regression for the #374 follow-up dead-pane bug: a split that is torn
+        // down and whose bridge is later reused must not keep stale panels.
+        // reset() is what a reused bridge relies on to come back to a single
+        // clean panel; this pins that it drops the extra pane and reports the
+        // sessions that were displayed.
+        if gtk4::init().is_err() {
+            return;
+        }
+        let bridge = SplitViewBridge::new();
+        assert!(bridge.is_single_panel(), "a fresh bridge is single-panel");
+
+        let a = Uuid::new_v4();
+        bridge
+            .terminals
+            .borrow_mut()
+            .insert(a, vte4::Terminal::new());
+        {
+            let mut panes = bridge.panes.borrow_mut();
+            if let Some(pane) = panes.first_mut() {
+                pane.set_current_session(Some(a));
+            }
+        }
+        // Grow the layout, as a real split does.
+        assert!(bridge.split(crate::split_view::SplitDirection::Vertical).is_some());
+        assert!(
+            !bridge.is_single_panel(),
+            "after a split the bridge is no longer single-panel"
+        );
+
+        // Teardown path relies on reset() to clear the stale layout.
+        let _displayed = bridge.reset();
+        assert!(
+            bridge.is_single_panel(),
+            "reset() must restore a clean single-panel model so a reused bridge \
+             carries no stale panels"
+        );
+        assert_eq!(
+            bridge.pane_count(),
+            1,
+            "reset() leaves exactly one pane behind"
+        );
     }
 }

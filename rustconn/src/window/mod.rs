@@ -1700,6 +1700,17 @@ impl MainWindow {
                         {
                             monitoring_for_cleanup.resume_monitoring(guest_id, &container);
                         }
+                        // Drop the guest's bridge entry too (issue #374 follow-up).
+                        // The entry is the SAME Rc as the owner's torn-down
+                        // layout, whose model still lists this guest's old panels
+                        // AND the now-killed owner session. Left in the map, a
+                        // later split on this guest REUSED that stale bridge and
+                        // restore_panel_contents walked a panel whose session has
+                        // no content widget, leaving a dead pane with no header,
+                        // no hover actions and no empty-placeholder X. Removing it
+                        // forces get_or_create_session_bridge down the CREATE path
+                        // with a clean single-panel model.
+                        session_bridges_for_cleanup.borrow_mut().remove(&guest_id);
                     }
                 }
 
