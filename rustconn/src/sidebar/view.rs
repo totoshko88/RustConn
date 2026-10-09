@@ -117,6 +117,10 @@ pub fn show_context_menu_for_connection_item(
     let is_ssh = protocol == "ssh" || protocol == "sftp";
     let is_connected = item.status() == "connected";
     let conn_id = item.id();
+    // A connection is in a split when it carries a split-pane colour (>= 0);
+    // the sidebar already uses this to draw the split-membership marker
+    // (issue #374).
+    let in_split = item.split_color() >= 0;
     let is_recording = if is_connected && !conn_id.is_empty() {
         recording_checker
             .borrow()
@@ -155,6 +159,7 @@ pub fn show_context_menu_for_connection_item(
         &item.sync_mode(),
         item.is_root_group(),
         item.has_dynamic_folder(),
+        in_split,
         activation,
     );
 }

@@ -56,13 +56,17 @@ pub(crate) type TabConnectionMenuProvider = Rc<dyn Fn(Uuid) -> bool>;
 
 /// Reports whether the detach section is offered for a verdict.
 ///
-/// A split owner keeps the item: activating it explains that the split layout
-/// has to be removed first (Requirement 4.3), which is clearer than a silently
-/// missing entry. Every other blocking verdict hides the whole section, so no
-/// inert item is ever shown (Requirement 3.2), and a page with no session — the
-/// Welcome tab — never reaches this function at all (Requirement 4.5).
+/// Only an `Allowed` verdict shows "Move to New Window". Every blocking
+/// verdict — including a split owner — hides the whole section, so no inert
+/// item is ever shown (issue #374): a split tab previously kept the item
+/// enabled only to answer a click with a "remove the split first" toast, which
+/// reads as a broken control. The split tab reaches the same session through
+/// "Remove Split" (shown via `hosts_split`) and then detaching, and the
+/// sidebar connection menu offers a one-step "Move to New Window" that pops the
+/// pane out of the split for you. A page with no session — the Welcome tab —
+/// never reaches this function at all.
 const fn offers_detach(verdict: DetachVerdict) -> bool {
-    matches!(verdict, DetachVerdict::Allowed | DetachVerdict::SplitOwner)
+    matches!(verdict, DetachVerdict::Allowed)
 }
 
 /// A filesystem-safe default file name for a session's saved output (#371).
@@ -1302,16 +1306,26 @@ mod tests {
     }
 
     #[test]
-    fn a_split_owner_keeps_the_item_so_the_restriction_can_be_explained() {
-        assert!(offers_detach(DetachVerdict::SplitOwner));
+    fn a_split_owner_hides_the_detach_item_rather_than_showing_an_inert_one() {
+        // Issue #374: a split tab used to keep "Move to New Window" enabled only
+        // to answer a click with a "remove the split first" toast, which reads
+        // as a broken control. It is now hidden; the split is dismantled via
+        // "Remove Split" (or the sidebar's one-step "Move to New Window").
+        assert!(!offers_detach(DetachVerdict::SplitOwner));
     }
 
     #[test]
-    fn every_other_blocking_verdict_hides_the_section() {
+    fn only_an_allowed_verdict_shows_the_detach_item() {
+        assert!(offers_detach(DetachVerdict::Allowed));
+    }
+
+    #[test]
+    fn every_blocking_verdict_hides_the_section() {
         for verdict in [
             DetachVerdict::AlreadyDetached,
             DetachVerdict::ExternalViewer,
             DetachVerdict::SplitGuest,
+            DetachVerdict::SplitOwner,
         ] {
             assert!(
                 !offers_detach(verdict),

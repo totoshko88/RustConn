@@ -414,6 +414,16 @@ impl SplitViewBridge {
         self.owner_session.get() == Some(session_id)
     }
 
+    /// Returns the session whose tab hosts this layout, if set.
+    ///
+    /// Used by the sidebar's split actions (issue #374) to switch to the
+    /// hosting tab before activating the active-tab-scoped `win.pop-pane-to-tab`
+    /// / `win.close-pane` actions on a pane the user picked from the sidebar.
+    #[must_use]
+    pub fn owner_session(&self) -> Option<Uuid> {
+        self.owner_session.get()
+    }
+
     /// Creates a bridge that reads the notebook's live terminal map.
     ///
     /// The map is what distinguishes a terminal session from an embedded

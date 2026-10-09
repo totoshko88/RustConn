@@ -5,6 +5,18 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.7]
+
+### Changed
+- **Split-pane close / detach controls follow the GNOME HIG instead of a hover-only reveal (#374)** — a reporter hit three things at once: the pane close "X" was reachable only through a hover-reveal arrow (a touch screen has no hover, which the project's own HIG steering forbids relying on), the right-click context menu did not open over a terminal or remote-desktop pane, and a disabled "Move to New Window" sat inert on split tabs. The fixes:
+  - **Pane context menu moved onto the pane header.** With connection-name headers on (the default), right-click — or long-press on touch — the pane header for Reconnect / Remove from Split / Remove Split / Close Connection. It is attached to the header rather than the pane body on purpose: a VTE terminal and an RDP/VNC `DrawingArea` claim button-press in the bubble phase, so a gesture on the container never fired over the content, and moving it to the capture phase to beat them would have swallowed VTE's own native Copy/Paste menu (the #84 regression). The header has no competing input, so the menu is reliable there and the terminal keeps its own right-click menu. A `GestureLongPress` mirrors the right-click for touch, per the HIG's long-press-with-every-context-menu rule.
+  - **Hover reveal arrow is now the no-header fallback only.** When headers are visible their menu already carries close/pop, so the redundant hover arrow is hidden; it reappears only when headers are off. Because the hover arrow is a single easy-to-mis-click gesture, its **Close** now asks for confirmation before disconnecting a live session (an `AdwAlertDialog`), while the two-step header menu and sidebar paths are not second-guessed.
+  - **Sidebar connection menu gained split/window actions.** Right-click a connected connection in the sidebar for **Remove from Split** and **Close** (shown only while it is in a split) and **Move to New Window**. The last pops a split pane out and detaches it in one step, and also detaches an ordinary background tab — so a split session can go straight to its own window without first dismantling the split by hand.
+  - **The dead "Move to New Window" is gone from split tabs.** The tab menu used to keep the item enabled on a split tab only to answer a click with a "remove the split first" toast, which reads as a broken control; it is now hidden there (`offers_detach` accepts only an `Allowed` verdict). The split is dismantled via Remove Split, or detached in one step from the sidebar.
+
+### Documentation
+- **User guide: Split View and Detached Session Windows updated** for the header context menu, the long-press equivalent, the conditional close confirmation in no-header mode, the hover arrow becoming a no-header fallback, the new sidebar split/window actions, and the removal of the inert detach item from split tabs.
+
 ## [0.23.6] - 2026-10-09
 
 ### Added

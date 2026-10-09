@@ -490,5 +490,118 @@ impl MainWindow {
             );
         });
         window.add_action(&open_new_session_action);
+
+        // Sidebar-driven split / window placement actions (issue #374).
+        //
+        // The split teardown actions (`win.pop-pane-to-tab`, `win.close-pane`)
+        // operate on the ACTIVE tab's split and its focused pane, so a sidebar
+        // request first switches to the hosting (owner) tab, focuses the pane
+        // holding the connection's session, then activates the proven action —
+        // reusing all the tested teardown rather than re-implementing it.
+        //
+        // Resolution shared by all three: selected sidebar connection → its
+        // live session → the split bridge it participates in (if any).
+        let resolve_session = {
+            let sidebar = self.sidebar.clone();
+            let notebook = terminal_notebook.clone();
+            move || -> Option<Uuid> {
+                let item = sidebar.get_selected_item()?;
+                let conn_id = Uuid::parse_str(&item.id()).ok()?;
+                notebook
+                    .get_all_sessions()
+                    .into_iter()
+                    .find(|s| s.connection_id == conn_id)
+                    .map(|s| s.id)
+            }
+        };
+
+        // Focuses the pane holding `session_id` in its split, switching to the
+        // owner tab first; returns the owning bridge so the caller can activate
+        // the pane action. `None` when the session is not in a split.
+        let focus_pane_for = {
+            let notebook = terminal_notebook.clone();
+            let bridges = self.session_split_bridges.clone();
+            move |session_id: Uuid| -> bool {
+                let Some(bridge) = bridges.borrow().get(&session_id).cloned() else {
+                    return false;
+                };
+                if let Some(owner) = bridge.owner_session() {
+                    notebook.switch_to_tab(owner);
+                }
+                bridge.set_focused_pane(Some(session_id));
+                if let Some(panel_id) = bridge.get_panel_id_for_uuid(session_id) {
+                    let _ = bridge.adapter_set_focus(panel_id);
+                }
+                true
+            }
+        };
+
+        // "Remove from Split" — pop the pane back to its own tab.
+        let pop_action = gio::SimpleAction::new("split-pop-connection", None);
+        let resolve_pop = resolve_session.clone();
+        let focus_pop = focus_pane_for.clone();
+        pop_action.connect_activate(move |_, _| {
+            let Some(session_id) = resolve_pop() else {
+                return;
+            };
+            if !focus_pop(session_id) {
+                return;
+            }
+            if let Some(window) = active_window() {
+                gtk4::prelude::ActionGroupExt::activate_action(&window, "pop-pane-to-tab", None);
+            }
+        });
+        window.add_action(&pop_action);
+
+        // "Close" — terminate the pane's session (from the sidebar; the pane
+        // header menu and hover-X cover the in-pane paths).
+        let close_action = gio::SimpleAction::new("split-close-connection", None);
+        let resolve_close = resolve_session.clone();
+        let focus_close = focus_pane_for.clone();
+        close_action.connect_activate(move |_, _| {
+            let Some(session_id) = resolve_close() else {
+                return;
+            };
+            if !focus_close(session_id) {
+                return;
+            }
+            if let Some(window) = active_window() {
+                gtk4::prelude::ActionGroupExt::activate_action(&window, "close-pane", None);
+            }
+        });
+        window.add_action(&close_action);
+
+        // "Move to New Window" — detach the live session into its own window.
+        // A split guest is popped out of the split first (its verdict is
+        // SplitGuest until then), so the user goes from a split straight to a
+        // standalone window in one click; an ordinary/background tab detaches
+        // directly.
+        let detach_action = gio::SimpleAction::new("connection-detach", None);
+        let resolve_detach = resolve_session.clone();
+        let focus_detach = focus_pane_for.clone();
+        let notebook_detach = terminal_notebook.clone();
+        detach_action.connect_activate(move |_, _| {
+            let Some(session_id) = resolve_detach() else {
+                return;
+            };
+            // Pop out of the split first if needed so the detach verdict
+            // becomes Allowed.
+            if focus_detach(session_id)
+                && let Some(window) = active_window()
+            {
+                gtk4::prelude::ActionGroupExt::activate_action(&window, "pop-pane-to-tab", None);
+            }
+            let _ = notebook_detach
+                .request_detach(session_id, crate::terminal::DetachPresentation::default());
+        });
+        window.add_action(&detach_action);
     }
+}
+
+/// Returns the application's active window for activating window actions.
+fn active_window() -> Option<gtk4::ApplicationWindow> {
+    gtk4::gio::Application::default()
+        .and_downcast::<gtk4::Application>()
+        .and_then(|app| app.active_window())
+        .and_downcast::<gtk4::ApplicationWindow>()
 }

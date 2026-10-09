@@ -14,6 +14,7 @@ use gtk4::{
     Paned, Revealer, gdk, gio, glib,
 };
 use libadwaita as adw;
+use libadwaita::prelude::*;
 use rustconn_core::split::{
     DropResult, PanelId, PanelNode, SessionId, SplitDirection, SplitError, SplitLayoutModel,
     SplitNode,
@@ -112,6 +113,15 @@ pub struct SplitViewAdapter {
     /// toggled via [`Self::set_labels_visible`]. The map is cleared on rebuild
     /// and repopulated by [`Self::create_panel_widget`].
     panel_headers: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
+    /// Auto-hide hover reveal containers for each occupied panel (issue #374).
+    ///
+    /// The small reveal arrow and its close/pop buttons are redundant once the
+    /// always-visible pane header carries the context menu, so they are hidden
+    /// whenever `show_labels` is on and shown only in the no-header mode. The
+    /// map lets [`Self::set_labels_visible`] toggle them live without a full
+    /// widget rebuild. Cleared on rebuild, repopulated by
+    /// [`Self::set_panel_content`].
+    panel_reveals: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
     /// Whether split-pane connection name labels are visible.
     show_labels: Rc<Cell<bool>>,
 }
@@ -131,6 +141,7 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("pop_panel_callback", &"<callback>")
             .field("reconnect_panel_callback", &"<callback>")
             .field("panel_headers", &self.panel_headers)
+            .field("panel_reveals", &self.panel_reveals)
             .field("show_labels", &self.show_labels)
             .finish()
     }
@@ -158,6 +169,7 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
+            panel_reveals: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
         };
 
@@ -186,6 +198,7 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
+            panel_reveals: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
         };
 
@@ -823,6 +836,14 @@ impl SplitViewAdapter {
             // close/detach buttons. This avoids blocking the session toolbar
             // or other top-edge controls (issue with RDP floating panel).
             let (reveal_container, _revealer) = self.panel_corner_buttons_autohide(panel_id);
+            // The hover reveal arrow is redundant when the always-visible pane
+            // header carries the context menu, so show it only in the no-header
+            // mode (issue #374). Tracked so set_labels_visible can toggle it
+            // live when the setting changes.
+            reveal_container.set_visible(!self.show_labels.get());
+            self.panel_reveals
+                .borrow_mut()
+                .insert(panel_id, reveal_container.clone());
             overlay.add_overlay(&reveal_container);
 
             panel_widget.append(&overlay);
@@ -921,6 +942,12 @@ impl SplitViewAdapter {
             } else {
                 header.set_visible(false);
             }
+        }
+        // The hover reveal arrow is the no-header fallback for close/pop, so it
+        // is shown only when headers are off (issue #374): with the header
+        // visible, its context menu already carries those actions.
+        for reveal in self.panel_reveals.borrow().values() {
+            reveal.set_visible(!visible);
         }
     }
 
@@ -1061,10 +1088,47 @@ impl SplitViewAdapter {
         close_button.add_css_class("panel-close-button");
         close_button.update_property(&[gtk4::accessible::Property::Label(&i18n("Close session"))]);
         let close_callback_ref = Rc::clone(&self.close_panel_callback);
-        close_button.connect_clicked(move |_| {
-            if let Some(ref callback) = *close_callback_ref.borrow() {
-                callback(panel_id);
+        // The hover reveal buttons are overlaid only on an OCCUPIED pane
+        // (set_panel_content); an empty pane uses create_empty_placeholder's
+        // own X. So this close always terminates a live session, and because
+        // the reveal arrow is a single fragile hover-then-click gesture (unlike
+        // the header menu's deliberate right-click → item), it is guarded by a
+        // confirmation so a stray click does not drop a connection (issue
+        // #374). The header-menu and sidebar close paths are two deliberate
+        // clicks and are intentionally NOT confirmed.
+        let model_for_close = Rc::clone(&self.model);
+        close_button.connect_clicked(move |button| {
+            let has_session = model_for_close
+                .borrow()
+                .get_panel_session(panel_id)
+                .is_some();
+            let close_callback_ref = Rc::clone(&close_callback_ref);
+            let do_close = move || {
+                if let Some(ref callback) = *close_callback_ref.borrow() {
+                    callback(panel_id);
+                }
+            };
+            if !has_session {
+                do_close();
+                return;
             }
+            let dialog = adw::AlertDialog::new(
+                Some(&i18n("Close this pane?")),
+                Some(&i18n(
+                    "The session in this pane will be disconnected and closed.",
+                )),
+            );
+            dialog.add_response("cancel", &i18n("Cancel"));
+            dialog.add_response("close", &i18n("Close"));
+            dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_close_response("cancel");
+            dialog.connect_response(None, move |_, response| {
+                if response == "close" {
+                    do_close();
+                }
+            });
+            dialog.present(Some(button));
         });
         buttons.append(&close_button);
 
@@ -1109,6 +1173,7 @@ impl SplitViewAdapter {
         }
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
+        self.panel_reveals.borrow_mut().clear();
         self.paned_widgets.clear();
 
         let model = self.model.borrow();
@@ -1307,9 +1372,12 @@ impl SplitViewAdapter {
             // a dedicated drag handle.
             self.setup_drag_source(panel_id, session_id, &container, &header_for_drag);
 
-            // Set up context menu for occupied panels
-            // Right-click context menu with Close/Move options
-            self.setup_panel_context_menu(panel_id, session_id, &container);
+            // Set up context menu on the pane HEADER (issue #374). Attaching it
+            // to the header rather than the container keeps VTE's own native
+            // Copy/Paste right-click menu intact over the terminal content,
+            // while still giving the pane Reconnect / Remove from Split /
+            // Remove Split / Close Connection.
+            self.setup_panel_context_menu(panel_id, session_id, &header_for_drag);
 
             let placeholder = self.create_occupied_placeholder();
             container.append(&placeholder);
@@ -1405,18 +1473,30 @@ impl SplitViewAdapter {
         handle.add_controller(drag_source);
     }
 
-    /// Sets up a right-click context menu on an occupied panel widget.
+    /// Sets up a right-click (and touch long-press) context menu on a split
+    /// pane's **header**, not its content container.
     ///
-    /// The context menu provides options for:
-    /// - "Close Connection": Removes the panel from the split container
-    /// - "Move to New Tab": Extracts the session to a new root tab
+    /// The menu offers Reconnect / Remove from Split / Remove Split / Close
+    /// Connection. It is attached to the header widget rather than the panel
+    /// container because the session widget inside the container (a VTE
+    /// terminal, or an RDP/VNC `DrawingArea`) claims button-press in the
+    /// default bubble phase, so a secondary-click gesture on the container
+    /// never fired over the content — and worse, moving the gesture into the
+    /// capture phase to beat the terminal would swallow VTE's own native
+    /// Copy/Paste context menu (the #84 regression). The header is a plain
+    /// label box with no competing input, so a bubble-phase gesture there is
+    /// safe and leaves the terminal's own menu intact (issue #374).
+    ///
+    /// A `GestureLongPress` mirrors the right-click for touch, per the GNOME
+    /// HIG requirement to pair long-press with every right-click menu.
     ///
     /// # Arguments
     ///
     /// * `panel_id` - The ID of the panel
     /// * `session_id` - The session ID in the panel
-    /// * `widget` - The GTK widget (panel container) to attach the context menu to
-    fn setup_panel_context_menu(&self, panel_id: PanelId, session_id: SessionId, widget: &GtkBox) {
+    /// * `header` - The pane header widget to attach the context menu to
+    fn setup_panel_context_menu(&self, panel_id: PanelId, session_id: SessionId, header: &GtkBox) {
+        let widget = header;
         // Create action group for the panel
         let action_group = gio::SimpleActionGroup::new();
 
@@ -1468,13 +1548,11 @@ impl SplitViewAdapter {
         // Insert the action group into the widget
         widget.insert_action_group("panel", Some(&action_group));
 
-        // Set up right-click gesture to show the context menu
-        // Create popover dynamically on each right-click to avoid GTK popup grabbing issues
-        let gesture = gtk4::GestureClick::new();
-        gesture.set_button(gdk::BUTTON_SECONDARY);
-
-        let widget_for_gesture = widget.clone();
-        gesture.connect_pressed(move |gesture, _n_press, x, y| {
+        // Shared menu opener used by both the secondary-click gesture and the
+        // touch long-press gesture. A popover is created fresh on each open to
+        // avoid GTK popup-grab issues when reusing one across clicks.
+        let widget_for_menu = widget.clone();
+        let open_menu: Rc<dyn Fn(f64, f64)> = Rc::new(move |x: f64, y: f64| {
             // Close any previously open context menu (sidebar or split view)
             crate::sidebar_ui::close_active_popover();
 
@@ -1486,13 +1564,13 @@ impl SplitViewAdapter {
             menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
             menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
 
-            // Create popover dynamically for this click
+            // Create popover dynamically for this open
             let popover = gtk4::PopoverMenu::from_model(Some(&menu));
-            popover.set_parent(&widget_for_gesture);
+            popover.set_parent(&widget_for_menu);
             popover.set_has_arrow(true);
             popover.set_autohide(true);
 
-            // Position the popover at the click location
+            // Position the popover at the pointer / long-press location
             let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
             popover.set_pointing_to(Some(&rect));
 
@@ -1500,10 +1578,9 @@ impl SplitViewAdapter {
             crate::sidebar_ui::set_active_popover(popover.upcast_ref::<gtk4::Popover>());
 
             popover.popup();
-            gesture.set_state(gtk4::EventSequenceState::Claimed);
 
             // Clean up popover when closed
-            let widget_weak = widget_for_gesture.downgrade();
+            let widget_weak = widget_for_menu.downgrade();
             popover.connect_closed(move |pop| {
                 crate::sidebar_ui::clear_active_popover(pop.upcast_ref::<gtk4::Popover>());
                 if widget_weak.upgrade().is_some() {
@@ -1512,7 +1589,28 @@ impl SplitViewAdapter {
             });
         });
 
+        // Secondary-button (right-click) gesture — bubble phase is enough on
+        // the header, which has no terminal child competing for the event.
+        let gesture = gtk4::GestureClick::new();
+        gesture.set_button(gdk::BUTTON_SECONDARY);
+        let open_for_click = Rc::clone(&open_menu);
+        gesture.connect_pressed(move |gesture, _n_press, x, y| {
+            open_for_click(x, y);
+            gesture.set_state(gtk4::EventSequenceState::Claimed);
+        });
         widget.add_controller(gesture);
+
+        // Touch long-press mirrors the right-click, per the GNOME HIG rule that
+        // every right-click context menu has a long-press equivalent on touch
+        // (issue #374). Touch-only so a mouse press-and-hold still selects.
+        let long_press = gtk4::GestureLongPress::new();
+        long_press.set_touch_only(true);
+        let open_for_long = Rc::clone(&open_menu);
+        long_press.connect_pressed(move |gesture, x, y| {
+            open_for_long(x, y);
+            gesture.set_state(gtk4::EventSequenceState::Claimed);
+        });
+        widget.add_controller(long_press);
     }
 
     /// Creates the empty panel placeholder widget with close button and select tab button.

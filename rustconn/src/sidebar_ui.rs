@@ -318,6 +318,7 @@ pub fn show_context_menu_for_item(
     sync_mode: &str,
     is_root_group: bool,
     has_dynamic_folder: bool,
+    in_split: bool,
     activation: MenuActivation,
 ) {
     let Some(root) = widget.root() else { return };
@@ -422,6 +423,37 @@ pub fn show_context_menu_for_item(
                 &i18n("Open new session"),
                 "open-new-session",
             ));
+        }
+        // § Window / split placement (issue #374).
+        //
+        // "Move to New Window" moves the live session into its own window. For
+        // a session shown in a split pane it first pops the pane back out of
+        // the split, so the user can go straight from a split to a standalone
+        // window in one click; for an ordinary (possibly background) tab it
+        // detaches directly. Offered only when the connection actually has a
+        // live session to move.
+        //
+        // The two split-only items ("Remove from Split", "Close") give the
+        // sidebar a way to act on a pane whose header is hidden — the no-header
+        // mode's companion to the hover reveal buttons.
+        if is_connected {
+            items.push(ContextMenuItem::Separator);
+            if in_split {
+                items.push(ContextMenuItem::action(
+                    &i18n("Remove from Split"),
+                    "split-pop-connection",
+                ));
+            }
+            items.push(ContextMenuItem::action(
+                &i18n("Move to New Window"),
+                "connection-detach",
+            ));
+            if in_split {
+                items.push(
+                    ContextMenuItem::action(&i18n("Close"), "split-close-connection")
+                        .destructive(),
+                );
+            }
         }
         // § Utilities (copy, tools, network)
         items.push(ContextMenuItem::Separator);
