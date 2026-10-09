@@ -319,6 +319,7 @@ pub fn show_context_menu_for_item(
     is_root_group: bool,
     has_dynamic_folder: bool,
     in_split: bool,
+    has_multi_session: bool,
     activation: MenuActivation,
 ) {
     let Some(root) = widget.root() else { return };
@@ -440,7 +441,15 @@ pub fn show_context_menu_for_item(
         // session is recoverable by reconnecting, so per the GNOME HIG only
         // Delete (which removes the connection permanently) stays red, keeping
         // a single destructive action in the menu.
-        if is_connected {
+        //
+        // Suppressed entirely when the connection has MORE THAN ONE live
+        // session (issue #374): the sidebar row stands for the connection, not
+        // a single session, so "which session?" is ambiguous — Close / Remove
+        // from Split / Move to New Window would act on an arbitrary one. With
+        // several sessions these controls live in the tabs, where each targets
+        // its own session unambiguously. (Common when "open a new session on
+        // every double-click" is enabled.)
+        if is_connected && !has_multi_session {
             items.push(ContextMenuItem::Separator);
             if in_split {
                 items.push(ContextMenuItem::action(

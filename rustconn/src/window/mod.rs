@@ -1447,6 +1447,29 @@ impl MainWindow {
                 });
         }
 
+        // Set up multi-session checker for the sidebar context menu (#374):
+        // true when a connection has 2+ live sessions, so the ambiguous
+        // per-session controls (Close / Remove from Split / Move to New
+        // Window) are hidden — they target a single session, which is
+        // undefined when several are open for one connection.
+        {
+            let notebook = main_window.terminal_notebook.clone();
+            main_window
+                .sidebar
+                .set_multi_session_checker(move |conn_id_str| {
+                    if let Ok(conn_id) = Uuid::parse_str(conn_id_str) {
+                        notebook
+                            .get_all_sessions()
+                            .iter()
+                            .filter(|s| s.connection_id == conn_id)
+                            .count()
+                            >= 2
+                    } else {
+                        false
+                    }
+                });
+        }
+
         // Drive the sidebar recording indicator from recording start/stop.
         // Use a weak notebook reference — the notebook owns this callback,
         // so a strong clone would create an Rc cycle.

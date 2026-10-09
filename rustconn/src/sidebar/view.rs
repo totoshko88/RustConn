@@ -110,6 +110,7 @@ pub fn show_context_menu_for_connection_item(
     y: f64,
     item: &ConnectionItem,
     recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+    multi_session_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     activation: sidebar_ui::MenuActivation,
 ) {
     let is_group = item.is_group();
@@ -123,6 +124,20 @@ pub fn show_context_menu_for_connection_item(
     let in_split = item.split_color() >= 0;
     let is_recording = if is_connected && !conn_id.is_empty() {
         recording_checker
+            .borrow()
+            .as_ref()
+            .is_some_and(|checker| checker(&conn_id))
+    } else {
+        false
+    };
+    // Whether this connection has MORE THAN ONE live session (issue #374).
+    // With several sessions open for one connection (common when "open a new
+    // session on every double-click" is on), the per-session sidebar controls
+    // (Close / Remove from Split / Move to New Window) are ambiguous — they
+    // would act on an arbitrary one of the sessions — so they are hidden here
+    // and remain available per-session in the tabs.
+    let has_multi_session = if is_connected && !conn_id.is_empty() {
+        multi_session_checker
             .borrow()
             .as_ref()
             .is_some_and(|checker| checker(&conn_id))
@@ -160,6 +175,7 @@ pub fn show_context_menu_for_connection_item(
         item.is_root_group(),
         item.has_dynamic_folder(),
         in_split,
+        has_multi_session,
         activation,
     );
 }
@@ -175,6 +191,7 @@ pub fn setup_list_item(
     list_item: &ListItem,
     _group_ops_mode: bool,
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+    multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
 ) {
     let expander = TreeExpander::new();
 
@@ -417,6 +434,7 @@ pub fn setup_list_item(
             y,
             &item,
             &recording_checker,
+            &multi_session_checker,
             sidebar_ui::MenuActivation::PointerRow,
         );
 
