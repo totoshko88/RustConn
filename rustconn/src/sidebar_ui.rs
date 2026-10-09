@@ -1039,16 +1039,17 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
 /// Compact icon-only pill buttons matching the protocol filter bar style.
 #[must_use]
 pub fn create_bulk_actions_bar() -> GtkBox {
-    let bar = GtkBox::new(Orientation::Horizontal, 4);
-    bar.set_margin_start(12);
-    bar.set_margin_end(12);
+    let bar = GtkBox::new(Orientation::Horizontal, 0);
+    bar.set_margin_start(6);
+    bar.set_margin_end(6);
     bar.set_margin_top(6);
     bar.set_margin_bottom(6);
-    bar.set_halign(gtk4::Align::Center);
+    bar.set_hexpand(true);
+    bar.set_homogeneous(true);
     bar.add_css_class("bulk-actions-bar");
 
     let new_group_button = Button::from_icon_name("folder-new-symbolic");
-    new_group_button.add_css_class("pill");
+    new_group_button.add_css_class("flat");
     new_group_button.add_css_class("bulk-action");
     new_group_button.set_tooltip_text(Some(&i18n("New Group")));
     new_group_button.set_action_name(Some("win.new-group"));
@@ -1057,7 +1058,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&new_group_button);
 
     let move_button = Button::from_icon_name("folder-drag-accept-symbolic");
-    move_button.add_css_class("pill");
+    move_button.add_css_class("flat");
     move_button.add_css_class("bulk-action");
     move_button.set_tooltip_text(Some(&i18n("Move to Group")));
     move_button.set_action_name(Some("win.move-selected-to-group"));
@@ -1067,7 +1068,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&move_button);
 
     let cluster_button = Button::from_icon_name("network-workgroup-symbolic");
-    cluster_button.add_css_class("pill");
+    cluster_button.add_css_class("flat");
     cluster_button.add_css_class("bulk-action");
     cluster_button.set_tooltip_text(Some(&i18n("Create Cluster")));
     cluster_button.set_action_name(Some("win.cluster-from-selection"));
@@ -1077,7 +1078,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&cluster_button);
 
     let batch_edit_button = Button::from_icon_name("document-edit-symbolic");
-    batch_edit_button.add_css_class("pill");
+    batch_edit_button.add_css_class("flat");
     batch_edit_button.add_css_class("bulk-action");
     batch_edit_button.set_tooltip_text(Some(&i18n("Batch Edit")));
     batch_edit_button.set_action_name(Some("win.batch-edit-selected"));
@@ -1087,7 +1088,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&batch_edit_button);
 
     let select_all_button = Button::from_icon_name("edit-select-all-symbolic");
-    select_all_button.add_css_class("pill");
+    select_all_button.add_css_class("flat");
     select_all_button.add_css_class("bulk-action");
     select_all_button.set_tooltip_text(Some(&i18n("Select All")));
     select_all_button.set_action_name(Some("win.select-all"));
@@ -1097,7 +1098,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&select_all_button);
 
     let clear_button = Button::from_icon_name("edit-clear-symbolic");
-    clear_button.add_css_class("pill");
+    clear_button.add_css_class("flat");
     clear_button.add_css_class("bulk-action");
     clear_button.set_tooltip_text(Some(&i18n("Clear Selection")));
     clear_button.set_action_name(Some("win.clear-selection"));
@@ -1105,7 +1106,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&clear_button);
 
     let delete_button = Button::from_icon_name("user-trash-symbolic");
-    delete_button.add_css_class("pill");
+    delete_button.add_css_class("flat");
     delete_button.add_css_class("bulk-action");
     delete_button.add_css_class("bulk-action-destructive");
     delete_button.set_tooltip_text(Some(&i18n("Delete Selected")));
@@ -1123,13 +1124,17 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 /// Layout: \[Group Ops\] \[History\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
-    // 6px inter-icon gap matches AdwHeaderBar's built-in child spacing, and the
-    // buttons use Adwaita's standard flat-icon metrics (no CSS size override, see
-    // style.css), so the bottom row reads identically to the header (GNOME HIG).
-    let toolbar = GtkBox::new(Orientation::Horizontal, 6);
+    // Buttons use Adwaita's standard flat-icon metrics (no CSS size override,
+    // see style.css), so the row reads with the same icon size as the header
+    // (GNOME HIG). The toolbar fills the full sidebar width and distributes the
+    // icons evenly across it (homogeneous cells, each button hexpands), the way
+    // GNOME Files spreads its sidebar action icons — rather than clustering
+    // them in the centre with empty space to the right (issue #374).
+    let toolbar = GtkBox::new(Orientation::Horizontal, 0);
     toolbar.set_margin_start(6);
     toolbar.set_margin_end(6);
-    toolbar.set_halign(gtk4::Align::Center);
+    toolbar.set_hexpand(true);
+    toolbar.set_homogeneous(true);
 
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.add_css_class("flat");

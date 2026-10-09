@@ -240,13 +240,12 @@ window.compact-manual headerbar {
     min-height: 34px;
 }
 
-/* Bulk action buttons (group operations mode) — symbolic icon buttons that
- * also carry `.pill` (see create_bulk_actions_bar); this rule only trims them
- * to toolbar size and keeps the round shape. */
+/* Bulk action buttons (group operations mode) — flat symbolic icon buttons,
+ * visually identical to the sidebar bottom toolbar: no resting background and
+ * no pill shape, only a subtle hover. Trimmed to toolbar size (issue #374). */
 .bulk-action {
     min-width: 24px;
     min-height: 24px;
-    border-radius: 999px;
     padding: 4px 6px;
 }
 
@@ -581,14 +580,11 @@ window:not(.compact):not(.macos) .sidebar-search-row {
     border: none;
 }
 
-/* Sidebar bottom toolbar — no border for flat look */
+/* Sidebar bottom toolbar — no border, flat icons on transparent background,
+ * so the action row merges into the connection list like GNOME Files' sidebar
+ * rather than reading as a separate panel split off by a divider (issue #374). */
 .sidebar toolbarview > .bottom-bar {
     border-top: none;
-}
-
-/* Sidebar bottom toolbar — flat icons on transparent background */
-.sidebar toolbarview > .bottom-bar {
-    border-top: 1px solid alpha(@borders, 0.3);
 }
 
 /* Sidebar bottom toolbar buttons — deliberately NOT custom-sized. They inherit
