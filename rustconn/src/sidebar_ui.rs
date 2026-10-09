@@ -433,9 +433,13 @@ pub fn show_context_menu_for_item(
         // detaches directly. Offered only when the connection actually has a
         // live session to move.
         //
-        // The two split-only items ("Remove from Split", "Close") give the
-        // sidebar a way to act on a pane whose header is hidden — the no-header
-        // mode's companion to the hover reveal buttons.
+        // "Remove from Split" is split-only. "Close" is offered for ANY live
+        // session (split or an ordinary connected tab) — the sidebar's
+        // counterpart to closing the tab, which was previously missing for a
+        // plain connected connection. It is NOT destructive-styled: ending a
+        // session is recoverable by reconnecting, so per the GNOME HIG only
+        // Delete (which removes the connection permanently) stays red, keeping
+        // a single destructive action in the menu.
         if is_connected {
             items.push(ContextMenuItem::Separator);
             if in_split {
@@ -448,12 +452,10 @@ pub fn show_context_menu_for_item(
                 &i18n("Move to New Window"),
                 "connection-detach",
             ));
-            if in_split {
-                items.push(
-                    ContextMenuItem::action(&i18n("Close"), "split-close-connection")
-                        .destructive(),
-                );
-            }
+            items.push(ContextMenuItem::action(
+                &i18n("Close"),
+                "split-close-connection",
+            ));
         }
         // § Utilities (copy, tools, network)
         items.push(ContextMenuItem::Separator);

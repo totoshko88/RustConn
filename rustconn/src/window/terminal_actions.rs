@@ -553,20 +553,26 @@ impl MainWindow {
         });
         window.add_action(&pop_action);
 
-        // "Close" — terminate the pane's session (from the sidebar; the pane
-        // header menu and hover-X cover the in-pane paths).
+        // "Close" — terminate the connection's live session. Delegates to
+        // `close-tab-by-id`, which performs the full teardown (split-bridge
+        // cleanup, tab close, sidebar count) for a session whether or not it is
+        // in a split, so this one path serves both an ordinary connected tab
+        // and a split pane (the pane header menu and hover-X cover the in-pane
+        // paths). Not destructive-styled: ending a session is recoverable by
+        // reconnecting — only Delete (removing the connection) is red.
         let close_action = gio::SimpleAction::new("split-close-connection", None);
         let resolve_close = resolve_session.clone();
-        let focus_close = focus_pane_for.clone();
         close_action.connect_activate(move |_, _| {
             let Some(session_id) = resolve_close() else {
                 return;
             };
-            if !focus_close(session_id) {
-                return;
-            }
             if let Some(window) = active_window() {
-                gtk4::prelude::ActionGroupExt::activate_action(&window, "close-pane", None);
+                let sid = session_id.to_string();
+                gtk4::prelude::ActionGroupExt::activate_action(
+                    &window,
+                    "close-tab-by-id",
+                    Some(&sid.to_variant()),
+                );
             }
         });
         window.add_action(&close_action);
