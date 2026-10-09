@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.23.7]
+## [0.23.7] - 2026-10-10
 
 ### Added
 - **Setting to hide the split-pane hover controls (#374)** — a new **Settings → Interface → Window → "Hide hover controls in split panes"** switch hides the top-right hover-reveal arrow (with its close/detach buttons) on split-view panes for users who find it distracting. **Off by default**, so the hover controls stay shown. It is fully independent of "Show connection name in split panes": each has its own switch and neither hides the other, and it applies live to every open split without a restart. With the arrow hidden, the pane header context menu and the sidebar connection menu still offer close/detach.
@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - **User guide: Split View and Detached Session Windows updated** for the header context menu, the long-press equivalent, the conditional close confirmation on the hover close, the hover arrow staying available independently of the name labels, the new sidebar split/window actions, and the removal of the inert detach item from split tabs.
+
+### Dependencies
+- **Updated**: tokio-util 0.7.19 → 0.7.20, toml 1.1.7 → 1.1.8, toml_edit 0.25.16 → 0.25.17, toml_parser 1.1.4 → 1.1.5, zstd-sys 2.1.0 → 2.1.1. All semver-compatible patch bumps (the TOML parser family plus tokio-util and the zstd FFI shim); no security advisories affected (`cargo deny check advisories` clean). All other in-range cargo dependencies were already at their latest compatible versions. CLI download versions all current (TigerVNC pinned at 1.16.2); the Flatpak/Flathub manifests are in sync (GNOME runtime 51, FreeRDP 3.32.1, cJSON 1.7.19, OpenH264 2.6.0), and picky-krb 0.12.5 remains held back for the same reason as 0.23.1–0.23.6: its `GssApiMessageError` variant breaks the pinned sspi 0.21.3, which does not match it exhaustively, so picky-krb stays at 0.12.4.
 
 ## [0.23.6] - 2026-10-09
 

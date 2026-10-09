@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.7" date="2026-10-10">
+      <description>
+        <p>Version 0.23.7 - GNOME HIG split-pane controls, sidebar session-menu fixes, and a sidebar restyle:</p>
+        <ul>
+          <li>New setting to hide the split-pane hover controls, off by default and independent of the name labels</li>
+          <li>Sidebar per-session controls (Close, Remove from Split, Move to New Window) hidden when a connection has several live sessions</li>
+          <li>Sidebar Close offered for any connected session; only Delete stays red</li>
+          <li>A re-split after closing a split's owner tab no longer leaves a dead, actionless pane</li>
+          <li>Sidebar action toolbars restyled to match GNOME Files; multi-select moved to the bottom toolbar</li>
+          <li>Split-pane close/detach controls follow the GNOME HIG with a pane-header context menu and a long-press equivalent</li>
+          <li>Updated tokio-util, toml and zstd-sys</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.6" date="2026-10-09">
       <description>
         <p>Version 0.23.6 - remote clipboard over OSC 52, saving terminal output, and an RDP performance fix:</p>

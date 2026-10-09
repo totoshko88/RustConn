@@ -2803,7 +2803,11 @@ mod broadcast_gating_tests {
             }
         }
         // Grow the layout, as a real split does.
-        assert!(bridge.split(crate::split_view::SplitDirection::Vertical).is_some());
+        assert!(
+            bridge
+                .split(crate::split_view::SplitDirection::Vertical)
+                .is_some()
+        );
         assert!(
             !bridge.is_single_panel(),
             "after a split the bridge is no longer single-panel"
