@@ -318,6 +318,8 @@ pub fn show_context_menu_for_item(
     sync_mode: &str,
     is_root_group: bool,
     has_dynamic_folder: bool,
+    in_split: bool,
+    has_multi_session: bool,
     activation: MenuActivation,
 ) {
     let Some(root) = widget.root() else { return };
@@ -421,6 +423,47 @@ pub fn show_context_menu_for_item(
             items.push(ContextMenuItem::action(
                 &i18n("Open new session"),
                 "open-new-session",
+            ));
+        }
+        // § Window / split placement (issue #374).
+        //
+        // "Move to New Window" moves the live session into its own window. For
+        // a session shown in a split pane it first pops the pane back out of
+        // the split, so the user can go straight from a split to a standalone
+        // window in one click; for an ordinary (possibly background) tab it
+        // detaches directly. Offered only when the connection actually has a
+        // live session to move.
+        //
+        // "Remove from Split" is split-only. "Close" is offered for ANY live
+        // session (split or an ordinary connected tab) — the sidebar's
+        // counterpart to closing the tab, which was previously missing for a
+        // plain connected connection. It is NOT destructive-styled: ending a
+        // session is recoverable by reconnecting, so per the GNOME HIG only
+        // Delete (which removes the connection permanently) stays red, keeping
+        // a single destructive action in the menu.
+        //
+        // Suppressed entirely when the connection has MORE THAN ONE live
+        // session (issue #374): the sidebar row stands for the connection, not
+        // a single session, so "which session?" is ambiguous — Close / Remove
+        // from Split / Move to New Window would act on an arbitrary one. With
+        // several sessions these controls live in the tabs, where each targets
+        // its own session unambiguously. (Common when "open a new session on
+        // every double-click" is enabled.)
+        if is_connected && !has_multi_session {
+            items.push(ContextMenuItem::Separator);
+            if in_split {
+                items.push(ContextMenuItem::action(
+                    &i18n("Remove from Split"),
+                    "split-pop-connection",
+                ));
+            }
+            items.push(ContextMenuItem::action(
+                &i18n("Move to New Window"),
+                "connection-detach",
+            ));
+            items.push(ContextMenuItem::action(
+                &i18n("Close"),
+                "split-close-connection",
             ));
         }
         // § Utilities (copy, tools, network)
@@ -996,16 +1039,17 @@ pub fn get_protocol_icon(protocol: &str) -> &'static str {
 /// Compact icon-only pill buttons matching the protocol filter bar style.
 #[must_use]
 pub fn create_bulk_actions_bar() -> GtkBox {
-    let bar = GtkBox::new(Orientation::Horizontal, 4);
-    bar.set_margin_start(12);
-    bar.set_margin_end(12);
+    let bar = GtkBox::new(Orientation::Horizontal, 0);
+    bar.set_margin_start(6);
+    bar.set_margin_end(6);
     bar.set_margin_top(6);
     bar.set_margin_bottom(6);
-    bar.set_halign(gtk4::Align::Center);
+    bar.set_hexpand(true);
+    bar.set_homogeneous(true);
     bar.add_css_class("bulk-actions-bar");
 
     let new_group_button = Button::from_icon_name("folder-new-symbolic");
-    new_group_button.add_css_class("pill");
+    new_group_button.add_css_class("flat");
     new_group_button.add_css_class("bulk-action");
     new_group_button.set_tooltip_text(Some(&i18n("New Group")));
     new_group_button.set_action_name(Some("win.new-group"));
@@ -1014,7 +1058,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&new_group_button);
 
     let move_button = Button::from_icon_name("folder-drag-accept-symbolic");
-    move_button.add_css_class("pill");
+    move_button.add_css_class("flat");
     move_button.add_css_class("bulk-action");
     move_button.set_tooltip_text(Some(&i18n("Move to Group")));
     move_button.set_action_name(Some("win.move-selected-to-group"));
@@ -1023,18 +1067,8 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     ))]);
     bar.append(&move_button);
 
-    let cluster_button = Button::from_icon_name("network-workgroup-symbolic");
-    cluster_button.add_css_class("pill");
-    cluster_button.add_css_class("bulk-action");
-    cluster_button.set_tooltip_text(Some(&i18n("Create Cluster")));
-    cluster_button.set_action_name(Some("win.cluster-from-selection"));
-    cluster_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Create cluster from selected connections",
-    ))]);
-    bar.append(&cluster_button);
-
     let batch_edit_button = Button::from_icon_name("document-edit-symbolic");
-    batch_edit_button.add_css_class("pill");
+    batch_edit_button.add_css_class("flat");
     batch_edit_button.add_css_class("bulk-action");
     batch_edit_button.set_tooltip_text(Some(&i18n("Batch Edit")));
     batch_edit_button.set_action_name(Some("win.batch-edit-selected"));
@@ -1044,7 +1078,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&batch_edit_button);
 
     let select_all_button = Button::from_icon_name("edit-select-all-symbolic");
-    select_all_button.add_css_class("pill");
+    select_all_button.add_css_class("flat");
     select_all_button.add_css_class("bulk-action");
     select_all_button.set_tooltip_text(Some(&i18n("Select All")));
     select_all_button.set_action_name(Some("win.select-all"));
@@ -1054,7 +1088,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&select_all_button);
 
     let clear_button = Button::from_icon_name("edit-clear-symbolic");
-    clear_button.add_css_class("pill");
+    clear_button.add_css_class("flat");
     clear_button.add_css_class("bulk-action");
     clear_button.set_tooltip_text(Some(&i18n("Clear Selection")));
     clear_button.set_action_name(Some("win.clear-selection"));
@@ -1062,7 +1096,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     bar.append(&clear_button);
 
     let delete_button = Button::from_icon_name("user-trash-symbolic");
-    delete_button.add_css_class("pill");
+    delete_button.add_css_class("flat");
     delete_button.add_css_class("bulk-action");
     delete_button.add_css_class("bulk-action-destructive");
     delete_button.set_tooltip_text(Some(&i18n("Delete Selected")));
@@ -1077,17 +1111,23 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 
 /// Creates the sidebar bottom toolbar with secondary actions
 ///
-/// Layout: \[Group Ops\] \[History\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
+/// Layout: \[History\] \[Select\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
-    // 6px inter-icon gap matches AdwHeaderBar's built-in child spacing, and the
-    // buttons use Adwaita's standard flat-icon metrics (no CSS size override, see
-    // style.css), so the bottom row reads identically to the header (GNOME HIG).
-    let toolbar = GtkBox::new(Orientation::Horizontal, 6);
+    // Buttons use Adwaita's standard flat-icon metrics (no CSS size override,
+    // see style.css), so the row reads with the same icon size as the header
+    // (GNOME HIG). The toolbar fills the full sidebar width and distributes the
+    // icons evenly across it (homogeneous cells, each button hexpands), the way
+    // GNOME Files spreads its sidebar action icons — rather than clustering
+    // them in the centre with empty space to the right (issue #374).
+    let toolbar = GtkBox::new(Orientation::Horizontal, 0);
     toolbar.set_margin_start(6);
     toolbar.set_margin_end(6);
-    toolbar.set_halign(gtk4::Align::Center);
+    toolbar.set_hexpand(true);
+    toolbar.set_homogeneous(true);
 
+    // Connection History — the quick-access entry point, kept leftmost (first)
+    // in the action row (issue #374).
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.add_css_class("flat");
     history_button.set_tooltip_text(Some(&i18n("Connection History")));
@@ -1096,6 +1136,22 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
         "View connection history",
     ))]);
     toolbar.append(&history_button);
+
+    // Multi-select ("Select Connections") toggle — moved here from the sidebar
+    // header menu (issue #374). A toggle button bound to the stateful
+    // `win.group-operations` action, so it shows the active state and reveals
+    // the bulk-actions bar. Living in the action row (not a menu checkbox) is
+    // both more discoverable and lets the header menu drop the checkable item
+    // that was widening the popover.
+    let select_toggle = gtk4::ToggleButton::new();
+    select_toggle.set_icon_name("object-select-symbolic");
+    select_toggle.add_css_class("flat");
+    select_toggle.set_tooltip_text(Some(&i18n("Select Connections")));
+    select_toggle.set_action_name(Some("win.group-operations"));
+    select_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Toggle multi-select mode for connections",
+    ))]);
+    toolbar.append(&select_toggle);
 
     // Sort: two standalone buttons (Alphabetical / Recent Usage) rather than a
     // single menu button. Five direct icons read more clearly than four icons
@@ -1219,14 +1275,10 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     list_section.append(Some(&i18n("Export…")), Some("win.export"));
     menu.append_section(None, &list_section);
 
-    // Select + sort — multi-select mode and the two orderings.
-    let select_section = gio::Menu::new();
-    // Stateful `win.group-operations`: renders as a checkable item.
-    select_section.append(
-        Some(&i18n("Select Connections")),
-        Some("win.group-operations"),
-    );
-    menu.append_section(None, &select_section);
+    // "Select Connections" (multi-select mode) is no longer a checkable menu
+    // item here — it moved to a toggle button in the sidebar bottom toolbar
+    // (issue #374), which is more discoverable and keeps the checkable item
+    // from widening this popover. The two orderings stay in their own section.
     let sort_section = gio::Menu::new();
     sort_section.append(
         Some(&i18n("Sort Alphabetically")),

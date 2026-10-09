@@ -1447,6 +1447,29 @@ impl MainWindow {
                 });
         }
 
+        // Set up multi-session checker for the sidebar context menu (#374):
+        // true when a connection has 2+ live sessions, so the ambiguous
+        // per-session controls (Close / Remove from Split / Move to New
+        // Window) are hidden — they target a single session, which is
+        // undefined when several are open for one connection.
+        {
+            let notebook = main_window.terminal_notebook.clone();
+            main_window
+                .sidebar
+                .set_multi_session_checker(move |conn_id_str| {
+                    if let Ok(conn_id) = Uuid::parse_str(conn_id_str) {
+                        notebook
+                            .get_all_sessions()
+                            .iter()
+                            .filter(|s| s.connection_id == conn_id)
+                            .count()
+                            >= 2
+                    } else {
+                        false
+                    }
+                });
+        }
+
         // Drive the sidebar recording indicator from recording start/stop.
         // Use a weak notebook reference — the notebook owns this callback,
         // so a strong clone would create an Rc cycle.
@@ -1700,6 +1723,17 @@ impl MainWindow {
                         {
                             monitoring_for_cleanup.resume_monitoring(guest_id, &container);
                         }
+                        // Drop the guest's bridge entry too (issue #374 follow-up).
+                        // The entry is the SAME Rc as the owner's torn-down
+                        // layout, whose model still lists this guest's old panels
+                        // AND the now-killed owner session. Left in the map, a
+                        // later split on this guest REUSED that stale bridge and
+                        // restore_panel_contents walked a panel whose session has
+                        // no content widget, leaving a dead pane with no header,
+                        // no hover actions and no empty-placeholder X. Removing it
+                        // forces get_or_create_session_bridge down the CREATE path
+                        // with a clean single-panel model.
+                        session_bridges_for_cleanup.borrow_mut().remove(&guest_id);
                     }
                 }
 
@@ -3978,6 +4012,7 @@ impl MainWindow {
                     let bridges = session_split_bridges.borrow();
                     for bridge in bridges.values() {
                         bridge.set_show_pane_labels(settings.ui.show_split_pane_labels);
+                        bridge.set_hide_hover_controls(settings.ui.hide_split_pane_hover_controls);
                     }
                 }
 

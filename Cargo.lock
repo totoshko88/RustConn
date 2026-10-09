@@ -4802,7 +4802,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4842,7 +4842,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "chrono",
  "clap",
@@ -4864,7 +4864,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "aes 0.9.3",
  "ar",
@@ -4925,7 +4925,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -4934,18 +4934,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.23.6"
+version = "0.23.7"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.23.6"
+version = "0.23.7"
 dependencies = [
  "libc",
  "nix",
@@ -6001,9 +6001,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.19"
+version = "0.7.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "494815d09bf52b5548659851081238f0ca39ff638363907596da739561c62c52"
+checksum = "e464cf451ba96ebfc6f9b6542f17ee8b8956e33f1e40d9690624e59d7a7f8a4b"
 dependencies = [
  "bytes",
  "futures-core",
@@ -6016,9 +6016,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "1.1.7+spec-1.1.0"
+version = "1.1.8+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7874cd34dd99040fc24e30923aa64a60a81ff3ddfe2b8129ccc84ba24949deed"
+checksum = "20489e00e4d8741d6be680764cc12e270655e375a20d1011e844a9c3379e678d"
 dependencies = [
  "indexmap",
  "serde_core",
@@ -6040,9 +6040,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.16+spec-1.1.0"
+version = "0.25.17+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88f38f3af8bf71841c67a990f4e2b52143b2d0a1a994c72513ff4c14977fc722"
+checksum = "e3641d5bbb5349a79e1020a242d251efbc546ad8048d133958323ce9c40a9c9c"
 dependencies = [
  "indexmap",
  "toml_datetime",
@@ -6052,9 +6052,9 @@ dependencies = [
 
 [[package]]
 name = "toml_parser"
-version = "1.1.4+spec-1.1.0"
+version = "1.1.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bed810ee007d8e7f9cf20b4774e7198142fa27186e0f805871da7f3c39eaf333"
+checksum = "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c"
 dependencies = [
  "winnow",
 ]
@@ -7274,9 +7274,9 @@ dependencies = [
 
 [[package]]
 name = "zstd-sys"
-version = "2.1.0+zstd.1.5.7"
+version = "2.1.1+zstd.1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ef0a8027ec3ee71300ab3bcbcd0393f434aa72b91ca6d635a39941deae8eea0"
+checksum = "aeec9eaf2dffbbd09201e23bd0ffcbaa33bb8e9266a10734fd7ed90a85eca078"
 dependencies = [
  "cc",
  "pkg-config",

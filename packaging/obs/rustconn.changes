@@ -1,4 +1,35 @@
 -------------------------------------------------------------------
+Sat Oct 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.7
+
+- Version bump to 0.23.7
+- Added: setting to hide the split-pane hover controls - a new Settings >
+  Interface > Window toggle hides the top-right hover-reveal arrow on split
+  panes; off by default, independent of the connection-name labels, applied
+  live (#374)
+- Fixed: the sidebar's per-session controls (Close, Remove from Split, Move to
+  New Window) are hidden when a connection has two or more live sessions, since
+  they would act on an arbitrary one; they remain per-tab where each targets its
+  own session (#374)
+- Fixed: sidebar Close is now offered for any connected session, routed through
+  the same close-tab-by-id teardown, and no longer styled destructive - only
+  Delete stays red (#374)
+- Fixed: a re-split after closing a split's owner tab no longer leaves a dead,
+  actionless pane - stale per-session bridge entries are dropped and a panel with
+  no resolvable content falls back to the empty placeholder
+- Changed: sidebar action toolbars restyled to match GNOME Files - no divider
+  above the bottom row, icons spread evenly, flat Select Connections buttons,
+  multi-select moved to the bottom toolbar, Create Cluster dropped from the bar
+  (#374)
+- Changed: split-pane close/detach controls follow the GNOME HIG instead of a
+  hover-only reveal - a pane-header context menu with a long-press equivalent,
+  the hover arrow kept as an independent fallback with a close confirmation,
+  sidebar split/window actions, and the dead Move to New Window removed from
+  split tabs (#374)
+- Dependencies: updated tokio-util 0.7.19->0.7.20, toml 1.1.7->1.1.8, toml_edit
+  0.25.16->0.25.17, toml_parser 1.1.4->1.1.5, zstd-sys 2.1.0->2.1.1; advisories
+  clean
+
+-------------------------------------------------------------------
 Fri Oct 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.6
 
 - Version bump to 0.23.6

@@ -1154,6 +1154,16 @@ pub struct UiSettings {
     /// moving a pane between panels/tabs (issue #355).
     #[serde(default = "default_true")]
     pub show_split_pane_labels: bool,
+    /// Hide the hover-reveal corner controls (close/detach arrow) on split panes.
+    ///
+    /// Default `false` — the hover controls are shown. When a user finds the
+    /// top-right reveal arrow distracting (the pane header and the sidebar
+    /// connection menu already offer close/detach), turning this on hides the
+    /// hover controls entirely. Independent of "Show connection name in split
+    /// panes": both the header labels and the hover controls have their own
+    /// switch, so neither hides the other (issue #374).
+    #[serde(default)]
+    pub hide_split_pane_hover_controls: bool,
     /// Show "Close to the Left" / "Close to the Right" in the tab context menu.
     ///
     /// Default `false`. The tab menu's close block is minimal by default —
@@ -1268,6 +1278,7 @@ impl Default for UiSettings {
             tunnel_browser_start_url: default_tunnel_start_url(),
             tunnel_browser_command: String::new(),
             show_split_pane_labels: true,
+            hide_split_pane_hover_controls: false,
             show_directional_tab_close: false,
             keyboard_passthrough: false,
         }
@@ -2178,6 +2189,22 @@ mod tests {
         let explicit_off: UiSettings = toml::from_str("show_split_pane_labels = false")
             .expect("a config with the key must parse");
         assert!(!explicit_off.show_split_pane_labels);
+    }
+
+    /// The split-pane hover controls are shown by default; hiding them is
+    /// opt-in. A config written before the key existed keeps them shown, and a
+    /// user who turned the hide on keeps it across loads (issue #374).
+    #[test]
+    fn hide_split_pane_hover_controls_default_off_and_opt_in_is_kept() {
+        assert!(!UiSettings::default().hide_split_pane_hover_controls);
+
+        let without_key: UiSettings = toml::from_str(r#"color_scheme = "system""#)
+            .expect("a config without the key must parse");
+        assert!(!without_key.hide_split_pane_hover_controls);
+
+        let explicit_on: UiSettings = toml::from_str("hide_split_pane_hover_controls = true")
+            .expect("a config with the key must parse");
+        assert!(explicit_on.hide_split_pane_hover_controls);
     }
 
     /// The directional tab-close items are opt-in: the default is off, a config

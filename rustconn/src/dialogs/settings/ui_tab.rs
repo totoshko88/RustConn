@@ -83,6 +83,8 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    // hide_split_pane_hover_controls
+    adw::SwitchRow,
     // show_directional_tab_close
     adw::SwitchRow,
     adw::SwitchRow,
@@ -372,6 +374,19 @@ pub fn create_ui_page() -> (
         .build();
     window_group.add(&show_split_pane_labels);
 
+    // Hide the hover-reveal corner controls (close/detach arrow) on split
+    // panes (issue #374). Off by default — the hover arrow is shown. Users who
+    // find it distracting hide it here; the pane header and the sidebar
+    // connection menu still offer close/detach. Independent of the labels row
+    // above: both have their own switch and neither hides the other.
+    let hide_split_pane_hover_controls = adw::SwitchRow::builder()
+        .title(i18n("Hide hover controls in split panes"))
+        .subtitle(i18n(
+            "Hide the top-right reveal arrow with close/detach buttons on split-view panes",
+        ))
+        .build();
+    window_group.add(&hide_split_pane_hover_controls);
+
     // Show the directional "Close to the Left" / "Close to the Right" items in
     // the tab context menu. Off by default: they serve a narrow workflow and,
     // shown always, lengthen the menu for everyone, so the default menu stays
@@ -588,6 +603,7 @@ pub fn create_ui_page() -> (
         show_welcome_switch,
         double_click_opens_new_session,
         show_split_pane_labels,
+        hide_split_pane_hover_controls,
         show_directional_tab_close,
         reveal_toolbar_on_hover,
         open_tunnelled_browser_in_embedded,
@@ -650,6 +666,7 @@ pub fn load_ui_settings(
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
+    hide_split_pane_hover_controls: &adw::SwitchRow,
     show_directional_tab_close: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
     open_tunnelled_browser_in_embedded: &adw::SwitchRow,
@@ -747,6 +764,7 @@ pub fn load_ui_settings(
     tunnel_browser_command_row.set_text(&settings.tunnel_browser_command);
 
     show_split_pane_labels.set_active(settings.show_split_pane_labels);
+    hide_split_pane_hover_controls.set_active(settings.hide_split_pane_hover_controls);
     show_directional_tab_close.set_active(settings.show_directional_tab_close);
 
     // Same shape as the compact toggle above: push the stored value into the
@@ -811,6 +829,7 @@ pub fn collect_ui_settings(
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
+    hide_split_pane_hover_controls: &adw::SwitchRow,
     show_directional_tab_close: &adw::SwitchRow,
     reveal_toolbar_on_hover: &adw::SwitchRow,
     open_tunnelled_browser_in_embedded: &adw::SwitchRow,
@@ -892,6 +911,7 @@ pub fn collect_ui_settings(
         tunnel_browser_start_url: tunnel_start_url_row.text().to_string(),
         tunnel_browser_command: tunnel_browser_command_row.text().to_string(),
         show_split_pane_labels: show_split_pane_labels.is_active(),
+        hide_split_pane_hover_controls: hide_split_pane_hover_controls.is_active(),
         show_directional_tab_close: show_directional_tab_close.is_active(),
         reveal_session_toolbar_on_hover: reveal_toolbar_on_hover.is_active(),
         keyboard_passthrough: keyboard_passthrough.is_active(),

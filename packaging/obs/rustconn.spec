@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.6
+Version:        0.23.7
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,16 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Oct 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.7-0
+- Version bump to 0.23.7
+- Added a setting to hide the split-pane hover controls (#374)
+- Fixed sidebar per-session controls being hidden when a connection has several live sessions (#374)
+- Fixed sidebar Close now offered for any connected session; only Delete stays red (#374)
+- Fixed a re-split after closing a split's owner tab leaving a dead, actionless pane
+- Changed sidebar action toolbars to match GNOME Files; multi-select moved to the bottom toolbar (#374)
+- Changed split-pane close/detach controls to follow the GNOME HIG instead of a hover-only reveal (#374)
+- Updated tokio-util 0.7.19->0.7.20, toml 1.1.7->1.1.8, toml_edit 0.25.16->0.25.17, toml_parser 1.1.4->1.1.5, zstd-sys 2.1.0->2.1.1
+
 * Fri Oct 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.6-0
 - Version bump to 0.23.6
 - Added OSC 52 remote-clipboard support, opt-in (PR #372)

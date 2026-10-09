@@ -112,6 +112,11 @@ pub struct ConnectionSidebar {
     /// Callback to check if a connection has an active recording session
     /// Takes a connection ID string and returns true if recording is active
     recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+    /// Callback to check whether a connection has MORE THAN ONE live session.
+    /// Takes a connection ID string and returns true when ≥2 sessions are
+    /// open for it, so the per-session sidebar controls (Close / Remove from
+    /// Split / Move to New Window) can be hidden as ambiguous (issue #374).
+    multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     /// Smart Folders sidebar section (dynamic tag-based grouping)
     smart_folders_sidebar: SmartFoldersSidebar,
     /// Revealer for Smart Folders section (toggled via toolbar button)
@@ -341,7 +346,10 @@ impl ConnectionSidebar {
         let search_entry_bind = search_entry.clone();
         let recording_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>> =
             Rc::new(RefCell::new(None));
+        let multi_session_checker: Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>> =
+            Rc::new(RefCell::new(None));
         let recording_checker_clone = recording_checker.clone();
+        let multi_session_checker_clone = multi_session_checker.clone();
         factory.connect_setup(move |factory, obj| {
             if let Some(list_item) = obj.downcast_ref::<ListItem>() {
                 view::setup_list_item(
@@ -349,6 +357,7 @@ impl ConnectionSidebar {
                     list_item,
                     *group_ops_mode_clone.borrow(),
                     recording_checker_clone.clone(),
+                    multi_session_checker_clone.clone(),
                 );
             }
         });
@@ -391,6 +400,7 @@ impl ConnectionSidebar {
         let selection_model_clone = selection_model.clone();
         let list_view_weak = list_view.downgrade();
         let recording_checker_for_keys = recording_checker.clone();
+        let multi_session_for_keys = multi_session_checker.clone();
         let key_controller = EventControllerKey::new();
         key_controller.connect_key_pressed(move |_controller, key, _code, modifier| {
             // Use is_multi() to check if we're in multi-selection mode
@@ -474,14 +484,22 @@ impl ConnectionSidebar {
                     // Keyboard fallback for environments where right-click
                     // on nested rows is unreliable (#157).
                     if let Some(lv) = list_view_weak.upgrade() {
-                        Self::show_context_menu_for_selected_row(&lv, &recording_checker_for_keys);
+                        Self::show_context_menu_for_selected_row(
+                            &lv,
+                            &recording_checker_for_keys,
+                            &multi_session_for_keys,
+                        );
                     }
                     glib::Propagation::Stop
                 }
                 gdk::Key::F10 if modifier.contains(gdk::ModifierType::SHIFT_MASK) => {
                     // Shift+F10: same as the Menu key (GNOME HIG)
                     if let Some(lv) = list_view_weak.upgrade() {
-                        Self::show_context_menu_for_selected_row(&lv, &recording_checker_for_keys);
+                        Self::show_context_menu_for_selected_row(
+                            &lv,
+                            &recording_checker_for_keys,
+                            &multi_session_for_keys,
+                        );
                     }
                     glib::Propagation::Stop
                 }
@@ -499,6 +517,7 @@ impl ConnectionSidebar {
         // pick() instead of relying on per-row event dispatch, so it works
         // at any nesting depth.
         let recording_for_fallback = recording_checker.clone();
+        let multi_session_for_fallback = multi_session_checker.clone();
         let row_menu_fallback = GestureClick::new();
         row_menu_fallback.set_button(gdk::BUTTON_SECONDARY);
         row_menu_fallback.connect_pressed(move |gesture, _n_press, x, y| {
@@ -508,7 +527,13 @@ impl ConnectionSidebar {
             let Some(lv) = widget.downcast_ref::<ListView>() else {
                 return;
             };
-            if Self::show_row_context_menu_at(lv, x, y, &recording_for_fallback) {
+            if Self::show_row_context_menu_at(
+                lv,
+                x,
+                y,
+                &recording_for_fallback,
+                &multi_session_for_fallback,
+            ) {
                 gesture.set_state(gtk4::EventSequenceState::Claimed);
             }
         });
@@ -518,6 +543,7 @@ impl ConnectionSidebar {
         // touch screens have no right-click). touch-only so mouse
         // long-presses keep their default behavior.
         let recording_for_long_press = recording_checker.clone();
+        let multi_session_for_long_press = multi_session_checker.clone();
         let row_menu_long_press = gtk4::GestureLongPress::new();
         row_menu_long_press.set_touch_only(true);
         row_menu_long_press.connect_pressed(move |gesture, x, y| {
@@ -527,7 +553,13 @@ impl ConnectionSidebar {
             let Some(lv) = widget.downcast_ref::<ListView>() else {
                 return;
             };
-            if Self::show_row_context_menu_at(lv, x, y, &recording_for_long_press) {
+            if Self::show_row_context_menu_at(
+                lv,
+                x,
+                y,
+                &recording_for_long_press,
+                &multi_session_for_long_press,
+            ) {
                 gesture.set_state(gtk4::EventSequenceState::Claimed);
             }
         });
@@ -788,6 +820,7 @@ impl ConnectionSidebar {
             pre_search_state: Rc::new(RefCell::new(None)),
             keepass_button,
             recording_checker,
+            multi_session_checker,
             smart_folders_sidebar,
             smart_folders_revealer,
             toolbar_view,
@@ -959,6 +992,12 @@ impl ConnectionSidebar {
     /// Sets the callback used to check if a connection has an active recording
     pub fn set_recording_checker<F: Fn(&str) -> bool + 'static>(&self, checker: F) {
         *self.recording_checker.borrow_mut() = Some(Box::new(checker));
+    }
+
+    /// Sets the callback used to check whether a connection has ≥2 live
+    /// sessions, so the per-session controls can be hidden as ambiguous (#374).
+    pub fn set_multi_session_checker<F: Fn(&str) -> bool + 'static>(&self, checker: F) {
+        *self.multi_session_checker.borrow_mut() = Some(Box::new(checker));
     }
 
     /// Shows the search pending indicator
@@ -1350,6 +1389,7 @@ impl ConnectionSidebar {
         x: f64,
         y: f64,
         recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+        multi_session_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     ) -> bool {
         let activation = sidebar_ui::MenuActivation::PointerFallback;
         let Some(picked) = list_view.pick(x, y, gtk4::PickFlags::DEFAULT) else {
@@ -1394,6 +1434,7 @@ impl ConnectionSidebar {
             ey,
             &item,
             recording_checker,
+            multi_session_checker,
             activation,
         );
         true
@@ -1407,6 +1448,7 @@ impl ConnectionSidebar {
     fn show_context_menu_for_selected_row(
         list_view: &ListView,
         recording_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
+        multi_session_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     ) {
         let Some(model) = list_view.model() else {
             return;
@@ -1445,6 +1487,7 @@ impl ConnectionSidebar {
             anchor_y,
             &item,
             recording_checker,
+            multi_session_checker,
             sidebar_ui::MenuActivation::Keyboard,
         );
     }
