@@ -542,8 +542,16 @@ mod tests {
 
     #[test]
     fn test_password_strength() {
-        // Short password should be weak
-        let config = PasswordGeneratorConfig::new().with_length(4);
+        // Short password should be weak. require_all_sets is turned off here on
+        // purpose: with it on, a length-4 password must place one character from
+        // each of the four sets, and the random draw only satisfies that ~11% of
+        // the time — across MAX_ATTEMPTS that leaves a ~1-in-70000 chance of
+        // GenerationFailed, which made this test flaky in CI. The strength check
+        // is about length, not composition, so dropping the constraint keeps the
+        // intent while making generation deterministic.
+        let config = PasswordGeneratorConfig::new()
+            .with_length(4)
+            .with_require_all_sets(false);
         let generator = PasswordGenerator::new(config);
         let short_pass = generator.generate().unwrap();
         assert!(generator.evaluate_strength(&short_pass) <= PasswordStrength::Fair);
