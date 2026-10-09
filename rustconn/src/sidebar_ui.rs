@@ -1111,7 +1111,7 @@ pub fn create_bulk_actions_bar() -> GtkBox {
 
 /// Creates the sidebar bottom toolbar with secondary actions
 ///
-/// Layout: \[Group Ops\] \[History\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
+/// Layout: \[History\] \[Select\] \[A-Z Sort\] \[Recent\] \[KeePass\] \[Smart Folders\]
 #[must_use]
 pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     // Buttons use Adwaita's standard flat-icon metrics (no CSS size override,
@@ -1125,6 +1125,17 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.set_margin_end(6);
     toolbar.set_hexpand(true);
     toolbar.set_homogeneous(true);
+
+    // Connection History — the quick-access entry point, kept leftmost (first)
+    // in the action row (issue #374).
+    let history_button = Button::from_icon_name("document-open-recent-symbolic");
+    history_button.add_css_class("flat");
+    history_button.set_tooltip_text(Some(&i18n("Connection History")));
+    history_button.set_action_name(Some("win.show-history"));
+    history_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "View connection history",
+    ))]);
+    toolbar.append(&history_button);
 
     // Multi-select ("Select Connections") toggle — moved here from the sidebar
     // header menu (issue #374). A toggle button bound to the stateful
@@ -1141,15 +1152,6 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
         "Toggle multi-select mode for connections",
     ))]);
     toolbar.append(&select_toggle);
-
-    let history_button = Button::from_icon_name("document-open-recent-symbolic");
-    history_button.add_css_class("flat");
-    history_button.set_tooltip_text(Some(&i18n("Connection History")));
-    history_button.set_action_name(Some("win.show-history"));
-    history_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "View connection history",
-    ))]);
-    toolbar.append(&history_button);
 
     // Sort: two standalone buttons (Alphabetical / Recent Usage) rather than a
     // single menu button. Five direct icons read more clearly than four icons
