@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-09 23:33+0300\n"
+"POT-Creation-Date: 2026-10-10 00:21+0300\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -56,8 +56,8 @@ msgstr "确定"
 #: rustconn/src/window/connection_dialogs.rs:1066
 #: rustconn/src/window/edit_group.rs:1890
 #: rustconn/src/window/edit_group.rs:1938
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3296
-#: rustconn/src/window/mod.rs:3360 rustconn/src/window/mod.rs:4309
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3319
+#: rustconn/src/window/mod.rs:3383 rustconn/src/window/mod.rs:4332
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
@@ -215,7 +215,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "“{}” 连接前需要以下信息。"
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:614 rustconn/src/sidebar_ui.rs:381
+#: rustconn/src/dialogs/widgets.rs:614 rustconn/src/sidebar_ui.rs:382
 #: rustconn/src/smart_folder_ui.rs:438 rustconn/src/window/edit_dialogs.rs:761
 #: rustconn/src/window/edit_dialogs.rs:762
 msgid "Connect"
@@ -332,7 +332,7 @@ msgstr "请至少选择一个连接或设置自动成员匹配模式"
 
 #: rustconn/src/dialogs/cluster.rs:297
 #: rustconn/src/dialogs/settings/ui_tab.rs:406
-#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1194
+#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1216
 msgid "Connections"
 msgstr "连接"
 
@@ -344,7 +344,7 @@ msgstr "选择要包含在此集群中的连接"
 msgid "Filter connections…"
 msgstr "筛选连接…"
 
-#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1081
+#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1083
 #: rustconn/src/terminal/config.rs:292
 msgid "Select All"
 msgstr "全选"
@@ -357,7 +357,7 @@ msgstr "取消全选"
 msgid "Edit Cluster"
 msgstr "编辑集群"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1236
+#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1258
 msgid "Manage Clusters"
 msgstr "管理集群"
 
@@ -407,7 +407,7 @@ msgstr "此集群将被永久删除。"
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
 #: rustconn/src/dialogs/tunnel.rs:724 rustconn/src/dialogs/workspace.rs:119
-#: rustconn/src/dialogs/workspace.rs:292 rustconn/src/sidebar_ui.rs:526
+#: rustconn/src/dialogs/workspace.rs:292 rustconn/src/sidebar_ui.rs:537
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:460
 #: rustconn/src/window/clusters.rs:633 rustconn/src/window/operations.rs:171
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
@@ -717,7 +717,7 @@ msgstr "添加规则"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:648
 #: rustconn/src/dialogs/shortcuts.rs:159 rustconn/src/dialogs/wol.rs:38
-#: rustconn/src/sidebar_ui.rs:482 rustconn/src/smart_folder_ui.rs:453
+#: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:453
 msgid "Wake On LAN"
 msgstr "局域网唤醒"
 
@@ -2224,7 +2224,7 @@ msgstr "动态"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:47
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:182
-#: rustconn/src/sidebar/mod.rs:830
+#: rustconn/src/sidebar/mod.rs:863
 msgid "Kubernetes"
 msgstr "Kubernetes"
 
@@ -4363,8 +4363,8 @@ msgstr "您的模板"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:453
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
-#: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:504
-#: rustconn/src/sidebar_ui.rs:541 rustconn/src/sidebar_ui.rs:1226
+#: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:515
+#: rustconn/src/sidebar_ui.rs:552 rustconn/src/sidebar_ui.rs:1248
 #: rustconn/src/split_view/bridge.rs:1856 rustconn/src/window/ui.rs:257
 msgid "New Connection"
 msgstr "新建连接"
@@ -4523,10 +4523,10 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:453
+#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:465
 #: rustconn/src/split_view/adapter.rs:1132
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4310
+#: rustconn/src/window/mod.rs:4333
 msgid "Close"
 msgstr "关闭"
 
@@ -4962,7 +4962,7 @@ msgid "Failed"
 msgstr "失败"
 
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:156
-#: rustconn/src/sidebar_ui.rs:1125
+#: rustconn/src/sidebar_ui.rs:1147
 msgid "Connection History"
 msgstr "连接历史"
 
@@ -6065,8 +6065,8 @@ msgid "Enter a new display name for this recording."
 msgstr "输入此录像的新显示名称。"
 
 #: rustconn/src/dialogs/recording.rs:510 rustconn/src/dialogs/workspace.rs:127
-#: rustconn/src/dialogs/workspace.rs:238 rustconn/src/sidebar_ui.rs:341
-#: rustconn/src/sidebar_ui.rs:392 rustconn/src/window/edit_dialogs.rs:318
+#: rustconn/src/dialogs/workspace.rs:238 rustconn/src/sidebar_ui.rs:342
+#: rustconn/src/sidebar_ui.rs:393 rustconn/src/window/edit_dialogs.rs:318
 msgid "Rename"
 msgstr "重命名"
 
@@ -7561,7 +7561,7 @@ msgstr "正在检查……密钥闪烁时请触摸您的 YubiKey"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2777
 #: rustconn/src/embedded_rdp/ui.rs:169 rustconn/src/embedded_vnc/ui.rs:335
-#: rustconn/src/sidebar/view.rs:758
+#: rustconn/src/sidebar/view.rs:776
 msgid "Connected"
 msgstr "已连接"
 
@@ -8415,19 +8415,19 @@ msgstr "统计"
 msgid "SSH Tunnel Manager"
 msgstr "SSH 隧道管理器"
 
-#: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:542
-#: rustconn/src/sidebar_ui.rs:1042 rustconn/src/sidebar_ui.rs:1231
+#: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:553
+#: rustconn/src/sidebar_ui.rs:1054 rustconn/src/sidebar_ui.rs:1253
 #: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "新建组"
 
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:540
-#: rustconn/src/sidebar_ui.rs:1249 rustconn/src/split_view/bridge.rs:1863
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:551
+#: rustconn/src/sidebar_ui.rs:1271 rustconn/src/split_view/bridge.rs:1863
 #: rustconn/src/window/edit_dialogs.rs:754 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "快速连接"
 
-#: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:1051
+#: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:1063
 msgid "Move to Group"
 msgstr "移动到组"
 
@@ -8493,7 +8493,7 @@ msgstr "垂直分割"
 msgid "Close Pane"
 msgstr "关闭窗格"
 
-#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:443
+#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:456
 #: rustconn/src/split_view/adapter.rs:1082
 #: rustconn/src/split_view/adapter.rs:1573
 msgid "Remove from Split"
@@ -8545,7 +8545,7 @@ msgstr "搜索快捷键…"
 msgid "Edit Smart Folder"
 msgstr "编辑智能文件夹"
 
-#: rustconn/src/dialogs/smart_folder.rs:67 rustconn/src/sidebar_ui.rs:543
+#: rustconn/src/dialogs/smart_folder.rs:67 rustconn/src/sidebar_ui.rs:554
 #: rustconn/src/smart_folder_ui.rs:69
 msgid "New Smart Folder"
 msgstr "新建智能文件夹"
@@ -9032,20 +9032,20 @@ msgstr "按协议过滤："
 msgid "All"
 msgstr "全部"
 
-#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:823
+#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:856
 #: rustconn/src/window/edit_group.rs:1481
 msgid "SSH"
 msgstr "SSH"
 
-#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:824
+#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:857
 msgid "RDP"
 msgstr "RDP"
 
-#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:825
+#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:858
 msgid "VNC"
 msgstr "VNC"
 
-#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:826
+#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:859
 msgid "SPICE"
 msgstr "SPICE"
 
@@ -9058,8 +9058,8 @@ msgid ""
 "Create a template to quickly set up new connections with predefined settings."
 msgstr "创建模板以使用预定义设置快速建立新连接。"
 
-#: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:351
-#: rustconn/src/sidebar_ui.rs:507 rustconn/src/smart_folder_ui.rs:404
+#: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:352
+#: rustconn/src/sidebar_ui.rs:518 rustconn/src/smart_folder_ui.rs:404
 #: rustconn/src/smart_folder_ui.rs:443 rustconn/src/window/snippets.rs:407
 msgid "Edit"
 msgstr "编辑"
@@ -9719,7 +9719,7 @@ msgid "Connecting…"
 msgstr "连接中…"
 
 #: rustconn/src/embedded.rs:80 rustconn/src/embedded.rs:84
-#: rustconn/src/sidebar_ui.rs:377
+#: rustconn/src/sidebar_ui.rs:378
 msgid "Disconnect"
 msgstr "断开连接"
 
@@ -10363,7 +10363,7 @@ msgid "RDP session running in external window"
 msgstr "RDP 会话正在外部窗口中运行"
 
 #: rustconn/src/embedded_rdp/ui.rs:177 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:769
+#: rustconn/src/sidebar/view.rs:787
 msgid "Connection failed"
 msgstr "连接失败"
 
@@ -10429,7 +10429,7 @@ msgid "No login form fields found on this page"
 msgstr "此页面未找到登录表单字段"
 
 #: rustconn/src/embedded_web/navigation.rs:84
-#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:865
+#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:876
 msgid "Back"
 msgstr "后退"
 
@@ -10705,59 +10705,59 @@ msgstr "运行时间"
 msgid "⚠ Monitoring stopped — metrics may be stale"
 msgstr "⚠ 监控已停止 — 指标可能已过期"
 
-#: rustconn/src/sidebar/mod.rs:146
+#: rustconn/src/sidebar/mod.rs:151
 msgid "Search… (? for help)"
 msgstr "搜索…（? 获取帮助）"
 
-#: rustconn/src/sidebar/mod.rs:150
+#: rustconn/src/sidebar/mod.rs:155
 msgid "Search connections"
 msgstr "搜索连接"
 
-#: rustconn/src/sidebar/mod.rs:158
+#: rustconn/src/sidebar/mod.rs:163
 msgid "Search pending…"
 msgstr "搜索待处理…"
 
-#: rustconn/src/sidebar/mod.rs:386
+#: rustconn/src/sidebar/mod.rs:395
 msgid "Connection list"
 msgstr "连接列表"
 
-#: rustconn/src/sidebar/mod.rs:827
+#: rustconn/src/sidebar/mod.rs:860
 msgid "Telnet"
 msgstr "Telnet"
 
-#: rustconn/src/sidebar/mod.rs:828
+#: rustconn/src/sidebar/mod.rs:861
 msgid "Serial"
 msgstr "串口"
 
-#: rustconn/src/sidebar/mod.rs:829
+#: rustconn/src/sidebar/mod.rs:862
 msgid "ZeroTrust"
 msgstr "ZeroTrust"
 
-#: rustconn/src/sidebar/mod.rs:831
+#: rustconn/src/sidebar/mod.rs:864
 msgid "Web"
 msgstr "网页"
 
-#: rustconn/src/sidebar/mod.rs:848
+#: rustconn/src/sidebar/mod.rs:881
 msgid "Filter by {} protocol"
 msgstr "按 {} 协议筛选"
 
-#: rustconn/src/sidebar/mod.rs:897 rustconn/src/sidebar/mod.rs:915
+#: rustconn/src/sidebar/mod.rs:930 rustconn/src/sidebar/mod.rs:948
 msgid "Filter by protocol"
 msgstr "按协议筛选"
 
-#: rustconn/src/sidebar/mod.rs:912
+#: rustconn/src/sidebar/mod.rs:945
 msgid "Filter by protocol (filters active)"
 msgstr "按协议筛选（筛选已启用）"
 
-#: rustconn/src/sidebar/mod.rs:1826
+#: rustconn/src/sidebar/mod.rs:1869
 msgid "Open Password Vault (Active)"
 msgstr "打开密码库（活动）"
 
-#: rustconn/src/sidebar/mod.rs:1831
+#: rustconn/src/sidebar/mod.rs:1874
 msgid "Password Vault Not Found"
 msgstr "未找到密码库"
 
-#: rustconn/src/sidebar/mod.rs:1834
+#: rustconn/src/sidebar/mod.rs:1877
 msgid "Password Vault Disabled"
 msgstr "密码库已禁用"
 
@@ -10789,247 +10789,243 @@ msgstr "protocol:{}：按协议筛选"
 msgid "group:{}: Search in group"
 msgstr "group:{}：在组中搜索"
 
-#: rustconn/src/sidebar/view.rs:220 rustconn/src/sidebar/view.rs:223
+#: rustconn/src/sidebar/view.rs:237 rustconn/src/sidebar/view.rs:240
 msgid "Favorite"
 msgstr "收藏"
 
-#: rustconn/src/sidebar/view.rs:234
+#: rustconn/src/sidebar/view.rs:251
 msgid "Has notes"
 msgstr "有备注"
 
-#: rustconn/src/sidebar/view.rs:243 rustconn/src/sidebar/view.rs:245
+#: rustconn/src/sidebar/view.rs:260 rustconn/src/sidebar/view.rs:262
 msgid "Recording session"
 msgstr "正在录制会话"
 
-#: rustconn/src/sidebar/view.rs:260 rustconn/src/sidebar/view.rs:262
+#: rustconn/src/sidebar/view.rs:277 rustconn/src/sidebar/view.rs:279
 msgid "Running in external window"
 msgstr "正在外部窗口中运行"
 
-#: rustconn/src/sidebar/view.rs:279 rustconn/src/sidebar/view.rs:281
+#: rustconn/src/sidebar/view.rs:296 rustconn/src/sidebar/view.rs:298
 msgid "Part of a split view"
 msgstr "分屏视图的一部分"
 
-#: rustconn/src/sidebar/view.rs:629
+#: rustconn/src/sidebar/view.rs:647
 msgid "Master — synced to cloud"
 msgstr "主控 — 已同步到云端"
 
-#: rustconn/src/sidebar/view.rs:631
+#: rustconn/src/sidebar/view.rs:649
 msgid "Import — synced from cloud"
 msgstr "导入 — 从云端同步"
 
-#: rustconn/src/sidebar/view.rs:655
+#: rustconn/src/sidebar/view.rs:673
 msgid "Sync error: {}"
 msgstr "同步错误：{}"
 
-#: rustconn/src/sidebar/view.rs:763
+#: rustconn/src/sidebar/view.rs:781
 msgid "Connecting"
 msgstr "连接中"
 
-#: rustconn/src/sidebar_ui.rs:336 rustconn/src/window/clusters.rs:402
+#: rustconn/src/sidebar_ui.rs:337 rustconn/src/window/clusters.rs:402
 msgid "Connect All"
 msgstr "全部连接"
 
-#: rustconn/src/sidebar_ui.rs:347
+#: rustconn/src/sidebar_ui.rs:348
 msgid "New Connection in Group"
 msgstr "在组中新建连接"
 
-#: rustconn/src/sidebar_ui.rs:355
+#: rustconn/src/sidebar_ui.rs:356
 msgid "Sync Now"
 msgstr "立即同步"
 
-#: rustconn/src/sidebar_ui.rs:359
+#: rustconn/src/sidebar_ui.rs:360
 msgid "Enable Cloud Sync…"
 msgstr "启用云同步…"
 
-#: rustconn/src/sidebar_ui.rs:367
+#: rustconn/src/sidebar_ui.rs:368
 msgid "Refresh Dynamic Folder"
 msgstr "刷新动态文件夹"
 
-#: rustconn/src/sidebar_ui.rs:385
+#: rustconn/src/sidebar_ui.rs:386
 msgid "Remove from Favorites"
 msgstr "从收藏中移除"
 
-#: rustconn/src/sidebar_ui.rs:387
+#: rustconn/src/sidebar_ui.rs:388
 msgid "Add to Favorites"
 msgstr "添加到收藏"
 
-#: rustconn/src/sidebar_ui.rs:394
+#: rustconn/src/sidebar_ui.rs:395
 msgid "Duplicate"
 msgstr "复制"
 
-#: rustconn/src/sidebar_ui.rs:398
+#: rustconn/src/sidebar_ui.rs:399
 msgid "Duplicate via Wizard…"
 msgstr "通过向导复制…"
 
-#: rustconn/src/sidebar_ui.rs:402
+#: rustconn/src/sidebar_ui.rs:403
 msgid "Move to Group…"
 msgstr "移动到组…"
 
-#: rustconn/src/sidebar_ui.rs:423
+#: rustconn/src/sidebar_ui.rs:424
 msgid "Open new session"
 msgstr "打开新会话"
 
-#: rustconn/src/sidebar_ui.rs:448 rustconn/src/terminal/tab_menu.rs:1207
+#: rustconn/src/sidebar_ui.rs:461 rustconn/src/terminal/tab_menu.rs:1207
 msgid "Move to New Window"
 msgstr "移动到新窗口"
 
-#: rustconn/src/sidebar_ui.rs:465
+#: rustconn/src/sidebar_ui.rs:476
 msgid "Run Snippet…"
 msgstr "运行代码片段…"
 
-#: rustconn/src/sidebar_ui.rs:472
+#: rustconn/src/sidebar_ui.rs:483
 msgid "Session Log…"
 msgstr "会话日志…"
 
-#: rustconn/src/sidebar_ui.rs:476
+#: rustconn/src/sidebar_ui.rs:487
 msgid "Open SFTP"
 msgstr "打开 SFTP"
 
-#: rustconn/src/sidebar_ui.rs:478
+#: rustconn/src/sidebar_ui.rs:489
 msgid "Open Browser via Tunnel"
 msgstr "通过隔离隧道打开浏览器"
 
-#: rustconn/src/sidebar_ui.rs:484 rustconn/src/smart_folder_ui.rs:455
+#: rustconn/src/sidebar_ui.rs:495 rustconn/src/smart_folder_ui.rs:455
 msgid "Check if Online"
 msgstr "检查是否在线"
 
-#: rustconn/src/sidebar_ui.rs:491
+#: rustconn/src/sidebar_ui.rs:502
 msgid "Stop Recording"
 msgstr "停止录制"
 
-#: rustconn/src/sidebar_ui.rs:496
+#: rustconn/src/sidebar_ui.rs:507
 msgid "Start Recording"
 msgstr "开始录制"
 
-#: rustconn/src/sidebar_ui.rs:516
+#: rustconn/src/sidebar_ui.rs:527
 msgid "Stop tracking"
 msgstr "停止跟踪"
 
-#: rustconn/src/sidebar_ui.rs:545 rustconn/src/sidebar_ui.rs:1250
+#: rustconn/src/sidebar_ui.rs:556 rustconn/src/sidebar_ui.rs:1272
 msgid "Import…"
 msgstr "导入…"
 
-#: rustconn/src/sidebar_ui.rs:546 rustconn/src/sidebar_ui.rs:1251
+#: rustconn/src/sidebar_ui.rs:557 rustconn/src/sidebar_ui.rs:1273
 msgid "Export…"
 msgstr "导出…"
 
-#: rustconn/src/sidebar_ui.rs:1045
+#: rustconn/src/sidebar_ui.rs:1057
 msgid "Create new group"
 msgstr "创建新组"
 
-#: rustconn/src/sidebar_ui.rs:1054
+#: rustconn/src/sidebar_ui.rs:1066
 msgid "Move selected connections to group"
 msgstr "将选中的连接移动到组"
 
-#: rustconn/src/sidebar_ui.rs:1061
-msgid "Create Cluster"
-msgstr "创建集群"
-
-#: rustconn/src/sidebar_ui.rs:1064
-msgid "Create cluster from selected connections"
-msgstr "从选中的连接创建集群"
-
-#: rustconn/src/sidebar_ui.rs:1071 rustconn/src/window/batch_edit.rs:46
+#: rustconn/src/sidebar_ui.rs:1073 rustconn/src/window/batch_edit.rs:46
 msgid "Batch Edit"
 msgstr "批量编辑"
 
-#: rustconn/src/sidebar_ui.rs:1074
+#: rustconn/src/sidebar_ui.rs:1076
 msgid "Edit selected connections together"
 msgstr "一起编辑选中的连接"
 
-#: rustconn/src/sidebar_ui.rs:1084
+#: rustconn/src/sidebar_ui.rs:1086
 msgid "Select all connections"
 msgstr "选择所有连接"
 
-#: rustconn/src/sidebar_ui.rs:1091
+#: rustconn/src/sidebar_ui.rs:1093
 msgid "Clear Selection"
 msgstr "清除选择"
 
-#: rustconn/src/sidebar_ui.rs:1093
+#: rustconn/src/sidebar_ui.rs:1095
 msgid "Clear selection"
 msgstr "清除选择"
 
-#: rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/sidebar_ui.rs:1102
 msgid "Delete Selected"
 msgstr "删除选中项"
 
-#: rustconn/src/sidebar_ui.rs:1103
+#: rustconn/src/sidebar_ui.rs:1105
 msgid "Delete selected connections"
 msgstr "删除选中的连接"
 
-#: rustconn/src/sidebar_ui.rs:1128
-msgid "View connection history"
-msgstr "查看连接历史"
-
 #: rustconn/src/sidebar_ui.rs:1138
-msgid "Sort alphabetically"
-msgstr "按字母顺序排序"
-
-#: rustconn/src/sidebar_ui.rs:1141
-msgid "Sort connections alphabetically"
-msgstr "按字母顺序排列连接"
-
-#: rustconn/src/sidebar_ui.rs:1147
-msgid "Sort by recent usage"
-msgstr "按最近使用排序"
-
-#: rustconn/src/sidebar_ui.rs:1150
-msgid "Sort connections by recent usage"
-msgstr "按最近使用排列连接"
-
-#: rustconn/src/sidebar_ui.rs:1156
-msgid "Open password vault"
-msgstr "打开密码保险库"
-
-#: rustconn/src/sidebar_ui.rs:1160
-msgid "Open password vault for credential management"
-msgstr "打开密码保管库以管理凭据"
-
-#: rustconn/src/sidebar_ui.rs:1166
-msgid "Toggle smart folders"
-msgstr "切换智能文件夹"
-
-#: rustconn/src/sidebar_ui.rs:1169
-msgid "Show or hide smart folders panel"
-msgstr "显示或隐藏智能文件夹面板"
-
-#: rustconn/src/sidebar_ui.rs:1204
-msgid "Search (Ctrl+F)"
-msgstr "搜索 (Ctrl+F)"
-
-#: rustconn/src/sidebar_ui.rs:1205
-msgid "Toggle search"
-msgstr "切换搜索"
-
-#: rustconn/src/sidebar_ui.rs:1228 rustconn/src/window/ui.rs:259
-msgid "New Connection (Advanced)…"
-msgstr "新建连接（高级）…"
-
-#: rustconn/src/sidebar_ui.rs:1238
-msgid "Manage Workspaces"
-msgstr "管理工作区"
-
-#: rustconn/src/sidebar_ui.rs:1241 rustconn/src/window/snippets.rs:218
-msgid "Manage Snippets"
-msgstr "管理代码片段"
-
-#: rustconn/src/sidebar_ui.rs:1242 rustconn/src/window/ui.rs:297
-msgid "Tools"
-msgstr "工具"
-
-#: rustconn/src/sidebar_ui.rs:1258
 msgid "Select Connections"
 msgstr "选择连接"
 
-#: rustconn/src/sidebar_ui.rs:1264
+#: rustconn/src/sidebar_ui.rs:1141
+msgid "Toggle multi-select mode for connections"
+msgstr "切换连接的多选模式"
+
+#: rustconn/src/sidebar_ui.rs:1150
+msgid "View connection history"
+msgstr "查看连接历史"
+
+#: rustconn/src/sidebar_ui.rs:1160
+msgid "Sort alphabetically"
+msgstr "按字母顺序排序"
+
+#: rustconn/src/sidebar_ui.rs:1163
+msgid "Sort connections alphabetically"
+msgstr "按字母顺序排列连接"
+
+#: rustconn/src/sidebar_ui.rs:1169
+msgid "Sort by recent usage"
+msgstr "按最近使用排序"
+
+#: rustconn/src/sidebar_ui.rs:1172
+msgid "Sort connections by recent usage"
+msgstr "按最近使用排列连接"
+
+#: rustconn/src/sidebar_ui.rs:1178
+msgid "Open password vault"
+msgstr "打开密码保险库"
+
+#: rustconn/src/sidebar_ui.rs:1182
+msgid "Open password vault for credential management"
+msgstr "打开密码保管库以管理凭据"
+
+#: rustconn/src/sidebar_ui.rs:1188
+msgid "Toggle smart folders"
+msgstr "切换智能文件夹"
+
+#: rustconn/src/sidebar_ui.rs:1191
+msgid "Show or hide smart folders panel"
+msgstr "显示或隐藏智能文件夹面板"
+
+#: rustconn/src/sidebar_ui.rs:1226
+msgid "Search (Ctrl+F)"
+msgstr "搜索 (Ctrl+F)"
+
+#: rustconn/src/sidebar_ui.rs:1227
+msgid "Toggle search"
+msgstr "切换搜索"
+
+#: rustconn/src/sidebar_ui.rs:1250 rustconn/src/window/ui.rs:259
+msgid "New Connection (Advanced)…"
+msgstr "新建连接（高级）…"
+
+#: rustconn/src/sidebar_ui.rs:1260
+msgid "Manage Workspaces"
+msgstr "管理工作区"
+
+#: rustconn/src/sidebar_ui.rs:1263 rustconn/src/window/snippets.rs:218
+msgid "Manage Snippets"
+msgstr "管理代码片段"
+
+#: rustconn/src/sidebar_ui.rs:1264 rustconn/src/window/ui.rs:297
+msgid "Tools"
+msgstr "工具"
+
+#: rustconn/src/sidebar_ui.rs:1282
 msgid "Sort Alphabetically"
 msgstr "按字母排序"
 
-#: rustconn/src/sidebar_ui.rs:1267
+#: rustconn/src/sidebar_ui.rs:1285
 msgid "Sort by Recent Use"
 msgstr "按最近使用排序"
 
-#: rustconn/src/sidebar_ui.rs:1270
+#: rustconn/src/sidebar_ui.rs:1288
 msgid "Connection list menu"
 msgstr "连接列表菜单"
 
@@ -11520,7 +11516,7 @@ msgstr "{} 个活动会话"
 msgid "About RustConn"
 msgstr "关于 RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5277
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5300
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "密码短语无法打开便携文件"
 
@@ -11708,8 +11704,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "跳板主机不可用"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3297
-#: rustconn/src/window/mod.rs:3363 rustconn/src/window/rdp_vnc.rs:766
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3320
+#: rustconn/src/window/mod.rs:3386 rustconn/src/window/rdp_vnc.rs:766
 msgid "Connect Anyway"
 msgstr "仍然连接"
 
@@ -12553,31 +12549,31 @@ msgstr "忽略"
 msgid "Touch your hardware key to unlock the password database"
 msgstr "轻触您的硬件密钥以解锁密码数据库"
 
-#: rustconn/src/window/mod.rs:2506
+#: rustconn/src/window/mod.rs:2529
 msgid "Already running in an external window"
 msgstr "已在外部窗口中运行"
 
-#: rustconn/src/window/mod.rs:2657
+#: rustconn/src/window/mod.rs:2680
 msgid "Connection to ‘{}’ failed"
 msgstr "连接到‘{}’失败"
 
-#: rustconn/src/window/mod.rs:2989 rustconn/src/window/mod.rs:3003
+#: rustconn/src/window/mod.rs:3012 rustconn/src/window/mod.rs:3026
 msgid "Pre-connect task failed: {}"
 msgstr "连接前任务失败：{}"
 
-#: rustconn/src/window/mod.rs:3037
+#: rustconn/src/window/mod.rs:3060
 msgid "Port knock failed: {}"
 msgstr "端口敲门失败：{}"
 
-#: rustconn/src/window/mod.rs:3086
+#: rustconn/src/window/mod.rs:3109
 msgid "SPA failed: {}"
 msgstr "SPA 失败：{}"
 
-#: rustconn/src/window/mod.rs:3282
+#: rustconn/src/window/mod.rs:3305
 msgid "{} (via {})"
 msgstr "{}（经由 {}）"
 
-#: rustconn/src/window/mod.rs:3288
+#: rustconn/src/window/mod.rs:3311
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -12600,35 +12596,35 @@ msgstr ""
 "\n"
 "如果这不是你所做的更改，请取消——连接可能会将已保存的凭据发送到另一台机器。"
 
-#: rustconn/src/window/mod.rs:3293
+#: rustconn/src/window/mod.rs:3316
 msgid "Routing changed for “{}”"
 msgstr "“{}”的路由已更改"
 
-#: rustconn/src/window/mod.rs:3357
+#: rustconn/src/window/mod.rs:3380
 msgid "Jump Host Unavailable for “{}”"
 msgstr "“{}”的跳板主机不可用"
 
-#: rustconn/src/window/mod.rs:3362
+#: rustconn/src/window/mod.rs:3385
 msgid "Connect Directly"
 msgstr "直接连接"
 
-#: rustconn/src/window/mod.rs:3451 rustconn/src/window/mod.rs:3626
+#: rustconn/src/window/mod.rs:3474 rustconn/src/window/mod.rs:3649
 msgid "Connection “{}” created"
 msgstr "连接“{}”已创建"
 
-#: rustconn/src/window/mod.rs:3833
+#: rustconn/src/window/mod.rs:3856
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4033
+#: rustconn/src/window/mod.rs:4056
 msgid "Settings saved"
 msgstr "设置已保存"
 
-#: rustconn/src/window/mod.rs:4070
+#: rustconn/src/window/mod.rs:4093
 msgid "Passphrase Not Saved on This Computer"
 msgstr "密码短语未保存在本机"
 
-#: rustconn/src/window/mod.rs:4072
+#: rustconn/src/window/mod.rs:4095
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -12638,11 +12634,11 @@ msgstr ""
 "无法为本地存储加密该密码短语，因此它只在本次会话中保留，重启后会再次询问。请"
 "改选“系统密钥环”，或检查 RustConn 是否可以写入其数据目录。"
 
-#: rustconn/src/window/mod.rs:4118
+#: rustconn/src/window/mod.rs:4141
 msgid "Credentials Not Saved to Keyring"
 msgstr "凭据未保存到密钥环"
 
-#: rustconn/src/window/mod.rs:4120
+#: rustconn/src/window/mod.rs:4143
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -12651,55 +12647,55 @@ msgstr ""
 "系统密钥环未接受该凭据，因此凭据仅在本次会话内保留，重启后将丢失。请确认密钥"
 "环服务正在运行且已解锁，然后重新保存设置。"
 
-#: rustconn/src/window/mod.rs:4303
+#: rustconn/src/window/mod.rs:4326
 msgid "Close RustConn?"
 msgstr "关闭 RustConn？"
 
-#: rustconn/src/window/mod.rs:4305
+#: rustconn/src/window/mod.rs:4328
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "有 {} 个会话标签页处于打开状态。活动连接将被断开。"
 
-#: rustconn/src/window/mod.rs:4342
+#: rustconn/src/window/mod.rs:4365
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr "无法读取设置，因此正在使用默认值。无法读取的文件已保留为 {}。"
 
-#: rustconn/src/window/mod.rs:4347
+#: rustconn/src/window/mod.rs:4370
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr "这些设置由较新版本的 RustConn（{}）保存。更改前会保留备份。"
 
-#: rustconn/src/window/mod.rs:4372
+#: rustconn/src/window/mod.rs:4395
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' 的云同步失败：{}"
 
-#: rustconn/src/window/mod.rs:4555
+#: rustconn/src/window/mod.rs:4578
 msgid "Startup connection not found"
 msgstr "未找到启动连接"
 
-#: rustconn/src/window/mod.rs:4591
+#: rustconn/src/window/mod.rs:4614
 msgid "Failed to open .rdp file"
 msgstr "打开 .rdp 文件失败"
 
-#: rustconn/src/window/mod.rs:4627
+#: rustconn/src/window/mod.rs:4650
 msgid "Failed to open .vv file"
 msgstr "打开 .vv 文件失败"
 
-#: rustconn/src/window/mod.rs:4664
+#: rustconn/src/window/mod.rs:4687
 msgid "Tunnel “{}” stopped: {}"
 msgstr "隧道“{}”已停止：{}"
 
-#: rustconn/src/window/mod.rs:4680
+#: rustconn/src/window/mod.rs:4703
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "已放弃重连隧道“{}”：{}"
 
-#: rustconn/src/window/mod.rs:5193
+#: rustconn/src/window/mod.rs:5216
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "成功导出 {} 个连接。{} 个已跳过。"
 
-#: rustconn/src/window/mod.rs:5279
+#: rustconn/src/window/mod.rs:5302
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13389,6 +13385,12 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Create Cluster"
+#~ msgstr "创建集群"
+
+#~ msgid "Create cluster from selected connections"
+#~ msgstr "从选中的连接创建集群"
 
 #~ msgid ""
 #~ "Reduce header bar, tab bar, and toolbar height. Applied instantly; useful "

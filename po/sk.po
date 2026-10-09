@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-09 23:33+0300\n"
+"POT-Creation-Date: 2026-10-10 00:21+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -55,8 +55,8 @@ msgstr "OK"
 #: rustconn/src/window/connection_dialogs.rs:1066
 #: rustconn/src/window/edit_group.rs:1890
 #: rustconn/src/window/edit_group.rs:1938
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3296
-#: rustconn/src/window/mod.rs:3360 rustconn/src/window/mod.rs:4309
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3319
+#: rustconn/src/window/mod.rs:3383 rustconn/src/window/mod.rs:4332
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
@@ -223,7 +223,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "„{}“ pred pripojením vyžaduje nasledovné."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/widgets.rs:614 rustconn/src/sidebar_ui.rs:381
+#: rustconn/src/dialogs/widgets.rs:614 rustconn/src/sidebar_ui.rs:382
 #: rustconn/src/smart_folder_ui.rs:438 rustconn/src/window/edit_dialogs.rs:761
 #: rustconn/src/window/edit_dialogs.rs:762
 msgid "Connect"
@@ -344,7 +344,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/cluster.rs:297
 #: rustconn/src/dialogs/settings/ui_tab.rs:406
-#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1194
+#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1216
 msgid "Connections"
 msgstr "Pripojenia"
 
@@ -356,7 +356,7 @@ msgstr "Vybrať pripojenia na zahrnutie do tohto klastra"
 msgid "Filter connections…"
 msgstr "Filtrovať pripojenia…"
 
-#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1081
+#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1083
 #: rustconn/src/terminal/config.rs:292
 msgid "Select All"
 msgstr "Vybrať všetko"
@@ -369,7 +369,7 @@ msgstr "Zrušiť výber"
 msgid "Edit Cluster"
 msgstr "Upraviť klaster"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1236
+#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1258
 msgid "Manage Clusters"
 msgstr "Správa klastrov"
 
@@ -425,7 +425,7 @@ msgstr "Tento cluster bude natrvalo odstránený."
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
 #: rustconn/src/dialogs/tunnel.rs:724 rustconn/src/dialogs/workspace.rs:119
-#: rustconn/src/dialogs/workspace.rs:292 rustconn/src/sidebar_ui.rs:526
+#: rustconn/src/dialogs/workspace.rs:292 rustconn/src/sidebar_ui.rs:537
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:460
 #: rustconn/src/window/clusters.rs:633 rustconn/src/window/operations.rs:171
 #: rustconn/src/window/snippets.rs:413 rustconn/src/window/snippets.rs:503
@@ -737,7 +737,7 @@ msgstr "Pridať pravidlo"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:648
 #: rustconn/src/dialogs/shortcuts.rs:159 rustconn/src/dialogs/wol.rs:38
-#: rustconn/src/sidebar_ui.rs:482 rustconn/src/smart_folder_ui.rs:453
+#: rustconn/src/sidebar_ui.rs:493 rustconn/src/smart_folder_ui.rs:453
 msgid "Wake On LAN"
 msgstr "Wake On LAN"
 
@@ -2280,7 +2280,7 @@ msgstr "Dynamický"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:47
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:182
-#: rustconn/src/sidebar/mod.rs:830
+#: rustconn/src/sidebar/mod.rs:863
 msgid "Kubernetes"
 msgstr "Kubernetes"
 
@@ -4471,8 +4471,8 @@ msgstr "Vaše šablóny"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:453
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
-#: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:504
-#: rustconn/src/sidebar_ui.rs:541 rustconn/src/sidebar_ui.rs:1226
+#: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:515
+#: rustconn/src/sidebar_ui.rs:552 rustconn/src/sidebar_ui.rs:1248
 #: rustconn/src/split_view/bridge.rs:1856 rustconn/src/window/ui.rs:257
 msgid "New Connection"
 msgstr "Nové pripojenie"
@@ -4642,10 +4642,10 @@ msgstr "Kopírovanie zastavené"
 #: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:453
+#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:465
 #: rustconn/src/split_view/adapter.rs:1132
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4310
+#: rustconn/src/window/mod.rs:4333
 msgid "Close"
 msgstr "Zavrieť"
 
@@ -5087,7 +5087,7 @@ msgid "Failed"
 msgstr "Zlyhalo"
 
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:156
-#: rustconn/src/sidebar_ui.rs:1125
+#: rustconn/src/sidebar_ui.rs:1147
 msgid "Connection History"
 msgstr "História pripojení"
 
@@ -6208,8 +6208,8 @@ msgid "Enter a new display name for this recording."
 msgstr "Zadajte nový zobrazovaný názov pre túto nahrávku."
 
 #: rustconn/src/dialogs/recording.rs:510 rustconn/src/dialogs/workspace.rs:127
-#: rustconn/src/dialogs/workspace.rs:238 rustconn/src/sidebar_ui.rs:341
-#: rustconn/src/sidebar_ui.rs:392 rustconn/src/window/edit_dialogs.rs:318
+#: rustconn/src/dialogs/workspace.rs:238 rustconn/src/sidebar_ui.rs:342
+#: rustconn/src/sidebar_ui.rs:393 rustconn/src/window/edit_dialogs.rs:318
 msgid "Rename"
 msgstr "Premenovať"
 
@@ -7756,7 +7756,7 @@ msgstr "Overovanie… dotknite sa YubiKey, keď bliká"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2777
 #: rustconn/src/embedded_rdp/ui.rs:169 rustconn/src/embedded_vnc/ui.rs:335
-#: rustconn/src/sidebar/view.rs:758
+#: rustconn/src/sidebar/view.rs:776
 msgid "Connected"
 msgstr "Pripojené"
 
@@ -8401,7 +8401,9 @@ msgstr "Skryť ovládacie prvky pri prejdení myšou v rozdelených paneloch"
 #: rustconn/src/dialogs/settings/ui_tab.rs:385
 msgid ""
 "Hide the top-right reveal arrow with close/detach buttons on split-view panes"
-msgstr "Skryť šípku odhalenia vpravo hore s tlačidlami zavrieť/oddeliť na paneloch rozdeleného zobrazenia"
+msgstr ""
+"Skryť šípku odhalenia vpravo hore s tlačidlami zavrieť/oddeliť na paneloch "
+"rozdeleného zobrazenia"
 
 #: rustconn/src/dialogs/settings/ui_tab.rs:395
 msgid "Show directional tab-close items"
@@ -8630,19 +8632,19 @@ msgstr "Štatistiky"
 msgid "SSH Tunnel Manager"
 msgstr "Správca tunelov SSH"
 
-#: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:542
-#: rustconn/src/sidebar_ui.rs:1042 rustconn/src/sidebar_ui.rs:1231
+#: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:553
+#: rustconn/src/sidebar_ui.rs:1054 rustconn/src/sidebar_ui.rs:1253
 #: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Nová skupina"
 
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:540
-#: rustconn/src/sidebar_ui.rs:1249 rustconn/src/split_view/bridge.rs:1863
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:551
+#: rustconn/src/sidebar_ui.rs:1271 rustconn/src/split_view/bridge.rs:1863
 #: rustconn/src/window/edit_dialogs.rs:754 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Rýchle pripojenie"
 
-#: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:1051
+#: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:1063
 msgid "Move to Group"
 msgstr "Presunúť do skupiny"
 
@@ -8708,7 +8710,7 @@ msgstr "Rozdeliť zvisle"
 msgid "Close Pane"
 msgstr "Zavrieť panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:443
+#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:456
 #: rustconn/src/split_view/adapter.rs:1082
 #: rustconn/src/split_view/adapter.rs:1573
 msgid "Remove from Split"
@@ -8760,7 +8762,7 @@ msgstr "Hľadať skratky…"
 msgid "Edit Smart Folder"
 msgstr "Upraviť inteligentný priečinok"
 
-#: rustconn/src/dialogs/smart_folder.rs:67 rustconn/src/sidebar_ui.rs:543
+#: rustconn/src/dialogs/smart_folder.rs:67 rustconn/src/sidebar_ui.rs:554
 #: rustconn/src/smart_folder_ui.rs:69
 msgid "New Smart Folder"
 msgstr "Nový inteligentný priečinok"
@@ -9248,20 +9250,20 @@ msgstr "Filtrovať podľa protokolu:"
 msgid "All"
 msgstr "Všetko"
 
-#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:823
+#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:856
 #: rustconn/src/window/edit_group.rs:1481
 msgid "SSH"
 msgstr "SSH"
 
-#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:824
+#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:857
 msgid "RDP"
 msgstr "RDP"
 
-#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:825
+#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:858
 msgid "VNC"
 msgstr "VNC"
 
-#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:826
+#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:859
 msgid "SPICE"
 msgstr "SPICE"
 
@@ -9276,8 +9278,8 @@ msgstr ""
 "Vytvorte šablónu na rýchle nastavenie nových pripojení s preddefinovanými "
 "nastaveniami."
 
-#: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:351
-#: rustconn/src/sidebar_ui.rs:507 rustconn/src/smart_folder_ui.rs:404
+#: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:352
+#: rustconn/src/sidebar_ui.rs:518 rustconn/src/smart_folder_ui.rs:404
 #: rustconn/src/smart_folder_ui.rs:443 rustconn/src/window/snippets.rs:407
 msgid "Edit"
 msgstr "Upraviť"
@@ -9950,7 +9952,7 @@ msgid "Connecting…"
 msgstr "Pripájanie…"
 
 #: rustconn/src/embedded.rs:80 rustconn/src/embedded.rs:84
-#: rustconn/src/sidebar_ui.rs:377
+#: rustconn/src/sidebar_ui.rs:378
 msgid "Disconnect"
 msgstr "Odpojiť"
 
@@ -10636,7 +10638,7 @@ msgid "RDP session running in external window"
 msgstr "Relácia RDP beží v externom okne"
 
 #: rustconn/src/embedded_rdp/ui.rs:177 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:769
+#: rustconn/src/sidebar/view.rs:787
 msgid "Connection failed"
 msgstr "Pripojenie zlyhalo"
 
@@ -10704,7 +10706,7 @@ msgid "No login form fields found on this page"
 msgstr "Na tejto stránke neboli nájdené žiadne prihlasovacie polia"
 
 #: rustconn/src/embedded_web/navigation.rs:84
-#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:865
+#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:876
 msgid "Back"
 msgstr "Späť"
 
@@ -10981,59 +10983,59 @@ msgstr "Doba prevádzky"
 msgid "⚠ Monitoring stopped — metrics may be stale"
 msgstr "⚠ Monitorovanie zastavené — metriky môžu byť neaktuálne"
 
-#: rustconn/src/sidebar/mod.rs:146
+#: rustconn/src/sidebar/mod.rs:151
 msgid "Search… (? for help)"
 msgstr "Hľadať… (? pre pomoc)"
 
-#: rustconn/src/sidebar/mod.rs:150
+#: rustconn/src/sidebar/mod.rs:155
 msgid "Search connections"
 msgstr "Hľadať pripojenia"
 
-#: rustconn/src/sidebar/mod.rs:158
+#: rustconn/src/sidebar/mod.rs:163
 msgid "Search pending…"
 msgstr "Vyhľadávanie čaká…"
 
-#: rustconn/src/sidebar/mod.rs:386
+#: rustconn/src/sidebar/mod.rs:395
 msgid "Connection list"
 msgstr "Zoznam pripojení"
 
-#: rustconn/src/sidebar/mod.rs:827
+#: rustconn/src/sidebar/mod.rs:860
 msgid "Telnet"
 msgstr "Telnet"
 
-#: rustconn/src/sidebar/mod.rs:828
+#: rustconn/src/sidebar/mod.rs:861
 msgid "Serial"
 msgstr "Sériový port"
 
-#: rustconn/src/sidebar/mod.rs:829
+#: rustconn/src/sidebar/mod.rs:862
 msgid "ZeroTrust"
 msgstr "ZeroTrust"
 
-#: rustconn/src/sidebar/mod.rs:831
+#: rustconn/src/sidebar/mod.rs:864
 msgid "Web"
 msgstr "Web"
 
-#: rustconn/src/sidebar/mod.rs:848
+#: rustconn/src/sidebar/mod.rs:881
 msgid "Filter by {} protocol"
 msgstr "Filtrovať podľa protokolu {}"
 
-#: rustconn/src/sidebar/mod.rs:897 rustconn/src/sidebar/mod.rs:915
+#: rustconn/src/sidebar/mod.rs:930 rustconn/src/sidebar/mod.rs:948
 msgid "Filter by protocol"
 msgstr "Filtrovať podľa protokolu"
 
-#: rustconn/src/sidebar/mod.rs:912
+#: rustconn/src/sidebar/mod.rs:945
 msgid "Filter by protocol (filters active)"
 msgstr "Filtrovať podľa protokolu (filtre aktívne)"
 
-#: rustconn/src/sidebar/mod.rs:1826
+#: rustconn/src/sidebar/mod.rs:1869
 msgid "Open Password Vault (Active)"
 msgstr "Otvoriť trezor hesiel (aktívny)"
 
-#: rustconn/src/sidebar/mod.rs:1831
+#: rustconn/src/sidebar/mod.rs:1874
 msgid "Password Vault Not Found"
 msgstr "Trezor hesiel nenájdený"
 
-#: rustconn/src/sidebar/mod.rs:1834
+#: rustconn/src/sidebar/mod.rs:1877
 msgid "Password Vault Disabled"
 msgstr "Trezor hesiel zakázaný"
 
@@ -11065,247 +11067,243 @@ msgstr "protocol:{}: Filtrovať podľa protokolu"
 msgid "group:{}: Search in group"
 msgstr "group:{}: Hľadať v skupine"
 
-#: rustconn/src/sidebar/view.rs:220 rustconn/src/sidebar/view.rs:223
+#: rustconn/src/sidebar/view.rs:237 rustconn/src/sidebar/view.rs:240
 msgid "Favorite"
 msgstr "Obľúbené"
 
-#: rustconn/src/sidebar/view.rs:234
+#: rustconn/src/sidebar/view.rs:251
 msgid "Has notes"
 msgstr "Má poznámky"
 
-#: rustconn/src/sidebar/view.rs:243 rustconn/src/sidebar/view.rs:245
+#: rustconn/src/sidebar/view.rs:260 rustconn/src/sidebar/view.rs:262
 msgid "Recording session"
 msgstr "Nahráva sa relácia"
 
-#: rustconn/src/sidebar/view.rs:260 rustconn/src/sidebar/view.rs:262
+#: rustconn/src/sidebar/view.rs:277 rustconn/src/sidebar/view.rs:279
 msgid "Running in external window"
 msgstr "Beží v externom okne"
 
-#: rustconn/src/sidebar/view.rs:279 rustconn/src/sidebar/view.rs:281
+#: rustconn/src/sidebar/view.rs:296 rustconn/src/sidebar/view.rs:298
 msgid "Part of a split view"
 msgstr "Súčasť rozdeleného zobrazenia"
 
-#: rustconn/src/sidebar/view.rs:629
+#: rustconn/src/sidebar/view.rs:647
 msgid "Master — synced to cloud"
 msgstr "Hlavný — synchronizované do cloudu"
 
-#: rustconn/src/sidebar/view.rs:631
+#: rustconn/src/sidebar/view.rs:649
 msgid "Import — synced from cloud"
 msgstr "Import — synchronizované z cloudu"
 
-#: rustconn/src/sidebar/view.rs:655
+#: rustconn/src/sidebar/view.rs:673
 msgid "Sync error: {}"
 msgstr "Chyba synchronizácie: {}"
 
-#: rustconn/src/sidebar/view.rs:763
+#: rustconn/src/sidebar/view.rs:781
 msgid "Connecting"
 msgstr "Pripájanie"
 
-#: rustconn/src/sidebar_ui.rs:336 rustconn/src/window/clusters.rs:402
+#: rustconn/src/sidebar_ui.rs:337 rustconn/src/window/clusters.rs:402
 msgid "Connect All"
 msgstr "Pripojiť všetko"
 
-#: rustconn/src/sidebar_ui.rs:347
+#: rustconn/src/sidebar_ui.rs:348
 msgid "New Connection in Group"
 msgstr "Nové pripojenie v skupine"
 
-#: rustconn/src/sidebar_ui.rs:355
+#: rustconn/src/sidebar_ui.rs:356
 msgid "Sync Now"
 msgstr "Synchronizovať teraz"
 
-#: rustconn/src/sidebar_ui.rs:359
+#: rustconn/src/sidebar_ui.rs:360
 msgid "Enable Cloud Sync…"
 msgstr "Povoliť cloudovú synchronizáciu…"
 
-#: rustconn/src/sidebar_ui.rs:367
+#: rustconn/src/sidebar_ui.rs:368
 msgid "Refresh Dynamic Folder"
 msgstr "Obnoviť dynamický priečinok"
 
-#: rustconn/src/sidebar_ui.rs:385
+#: rustconn/src/sidebar_ui.rs:386
 msgid "Remove from Favorites"
 msgstr "Odstrániť z obľúbených"
 
-#: rustconn/src/sidebar_ui.rs:387
+#: rustconn/src/sidebar_ui.rs:388
 msgid "Add to Favorites"
 msgstr "Pridať k obľúbeným"
 
-#: rustconn/src/sidebar_ui.rs:394
+#: rustconn/src/sidebar_ui.rs:395
 msgid "Duplicate"
 msgstr "Duplikovať"
 
-#: rustconn/src/sidebar_ui.rs:398
+#: rustconn/src/sidebar_ui.rs:399
 msgid "Duplicate via Wizard…"
 msgstr "Duplikovať cez sprievodcu…"
 
-#: rustconn/src/sidebar_ui.rs:402
+#: rustconn/src/sidebar_ui.rs:403
 msgid "Move to Group…"
 msgstr "Presunúť do skupiny…"
 
-#: rustconn/src/sidebar_ui.rs:423
+#: rustconn/src/sidebar_ui.rs:424
 msgid "Open new session"
 msgstr "Otvoriť novú reláciu"
 
-#: rustconn/src/sidebar_ui.rs:448 rustconn/src/terminal/tab_menu.rs:1207
+#: rustconn/src/sidebar_ui.rs:461 rustconn/src/terminal/tab_menu.rs:1207
 msgid "Move to New Window"
 msgstr "Presunúť do nového okna"
 
-#: rustconn/src/sidebar_ui.rs:465
+#: rustconn/src/sidebar_ui.rs:476
 msgid "Run Snippet…"
 msgstr "Spustiť úryvok…"
 
-#: rustconn/src/sidebar_ui.rs:472
+#: rustconn/src/sidebar_ui.rs:483
 msgid "Session Log…"
 msgstr "Záznam sedenia…"
 
-#: rustconn/src/sidebar_ui.rs:476
+#: rustconn/src/sidebar_ui.rs:487
 msgid "Open SFTP"
 msgstr "Otvoriť SFTP"
 
-#: rustconn/src/sidebar_ui.rs:478
+#: rustconn/src/sidebar_ui.rs:489
 msgid "Open Browser via Tunnel"
 msgstr "Otvoriť prehliadač cez tunel"
 
-#: rustconn/src/sidebar_ui.rs:484 rustconn/src/smart_folder_ui.rs:455
+#: rustconn/src/sidebar_ui.rs:495 rustconn/src/smart_folder_ui.rs:455
 msgid "Check if Online"
 msgstr "Skontrolovať dostupnosť"
 
-#: rustconn/src/sidebar_ui.rs:491
+#: rustconn/src/sidebar_ui.rs:502
 msgid "Stop Recording"
 msgstr "Zastaviť nahrávanie"
 
-#: rustconn/src/sidebar_ui.rs:496
+#: rustconn/src/sidebar_ui.rs:507
 msgid "Start Recording"
 msgstr "Spustiť nahrávanie"
 
-#: rustconn/src/sidebar_ui.rs:516
+#: rustconn/src/sidebar_ui.rs:527
 msgid "Stop tracking"
 msgstr "Zastaviť sledovanie"
 
-#: rustconn/src/sidebar_ui.rs:545 rustconn/src/sidebar_ui.rs:1250
+#: rustconn/src/sidebar_ui.rs:556 rustconn/src/sidebar_ui.rs:1272
 msgid "Import…"
 msgstr "Importovať…"
 
-#: rustconn/src/sidebar_ui.rs:546 rustconn/src/sidebar_ui.rs:1251
+#: rustconn/src/sidebar_ui.rs:557 rustconn/src/sidebar_ui.rs:1273
 msgid "Export…"
 msgstr "Exportovať…"
 
-#: rustconn/src/sidebar_ui.rs:1045
+#: rustconn/src/sidebar_ui.rs:1057
 msgid "Create new group"
 msgstr "Vytvoriť novú skupinu"
 
-#: rustconn/src/sidebar_ui.rs:1054
+#: rustconn/src/sidebar_ui.rs:1066
 msgid "Move selected connections to group"
 msgstr "Presunúť vybrané pripojenia do skupiny"
 
-#: rustconn/src/sidebar_ui.rs:1061
-msgid "Create Cluster"
-msgstr "Vytvoriť cluster"
-
-#: rustconn/src/sidebar_ui.rs:1064
-msgid "Create cluster from selected connections"
-msgstr "Vytvoriť klaster z vybraných pripojení"
-
-#: rustconn/src/sidebar_ui.rs:1071 rustconn/src/window/batch_edit.rs:46
+#: rustconn/src/sidebar_ui.rs:1073 rustconn/src/window/batch_edit.rs:46
 msgid "Batch Edit"
 msgstr "Hromadná úprava"
 
-#: rustconn/src/sidebar_ui.rs:1074
+#: rustconn/src/sidebar_ui.rs:1076
 msgid "Edit selected connections together"
 msgstr "Upraviť vybrané pripojenia spoločne"
 
-#: rustconn/src/sidebar_ui.rs:1084
+#: rustconn/src/sidebar_ui.rs:1086
 msgid "Select all connections"
 msgstr "Vybrať všetky pripojenia"
 
-#: rustconn/src/sidebar_ui.rs:1091
+#: rustconn/src/sidebar_ui.rs:1093
 msgid "Clear Selection"
 msgstr "Zrušiť výber"
 
-#: rustconn/src/sidebar_ui.rs:1093
+#: rustconn/src/sidebar_ui.rs:1095
 msgid "Clear selection"
 msgstr "Zrušiť výber"
 
-#: rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/sidebar_ui.rs:1102
 msgid "Delete Selected"
 msgstr "Odstrániť vybrané"
 
-#: rustconn/src/sidebar_ui.rs:1103
+#: rustconn/src/sidebar_ui.rs:1105
 msgid "Delete selected connections"
 msgstr "Odstrániť vybrané pripojenia"
 
-#: rustconn/src/sidebar_ui.rs:1128
-msgid "View connection history"
-msgstr "Zobraziť históriu pripojení"
-
 #: rustconn/src/sidebar_ui.rs:1138
-msgid "Sort alphabetically"
-msgstr "Zoradiť abecedne"
-
-#: rustconn/src/sidebar_ui.rs:1141
-msgid "Sort connections alphabetically"
-msgstr "Zoradiť pripojenia abecedne"
-
-#: rustconn/src/sidebar_ui.rs:1147
-msgid "Sort by recent usage"
-msgstr "Zoradiť podľa posledného použitia"
-
-#: rustconn/src/sidebar_ui.rs:1150
-msgid "Sort connections by recent usage"
-msgstr "Zoradiť pripojenia podľa posledného použitia"
-
-#: rustconn/src/sidebar_ui.rs:1156
-msgid "Open password vault"
-msgstr "Otvoriť trezor hesiel"
-
-#: rustconn/src/sidebar_ui.rs:1160
-msgid "Open password vault for credential management"
-msgstr "Otvoriť trezor hesiel pre správu prihlasovacích údajov"
-
-#: rustconn/src/sidebar_ui.rs:1166
-msgid "Toggle smart folders"
-msgstr "Prepnúť inteligentné priečinky"
-
-#: rustconn/src/sidebar_ui.rs:1169
-msgid "Show or hide smart folders panel"
-msgstr "Zobraziť alebo skryť panel inteligentných priečinkov"
-
-#: rustconn/src/sidebar_ui.rs:1204
-msgid "Search (Ctrl+F)"
-msgstr "Hľadať (Ctrl+F)"
-
-#: rustconn/src/sidebar_ui.rs:1205
-msgid "Toggle search"
-msgstr "Prepnúť hľadanie"
-
-#: rustconn/src/sidebar_ui.rs:1228 rustconn/src/window/ui.rs:259
-msgid "New Connection (Advanced)…"
-msgstr "Nové pripojenie (pokročilé)…"
-
-#: rustconn/src/sidebar_ui.rs:1238
-msgid "Manage Workspaces"
-msgstr "Správa pracovných priestorov"
-
-#: rustconn/src/sidebar_ui.rs:1241 rustconn/src/window/snippets.rs:218
-msgid "Manage Snippets"
-msgstr "Správa úryvkov"
-
-#: rustconn/src/sidebar_ui.rs:1242 rustconn/src/window/ui.rs:297
-msgid "Tools"
-msgstr "Nástroje"
-
-#: rustconn/src/sidebar_ui.rs:1258
 msgid "Select Connections"
 msgstr "Vybrať pripojenia"
 
-#: rustconn/src/sidebar_ui.rs:1264
+#: rustconn/src/sidebar_ui.rs:1141
+msgid "Toggle multi-select mode for connections"
+msgstr "Prepnúť režim viacnásobného výberu pripojení"
+
+#: rustconn/src/sidebar_ui.rs:1150
+msgid "View connection history"
+msgstr "Zobraziť históriu pripojení"
+
+#: rustconn/src/sidebar_ui.rs:1160
+msgid "Sort alphabetically"
+msgstr "Zoradiť abecedne"
+
+#: rustconn/src/sidebar_ui.rs:1163
+msgid "Sort connections alphabetically"
+msgstr "Zoradiť pripojenia abecedne"
+
+#: rustconn/src/sidebar_ui.rs:1169
+msgid "Sort by recent usage"
+msgstr "Zoradiť podľa posledného použitia"
+
+#: rustconn/src/sidebar_ui.rs:1172
+msgid "Sort connections by recent usage"
+msgstr "Zoradiť pripojenia podľa posledného použitia"
+
+#: rustconn/src/sidebar_ui.rs:1178
+msgid "Open password vault"
+msgstr "Otvoriť trezor hesiel"
+
+#: rustconn/src/sidebar_ui.rs:1182
+msgid "Open password vault for credential management"
+msgstr "Otvoriť trezor hesiel pre správu prihlasovacích údajov"
+
+#: rustconn/src/sidebar_ui.rs:1188
+msgid "Toggle smart folders"
+msgstr "Prepnúť inteligentné priečinky"
+
+#: rustconn/src/sidebar_ui.rs:1191
+msgid "Show or hide smart folders panel"
+msgstr "Zobraziť alebo skryť panel inteligentných priečinkov"
+
+#: rustconn/src/sidebar_ui.rs:1226
+msgid "Search (Ctrl+F)"
+msgstr "Hľadať (Ctrl+F)"
+
+#: rustconn/src/sidebar_ui.rs:1227
+msgid "Toggle search"
+msgstr "Prepnúť hľadanie"
+
+#: rustconn/src/sidebar_ui.rs:1250 rustconn/src/window/ui.rs:259
+msgid "New Connection (Advanced)…"
+msgstr "Nové pripojenie (pokročilé)…"
+
+#: rustconn/src/sidebar_ui.rs:1260
+msgid "Manage Workspaces"
+msgstr "Správa pracovných priestorov"
+
+#: rustconn/src/sidebar_ui.rs:1263 rustconn/src/window/snippets.rs:218
+msgid "Manage Snippets"
+msgstr "Správa úryvkov"
+
+#: rustconn/src/sidebar_ui.rs:1264 rustconn/src/window/ui.rs:297
+msgid "Tools"
+msgstr "Nástroje"
+
+#: rustconn/src/sidebar_ui.rs:1282
 msgid "Sort Alphabetically"
 msgstr "Zoradiť abecedne"
 
-#: rustconn/src/sidebar_ui.rs:1267
+#: rustconn/src/sidebar_ui.rs:1285
 msgid "Sort by Recent Use"
 msgstr "Zoradiť podľa posledného použitia"
 
-#: rustconn/src/sidebar_ui.rs:1270
+#: rustconn/src/sidebar_ui.rs:1288
 msgid "Connection list menu"
 msgstr "Ponuka zoznamu pripojení"
 
@@ -11802,7 +11800,7 @@ msgstr "{} aktívna(-e) relácia(-e)"
 msgid "About RustConn"
 msgstr "O aplikácii RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5277
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5300
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Prístupová fráza prenosný súbor neotvorí"
 
@@ -12009,8 +12007,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Medzihostiteľ nie je dostupný"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3297
-#: rustconn/src/window/mod.rs:3363 rustconn/src/window/rdp_vnc.rs:766
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3320
+#: rustconn/src/window/mod.rs:3386 rustconn/src/window/rdp_vnc.rs:766
 msgid "Connect Anyway"
 msgstr "Napriek tomu pripojiť"
 
@@ -12890,31 +12888,31 @@ msgstr "Zavrieť"
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Dotknite sa hardvérového kľúča na odomknutie databázy hesiel"
 
-#: rustconn/src/window/mod.rs:2506
+#: rustconn/src/window/mod.rs:2529
 msgid "Already running in an external window"
 msgstr "Už beží v externom okne"
 
-#: rustconn/src/window/mod.rs:2657
+#: rustconn/src/window/mod.rs:2680
 msgid "Connection to ‘{}’ failed"
 msgstr "Pripojenie k ‘{}’ zlyhalo"
 
-#: rustconn/src/window/mod.rs:2989 rustconn/src/window/mod.rs:3003
+#: rustconn/src/window/mod.rs:3012 rustconn/src/window/mod.rs:3026
 msgid "Pre-connect task failed: {}"
 msgstr "Úloha pred pripojením zlyhala: {}"
 
-#: rustconn/src/window/mod.rs:3037
+#: rustconn/src/window/mod.rs:3060
 msgid "Port knock failed: {}"
 msgstr "Port knock zlyhal: {}"
 
-#: rustconn/src/window/mod.rs:3086
+#: rustconn/src/window/mod.rs:3109
 msgid "SPA failed: {}"
 msgstr "SPA zlyhalo: {}"
 
-#: rustconn/src/window/mod.rs:3282
+#: rustconn/src/window/mod.rs:3305
 msgid "{} (via {})"
 msgstr "{} (cez {})"
 
-#: rustconn/src/window/mod.rs:3288
+#: rustconn/src/window/mod.rs:3311
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -12938,35 +12936,35 @@ msgstr ""
 "Ak ste túto zmenu nevykonali, zrušte ju — pripojenie by mohlo odoslať "
 "uložené prihlasovacie údaje na iný počítač."
 
-#: rustconn/src/window/mod.rs:3293
+#: rustconn/src/window/mod.rs:3316
 msgid "Routing changed for “{}”"
 msgstr "Zmenila sa trasa pre „{}“"
 
-#: rustconn/src/window/mod.rs:3357
+#: rustconn/src/window/mod.rs:3380
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Medzihostiteľ nie je dostupný pre „{}“"
 
-#: rustconn/src/window/mod.rs:3362
+#: rustconn/src/window/mod.rs:3385
 msgid "Connect Directly"
 msgstr "Pripojiť priamo"
 
-#: rustconn/src/window/mod.rs:3451 rustconn/src/window/mod.rs:3626
+#: rustconn/src/window/mod.rs:3474 rustconn/src/window/mod.rs:3649
 msgid "Connection “{}” created"
 msgstr "Pripojenie „{}“ vytvorené"
 
-#: rustconn/src/window/mod.rs:3833
+#: rustconn/src/window/mod.rs:3856
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4033
+#: rustconn/src/window/mod.rs:4056
 msgid "Settings saved"
 msgstr "Nastavenia uložené"
 
-#: rustconn/src/window/mod.rs:4070
+#: rustconn/src/window/mod.rs:4093
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Prístupová fráza sa na tomto počítači neuložila"
 
-#: rustconn/src/window/mod.rs:4072
+#: rustconn/src/window/mod.rs:4095
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -12978,11 +12976,11 @@ msgstr ""
 "„Systémový zväzok kľúčov“ alebo skontrolujte, či môže RustConn zapisovať do "
 "svojho dátového adresára."
 
-#: rustconn/src/window/mod.rs:4118
+#: rustconn/src/window/mod.rs:4141
 msgid "Credentials Not Saved to Keyring"
 msgstr "Prihlasovacie údaje neboli uložené do kľúčenky"
 
-#: rustconn/src/window/mod.rs:4120
+#: rustconn/src/window/mod.rs:4143
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -12992,15 +12990,15 @@ msgstr ""
 "túto reláciu a po restarte zmiznú. Skontrolujte, či služba kľúčenky beží a "
 "je odomknutá, a potom nastavenia uložte znova."
 
-#: rustconn/src/window/mod.rs:4303
+#: rustconn/src/window/mod.rs:4326
 msgid "Close RustConn?"
 msgstr "Zavrieť RustConn?"
 
-#: rustconn/src/window/mod.rs:4305
+#: rustconn/src/window/mod.rs:4328
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Je otvorených {} kariet relácií. Aktívne pripojenia budú odpojené."
 
-#: rustconn/src/window/mod.rs:4342
+#: rustconn/src/window/mod.rs:4365
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -13008,7 +13006,7 @@ msgstr ""
 "Nastavenia sa nepodarilo načítať, preto sa používajú predvolené hodnoty. "
 "Nečitateľný súbor bol zachovaný ako {}."
 
-#: rustconn/src/window/mod.rs:4347
+#: rustconn/src/window/mod.rs:4370
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -13016,35 +13014,35 @@ msgstr ""
 "Tieto nastavenia uložila novšia verzia aplikácie RustConn ({}). Pred ich "
 "zmenou sa uchová záloha."
 
-#: rustconn/src/window/mod.rs:4372
+#: rustconn/src/window/mod.rs:4395
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Synchronizácia s cloudom zlyhala pre '{}': {}"
 
-#: rustconn/src/window/mod.rs:4555
+#: rustconn/src/window/mod.rs:4578
 msgid "Startup connection not found"
 msgstr "Pripojenie pre spustenie nenájdené"
 
-#: rustconn/src/window/mod.rs:4591
+#: rustconn/src/window/mod.rs:4614
 msgid "Failed to open .rdp file"
 msgstr "Nepodarilo sa otvoriť súbor .rdp"
 
-#: rustconn/src/window/mod.rs:4627
+#: rustconn/src/window/mod.rs:4650
 msgid "Failed to open .vv file"
 msgstr "Nepodarilo sa otvoriť súbor .vv"
 
-#: rustconn/src/window/mod.rs:4664
+#: rustconn/src/window/mod.rs:4687
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunel „{}“ sa zastavil: {}"
 
-#: rustconn/src/window/mod.rs:4680
+#: rustconn/src/window/mod.rs:4703
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Opätovné pripojenie tunela „{}“ bolo vzdané: {}"
 
-#: rustconn/src/window/mod.rs:5193
+#: rustconn/src/window/mod.rs:5216
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Úspešne exportovaných {} pripojení. {} preskočených."
 
-#: rustconn/src/window/mod.rs:5279
+#: rustconn/src/window/mod.rs:5302
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13752,6 +13750,12 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;pripojenie;terminál;vzdialený;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Create Cluster"
+#~ msgstr "Vytvoriť cluster"
+
+#~ msgid "Create cluster from selected connections"
+#~ msgstr "Vytvoriť klaster z vybraných pripojení"
 
 #~ msgid ""
 #~ "Reduce header bar, tab bar, and toolbar height. Applied instantly; useful "

@@ -1067,16 +1067,6 @@ pub fn create_bulk_actions_bar() -> GtkBox {
     ))]);
     bar.append(&move_button);
 
-    let cluster_button = Button::from_icon_name("network-workgroup-symbolic");
-    cluster_button.add_css_class("flat");
-    cluster_button.add_css_class("bulk-action");
-    cluster_button.set_tooltip_text(Some(&i18n("Create Cluster")));
-    cluster_button.set_action_name(Some("win.cluster-from-selection"));
-    cluster_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Create cluster from selected connections",
-    ))]);
-    bar.append(&cluster_button);
-
     let batch_edit_button = Button::from_icon_name("document-edit-symbolic");
     batch_edit_button.add_css_class("flat");
     batch_edit_button.add_css_class("bulk-action");
@@ -1135,6 +1125,22 @@ pub fn create_sidebar_bottom_toolbar() -> (GtkBox, Button) {
     toolbar.set_margin_end(6);
     toolbar.set_hexpand(true);
     toolbar.set_homogeneous(true);
+
+    // Multi-select ("Select Connections") toggle — moved here from the sidebar
+    // header menu (issue #374). A toggle button bound to the stateful
+    // `win.group-operations` action, so it shows the active state and reveals
+    // the bulk-actions bar. Living in the action row (not a menu checkbox) is
+    // both more discoverable and lets the header menu drop the checkable item
+    // that was widening the popover.
+    let select_toggle = gtk4::ToggleButton::new();
+    select_toggle.set_icon_name("object-select-symbolic");
+    select_toggle.add_css_class("flat");
+    select_toggle.set_tooltip_text(Some(&i18n("Select Connections")));
+    select_toggle.set_action_name(Some("win.group-operations"));
+    select_toggle.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Toggle multi-select mode for connections",
+    ))]);
+    toolbar.append(&select_toggle);
 
     let history_button = Button::from_icon_name("document-open-recent-symbolic");
     history_button.add_css_class("flat");
@@ -1267,14 +1273,10 @@ pub fn create_sidebar_header() -> (adw::HeaderBar, gtk4::ToggleButton) {
     list_section.append(Some(&i18n("Export…")), Some("win.export"));
     menu.append_section(None, &list_section);
 
-    // Select + sort — multi-select mode and the two orderings.
-    let select_section = gio::Menu::new();
-    // Stateful `win.group-operations`: renders as a checkable item.
-    select_section.append(
-        Some(&i18n("Select Connections")),
-        Some("win.group-operations"),
-    );
-    menu.append_section(None, &select_section);
+    // "Select Connections" (multi-select mode) is no longer a checkable menu
+    // item here — it moved to a toggle button in the sidebar bottom toolbar
+    // (issue #374), which is more discoverable and keeps the checkable item
+    // from widening this popover. The two orderings stay in their own section.
     let sort_section = gio::Menu::new();
     sort_section.append(
         Some(&i18n("Sort Alphabetically")),
