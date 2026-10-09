@@ -113,15 +113,6 @@ pub struct SplitViewAdapter {
     /// toggled via [`Self::set_labels_visible`]. The map is cleared on rebuild
     /// and repopulated by [`Self::create_panel_widget`].
     panel_headers: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
-    /// Auto-hide hover reveal containers for each occupied panel (issue #374).
-    ///
-    /// The small reveal arrow and its close/pop buttons are redundant once the
-    /// always-visible pane header carries the context menu, so they are hidden
-    /// whenever `show_labels` is on and shown only in the no-header mode. The
-    /// map lets [`Self::set_labels_visible`] toggle them live without a full
-    /// widget rebuild. Cleared on rebuild, repopulated by
-    /// [`Self::set_panel_content`].
-    panel_reveals: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
     /// Whether split-pane connection name labels are visible.
     show_labels: Rc<Cell<bool>>,
 }
@@ -141,7 +132,6 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("pop_panel_callback", &"<callback>")
             .field("reconnect_panel_callback", &"<callback>")
             .field("panel_headers", &self.panel_headers)
-            .field("panel_reveals", &self.panel_reveals)
             .field("show_labels", &self.show_labels)
             .finish()
     }
@@ -169,7 +159,6 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
-            panel_reveals: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
         };
 
@@ -198,7 +187,6 @@ impl SplitViewAdapter {
             pop_panel_callback: Rc::new(RefCell::new(None)),
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
-            panel_reveals: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
         };
 
@@ -836,14 +824,6 @@ impl SplitViewAdapter {
             // close/detach buttons. This avoids blocking the session toolbar
             // or other top-edge controls (issue with RDP floating panel).
             let (reveal_container, _revealer) = self.panel_corner_buttons_autohide(panel_id);
-            // The hover reveal arrow is redundant when the always-visible pane
-            // header carries the context menu, so show it only in the no-header
-            // mode (issue #374). Tracked so set_labels_visible can toggle it
-            // live when the setting changes.
-            reveal_container.set_visible(!self.show_labels.get());
-            self.panel_reveals
-                .borrow_mut()
-                .insert(panel_id, reveal_container.clone());
             overlay.add_overlay(&reveal_container);
 
             panel_widget.append(&overlay);
@@ -942,12 +922,6 @@ impl SplitViewAdapter {
             } else {
                 header.set_visible(false);
             }
-        }
-        // The hover reveal arrow is the no-header fallback for close/pop, so it
-        // is shown only when headers are off (issue #374): with the header
-        // visible, its context menu already carries those actions.
-        for reveal in self.panel_reveals.borrow().values() {
-            reveal.set_visible(!visible);
         }
     }
 
@@ -1173,7 +1147,6 @@ impl SplitViewAdapter {
         }
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
-        self.panel_reveals.borrow_mut().clear();
         self.paned_widgets.clear();
 
         let model = self.model.borrow();
