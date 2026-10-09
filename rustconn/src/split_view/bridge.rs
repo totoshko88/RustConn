@@ -1051,6 +1051,11 @@ impl SplitViewBridge {
         self.adapter.borrow().set_labels_visible(show);
     }
 
+    /// Sets whether the hover-reveal corner controls are hidden (issue #374).
+    pub fn set_hide_hover_controls(&self, hidden: bool) {
+        self.adapter.borrow().set_hover_controls_hidden(hidden);
+    }
+
     /// Updates the panel header label from the session map.
     ///
     /// Call after placing a session in a panel to populate the connection name

@@ -523,6 +523,7 @@ impl MainWindow {
             // Apply the pane labels setting from current config (issue #277).
             if let Ok(s) = state_h.try_borrow() {
                 split_view.set_show_pane_labels(s.settings().ui.show_split_pane_labels);
+                split_view.set_hide_hover_controls(s.settings().ui.hide_split_pane_hover_controls);
             }
 
             // Wire the content provider so the bridge can place any session's
@@ -743,6 +744,7 @@ impl MainWindow {
             // Apply the pane labels setting from current config (issue #277).
             if let Ok(s) = state_v.try_borrow() {
                 split_view.set_show_pane_labels(s.settings().ui.show_split_pane_labels);
+                split_view.set_hide_hover_controls(s.settings().ui.hide_split_pane_hover_controls);
             }
 
             // Wire the content provider so the bridge can place any session's

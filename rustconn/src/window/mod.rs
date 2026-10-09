@@ -3989,6 +3989,7 @@ impl MainWindow {
                     let bridges = session_split_bridges.borrow();
                     for bridge in bridges.values() {
                         bridge.set_show_pane_labels(settings.ui.show_split_pane_labels);
+                        bridge.set_hide_hover_controls(settings.ui.hide_split_pane_hover_controls);
                     }
                 }
 

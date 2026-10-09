@@ -115,6 +115,17 @@ pub struct SplitViewAdapter {
     panel_headers: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
     /// Whether split-pane connection name labels are visible.
     show_labels: Rc<Cell<bool>>,
+    /// The hover-reveal corner-control containers for each panel (issue #374).
+    ///
+    /// Tracked so the "Hide hover controls in split panes" setting can toggle
+    /// their visibility live without a rebuild. Cleared on rebuild and
+    /// repopulated by [`Self::set_panel_content`]. Independent of
+    /// [`Self::panel_headers`] — labels and hover controls hide separately.
+    panel_reveal_containers: Rc<RefCell<HashMap<PanelId, GtkBox>>>,
+    /// Whether the hover-reveal corner controls are hidden (issue #374).
+    /// `false` (default) shows them; toggled via
+    /// [`Self::set_hover_controls_hidden`].
+    hide_hover_controls: Rc<Cell<bool>>,
 }
 
 impl std::fmt::Debug for SplitViewAdapter {
@@ -133,6 +144,8 @@ impl std::fmt::Debug for SplitViewAdapter {
             .field("reconnect_panel_callback", &"<callback>")
             .field("panel_headers", &self.panel_headers)
             .field("show_labels", &self.show_labels)
+            .field("panel_reveal_containers", &self.panel_reveal_containers)
+            .field("hide_hover_controls", &self.hide_hover_controls)
             .finish()
     }
 }
@@ -160,6 +173,8 @@ impl SplitViewAdapter {
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
+            panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
+            hide_hover_controls: Rc::new(Cell::new(false)),
         };
 
         adapter.rebuild_widgets();
@@ -188,6 +203,8 @@ impl SplitViewAdapter {
             reconnect_panel_callback: Rc::new(RefCell::new(None)),
             panel_headers: Rc::new(RefCell::new(HashMap::new())),
             show_labels: Rc::new(Cell::new(false)),
+            panel_reveal_containers: Rc::new(RefCell::new(HashMap::new())),
+            hide_hover_controls: Rc::new(Cell::new(false)),
         };
 
         adapter.rebuild_widgets();
@@ -824,6 +841,12 @@ impl SplitViewAdapter {
             // close/detach buttons. This avoids blocking the session toolbar
             // or other top-edge controls (issue with RDP floating panel).
             let (reveal_container, _revealer) = self.panel_corner_buttons_autohide(panel_id);
+            // Hover controls are shown unless the user turned them off (#374).
+            // Independent of pane labels — both have their own setting.
+            reveal_container.set_visible(!self.hide_hover_controls.get());
+            self.panel_reveal_containers
+                .borrow_mut()
+                .insert(panel_id, reveal_container.clone());
             overlay.add_overlay(&reveal_container);
 
             panel_widget.append(&overlay);
@@ -922,6 +945,19 @@ impl SplitViewAdapter {
             } else {
                 header.set_visible(false);
             }
+        }
+    }
+
+    /// Hides or shows the hover-reveal corner controls on all panels (#374).
+    ///
+    /// Called when the user changes "Hide hover controls in split panes" in
+    /// settings. Independent of [`Self::set_labels_visible`]: the pane headers
+    /// and the hover controls have separate switches and neither hides the
+    /// other. `hidden == false` (default) shows the reveal arrow.
+    pub fn set_hover_controls_hidden(&self, hidden: bool) {
+        self.hide_hover_controls.set(hidden);
+        for container in self.panel_reveal_containers.borrow().values() {
+            container.set_visible(!hidden);
         }
     }
 
@@ -1147,6 +1183,7 @@ impl SplitViewAdapter {
         }
         self.panel_widgets.borrow_mut().clear();
         self.panel_headers.borrow_mut().clear();
+        self.panel_reveal_containers.borrow_mut().clear();
         self.paned_widgets.clear();
 
         let model = self.model.borrow();
