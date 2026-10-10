@@ -394,7 +394,6 @@ pub fn show_new_connection_from_template(
     }
 
     // Set up password visibility toggle and source visibility
-    dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
     dialog.update_password_row_visibility();
 

@@ -57,8 +57,7 @@ pub(super) struct BasicTabWidgets {
     pub password_source_dropdown: DropDown,
     /// Row carrying the Password Source title — see [`Self::host_row`].
     pub pw_source_row: adw::ActionRow,
-    pub password_entry: Entry,
-    pub password_visibility_button: Button,
+    pub password_entry: adw::PasswordEntryRow,
     pub password_load_button: Button,
     pub vault_test_button: Button,
     pub password_row: GtkBox,
@@ -291,20 +290,12 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     auth_group.add(&pw_source_row);
 
     // Password value row (visible for Vault source)
-    let password_entry = Entry::builder()
-        .placeholder_text(i18n("Password value"))
-        .hexpand(true)
-        .visibility(false)
-        .valign(gtk4::Align::Center)
+    let password_value_row = adw::PasswordEntryRow::builder()
+        .title(i18n("Value"))
         .build();
-    let password_visibility_button = Button::builder()
-        .icon_name("view-reveal-symbolic")
-        .tooltip_text(i18n("Show/hide password"))
-        .valign(gtk4::Align::Center)
-        .build();
-    password_visibility_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Toggle password visibility",
-    ))]);
+    // adw::PasswordEntryRow masks its text and provides its own built-in
+    // show/hide (reveal) button, so no separate visibility toggle is needed.
+    let password_entry = password_value_row.clone();
     let password_load_button = Button::builder()
         .icon_name("document-open-symbolic")
         .tooltip_text(i18n("Load password from vault"))
@@ -321,9 +312,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     vault_test_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Test credential resolution",
     ))]);
-    let password_value_row = adw::ActionRow::builder().title(i18n("Value")).build();
-    password_value_row.add_suffix(&password_entry);
-    password_value_row.add_suffix(&password_visibility_button);
     password_value_row.add_suffix(&password_load_button);
     password_value_row.add_suffix(&vault_test_button);
     auth_group.add(&password_value_row);
@@ -463,7 +451,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
     crate::utils::set_labelled_by(&username_entry, &username_row);
     crate::utils::set_labelled_by(&domain_entry, &domain_row);
     crate::utils::set_labelled_by(&password_source_dropdown, &pw_source_row);
-    crate::utils::set_labelled_by(&password_entry, &password_value_row);
     crate::utils::set_labelled_by(&variable_dropdown, &variable_action_row);
     crate::utils::set_labelled_by(&script_command_entry, &script_action_row);
     crate::utils::set_labelled_by(&tags_entry, &tags_row);
@@ -490,7 +477,6 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         password_source_dropdown,
         pw_source_row,
         password_entry,
-        password_visibility_button,
         password_load_button,
         vault_test_button,
         password_row,

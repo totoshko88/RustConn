@@ -112,8 +112,7 @@ pub struct ConnectionDialog {
     // Password source selection
     password_source_dropdown: DropDown,
     // Password entry and visibility toggle
-    password_entry: Entry,
-    password_visibility_button: Button,
+    password_entry: adw::PasswordEntryRow,
     password_load_button: Button,
     vault_test_button: Button,
     password_row: GtkBox,

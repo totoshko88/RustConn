@@ -101,7 +101,6 @@ pub fn show_new_connection_dialog_internal(
     }
 
     // Set up password visibility toggle and source visibility
-    dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
     dialog.update_password_row_visibility();
 
@@ -257,7 +256,6 @@ fn show_new_connection_dialog_internal_prefilled(
     }
 
     // Set up password visibility toggle and source visibility
-    dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
     dialog.update_password_row_visibility();
 

@@ -10,7 +10,8 @@
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Entry};
+use gtk4::Box as GtkBox;
+use libadwaita as adw;
 
 use super::ConnectionDialog;
 use crate::alert;
@@ -38,28 +39,6 @@ impl ConnectionDialog {
     pub fn set_password(&self, password: &secrecy::SecretString) {
         use secrecy::ExposeSecret;
         self.password_entry.set_text(password.expose_secret());
-    }
-
-    /// Connects password visibility toggle button
-    pub fn connect_password_visibility_toggle(&self) {
-        use std::cell::Cell;
-
-        let password_entry = self.password_entry.clone();
-        // Track visibility state - starts hidden (false)
-        let is_visible = Rc::new(Cell::new(false));
-
-        self.password_visibility_button.connect_clicked(move |btn| {
-            let currently_visible = is_visible.get();
-            let new_visible = !currently_visible;
-            is_visible.set(new_visible);
-            password_entry.set_visibility(new_visible);
-            // Update icon
-            if new_visible {
-                btn.set_icon_name("view-conceal-symbolic");
-            } else {
-                btn.set_icon_name("view-reveal-symbolic");
-            }
-        });
     }
 
     /// Connects password source dropdown to update password row visibility
@@ -801,7 +780,7 @@ impl ConnectionDialog {
 
     /// Returns the password entry widget for external access
     #[must_use]
-    pub const fn password_entry(&self) -> &Entry {
+    pub const fn password_entry(&self) -> &adw::PasswordEntryRow {
         &self.password_entry
     }
 
