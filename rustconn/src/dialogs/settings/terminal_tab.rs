@@ -3,7 +3,7 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, DropDown, Entry, Orientation, SpinButton, StringList, ToggleButton, gdk,
+    Box as GtkBox, DropDown, Entry, Orientation, StringList, ToggleButton, gdk,
 };
 use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
@@ -19,8 +19,8 @@ use crate::i18n::{i18n, i18n_f};
 pub fn create_terminal_page() -> (
     adw::PreferencesPage,
     Entry,
-    SpinButton,
-    SpinButton,
+    adw::SpinRow,
+    adw::SpinRow,
     DropDown,
     GtkBox, // cursor shape buttons container
     GtkBox, // cursor blink buttons container
@@ -60,15 +60,13 @@ pub fn create_terminal_page() -> (
 
     // Font size row - simplified title
     let size_adj = gtk4::Adjustment::new(12.0, 6.0, 72.0, 1.0, 2.0, 0.0);
-    let font_size_spin = SpinButton::builder()
+    let font_size_row = adw::SpinRow::builder()
+        .title(i18n("Size"))
         .adjustment(&size_adj)
         .climb_rate(1.0)
         .digits(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let font_size_row = adw::ActionRow::builder().title(i18n("Size")).build();
-    font_size_row.add_suffix(&font_size_spin);
-    font_size_row.set_activatable_widget(Some(&font_size_spin));
+    let font_size_spin = font_size_row.clone();
     font_group.add(&font_size_row);
 
     page.add(&font_group);
@@ -340,18 +338,14 @@ pub fn create_terminal_page() -> (
 
     // Scrollback lines - simplified title
     let scrollback_adj = gtk4::Adjustment::new(10000.0, 100.0, 1_000_000.0, 100.0, 1000.0, 0.0);
-    let scrollback_spin = SpinButton::builder()
+    let scrollback_row = adw::SpinRow::builder()
+        .title(i18n("History"))
+        .subtitle(i18n("Number of lines to keep in scrollback"))
         .adjustment(&scrollback_adj)
         .climb_rate(100.0)
         .digits(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let scrollback_row = adw::ActionRow::builder()
-        .title(i18n("History"))
-        .subtitle(i18n("Number of lines to keep in scrollback"))
-        .build();
-    scrollback_row.add_suffix(&scrollback_spin);
-    scrollback_row.set_activatable_widget(Some(&scrollback_spin));
+    let scrollback_spin = scrollback_row.clone();
     scrolling_group.add(&scrollback_row);
 
     // Keep scrollback across an in-place reconnect (issue #253)
@@ -538,8 +532,8 @@ pub fn create_terminal_page() -> (
 )]
 pub fn load_terminal_settings(
     font_family_entry: &Entry,
-    font_size_spin: &SpinButton,
-    scrollback_spin: &SpinButton,
+    font_size_spin: &adw::SpinRow,
+    scrollback_spin: &adw::SpinRow,
     color_theme_dropdown: &DropDown,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,
@@ -691,8 +685,8 @@ fn get_active_toggle_index(button_box: &GtkBox) -> usize {
 )]
 pub fn collect_terminal_settings(
     font_family_entry: &Entry,
-    font_size_spin: &SpinButton,
-    scrollback_spin: &SpinButton,
+    font_size_spin: &adw::SpinRow,
+    scrollback_spin: &adw::SpinRow,
     color_theme_dropdown: &DropDown,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,

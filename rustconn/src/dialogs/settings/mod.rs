@@ -77,8 +77,8 @@ pub struct SettingsDialog {
     dialog: adw::PreferencesDialog,
     // Terminal settings
     font_family_entry: Entry,
-    font_size_spin: SpinButton,
-    scrollback_spin: SpinButton,
+    font_size_spin: adw::SpinRow,
+    scrollback_spin: adw::SpinRow,
     color_theme_dropdown: DropDown,
     cursor_shape_buttons: GtkBox,
     cursor_blink_buttons: GtkBox,
