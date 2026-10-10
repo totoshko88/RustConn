@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.23.7
+Version:        0.23.8
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,17 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Oct 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.8-0
+- Version bump to 0.23.8
+- Fixed recording, tunnel and SSH-key failures being swallowed; now surfaced in a dialog or status page
+- Fixed the "Enable Cloud Sync?" confirmation lacking a default response, and the new-theme prompt silent no-op
+- Fixed the cramped Theme Editor width and added type-to-search to the on-startup connection picker
+- Changed Terminal/Interface settings rows to native AdwSpinRow/AdwComboRow and password fields to revealable native rows
+- Changed embedded RDP/VNC status screens to follow the light/dark theme
+- Changed split-view pane actions to add a keyboard and hidden-header route (Shift+F10 / Menu) per the GNOME HIG
+- Changed window minimum height to the HIG 360x294 phone-portrait floor
+- Updated cc 1.6.0->1.7.0, smallvec 1.16.2->1.16.3, syn 3.0.6->3.0.7, uuid 1.27.0->1.28.0
+
 * Sat Oct 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.23.7-0
 - Version bump to 0.23.7
 - Added a setting to hide the split-pane hover controls (#374)

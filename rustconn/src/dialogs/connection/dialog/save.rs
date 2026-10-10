@@ -51,7 +51,7 @@ impl ConnectionDialog {
         tags_entry: &Entry,
         protocol_dropdown: &DropDown,
         password_source_dropdown: &DropDown,
-        password_entry: &Entry,
+        password_entry: &adw::PasswordEntryRow,
         variable_dropdown: &DropDown,
         group_dropdown: &DropDown,
         groups_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,

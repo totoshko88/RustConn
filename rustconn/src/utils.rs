@@ -6,6 +6,29 @@
 use gtk4::gdk;
 use gtk4::prelude::DisplayExtManual;
 
+/// Theme-aware colors for a cairo-drawn placeholder/status surface.
+///
+/// The embedded RDP/VNC viewers paint their "no video yet" status screens
+/// directly on a `DrawingArea` with cairo, which cannot use CSS classes. Using
+/// a fixed dark fill there renders as a black rectangle on a light desktop
+/// (GNOME HIG: do not hardcode colors that ignore the theme). This returns a
+/// `(background, foreground)` RGB pair that follows the active light/dark theme,
+/// so the status screen matches the rest of the chrome. Status *accent* colors
+/// (green/yellow/red/blue state dots) stay fixed by the caller because they
+/// encode meaning, not chrome.
+///
+/// # Returns
+/// `((bg_r, bg_g, bg_b), (fg_r, fg_g, fg_b))` in cairo's 0.0–1.0 range.
+#[must_use]
+pub fn placeholder_surface_colors() -> ((f64, f64, f64), (f64, f64, f64)) {
+    let dark = libadwaita::StyleManager::default().is_dark();
+    if dark {
+        ((0.12, 0.12, 0.14), (0.90, 0.90, 0.90))
+    } else {
+        ((0.95, 0.95, 0.96), (0.18, 0.18, 0.20))
+    }
+}
+
 /// Gets the default GDK display, returning None if unavailable
 ///
 /// This is safer than using `gdk::Display::default().expect(...)` which

@@ -1890,6 +1890,7 @@ fn show_enable_master_confirmation(
     dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("enable", &i18n("Enable"));
     dialog.set_close_response("cancel");
+    dialog.set_default_response(Some("cancel"));
     dialog.set_response_appearance("enable", adw::ResponseAppearance::Suggested);
 
     let row_clone = row.clone();

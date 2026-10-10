@@ -56,7 +56,6 @@ impl ConnectionDialog {
         let password_source_dropdown = basic.password_source_dropdown.clone();
         let pw_source_row = basic.pw_source_row.clone();
         let password_entry = basic.password_entry.clone();
-        let password_visibility_button = basic.password_visibility_button.clone();
         let password_load_button = basic.password_load_button.clone();
         let vault_test_button = basic.vault_test_button.clone();
         let password_row = basic.password_row.clone();
@@ -810,7 +809,6 @@ impl ConnectionDialog {
             protocol_stack,
             password_source_dropdown,
             password_entry,
-            password_visibility_button,
             password_load_button,
             vault_test_button,
             password_row,

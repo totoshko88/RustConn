@@ -136,7 +136,6 @@ pub fn edit_connection_by_id(
     }
 
     // Set up password visibility toggle and source visibility
-    dialog.connect_password_visibility_toggle();
     dialog.connect_password_source_visibility();
     dialog.update_password_row_visibility();
 

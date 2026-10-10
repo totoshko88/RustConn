@@ -138,7 +138,8 @@ pub fn draw_status_overlay(
         .as_ref()
         .map_or(no_connection.as_str(), |c| c.host.as_str());
 
-    cr.set_source_rgb(0.9, 0.9, 0.9);
+    let (_, fg) = crate::utils::placeholder_surface_colors();
+    cr.set_source_rgb(fg.0, fg.1, fg.2);
     cr.set_font_size(18.0);
     if let Ok(extents) = cr.text_extents(host) {
         cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);

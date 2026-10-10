@@ -21,7 +21,7 @@ use libadwaita as adw;
 use rustconn_core::session::recording::{RecordingEntry, RecordingManager, default_recordings_dir};
 
 use crate::dialogs::widgets::dialog_pack_action;
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 // ---------------------------------------------------------------------------
 // RecordingListRow
@@ -288,6 +288,20 @@ impl RecordingsDialog {
             Ok(e) => e,
             Err(e) => {
                 tracing::warn!("Failed to list recordings: {e}");
+                // Surface the failure: an empty list after an error must not
+                // read as "no recordings". Swap the placeholder to an error
+                // state (GNOME HIG: persistent problem -> visible status, not
+                // a silent tracing-only drop).
+                let error_placeholder = adw::StatusPage::builder()
+                    .icon_name("dialog-warning-symbolic")
+                    .title(i18n("Could Not Load Recordings"))
+                    .description(i18n_f(
+                        "The recordings folder could not be read: {}",
+                        &[&e.to_string()],
+                    ))
+                    .build();
+                ctx.recordings_list
+                    .set_placeholder(Some(&error_placeholder));
                 return;
             }
         };
@@ -523,6 +537,7 @@ impl RecordingsDialog {
         let data_path = data_path.to_path_buf();
         let on_rename = on_rename.clone();
         let name_label = name_label.clone();
+        let dlg_err = dlg.clone();
         alert.connect_response(None, move |_, response| {
             if response != "rename" {
                 return;
@@ -539,6 +554,11 @@ impl RecordingsDialog {
             let mgr = RecordingManager::new(dir);
             if let Err(e) = mgr.rename(&data_path, &new_name) {
                 tracing::warn!("Failed to rename recording: {e}");
+                crate::alert::show_error(
+                    &dlg_err,
+                    &i18n("Could Not Rename Recording"),
+                    &i18n_f("The recording could not be renamed: {}", &[&e.to_string()]),
+                );
                 return;
             }
 
@@ -587,6 +607,7 @@ impl RecordingsDialog {
         let recordings_list = recordings_list.clone();
         let recording_rows = recording_rows.clone();
         let row_weak = row_weak.clone();
+        let dlg_err = dlg.clone();
         alert.connect_response(None, move |_, response| {
             if response != "delete" {
                 return;
@@ -599,6 +620,11 @@ impl RecordingsDialog {
             let mgr = RecordingManager::new(dir);
             if let Err(e) = mgr.delete(&data_path) {
                 tracing::warn!("Failed to delete recording: {e}");
+                crate::alert::show_error(
+                    &dlg_err,
+                    &i18n("Could Not Delete Recording"),
+                    &i18n_f("The recording could not be deleted: {}", &[&e.to_string()]),
+                );
                 return;
             }
 

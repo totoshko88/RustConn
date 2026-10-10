@@ -141,8 +141,13 @@ impl super::EmbeddedRdpWidget {
                         }
                     }
                 } else {
-                    // Dark background for non-framebuffer states
-                    cr.set_source_rgb(0.12, 0.12, 0.14);
+                    // Themed background for non-framebuffer status states (no
+                    // video yet) — follows light/dark theme so it is not a black
+                    // rectangle on a light desktop. (The letterbox fill above and
+                    // the stale-frame wash stay fixed-dark on purpose: they frame
+                    // or dim actual video, where a dark border is standard.)
+                    let (bg, _) = crate::utils::placeholder_surface_colors();
+                    cr.set_source_rgb(bg.0, bg.1, bg.2);
                     let _ = cr.paint();
 
                     // Show status overlay when not rendering framebuffer

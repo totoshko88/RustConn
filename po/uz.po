@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-10 00:21+0300\n"
+"POT-Creation-Date: 2026-10-10 17:43+0300\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Uzbek\n"
@@ -31,17 +31,17 @@ msgstr "OK"
 #: rustconn/src/dialogs/portable_migration.rs:58
 #: rustconn/src/dialogs/portable_passphrase_change.rs:93
 #: rustconn/src/dialogs/portable_unlock.rs:93
-#: rustconn/src/dialogs/recording.rs:509 rustconn/src/dialogs/recording.rs:579
+#: rustconn/src/dialogs/recording.rs:523 rustconn/src/dialogs/recording.rs:599
 #: rustconn/src/dialogs/settings/clients_tab.rs:347
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:174
 #: rustconn/src/dialogs/settings/mod.rs:578
 #: rustconn/src/dialogs/settings/mod.rs:919
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:448
-#: rustconn/src/dialogs/settings/terminal_tab.rs:822
-#: rustconn/src/dialogs/settings/terminal_tab.rs:872
+#: rustconn/src/dialogs/settings/terminal_tab.rs:814
+#: rustconn/src/dialogs/settings/terminal_tab.rs:873
 #: rustconn/src/dialogs/statistics.rs:86
 #: rustconn/src/dialogs/template_manager.rs:191
-#: rustconn/src/dialogs/tunnel.rs:723
+#: rustconn/src/dialogs/tunnel.rs:727
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:559
 #: rustconn/src/dialogs/variable_setup.rs:85
 #: rustconn/src/dialogs/workspace.rs:237 rustconn/src/dialogs/workspace.rs:291
@@ -52,11 +52,11 @@ msgstr "OK"
 #: rustconn/src/terminal/tab_menu.rs:688 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
-#: rustconn/src/window/connection_dialogs.rs:1066
+#: rustconn/src/window/connection_dialogs.rs:1064
 #: rustconn/src/window/edit_group.rs:1890
-#: rustconn/src/window/edit_group.rs:1938
-#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3319
-#: rustconn/src/window/mod.rs:3383 rustconn/src/window/mod.rs:4332
+#: rustconn/src/window/edit_group.rs:1939
+#: rustconn/src/window/group_broadcast.rs:379 rustconn/src/window/mod.rs:3323
+#: rustconn/src/window/mod.rs:3387 rustconn/src/window/mod.rs:4336
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
@@ -76,7 +76,7 @@ msgstr "Saqlamaslik"
 #: rustconn/src/dialogs/connection/dialog/populate.rs:90
 #: rustconn/src/dialogs/connection/dialog/populate.rs:92
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:177
-#: rustconn/src/dialogs/settings/terminal_tab.rs:873
+#: rustconn/src/dialogs/settings/terminal_tab.rs:874
 #: rustconn/src/dialogs/smart_folder.rs:82
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2792
@@ -225,8 +225,8 @@ msgstr "«{}» ulanishdan oldin quyidagilarni talab qiladi."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
 #: rustconn/src/dialogs/widgets.rs:614 rustconn/src/sidebar_ui.rs:382
-#: rustconn/src/smart_folder_ui.rs:438 rustconn/src/window/edit_dialogs.rs:761
-#: rustconn/src/window/edit_dialogs.rs:762
+#: rustconn/src/smart_folder_ui.rs:438 rustconn/src/window/edit_dialogs.rs:760
+#: rustconn/src/window/edit_dialogs.rs:761
 msgid "Connect"
 msgstr "Ulanish"
 
@@ -264,7 +264,7 @@ msgstr "Parolni qo'lda kiritish"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2165 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1043
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1047
 msgid "Open Settings"
 msgstr "Sozlamalarni ochish"
 
@@ -276,15 +276,15 @@ msgstr "Yangi klaster"
 #: rustconn/src/dialogs/cluster.rs:70 rustconn/src/dialogs/cluster.rs:71
 #: rustconn/src/dialogs/connection/dialog/construction.rs:139
 #: rustconn/src/dialogs/connection/dialog/construction.rs:140
-#: rustconn/src/dialogs/settings/terminal_tab.rs:823
+#: rustconn/src/dialogs/settings/terminal_tab.rs:815
 #: rustconn/src/dialogs/smart_folder.rs:87
 #: rustconn/src/dialogs/smart_folder.rs:88 rustconn/src/dialogs/snippet.rs:87
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
 #: rustconn/src/dialogs/widgets.rs:610
-#: rustconn/src/window/connection_dialogs.rs:385
-#: rustconn/src/window/connection_dialogs.rs:386
+#: rustconn/src/window/connection_dialogs.rs:383
+#: rustconn/src/window/connection_dialogs.rs:384
 msgid "Create"
 msgstr "Yaratish"
 
@@ -294,14 +294,14 @@ msgstr "Klaster tafsilotlari"
 
 #: rustconn/src/dialogs/cluster.rs:107
 #: rustconn/src/dialogs/connection/advanced_tab.rs:911
-#: rustconn/src/dialogs/connection/general_tab.rs:99
+#: rustconn/src/dialogs/connection/general_tab.rs:98
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
 #: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:1970
 #: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:512
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
-#: rustconn/src/window/connection_dialogs.rs:416
-#: rustconn/src/window/edit_dialogs.rs:332
+#: rustconn/src/window/connection_dialogs.rs:414
+#: rustconn/src/window/edit_dialogs.rs:331
 #: rustconn/src/window/edit_group.rs:111
 msgid "Name"
 msgstr "Nomi"
@@ -341,8 +341,8 @@ msgid "Select at least one connection or set an auto-membership pattern"
 msgstr "Kamida bitta ulanishni tanlang yoki avto-aʼzolik namunasini belgilang"
 
 #: rustconn/src/dialogs/cluster.rs:297
-#: rustconn/src/dialogs/settings/ui_tab.rs:406
-#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1216
+#: rustconn/src/dialogs/settings/ui_tab.rs:401
+#: rustconn/src/dialogs/shortcuts.rs:148 rustconn/src/sidebar_ui.rs:1218
 msgid "Connections"
 msgstr "Ulanishlar"
 
@@ -367,7 +367,7 @@ msgstr "Tanlovni bekor qilish"
 msgid "Edit Cluster"
 msgstr "Klasterni tahrirlash"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1258
+#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1260
 msgid "Manage Clusters"
 msgstr "Klasterlarni boshqarish"
 
@@ -414,10 +414,10 @@ msgstr "Klasterni o'chirishmi?"
 msgid "This cluster will be permanently removed."
 msgstr "Bu klaster butunlay oʻchiriladi."
 
-#: rustconn/src/dialogs/cluster.rs:808 rustconn/src/dialogs/recording.rs:580
+#: rustconn/src/dialogs/cluster.rs:808 rustconn/src/dialogs/recording.rs:600
 #: rustconn/src/dialogs/template_manager.rs:114
 #: rustconn/src/dialogs/template_manager.rs:192
-#: rustconn/src/dialogs/tunnel.rs:724 rustconn/src/dialogs/workspace.rs:119
+#: rustconn/src/dialogs/tunnel.rs:728 rustconn/src/dialogs/workspace.rs:119
 #: rustconn/src/dialogs/workspace.rs:292 rustconn/src/sidebar_ui.rs:537
 #: rustconn/src/smart_folder_ui.rs:406 rustconn/src/smart_folder_ui.rs:460
 #: rustconn/src/window/clusters.rs:633 rustconn/src/window/operations.rs:171
@@ -454,7 +454,7 @@ msgid "Override terminal colors for this connection"
 msgstr "Ushbu ulanish uchun terminal ranglarini qayta belgilash"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:91
-#: rustconn/src/dialogs/settings/ui_tab.rs:443
+#: rustconn/src/dialogs/settings/ui_tab.rs:438
 msgid "Custom"
 msgstr "Maxsus"
 
@@ -488,12 +488,12 @@ msgstr "Muhitni aniqlash uchun tezkor rang oldindan sozlashlari"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:121
 #: rustconn/src/dialogs/connection/advanced_tab.rs:957
-#: rustconn/src/dialogs/settings/terminal_tab.rs:896
+#: rustconn/src/dialogs/settings/terminal_tab.rs:897
 msgid "Background"
 msgstr "Fon"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:129
-#: rustconn/src/dialogs/settings/terminal_tab.rs:897
+#: rustconn/src/dialogs/settings/terminal_tab.rs:898
 msgid "Foreground"
 msgstr "Matn"
 
@@ -795,8 +795,8 @@ msgstr "Global sozlamadan foydalanish"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:822
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:553
-#: rustconn/src/window/edit_group.rs:2220
+#: rustconn/src/dialogs/settings/ui_tab.rs:552
+#: rustconn/src/window/edit_group.rs:2221
 msgid "Enabled"
 msgstr "Yoqilgan"
 
@@ -825,8 +825,8 @@ msgid "Pattern (regex)"
 msgstr "Shablon (regex)"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:943
-#: rustconn/src/dialogs/settings/terminal_tab.rs:222
-#: rustconn/src/dialogs/settings/terminal_tab.rs:259
+#: rustconn/src/dialogs/settings/terminal_tab.rs:218
+#: rustconn/src/dialogs/settings/terminal_tab.rs:255
 msgid "Underline"
 msgstr "Tagchiziq"
 
@@ -841,8 +841,8 @@ msgstr "Qoidani yoqish"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
 #: rustconn/src/dialogs/settings/mod.rs:1951
-#: rustconn/src/window/edit_group.rs:2056
-#: rustconn/src/window/edit_group.rs:2058
+#: rustconn/src/window/edit_group.rs:2057
+#: rustconn/src/window/edit_group.rs:2059
 msgid "Delete rule"
 msgstr "Qoidani o'chirish"
 
@@ -998,9 +998,9 @@ msgstr "mas. /yol/skriptga.sh yoki vpn-connect ${host}"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:397
 #: rustconn/src/dialogs/connection/automation_tab.rs:517
-#: rustconn/src/dialogs/connection/general_tab.rs:382
+#: rustconn/src/dialogs/connection/general_tab.rs:370
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:233
-#: rustconn/src/dialogs/settings/terminal_tab.rs:500
+#: rustconn/src/dialogs/settings/terminal_tab.rs:492
 #: rustconn/src/dialogs/snippet.rs:273 rustconn/src/dialogs/template.rs:1930
 msgid "Command"
 msgstr "Buyruq"
@@ -1252,27 +1252,27 @@ msgstr "Bulutli sinxronlash tomonidan boshqariladi"
 msgid "Edit Connection (Synced)"
 msgstr "Ulanishni tahrirlash (sinxronlangan)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:78
+#: rustconn/src/dialogs/connection/dialog/build.rs:77
 #: rustconn/src/dialogs/template.rs:183
 msgid "Basic"
 msgstr "Asosiy"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:366
+#: rustconn/src/dialogs/connection/dialog/build.rs:365
 msgid "Data"
 msgstr "Ma'lumotlar"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:376
+#: rustconn/src/dialogs/connection/dialog/build.rs:375
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "Jurnallash"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:386
+#: rustconn/src/dialogs/connection/dialog/build.rs:385
 #: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1068
 #: rustconn/src/window/edit_group.rs:1514
 msgid "Automation"
 msgstr "Avtomatlashtirish"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:430
+#: rustconn/src/dialogs/connection/dialog/build.rs:429
 #: rustconn/src/dialogs/connection/kubernetes.rs:132
 #: rustconn/src/dialogs/connection/rdp.rs:827
 #: rustconn/src/dialogs/connection/vnc.rs:318
@@ -1282,19 +1282,19 @@ msgstr "Avtomatlashtirish"
 msgid "Advanced"
 msgstr "Kengaytirilgan"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:446
+#: rustconn/src/dialogs/connection/dialog/build.rs:445
 msgid "No host set"
 msgstr "Xost belgilanmagan"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:447
+#: rustconn/src/dialogs/connection/dialog/build.rs:446
 msgid "Enter the host address first, then detect its MAC."
 msgstr "Avval xost manzilini kiriting, so‘ng uning MAC-ini aniqlang."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:465
+#: rustconn/src/dialogs/connection/dialog/build.rs:464
 msgid "MAC address may be temporary"
 msgstr "MAC-manzil vaqtinchalik bo‘lishi mumkin"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:467
+#: rustconn/src/dialogs/connection/dialog/build.rs:466
 msgid ""
 "This looks like a randomized (private) address, which changes periodically. "
 "Wake-on-LAN will stop working once it rotates — turn off the private address "
@@ -1304,11 +1304,11 @@ msgstr ""
 "o‘zgargach Wake-on-LAN ishlamay qoladi — maqsadli qurilmada ushbu tarmoq "
 "uchun shaxsiy manzilni o‘chiring yoki uni keyinroq qayta o‘qing."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:475
+#: rustconn/src/dialogs/connection/dialog/build.rs:474
 msgid "MAC address not found"
 msgstr "MAC-manzil topilmadi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:477
+#: rustconn/src/dialogs/connection/dialog/build.rs:476
 msgid ""
 "The host is not in this computer's ARP cache. It must be powered on and on "
 "the same local network. For a host beyond a router, read its MAC over an SSH "
@@ -1318,50 +1318,50 @@ msgstr ""
 "tarmoqda bo‘lishi kerak. Router ortidagi xost uchun uning MAC-ini SSH "
 "sessiyasi orqali o‘qing."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:832
+#: rustconn/src/dialogs/connection/dialog/build.rs:830
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1176
 #: rustconn/src/dialogs/connection/ssh.rs:588
 #: rustconn/src/dialogs/template.rs:699
 msgid "Jump host for tunneling (-J)"
 msgstr "Tunnel uchun o'tish xosti (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1154
+#: rustconn/src/dialogs/connection/dialog/build.rs:1152
 msgid "Username Loaded"
 msgstr "Foydalanuvchi nomi yuklandi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1155
+#: rustconn/src/dialogs/connection/dialog/build.rs:1153
 msgid "Username loaded from group"
 msgstr "Foydalanuvchi nomi guruhdan yuklandi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1161
+#: rustconn/src/dialogs/connection/dialog/build.rs:1159
 msgid "No Username"
 msgstr "Foydalanuvchi nomi yo’q"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1162
+#: rustconn/src/dialogs/connection/dialog/build.rs:1160
 msgid "Group has no username defined"
 msgstr "Guruhda foydalanuvchi nomi aniqlanmagan"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1188
+#: rustconn/src/dialogs/connection/dialog/build.rs:1186
 msgid "Domain Loaded"
 msgstr "Domen yuklandi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1189
+#: rustconn/src/dialogs/connection/dialog/build.rs:1187
 msgid "Domain loaded from group"
 msgstr "Domen guruhdan yuklandi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1195
+#: rustconn/src/dialogs/connection/dialog/build.rs:1193
 msgid "No Domain"
 msgstr "Domen yo’q"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1196
+#: rustconn/src/dialogs/connection/dialog/build.rs:1194
 msgid "Group has no domain defined"
 msgstr "Guruhda domen aniqlanmagan"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1224
+#: rustconn/src/dialogs/connection/dialog/build.rs:1222
 msgid "Zero Trust Connection Test"
 msgstr "Zero Trust ulanish testi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1225
+#: rustconn/src/dialogs/connection/dialog/build.rs:1223
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1377,35 +1377,35 @@ msgstr ""
 "2. Ulanish tugmasini bosing\n"
 "3. Provayder CLI autentifikatsiyani boshqaradi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1233
-#: rustconn/src/dialogs/connection/dialog/build.rs:1395
-#: rustconn/src/dialogs/connection/dialog/build.rs:1400
+#: rustconn/src/dialogs/connection/dialog/build.rs:1231
+#: rustconn/src/dialogs/connection/dialog/build.rs:1393
+#: rustconn/src/dialogs/connection/dialog/build.rs:1398
 msgid "Connection Test Failed"
 msgstr "Ulanish testi muvaffaqiyatsiz"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1234
+#: rustconn/src/dialogs/connection/dialog/build.rs:1232
 msgid "Fill in the required fields (name and host)"
 msgstr "Majburiy maydonlarni to'ldiring (nom va xost)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1276
-#: rustconn/src/dialogs/connection/dialog/build.rs:1446
+#: rustconn/src/dialogs/connection/dialog/build.rs:1274
+#: rustconn/src/dialogs/connection/dialog/build.rs:1444
 msgid "Testing…"
 msgstr "Tekshirilmoqda…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1375
-#: rustconn/src/dialogs/connection/general_tab.rs:378
+#: rustconn/src/dialogs/connection/dialog/build.rs:1373
+#: rustconn/src/dialogs/connection/general_tab.rs:366
 msgid "Test"
 msgstr "Tekshirish"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1382
+#: rustconn/src/dialogs/connection/dialog/build.rs:1380
 msgid "Connection Test Successful"
 msgstr "Ulanish testi muvaffaqiyatli"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1384
+#: rustconn/src/dialogs/connection/dialog/build.rs:1382
 msgid "Connection successful. Latency: {} ms"
 msgstr "Ulanish muvaffaqiyatli. Kechikish: {} ms"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1393
+#: rustconn/src/dialogs/connection/dialog/build.rs:1391
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1413,58 +1413,58 @@ msgstr ""
 "Test aniq xatosiz muvaffaqiyatsiz tugadi. Xost manzili va portni tekshiring, "
 "so'ngra qayta urinib ko'ring."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1401
+#: rustconn/src/dialogs/connection/dialog/build.rs:1399
 msgid "Test timed out"
 msgstr "Test vaqti tugadi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1419
-#: rustconn/src/dialogs/connection/dialog/build.rs:1429
-#: rustconn/src/dialogs/connection/dialog/build.rs:1438
-#: rustconn/src/dialogs/connection/dialog/build.rs:1499
-#: rustconn/src/dialogs/connection/dialog/build.rs:1504
+#: rustconn/src/dialogs/connection/dialog/build.rs:1417
+#: rustconn/src/dialogs/connection/dialog/build.rs:1427
+#: rustconn/src/dialogs/connection/dialog/build.rs:1436
+#: rustconn/src/dialogs/connection/dialog/build.rs:1497
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
 msgid "Script Test Failed"
 msgstr "Skript testi muvaffaqiyatsiz"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1420
+#: rustconn/src/dialogs/connection/dialog/build.rs:1418
 msgid "Script command is empty"
 msgstr "Skript buyrug’i bo’sh"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1430
+#: rustconn/src/dialogs/connection/dialog/build.rs:1428
 msgid "Script command is empty after parsing"
 msgstr "Skript buyrug’i tahlildan keyin bo’sh"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1439
+#: rustconn/src/dialogs/connection/dialog/build.rs:1437
 msgid "Failed to parse command"
 msgstr "Buyruqni tahlil qilib bo’lmadi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1469
+#: rustconn/src/dialogs/connection/dialog/build.rs:1467
 msgid "Test Script"
 msgstr "Skriptni sinash"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1474
 msgid "(empty output)"
 msgstr "(bo’sh natija)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1482
+#: rustconn/src/dialogs/connection/dialog/build.rs:1480
 msgid "Script Test Successful"
 msgstr "Skript testi muvaffaqiyatli"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1483
+#: rustconn/src/dialogs/connection/dialog/build.rs:1481
 #: rustconn/src/dialogs/export.rs:322
 msgid "Output"
 msgstr "Chiqish"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1490
+#: rustconn/src/dialogs/connection/dialog/build.rs:1488
 msgid "Command failed"
 msgstr "Buyruq bajarilmadi"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script timed out after 30 seconds"
 msgstr "Skript 30 soniyadan keyin vaqt chegarasini oshirdi"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:125
 #: rustconn/src/dialogs/shortcuts.rs:163
-#: rustconn/src/window/connection_dialogs.rs:300
+#: rustconn/src/window/connection_dialogs.rs:298
 msgid "New Connection (Advanced)"
 msgstr "Yangi ulanish (qoʻshimcha)"
 
@@ -1477,11 +1477,11 @@ msgid "Test connection"
 msgstr "Ulanishni tekshirish"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:203
-#: rustconn/src/dialogs/connection/general_tab.rs:139
+#: rustconn/src/dialogs/connection/general_tab.rs:138
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:194
 #: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1604
-#: rustconn/src/window/edit_dialogs.rs:810
+#: rustconn/src/window/edit_dialogs.rs:809
 msgid "Protocol"
 msgstr "Protokol"
 
@@ -1496,7 +1496,7 @@ msgid "https://example.com"
 msgstr "https://example.com"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:316
-#: rustconn/src/dialogs/connection/general_tab.rs:157
+#: rustconn/src/dialogs/connection/general_tab.rs:156
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:766
@@ -1504,84 +1504,84 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/export.rs:389 rustconn/src/dialogs/template.rs:549
 #: rustconn/src/dialogs/template.rs:1781 rustconn/src/split_view/bridge.rs:1611
 #: rustconn/src/window/copy_field_actions.rs:79
-#: rustconn/src/window/edit_dialogs.rs:820
+#: rustconn/src/window/edit_dialogs.rs:819
 msgid "Host"
 msgstr "Xost"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:319
-#: rustconn/src/dialogs/connection/general_tab.rs:151
+#: rustconn/src/dialogs/connection/general_tab.rs:150
 #: rustconn/src/dialogs/template.rs:1813
-#: rustconn/src/window/edit_dialogs.rs:816
+#: rustconn/src/window/edit_dialogs.rs:815
 msgid "hostname or IP"
 msgstr "xost nomi yoki IP"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:164
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:519
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:143
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:498
 msgid "Cannot Load Password"
 msgstr "Parolni yuklash imkonsiz"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:165
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:580
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:144
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:559
 msgid "Enter a connection name or host first."
 msgstr "Avval ulanish nomini yoki xostni kiriting."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:301
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:490
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:498
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:280
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:469
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:477
 msgid "Password Not Found"
 msgstr "Parol topilmadi"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:302
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:491
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:499
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:281
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:470
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:478
 msgid "No password found in vault for this connection."
 msgstr "Bu ulanish uchun omborda parol topilmadi."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:311
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:506
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:290
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:485
 msgid "Failed to Load Password"
 msgstr "Parolni yuklash muvaffaqiyatsiz"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:312
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:507
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:291
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:486
 msgid "Could not load password from vault."
 msgstr "Ombordan parolni yuklash imkonsiz."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:323
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:729
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:302
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:708
 msgid "Vault Not Configured"
 msgstr "Ombor sozlanmagan"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:324
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:730
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:303
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:709
 msgid "Configure a secret backend in Settings → Secrets."
 msgstr "Sozlamalar → Maxfiyliklar bo'limida maxfiy backendni sozlang."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:520
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:499
 msgid "Password loading is only available for Vault source."
 msgstr "Parolni yuklash faqat Ombor manbasi uchun mavjud."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:560
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:539
 msgid "Test Not Available"
 msgstr "Test mavjud emas"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:561
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:540
 msgid "Credential test is only available when Password Source is set to Vault."
 msgstr ""
 "Hisob maʻlumotlarini tekshirish faqat Parol manbai Ombor ga oʻrnatilganda "
 "mavjud."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:579
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:558
 msgid "Cannot Test"
 msgstr "Tekshirib boʻlmaydi"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:693
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:757
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:672
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:736
 msgid "Credential Test Passed"
 msgstr "Hisob maʻlumotlarini tekshirish muvaffaqiyatli"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:695
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:759
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:674
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:738
 msgid ""
 "Password found in vault.\n"
 "Lookup key: {}"
@@ -1589,15 +1589,15 @@ msgstr ""
 "Parol ombordan topildi.\n"
 "Qidiruv kaliti: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:703
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:714
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:766
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:777
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:788
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:682
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:693
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:745
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:756
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:767
 msgid "Credential Test Failed"
 msgstr "Hisob maʻlumotlarini tekshirish muvaffaqiyatsiz"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:705
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:684
 msgid ""
 "No password found in vault.\n"
 "Lookup key: {}"
@@ -1605,7 +1605,7 @@ msgstr ""
 "Ombordan parol topilmadi.\n"
 "Qidiruv kaliti: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:716
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:695
 msgid ""
 "Vault error. Check your KeePass configuration.\n"
 "Lookup key: {}"
@@ -1613,7 +1613,7 @@ msgstr ""
 "Ombor xatosi. KeePass konfiguratsiyasini tekshiring.\n"
 "Qidiruv kaliti: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:768
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:747
 msgid ""
 "Entry found but contains no password.\n"
 "Lookup key: {}"
@@ -1621,7 +1621,7 @@ msgstr ""
 "Yozuv topildi, lekin parol yoʻq.\n"
 "Qidiruv kaliti: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:779
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:758
 msgid ""
 "No entry found in vault.\n"
 "Lookup key: {}"
@@ -1629,7 +1629,7 @@ msgstr ""
 "Ombordan yozuv topilmadi.\n"
 "Qidiruv kaliti: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:790
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:769
 msgid ""
 "Backend error. Check your vault configuration.\n"
 "Lookup key: {}"
@@ -1647,7 +1647,7 @@ msgid "Edit Connection"
 msgstr "Ulanishni tahrirlash"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:430
-#: rustconn/src/dialogs/connection/general_tab.rs:412
+#: rustconn/src/dialogs/connection/general_tab.rs:400
 #: rustconn/src/dialogs/widgets.rs:61
 msgid "(Root)"
 msgstr "(Ildiz)"
@@ -1761,52 +1761,52 @@ msgid "Protected value (masked)"
 msgstr "Himoyalangan qiymat (niqoblangan)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:275
-#: rustconn/src/window/edit_group.rs:2044
+#: rustconn/src/window/edit_group.rs:2045
 msgid "Move up (higher priority)"
 msgstr "Yuqoriga ko'tarish (yuqori ustuvorlik)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:277
-#: rustconn/src/window/edit_group.rs:2046
+#: rustconn/src/window/edit_group.rs:2047
 msgid "Move rule up"
 msgstr "Qoidani yuqoriga siljitish"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:281
-#: rustconn/src/window/edit_group.rs:2050
+#: rustconn/src/window/edit_group.rs:2051
 msgid "Move down (lower priority)"
 msgstr "Pastga tushirish (past ustuvorlik)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:284
-#: rustconn/src/window/edit_group.rs:2052
+#: rustconn/src/window/edit_group.rs:2053
 msgid "Move rule down"
 msgstr "Qoidani pastga siljitish"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:299
-#: rustconn/src/window/edit_group.rs:2067
+#: rustconn/src/window/edit_group.rs:2068
 msgid "Pattern:"
 msgstr "Namuna:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:305
-#: rustconn/src/window/edit_group.rs:2073
+#: rustconn/src/window/edit_group.rs:2074
 msgid "Regex pattern (e.g., password:\\s*$)"
 msgstr "Regex namunasi (mas. password:\\s*$)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:306
-#: rustconn/src/window/edit_group.rs:2074
+#: rustconn/src/window/edit_group.rs:2075
 msgid "Regular expression to match against terminal output"
 msgstr "Terminal chiqishi bilan solishtirish uchun muntazam ifoda"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:315
-#: rustconn/src/window/edit_group.rs:2083
+#: rustconn/src/window/edit_group.rs:2084
 msgid "Response:"
 msgstr "Javob:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:321
-#: rustconn/src/window/edit_group.rs:2089
+#: rustconn/src/window/edit_group.rs:2090
 msgid "Text to send (e.g., ${password}\\n)"
 msgstr "Yuboriladigan matn (masalan, ${password}\\n)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
-#: rustconn/src/window/edit_group.rs:2091
+#: rustconn/src/window/edit_group.rs:2092
 msgid ""
 "Response to send when pattern matches. Use ${password}, ${username}, or $"
 "{VAR_NAME} for variables."
@@ -1815,78 +1815,78 @@ msgstr ""
 "{username} yoki ${VAR_NAME} ishlating."
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
-#: rustconn/src/window/edit_group.rs:2099
+#: rustconn/src/window/edit_group.rs:2100
 msgid "Insert a variable placeholder"
 msgstr "Oʻzgaruvchi toʻldirgichini kiritish"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:334
-#: rustconn/src/window/edit_group.rs:2101
+#: rustconn/src/window/edit_group.rs:2102
 msgid "Insert variable"
 msgstr "Oʻzgaruvchini kiritish"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:345
-#: rustconn/src/window/edit_group.rs:2113
+#: rustconn/src/window/edit_group.rs:2114
 msgid "Built-in"
 msgstr "Oʻrnatilgan"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:352
-#: rustconn/src/window/edit_group.rs:2120
+#: rustconn/src/window/edit_group.rs:2121
 msgid "Connection password"
 msgstr "Ulanish paroli"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:353
-#: rustconn/src/window/edit_group.rs:2121
+#: rustconn/src/window/edit_group.rs:2122
 msgid "Connection username"
 msgstr "Ulanish foydalanuvchi nomi"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:354
-#: rustconn/src/window/edit_group.rs:2122
+#: rustconn/src/window/edit_group.rs:2123
 msgid "Connection host"
 msgstr "Ulanish xosti"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:355
-#: rustconn/src/window/edit_group.rs:2123
+#: rustconn/src/window/edit_group.rs:2124
 msgid "Connection port"
 msgstr "Ulanish porti"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:383
 #: rustconn/src/dialogs/password_generator.rs:225
-#: rustconn/src/window/edit_group.rs:2153
+#: rustconn/src/window/edit_group.rs:2154
 msgid "Special"
 msgstr "Maxsus"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:393
-#: rustconn/src/window/edit_group.rs:2163
+#: rustconn/src/window/edit_group.rs:2164
 msgid "Newline (Enter key)"
 msgstr "Yangi qator (Enter tugmasi)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:424
-#: rustconn/src/window/edit_group.rs:2194
+#: rustconn/src/window/edit_group.rs:2195
 msgid "Priority:"
 msgstr "Ustuvorlik:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:433
-#: rustconn/src/window/edit_group.rs:2203
+#: rustconn/src/window/edit_group.rs:2204
 msgid "Higher priority rules are checked first"
 msgstr "Yuqori ustuvorlikdagi qoidalar birinchi tekshiriladi"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:437
-#: rustconn/src/window/edit_group.rs:2207
+#: rustconn/src/window/edit_group.rs:2208
 msgid "Timeout:"
 msgstr "Kutish vaqti:"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:446
-#: rustconn/src/window/edit_group.rs:2216
+#: rustconn/src/window/edit_group.rs:2217
 msgid "Timeout in milliseconds (0 = no timeout)"
 msgstr "Vaqt chegarasi millisekundlarda (0 = chegarasiz)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:455
-#: rustconn/src/window/edit_group.rs:2224
+#: rustconn/src/window/edit_group.rs:2225
 msgid "One-shot"
 msgstr "Bir martalik"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:457
-#: rustconn/src/window/edit_group.rs:2226
+#: rustconn/src/window/edit_group.rs:2227
 msgid "Fire only once, then remove the rule"
 msgstr "Faqat bir marta ishga tushirish, keyin qoidani oʻchirish"
 
@@ -2001,45 +2001,45 @@ msgstr "Ixtiyoriy tavsif"
 msgid "(Inherited from global - override value below)"
 msgstr "(Globaldan meros — qiymatni pastda qayta belgilang)"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:90
+#: rustconn/src/dialogs/connection/general_tab.rs:89
 #: rustconn/src/window/edit_group.rs:1470
 msgid "Identity"
 msgstr "Identifikatsiya"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:94
+#: rustconn/src/dialogs/connection/general_tab.rs:93
 msgid "Connection name"
 msgstr "Ulanish nomi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:105
+#: rustconn/src/dialogs/connection/general_tab.rs:104
 msgid "Emoji or icon name"
 msgstr "Emoji yoki belgi nomi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:111
-#: rustconn/src/window/connection_dialogs.rs:425
+#: rustconn/src/dialogs/connection/general_tab.rs:110
+#: rustconn/src/window/connection_dialogs.rs:423
 #: rustconn/src/window/edit_group.rs:122
 msgid "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)"
 msgstr "Emoji (mas. 🇺🇦) yoki GTK belgi nomini (mas. starred-symbolic) kiriting"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:114
+#: rustconn/src/dialogs/connection/general_tab.rs:113
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:151
 #: rustconn/src/dialogs/smart_folder.rs:127
 #: rustconn/src/dialogs/template.rs:520
-#: rustconn/src/window/connection_dialogs.rs:421
+#: rustconn/src/window/connection_dialogs.rs:419
 #: rustconn/src/window/edit_group.rs:118
 msgid "Icon"
 msgstr "Belgi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:115
+#: rustconn/src/dialogs/connection/general_tab.rs:114
 msgid "Optional"
 msgstr "Ixtiyoriy"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:126
+#: rustconn/src/dialogs/connection/general_tab.rs:125
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:207
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:622
 msgid "Zero Trust"
 msgstr "Zero Trust"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:147
+#: rustconn/src/dialogs/connection/general_tab.rs:146
 #: rustconn/src/dialogs/connection/rdp.rs:671
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:560
@@ -2053,37 +2053,37 @@ msgstr "Zero Trust"
 msgid "Connection"
 msgstr "Ulanish"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:169
+#: rustconn/src/dialogs/connection/general_tab.rs:168
 msgid "SSH, Well-Known"
 msgstr "SSH, ma'lum portlar"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:176
+#: rustconn/src/dialogs/connection/general_tab.rs:175
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
 #: rustconn/src/dialogs/export.rs:395 rustconn/src/dialogs/template.rs:558
-#: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:832
+#: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:831
 msgid "Port"
 msgstr "Port"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:186
+#: rustconn/src/dialogs/connection/general_tab.rs:185
 msgid "Inherit from group or global"
 msgstr "Guruhdan yoki global meros olish"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:187
+#: rustconn/src/dialogs/connection/general_tab.rs:186
 msgid "Direct"
 msgstr "To'g'ridan-to'g'ri"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:190
+#: rustconn/src/dialogs/connection/general_tab.rs:189
 msgid "Network Mode"
 msgstr "Tarmoq rejimi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:192
+#: rustconn/src/dialogs/connection/general_tab.rs:191
 msgid "Direct ignores a jump host inherited from a group or globally"
 msgstr ""
 "To'g'ridan-to'g'ri guruhdan yoki globaldan meros olingan o'tish xostini "
 "e'tiborsiz qoldiradi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:214
+#: rustconn/src/dialogs/connection/general_tab.rs:213
 #: rustconn/src/dialogs/connection/ssh.rs:300
 #: rustconn/src/dialogs/connection/vnc.rs:307
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:85
@@ -2093,188 +2093,167 @@ msgstr ""
 msgid "Authentication"
 msgstr "Autentifikatsiya"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:221
-#: rustconn/src/dialogs/connection/general_tab.rs:241
+#: rustconn/src/dialogs/connection/general_tab.rs:220
+#: rustconn/src/dialogs/connection/general_tab.rs:240
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
-#: rustconn/src/window/connection_dialogs.rs:486
+#: rustconn/src/window/connection_dialogs.rs:484
 #: rustconn/src/window/copy_field_actions.rs:82
-#: rustconn/src/window/edit_dialogs.rs:842
+#: rustconn/src/window/edit_dialogs.rs:841
 #: rustconn/src/window/edit_group.rs:241
 msgid "Username"
 msgstr "Foydalanuvchi nomi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:234
-#: rustconn/src/dialogs/connection/general_tab.rs:256
+#: rustconn/src/dialogs/connection/general_tab.rs:233
+#: rustconn/src/dialogs/connection/general_tab.rs:255
 msgid "Load from selected group"
 msgstr "Tanlangan guruhdan yuklash"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:239
+#: rustconn/src/dialogs/connection/general_tab.rs:238
 msgid "Load username from selected group"
 msgstr "Tanlangan guruhdan foydalanuvchi nomini yuklash"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:248
+#: rustconn/src/dialogs/connection/general_tab.rs:247
 msgid "Optional (e.g., WORKGROUP)"
 msgstr "Ixtiyoriy (mas. WORKGROUP)"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:261
+#: rustconn/src/dialogs/connection/general_tab.rs:260
 msgid "Load domain from selected group"
 msgstr "Tanlangan guruhdan domenni yuklash"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:264
+#: rustconn/src/dialogs/connection/general_tab.rs:263
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:129
 #: rustconn/src/dialogs/template.rs:569
-#: rustconn/src/window/connection_dialogs.rs:830
+#: rustconn/src/window/connection_dialogs.rs:828
 #: rustconn/src/window/edit_group.rs:539
 msgid "Domain"
 msgstr "Domen"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:265
+#: rustconn/src/dialogs/connection/general_tab.rs:264
 msgid "Windows authentication"
 msgstr "Windows autentifikatsiyasi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:273
-#: rustconn/src/window/connection_dialogs.rs:491
+#: rustconn/src/dialogs/connection/general_tab.rs:272
+#: rustconn/src/window/connection_dialogs.rs:489
 #: rustconn/src/window/edit_group.rs:248
 msgid "Prompt"
 msgstr "So'rov"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:274
-#: rustconn/src/window/connection_dialogs.rs:492
+#: rustconn/src/dialogs/connection/general_tab.rs:273
+#: rustconn/src/window/connection_dialogs.rs:490
 #: rustconn/src/window/edit_group.rs:249
 msgid "Vault"
 msgstr "Ombor"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:275
-#: rustconn/src/dialogs/connection/general_tab.rs:357
-#: rustconn/src/window/connection_dialogs.rs:493
+#: rustconn/src/dialogs/connection/general_tab.rs:274
+#: rustconn/src/dialogs/connection/general_tab.rs:345
+#: rustconn/src/window/connection_dialogs.rs:491
 #: rustconn/src/window/edit_group.rs:250 rustconn/src/window/edit_group.rs:319
 msgid "Variable"
 msgstr "O'zgaruvchi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:276
-#: rustconn/src/window/connection_dialogs.rs:494
+#: rustconn/src/dialogs/connection/general_tab.rs:275
+#: rustconn/src/window/connection_dialogs.rs:492
 #: rustconn/src/window/edit_group.rs:251
 msgid "Inherit"
 msgstr "Meros olish"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:277
+#: rustconn/src/dialogs/connection/general_tab.rs:276
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:427
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:276
-#: rustconn/src/window/connection_dialogs.rs:495
+#: rustconn/src/window/connection_dialogs.rs:493
 #: rustconn/src/window/edit_group.rs:252 rustconn/src/window/edit_group.rs:656
 msgid "None"
 msgstr "Yo'q"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:278
+#: rustconn/src/dialogs/connection/general_tab.rs:277
 #: rustconn/src/window/edit_group.rs:996
 msgid "Script"
 msgstr "Skript"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:288
+#: rustconn/src/dialogs/connection/general_tab.rs:287
 msgid "Password Source"
 msgstr "Parol manbasi"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:295
-#: rustconn/src/dialogs/variables.rs:252 rustconn/src/dialogs/variables.rs:623
-#: rustconn/src/window/connection_dialogs.rs:511
-#: rustconn/src/window/edit_group.rs:275
-msgid "Password value"
-msgstr "Parol qiymati"
-
-#: rustconn/src/dialogs/connection/general_tab.rs:302
-#: rustconn/src/dialogs/variables.rs:258
-#: rustconn/src/window/connection_dialogs.rs:517
-#: rustconn/src/window/edit_group.rs:281
-msgid "Show/hide password"
-msgstr "Parolni ko'rsatish/yashirish"
-
-#: rustconn/src/dialogs/connection/general_tab.rs:306
-#: rustconn/src/dialogs/variables.rs:261
-#: rustconn/src/window/connection_dialogs.rs:521
-#: rustconn/src/window/edit_group.rs:285
-msgid "Toggle password visibility"
-msgstr "Parol ko'rinishini almashtirish"
-
-#: rustconn/src/dialogs/connection/general_tab.rs:310
-#: rustconn/src/dialogs/connection/general_tab.rs:314
-#: rustconn/src/dialogs/variables.rs:266 rustconn/src/dialogs/variables.rs:269
-#: rustconn/src/window/connection_dialogs.rs:525
-#: rustconn/src/window/connection_dialogs.rs:529
-#: rustconn/src/window/edit_group.rs:289 rustconn/src/window/edit_group.rs:293
-msgid "Load password from vault"
-msgstr "Ombordan parolni yuklash"
-
-#: rustconn/src/dialogs/connection/general_tab.rs:318
-#: rustconn/src/dialogs/connection/general_tab.rs:322
-msgid "Test credential resolution"
-msgstr "Hisob maʻlumotlarini hal qilishni tekshirish"
-
-#: rustconn/src/dialogs/connection/general_tab.rs:324
+#: rustconn/src/dialogs/connection/general_tab.rs:294
 #: rustconn/src/dialogs/variable_setup.rs:73
-#: rustconn/src/window/connection_dialogs.rs:532
+#: rustconn/src/window/connection_dialogs.rs:530
 #: rustconn/src/window/edit_group.rs:296
 msgid "Value"
 msgstr "Qiymat"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:347
-#: rustconn/src/dialogs/connection/general_tab.rs:352
+#: rustconn/src/dialogs/connection/general_tab.rs:301
+#: rustconn/src/dialogs/connection/general_tab.rs:305
+#: rustconn/src/dialogs/variables.rs:266 rustconn/src/dialogs/variables.rs:269
+#: rustconn/src/window/connection_dialogs.rs:523
+#: rustconn/src/window/connection_dialogs.rs:527
+#: rustconn/src/window/edit_group.rs:289 rustconn/src/window/edit_group.rs:293
+msgid "Load password from vault"
+msgstr "Ombordan parolni yuklash"
+
+#: rustconn/src/dialogs/connection/general_tab.rs:309
+#: rustconn/src/dialogs/connection/general_tab.rs:313
+msgid "Test credential resolution"
+msgstr "Hisob maʻlumotlarini hal qilishni tekshirish"
+
+#: rustconn/src/dialogs/connection/general_tab.rs:335
+#: rustconn/src/dialogs/connection/general_tab.rs:340
 #: rustconn/src/window/edit_group.rs:310 rustconn/src/window/edit_group.rs:315
 msgid "Manage global variables"
 msgstr "Global oʻzgaruvchilarni boshqarish"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:358
+#: rustconn/src/dialogs/connection/general_tab.rs:346
 #: rustconn/src/window/edit_group.rs:320
 msgid "Create secret variables in Tools → Variables"
 msgstr "Asboblar → Oʻzgaruvchilar boʻlimida maxfiy oʻzgaruvchilar yarating"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:373
+#: rustconn/src/dialogs/connection/general_tab.rs:361
 msgid "e.g. vault kv get -field=password secret/myapp"
 msgstr "masalan, vault kv get -field=password secret/myapp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:379
+#: rustconn/src/dialogs/connection/general_tab.rs:367
 msgid "Test the script command"
 msgstr "Skript buyrug’ini sinash"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:398
+#: rustconn/src/dialogs/connection/general_tab.rs:386
 msgid "Organization"
 msgstr "Tashkilot"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:402
+#: rustconn/src/dialogs/connection/general_tab.rs:390
 #: rustconn/src/dialogs/snippet.rs:216
 msgid "tag1, tag2, …"
 msgstr "tag1, tag2, …"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:408
+#: rustconn/src/dialogs/connection/general_tab.rs:396
 #: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:214
 #: rustconn/src/dialogs/template.rs:573
 msgid "Tags"
 msgstr "Teglar"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:419
+#: rustconn/src/dialogs/connection/general_tab.rs:407
 #: rustconn/src/dialogs/export.rs:288 rustconn/src/dialogs/export.rs:413
 #: rustconn/src/window/batch_edit.rs:115
 msgid "Group"
 msgstr "Guruh"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:440
+#: rustconn/src/dialogs/connection/general_tab.rs:428
 #: rustconn/src/dialogs/export.rs:425 rustconn/src/dialogs/snippet.rs:200
 #: rustconn/src/dialogs/template.rs:516
-#: rustconn/src/window/connection_dialogs.rs:837
+#: rustconn/src/window/connection_dialogs.rs:835
 #: rustconn/src/window/edit_group.rs:1437
 msgid "Description"
 msgstr "Tavsif"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:537
+#: rustconn/src/dialogs/connection/general_tab.rs:523
 msgid "Well-Known"
 msgstr "Taniqli"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:539
+#: rustconn/src/dialogs/connection/general_tab.rs:525
 msgid "Registered"
 msgstr "Ro'yxatdan o'tgan"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:541
+#: rustconn/src/dialogs/connection/general_tab.rs:527
 #: rustconn/src/window/edit_group.rs:1505
 msgid "Dynamic"
 msgstr "Dinamik"
@@ -2918,7 +2897,7 @@ msgstr "Ulanish foydalanuvchi nomidan farq qilsa"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:66 rustconn/src/window/edit_dialogs.rs:785
+#: rustconn/src/dialogs/widgets.rs:66 rustconn/src/window/edit_dialogs.rs:784
 #: rustconn/src/window/edit_group.rs:762
 msgid "(None)"
 msgstr "(Yo'q)"
@@ -2999,7 +2978,7 @@ msgid "Display name (optional)"
 msgstr "Koʻrsatiladigan nom (ixtiyoriy)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:790
-#: rustconn/src/dialogs/recording.rs:517
+#: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "Ko'rsatiladigan nom"
 
@@ -3341,8 +3320,8 @@ msgid "Auto"
 msgstr "Auto"
 
 #: rustconn/src/dialogs/connection/spice.rs:180
-#: rustconn/src/dialogs/settings/terminal_tab.rs:280
-#: rustconn/src/dialogs/settings/terminal_tab.rs:313
+#: rustconn/src/dialogs/settings/terminal_tab.rs:276
+#: rustconn/src/dialogs/settings/terminal_tab.rs:309
 #: rustconn/src/dialogs/template.rs:1258 rustconn/src/i18n_markers.rs:115
 msgid "Off"
 msgstr "O'chirish"
@@ -3489,9 +3468,9 @@ msgstr "Har satrda bitta muntazam ifoda; bo'sh bo'lsa — ichki namunalar"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:107
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:335
 #: rustconn/src/dialogs/template.rs:631
-#: rustconn/src/window/connection_dialogs.rs:505
+#: rustconn/src/window/connection_dialogs.rs:503
 #: rustconn/src/window/copy_field_actions.rs:83
-#: rustconn/src/window/edit_dialogs.rs:853
+#: rustconn/src/window/edit_dialogs.rs:852
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:657
 #: rustconn/src/window/edit_group.rs:680
 msgid "Password"
@@ -4387,7 +4366,7 @@ msgid "Finish"
 msgstr "Yakunlash"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:247
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:599
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:602
 msgid "Select SSH Key File"
 msgstr "SSH kalit faylini tanlash"
 
@@ -4489,7 +4468,7 @@ msgstr "Sizning shablonlaringiz"
 #: rustconn/src/dialogs/connection_wizard/mod.rs:453
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
 #: rustconn/src/dialogs/shortcuts.rs:162 rustconn/src/sidebar_ui.rs:515
-#: rustconn/src/sidebar_ui.rs:552 rustconn/src/sidebar_ui.rs:1248
+#: rustconn/src/sidebar_ui.rs:552 rustconn/src/sidebar_ui.rs:1250
 #: rustconn/src/split_view/bridge.rs:1856 rustconn/src/window/ui.rs:257
 msgid "New Connection"
 msgstr "Yangi ulanish"
@@ -4543,7 +4522,7 @@ msgid "Copy"
 msgstr "Nusxalash"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1095
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1099
 msgid "Stop"
 msgstr "Toʻxtatish"
 
@@ -4656,13 +4635,13 @@ msgstr "Ko'chirish to'xtatildi"
 #: rustconn/src/dialogs/export.rs:1180 rustconn/src/dialogs/history.rs:340
 #: rustconn/src/dialogs/import/sources.rs:708
 #: rustconn/src/dialogs/portable_passphrase_change.rs:376
-#: rustconn/src/dialogs/recording.rs:805 rustconn/src/dialogs/recording.rs:817
+#: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:618
 #: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:465
 #: rustconn/src/split_view/adapter.rs:1132
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4333
+#: rustconn/src/window/mod.rs:4337
 msgid "Close"
 msgstr "Yopish"
 
@@ -4992,7 +4971,7 @@ msgstr "Eksport tugallandi"
 msgid "Done"
 msgstr "Tayyor"
 
-#: rustconn/src/dialogs/export.rs:1172 rustconn/src/dialogs/recording.rs:672
+#: rustconn/src/dialogs/export.rs:1172 rustconn/src/dialogs/recording.rs:698
 msgid "Export failed"
 msgstr "Eksport muvaffaqiyatsiz"
 
@@ -5107,7 +5086,7 @@ msgid "Failed"
 msgstr "Muvaffaqiyatsiz"
 
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:156
-#: rustconn/src/sidebar_ui.rs:1147
+#: rustconn/src/sidebar_ui.rs:1133
 msgid "Connection History"
 msgstr "Ulanish tarixi"
 
@@ -5602,7 +5581,7 @@ msgstr ""
 "'{}' guruhi Import rejimida yaratiladi."
 
 #: rustconn/src/dialogs/import/sources.rs:704
-#: rustconn/src/window/connection_dialogs.rs:1148
+#: rustconn/src/window/connection_dialogs.rs:1146
 msgid "Import Failed"
 msgstr "Import muvaffaqiyatsiz"
 
@@ -5778,7 +5757,7 @@ msgid "Log Content"
 msgstr "Jurnal tarkibi"
 
 #: rustconn/src/dialogs/log_viewer.rs:354
-#: rustconn/src/split_view/adapter.rs:1749
+#: rustconn/src/split_view/adapter.rs:1821
 msgid "Loading…"
 msgstr "Yuklanmoqda…"
 
@@ -5817,8 +5796,8 @@ msgstr "Hisob ma'lumotlari aniqlanmoqda…"
 msgid "Domain:"
 msgstr "Domen:"
 
-#: rustconn/src/dialogs/password.rs:157 rustconn/src/window/edit_dialogs.rs:838
-#: rustconn/src/window/edit_dialogs.rs:849
+#: rustconn/src/dialogs/password.rs:157 rustconn/src/window/edit_dialogs.rs:837
+#: rustconn/src/window/edit_dialogs.rs:848
 msgid "(optional)"
 msgstr "(ixtiyoriy)"
 
@@ -6210,88 +6189,112 @@ msgstr ""
 "Seans yozuvlari bu yerda ko'rsatiladi. Seansni yozishni boshlash uchun "
 "kontekst menyusidan foydalaning."
 
-#: rustconn/src/dialogs/recording.rs:363 rustconn/src/dialogs/recording.rs:366
+#: rustconn/src/dialogs/recording.rs:297
+msgid "Could Not Load Recordings"
+msgstr "Yozuvlarni yuklab boʻlmadi"
+
+#: rustconn/src/dialogs/recording.rs:299
+msgid "The recordings folder could not be read: {}"
+msgstr "Yozuvlar jildini oʻqib boʻlmadi: {}"
+
+#: rustconn/src/dialogs/recording.rs:377 rustconn/src/dialogs/recording.rs:380
 #: rustconn/src/terminal/playback.rs:261
 msgid "Play recording"
 msgstr "Yozuvni ijro etish"
 
-#: rustconn/src/dialogs/recording.rs:372 rustconn/src/dialogs/recording.rs:375
+#: rustconn/src/dialogs/recording.rs:386 rustconn/src/dialogs/recording.rs:389
 msgid "Rename recording"
 msgstr "Yozuvni qayta nomlash"
 
-#: rustconn/src/dialogs/recording.rs:381 rustconn/src/dialogs/recording.rs:384
+#: rustconn/src/dialogs/recording.rs:395 rustconn/src/dialogs/recording.rs:398
 msgid "Delete recording"
 msgstr "Yozuvni o'chirish"
 
-#: rustconn/src/dialogs/recording.rs:390 rustconn/src/dialogs/recording.rs:393
+#: rustconn/src/dialogs/recording.rs:404 rustconn/src/dialogs/recording.rs:407
 msgid "Export recording"
 msgstr "Yozuvni eksport qilish"
 
-#: rustconn/src/dialogs/recording.rs:505
+#: rustconn/src/dialogs/recording.rs:519
 msgid "Rename Recording"
 msgstr "Yozuvni qayta nomlash"
 
-#: rustconn/src/dialogs/recording.rs:506
+#: rustconn/src/dialogs/recording.rs:520
 msgid "Enter a new display name for this recording."
 msgstr "Ushbu yozuv uchun yangi nom kiriting."
 
-#: rustconn/src/dialogs/recording.rs:510 rustconn/src/dialogs/workspace.rs:127
+#: rustconn/src/dialogs/recording.rs:524 rustconn/src/dialogs/workspace.rs:127
 #: rustconn/src/dialogs/workspace.rs:238 rustconn/src/sidebar_ui.rs:342
-#: rustconn/src/sidebar_ui.rs:393 rustconn/src/window/edit_dialogs.rs:318
+#: rustconn/src/sidebar_ui.rs:393 rustconn/src/window/edit_dialogs.rs:317
 msgid "Rename"
 msgstr "Nomini o'zgartirish"
 
-#: rustconn/src/dialogs/recording.rs:571
+#: rustconn/src/dialogs/recording.rs:559
+msgid "Could Not Rename Recording"
+msgstr "Yozuv nomini oʻzgartirib boʻlmadi"
+
+#: rustconn/src/dialogs/recording.rs:560
+msgid "The recording could not be renamed: {}"
+msgstr "Yozuv nomini oʻzgartirib boʻlmadi: {}"
+
+#: rustconn/src/dialogs/recording.rs:591
 msgid "Delete Recording?"
 msgstr "Yozuvni o'chirishmi?"
 
-#: rustconn/src/dialogs/recording.rs:575
+#: rustconn/src/dialogs/recording.rs:595
 msgid "This will permanently remove the recording files from disk."
 msgstr "Bu yozuv fayllarini diskdan butunlay o'chiradi."
 
-#: rustconn/src/dialogs/recording.rs:628
+#: rustconn/src/dialogs/recording.rs:625
+msgid "Could Not Delete Recording"
+msgstr "Yozuvni oʻchirib boʻlmadi"
+
+#: rustconn/src/dialogs/recording.rs:626
+msgid "The recording could not be deleted: {}"
+msgstr "Yozuvni oʻchirib boʻlmadi: {}"
+
+#: rustconn/src/dialogs/recording.rs:654
 msgid "Export Recording"
 msgstr "Yozuvni eksport qilish"
 
-#: rustconn/src/dialogs/recording.rs:654 rustconn/src/dialogs/recording.rs:771
+#: rustconn/src/dialogs/recording.rs:680 rustconn/src/dialogs/recording.rs:797
 msgid "Cannot determine recordings directory."
 msgstr "Yozuvlar katalogini aniqlab bo'lmadi."
 
-#: rustconn/src/dialogs/recording.rs:666
+#: rustconn/src/dialogs/recording.rs:692
 msgid "Recording exported successfully"
 msgstr "Yozuv muvaffaqiyatli eksport qilindi"
 
-#: rustconn/src/dialogs/recording.rs:691
+#: rustconn/src/dialogs/recording.rs:717
 msgid "Data files"
 msgstr "Ma'lumot fayllari"
 
-#: rustconn/src/dialogs/recording.rs:699
+#: rustconn/src/dialogs/recording.rs:725
 msgid "Select Data File"
 msgstr "Ma'lumot faylini tanlang"
 
-#: rustconn/src/dialogs/recording.rs:725
+#: rustconn/src/dialogs/recording.rs:751
 msgid "Timing files"
 msgstr "Vaqt fayllari"
 
-#: rustconn/src/dialogs/recording.rs:733
+#: rustconn/src/dialogs/recording.rs:759
 msgid "Select Timing File"
 msgstr "Vaqt faylini tanlang"
 
-#: rustconn/src/dialogs/recording.rs:785
+#: rustconn/src/dialogs/recording.rs:811
 msgid "Recording imported successfully"
 msgstr "Yozuv muvaffaqiyatli import qilindi"
 
-#: rustconn/src/dialogs/recording.rs:793
+#: rustconn/src/dialogs/recording.rs:819
 msgid "Import failed"
 msgstr "Import muvaffaqiyatsiz"
 
-#: rustconn/src/dialogs/recording.rs:802 rustconn/src/dialogs/recording.rs:814
+#: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:285 rustconn/src/toast.rs:73
 #: rustconn/src/toast.rs:333 rustconn/src/toast.rs:363
 #: rustconn/src/window/clusters.rs:599
-#: rustconn/src/window/connection_dialogs.rs:1012
-#: rustconn/src/window/edit_dialogs.rs:391
-#: rustconn/src/window/edit_dialogs.rs:495
+#: rustconn/src/window/connection_dialogs.rs:1010
+#: rustconn/src/window/edit_dialogs.rs:390
+#: rustconn/src/window/edit_dialogs.rs:494
 #: rustconn/src/window/edit_group.rs:1817
 msgid "Error"
 msgstr "Xato"
@@ -6462,7 +6465,7 @@ msgid "Choose sync directory"
 msgstr "Sinxronlash katalogini tanlash"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:69
-#: rustconn/src/window/edit_group.rs:1957
+#: rustconn/src/window/edit_group.rs:1958
 msgid "Select Sync Directory"
 msgstr "Sinxronlash katalogini tanlash"
 
@@ -6924,7 +6927,7 @@ msgid "Load average"
 msgstr "Oʻrtacha yuklanish"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:140
-msgid "System info"
+msgid "System information"
 msgstr "Tizim haqida maʼlumot"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:141
@@ -7080,7 +7083,7 @@ msgstr "Sozlangan"
 
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:838
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:842
-#: rustconn/src/embedded_vnc/ui.rs:315
+#: rustconn/src/embedded_vnc/ui.rs:322
 msgid "Not configured"
 msgstr "Sozlanmagan"
 
@@ -7776,7 +7779,7 @@ msgid "Key Files (*.keyx, *.key)"
 msgstr "Kalit fayllari (*.keyx, *.key)"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2675
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:612
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:615
 msgid "All Files"
 msgstr "Barcha fayllar"
 
@@ -7789,7 +7792,7 @@ msgid "Checking… touch your YubiKey when it blinks"
 msgstr "Tekshirilmoqda… YubiKey chaqnaganda unga tegining"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2777
-#: rustconn/src/embedded_rdp/ui.rs:169 rustconn/src/embedded_vnc/ui.rs:335
+#: rustconn/src/embedded_rdp/ui.rs:170 rustconn/src/embedded_vnc/ui.rs:342
 #: rustconn/src/sidebar/view.rs:776
 msgid "Connected"
 msgstr "Ulangan"
@@ -7930,29 +7933,33 @@ msgstr "Parol iborasini kiriting (kalit parolsiz bo'lsa bo'sh qoldiring)"
 msgid "Passphrase (optional)"
 msgstr "Parol iborasi (ixtiyoriy)"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:547
-msgid "Failed to add key: {}"
-msgstr "Kalitni qo‘shishda xatolik: {}"
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:550
+msgid "Could Not Add Key"
+msgstr "Kalitni qoʻshib boʻlmadi"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:607
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:551
+msgid "The key could not be added: {}"
+msgstr "Kalitni qoʻshib boʻlmadi: {}"
+
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:610
 msgid "SSH Keys"
 msgstr "SSH kalitlari"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:681
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:684
 msgid "Cannot Use That File"
 msgstr "Bu fayldan foydalanib bo'lmaydi"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:683
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:686
 msgid ""
 "That location has no local file path. Copy the key to a local folder first."
 msgstr ""
 "Bu joyda mahalliy fayl yo'li yo'q. Kalitni avval mahalliy jildga ko'chiring."
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:713
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:716
 msgid "Could Not Open the File Chooser"
 msgstr "Fayl tanlagichni ochib bo'lmadi"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:715
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:718
 msgid ""
 "{}\n"
 "\n"
@@ -7964,11 +7971,11 @@ msgstr ""
 "~/.ssh da allaqachon mavjud kalitlar «Mavjud kalit fayllari» bo'limida "
 "ro'yxatlangan va ularni fayl tanlagichsiz shu joydan qo'shish mumkin."
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:746
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:749
 msgid "Remove from agent"
 msgstr "Agentdan olib tashlash"
 
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:750
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:753
 msgid "Remove key from SSH agent"
 msgstr "SSH agentdan kalitni olib tashlash"
 
@@ -7985,310 +7992,310 @@ msgstr "Shrift"
 msgid "Family"
 msgstr "Oila"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:69
+#: rustconn/src/dialogs/settings/terminal_tab.rs:64
 msgid "Size"
 msgstr "Hajm"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:78
-#: rustconn/src/dialogs/settings/terminal_tab.rs:901
+#: rustconn/src/dialogs/settings/terminal_tab.rs:76
+#: rustconn/src/dialogs/settings/terminal_tab.rs:902
 msgid "Colors"
 msgstr "Ranglar"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:89
+#: rustconn/src/dialogs/settings/terminal_tab.rs:83
 #: rustconn/src/dialogs/settings/ui_tab.rs:139
 #: rustconn/src/dialogs/settings/ui_tab.rs:194
 msgid "Theme"
 msgstr "Mavzu"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:103
-#: rustconn/src/dialogs/settings/terminal_tab.rs:106
+#: rustconn/src/dialogs/settings/terminal_tab.rs:99
+#: rustconn/src/dialogs/settings/terminal_tab.rs:102
 msgid "New custom theme"
 msgstr "Yangi maxsus mavzu"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:110
-#: rustconn/src/dialogs/settings/terminal_tab.rs:115
+#: rustconn/src/dialogs/settings/terminal_tab.rs:106
+#: rustconn/src/dialogs/settings/terminal_tab.rs:111
 msgid "Edit custom theme"
 msgstr "Maxsus mavzuni tahrirlash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:120
-#: rustconn/src/dialogs/settings/terminal_tab.rs:125
+#: rustconn/src/dialogs/settings/terminal_tab.rs:116
+#: rustconn/src/dialogs/settings/terminal_tab.rs:121
 msgid "Delete custom theme"
 msgstr "Maxsus mavzuni o'chirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:133
+#: rustconn/src/dialogs/settings/terminal_tab.rs:129
 msgid "Custom themes"
 msgstr "Maxsus mavzular"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:213
-#: rustconn/src/dialogs/settings/terminal_tab.rs:898
+#: rustconn/src/dialogs/settings/terminal_tab.rs:209
+#: rustconn/src/dialogs/settings/terminal_tab.rs:899
 msgid "Cursor"
 msgstr "Kursor"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:220
-#: rustconn/src/dialogs/settings/terminal_tab.rs:249
+#: rustconn/src/dialogs/settings/terminal_tab.rs:216
+#: rustconn/src/dialogs/settings/terminal_tab.rs:245
 msgid "Block"
 msgstr "Blok"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:221
-#: rustconn/src/dialogs/settings/terminal_tab.rs:254
+#: rustconn/src/dialogs/settings/terminal_tab.rs:217
+#: rustconn/src/dialogs/settings/terminal_tab.rs:250
 msgid "IBeam"
 msgstr "IBeam"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:231
-#: rustconn/src/dialogs/settings/terminal_tab.rs:268
+#: rustconn/src/dialogs/settings/terminal_tab.rs:227
+#: rustconn/src/dialogs/settings/terminal_tab.rs:264
 msgid "Shape"
 msgstr "Shakl"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:279
-#: rustconn/src/dialogs/settings/terminal_tab.rs:308
+#: rustconn/src/dialogs/settings/terminal_tab.rs:275
+#: rustconn/src/dialogs/settings/terminal_tab.rs:304
 msgid "On"
 msgstr "Yoqish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:281
-#: rustconn/src/dialogs/settings/terminal_tab.rs:318
+#: rustconn/src/dialogs/settings/terminal_tab.rs:277
+#: rustconn/src/dialogs/settings/terminal_tab.rs:314
 #: rustconn/src/dialogs/settings/ui_tab.rs:115
 #: rustconn/src/dialogs/settings/ui_tab.rs:156
 msgid "System"
 msgstr "Tizim"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:290
-#: rustconn/src/dialogs/settings/terminal_tab.rs:327
+#: rustconn/src/dialogs/settings/terminal_tab.rs:286
+#: rustconn/src/dialogs/settings/terminal_tab.rs:323
 msgid "Blink"
 msgstr "Miltillash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:338
+#: rustconn/src/dialogs/settings/terminal_tab.rs:334
 msgid "Scrolling"
 msgstr "Aylantirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:350
+#: rustconn/src/dialogs/settings/terminal_tab.rs:340
 msgid "History"
 msgstr "Tarix"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:351
+#: rustconn/src/dialogs/settings/terminal_tab.rs:341
 msgid "Number of lines to keep in scrollback"
 msgstr "Orqaga aylantirish buferida saqlanadigan qatorlar soni"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:359
+#: rustconn/src/dialogs/settings/terminal_tab.rs:351
 msgid "Keep on reconnect"
 msgstr "Qayta ulanishda saqlash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:360
+#: rustconn/src/dialogs/settings/terminal_tab.rs:352
 msgid "Preserve terminal output when a session reconnects"
 msgstr "Qayta ulanishda terminal chiqishini saqlash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:366
+#: rustconn/src/dialogs/settings/terminal_tab.rs:358
 msgid "On output"
 msgstr "Chiqishda"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:367
+#: rustconn/src/dialogs/settings/terminal_tab.rs:359
 msgid "Scroll to bottom when new output appears"
 msgstr "Yangi chiqish paydo bo'lganda pastga aylantirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:373
+#: rustconn/src/dialogs/settings/terminal_tab.rs:365
 msgid "On keystroke"
 msgstr "Tugma bosilganda"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:374
+#: rustconn/src/dialogs/settings/terminal_tab.rs:366
 msgid "Scroll to bottom when typing"
 msgstr "Yozganda pastga aylantirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:381
+#: rustconn/src/dialogs/settings/terminal_tab.rs:373
 msgid "Scrollbar"
 msgstr "Aylantirish paneli"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:382
+#: rustconn/src/dialogs/settings/terminal_tab.rs:374
 msgid "Show a scrollbar next to the terminal"
 msgstr "Terminal yonida aylantirish panelini ko'rsatish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:391
+#: rustconn/src/dialogs/settings/terminal_tab.rs:383
 msgid "Behavior"
 msgstr "Xulq-atvor"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:396
+#: rustconn/src/dialogs/settings/terminal_tab.rs:388
 msgid "Hyperlinks"
 msgstr "Giperhavolalar"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:397
+#: rustconn/src/dialogs/settings/terminal_tab.rs:389
 msgid "Allow clickable URLs in terminal"
 msgstr "Terminalda bosiladigan URL larga ruxsat berish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:404
+#: rustconn/src/dialogs/settings/terminal_tab.rs:396
 msgid "Hide pointer"
 msgstr "Ko'rsatkichni yashirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:405
+#: rustconn/src/dialogs/settings/terminal_tab.rs:397
 msgid "Hide mouse cursor when typing"
 msgstr "Yozganda sichqoncha kursorini yashirish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:412
+#: rustconn/src/dialogs/settings/terminal_tab.rs:404
 msgid "Bell"
 msgstr "Qo'ng'iroq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:413
+#: rustconn/src/dialogs/settings/terminal_tab.rs:405
 msgid "Play sound on terminal bell"
 msgstr "Terminal qo'ng'irog'ida ovoz ijro etish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:419
+#: rustconn/src/dialogs/settings/terminal_tab.rs:411
 msgid "SFTP via mc"
 msgstr "mc orqali SFTP"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:420
-#: rustconn/src/dialogs/settings/terminal_tab.rs:429
+#: rustconn/src/dialogs/settings/terminal_tab.rs:412
+#: rustconn/src/dialogs/settings/terminal_tab.rs:421
 msgid "Open SFTP in Midnight Commander (local shell tab)"
 msgstr "Midnight Commander da SFTP ochish (mahalliy qobiq tabi)"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:432
+#: rustconn/src/dialogs/settings/terminal_tab.rs:424
 msgid "⚠ External file managers cannot access SSH agent in Flatpak sandbox"
 msgstr ""
 "⚠ Tashqi fayl menejerlari Flatpak sandbox ichidagi SSH agentiga kira olmaydi"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:442
+#: rustconn/src/dialogs/settings/terminal_tab.rs:434
 msgid "Copy on select"
 msgstr "Tanlashda nusxalash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:443
+#: rustconn/src/dialogs/settings/terminal_tab.rs:435
 msgid "Automatically copy selected text to clipboard"
 msgstr "Tanlangan matnni avtomatik ravishda vaqtinchalik xotiraga nusxalash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:451
+#: rustconn/src/dialogs/settings/terminal_tab.rs:443
 msgid "Remote clipboard (OSC 52)"
 msgstr "Masofaviy almashish buferi (OSC 52)"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:452
+#: rustconn/src/dialogs/settings/terminal_tab.rs:444
 msgid "Let a remote program put text on the local clipboard"
 msgstr ""
 "Masofaviy dasturga matnni mahalliy almashish buferiga qo'yishga ruxsat berish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:458
+#: rustconn/src/dialogs/settings/terminal_tab.rs:450
 msgid "Right-click pastes"
 msgstr "Oʻng tugma qoʻyadi"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:460
+#: rustconn/src/dialogs/settings/terminal_tab.rs:452
 msgid "Paste the clipboard on right-click instead of showing the menu"
 msgstr "Menyuni koʻrsatish oʻrniga oʻng tugma bilan almashish buferini qoʻyish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:467
+#: rustconn/src/dialogs/settings/terminal_tab.rs:459
 msgid "Close tab on clean exit"
 msgstr "Toza chiqishda yorliqni yopish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:469
+#: rustconn/src/dialogs/settings/terminal_tab.rs:461
 msgid "Automatically close the tab when the session exits normally"
 msgstr "Sessiya normal yakunlanganda yorliqni avtomatik yopish"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:476
+#: rustconn/src/dialogs/settings/terminal_tab.rs:468
 msgid "Option as Meta key"
 msgstr "Option — Meta tugmasi sifatida"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:478
+#: rustconn/src/dialogs/settings/terminal_tab.rs:470
 msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
 msgstr "Tarkibiy belgilar oʻrniga Escape prefiksini yuborish (vim/emacs uchun)"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:490
-#: rustconn/src/dialogs/settings/ui_tab.rs:491
-#: rustconn/src/dialogs/settings/ui_tab.rs:785
+#: rustconn/src/dialogs/settings/terminal_tab.rs:482
+#: rustconn/src/dialogs/settings/ui_tab.rs:488
+#: rustconn/src/dialogs/settings/ui_tab.rs:784
 #: rustconn/src/dialogs/shortcuts.rs:168
-#: rustconn/src/split_view/adapter.rs:1679 rustconn/src/tray.rs:258
+#: rustconn/src/split_view/adapter.rs:1751 rustconn/src/tray.rs:258
 #: rustconn/src/tray.rs:648 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
 msgstr "Mahalliy qobiq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:491
+#: rustconn/src/dialogs/settings/terminal_tab.rs:483
 msgid "Custom command for the local shell tab"
 msgstr "Mahalliy qobiq varag'i uchun maxsus buyruq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:495
+#: rustconn/src/dialogs/settings/terminal_tab.rs:487
 msgid "Default system shell"
 msgstr "Standart tizim qobig'i"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:501
+#: rustconn/src/dialogs/settings/terminal_tab.rs:493
 msgid "e.g. fish, bash --norc, neofetch &amp;&amp; bash"
 msgstr "masalan, fish, bash --norc, neofetch &amp;&amp; bash"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:792
+#: rustconn/src/dialogs/settings/terminal_tab.rs:784
 msgid "Follow System"
 msgstr "Tizim bo'yicha"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:816
+#: rustconn/src/dialogs/settings/terminal_tab.rs:808
 msgid "New Custom Theme"
 msgstr "Yangi maxsus mavzu"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:817
+#: rustconn/src/dialogs/settings/terminal_tab.rs:809
 msgid "Enter a name for the new theme"
 msgstr "Yangi mavzu uchun nom kiriting"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:827
+#: rustconn/src/dialogs/settings/terminal_tab.rs:823
 msgid "Theme name"
 msgstr "Mavzu nomi"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:867
+#: rustconn/src/dialogs/settings/terminal_tab.rs:868
 msgid "{} — Theme Editor"
 msgstr "{} — Mavzu muharriri"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:909
+#: rustconn/src/dialogs/settings/terminal_tab.rs:910
 msgid "Palette"
 msgstr "Palitra"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:913
+#: rustconn/src/dialogs/settings/terminal_tab.rs:914
 msgid "Black"
 msgstr "Qora"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:914
+#: rustconn/src/dialogs/settings/terminal_tab.rs:915
 msgid "Red"
 msgstr "Qizil"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:915
+#: rustconn/src/dialogs/settings/terminal_tab.rs:916
 msgid "Green"
 msgstr "Yashil"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:916
+#: rustconn/src/dialogs/settings/terminal_tab.rs:917
 msgid "Yellow"
 msgstr "Sariq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:917
+#: rustconn/src/dialogs/settings/terminal_tab.rs:918
 msgid "Blue"
 msgstr "Ko'k"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:918
+#: rustconn/src/dialogs/settings/terminal_tab.rs:919
 msgid "Magenta"
 msgstr "Qizg'ish binafsha"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:919
+#: rustconn/src/dialogs/settings/terminal_tab.rs:920
 msgid "Cyan"
 msgstr "Zangori"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:920
+#: rustconn/src/dialogs/settings/terminal_tab.rs:921
 msgid "White"
 msgstr "Oq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:921
+#: rustconn/src/dialogs/settings/terminal_tab.rs:922
 msgid "Bright Black"
 msgstr "Yorqin qora"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:922
+#: rustconn/src/dialogs/settings/terminal_tab.rs:923
 msgid "Bright Red"
 msgstr "Yorqin qizil"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:923
+#: rustconn/src/dialogs/settings/terminal_tab.rs:924
 msgid "Bright Green"
 msgstr "Yorqin yashil"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:924
+#: rustconn/src/dialogs/settings/terminal_tab.rs:925
 msgid "Bright Yellow"
 msgstr "Yorqin sariq"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:925
+#: rustconn/src/dialogs/settings/terminal_tab.rs:926
 msgid "Bright Blue"
 msgstr "Yorqin ko'k"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:926
+#: rustconn/src/dialogs/settings/terminal_tab.rs:927
 msgid "Bright Magenta"
 msgstr "Yorqin qizg'ish binafsha"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:927
+#: rustconn/src/dialogs/settings/terminal_tab.rs:928
 msgid "Bright Cyan"
 msgstr "Yorqin zangori"
 
-#: rustconn/src/dialogs/settings/terminal_tab.rs:928
+#: rustconn/src/dialogs/settings/terminal_tab.rs:929
 msgid "Bright White"
 msgstr "Yorqin oq"
 
@@ -8306,32 +8313,32 @@ msgstr "Yorug'"
 msgid "Dark"
 msgstr "Qorong'i"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:211
+#: rustconn/src/dialogs/settings/ui_tab.rs:206
 msgid "Language"
 msgstr "Til"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:212
-#: rustconn/src/dialogs/settings/ui_tab.rs:228
+#: rustconn/src/dialogs/settings/ui_tab.rs:207
+#: rustconn/src/dialogs/settings/ui_tab.rs:223
 msgid "Restart required to apply"
 msgstr "Qo'llash uchun qayta ishga tushirish kerak"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:227
+#: rustconn/src/dialogs/settings/ui_tab.rs:222
 msgid "Rendering"
 msgstr "Ko'rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:235
+#: rustconn/src/dialogs/settings/ui_tab.rs:230
 msgid "Sidebar width"
 msgstr "Yon panel kengligi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:236
+#: rustconn/src/dialogs/settings/ui_tab.rs:231
 msgid "Width of the connection sidebar in pixels"
 msgstr "Ulanishlar yon panelining kengligi pikselda"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:245
+#: rustconn/src/dialogs/settings/ui_tab.rs:240
 msgid "Compact interface"
 msgstr "Ixcham interfeys"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:247
+#: rustconn/src/dialogs/settings/ui_tab.rs:242
 msgid ""
 "Reduce header bar, tab bar, and toolbar height for a denser layout. Applied "
 "instantly"
@@ -8339,11 +8346,11 @@ msgstr ""
 "Zichroq joylashuv uchun sarlavha paneli, varaqlar paneli va asboblar paneli "
 "balandligini kamaytiradi. Darhol qoʻllanadi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:254
+#: rustconn/src/dialogs/settings/ui_tab.rs:249
 msgid "Compact automatically on small windows"
 msgstr "Kichik oynalarda avtomatik ixchamlash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:256
+#: rustconn/src/dialogs/settings/ui_tab.rs:251
 msgid ""
 "Switch to compact chrome when the window becomes short or narrow, and back "
 "when it grows"
@@ -8351,11 +8358,11 @@ msgstr ""
 "Oyna kichik yoki tor bo'lganda ixcham ko'rinishga o'tish, kattlashganda "
 "qaytish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:267
+#: rustconn/src/dialogs/settings/ui_tab.rs:262
 msgid "Open session toolbar on hover"
 msgstr "Seans panelini sichqoncha yaqinlashtirilganda ochish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:269
+#: rustconn/src/dialogs/settings/ui_tab.rs:264
 msgid ""
 "Reveal the floating RDP/VNC toolbar when the pointer touches its handle. "
 "When off, the handle must be clicked"
@@ -8363,15 +8370,15 @@ msgstr ""
 "RDP/VNC suzuvchi asboblar panelini sichqoncha tutqichga tegishi bilan "
 "koʻrsatish. Oʻchirilganda bosish talab qilinadi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:289
+#: rustconn/src/dialogs/settings/ui_tab.rs:284
 msgid "Always on while Compact interface is enabled above"
 msgstr "Yuqorida ixcham interfeys yoqilgan boʻlsa, doimo yoqiq"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:315
+#: rustconn/src/dialogs/settings/ui_tab.rs:310
 msgid "Send terminal control shortcuts to the session"
 msgstr "Terminal boshqaruv tugmalar birikmalarini seansga yuborish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:317
+#: rustconn/src/dialogs/settings/ui_tab.rs:312
 msgid ""
 "While a terminal or remote viewer is focused, let Ctrl+F/P/N and similar "
 "chords reach the session instead of the app"
@@ -8379,32 +8386,32 @@ msgstr ""
 "Terminal yoki masofaviy ko‘ruvchi fokusda bo‘lganda, Ctrl+F/P/N va shunga "
 "o‘xshash birikmalar ilova o‘rniga seansga yetib borishiga ruxsat berish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:326
+#: rustconn/src/dialogs/settings/ui_tab.rs:321
 msgid "Remember keyboard passthrough"
 msgstr "Klaviatura passthrough-ni eslab qolish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:328
+#: rustconn/src/dialogs/settings/ui_tab.rs:323
 msgid "Restore the passthrough state (Ctrl+Shift+Backspace) on the next start"
 msgstr ""
 "Keyingi ishga tushirishda passthrough holatini (Ctrl+Shift+Backspace) tiklash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:337
+#: rustconn/src/dialogs/settings/ui_tab.rs:332
 msgid "Window"
 msgstr "Oyna"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:341
+#: rustconn/src/dialogs/settings/ui_tab.rs:336
 msgid "Remember size"
 msgstr "Hajmni eslab qolish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:342
+#: rustconn/src/dialogs/settings/ui_tab.rs:337
 msgid "Restore window geometry on startup"
 msgstr "Ishga tushganda oyna geometriyasini tiklash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:350
+#: rustconn/src/dialogs/settings/ui_tab.rs:345
 msgid "Show connection in window title"
 msgstr "Oyna sarlavhasida ulanishni ko‘rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:352
+#: rustconn/src/dialogs/settings/ui_tab.rs:347
 msgid ""
 "Append the active connection name to the window title, so time-tracking "
 "tools can identify it"
@@ -8412,21 +8419,21 @@ msgstr ""
 "Faol ulanish nomini oyna sarlavhasiga qo'shish, vaqtni kuzatish vositalari "
 "aniqlay olishi uchun"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:358
+#: rustconn/src/dialogs/settings/ui_tab.rs:353
 msgid "Show hierarchy path in header"
 msgstr "Sarlavhada ierarxiya yoʻlini koʻrsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:360
+#: rustconn/src/dialogs/settings/ui_tab.rs:355
 msgid ""
 "Show the groups that contain the active connection below the window title"
 msgstr ""
 "Faol ulanishni oʻz ichiga olgan guruhlarni oyna sarlavhasi ostida koʻrsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:370
+#: rustconn/src/dialogs/settings/ui_tab.rs:365
 msgid "Show connection name in split panes"
 msgstr "Bo'lingan panellarda ulanish nomini ko'rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:372
+#: rustconn/src/dialogs/settings/ui_tab.rs:367
 msgid ""
 "Display a compact header with the connection name at the top of each split-"
 "view pane"
@@ -8434,24 +8441,24 @@ msgstr ""
 "Bo'lingan ko'rinishning har bir paneli yuqorisida ulanish nomi bilan ixcham "
 "sarlavha ko'rsatadi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:383
+#: rustconn/src/dialogs/settings/ui_tab.rs:378
 msgid "Hide hover controls in split panes"
 msgstr ""
 "Bo‘lingan panellarda sichqoncha ustiga olib borilganda boshqaruvlarni "
 "yashirish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:385
+#: rustconn/src/dialogs/settings/ui_tab.rs:380
 msgid ""
 "Hide the top-right reveal arrow with close/detach buttons on split-view panes"
 msgstr ""
 "Bo‘lingan ko‘rinish panellarida yopish/ajratish tugmalari bilan yuqori o‘ng "
 "burchakdagi ochish strelkasini yashirish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:395
+#: rustconn/src/dialogs/settings/ui_tab.rs:390
 msgid "Show directional tab-close items"
 msgstr "Varaqlarni yo'nalish bo'yicha yopish bandlarini ko'rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:397
+#: rustconn/src/dialogs/settings/ui_tab.rs:392
 msgid ""
 "Add \"Close to the Left\" and \"Close to the Right\" to the tab menu's close "
 "options"
@@ -8459,15 +8466,15 @@ msgstr ""
 "Varaq menyusining yopish variantlariga «Chapdagilarni yopish» va "
 "«O'ngdagilarni yopish» qo'shish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:407
+#: rustconn/src/dialogs/settings/ui_tab.rs:402
 msgid "Behavior when opening a connection from the sidebar"
 msgstr "Yon paneldan ulanishni ochish tartibi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:413
+#: rustconn/src/dialogs/settings/ui_tab.rs:408
 msgid "Open a new session on every double-click"
 msgstr "Har bir ikki marta bosishda yangi seans ochish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:415
+#: rustconn/src/dialogs/settings/ui_tab.rs:410
 msgid ""
 "Double-clicking a connection always starts another session instead of "
 "focusing the one already open"
@@ -8475,11 +8482,11 @@ msgstr ""
 "Ulanishni ikki marta bosish har doim yana bir seans ochadi, allaqachon "
 "ochilgan seansga o'tmaydi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:422
+#: rustconn/src/dialogs/settings/ui_tab.rs:417
 msgid "Open tunnelled browser in the embedded browser"
 msgstr "Tunnellangan brauzerni oʻrnatilganda ochish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:424
+#: rustconn/src/dialogs/settings/ui_tab.rs:419
 msgid ""
 "‘Open Browser via Tunnel’ uses the in-app browser; turn off to launch an "
 "external Chromium browser in incognito mode instead"
@@ -8487,31 +8494,31 @@ msgstr ""
 "«Brauzerni tunnel orqali ochish» oʻrnatilgan brauzerdan foydalanadi; tashqi "
 "Chromium brauzerini yashirin rejimda ishga tushirish uchun oʻchiring"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:433
+#: rustconn/src/dialogs/settings/ui_tab.rs:428
 msgid "Tunnelled browser start page"
 msgstr "Tunnellangan brauzerning boshlang‘ich sahifasi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:440
+#: rustconn/src/dialogs/settings/ui_tab.rs:435
 msgid "Google"
 msgstr "Google"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:441
+#: rustconn/src/dialogs/settings/ui_tab.rs:436
 msgid "DuckDuckGo"
 msgstr "DuckDuckGo"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:442
+#: rustconn/src/dialogs/settings/ui_tab.rs:437
 msgid "ifconfig.me (show exit IP)"
 msgstr "ifconfig.me (chiquvchi IP ko‘rsatish)"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:450
+#: rustconn/src/dialogs/settings/ui_tab.rs:445
 msgid "Fill in a common start page, or Custom to type your own"
 msgstr "Keng tarqalgan boshlang‘ich sahifani to‘ldiring yoki Custom"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:471
+#: rustconn/src/dialogs/settings/ui_tab.rs:466
 msgid "External browser command (tunnelled)"
 msgstr "Tunnel uchun tashqi brauzer (buyruq)"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:475
+#: rustconn/src/dialogs/settings/ui_tab.rs:470
 msgid ""
 "Command or path to a Chromium-based browser for the external tunnelled "
 "browser (e.g. chromium, brave-browser). Leave empty to auto-detect."
@@ -8519,86 +8526,86 @@ msgstr ""
 "Tashqi tunnellangan brauzer uchun Chromium asosidagi brauzer buyrug‘i yoki "
 "yo‘li (masalan, chromium, brave-browser). Avtoaniqlash uchun bo‘sh qoldiring."
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:483
+#: rustconn/src/dialogs/settings/ui_tab.rs:478
 msgid "Startup"
 msgstr "Ishga tushirish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:484
+#: rustconn/src/dialogs/settings/ui_tab.rs:479
 msgid "Action to perform when the application starts"
 msgstr "Dastur ishga tushganda bajariladigan amal"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:490
-#: rustconn/src/dialogs/settings/ui_tab.rs:785
-msgid "Do nothing"
-msgstr "Hech narsa qilmaslik"
-
-#: rustconn/src/dialogs/settings/ui_tab.rs:497
+#: rustconn/src/dialogs/settings/ui_tab.rs:484
 msgid "On startup"
 msgstr "Ishga tushganda"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:498
+#: rustconn/src/dialogs/settings/ui_tab.rs:485
 msgid "Open session automatically"
 msgstr "Sessiyani avtomatik ochish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:506
+#: rustconn/src/dialogs/settings/ui_tab.rs:487
+#: rustconn/src/dialogs/settings/ui_tab.rs:784
+msgid "Do Nothing"
+msgstr "Hech narsa qilmaslik"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs:505
 msgid "Show Welcome tab"
 msgstr "«Xush kelibsiz» varagʻini koʻrsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:507
+#: rustconn/src/dialogs/settings/ui_tab.rs:506
 msgid "Display Welcome tab when no session opens at startup"
 msgstr ""
 "Ishga tushganda hech qanday sessiya ochilmasa «Xush kelibsiz» varagʻini "
 "koʻrsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:517
+#: rustconn/src/dialogs/settings/ui_tab.rs:516
 msgid "System Tray"
 msgstr "Tizim treyi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:518
+#: rustconn/src/dialogs/settings/ui_tab.rs:517
 msgid "Requires desktop environment with tray support"
 msgstr "Trey qo'llab-quvvatlaydigan ish stoli muhiti talab qilinadi"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:523
+#: rustconn/src/dialogs/settings/ui_tab.rs:522
 msgid "Show icon"
 msgstr "Belgini ko'rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:524
+#: rustconn/src/dialogs/settings/ui_tab.rs:523
 msgid "Display icon in system tray"
 msgstr "Tizim treyida belgini ko'rsatish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:529
+#: rustconn/src/dialogs/settings/ui_tab.rs:528
 msgid "Minimize to tray"
 msgstr "Trey ga kichraytirish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:530
+#: rustconn/src/dialogs/settings/ui_tab.rs:529
 msgid "Hide window instead of closing"
 msgstr "Yopish o'rniga oynani yashirish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:547
+#: rustconn/src/dialogs/settings/ui_tab.rs:546
 msgid "Session Restore"
 msgstr "Sessiyani tiklash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:548
+#: rustconn/src/dialogs/settings/ui_tab.rs:547
 msgid "Restore previous connections on startup"
 msgstr "Ishga tushganda oldingi ulanishlarni tiklash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:554
+#: rustconn/src/dialogs/settings/ui_tab.rs:553
 msgid "Reconnect to previous sessions on startup"
 msgstr "Ishga tushganda oldingi sessiyalarga qayta ulanish"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:559
+#: rustconn/src/dialogs/settings/ui_tab.rs:558
 msgid "Ask first"
 msgstr "Avval so'rash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:560
+#: rustconn/src/dialogs/settings/ui_tab.rs:559
 msgid "Prompt before restoring sessions"
 msgstr "Sessiyalarni tiklashdan oldin so'rash"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:565
+#: rustconn/src/dialogs/settings/ui_tab.rs:564
 msgid "Max age"
 msgstr "Maksimal yosh"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:566
+#: rustconn/src/dialogs/settings/ui_tab.rs:565
 msgid "Hours before sessions expire"
 msgstr "Sessiyalar tugashidan oldingi soatlar"
 
@@ -8676,14 +8683,14 @@ msgid "SSH Tunnel Manager"
 msgstr "SSH tunnellar boshqaruvchisi"
 
 #: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:553
-#: rustconn/src/sidebar_ui.rs:1054 rustconn/src/sidebar_ui.rs:1253
-#: rustconn/src/window/connection_dialogs.rs:378 rustconn/src/window/ui.rs:262
+#: rustconn/src/sidebar_ui.rs:1054 rustconn/src/sidebar_ui.rs:1255
+#: rustconn/src/window/connection_dialogs.rs:376 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Yangi guruh"
 
 #: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/sidebar_ui.rs:551
-#: rustconn/src/sidebar_ui.rs:1271 rustconn/src/split_view/bridge.rs:1863
-#: rustconn/src/window/edit_dialogs.rs:754 rustconn/src/window/ui.rs:265
+#: rustconn/src/sidebar_ui.rs:1273 rustconn/src/split_view/bridge.rs:1863
+#: rustconn/src/window/edit_dialogs.rs:753 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Tezkor ulanish"
 
@@ -8755,12 +8762,14 @@ msgstr "Panelni yopish"
 
 #: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:456
 #: rustconn/src/split_view/adapter.rs:1082
-#: rustconn/src/split_view/adapter.rs:1573
+#: rustconn/src/split_view/adapter.rs:1592
+#: rustconn/src/split_view/adapter.rs:1657
 msgid "Remove from Split"
 msgstr "Boʻlingan koʻrinishdan olib tashlash"
 
 #: rustconn/src/dialogs/shortcuts.rs:192
-#: rustconn/src/split_view/adapter.rs:1574
+#: rustconn/src/split_view/adapter.rs:1593
+#: rustconn/src/split_view/adapter.rs:1658
 #: rustconn/src/terminal/tab_menu.rs:1200
 msgid "Remove Split"
 msgstr "Boʻlishni olib tashlash"
@@ -9437,12 +9446,12 @@ msgid "SSH tunnels forward ports through encrypted connections"
 msgstr "SSH tunnellari portlarni shifrlangan ulanishlar orqali yonaltiradi"
 
 #: rustconn/src/dialogs/tunnel.rs:110 rustconn/src/dialogs/tunnel.rs:202
-#: rustconn/src/dialogs/tunnel.rs:761
+#: rustconn/src/dialogs/tunnel.rs:778
 msgid "Active"
 msgstr "Faol"
 
 #: rustconn/src/dialogs/tunnel.rs:117 rustconn/src/dialogs/tunnel.rs:205
-#: rustconn/src/dialogs/tunnel.rs:416 rustconn/src/dialogs/tunnel.rs:764
+#: rustconn/src/dialogs/tunnel.rs:416 rustconn/src/dialogs/tunnel.rs:781
 #: rustconn/src/terminal/playback.rs:457
 msgid "Stopped"
 msgstr "To'xtatildi"
@@ -9506,11 +9515,15 @@ msgstr "Tunnelni ochirish"
 msgid "Delete this tunnel"
 msgstr "Bu tunnelni ochirish"
 
-#: rustconn/src/dialogs/tunnel.rs:575 rustconn/src/dialogs/tunnel.rs:587
+#: rustconn/src/dialogs/tunnel.rs:538
+msgid "Could not stop tunnel '{}'."
+msgstr "«{}» tunnelini toʻxtatib boʻlmadi."
+
+#: rustconn/src/dialogs/tunnel.rs:579 rustconn/src/dialogs/tunnel.rs:591
 msgid "Tunnel Did Not Start"
 msgstr "Tunnel Ishga Tushmadi"
 
-#: rustconn/src/dialogs/tunnel.rs:589
+#: rustconn/src/dialogs/tunnel.rs:593
 msgid ""
 "“{}” refers to an SSH connection that no longer exists. Edit the tunnel and "
 "pick a connection."
@@ -9518,11 +9531,11 @@ msgstr ""
 "“{}” endi mavjud bo'lmagan SSH ulanishiga havola qiladi. Tunnelni tahrirlab, "
 "ulanish tanlang."
 
-#: rustconn/src/dialogs/tunnel.rs:643
+#: rustconn/src/dialogs/tunnel.rs:647
 msgid "“{}” needs {}, which is not installed or not on PATH. {}"
 msgstr "“{}” uchun {} kerak, u o'rnatilmagan yoki PATH da yo'q. {}"
 
-#: rustconn/src/dialogs/tunnel.rs:647
+#: rustconn/src/dialogs/tunnel.rs:651
 msgid ""
 "“{}” is attached to a connection that is not SSH. Port forwarding needs an "
 "SSH connection."
@@ -9530,19 +9543,19 @@ msgstr ""
 "“{}” SSH bo'lmagan ulanishga bog'langan. Port yo'naltirish SSH ulanishini "
 "talab qiladi."
 
-#: rustconn/src/dialogs/tunnel.rs:650
+#: rustconn/src/dialogs/tunnel.rs:654
 msgid "“{}” is already running."
 msgstr "“{}” allaqachon ishlayapti."
 
-#: rustconn/src/dialogs/tunnel.rs:653
+#: rustconn/src/dialogs/tunnel.rs:657
 msgid "“{}” could not be started: {}"
 msgstr "“{}” ishga tushmadi: {}"
 
-#: rustconn/src/dialogs/tunnel.rs:670
+#: rustconn/src/dialogs/tunnel.rs:674
 msgid "Install the OpenSSH client and try again."
 msgstr "OpenSSH klientini o'rnatib, qayta urinib ko'ring."
 
-#: rustconn/src/dialogs/tunnel.rs:672
+#: rustconn/src/dialogs/tunnel.rs:676
 msgid ""
 "It ships with the Multipath TCP tools (package “mptcpd” on most "
 "distributions). Install them, or turn off Multipath TCP for this connection."
@@ -9551,17 +9564,29 @@ msgstr ""
 "«mptcpd» paketi). Ularni o'rnating yoki bu ulanish uchun Multipath TCP ni "
 "o'chiring."
 
-#: rustconn/src/dialogs/tunnel.rs:674
+#: rustconn/src/dialogs/tunnel.rs:678
 msgid "Install it, or make sure it can be found on PATH."
 msgstr "Uni o'rnating yoki PATH da topilishiga ishonch hosil qiling."
 
-#: rustconn/src/dialogs/tunnel.rs:716
+#: rustconn/src/dialogs/tunnel.rs:720
 msgid "Delete Tunnel?"
 msgstr "Tunnelni o'chirish?"
 
-#: rustconn/src/dialogs/tunnel.rs:718
+#: rustconn/src/dialogs/tunnel.rs:722
 msgid "Tunnel \"{}\" will be permanently removed."
 msgstr "\"{}\" tunneli butunlay o'chiriladi."
+
+#: rustconn/src/dialogs/tunnel.rs:758
+msgid "Could Not Save Changes"
+msgstr "Oʻzgarishlarni saqlab boʻlmadi"
+
+#: rustconn/src/dialogs/tunnel.rs:760
+msgid ""
+"The tunnel was removed, but saving the change failed and it may return on "
+"next launch: {}"
+msgstr ""
+"Tunnel oʻchirildi, lekin oʻzgarishni saqlab boʻlmadi va u keyingi ishga "
+"tushirishda qaytishi mumkin: {}"
 
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:120
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:202
@@ -9793,6 +9818,24 @@ msgstr ""
 msgid "variable_name"
 msgstr "variable_name"
 
+#: rustconn/src/dialogs/variables.rs:252 rustconn/src/dialogs/variables.rs:623
+#: rustconn/src/window/connection_dialogs.rs:509
+#: rustconn/src/window/edit_group.rs:275
+msgid "Password value"
+msgstr "Parol qiymati"
+
+#: rustconn/src/dialogs/variables.rs:258
+#: rustconn/src/window/connection_dialogs.rs:515
+#: rustconn/src/window/edit_group.rs:281
+msgid "Show/hide password"
+msgstr "Parolni ko'rsatish/yashirish"
+
+#: rustconn/src/dialogs/variables.rs:261
+#: rustconn/src/window/connection_dialogs.rs:519
+#: rustconn/src/window/edit_group.rs:285
+msgid "Toggle password visibility"
+msgstr "Parol ko'rinishini almashtirish"
+
 #: rustconn/src/dialogs/variables.rs:305
 msgid "KeePass entry:"
 msgstr "KeePass yozuvi:"
@@ -9997,7 +10040,7 @@ msgstr "Bittasini yaratish uchun joriy sessiyalarni saqlang"
 msgid "{} connections"
 msgstr "{} ulanish"
 
-#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:331
+#: rustconn/src/embedded.rs:66 rustconn/src/embedded_vnc/ui.rs:338
 #: rustconn/src/session/vnc.rs:175 rustconn/src/session/vnc.rs:243
 msgid "Connecting…"
 msgstr "Ulanmoqda…"
@@ -10130,17 +10173,17 @@ msgid "No text to type"
 msgstr "Teradigan matn yoʻq"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:84
-#: rustconn/src/embedded_vnc/ui.rs:733
+#: rustconn/src/embedded_vnc/ui.rs:740
 msgid "Copied {} chars"
 msgstr "Nusxalandi: {} belgi"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:92
-#: rustconn/src/embedded_vnc/ui.rs:709
+#: rustconn/src/embedded_vnc/ui.rs:716
 msgid "No remote clipboard data"
 msgstr "Masofaviy almashish buferida ma'lumot yo'q"
 
 #: rustconn/src/embedded_rdp/clipboard.rs:198
-#: rustconn/src/embedded_vnc/ui.rs:776
+#: rustconn/src/embedded_vnc/ui.rs:783
 msgid "Pasted {} chars"
 msgstr "Joylashtirildi: {} belgi"
 
@@ -10568,7 +10611,8 @@ msgid "Save files from remote clipboard"
 msgstr "Masofaviy almashish buferidan fayllarni saqlash"
 
 #: rustconn/src/embedded_rdp/mod.rs:770 rustconn/src/embedded_vnc/ui.rs:149
-#: rustconn/src/split_view/adapter.rs:1572 rustconn/src/terminal/mod.rs:1402
+#: rustconn/src/split_view/adapter.rs:1591
+#: rustconn/src/split_view/adapter.rs:1656 rustconn/src/terminal/mod.rs:1402
 #: rustconn/src/terminal/session_lifecycle.rs:401
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
@@ -10689,28 +10733,28 @@ msgstr "Qayta ulanish…"
 msgid "No connection"
 msgstr "Ulanish yo'q"
 
-#: rustconn/src/embedded_rdp/ui.rs:153
+#: rustconn/src/embedded_rdp/ui.rs:154
 msgid "Session ended"
 msgstr "Sessiya tugadi"
 
-#: rustconn/src/embedded_rdp/ui.rs:155
+#: rustconn/src/embedded_rdp/ui.rs:156
 msgid "No connection configured"
 msgstr "Ulanish sozlanmagan"
 
-#: rustconn/src/embedded_rdp/ui.rs:165
+#: rustconn/src/embedded_rdp/ui.rs:166
 msgid "Starting RDP…"
 msgstr "RDP ishga tushirilmoqda…"
 
-#: rustconn/src/embedded_rdp/ui.rs:172
+#: rustconn/src/embedded_rdp/ui.rs:173
 msgid "RDP session running in external window"
 msgstr "RDP sessiyasi tashqi oynada ishlayapti"
 
-#: rustconn/src/embedded_rdp/ui.rs:177 rustconn/src/session/vnc.rs:342
+#: rustconn/src/embedded_rdp/ui.rs:178 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:787
 msgid "Connection failed"
 msgstr "Ulanish muvaffaqiyatsiz"
 
-#: rustconn/src/embedded_rdp/ui.rs:190
+#: rustconn/src/embedded_rdp/ui.rs:191
 msgid "Switch to the external window to interact with the session"
 msgstr "Sessiya bilan ishlash uchun tashqi oynaga o’ting"
 
@@ -10736,17 +10780,17 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Tashqi ko'ruvchi ishlatilmoqda (qo'llab-quvvatlanmaydigan shifrlash)"
 
-#: rustconn/src/embedded_vnc/ui.rs:330 rustconn/src/embedded_web/mod.rs:361
+#: rustconn/src/embedded_vnc/ui.rs:337 rustconn/src/embedded_web/mod.rs:361
 #: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
 msgid "Disconnected"
 msgstr "Uzilgan"
 
-#: rustconn/src/embedded_vnc/ui.rs:333 rustconn/src/session/vnc.rs:330
+#: rustconn/src/embedded_vnc/ui.rs:340 rustconn/src/session/vnc.rs:330
 msgid "Session running in external window"
 msgstr "Sessiya tashqi oynada ishlayapti"
 
-#: rustconn/src/embedded_vnc/ui.rs:336 rustconn/src/session/vnc.rs:177
+#: rustconn/src/embedded_vnc/ui.rs:343 rustconn/src/session/vnc.rs:177
 #: rustconn/src/session/vnc.rs:202
 msgid "Connection error"
 msgstr "Ulanish xatosi"
@@ -11250,11 +11294,11 @@ msgstr "Yozishni boshlash"
 msgid "Stop tracking"
 msgstr "Kuzatishni to'xtatish"
 
-#: rustconn/src/sidebar_ui.rs:556 rustconn/src/sidebar_ui.rs:1272
+#: rustconn/src/sidebar_ui.rs:556 rustconn/src/sidebar_ui.rs:1274
 msgid "Import…"
 msgstr "Import…"
 
-#: rustconn/src/sidebar_ui.rs:557 rustconn/src/sidebar_ui.rs:1273
+#: rustconn/src/sidebar_ui.rs:557 rustconn/src/sidebar_ui.rs:1275
 msgid "Export…"
 msgstr "Eksport…"
 
@@ -11294,83 +11338,83 @@ msgstr "Tanlanganlarni o’chirish"
 msgid "Delete selected connections"
 msgstr "Tanlangan ulanishlarni o’chirish"
 
-#: rustconn/src/sidebar_ui.rs:1138
-msgid "Select Connections"
-msgstr "Ulanishlarni tanlash"
-
-#: rustconn/src/sidebar_ui.rs:1141
-msgid "Toggle multi-select mode for connections"
-msgstr "Ulanishlarni ko‘p tanlash rejimini almashtirish"
-
-#: rustconn/src/sidebar_ui.rs:1150
+#: rustconn/src/sidebar_ui.rs:1136
 msgid "View connection history"
 msgstr "Ulanish tarixini ko’rish"
 
-#: rustconn/src/sidebar_ui.rs:1160
+#: rustconn/src/sidebar_ui.rs:1149
+msgid "Select Connections"
+msgstr "Ulanishlarni tanlash"
+
+#: rustconn/src/sidebar_ui.rs:1152
+msgid "Toggle multi-select mode for connections"
+msgstr "Ulanishlarni ko‘p tanlash rejimini almashtirish"
+
+#: rustconn/src/sidebar_ui.rs:1162
 msgid "Sort alphabetically"
 msgstr "Alifbo boʻyicha saralash"
 
-#: rustconn/src/sidebar_ui.rs:1163
+#: rustconn/src/sidebar_ui.rs:1165
 msgid "Sort connections alphabetically"
 msgstr "Ulanishlarni alifbo tartibida saralash"
 
-#: rustconn/src/sidebar_ui.rs:1169
+#: rustconn/src/sidebar_ui.rs:1171
 msgid "Sort by recent usage"
 msgstr "Oxirgi foydalanish boʻyicha saralash"
 
-#: rustconn/src/sidebar_ui.rs:1172
+#: rustconn/src/sidebar_ui.rs:1174
 msgid "Sort connections by recent usage"
 msgstr "Ulanishlarni oxirgi foydalanish bo’yicha saralash"
 
-#: rustconn/src/sidebar_ui.rs:1178
+#: rustconn/src/sidebar_ui.rs:1180
 msgid "Open password vault"
 msgstr "Parollar omborini ochish"
 
-#: rustconn/src/sidebar_ui.rs:1182
+#: rustconn/src/sidebar_ui.rs:1184
 msgid "Open password vault for credential management"
 msgstr "Hisob ma’lumotlarini boshqarish uchun parol omborini ochish"
 
-#: rustconn/src/sidebar_ui.rs:1188
+#: rustconn/src/sidebar_ui.rs:1190
 msgid "Toggle smart folders"
 msgstr "Aqlli papkalarni yoqish/oʻchirish"
 
-#: rustconn/src/sidebar_ui.rs:1191
+#: rustconn/src/sidebar_ui.rs:1193
 msgid "Show or hide smart folders panel"
 msgstr "Aqlli papkalar panelini ko'rsatish yoki yashirish"
 
-#: rustconn/src/sidebar_ui.rs:1226
+#: rustconn/src/sidebar_ui.rs:1228
 msgid "Search (Ctrl+F)"
 msgstr "Qidirish (Ctrl+F)"
 
-#: rustconn/src/sidebar_ui.rs:1227
+#: rustconn/src/sidebar_ui.rs:1229
 msgid "Toggle search"
 msgstr "Qidiruvni almashtirish"
 
-#: rustconn/src/sidebar_ui.rs:1250 rustconn/src/window/ui.rs:259
+#: rustconn/src/sidebar_ui.rs:1252 rustconn/src/window/ui.rs:259
 msgid "New Connection (Advanced)…"
 msgstr "Yangi ulanish (kengaytirilgan)…"
 
-#: rustconn/src/sidebar_ui.rs:1260
+#: rustconn/src/sidebar_ui.rs:1262
 msgid "Manage Workspaces"
 msgstr "Ish maydonlarini boshqarish"
 
-#: rustconn/src/sidebar_ui.rs:1263 rustconn/src/window/snippets.rs:218
+#: rustconn/src/sidebar_ui.rs:1265 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
 msgstr "Snippetlarni boshqarish"
 
-#: rustconn/src/sidebar_ui.rs:1264 rustconn/src/window/ui.rs:297
+#: rustconn/src/sidebar_ui.rs:1266 rustconn/src/window/ui.rs:297
 msgid "Tools"
 msgstr "Asboblar"
 
-#: rustconn/src/sidebar_ui.rs:1282
+#: rustconn/src/sidebar_ui.rs:1284
 msgid "Sort Alphabetically"
 msgstr "Alifbo boʻyicha saralash"
 
-#: rustconn/src/sidebar_ui.rs:1285
+#: rustconn/src/sidebar_ui.rs:1287
 msgid "Sort by Recent Use"
 msgstr "Oxirgi foydalanish boʻyicha saralash"
 
-#: rustconn/src/sidebar_ui.rs:1288
+#: rustconn/src/sidebar_ui.rs:1290
 msgid "Connection list menu"
 msgstr "Ulanishlar ro'yxati menyusi"
 
@@ -11417,35 +11461,36 @@ msgstr "Ushbu paneldagi seans uziladi va yopiladi."
 msgid "Terminal panel"
 msgstr "Terminal paneli"
 
-#: rustconn/src/split_view/adapter.rs:1575
+#: rustconn/src/split_view/adapter.rs:1594
+#: rustconn/src/split_view/adapter.rs:1659
 msgid "Close Connection"
 msgstr "Ulanishni yopish"
 
-#: rustconn/src/split_view/adapter.rs:1638
+#: rustconn/src/split_view/adapter.rs:1710
 msgid "Empty Panel"
 msgstr "Bo'sh panel"
 
-#: rustconn/src/split_view/adapter.rs:1639
+#: rustconn/src/split_view/adapter.rs:1711
 msgid "Select an existing tab to display in this panel"
 msgstr "Ushbu panelda ko'rsatish uchun mavjud tabni tanlang"
 
-#: rustconn/src/split_view/adapter.rs:1649
+#: rustconn/src/split_view/adapter.rs:1721
 msgid "Select Tab…"
 msgstr "Tabni tanlash…"
 
-#: rustconn/src/split_view/adapter.rs:1650
+#: rustconn/src/split_view/adapter.rs:1722
 msgid "Choose an open tab to display in this panel"
 msgstr "Ushbu panelda ko'rsatish uchun ochiq tabni tanlang"
 
-#: rustconn/src/split_view/adapter.rs:1680
+#: rustconn/src/split_view/adapter.rs:1752
 msgid "Open a new local shell in this panel"
 msgstr "Bu panelda yangi mahalliy qobiq ochish"
 
-#: rustconn/src/split_view/adapter.rs:1707
+#: rustconn/src/split_view/adapter.rs:1779
 msgid "Close panel"
 msgstr "Panelni yopish"
 
-#: rustconn/src/split_view/adapter.rs:1718
+#: rustconn/src/split_view/adapter.rs:1790
 msgid "Close split view panel"
 msgstr "Boʻlingan koʻrinish panelini yopish"
 
@@ -11866,7 +11911,7 @@ msgstr "{} faol sessiya(lar)"
 msgid "About RustConn"
 msgstr "RustConn haqida"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5300
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5304
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Parol iborasi ko'chma faylni ochmaydi"
 
@@ -12066,8 +12111,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Oʻtish xosti mavjud emas"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3320
-#: rustconn/src/window/mod.rs:3386 rustconn/src/window/rdp_vnc.rs:766
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3324
+#: rustconn/src/window/mod.rs:3390 rustconn/src/window/rdp_vnc.rs:766
 msgid "Connect Anyway"
 msgstr "Baribir ulanish"
 
@@ -12134,92 +12179,92 @@ msgstr "Dinamik papka '{}' muvaffaqiyatsiz: {}"
 msgid "Refreshed '{}': {} connections generated"
 msgstr "'{}' yangilandi: {} ta ulanish yaratildi"
 
-#: rustconn/src/window/connection_dialogs.rs:138
-#: rustconn/src/window/templates.rs:430
+#: rustconn/src/window/connection_dialogs.rs:137
+#: rustconn/src/window/templates.rs:429
 msgid "New Connection from Template"
 msgstr "Shablondan yangi ulanish"
 
-#: rustconn/src/window/connection_dialogs.rs:206
-#: rustconn/src/window/connection_dialogs.rs:352
-#: rustconn/src/window/templates.rs:482
+#: rustconn/src/window/connection_dialogs.rs:205
+#: rustconn/src/window/connection_dialogs.rs:350
+#: rustconn/src/window/templates.rs:481
 msgid "Error Creating Connection"
 msgstr "Ulanish yaratishda xato"
 
-#: rustconn/src/window/connection_dialogs.rs:412
+#: rustconn/src/window/connection_dialogs.rs:410
 #: rustconn/src/window/edit_group.rs:106
 msgid "Group Details"
 msgstr "Guruh tafsilotlari"
 
-#: rustconn/src/window/connection_dialogs.rs:447
+#: rustconn/src/window/connection_dialogs.rs:445
 #: rustconn/src/window/edit_group.rs:189
 msgid "(None - Root Level)"
 msgstr "(Yo'q - Ildiz darajasi)"
 
-#: rustconn/src/window/connection_dialogs.rs:472
+#: rustconn/src/window/connection_dialogs.rs:470
 #: rustconn/src/window/edit_group.rs:216
 msgid "Parent"
 msgstr "Ota"
 
-#: rustconn/src/window/connection_dialogs.rs:473
+#: rustconn/src/window/connection_dialogs.rs:471
 msgid "Optional - leave empty for root level"
 msgstr "Ixtiyoriy - ildiz darajasi uchun bo'sh qoldiring"
 
-#: rustconn/src/window/connection_dialogs.rs:482
+#: rustconn/src/window/connection_dialogs.rs:480
 #: rustconn/src/window/edit_group.rs:229
 msgid "Default Credentials"
 msgstr "Standart hisob ma'lumotlari"
 
-#: rustconn/src/window/connection_dialogs.rs:483
+#: rustconn/src/window/connection_dialogs.rs:481
 #: rustconn/src/window/edit_group.rs:230
 msgid "Credentials inherited by connections in this group"
 msgstr "Ushbu guruhdagi ulanishlar tomonidan meros olingan hisob ma'lumotlari"
 
-#: rustconn/src/window/connection_dialogs.rs:575
+#: rustconn/src/window/connection_dialogs.rs:573
 msgid "Enter group name first"
 msgstr "Avval guruh nomini kiriting"
 
-#: rustconn/src/window/connection_dialogs.rs:603
+#: rustconn/src/window/connection_dialogs.rs:601
 msgid "Vault not configured"
 msgstr "Ombor sozlanmagan"
 
-#: rustconn/src/window/connection_dialogs.rs:641
-#: rustconn/src/window/connection_dialogs.rs:805
-#: rustconn/src/window/connection_dialogs.rs:812
+#: rustconn/src/window/connection_dialogs.rs:639
+#: rustconn/src/window/connection_dialogs.rs:803
+#: rustconn/src/window/connection_dialogs.rs:810
 #: rustconn/src/window/edit_group.rs:486 rustconn/src/window/edit_group.rs:518
 #: rustconn/src/window/edit_group.rs:525
 msgid "No password found for this group"
 msgstr "Ushbu guruh uchun parol topilmadi"
 
-#: rustconn/src/window/connection_dialogs.rs:647
-#: rustconn/src/window/connection_dialogs.rs:817
+#: rustconn/src/window/connection_dialogs.rs:645
+#: rustconn/src/window/connection_dialogs.rs:815
 #: rustconn/src/window/edit_group.rs:492 rustconn/src/window/edit_group.rs:530
 msgid "Load Error"
 msgstr "Yuklash xatosi"
 
-#: rustconn/src/window/connection_dialogs.rs:826
+#: rustconn/src/window/connection_dialogs.rs:824
 #: rustconn/src/window/edit_group.rs:439
 msgid "Select Vault to load password"
 msgstr "Parolni yuklash uchun omborni tanlang"
 
-#: rustconn/src/window/connection_dialogs.rs:838
+#: rustconn/src/window/connection_dialogs.rs:836
 #: rustconn/src/window/edit_group.rs:1438
 msgid "Notes, contacts, project info"
 msgstr "Eslatmalar, kontaktlar, loyiha ma'lumotlari"
 
-#: rustconn/src/window/connection_dialogs.rs:878
+#: rustconn/src/window/connection_dialogs.rs:876
 #: rustconn/src/window/edit_group.rs:1555
 msgid "Group name cannot be empty"
 msgstr "Guruh nomi bo'sh bo'lishi mumkin emas"
 
-#: rustconn/src/window/connection_dialogs.rs:967
+#: rustconn/src/window/connection_dialogs.rs:965
 msgid "Error Updating Group"
 msgstr "Guruhni yangilashda xato"
 
-#: rustconn/src/window/connection_dialogs.rs:1057
+#: rustconn/src/window/connection_dialogs.rs:1055
 msgid "Import Duplicates?"
 msgstr "Dublikatlar import qilinsinmi?"
 
-#: rustconn/src/window/connection_dialogs.rs:1059
+#: rustconn/src/window/connection_dialogs.rs:1057
 msgid ""
 "{} of {} connections have the same name as existing ones. Imported copies "
 "are kept alongside the existing connections under a numbered name."
@@ -12228,19 +12273,19 @@ msgstr ""
 "Import qilingan nusxalar mavjud ulanishlar yonida raqamlangan nom bilan "
 "saqlanadi."
 
-#: rustconn/src/window/connection_dialogs.rs:1067
+#: rustconn/src/window/connection_dialogs.rs:1065
 msgid "Skip Duplicates"
 msgstr "Dublikatlarni o'tkazib yuborish"
 
-#: rustconn/src/window/connection_dialogs.rs:1068
+#: rustconn/src/window/connection_dialogs.rs:1066
 msgid "Import All"
 msgstr "Hammasini import qilish"
 
-#: rustconn/src/window/connection_dialogs.rs:1134
+#: rustconn/src/window/connection_dialogs.rs:1132
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr "{} ta ulanish va {} ta snippet '{}' guruhiga import qilindi"
 
-#: rustconn/src/window/connection_dialogs.rs:1139
+#: rustconn/src/window/connection_dialogs.rs:1137
 msgid "Imported {} connections to '{}' group"
 msgstr "{} ta ulanish '{}' guruhiga import qilindi"
 
@@ -12546,44 +12591,44 @@ msgstr ""
 "SSH tunnellash oʻrnatilgan yoki maxsus (Chromium) brauzerni talab qiladi; "
 "tizim brauzeri tunnelsiz ochiladi."
 
-#: rustconn/src/window/edit_dialogs.rs:261
+#: rustconn/src/window/edit_dialogs.rs:260
 msgid "Failed to update vault entry: {}"
 msgstr "Ombor yozuvini yangilashda xatolik: {}"
 
-#: rustconn/src/window/edit_dialogs.rs:278
+#: rustconn/src/window/edit_dialogs.rs:277
 msgid "Error Updating Connection"
 msgstr "Ulanishni yangilashda xato"
 
-#: rustconn/src/window/edit_dialogs.rs:309
+#: rustconn/src/window/edit_dialogs.rs:308
 msgid "Rename Group"
 msgstr "Guruh nomini o'zgartirish"
 
-#: rustconn/src/window/edit_dialogs.rs:311
+#: rustconn/src/window/edit_dialogs.rs:310
 msgid "Rename Connection"
 msgstr "Ulanish nomini o'zgartirish"
 
-#: rustconn/src/window/edit_dialogs.rs:353
+#: rustconn/src/window/edit_dialogs.rs:352
 msgid "Name cannot be empty"
 msgstr "Nom bo'sh bo'lishi mumkin emas"
 
-#: rustconn/src/window/edit_dialogs.rs:370
+#: rustconn/src/window/edit_dialogs.rs:369
 #: rustconn/src/window/edit_group.rs:1614
 msgid "Group with name '{}' already exists"
 msgstr "'{}' nomli guruh allaqachon mavjud"
 
-#: rustconn/src/window/edit_dialogs.rs:468
+#: rustconn/src/window/edit_dialogs.rs:467
 msgid "Failed to rename vault entry: {}"
 msgstr "Ombor yozuvi nomini o‘zgartirishda xatolik: {}"
 
-#: rustconn/src/window/edit_dialogs.rs:774
+#: rustconn/src/window/edit_dialogs.rs:773
 msgid "⚠ This connection will not be saved"
 msgstr "⚠ Ushbu ulanish saqlanmaydi"
 
-#: rustconn/src/window/edit_dialogs.rs:796
+#: rustconn/src/window/edit_dialogs.rs:795
 msgid "Template"
 msgstr "Shablon"
 
-#: rustconn/src/window/edit_dialogs.rs:861
+#: rustconn/src/window/edit_dialogs.rs:860
 msgid "Recent"
 msgstr "Yaqinda"
 
@@ -12776,15 +12821,15 @@ msgstr ""
 msgid "Enable Cloud Sync?"
 msgstr "Bulutli sinxronlashni yoqish?"
 
-#: rustconn/src/window/edit_group.rs:1922
+#: rustconn/src/window/edit_group.rs:1923
 msgid "Choose Directory"
 msgstr "Katalogni tanlash"
 
-#: rustconn/src/window/edit_group.rs:1929
+#: rustconn/src/window/edit_group.rs:1930
 msgid "Set Up Cloud Sync"
 msgstr "Bulutli sinxronlashni sozlash"
 
-#: rustconn/src/window/edit_group.rs:1931
+#: rustconn/src/window/edit_group.rs:1932
 msgid ""
 "Choose a directory synced with your cloud service (Google Drive, Nextcloud, "
 "Syncthing, etc.)"
@@ -12792,16 +12837,16 @@ msgstr ""
 "Bulut xizmatingiz bilan sinxronlangan katalogni tanlang (Google Drive, "
 "Nextcloud, Syncthing va h.k.)"
 
-#: rustconn/src/window/edit_group.rs:2446
+#: rustconn/src/window/edit_group.rs:2447
 msgid "Shell command (e.g., export TERM=xterm-256color)"
 msgstr "Shell buyrugʻi (masalan, export TERM=xterm-256color)"
 
-#: rustconn/src/window/edit_group.rs:2447
+#: rustconn/src/window/edit_group.rs:2448
 msgid "Command to execute after login"
 msgstr "Kirgandan keyin bajariladigan buyruq"
 
-#: rustconn/src/window/edit_group.rs:2457
-#: rustconn/src/window/edit_group.rs:2460
+#: rustconn/src/window/edit_group.rs:2458
+#: rustconn/src/window/edit_group.rs:2461
 msgid "Delete script"
 msgstr "Skriptni oʻchirish"
 
@@ -12943,39 +12988,39 @@ msgstr ""
 "«{}» ga ulanish endi oʻsha oʻtish xostini oʻtkazib yuboradi va faqat "
 "sozlangan marshrutning qolganidan foydalanadi."
 
-#: rustconn/src/window/mod.rs:1019 rustconn/src/window/mod.rs:1030
+#: rustconn/src/window/mod.rs:1023 rustconn/src/window/mod.rs:1034
 msgid "Dismiss"
 msgstr "Yopish"
 
-#: rustconn/src/window/mod.rs:1059
+#: rustconn/src/window/mod.rs:1063
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Parollar ma'lumotlar bazasini ochish uchun apparat kalitiga teging"
 
-#: rustconn/src/window/mod.rs:2529
+#: rustconn/src/window/mod.rs:2533
 msgid "Already running in an external window"
 msgstr "Allaqachon tashqi oynada ishlamoqda"
 
-#: rustconn/src/window/mod.rs:2680
+#: rustconn/src/window/mod.rs:2684
 msgid "Connection to ‘{}’ failed"
 msgstr "‘{}’ ga ulanish muvaffaqiyatsiz"
 
-#: rustconn/src/window/mod.rs:3012 rustconn/src/window/mod.rs:3026
+#: rustconn/src/window/mod.rs:3016 rustconn/src/window/mod.rs:3030
 msgid "Pre-connect task failed: {}"
 msgstr "Ulanish oldidan vazifa bajarilmadi: {}"
 
-#: rustconn/src/window/mod.rs:3060
+#: rustconn/src/window/mod.rs:3064
 msgid "Port knock failed: {}"
 msgstr "Port knock amalga oshmadi: {}"
 
-#: rustconn/src/window/mod.rs:3109
+#: rustconn/src/window/mod.rs:3113
 msgid "SPA failed: {}"
 msgstr "SPA amalga oshmadi: {}"
 
-#: rustconn/src/window/mod.rs:3305
+#: rustconn/src/window/mod.rs:3309
 msgid "{} (via {})"
 msgstr "{} ({} orqali)"
 
-#: rustconn/src/window/mod.rs:3311
+#: rustconn/src/window/mod.rs:3315
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -12999,35 +13044,35 @@ msgstr ""
 "Agar bu o‘zgarishni siz qilmagan bo‘lsangiz, bekor qiling — ulanish "
 "saqlangan hisob ma’lumotlarini boshqa mashinaga yuborishi mumkin."
 
-#: rustconn/src/window/mod.rs:3316
+#: rustconn/src/window/mod.rs:3320
 msgid "Routing changed for “{}”"
 msgstr "«{}» uchun marshrut o‘zgardi"
 
-#: rustconn/src/window/mod.rs:3380
+#: rustconn/src/window/mod.rs:3384
 msgid "Jump Host Unavailable for “{}”"
 msgstr "«{}» uchun oʻtish xosti mavjud emas"
 
-#: rustconn/src/window/mod.rs:3385
+#: rustconn/src/window/mod.rs:3389
 msgid "Connect Directly"
 msgstr "Toʻgʻridan-toʻgʻri ulanish"
 
-#: rustconn/src/window/mod.rs:3474 rustconn/src/window/mod.rs:3649
+#: rustconn/src/window/mod.rs:3478 rustconn/src/window/mod.rs:3653
 msgid "Connection “{}” created"
 msgstr "“{}” ulanishi yaratildi"
 
-#: rustconn/src/window/mod.rs:3856
+#: rustconn/src/window/mod.rs:3860
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4056
+#: rustconn/src/window/mod.rs:4060
 msgid "Settings saved"
 msgstr "Sozlamalar saqlandi"
 
-#: rustconn/src/window/mod.rs:4093
+#: rustconn/src/window/mod.rs:4097
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Parol iborasi bu kompyuterda saqlanmadi"
 
-#: rustconn/src/window/mod.rs:4095
+#: rustconn/src/window/mod.rs:4099
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -13039,11 +13084,11 @@ msgstr ""
 "so'raladi. Buning o'rniga «Tizim kalitlar shodasi»ni tanlang yoki RustConn "
 "o'z ma'lumotlar katalogiga yozishi mumkinligini tekshiring."
 
-#: rustconn/src/window/mod.rs:4141
+#: rustconn/src/window/mod.rs:4145
 msgid "Credentials Not Saved to Keyring"
 msgstr "Hisob ma’lumotlari kalitlar to‘plamiga saqlanmadi"
 
-#: rustconn/src/window/mod.rs:4143
+#: rustconn/src/window/mod.rs:4147
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -13054,15 +13099,15 @@ msgstr ""
 "yo‘qoladi. Kalitlar to‘plami xizmati ishlayotganini va qulfi ochilganini "
 "tekshirib, sozlamalarni qayta saqlang."
 
-#: rustconn/src/window/mod.rs:4326
+#: rustconn/src/window/mod.rs:4330
 msgid "Close RustConn?"
 msgstr "RustConn yopilsinmi?"
 
-#: rustconn/src/window/mod.rs:4328
+#: rustconn/src/window/mod.rs:4332
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} ta seans varag'i ochiq. Faol ulanishlar uziladi."
 
-#: rustconn/src/window/mod.rs:4365
+#: rustconn/src/window/mod.rs:4369
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -13070,7 +13115,7 @@ msgstr ""
 "Sozlamalarni o'qib bo'lmadi, shuning uchun standart qiymatlar ishlatilmoqda. "
 "O'qib bo'lmaydigan fayl {} sifatida saqlandi."
 
-#: rustconn/src/window/mod.rs:4370
+#: rustconn/src/window/mod.rs:4374
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -13078,35 +13123,35 @@ msgstr ""
 "Ushbu sozlamalar yangiroq RustConn ({}) tomonidan saqlangan. Ular "
 "o'zgartirilishdan oldin zaxira nusxa saqlanadi."
 
-#: rustconn/src/window/mod.rs:4395
+#: rustconn/src/window/mod.rs:4399
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' uchun bulutli sinxronlash muvaffaqiyatsiz tugadi: {}"
 
-#: rustconn/src/window/mod.rs:4578
+#: rustconn/src/window/mod.rs:4582
 msgid "Startup connection not found"
 msgstr "Ishga tushirish ulanishi topilmadi"
 
-#: rustconn/src/window/mod.rs:4614
+#: rustconn/src/window/mod.rs:4618
 msgid "Failed to open .rdp file"
 msgstr ".rdp faylni ochib bo’lmadi"
 
-#: rustconn/src/window/mod.rs:4650
+#: rustconn/src/window/mod.rs:4654
 msgid "Failed to open .vv file"
 msgstr ".vv faylni ochib bo'lmadi"
 
-#: rustconn/src/window/mod.rs:4687
+#: rustconn/src/window/mod.rs:4691
 msgid "Tunnel “{}” stopped: {}"
 msgstr "“{}” tunneli to'xtadi: {}"
 
-#: rustconn/src/window/mod.rs:4703
+#: rustconn/src/window/mod.rs:4707
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "“{}” tunnelini qayta ulash to'xtatildi: {}"
 
-#: rustconn/src/window/mod.rs:5216
+#: rustconn/src/window/mod.rs:5220
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "{} ta ulanish muvaffaqiyatli eksport qilindi. {} tashlab yuborildi."
 
-#: rustconn/src/window/mod.rs:5302
+#: rustconn/src/window/mod.rs:5306
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13810,6 +13855,12 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ulanish;terminal;masofaviy;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Do nothing"
+#~ msgstr "Hech narsa qilmaslik"
+
+#~ msgid "Failed to add key: {}"
+#~ msgstr "Kalitni qo‘shishda xatolik: {}"
 
 #~ msgid "Create Cluster"
 #~ msgstr "Klaster yaratish"

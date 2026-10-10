@@ -2,9 +2,7 @@
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, DropDown, Entry, Orientation, SpinButton, StringList, ToggleButton, gdk,
-};
+use gtk4::{Box as GtkBox, Entry, Orientation, StringList, ToggleButton, gdk};
 use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::terminal_themes::TerminalTheme;
@@ -19,9 +17,9 @@ use crate::i18n::{i18n, i18n_f};
 pub fn create_terminal_page() -> (
     adw::PreferencesPage,
     Entry,
-    SpinButton,
-    SpinButton,
-    DropDown,
+    adw::SpinRow,
+    adw::SpinRow,
+    adw::ComboRow,
     GtkBox, // cursor shape buttons container
     GtkBox, // cursor blink buttons container
     adw::SwitchRow,
@@ -60,15 +58,13 @@ pub fn create_terminal_page() -> (
 
     // Font size row - simplified title
     let size_adj = gtk4::Adjustment::new(12.0, 6.0, 72.0, 1.0, 2.0, 0.0);
-    let font_size_spin = SpinButton::builder()
+    let font_size_row = adw::SpinRow::builder()
+        .title(i18n("Size"))
         .adjustment(&size_adj)
         .climb_rate(1.0)
         .digits(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let font_size_row = adw::ActionRow::builder().title(i18n("Size")).build();
-    font_size_row.add_suffix(&font_size_spin);
-    font_size_row.set_activatable_widget(Some(&font_size_spin));
+    let font_size_spin = font_size_row.clone();
     font_group.add(&font_size_row);
 
     page.add(&font_group);
@@ -81,14 +77,12 @@ pub fn create_terminal_page() -> (
     let theme_names = TerminalTheme::theme_names();
     let theme_labels = theme_labels(&theme_names);
     let theme_list = StringList::new(&theme_labels.iter().map(String::as_str).collect::<Vec<_>>());
-    let color_theme_dropdown = DropDown::builder()
+    let color_theme_row = adw::ComboRow::builder()
+        .title(i18n("Theme"))
         .model(&theme_list)
         .selected(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let color_theme_row = adw::ActionRow::builder().title(i18n("Theme")).build();
-    color_theme_row.add_suffix(&color_theme_dropdown);
-    color_theme_row.set_activatable_widget(Some(&color_theme_dropdown));
+    let color_theme_dropdown = color_theme_row.clone();
     colors_group.add(&color_theme_row);
 
     // Custom theme management buttons
@@ -340,18 +334,14 @@ pub fn create_terminal_page() -> (
 
     // Scrollback lines - simplified title
     let scrollback_adj = gtk4::Adjustment::new(10000.0, 100.0, 1_000_000.0, 100.0, 1000.0, 0.0);
-    let scrollback_spin = SpinButton::builder()
+    let scrollback_row = adw::SpinRow::builder()
+        .title(i18n("History"))
+        .subtitle(i18n("Number of lines to keep in scrollback"))
         .adjustment(&scrollback_adj)
         .climb_rate(100.0)
         .digits(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let scrollback_row = adw::ActionRow::builder()
-        .title(i18n("History"))
-        .subtitle(i18n("Number of lines to keep in scrollback"))
-        .build();
-    scrollback_row.add_suffix(&scrollback_spin);
-    scrollback_row.set_activatable_widget(Some(&scrollback_spin));
+    let scrollback_spin = scrollback_row.clone();
     scrolling_group.add(&scrollback_row);
 
     // Keep scrollback across an in-place reconnect (issue #253)
@@ -538,9 +528,9 @@ pub fn create_terminal_page() -> (
 )]
 pub fn load_terminal_settings(
     font_family_entry: &Entry,
-    font_size_spin: &SpinButton,
-    scrollback_spin: &SpinButton,
-    color_theme_dropdown: &DropDown,
+    font_size_spin: &adw::SpinRow,
+    scrollback_spin: &adw::SpinRow,
+    color_theme_dropdown: &adw::ComboRow,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,
     scroll_on_output_row: &adw::SwitchRow,
@@ -691,9 +681,9 @@ fn get_active_toggle_index(button_box: &GtkBox) -> usize {
 )]
 pub fn collect_terminal_settings(
     font_family_entry: &Entry,
-    font_size_spin: &SpinButton,
-    scrollback_spin: &SpinButton,
-    color_theme_dropdown: &DropDown,
+    font_size_spin: &adw::SpinRow,
+    scrollback_spin: &adw::SpinRow,
+    color_theme_dropdown: &adw::ComboRow,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,
     scroll_on_output_row: &adw::SwitchRow,
@@ -798,7 +788,7 @@ fn theme_labels(names: &[String]) -> Vec<String> {
 }
 
 /// Refreshes the theme dropdown model and selects the given theme name.
-fn refresh_theme_dropdown(dropdown: &DropDown, select_name: &str) {
+fn refresh_theme_dropdown(dropdown: &adw::ComboRow, select_name: &str) {
     let names = TerminalTheme::theme_names();
     let labels = theme_labels(&names);
     let list = StringList::new(&labels.iter().map(String::as_str).collect::<Vec<_>>());
@@ -822,12 +812,21 @@ where
     dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("create", &i18n("Create"));
     dialog.set_response_appearance("create", adw::ResponseAppearance::Suggested);
+    // Guard against a silent no-op: Create stays disabled until the name is
+    // non-empty, so pressing it (or Enter) with a blank field can't quietly
+    // discard the action (GNOME HIG: never drop a user action with no feedback).
+    dialog.set_response_enabled("create", false);
 
     let entry = Entry::builder()
         .placeholder_text(i18n("Theme name"))
         .hexpand(true)
         .build();
     dialog.set_extra_child(Some(&entry));
+
+    let dialog_for_entry = dialog.clone();
+    entry.connect_changed(move |e| {
+        dialog_for_entry.set_response_enabled("create", !e.text().trim().is_empty());
+    });
 
     let entry_c = entry.clone();
     dialog.connect_response(None, move |_, response| {
@@ -857,7 +856,7 @@ where
 fn show_theme_editor(
     parent: Option<&gtk4::Window>,
     theme: &TerminalTheme,
-    dropdown: &DropDown,
+    dropdown: &adw::ComboRow,
     edit_btn: &gtk4::Button,
     delete_btn: &gtk4::Button,
 ) {
@@ -945,6 +944,8 @@ fn show_theme_editor(
 
     let scrolled = gtk4::ScrolledWindow::builder()
         .child(&content)
+        .min_content_width(420)
+        .max_content_width(480)
         .min_content_height(400)
         .max_content_height(500)
         .propagate_natural_height(true)

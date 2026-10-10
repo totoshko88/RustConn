@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.23.8" date="2026-10-10">
+      <description>
+        <p>Version 0.23.8 - UI/UX HIG audit fixes, native settings rows, and theme-aware embedded viewers:</p>
+        <ul>
+          <li>Recording, tunnel and SSH-key failures are surfaced in a dialog or status page instead of a silent log line</li>
+          <li>The "Enable Cloud Sync?" confirmation defaults to Cancel, and the new-theme prompt can no longer be dismissed into a no-op</li>
+          <li>The Theme Editor is wide enough to read its colour rows, and the on-startup connection picker is type-to-search</li>
+          <li>Terminal and Interface settings rows migrated to native AdwSpinRow and AdwComboRow; password fields use revealable native rows</li>
+          <li>Embedded RDP/VNC status screens follow the light/dark theme instead of a fixed dark background</li>
+          <li>Split-view pane actions gained a keyboard and hidden-header route (Shift+F10 / Menu) per the GNOME HIG</li>
+          <li>Window minimum height lowered to the HIG 360x294 phone-portrait floor</li>
+          <li>Updated cc, smallvec, syn and uuid</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.23.7" date="2026-10-10">
       <description>
         <p>Version 0.23.7 - GNOME HIG split-pane controls, sidebar session-menu fixes, and a sidebar restyle:</p>

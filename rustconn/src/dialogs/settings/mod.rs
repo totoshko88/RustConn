@@ -77,9 +77,9 @@ pub struct SettingsDialog {
     dialog: adw::PreferencesDialog,
     // Terminal settings
     font_family_entry: Entry,
-    font_size_spin: SpinButton,
-    scrollback_spin: SpinButton,
-    color_theme_dropdown: DropDown,
+    font_size_spin: adw::SpinRow,
+    scrollback_spin: adw::SpinRow,
+    color_theme_dropdown: adw::ComboRow,
     cursor_shape_buttons: GtkBox,
     cursor_blink_buttons: GtkBox,
     scroll_on_output_check: adw::SwitchRow,
@@ -108,7 +108,7 @@ pub struct SettingsDialog {
     secrets_widgets: SecretsPageWidgets,
     // UI settings
     color_scheme_box: GtkBox,
-    language_dropdown: DropDown,
+    language_dropdown: adw::ComboRow,
     remember_geometry: adw::SwitchRow,
     enable_tray_icon: adw::SwitchRow,
     minimize_to_tray: adw::SwitchRow,
@@ -117,7 +117,7 @@ pub struct SettingsDialog {
     prompt_on_restore: adw::SwitchRow,
     max_age_row: adw::SpinRow,
     // Startup action
-    startup_action_dropdown: DropDown,
+    startup_action_dropdown: adw::ComboRow,
     // Sidebar width setting
     sidebar_width_row: adw::SpinRow,
     // Compact interface toggle

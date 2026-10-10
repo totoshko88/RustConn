@@ -49,7 +49,7 @@ struct VariableRow {
     /// Entry for variable value (regular, visible)
     value_entry: Entry,
     /// Entry for secret value (hidden text, with show/hide toggle)
-    secret_entry: Entry,
+    secret_entry: gtk4::PasswordEntry,
     /// Checkbox for secret flag
     is_secret_check: CheckButton,
     /// Entry for description
@@ -246,20 +246,14 @@ impl VariablesDialog {
             .hexpand(true)
             .placeholder_text(i18n("Variable value"))
             .build();
-        // Secret value entry (visible when secret, with masked input)
-        let secret_entry = Entry::builder()
+        // Secret value entry (visible when secret). gtk4::PasswordEntry masks
+        // its text and shows a built-in peek (reveal) icon, so no separate
+        // show/hide button is needed.
+        let secret_entry = gtk4::PasswordEntry::builder()
             .hexpand(true)
             .placeholder_text(i18n("Password value"))
-            .visibility(false)
+            .show_peek_icon(true)
             .build();
-        // Show/Hide toggle button (secret mode only)
-        let show_hide_btn = Button::builder()
-            .icon_name("view-reveal-symbolic")
-            .tooltip_text(i18n("Show/hide password"))
-            .build();
-        show_hide_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
-            "Toggle password visibility",
-        ))]);
         // Load from Vault button (secret mode only)
         let load_vault_btn = Button::builder()
             .icon_name("document-open-symbolic")
@@ -268,10 +262,9 @@ impl VariablesDialog {
         load_vault_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
             "Load password from vault",
         ))]);
-        // Secret row: entry + show/hide + load buttons
+        // Secret row: entry + load button
         let secret_buttons_box = GtkBox::new(Orientation::Horizontal, 4);
         secret_buttons_box.append(&secret_entry);
-        secret_buttons_box.append(&show_hide_btn);
         secret_buttons_box.append(&load_vault_btn);
         secret_buttons_box.set_hexpand(true);
         secret_buttons_box.set_visible(false);
@@ -412,21 +405,7 @@ impl VariablesDialog {
             }
         });
 
-        // Wire Show/Hide toggle — track visibility state in Rc
-        let secret_visible = Rc::new(RefCell::new(false));
-        let secret_entry_for_toggle = secret_entry.clone();
-        let show_hide_btn_clone = show_hide_btn.clone();
-        let vis_state = secret_visible.clone();
-        show_hide_btn.connect_clicked(move |_| {
-            let mut is_vis = vis_state.borrow_mut();
-            *is_vis = !*is_vis;
-            secret_entry_for_toggle.set_visibility(*is_vis);
-            if *is_vis {
-                show_hide_btn_clone.set_icon_name("view-conceal-symbolic");
-            } else {
-                show_hide_btn_clone.set_icon_name("view-reveal-symbolic");
-            }
-        });
+        // (The secret entry's reveal is the PasswordEntry's built-in peek icon.)
 
         // Wire Load from Vault button
         let secret_entry_for_load = secret_entry.clone();

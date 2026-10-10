@@ -59,7 +59,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub tags_entry: &'a Entry,
     pub protocol_dropdown: &'a DropDown,
     pub password_source_dropdown: &'a DropDown,
-    pub password_entry: &'a Entry,
+    pub password_entry: &'a adw::PasswordEntryRow,
     pub variable_dropdown: &'a DropDown,
     pub group_dropdown: &'a DropDown,
     pub groups_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,

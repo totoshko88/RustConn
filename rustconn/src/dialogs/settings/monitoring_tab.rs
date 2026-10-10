@@ -137,7 +137,7 @@ impl MonitoringPageWidgets {
         metrics_group.add(&show_load);
 
         let show_system_info = adw::SwitchRow::builder()
-            .title(i18n("System info"))
+            .title(i18n("System information"))
             .subtitle(i18n("Distribution, kernel version, uptime"))
             .active(true)
             .sensitive(false)
