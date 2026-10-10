@@ -3,7 +3,7 @@
 use adw::prelude::*;
 use gtk4::prelude::*;
 use gtk4::{
-    Box as GtkBox, DropDown, Entry, Orientation, StringList, ToggleButton, gdk,
+    Box as GtkBox, Entry, Orientation, StringList, ToggleButton, gdk,
 };
 use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
@@ -21,7 +21,7 @@ pub fn create_terminal_page() -> (
     Entry,
     adw::SpinRow,
     adw::SpinRow,
-    DropDown,
+    adw::ComboRow,
     GtkBox, // cursor shape buttons container
     GtkBox, // cursor blink buttons container
     adw::SwitchRow,
@@ -79,14 +79,12 @@ pub fn create_terminal_page() -> (
     let theme_names = TerminalTheme::theme_names();
     let theme_labels = theme_labels(&theme_names);
     let theme_list = StringList::new(&theme_labels.iter().map(String::as_str).collect::<Vec<_>>());
-    let color_theme_dropdown = DropDown::builder()
+    let color_theme_row = adw::ComboRow::builder()
+        .title(i18n("Theme"))
         .model(&theme_list)
         .selected(0)
-        .valign(gtk4::Align::Center)
         .build();
-    let color_theme_row = adw::ActionRow::builder().title(i18n("Theme")).build();
-    color_theme_row.add_suffix(&color_theme_dropdown);
-    color_theme_row.set_activatable_widget(Some(&color_theme_dropdown));
+    let color_theme_dropdown = color_theme_row.clone();
     colors_group.add(&color_theme_row);
 
     // Custom theme management buttons
@@ -534,7 +532,7 @@ pub fn load_terminal_settings(
     font_family_entry: &Entry,
     font_size_spin: &adw::SpinRow,
     scrollback_spin: &adw::SpinRow,
-    color_theme_dropdown: &DropDown,
+    color_theme_dropdown: &adw::ComboRow,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,
     scroll_on_output_row: &adw::SwitchRow,
@@ -687,7 +685,7 @@ pub fn collect_terminal_settings(
     font_family_entry: &Entry,
     font_size_spin: &adw::SpinRow,
     scrollback_spin: &adw::SpinRow,
-    color_theme_dropdown: &DropDown,
+    color_theme_dropdown: &adw::ComboRow,
     cursor_shape_buttons: &GtkBox,
     cursor_blink_buttons: &GtkBox,
     scroll_on_output_row: &adw::SwitchRow,
@@ -792,7 +790,7 @@ fn theme_labels(names: &[String]) -> Vec<String> {
 }
 
 /// Refreshes the theme dropdown model and selects the given theme name.
-fn refresh_theme_dropdown(dropdown: &DropDown, select_name: &str) {
+fn refresh_theme_dropdown(dropdown: &adw::ComboRow, select_name: &str) {
     let names = TerminalTheme::theme_names();
     let labels = theme_labels(&names);
     let list = StringList::new(&labels.iter().map(String::as_str).collect::<Vec<_>>());
@@ -860,7 +858,7 @@ where
 fn show_theme_editor(
     parent: Option<&gtk4::Window>,
     theme: &TerminalTheme,
-    dropdown: &DropDown,
+    dropdown: &adw::ComboRow,
     edit_btn: &gtk4::Button,
     delete_btn: &gtk4::Button,
 ) {

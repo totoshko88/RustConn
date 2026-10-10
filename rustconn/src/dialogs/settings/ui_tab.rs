@@ -66,14 +66,14 @@ pub struct WindowTitleRows {
 pub fn create_ui_page() -> (
     adw::PreferencesPage,
     GtkBox,
-    DropDown,
+    adw::ComboRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SpinRow,
-    DropDown,
+    adw::ComboRow,
     adw::SpinRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -202,17 +202,12 @@ pub fn create_ui_page() -> (
     let languages = crate::i18n::available_languages();
     let display_names: Vec<&str> = languages.iter().map(|(_, name)| *name).collect();
     let string_list = StringList::new(&display_names);
-    let language_dropdown = DropDown::builder()
-        .model(&string_list)
-        .valign(gtk4::Align::Center)
-        .build();
-
-    let language_row = adw::ActionRow::builder()
+    let language_row = adw::ComboRow::builder()
         .title(i18n("Language"))
         .subtitle(i18n("Restart required to apply"))
+        .model(&string_list)
         .build();
-    language_row.add_suffix(&language_dropdown);
-    language_row.set_activatable_widget(Some(&language_dropdown));
+    let language_dropdown = language_row.clone();
     appearance_group.add(&language_row);
 
     // Renderer selector. GTK reads GSK_RENDERER while it realises the first
@@ -485,20 +480,15 @@ pub fn create_ui_page() -> (
         .build();
 
     // Startup action dropdown — populated with connections in load_ui_settings
-    let startup_action_dropdown = DropDown::builder()
+    let startup_action_row = adw::ComboRow::builder()
+        .title(i18n("On startup"))
+        .subtitle(i18n("Open session automatically"))
         .model(&StringList::new(&[
             &i18n("Do Nothing"),
             &i18n("Local Shell"),
         ]))
-        .valign(gtk4::Align::Center)
         .build();
-
-    let startup_action_row = adw::ActionRow::builder()
-        .title(i18n("On startup"))
-        .subtitle(i18n("Open session automatically"))
-        .build();
-    startup_action_row.add_suffix(&startup_action_dropdown);
-    startup_action_row.set_activatable_widget(Some(&startup_action_dropdown));
+    let startup_action_dropdown = startup_action_row.clone();
     startup_group.add(&startup_action_row);
 
     // Show Welcome tab on startup switch (issue #232)
@@ -618,7 +608,7 @@ pub fn create_ui_page() -> (
 
 /// Connection entry in the startup action dropdown.
 ///
-/// Indices 0 and 1 are reserved for "Do nothing" and "Local Shell".
+/// Indices 0 and 1 are reserved for "Do Nothing" and "Local Shell".
 /// Indices 2+ map to connections sorted alphabetically.
 struct StartupConnectionEntry {
     id: uuid::Uuid,
@@ -649,14 +639,14 @@ fn build_startup_entries(connections: &[&Connection]) -> Vec<StartupConnectionEn
 )]
 pub fn load_ui_settings(
     color_scheme_box: &GtkBox,
-    language_dropdown: &DropDown,
+    language_dropdown: &adw::ComboRow,
     remember_geometry: &adw::SwitchRow,
     enable_tray_icon: &adw::SwitchRow,
     minimize_to_tray: &adw::SwitchRow,
     session_restore_enabled: &adw::SwitchRow,
     prompt_on_restore: &adw::SwitchRow,
     max_age_row: &adw::SpinRow,
-    startup_action_dropdown: &DropDown,
+    startup_action_dropdown: &adw::ComboRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
     compact_auto: &adw::SwitchRow,
@@ -782,7 +772,7 @@ pub fn load_ui_settings(
 
     // Populate startup action dropdown with connections
     let entries = build_startup_entries(connections);
-    let mut labels: Vec<String> = vec![i18n("Do nothing"), i18n("Local Shell")];
+    let mut labels: Vec<String> = vec![i18n("Do Nothing"), i18n("Local Shell")];
     for entry in &entries {
         labels.push(entry.display_name.clone());
     }
@@ -812,14 +802,14 @@ pub fn load_ui_settings(
 )]
 pub fn collect_ui_settings(
     color_scheme_box: &GtkBox,
-    language_dropdown: &DropDown,
+    language_dropdown: &adw::ComboRow,
     remember_geometry: &adw::SwitchRow,
     enable_tray_icon: &adw::SwitchRow,
     minimize_to_tray: &adw::SwitchRow,
     session_restore_enabled: &adw::SwitchRow,
     prompt_on_restore: &adw::SwitchRow,
     max_age_row: &adw::SpinRow,
-    startup_action_dropdown: &DropDown,
+    startup_action_dropdown: &adw::ComboRow,
     sidebar_width_row: &adw::SpinRow,
     compact_ui: &adw::SwitchRow,
     compact_auto: &adw::SwitchRow,
