@@ -280,7 +280,14 @@ impl EmbeddedVncWidget {
                         let _ = cr.paint();
                     }
                 } else {
-                    // Show status overlay
+                    // Show status overlay. Repaint the background with the
+                    // themed placeholder color (the base fill above stays dark as
+                    // a letterbox behind actual video; here there is no video, so
+                    // follow the light/dark theme instead of a black rectangle).
+                    let (bg, fg) = crate::utils::placeholder_surface_colors();
+                    cr.set_source_rgb(bg.0, bg.1, bg.2);
+                    let _ = cr.paint();
+
                     cr.select_font_face(
                         "Sans",
                         gtk4::cairo::FontSlant::Normal,
@@ -317,7 +324,7 @@ impl EmbeddedVncWidget {
                         .as_ref()
                         .map_or(not_configured.as_str(), |c| c.host.as_str());
 
-                    cr.set_source_rgb(0.9, 0.9, 0.9);
+                    cr.set_source_rgb(fg.0, fg.1, fg.2);
                     cr.set_font_size(18.0);
                     if let Ok(extents) = cr.text_extents(host) {
                         cr.move_to((f64::from(width) - extents.width()) / 2.0, center_y + 70.0);

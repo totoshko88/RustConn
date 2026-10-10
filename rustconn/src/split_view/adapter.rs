@@ -1387,7 +1387,7 @@ impl SplitViewAdapter {
             // Copy/Paste right-click menu intact over the terminal content,
             // while still giving the pane Reconnect / Remove from Split /
             // Remove Split / Close Connection.
-            self.setup_panel_context_menu(panel_id, session_id, &header_for_drag);
+            self.setup_panel_context_menu(panel_id, session_id, &header_for_drag, &container);
 
             let placeholder = self.create_occupied_placeholder();
             container.append(&placeholder);
@@ -1500,12 +1500,31 @@ impl SplitViewAdapter {
     /// A `GestureLongPress` mirrors the right-click for touch, per the GNOME
     /// HIG requirement to pair long-press with every right-click menu.
     ///
+    /// A keyboard route is also installed on the pane **container** (Shift+F10
+    /// and the Menu key), and the action group is inserted on the container as
+    /// well as the header. This matters because the header is hidden
+    /// (`set_visible(false)`) when connection-name labels are off: without a
+    /// container-level route the pane's Close / Remove-from-Split actions would
+    /// be reachable only through the hover reveal controls — a hover-only
+    /// affordance with no keyboard or touch path (GNOME HIG violation, and
+    /// unreachable entirely when hover controls are also hidden). The container
+    /// is always present and focusable, so the keyboard menu works regardless of
+    /// header or hover-control visibility (issues #374, SPLIT-01/02).
+    ///
     /// # Arguments
     ///
     /// * `panel_id` - The ID of the panel
     /// * `session_id` - The session ID in the panel
-    /// * `header` - The pane header widget to attach the context menu to
-    fn setup_panel_context_menu(&self, panel_id: PanelId, session_id: SessionId, header: &GtkBox) {
+    /// * `header` - The pane header widget to attach the pointer gestures to
+    /// * `container` - The pane container, host of the keyboard route and a
+    ///   mirror of the action group so it works when the header is hidden
+    fn setup_panel_context_menu(
+        &self,
+        panel_id: PanelId,
+        session_id: SessionId,
+        header: &GtkBox,
+        container: &GtkBox,
+    ) {
         let widget = header;
         // Create action group for the panel
         let action_group = gio::SimpleActionGroup::new();
@@ -1621,6 +1640,59 @@ impl SplitViewAdapter {
             gesture.set_state(gtk4::EventSequenceState::Claimed);
         });
         widget.add_controller(long_press);
+
+        // Keyboard + hidden-header route (SPLIT-01/02). Mirror the action group
+        // onto the container so `panel.*` resolves from the focused content, and
+        // bind Shift+F10 and the Menu key to open the same menu anchored to the
+        // container (which, unlike the header, is always visible and focusable).
+        container.insert_action_group("panel", Some(&action_group));
+        container.set_focusable(true);
+
+        let container_for_menu = container.clone();
+        let open_from_keyboard: Rc<dyn Fn()> = Rc::new(move || {
+            crate::sidebar_ui::close_active_popover();
+
+            let menu = gio::Menu::new();
+            menu.append(Some(&i18n("Reconnect")), Some("panel.reconnect"));
+            menu.append(Some(&i18n("Remove from Split")), Some("panel.move-to-tab"));
+            menu.append(Some(&i18n("Remove Split")), Some("win.unsplit"));
+            menu.append(Some(&i18n("Close Connection")), Some("panel.close"));
+
+            let popover = gtk4::PopoverMenu::from_model(Some(&menu));
+            popover.set_parent(&container_for_menu);
+            popover.set_has_arrow(true);
+            popover.set_autohide(true);
+
+            // Anchor to the top-centre of the pane rather than a pointer point.
+            let w = container_for_menu.width();
+            let rect = gdk::Rectangle::new(w / 2, 0, 1, 1);
+            popover.set_pointing_to(Some(&rect));
+
+            crate::sidebar_ui::set_active_popover(popover.upcast_ref::<gtk4::Popover>());
+            popover.popup();
+
+            let popover_weak = popover.downgrade();
+            popover.connect_closed(move |pop| {
+                crate::sidebar_ui::clear_active_popover(pop.upcast_ref::<gtk4::Popover>());
+                if popover_weak.upgrade().is_some() {
+                    pop.unparent();
+                }
+            });
+        });
+
+        let shortcuts = gtk4::ShortcutController::new();
+        shortcuts.set_scope(gtk4::ShortcutScope::Local);
+        for trigger in ["<Shift>F10", "Menu"] {
+            let opener = Rc::clone(&open_from_keyboard);
+            let action = gtk4::CallbackAction::new(move |_, _| {
+                opener();
+                gtk4::glib::Propagation::Stop
+            });
+            if let Some(trig) = gtk4::ShortcutTrigger::parse_string(trigger) {
+                shortcuts.add_shortcut(gtk4::Shortcut::new(Some(trig), Some(action)));
+            }
+        }
+        container.add_controller(shortcuts);
     }
 
     /// Creates the empty panel placeholder widget with close button and select tab button.

@@ -822,12 +822,21 @@ where
     dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("create", &i18n("Create"));
     dialog.set_response_appearance("create", adw::ResponseAppearance::Suggested);
+    // Guard against a silent no-op: Create stays disabled until the name is
+    // non-empty, so pressing it (or Enter) with a blank field can't quietly
+    // discard the action (GNOME HIG: never drop a user action with no feedback).
+    dialog.set_response_enabled("create", false);
 
     let entry = Entry::builder()
         .placeholder_text(i18n("Theme name"))
         .hexpand(true)
         .build();
     dialog.set_extra_child(Some(&entry));
+
+    let dialog_for_entry = dialog.clone();
+    entry.connect_changed(move |e| {
+        dialog_for_entry.set_response_enabled("create", !e.text().trim().is_empty());
+    });
 
     let entry_c = entry.clone();
     dialog.connect_response(None, move |_, response| {

@@ -539,13 +539,16 @@ fn add_key_with_passphrase_dialog(
                 tracing::error!("Failed to add key: {e}");
                 dialog_clone2.close();
                 // Show error feedback so the user knows the key wasn't added.
+                // A failed action belongs in a modal dialog, not a dismissable
+                // toast (GNOME HIG error-feedback rule) — matching the sibling
+                // failure paths in this file.
                 if let Some(root) = status_label_clone.root()
                     && let Some(window) = root.downcast_ref::<gtk4::Window>()
                 {
-                    crate::toast::show_toast_on_window(
+                    crate::alert::show_error(
                         window,
-                        &i18n_f("Failed to add key: {}", &[&e.to_string()]),
-                        crate::toast::ToastType::Error,
+                        &i18n("Could Not Add Key"),
+                        &i18n_f("The key could not be added: {}", &[&e.to_string()]),
                     );
                 }
             }

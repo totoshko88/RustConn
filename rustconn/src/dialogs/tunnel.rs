@@ -534,6 +534,10 @@ fn wire_tunnel_row_actions(
                 // Stop the tunnel
                 if let Err(e) = ctx_c.tunnel_manager.borrow_mut().stop(tunnel_c.id) {
                     tracing::warn!(tunnel = %tunnel_c.name, %e, "Failed to stop tunnel");
+                    crate::toast::show_error_toast_on_active_window(&i18n_f(
+                        "Could not stop tunnel '{}'.",
+                        &[&tunnel_c.name],
+                    ));
                 }
             } else {
                 // Start the tunnel — find the connection from state
@@ -737,14 +741,27 @@ fn delete_tunnel(tunnel_id: Uuid, ctx: &Rc<TunnelRowContext>) {
             let _ = ctx_c.tunnel_manager.borrow_mut().stop(tunnel_id);
         }
 
+        let mut save_err: Option<String> = None;
+
         with_state_mut(&ctx_c.state, |s| {
             s.settings_mut()
                 .standalone_tunnels
                 .retain(|t| t.id != tunnel_id);
             if let Err(e) = s.save_settings() {
                 tracing::error!(%e, "Failed to save settings after tunnel delete");
+                save_err = Some(e.clone());
             }
         });
+        if let Some(err) = save_err {
+            crate::alert::show_error(
+                &ctx_c.dialog,
+                &i18n("Could Not Save Changes"),
+                &i18n_f(
+                    "The tunnel was removed, but saving the change failed and it may return on next launch: {}",
+                    &[&err],
+                ),
+            );
+        }
         refresh_from_context(&ctx_c);
     });
 

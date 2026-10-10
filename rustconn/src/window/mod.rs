@@ -454,7 +454,11 @@ impl MainWindow {
             // the connect_map handler below (#204). With breakpoints present,
             // AdwApplicationWindow derives its minimum from width-request.
             .width_request(400)
-            .height_request(400)
+            // HIG adaptive floor is 360x294 (phone portrait). The width floor
+            // is refined down to the measured narrow-tier minimum (>=360) by the
+            // connect_map handler below (#204); the height floor is set to 294
+            // here so the window can shrink to phone-portrait height.
+            .height_request(294)
             .icon_name("io.github.totoshko88.RustConn")
             .build();
 

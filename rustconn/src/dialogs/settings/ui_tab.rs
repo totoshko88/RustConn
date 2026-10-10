@@ -487,7 +487,7 @@ pub fn create_ui_page() -> (
     // Startup action dropdown — populated with connections in load_ui_settings
     let startup_action_dropdown = DropDown::builder()
         .model(&StringList::new(&[
-            &i18n("Do nothing"),
+            &i18n("Do Nothing"),
             &i18n("Local Shell"),
         ]))
         .valign(gtk4::Align::Center)
