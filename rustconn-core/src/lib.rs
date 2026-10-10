@@ -135,8 +135,9 @@ pub use automation::{
     AutomationTemplate, CompiledRule, ConnectionTask, ExpectEngine, ExpectError, ExpectResult,
     ExpectRule, FolderConnectionTracker, KeyElement, KeySequence, KeySequenceError,
     KeySequenceResult, PendingKind, ScriptEngine, ScriptHost, ScriptParseError, ScriptProgram,
-    ScriptStep, SpecialKey, TaskCondition, TaskError, TaskExecutor, TaskResult, TaskTiming,
-    builtin_templates, elevated_credentials_rules, templates_for_protocol,
+    ScriptStep, SpecialKey, StepRecorder, TaskCondition, TaskError, TaskExecutor, TaskResult,
+    TaskTiming, builtin_templates, elevated_credentials_rules, render_script,
+    templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
 pub use cli_download::{

@@ -94,7 +94,12 @@ impl TerminalNotebook {
                 let cmd = format!(
                     " script -q -f --log-out '{remote_data}' --log-timing '{remote_timing}'\n"
                 );
-                terminal.feed_child(cmd.as_bytes());
+                // Suppressed: this is RustConn's own bookkeeping command, not
+                // something the user typed, so it must not reach a script
+                // recording running against the same session.
+                script_recorder::suppress_recording(|| {
+                    terminal.feed_child(cmd.as_bytes());
+                });
                 // Erase the echoed command after a short delay so the PTY echo
                 // has time to arrive before we clear the line.
                 let term_clone = terminal.clone();
@@ -107,7 +112,12 @@ impl TerminalNotebook {
                 let timing_str = timing_path.display().to_string();
                 let cmd =
                     format!(" script -q -f --log-out '{data_str}' --log-timing '{timing_str}'\n");
-                terminal.feed_child(cmd.as_bytes());
+                // Suppressed: this is RustConn's own bookkeeping command, not
+                // something the user typed, so it must not reach a script
+                // recording running against the same session.
+                script_recorder::suppress_recording(|| {
+                    terminal.feed_child(cmd.as_bytes());
+                });
                 // Erase the echoed command after a short delay so the PTY echo
                 // has time to arrive before we clear the line.
                 let term_clone = terminal.clone();
@@ -228,7 +238,9 @@ impl TerminalNotebook {
         // Unlike `exit\n`, EOF produces no visible echo and is safely ignored
         // if the sub-shell has already exited.
         if let Some(terminal) = self.get_terminal(session_id) {
-            terminal.feed_child(b"\x04");
+            script_recorder::suppress_recording(|| {
+                terminal.feed_child(b"\x04");
+            });
         }
 
         self.update_recording_indicator(session_id, false);

@@ -5,6 +5,15 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Built-in script recording (Phase 0 of #373)** — the terminal right-click menu gains **Record Script…**, which captures the keystrokes you type in a session and writes them to `~/.config/rustconn/scripts/<connection>.rsc` as readable, diffable text. Stopping is the same menu item, relabelled **Stop Script Recording**, and reports the step count and path in a toast. The file is line-based (`send` / `wait` verbs) and each `send` carries the existing `KeySequence` syntax, so `{ENTER}`, `{WAIT:500}` and `${var}` mean the same thing in a script as they do in a connection's key sequence — one grammar, not two. The recorder lives in `rustconn-core` (`automation::script`) and emits the same `.rsc` source the existing script engine parses, so a recorded file opens in the Scripts dialog unchanged. The action is deliberately **not** in the app menu: it targets "the session you are looking at", which is the same ambiguity that keeps `execute-snippet` out of it, and here the cost of guessing wrong is a file on disk full of one host's commands. (`rustconn-core/src/automation/script.rs`, `rustconn/src/terminal/script_recorder.rs`, `rustconn/src/window/script_actions.rs`)
+
+### Fixed
+- **Key sequences containing `{`, `}` or `$` no longer corrupt on `Display`** — `KeyElement::Display` escaped those characters with `write!(f, "{{")`, but `{{` is *format-string* syntax for a single literal `{`, so each escaped brace was emitted **once** and the `Display` → `parse` round trip was lossy. A stored `key_sequence` containing braces printed back into an unparseable string — `{ENTER}` in literal text degraded into an actual Enter keypress. The escaping now goes through `f.write_str("{{")`, and a new property test (`key_sequence_round_trip_escaped_text`) generates exactly the characters every previous round-trip test filtered out, so the gap that hid this cannot reopen. (`rustconn-core/src/automation/key_sequence.rs`, `rustconn-core/tests/properties/key_sequence_tests.rs`)
+- **Automated sends are never written into a recorded script** — a script recording listens to VTE's `commit`, which also fires for bytes RustConn itself writes. Automatic logins would therefore have recorded `${password}` to disk in clear text. Every send RustConn originates (key sequences, macros, snippets, and both the immediate and delayed expect-rule responses) now runs inside a thread-local `suppress_recording` guard, entered at the moment the bytes are written so that delayed sends are covered too. (`rustconn/src/terminal/script_recorder.rs`, `rustconn/src/automation.rs`)
+
 ## [0.25.4] - 2026-11-18
 
 ### Added

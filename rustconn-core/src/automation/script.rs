@@ -1651,6 +1651,165 @@ fn split_pair(first: &str, second: &str) -> (String, String) {
     }
 }
 
+/// First line of a script written by [`StepRecorder`].
+const SCRIPT_HEADER: &str = "# rustconn script";
+
+/// Renders recorded steps as `.rsc` source, header and all.
+///
+/// [`StepRecorder`] produces only [`ScriptStep::Send`] and [`ScriptStep::Wait`];
+/// any other verb is skipped, because the recorder has no source text for it.
+/// Comments are carried through so the recorder's suggestions survive a
+/// load/edit/save cycle.
+#[must_use]
+pub fn render_script(name: &str, steps: &[ScriptStep], comments: &[String]) -> String {
+    let mut out = format!("{SCRIPT_HEADER} — {name}\n");
+    for comment in comments {
+        for line in comment.lines() {
+            out.push_str("# ");
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    for step in steps {
+        match step {
+            ScriptStep::Send(sequence) => {
+                out.push_str("send ");
+                out.push_str(&sequence.to_string());
+                out.push('\n');
+            }
+            ScriptStep::Wait(ms) => {
+                out.push_str("wait ");
+                out.push_str(&ms.to_string());
+                out.push('\n');
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Turns recorded text into the steps a script should carry.
+///
+/// Enter flushes whatever has accumulated as one `send`; the newline is dropped
+/// because `{ENTER}` carries the intent. Any other text is buffered so that a
+/// paste of several lines becomes several steps rather than one unreadable
+/// blob.
+#[derive(Debug, Default)]
+pub struct StepRecorder {
+    buffer: String,
+    steps: Vec<ScriptStep>,
+}
+
+impl StepRecorder {
+    /// A recorder with nothing buffered.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Feeds one chunk of committed terminal input.
+    ///
+    /// Control characters other than CR and LF are dropped: VTE reports them as
+    /// they reach the PTY, and writing them into the file would put raw
+    /// control bytes in a text file. Users wanting Ctrl-C should type `{CTRL_C}`.
+    pub fn record(&mut self, text: &str) {
+        for ch in text.chars() {
+            match ch {
+                '\r' | '\n' => self.flush(),
+                ch if ch.is_control() => {}
+                ch => self.buffer.push(ch),
+            }
+        }
+    }
+
+    /// Flushes buffered text as a `send` step. No-op when nothing is buffered.
+    pub fn flush(&mut self) {
+        if self.buffer.is_empty() {
+            return;
+        }
+        let text = std::mem::take(&mut self.buffer);
+        if let Ok(sequence) = KeySequence::parse(&text) {
+            self.steps.push(ScriptStep::Send(sequence));
+        }
+    }
+
+    /// Number of completed steps so far. Buffered text is not counted, since
+    /// it only becomes a step once a newline or [`Self::finish`] arrives.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.steps.len()
+    }
+
+    /// Whether nothing has been recorded yet.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.steps.is_empty()
+    }
+
+    /// Emits the buffered text as a final step and returns everything recorded.
+    pub fn finish(mut self) -> Vec<ScriptStep> {
+        self.flush();
+        self.steps
+    }
+}
+
+#[cfg(test)]
+mod recorder_tests {
+    use super::*;
+
+    #[test]
+    fn round_trips_braces_and_dollars() {
+        // The escaping that matters: a recorded `echo ${x}` must not come back
+        // as a variable reference, and a literal brace must not open a key.
+        let original = vec![ScriptStep::Send(
+            KeySequence::parse("echo ${x} {{done}} $5").unwrap(),
+        )];
+        let rendered = render_script("t", &original, &["# note"]);
+        assert_eq!(parse_program(&rendered).unwrap().steps(), original);
+    }
+
+    #[test]
+    fn recorder_flushes_on_enter() {
+        let mut rec = StepRecorder::new();
+        rec.record("whoami\r");
+        rec.record("uptime\r");
+        assert_eq!(rec.finish().len(), 2);
+    }
+
+    #[test]
+    fn recorder_drops_control_chars() {
+        let mut rec = StepRecorder::new();
+        rec.record("ls\x03-l\r");
+        assert_eq!(
+            rec.finish(),
+            vec![ScriptStep::Send(KeySequence::parse("ls-l").unwrap())]
+        );
+    }
+
+    #[test]
+    fn recorder_keeps_buffered_text_on_finish() {
+        let mut rec = StepRecorder::new();
+        rec.record("no trailing enter");
+        assert_eq!(
+            rec.finish(),
+            vec![ScriptStep::Send(
+                KeySequence::parse("no trailing enter").unwrap()
+            )]
+        );
+    }
+
+    #[test]
+    fn len_does_not_count_buffered_text() {
+        let mut rec = StepRecorder::new();
+        assert!(rec.is_empty());
+        rec.record("partial");
+        // Not a step yet — no newline, so `finish` has not been called.
+        assert_eq!(rec.len(), 0);
+        rec.record("\r");
+        assert_eq!(rec.len(), 1);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -523,7 +523,9 @@ impl AutomationSession {
         // happens here or after a delay timer has run.
         for pending in matches {
             match pending.delay_ms {
-                None => terminal.feed_child(pending.response.as_bytes()),
+                None => crate::terminal::script_recorder::suppress_recording(|| {
+                    terminal.feed_child(pending.response.as_bytes());
+                }),
                 Some(delay_ms) => {
                     // A weak handle, so a tab closed inside the delay window
                     // drops the response instead of writing to a dead widget.
@@ -556,7 +558,13 @@ impl AutomationSession {
                                 );
                                 return;
                             }
-                            terminal.feed_child(response.as_bytes());
+                            // Suppressed here for the same reason as the
+                            // undelayed branch: this response may be a
+                            // password, and a script recording running
+                            // alongside must not capture it.
+                            crate::terminal::script_recorder::suppress_recording(|| {
+                                terminal.feed_child(response.as_bytes());
+                            });
                         },
                     );
                 }

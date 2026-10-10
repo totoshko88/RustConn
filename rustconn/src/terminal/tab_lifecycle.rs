@@ -377,6 +377,7 @@ impl TerminalNotebook {
         if let Some(item) = config::setup_context_menu(
             &terminal,
             &self.snippet_menu_section,
+            &self.script_menu_section,
             settings.right_click_pastes,
             reconnect,
         ) {
