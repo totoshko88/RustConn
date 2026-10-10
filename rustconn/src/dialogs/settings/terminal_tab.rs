@@ -946,6 +946,8 @@ fn show_theme_editor(
 
     let scrolled = gtk4::ScrolledWindow::builder()
         .child(&content)
+        .min_content_width(420)
+        .max_content_width(480)
         .min_content_height(400)
         .max_content_height(500)
         .propagate_natural_height(true)

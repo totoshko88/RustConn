@@ -488,6 +488,15 @@ pub fn create_ui_page() -> (
             &i18n("Local Shell"),
         ]))
         .build();
+    // The list grows with one entry per saved connection, so give it the same
+    // type-to-search the jump-host picker has. A ComboRow needs an expression to
+    // match against before enable_search shows anything but a dead box.
+    startup_action_row.set_expression(Some(gtk4::PropertyExpression::new(
+        gtk4::StringObject::static_type(),
+        None::<gtk4::Expression>,
+        "string",
+    )));
+    startup_action_row.set_enable_search(true);
     let startup_action_dropdown = startup_action_row.clone();
     startup_group.add(&startup_action_row);
 
