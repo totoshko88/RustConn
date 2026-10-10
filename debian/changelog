@@ -1,3 +1,33 @@
+rustconn (0.23.8-1) unstable; urgency=medium
+
+  * Version bump to 0.23.8
+  * Fixed: recording rename/delete/list failures are surfaced in a modal dialog
+    or status page instead of a silent tracing warning
+  * Fixed: tunnel stop and delete-save failures are no longer silent - a stop
+    failure shows a toast and a failed delete-save raises a modal dialog
+  * Fixed: adding an SSH key reports failure in a modal dialog, not a toast,
+    matching its sibling failure paths
+  * Fixed: the "Enable Cloud Sync?" confirmation now defaults to Cancel so Enter
+    has a defined, safe action
+  * Fixed: the new-theme name prompt keeps Create disabled until the name is
+    non-empty, so it can no longer be dismissed into a silent no-op
+  * Fixed: the Theme Editor dialog is wide enough to read its colour rows
+  * Fixed: the on-startup "open a connection" picker is now type-to-search
+  * Changed: Terminal/Interface settings rows migrated to native adw::SpinRow and
+    adw::ComboRow; connection password and Variables secret fields migrated to
+    revealable native password rows
+  * Changed: embedded RDP/VNC status/placeholder screens follow the light/dark
+    theme instead of a fixed dark background
+  * Changed: split-view pane actions gained a keyboard and hidden-header route
+    (Shift+F10 / Menu) per the GNOME HIG
+  * Changed: window minimum height lowered to the HIG 360x294 phone-portrait floor
+  * Changed: writing-style polish in Settings (System information, consistent
+    startup-action header caps)
+  * Dependencies: cc 1.6.0->1.7.0, smallvec 1.16.2->1.16.3, syn 3.0.6->3.0.7,
+    uuid 1.27.0->1.28.0; advisories clean
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 10 Oct 2026 18:00:00 +0300
+
 rustconn (0.23.7-1) unstable; urgency=medium
 
   * Version bump to 0.23.7

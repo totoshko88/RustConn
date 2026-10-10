@@ -9,8 +9,8 @@
 
 use std::rc::Rc;
 
-use gtk4::prelude::*;
 use gtk4::Box as GtkBox;
+use gtk4::prelude::*;
 use libadwaita as adw;
 
 use super::ConnectionDialog;

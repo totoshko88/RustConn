@@ -2,9 +2,7 @@
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{
-    Box as GtkBox, Entry, Orientation, StringList, ToggleButton, gdk,
-};
+use gtk4::{Box as GtkBox, Entry, Orientation, StringList, ToggleButton, gdk};
 use libadwaita as adw;
 use rustconn_core::config::TerminalSettings;
 use rustconn_core::terminal_themes::TerminalTheme;
