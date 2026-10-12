@@ -78,7 +78,7 @@ oo7 = { version = "0.6", default-features = false, features = ["tokio", "native_
 # Note: sspi (via ironrdp-connector) still pulls aws-lc-sys transitively;
 # Flatpak manifests work around the GCC 15 -O2/-O0 conflict with a cc-wrap shim.
 reqwest = { version = "0.13", features = ["native-tls", "stream"], default-features = false }
-zip = "8.2"
+zip = "9.0"
 flate2 = "1.1"
 tar = "0.4.45"
 # bzip2 decompression for the on-demand Cisco OpenH264 blob. Default feature is
