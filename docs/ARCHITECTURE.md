@@ -216,6 +216,12 @@ forwards those bytes to a writer thread. Both directions use bounded or
 off-thread I/O so that a flood of output or a paste into a process that is not
 reading cannot block the window.
 
+Owning the PTY also means taking over one thing VTE does for its own: it stops
+reading while the user drags out a mouse selection, because any output that
+arrives before the drag ends deselects. `terminal::selection_hold` restores that
+pause on the main-thread side of the channel, so a remote that redraws on a timer
+(a byobu or tmux status clock) does not cancel the selection.
+
 This arrangement exists because a session transcript has to be a copy of what
 the child wrote, and that cannot be recovered from the widget: VTE rewraps its
 buffer on a width change and renumbers the rows underneath any reader, so a

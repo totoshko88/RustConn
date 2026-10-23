@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **A mouse selection in a terminal no longer disappears while it is being dragged when the remote side redraws on a timer** — with byobu (or any tmux status bar with a clock) on the remote host, the selection was dropped every second, so selecting more than a few characters was nearly impossible. VTE deselects when output arrives before the drag ends, and protects its own PTY by not reading from it during a drag. RustConn owns the PTY and feeds VTE directly, which bypassed that pause. The output loop now waits while the primary button is down and VTE has a selection, and resumes on release or when the terminal loses focus. Nothing is dropped: the relay's bounded queue fills and the child is held back, as with VTE's own PTY. A click that goes to a mouse-tracking application (tmux with mouse on, vim) creates no selection and does not pause output. (`rustconn/src/terminal/selection_hold.rs`, `rustconn/src/terminal/mod.rs`)
+
 ## [0.23.20] - 2026-10-23
 
 ### Added

@@ -34,6 +34,7 @@ pub mod pty_relay;
 pub mod pty_spawn;
 mod recording;
 pub mod safe_paste;
+mod selection_hold;
 mod session_lifecycle;
 pub mod tab_container;
 mod tab_lifecycle;
@@ -1106,6 +1107,7 @@ impl TerminalNotebook {
         terminal: &Terminal,
         output: pty_relay::OutputStream,
     ) {
+        let hold = selection_hold::SelectionHold::attach(terminal);
         let terminal = terminal.downgrade();
         let observers = Rc::clone(&self.output_observers);
         glib::spawn_future_local(async move {
@@ -1113,6 +1115,8 @@ impl TerminalNotebook {
             // across a chunk boundary and its state belongs to exactly one PTY.
             let mut osc52_filter = osc52::Osc52Filter::default();
             while let Ok(chunk) = output.recv().await {
+                hold.wait_while_selecting(|| terminal.upgrade().is_some_and(|t| t.has_selection()))
+                    .await;
                 let live_terminal = terminal.upgrade();
                 // The clipboard offer is written here, inside the sink, so it
                 // only fires while the terminal is alive to supply a display.
@@ -1157,6 +1161,7 @@ impl TerminalNotebook {
             // The stream can end inside an OSC string. Hand the remainder to VTE
             // rather than dropping it with the filter.
             if let Some(terminal) = terminal.upgrade() {
+                hold.detach(&terminal);
                 let tail = osc52_filter.finish();
                 if !tail.is_empty() {
                     terminal.feed(tail);
