@@ -149,7 +149,7 @@ jobs:
       # SHA — this action downloads and executes a binary, which is the last
       # place to accept a moving tag.
       - name: Install cargo-machete
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           # The tool is version-pinned too, not just the action. An unpinned
           # `cargo-machete` would let a new upstream release turn CI red with no
@@ -423,7 +423,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-test
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           # Version-pinned like the other tools in this file.
           tool: cargo-nextest@0.9.146
@@ -457,7 +457,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-core
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           tool: cargo-nextest@0.9.146
 
@@ -490,7 +490,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-proptest
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           tool: cargo-nextest@0.9.146
 
@@ -808,7 +808,7 @@ jobs:
       - name: Install cargo-semver-checks
         # v2.87.25: v2.87.20 had no prebuilt for cargo-semver-checks 0.51.0 and
         # fell back to a slow cargo-binstall with an "is not supported" warning.
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           tool: cargo-semver-checks@0.51.0
 
@@ -883,7 +883,7 @@ jobs:
           prefix-key: ${{ runner.os }}-cargo-powerset
 
       - name: Install cargo-hack
-        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           # Version-pinned like the other tools in this file — a moving upstream
           # must not change what CI checks without a commit here.
