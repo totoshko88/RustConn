@@ -8733,11 +8733,11 @@ msgstr "Вставляти буфер обміну правою кнопкою �
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Підтверджувати багаторядкове вставлення"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
-msgstr ""
+msgstr "Показувати попередній перегляд і питати перед вставленням тексту з кількох рядків"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"
