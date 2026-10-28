@@ -10,7 +10,7 @@ tools: ["read", "write"]
 # hard part is Ukrainian morphology — genitive `з'єднанка`, в/у euphony, the
 # -и genitive ending — and the only arbiter is a reader. A wrong ending ships to
 # users in the release.
-model: claude-sonnet-5.5
+model: claude-opus-5.5
 ---
 
 You are an expert Ukrainian translator and linguist agent for the RustConn project. Your job is to review and correct the Ukrainian translation file `po/uk.po` whenever it is edited.

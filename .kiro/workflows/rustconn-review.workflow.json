@@ -24,7 +24,7 @@
           "type": "step",
           "id": "review-security",
           "agent": "security-reviewer",
-          "modelId": "claude-sonnet-5.5",
+          "modelId": "claude-opus-5.5",
           "captureOutput": true,
           "prompt": "Change goal: {{goal}}\n\nRead {{setup.output}}/inventory.md first. If its 'Review scope' section does not name `security-reviewer`, your entire reply is `SKIPPED: not in scope` and you read nothing else.\n\nOtherwise review the change in {{setup.output}}/diff.patch, reading the touched files in full where the diff alone is not enough. Apply your six checks to the changed code only; a doc-comment-only hunk needs no finding. Report in your usual format, one line per finding with file:line. Modify nothing."
         },
@@ -40,7 +40,7 @@
           "type": "step",
           "id": "review-uk",
           "agent": "uk-translation-reviewer",
-          "modelId": "claude-sonnet-5.5",
+          "modelId": "claude-opus-5.5",
           "captureOutput": true,
           "prompt": "Change goal: {{goal}}\n\nRead {{setup.output}}/inventory.md first. If its 'Review scope' section does not name `uk-translation-reviewer`, your entire reply is `SKIPPED: not in scope` and you read nothing else.\n\nThis run is REPORT-ONLY: do NOT edit po/uk.po or any other file, even where your instructions say to correct. Review only the po/uk.po hunks in {{setup.output}}/diff.patch and list each problem as `msgid → current msgstr → proposed msgstr — rule`."
         },
@@ -48,7 +48,7 @@
           "type": "step",
           "id": "review-config",
           "agent": "config-mapping-reviewer",
-          "modelId": "claude-sonnet-5.5",
+          "modelId": "claude-opus-5.5",
           "captureOutput": true,
           "prompt": "Change goal: {{goal}}\n\nRead {{setup.output}}/inventory.md first. If its 'Review scope' section does not name `config-mapping-reviewer`, your entire reply is `SKIPPED: not in scope` and you read nothing else.\n\nOtherwise review the change in {{setup.output}}/diff.patch for stored-but-unread fields, dead UI handles and broken export/import round-trips, reading the mappers in full. Report in your usual format. Modify nothing."
         },

@@ -15,7 +15,7 @@ tools: ["read", "grep"]
 # before 0.22.12). The checks look mechanical but tracing "is this field actually
 # consumed" across the persisted/runtime split and the export/import round-trip is
 # a judgement a reader makes, not a grep. See cost-discipline.md.
-model: claude-sonnet-5.5
+model: claude-opus-5.5
 ---
 
 You review RustConn config-mapping fidelity. You do NOT modify files. Your ONLY

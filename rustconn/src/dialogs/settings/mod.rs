@@ -96,6 +96,7 @@ pub struct SettingsDialog {
     close_on_clean_exit_check: adw::SwitchRow,
     option_is_meta_check: adw::SwitchRow,
     keep_history_on_reconnect_check: adw::SwitchRow,
+    confirm_multiline_paste_check: adw::SwitchRow,
     // Logging settings
     logging_enabled_row: adw::SwitchRow,
     log_dir_entry: Entry,
@@ -248,6 +249,7 @@ impl SettingsDialog {
             close_on_clean_exit_check,
             option_is_meta_check,
             keep_history_on_reconnect_check,
+            confirm_multiline_paste_check,
         ) = create_terminal_page();
         mark("terminal_page");
 
@@ -711,6 +713,7 @@ impl SettingsDialog {
             close_on_clean_exit_check,
             option_is_meta_check,
             keep_history_on_reconnect_check,
+            confirm_multiline_paste_check,
             logging_enabled_row,
             log_dir_entry,
             retention_spin,
@@ -1279,6 +1282,7 @@ impl SettingsDialog {
             &self.close_on_clean_exit_check,
             &self.option_is_meta_check,
             &self.keep_history_on_reconnect_check,
+            &self.confirm_multiline_paste_check,
             &settings.terminal,
         );
 
@@ -1431,6 +1435,7 @@ impl SettingsDialog {
         let close_on_clean_exit_check_clone = self.close_on_clean_exit_check.clone();
         let option_is_meta_check_clone = self.option_is_meta_check.clone();
         let keep_history_on_reconnect_check_clone = self.keep_history_on_reconnect_check.clone();
+        let confirm_multiline_paste_check_clone = self.confirm_multiline_paste_check.clone();
 
         // Logging controls
         let logging_enabled_row_clone = self.logging_enabled_row.clone();
@@ -1594,9 +1599,9 @@ impl SettingsDialog {
                 &close_on_clean_exit_check_clone,
                 &option_is_meta_check_clone,
                 &keep_history_on_reconnect_check_clone,
+                &confirm_multiline_paste_check_clone,
                 log_timestamps_check_clone.is_active(),
                 settings_clone.borrow().terminal.max_scrollback_on_reconnect,
-                settings_clone.borrow().terminal.confirm_multiline_paste,
             );
 
             // Collect logging settings

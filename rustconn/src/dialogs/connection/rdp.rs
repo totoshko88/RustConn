@@ -429,7 +429,7 @@ pub(super) fn create_rdp_options() -> (
     let rdp_smart_sizing_check = adw::SwitchRow::builder()
         .title(i18n("Smart sizing"))
         .subtitle(i18n(
-            "Scale the remote screen to fit the window (External client). For legacy servers on HiDPI displays. Overrides dynamic resolution",
+            "Scale the remote screen to fit the window (External client). For servers that do not resize dynamically, such as KDE KRdp, or legacy servers on HiDPI displays. Overrides dynamic resolution",
         ))
         .active(false)
         .build();

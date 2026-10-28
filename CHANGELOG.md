@@ -5,6 +5,17 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2026-10-28
+
+### Added
+- **On/off switch for multi-line paste confirmation (issue #399)** — the `confirm_multiline_paste` safe-paste guard, which shows a preview and asks before pasting text that spans multiple lines as a pastejacking defence, was configurable only by hand-editing `settings.toml`. The Terminal tab of Settings now has a "Confirm multi-line paste" switch next to the other paste controls; it reflects the stored setting, and toggling it takes effect live on save through `configure_terminal_with_settings`. No behaviour change to the guard itself. (`rustconn/src/dialogs/settings/terminal_tab.rs`, `rustconn/src/dialogs/settings/mod.rs`)
+
+### Fixed
+- **The AppImage now uses its bundled translations, so Settings → Interface → Language takes effect (issue #400)** — the saved language was persisted and applied at startup, but the AppImage never found its own translation catalogues: an AppImage is mounted at a random temporary path exported as `$APPDIR`, and `locale_dir()` only looked in Flatpak, Snap, macOS bundle, user-local, XDG and system locations, so gettext was bound to the host's `/usr/share/locale`, which has no `rustconn.mo`, and every language fell back to English even after a restart. Locale lookup now resolves `$APPDIR/usr/share/locale` (with a fallback to `../share/locale` next to the executable's `usr/bin` directory) ahead of the user-local and system directories, and only when it actually holds a `rustconn.mo`, so a normal install is never misrouted. The OBS AppImage recipe shipped no catalogues at all; it now compiles `po/*.po` into the bundle as the GitHub release AppImage already did. Flatpak, Snap, deb, RPM, Nix and macOS were not affected. (`rustconn/src/i18n.rs`, `packaging/obs/AppImageBuilder.yml`)
+
+### Dependencies
+- **Updated** (semver-compatible, transitive): aws-lc-rs 1.18.2 → 1.19.0, aws-lc-sys 0.46.0 → 0.47.0, libz-sys 1.1.30 → 1.1.31. A `cargo update` refresh for the release; `cargo deny check advisories` is clean before and after. `cargo-sources.json` regenerated for the Flatpak/Flathub manifests.
+
 ## [0.24.0] - 2026-10-28
 
 ### Fixed

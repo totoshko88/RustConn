@@ -196,9 +196,11 @@ fn build_locale_has_translations(dir: &str) -> bool {
 /// 3. macOS .app bundle: `Contents/Resources/locale` relative to executable
 /// 4. Flatpak `/app/share/locale` (legacy fallback for older builds)
 /// 5. Snap `$SNAP/share/locale`
-/// 6. User-local `~/.local/share/locale` (install-desktop.sh)
-/// 7. `XDG_DATA_HOME/locale`
-/// 8. System `/usr/share/locale`
+/// 6. AppImage `$APPDIR/usr/share/locale` (or `../share/locale` relative to
+///    the executable's directory), guarded by catalogue presence (issue #400)
+/// 7. User-local `~/.local/share/locale` (install-desktop.sh)
+/// 8. `XDG_DATA_HOME/locale`
+/// 9. System `/usr/share/locale`
 fn locale_dir() -> String {
     // 1. Explicit override
     if let Ok(dir) = std::env::var("LOCALEDIR") {
@@ -238,7 +240,20 @@ fn locale_dir() -> String {
         }
     }
 
-    // 6. User-local install (install-desktop.sh)
+    // 6. AppImage
+    //    The bundle is FUSE-mounted at a random path exported as $APPDIR, and
+    //    its catalogues live inside it, so no host path finds them (issue #400).
+    #[cfg(target_os = "linux")]
+    {
+        let appdir = std::env::var("APPDIR").ok();
+        let exe = std::env::current_exe().ok();
+        let exe_dir = exe.as_deref().and_then(std::path::Path::parent);
+        if let Some(appimage_locale) = appimage_locale_dir(appdir.as_deref(), exe_dir) {
+            return appimage_locale;
+        }
+    }
+
+    // 7. User-local install (install-desktop.sh)
     if let Ok(home) = std::env::var("HOME") {
         let local_locale = format!("{home}/.local/share/locale");
         if build_locale_has_translations(&local_locale) {
@@ -246,7 +261,7 @@ fn locale_dir() -> String {
         }
     }
 
-    // 7. XDG_DATA_HOME fallback
+    // 8. XDG_DATA_HOME fallback
     if let Ok(xdg_data) = std::env::var("XDG_DATA_HOME") {
         let xdg_locale = format!("{xdg_data}/locale");
         if build_locale_has_translations(&xdg_locale) {
@@ -254,7 +269,7 @@ fn locale_dir() -> String {
         }
     }
 
-    // 8. System default
+    // 9. System default
     "/usr/share/locale".to_string()
 }
 
@@ -282,6 +297,52 @@ fn macos_bundle_locale_dir() -> Option<String> {
     } else {
         None
     }
+}
+
+/// Detects the locale directory inside a mounted AppImage.
+///
+/// `appdir` is the value of `$APPDIR` (the AppImage mount point) and `exe_dir`
+/// the directory of the running executable; both are passed in rather than read
+/// here so the lookup can be tested without touching the process environment.
+/// Candidates, in order: `<appdir>/usr/share/locale`, then
+/// `<exe_dir>/../share/locale` when `exe_dir` is a relocated `<root>/usr/bin`
+/// other than the host's `/usr/bin` (the binary sits at `$APPDIR/usr/bin`). A
+/// candidate is accepted only if it holds a `rustconn.mo`, so a normal `/usr`
+/// install with a stray `$APPDIR` falls through to the system directory.
+#[cfg(target_os = "linux")]
+fn appimage_locale_dir(appdir: Option<&str>, exe_dir: Option<&std::path::Path>) -> Option<String> {
+    let from_appdir = appdir.filter(|dir| !dir.is_empty()).map(|dir| {
+        std::path::Path::new(dir)
+            .join("usr")
+            .join("share")
+            .join("locale")
+    });
+    // Only a relocated `<root>/usr/bin` qualifies, never the host's own
+    // `/usr/bin`: that would put `/usr/share/locale` ahead of the user-local
+    // branch for a normal install.
+    let from_exe = exe_dir
+        .filter(|dir| {
+            let usr = dir.parent();
+            dir.file_name().is_some_and(|name| name == "bin")
+                && usr
+                    .and_then(std::path::Path::file_name)
+                    .is_some_and(|name| name == "usr")
+                && usr
+                    .and_then(std::path::Path::parent)
+                    .is_some_and(|root| root.parent().is_some())
+        })
+        .and_then(std::path::Path::parent)
+        .map(|usr| usr.join("share").join("locale"));
+
+    let found = [from_appdir, from_exe]
+        .into_iter()
+        .flatten()
+        .map(|candidate| candidate.to_string_lossy().into_owned())
+        .find(|candidate| build_locale_has_translations(candidate));
+    if let Some(dir) = &found {
+        tracing::debug!(locale_dir = %dir, "AppImage locale directory");
+    }
+    found
 }
 
 /// Translates a string using gettext.
@@ -484,3 +545,62 @@ fn apply_language_setlocale(lang: &str) {
 // Changing the language from the Settings dialog still only persists the value
 // to `config.toml`; it takes effect on the next start. That was already true —
 // the old runtime call could not retranslate already-rendered GTK labels.
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    use super::appimage_locale_dir;
+
+    /// Creates `<root>/usr/share/locale/uk/LC_MESSAGES/rustconn.mo`.
+    fn fake_catalogue(root: &std::path::Path) {
+        let messages = root.join("usr/share/locale/uk/LC_MESSAGES");
+        std::fs::create_dir_all(&messages).unwrap();
+        std::fs::write(messages.join("rustconn.mo"), b"").unwrap();
+    }
+
+    #[test]
+    fn appimage_locale_dir_resolves_appdir_catalogue() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        fake_catalogue(tmp.path());
+        let appdir = tmp.path().to_str().unwrap();
+
+        let expected = tmp.path().join("usr").join("share").join("locale");
+        assert_eq!(
+            appimage_locale_dir(Some(appdir), None),
+            Some(expected.to_string_lossy().into_owned())
+        );
+    }
+
+    #[test]
+    fn appimage_locale_dir_falls_through_without_catalogue() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        std::fs::create_dir_all(tmp.path().join("usr/share/locale/uk/LC_MESSAGES")).unwrap();
+        std::fs::create_dir_all(tmp.path().join("usr/bin")).unwrap();
+        let appdir = tmp.path().to_str().unwrap();
+
+        assert_eq!(
+            appimage_locale_dir(Some(appdir), Some(&tmp.path().join("usr/bin"))),
+            None
+        );
+        assert_eq!(appimage_locale_dir(None, None), None);
+        // A normal install's `/usr/bin` is never treated as a bundle, whatever
+        // `/usr/share/locale` holds on this host.
+        assert_eq!(
+            appimage_locale_dir(None, Some(std::path::Path::new("/usr/bin"))),
+            None
+        );
+    }
+
+    #[test]
+    fn appimage_locale_dir_falls_back_to_executable_relative() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        fake_catalogue(tmp.path());
+        let exe_dir = tmp.path().join("usr").join("bin");
+        std::fs::create_dir_all(&exe_dir).unwrap();
+
+        let found = appimage_locale_dir(None, Some(&exe_dir)).unwrap();
+        assert_eq!(
+            std::fs::canonicalize(found).unwrap(),
+            std::fs::canonicalize(tmp.path().join("usr/share/locale")).unwrap()
+        );
+    }
+}
