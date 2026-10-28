@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.0
+Version:        0.24.1
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,18 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Wed Oct 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.1-0
+- Version bump to 0.24.1
+- Added: an on/off switch for multi-line paste confirmation on the Terminal
+  tab of Settings (issue #399); the confirm_multiline_paste pastejacking guard
+  was configurable only by hand-editing the config file
+- Fixed: the AppImage now uses its bundled translations, so Settings →
+  Interface → Language takes effect (issue #400); locale lookup resolves the
+  AppImage's own $APPDIR locale directory, and the OBS AppImage recipe now
+  bundles the catalogues
+- Dependencies: aws-lc-rs 1.18.2→1.19.0, aws-lc-sys 0.46.0→0.47.0,
+  libz-sys 1.1.30→1.1.31 (transitive; advisories clean)
+
 * Wed Oct 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.0-0
 - Version bump to 0.24.0 (performance release)
 - Added: "Set Up Key Authentication…" - generate or use an existing SSH

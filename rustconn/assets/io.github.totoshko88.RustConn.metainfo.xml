@@ -140,6 +140,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.1" date="2026-10-28">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.1</url>
+      <description>
+        <p>Version 0.24.1 - a small follow-up with a Settings toggle, an AppImage translation fix, and a dependency refresh:</p>
+        <ul>
+          <li>A new on/off switch for multi-line paste confirmation on the Terminal tab of Settings (issue #399).</li>
+          <li>The AppImage now uses its bundled translations, so Settings - Interface - Language takes effect (issue #400).</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.0" date="2026-10-28">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.0</url>
       <description>
