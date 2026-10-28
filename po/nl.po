@@ -8810,11 +8810,13 @@ msgstr "Plak het klembord bij rechtsklikken in plaats van het menu te tonen"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Plakken van meerdere regels bevestigen"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Een voorbeeld tonen en bevestiging vragen voordat tekst met meerdere regels "
+"wordt geplakt"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

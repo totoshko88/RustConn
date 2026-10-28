@@ -8772,11 +8772,11 @@ msgstr "მარჯვენა დაწკაპუნებით ბუფ�
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "მრავალხაზიანი ჩასმის დადასტურება"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
-msgstr ""
+msgstr "ნახვა და დადასტურების კითხვა რამდენიმე ხაზის ტექსტის ჩასმამდე"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

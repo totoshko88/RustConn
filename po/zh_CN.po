@@ -8524,11 +8524,11 @@ msgstr "右键单击时粘贴剪贴板，而不显示菜单"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "确认粘贴多行内容"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
-msgstr ""
+msgstr "粘贴跨越多行的文本前显示预览并询问"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

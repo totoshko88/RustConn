@@ -8845,11 +8845,12 @@ msgstr "Coller le presse-papiers au clic droit au lieu d’afficher le menu"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Confirmer le collage multiligne"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Afficher un aperçu et demander avant de coller un texte sur plusieurs lignes"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

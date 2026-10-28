@@ -8793,11 +8793,13 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Confirmar a colagem de várias linhas"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Mostrar uma pré-visualização e perguntar antes de colar texto com várias "
+"linhas"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

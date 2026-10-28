@@ -8736,11 +8736,11 @@ msgstr "Indsæt udklipsholderen ved højreklik i stedet for at vise menuen"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Bekræft indsættelse af flere linjer"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
-msgstr ""
+msgstr "Vis et eksempel og spørg, før tekst med flere linjer indsættes"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

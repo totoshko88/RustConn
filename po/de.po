@@ -8831,11 +8831,12 @@ msgstr "Bei Rechtsklick die Zwischenablage einfügen, statt das Menü anzuzeigen
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Mehrzeiliges Einfügen bestätigen"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Vor dem Einfügen von mehrzeiligem Text eine Vorschau anzeigen und nachfragen"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

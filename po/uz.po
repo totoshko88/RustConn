@@ -8794,11 +8794,12 @@ msgstr "Menyuni koʻrsatish oʻrniga oʻng tugma bilan almashish buferini qoʻyi
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Koʻp qatorli qoʻyishni tasdiqlash"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Bir nechta qatordan iborat matnni qoʻyishdan oldin koʻrib chiqish va soʻrash"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

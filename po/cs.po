@@ -8732,11 +8732,11 @@ msgstr "Vložit schránku pravým tlačítkem místo zobrazení nabídky"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Potvrzovat vkládání více řádků"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
-msgstr ""
+msgstr "Před vložením víceřádkového textu zobrazit náhled a zeptat se"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

@@ -8754,11 +8754,12 @@ msgstr "Wklejaj schowek prawym przyciskiem zamiast pokazywać menu"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Potwierdzaj wklejanie wielu wierszy"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Pokaż podgląd i zapytaj przed wklejeniem tekstu obejmującego wiele wierszy"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"

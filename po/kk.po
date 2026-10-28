@@ -8746,11 +8746,13 @@ msgstr "Мәзірді көрсетудің орнына оң жақ түйме�
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:458
 msgid "Confirm multi-line paste"
-msgstr ""
+msgstr "Көп жолды қоюды растау"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:460
 msgid "Show a preview and ask before pasting text that spans multiple lines"
 msgstr ""
+"Бірнеше жолдан тұратын мәтінді қою алдында алдын ала қарауды көрсету және "
+"сұрау"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:467
 msgid "Close tab on clean exit"
