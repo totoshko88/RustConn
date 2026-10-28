@@ -670,6 +670,22 @@ pub fn detect_mosh() -> ClientInfo {
     ClientInfo::not_installed("mosh", "Install mosh package")
 }
 
+/// Detects the quicssh client ([moul/quicssh](https://github.com/moul/quicssh),
+/// SSH over QUIC)
+///
+/// quicssh is not bundled: it must be installed by the user and, in the
+/// Flatpak and Snap builds, reachable from inside the sandbox.
+#[must_use]
+pub fn detect_quicssh() -> ClientInfo {
+    if let Some(info) = try_detect_client("quicssh", "quicssh", &["--version"]) {
+        return info;
+    }
+    ClientInfo::not_installed(
+        "quicssh",
+        "Install quicssh (github.com/moul/quicssh) and make sure it is on PATH",
+    )
+}
+
 /// Detects waypipe (Wayland application forwarding proxy)
 ///
 /// Waypipe forwards Wayland clients over SSH, similar to `ssh -X` for X11.

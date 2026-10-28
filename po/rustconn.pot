@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 20:27+0200\n"
+"POT-Creation-Date: 2026-10-29 23:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2649,7 +2649,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/dialogs/connection/rdp.rs:477
-#: rustconn/src/dialogs/connection/ssh.rs:805
+#: rustconn/src/dialogs/connection/ssh.rs:850
 #: rustconn/src/dialogs/connection/vnc.rs:299
 msgid "Multipath TCP"
 msgstr ""
@@ -3493,262 +3493,276 @@ msgstr ""
 msgid "Custom proxy command (e.g., for .onion hosts)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:701
+#: rustconn/src/dialogs/connection/ssh.rs:702
 #: rustconn/src/dialogs/template.rs:706
 msgid "Use Only Specified Key"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:702
+#: rustconn/src/dialogs/connection/ssh.rs:703
 #: rustconn/src/dialogs/template.rs:707
 msgid "Prevents trying other keys (IdentitiesOnly)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:708
+#: rustconn/src/dialogs/connection/ssh.rs:709
 #: rustconn/src/dialogs/template.rs:713
 msgid "Connection Multiplexing"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:709
+#: rustconn/src/dialogs/connection/ssh.rs:710
 #: rustconn/src/dialogs/template.rs:714
 msgid "Reuse connections (ControlMaster)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:717
+#: rustconn/src/dialogs/connection/ssh.rs:718
 msgid "Keep-Alive Interval"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:718
+#: rustconn/src/dialogs/connection/ssh.rs:719
 msgid "Seconds between keep-alive packets (0 = disabled)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:725
+#: rustconn/src/dialogs/connection/ssh.rs:726
 msgid "Keep-Alive Count"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:726
+#: rustconn/src/dialogs/connection/ssh.rs:727
 msgid "Disconnect after this many unanswered packets"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:759
+#: rustconn/src/dialogs/connection/ssh.rs:761
+msgid "QUIC (quicssh) preset: fills the ProxyCommand with “{}”"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/ssh.rs:767
+msgid ""
+"quicssh not found — {}. In the Flatpak/Snap builds it must be reachable "
+"inside the sandbox."
+msgstr ""
+
+#: rustconn/src/dialogs/connection/ssh.rs:778
+msgid "Fill ProxyCommand with the QUIC (quicssh) preset"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/ssh.rs:804
 #: rustconn/src/dialogs/template.rs:722
 msgid "Session"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:764
+#: rustconn/src/dialogs/connection/ssh.rs:809
 #: rustconn/src/dialogs/template.rs:727
 msgid "Agent Forwarding"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:765
+#: rustconn/src/dialogs/connection/ssh.rs:810
 #: rustconn/src/dialogs/template.rs:728
 msgid "Forward SSH agent to remote host (-A)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:770
+#: rustconn/src/dialogs/connection/ssh.rs:815
 msgid "Waypipe"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:771
+#: rustconn/src/dialogs/connection/ssh.rs:816
 msgid "Wayland application forwarding via waypipe"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:776
+#: rustconn/src/dialogs/connection/ssh.rs:821
 msgid "X11 Forwarding"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:777
+#: rustconn/src/dialogs/connection/ssh.rs:822
 msgid "Forward X11 display to local host (-X)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:782
+#: rustconn/src/dialogs/connection/ssh.rs:827
 #: rustconn/src/dialogs/connection/vnc.rs:197
 msgid "Compression"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:783
+#: rustconn/src/dialogs/connection/ssh.rs:828
 msgid "Enable compression for slow connections (-C)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:788
+#: rustconn/src/dialogs/connection/ssh.rs:833
 msgid "Verbose"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:789
+#: rustconn/src/dialogs/connection/ssh.rs:834
 msgid "Show SSH debug output for troubleshooting (-v)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:796
+#: rustconn/src/dialogs/connection/ssh.rs:841
 msgid "Use multiple network paths for mobility and aggregation (mptcpize run)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:799
+#: rustconn/src/dialogs/connection/ssh.rs:844
 msgid ""
 "Use multiple network paths for mobility and aggregation. Install mptcpize "
 "(mptcpd) to enable"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:803
+#: rustconn/src/dialogs/connection/ssh.rs:848
 msgid ""
 "Use multiple network paths (mptcpize run). Not available: kernel MPTCP is "
 "disabled"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:811
+#: rustconn/src/dialogs/connection/ssh.rs:856
 #: rustconn/src/dialogs/template.rs:740
 msgid "Startup Command"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:812
+#: rustconn/src/dialogs/connection/ssh.rs:857
 #: rustconn/src/dialogs/template.rs:741
 msgid "Execute after connection established"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:813
+#: rustconn/src/dialogs/connection/ssh.rs:858
 #: rustconn/src/dialogs/template.rs:735
 msgid "Command to run on connect"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:818
+#: rustconn/src/dialogs/connection/ssh.rs:863
 #: rustconn/src/dialogs/template.rs:754
 msgid "Custom Options"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:819
+#: rustconn/src/dialogs/connection/ssh.rs:864
 msgid "Key=Value, comma-separated (-o flags)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:826
+#: rustconn/src/dialogs/connection/ssh.rs:871
 #: rustconn/src/window/edit_group.rs:853
 msgid "SSH Agent Socket"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:829
+#: rustconn/src/dialogs/connection/ssh.rs:874
 msgid "Overrides global setting and auto-detected socket for this connection"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:856
+#: rustconn/src/dialogs/connection/ssh.rs:901
 msgid "PKCS#11 Provider"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:859
+#: rustconn/src/dialogs/connection/ssh.rs:904
 msgid ""
 "Path to a PKCS#11 library for hardware-token login (e.g. /usr/lib64/"
 "libykcs11.so.2)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:885
+#: rustconn/src/dialogs/connection/ssh.rs:930
 msgid "SFTP Remote Directory"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:888
+#: rustconn/src/dialogs/connection/ssh.rs:933
 msgid ""
 "Directory the SFTP file browser opens in. Leave empty to detect the home "
 "directory automatically."
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:917
+#: rustconn/src/dialogs/connection/ssh.rs:962
 #: rustconn/src/dialogs/connection/telnet.rs:52
 msgid "Keyboard"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:919
+#: rustconn/src/dialogs/connection/ssh.rs:964
 #: rustconn/src/dialogs/connection/telnet.rs:54
 msgid ""
 "If Backspace or Delete is not recognised, try Backspace (^H) or Delete (^?) "
 "—              devices that reject one default usually reject both"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:930
+#: rustconn/src/dialogs/connection/ssh.rs:975
 #: rustconn/src/dialogs/connection/telnet.rs:74
 msgid "Backspace sends"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:931
+#: rustconn/src/dialogs/connection/ssh.rs:976
 #: rustconn/src/dialogs/connection/telnet.rs:75
 msgid "What the Backspace key sends to the remote"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:943
+#: rustconn/src/dialogs/connection/ssh.rs:988
 #: rustconn/src/dialogs/connection/telnet.rs:93
 msgid "Delete sends"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:944
+#: rustconn/src/dialogs/connection/ssh.rs:989
 #: rustconn/src/dialogs/connection/telnet.rs:94
 msgid "What the Delete key sends to the remote"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:976
+#: rustconn/src/dialogs/connection/ssh.rs:1021
 msgid "Port Forwarding"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:977
+#: rustconn/src/dialogs/connection/ssh.rs:1022
 msgid "Forward ports through the SSH tunnel"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:982
+#: rustconn/src/dialogs/connection/ssh.rs:1027
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:420
 msgid "Local (-L)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:983
+#: rustconn/src/dialogs/connection/ssh.rs:1028
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:421
 msgid "Remote (-R)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:984
+#: rustconn/src/dialogs/connection/ssh.rs:1029
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:422
 msgid "Dynamic (-D)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:992
+#: rustconn/src/dialogs/connection/ssh.rs:1037
 msgid "Direction"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:993
+#: rustconn/src/dialogs/connection/ssh.rs:1038
 msgid "Type of port forwarding"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1006
+#: rustconn/src/dialogs/connection/ssh.rs:1051
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:459
 msgid "Local Port"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1007
+#: rustconn/src/dialogs/connection/ssh.rs:1052
 msgid "Port to bind locally"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1018
+#: rustconn/src/dialogs/connection/ssh.rs:1063
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:477
 msgid "Remote Host"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1019
+#: rustconn/src/dialogs/connection/ssh.rs:1064
 msgid "Destination host on the remote side"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1032
+#: rustconn/src/dialogs/connection/ssh.rs:1077
 #: rustconn/src/dialogs/tunnel_builder/step_forwards.rs:493
 msgid "Remote Port"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1033
+#: rustconn/src/dialogs/connection/ssh.rs:1078
 msgid "Destination port on the remote side"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1049
+#: rustconn/src/dialogs/connection/ssh.rs:1094
 msgid "Add Forward"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1079
+#: rustconn/src/dialogs/connection/ssh.rs:1124
 msgid "Port already in use"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1156
+#: rustconn/src/dialogs/connection/ssh.rs:1201
 msgid "Remove this port forward"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/ssh.rs:1159
+#: rustconn/src/dialogs/connection/ssh.rs:1204
 msgid "Remove port forward"
 msgstr ""
 
