@@ -13,7 +13,7 @@ tools: ["read", "write", "shell", "grep"]
 # because the rules that are NOT machine-checked (i18n wrapping, SecretString,
 # no unwrap) are violated quietly — the same reason cost-discipline.md keeps the
 # main agent off the cheap tiers. See steering cost-discipline.md, "Delegation".
-model: claude-sonnet-5.5
+model: claude-opus-5.5
 ---
 
 You implement exactly the change you were given, then stop and report.
