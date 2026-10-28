@@ -36,6 +36,7 @@ pub fn create_terminal_page() -> (
     adw::SwitchRow, // close_on_clean_exit
     adw::SwitchRow, // option_is_meta (macOS)
     adw::SwitchRow, // keep_history_on_reconnect
+    adw::SwitchRow, // confirm_multiline_paste
 ) {
     let page = adw::PreferencesPage::builder()
         .title(i18n("Terminal"))
@@ -452,6 +453,15 @@ pub fn create_terminal_page() -> (
         .build();
     behavior_group.add(&right_click_pastes_row);
 
+    // Confirm multi-line paste (pastejacking guard; issue #399)
+    let confirm_multiline_paste_row = adw::SwitchRow::builder()
+        .title(i18n("Confirm multi-line paste"))
+        .subtitle(i18n(
+            "Show a preview and ask before pasting text that spans multiple lines",
+        ))
+        .build();
+    behavior_group.add(&confirm_multiline_paste_row);
+
     // Close tab on clean exit
     let close_on_clean_exit_row = adw::SwitchRow::builder()
         .title(i18n("Close tab on clean exit"))
@@ -518,6 +528,7 @@ pub fn create_terminal_page() -> (
         close_on_clean_exit_row,
         option_is_meta_row,
         keep_history_on_reconnect_row,
+        confirm_multiline_paste_row,
     )
 }
 
@@ -547,6 +558,7 @@ pub fn load_terminal_settings(
     close_on_clean_exit_row: &adw::SwitchRow,
     option_is_meta_row: &adw::SwitchRow,
     keep_history_on_reconnect_row: &adw::SwitchRow,
+    confirm_multiline_paste_row: &adw::SwitchRow,
     settings: &TerminalSettings,
 ) {
     font_family_entry.set_text(&settings.font_family);
@@ -594,6 +606,7 @@ pub fn load_terminal_settings(
     close_on_clean_exit_row.set_active(settings.close_on_clean_exit);
     option_is_meta_row.set_active(settings.option_is_meta);
     keep_history_on_reconnect_row.set_active(settings.keep_history_on_reconnect);
+    confirm_multiline_paste_row.set_active(settings.confirm_multiline_paste);
 }
 
 /// Sets the active toggle index.
@@ -700,15 +713,13 @@ pub fn collect_terminal_settings(
     close_on_clean_exit_row: &adw::SwitchRow,
     option_is_meta_row: &adw::SwitchRow,
     keep_history_on_reconnect_row: &adw::SwitchRow,
+    confirm_multiline_paste_row: &adw::SwitchRow,
     // NOTE: log_timestamps lives in TerminalSettings but is displayed on the
     // Logging tab. The logging_tab `create_logging_page()` builds the switch,
     // and the close handler passes its value here. If the setting is ever moved
     // to LoggingSettings, update the close handler in mod.rs accordingly.
     log_timestamps: bool,
     existing_max_scrollback_on_reconnect: Option<u32>,
-    // Preserved rather than edited here: safe paste has no switch on this page
-    // yet, so keep whatever is stored instead of resetting it to the default.
-    existing_confirm_multiline_paste: bool,
 ) -> TerminalSettings {
     let theme_names = TerminalTheme::theme_names();
     let color_theme = theme_names
@@ -756,7 +767,7 @@ pub fn collect_terminal_settings(
         max_scrollback_on_reconnect: existing_max_scrollback_on_reconnect,
         close_on_clean_exit: close_on_clean_exit_row.is_active(),
         option_is_meta: option_is_meta_row.is_active(),
-        confirm_multiline_paste: existing_confirm_multiline_paste,
+        confirm_multiline_paste: confirm_multiline_paste_row.is_active(),
     }
 }
 

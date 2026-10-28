@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1]
+
+### Added
+- **On/off switch for multi-line paste confirmation (issue #399)** — the `confirm_multiline_paste` safe-paste guard, which shows a preview and asks before pasting text that spans multiple lines as a pastejacking defence, was configurable only by hand-editing `settings.toml`. The Terminal tab of Settings now has a "Confirm multi-line paste" switch next to the other paste controls; it reflects the stored setting, and toggling it takes effect live on save through `configure_terminal_with_settings`. No behaviour change to the guard itself. (`rustconn/src/dialogs/settings/terminal_tab.rs`, `rustconn/src/dialogs/settings/mod.rs`)
+
 ## [0.24.0] - 2026-10-28
 
 ### Fixed
