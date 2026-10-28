@@ -2,6 +2,15 @@ version: 1
 script:
   - cargo build --release -p rustconn
   - cargo build --release -p rustconn-cli --features full
+  # Locale files (compile .po to .mo) — mirrors .github/workflows/release.yml.
+  # Without them the AppImage ships no translations at all (issue #400).
+  - |
+    for po_file in po/*.po; do
+      [ -f "$po_file" ] || continue
+      lang=$(basename "$po_file" .po)
+      mkdir -p "AppDir/usr/share/locale/${lang}/LC_MESSAGES"
+      msgfmt -o "AppDir/usr/share/locale/${lang}/LC_MESSAGES/rustconn.mo" "$po_file"
+    done
 
 AppDir:
   path: ./AppDir
@@ -51,6 +60,7 @@ AppDir:
       - usr/share/glib-2.0/schemas
       - usr/share/icons/Adwaita
       - usr/share/icons/hicolor
+      - usr/share/locale
 
     exclude:
       - usr/share/doc
