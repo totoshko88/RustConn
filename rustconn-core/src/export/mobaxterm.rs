@@ -924,6 +924,33 @@ mod tests {
     }
 
     #[test]
+    fn sftp_round_trips_through_mobaxterm() {
+        use crate::import::MobaXtermImporter;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("sftp.mxtsessions");
+
+        let mut conn = Connection::new_sftp("files".to_string(), "192.168.1.9".to_string(), 22);
+        conn.username = Some("admin".to_string());
+
+        MobaXtermExporter::export_to_file(&[conn], &[], &output_path).unwrap();
+        let content = fs::read_to_string(&output_path).unwrap();
+        let result = MobaXtermImporter::new().parse_content(&content, "sftp.mxtsessions");
+
+        assert_eq!(result.connections.len(), 1);
+        let imported = &result.connections[0];
+        // Session type 7 must round-trip back as SFTP, not be downgraded to SSH.
+        assert!(
+            matches!(imported.protocol_config, ProtocolConfig::Sftp(_)),
+            "SFTP must survive the round-trip, got {:?}",
+            imported.protocol_config
+        );
+        assert_eq!(imported.host, "192.168.1.9");
+        assert_eq!(imported.port, 22);
+        assert_eq!(imported.username, Some("admin".to_string()));
+    }
+
+    #[test]
     fn web_and_mosh_round_trip_through_mobaxterm() {
         use crate::import::MobaXtermImporter;
 

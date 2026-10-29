@@ -291,8 +291,14 @@ impl MobaXtermImporter {
             |conn: Result<Option<Connection>, String>| conn.map(|c| c.map(|c| (c, None)));
 
         match session_type {
-            MobaSessionType::Ssh | MobaSessionType::Sftp => {
-                no_warning(self.parse_ssh_session(&name, &conn_params, source_path))
+            MobaSessionType::Ssh => {
+                no_warning(self.parse_ssh_session(&name, &conn_params, source_path, false))
+            }
+            // SFTP reuses the SSH field layout but must keep its own protocol
+            // type so a round-trip through MobaXterm does not downgrade it to
+            // SSH.
+            MobaSessionType::Sftp => {
+                no_warning(self.parse_ssh_session(&name, &conn_params, source_path, true))
             }
             MobaSessionType::Rdp => {
                 no_warning(self.parse_rdp_session(&name, &conn_params, source_path))
@@ -335,6 +341,12 @@ impl MobaXtermImporter {
     }
 
     /// Parses an SSH/SFTP session.
+    ///
+    /// `is_sftp` selects the protocol variant: SFTP (session type 7) and SSH
+    /// (type 0) share the exact same MobaXterm field layout and both map onto
+    /// an [`SshConfig`], so only the wrapping `ProtocolConfig` variant differs.
+    /// Keeping them distinct lets an SFTP session survive a round-trip through
+    /// MobaXterm instead of being downgraded to SSH.
     #[expect(
         clippy::unused_self,
         reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
@@ -344,6 +356,7 @@ impl MobaXtermImporter {
         name: &str,
         params: &[&str],
         _source_path: &str,
+        is_sftp: bool,
     ) -> Result<Option<Connection>, String> {
         // SSH params layout:
         // [0] = session type (0 for SSH, 7 for SFTP)
@@ -428,12 +441,13 @@ impl MobaXtermImporter {
             ..Default::default()
         };
 
-        let mut connection = Connection::new(
-            name.to_string(),
-            host,
-            port,
-            ProtocolConfig::Ssh(ssh_config),
-        );
+        let protocol_config = if is_sftp {
+            ProtocolConfig::Sftp(ssh_config)
+        } else {
+            ProtocolConfig::Ssh(ssh_config)
+        };
+
+        let mut connection = Connection::new(name.to_string(), host, port, protocol_config);
         connection.username = username;
 
         Ok(Some(connection))
@@ -961,6 +975,30 @@ My SSH Server=#109#0%192.168.1.100%22%admin%%-1%-1%%%%%0%0%0%%%-1%0%0%0%%1080%%0
         assert_eq!(conn.port, 22);
         assert_eq!(conn.username, Some("admin".to_string()));
         assert!(matches!(conn.protocol_config, ProtocolConfig::Ssh(_)));
+    }
+
+    #[test]
+    fn test_parse_sftp_session_keeps_sftp_type() {
+        let importer = MobaXtermImporter::new();
+        // Session type 7 = SFTP, same field layout as SSH (type 0). It must be
+        // imported as SFTP, not downgraded to SSH.
+        let content = "[Bookmarks]
+SubRep=
+ImgNum=140
+My SFTP=#140#7%192.168.1.200%22%admin%%-1%-1%%%%%0%0%0%%%-1%0%0%0%%1080%%0%0%1%#MobaFont%10#0# #-1";
+
+        let result = importer.parse_content(content, "test.mxtsessions");
+        assert_eq!(result.connections.len(), 1);
+
+        let conn = &result.connections[0];
+        assert_eq!(conn.name, "My SFTP");
+        assert_eq!(conn.host, "192.168.1.200");
+        assert_eq!(conn.port, 22);
+        assert_eq!(conn.username, Some("admin".to_string()));
+        assert!(
+            matches!(conn.protocol_config, ProtocolConfig::Sftp(_)),
+            "MobaXterm session type 7 must import as SFTP"
+        );
     }
 
     #[test]
