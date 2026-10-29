@@ -168,7 +168,7 @@ Options:
 | `--agent-forwarding` | — | Enable SSH agent forwarding (`-A` flag, SSH/SFTP only) |
 | `--compression` | — | Enable compression (`-C` flag, SSH/SFTP only) |
 | `--startup-command` | — | Command to execute on SSH connection startup |
-| `--proxy-command` | — | SSH ProxyCommand (e.g. `"ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"`) |
+| `--proxy-command` | — | SSH ProxyCommand (e.g. `"ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"`). The GUI's QUIC (quicssh) button is just a preset for this field — pass `"quicssh client --addr %h:%p"` here for the same SSH-over-QUIC setup (quicssh must be installed separately and on PATH) |
 | `--network-mode` | — | Where the bastion comes from: `inherit` (group chain, then the global network settings) or `direct` (ignore any inherited bastion) |
 | `--ssh-option` | — | Custom SSH option `K=V` (repeatable, e.g. `--ssh-option StrictHostKeyChecking=no`) |
 | `--local-forward` | — | Local port forwarding `L:H:P` (repeatable, e.g. `8080:localhost:80`) |

@@ -182,6 +182,18 @@ integration status:
   - Bitwarden web vault for Bitwarden backend
   - 1Password app for 1Password backend
 
+### Auto-hide the Sidebar on Connect
+
+By default the sidebar stays put when you open a connection. If you would rather reclaim that space for the session, turn on **Auto-hide the sidebar on connect** in Settings → Interface → Connections. The subtitle sums it up: the connection list is hidden when a session opens, and it returns when you show it again or when the last session closes.
+
+With the setting on:
+
+- Opening (connecting) a connection hides the sidebar automatically, freeing the width for the session area.
+- The sidebar comes back when you reveal it yourself (the F9 toggle) **or** when the last open session closes.
+- Opening another connection hides it again, even if you had just revealed it by hand.
+
+The setting is **off by default**, so leaving it alone keeps the existing behaviour — the sidebar never hides on its own.
+
 ---
 
 ## Connections
@@ -319,6 +331,19 @@ Three notes on scope:
 > **Tip:** The *Jump Host* dropdown (and the Web "Tunnel Through SSH" picker) is
 > type-to-search. With a long connection list, open it and start typing part of a
 > name or host to filter down to the one you want instead of scrolling.
+
+#### QUIC (quicssh) ProxyCommand preset
+
+The SSH page's **ProxyCommand** row carries a small QUIC button in its suffix. Clicking it fills the field with the quicssh preset — nothing more. It is a convenience preset, not a new protocol: the connection stays a plain SSH connection with a user-visible ProxyCommand, so jump hosts, exports, vault keys, connection testing and reconnect all behave exactly as they would for any other proxy command.
+
+The preset routes the SSH transport through [moul/quicssh](https://github.com/moul/quicssh), which carries SSH over QUIC. Two things make that worth doing:
+
+- **Connection migration** — QUIC survives a change of network path, so the SSH session can roam between networks (for example Wi-Fi to Ethernet) without dropping.
+- **UDP NAT traversal** — QUIC runs over UDP, which reaches hosts behind an ISP-side NAT that would block a direct inbound TCP connection.
+
+quicssh is **not bundled**. You install it yourself and put it on your PATH; the button's tooltip reports whether RustConn found the `quicssh` binary and, if not, how to install it. In the Flatpak and Snap builds the binary has to be reachable *inside the sandbox* — a copy installed only on the host is not visible to the sandboxed app, so the preset cannot work out of the box there even when quicssh is installed on the host.
+
+> **Security note.** moul/quicssh uses `InsecureSkipVerify` on its QUIC transport, so the QUIC layer itself is not authenticated. The host's identity and your credential are still protected by the inner SSH layer, which performs its normal host-key check and authentication on top of the QUIC tunnel.
 
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
@@ -719,7 +744,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Protocol | Options |
 |----------|---------|
 | SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), key source (default/file/agent), PKCS#11 provider (hardware token/smart card), proxy jump (Jump Host), ProxyJump, IdentitiesOnly, ControlMaster, agent forwarding, Waypipe (Wayland forwarding), X11 forwarding, compression, startup command, verbose mode, backspace/delete key behavior, custom SSH options, port forwarding (local/remote/dynamic) |
-| RDP | Client mode (embedded/external), FreeRDP client selection (auto/specific binary), external window sizing (fit to screen/fullscreen/custom resolution/all monitors), dynamic resolution and smart sizing for legacy servers, performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing, shared folders, mouse jiggler (prevent idle disconnect, configurable interval 10–600s), autotype (send text as keystrokes, configurable inter-character and initial delay), custom FreeRDP arguments |
+| RDP | Client mode (embedded/external), FreeRDP client selection (auto/specific binary), external window sizing (fit to screen/fullscreen/custom resolution/all monitors), dynamic resolution and smart sizing for legacy servers, performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing with direction control (off / remote-to-local / local-to-remote / both), shared folders, mouse jiggler (prevent idle disconnect, configurable interval 10–600s), autotype (send text as keystrokes, configurable inter-character and initial delay), custom FreeRDP arguments |
 | VNC | Client mode (embedded/external), performance mode (quality/balanced/speed), encoding (Auto/Tight/ZRLE/Hextile/Raw/CopyRect), compression level, quality level, display scale override, view-only mode, scaling, clipboard sharing, custom arguments |
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, backspace/delete key behavior, custom arguments |
@@ -1342,7 +1367,22 @@ When you resize the RustConn window, the embedded RDP session automatically adju
 
 #### Clipboard
 
-The embedded IronRDP client provides bidirectional clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is automatically available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback. Clipboard sync requires the "Clipboard" option enabled in the RDP connection settings.
+The embedded IronRDP client provides clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is made available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback.
+
+**Clipboard direction.** The RDP connection editor's **Clipboard Sharing** option is a direction selector (Features group), not a plain on/off switch. It replaces the earlier single switch so you can limit which way the clipboard flows without hand-writing a FreeRDP argument. The choices are:
+
+| Option | Meaning |
+|--------|---------|
+| **Off** | No clipboard channel at all — nothing is shared either way |
+| **Remote to local only** | Paste from the remote session into your local clipboard, but the local clipboard is never pushed to the remote |
+| **Local to remote only** | Push your local clipboard to the remote, but the remote clipboard is never pulled back |
+| **Both directions** | Clipboard syncs both ways (the default, and the historical behaviour) |
+
+The direction is honoured by both clients: for the external FreeRDP client it becomes the `/clipboard:direction-to:…` argument, and for the embedded IronRDP client it is enforced in-app. **Off** emits no clipboard argument and inserts no channel.
+
+This replaces the old workaround of typing `/clipboard:direction-to:all` (or `…:local` / `…:remote`) into the Custom Arguments field to get one-way sync — that is no longer needed for direction, so remove it if you had added it.
+
+Existing connections are unaffected: a connection saved with clipboard sharing *on* opens as **Both directions**, and one saved *off* opens as **Off**.
 
 #### Autotype (Type as Keystrokes)
 
