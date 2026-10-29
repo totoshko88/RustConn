@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **RDP clipboard direction control (users reported the clipboard workaround)** — the connection editor's "Clipboard Sharing" switch for RDP is now a four-way selector: Off, Remote to local only, Local to remote only, or Both directions. One-way sync previously needed a hand-written `/clipboard:direction-to:` custom argument. A new `RdpClipboardDirection` enum on `RdpConfig` backs the control, read through `effective_clipboard_direction()`. Backward compatible: a profile written before this feature carries only the `clipboard_enabled` bool, which loads as Both (true) or Off (false); the bool is kept in sync on save so a downgrade to a pre-0.24.2 build still sees the correct on/off state (a one-way direction degrades to "on"). The external FreeRDP path maps the direction to `/clipboard:direction-to:<all|local|remote>,files-to:<...>` (the file clipboard follows the text direction; `Off` emits no clipboard argument, as before) for both the launcher and the embedded widget's external fallback. The embedded IronRDP backend honours all four directions by gating the remote→local announce in `on_remote_copy` and the local→remote announce in the clipboard command arms (with `on_format_data_request` as a backstop). Export fidelity per format: the native format round-trips the full direction; `.rdp` and MobaXterm carry only on/off and degrade a one-way direction to "on" (MobaXterm now also exports `0` for a disabled clipboard instead of always `-1`); the CLI `show` command prints the effective direction. GUI visual verification is pending a real desktop session. (`rustconn-core/src/models/protocol.rs`, `rustconn-core/src/protocol/freerdp.rs`, `rustconn-core/src/rdp_client/config.rs`, `rustconn-core/src/rdp_client/clipboard.rs`, `rustconn-core/src/rdp_client/client/connection.rs`, `rustconn-core/src/rdp_client/client/commands.rs`, `rustconn-core/src/export/mobaxterm.rs`, `rustconn-cli/src/commands/show.rs`, `rustconn/src/dialogs/connection/rdp.rs`, `rustconn/src/dialogs/mod.rs`, `rustconn/src/window/rdp_vnc.rs`, `rustconn/src/embedded_rdp/types.rs`, `rustconn/src/embedded_rdp/launcher.rs`, `rustconn/src/embedded_rdp/thread.rs`, `rustconn/src/embedded_rdp/connection.rs`, `po/*.po`)
+- **Auto-hide the sidebar on connect (issue #401)** — a new opt-in switch in
+  Settings → Interface, in the Connections group. When enabled, opening a session
+  collapses the connection sidebar to free space; it comes back when you reveal it
+  with the sidebar toggle or when the last open session closes. Off by default, so
+  existing behaviour is unchanged. (`rustconn-core/src/config/settings.rs`,
+  `rustconn-core/src/config/mod.rs`, `rustconn/src/terminal/mod.rs`,
+  `rustconn/src/window/mod.rs`, `rustconn/src/dialogs/settings/ui_tab.rs`,
+  `rustconn/src/dialogs/settings/mod.rs`)
 
 ## [0.24.1] - 2026-10-28
 

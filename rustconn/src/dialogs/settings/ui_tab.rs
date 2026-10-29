@@ -84,6 +84,9 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     WindowTitleRows,
     adw::SwitchRow,
+    // double_click_opens_new_session
+    adw::SwitchRow,
+    // auto_hide_sidebar_on_connect (#401)
     adw::SwitchRow,
     adw::SwitchRow,
     // hide_split_pane_hover_controls
@@ -500,6 +503,17 @@ pub fn create_ui_page() -> (
         .build();
     connections_group.add(&double_click_opens_new_session);
 
+    // Auto-hide the sidebar when a session opens (issue #401). Off by default so
+    // existing users keep today's behaviour; the sidebar returns when the last
+    // session closes or when the user reveals it with the toggle.
+    let auto_hide_sidebar_on_connect = adw::SwitchRow::builder()
+        .title(i18n("Auto-hide the sidebar on connect"))
+        .subtitle(i18n(
+            "Hide the connection list when a session opens, to free space. It returns when you show it again or when the last session closes",
+        ))
+        .build();
+    connections_group.add(&auto_hide_sidebar_on_connect);
+
     // "Open Browser via Tunnel" (SSH context menu) target browser.
     let open_tunnelled_browser_in_embedded = adw::SwitchRow::builder()
         .title(i18n("Open tunnelled browser in the embedded browser"))
@@ -690,6 +704,7 @@ pub fn create_ui_page() -> (
         },
         show_welcome_switch,
         double_click_opens_new_session,
+        auto_hide_sidebar_on_connect,
         show_split_pane_labels,
         hide_split_pane_hover_controls,
         show_directional_tab_close,
@@ -758,6 +773,7 @@ pub fn load_ui_settings(
     window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
+    auto_hide_sidebar_on_connect: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     hide_split_pane_hover_controls: &adw::SwitchRow,
     show_directional_tab_close: &adw::SwitchRow,
@@ -853,6 +869,7 @@ pub fn load_ui_settings(
     show_welcome_switch.set_active(settings.show_welcome_on_startup);
 
     double_click_opens_new_session.set_active(settings.double_click_opens_new_session);
+    auto_hide_sidebar_on_connect.set_active(settings.auto_hide_sidebar_on_connect);
 
     open_tunnelled_browser_in_embedded.set_active(settings.open_tunnelled_browser_in_embedded);
     tunnel_start_url_row.set_text(&settings.tunnel_browser_start_url);
@@ -940,6 +957,7 @@ pub fn collect_ui_settings(
     window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
+    auto_hide_sidebar_on_connect: &adw::SwitchRow,
     show_split_pane_labels: &adw::SwitchRow,
     hide_split_pane_hover_controls: &adw::SwitchRow,
     show_directional_tab_close: &adw::SwitchRow,
@@ -1030,6 +1048,7 @@ pub fn collect_ui_settings(
         window_title_shows_path: window_title.shows_path.is_active(),
         show_welcome_on_startup: show_welcome_switch.is_active(),
         double_click_opens_new_session: double_click_opens_new_session.is_active(),
+        auto_hide_sidebar_on_connect: auto_hide_sidebar_on_connect.is_active(),
         open_tunnelled_browser_in_embedded: open_tunnelled_browser_in_embedded.is_active(),
         tunnel_browser_start_url: tunnel_start_url_row.text().to_string(),
         tunnel_browser_command: tunnel_browser_command_row.text().to_string(),

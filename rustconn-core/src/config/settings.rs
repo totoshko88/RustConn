@@ -1214,6 +1214,17 @@ pub struct UiSettings {
     /// host (issue #242).
     #[serde(default)]
     pub double_click_opens_new_session: bool,
+    /// Auto-hide the connection sidebar when a session is opened (issue #401).
+    ///
+    /// Default `false` — sidebar visibility is user-controlled, as before. When
+    /// `true`, showing any session (SSH/Telnet/Serial/local shell, embedded or
+    /// external VNC/RDP/SPICE, Web) collapses the sidebar to free space. The
+    /// sidebar stays hidden until the user reveals it with the sidebar toggle, or
+    /// until the last open session closes, when it is shown again. The hide fires
+    /// only at the moment a session is shown, so a manual reveal is honoured until
+    /// the next connect.
+    #[serde(default)]
+    pub auto_hide_sidebar_on_connect: bool,
     /// Open the "Open Browser via Tunnel" SSH action in the embedded browser
     /// rather than an external one.
     ///
@@ -1390,6 +1401,7 @@ impl Default for UiSettings {
             window_title_shows_connection: false,
             window_title_shows_path: false,
             double_click_opens_new_session: false,
+            auto_hide_sidebar_on_connect: false,
             open_tunnelled_browser_in_embedded: default_true(),
             tunnel_browser_start_url: default_tunnel_start_url(),
             tunnel_browser_command: String::new(),
@@ -1491,6 +1503,41 @@ pub const fn clamp_sidebar_width(width: i32) -> i32 {
     } else {
         width
     }
+}
+
+/// What the sidebar auto-hide feature should do in response to a session event.
+///
+/// `None` means "leave the sidebar as the user left it".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SidebarAutoAction {
+    /// Collapse the sidebar (a session was just shown).
+    Hide,
+    /// Reveal the sidebar (the last session just closed).
+    Show,
+}
+
+/// Decides the auto-hide action when a session is **shown**.
+///
+/// Returns `Some(Hide)` whenever the feature is enabled — *every* connect event
+/// hides, including one that follows a manual reveal (there is no persistent
+/// "user wants it shown" override; issue #401, settled contract). The caller
+/// applies it idempotently: hiding an already-hidden sidebar is a no-op.
+#[must_use]
+pub fn sidebar_action_on_session_shown(enabled: bool) -> Option<SidebarAutoAction> {
+    enabled.then_some(SidebarAutoAction::Hide)
+}
+
+/// Decides the auto-hide action when a session is **closed**.
+///
+/// `live_session_count_after_close` is the number of sessions that remain once
+/// this one is gone. When it reaches zero and the feature is on, the sidebar is
+/// revealed again.
+#[must_use]
+pub fn sidebar_action_on_session_closed(
+    enabled: bool,
+    live_session_count_after_close: usize,
+) -> Option<SidebarAutoAction> {
+    (enabled && live_session_count_after_close == 0).then_some(SidebarAutoAction::Show)
 }
 
 /// Historical per-row vertical margin, kept as the default so existing
@@ -2255,7 +2302,10 @@ fn hex_decode(data: &str) -> Option<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{RendererPreference, UiSettings, clamp_sidebar_width};
+    use super::{
+        RendererPreference, SidebarAutoAction, UiSettings, clamp_sidebar_width,
+        sidebar_action_on_session_closed, sidebar_action_on_session_shown,
+    };
 
     /// `open_tunnelled_browser_in_embedded` defaults to `true` on every build
     /// type, the snap included (0.24.0 parity with Flatpak) — both for a fresh
@@ -2639,6 +2689,67 @@ mod tests {
         assert_eq!(clamp_sidebar_width(320), 320);
         assert_eq!(clamp_sidebar_width(500), 500);
         assert_eq!(clamp_sidebar_width(501), 500);
+    }
+
+    /// Issue #401: with the feature off, showing a session never hides the
+    /// sidebar.
+    #[test]
+    fn sidebar_action_on_shown_is_none_when_disabled() {
+        assert_eq!(sidebar_action_on_session_shown(false), None);
+    }
+
+    /// Issue #401: with the feature on, every session shown hides the sidebar —
+    /// the settled AC4 contract (a connect hides even after a manual reveal).
+    #[test]
+    fn sidebar_action_on_shown_hides_when_enabled() {
+        assert_eq!(
+            sidebar_action_on_session_shown(true),
+            Some(SidebarAutoAction::Hide)
+        );
+    }
+
+    /// Issue #401: closing the last session (zero remaining) reveals the sidebar
+    /// when the feature is on.
+    #[test]
+    fn sidebar_action_on_last_close_reveals_when_enabled() {
+        assert_eq!(
+            sidebar_action_on_session_closed(true, 0),
+            Some(SidebarAutoAction::Show)
+        );
+    }
+
+    /// Issue #401: closing a session while others remain leaves the sidebar
+    /// hidden, regardless of how many remain.
+    #[test]
+    fn sidebar_action_on_non_last_close_does_nothing() {
+        assert_eq!(sidebar_action_on_session_closed(true, 1), None);
+        assert_eq!(sidebar_action_on_session_closed(true, 3), None);
+    }
+
+    /// Issue #401: with the feature off, closing the last session does not
+    /// touch the sidebar (FR5).
+    #[test]
+    fn sidebar_action_on_close_is_none_when_disabled() {
+        assert_eq!(sidebar_action_on_session_closed(false, 0), None);
+    }
+
+    /// Issue #401: the setting is opt-in — a fresh `UiSettings` has it off.
+    #[test]
+    fn auto_hide_sidebar_defaults_to_false() {
+        assert!(!UiSettings::default().auto_hide_sidebar_on_connect);
+    }
+
+    /// Issue #401: a config predating the field parses with auto-hide off, and
+    /// an explicit `true` round-trips (mirrors the sibling serde tests).
+    #[test]
+    fn auto_hide_sidebar_round_trips_through_toml() {
+        let without_key: UiSettings =
+            toml::from_str("color_scheme = \"system\"\n").expect("a [ui] table without the key");
+        assert!(!without_key.auto_hide_sidebar_on_connect);
+
+        let enabled: UiSettings = toml::from_str("auto_hide_sidebar_on_connect = true\n")
+            .expect("a stored value must parse");
+        assert!(enabled.auto_hide_sidebar_on_connect);
     }
 
     /// Issue #3: an unset or out-of-range saved width resets to the default

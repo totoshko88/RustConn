@@ -439,6 +439,31 @@ pub(crate) fn skipped_bastion_body(
 }
 
 impl MainWindow {
+    /// Applies a sidebar auto-hide verdict to the split view (issue #401).
+    ///
+    /// Idempotent: setting the sidebar to the state it is already in is a no-op,
+    /// so this never fights the adaptive breakpoint or a manual toggle.
+    fn apply_sidebar_auto_action(
+        split: &adw::OverlaySplitView,
+        action: rustconn_core::config::SidebarAutoAction,
+    ) {
+        use rustconn_core::config::SidebarAutoAction;
+        match action {
+            SidebarAutoAction::Hide => {
+                if split.shows_sidebar() {
+                    tracing::debug!("auto-hide: collapsing sidebar on connect");
+                    split.set_show_sidebar(false);
+                }
+            }
+            SidebarAutoAction::Show => {
+                if !split.shows_sidebar() {
+                    tracing::debug!("auto-hide: revealing sidebar, last session closed");
+                    split.set_show_sidebar(true);
+                }
+            }
+        }
+    }
+
     /// Creates a new main window for the application
     #[must_use]
     pub fn new(app: &adw::Application, state: SharedAppState) -> Self {
@@ -721,6 +746,15 @@ impl MainWindow {
         // the widget move, mirroring the split path.
         terminal_notebook.set_monitoring_coordinator(Rc::clone(&monitoring));
         let group_broadcast_for_close = group_broadcast.clone();
+        // Auto-reveal-on-last-close (issue #401). Captured from the locals before
+        // the struct literal moves them: the split view and app state to read the
+        // live setting, and a weak notebook handle for the live session counts.
+        // The external-viewer count comes from the thread-local registry accessor
+        // (`external_session_registry`), which is published after construction and
+        // is populated by the time any close fires.
+        let split_for_close = overlay_split_view.clone();
+        let state_for_close = state.clone();
+        let notebook_for_autohide_close = Rc::downgrade(&terminal_notebook);
         terminal_notebook.set_on_page_closed(move |session_id, connection_id| {
             monitoring_for_close.stop_monitoring(session_id);
             activity_for_close.stop(session_id);
@@ -728,6 +762,45 @@ impl MainWindow {
             // can never inherit its membership, and the wired set stays bounded.
             group_broadcast_for_close.forget(session_id);
             sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
+
+            // Read the setting into a local FIRST — no borrow held across the GTK
+            // call (NFR3). At this point the closing session is STILL in the
+            // notebook's map (remove() runs later in connect_close_page), so the
+            // remainder after this close is (current live count - 1). The count
+            // spans all session kinds (window-guide.md). A failed weak upgrade
+            // means the window is tearing down — skip the reveal silently.
+            let enabled = with_state(&state_for_close, |s| {
+                s.settings().ui.auto_hide_sidebar_on_connect
+            });
+            if let Some(notebook) = notebook_for_autohide_close.upgrade() {
+                let external = external_session_registry().map_or(0, |reg| reg.active_count());
+                let live_now = notebook.session_count() + notebook.detached_count() + external;
+                let remaining = live_now.saturating_sub(1);
+                if let Some(action) =
+                    rustconn_core::config::sidebar_action_on_session_closed(enabled, remaining)
+                {
+                    Self::apply_sidebar_auto_action(&split_for_close, action);
+                }
+            }
+        });
+
+        // Auto-hide-on-connect (issue #401). Fires for every protocol via the
+        // notebook's all-protocol "session shown" choke point. Session restore
+        // reopens tabs through `open_local_shell_with_split` /
+        // `start_connection_with_credential_resolution_observed`, both of which
+        // end in `notify_tab_added`, so a restored session auto-hides too — the
+        // intended "a session was shown" behaviour.
+        let split_for_shown = overlay_split_view.clone();
+        let state_for_shown = state.clone();
+        terminal_notebook.set_on_session_shown(move |_session_id, _connection_id| {
+            // Read the bool into a local FIRST — no borrow held across the GTK
+            // call (NFR3).
+            let enabled = with_state(&state_for_shown, |s| {
+                s.settings().ui.auto_hide_sidebar_on_connect
+            });
+            if let Some(action) = rustconn_core::config::sidebar_action_on_session_shown(enabled) {
+                Self::apply_sidebar_auto_action(&split_for_shown, action);
+            }
         });
 
         // Wire activity monitoring from the single session-creation choke point.
