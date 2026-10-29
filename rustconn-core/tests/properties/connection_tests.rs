@@ -213,6 +213,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 tls_security_level: None,
                 ignore_certificate: false,
                 clipboard_enabled: true,
+                clipboard_direction: None,
                 show_local_cursor: true,
                 hide_floating_toolbar: false,
                 jiggler_enabled: false,

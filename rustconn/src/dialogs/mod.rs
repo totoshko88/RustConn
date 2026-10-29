@@ -17,6 +17,24 @@ pub(crate) fn rdp_audio_mode_label(mode: rustconn_core::models::RdpAudioMode) ->
     }
 }
 
+/// Returns the translated label for an RDP clipboard direction.
+///
+/// Like [`rdp_audio_mode_label`], the variants' `display_name()` strings live in
+/// `rustconn-core`, which `xgettext` never scans, so the GUI crate re-states the
+/// literals here where the extractor can find them.
+#[must_use]
+pub(crate) fn rdp_clipboard_direction_label(
+    dir: rustconn_core::models::RdpClipboardDirection,
+) -> String {
+    use rustconn_core::models::RdpClipboardDirection;
+    match dir {
+        RdpClipboardDirection::Off => crate::i18n::i18n("Off"),
+        RdpClipboardDirection::RemoteToLocal => crate::i18n::i18n("Remote to local only"),
+        RdpClipboardDirection::LocalToRemote => crate::i18n::i18n("Local to remote only"),
+        RdpClipboardDirection::Both => crate::i18n::i18n("Both directions"),
+    }
+}
+
 mod adw_dialogs;
 mod ask_prompt;
 mod backend_missing;

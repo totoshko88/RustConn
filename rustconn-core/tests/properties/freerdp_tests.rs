@@ -71,6 +71,12 @@ fn arb_display_mode() -> impl Strategy<Value = RdpDisplayMode> {
     prop::sample::select(RdpDisplayMode::all())
 }
 
+/// Strategy covering every clipboard direction
+fn arb_clipboard_direction() -> impl Strategy<Value = rustconn_core::models::RdpClipboardDirection>
+{
+    prop::sample::select(rustconn_core::models::RdpClipboardDirection::all())
+}
+
 /// Strategy for generating FreeRDP configurations
 fn arb_freerdp_config() -> impl Strategy<Value = FreeRdpConfig> {
     (
@@ -80,9 +86,9 @@ fn arb_freerdp_config() -> impl Strategy<Value = FreeRdpConfig> {
         arb_password(),
         arb_domain(),
         arb_resolution(),
-        any::<bool>(),           // clipboard_enabled
-        arb_optional_geometry(), // window_geometry
-        any::<bool>(),           // remember_window_position
+        arb_clipboard_direction(), // clipboard_direction
+        arb_optional_geometry(),   // window_geometry
+        any::<bool>(),             // remember_window_position
         arb_display_mode(),
     )
         .prop_map(
@@ -93,7 +99,7 @@ fn arb_freerdp_config() -> impl Strategy<Value = FreeRdpConfig> {
                 password,
                 domain,
                 (width, height),
-                clipboard_enabled,
+                clipboard_direction,
                 window_geometry,
                 remember_window_position,
                 display_mode,
@@ -102,7 +108,7 @@ fn arb_freerdp_config() -> impl Strategy<Value = FreeRdpConfig> {
                     .with_port(port)
                     .with_display_mode(display_mode)
                     .with_resolution(width, height)
-                    .with_clipboard(clipboard_enabled)
+                    .with_clipboard_direction(clipboard_direction)
                     .with_remember_window_position(remember_window_position);
 
                 if let Some(u) = username {
@@ -282,18 +288,31 @@ proptest! {
 
     // Additional property: Clipboard flag only when enabled
     #[test]
-    fn prop_clipboard_flag_matches_config(config in arb_freerdp_config()) {
+    fn prop_clipboard_arg_matches_direction(config in arb_freerdp_config()) {
+        use rustconn_core::models::RdpClipboardDirection;
         let args = build_freerdp_args(&config);
 
-        let has_clipboard = args.iter().any(|a| a == "+clipboard");
+        // Never the legacy `+clipboard`; the direction form instead.
+        prop_assert!(!args.iter().any(|a| a == "+clipboard"));
 
-        prop_assert_eq!(
-            has_clipboard,
-            config.clipboard_enabled,
-            "Clipboard flag should match config. Config: {}, Args: {:?}",
-            config.clipboard_enabled,
-            args
-        );
+        let clipboard_arg = args.iter().find(|a| a.starts_with("/clipboard"));
+        match config.clipboard_direction {
+            RdpClipboardDirection::Off => prop_assert!(
+                clipboard_arg.is_none(),
+                "Off must emit no clipboard argument. Args: {:?}",
+                args
+            ),
+            dir => {
+                let expected = dir.freerdp_arg().expect("enabled direction has an argument");
+                prop_assert_eq!(
+                    clipboard_arg,
+                    Some(&expected),
+                    "Clipboard argument should match direction {:?}. Args: {:?}",
+                    dir,
+                    args
+                );
+            }
+        }
     }
 
     // Additional property: Username only when set

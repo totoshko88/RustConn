@@ -22,7 +22,8 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::{
-    RdpAudioMode, RdpClientMode, RdpDisplayMode, RdpPerformanceMode, ScaleOverride, SharedFolder,
+    RdpAudioMode, RdpClientMode, RdpClipboardDirection, RdpDisplayMode, RdpPerformanceMode,
+    ScaleOverride, SharedFolder,
 };
 
 use crate::i18n::i18n;
@@ -48,7 +49,7 @@ pub(super) fn create_rdp_options() -> (
     DropDown,
     SpinButton,
     adw::SwitchRow,
-    adw::SwitchRow,
+    adw::ComboRow,
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
@@ -328,13 +329,23 @@ pub(super) fn create_rdp_options() -> (
         .build();
     features_group.add(&printer_check);
 
-    // Clipboard sharing
-    let clipboard_check = adw::SwitchRow::builder()
+    // Clipboard direction. Replaces the old on/off switch so one-way sync no
+    // longer needs a /clipboard:direction-to: custom argument. The audio row
+    // above is an ActionRow + DropDown; this is an adw::ComboRow, the
+    // HIG-preferred single-choice control, owning its own model.
+    let clipboard_items: Vec<String> = RdpClipboardDirection::all()
+        .iter()
+        .map(|d| crate::dialogs::rdp_clipboard_direction_label(*d))
+        .collect();
+    let clipboard_strs: Vec<&str> = clipboard_items.iter().map(String::as_str).collect();
+    let clipboard_model = StringList::new(&clipboard_strs);
+    let clipboard_row = adw::ComboRow::builder()
         .title(i18n("Clipboard Sharing"))
-        .subtitle(i18n("Synchronize clipboard with remote"))
-        .active(true)
+        .subtitle(i18n("Which way the clipboard synchronises with the remote"))
+        .model(&clipboard_model)
         .build();
-    features_group.add(&clipboard_check);
+    clipboard_row.set_selected(RdpClipboardDirection::default().index());
+    features_group.add(&clipboard_row);
 
     // Show local cursor
     let rdp_show_local_cursor_check = adw::SwitchRow::builder()
@@ -918,7 +929,7 @@ pub(super) fn create_rdp_options() -> (
         freerdp_client_dropdown,
         tls_security_level_spin,
         ignore_certificate_check,
-        clipboard_check,
+        clipboard_row,
         rdp_show_local_cursor_check,
         rdp_floating_toolbar_check,
         rdp_jiggler_check,

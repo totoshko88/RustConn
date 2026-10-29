@@ -66,6 +66,18 @@ fn arb_security_protocol() -> impl Strategy<Value = RdpSecurityProtocol> {
     ]
 }
 
+// Strategy for generating clipboard directions
+fn arb_clipboard_direction() -> impl Strategy<Value = rustconn_core::models::RdpClipboardDirection>
+{
+    use rustconn_core::models::RdpClipboardDirection;
+    prop_oneof![
+        Just(RdpClipboardDirection::Off),
+        Just(RdpClipboardDirection::RemoteToLocal),
+        Just(RdpClipboardDirection::LocalToRemote),
+        Just(RdpClipboardDirection::Both),
+    ]
+}
+
 // Strategy for generating RDP client config
 fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
     (
@@ -78,11 +90,11 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
             arb_color_depth(),
         ),
         (
-            any::<bool>(), // clipboard_enabled
-            any::<bool>(), // audio_enabled
-            1u64..=300,    // timeout_secs
-            any::<bool>(), // ignore_certificate
-            any::<bool>(), // nla_enabled
+            arb_clipboard_direction(), // clipboard_direction
+            any::<bool>(),             // audio_enabled
+            1u64..=300,                // timeout_secs
+            any::<bool>(),             // ignore_certificate
+            any::<bool>(),             // nla_enabled
             arb_security_protocol(),
         ),
         (
@@ -94,7 +106,7 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
             |(
                 (host, port, username, domain, (width, height), color_depth),
                 (
-                    clipboard_enabled,
+                    clipboard_direction,
                     audio_enabled,
                     timeout_secs,
                     ignore_certificate,
@@ -112,7 +124,7 @@ fn arb_rdp_client_config() -> impl Strategy<Value = RdpClientConfig> {
                     width,
                     height,
                     color_depth,
-                    clipboard_enabled,
+                    clipboard_direction,
                     audio_enabled,
                     timeout_secs,
                     ignore_certificate,
@@ -174,7 +186,7 @@ proptest! {
         prop_assert_eq!(config.width, deserialized.width, "Width should be preserved");
         prop_assert_eq!(config.height, deserialized.height, "Height should be preserved");
         prop_assert_eq!(config.color_depth, deserialized.color_depth, "Color depth should be preserved");
-        prop_assert_eq!(config.clipboard_enabled, deserialized.clipboard_enabled, "Clipboard enabled should be preserved");
+        prop_assert_eq!(config.clipboard_direction, deserialized.clipboard_direction, "Clipboard direction should be preserved");
         prop_assert_eq!(config.audio_enabled, deserialized.audio_enabled, "Audio enabled should be preserved");
         prop_assert_eq!(config.timeout_secs, deserialized.timeout_secs, "Timeout should be preserved");
         prop_assert_eq!(config.ignore_certificate, deserialized.ignore_certificate, "Ignore certificate should be preserved");
@@ -208,7 +220,7 @@ proptest! {
         prop_assert_eq!(config.width, deserialized.width, "Width should be preserved");
         prop_assert_eq!(config.height, deserialized.height, "Height should be preserved");
         prop_assert_eq!(config.color_depth, deserialized.color_depth, "Color depth should be preserved");
-        prop_assert_eq!(config.clipboard_enabled, deserialized.clipboard_enabled, "Clipboard enabled should be preserved");
+        prop_assert_eq!(config.clipboard_direction, deserialized.clipboard_direction, "Clipboard direction should be preserved");
         prop_assert_eq!(config.audio_enabled, deserialized.audio_enabled, "Audio enabled should be preserved");
         prop_assert_eq!(config.timeout_secs, deserialized.timeout_secs, "Timeout should be preserved");
         prop_assert_eq!(config.ignore_certificate, deserialized.ignore_certificate, "Ignore certificate should be preserved");
@@ -274,7 +286,11 @@ proptest! {
         prop_assert_eq!(config.width, width, "Width should match");
         prop_assert_eq!(config.height, height, "Height should match");
         prop_assert_eq!(config.color_depth, color_depth, "Color depth should match");
-        prop_assert!(config.clipboard_enabled, "Clipboard should be enabled");
+        prop_assert_eq!(
+            config.clipboard_direction,
+            rustconn_core::models::RdpClipboardDirection::Both,
+            "Clipboard should be bidirectional"
+        );
         prop_assert!(!config.nla_enabled, "NLA should be disabled");
     }
 }

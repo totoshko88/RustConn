@@ -202,21 +202,37 @@ pub(super) async fn process_command<W: FramedWrite>(
                 .collect();
 
             // Store pending data in the backend so on_format_data_request
-            // can serve it immediately.
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
+            // can serve it immediately. Gate both the park and the announce on
+            // the direction: parking without gating would let a later
+            // on_format_data_request serve local text even though local→remote
+            // is disabled.
+            let allow_local_to_remote = if let Some(cliprdr) =
+                active_stage.get_svc_processor_mut::<CliprdrClient>()
                 && let Some(backend) = cliprdr
                     .downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
             {
-                backend.set_pending_copy_data(
-                    ironrdp::cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT.value(),
-                    utf16_data,
-                );
-            }
+                let allow = backend.allows_local_to_remote();
+                if allow {
+                    backend.set_pending_copy_data(
+                        ironrdp::cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT.value(),
+                        utf16_data,
+                    );
+                }
+                allow
+            } else {
+                // No backend (clipboard channel absent / Off): the existing
+                // code paths already no-op, so nothing to announce.
+                false
+            };
 
-            // Announce the format list to the server — it will then request
-            // the data via FormatDataRequest.
-            let formats = vec![super::super::ClipboardFormatInfo::unicode_text()];
-            handle_clipboard_copy(active_stage, writer, formats).await;
+            if allow_local_to_remote {
+                // Announce the format list to the server — it will then request
+                // the data via FormatDataRequest.
+                let formats = vec![super::super::ClipboardFormatInfo::unicode_text()];
+                handle_clipboard_copy(active_stage, writer, formats).await;
+            } else {
+                tracing::trace!("clipboard local→remote suppressed by direction");
+            }
         }
         RdpClientCommand::Authenticate { .. } => {}
         RdpClientCommand::AutotypeText {
@@ -260,22 +276,36 @@ pub(super) async fn process_command<W: FramedWrite>(
             handle_clipboard_data(active_stage, writer, format_id, data).await;
         }
         RdpClientCommand::ClipboardCopy(formats) => {
-            handle_clipboard_copy(active_stage, writer, formats).await;
+            if clipboard_allows_local_to_remote(active_stage) {
+                handle_clipboard_copy(active_stage, writer, formats).await;
+            } else {
+                tracing::trace!("clipboard local→remote suppressed by direction");
+            }
         }
         RdpClientCommand::AnnounceClipboardFormats(formats) => {
             // Invalidate before announcing: on_format_data_request serves from
             // pending_copy_data ahead of asking the GUI, so a payload parked by
             // an earlier explicit copy would shadow the new clipboard contents
             // exactly once (issue #261).
-            if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
+            let allow = if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
                 && let Some(backend) = cliprdr
                     .downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
             {
-                for format in &formats {
-                    backend.clear_pending_format(format.id);
+                let allow = backend.allows_local_to_remote();
+                if allow {
+                    for format in &formats {
+                        backend.clear_pending_format(format.id);
+                    }
                 }
+                allow
+            } else {
+                false
+            };
+            if allow {
+                handle_clipboard_copy(active_stage, writer, formats).await;
+            } else {
+                tracing::trace!("clipboard local→remote suppressed by direction");
             }
-            handle_clipboard_copy(active_stage, writer, formats).await;
         }
         RdpClientCommand::RequestClipboardData { format_id } => {
             handle_clipboard_request(active_stage, writer, format_id).await;
@@ -394,6 +424,20 @@ async fn handle_clipboard_data<W: FramedWrite>(
             );
         }
     }
+}
+
+/// Whether the clipboard backend permits local→remote sync.
+///
+/// Returns `false` when the clipboard channel is absent (direction `Off`), which
+/// is the behaviour those arms already have: with no backend there is nothing to
+/// announce.
+fn clipboard_allows_local_to_remote(active_stage: &mut ActiveStage) -> bool {
+    active_stage
+        .get_svc_processor_mut::<CliprdrClient>()
+        .and_then(|cliprdr| {
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+        })
+        .is_some_and(|backend| backend.allows_local_to_remote())
 }
 
 async fn handle_clipboard_copy<W: FramedWrite>(

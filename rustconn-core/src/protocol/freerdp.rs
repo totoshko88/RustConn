@@ -9,8 +9,8 @@ use std::path::PathBuf;
 use secrecy::SecretString;
 
 use crate::models::{
-    RdpAudioMode, RdpDisplayMode, RdpGateway, RdpPerformanceMode, RdpSecurityLayer, Resolution,
-    ScaleOverride, WindowGeometry, build_remote_app_freerdp_args,
+    RdpAudioMode, RdpClipboardDirection, RdpDisplayMode, RdpGateway, RdpPerformanceMode,
+    RdpSecurityLayer, Resolution, ScaleOverride, WindowGeometry, build_remote_app_freerdp_args,
 };
 
 /// A shared folder for RDP drive redirection
@@ -76,8 +76,8 @@ pub struct FreeRdpConfig {
     /// `-wallpaper`/`-themes`/`+window-drag`/`+menu-anims`, mirroring the two
     /// other paths so the three cannot drift.
     pub performance_mode: RdpPerformanceMode,
-    /// Enable clipboard sharing
-    pub clipboard_enabled: bool,
+    /// Which way the clipboard synchronises
+    pub clipboard_direction: RdpClipboardDirection,
     /// Shared folders for drive redirection
     pub shared_folders: Vec<SharedFolder>,
     /// Map the local default printer into the session
@@ -154,8 +154,8 @@ pub struct FreeRdpConfig {
 
 /// Written by hand so that it agrees with [`FreeRdpConfig::new`].
 ///
-/// `#[derive(Default)]` gave `port: 0`, `width: 0` and `clipboard_enabled:
-/// false` — a configuration that cannot connect — while `new()` gives a working
+/// `#[derive(Default)]` gave `port: 0`, `width: 0` and a clipboard `Off`
+/// — a configuration that cannot connect — while `new()` gives a working
 /// one. The same divergence is documented for `RdpConfig` and `SpiceConfig` in
 /// `models::protocol`; callers reach for `..Default::default()` and are entitled
 /// to get the same baseline either way.
@@ -181,7 +181,7 @@ impl FreeRdpConfig {
             system_scale_percent: 100,
             color_depth: None,
             performance_mode: RdpPerformanceMode::default(),
-            clipboard_enabled: true,
+            clipboard_direction: RdpClipboardDirection::Both,
             shared_folders: Vec::new(),
             printer_enabled: false,
             audio_mode: RdpAudioMode::default(),
@@ -258,10 +258,25 @@ impl FreeRdpConfig {
         self
     }
 
-    /// Enables or disables clipboard sharing
+    /// Enables or disables clipboard sharing.
+    ///
+    /// Thin shim over [`Self::with_clipboard_direction`] kept so the on/off call
+    /// sites (quick-connect, tests) compile unchanged: `true` maps to
+    /// [`RdpClipboardDirection::Both`], `false` to [`RdpClipboardDirection::Off`].
     #[must_use]
     pub const fn with_clipboard(mut self, enabled: bool) -> Self {
-        self.clipboard_enabled = enabled;
+        self.clipboard_direction = if enabled {
+            RdpClipboardDirection::Both
+        } else {
+            RdpClipboardDirection::Off
+        };
+        self
+    }
+
+    /// Sets which way the clipboard synchronises.
+    #[must_use]
+    pub const fn with_clipboard_direction(mut self, dir: RdpClipboardDirection) -> Self {
+        self.clipboard_direction = dir;
         self
     }
 
@@ -560,8 +575,8 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
     }
 
     // Clipboard
-    if config.clipboard_enabled {
-        args.push("+clipboard".to_string());
+    if let Some(arg) = config.clipboard_direction.freerdp_arg() {
+        args.push(arg);
     }
 
     push_redirection_args(&mut args, config);
@@ -1296,11 +1311,43 @@ mod tests {
     }
 
     #[test]
-    fn test_build_freerdp_args_clipboard_disabled() {
-        let config = FreeRdpConfig::new("server.example.com").with_clipboard(false);
+    fn test_build_freerdp_args_clipboard_off() {
+        let config = FreeRdpConfig::new("server.example.com")
+            .with_clipboard_direction(RdpClipboardDirection::Off);
         let args = build_freerdp_args(&config);
 
         assert!(!args.contains(&"+clipboard".to_string()));
+        assert!(
+            !args.iter().any(|a| a.starts_with("/clipboard")),
+            "Off must emit no clipboard argument"
+        );
+    }
+
+    #[test]
+    fn test_build_freerdp_args_clipboard_both() {
+        let config = FreeRdpConfig::new("server.example.com")
+            .with_clipboard_direction(RdpClipboardDirection::Both);
+        let args = build_freerdp_args(&config);
+
+        assert!(args.contains(&"/clipboard:direction-to:all,files-to:all".to_string()));
+    }
+
+    #[test]
+    fn test_build_freerdp_args_clipboard_remote_to_local() {
+        let config = FreeRdpConfig::new("server.example.com")
+            .with_clipboard_direction(RdpClipboardDirection::RemoteToLocal);
+        let args = build_freerdp_args(&config);
+
+        assert!(args.contains(&"/clipboard:direction-to:local,files-to:local".to_string()));
+    }
+
+    #[test]
+    fn test_build_freerdp_args_clipboard_local_to_remote() {
+        let config = FreeRdpConfig::new("server.example.com")
+            .with_clipboard_direction(RdpClipboardDirection::LocalToRemote);
+        let args = build_freerdp_args(&config);
+
+        assert!(args.contains(&"/clipboard:direction-to:remote,files-to:remote".to_string()));
     }
 
     #[test]

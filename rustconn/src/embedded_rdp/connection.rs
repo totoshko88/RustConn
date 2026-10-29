@@ -106,7 +106,10 @@ pub(super) fn remove_clipboard_monitor(slot: &ClipboardMonitorSlot, only_generat
 /// turning the setting off has to stop *every* read rather than only the
 /// automatic ones.
 pub(super) fn clipboard_sharing_enabled(config: &Rc<RefCell<Option<RdpConfig>>>) -> bool {
-    config.borrow().as_ref().is_none_or(|c| c.clipboard_enabled)
+    config
+        .borrow()
+        .as_ref()
+        .is_none_or(|c| c.clipboard_direction.enabled())
 }
 
 // Poll background FreeRDP startup often enough to keep the UI responsive without
@@ -1192,7 +1195,7 @@ impl super::EmbeddedRdpWidget {
                 crate::utils::dimension_to_u16(actual_width),
                 crate::utils::dimension_to_u16(actual_height),
             )
-            .with_clipboard(config.clipboard_enabled)
+            .with_clipboard_direction(config.clipboard_direction)
             .with_shared_folders(shared_folders)
             .with_printer(config.printer_enabled)
             // Only `Local` means "this client plays the stream". `Remote` never

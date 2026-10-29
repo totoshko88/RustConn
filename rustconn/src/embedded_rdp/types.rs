@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use rustconn_core::models::RdpPerformanceMode;
+use rustconn_core::models::{RdpClipboardDirection, RdpPerformanceMode};
 use rustconn_core::rdp_client::graphics::GraphicsMode;
 use secrecy::SecretString;
 use thiserror::Error;
@@ -134,8 +134,8 @@ pub struct RdpConfig {
     /// Live compositor scale as a percentage, read for
     /// [`rustconn_core::models::ScaleOverride::Native`] on the external path
     pub system_scale_percent: u16,
-    /// Enable clipboard sharing
-    pub clipboard_enabled: bool,
+    /// Which way the clipboard synchronises
+    pub clipboard_direction: RdpClipboardDirection,
     /// Performance mode (Quality/Balanced/Speed)
     pub performance_mode: RdpPerformanceMode,
     /// Shared folders for drive redirection
@@ -272,7 +272,7 @@ impl Default for RdpConfig {
             external_resolution: None,
             color_depth: None,
             system_scale_percent: 100,
-            clipboard_enabled: true,
+            clipboard_direction: RdpClipboardDirection::Both,
             performance_mode: RdpPerformanceMode::default(),
             shared_folders: Vec::new(),
             printer_enabled: false,
@@ -379,10 +379,25 @@ impl RdpConfig {
         self
     }
 
-    /// Enables or disables clipboard sharing
+    /// Enables or disables clipboard sharing.
+    ///
+    /// Thin shim over [`Self::with_clipboard_direction`]: `true` maps to
+    /// [`RdpClipboardDirection::Both`], `false` to
+    /// [`RdpClipboardDirection::Off`].
     #[must_use]
     pub const fn with_clipboard(mut self, enabled: bool) -> Self {
-        self.clipboard_enabled = enabled;
+        self.clipboard_direction = if enabled {
+            RdpClipboardDirection::Both
+        } else {
+            RdpClipboardDirection::Off
+        };
+        self
+    }
+
+    /// Sets which way the clipboard synchronises.
+    #[must_use]
+    pub const fn with_clipboard_direction(mut self, dir: RdpClipboardDirection) -> Self {
+        self.clipboard_direction = dir;
         self
     }
 
@@ -573,7 +588,7 @@ mod tests {
         assert_eq!(config.domain, Some("CORP".to_string()));
         assert_eq!(config.width, 1920);
         assert_eq!(config.height, 1080);
-        assert!(config.clipboard_enabled);
+        assert_eq!(config.clipboard_direction, RdpClipboardDirection::Both);
         assert_eq!(config.polling_interval_ms, 33);
     }
 

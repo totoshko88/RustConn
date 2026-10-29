@@ -164,8 +164,14 @@ impl MobaXtermExporter {
             }
             .to_string();
 
-            // Clipboard (always enabled by default in MobaXterm)
-            params[19] = "-1".to_string();
+            // Clipboard. MobaXterm has no direction concept, so this degrades to
+            // on/off: any enabled direction exports `-1`, `Off` exports `0`.
+            params[19] = if rdp_config.clipboard_enabled {
+                "-1"
+            } else {
+                "0"
+            }
+            .to_string();
 
             // Color depth
             params[28] = rdp_config
@@ -548,6 +554,41 @@ mod tests {
         assert!(line.contains("%11%"));
         // Color depth 32 = ID 4
         assert!(line.contains("%4%"));
+    }
+
+    /// MobaXterm has no clipboard direction concept, so the export degrades to
+    /// on/off: an enabled direction writes `-1`, `Off` writes `0` (field 19).
+    #[test]
+    fn mobaxterm_export_clipboard_off_writes_zero() {
+        use crate::models::RdpClipboardDirection;
+
+        fn clipboard_field(line: &str) -> String {
+            // Line is `#91#<params joined by %>#<terminal>#0# #-1`.
+            let conn_params = line.splitn(3, '#').nth(2).expect("params segment");
+            let conn_params = conn_params
+                .split('#')
+                .next()
+                .expect("params before terminal");
+            conn_params
+                .split('%')
+                .nth(19)
+                .expect("field 19")
+                .to_string()
+        }
+
+        let mut both = create_rdp_connection("windows", "192.168.1.50", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = both.protocol_config {
+            rdp.set_clipboard_direction(RdpClipboardDirection::Both);
+        }
+        let both_line = MobaXtermExporter::export_rdp_session(&both).unwrap();
+        assert_eq!(clipboard_field(&both_line), "-1");
+
+        let mut off = create_rdp_connection("windows", "192.168.1.50", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = off.protocol_config {
+            rdp.set_clipboard_direction(RdpClipboardDirection::Off);
+        }
+        let off_line = MobaXtermExporter::export_rdp_session(&off).unwrap();
+        assert_eq!(clipboard_field(&off_line), "0");
     }
 
     #[test]

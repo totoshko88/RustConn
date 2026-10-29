@@ -2143,6 +2143,164 @@ impl RdpAudioMode {
     }
 }
 
+/// Which way the RDP clipboard synchronises.
+///
+/// Supersedes the `clipboard_enabled: bool` the same way [`RdpAudioMode`]
+/// supersedes `audio_redirect`: the bool is kept for compatibility and this
+/// enum is read through [`RdpConfig::effective_clipboard_direction`].
+/// `Both` is the historical behaviour (`clipboard_enabled: true`); `Off` is
+/// `false`. `RemoteToLocal` and `LocalToRemote` are the two one-way modes users
+/// previously reached only through a hand-written `/clipboard:direction-to:`
+/// custom argument.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RdpClipboardDirection {
+    /// No clipboard channel at all. Maps to the old `clipboard_enabled: false`.
+    Off,
+    /// Remote → local only: paste from the remote session into the local
+    /// clipboard, but never push the local clipboard to the remote.
+    RemoteToLocal,
+    /// Local → remote only: push the local clipboard to the remote, but never
+    /// pull the remote clipboard into the local one.
+    LocalToRemote,
+    /// Both directions. The historical default (`clipboard_enabled: true`).
+    #[default]
+    Both,
+}
+
+impl RdpClipboardDirection {
+    /// Returns all directions, in dropdown order (`Off` first, `Both` last).
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::Off,
+            Self::RemoteToLocal,
+            Self::LocalToRemote,
+            Self::Both,
+        ]
+    }
+
+    /// Returns the untranslated display name for this direction.
+    ///
+    /// Callers in the GUI wrap the result in `i18n()`.
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Off => "Off",
+            Self::RemoteToLocal => "Remote to local only",
+            Self::LocalToRemote => "Local to remote only",
+            Self::Both => "Both directions",
+        }
+    }
+
+    /// Returns the dropdown index for this direction.
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Off => 0,
+            Self::RemoteToLocal => 1,
+            Self::LocalToRemote => 2,
+            Self::Both => 3,
+        }
+    }
+
+    /// Creates a direction from a dropdown index.
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            0 => Self::Off,
+            1 => Self::RemoteToLocal,
+            2 => Self::LocalToRemote,
+            _ => Self::Both,
+        }
+    }
+
+    /// Returns the destination token for the FreeRDP 3.x
+    /// `/clipboard:direction-to:` argument.
+    ///
+    /// `local` = toward the local machine (remote→local), `remote` = toward the
+    /// remote (local→remote), `all` = both. `Off` is handled before this is
+    /// called, so its `"off"` token exists only for completeness.
+    #[must_use]
+    pub const fn freerdp_direction_to(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::RemoteToLocal => "local",
+            Self::LocalToRemote => "remote",
+            Self::Both => "all",
+        }
+    }
+
+    /// Whether any clipboard channel is active.
+    ///
+    /// Used by the embedded path to decide whether to insert the CLIPRDR
+    /// channel, by the bool-only exporters, and to keep the legacy bool in sync.
+    #[must_use]
+    pub const fn enabled(self) -> bool {
+        !matches!(self, Self::Off)
+    }
+
+    /// Builds the FreeRDP 3.x `/clipboard:` argument for this direction.
+    ///
+    /// Returns `None` for `Off` — emitting *nothing* rather than
+    /// `/clipboard:direction-to:off`, because the pre-0.24.2 `clipboard_enabled:
+    /// false` emitted no argument at all and negotiated no channel.
+    /// `direction-to:off` would still negotiate the CLIPRDR channel, a behaviour
+    /// change we do not want for the disabled case.
+    ///
+    /// The text/data direction and the file direction follow the one UI control
+    /// together (`direction-to:{to},files-to:{to}`). If a live FreeRDP rejects
+    /// the composite form, drop `,files-to:{to}`; the per-direction string tests
+    /// are the single source of truth and change with this together.
+    #[must_use]
+    pub fn freerdp_arg(self) -> Option<String> {
+        if matches!(self, Self::Off) {
+            return None;
+        }
+        let to = self.freerdp_direction_to(); // all | local | remote
+        Some(format!("/clipboard:direction-to:{to},files-to:{to}"))
+    }
+
+    /// Whether the remote clipboard may flow into the local one.
+    #[must_use]
+    pub const fn allows_remote_to_local(self) -> bool {
+        matches!(self, Self::RemoteToLocal | Self::Both)
+    }
+
+    /// Whether the local clipboard may flow to the remote.
+    #[must_use]
+    pub const fn allows_local_to_remote(self) -> bool {
+        matches!(self, Self::LocalToRemote | Self::Both)
+    }
+
+    /// Returns the CLI token for this direction.
+    #[must_use]
+    pub const fn as_cli_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::RemoteToLocal => "remote-to-local",
+            Self::LocalToRemote => "local-to-remote",
+            Self::Both => "both",
+        }
+    }
+
+    /// Parses a direction from its CLI token, case-insensitively.
+    ///
+    /// Accepts the aliases `all`→`Both`, `none`→`Off`, `local`→`RemoteToLocal`,
+    /// `remote`→`LocalToRemote` (mirroring [`RdpAudioMode::from_cli_str`]'s
+    /// tolerance). Returns `None` for anything else.
+    #[must_use]
+    pub fn from_cli_str(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "off" | "none" => Some(Self::Off),
+            "remote-to-local" | "local" => Some(Self::RemoteToLocal),
+            "local-to-remote" | "remote" => Some(Self::LocalToRemote),
+            "both" | "all" => Some(Self::Both),
+            _ => None,
+        }
+    }
+}
+
 /// RDP protocol configuration
 // Allow 4 bools - these are distinct RDP connection options
 #[expect(
@@ -2250,9 +2408,21 @@ pub struct RdpConfig {
     /// Default: false (TOFU — trust-on-first-use, like SSH known_hosts).
     #[serde(default)]
     pub ignore_certificate: bool,
-    /// Enable clipboard sharing between local and remote
+    /// Enable clipboard sharing between local and remote.
+    ///
+    /// Superseded by [`RdpConfig::clipboard_direction`], kept for compatibility:
+    /// older RustConn versions and the on/off-only import/export formats (.rdp
+    /// `redirectclipboard`, `MobaXterm`) only understand this boolean. It is
+    /// written on save (via [`RdpConfig::set_clipboard_direction`]) so a
+    /// downgrade keeps the on/off state, and it is the fallback when
+    /// `clipboard_direction` is absent. Read it through
+    /// [`RdpConfig::effective_clipboard_direction`], not directly.
     #[serde(default = "default_true")]
     pub clipboard_enabled: bool,
+    /// Which way the clipboard synchronises. `None` means "not migrated yet" —
+    /// fall back to `clipboard_enabled`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clipboard_direction: Option<RdpClipboardDirection>,
     /// Show local mouse cursor over embedded viewer (disable to avoid double cursor)
     #[serde(default = "default_true")]
     pub show_local_cursor: bool,
@@ -2408,6 +2578,7 @@ impl Default for RdpConfig {
             color_depth: None,
             audio_redirect: false,
             audio_mode: None,
+            clipboard_direction: None,
             printer_enabled: false,
             gateway: None,
             shared_folders: Vec::new(),
@@ -2477,6 +2648,28 @@ impl RdpConfig {
     pub const fn set_audio_mode(&mut self, mode: RdpAudioMode) {
         self.audio_mode = Some(mode);
         self.audio_redirect = mode.is_local_playback();
+    }
+
+    /// Returns which way the clipboard synchronises.
+    ///
+    /// Prefers the four-state [`RdpConfig::clipboard_direction`] and falls back
+    /// to the legacy `clipboard_enabled` boolean for profiles written before the
+    /// direction existed: `true` becomes [`RdpClipboardDirection::Both`],
+    /// `false` becomes [`RdpClipboardDirection::Off`].
+    #[must_use]
+    pub const fn effective_clipboard_direction(&self) -> RdpClipboardDirection {
+        match self.clipboard_direction {
+            Some(dir) => dir,
+            None if self.clipboard_enabled => RdpClipboardDirection::Both,
+            None => RdpClipboardDirection::Off,
+        }
+    }
+
+    /// Sets the clipboard direction, keeping the legacy `clipboard_enabled` bool
+    /// in sync so an older RustConn and the bool-only exporters stay correct.
+    pub const fn set_clipboard_direction(&mut self, dir: RdpClipboardDirection) {
+        self.clipboard_direction = Some(dir);
+        self.clipboard_enabled = dir.enabled();
     }
 
     /// Whether this configuration requires FreeRDP instead of IronRDP.
@@ -4663,6 +4856,11 @@ mod default_consistency_tests {
     fn imported_rdp_connection_keeps_its_usable_defaults() {
         let config = RdpConfig::default();
         assert!(config.clipboard_enabled, "clipboard was silently off");
+        assert_eq!(
+            config.effective_clipboard_direction(),
+            RdpClipboardDirection::Both,
+            "the default clipboard direction must stay bidirectional"
+        );
         assert!(config.show_local_cursor, "local cursor was silently off");
         assert!(
             config.script_paste_via_clipboard,
@@ -4684,6 +4882,92 @@ mod default_consistency_tests {
         assert!(config.clipboard_enabled, "clipboard was silently off");
         assert!(config.show_local_cursor, "local cursor was silently off");
         assert!(!config.hide_floating_toolbar);
+    }
+}
+
+#[cfg(test)]
+mod rdp_clipboard_direction_tests {
+    use super::*;
+
+    #[test]
+    fn rdp_clipboard_direction_round_trips_index_and_cli() {
+        for dir in RdpClipboardDirection::all() {
+            assert_eq!(RdpClipboardDirection::from_index(dir.index()), *dir);
+            assert_eq!(
+                RdpClipboardDirection::from_cli_str(dir.as_cli_str()),
+                Some(*dir)
+            );
+        }
+    }
+
+    #[test]
+    fn rdp_config_legacy_clipboard_bool_true_is_both() {
+        let config: RdpConfig = serde_json::from_str(r#"{"clipboard_enabled": true}"#)
+            .expect("RdpConfig must deserialise");
+        assert_eq!(config.clipboard_direction, None);
+        assert_eq!(
+            config.effective_clipboard_direction(),
+            RdpClipboardDirection::Both
+        );
+    }
+
+    #[test]
+    fn rdp_config_legacy_clipboard_bool_false_is_off() {
+        let config: RdpConfig = serde_json::from_str(r#"{"clipboard_enabled": false}"#)
+            .expect("RdpConfig must deserialise");
+        assert_eq!(config.clipboard_direction, None);
+        assert_eq!(
+            config.effective_clipboard_direction(),
+            RdpClipboardDirection::Off
+        );
+    }
+
+    #[test]
+    fn rdp_config_explicit_direction_wins_over_bool() {
+        // A one-way direction with the bool still true: the new field wins.
+        let config: RdpConfig = serde_json::from_str(
+            r#"{"clipboard_enabled": true, "clipboard_direction": "remote_to_local"}"#,
+        )
+        .expect("RdpConfig must deserialise");
+        assert_eq!(
+            config.effective_clipboard_direction(),
+            RdpClipboardDirection::RemoteToLocal
+        );
+    }
+
+    #[test]
+    fn rdp_config_absent_clipboard_defaults_to_both() {
+        let config: RdpConfig = serde_json::from_str("{}").expect("RdpConfig must deserialise");
+        assert!(config.clipboard_enabled);
+        assert_eq!(config.clipboard_direction, None);
+        assert_eq!(
+            config.effective_clipboard_direction(),
+            RdpClipboardDirection::Both
+        );
+    }
+
+    #[test]
+    fn set_clipboard_direction_keeps_bool_in_sync() {
+        let mut config = RdpConfig::default();
+        config.set_clipboard_direction(RdpClipboardDirection::Off);
+        assert!(!config.clipboard_enabled);
+        config.set_clipboard_direction(RdpClipboardDirection::RemoteToLocal);
+        assert!(config.clipboard_enabled);
+        assert_eq!(
+            config.clipboard_direction,
+            Some(RdpClipboardDirection::RemoteToLocal)
+        );
+    }
+
+    #[test]
+    fn direction_predicates_truth_table() {
+        use RdpClipboardDirection::{Both, LocalToRemote, Off, RemoteToLocal};
+        assert!(!Off.allows_remote_to_local() && !Off.allows_local_to_remote());
+        assert!(RemoteToLocal.allows_remote_to_local() && !RemoteToLocal.allows_local_to_remote());
+        assert!(!LocalToRemote.allows_remote_to_local() && LocalToRemote.allows_local_to_remote());
+        assert!(Both.allows_remote_to_local() && Both.allows_local_to_remote());
+        assert!(!Off.enabled());
+        assert!(RemoteToLocal.enabled() && LocalToRemote.enabled() && Both.enabled());
     }
 }
 

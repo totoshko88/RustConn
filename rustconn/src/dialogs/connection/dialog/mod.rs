@@ -206,7 +206,7 @@ pub struct ConnectionDialog {
     rdp_freerdp_client_dropdown: DropDown,
     rdp_tls_security_level_spin: SpinButton,
     rdp_ignore_certificate_check: adw::SwitchRow,
-    rdp_clipboard_check: adw::SwitchRow,
+    rdp_clipboard_row: adw::ComboRow,
     rdp_show_local_cursor_check: adw::SwitchRow,
     rdp_floating_toolbar_check: adw::SwitchRow,
     rdp_jiggler_check: adw::SwitchRow,

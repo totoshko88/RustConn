@@ -10,6 +10,13 @@
 //! - Server → Client files: `on_remote_copy` → `on_remote_file_list` → `ClipboardFileList` event
 //! - Client → Server: `ClipboardCopy` command → `on_format_data_request` → `ClipboardData` command
 //!
+//! Each direction is gated by [`RdpClipboardDirection`]: the remote→local
+//! direction is gated in `on_remote_copy` (the gate owner), and the local→remote
+//! direction is gated in the three `commands.rs` clipboard arms
+//! (`ClipboardText`, `ClipboardCopy`, `AnnounceClipboardFormats`), with
+//! `on_format_data_request` as a backstop that never serves local data when
+//! local→remote is disabled.
+//!
 //! # Supported Formats
 //!
 //! - `CF_UNICODETEXT` (13): Unicode text (UTF-16LE)
@@ -30,6 +37,7 @@ use ironrdp::core::impl_as_any;
 use tracing::{debug, trace, warn};
 
 use super::{ClipboardFileInfo, ClipboardFormatInfo, RdpClientEvent};
+use crate::models::RdpClipboardDirection;
 
 /// Proxy for sending clipboard messages to the main event loop
 #[derive(Clone, Debug)]
@@ -147,14 +155,32 @@ pub struct RustConnClipboardBackend {
     /// reply and was decoded as text — binary descriptor bytes put on the local
     /// clipboard. Replies are dropped while this is non-zero.
     stale_replies: u32,
+    /// Which way the clipboard is allowed to synchronise. Gates the two announce
+    /// directions: remote→local in [`Self::on_remote_copy`], local→remote in the
+    /// `commands.rs` clipboard arms with [`Self::on_format_data_request`] as a
+    /// backstop.
+    direction: RdpClipboardDirection,
 }
 
 impl_as_any!(RustConnClipboardBackend);
 
 impl RustConnClipboardBackend {
-    /// Creates a new clipboard backend
+    /// Creates a new clipboard backend with bidirectional sync.
+    ///
+    /// Equivalent to [`Self::new_with_direction`] with
+    /// [`RdpClipboardDirection::Both`] — the historical always-bidirectional
+    /// behaviour.
     #[must_use]
     pub fn new(event_tx: Sender<RdpClientEvent>) -> Self {
+        Self::new_with_direction(event_tx, RdpClipboardDirection::Both)
+    }
+
+    /// Creates a new clipboard backend honouring `direction`.
+    #[must_use]
+    pub fn new_with_direction(
+        event_tx: Sender<RdpClientEvent>,
+        direction: RdpClipboardDirection,
+    ) -> Self {
         Self {
             proxy: RustConnClipboardProxy::new(event_tx),
             ready: false,
@@ -168,7 +194,20 @@ impl RustConnClipboardBackend {
             remote_file_sizes: Vec::new(),
             outstanding_requests: 0,
             stale_replies: 0,
+            direction,
         }
+    }
+
+    /// Whether the remote clipboard may flow into the local one.
+    #[must_use]
+    pub const fn allows_remote_to_local(&self) -> bool {
+        self.direction.allows_remote_to_local()
+    }
+
+    /// Whether the local clipboard may flow to the remote.
+    #[must_use]
+    pub const fn allows_local_to_remote(&self) -> bool {
+        self.direction.allows_local_to_remote()
     }
 
     /// Returns true if the clipboard is ready
@@ -431,18 +470,22 @@ impl CliprdrBackend for RustConnClipboardBackend {
                 .collect::<Vec<_>>()
         );
 
-        // Notify GUI about available formats (for UI display)
-        let format_infos: Vec<ClipboardFormatInfo> = available_formats
-            .iter()
-            .map(|f| {
-                let name = f.name.as_ref().map(|n| format!("{n:?}"));
-                ClipboardFormatInfo::new(f.id.value(), name)
-            })
-            .collect();
-        let _ = self
-            .proxy
-            .event_tx
-            .send(RdpClientEvent::ClipboardFormatsAvailable(format_infos));
+        // Notify GUI about available formats (for UI display), unless the
+        // direction suppresses remote→local — advertising formats the user
+        // cannot paste is pointless.
+        if self.allows_remote_to_local() {
+            let format_infos: Vec<ClipboardFormatInfo> = available_formats
+                .iter()
+                .map(|f| {
+                    let name = f.name.as_ref().map(|n| format!("{n:?}"));
+                    ClipboardFormatInfo::new(f.id.value(), name)
+                })
+                .collect();
+            let _ = self
+                .proxy
+                .event_tx
+                .send(RdpClientEvent::ClipboardFormatsAvailable(format_infos));
+        }
 
         // A new format list replaces everything the server offered before, so the
         // previous file offer is withdrawn here. Otherwise "Save N Files" stays up
@@ -465,6 +508,13 @@ impl CliprdrBackend for RustConnClipboardBackend {
             .proxy
             .event_tx
             .send(RdpClientEvent::ClipboardFileList(Vec::new()));
+
+        // Remote→local disabled: the bookkeeping above still runs so internal
+        // state stays consistent, but nothing is pulled from the remote.
+        if !self.allows_remote_to_local() {
+            trace!("clipboard remote→local suppressed by direction");
+            return;
+        }
 
         // Check if text format is available and auto-request it
         let text_format = available_formats
@@ -497,6 +547,13 @@ impl CliprdrBackend for RustConnClipboardBackend {
     fn on_format_data_request(&mut self, request: FormatDataRequest) {
         let format_id = request.format.value();
         debug!("Server requested clipboard data for format {}", format_id);
+
+        // Local→remote disabled: never serve local clipboard data to the server,
+        // even if a command arm forgot to gate the announce (defence in depth).
+        if !self.allows_local_to_remote() {
+            trace!("clipboard local→remote data request suppressed by direction");
+            return;
+        }
 
         // Check if we have pending data for this format
         if let Some(data) = self.pending_copy_data.get(&format_id) {
@@ -802,6 +859,71 @@ mod tests {
         let format = ClipboardFormatInfo::unicode_text();
         assert!(format.is_text());
         assert_eq!(format.id, ClipboardFormatInfo::UNICODE_TEXT);
+    }
+
+    #[test]
+    fn direction_predicates() {
+        use RdpClipboardDirection::{Both, LocalToRemote, Off, RemoteToLocal};
+        let (tx, _rx) = std::sync::mpsc::channel();
+
+        let off = RustConnClipboardBackend::new_with_direction(tx.clone(), Off);
+        assert!(!off.allows_remote_to_local() && !off.allows_local_to_remote());
+
+        let r2l = RustConnClipboardBackend::new_with_direction(tx.clone(), RemoteToLocal);
+        assert!(r2l.allows_remote_to_local() && !r2l.allows_local_to_remote());
+
+        let l2r = RustConnClipboardBackend::new_with_direction(tx.clone(), LocalToRemote);
+        assert!(!l2r.allows_remote_to_local() && l2r.allows_local_to_remote());
+
+        let both = RustConnClipboardBackend::new_with_direction(tx, Both);
+        assert!(both.allows_remote_to_local() && both.allows_local_to_remote());
+    }
+
+    /// With remote→local disabled, a remote copy announcement must not advertise
+    /// formats to the GUI nor request the remote data.
+    #[test]
+    fn remote_to_local_suppresses_remote_copy_request() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend =
+            RustConnClipboardBackend::new_with_direction(tx, RdpClipboardDirection::LocalToRemote);
+
+        backend.on_remote_copy(&[ClipboardFormat::new(ClipboardFormatId::CF_UNICODETEXT)]);
+
+        // The only events emitted are the bookkeeping file-list clear; no
+        // ClipboardFormatsAvailable (the remote→local advertisement).
+        let saw_formats_available = std::iter::from_fn(|| rx.try_recv().ok())
+            .any(|e| matches!(e, RdpClientEvent::ClipboardFormatsAvailable(_)));
+        assert!(
+            !saw_formats_available,
+            "remote→local disabled must not advertise remote formats"
+        );
+        assert!(
+            backend.pending_paste_format.is_none(),
+            "no remote format should have been requested"
+        );
+    }
+
+    /// With both directions, a remote copy announcement advertises formats and
+    /// requests the text (sanity complement).
+    #[test]
+    fn both_requests_remote_copy() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut backend =
+            RustConnClipboardBackend::new_with_direction(tx, RdpClipboardDirection::Both);
+
+        backend.on_remote_copy(&[ClipboardFormat::new(ClipboardFormatId::CF_UNICODETEXT)]);
+
+        let saw_formats_available = std::iter::from_fn(|| rx.try_recv().ok())
+            .any(|e| matches!(e, RdpClientEvent::ClipboardFormatsAvailable(_)));
+        assert!(
+            saw_formats_available,
+            "both directions must advertise remote formats"
+        );
+        assert_eq!(
+            backend.pending_paste_format,
+            Some(ClipboardFormatId::CF_UNICODETEXT),
+            "both directions must request the remote text"
+        );
     }
 
     /// Announcing new text must drop the parked text payload — otherwise

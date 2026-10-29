@@ -25,11 +25,11 @@ use rustconn_core::models::{
     AwsSsmConfig, AzureBastionConfig, AzureSshConfig, BackspaceSends, BoundaryConfig,
     CloudflareAccessConfig, CommandMacro, Connection, ConnectionThemeOverride, CustomProperty,
     DeleteSends, GcpIapConfig, GenericZeroTrustConfig, HighlightRule, HoopDevConfig,
-    OciBastionConfig, PasswordSource, ProtocolConfig, RdpAudioMode, RdpClientMode, RdpConfig,
-    RdpDisplayMode, RdpPerformanceMode, Resolution, ScaleOverride, SharedFolder, SpiceConfig,
-    SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, TailscaleSshConfig,
-    TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode, ZeroTrustConfig,
-    ZeroTrustProvider, ZeroTrustProviderConfig,
+    OciBastionConfig, PasswordSource, ProtocolConfig, RdpAudioMode, RdpClientMode,
+    RdpClipboardDirection, RdpConfig, RdpDisplayMode, RdpPerformanceMode, Resolution,
+    ScaleOverride, SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig,
+    SshKeySource, TailscaleSshConfig, TeleportConfig, VncClientMode, VncConfig, VncPerformanceMode,
+    ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
 };
 use rustconn_core::session::LogConfig;
 use rustconn_core::variables::Variable;
@@ -111,7 +111,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_freerdp_client_dropdown: &'a DropDown,
     pub rdp_tls_security_level_spin: &'a SpinButton,
     pub rdp_ignore_certificate_check: &'a adw::SwitchRow,
-    pub rdp_clipboard_check: &'a adw::SwitchRow,
+    pub rdp_clipboard_row: &'a adw::ComboRow,
     pub rdp_show_local_cursor_check: &'a adw::SwitchRow,
     pub rdp_floating_toolbar_check: &'a adw::SwitchRow,
     pub rdp_jiggler_check: &'a adw::SwitchRow,
@@ -1642,6 +1642,12 @@ impl ConnectionDialogData<'_> {
         // correctly, and the Remmina/MobaXterm exporters keep working.
         let audio_mode = RdpAudioMode::from_index(self.rdp_audio_mode_dropdown.selected());
 
+        // The legacy `clipboard_enabled` bool is written alongside the direction
+        // (via `clipboard_direction.enabled()`) so an older RustConn and the
+        // bool-only exporters stay correct.
+        let rdp_clipboard_direction =
+            RdpClipboardDirection::from_index(self.rdp_clipboard_row.selected());
+
         let shared_folders = self.rdp_shared_folders.borrow().clone();
 
         // The KDC Address, stored normalized. Kept while Kerberos is off so that
@@ -1692,7 +1698,8 @@ impl ConnectionDialogData<'_> {
                 if level == 2 { None } else { Some(level) }
             },
             ignore_certificate: self.rdp_ignore_certificate_check.is_active(),
-            clipboard_enabled: self.rdp_clipboard_check.is_active(),
+            clipboard_enabled: rdp_clipboard_direction.enabled(),
+            clipboard_direction: Some(rdp_clipboard_direction),
             show_local_cursor: self.rdp_show_local_cursor_check.is_active(),
             hide_floating_toolbar: !self.rdp_floating_toolbar_check.is_active(),
             jiggler_enabled: self.rdp_jiggler_check.is_active(),

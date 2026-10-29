@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use super::gateway::GatewayConfig;
 use super::graphics::{GraphicsMode, GraphicsQuality};
 use super::multimonitor::MonitorLayout;
-use crate::models::RdpPerformanceMode;
+use crate::models::{RdpClipboardDirection, RdpPerformanceMode};
 
 /// Shared folder configuration for RDP drive redirection
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -74,8 +74,8 @@ pub struct RdpClientConfig {
     /// Color depth (16, 24, or 32)
     pub color_depth: u8,
 
-    /// Enable clipboard sharing
-    pub clipboard_enabled: bool,
+    /// Which way the clipboard synchronises
+    pub clipboard_direction: RdpClipboardDirection,
 
     /// Enable audio redirection
     pub audio_enabled: bool,
@@ -277,7 +277,7 @@ impl Default for RdpClientConfig {
             width: 1280,
             height: 720,
             color_depth: 32,
-            clipboard_enabled: true,
+            clipboard_direction: RdpClipboardDirection::Both,
             audio_enabled: false,
             timeout_secs: 30,
             ignore_certificate: false,
@@ -359,10 +359,25 @@ impl RdpClientConfig {
         self
     }
 
-    /// Enables or disables clipboard sharing
+    /// Enables or disables clipboard sharing.
+    ///
+    /// Thin shim over [`Self::with_clipboard_direction`] kept so on/off call
+    /// sites compile unchanged: `true` maps to [`RdpClipboardDirection::Both`],
+    /// `false` to [`RdpClipboardDirection::Off`].
     #[must_use]
     pub const fn with_clipboard(mut self, enabled: bool) -> Self {
-        self.clipboard_enabled = enabled;
+        self.clipboard_direction = if enabled {
+            RdpClipboardDirection::Both
+        } else {
+            RdpClipboardDirection::Off
+        };
+        self
+    }
+
+    /// Sets which way the clipboard synchronises.
+    #[must_use]
+    pub const fn with_clipboard_direction(mut self, dir: RdpClipboardDirection) -> Self {
+        self.clipboard_direction = dir;
         self
     }
 
@@ -580,7 +595,7 @@ impl PartialEq for RdpClientConfig {
             && self.width == other.width
             && self.height == other.height
             && self.color_depth == other.color_depth
-            && self.clipboard_enabled == other.clipboard_enabled
+            && self.clipboard_direction == other.clipboard_direction
             && self.audio_enabled == other.audio_enabled
             && self.timeout_secs == other.timeout_secs
             && self.ignore_certificate == other.ignore_certificate
@@ -671,7 +686,7 @@ mod tests {
         let config = RdpClientConfig::default();
         assert_eq!(config.port, 3389);
         assert_eq!(config.color_depth, 32);
-        assert!(config.clipboard_enabled);
+        assert_eq!(config.clipboard_direction, RdpClipboardDirection::Both);
         assert!(config.nla_enabled);
     }
 

@@ -103,7 +103,7 @@ impl ConnectionDialog {
         rdp_freerdp_client_dropdown: &DropDown,
         rdp_tls_security_level_spin: &SpinButton,
         rdp_ignore_certificate_check: &adw::SwitchRow,
-        rdp_clipboard_check: &adw::SwitchRow,
+        rdp_clipboard_row: &adw::ComboRow,
         rdp_show_local_cursor_check: &adw::SwitchRow,
         rdp_floating_toolbar_check: &adw::SwitchRow,
         rdp_jiggler_check: &adw::SwitchRow,
@@ -331,7 +331,7 @@ impl ConnectionDialog {
         let rdp_freerdp_client_dropdown = rdp_freerdp_client_dropdown.clone();
         let rdp_tls_security_level_spin = rdp_tls_security_level_spin.clone();
         let rdp_ignore_certificate_check = rdp_ignore_certificate_check.clone();
-        let rdp_clipboard_check = rdp_clipboard_check.clone();
+        let rdp_clipboard_row = rdp_clipboard_row.clone();
         let rdp_show_local_cursor_check = rdp_show_local_cursor_check.clone();
         let rdp_floating_toolbar_check = rdp_floating_toolbar_check.clone();
         let rdp_jiggler_check = rdp_jiggler_check.clone();
@@ -577,7 +577,7 @@ impl ConnectionDialog {
                 rdp_freerdp_client_dropdown: &rdp_freerdp_client_dropdown,
                 rdp_tls_security_level_spin: &rdp_tls_security_level_spin,
                 rdp_ignore_certificate_check: &rdp_ignore_certificate_check,
-                rdp_clipboard_check: &rdp_clipboard_check,
+                rdp_clipboard_row: &rdp_clipboard_row,
                 rdp_show_local_cursor_check: &rdp_show_local_cursor_check,
                 rdp_floating_toolbar_check: &rdp_floating_toolbar_check,
                 rdp_jiggler_check: &rdp_jiggler_check,
