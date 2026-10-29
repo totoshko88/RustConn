@@ -3768,7 +3768,7 @@ Options: Export selected only.
 | Asbru-CM | SSH, VNC, RDP | Never | Yes | YAML-based, supports variables |
 | Ansible | SSH only | Never | Yes (groups) | INI or YAML inventory format |
 | Royal TS | All | Never | Yes | XML `.rtsz` archive |
-| MobaXterm | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser, Rsh/Rlogin (→ Telnet), FTP (→ SFTP) | Never | Yes | INI-based `.mxtsessions`; unsupported session types are reported as skipped |
+| MobaXterm | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Web (→ Browser) | Never | Yes | INI-based `.mxtsessions`; SPICE, Zero Trust and Kubernetes are reported as skipped |
 | SecureCRT | SSH, Telnet, RDP, VNC | Never | Yes | Directory of `.ini` files |
 | RDP File | RDP only | Never | No | Directory of standard Microsoft `.rdp` files, one per connection |
 | RustConn Native | All | Never (source only) | Yes | Full-fidelity backup of connections |
