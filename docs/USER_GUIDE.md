@@ -3732,7 +3732,7 @@ Double-click source to start import immediately.
 | Asbru-CM | `~/.config/pac/` | YAML file | SSH, VNC, RDP | Variables converted to `${VAR}` |
 | Ansible | `/etc/ansible/hosts` | INI/YAML file | SSH | Groups preserved |
 | Royal TS / Royal TSX | — | `.rtsz` (compressed) or `.rtsx` file | SSH, Telnet, RDP, VNC | Folder hierarchy → groups; usernames inherited from folder credentials; passwords cannot be imported (encrypted in the document) |
-| MobaXterm | — | `.mxtsessions` | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser (→ Web) | INI-based sessions; session types with no RustConn equivalent (Rsh/Rlogin, XDMCP, FTP, file browser, local shell, AWS S3, WSL) are listed as skipped |
+| MobaXterm | — | `.mxtsessions` | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser (→ Web), Rsh/Rlogin (→ Telnet), FTP (→ SFTP) | INI-based sessions; session types with no RustConn equivalent (XDMCP, file browser, local shell, AWS S3, WSL) are listed as skipped |
 | SecureCRT | `~/.vandyke/Config/Sessions/` | Directory or `.ini` | SSH, Telnet, RDP, VNC | Folder hierarchy → groups |
 | PuTTY / KiTTY | — | `.reg` registry export | SSH, Telnet (Raw, Rlogin → Telnet) | Key file, agent/X11 forwarding, compression imported; passwords are not stored in the export |
 | mRemoteNG | — | `confCons.xml` | SSH, RDP, VNC, Telnet, Web (Raw, Rlogin → Telnet; HTTP/HTTPS → Web) | Container nodes → nested groups; unencrypted documents only; passwords are not imported |
@@ -3768,7 +3768,7 @@ Options: Export selected only.
 | Asbru-CM | SSH, VNC, RDP | Never | Yes | YAML-based, supports variables |
 | Ansible | SSH only | Never | Yes (groups) | INI or YAML inventory format |
 | Royal TS | All | Never | Yes | XML `.rtsz` archive |
-| MobaXterm | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser | Never | Yes | INI-based `.mxtsessions`; unsupported session types are reported as skipped |
+| MobaXterm | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser, Rsh/Rlogin (→ Telnet), FTP (→ SFTP) | Never | Yes | INI-based `.mxtsessions`; unsupported session types are reported as skipped |
 | SecureCRT | SSH, Telnet, RDP, VNC | Never | Yes | Directory of `.ini` files |
 | RDP File | RDP only | Never | No | Directory of standard Microsoft `.rdp` files, one per connection |
 | RustConn Native | All | Never (source only) | Yes | Full-fidelity backup of connections |
@@ -3842,7 +3842,7 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 1. Export sessions from MobaXterm → copy `.mxtsessions` file to Linux
 2. **File > Import > MobaXterm** → select file → Import
 
-SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser sessions are imported (a Browser session becomes a Web connection, and a MOSH session keeps its SSH host, port and username). A Serial session carries its baud rate, data bits, parity, stop bits and flow control, but its Windows COM port name (for example `COM3`) has no Linux equivalent, so it is kept verbatim in the device field for you to change to a `/dev/tty*` path before connecting. Session types RustConn has no equivalent for — Rsh/Rlogin, XDMCP, FTP, the file browser, the local shell, AWS S3 and WSL — are reported in the import summary as skipped rather than dropped silently.
+SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser sessions are imported (a Browser session becomes a Web connection, and a MOSH session keeps its SSH host, port and username). A Serial session carries its baud rate, data bits, parity, stop bits and flow control, but its Windows COM port name (for example `COM3`) has no Linux equivalent, so it is kept verbatim in the device field for you to change to a `/dev/tty*` path before connecting. Rsh/Rlogin sessions are imported as Telnet, the same line-protocol mapping the mRemoteNG and PuTTY importers use. FTP sessions are imported as SFTP — RustConn has no FTP client — with a warning in the import summary, because SFTP uses a different transport, port (22) and authentication; check the port and credentials and confirm the server speaks SFTP before connecting. Session types RustConn has no equivalent for — XDMCP, the file browser, the local shell, AWS S3 and WSL — are reported in the import summary as skipped rather than dropped silently.
 
 #### From SecureCRT
 

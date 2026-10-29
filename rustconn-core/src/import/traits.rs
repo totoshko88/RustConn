@@ -141,6 +141,12 @@ pub enum ImportWarning {
         /// Number of variables left behind.
         count: usize,
     },
+    /// A plain-FTP session was imported as SFTP because the target tool has no
+    /// FTP client; the transport, port and authentication differ.
+    FtpImportedAsSftp {
+        /// Name of the imported connection.
+        connection_name: String,
+    },
 }
 
 impl ImportWarning {
@@ -175,6 +181,9 @@ impl ImportWarning {
             Self::VariablesNotImported { .. } => {
                 "{} variable(s) skipped (not supported in batch import)"
             }
+            Self::FtpImportedAsSftp { .. } => {
+                "Connection '{}' was an FTP session, imported as SFTP — RustConn has no FTP client. Check the port (SFTP uses 22), the credentials and whether the server speaks SFTP before connecting."
+            }
         }
     }
 
@@ -206,6 +215,7 @@ impl ImportWarning {
             Self::TemplatesNotImported { count }
             | Self::ClustersNotImported { count }
             | Self::VariablesNotImported { count } => vec![count.to_string()],
+            Self::FtpImportedAsSftp { connection_name } => vec![connection_name.clone()],
         }
     }
 }

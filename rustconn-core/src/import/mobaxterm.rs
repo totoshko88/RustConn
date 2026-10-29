@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
-use super::traits::{ImportResult, ImportSource, SkippedEntry};
+use super::traits::{ImportResult, ImportSource, ImportWarning, SkippedEntry};
 use crate::error::ImportError;
 use crate::models::{
     Connection, ConnectionGroup, MoshConfig, ProtocolConfig, RdpAudioMode, RdpConfig, Resolution,
@@ -186,8 +186,11 @@ impl MobaXtermImporter {
 
                 // Parse session
                 match self.parse_session(key, value, source_path) {
-                    Ok(Some(mut connection)) => {
+                    Ok(Some((mut connection, warning))) => {
                         connection.group_id = group_id;
+                        if let Some(warning) = warning {
+                            result.add_warning(warning);
+                        }
                         result.add_connection(connection);
                     }
                     Ok(None) => {
@@ -242,12 +245,16 @@ impl MobaXtermImporter {
     }
 
     /// Parses a single session line.
+    ///
+    /// Returns the imported connection together with an optional
+    /// [`ImportWarning`] the caller should surface (used for FTP, which is
+    /// imported as SFTP because RustConn has no FTP client).
     fn parse_session(
         &self,
         name: &str,
         value: &str,
         source_path: &str,
-    ) -> Result<Option<Connection>, String> {
+    ) -> Result<Option<(Connection, Option<ImportWarning>)>, String> {
         let name = Self::decode_escapes(name);
 
         // Split by '#' to get main fields
@@ -278,24 +285,45 @@ impl MobaXtermImporter {
             return Err(format!("Unknown session type ID: {session_type_id}"));
         };
 
+        // Every connection-producing branch pairs its result with an optional
+        // warning; only FTP (imported as SFTP) carries one.
+        let no_warning =
+            |conn: Result<Option<Connection>, String>| conn.map(|c| c.map(|c| (c, None)));
+
         match session_type {
             MobaSessionType::Ssh | MobaSessionType::Sftp => {
-                self.parse_ssh_session(&name, &conn_params, source_path)
+                no_warning(self.parse_ssh_session(&name, &conn_params, source_path))
             }
-            MobaSessionType::Rdp => self.parse_rdp_session(&name, &conn_params, source_path),
-            MobaSessionType::Vnc => self.parse_vnc_session(&name, &conn_params, source_path),
-            MobaSessionType::Telnet => self.parse_telnet_session(&name, &conn_params, source_path),
-            MobaSessionType::Serial => self.parse_serial_session(&name, &conn_params, source_path),
-            MobaSessionType::Mosh => self.parse_mosh_session(&name, &conn_params, source_path),
+            MobaSessionType::Rdp => {
+                no_warning(self.parse_rdp_session(&name, &conn_params, source_path))
+            }
+            MobaSessionType::Vnc => {
+                no_warning(self.parse_vnc_session(&name, &conn_params, source_path))
+            }
+            MobaSessionType::Telnet => {
+                no_warning(self.parse_telnet_session(&name, &conn_params, source_path))
+            }
+            // Rsh/Rlogin is a line protocol RustConn serves through its Telnet
+            // client, the same mapping the mRemoteNG and PuTTY importers use.
+            MobaSessionType::Rsh => {
+                no_warning(self.parse_telnet_session(&name, &conn_params, source_path))
+            }
+            MobaSessionType::Serial => {
+                no_warning(self.parse_serial_session(&name, &conn_params, source_path))
+            }
+            MobaSessionType::Mosh => {
+                no_warning(self.parse_mosh_session(&name, &conn_params, source_path))
+            }
             MobaSessionType::Browser => {
-                self.parse_browser_session(&name, &conn_params, source_path)
+                no_warning(self.parse_browser_session(&name, &conn_params, source_path))
             }
+            // FTP has no RustConn client; import it as SFTP and warn that the
+            // transport, port and authentication differ.
+            MobaSessionType::Ftp => self.parse_ftp_session(&name, &conn_params, source_path),
             // RustConn has no equivalent for these session types. Record them
             // as skipped so the user sees what was left behind instead of
             // losing them silently.
-            MobaSessionType::Rsh
-            | MobaSessionType::Xdmcp
-            | MobaSessionType::Ftp
+            MobaSessionType::Xdmcp
             | MobaSessionType::File
             | MobaSessionType::Shell
             | MobaSessionType::AwsS3
@@ -779,6 +807,61 @@ impl MobaXtermImporter {
 
         Ok(Some(connection))
     }
+
+    /// Parses an FTP session.
+    ///
+    /// RustConn has no plain-FTP client, so an FTP session is imported as SFTP
+    /// — the closest equivalent — and paired with an [`ImportWarning`] so the
+    /// user knows the transport, port and authentication differ. The host and
+    /// username are carried over; the port is kept as MobaXterm stored it (FTP
+    /// default 21), which the user must change to an SFTP port before
+    /// connecting.
+    #[expect(
+        clippy::unused_self,
+        reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
+    )]
+    fn parse_ftp_session(
+        &self,
+        name: &str,
+        params: &[&str],
+        _source_path: &str,
+    ) -> Result<Option<(Connection, Option<ImportWarning>)>, String> {
+        // FTP params layout:
+        // [0] = session type (6)
+        // [1] = host
+        // [2] = port
+        // [3] = username
+
+        let host = params
+            .get(1)
+            .map(|s| Self::decode_escapes(s))
+            .unwrap_or_default();
+        if host.is_empty() {
+            return Err("No host specified".to_string());
+        }
+
+        let port: u16 = params.get(2).and_then(|s| s.parse().ok()).unwrap_or(21);
+
+        let username = params
+            .get(3)
+            .filter(|s| !s.is_empty() && **s != "<default>")
+            .map(|s| Self::decode_escapes(s));
+
+        let mut connection = Connection::new(
+            name.to_string(),
+            host,
+            port,
+            // SFTP reuses the SSH config shape.
+            ProtocolConfig::Sftp(SshConfig::default()),
+        );
+        connection.username = username;
+
+        let warning = ImportWarning::FtpImportedAsSftp {
+            connection_name: name.to_string(),
+        };
+
+        Ok(Some((connection, Some(warning))))
+    }
 }
 
 impl Default for MobaXtermImporter {
@@ -996,23 +1079,73 @@ Web Server=#109#0%10.0.1.2%22%www%%-1%-1%%%%%0%0%0%%%-1%0%0%0%%1080%%0%0%1%#Moba
     #[test]
     fn test_skip_unsupported_session_type() {
         let importer = MobaXtermImporter::new();
-        // Rsh session (type 2) - not supported
+        // XDMCP session (type 3) - no RustConn equivalent
         let content = "[Bookmarks]
 SubRep=
 ImgNum=42
-Rsh Server=#98#2%192.168.1.100%514%%%#MobaFont%10#0# #-1";
+X Desktop=#88#3%192.168.1.100%177%%%#MobaFont%10#0# #-1";
 
         let result = importer.parse_content(content, "test.mxtsessions");
         assert_eq!(result.connections.len(), 0);
-        // RustConn has no Rsh/Rlogin equivalent, so the session is recorded as
+        // RustConn has no XDMCP equivalent, so the session is recorded as
         // skipped rather than lost silently.
         assert_eq!(result.skipped.len(), 1);
-        assert_eq!(result.skipped[0].identifier, "Rsh Server");
+        assert_eq!(result.skipped[0].identifier, "X Desktop");
         assert!(
-            result.skipped[0].reason.contains("Rsh/Rlogin"),
+            result.skipped[0].reason.contains("XDMCP"),
             "skip reason should name the MobaXterm session type, got: {}",
             result.skipped[0].reason
         );
+    }
+
+    #[test]
+    fn test_parse_rsh_session_maps_to_telnet() {
+        let importer = MobaXtermImporter::new();
+        // Rsh/Rlogin (type 2) is served through RustConn's Telnet client, like
+        // the mRemoteNG and PuTTY importers do.
+        let content = "[Bookmarks]
+SubRep=
+ImgNum=42
+Rlogin Host=#100#2%legacy.example.com%513%%%#MobaFont%10#0# #-1";
+
+        let result = importer.parse_content(content, "test.mxtsessions");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        assert_eq!(conn.name, "Rlogin Host");
+        assert_eq!(conn.host, "legacy.example.com");
+        assert_eq!(conn.port, 513);
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Telnet(_)));
+    }
+
+    #[test]
+    fn test_parse_ftp_session_maps_to_sftp_with_warning() {
+        let importer = MobaXtermImporter::new();
+        // FTP (type 6) has no RustConn client; it is imported as SFTP and the
+        // result carries a warning that the transport/port/auth differ.
+        let content = "[Bookmarks]
+SubRep=
+ImgNum=42
+File Server=#130#6%ftp.example.com%21%ftpuser%%#MobaFont%10#0# #-1";
+
+        let result = importer.parse_content(content, "test.mxtsessions");
+        assert_eq!(result.connections.len(), 1);
+        assert_eq!(result.skipped.len(), 0);
+
+        let conn = &result.connections[0];
+        assert_eq!(conn.name, "File Server");
+        assert_eq!(conn.host, "ftp.example.com");
+        // The FTP port is kept as stored; the user retargets it to SFTP.
+        assert_eq!(conn.port, 21);
+        assert_eq!(conn.username, Some("ftpuser".to_string()));
+        assert!(matches!(conn.protocol_config, ProtocolConfig::Sftp(_)));
+
+        assert_eq!(result.warnings.len(), 1);
+        assert!(matches!(
+            result.warnings[0],
+            ImportWarning::FtpImportedAsSftp { .. }
+        ));
     }
 
     #[test]

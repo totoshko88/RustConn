@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 18:35+0200\n"
+"POT-Creation-Date: 2026-10-29 20:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4719,7 +4719,7 @@ msgstr ""
 msgid "Skipped"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:797 rustconn/src/dialogs/import/mod.rs:472
+#: rustconn/src/dialogs/export.rs:797 rustconn/src/dialogs/import/mod.rs:476
 msgid "Warnings ({}):"
 msgstr ""
 
@@ -4794,8 +4794,8 @@ msgstr ""
 msgid "Export complete"
 msgstr ""
 
-#: rustconn/src/dialogs/export.rs:1167 rustconn/src/dialogs/import/mod.rs:577
-#: rustconn/src/dialogs/import/mod.rs:890
+#: rustconn/src/dialogs/export.rs:1167 rustconn/src/dialogs/import/mod.rs:581
+#: rustconn/src/dialogs/import/mod.rs:894
 #: rustconn/src/dialogs/import/sources.rs:353
 #: rustconn/src/dialogs/import/sources.rs:445
 #: rustconn/src/dialogs/import/sources.rs:541
@@ -5078,29 +5078,36 @@ msgstr ""
 msgid "{} variable(s) skipped (not supported in batch import)"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:446
+#: rustconn/src/dialogs/import/mod.rs:436
+msgid ""
+"Connection '{}' was an FTP session, imported as SFTP — RustConn has no FTP "
+"client. Check the port (SFTP uses 22), the credentials and whether the "
+"server speaks SFTP before connecting."
+msgstr ""
+
+#: rustconn/src/dialogs/import/mod.rs:450
 msgid "Imported connections:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:459
+#: rustconn/src/dialogs/import/mod.rs:463
 msgid "Skipped {} entries:"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:485
+#: rustconn/src/dialogs/import/mod.rs:489
 msgid "Errors ({}):"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:493
+#: rustconn/src/dialogs/import/mod.rs:497
 msgid "No connections found in the selected source."
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:550
-#: rustconn/src/dialogs/import/mod.rs:646
-#: rustconn/src/dialogs/import/mod.rs:1003
-#: rustconn/src/dialogs/import/mod.rs:1021
-#: rustconn/src/dialogs/import/mod.rs:1039
-#: rustconn/src/dialogs/import/mod.rs:1057
-#: rustconn/src/dialogs/import/mod.rs:1075
+#: rustconn/src/dialogs/import/mod.rs:554
+#: rustconn/src/dialogs/import/mod.rs:650
+#: rustconn/src/dialogs/import/mod.rs:1007
+#: rustconn/src/dialogs/import/mod.rs:1025
+#: rustconn/src/dialogs/import/mod.rs:1043
+#: rustconn/src/dialogs/import/mod.rs:1061
+#: rustconn/src/dialogs/import/mod.rs:1079
 #: rustconn/src/dialogs/import/sources.rs:322
 #: rustconn/src/dialogs/import/sources.rs:415
 #: rustconn/src/dialogs/import/sources.rs:511
@@ -5117,17 +5124,17 @@ msgstr ""
 msgid "Importing from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:567
-#: rustconn/src/dialogs/import/mod.rs:879
-#: rustconn/src/dialogs/import/mod.rs:1097
+#: rustconn/src/dialogs/import/mod.rs:571
+#: rustconn/src/dialogs/import/mod.rs:883
+#: rustconn/src/dialogs/import/mod.rs:1101
 msgid "Import complete"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:991
+#: rustconn/src/dialogs/import/mod.rs:995
 msgid "Starting import from {}…"
 msgstr ""
 
-#: rustconn/src/dialogs/import/mod.rs:1085
+#: rustconn/src/dialogs/import/mod.rs:1089
 msgid "Querying libvirt daemon…"
 msgstr ""
 
