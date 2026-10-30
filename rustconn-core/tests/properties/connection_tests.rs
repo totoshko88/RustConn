@@ -233,6 +233,8 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 microphone_enabled: false,
                 smartcard_enabled: false,
                 load_balance_info: None,
+                auto_reconnect: true,
+                keyboard_hook: None,
                 kerberos_enabled: false,
                 kdc_proxy_url: None,
             },

@@ -207,6 +207,9 @@ pub struct RdpConfig {
     /// Force full reconnect on resize instead of Display Control Channel.
     /// Useful for legacy servers that don't support MS-RDPEDISP.
     pub reconnect_on_resize: bool,
+    /// Reconnect by itself when an established session's connection drops
+    /// (`RdpConfig::auto_reconnect`). Read by the IronRDP path only.
+    pub auto_reconnect: bool,
     /// Request dynamic desktop resizing on the external client
     /// (`/dynamic-resolution`). Default true; turn off for legacy servers.
     /// Mutually exclusive with [`Self::smart_sizing`] (issue #341).
@@ -307,6 +310,7 @@ impl Default for RdpConfig {
             autotype_initial_delay_ms: 0,
             script_paste_via_clipboard: true,
             reconnect_on_resize: false,
+            auto_reconnect: true,
             dynamic_resolution: true,
             smart_sizing: false,
             remote_app_program: None,

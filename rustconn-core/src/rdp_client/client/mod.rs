@@ -135,6 +135,9 @@ impl RdpClient {
                                 old_fingerprint,
                             });
                         }
+                        lost @ RdpClientError::ServerDisconnected(_) => {
+                            let _ = event_tx.send(RdpClientEvent::ConnectionLost(lost.to_string()));
+                        }
                         other => {
                             let _ = event_tx.send(RdpClientEvent::Error(other.to_string()));
                         }

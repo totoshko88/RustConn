@@ -763,6 +763,15 @@ pub(super) struct RdpConnectionContext {
     pub connection_generation: Rc<RefCell<u64>>,
     /// Generation that produced this error and consent request.
     pub generation: u64,
+    /// The banner shown while disconnected, and its label, which counts the
+    /// automatic reconnection attempts.
+    pub reconnect_banner: gtk4::Box,
+    pub reconnect_label: gtk4::Label,
+    /// Automatic reconnection attempts since the connection dropped; `0` when
+    /// none is under way. Shared with the widget, across connects.
+    pub auto_reconnect_attempt: Rc<std::cell::Cell<u32>>,
+    /// The pending automatic reconnection attempt.
+    pub auto_reconnect_timer: Rc<RefCell<Option<glib::SourceId>>>,
 }
 
 /// Shared widget state needed to launch an external RDP process after consent.
@@ -1413,6 +1422,8 @@ impl super::EmbeddedRdpWidget {
         let stale_frame = self.stale.clone();
         let stale_banner = self.reconnect_banner.clone();
         let stale_label = self.reconnect_label.clone();
+        let auto_reconnect_attempt = self.auto_reconnect_attempt.clone();
+        let auto_reconnect_timer = self.auto_reconnect_timer.clone();
         let drawing_area = self.drawing_area.clone();
         let toolbar = self.toolbar.clone();
         let on_state_changed = self.on_state_changed.clone();
@@ -1682,6 +1693,10 @@ impl super::EmbeddedRdpWidget {
                 // client_ref.borrow_mut() which conflicts with the immutable
                 // borrow held by the event polling loop (#57)
                 let mut deferred_error: Option<String> = None;
+                // Whether `deferred_error` is an established session's
+                // connection dropping (`ConnectionLost`), which may reconnect
+                // automatically, rather than a failure.
+                let mut connection_lost = false;
                 // Deferred TOFU certificate-change notification, handled the same
                 // way and for the same borrow reason as `deferred_error`.
                 let mut deferred_cert_changed: Option<(String, u16, String, String)> = None;
@@ -1720,6 +1735,11 @@ impl super::EmbeddedRdpWidget {
                                     "IronRDP connected"
                                 );
                                 *state.borrow_mut() = RdpConnectionState::Connected;
+                                // A reconnection that got through ends the
+                                // automatic attempts.
+                                if auto_reconnect_attempt.replace(0) > 0 {
+                                    stale_label.set_text(&i18n("Session disconnected"));
+                                }
                                 // Arm the first-frame watchdog (see FIRST_FRAME_TIMEOUT)
                                 *connected_at.borrow_mut() = Some(std::time::Instant::now());
 
@@ -1937,6 +1957,16 @@ impl super::EmbeddedRdpWidget {
                                 // while client_ref.borrow() is held by this loop
                                 jiggler.stop();
                                 deferred_error = Some(msg);
+                                needs_redraw = true;
+                                should_break = true;
+                                break;
+                            }
+                            RdpClientEvent::ConnectionLost(msg) => {
+                                // Deferred for the same borrow reason as an
+                                // error, then given to handle_connection_lost.
+                                jiggler.stop();
+                                deferred_error = Some(msg);
+                                connection_lost = true;
                                 needs_redraw = true;
                                 should_break = true;
                                 break;
@@ -2415,8 +2445,16 @@ Open Settings → Connection → Media Codecs to re-download it.",
                         on_reconnect: on_reconnect.clone(),
                         connection_generation: connection_generation.clone(),
                         generation,
+                        reconnect_banner: stale_banner.clone(),
+                        reconnect_label: stale_label.clone(),
+                        auto_reconnect_attempt: auto_reconnect_attempt.clone(),
+                        auto_reconnect_timer: auto_reconnect_timer.clone(),
                     };
-                    Self::handle_ironrdp_error(error_msg, &ctx);
+                    if connection_lost {
+                        Self::handle_connection_lost(error_msg, &ctx);
+                    } else {
+                        Self::handle_ironrdp_error(error_msg, &ctx);
+                    }
                 }
 
                 // Handle a deferred TOFU certificate change AFTER the
@@ -2478,6 +2516,104 @@ Open Settings → Connection → Media Codecs to re-download it.",
         );
     }
 
+    /// Handles the connection of an established session dropping.
+    ///
+    /// Reconnects automatically when the connection asks for it, as Remote
+    /// Desktop Connection does after a network drop; otherwise, or once the
+    /// attempts run out, it is reported like any other failure. A session the
+    /// server ends never gets here: that arrives as a plain `Disconnected`.
+    #[cfg(feature = "rdp-embedded")]
+    fn handle_connection_lost(msg: &str, ctx: &RdpConnectionContext) {
+        tracing::warn!(
+            protocol = "rdp",
+            error = %msg,
+            "[IronRDP] Connection to the server lost"
+        );
+        remove_clipboard_monitor(&ctx.clipboard_monitor, Some(ctx.generation));
+        let enabled = ctx
+            .fallback_config
+            .borrow()
+            .as_ref()
+            .is_some_and(|config| config.auto_reconnect);
+        if enabled && Self::schedule_auto_reconnect(ctx) {
+            return;
+        }
+        Self::handle_ironrdp_error(msg, ctx);
+    }
+
+    /// Schedules the next automatic reconnection attempt, or returns `false`
+    /// once [`AUTO_RECONNECT_MAX_ATTEMPTS`] have been made.
+    ///
+    /// The first attempt tells the window the session dropped, so its tab shows
+    /// it as disconnected; later ones only keep the banner up, so the window's
+    /// state handler sees one `Disconnected` and one `Connected` per outage and
+    /// its session count stays balanced.
+    ///
+    /// [`AUTO_RECONNECT_MAX_ATTEMPTS`]: rustconn_core::rdp_client::AUTO_RECONNECT_MAX_ATTEMPTS
+    #[cfg(feature = "rdp-embedded")]
+    fn schedule_auto_reconnect(ctx: &RdpConnectionContext) -> bool {
+        use rustconn_core::rdp_client::{AUTO_RECONNECT_MAX_ATTEMPTS, auto_reconnect_delay};
+
+        let attempt = ctx.auto_reconnect_attempt.get() + 1;
+        if attempt > AUTO_RECONNECT_MAX_ATTEMPTS {
+            tracing::warn!(
+                protocol = "rdp",
+                attempts = AUTO_RECONNECT_MAX_ATTEMPTS,
+                "[IronRDP] Giving up reconnecting automatically"
+            );
+            return false;
+        }
+        ctx.auto_reconnect_attempt.set(attempt);
+
+        // Tear down the dead client, as the graphics retry does.
+        *ctx.ironrdp_tx.borrow_mut() = None;
+        if let Some(mut client) = ctx.client_ref.borrow_mut().take() {
+            client.disconnect();
+        }
+
+        if attempt == 1 {
+            Self::notify_ironrdp_state(ctx, RdpConnectionState::Disconnected);
+        } else {
+            *ctx.state.borrow_mut() = RdpConnectionState::Disconnected;
+            ctx.drawing_area.queue_draw();
+        }
+        ctx.reconnect_label.set_text(&i18n_f(
+            "Connection lost. Reconnecting (attempt {} of {})…",
+            &[
+                &attempt.to_string(),
+                &AUTO_RECONNECT_MAX_ATTEMPTS.to_string(),
+            ],
+        ));
+        ctx.reconnect_banner.set_visible(true);
+
+        let delay = auto_reconnect_delay(attempt);
+        tracing::info!(
+            protocol = "rdp",
+            attempt,
+            delay_secs = delay.as_secs(),
+            "[IronRDP] Reconnecting automatically"
+        );
+        let timer = ctx.auto_reconnect_timer.clone();
+        let current_generation = ctx.connection_generation.clone();
+        let generation = *ctx.connection_generation.borrow();
+        let on_reconnect = ctx.on_reconnect.clone();
+        let source = glib::timeout_add_local_once(delay, move || {
+            // The source has fired, so its id only needs forgetting.
+            let _ = timer.borrow_mut().take();
+            // A disconnect or another connect since then owns the widget now.
+            if *current_generation.borrow() != generation {
+                return;
+            }
+            if let Some(ref callback) = *on_reconnect.borrow() {
+                callback();
+            }
+        });
+        if let Some(previous) = ctx.auto_reconnect_timer.borrow_mut().replace(source) {
+            previous.remove();
+        }
+        true
+    }
+
     /// Handles IronRDP protocol errors with auto-fallback to FreeRDP
     #[cfg(feature = "rdp-embedded")]
     fn handle_ironrdp_error(msg: &str, ctx: &RdpConnectionContext) {
@@ -2513,6 +2649,20 @@ Open Settings → Connection → Media Codecs to re-download it.",
             failure_class = ?class,
             "[IronRDP] Failure classified"
         );
+
+        // An automatic reconnection whose attempt could not reach the server —
+        // the network may still be down — waits and tries again. Anything else,
+        // such as a refused sign-in or a server the embedded client cannot
+        // serve, ends the attempts and is handled below as usual.
+        if ctx.auto_reconnect_attempt.get() > 0 {
+            if class == rustconn_core::rdp_client::RdpFailureClass::Other
+                && Self::schedule_auto_reconnect(ctx)
+            {
+                return;
+            }
+            ctx.auto_reconnect_attempt.set(0);
+            ctx.reconnect_label.set_text(&i18n("Session disconnected"));
+        }
 
         // A KRdp 6.6.x / FreeRDP-3.32 server advertises HYBRID_EX it cannot
         // complete, so the embedded IronRDP client's CredSSP is rejected with
@@ -3434,6 +3584,12 @@ Open Settings → Connection → Media Codecs to re-download it.",
     pub fn disconnect(&self) {
         // Increment connection generation to invalidate any active polling loops
         *self.connection_generation.borrow_mut() += 1;
+
+        // A pending automatic reconnection must not bring a closed session back.
+        self.auto_reconnect_attempt.set(0);
+        if let Some(timer) = self.auto_reconnect_timer.borrow_mut().take() {
+            timer.remove();
+        }
 
         // Disconnect resize signal handler
         if let Some(handler_id) = self.resize_handler_id.borrow_mut().take() {

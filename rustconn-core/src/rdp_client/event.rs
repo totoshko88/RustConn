@@ -590,6 +590,16 @@ pub enum RdpClientEvent {
     /// Error occurred
     Error(String),
 
+    /// The connection of an established session broke — a read or write on
+    /// the transport failed — as opposed to the server ending the session.
+    ///
+    /// Kept apart from [`Self::Error`] so the GUI can reconnect automatically,
+    /// as Remote Desktop Connection does after a network drop, without parsing
+    /// an error string. A logoff or an administrator's disconnect ends the
+    /// session cleanly and never produces this. Carries the error text, for
+    /// the report once reconnecting gives up.
+    ConnectionLost(String),
+
     /// The server's TLS certificate changed since a previous connection (TOFU).
     ///
     /// Delivered structured rather than folded into [`Self::Error`] so the GUI

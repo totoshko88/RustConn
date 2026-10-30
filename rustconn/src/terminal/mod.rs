@@ -52,7 +52,7 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation, Widget, gio, glib};
 use libadwaita as adw;
 use libadwaita::prelude::*;
-use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends};
+use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
     ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
@@ -291,6 +291,9 @@ pub struct TerminalNotebook {
     /// asks the compositor for the desktop shortcuts while passthrough is on
     /// (issue #356).
     focused_viewer: Rc<RefCell<Option<glib::WeakRef<gtk4::Widget>>>>,
+    /// The focused viewer's `keyboard_hook` (an RDP connection's choice of
+    /// where Windows key combinations go); `None` follows auto-capture.
+    focused_hook: Rc<std::cell::Cell<Option<RdpKeyboardHook>>>,
     /// Callback fired when terminal focus changes (`true` = focus entered the
     /// VTE, `false` = focus left). Drives focus-based accelerator suspend (#197).
     on_terminal_focus: Rc<RefCell<Option<Box<dyn Fn(bool)>>>>,
@@ -565,6 +568,7 @@ impl TerminalNotebook {
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
             auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),
+            focused_hook: Rc::new(std::cell::Cell::new(None)),
             on_terminal_focus: Rc::new(RefCell::new(None)),
             reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
             disconnected_sessions: Rc::new(RefCell::new(HashSet::new())),
@@ -2362,22 +2366,24 @@ impl TerminalNotebook {
     /// to an embedded RDP or VNC viewer while one has focus; see
     /// [`Self::attach_shortcut_inhibit`].
     pub fn set_keyboard_passthrough(&self, enabled: bool) {
-        let should_disable_tab_shortcuts = enabled
-            || (self.auto_capture_shortcuts.get() && self.focused_viewer.borrow().is_some());
-        self.tab_view
-            .set_shortcuts(tab_view_shortcuts_for_passthrough(
-                should_disable_tab_shortcuts,
-            ));
-        self.keyboard_passthrough.set(enabled);
-
         let focused = self
             .focused_viewer
             .borrow()
             .as_ref()
             .and_then(glib::WeakRef::upgrade);
+        let viewer_takes = focused.as_ref().is_some_and(|viewer| {
+            viewer_takes_shortcuts(
+                viewer,
+                self.focused_hook.get(),
+                self.auto_capture_shortcuts.get(),
+            )
+        });
+        self.tab_view
+            .set_shortcuts(tab_view_shortcuts_for_passthrough(enabled || viewer_takes));
+        self.keyboard_passthrough.set(enabled);
+
         if let Some(viewer) = focused {
-            let should_inhibit = enabled || self.auto_capture_shortcuts.get();
-            set_system_shortcuts_inhibited(&viewer, should_inhibit);
+            set_system_shortcuts_inhibited(&viewer, enabled || viewer_takes);
         } else if !enabled {
             // The viewer may have gone away while it held the shortcuts.
             set_system_shortcuts_inhibited(self.container.upcast_ref(), false);
@@ -2394,7 +2400,8 @@ impl TerminalNotebook {
             .as_ref()
             .and_then(glib::WeakRef::upgrade)
         {
-            let should_inhibit = enabled || self.keyboard_passthrough.get();
+            let should_inhibit = self.keyboard_passthrough.get()
+                || viewer_takes_shortcuts(&viewer, self.focused_hook.get(), enabled);
             set_system_shortcuts_inhibited(&viewer, should_inhibit);
             if should_inhibit {
                 self.tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
@@ -2415,33 +2422,80 @@ impl TerminalNotebook {
     /// embedded RDP or VNC viewer) has focus and passthrough or auto-capture
     /// is on, and gives them back when focus leaves (issue #356).
     ///
+    /// `hook` is an RDP connection's own choice of where Windows key
+    /// combinations go (`RdpConfig::keyboard_hook`), read on every focus change;
+    /// `None`, or a cell holding `None`, follows auto-capture. "Only in full
+    /// screen" also follows the window going in and out of full screen while
+    /// the viewer has focus.
+    ///
     /// This is the Wayland keyboard-shortcuts-inhibit request that an external
     /// FreeRDP window already makes. GNOME asks the user once whether to allow
     /// it, and Super+Esc always gives the shortcuts back. Terminals are left
     /// out on purpose: in an SSH tab Alt+Tab is expected to switch windows.
-    fn attach_shortcut_inhibit<W: IsA<gtk4::Widget>>(&self, widget: &W) {
+    fn attach_shortcut_inhibit<W: IsA<gtk4::Widget>>(
+        &self,
+        widget: &W,
+        hook: Option<Rc<std::cell::Cell<Option<RdpKeyboardHook>>>>,
+    ) {
         let focus_ctrl = gtk4::EventControllerFocus::new();
+        // The full-screen watch of a focused "Only in full screen" viewer.
+        let fullscreen_watch: Rc<
+            RefCell<Option<(glib::WeakRef<gtk4::Window>, glib::SignalHandlerId)>>,
+        > = Rc::new(RefCell::new(None));
         let passthrough = self.keyboard_passthrough.clone();
         let auto_capture = self.auto_capture_shortcuts.clone();
         let focused = self.focused_viewer.clone();
+        let focused_hook = self.focused_hook.clone();
         let tab_view = self.tab_view.clone();
+        let watch = fullscreen_watch.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_enter(move |_| {
             let Some(viewer) = viewer.upgrade() else {
                 return;
             };
             *focused.borrow_mut() = Some(viewer.downgrade());
-            if passthrough.get() || auto_capture.get() {
+            let viewer_hook = hook.as_ref().and_then(|cell| cell.get());
+            focused_hook.set(viewer_hook);
+            if passthrough.get() || viewer_takes_shortcuts(&viewer, viewer_hook, auto_capture.get())
+            {
                 set_system_shortcuts_inhibited(&viewer, true);
                 tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
+            }
+            if viewer_hook == Some(RdpKeyboardHook::FullscreenOnly)
+                && let Some(window) = viewer.root().and_downcast::<gtk4::Window>()
+            {
+                let passthrough = passthrough.clone();
+                let tab_view = tab_view.clone();
+                let viewer = viewer.downgrade();
+                let handler = window.connect_fullscreened_notify(move |window| {
+                    let Some(viewer) = viewer.upgrade() else {
+                        return;
+                    };
+                    let take = passthrough.get() || window.is_fullscreen();
+                    set_system_shortcuts_inhibited(&viewer, take);
+                    tab_view.set_shortcuts(tab_view_shortcuts_for_passthrough(take));
+                });
+                if let Some((old_window, old_handler)) =
+                    watch.borrow_mut().replace((window.downgrade(), handler))
+                    && let Some(old_window) = old_window.upgrade()
+                {
+                    old_window.disconnect(old_handler);
+                }
             }
         });
         let passthrough = self.keyboard_passthrough.clone();
         let focused = self.focused_viewer.clone();
+        let focused_hook = self.focused_hook.clone();
         let tab_view = self.tab_view.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_leave(move |_| {
             *focused.borrow_mut() = None;
+            focused_hook.set(None);
+            if let Some((window, handler)) = fullscreen_watch.borrow_mut().take()
+                && let Some(window) = window.upgrade()
+            {
+                window.disconnect(handler);
+            }
             if let Some(viewer) = viewer.upgrade()
                 && !passthrough.get()
             {
@@ -3472,6 +3526,40 @@ const fn tab_view_shortcuts_for_passthrough(enabled: bool) -> adw::TabViewShortc
     }
 }
 
+/// Whether the desktop's shortcuts should go to `viewer` while it has focus.
+///
+/// `hook` is the connection's own choice; `None` follows `auto_capture`, the
+/// application's "Auto-capture shortcuts in remote desktop" setting.
+/// Keyboard passthrough, which sends them in every case, is checked by the
+/// callers.
+fn viewer_takes_shortcuts(
+    viewer: &gtk4::Widget,
+    hook: Option<RdpKeyboardHook>,
+    auto_capture: bool,
+) -> bool {
+    hook_takes_shortcuts(hook, auto_capture, || {
+        viewer
+            .root()
+            .and_downcast::<gtk4::Window>()
+            .is_some_and(|window| window.is_fullscreen())
+    })
+}
+
+/// The decision behind [`viewer_takes_shortcuts`], with the window's full-screen
+/// state asked for only when the hook depends on it.
+fn hook_takes_shortcuts(
+    hook: Option<RdpKeyboardHook>,
+    auto_capture: bool,
+    fullscreen: impl FnOnce() -> bool,
+) -> bool {
+    match hook {
+        None => auto_capture,
+        Some(RdpKeyboardHook::Local) => false,
+        Some(RdpKeyboardHook::Remote) => true,
+        Some(RdpKeyboardHook::FullscreenOnly) => fullscreen(),
+    }
+}
+
 /// Inhibits or restores the compositor's shortcuts for the window `widget` is
 /// in, so a detached session window asks for its own surface.
 ///
@@ -3496,8 +3584,36 @@ fn set_system_shortcuts_inhibited(widget: &gtk4::Widget, inhibit: bool) {
 #[cfg(test)]
 mod passthrough_shortcut_tests {
     use libadwaita as adw;
+    use rustconn_core::models::RdpKeyboardHook;
 
-    use super::tab_view_shortcuts_for_passthrough;
+    use super::{hook_takes_shortcuts, tab_view_shortcuts_for_passthrough};
+
+    /// A connection's own choice wins over the app's auto-capture setting, and
+    /// "only in full screen" follows the window.
+    #[test]
+    fn keyboard_hook_decides_where_shortcuts_go() {
+        for auto in [true, false] {
+            assert_eq!(hook_takes_shortcuts(None, auto, || unreachable!()), auto);
+            assert!(!hook_takes_shortcuts(
+                Some(RdpKeyboardHook::Local),
+                auto,
+                || true
+            ));
+            assert!(hook_takes_shortcuts(
+                Some(RdpKeyboardHook::Remote),
+                auto,
+                || false
+            ));
+            for fullscreen in [true, false] {
+                assert_eq!(
+                    hook_takes_shortcuts(Some(RdpKeyboardHook::FullscreenOnly), auto, || {
+                        fullscreen
+                    }),
+                    fullscreen
+                );
+            }
+        }
+    }
 
     /// Issue #356: Ctrl+Shift+Tab and friends switched tabs in passthrough.
     #[test]

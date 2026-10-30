@@ -32,6 +32,7 @@ rustconn/src/window/detach_actions.rs
 rustconn/src/window/edit_actions.rs
 rustconn/src/window/key_setup.rs
 rustconn/src/window/edit_dialogs.rs
+rustconn/src/window/fullscreen_header.rs
 rustconn/src/window/edit_group.rs
 rustconn/src/window/group_broadcast.rs
 rustconn/src/window/groups.rs

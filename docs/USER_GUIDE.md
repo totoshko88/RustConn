@@ -1325,6 +1325,38 @@ The counterparts of Remote Desktop Connection's *Recording* and *Smart cards* se
   built with PC/SC and a running `pcscd`; the FreeRDP bundled in the Flatpak is built
   without PC/SC.
 
+#### Automatic Reconnection
+
+Like Remote Desktop Connection, an embedded session whose network connection drops —
+Wi-Fi roaming, a VPN reconnecting, a laptop waking from sleep — reconnects by itself.
+The banner at the bottom of the session shows the attempt, up to 20 of them, waiting
+1, 2, 4 and 8 seconds and then 10 seconds between attempts. Windows hands the
+reconnected client the same session, so open programs are where you left them.
+Clicking **Reconnect** in the banner tries at once and stops the automatic attempts.
+
+A session the server ends — you sign out, an administrator disconnects you, or another
+client takes the session over — is not reconnected, and neither is one whose sign-in is
+refused on the way back. Turn **Reconnect Automatically** off (Connection Dialog →
+RDP → Features) to get the banner straight away instead. The setting applies to the
+embedded client; `.rdp` import and export carry it as `autoreconnection enabled`.
+
+#### Windows Key Combinations
+
+Remote Desktop Connection's *Apply Windows key combinations*, per connection
+(Connection Dialog → RDP → Features). It decides where shortcuts such as Alt+Tab and
+Super go while the embedded session has keyboard focus:
+
+| Value | Shortcuts go to |
+|-------|-----------------|
+| **Follow the app setting** *(default)* | the remote session when **Auto-capture shortcuts in remote desktop** is on in Settings → Interface, this computer otherwise |
+| **On this computer** | this computer, always |
+| **On the remote computer** | the remote session |
+| **Only in full screen** | the remote session while the window is full screen, this computer otherwise — Remote Desktop Connection's default |
+
+Keyboard passthrough (Ctrl+Shift+Backspace) still sends every shortcut to the session
+whatever is chosen here. `.rdp` import and export carry the choice as `keyboardhook`;
+a file from Remote Desktop Connection usually says *Only in full screen*.
+
 #### Connection Broker (Load Balance Info)
 
 An `.rdp` file published by RD Web Access for a session collection carries a
@@ -2146,7 +2178,7 @@ The **Display Mode** setting in the connection dialog (Advanced tab → Window M
 3. For External Window mode, enable **Remember Position** to save window geometry between sessions (RDP only)
 
 **Notes:**
-- Fullscreen mode maximizes the RustConn window, not the remote desktop. Use F11 to toggle true fullscreen of the entire application. In fullscreen the application header bar and the tab bar are hidden, for every kind of session, so the session gets the space they took; they reappear when you leave fullscreen, however you entered it — the F11 shortcut, the menu toggle, or a window-manager fullscreen. To reach them without leaving fullscreen, move the pointer to the very top edge of the screen: the header and the tab bar slide in together over the session, without resizing it, and slide away a moment after the pointer moves back down. They stay while a header menu or a tab's context menu is open, or while you drag a tab. Switching tabs (for example with Ctrl+Page Up/Down) shows them for about a second and a half, and F10 opens the main menu. The sidebar stays as it is — hide it with F9 for more room. Banners that need your attention, such as an active group broadcast or a request to touch your hardware key, remain visible in fullscreen. On a touch screen without a keyboard there is no hover, so leaving fullscreen needs F11.
+- Fullscreen mode maximizes the RustConn window, not the remote desktop. Use F11 to toggle true fullscreen of the entire application. In fullscreen the application header bar and the tab bar are hidden, for every kind of session, so the session gets the space they took; they reappear when you leave fullscreen, however you entered it — the F11 shortcut, the menu toggle, or a window-manager fullscreen. To reach them without leaving fullscreen, move the pointer to the very top edge of the screen: the header and the tab bar slide in together over the session, without resizing it, and slide away a moment after the pointer moves back down. They stay while a header menu or a tab's context menu is open, or while you drag a tab. Switching tabs (for example with Ctrl+Page Up/Down) shows them for about a second and a half, and F10 opens the main menu. The sidebar stays as it is — hide it with F9 for more room. Banners that need your attention, such as an active group broadcast or a request to touch your hardware key, remain visible in fullscreen. While fullscreen the header also carries a **Leave Fullscreen** button at its right end — the counterpart of the Restore button on Remote Desktop Connection's connection bar. On a touch screen without a keyboard there is no hover, so leaving fullscreen needs F11.
 - External Window mode for VNC requires an external VNC viewer installed (TigerVNC, vncviewer, gvncviewer, or similar). If no viewer is found, a toast notification shows the install hint.
 - External Window mode for RDP uses FreeRDP. The Flatpak bundles the SDL3 client and the snap the X11 client (`xfreerdp3`) — no separate installation needed. On native installs, RustConn auto-detects the installed FreeRDP clients in priority order: on a Wayland session `sdl-freerdp3` > `sdl-freerdp` > `wlfreerdp3` > `wlfreerdp` > `xfreerdp3` > `xfreerdp`, on an X11 session the `xfreerdp*` clients first. `rustconn-cli connect` uses the same order and the connection's pinned client.
 - The VNC protocol tab also has its own **Client Mode** (Embedded/External) setting. When Display Mode is set to External Window, it takes precedence over the protocol-level Client Mode.
@@ -3862,7 +3894,7 @@ RustConn registers as a handler for `.rdp` files. Double-clicking an `.rdp` file
 2. RustConn parses the file and creates a temporary connection
 3. The connection starts immediately
 
-**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusagemethod`, `gatewayusername`, `desktopwidth`/`desktopheight`, `screen mode id`, `use multimon`, `session bpp`, `audiomode`, `audiocapturemode`, `redirectclipboard`, `redirectprinters`, `redirectsmartcards`, `redirectwebauthn`, `smart sizing`, `dynamic resolution`, `enablecredsspsupport`, `loadbalanceinfo`, `remoteapplicationmode`, `remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname`.
+**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusagemethod`, `gatewayusername`, `desktopwidth`/`desktopheight`, `screen mode id`, `use multimon`, `session bpp`, `audiomode`, `audiocapturemode`, `redirectclipboard`, `redirectprinters`, `redirectsmartcards`, `redirectwebauthn`, `smart sizing`, `dynamic resolution`, `enablecredsspsupport`, `autoreconnection enabled`, `keyboardhook`, `loadbalanceinfo`, `remoteapplicationmode`, `remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname`.
 
 Files saved by Remote Desktop Connection (UTF-16 with a byte-order mark) and UTF-8 files are both read. `authentication level` is deliberately ignored, so a file cannot switch certificate checking off.
 

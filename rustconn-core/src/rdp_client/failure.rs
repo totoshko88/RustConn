@@ -580,6 +580,50 @@ fn realm_named_in(msg: &str, lower: &str) -> Option<String> {
     (!realm.is_empty()).then(|| realm.to_owned())
 }
 
+/// How many times a session whose connection dropped is reconnected before
+/// the failure is reported — Remote Desktop Connection's default for the
+/// `.rdp` `autoreconnect max retries`.
+pub const AUTO_RECONNECT_MAX_ATTEMPTS: u32 = 20;
+
+/// The wait before automatic reconnection attempt `attempt` (counted from 1):
+/// 1, 2, 4 and 8 seconds, then 10 seconds for every later attempt.
+///
+/// Short at first, so a brief Wi-Fi or VPN hiccup is bridged quickly, and
+/// capped, so twenty attempts cover a few minutes of outage — about the
+/// window in which Windows keeps a disconnected session for reconnection by
+/// default — without hammering an unreachable host.
+#[must_use]
+pub fn auto_reconnect_delay(attempt: u32) -> std::time::Duration {
+    const CAP_SECS: u64 = 10;
+    let secs = 1_u64
+        .checked_shl(attempt.saturating_sub(1))
+        .map_or(CAP_SECS, |secs| secs.min(CAP_SECS));
+    std::time::Duration::from_secs(secs)
+}
+
+#[cfg(test)]
+mod reconnect_tests {
+    use std::time::Duration;
+
+    use super::*;
+
+    #[test]
+    fn reconnect_delay_doubles_then_caps_at_ten_seconds() {
+        let secs: Vec<u64> = (1..=7).map(|n| auto_reconnect_delay(n).as_secs()).collect();
+        assert_eq!(secs, [1, 2, 4, 8, 10, 10, 10]);
+        assert_eq!(auto_reconnect_delay(0), Duration::from_secs(1));
+        assert_eq!(auto_reconnect_delay(u32::MAX), Duration::from_secs(10));
+    }
+
+    #[test]
+    fn every_attempt_fits_in_a_few_minutes() {
+        let total: u64 = (1..=AUTO_RECONNECT_MAX_ATTEMPTS)
+            .map(|n| auto_reconnect_delay(n).as_secs())
+            .sum();
+        assert!((60..=300).contains(&total), "{total} s");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

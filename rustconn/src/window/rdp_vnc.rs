@@ -627,6 +627,9 @@ fn start_embedded_rdp_session(
     // FIDO2/WebAuthn device redirection (FreeRDP 3.x only, external mode)
     embedded_config.fido2_enabled = rdp_config.fido2_enabled;
 
+    // Automatic reconnection after a dropped connection (IronRDP path)
+    embedded_config.auto_reconnect = rdp_config.auto_reconnect;
+
     // Microphone and broker routing send the session to FreeRDP, which has
     // the channels IronRDP lacks; smart cards apply only once it runs there.
     embedded_config.microphone_enabled = rdp_config.microphone_enabled;
@@ -891,6 +894,10 @@ fn start_embedded_rdp_session(
     // Applied before anything reveals it, and before the split view can wrap
     // this session in its own corner buttons.
     widget_for_connect.set_toolbar_enabled(!rdp_config.hide_floating_toolbar);
+
+    // Where Windows key combinations go while the viewer has focus; read by the
+    // notebook on each focus change, so setting it after the tab exists is fine.
+    widget_for_connect.set_keyboard_hook(rdp_config.keyboard_hook);
 
     // Reveal the toolbar briefly so the user sees the actions that are
     // available while the connection is being established; the auto-hide timer

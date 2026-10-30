@@ -163,7 +163,9 @@ pub(super) async fn run_active_session(
                         }
                     }
                     Err(e) => {
-                        return Err(RdpClientError::ConnectionFailed(format!("Read error: {e}")));
+                        // The session was up, so this is the link dropping, not
+                        // a connection failing to start; see `ConnectionLost`.
+                        return Err(RdpClientError::ServerDisconnected(format!("Read error: {e}")));
                     }
                 }
             }
@@ -273,7 +275,7 @@ where
     match output {
         ActiveStageOutput::ResponseFrame(data) => {
             if let Err(e) = writer.write_all(&data).await {
-                return Err(RdpClientError::ConnectionFailed(format!(
+                return Err(RdpClientError::ServerDisconnected(format!(
                     "Write error: {e}"
                 )));
             }

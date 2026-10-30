@@ -25,6 +25,8 @@
 //! - `smart sizing` — 0/1, scale the session to the window
 //! - `dynamic resolution` — 0/1, resize the remote desktop with the window
 //! - `enablecredsspsupport` — 0 turns Network Level Authentication off
+//! - `autoreconnection enabled` — 0/1, reconnect after a dropped connection
+//! - `keyboardhook` — 0 = local, 1 = remote, 2 = remote in full screen only
 //! - `loadbalanceinfo` — RD Connection Broker routing value
 //! - `remoteapplicationmode` — 0 ignores the `remoteapplication*` fields
 //! - `remoteapplicationprogram` / `remoteapplicationcmdline` /
@@ -39,7 +41,8 @@ use std::path::Path;
 use super::traits::{ImportResult, ImportSource, read_import_bytes};
 use crate::error::ImportError;
 use crate::models::{
-    Connection, ProtocolConfig, RdpAudioMode, RdpConfig, RdpDisplayMode, RdpGateway, Resolution,
+    Connection, ProtocolConfig, RdpAudioMode, RdpConfig, RdpDisplayMode, RdpGateway,
+    RdpKeyboardHook, Resolution,
 };
 
 /// Parsed contents of an `.rdp` file.
@@ -213,6 +216,10 @@ impl RdpFileImporter {
                 .get("loadbalanceinfo")
                 .filter(|s| !s.is_empty())
                 .map(String::from),
+            auto_reconnect: fields.get_bool("autoreconnection enabled").unwrap_or(true),
+            keyboard_hook: fields
+                .get_u32("keyboardhook")
+                .and_then(RdpKeyboardHook::from_rdp_value),
             remote_app_program: remote_app("remoteapplicationprogram"),
             remote_app_args: remote_app("remoteapplicationcmdline"),
             remote_app_name: remote_app("remoteapplicationname"),
@@ -870,6 +877,28 @@ remoteapplicationname:s:
         assert!(!rdp.fido2_enabled);
         assert!(!rdp.disable_nla);
         assert!(rdp.load_balance_info.is_none());
+    }
+
+    #[test]
+    fn reconnect_and_keyboard_fields_import() {
+        let base = "full address:s:server.example.com\n";
+        let rdp = import(base.as_bytes());
+        assert!(rdp.auto_reconnect, "on unless the file turns it off");
+        assert_eq!(rdp.keyboard_hook, None);
+
+        let cases = [
+            ("0", Some(RdpKeyboardHook::Local)),
+            ("1", Some(RdpKeyboardHook::Remote)),
+            ("2", Some(RdpKeyboardHook::FullscreenOnly)),
+            ("3", None),
+        ];
+        for (value, expected) in cases {
+            let rdp = import(
+                format!("{base}keyboardhook:i:{value}\nautoreconnection enabled:i:0\n").as_bytes(),
+            );
+            assert_eq!(rdp.keyboard_hook, expected, "keyboardhook {value}");
+            assert!(!rdp.auto_reconnect);
+        }
     }
 
     /// A profile as Remote Desktop Connection saves it by default must stay on

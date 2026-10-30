@@ -201,6 +201,8 @@ impl ConnectionDialog {
             rdp_microphone_check,
             rdp_smartcard_check,
             rdp_load_balance_entry,
+            rdp_auto_reconnect_check,
+            rdp_keyboard_hook_dropdown,
         ) = crate::dialogs::connection::rdp::create_rdp_options();
         protocol_stack.add_named(&rdp_box, Some("rdp"));
 
@@ -649,6 +651,8 @@ impl ConnectionDialog {
             &rdp_microphone_check,
             &rdp_smartcard_check,
             &rdp_load_balance_entry,
+            &rdp_auto_reconnect_check,
+            &rdp_keyboard_hook_dropdown,
             &rdp_kerberos_check,
             &rdp_kdc_address_entry,
             &rdp_jump_host_dropdown,
@@ -910,6 +914,8 @@ impl ConnectionDialog {
             rdp_microphone_check,
             rdp_smartcard_check,
             rdp_load_balance_entry,
+            rdp_auto_reconnect_check,
+            rdp_keyboard_hook_dropdown,
             rdp_kerberos_check,
             rdp_kdc_address_entry,
             rdp_jump_host_dropdown,

@@ -1360,6 +1360,10 @@ impl ConnectionDialog {
         self.rdp_admin_session_check.set_active(rdp.admin_session);
         self.rdp_microphone_check.set_active(rdp.microphone_enabled);
         self.rdp_smartcard_check.set_active(rdp.smartcard_enabled);
+        self.rdp_auto_reconnect_check.set_active(rdp.auto_reconnect);
+        self.rdp_keyboard_hook_dropdown.set_selected(
+            rustconn_core::models::RdpKeyboardHook::index_of(rdp.keyboard_hook),
+        );
         if let Some(ref info) = rdp.load_balance_info {
             self.rdp_load_balance_entry.set_text(info);
         }

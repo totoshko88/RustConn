@@ -127,6 +127,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_microphone_check: &'a adw::SwitchRow,
     pub rdp_smartcard_check: &'a adw::SwitchRow,
     pub rdp_load_balance_entry: &'a Entry,
+    pub rdp_auto_reconnect_check: &'a adw::SwitchRow,
+    pub rdp_keyboard_hook_dropdown: &'a DropDown,
     pub rdp_kerberos_check: &'a adw::SwitchRow,
     pub rdp_kdc_address_entry: &'a adw::EntryRow,
     pub rdp_jump_host_dropdown: &'a DropDown,
@@ -1733,6 +1735,10 @@ impl ConnectionDialogData<'_> {
                     Some(text.trim().to_string())
                 }
             },
+            auto_reconnect: self.rdp_auto_reconnect_check.is_active(),
+            keyboard_hook: rustconn_core::models::RdpKeyboardHook::from_index(
+                self.rdp_keyboard_hook_dropdown.selected(),
+            ),
             kerberos_enabled: self.rdp_kerberos_check.is_active(),
             kdc_proxy_url,
             script_paste_via_clipboard: true,
