@@ -91,6 +91,7 @@ pub mod sync;
 pub mod template;
 pub mod terminal_themes;
 pub mod testing;
+pub mod tmux_control;
 pub mod tracing;
 pub mod tunnel_manager;
 pub mod tunnel_preview;
