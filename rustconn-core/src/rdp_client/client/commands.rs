@@ -110,20 +110,38 @@ pub(super) async fn process_command<W: FramedWrite>(
             vertical,
         } => {
             if vertical != 0 {
-                let op = Operation::WheelRotations(WheelRotations {
-                    is_vertical: true,
-                    rotation_units: vertical,
-                });
-                let events = input_db.apply(std::iter::once(op));
-                send_input_events(active_stage, image, writer, &events).await;
+                // RDP pointer event restricts wheel rotation units to a 9-bit
+                // two's-complement range [-256, 255]. Chunk large kinetic/smooth
+                // scroll deltas into steps of at most 120 (standard Windows
+                // WHEEL_DELTA) so ironrdp-pdu never panics.
+                let mut rem = vertical;
+                let mut count = 0;
+                while rem != 0 && count < 20 {
+                    let step = rem.clamp(-120, 120);
+                    rem -= step;
+                    count += 1;
+                    let op = Operation::WheelRotations(WheelRotations {
+                        is_vertical: true,
+                        rotation_units: step,
+                    });
+                    let events = input_db.apply(std::iter::once(op));
+                    send_input_events(active_stage, image, writer, &events).await;
+                }
             }
             if horizontal != 0 {
-                let op = Operation::WheelRotations(WheelRotations {
-                    is_vertical: false,
-                    rotation_units: horizontal,
-                });
-                let events = input_db.apply(std::iter::once(op));
-                send_input_events(active_stage, image, writer, &events).await;
+                let mut rem = horizontal;
+                let mut count = 0;
+                while rem != 0 && count < 20 {
+                    let step = rem.clamp(-120, 120);
+                    rem -= step;
+                    count += 1;
+                    let op = Operation::WheelRotations(WheelRotations {
+                        is_vertical: false,
+                        rotation_units: step,
+                    });
+                    let events = input_db.apply(std::iter::once(op));
+                    send_input_events(active_stage, image, writer, &events).await;
+                }
             }
         }
         RdpClientCommand::SetDesktopSize {
