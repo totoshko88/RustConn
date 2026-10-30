@@ -477,10 +477,8 @@ pub(super) async fn establish_connection(
         tracing::debug!(direction = ?config.clipboard_direction, "Clipboard channel enabled");
     }
 
-    // Phase 2.6: Add RDPDR channel for shared folders and/or printer if configured.
-    // Note: RDPDR requires RDPSND channel to be present per MS-RDPEFS spec.
-    let needs_rdpdr = !config.shared_folders.is_empty() || config.printer_enabled;
-    if needs_rdpdr {
+    // Phase 2.6: Add the RDPDR and RDPSND channels — see `needs_rdpdr`.
+    if needs_rdpdr(config) {
         // Add RDPSND channel first (required for RDPDR)
         // Use real audio backend if audio is enabled, otherwise noop
         let rdpsnd = if config.audio_enabled {
@@ -573,12 +571,6 @@ pub(super) async fn establish_connection(
         }
 
         connector.static_channels.insert(rdpdr);
-    } else if config.audio_enabled {
-        // No shared folders but audio is enabled - add RDPSND channel
-        let audio_backend = RustConnAudioBackend::new(event_tx.clone());
-        let rdpsnd = Rdpsnd::new(Box::new(audio_backend));
-        connector.static_channels.insert(rdpsnd);
-        tracing::debug!("Audio channel enabled (without RDPDR)");
     }
 
     // Register DRDYNVC (Dynamic Virtual Channel) with Echo client for RTT measurement.
@@ -1065,6 +1057,17 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
     }
 }
 
+/// Whether the session needs the device redirection channel (RDPDR).
+///
+/// RDPDR and RDPSND go together both ways. RDPDR needs RDPSND (MS-RDPEFS),
+/// and a Windows host starts sound on RDPSND only once RDPDR is joined too —
+/// FreeRDP registers RDPDR whenever sound is on for that reason. Audio used to
+/// get RDPSND alone when nothing was shared, and the server never played a
+/// sound: no format list, no wave, no error.
+fn needs_rdpdr(config: &RdpClientConfig) -> bool {
+    !config.shared_folders.is_empty() || config.printer_enabled || config.audio_enabled
+}
+
 /// Builds performance flags based on the performance mode
 fn build_performance_flags(mode: crate::models::RdpPerformanceMode) -> PerformanceFlags {
     use crate::models::RdpPerformanceMode;
@@ -1156,6 +1159,14 @@ fn get_timezone_info() -> TimezoneInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sound_brings_the_device_channel_with_it() {
+        let base = RdpClientConfig::new("server.example.com");
+        assert!(!needs_rdpdr(&base));
+        assert!(needs_rdpdr(&base.clone().with_audio(true)));
+        assert!(needs_rdpdr(&base.with_printer(true)));
+    }
 
     /// Quality asks for lossless bitmaps and offers no lossy codec a server
     /// would prefer; only Balanced offers RemoteFX.
