@@ -913,7 +913,7 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
     // 2. BitmapCodecs capability in CapabilitiesExchange (ClientConfirmActive)
     //
     // Performance mode controls:
-    // - Quality: lossy_compression=false (lossless), RemoteFX codec, all visual effects
+    // - Quality: lossy_compression=false (lossless), no RemoteFX, all visual effects
     // - Balanced: lossy_compression=true (allows dynamic quality), RemoteFX codec
     // - Speed: lossy_compression=true, no RemoteFX (legacy bitmap), minimal effects
     //
@@ -1043,18 +1043,26 @@ fn build_performance_flags(mode: crate::models::RdpPerformanceMode) -> Performan
 /// This controls:
 /// - `lossy_compression`: Whether server can use lossy compression for better bandwidth
 /// - `color_depth`: Always 32 for AWS EC2 compatibility
-/// - `codecs`: RemoteFX for Quality/Balanced, empty (legacy) for Speed
+/// - `codecs`: RemoteFX for Balanced only; empty (lossless or RLE bitmaps) for
+///   Quality and Speed
 fn build_bitmap_config(mode: crate::models::RdpPerformanceMode) -> Option<BitmapConfig> {
     use crate::models::RdpPerformanceMode;
 
     match mode {
         RdpPerformanceMode::Quality => {
-            // Best quality: lossless compression, RemoteFX codec
+            // Best quality: lossless 32-bit bitmaps (RDP 6.0 planar).
             // drawing_flags = ALLOW_SKIP_ALPHA only (no color subsampling)
+            //
+            // No RemoteFX: it is a lossy wavelet codec, and a server offered it
+            // prefers it, so advertising it here undid the lossless request.
+            // That decides what the user sees whenever the server does not open
+            // the GFX pipeline — some Windows hosts and policies never do — and
+            // text came out soft and smeared. Lossless costs bandwidth; Balanced
+            // keeps RemoteFX for links where that matters.
             Some(BitmapConfig {
                 lossy_compression: false,
                 color_depth: 32,
-                codecs: client_codecs_capabilities(&[]).unwrap_or_else(|_| BitmapCodecs(vec![])),
+                codecs: BitmapCodecs(vec![]),
             })
         }
         RdpPerformanceMode::Balanced => {
@@ -1096,6 +1104,24 @@ fn get_timezone_info() -> TimezoneInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Quality asks for lossless bitmaps and offers no lossy codec a server
+    /// would prefer; only Balanced offers RemoteFX.
+    #[test]
+    fn only_balanced_offers_remotefx() {
+        use crate::models::RdpPerformanceMode;
+
+        for (mode, lossy, offers_codecs) in [
+            (RdpPerformanceMode::Quality, false, false),
+            (RdpPerformanceMode::Balanced, true, true),
+            (RdpPerformanceMode::Speed, true, false),
+        ] {
+            let config = build_bitmap_config(mode).expect("every mode sends a bitmap config");
+            assert_eq!(config.lossy_compression, lossy, "{mode:?}");
+            assert_eq!(config.color_depth, 32, "{mode:?}");
+            assert_eq!(!config.codecs.0.is_empty(), offers_codecs, "{mode:?}");
+        }
+    }
 
     /// Issue #392: a connect sequence that stalls *before* TLS (the server
     /// accepts the TCP connection but never answers X.224) must keep failing

@@ -15,6 +15,25 @@ use super::types::{RdpConfig, RdpConnectionState};
 /// user can still recognise what was on screen before the machine slept.
 const STALE_FRAME_DIM_ALPHA: f64 = 0.55;
 
+/// How far a magnification may stray from a whole number and still count as
+/// one; absorbs the rounding in fractional compositor scales.
+const WHOLE_MAGNIFICATION_TOLERANCE: f64 = 0.01;
+
+/// The filter for drawing the framebuffer at `magnification` device pixels per
+/// remote pixel.
+///
+/// Nearest at a whole magnification — every remote pixel becomes an even
+/// block, so text stays sharp and the paint stays cheap. Bilinear otherwise,
+/// because at 1.25× Nearest doubles every fourth row and column and makes
+/// strokes uneven, which reads worse than the slight softness of bilinear.
+fn upscale_filter(magnification: f64) -> gtk4::cairo::Filter {
+    if (magnification - magnification.round()).abs() <= WHOLE_MAGNIFICATION_TOLERANCE {
+        gtk4::cairo::Filter::Nearest
+    } else {
+        gtk4::cairo::Filter::Bilinear
+    }
+}
+
 impl super::EmbeddedRdpWidget {
     /// Sets up the drawing function for the DrawingArea
     ///
@@ -68,10 +87,11 @@ impl super::EmbeddedRdpWidget {
                         // Tell Cairo the surface is already at device resolution so it
                         // doesn't double-scale (CSS→device) through bilinear interpolation,
                         // which causes blurry output.
-                        let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
-                            c.scale_override
-                                .resolved_scale(super::widget_fractional_scale(area))
-                        });
+                        let display_scale = super::widget_fractional_scale(area);
+                        let effective_scale = config
+                            .borrow()
+                            .as_ref()
+                            .map_or(1.0, |c| c.scale_override.resolved_scale(display_scale));
 
                         // Only call set_device_scale when it actually changed — Cairo
                         // internally invalidates pattern caches on every call regardless
@@ -118,9 +138,15 @@ impl super::EmbeddedRdpWidget {
                         cr.scale(scale, scale);
                         let _ = cr.set_source_surface(surface, 0.0, 0.0);
 
-                        // For live remote desktop at 60fps, use Nearest filtering
-                        // universally to keep text razor-sharp without blur.
-                        cr.source().set_filter(gtk4::cairo::Filter::Nearest);
+                        // Nearest keeps text razor-sharp when each remote pixel
+                        // lands on a whole number of device pixels — 1:1 with
+                        // Native, 2:1 with Auto on a 2× display. At a fractional
+                        // magnification, such as Auto on a 125% or 150% display,
+                        // it repeats every fourth or every second row and column,
+                        // so strokes come out uneven; bilinear spreads the
+                        // difference evenly instead.
+                        cr.source()
+                            .set_filter(upscale_filter(scale * display_scale / effective_scale));
 
                         let _ = cr.paint();
 
@@ -188,5 +214,36 @@ impl super::EmbeddedRdpWidget {
             rdp_width,
             rdp_height,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use gtk4::cairo::Filter;
+
+    use super::upscale_filter;
+
+    #[test]
+    fn whole_magnifications_stay_nearest() {
+        // Native on any display, Auto at 100% and at 200%
+        for magnification in [1.0, 2.0, 3.0, 1.004, 1.996] {
+            assert_eq!(
+                upscale_filter(magnification),
+                Filter::Nearest,
+                "{magnification}"
+            );
+        }
+    }
+
+    #[test]
+    fn fractional_magnifications_are_smoothed() {
+        // Auto at 125%, 150% and 175%, and a letterboxed frame mid-resize
+        for magnification in [1.25, 1.5, 1.75, 0.8, 1.1] {
+            assert_eq!(
+                upscale_filter(magnification),
+                Filter::Bilinear,
+                "{magnification}"
+            );
+        }
     }
 }
