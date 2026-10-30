@@ -5,6 +5,24 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.2] - 2026-10-30
+
+### Added
+- **RDP clipboard direction control (users reported the one-way clipboard workaround)** — the RDP connection editor's "Clipboard Sharing" switch is now a four-way selector: Off, Remote to local only, Local to remote only, or Both directions. One-way sync previously needed a hand-written `/clipboard:direction-to:` custom argument. The external FreeRDP client maps the choice to `/clipboard:direction-to:…,files-to:…` and the embedded IronRDP backend enforces it in-app. Backward compatible: a profile written before this feature loads as Both (clipboard was on) or Off, and the old on/off state is kept in sync so a downgrade still reads correctly. (`rustconn-core/src/models/protocol.rs`, `rustconn-core/src/protocol/freerdp.rs`, `rustconn-core/src/rdp_client/`, `rustconn/src/dialogs/connection/rdp.rs`, `rustconn/src/embedded_rdp/`)
+- **QUIC (quicssh) preset on the SSH ProxyCommand row — SSH over QUIC via [moul/quicssh](https://github.com/moul/quicssh)** — the ProxyCommand row gains a QUIC button that fills in `quicssh client --addr %h:%p`, giving an ordinary SSH connection a QUIC transport with connection migration (roaming between networks) and UDP NAT traversal for ISP-NATed hosts. Because it is a preset and not a new protocol type, jump hosts, exports, vault keys, connection testing and reconnect all apply unchanged. The tooltip reports whether `quicssh` was found and notes that the Flatpak/Snap builds only see binaries reachable inside the sandbox. (`rustconn/src/dialogs/connection/ssh.rs`, `rustconn-core/src/ssh_tunnel.rs`, `rustconn-core/src/protocol/detection.rs`)
+- **Auto-hide the sidebar on connect (issue #401)** — a new opt-in switch in Settings → Interface (Connections group). When enabled, opening a session collapses the connection sidebar to free space; it reappears when you reveal it with the sidebar toggle or when the last open session closes. Off by default, so existing behaviour is unchanged. (`rustconn-core/src/config/`, `rustconn/src/window/mod.rs`, `rustconn/src/dialogs/settings/ui_tab.rs`)
+- **MobaXterm import and export round-trip more session types** — the `.mxtsessions` importer and exporter previously handled only SSH, RDP, VNC and Telnet and silently dropped the rest. Both now cover Serial, MOSH and Web (Browser) sessions, the importer additionally maps Rsh/Rlogin (to Telnet) and FTP (to SFTP), and every session type RustConn has no equivalent for (XDMCP, the file browser, the local shell, AWS S3, WSL) is now recorded as a named skipped-entry warning instead of vanishing. FTP-imported-as-SFTP carries a warning that the transport, port and authentication differ. A Serial session preserves baud rate, data bits, parity, stop bits and flow control and carries the COM/`/dev/tty*` device verbatim for the user to retarget. Round-trip tests confirm a Serial, Web or MOSH connection survives export and re-import. (`rustconn-core/src/import/mobaxterm.rs`, `rustconn-core/src/export/mobaxterm.rs`, `rustconn-core/src/import/traits.rs`, `rustconn/src/dialogs/import/mod.rs`)
+
+### Fixed
+- **An imported MobaXterm SFTP session no longer round-trips back out as SSH** — the importer mapped MobaXterm session type 7 (SFTP) and type 0 (SSH) through the same path, always producing an SSH connection, so exporting an SFTP connection and re-importing it silently downgraded it. Type 7 now imports as `ProtocolConfig::Sftp` while type 0 stays `Ssh`. (`rustconn-core/src/import/mobaxterm.rs`)
+
+### Documentation
+- **New feature coverage for 0.24.2** — the user guide, README and CLI reference document the quicssh ProxyCommand preset, the RDP clipboard direction selector (replacing the old `/clipboard:direction-to:` custom-argument workaround) and the opt-in auto-hide-sidebar-on-connect setting. (`docs/USER_GUIDE.md`, `README.md`, `docs/CLI_REFERENCE.md`)
+- **All 17 translation catalogues completed for the release** — the new quicssh, RDP clipboard direction, sidebar and MobaXterm strings were translated across every catalogue, and the Ukrainian catalogue was reviewed for DSTU terminology and the «з'єднання» connection noun. (`po/*.po`)
+
+### Dependencies
+- **Updated** (semver-compatible, transitive): ctutils 0.4.6→0.4.7, libbz2-rs-sys 0.2.5→0.2.6, utf8_iter 1.0.4→1.1.0, zcheapstr 1.1.0→1.2.0, utf_types added 1.0.0. A `cargo update` refresh for the release; `cargo deny check advisories` is clean. `cargo-sources.json` regenerated for the Flatpak/Flathub manifests.
+
 ## [0.24.1] - 2026-10-28
 
 ### Added

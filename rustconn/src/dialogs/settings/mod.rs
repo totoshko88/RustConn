@@ -139,6 +139,8 @@ pub struct SettingsDialog {
     show_welcome_switch: adw::SwitchRow,
     // Always open a new session on a sidebar double-click (issue #242)
     double_click_opens_new_session: adw::SwitchRow,
+    // Auto-hide the sidebar when a session opens (issue #401)
+    auto_hide_sidebar_on_connect: adw::SwitchRow,
     // "Open Browser via Tunnel" target: embedded vs external browser
     open_tunnelled_browser_in_embedded: adw::SwitchRow,
     // "Open Browser via Tunnel" start page (issue: tunnelled browser start URL)
@@ -288,6 +290,7 @@ impl SettingsDialog {
             window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
+            auto_hide_sidebar_on_connect,
             show_split_pane_labels,
             hide_split_pane_hover_controls,
             show_directional_tab_close,
@@ -740,6 +743,7 @@ impl SettingsDialog {
             window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
+            auto_hide_sidebar_on_connect,
             open_tunnelled_browser_in_embedded,
             tunnel_start_url_row,
             tunnel_start_preset,
@@ -1324,6 +1328,7 @@ impl SettingsDialog {
             &self.window_title_rows,
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
+            &self.auto_hide_sidebar_on_connect,
             &self.show_split_pane_labels,
             &self.hide_split_pane_hover_controls,
             &self.show_directional_tab_close,
@@ -1518,6 +1523,7 @@ impl SettingsDialog {
         let window_title_rows_clone = self.window_title_rows.clone();
         let show_welcome_switch_clone = self.show_welcome_switch.clone();
         let double_click_opens_new_session_clone = self.double_click_opens_new_session.clone();
+        let auto_hide_sidebar_on_connect_clone = self.auto_hide_sidebar_on_connect.clone();
         let open_tunnelled_browser_in_embedded_clone =
             self.open_tunnelled_browser_in_embedded.clone();
         let tunnel_start_url_row_clone = self.tunnel_start_url_row.clone();
@@ -1752,6 +1758,7 @@ impl SettingsDialog {
                 &window_title_rows_clone,
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,
+                &auto_hide_sidebar_on_connect_clone,
                 &show_split_pane_labels_clone,
                 &hide_split_pane_hover_controls_clone,
                 &show_directional_tab_close_clone,

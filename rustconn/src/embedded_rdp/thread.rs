@@ -1196,8 +1196,8 @@ impl FreeRdpThread {
             plain_args.push(flag.to_string());
         }
 
-        if config.clipboard_enabled {
-            plain_args.push("+clipboard".to_string());
+        if let Some(arg) = config.clipboard_direction.freerdp_arg() {
+            plain_args.push(arg);
         }
 
         // State the audio routing explicitly — FreeRDP's implicit default is

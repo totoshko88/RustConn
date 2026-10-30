@@ -504,7 +504,7 @@ fn start_embedded_rdp_session(
     let mut embedded_config = EmbeddedRdpConfig::new(host)
         .with_port(port)
         .with_resolution(1280, 720) // Placeholder, will be updated
-        .with_clipboard(rdp_config.clipboard_enabled)
+        .with_clipboard_direction(rdp_config.effective_clipboard_direction())
         .with_performance_mode(rdp_config.performance_mode);
 
     if !username.is_empty() {
@@ -968,7 +968,7 @@ fn start_external_rdp_session(
         system_scale_percent: crate::utils::active_display_scale_percent(),
         color_depth: rdp_config.color_depth,
         performance_mode: rdp_config.performance_mode,
-        clipboard_enabled: rdp_config.clipboard_enabled,
+        clipboard_direction: rdp_config.effective_clipboard_direction(),
         shared_folders: rdp_config
             .shared_folders
             .iter()

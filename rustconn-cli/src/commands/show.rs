@@ -154,6 +154,15 @@ fn print_json(
                 "clipboard_enabled".to_string(),
                 serde_json::Value::Bool(config.clipboard_enabled),
             );
+            map.insert(
+                "clipboard_direction".to_string(),
+                serde_json::Value::String(
+                    config
+                        .effective_clipboard_direction()
+                        .as_cli_str()
+                        .to_string(),
+                ),
+            );
             if config.audio_redirect {
                 map.insert("audio_redirect".to_string(), serde_json::Value::Bool(true));
             }
@@ -469,9 +478,10 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             if let Some(level) = config.tls_security_level {
                 println!("  TLS Level: {level}");
             }
-            if !config.clipboard_enabled {
-                println!("  Clipboard: disabled");
-            }
+            println!(
+                "  Clipboard: {}",
+                config.effective_clipboard_direction().as_cli_str()
+            );
             println!("  Audio:    {}", config.effective_audio_mode().as_cli_str());
             if config.printer_enabled {
                 println!("  Printer:  enabled");

@@ -140,6 +140,19 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.2" date="2026-10-30">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.2</url>
+      <description>
+        <p>Version 0.24.2 - RDP clipboard direction control, a QUIC SSH preset, an auto-hide sidebar, and wider MobaXterm import/export:</p>
+        <ul>
+          <li>RDP clipboard sharing is now a four-way direction selector (Off, Remote to local, Local to remote, Both), replacing the hand-written custom argument.</li>
+          <li>A QUIC (quicssh) preset on the SSH ProxyCommand row gives an SSH connection a QUIC transport with connection migration and UDP NAT traversal.</li>
+          <li>An opt-in switch auto-hides the connection sidebar when a session opens (issue #401).</li>
+          <li>MobaXterm import and export now round-trip Serial, MOSH and Web sessions, map Rsh/Rlogin and FTP, and warn on unsupported session types.</li>
+          <li>An imported MobaXterm SFTP session no longer round-trips back out as SSH.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.1" date="2026-10-28">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.1</url>
       <description>

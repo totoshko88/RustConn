@@ -1334,7 +1334,8 @@ impl ConnectionDialog {
         self.rdp_audio_mode_dropdown
             .set_selected(rdp.effective_audio_mode().index());
         self.rdp_printer_check.set_active(rdp.printer_enabled);
-        self.rdp_clipboard_check.set_active(rdp.clipboard_enabled);
+        self.rdp_clipboard_row
+            .set_selected(rdp.effective_clipboard_direction().index());
         self.rdp_show_local_cursor_check
             .set_active(rdp.show_local_cursor);
         // Inverted: the switch offers the toolbar, the field hides it.

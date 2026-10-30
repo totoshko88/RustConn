@@ -587,7 +587,7 @@ impl SafeFreeRdpLauncher {
             system_scale_percent: config.system_scale_percent,
             color_depth: config.color_depth,
             performance_mode: config.performance_mode,
-            clipboard_enabled: config.clipboard_enabled,
+            clipboard_direction: config.clipboard_direction,
             shared_folders: config
                 .shared_folders
                 .iter()

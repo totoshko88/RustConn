@@ -918,7 +918,7 @@ impl EmbeddedRdpWidget {
                     let clipboard_on = config
                         .borrow()
                         .as_ref()
-                        .is_some_and(|c| c.clipboard_enabled);
+                        .is_some_and(|c| c.clipboard_direction.allows_local_to_remote());
                     if !clipboard_on {
                         tracing::info!(
                             protocol = "rdp",

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.1** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.2** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -182,6 +182,18 @@ integration status:
   - Bitwarden web vault for Bitwarden backend
   - 1Password app for 1Password backend
 
+### Auto-hide the Sidebar on Connect
+
+By default the sidebar stays put when you open a connection. If you would rather reclaim that space for the session, turn on **Auto-hide the sidebar on connect** in Settings → Interface → Connections. The subtitle sums it up: the connection list is hidden when a session opens, and it returns when you show it again or when the last session closes.
+
+With the setting on:
+
+- Opening (connecting) a connection hides the sidebar automatically, freeing the width for the session area.
+- The sidebar comes back when you reveal it yourself (the F9 toggle) **or** when the last open session closes.
+- Opening another connection hides it again, even if you had just revealed it by hand.
+
+The setting is **off by default**, so leaving it alone keeps the existing behaviour — the sidebar never hides on its own.
+
 ---
 
 ## Connections
@@ -319,6 +331,19 @@ Three notes on scope:
 > **Tip:** The *Jump Host* dropdown (and the Web "Tunnel Through SSH" picker) is
 > type-to-search. With a long connection list, open it and start typing part of a
 > name or host to filter down to the one you want instead of scrolling.
+
+#### QUIC (quicssh) ProxyCommand preset
+
+The SSH page's **ProxyCommand** row carries a small QUIC button in its suffix. Clicking it fills the field with the quicssh preset — nothing more. It is a convenience preset, not a new protocol: the connection stays a plain SSH connection with a user-visible ProxyCommand, so jump hosts, exports, vault keys, connection testing and reconnect all behave exactly as they would for any other proxy command.
+
+The preset routes the SSH transport through [moul/quicssh](https://github.com/moul/quicssh), which carries SSH over QUIC. Two things make that worth doing:
+
+- **Connection migration** — QUIC survives a change of network path, so the SSH session can roam between networks (for example Wi-Fi to Ethernet) without dropping.
+- **UDP NAT traversal** — QUIC runs over UDP, which reaches hosts behind an ISP-side NAT that would block a direct inbound TCP connection.
+
+quicssh is **not bundled**. You install it yourself and put it on your PATH; the button's tooltip reports whether RustConn found the `quicssh` binary and, if not, how to install it. In the Flatpak and Snap builds the binary has to be reachable *inside the sandbox* — a copy installed only on the host is not visible to the sandboxed app, so the preset cannot work out of the box there even when quicssh is installed on the host.
+
+> **Security note.** moul/quicssh uses `InsecureSkipVerify` on its QUIC transport, so the QUIC layer itself is not authenticated. The host's identity and your credential are still protected by the inner SSH layer, which performs its normal host-key check and authentication on top of the QUIC tunnel.
 
 For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically before the viewer starts. Those protocols have no SOCKS option of their own, and they inherit — and refuse, via *Direct* — exactly like SSH does.
 
@@ -719,7 +744,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | Protocol | Options |
 |----------|---------|
 | SSH | Auth method (password, publickey, keyboard-interactive, agent, security-key/FIDO2), key source (default/file/agent), PKCS#11 provider (hardware token/smart card), proxy jump (Jump Host), ProxyJump, IdentitiesOnly, ControlMaster, agent forwarding, Waypipe (Wayland forwarding), X11 forwarding, compression, startup command, verbose mode, backspace/delete key behavior, custom SSH options, port forwarding (local/remote/dynamic) |
-| RDP | Client mode (embedded/external), FreeRDP client selection (auto/specific binary), external window sizing (fit to screen/fullscreen/custom resolution/all monitors), dynamic resolution and smart sizing for legacy servers, performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing, shared folders, mouse jiggler (prevent idle disconnect, configurable interval 10–600s), autotype (send text as keystrokes, configurable inter-character and initial delay), custom FreeRDP arguments |
+| RDP | Client mode (embedded/external), FreeRDP client selection (auto/specific binary), external window sizing (fit to screen/fullscreen/custom resolution/all monitors), dynamic resolution and smart sizing for legacy servers, performance mode (quality/balanced/speed), resolution, color depth, display scale override, audio redirection, RDP gateway (host, port, username), keyboard layout, disable NLA, clipboard sharing with direction control (off / remote-to-local / local-to-remote / both), shared folders, mouse jiggler (prevent idle disconnect, configurable interval 10–600s), autotype (send text as keystrokes, configurable inter-character and initial delay), custom FreeRDP arguments |
 | VNC | Client mode (embedded/external), performance mode (quality/balanced/speed), encoding (Auto/Tight/ZRLE/Hextile/Raw/CopyRect), compression level, quality level, display scale override, view-only mode, scaling, clipboard sharing, custom arguments |
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, backspace/delete key behavior, custom arguments |
@@ -1342,7 +1367,22 @@ When you resize the RustConn window, the embedded RDP session automatically adju
 
 #### Clipboard
 
-The embedded IronRDP client provides bidirectional clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is automatically available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback. Clipboard sync requires the "Clipboard" option enabled in the RDP connection settings.
+The embedded IronRDP client provides clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is made available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback.
+
+**Clipboard direction.** The RDP connection editor's **Clipboard Sharing** option is a direction selector (Features group), not a plain on/off switch. It replaces the earlier single switch so you can limit which way the clipboard flows without hand-writing a FreeRDP argument. The choices are:
+
+| Option | Meaning |
+|--------|---------|
+| **Off** | No clipboard channel at all — nothing is shared either way |
+| **Remote to local only** | Paste from the remote session into your local clipboard, but the local clipboard is never pushed to the remote |
+| **Local to remote only** | Push your local clipboard to the remote, but the remote clipboard is never pulled back |
+| **Both directions** | Clipboard syncs both ways (the default, and the historical behaviour) |
+
+The direction is honoured by both clients: for the external FreeRDP client it becomes the `/clipboard:direction-to:…` argument, and for the embedded IronRDP client it is enforced in-app. **Off** emits no clipboard argument and inserts no channel.
+
+This replaces the old workaround of typing `/clipboard:direction-to:all` (or `…:local` / `…:remote`) into the Custom Arguments field to get one-way sync — that is no longer needed for direction, so remove it if you had added it.
+
+Existing connections are unaffected: a connection saved with clipboard sharing *on* opens as **Both directions**, and one saved *off* opens as **Off**.
 
 #### Autotype (Type as Keystrokes)
 
@@ -3732,7 +3772,7 @@ Double-click source to start import immediately.
 | Asbru-CM | `~/.config/pac/` | YAML file | SSH, VNC, RDP | Variables converted to `${VAR}` |
 | Ansible | `/etc/ansible/hosts` | INI/YAML file | SSH | Groups preserved |
 | Royal TS / Royal TSX | — | `.rtsz` (compressed) or `.rtsx` file | SSH, Telnet, RDP, VNC | Folder hierarchy → groups; usernames inherited from folder credentials; passwords cannot be imported (encrypted in the document) |
-| MobaXterm | — | `.mxtsessions` | SSH, RDP, VNC, Telnet, Serial | INI-based sessions |
+| MobaXterm | — | `.mxtsessions` | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Browser (→ Web), Rsh/Rlogin (→ Telnet), FTP (→ SFTP) | INI-based sessions; session types with no RustConn equivalent (XDMCP, file browser, local shell, AWS S3, WSL) are listed as skipped |
 | SecureCRT | `~/.vandyke/Config/Sessions/` | Directory or `.ini` | SSH, Telnet, RDP, VNC | Folder hierarchy → groups |
 | PuTTY / KiTTY | — | `.reg` registry export | SSH, Telnet (Raw, Rlogin → Telnet) | Key file, agent/X11 forwarding, compression imported; passwords are not stored in the export |
 | mRemoteNG | — | `confCons.xml` | SSH, RDP, VNC, Telnet, Web (Raw, Rlogin → Telnet; HTTP/HTTPS → Web) | Container nodes → nested groups; unencrypted documents only; passwords are not imported |
@@ -3768,7 +3808,7 @@ Options: Export selected only.
 | Asbru-CM | SSH, VNC, RDP | Never | Yes | YAML-based, supports variables |
 | Ansible | SSH only | Never | Yes (groups) | INI or YAML inventory format |
 | Royal TS | All | Never | Yes | XML `.rtsz` archive |
-| MobaXterm | SSH, RDP, VNC, Telnet | Never | Yes | INI-based `.mxtsessions` |
+| MobaXterm | SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH, Web (→ Browser) | Never | Yes | INI-based `.mxtsessions`; SPICE, Zero Trust and Kubernetes are reported as skipped |
 | SecureCRT | SSH, Telnet, RDP, VNC | Never | Yes | Directory of `.ini` files |
 | RDP File | RDP only | Never | No | Directory of standard Microsoft `.rdp` files, one per connection |
 | RustConn Native | All | Never (source only) | Yes | Full-fidelity backup of connections |
@@ -3841,6 +3881,8 @@ xdg-mime default io.github.totoshko88.RustConn.desktop application/x-virt-viewer
 
 1. Export sessions from MobaXterm → copy `.mxtsessions` file to Linux
 2. **File > Import > MobaXterm** → select file → Import
+
+SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser sessions are imported (a Browser session becomes a Web connection, and a MOSH session keeps its SSH host, port and username). A Serial session carries its baud rate, data bits, parity, stop bits and flow control, but its Windows COM port name (for example `COM3`) has no Linux equivalent, so it is kept verbatim in the device field for you to change to a `/dev/tty*` path before connecting. Rsh/Rlogin sessions are imported as Telnet, the same line-protocol mapping the mRemoteNG and PuTTY importers use. FTP sessions are imported as SFTP — RustConn has no FTP client — with a warning in the import summary, because SFTP uses a different transport, port (22) and authentication; check the port and credentials and confirm the server speaks SFTP before connecting. Session types RustConn has no equivalent for — XDMCP, the file browser, the local shell, AWS S3 and WSL — are reported in the import summary as skipped rather than dropped silently.
 
 #### From SecureCRT
 

@@ -1,7 +1,9 @@
 //! MobaXterm session file exporter.
 //!
 //! Exports `RustConn` connections to MobaXterm `.mxtsessions` format.
-//! Supports SSH, RDP, and VNC connection types.
+//! Supports SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Web (Browser)
+//! connection types; the rest (SPICE, Zero Trust, Kubernetes) are recorded as
+//! skipped warnings rather than aborting the export.
 //!
 //! File format: INI-style with Windows-1252 encoding and CRLF line endings.
 
@@ -15,14 +17,19 @@ use super::{
     ExportError, ExportFormat, ExportOperationResult, ExportOptions, ExportResult, ExportTarget,
 };
 use crate::models::{
-    Connection, ConnectionGroup, ProtocolConfig, ProtocolType, RdpAudioMode, SshAuthMethod,
+    Connection, ConnectionGroup, ProtocolConfig, ProtocolType, RdpAudioMode, SerialDataBits,
+    SerialFlowControl, SerialParity, SerialStopBits, SshAuthMethod,
 };
 
 /// Default icon numbers for each session type in MobaXterm.
 const ICON_SSH: u16 = 109;
+const ICON_SFTP: u16 = 140;
 const ICON_RDP: u16 = 91;
 const ICON_VNC: u16 = 128;
 const ICON_TELNET: u16 = 98;
+const ICON_SERIAL: u16 = 131;
+const ICON_BROWSER: u16 = 313;
+const ICON_MOSH: u16 = 145;
 const ICON_FOLDER: u16 = 41;
 const ICON_ROOT_FOLDER: u16 = 42;
 
@@ -57,10 +64,33 @@ impl MobaXtermExporter {
 
     /// Exports a single SSH connection to MobaXterm session line format.
     fn export_ssh_session(connection: &Connection) -> Result<String, ExportError> {
+        // Session type 0 = SSH, icon 109.
+        Self::build_ssh_like_session(connection, "0", ICON_SSH)
+    }
+
+    /// Exports a single SFTP connection to MobaXterm session line format.
+    ///
+    /// MobaXterm's SFTP session type (7) shares the SSH field layout, and
+    /// RustConn's SFTP config reuses `SshConfig`, so the SSH builder is
+    /// reused verbatim with the SFTP session type and icon.
+    fn export_sftp_session(connection: &Connection) -> Result<String, ExportError> {
+        // Session type 7 = SFTP, icon 140.
+        Self::build_ssh_like_session(connection, "7", ICON_SFTP)
+    }
+
+    /// Builds an SSH-shaped session line for SSH and SFTP.
+    ///
+    /// Both read their options from an `SshConfig` (SFTP reuses it), so the
+    /// only differences are the session-type field and the icon number.
+    fn build_ssh_like_session(
+        connection: &Connection,
+        session_type: &str,
+        icon: u16,
+    ) -> Result<String, ExportError> {
         let mut params = vec![String::new(); 35];
 
         // Session type
-        params[0] = "0".to_string();
+        params[0] = session_type.to_string();
 
         // Host
         params[1] = Self::encode_escapes(&connection.host);
@@ -81,8 +111,11 @@ impl MobaXtermExporter {
         // Compression (disabled by default)
         params[6] = "0".to_string();
 
-        // SSH-specific options
-        if let ProtocolConfig::Ssh(ref ssh_config) = connection.protocol_config {
+        // SSH-specific options. SFTP reuses the SSH config, so both variants
+        // are read here.
+        if let ProtocolConfig::Ssh(ref ssh_config) | ProtocolConfig::Sftp(ref ssh_config) =
+            connection.protocol_config
+        {
             // Startup command
             if let Some(ref cmd) = ssh_config.startup_command {
                 params[7] = Self::encode_escapes(cmd);
@@ -108,19 +141,131 @@ impl MobaXtermExporter {
             };
         }
 
-        // Fill remaining params with defaults
-        for param in &mut params {
-            if param.is_empty() {
-                *param = String::new();
+        let conn_params = params.join("%");
+        let terminal_settings = Self::build_terminal_settings();
+
+        // Build full session line: #icon#conn_params#terminal_settings#start_mode#comment#color
+        Ok(format!("#{icon}#{conn_params}#{terminal_settings}#0# #-1"))
+    }
+
+    /// Exports a single MOSH connection to MobaXterm session line format.
+    ///
+    /// MobaXterm's MOSH session type (12) shares the SSH field layout (MOSH
+    /// connects over SSH for its handshake), so host, SSH port and username are
+    /// written as for SSH. The SSH port prefers the MOSH config's `ssh_port`
+    /// when set, falling back to the connection's port.
+    fn export_mosh_session(connection: &Connection) -> Result<String, ExportError> {
+        let mut params = vec![String::new(); 35];
+
+        // Session type (12 = MOSH)
+        params[0] = "12".to_string();
+
+        // Host
+        params[1] = Self::encode_escapes(&connection.host);
+
+        // SSH port: the MOSH config's ssh_port overrides the connection port.
+        let ssh_port = match connection.protocol_config {
+            ProtocolConfig::Mosh(ref mosh_config) => {
+                mosh_config.ssh_port.unwrap_or(connection.port)
             }
+            _ => connection.port,
+        };
+        params[2] = ssh_port.to_string();
+
+        // Username
+        params[3] = connection
+            .username
+            .as_ref()
+            .map(|u| Self::encode_escapes(u))
+            .unwrap_or_default();
+
+        let conn_params = params.join("%");
+        let terminal_settings = Self::build_terminal_settings();
+
+        Ok(format!(
+            "#{ICON_MOSH}#{conn_params}#{terminal_settings}#0# #-1"
+        ))
+    }
+
+    /// Exports a single Web connection to a MobaXterm Browser session line.
+    ///
+    /// RustConn stores a Web connection's URL in its host field, which maps
+    /// directly to MobaXterm's Browser session type (11).
+    fn export_web_session(connection: &Connection) -> Result<String, ExportError> {
+        let mut params = vec![String::new(); 18];
+
+        // Session type (11 = Browser)
+        params[0] = "11".to_string();
+
+        // URL (stored in the host field)
+        params[1] = Self::encode_escapes(&connection.host);
+
+        let conn_params = params.join("%");
+        let terminal_settings = Self::build_terminal_settings();
+
+        Ok(format!(
+            "#{ICON_BROWSER}#{conn_params}#{terminal_settings}#0# #-1"
+        ))
+    }
+
+    /// Exports a single Serial connection to MobaXterm session line format.
+    ///
+    /// MobaXterm's Serial session type (8) stores a device name, baud rate,
+    /// data bits, parity, stop bits and flow control. The RustConn device path
+    /// (for example `/dev/ttyUSB0`) is written verbatim; it is not a Windows
+    /// COM port, so the user retargets it after importing into MobaXterm.
+    fn export_serial_session(connection: &Connection) -> Result<String, ExportError> {
+        let mut params = vec![String::new(); 10];
+
+        // Session type (8 = Serial)
+        params[0] = "8".to_string();
+
+        if let ProtocolConfig::Serial(ref serial_config) = connection.protocol_config {
+            // Device (port). Written verbatim; a Linux /dev path is not a COM
+            // port, so the user retargets it in MobaXterm.
+            params[1] = Self::encode_escapes(&serial_config.device);
+
+            // Baud rate, e.g. "115200".
+            params[2] = serial_config.baud_rate.display_name().to_string();
+
+            // Data bits.
+            params[3] = match serial_config.data_bits {
+                SerialDataBits::Five => "5",
+                SerialDataBits::Six => "6",
+                SerialDataBits::Seven => "7",
+                SerialDataBits::Eight => "8",
+            }
+            .to_string();
+
+            // Parity (0=none, 1=odd, 2=even).
+            params[4] = match serial_config.parity {
+                SerialParity::None => "0",
+                SerialParity::Odd => "1",
+                SerialParity::Even => "2",
+            }
+            .to_string();
+
+            // Stop bits (0=1, 2=2).
+            params[5] = match serial_config.stop_bits {
+                SerialStopBits::One => "0",
+                SerialStopBits::Two => "2",
+            }
+            .to_string();
+
+            // Flow control (0=none, 1=RTS/CTS, 2=XON/XOFF).
+            params[6] = match serial_config.flow_control {
+                SerialFlowControl::None => "0",
+                SerialFlowControl::Hardware => "1",
+                SerialFlowControl::Software => "2",
+            }
+            .to_string();
         }
 
         let conn_params = params.join("%");
         let terminal_settings = Self::build_terminal_settings();
 
-        // Build full session line: #icon#conn_params#terminal_settings#start_mode#comment#color
         Ok(format!(
-            "#{ICON_SSH}#{conn_params}#{terminal_settings}#0# #-1"
+            "#{ICON_SERIAL}#{conn_params}#{terminal_settings}#0# #-1"
         ))
     }
 
@@ -164,8 +309,14 @@ impl MobaXtermExporter {
             }
             .to_string();
 
-            // Clipboard (always enabled by default in MobaXterm)
-            params[19] = "-1".to_string();
+            // Clipboard. MobaXterm has no direction concept, so this degrades to
+            // on/off: any enabled direction exports `-1`, `Off` exports `0`.
+            params[19] = if rdp_config.clipboard_enabled {
+                "-1"
+            } else {
+                "0"
+            }
+            .to_string();
 
             // Color depth
             params[28] = rdp_config
@@ -418,20 +569,20 @@ impl MobaXtermExporter {
     fn export_connection_line(connection: &Connection) -> Result<String, ExportError> {
         match connection.protocol {
             ProtocolType::Ssh => Self::export_ssh_session(connection),
+            ProtocolType::Sftp => Self::export_sftp_session(connection),
             ProtocolType::Rdp => Self::export_rdp_session(connection),
             ProtocolType::Vnc => Self::export_vnc_session(connection),
             ProtocolType::Telnet => Self::export_telnet_session(connection),
+            ProtocolType::Serial => Self::export_serial_session(connection),
+            ProtocolType::Mosh => Self::export_mosh_session(connection),
+            ProtocolType::Web => Self::export_web_session(connection),
             ProtocolType::Spice => Err(ExportError::UnsupportedProtocol("SPICE".to_string())),
             ProtocolType::ZeroTrust => {
                 Err(ExportError::UnsupportedProtocol("ZeroTrust".to_string()))
             }
-            ProtocolType::Serial => Err(ExportError::UnsupportedProtocol("Serial".to_string())),
-            ProtocolType::Sftp => Err(ExportError::UnsupportedProtocol("SFTP".to_string())),
             ProtocolType::Kubernetes => {
                 Err(ExportError::UnsupportedProtocol("Kubernetes".to_string()))
             }
-            ProtocolType::Mosh => Err(ExportError::UnsupportedProtocol("MOSH".to_string())),
-            ProtocolType::Web => Err(ExportError::UnsupportedProtocol("Web".to_string())),
         }
     }
 }
@@ -467,7 +618,14 @@ impl ExportTarget for MobaXtermExporter {
     fn supports_protocol(&self, protocol: &ProtocolType) -> bool {
         matches!(
             protocol,
-            ProtocolType::Ssh | ProtocolType::Rdp | ProtocolType::Vnc | ProtocolType::Telnet
+            ProtocolType::Ssh
+                | ProtocolType::Sftp
+                | ProtocolType::Rdp
+                | ProtocolType::Vnc
+                | ProtocolType::Telnet
+                | ProtocolType::Serial
+                | ProtocolType::Mosh
+                | ProtocolType::Web
         )
     }
 }
@@ -550,6 +708,41 @@ mod tests {
         assert!(line.contains("%4%"));
     }
 
+    /// MobaXterm has no clipboard direction concept, so the export degrades to
+    /// on/off: an enabled direction writes `-1`, `Off` writes `0` (field 19).
+    #[test]
+    fn mobaxterm_export_clipboard_off_writes_zero() {
+        use crate::models::RdpClipboardDirection;
+
+        fn clipboard_field(line: &str) -> String {
+            // Line is `#91#<params joined by %>#<terminal>#0# #-1`.
+            let conn_params = line.splitn(3, '#').nth(2).expect("params segment");
+            let conn_params = conn_params
+                .split('#')
+                .next()
+                .expect("params before terminal");
+            conn_params
+                .split('%')
+                .nth(19)
+                .expect("field 19")
+                .to_string()
+        }
+
+        let mut both = create_rdp_connection("windows", "192.168.1.50", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = both.protocol_config {
+            rdp.set_clipboard_direction(RdpClipboardDirection::Both);
+        }
+        let both_line = MobaXtermExporter::export_rdp_session(&both).unwrap();
+        assert_eq!(clipboard_field(&both_line), "-1");
+
+        let mut off = create_rdp_connection("windows", "192.168.1.50", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = off.protocol_config {
+            rdp.set_clipboard_direction(RdpClipboardDirection::Off);
+        }
+        let off_line = MobaXtermExporter::export_rdp_session(&off).unwrap();
+        assert_eq!(clipboard_field(&off_line), "0");
+    }
+
     #[test]
     fn test_export_vnc_session() {
         let conn = create_vnc_connection("vnc-desktop", "192.168.1.75", 5900);
@@ -594,10 +787,208 @@ mod tests {
     fn test_supports_protocol() {
         let exporter = MobaXtermExporter::new();
         assert!(exporter.supports_protocol(&ProtocolType::Ssh));
+        assert!(exporter.supports_protocol(&ProtocolType::Sftp));
         assert!(exporter.supports_protocol(&ProtocolType::Rdp));
         assert!(exporter.supports_protocol(&ProtocolType::Vnc));
+        assert!(exporter.supports_protocol(&ProtocolType::Telnet));
+        assert!(exporter.supports_protocol(&ProtocolType::Serial));
+        assert!(exporter.supports_protocol(&ProtocolType::Mosh));
+        assert!(exporter.supports_protocol(&ProtocolType::Web));
         assert!(!exporter.supports_protocol(&ProtocolType::Spice));
         assert!(!exporter.supports_protocol(&ProtocolType::ZeroTrust));
+        assert!(!exporter.supports_protocol(&ProtocolType::Kubernetes));
+    }
+
+    #[test]
+    fn test_export_sftp_session() {
+        let conn = Connection::new_sftp("files".to_string(), "192.168.1.9".to_string(), 22);
+        let line = MobaXtermExporter::export_connection_line(&conn).unwrap();
+
+        // SFTP session type 7, icon 140.
+        assert!(line.starts_with("#140#"));
+        assert!(line.contains("192.168.1.9"));
+        // params[0] is "7" (session type), immediately after the icon fence.
+        let conn_params = line.splitn(3, '#').nth(2).unwrap();
+        assert!(conn_params.starts_with("7%"), "SFTP session type must be 7");
+    }
+
+    #[test]
+    fn test_export_mosh_session() {
+        let mut conn = Connection::new_mosh("mobile".to_string(), "10.0.0.5".to_string(), 22);
+        conn.username = Some("deploy".to_string());
+        if let ProtocolConfig::Mosh(ref mut cfg) = conn.protocol_config {
+            cfg.ssh_port = Some(2222);
+        }
+        let line = MobaXtermExporter::export_connection_line(&conn).unwrap();
+
+        // MOSH icon 145, session type 12, SSH port taken from the config.
+        assert!(line.starts_with("#145#"));
+        let conn_params = line.splitn(3, '#').nth(2).unwrap();
+        assert!(
+            conn_params.starts_with("12%"),
+            "MOSH session type must be 12"
+        );
+        assert!(
+            line.contains("%2222%"),
+            "MOSH ssh_port should override port"
+        );
+        assert!(line.contains("%deploy%"));
+    }
+
+    #[test]
+    fn test_export_web_session() {
+        let conn = Connection::new(
+            "dash".to_string(),
+            "https://grafana.example.com".to_string(),
+            443,
+            ProtocolConfig::Web(crate::models::WebConfig::default()),
+        );
+        let line = MobaXtermExporter::export_connection_line(&conn).unwrap();
+
+        // Browser icon 313, session type 11, URL in the host field.
+        assert!(line.starts_with("#313#"));
+        let conn_params = line.splitn(3, '#').nth(2).unwrap();
+        assert!(
+            conn_params.starts_with("11%"),
+            "Browser session type must be 11"
+        );
+        assert!(line.contains("https://grafana.example.com"));
+    }
+
+    #[test]
+    fn test_export_serial_session() {
+        use crate::models::{SerialBaudRate, SerialConfig};
+
+        let mut conn = Connection::new_serial("console".to_string(), "/dev/ttyUSB0".to_string());
+        if let ProtocolConfig::Serial(ref mut cfg) = conn.protocol_config {
+            *cfg = SerialConfig {
+                device: "/dev/ttyUSB0".to_string(),
+                baud_rate: SerialBaudRate::B9600,
+                data_bits: SerialDataBits::Seven,
+                parity: SerialParity::Even,
+                stop_bits: SerialStopBits::Two,
+                flow_control: SerialFlowControl::Software,
+                custom_args: Vec::new(),
+            };
+        }
+        let line = MobaXtermExporter::export_connection_line(&conn).unwrap();
+
+        // Serial icon 131, session type 8.
+        assert!(line.starts_with("#131#"));
+        let conn_params = line.splitn(3, '#').nth(2).unwrap();
+        let fields: Vec<&str> = conn_params.split('#').next().unwrap().split('%').collect();
+        assert_eq!(fields[0], "8", "Serial session type");
+        assert_eq!(fields[1], "/dev/ttyUSB0");
+        assert_eq!(fields[2], "9600");
+        assert_eq!(fields[3], "7"); // data bits
+        assert_eq!(fields[4], "2"); // parity even
+        assert_eq!(fields[5], "2"); // stop bits 2
+        assert_eq!(fields[6], "2"); // flow control XON/XOFF
+    }
+
+    #[test]
+    fn serial_round_trips_through_mobaxterm() {
+        use crate::import::MobaXtermImporter;
+        use crate::models::{SerialBaudRate, SerialConfig};
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("serial.mxtsessions");
+
+        let mut conn = Connection::new_serial("console".to_string(), "/dev/ttyUSB0".to_string());
+        if let ProtocolConfig::Serial(ref mut cfg) = conn.protocol_config {
+            *cfg = SerialConfig {
+                device: "/dev/ttyUSB0".to_string(),
+                baud_rate: SerialBaudRate::B9600,
+                data_bits: SerialDataBits::Seven,
+                parity: SerialParity::Even,
+                stop_bits: SerialStopBits::Two,
+                flow_control: SerialFlowControl::Software,
+                custom_args: Vec::new(),
+            };
+        }
+
+        MobaXtermExporter::export_to_file(&[conn], &[], &output_path).unwrap();
+        let content = fs::read_to_string(&output_path).unwrap();
+        let result = MobaXtermImporter::new().parse_content(&content, "serial.mxtsessions");
+
+        assert_eq!(result.connections.len(), 1);
+        let ProtocolConfig::Serial(ref imported) = result.connections[0].protocol_config else {
+            panic!("expected a Serial connection");
+        };
+        assert_eq!(imported.device, "/dev/ttyUSB0");
+        assert_eq!(imported.baud_rate, SerialBaudRate::B9600);
+        assert_eq!(imported.data_bits, SerialDataBits::Seven);
+        assert_eq!(imported.parity, SerialParity::Even);
+        assert_eq!(imported.stop_bits, SerialStopBits::Two);
+        assert_eq!(imported.flow_control, SerialFlowControl::Software);
+    }
+
+    #[test]
+    fn sftp_round_trips_through_mobaxterm() {
+        use crate::import::MobaXtermImporter;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("sftp.mxtsessions");
+
+        let mut conn = Connection::new_sftp("files".to_string(), "192.168.1.9".to_string(), 22);
+        conn.username = Some("admin".to_string());
+
+        MobaXtermExporter::export_to_file(&[conn], &[], &output_path).unwrap();
+        let content = fs::read_to_string(&output_path).unwrap();
+        let result = MobaXtermImporter::new().parse_content(&content, "sftp.mxtsessions");
+
+        assert_eq!(result.connections.len(), 1);
+        let imported = &result.connections[0];
+        // Session type 7 must round-trip back as SFTP, not be downgraded to SSH.
+        assert!(
+            matches!(imported.protocol_config, ProtocolConfig::Sftp(_)),
+            "SFTP must survive the round-trip, got {:?}",
+            imported.protocol_config
+        );
+        assert_eq!(imported.host, "192.168.1.9");
+        assert_eq!(imported.port, 22);
+        assert_eq!(imported.username, Some("admin".to_string()));
+    }
+
+    #[test]
+    fn web_and_mosh_round_trip_through_mobaxterm() {
+        use crate::import::MobaXtermImporter;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let output_path = temp_dir.path().join("mixed.mxtsessions");
+
+        let web = Connection::new(
+            "dash".to_string(),
+            "https://grafana.example.com".to_string(),
+            443,
+            ProtocolConfig::Web(crate::models::WebConfig::default()),
+        );
+        let mut mosh = Connection::new_mosh("mobile".to_string(), "10.0.0.5".to_string(), 2222);
+        mosh.username = Some("deploy".to_string());
+
+        MobaXtermExporter::export_to_file(&[web, mosh], &[], &output_path).unwrap();
+        let content = fs::read_to_string(&output_path).unwrap();
+        let result = MobaXtermImporter::new().parse_content(&content, "mixed.mxtsessions");
+
+        assert_eq!(result.connections.len(), 2);
+
+        let web = result
+            .connections
+            .iter()
+            .find(|c| c.name == "dash")
+            .expect("web connection");
+        assert!(matches!(web.protocol_config, ProtocolConfig::Web(_)));
+        assert_eq!(web.host, "https://grafana.example.com");
+
+        let mosh = result
+            .connections
+            .iter()
+            .find(|c| c.name == "mobile")
+            .expect("mosh connection");
+        assert!(matches!(mosh.protocol_config, ProtocolConfig::Mosh(_)));
+        assert_eq!(mosh.host, "10.0.0.5");
+        assert_eq!(mosh.port, 2222);
+        assert_eq!(mosh.username, Some("deploy".to_string()));
     }
 
     #[test]

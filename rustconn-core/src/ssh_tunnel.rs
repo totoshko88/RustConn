@@ -873,6 +873,15 @@ pub fn probe_tunnel_remote(
     }
 }
 
+/// `ProxyCommand` of the [moul/quicssh](https://github.com/moul/quicssh)
+/// tunnel (SSH over QUIC), offered as a preset on the editor's ProxyCommand
+/// row.
+///
+/// `%h` and `%p` are expanded by OpenSSH itself; the command is a pure byte
+/// relay, so `proxy_command_can_prompt_for_password` keeps target password
+/// auto-fill enabled for it.
+pub const QUIC_SSH_PROXY_COMMAND: &str = "quicssh client --addr %h:%p";
+
 /// Parses a jump host string in `[user@]host[:port]` format and appends
 /// the correct SSH arguments for use inside a `ProxyCommand`.
 ///
@@ -1044,6 +1053,7 @@ pub fn proxy_command_can_prompt_for_password(proxy_command: &str) -> bool {
         "cloudflared",
         "boringproxy",
         "gost",
+        "quicssh",
     ];
 
     // A nested `ssh` invocation is a bastion hop that can prompt — always
@@ -1621,6 +1631,12 @@ mod tests {
         ));
         // Absolute path to the relay binary is stripped to its basename.
         assert!(!proxy_command_can_prompt_for_password("/usr/bin/nc %h %p"));
+        // The quicssh preset (SSH over QUIC, moul/quicssh) is a pure byte
+        // relay: its server has no auth of its own, so target auto-fill
+        // stays enabled for connections using the preset.
+        assert!(!proxy_command_can_prompt_for_password(
+            "quicssh client --addr %h:%p"
+        ));
     }
 
     #[test]

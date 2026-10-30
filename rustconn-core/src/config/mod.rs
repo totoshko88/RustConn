@@ -17,8 +17,9 @@ pub use settings::{
     AppSettings, ColorScheme, ConnectionSettings, KeyringRevocations, LoggingSettings,
     NetworkSettings, QuickConnectHistoryItem, RendererPreference, SIDEBAR_ROW_MARGIN_MAX,
     SIDEBAR_ROW_MARGIN_MIN, SIDEBAR_WIDTH_DEFAULT, SIDEBAR_WIDTH_MAX, SIDEBAR_WIDTH_MIN,
-    SecretBackendType, SecretSettings, SessionRestoreSettings, SidebarFontSize, StartupAction,
-    TerminalSettings, UiSettings, clamp_sidebar_width,
+    SecretBackendType, SecretSettings, SessionRestoreSettings, SidebarAutoAction, SidebarFontSize,
+    StartupAction, TerminalSettings, UiSettings, clamp_sidebar_width,
+    sidebar_action_on_session_closed, sidebar_action_on_session_shown,
 };
 pub use version_skew::is_newer_than_running;
 pub(crate) use version_skew::quarantine_file;

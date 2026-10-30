@@ -208,6 +208,11 @@ pub struct TerminalNotebook {
     sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
     /// Callback for when a page is closed (session_id, connection_id)
     on_page_closed: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
+    /// Persistent all-protocol callback fired when a session is shown
+    /// (session_id, connection_id). Parallel to `on_page_closed`; drives the
+    /// auto-hide-on-connect feature (issue #401). Unlike the one-shot
+    /// `on_tab_added`, this one is restored after firing.
+    on_session_shown: Rc<RefCell<Option<Box<dyn Fn(Uuid, Uuid)>>>>,
     /// Callback fired when a new terminal session tab is created
     /// (session_id, connection_id). The single choke point for per-session
     /// setup such as activity monitoring — covers every terminal protocol
@@ -535,6 +540,7 @@ impl TerminalNotebook {
             tab_overview,
             sessions: Rc::new(RefCell::new(HashMap::new())),
             on_page_closed: Rc::new(RefCell::new(None)),
+            on_session_shown: Rc::new(RefCell::new(None)),
             on_session_created: Rc::new(RefCell::new(None)),
             on_tab_added: Rc::new(RefCell::new(None)),
             on_recording_changed: Rc::new(RefCell::new(None)),
@@ -2923,6 +2929,19 @@ impl TerminalNotebook {
         *self.on_page_closed.borrow_mut() = Some(Box::new(callback));
     }
 
+    /// Sets the persistent all-protocol callback fired when a session is shown.
+    ///
+    /// The callback receives `(session_id, connection_id)` and fires from
+    /// [`Self::notify_tab_added`], which every protocol's tab-creation path
+    /// calls. Unlike the one-shot `on_tab_added`, this slot is restored after
+    /// firing. Wired from the window to drive auto-hide-on-connect (issue #401).
+    pub fn set_on_session_shown<F>(&self, callback: F)
+    where
+        F: Fn(Uuid, Uuid) + 'static,
+    {
+        *self.on_session_shown.borrow_mut() = Some(Box::new(callback));
+    }
+
     /// Sets the callback invoked when a new terminal session tab is created.
     ///
     /// The callback receives `(session_id, connection_id)`. It fires from
@@ -2976,6 +2995,19 @@ impl TerminalNotebook {
             // captured in the closure. We simply always restore here; the
             // workspace code uses an `Rc<Cell<bool>>` to stop re-firing.
             let mut slot = self.on_tab_added.borrow_mut();
+            if slot.is_none() {
+                *slot = Some(cb);
+            }
+        }
+
+        // Auto-hide-on-connect and any future "a session appeared" observers.
+        // Taken out of the slot so the callback may re-enter the notebook
+        // without a BorrowMutError; restored afterwards because, unlike
+        // on_tab_added, this one is persistent (issue #401).
+        let shown_cb = self.on_session_shown.borrow_mut().take();
+        if let Some(cb) = shown_cb {
+            cb(session_id, connection_id);
+            let mut slot = self.on_session_shown.borrow_mut();
             if slot.is_none() {
                 *slot = Some(cb);
             }

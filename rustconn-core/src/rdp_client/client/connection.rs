@@ -456,11 +456,14 @@ pub(super) async fn establish_connection(
     let mut connector = ClientConnector::new(connector_config, client_addr);
 
     // Phase 2.5: Add clipboard channel if enabled
-    if config.clipboard_enabled {
-        let clipboard_backend = RustConnClipboardBackend::new(event_tx.clone());
+    if config.clipboard_direction.enabled() {
+        let clipboard_backend = RustConnClipboardBackend::new_with_direction(
+            event_tx.clone(),
+            config.clipboard_direction,
+        );
         let cliprdr: CliprdrClient = ironrdp::cliprdr::Cliprdr::new(Box::new(clipboard_backend));
         connector.static_channels.insert(cliprdr);
-        tracing::debug!("Clipboard channel enabled");
+        tracing::debug!(direction = ?config.clipboard_direction, "Clipboard channel enabled");
     }
 
     // Phase 2.6: Add RDPDR channel for shared folders and/or printer if configured.
@@ -1128,7 +1131,7 @@ mod tests {
             host: "127.0.0.1".to_string(),
             port,
             timeout_secs: 1,
-            clipboard_enabled: false,
+            clipboard_direction: crate::models::RdpClipboardDirection::Off,
             ..Default::default()
         };
         let (tx, _rx) = std::sync::mpsc::channel();

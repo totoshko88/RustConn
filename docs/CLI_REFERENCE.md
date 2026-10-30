@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.24.1** | Command-line interface for RustConn connection management
+**Version 0.24.2** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -168,7 +168,7 @@ Options:
 | `--agent-forwarding` | — | Enable SSH agent forwarding (`-A` flag, SSH/SFTP only) |
 | `--compression` | — | Enable compression (`-C` flag, SSH/SFTP only) |
 | `--startup-command` | — | Command to execute on SSH connection startup |
-| `--proxy-command` | — | SSH ProxyCommand (e.g. `"ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"`) |
+| `--proxy-command` | — | SSH ProxyCommand (e.g. `"ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p"`). The GUI's QUIC (quicssh) button is just a preset for this field — pass `"quicssh client --addr %h:%p"` here for the same SSH-over-QUIC setup (quicssh must be installed separately and on PATH) |
 | `--network-mode` | — | Where the bastion comes from: `inherit` (group chain, then the global network settings) or `direct` (ignore any inherited bastion) |
 | `--ssh-option` | — | Custom SSH option `K=V` (repeatable, e.g. `--ssh-option StrictHostKeyChecking=no`) |
 | `--local-forward` | — | Local port forwarding `L:H:P` (repeatable, e.g. `8080:localhost:80`) |
@@ -577,7 +577,7 @@ rustconn-cli export -f csv -o connections.csv --csv-fields "name,host,port,proto
 | `remmina` | Remmina `.remmina` files |
 | `asbru` | Asbru-CM YAML |
 | `royal-ts` | Royal TS JSON (`.rtsz`) |
-| `moba-xterm` | MobaXterm sessions (`.mxtsessions`) |
+| `moba-xterm` | MobaXterm sessions (`.mxtsessions`) — exports SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Web (as a Browser session); SPICE, Zero Trust and Kubernetes are skipped |
 | `secure-crt` | SecureCRT session format (`.ini` directory) |
 | `rdp-file` | Microsoft Remote Desktop files (`.rdp` directory, one file per connection) — RDP connections only, everything else is skipped |
 | `csv` | CSV format (`.csv`) |
@@ -619,6 +619,8 @@ rustconn-cli import -f ssh-config --dry-run file     # Preview without saving
 The `--auto` flag scans default locations (`~/.config/asbru-cm/`, `~/.local/share/remmina/`, `~/.ssh/config`) and imports from all detected sources. Duplicates (same name + host) are skipped.
 
 Additional import formats: `rdp` (Microsoft RDP files), `rdm` (Remote Desktop Manager), `virt-viewer` (`.vv` files), `libvirt` (GNOME Boxes / virsh XML), `secure-crt` (SecureCRT `.ini` session directory). Passwords are never included in import/export files — re-enter them after importing.
+
+MobaXterm import maps SSH, SFTP, RDP, VNC, Telnet, Serial, MOSH and Browser (→ Web) session types. Rsh/Rlogin is imported as Telnet, and FTP as SFTP (RustConn has no FTP client, so check the port — SFTP uses 22 — and credentials before connecting). Session types with no RustConn equivalent (XDMCP, file browser, local shell, AWS S3, WSL) are reported as skipped. A Serial session keeps its baud rate and framing but carries the Windows COM port name verbatim, so retarget it to a `/dev/tty*` path before connecting.
 
 ### wol — Wake-on-LAN
 

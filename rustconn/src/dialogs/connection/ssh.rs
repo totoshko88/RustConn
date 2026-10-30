@@ -19,7 +19,7 @@ use rustconn_core::sftp::{SocketPathValidation, validate_socket_path};
 
 use super::protocol_layout::ProtocolLayoutBuilder;
 use super::widgets::{CheckboxRowBuilder, EntryRowBuilder};
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Named struct for SSH options widgets.
 ///
@@ -694,6 +694,7 @@ fn create_connection_group() -> ConnectionGroupWidgets {
         .subtitle(i18n("Custom proxy command (e.g., for .onion hosts)"))
         .placeholder("ncat --proxy 127.0.0.1:9050 --proxy-type socks5 %h %p")
         .build();
+    proxy_command_row.add_suffix(&quicssh_preset_button(&proxy_command_entry));
     connection_group.add(&proxy_command_row);
 
     // IdentitiesOnly switch
@@ -738,6 +739,50 @@ fn create_connection_group() -> ConnectionGroupWidgets {
         keep_alive_interval,
         keep_alive_count_max,
     }
+}
+
+/// The QUIC (quicssh) preset button on the ProxyCommand row.
+///
+/// quicssh ([moul/quicssh](https://github.com/moul/quicssh)) is SSH over QUIC:
+/// an ordinary `ssh` whose transport is the `quicssh client` stdio proxy. As a
+/// preset it only fills the field — the connection stays a plain SSH
+/// connection with a user-visible ProxyCommand, so jump hosts, exports and the
+/// password auto-fill logic all treat it exactly like any other relay.
+///
+/// The tooltip reports whether the `quicssh` binary was found, and notes that
+/// the Flatpak/Snap builds only see binaries reachable inside the sandbox.
+fn quicssh_preset_button(entry: &Entry) -> Button {
+    let button = Button::from_icon_name("network-transmit-receive-symbolic");
+    button.add_css_class("flat");
+    button.set_valign(gtk4::Align::Center);
+
+    let quicssh = rustconn_core::protocol::detect_quicssh();
+    let mut tooltip = i18n_f(
+        "QUIC (quicssh) preset: fills the ProxyCommand with “{}”",
+        &[rustconn_core::ssh_tunnel::QUIC_SSH_PROXY_COMMAND],
+    );
+    if !quicssh.installed {
+        tooltip.push(' ');
+        tooltip.push_str(&i18n_f(
+            "quicssh not found — {}. In the Flatpak/Snap builds it must be reachable inside the sandbox.",
+            &[&i18n(
+                quicssh
+                    .install_hint
+                    .as_deref()
+                    .unwrap_or("Install quicssh (github.com/moul/quicssh)"),
+            )],
+        ));
+    }
+    button.set_tooltip_text(Some(&tooltip));
+    button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Fill ProxyCommand with the QUIC (quicssh) preset",
+    ))]);
+
+    let entry = entry.clone();
+    button.connect_clicked(move |_| {
+        entry.set_text(rustconn_core::ssh_tunnel::QUIC_SSH_PROXY_COMMAND);
+    });
+    button
 }
 
 /// Creates the Session preferences group

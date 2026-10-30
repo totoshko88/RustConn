@@ -2520,6 +2520,10 @@ impl TemplateDialog {
             tls_security_level: None,
             ignore_certificate: false,
             clipboard_enabled: true,
+            // The template editor does not expose a clipboard direction control;
+            // `None` resolves to `Both` via `effective_clipboard_direction()`
+            // given the `true` bool above, the historical default.
+            clipboard_direction: None,
             show_local_cursor: true,
             // ponytail: the template editor does not expose the floating
             // toolbar toggle (issue #260) — same reasoning as printer
