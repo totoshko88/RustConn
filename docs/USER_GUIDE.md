@@ -2348,7 +2348,7 @@ Per-session activity and silence detection for terminal tabs, inspired by KDE Ko
 
 **Silence mode** is useful when you're watching a stream of output (logs, compilation) and want to know when it stops — indicating the process has finished or stalled.
 
-**Command finished mode** is the only event-driven mode: instead of guessing from output timing, it reacts to the shell announcing that a command ended (via the OSC 133 shell-integration sequence), so the notification carries the exit code. It needs two things the timing modes do not — RustConn built with VTE 0.78 or newer, and shell integration sourced on the *remote* side (most modern distributions ship it for bash/zsh/fish). Where either is missing the mode simply never fires. The per-tab quick toggle cycles Off → Activity → Silence → Command finished → Off.
+**Command finished mode** is the only event-driven mode: instead of guessing from output timing, it reacts to the shell announcing that a command ended (via the OSC 133 shell-integration sequence), so the notification carries the exit code. It needs two things the timing modes do not — RustConn built with VTE 0.78 or newer, and shell integration sourced on the *remote* side (most modern distributions ship it for bash/zsh/fish). Where either is missing the mode simply never fires. The per-tab quick toggle cycles Off → Activity → Silence → Command finished → Off. The same OSC 133 signal also drives prompt navigation and the failed-command marker — see [Shell Integration (Prompt Navigation)](#shell-integration-prompt-navigation).
 
 **Notification Channels:**
 1. **Tab indicator icon** — an icon appears on the tab (ℹ for activity, ⚠ for silence)
@@ -4643,6 +4643,8 @@ Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl
 | Ctrl+Shift+O | Tab Overview |
 | Ctrl+% | Switch to Open Tab |
 | Ctrl+Shift+M | Move Session to New Window (and back) |
+| Ctrl+Shift+[ | Previous Prompt (shell integration) |
+| Ctrl+Shift+] | Next Prompt (shell integration) |
 | Ctrl+Scroll | Zoom in/out (font size) |
 | Ctrl+Plus / Ctrl+Minus | Zoom in/out (font size) |
 | Ctrl+0 | Reset zoom |
@@ -4656,6 +4658,24 @@ RustConn uses VTE, which passes all keystrokes to the shell. Configure vim/emacs
 | Bash | `set -o vi` in `~/.bashrc` | `set -o emacs` in `~/.bashrc` |
 | Zsh | `bindkey -v` in `~/.zshrc` | `bindkey -e` in `~/.zshrc` |
 | Fish | `fish_vi_key_bindings` | `fish_default_key_bindings` |
+
+### Shell Integration (Prompt Navigation)
+
+When the remote shell emits the OSC 133 semantic-prompt sequences, RustConn tracks
+where each prompt is and lets you move between them:
+
+- **Previous / Next Prompt** (Ctrl+Shift+[ and Ctrl+Shift+]) scroll the terminal to
+  the prompt above or below the current view, so you can jump between commands
+  without hand-scrolling. Both are remappable in Settings → Keybindings.
+- **Failed-command marker** — a short red bar in the left margin marks the prompt
+  of any command that exited non-zero, so failures stand out as you scroll.
+
+Like the Command-finished monitoring mode (see
+[Terminal Activity Monitor](#terminal-activity-monitor)), this needs two
+things: RustConn built with VTE 0.78 or newer, and shell integration sourced on
+the *remote* side (most modern distributions ship it for bash/zsh/fish — e.g.
+`vte.sh`). Where either is missing the navigation keys are simply no-ops and no
+markers appear; nothing else changes.
 
 ### Split View
 

@@ -304,7 +304,10 @@ fn redraw_scheduler(drawing_area: &DrawingArea) -> Rc<dyn Fn()> {
 /// hop of their own, and the layer is queued the moment the view moves. The
 /// callback holds the layer weakly, and `use<>` keeps it from borrowing
 /// `drawing_area`, so it can go to a `'static` signal handler.
-fn next_frame_redraw(drawing_area: &DrawingArea) -> impl Fn() + use<> {
+///
+/// `pub(super)` because the failed-command marker overlay
+/// ([`super::failed_marker`]) reuses the same terminal-overlay plumbing.
+pub(super) fn next_frame_redraw(drawing_area: &DrawingArea) -> impl Fn() + use<> {
     let da_weak = drawing_area.downgrade();
     move || {
         if let Some(da) = da_weak.upgrade() {
@@ -331,7 +334,9 @@ fn host_overlay(terminal: &Terminal) -> Option<Overlay> {
 /// and joins the new one directly above the terminal — below any controls that
 /// overlay also carries, such as a split pane's corner buttons, so a highlight
 /// never paints over them.
-fn attach_to_host_overlay(drawing_area: &DrawingArea, terminal: &Terminal) {
+///
+/// `pub(super)` so [`super::failed_marker`] can share the same attachment logic.
+pub(super) fn attach_to_host_overlay(drawing_area: &DrawingArea, terminal: &Terminal) {
     let Some(overlay) = host_overlay(terminal) else {
         return;
     };
@@ -362,7 +367,7 @@ fn detach_from_parent(drawing_area: &DrawingArea) {
 /// A widget's own coordinates start at its content box, so this is the point
 /// `(0, 0)` of the terminal mapped into the DrawingArea. `None` until both are
 /// in the same, allocated widget tree — the frame is skipped rather than guessed.
-fn grid_origin(terminal: &Terminal, drawing_area: &DrawingArea) -> Option<(f64, f64)> {
+pub(super) fn grid_origin(terminal: &Terminal, drawing_area: &DrawingArea) -> Option<(f64, f64)> {
     let origin = terminal.compute_point(drawing_area, &graphene::Point::new(0.0, 0.0))?;
     Some((f64::from(origin.x()), f64::from(origin.y())))
 }

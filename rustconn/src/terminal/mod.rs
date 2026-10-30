@@ -26,8 +26,10 @@ mod child_teardown;
 mod config;
 mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
+mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;
+mod mark_registry;
 pub mod osc52;
 pub mod playback;
 pub mod pty_relay;
@@ -324,6 +326,25 @@ pub struct TerminalNotebook {
     /// that output has actually landed. A session with no entry started on an
     /// empty buffer and needs no baseline.
     cursor_row_base: Rc<RefCell<HashMap<Uuid, Option<i64>>>>,
+    /// OSC 133 prompt marks per session (shell-integration-osc133 spec).
+    ///
+    /// Populated by [`termprops::connect_shell_integration`] from the remote
+    /// shell's command-end events and read by the prompt-navigation actions and
+    /// the failed-command marker. Shared via `Rc` so the VTE termprop handler and
+    /// the window actions see the same registry. Empty — and the whole feature
+    /// dormant — on a host without shell integration, and on a build below the
+    /// `vte-0-78` feature (the hook is a no-op there). Dropped with the session.
+    mark_registries: Rc<RefCell<HashMap<Uuid, Rc<RefCell<mark_registry::MarkRegistry>>>>>,
+    /// The failed-command marker layer per session, kept alive so it keeps
+    /// painting and is removed from the terminal when dropped on tab close.
+    /// Reads the matching [`Self::mark_registries`] entry; invisible when that
+    /// registry has no failed rows.
+    failed_markers: Rc<RefCell<HashMap<Uuid, failed_marker::FailedMarkerOverlay>>>,
+    /// The remote working directory a session last reported via OSC 7, shown as
+    /// the last line of the tab tooltip. Updated from VTE's
+    /// `current-directory-uri-changed`; absent until the shell reports one (it
+    /// needs OSC 7, which the same `vte.sh` that drives shell integration emits).
+    session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -567,6 +588,9 @@ impl TerminalNotebook {
             keep_history_on_reconnect: Rc::new(std::cell::Cell::new(true)),
             max_scrollback_on_reconnect: Rc::new(std::cell::Cell::new(None)),
             cursor_row_base: Rc::new(RefCell::new(HashMap::new())),
+            mark_registries: Rc::new(RefCell::new(HashMap::new())),
+            failed_markers: Rc::new(RefCell::new(HashMap::new())),
+            session_cwd: Rc::new(RefCell::new(HashMap::new())),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
@@ -632,6 +656,9 @@ impl TerminalNotebook {
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
+        let mark_registries_on_close = Rc::clone(&self.mark_registries);
+        let failed_markers_on_close = Rc::clone(&self.failed_markers);
+        let session_cwd_on_close = Rc::clone(&self.session_cwd);
         let pty_relays_on_close = Rc::clone(&self.pty_relays);
         let output_observers_on_close = Rc::clone(&self.output_observers);
         let output_filters_on_close = Rc::clone(&self.output_filters);
@@ -761,6 +788,9 @@ impl TerminalNotebook {
                 session_info.borrow_mut().remove(&session_id);
                 disconnected_on_close.borrow_mut().remove(&session_id);
                 cursor_row_base_on_close.borrow_mut().remove(&session_id);
+                mark_registries_on_close.borrow_mut().remove(&session_id);
+                failed_markers_on_close.borrow_mut().remove(&session_id);
+                session_cwd_on_close.borrow_mut().remove(&session_id);
 
                 // Stop the session's PTY: dropping the relay ends its reader and
                 // writer threads and closes the descriptor. The child is killed
@@ -2003,13 +2033,23 @@ impl TerminalNotebook {
                 page.set_title(base);
             }
 
+            // Lift the CWD line out first so it is not mistaken for the
+            // broadcast suffix (and so toggling broadcast never drops it), then
+            // re-append it after rebuilding the broadcast portion.
             let tooltip = page.tooltip().unwrap_or_default().to_string();
-            let base_tooltip = tooltip.strip_suffix(TOOLTIP_LINE).unwrap_or(&tooltip);
-            if member {
-                page.set_tooltip(&format!("{base_tooltip}{TOOLTIP_LINE}"));
+            let (without_cwd, cwd_line) = Self::split_cwd_line(&tooltip);
+            let base_tooltip = without_cwd
+                .strip_suffix(TOOLTIP_LINE)
+                .unwrap_or(&without_cwd);
+            let mut new_tooltip = if member {
+                format!("{base_tooltip}{TOOLTIP_LINE}")
             } else {
-                page.set_tooltip(base_tooltip);
+                base_tooltip.to_string()
+            };
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
             }
+            page.set_tooltip(&new_tooltip);
         }
     }
 
@@ -2293,6 +2333,49 @@ impl TerminalNotebook {
             }
         }
         None
+    }
+
+    /// Scrolls the active terminal to the previous or next shell prompt.
+    ///
+    /// Reads the active session's OSC 133 [`mark_registry::MarkRegistry`], finds
+    /// the nearest prompt strictly above (`previous`) or below the top of the
+    /// current viewport, and scrolls there. A silent no-op when there is no such
+    /// prompt, no shell integration on this session (empty registry), or on a
+    /// build below the `vte-0-78` feature (the registry is never populated).
+    /// (shell-integration-osc133 spec, task 4.)
+    pub fn scroll_to_adjacent_prompt(&self, previous: bool) {
+        let Some(session_id) = self.get_active_session_id() else {
+            return;
+        };
+        let Some(terminal) = self.get_terminal(session_id) else {
+            return;
+        };
+        let registry = self.mark_registries.borrow().get(&session_id).cloned();
+        let Some(registry) = registry else {
+            return;
+        };
+
+        let Some(adjustment) = terminal.vadjustment() else {
+            return;
+        };
+        // The viewport's top buffer row — the same coordinate space the registry
+        // stores, documented in `highlight_overlay`.
+        let viewport_top = adjustment.value() as i64;
+        // The adjustment's lower bound is the oldest row still in the buffer:
+        // VTE moves it up as scrollback is trimmed. Discard marks below it before
+        // querying so a stale row can never be a navigation target (task 2.5).
+        let oldest_row = adjustment.lower() as i64;
+
+        let mut registry = registry.borrow_mut();
+        registry.trim_below(oldest_row);
+        let target = if previous {
+            registry.prev_before(viewport_top)
+        } else {
+            registry.next_after(viewport_top)
+        };
+        if let Some(row) = target {
+            adjustment.set_value(row as f64);
+        }
     }
 
     /// Sends text to the active terminal
@@ -2782,14 +2865,20 @@ impl TerminalNotebook {
         // Apply group label prefix to tab title (independent of split/protocol indicator)
         self.apply_group_color(session_id, color_index);
 
-        // Update tooltip to include group name
+        // Update tooltip to include group name. Lift the CWD line out first so
+        // the `\n[` split cannot land on a `[Broadcast]`/old group line and
+        // discard the directory beyond it; re-append it at the end afterwards.
         if let Some(page) = self.sessions.borrow().get(&session_id) {
-            let current_tooltip = page.tooltip().unwrap_or_default();
-            let base_tooltip = current_tooltip
-                .as_str()
+            let current_tooltip = page.tooltip().unwrap_or_default().to_string();
+            let (without_cwd, cwd_line) = Self::split_cwd_line(&current_tooltip);
+            let base_tooltip = without_cwd
                 .rsplit_once("\n[")
-                .map_or(current_tooltip.as_str(), |(base, _)| base);
-            page.set_tooltip(&format!("{base_tooltip}\n[{group_name}]"));
+                .map_or(without_cwd.as_str(), |(base, _)| base);
+            let mut new_tooltip = format!("{base_tooltip}\n[{group_name}]");
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
+            }
+            page.set_tooltip(&new_tooltip);
         }
 
         tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
@@ -2858,7 +2947,16 @@ impl TerminalNotebook {
         let page = sessions.borrow().get(&session_id).cloned();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
-            page.set_tooltip(&Self::tab_tooltip(label, host.as_deref(), group.as_deref()));
+            // `tab_tooltip` rebuilds the title/host/group tooltip from scratch
+            // and knows nothing of the CWD line, so carry the existing one over
+            // from the old tooltip and re-append it, keeping it alive across a
+            // rename.
+            let cwd_line = page.tooltip().and_then(|t| Self::split_cwd_line(&t).1);
+            let mut new_tooltip = Self::tab_tooltip(label, host.as_deref(), group.as_deref());
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
+            }
+            page.set_tooltip(&new_tooltip);
         }
     }
 
@@ -3592,6 +3690,166 @@ mod tab_tooltip_tests {
             TerminalNotebook::tab_tooltip("prod-db", Some("10.0.0.5"), Some("Production")),
             "prod-db\n10.0.0.5\n[Production]"
         );
+    }
+
+    // The working-directory line is added by `update_session_cwd` through
+    // `strip_cwd_line`, which must remove exactly its own line wherever it sits.
+    const CWD: &str = TerminalNotebook::CWD_TOOLTIP_PREFIX; // "\n📁 "
+
+    #[test]
+    fn strip_cwd_line_is_a_noop_without_one() {
+        assert_eq!(
+            TerminalNotebook::strip_cwd_line("prod-db\n10.0.0.5"),
+            "prod-db\n10.0.0.5"
+        );
+    }
+
+    #[test]
+    fn strip_cwd_line_removes_a_trailing_cwd() {
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        assert_eq!(TerminalNotebook::strip_cwd_line(&t), "prod-db\n10.0.0.5");
+    }
+
+    #[test]
+    fn strip_cwd_line_removes_a_cwd_followed_by_a_group_line() {
+        // A group toggle may append after the CWD line; the strip must remove
+        // only the CWD line and keep the group line and its leading newline.
+        let t = format!("prod-db{CWD}/home/me\n[Production]");
+        assert_eq!(
+            TerminalNotebook::strip_cwd_line(&t),
+            "prod-db\n[Production]"
+        );
+    }
+
+    #[test]
+    fn stripping_then_appending_replaces_in_place() {
+        let t = format!("prod-db{CWD}/old\n[Production]");
+        let base = TerminalNotebook::strip_cwd_line(&t);
+        assert_eq!(base, "prod-db\n[Production]");
+        // Appending the fresh CWD line, then stripping again, returns the base —
+        // the update is idempotent however many times the directory changes.
+        let updated = format!("{base}{CWD}/new");
+        assert_eq!(updated, format!("prod-db\n[Production]{CWD}/new"));
+        assert_eq!(TerminalNotebook::strip_cwd_line(&updated), base);
+    }
+
+    #[test]
+    fn split_cwd_line_returns_the_line_for_reappending() {
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        let (without, cwd) = TerminalNotebook::split_cwd_line(&t);
+        assert_eq!(without, "prod-db\n10.0.0.5");
+        assert_eq!(cwd.as_deref(), Some(format!("{CWD}/var/log").as_str()));
+        // Re-appending the lifted line restores the original exactly.
+        assert_eq!(format!("{without}{}", cwd.unwrap()), t);
+    }
+
+    #[test]
+    fn split_cwd_line_is_none_without_one() {
+        let (without, cwd) = TerminalNotebook::split_cwd_line("prod-db\n[Production]");
+        assert_eq!(without, "prod-db\n[Production]");
+        assert_eq!(cwd, None);
+    }
+
+    // The three tooltip mutators that rebuild the host/group/broadcast portion
+    // must lift the CWD line out first and re-append it, so a group assignment,
+    // a broadcast toggle or a rename never drops or mis-orders the directory.
+    // These reproduce each mutator's exact string transformation.
+
+    /// Replays `set_broadcast_member_marker`'s tooltip transformation.
+    fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
+        const TOOLTIP_LINE: &str = "\n[Broadcast]";
+        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let base = without_cwd
+            .strip_suffix(TOOLTIP_LINE)
+            .unwrap_or(&without_cwd);
+        let mut out = if member {
+            format!("{base}{TOOLTIP_LINE}")
+        } else {
+            base.to_string()
+        };
+        if let Some(cwd) = cwd_line {
+            out.push_str(&cwd);
+        }
+        out
+    }
+
+    /// Replays `set_tab_group`'s tooltip transformation.
+    fn group_tooltip(tooltip: &str, group: &str) -> String {
+        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let base = without_cwd
+            .rsplit_once("\n[")
+            .map_or(without_cwd.as_str(), |(base, _)| base);
+        let mut out = format!("{base}\n[{group}]");
+        if let Some(cwd) = cwd_line {
+            out.push_str(&cwd);
+        }
+        out
+    }
+
+    #[test]
+    fn broadcast_toggle_keeps_the_cwd_line() {
+        let with_cwd = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        // Enabling broadcast keeps the directory, with broadcast before it.
+        let on = broadcast_tooltip(&with_cwd, true);
+        assert_eq!(on, format!("prod-db\n10.0.0.5\n[Broadcast]{CWD}/var/log"));
+        // Disabling it again strips only the broadcast line, directory intact.
+        let off = broadcast_tooltip(&on, false);
+        assert_eq!(off, with_cwd);
+    }
+
+    #[test]
+    fn group_assignment_keeps_the_cwd_line_even_with_broadcast_present() {
+        // The exact clobber case: broadcast line sits before the CWD line.
+        let t = format!("prod-db\n10.0.0.5\n[Broadcast]{CWD}/var/log");
+        let grouped = group_tooltip(&t, "Production");
+        // The group split lands on `[Broadcast]` (not the CWD line), and the
+        // directory is re-appended last rather than discarded.
+        assert_eq!(
+            grouped,
+            format!("prod-db\n10.0.0.5\n[Production]{CWD}/var/log")
+        );
+    }
+
+    #[test]
+    fn osc7_uri_keeps_the_path_for_a_remote_host() {
+        // The remote case GIO's File::path() drops to None — we must keep the
+        // path and ignore the authority.
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://remotehost/var/log"),
+            Some("/var/log".to_string())
+        );
+        // Local / empty authority still works.
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file:///home/me"),
+            Some("/home/me".to_string())
+        );
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://localhost/etc"),
+            Some("/etc".to_string())
+        );
+    }
+
+    #[test]
+    fn osc7_uri_percent_decodes_and_rejects_non_file() {
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://host/home/a%20b/%D1%82"),
+            Some("/home/a b/т".to_string())
+        );
+        // Non-file scheme or no path → None (CWD line removed).
+        assert_eq!(TerminalNotebook::path_from_osc7_uri("http://host/x"), None);
+        assert_eq!(TerminalNotebook::path_from_osc7_uri("file://host"), None);
+    }
+
+    #[test]
+    fn rename_keeps_the_cwd_line() {
+        // `apply_session_label` rebuilds via `tab_tooltip` then re-appends CWD.
+        let old = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        let cwd_line = TerminalNotebook::split_cwd_line(&old).1;
+        let mut rebuilt = TerminalNotebook::tab_tooltip("renamed", Some("10.0.0.5"), None);
+        if let Some(cwd) = cwd_line {
+            rebuilt.push_str(&cwd);
+        }
+        assert_eq!(rebuilt, format!("renamed\n10.0.0.5{CWD}/var/log"));
     }
 }
 

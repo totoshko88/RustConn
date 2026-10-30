@@ -40,7 +40,15 @@
 //! module: the wrapper around the ephemeral read below is worth having regardless.
 
 #[cfg(feature = "vte-0-78")]
+use std::cell::RefCell;
+#[cfg(feature = "vte-0-78")]
+use std::rc::Rc;
+
+#[cfg(feature = "vte-0-78")]
 use vte4::Terminal;
+
+#[cfg(feature = "vte-0-78")]
+use super::mark_registry::MarkRegistry;
 
 /// The termprop VTE sets when a command run at the prompt has returned.
 ///
@@ -85,6 +93,62 @@ pub fn connect_command_finished<F>(_terminal: &vte4::Terminal, _on_finished: F) 
 where
     F: Fn(Option<u64>) + 'static,
 {
+    false
+}
+
+/// Feeds a session's [`MarkRegistry`] from the remote shell's OSC 133 events.
+///
+/// On every `vte.shell.postexec` — the shell reporting that a command run at the
+/// prompt has returned — this records a prompt mark at the cursor's current row
+/// and attaches the command's exit code to it. vte4 0.10 binds only the
+/// `postexec` termprop, not a separate prompt-start (`A`) one, so the cursor row
+/// at command-end is the anchor: it is the line the shell has returned the prompt
+/// to, which is exactly the row navigation should jump to. The registry collapses
+/// a repeat at the same row and ignores an out-of-order one, so an empty Enter or
+/// a redraw does not create phantom marks.
+///
+/// Returns `false` on a build that cannot observe termprops (so a caller can tell
+/// "not wired" from "wired and quiet"), same contract as
+/// [`connect_command_finished`]. Requires OSC 133 shell integration on the remote
+/// side; without it the handler never fires and the registry stays empty, which
+/// is what keeps the whole feature dormant on a host without `vte.sh`.
+#[cfg(feature = "vte-0-78")]
+pub fn connect_shell_integration(terminal: &Terminal, registry: Rc<RefCell<MarkRegistry>>) -> bool {
+    // `vadjustment` comes from gtk4's ScrollableExt (VTE's Terminal is a
+    // GtkScrollable); `cursor_position`/`termprop_uint` from vte4's TerminalExt.
+    use gtk4::prelude::*;
+    use vte4::prelude::TerminalExt;
+
+    terminal.connect_termprop_changed(Some(SHELL_POSTEXEC), move |terminal, _name| {
+        // cursor_position() returns (column, row) in the live grid; the row is
+        // the line the prompt has returned to. Offset by the scrollback already
+        // above the viewport so the stored row is in the same buffer coordinate
+        // space MarkRegistry::trim_below and the navigation scroll use. The
+        // adjustment is absent only before the widget is realized, which cannot
+        // be the case while the shell is emitting output — treat it as zero.
+        let (_col, cursor_row) = terminal.cursor_position();
+        let scroll_offset = terminal.vadjustment().map_or(0, |adj| adj.value() as i64);
+        let buffer_row = scroll_offset + cursor_row;
+
+        let exit_code = terminal.termprop_uint(SHELL_POSTEXEC);
+
+        let mut reg = registry.borrow_mut();
+        reg.record_prompt(buffer_row);
+        reg.set_last_exit(exit_code);
+    });
+    true
+}
+
+/// Feeds a session's [`MarkRegistry`](super::mark_registry::MarkRegistry) from
+/// the remote shell's OSC 133 events.
+///
+/// This build has no termprop support, so nothing is connected and `false` is
+/// returned. See the module docs.
+#[cfg(not(feature = "vte-0-78"))]
+pub fn connect_shell_integration(
+    _terminal: &vte4::Terminal,
+    _registry: std::rc::Rc<std::cell::RefCell<super::mark_registry::MarkRegistry>>,
+) -> bool {
     false
 }
 

@@ -102,6 +102,134 @@ impl TerminalNotebook {
         tooltip
     }
 
+    /// Extracts the filesystem path from an OSC 7 `file://` current-directory
+    /// URI, independent of whether the authority is the local host.
+    ///
+    /// OSC 7 reports `file://<host>/<path>`. `gio::File::for_uri(..).path()`
+    /// resolves a path only for a local/empty/`localhost` authority and returns
+    /// `None` for any other hostname — so for a genuinely *remote* session (the
+    /// whole point of the feature) the directory would never appear. Parse the
+    /// URI ourselves instead: take everything from the path-separating `/` after
+    /// the authority and percent-decode it. The host portion is intentionally
+    /// dropped (the tab already shows the host on its own tooltip line).
+    ///
+    /// Returns `None` for a non-`file:` scheme or a URI with no path, so the
+    /// caller removes the CWD line (unchanged behaviour for those).
+    pub(super) fn path_from_osc7_uri(uri: &str) -> Option<String> {
+        let rest = uri.strip_prefix("file://")?;
+        // `rest` is `<authority><path>`; the path starts at the first `/`
+        // (authority may be empty for `file:///path`, giving a leading `/`).
+        let path = &rest[rest.find('/')?..];
+        if path.is_empty() {
+            return None;
+        }
+        Some(Self::percent_decode(path))
+    }
+
+    /// Minimal percent-decoder for an OSC 7 path (`%XX` → byte), lossy-UTF-8 on
+    /// the result. Unlike a full URI decoder it touches only `%XX`; anything
+    /// else is passed through, so a malformed escape is kept verbatim.
+    fn percent_decode(s: &str) -> String {
+        let bytes = s.as_bytes();
+        let mut out = Vec::with_capacity(bytes.len());
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'%' && i + 2 < bytes.len() {
+                let hi = (bytes[i + 1] as char).to_digit(16);
+                let lo = (bytes[i + 2] as char).to_digit(16);
+                if let (Some(hi), Some(lo)) = (hi, lo) {
+                    out.push((hi * 16 + lo) as u8);
+                    i += 3;
+                    continue;
+                }
+            }
+            out.push(bytes[i]);
+            i += 1;
+        }
+        String::from_utf8_lossy(&out).into_owned()
+    }
+
+    /// Marker prefixing the working-directory line in a tab tooltip.
+    ///
+    /// A distinctive, stable prefix so the line can be stripped and re-applied
+    /// idempotently. The CWD updater appends it last and never rebuilds the
+    /// rest of the tooltip; conversely every mutator that *does* rebuild the
+    /// host/group/broadcast portion (`set_tab_group`,
+    /// `set_broadcast_member_marker`, `apply_session_label`) lifts this line out
+    /// via [`Self::split_cwd_line`] and re-appends it, so the two never fight
+    /// and the directory survives a group assignment, a broadcast toggle or a
+    /// rename.
+    pub(super) const CWD_TOOLTIP_PREFIX: &'static str = "\n\u{1f4c1} ";
+
+    /// Stores a session's latest remote CWD and refreshes its tab tooltip line.
+    ///
+    /// `dir` is `None` when the directory could not be resolved; the line is then
+    /// removed. The update replaces only the trailing CWD line (identified by
+    /// [`Self::CWD_TOOLTIP_PREFIX`]), leaving the title, host and any group /
+    /// broadcast markers untouched.
+    pub(super) fn update_session_cwd(
+        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
+        session_cwd: &Rc<RefCell<HashMap<Uuid, String>>>,
+        session_id: Uuid,
+        dir: Option<String>,
+    ) {
+        match &dir {
+            Some(d) => {
+                session_cwd.borrow_mut().insert(session_id, d.clone());
+            }
+            None => {
+                session_cwd.borrow_mut().remove(&session_id);
+            }
+        }
+
+        let Some(page) = sessions.borrow().get(&session_id).cloned() else {
+            return;
+        };
+        let tooltip = page.tooltip().unwrap_or_default().to_string();
+        // Remove any existing CWD line wherever it sits — not assuming it is
+        // last, since a later group/broadcast toggle may append after it. The
+        // line runs from its marker to the next line break (or end of string).
+        let without_cwd = Self::strip_cwd_line(&tooltip);
+        // Append the fresh CWD line at the end when we have one.
+        let new_tooltip = match dir {
+            Some(d) => format!("{without_cwd}{}{d}", Self::CWD_TOOLTIP_PREFIX),
+            None => without_cwd,
+        };
+        page.set_tooltip(&new_tooltip);
+    }
+
+    /// Removes the single CWD line (marker to the following newline, or to the
+    /// end) from a tooltip, leaving everything else in place.
+    pub(super) fn strip_cwd_line(tooltip: &str) -> String {
+        Self::split_cwd_line(tooltip).0
+    }
+
+    /// Splits a tooltip into its CWD-free text and the CWD line (if present).
+    ///
+    /// Returns `(without_cwd, cwd_line)` where `cwd_line` is the full line
+    /// including its leading [`Self::CWD_TOOLTIP_PREFIX`] (so it can be
+    /// re-appended verbatim). Any tooltip mutator that rebuilds the host/group/
+    /// broadcast portion must call this first and re-append `cwd_line` at the
+    /// end, so the working-directory line survives a group assignment, a
+    /// broadcast toggle or a rename — it is maintained independently of those
+    /// lines, as the feature documents.
+    pub(super) fn split_cwd_line(tooltip: &str) -> (String, Option<String>) {
+        let Some(start) = tooltip.find(Self::CWD_TOOLTIP_PREFIX) else {
+            return (tooltip.to_string(), None);
+        };
+        // The marker itself begins with `\n`; the line's content ends at the
+        // next `\n` after the marker, or at the end of the string.
+        let content_start = start + Self::CWD_TOOLTIP_PREFIX.len();
+        let end = tooltip[content_start..]
+            .find('\n')
+            .map_or(tooltip.len(), |rel| content_start + rel);
+        let cwd_line = tooltip[start..end].to_string();
+        let mut without = String::with_capacity(tooltip.len());
+        without.push_str(&tooltip[..start]);
+        without.push_str(&tooltip[end..]);
+        (without, Some(cwd_line))
+    }
+
     // ========================================================================
     // Terminal Tab Creation
     // ========================================================================
@@ -250,6 +378,53 @@ impl TerminalNotebook {
         // Store session data
         self.sessions.borrow_mut().insert(session_id, page.clone());
         let terminal_for_focus = terminal.clone();
+
+        // OSC 133 shell integration: give the session a mark registry and feed it
+        // from the remote shell's command-end events. A no-op on a build below the
+        // `vte-0-78` feature, and dormant on a host without `vte.sh` sourced.
+        // (shell-integration-osc133 spec, task 5.)
+        let mark_registry = Rc::new(RefCell::new(mark_registry::MarkRegistry::new()));
+        termprops::connect_shell_integration(&terminal, Rc::clone(&mark_registry));
+        // Failure-marker layer reads the same registry (task 6). Invisible until
+        // a command fails; dropped with the session on tab close.
+        let failed_marker =
+            failed_marker::FailedMarkerOverlay::attach(&terminal, Rc::clone(&mark_registry));
+        self.failed_markers
+            .borrow_mut()
+            .insert(session_id, failed_marker);
+        self.mark_registries
+            .borrow_mut()
+            .insert(session_id, mark_registry);
+
+        // Show the remote working directory on the tab tooltip (OSC 7, emitted
+        // by the same vte.sh that drives shell integration). Updated live as the
+        // shell reports it; a no-op on a host that never sends OSC 7.
+        //
+        // `current_directory_uri[_changed]` is deprecated in VTE 0.78 in favour
+        // of the `vte.cwd` termprop, but reading that needs `ref_termprop_uri()`,
+        // which vte4 0.10 does not generate (see the `termprops` module docs), so
+        // the deprecated accessor is the only working route today. Swap to the
+        // termprop once the bindings expose it.
+        // The deprecation is marked only in the v0_78+ bindings, so the expect
+        // is scoped to that feature or it is unfulfilled on the default build.
+        #[cfg_attr(
+            feature = "vte-0-78",
+            expect(
+                deprecated,
+                reason = "vte.cwd termprop needs ref_termprop_uri(), ungenerated in vte4 0.10"
+            )
+        )]
+        {
+            let sessions = Rc::clone(&self.sessions);
+            let session_cwd = Rc::clone(&self.session_cwd);
+            terminal.connect_current_directory_uri_changed(move |term| {
+                let dir = term
+                    .current_directory_uri()
+                    .and_then(|uri| Self::path_from_osc7_uri(&uri));
+                Self::update_session_cwd(&sessions, &session_cwd, session_id, dir);
+            });
+        }
+
         self.terminals.borrow_mut().insert(session_id, terminal);
         self.terminal_overlays
             .borrow_mut()

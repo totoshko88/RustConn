@@ -186,6 +186,8 @@ fn i18n_markers() -> Vec<String> {
         i18n("Tab Overview"),
         i18n("Switch Tab"),
         i18n("Move Session to New Window"),
+        i18n("Previous Prompt"),
+        i18n("Next Prompt"),
         // Split View
         i18n("Split Horizontal"),
         i18n("Split Vertical"),
@@ -642,6 +644,8 @@ mod tests {
         "<Control><Shift>o",
         "<Control>percent",
         "<Control><Shift>m",
+        "<Control><Shift>bracketleft",
+        "<Control><Shift>bracketright",
         "<Control>plus",
         "<Control>minus",
         "<Control>0",

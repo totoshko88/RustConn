@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 23:25+0200\n"
+"POT-Creation-Date: 2026-10-30 15:09+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Polish\n"
@@ -7182,7 +7182,7 @@ msgid "Keybindings"
 msgstr "Skróty klawiszowe"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:305
+#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:307
 #: rustconn/src/split_view/bridge.rs:2018
 msgid "Keyboard Shortcuts"
 msgstr "Skróty klawiszowe"
@@ -9419,7 +9419,7 @@ msgstr "Następna karta"
 msgid "Previous Tab"
 msgstr "Poprzednia karta"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:519
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:535
 msgid "Tab Overview"
 msgstr "Przegląd kart"
 
@@ -9431,65 +9431,73 @@ msgstr "Przełącz kartę"
 msgid "Move Session to New Window"
 msgstr "Przenieś sesję do nowego okna"
 
+#: rustconn/src/dialogs/shortcuts.rs:189
+msgid "Previous Prompt"
+msgstr "Poprzedni znak zachęty"
+
 #: rustconn/src/dialogs/shortcuts.rs:190
+msgid "Next Prompt"
+msgstr "Następny znak zachęty"
+
+#: rustconn/src/dialogs/shortcuts.rs:192
 msgid "Split Horizontal"
 msgstr "Podziel poziomo"
 
-#: rustconn/src/dialogs/shortcuts.rs:191
+#: rustconn/src/dialogs/shortcuts.rs:193
 msgid "Split Vertical"
 msgstr "Podziel pionowo"
 
-#: rustconn/src/dialogs/shortcuts.rs:192
+#: rustconn/src/dialogs/shortcuts.rs:194
 msgid "Close Pane"
 msgstr "Zamknij panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/sidebar_ui.rs:470
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:470
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Usuń z widoku podzielonego"
 
-#: rustconn/src/dialogs/shortcuts.rs:194
+#: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1200
 msgid "Remove Split"
 msgstr "Usuń podział"
 
-#: rustconn/src/dialogs/shortcuts.rs:195
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Focus Next Pane"
 msgstr "Przejdź do następnego panelu"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Reconnect Session"
 msgstr "Połącz ponownie sesję"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:200
 msgid "Toggle Fullscreen"
 msgstr "Przełącz pełny ekran"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Panel boczny"
 
-#: rustconn/src/dialogs/shortcuts.rs:200
+#: rustconn/src/dialogs/shortcuts.rs:202
 msgid "Toggle Compact Interface"
 msgstr "Interfejs kompaktowy"
 
-#: rustconn/src/dialogs/shortcuts.rs:201
+#: rustconn/src/dialogs/shortcuts.rs:203
 msgid "Toggle Keyboard Passthrough"
 msgstr "Bezpośrednie przekazywanie klawiatury"
 
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:204
 msgid "Toggle Split Broadcast"
 msgstr "Rozgłaszanie w widoku podzielonym"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:205
 msgid "Toggle Group Broadcast"
 msgstr "Przełącz rozgłaszanie grupowe"
 
-#: rustconn/src/dialogs/shortcuts.rs:331
+#: rustconn/src/dialogs/shortcuts.rs:333
 msgid "Search shortcuts…"
 msgstr "Szukaj skrótów…"
 
@@ -11301,14 +11309,14 @@ msgstr "Zapisz pliki ze zdalnego schowka"
 
 #: rustconn/src/embedded_rdp/mod.rs:764 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1431
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1453
 #: rustconn/src/terminal/session_lifecycle.rs:401
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr "Połącz ponownie"
 
 #: rustconn/src/embedded_rdp/mod.rs:766 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1433
+#: rustconn/src/terminal/mod.rs:1455
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Połącz ponownie z tą sesją"
@@ -12308,32 +12316,32 @@ msgstr "Wybierz kartę do wyświetlenia"
 msgid "Execute Snippet…"
 msgstr "Wykonaj fragment…"
 
-#: rustconn/src/terminal/mod.rs:515
+#: rustconn/src/terminal/mod.rs:531
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Przegląd kart (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:532 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:548 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Witaj"
 
-#: rustconn/src/terminal/mod.rs:1075
+#: rustconn/src/terminal/mod.rs:1097
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Filtr wyjścia „{}” nie jest zainstalowany; wyjście sesji nie jest filtrowane"
 
-#: rustconn/src/terminal/mod.rs:1425
+#: rustconn/src/terminal/mod.rs:1447
 msgid "Command not found: {}"
 msgstr "Nie znaleziono polecenia: {}"
 
-#: rustconn/src/terminal/mod.rs:1427
+#: rustconn/src/terminal/mod.rs:1449
 msgid "Failed to start '{}'"
 msgstr "Nie udało się uruchomić „{}”"
 
-#: rustconn/src/terminal/mod.rs:1449
+#: rustconn/src/terminal/mod.rs:1471
 msgid "'{}' is not installed"
 msgstr "„{}” nie jest zainstalowane"
 
-#: rustconn/src/terminal/mod.rs:1452
+#: rustconn/src/terminal/mod.rs:1474
 msgid "Failed to start '{}': {}"
 msgstr "Nie udało się uruchomić „{}”: {}"
 
@@ -14442,7 +14450,7 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "Użytkownik: {}"
 
-#: rustconn/src/window/terminal_actions.rs:390
+#: rustconn/src/window/terminal_actions.rs:407
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -14450,7 +14458,7 @@ msgstr ""
 "Nie można rozpocząć nagrywania dla „{}” — brak folderu nagrań lub brak "
 "uprawnień do zapisu"
 
-#: rustconn/src/window/terminal_actions.rs:454
+#: rustconn/src/window/terminal_actions.rs:471
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr ""
 "Ta przeglądarka działa niezależnie i nie można jej zamknąć z poziomu RustConn"

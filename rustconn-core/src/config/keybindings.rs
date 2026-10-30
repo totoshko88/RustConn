@@ -296,6 +296,23 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
             "Move Session to New Window",
             Terminal,
         ),
+        // OSC 133 shell-integration prompt navigation. Two-modifier chords on
+        // purpose: `suspend_terminal_accels` (issue #216) strips single-modifier
+        // accelerators while the terminal has focus, and these fire with the
+        // terminal focused. `[`/`]` is the "back/forward through items" idiom and
+        // stays clear of the Tab-navigation block.
+        KeybindingDef::new(
+            "win.prompt-prev",
+            "<Control><Shift>bracketleft",
+            "Previous Prompt",
+            Terminal,
+        ),
+        KeybindingDef::new(
+            "win.prompt-next",
+            "<Control><Shift>bracketright",
+            "Next Prompt",
+            Terminal,
+        ),
         // Split View
         KeybindingDef::new(
             "win.split-horizontal",
