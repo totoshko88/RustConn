@@ -5,6 +5,15 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Auto-capture keyboard shortcuts for remote desktop (Windows App parity)** — automatically inhibits system shortcuts (such as `Alt+Tab` and `Super` key) and disables tab view shortcuts when an embedded RDP/VNC viewer gains focus, forwarding all hotkeys directly to the remote session like Windows App. Controlled by a new toggle in Preferences → Interface → Appearance. (`rustconn-core/src/config/settings.rs`, `rustconn/src/terminal/mod.rs`, `rustconn/src/dialogs/settings/ui_tab.rs`)
+- **Responsive embedded RDP dynamic resizing and crisp rendering** — lowered resize hysteresis and thresholds for responsive dynamic resolution adaptation without jitter, and enforced pixel-direct filtering for sharp text display. (`rustconn/src/embedded_rdp/drawing.rs`, `rustconn/src/embedded_rdp/resize.rs`)
+
+### Fixed
+- **Touchpad smooth scroll and high-velocity mouse wheel no longer panic in RDP sessions** — kinetic scrolling and high-resolution wheel events can emit large deltas that exceed RDP's 9-bit two's-complement limit `[-256, 255]`. Large deltas are now chunked into safe increments of at most 120 (standard Windows `WHEEL_DELTA`), and horizontal/touchpad scrolling is scaled smoothly, preventing connection drops from `ironrdp-pdu` panics. (`rustconn-core/src/rdp_client/client/commands.rs`, `rustconn/src/embedded_rdp/input.rs`)
+
 ## [0.24.2] - 2026-10-30
 
 ### Added
