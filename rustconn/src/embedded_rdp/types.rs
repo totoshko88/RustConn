@@ -242,6 +242,14 @@ pub struct RdpConfig {
     /// Allows using local FIDO2 security keys for authentication in the remote session.
     /// Requires FreeRDP 3.x with `/fido` support. Only applies to External mode.
     pub fido2_enabled: bool,
+    /// Redirect the local microphone (`/microphone`). IronRDP has no
+    /// audio-input channel, so this sends the session to FreeRDP.
+    pub microphone_enabled: bool,
+    /// Redirect local smart cards (`/smartcard`). External FreeRDP only.
+    pub smartcard_enabled: bool,
+    /// RD Connection Broker routing value (`/load-balance-info:`). IronRDP
+    /// cannot follow a broker, so a value sends the session to FreeRDP.
+    pub load_balance_info: Option<String>,
     /// Authenticate NLA with Kerberos instead of NTLM (issue #351).
     ///
     /// On the embedded IronRDP path (CredSSP) this chooses Kerberos: it signs in
@@ -308,6 +316,9 @@ impl Default for RdpConfig {
             force_legacy_graphics: false,
             mptcp: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
         }

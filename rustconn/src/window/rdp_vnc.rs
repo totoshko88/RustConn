@@ -627,6 +627,12 @@ fn start_embedded_rdp_session(
     // FIDO2/WebAuthn device redirection (FreeRDP 3.x only, external mode)
     embedded_config.fido2_enabled = rdp_config.fido2_enabled;
 
+    // Microphone and broker routing send the session to FreeRDP, which has
+    // the channels IronRDP lacks; smart cards apply only once it runs there.
+    embedded_config.microphone_enabled = rdp_config.microphone_enabled;
+    embedded_config.smartcard_enabled = rdp_config.smartcard_enabled;
+    embedded_config.load_balance_info = rdp_config.load_balance_info.clone();
+
     // Kerberos NLA opt-in (issue #351). Embedded IronRDP path only — what an
     // account in AD "Protected Users" needs, since NTLM is refused for it. There
     // is no NTLM fallback once Kerberos is on. The KDC Address (stored as
@@ -996,6 +1002,9 @@ fn start_external_rdp_session(
         remember_window_position: false,
         ignore_certificate: rdp_config.ignore_certificate,
         fido2_enabled: rdp_config.fido2_enabled,
+        microphone_enabled: rdp_config.microphone_enabled,
+        smartcard_enabled: rdp_config.smartcard_enabled,
+        load_balance_info: rdp_config.load_balance_info.clone(),
         client_override: rdp_config.freerdp_client_override.clone(),
         // Lets a RemoteApp session negotiate Kerberos instead of NTLM, which an
         // AD "Protected Users" account cannot use (issue #351), and gates the

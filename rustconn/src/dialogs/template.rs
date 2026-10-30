@@ -2544,6 +2544,9 @@ impl TemplateDialog {
             remote_app_name: None,
             mptcp: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
         })

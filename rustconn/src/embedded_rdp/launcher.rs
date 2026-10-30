@@ -621,6 +621,9 @@ impl SafeFreeRdpLauncher {
             remember_window_position: config.remember_window_position,
             ignore_certificate: config.ignore_certificate,
             fido2_enabled: config.fido2_enabled,
+            microphone_enabled: config.microphone_enabled,
+            smartcard_enabled: config.smartcard_enabled,
+            load_balance_info: config.load_balance_info.clone(),
             // Carried for completeness; the binary choice on this path is made
             // by `launch_with_cancel` via `resolve_freerdp_binary`, not by the
             // arg builder that consumes this struct.

@@ -30,7 +30,7 @@ use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 42-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 45-element tuple matching the fields expected by `ConnectionDialog`.
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -74,6 +74,9 @@ pub(super) fn create_rdp_options() -> (
     Entry,
     DropDown,
     DropDown,
+    adw::SwitchRow,
+    adw::SwitchRow,
+    Entry,
 ) {
     let scrolled = ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -328,6 +331,29 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&printer_check);
+
+    // Microphone. IronRDP has no audio-input channel, so the session runs in
+    // FreeRDP while this is on, with a notice saying why.
+    let rdp_microphone_check = adw::SwitchRow::builder()
+        .title(i18n("Microphone"))
+        .subtitle(i18n(
+            "Send the local microphone to the remote session (requires FreeRDP)",
+        ))
+        .active(false)
+        .build();
+    features_group.add(&rdp_microphone_check);
+
+    // Smart cards. External client only, like FIDO2: mstsc writes
+    // `redirectsmartcards:i:1` into every .rdp file, so forcing FreeRDP here
+    // would move every imported Windows profile out of the embedded viewer.
+    let rdp_smartcard_check = adw::SwitchRow::builder()
+        .title(i18n("Smart Cards"))
+        .subtitle(i18n(
+            "Use local smart card readers in the remote session (External client, needs PC/SC)",
+        ))
+        .active(false)
+        .build();
+    features_group.add(&rdp_smartcard_check);
 
     // Clipboard direction. Replaces the old on/off switch so one-way sync no
     // longer needs a /clipboard:direction-to: custom argument. The audio row
@@ -701,6 +727,22 @@ pub(super) fn create_rdp_options() -> (
     rdp_jump_host_row.add_suffix(&rdp_jump_host_dropdown);
     rdp_connection_group.add(&rdp_jump_host_row);
 
+    // RD Connection Broker routing value, as RD Web Access writes it into a
+    // farm's .rdp files. IronRDP cannot follow the broker, so a value here
+    // runs the session in FreeRDP.
+    let rdp_load_balance_entry = Entry::builder()
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let load_balance_row = adw::ActionRow::builder()
+        .title(i18n("Load Balance Info"))
+        .subtitle(i18n(
+            "Connection broker routing value (loadbalanceinfo) from an .rdp file (requires FreeRDP)",
+        ))
+        .build();
+    load_balance_row.add_suffix(&rdp_load_balance_entry);
+    rdp_connection_group.add(&load_balance_row);
+
     content.append(&rdp_connection_group);
 
     // === Shared Folders Group ===
@@ -954,5 +996,8 @@ pub(super) fn create_rdp_options() -> (
         remote_app_name_entry,
         graphics_mode_dropdown,
         display_mode_dropdown,
+        rdp_microphone_check,
+        rdp_smartcard_check,
+        rdp_load_balance_entry,
     )
 }

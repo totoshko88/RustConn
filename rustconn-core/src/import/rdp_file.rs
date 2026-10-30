@@ -2,7 +2,8 @@
 //!
 //! Parses Remote Desktop Protocol connection files (`.rdp` format).
 //! The format uses `key:type:value` lines where type is `s` (string)
-//! or `i` (integer).
+//! or `i` (integer). The file may be UTF-8 or, as Remote Desktop Connection
+//! saves it, UTF-16 with a byte-order mark.
 //!
 //! # Supported Fields
 //!
@@ -13,18 +14,33 @@
 //! - `gatewayusagemethod` — 0 = never use the gateway, anything else enables it
 //! - `desktopwidth` / `desktopheight` — resolution
 //! - `screen mode id` — 1 = windowed, 2 = fullscreen
+//! - `use multimon` — 0/1, span every monitor
+//! - `session bpp` — colour depth (8, 15, 16, 24 or 32)
 //! - `audiomode` — 0 = local, 1 = remote, 2 = none
+//! - `audiocapturemode` — 0/1, redirect the microphone
 //! - `redirectclipboard` — 0/1
 //! - `redirectprinters` — 0/1
+//! - `redirectsmartcards` — 0/1
+//! - `redirectwebauthn` — 0/1, FIDO2/WebAuthn redirection
 //! - `smart sizing` — 0/1, scale the session to the window
 //! - `dynamic resolution` — 0/1, resize the remote desktop with the window
+//! - `enablecredsspsupport` — 0 turns Network Level Authentication off
+//! - `loadbalanceinfo` — RD Connection Broker routing value
+//! - `remoteapplicationmode` — 0 ignores the `remoteapplication*` fields
+//! - `remoteapplicationprogram` / `remoteapplicationcmdline` /
+//!   `remoteapplicationname` — RemoteApp
+//!
+//! `authentication level` is deliberately not read: its `0` ("connect without
+//! warning") would let a file someone sent switch certificate checking off.
 
 use std::collections::HashMap;
 use std::path::Path;
 
-use super::traits::{ImportResult, ImportSource, read_import_file};
+use super::traits::{ImportResult, ImportSource, read_import_bytes};
 use crate::error::ImportError;
-use crate::models::{Connection, ProtocolConfig, RdpAudioMode, RdpConfig, RdpGateway, Resolution};
+use crate::models::{
+    Connection, ProtocolConfig, RdpAudioMode, RdpConfig, RdpDisplayMode, RdpGateway, Resolution,
+};
 
 /// Parsed contents of an `.rdp` file.
 #[derive(Debug, Default)]
@@ -85,7 +101,11 @@ impl RdpFileImporter {
     /// Returns `ImportError` if the file cannot be read or has no
     /// `full address` field.
     pub fn parse_rdp_file(path: &Path) -> Result<Connection, ImportError> {
-        let content = read_import_file(path, "RDP file")?;
+        let bytes = read_import_bytes(path, "RDP file")?;
+        let content = decode_rdp_text(&bytes).ok_or_else(|| ImportError::ParseError {
+            source_name: "RDP file".to_string(),
+            reason: format!("{} is neither UTF-8 nor UTF-16 text", path.display()),
+        })?;
         let fields = RdpFileFields::parse(&content);
 
         let full_address = fields
@@ -119,6 +139,9 @@ impl RdpFileImporter {
             _ => None,
         };
 
+        let external_display_mode = parse_display_mode(&fields, resolution.is_some());
+        let color_depth = parse_color_depth(&fields);
+
         // Audio. The .rdp `audiomode` is three-way: 0 = play on this computer
         // (Local), 1 = leave on the remote (Remote), 2 = do not play (None).
         // Map it to the three-state `audio_mode` so Remote and None round-trip
@@ -149,6 +172,22 @@ impl RdpFileImporter {
 
         let gateway = parse_gateway(&fields);
 
+        // Only an explicit 0 turns NLA off; mstsc's default is 1.
+        let disable_nla = fields.get_bool("enablecredsspsupport") == Some(false);
+
+        // mstsc keeps the `remoteapplication*` fields of a published app in
+        // the file and switches them off with `remoteapplicationmode:i:0`, so
+        // that case is a full desktop. A file without the key keeps the
+        // fields, as before it was read.
+        let remote_app = |key: &str| {
+            fields
+                .get(key)
+                .filter(|s| {
+                    !s.is_empty() && fields.get_bool("remoteapplicationmode") != Some(false)
+                })
+                .map(String::from)
+        };
+
         let name = path
             .file_stem()
             .and_then(|s| s.to_str())
@@ -156,7 +195,9 @@ impl RdpFileImporter {
             .to_string();
 
         let rdp_config = ProtocolConfig::Rdp(RdpConfig {
+            external_display_mode,
             resolution,
+            color_depth,
             audio_redirect,
             audio_mode,
             gateway,
@@ -164,18 +205,17 @@ impl RdpFileImporter {
             printer_enabled,
             dynamic_resolution,
             smart_sizing,
-            remote_app_program: fields
-                .get("remoteapplicationprogram")
+            disable_nla,
+            microphone_enabled: fields.get_bool("audiocapturemode").unwrap_or(false),
+            smartcard_enabled: fields.get_bool("redirectsmartcards").unwrap_or(false),
+            fido2_enabled: fields.get_bool("redirectwebauthn").unwrap_or(false),
+            load_balance_info: fields
+                .get("loadbalanceinfo")
                 .filter(|s| !s.is_empty())
                 .map(String::from),
-            remote_app_args: fields
-                .get("remoteapplicationcmdline")
-                .filter(|s| !s.is_empty())
-                .map(String::from),
-            remote_app_name: fields
-                .get("remoteapplicationname")
-                .filter(|s| !s.is_empty())
-                .map(String::from),
+            remote_app_program: remote_app("remoteapplicationprogram"),
+            remote_app_args: remote_app("remoteapplicationcmdline"),
+            remote_app_name: remote_app("remoteapplicationname"),
             ..Default::default()
         });
 
@@ -229,6 +269,32 @@ impl ImportSource for RdpFileImporter {
         result.connections.push(connection);
         Ok(result)
     }
+}
+
+/// Reads the window mode as mstsc does: `use multimon:i:1` spans every monitor
+/// whatever `screen mode id` says (1 = windowed, 2 = full screen), and a
+/// windowed profile with a size keeps that size.
+///
+/// This is also what the exporter writes, so a custom size, full screen and
+/// all monitors survive a round trip.
+fn parse_display_mode(fields: &RdpFileFields, has_resolution: bool) -> RdpDisplayMode {
+    if fields.get_bool("use multimon") == Some(true) {
+        return RdpDisplayMode::AllMonitors;
+    }
+    match fields.get_u32("screen mode id") {
+        Some(2) => RdpDisplayMode::Fullscreen,
+        Some(1) if has_resolution => RdpDisplayMode::Custom,
+        _ => RdpDisplayMode::default(),
+    }
+}
+
+/// Reads `session bpp`. Anything but a depth a session can use is dropped,
+/// leaving the depth to the performance mode.
+fn parse_color_depth(fields: &RdpFileFields) -> Option<u8> {
+    fields.get("session bpp").and_then(|bpp| match bpp {
+        "8" | "15" | "16" | "24" | "32" => bpp.parse().ok(),
+        _ => None,
+    })
 }
 
 /// Default RD Gateway port (HTTPS).
@@ -305,6 +371,33 @@ fn split_gateway_host(value: &str, default_port: u16) -> (String, u16) {
     }
 
     (value.to_string(), default_port)
+}
+
+/// Decodes the bytes of an `.rdp` file, or `None` when they are not text.
+///
+/// Remote Desktop Connection saves `.rdp` files as UTF-16LE with a byte-order
+/// mark, which `read_to_string` refuses outright, so a profile saved on Windows
+/// could be neither imported nor opened. RD Web Access and third-party tools
+/// write UTF-8, with or without a mark — and a UTF-8 mark left in place made
+/// the first key unrecognisable. The mark decides; without one the file is
+/// UTF-8.
+fn decode_rdp_text(bytes: &[u8]) -> Option<String> {
+    match bytes {
+        [0xFF, 0xFE, rest @ ..] => decode_utf16(rest, u16::from_le_bytes),
+        [0xFE, 0xFF, rest @ ..] => decode_utf16(rest, u16::from_be_bytes),
+        [0xEF, 0xBB, 0xBF, rest @ ..] => String::from_utf8(rest.to_vec()).ok(),
+        _ => String::from_utf8(bytes.to_vec()).ok(),
+    }
+}
+
+/// Decodes UTF-16 code units built from byte pairs by `unit`.
+fn decode_utf16(bytes: &[u8], unit: fn([u8; 2]) -> u16) -> Option<String> {
+    let (pairs, []) = bytes.as_chunks::<2>() else {
+        return None;
+    };
+    char::decode_utf16(pairs.iter().copied().map(unit))
+        .collect::<Result<_, _>>()
+        .ok()
 }
 
 /// Parses `host:port` or `host` from the `full address` field.
@@ -654,5 +747,150 @@ remoteapplicationname:s:
         } else {
             panic!("Expected RDP protocol config");
         }
+    }
+
+    fn import(content: &[u8]) -> RdpConfig {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("server.rdp");
+        fs::write(&path, content).unwrap();
+        let conn = RdpFileImporter::parse_rdp_file(&path).unwrap();
+        assert_eq!(conn.host, "server.example.com");
+        let ProtocolConfig::Rdp(rdp) = conn.protocol_config else {
+            panic!("Expected RDP protocol config");
+        };
+        rdp
+    }
+
+    fn utf16(text: &str, unit: fn(u16) -> [u8; 2], bom: [u8; 2]) -> Vec<u8> {
+        let mut bytes = bom.to_vec();
+        bytes.extend(text.encode_utf16().flat_map(unit));
+        bytes
+    }
+
+    /// Remote Desktop Connection saves `.rdp` files as UTF-16LE with a mark,
+    /// which used to fail the import with an invalid-UTF-8 error.
+    #[test]
+    fn utf16_files_saved_by_mstsc_import() {
+        let text =
+            "screen mode id:i:2\r\nfull address:s:server.example.com\r\nusername:s:Jürgen\r\n";
+        for bytes in [
+            utf16(text, u16::to_le_bytes, [0xFF, 0xFE]),
+            utf16(text, u16::to_be_bytes, [0xFE, 0xFF]),
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("saved.rdp");
+            fs::write(&path, bytes).unwrap();
+            let conn = RdpFileImporter::parse_rdp_file(&path).unwrap();
+            assert_eq!(conn.host, "server.example.com");
+            assert_eq!(conn.username.as_deref(), Some("Jürgen"));
+        }
+    }
+
+    /// A UTF-8 mark used to stay glued to the first key, so a file starting
+    /// with `full address` was refused for missing it.
+    #[test]
+    fn utf8_mark_does_not_hide_the_first_key() {
+        let rdp = import(b"\xEF\xBB\xBFfull address:s:server.example.com\nsession bpp:i:16\n");
+        assert_eq!(rdp.color_depth, Some(16));
+    }
+
+    #[test]
+    fn text_that_is_not_utf8_or_utf16_is_refused() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("binary.rdp");
+        fs::write(&path, [0xFF, 0xFE, 0x41]).unwrap();
+        assert!(RdpFileImporter::parse_rdp_file(&path).is_err());
+        fs::write(&path, b"full address:s:\xC3\x28\n").unwrap();
+        assert!(RdpFileImporter::parse_rdp_file(&path).is_err());
+    }
+
+    #[test]
+    fn window_mode_follows_screen_mode_and_multimon() {
+        let base = "full address:s:server.example.com\n";
+        let cases = [
+            ("", RdpDisplayMode::FitScreen),
+            ("screen mode id:i:2\n", RdpDisplayMode::Fullscreen),
+            ("screen mode id:i:1\n", RdpDisplayMode::FitScreen),
+            (
+                "screen mode id:i:1\ndesktopwidth:i:1280\ndesktopheight:i:800\n",
+                RdpDisplayMode::Custom,
+            ),
+            (
+                "screen mode id:i:1\nuse multimon:i:1\n",
+                RdpDisplayMode::AllMonitors,
+            ),
+            (
+                "screen mode id:i:2\nuse multimon:i:0\n",
+                RdpDisplayMode::Fullscreen,
+            ),
+        ];
+        for (extra, expected) in cases {
+            let rdp = import(format!("{base}{extra}").as_bytes());
+            assert_eq!(rdp.external_display_mode, expected, "for {extra:?}");
+        }
+    }
+
+    #[test]
+    fn colour_depth_accepts_only_session_depths() {
+        let base = "full address:s:server.example.com\n";
+        for (bpp, expected) in [
+            ("32", Some(32)),
+            ("15", Some(15)),
+            ("12", None),
+            ("x", None),
+        ] {
+            let rdp = import(format!("{base}session bpp:i:{bpp}\n").as_bytes());
+            assert_eq!(rdp.color_depth, expected, "session bpp {bpp}");
+        }
+    }
+
+    #[test]
+    fn device_security_and_broker_fields_import() {
+        let rdp = import(
+            b"full address:s:server.example.com\n\
+              audiocapturemode:i:1\n\
+              redirectsmartcards:i:1\n\
+              redirectwebauthn:i:1\n\
+              enablecredsspsupport:i:0\n\
+              loadbalanceinfo:s:tsv://MS Terminal Services Plugin.1.Sessions\n",
+        );
+        assert!(rdp.microphone_enabled);
+        assert!(rdp.smartcard_enabled);
+        assert!(rdp.fido2_enabled);
+        assert!(rdp.disable_nla);
+        assert_eq!(
+            rdp.load_balance_info.as_deref(),
+            Some("tsv://MS Terminal Services Plugin.1.Sessions")
+        );
+        assert!(rdp.requires_freerdp_fallback());
+
+        let rdp = import(b"full address:s:server.example.com\nloadbalanceinfo:s:\n");
+        assert!(!rdp.microphone_enabled);
+        assert!(!rdp.smartcard_enabled);
+        assert!(!rdp.fido2_enabled);
+        assert!(!rdp.disable_nla);
+        assert!(rdp.load_balance_info.is_none());
+    }
+
+    /// A profile as Remote Desktop Connection saves it by default must stay on
+    /// the embedded client: its `redirectsmartcards:i:1` and
+    /// `redirectwebauthn:i:1` are external-only and do not force FreeRDP.
+    #[test]
+    fn mstsc_default_profile_stays_embedded() {
+        let rdp = import(
+            b"screen mode id:i:2\nuse multimon:i:0\nsession bpp:i:32\n\
+              full address:s:server.example.com\naudiomode:i:0\naudiocapturemode:i:0\n\
+              redirectprinters:i:1\nredirectsmartcards:i:1\nredirectwebauthn:i:1\n\
+              enablecredsspsupport:i:1\nauthentication level:i:0\n\
+              remoteapplicationmode:i:0\nremoteapplicationprogram:s:||calc\n\
+              alternate shell:s:\nloadbalanceinfo:s:\n",
+        );
+        assert!(!rdp.requires_freerdp_fallback(), "{rdp:?}");
+        assert!(
+            !rdp.is_remote_app(),
+            "remoteapplicationmode:i:0 is a desktop"
+        );
+        assert!(!rdp.ignore_certificate, "authentication level is not read");
+        assert_eq!(rdp.external_display_mode, RdpDisplayMode::Fullscreen);
     }
 }

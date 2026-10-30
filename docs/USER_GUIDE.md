@@ -1306,8 +1306,33 @@ Enables FIDO2/WebAuthn passkey redirection from local hardware security keys (Yu
 
 This adds the FreeRDP `/fido` flag to the session launch. The embedded IronRDP client does not currently support FIDO2 redirection — use External client mode for this feature.
 
-**CLI:** not exposed. `.rdp` export does not carry it either: the flag is a FreeRDP
-option, not a field in the Microsoft `.rdp` format.
+**CLI:** not exposed. `.rdp` import and export carry it as `redirectwebauthn`.
+
+#### Microphone and Smart Cards
+
+The counterparts of Remote Desktop Connection's *Recording* and *Smart cards* settings
+(Connection Dialog → RDP → Features):
+
+- **Microphone** sends the local default input device to the remote session
+  (FreeRDP `/microphone`, `.rdp` `audiocapturemode`). The embedded IronRDP client has
+  no audio-input channel, so with the switch on the session runs in FreeRDP, and a
+  notice says why.
+- **Smart Cards** makes local smart card readers available in the remote session
+  (FreeRDP `/smartcard`, `.rdp` `redirectsmartcards`). Like FIDO2 it applies only when
+  the session runs in FreeRDP and does not force it: Remote Desktop Connection writes
+  `redirectsmartcards:i:1` into every `.rdp` file it saves, and forcing FreeRDP would
+  move every imported Windows profile out of the embedded viewer. It needs a FreeRDP
+  built with PC/SC and a running `pcscd`; the FreeRDP bundled in the Flatpak is built
+  without PC/SC.
+
+#### Connection Broker (Load Balance Info)
+
+An `.rdp` file published by RD Web Access for a session collection carries a
+`loadbalanceinfo` line, such as `tsv://MS Terminal Services Plugin.1.Sessions`, which
+tells the RD Connection Broker where to place the session. Paste it into
+**Load Balance Info** (Connection Dialog → RDP → Connection), or import the file. It
+reaches FreeRDP as `/load-balance-info:`. The embedded client cannot follow the broker's
+redirection, so a value here runs the session in FreeRDP.
 
 #### Kerberos Authentication (Protected Users)
 
@@ -3837,7 +3862,9 @@ RustConn registers as a handler for `.rdp` files. Double-clicking an `.rdp` file
 2. RustConn parses the file and creates a temporary connection
 3. The connection starts immediately
 
-**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusername`, `desktopwidth`/`desktopheight`, `session bpp`, `audiomode`, `redirectclipboard`, `remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname`.
+**Supported .rdp Fields:** `full address`, `username`, `domain`, `gatewayhostname`, `gatewayusagemethod`, `gatewayusername`, `desktopwidth`/`desktopheight`, `screen mode id`, `use multimon`, `session bpp`, `audiomode`, `audiocapturemode`, `redirectclipboard`, `redirectprinters`, `redirectsmartcards`, `redirectwebauthn`, `smart sizing`, `dynamic resolution`, `enablecredsspsupport`, `loadbalanceinfo`, `remoteapplicationmode`, `remoteapplicationprogram`, `remoteapplicationcmdline`, `remoteapplicationname`.
+
+Files saved by Remote Desktop Connection (UTF-16 with a byte-order mark) and UTF-8 files are both read. `authentication level` is deliberately ignored, so a file cannot switch certificate checking off.
 
 **Desktop Integration:**
 ```bash

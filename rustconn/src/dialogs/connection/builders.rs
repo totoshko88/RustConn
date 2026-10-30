@@ -124,6 +124,9 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_mptcp_check: &'a adw::SwitchRow,
     pub rdp_fido2_check: &'a adw::SwitchRow,
     pub rdp_admin_session_check: &'a adw::SwitchRow,
+    pub rdp_microphone_check: &'a adw::SwitchRow,
+    pub rdp_smartcard_check: &'a adw::SwitchRow,
+    pub rdp_load_balance_entry: &'a Entry,
     pub rdp_kerberos_check: &'a adw::SwitchRow,
     pub rdp_kdc_address_entry: &'a adw::EntryRow,
     pub rdp_jump_host_dropdown: &'a DropDown,
@@ -1720,6 +1723,16 @@ impl ConnectionDialogData<'_> {
             reconnect_on_resize: self.rdp_reconnect_on_resize_check.is_active(),
             mptcp: self.rdp_mptcp_check.is_active(),
             fido2_enabled: self.rdp_fido2_check.is_active(),
+            microphone_enabled: self.rdp_microphone_check.is_active(),
+            smartcard_enabled: self.rdp_smartcard_check.is_active(),
+            load_balance_info: {
+                let text = self.rdp_load_balance_entry.text();
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text.trim().to_string())
+                }
+            },
             kerberos_enabled: self.rdp_kerberos_check.is_active(),
             kdc_proxy_url,
             script_paste_via_clipboard: true,

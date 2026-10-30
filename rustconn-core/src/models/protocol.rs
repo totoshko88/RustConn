@@ -2525,6 +2525,39 @@ pub struct RdpConfig {
     #[serde(default)]
     pub fido2_enabled: bool,
 
+    /// Redirect the local microphone into the session (`.rdp`
+    /// `audiocapturemode`, FreeRDP `/microphone`).
+    ///
+    /// The embedded IronRDP client has no audio-input (MS-RDPEAI) channel, so
+    /// turning this on sends the session to FreeRDP — see
+    /// [`Self::requires_freerdp_fallback`]. Off by default.
+    #[serde(default)]
+    pub microphone_enabled: bool,
+
+    /// Redirect local smart cards into the session (`.rdp`
+    /// `redirectsmartcards`, FreeRDP `/smartcard`).
+    ///
+    /// External FreeRDP only, like [`Self::fido2_enabled`]: the embedded
+    /// IronRDP client answers no smart-card calls. Unlike the microphone it
+    /// does not send the session to FreeRDP, because Remote Desktop Connection
+    /// writes `redirectsmartcards:i:1` into every `.rdp` file it saves, and
+    /// every imported Windows profile would otherwise leave the embedded
+    /// client. That FreeRDP must be built with PC/SC and find a running
+    /// `pcscd`. Off by default.
+    #[serde(default)]
+    pub smartcard_enabled: bool,
+
+    /// RD Connection Broker routing value (`.rdp` `loadbalanceinfo`, FreeRDP
+    /// `/load-balance-info:`), such as
+    /// `tsv://MS Terminal Services Plugin.1.Sessions`.
+    ///
+    /// `.rdp` files published by RD Web Access carry it so the broker can place
+    /// the session in the right collection. The embedded client neither sends
+    /// it nor follows the broker's redirection, so a value here sends the
+    /// session to FreeRDP. `None` (the default) sends none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub load_balance_info: Option<String>,
+
     /// Authenticate NLA (CredSSP) with Kerberos instead of NTLM.
     ///
     /// Only affects the embedded IronRDP path. Required for accounts in the AD
@@ -2608,6 +2641,9 @@ impl Default for RdpConfig {
             remote_app_name: None,
             mptcp: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
         }
@@ -2676,8 +2712,9 @@ impl RdpConfig {
     ///
     /// Returns `true` when the security layer or TLS level is incompatible
     /// with IronRDP's `rustls` backend (TLS 1.2+ only), when RemoteApp
-    /// is configured (IronRDP does not support RAIL protocol), or when the
-    /// audio mode is one IronRDP cannot signal.
+    /// is configured (IronRDP does not support RAIL protocol), when the
+    /// audio mode is one IronRDP cannot signal, or when the microphone or a
+    /// connection broker routing value is asked for.
     #[must_use]
     pub fn requires_freerdp_fallback(&self) -> bool {
         // RemoteApp requires RAIL protocol — not supported by IronRDP
@@ -2699,7 +2736,13 @@ impl RdpConfig {
         if self.effective_audio_mode().requires_freerdp() {
             return true;
         }
-        false
+        // IronRDP has no audio-input channel, and neither sends a routing
+        // token nor follows a broker's redirection
+        self.microphone_enabled
+            || self
+                .load_balance_info
+                .as_deref()
+                .is_some_and(|info| !info.trim().is_empty())
     }
 
     /// Returns whether this is a RemoteApp session.
