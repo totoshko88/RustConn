@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.1
+Version:        0.24.2
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,25 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Oct 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.2-0
+- Version bump to 0.24.2
+- Added: RDP clipboard direction control; the "Clipboard Sharing" switch is
+  now a four-way selector (Off, Remote to local, Local to remote, Both),
+  replacing the hand-written /clipboard:direction-to: custom argument
+- Added: QUIC (quicssh) preset on the SSH ProxyCommand row; SSH over QUIC
+  with connection migration and UDP NAT traversal
+- Added: opt-in auto-hide the sidebar on connect (issue #401); a new switch
+  in Settings → Interface collapses the sidebar when a session opens
+- Added: MobaXterm import/export round-trips more session types (Serial,
+  MOSH, Web), maps Rsh/Rlogin and FTP, and warns on unsupported types
+- Fixed: an imported MobaXterm SFTP session no longer round-trips back out as
+  SSH; type 7 now imports as SFTP while type 0 stays SSH
+- Documentation: user guide, README and CLI reference cover the new features;
+  all 17 translation catalogues completed
+- Dependencies: ctutils 0.4.6→0.4.7, libbz2-rs-sys 0.2.5→0.2.6,
+  utf8_iter 1.0.4→1.1.0, zcheapstr 1.1.0→1.2.0, utf_types added 1.0.0
+  (transitive; advisories clean)
+
 * Wed Oct 28 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.1-0
 - Version bump to 0.24.1
 - Added: an on/off switch for multi-line paste confirmation on the Terminal
