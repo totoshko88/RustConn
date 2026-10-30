@@ -132,6 +132,8 @@ pub struct SettingsDialog {
     terminal_passthrough_ctrl: adw::SwitchRow,
     // Remember keyboard passthrough state across restarts (issue #274)
     keyboard_passthrough: adw::SwitchRow,
+    // Auto-capture shortcuts for remote desktop sessions
+    remote_desktop_auto_capture_shortcuts: adw::SwitchRow,
     // Connection name in the window title (issue #211) and group path in the
     // header subtitle — named fields so the pair cannot be swapped.
     window_title_rows: ui_tab::WindowTitleRows,
@@ -287,6 +289,7 @@ impl SettingsDialog {
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
+            remote_desktop_auto_capture_shortcuts,
             window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
@@ -740,6 +743,7 @@ impl SettingsDialog {
             compact_auto,
             terminal_passthrough_ctrl,
             keyboard_passthrough,
+            remote_desktop_auto_capture_shortcuts,
             window_title_rows,
             show_welcome_switch,
             double_click_opens_new_session,
@@ -1325,6 +1329,7 @@ impl SettingsDialog {
             &self.compact_auto,
             &self.terminal_passthrough_ctrl,
             &self.keyboard_passthrough,
+            &self.remote_desktop_auto_capture_shortcuts,
             &self.window_title_rows,
             &self.show_welcome_switch,
             &self.double_click_opens_new_session,
@@ -1520,6 +1525,8 @@ impl SettingsDialog {
         let compact_auto_clone = self.compact_auto.clone();
         let terminal_passthrough_ctrl_clone = self.terminal_passthrough_ctrl.clone();
         let keyboard_passthrough_clone = self.keyboard_passthrough.clone();
+        let remote_desktop_auto_capture_shortcuts_clone =
+            self.remote_desktop_auto_capture_shortcuts.clone();
         let window_title_rows_clone = self.window_title_rows.clone();
         let show_welcome_switch_clone = self.show_welcome_switch.clone();
         let double_click_opens_new_session_clone = self.double_click_opens_new_session.clone();
@@ -1755,6 +1762,7 @@ impl SettingsDialog {
                 &compact_auto_clone,
                 &terminal_passthrough_ctrl_clone,
                 &keyboard_passthrough_clone,
+                &remote_desktop_auto_capture_shortcuts_clone,
                 &window_title_rows_clone,
                 &show_welcome_switch_clone,
                 &double_click_opens_new_session_clone,

@@ -284,6 +284,9 @@ pub struct TerminalNotebook {
     tab_connection_menu: Rc<RefCell<Option<tab_menu::TabConnectionMenuProvider>>>,
     /// Whether keyboard passthrough is on; mirrors `win.toggle-passthrough`.
     keyboard_passthrough: Rc<std::cell::Cell<bool>>,
+    /// Whether to automatically capture system shortcuts (Alt+Tab, Super)
+    /// when an embedded RDP/VNC viewer gains keyboard focus.
+    auto_capture_shortcuts: Rc<std::cell::Cell<bool>>,
     /// The embedded RDP/VNC viewer that has keyboard focus, if any. Its window
     /// asks the compositor for the desktop shortcuts while passthrough is on
     /// (issue #356).
@@ -560,6 +563,7 @@ impl TerminalNotebook {
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
+            auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),
             on_terminal_focus: Rc::new(RefCell::new(None)),
             reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
@@ -2358,8 +2362,12 @@ impl TerminalNotebook {
     /// to an embedded RDP or VNC viewer while one has focus; see
     /// [`Self::attach_shortcut_inhibit`].
     pub fn set_keyboard_passthrough(&self, enabled: bool) {
+        let should_disable_tab_shortcuts = enabled
+            || (self.auto_capture_shortcuts.get() && self.focused_viewer.borrow().is_some());
         self.tab_view
-            .set_shortcuts(tab_view_shortcuts_for_passthrough(enabled));
+            .set_shortcuts(tab_view_shortcuts_for_passthrough(
+                should_disable_tab_shortcuts,
+            ));
         self.keyboard_passthrough.set(enabled);
 
         let focused = self
@@ -2368,16 +2376,44 @@ impl TerminalNotebook {
             .as_ref()
             .and_then(glib::WeakRef::upgrade);
         if let Some(viewer) = focused {
-            set_system_shortcuts_inhibited(&viewer, enabled);
+            let should_inhibit = enabled || self.auto_capture_shortcuts.get();
+            set_system_shortcuts_inhibited(&viewer, should_inhibit);
         } else if !enabled {
             // The viewer may have gone away while it held the shortcuts.
             set_system_shortcuts_inhibited(self.container.upcast_ref(), false);
         }
     }
 
+    /// Enables or disables automatic system shortcut capture for embedded
+    /// remote desktop viewers (RDP and VNC) on focus.
+    pub fn set_auto_capture_shortcuts(&self, enabled: bool) {
+        self.auto_capture_shortcuts.set(enabled);
+        if let Some(viewer) = self
+            .focused_viewer
+            .borrow()
+            .as_ref()
+            .and_then(glib::WeakRef::upgrade)
+        {
+            let should_inhibit = enabled || self.keyboard_passthrough.get();
+            set_system_shortcuts_inhibited(&viewer, should_inhibit);
+            if should_inhibit {
+                self.tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
+            } else {
+                self.tab_view
+                    .set_shortcuts(adw::TabViewShortcuts::ALL_SHORTCUTS);
+            }
+        }
+    }
+
+    /// Whether automatic system shortcut capture for remote desktop viewers is on.
+    #[must_use]
+    pub fn auto_capture_shortcuts(&self) -> bool {
+        self.auto_capture_shortcuts.get()
+    }
+
     /// Asks the compositor for the desktop shortcuts while `widget` (an
-    /// embedded RDP or VNC viewer) has focus and passthrough is on, and gives
-    /// them back when focus leaves (issue #356).
+    /// embedded RDP or VNC viewer) has focus and passthrough or auto-capture
+    /// is on, and gives them back when focus leaves (issue #356).
     ///
     /// This is the Wayland keyboard-shortcuts-inhibit request that an external
     /// FreeRDP window already makes. GNOME asks the user once whether to allow
@@ -2386,26 +2422,33 @@ impl TerminalNotebook {
     fn attach_shortcut_inhibit<W: IsA<gtk4::Widget>>(&self, widget: &W) {
         let focus_ctrl = gtk4::EventControllerFocus::new();
         let passthrough = self.keyboard_passthrough.clone();
+        let auto_capture = self.auto_capture_shortcuts.clone();
         let focused = self.focused_viewer.clone();
+        let tab_view = self.tab_view.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_enter(move |_| {
             let Some(viewer) = viewer.upgrade() else {
                 return;
             };
             *focused.borrow_mut() = Some(viewer.downgrade());
-            if passthrough.get() {
+            if passthrough.get() || auto_capture.get() {
                 set_system_shortcuts_inhibited(&viewer, true);
+                tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
             }
         });
         let passthrough = self.keyboard_passthrough.clone();
         let focused = self.focused_viewer.clone();
+        let tab_view = self.tab_view.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_leave(move |_| {
             *focused.borrow_mut() = None;
-            if passthrough.get()
-                && let Some(viewer) = viewer.upgrade()
+            if let Some(viewer) = viewer.upgrade()
+                && !passthrough.get()
             {
                 set_system_shortcuts_inhibited(&viewer, false);
+            }
+            if !passthrough.get() {
+                tab_view.set_shortcuts(adw::TabViewShortcuts::ALL_SHORTCUTS);
             }
         });
         widget.add_controller(focus_ctrl);

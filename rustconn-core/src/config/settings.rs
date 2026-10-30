@@ -1291,6 +1291,16 @@ pub struct UiSettings {
     pub show_directional_tab_close: bool,
     /// Remember keyboard passthrough state across restarts.
     ///
+    /// Automatically capture system keyboard shortcuts (such as Alt+Tab and
+    /// Super/Windows key) when an embedded remote desktop session (RDP or VNC)
+    /// has keyboard focus, matching the behavior of Windows App.
+    ///
+    /// Default `true`. When an embedded viewer gains focus, system shortcuts are
+    /// inhibited on Wayland/X11 so they reach the remote desktop, and restored
+    /// when focus leaves. When `false`, shortcuts only pass through if global
+    /// keyboard passthrough is explicitly enabled.
+    #[serde(default = "default_true")]
+    pub remote_desktop_auto_capture_shortcuts: bool,
     /// Default `false`. When `true` at startup the global passthrough mode
     /// (`win.toggle-passthrough`) is re-engaged, disabling all accelerators
     /// except quit, fullscreen, and the toggle itself. Stored on window close
@@ -1409,6 +1419,7 @@ impl Default for UiSettings {
             hide_split_pane_hover_controls: false,
             show_directional_tab_close: false,
             keyboard_passthrough: false,
+            remote_desktop_auto_capture_shortcuts: true,
         }
     }
 }

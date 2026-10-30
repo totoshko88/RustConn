@@ -607,6 +607,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         hide_split_pane_hover_controls: false,
                         show_directional_tab_close: false,
                         keyboard_passthrough: false,
+                        remote_desktop_auto_capture_shortcuts: true,
                     },
                     connection: rustconn_core::ConnectionSettings::default(),
                     network: rustconn_core::NetworkSettings::default(),

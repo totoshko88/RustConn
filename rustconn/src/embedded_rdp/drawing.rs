@@ -119,11 +119,7 @@ impl super::EmbeddedRdpWidget {
                         let _ = cr.set_source_surface(surface, 0.0, 0.0);
 
                         // For live remote desktop at 60fps, use Nearest filtering
-                        // universally — it is significantly faster than Bilinear/Good
-                        // and the slight quality difference is imperceptible at
-                        // interactive frame rates. During a resize-in-progress (scale
-                        // != 1.0) a brief moment of aliased text is far less noticeable
-                        // than dropped frames.
+                        // universally to keep text razor-sharp without blur.
                         cr.source().set_filter(gtk4::cairo::Filter::Nearest);
 
                         let _ = cr.paint();
