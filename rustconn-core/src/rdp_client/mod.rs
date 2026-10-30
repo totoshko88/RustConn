@@ -65,6 +65,8 @@ pub mod graphics;
 pub mod input;
 pub mod kerberos;
 pub mod keyboard_layout;
+#[cfg(feature = "rdp-embedded")]
+pub mod microphone;
 pub mod multimonitor;
 // Opt-in, explicit-consent downloader for Cisco's official OpenH264 binary.
 // Deliberately NOT gated behind `gfx-h264`: the GUI loader wiring in

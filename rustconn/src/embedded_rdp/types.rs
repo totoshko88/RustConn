@@ -245,8 +245,8 @@ pub struct RdpConfig {
     /// Allows using local FIDO2 security keys for authentication in the remote session.
     /// Requires FreeRDP 3.x with `/fido` support. Only applies to External mode.
     pub fido2_enabled: bool,
-    /// Redirect the local microphone (`/microphone`). IronRDP has no
-    /// audio-input channel, so this sends the session to FreeRDP.
+    /// Redirect the local microphone: the `AUDIO_INPUT` channel on the
+    /// embedded client (with `rdp-audio`), `/microphone` on FreeRDP.
     pub microphone_enabled: bool,
     /// Redirect local smart cards (`/smartcard`). External FreeRDP only.
     pub smartcard_enabled: bool,

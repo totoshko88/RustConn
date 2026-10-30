@@ -334,13 +334,10 @@ pub(super) fn create_rdp_options() -> (
         .build();
     features_group.add(&printer_check);
 
-    // Microphone. IronRDP has no audio-input channel, so the session runs in
-    // FreeRDP while this is on, with a notice saying why.
+    // Microphone, over the AUDIO_INPUT channel on the embedded client.
     let rdp_microphone_check = adw::SwitchRow::builder()
         .title(i18n("Microphone"))
-        .subtitle(i18n(
-            "Send the local microphone to the remote session (requires FreeRDP)",
-        ))
+        .subtitle(i18n("Send the local microphone to the remote session"))
         .active(false)
         .build();
     features_group.add(&rdp_microphone_check);

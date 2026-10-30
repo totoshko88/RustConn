@@ -2622,9 +2622,9 @@ pub struct RdpConfig {
     /// Redirect the local microphone into the session (`.rdp`
     /// `audiocapturemode`, FreeRDP `/microphone`).
     ///
-    /// The embedded IronRDP client has no audio-input (MS-RDPEAI) channel, so
-    /// turning this on sends the session to FreeRDP — see
-    /// [`Self::requires_freerdp_fallback`]. Off by default.
+    /// The embedded client carries it over the MS-RDPEAI `AUDIO_INPUT`
+    /// channel, captured by the GUI; the external client gets `/microphone`.
+    /// Off by default.
     #[serde(default)]
     pub microphone_enabled: bool,
 
@@ -2827,8 +2827,8 @@ impl RdpConfig {
     /// Returns `true` when the security layer or TLS level is incompatible
     /// with IronRDP's `rustls` backend (TLS 1.2+ only), when RemoteApp
     /// is configured (IronRDP does not support RAIL protocol), when the
-    /// audio mode is one IronRDP cannot signal, or when the microphone or a
-    /// connection broker routing value is asked for.
+    /// audio mode is one IronRDP cannot signal, or when a connection broker
+    /// routing value is set.
     #[must_use]
     pub fn requires_freerdp_fallback(&self) -> bool {
         // RemoteApp requires RAIL protocol — not supported by IronRDP
@@ -2850,13 +2850,11 @@ impl RdpConfig {
         if self.effective_audio_mode().requires_freerdp() {
             return true;
         }
-        // IronRDP has no audio-input channel, and neither sends a routing
-        // token nor follows a broker's redirection
-        self.microphone_enabled
-            || self
-                .load_balance_info
-                .as_deref()
-                .is_some_and(|info| !info.trim().is_empty())
+        // The embedded client neither sends a routing token nor follows a
+        // broker's redirection
+        self.load_balance_info
+            .as_deref()
+            .is_some_and(|info| !info.trim().is_empty())
     }
 
     /// Returns whether this is a RemoteApp session.

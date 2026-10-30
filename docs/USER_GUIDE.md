@@ -1314,9 +1314,10 @@ The counterparts of Remote Desktop Connection's *Recording* and *Smart cards* se
 (Connection Dialog → RDP → Features):
 
 - **Microphone** sends the local default input device to the remote session
-  (FreeRDP `/microphone`, `.rdp` `audiocapturemode`). The embedded IronRDP client has
-  no audio-input channel, so with the switch on the session runs in FreeRDP, and a
-  notice says why.
+  (`.rdp` `audiocapturemode`). The embedded client carries it over the MS-RDPEAI
+  audio-input channel, capturing 16-bit PCM in the format the server asks for —
+  PipeWire or PulseAudio convert from what the device delivers. A session in the
+  external client gets FreeRDP's `/microphone`.
 - **Smart Cards** makes local smart card readers available in the remote session
   (FreeRDP `/smartcard`, `.rdp` `redirectsmartcards`). Like FIDO2 it applies only when
   the session runs in FreeRDP and does not force it: Remote Desktop Connection writes
@@ -1324,6 +1325,22 @@ The counterparts of Remote Desktop Connection's *Recording* and *Smart cards* se
   move every imported Windows profile out of the embedded viewer. It needs a FreeRDP
   built with PC/SC and a running `pcscd`; the FreeRDP bundled in the Flatpak is built
   without PC/SC.
+
+#### Graphics Pipeline and Image Quality
+
+In **Automatic** graphics mode the embedded client announces the RDP graphics
+pipeline (MS-RDPEGFX) to the server and decodes whatever it sends: H.264 in AVC444
+or AVC420 when OpenH264 is available, and ClearCodec, Planar and RFX Progressive
+always. AVC444 keeps full colour detail around text, which is what makes the picture
+as sharp as Remote Desktop Connection's; the status label then reads
+**GFX + AVC444**. Without OpenH264 the server picks one of the other codecs, so the
+pipeline still works.
+
+A Windows host only opens the pipeline when the client announces it in its first
+capabilities. Before RustConn moved to IronRDP's October 2026 releases it could not,
+and such a host kept the session on plain bitmap updates — either soft (RemoteFX) or
+heavy (lossless, the **Quality** performance mode). **Legacy** and **RemoteFX**
+graphics modes still skip the pipeline on purpose, for servers that misbehave with it.
 
 #### Automatic Reconnection
 

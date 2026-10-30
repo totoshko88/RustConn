@@ -144,12 +144,9 @@ pub struct RdpClientConfig {
     #[serde(default)]
     pub smartcard_enabled: bool,
 
-    /// Enable microphone redirection.
-    ///
-    /// **Reserved / not yet implemented.** The embedded IronRDP client has no
-    /// audio-input (audin) virtual channel, so setting this currently has no
-    /// effect. The field is kept for forward-compatibility and round-tripping;
-    /// it is not surfaced in the GUI.
+    /// Enable microphone redirection: registers the MS-RDPEAI `AUDIO_INPUT`
+    /// channel, sets `INFO_AUDIOCAPTURE`, and reports the format to capture in
+    /// as `RdpClientEvent::MicrophoneOpened`.
     #[serde(default)]
     pub microphone_enabled: bool,
 

@@ -17,15 +17,16 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use ironrdp::core::impl_as_any;
-use ironrdp::pdu::PduResult;
-use ironrdp::rdpdr::RdpdrBackend;
-use ironrdp::rdpdr::pdu::RdpdrPdu;
-use ironrdp::rdpdr::pdu::efs::{
+use ironrdp_core::impl_as_any;
+use ironrdp_pdu::PduResult;
+use ironrdp_rdpdr::RdpdrBackend;
+use ironrdp_rdpdr::pdu::RdpdrPdu;
+use ironrdp_rdpdr::pdu::efs::{
     Boolean, ClientDriveQueryDirectoryResponse, ClientDriveQueryInformationResponse,
-    ClientDriveQueryVolumeInformationResponse, ClientDriveSetInformationResponse,
-    CreateDisposition, CreateOptions, DesiredAccess, DeviceCloseRequest, DeviceCloseResponse,
-    DeviceControlRequest, DeviceControlResponse, DeviceCreateRequest, DeviceCreateResponse,
+    ClientDriveQuerySecurityResponse, ClientDriveQueryVolumeInformationResponse,
+    ClientDriveSetInformationResponse, ClientDriveSetSecurityResponse, CreateDisposition,
+    CreateOptions, DesiredAccess, DeviceCloseRequest, DeviceCloseResponse, DeviceControlRequest,
+    DeviceControlResponse, DeviceCreateRequest, DeviceCreateResponse, DeviceFlushBuffersResponse,
     DeviceIoResponse, DeviceReadRequest, DeviceReadResponse, DeviceWriteRequest,
     DeviceWriteResponse, FileAttributeTagInformation, FileAttributes, FileBasicInformation,
     FileBothDirectoryInformation, FileDirectoryInformation, FileFsAttributeInformation,
@@ -38,8 +39,8 @@ use ironrdp::rdpdr::pdu::efs::{
     ServerDriveQueryDirectoryRequest, ServerDriveQueryInformationRequest,
     ServerDriveQueryVolumeInformationRequest, ServerDriveSetInformationRequest,
 };
-use ironrdp::rdpdr::pdu::esc::{ScardCall, ScardIoCtlCode};
-use ironrdp::svc::SvcMessage;
+use ironrdp_rdpdr::pdu::esc::{ScardCall, ScardIoCtlCode};
+use ironrdp_svc::SvcMessage;
 use tracing::{debug, trace, warn};
 
 use super::dir_watcher::{DirectoryChange, DirectoryWatcher, WatchRequest};
@@ -89,7 +90,7 @@ pub struct RustConnRdpdrBackend {
 #[expect(dead_code, reason = "Fields read via Debug in trace! logging")]
 struct PendingNotification {
     /// Device IO request header
-    device_io_request: ironrdp::rdpdr::pdu::efs::DeviceIoRequest,
+    device_io_request: ironrdp_rdpdr::pdu::efs::DeviceIoRequest,
     /// Watch tree (recursive)
     watch_tree: bool,
     /// Completion filter
@@ -219,13 +220,9 @@ impl RustConnRdpdrBackend {
     ///
     /// # Current Limitations
     ///
-    /// `ironrdp-rdpdr` 0.7 (the version paired with ironrdp 0.17) still does not
-    /// expose a `ClientDriveNotifyChangeDirectoryResponse` type — it has the
-    /// server-side `ServerDriveNotifyChangeDirectoryRequest` and
-    /// `ClientDriveQueryDirectoryResponse`, but not the notify *response*. So the
-    /// inotify integration detects changes correctly, but the responses cannot be
-    /// sent until upstream adds this PDU. This is an external blocker, not
-    /// unfinished local work.
+    /// The inotify integration detects changes, but no notify response is sent
+    /// yet. `ironrdp-rdpdr` 0.7 had no `ClientDriveNotifyChangeDirectoryResponse`;
+    /// 0.9 has it, so this is now local work rather than an upstream blocker.
     ///
     /// Per MS-RDPEFS 2.2.3.4.11, the response should contain:
     /// - `DeviceIoResponse` header with the original request's `DeviceIoRequest`
@@ -306,12 +303,12 @@ impl RdpdrBackend for RustConnRdpdrBackend {
         &mut self,
         _req: DeviceControlRequest<ScardIoCtlCode>,
         _call: ScardCall,
-    ) -> PduResult<()> {
+    ) -> PduResult<Vec<SvcMessage>> {
         // Smart card redirection is not implemented for the embedded client:
         // there is no scard virtual channel, so any scard IOCTL is acknowledged
         // and dropped. `RdpClientConfig::smartcard_enabled` is a reserved field
         // with no effect until this is implemented.
-        Ok(())
+        Ok(Vec::new())
     }
 
     fn handle_printer_io_request(&mut self, req: PrinterIoRequest) -> PduResult<Vec<SvcMessage>> {
@@ -412,6 +409,42 @@ impl RdpdrBackend for RustConnRdpdrBackend {
             }
             ServerDriveIoRequest::ServerDriveLockControlRequest(lock_req) => {
                 self.handle_lock_control(lock_req)
+            }
+            // Writes go straight to the file, so there is nothing to flush.
+            ServerDriveIoRequest::DeviceFlushBuffersRequest(flush_req) => {
+                Ok(vec![SvcMessage::from(
+                    RdpdrPdu::DeviceFlushBuffersResponse(DeviceFlushBuffersResponse {
+                        device_io_response: DeviceIoResponse::new(
+                            flush_req.device_io_request,
+                            NtStatus::SUCCESS,
+                        ),
+                    }),
+                )])
+            }
+            // A shared folder carries no Windows security descriptors; the
+            // server falls back to default permissions, as it does for any
+            // file system without ACLs.
+            ServerDriveIoRequest::ServerDriveQuerySecurityRequest(query_req) => {
+                Ok(vec![SvcMessage::from(
+                    RdpdrPdu::ClientDriveQuerySecurityResponse(ClientDriveQuerySecurityResponse {
+                        device_io_response: DeviceIoResponse::new(
+                            query_req.device_io_request,
+                            NtStatus::NOT_SUPPORTED,
+                        ),
+                        security_descriptor: None,
+                    }),
+                )])
+            }
+            ServerDriveIoRequest::ServerDriveSetSecurityRequest(set_req) => {
+                Ok(vec![SvcMessage::from(
+                    RdpdrPdu::ClientDriveSetSecurityResponse(ClientDriveSetSecurityResponse {
+                        device_io_response: DeviceIoResponse::new(
+                            set_req.device_io_request,
+                            NtStatus::NOT_SUPPORTED,
+                        ),
+                        length: 0,
+                    }),
+                )])
             }
         }
     }
@@ -1748,7 +1781,7 @@ mod printer_tests {
 mod drive_io_tests {
     use std::collections::HashMap;
 
-    use ironrdp::rdpdr::pdu::efs::{
+    use ironrdp_rdpdr::pdu::efs::{
         CreateOptions, DesiredAccess, DeviceIoRequest, FileDispositionInformation,
         FileEndOfFileInformation, MajorFunction, MinorFunction, SharedAccess,
     };

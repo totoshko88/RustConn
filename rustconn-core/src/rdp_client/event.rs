@@ -646,6 +646,24 @@ pub enum RdpClientEvent {
     /// Audio channel closed
     AudioClose,
 
+    /// The server opened the microphone (MS-RDPEAI): capture 16-bit PCM in
+    /// this format and send it back as [`RdpClientCommand::MicrophoneData`]
+    /// packets of `packet_size` bytes. Sent again when the server changes the
+    /// format while capture is running.
+    MicrophoneOpened {
+        /// Channel count
+        channels: u16,
+        /// Sample rate in Hz
+        samples_per_sec: u32,
+        /// Bits per sample (always 16)
+        bits_per_sample: u16,
+        /// Bytes per capture packet
+        packet_size: usize,
+    },
+
+    /// The server closed the microphone: stop capturing.
+    MicrophoneClosed,
+
     /// Round-trip time measured via Echo DVC (MS-RDPEECO).
     ///
     /// Emitted periodically when the Echo virtual channel is active.
@@ -766,6 +784,10 @@ pub enum RdpClientEvent {
 pub enum RdpClientCommand {
     /// Disconnect from server
     Disconnect,
+
+    /// One packet of captured microphone audio, in the format of the last
+    /// [`RdpClientEvent::MicrophoneOpened`]
+    MicrophoneData(Vec<u8>),
 
     /// Send keyboard event
     KeyEvent {

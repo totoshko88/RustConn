@@ -223,6 +223,9 @@ const PROTOCOL_MARKERS: &[&str] = &[
     "unsupported pdu",
     "decode error",
     "unsupported fast-path update code",
+    // A connection broker redirected the session, which only the external
+    // client follows (`ConnectionOutcome::Redirected`).
+    "server redirection",
     // A rejected `BasicSecurityHeader`. Kept here rather than in
     // [`LICENSE_MARKERS`] because the header is common to every Standard RDP
     // Security PDU, so it identifies the fallback but not the phase.

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 10:59-0500\n"
+"POT-Creation-Date: 2026-10-30 15:27-0500\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -195,8 +195,8 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:151
-#: rustconn/src/embedded_rdp/connection.rs:1741
-#: rustconn/src/embedded_rdp/connection.rs:2664
+#: rustconn/src/embedded_rdp/connection.rs:1752
+#: rustconn/src/embedded_rdp/connection.rs:2711
 #: rustconn/src/embedded_rdp/mod.rs:772 rustconn/src/embedded_rdp/mod.rs:2146
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
@@ -256,7 +256,7 @@ msgid "Enter Password Manually"
 msgstr "手动输入密码"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2386 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2433 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr "打开设置"
@@ -1074,7 +1074,7 @@ msgid "Executable name or path (e.g., chromaterm, pv, ccze)"
 msgstr "可执行文件名或路径（例如 chromaterm、pv、ccze）"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:575
-#: rustconn/src/dialogs/connection/rdp.rs:869
+#: rustconn/src/dialogs/connection/rdp.rs:866
 msgid "Arguments"
 msgstr "参数"
 
@@ -1272,7 +1272,7 @@ msgstr "自动化"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:437
 #: rustconn/src/dialogs/connection/kubernetes.rs:132
-#: rustconn/src/dialogs/connection/rdp.rs:918
+#: rustconn/src/dialogs/connection/rdp.rs:915
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
@@ -1669,7 +1669,7 @@ msgid "Direct — an inherited jump host is ignored"
 msgstr "直连 — 忽略继承的跳转主机"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1472
-#: rustconn/src/dialogs/connection/rdp.rs:760
+#: rustconn/src/dialogs/connection/rdp.rs:757
 msgid "Tunnel RDP through an SSH connection"
 msgstr "通过 SSH 连接隧道传输 RDP"
 
@@ -2023,7 +2023,7 @@ msgid "Zero Trust"
 msgstr "零信任"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:146
-#: rustconn/src/dialogs/connection/rdp.rs:746
+#: rustconn/src/dialogs/connection/rdp.rs:743
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
 #: rustconn/src/dialogs/connection/telnet.rs:36
@@ -2323,7 +2323,7 @@ msgid "Container image for temporary pod"
 msgstr "临时 Pod 的容器镜像"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:135
-#: rustconn/src/dialogs/connection/rdp.rs:977
+#: rustconn/src/dialogs/connection/rdp.rs:974
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
@@ -2458,7 +2458,7 @@ msgid "Quality/speed tradeoff for image rendering and visual effects"
 msgstr "图像渲染和视觉效果的质量/速度权衡"
 
 #: rustconn/src/dialogs/connection/rdp.rs:151
-#: rustconn/src/dialogs/connection/rdp.rs:637
+#: rustconn/src/dialogs/connection/rdp.rs:634
 #: rustconn/src/dialogs/connection/vnc.rs:89 rustconn/src/i18n_markers.rs:99
 msgid "Automatic"
 msgstr "自动"
@@ -2580,72 +2580,72 @@ msgstr "打印机重定向"
 msgid "Share your local printer with the remote session"
 msgstr "与远程会话共享本地打印机"
 
-#: rustconn/src/dialogs/connection/rdp.rs:340
+#: rustconn/src/dialogs/connection/rdp.rs:339
 msgid "Microphone"
 msgstr "麦克风"
 
-#: rustconn/src/dialogs/connection/rdp.rs:342
-msgid "Send the local microphone to the remote session (requires FreeRDP)"
-msgstr "将本地麦克风发送到远程会话（需要 FreeRDP）"
+#: rustconn/src/dialogs/connection/rdp.rs:340
+msgid "Send the local microphone to the remote session"
+msgstr "将本地麦克风发送到远程会话"
 
-#: rustconn/src/dialogs/connection/rdp.rs:352
+#: rustconn/src/dialogs/connection/rdp.rs:349
 msgid "Smart Cards"
 msgstr "智能卡"
 
-#: rustconn/src/dialogs/connection/rdp.rs:354
+#: rustconn/src/dialogs/connection/rdp.rs:351
 msgid ""
 "Use local smart card readers in the remote session (External client, needs "
 "PC/SC)"
 msgstr "在远程会话中使用本地智能卡读卡器（外部客户端，需要 PC/SC）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:374
+#: rustconn/src/dialogs/connection/rdp.rs:371
 msgid "Windows Key Combinations"
 msgstr "Windows 组合键"
 
-#: rustconn/src/dialogs/connection/rdp.rs:376
+#: rustconn/src/dialogs/connection/rdp.rs:373
 msgid ""
 "Where shortcuts such as Alt+Tab and Super apply while the session has focus "
 "(Embedded client)"
 msgstr "会话获得焦点时 Alt+Tab 和 Super 等快捷键的作用位置（嵌入式客户端）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:384
+#: rustconn/src/dialogs/connection/rdp.rs:381
 msgid "Reconnect Automatically"
 msgstr "自动重连"
 
-#: rustconn/src/dialogs/connection/rdp.rs:386
+#: rustconn/src/dialogs/connection/rdp.rs:383
 msgid ""
 "Reconnect when the connection drops, up to {} attempts (Embedded client)"
 msgstr "连接中断时自动重连，最多 {} 次（嵌入式客户端）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:404
+#: rustconn/src/dialogs/connection/rdp.rs:401
 #: rustconn/src/dialogs/connection/spice.rs:171
 #: rustconn/src/dialogs/connection/vnc.rs:257
 #: rustconn/src/dialogs/template.rs:1111 rustconn/src/dialogs/template.rs:1246
 msgid "Clipboard Sharing"
 msgstr "剪贴板共享"
 
-#: rustconn/src/dialogs/connection/rdp.rs:405
+#: rustconn/src/dialogs/connection/rdp.rs:402
 msgid "Which way the clipboard synchronises with the remote"
 msgstr "剪贴板与远程的同步方向"
 
-#: rustconn/src/dialogs/connection/rdp.rs:413
+#: rustconn/src/dialogs/connection/rdp.rs:410
 #: rustconn/src/dialogs/connection/spice.rs:215
 #: rustconn/src/dialogs/connection/vnc.rs:265
 msgid "Show Local Cursor"
 msgstr "显示本地光标"
 
-#: rustconn/src/dialogs/connection/rdp.rs:414
+#: rustconn/src/dialogs/connection/rdp.rs:411
 #: rustconn/src/dialogs/connection/spice.rs:216
 #: rustconn/src/dialogs/connection/vnc.rs:266
 msgid "Hide to avoid double cursor in embedded mode"
 msgstr "在内嵌模式下隐藏以避免双光标"
 
-#: rustconn/src/dialogs/connection/rdp.rs:425
+#: rustconn/src/dialogs/connection/rdp.rs:422
 #: rustconn/src/dialogs/connection/vnc.rs:274
 msgid "Session Toolbar"
 msgstr "会话工具栏"
 
-#: rustconn/src/dialogs/connection/rdp.rs:427
+#: rustconn/src/dialogs/connection/rdp.rs:424
 #: rustconn/src/dialogs/connection/vnc.rs:276
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Ctrl+Alt+Del "
@@ -2653,53 +2653,53 @@ msgid ""
 msgstr ""
 "关闭后将移除浮动工具栏及其展开箭头。Ctrl+Alt+Del 和工具栏按钮也会一并消失。"
 
-#: rustconn/src/dialogs/connection/rdp.rs:435
+#: rustconn/src/dialogs/connection/rdp.rs:432
 msgid "Mouse Jiggler"
 msgstr "鼠标抖动器"
 
-#: rustconn/src/dialogs/connection/rdp.rs:436
+#: rustconn/src/dialogs/connection/rdp.rs:433
 msgid "Prevent idle disconnect by simulating mouse movement"
 msgstr "通过模拟鼠标移动防止空闲断开"
 
-#: rustconn/src/dialogs/connection/rdp.rs:449
+#: rustconn/src/dialogs/connection/rdp.rs:446
 msgid "Jiggler Interval"
 msgstr "抖动间隔"
 
-#: rustconn/src/dialogs/connection/rdp.rs:450
+#: rustconn/src/dialogs/connection/rdp.rs:447
 msgid "Seconds between mouse movements"
 msgstr "鼠标移动间隔秒数"
 
-#: rustconn/src/dialogs/connection/rdp.rs:469
+#: rustconn/src/dialogs/connection/rdp.rs:466
 msgid "Autotype Delay"
 msgstr "自动输入延迟"
 
-#: rustconn/src/dialogs/connection/rdp.rs:471
+#: rustconn/src/dialogs/connection/rdp.rs:468
 msgid "Milliseconds between keystrokes (increase for Citrix)"
 msgstr "按键之间的毫秒数（Citrix 需增大）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:484
+#: rustconn/src/dialogs/connection/rdp.rs:481
 msgid "Autotype Initial Delay"
 msgstr "自动输入初始延迟"
 
-#: rustconn/src/dialogs/connection/rdp.rs:485
+#: rustconn/src/dialogs/connection/rdp.rs:482
 msgid "Milliseconds to wait before typing starts"
 msgstr "开始输入前等待的毫秒数"
 
-#: rustconn/src/dialogs/connection/rdp.rs:492
+#: rustconn/src/dialogs/connection/rdp.rs:489
 msgid "Dynamic resolution"
 msgstr "动态分辨率"
 
-#: rustconn/src/dialogs/connection/rdp.rs:494
+#: rustconn/src/dialogs/connection/rdp.rs:491
 msgid ""
 "Resize the remote desktop to match the window (External client). Turn off "
 "for legacy servers"
 msgstr "调整远程桌面大小以匹配窗口（外部客户端）。旧版服务器请关闭"
 
-#: rustconn/src/dialogs/connection/rdp.rs:502
+#: rustconn/src/dialogs/connection/rdp.rs:499
 msgid "Smart sizing"
 msgstr "智能缩放"
 
-#: rustconn/src/dialogs/connection/rdp.rs:504
+#: rustconn/src/dialogs/connection/rdp.rs:501
 msgid ""
 "Scale the remote screen to fit the window (External client). For servers "
 "that do not resize dynamically, such as KDE KRdp, or legacy servers on HiDPI "
@@ -2708,56 +2708,56 @@ msgstr ""
 "缩放远程屏幕以适应窗口（外部客户端）。适用于不能动态调整大小的服务器，例如 "
 "KDE KRdp，或 HiDPI 显示器上的旧版服务器。将覆盖动态分辨率"
 
-#: rustconn/src/dialogs/connection/rdp.rs:523
+#: rustconn/src/dialogs/connection/rdp.rs:520
 msgid "Reconnect on Resize"
 msgstr "调整大小时重新连接"
 
-#: rustconn/src/dialogs/connection/rdp.rs:525
+#: rustconn/src/dialogs/connection/rdp.rs:522
 msgid ""
 "Full reconnect instead of dynamic resize (Embedded client). For legacy "
 "servers or fixed resolution"
 msgstr "完全重新连接而非动态调整大小（内嵌客户端）。适用于旧服务器或固定分辨率"
 
-#: rustconn/src/dialogs/connection/rdp.rs:533
+#: rustconn/src/dialogs/connection/rdp.rs:530
 #: rustconn/src/dialogs/connection/vnc.rs:294
 msgid ""
 "Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode "
 "only)"
 msgstr "使用多条网络路径实现无缝移动（Linux 5.6+，仅嵌入模式）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:535
+#: rustconn/src/dialogs/connection/rdp.rs:532
 #: rustconn/src/dialogs/connection/vnc.rs:296
 msgid ""
 "Multiple network paths (embedded mode only). Not available: kernel MPTCP is "
 "disabled"
 msgstr "多条网络路径（仅嵌入模式）。不可用：内核 MPTCP 已禁用"
 
-#: rustconn/src/dialogs/connection/rdp.rs:538
+#: rustconn/src/dialogs/connection/rdp.rs:535
 #: rustconn/src/dialogs/connection/ssh.rs:850
 #: rustconn/src/dialogs/connection/vnc.rs:299
 msgid "Multipath TCP"
 msgstr "多路径 TCP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:546
+#: rustconn/src/dialogs/connection/rdp.rs:543
 msgid "FIDO2 Passkey Redirection"
 msgstr "FIDO2 通行密钥重定向"
 
-#: rustconn/src/dialogs/connection/rdp.rs:548
+#: rustconn/src/dialogs/connection/rdp.rs:545
 msgid ""
 "Use local security keys in the remote session (External client, FreeRDP 3.x)"
 msgstr "在远程会话中使用本地安全密钥（外部客户端，FreeRDP 3.x）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:560
+#: rustconn/src/dialogs/connection/rdp.rs:557
 msgid "Admin/console session (/admin)"
 msgstr "管理员/控制台会话 (/admin)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:562
+#: rustconn/src/dialogs/connection/rdp.rs:559
 msgid ""
 "Connect to the console/admin session (External client). Bypasses RDS CAL "
 "licensing"
 msgstr "连接到控制台/管理员会话（外部客户端）。绕过 RDS CAL 许可"
 
-#: rustconn/src/dialogs/connection/rdp.rs:567
+#: rustconn/src/dialogs/connection/rdp.rs:564
 msgid ""
 "Passes /admin to the external FreeRDP client, connecting to the server's "
 "console/administrative session instead of a normal RDS session. This "
@@ -2768,11 +2768,11 @@ msgstr ""
 "的 RDS 会话。这会绕过 RDS CAL 许可。仅限外部客户端；嵌入式客户端尚无法请求此"
 "功能。"
 
-#: rustconn/src/dialogs/connection/rdp.rs:578
+#: rustconn/src/dialogs/connection/rdp.rs:575
 msgid "Kerberos Authentication"
 msgstr "Kerberos 认证"
 
-#: rustconn/src/dialogs/connection/rdp.rs:580
+#: rustconn/src/dialogs/connection/rdp.rs:577
 msgid ""
 "Required for AD \"Protected Users\"; Host must be the server's DNS name. "
 "Embedded client: Kerberos only, with the saved password. External client: "
@@ -2782,11 +2782,11 @@ msgstr ""
 "用已保存的密码。外部客户端：FreeRDP 自行尝试 Kerberos，RemoteApp 不再局限于 "
 "NTLM"
 
-#: rustconn/src/dialogs/connection/rdp.rs:592
+#: rustconn/src/dialogs/connection/rdp.rs:589
 msgid "KDC Address"
 msgstr "KDC 地址"
 
-#: rustconn/src/dialogs/connection/rdp.rs:594
+#: rustconn/src/dialogs/connection/rdp.rs:591
 msgid ""
 "Optional. A domain controller name or IP address, a tcp:// or udp:// "
 "address, or an https:// KDC proxy URL. Leave empty to find it automatically. "
@@ -2797,84 +2797,84 @@ msgstr ""
 "URL。留空则自动查找。外部客户端仅使用 https://…/KdcProxy 代理，其余情况遵循系"
 "统的 Kerberos 配置。"
 
-#: rustconn/src/dialogs/connection/rdp.rs:609
+#: rustconn/src/dialogs/connection/rdp.rs:606
 msgid "Disable NLA"
 msgstr "禁用 NLA"
 
-#: rustconn/src/dialogs/connection/rdp.rs:610
+#: rustconn/src/dialogs/connection/rdp.rs:607
 msgid "Skip Network Level Authentication (less secure)"
 msgstr "跳过网络级别认证（安全性较低）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:626
-#: rustconn/src/dialogs/connection/rdp.rs:628
+#: rustconn/src/dialogs/connection/rdp.rs:623
+#: rustconn/src/dialogs/connection/rdp.rs:625
 msgid "Security Layer"
 msgstr "安全层"
 
-#: rustconn/src/dialogs/connection/rdp.rs:629
+#: rustconn/src/dialogs/connection/rdp.rs:626
 msgid "RDP/TLS for legacy servers (forces external FreeRDP)"
 msgstr "旧服务器的 RDP/TLS（强制使用外部 FreeRDP）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:645
-#: rustconn/src/dialogs/connection/rdp.rs:647
+#: rustconn/src/dialogs/connection/rdp.rs:642
+#: rustconn/src/dialogs/connection/rdp.rs:644
 msgid "FreeRDP client"
 msgstr "FreeRDP 客户端"
 
-#: rustconn/src/dialogs/connection/rdp.rs:649
+#: rustconn/src/dialogs/connection/rdp.rs:646
 msgid "External client binary. Automatic picks the best available"
 msgstr "外部客户端可执行文件。“自动”会选择可用的最佳客户端"
 
-#: rustconn/src/dialogs/connection/rdp.rs:664
+#: rustconn/src/dialogs/connection/rdp.rs:661
 msgid "TLS Security Level"
 msgstr "TLS 安全级别"
 
-#: rustconn/src/dialogs/connection/rdp.rs:665
+#: rustconn/src/dialogs/connection/rdp.rs:662
 msgid "0 = legacy (Win7/2012), 2 = default, 5 = strict"
 msgstr "0 = 旧版 (Win7/2012)，2 = 默认，5 = 严格"
 
-#: rustconn/src/dialogs/connection/rdp.rs:681
+#: rustconn/src/dialogs/connection/rdp.rs:678
 #: rustconn/src/dialogs/connection/vnc.rs:284
 msgid "Accept Certificate"
 msgstr "接受证书"
 
-#: rustconn/src/dialogs/connection/rdp.rs:683
+#: rustconn/src/dialogs/connection/rdp.rs:680
 msgid "Accept changed/self-signed certificates (removes stored fingerprint)"
 msgstr "接受已更改/自签名证书（删除已存储的指纹）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:692
+#: rustconn/src/dialogs/connection/rdp.rs:689
 msgid "gateway.example.com"
 msgstr "gateway.example.com"
 
-#: rustconn/src/dialogs/connection/rdp.rs:697
+#: rustconn/src/dialogs/connection/rdp.rs:694
 #: rustconn/src/dialogs/template.rs:934
 msgid "RDP Gateway"
 msgstr "RDP 网关"
 
-#: rustconn/src/dialogs/connection/rdp.rs:698
+#: rustconn/src/dialogs/connection/rdp.rs:695
 #: rustconn/src/dialogs/template.rs:935
 msgid "Remote Desktop Gateway server"
 msgstr "远程桌面网关服务器"
 
-#: rustconn/src/dialogs/connection/rdp.rs:712
+#: rustconn/src/dialogs/connection/rdp.rs:709
 msgid "Gateway Port"
 msgstr "网关端口"
 
-#: rustconn/src/dialogs/connection/rdp.rs:713
+#: rustconn/src/dialogs/connection/rdp.rs:710
 msgid "Default: 443"
 msgstr "默认：443"
 
-#: rustconn/src/dialogs/connection/rdp.rs:721
+#: rustconn/src/dialogs/connection/rdp.rs:718
 msgid "Same as connection username"
 msgstr "与连接用户名相同"
 
-#: rustconn/src/dialogs/connection/rdp.rs:725
+#: rustconn/src/dialogs/connection/rdp.rs:722
 msgid "Gateway Username"
 msgstr "网关用户名"
 
-#: rustconn/src/dialogs/connection/rdp.rs:726
+#: rustconn/src/dialogs/connection/rdp.rs:723
 msgid "If different from connection username"
 msgstr "如果与连接用户名不同"
 
-#: rustconn/src/dialogs/connection/rdp.rs:749
+#: rustconn/src/dialogs/connection/rdp.rs:746
 #: rustconn/src/dialogs/connection/spice.rs:336
 #: rustconn/src/dialogs/connection/ssh.rs:668
 #: rustconn/src/dialogs/connection/vnc.rs:341
@@ -2890,7 +2890,7 @@ msgstr "如果与连接用户名不同"
 msgid "(None)"
 msgstr "（无）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:759
+#: rustconn/src/dialogs/connection/rdp.rs:756
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/ssh.rs:679
 #: rustconn/src/dialogs/connection/vnc.rs:351
@@ -2901,37 +2901,37 @@ msgstr "（无）"
 msgid "Jump Host"
 msgstr "跳转主机"
 
-#: rustconn/src/dialogs/connection/rdp.rs:773
+#: rustconn/src/dialogs/connection/rdp.rs:770
 msgid "Load Balance Info"
 msgstr "负载均衡信息"
 
-#: rustconn/src/dialogs/connection/rdp.rs:775
+#: rustconn/src/dialogs/connection/rdp.rs:772
 msgid ""
 "Connection broker routing value (loadbalanceinfo) from an .rdp file "
 "(requires FreeRDP)"
 msgstr "来自 .rdp 文件的连接代理路由值（loadbalanceinfo）（需要 FreeRDP）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:785
+#: rustconn/src/dialogs/connection/rdp.rs:782
 #: rustconn/src/dialogs/connection/spice.rs:239
 msgid "Shared Folders"
 msgstr "共享文件夹"
 
-#: rustconn/src/dialogs/connection/rdp.rs:786
+#: rustconn/src/dialogs/connection/rdp.rs:783
 #: rustconn/src/dialogs/connection/spice.rs:240
 msgid "Local folders accessible from remote session"
 msgstr "可从远程会话访问的本地文件夹"
 
-#: rustconn/src/dialogs/connection/rdp.rs:793
+#: rustconn/src/dialogs/connection/rdp.rs:790
 #: rustconn/src/dialogs/connection/spice.rs:247
 msgid "No shared folders"
 msgstr "无共享文件夹"
 
-#: rustconn/src/dialogs/connection/rdp.rs:808
+#: rustconn/src/dialogs/connection/rdp.rs:805
 #: rustconn/src/dialogs/connection/spice.rs:262
 msgid "Add"
 msgstr "添加"
 
-#: rustconn/src/dialogs/connection/rdp.rs:812
+#: rustconn/src/dialogs/connection/rdp.rs:809
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
 #: rustconn/src/dialogs/flatpak_components.rs:325
@@ -2941,204 +2941,204 @@ msgstr "添加"
 msgid "Remove"
 msgstr "移除"
 
-#: rustconn/src/dialogs/connection/rdp.rs:845
+#: rustconn/src/dialogs/connection/rdp.rs:842
 msgid "RemoteApp"
 msgstr "RemoteApp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:847
+#: rustconn/src/dialogs/connection/rdp.rs:844
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
 msgstr "启动单个应用程序而非完整桌面（需要 FreeRDP）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:853
+#: rustconn/src/dialogs/connection/rdp.rs:850
 msgid "||notepad or C:\\Program Files\\app.exe"
 msgstr "||notepad 或 C:\\Program Files\\app.exe"
 
-#: rustconn/src/dialogs/connection/rdp.rs:857
+#: rustconn/src/dialogs/connection/rdp.rs:854
 msgid "Program"
 msgstr "程序"
 
-#: rustconn/src/dialogs/connection/rdp.rs:858
+#: rustconn/src/dialogs/connection/rdp.rs:855
 msgid "Application alias (||name) or full path"
 msgstr "应用程序别名（||名称）或完整路径"
 
-#: rustconn/src/dialogs/connection/rdp.rs:865
+#: rustconn/src/dialogs/connection/rdp.rs:862
 msgid "Command-line arguments"
 msgstr "命令行参数"
 
-#: rustconn/src/dialogs/connection/rdp.rs:870
+#: rustconn/src/dialogs/connection/rdp.rs:867
 msgid "Arguments passed to the remote application"
 msgstr "传递给远程应用程序的参数"
 
-#: rustconn/src/dialogs/connection/rdp.rs:877
+#: rustconn/src/dialogs/connection/rdp.rs:874
 msgid "Display name (optional)"
 msgstr "显示名称（可选）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:881
+#: rustconn/src/dialogs/connection/rdp.rs:878
 #: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "显示名称"
 
-#: rustconn/src/dialogs/connection/rdp.rs:882
+#: rustconn/src/dialogs/connection/rdp.rs:879
 msgid "Shown in taskbar and window title"
 msgstr "显示在任务栏和窗口标题中"
 
-#: rustconn/src/dialogs/connection/rdp.rs:895
+#: rustconn/src/dialogs/connection/rdp.rs:892
 msgid "⚠ FreeRDP not found"
 msgstr "⚠ 未找到 FreeRDP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:897
+#: rustconn/src/dialogs/connection/rdp.rs:894
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr "RemoteApp 需要 FreeRDP。请安装 sdl-freerdp3、xfreerdp 或 wlfreerdp。"
 
-#: rustconn/src/dialogs/connection/rdp.rs:923
+#: rustconn/src/dialogs/connection/rdp.rs:920
 msgid "Auto (detect)"
 msgstr "自动（检测）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:924
+#: rustconn/src/dialogs/connection/rdp.rs:921
 msgid "US English"
 msgstr "美国英语"
 
-#: rustconn/src/dialogs/connection/rdp.rs:925
+#: rustconn/src/dialogs/connection/rdp.rs:922
 msgid "German (de)"
 msgstr "德语 (de)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:926
+#: rustconn/src/dialogs/connection/rdp.rs:923
 msgid "French (fr)"
 msgstr "法语 (fr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:927
+#: rustconn/src/dialogs/connection/rdp.rs:924
 msgid "Spanish (es)"
 msgstr "西班牙语 (es)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:928
+#: rustconn/src/dialogs/connection/rdp.rs:925
 msgid "Italian (it)"
 msgstr "意大利语 (it)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:929
+#: rustconn/src/dialogs/connection/rdp.rs:926
 msgid "Portuguese (pt)"
 msgstr "葡萄牙语 (pt)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:930
+#: rustconn/src/dialogs/connection/rdp.rs:927
 msgid "Portuguese - Brazil (br)"
 msgstr "葡萄牙语 - 巴西 (br)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:931
+#: rustconn/src/dialogs/connection/rdp.rs:928
 msgid "English - UK (gb)"
 msgstr "英语 - 英国 (gb)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:932
+#: rustconn/src/dialogs/connection/rdp.rs:929
 msgid "German - Switzerland (ch)"
 msgstr "德语 - 瑞士 (ch)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:933
+#: rustconn/src/dialogs/connection/rdp.rs:930
 msgid "German - Austria (at)"
 msgstr "德语 - 奥地利 (at)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:934
+#: rustconn/src/dialogs/connection/rdp.rs:931
 msgid "French - Belgium (be)"
 msgstr "法语 - 比利时 (be)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:935
+#: rustconn/src/dialogs/connection/rdp.rs:932
 msgid "Dutch (nl)"
 msgstr "荷兰语 (nl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:936
+#: rustconn/src/dialogs/connection/rdp.rs:933
 msgid "Swedish (se)"
 msgstr "瑞典语 (se)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:937
+#: rustconn/src/dialogs/connection/rdp.rs:934
 msgid "Norwegian (no)"
 msgstr "挪威语 (no)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:938
+#: rustconn/src/dialogs/connection/rdp.rs:935
 msgid "Danish (dk)"
 msgstr "丹麦语 (dk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:939
+#: rustconn/src/dialogs/connection/rdp.rs:936
 msgid "Finnish (fi)"
 msgstr "芬兰语 (fi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:940
+#: rustconn/src/dialogs/connection/rdp.rs:937
 msgid "Polish (pl)"
 msgstr "波兰语 (pl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:941
+#: rustconn/src/dialogs/connection/rdp.rs:938
 msgid "Czech (cz)"
 msgstr "捷克语 (cz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:942
+#: rustconn/src/dialogs/connection/rdp.rs:939
 msgid "Slovak (sk)"
 msgstr "斯洛伐克语 (sk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:943
+#: rustconn/src/dialogs/connection/rdp.rs:940
 msgid "Hungarian (hu)"
 msgstr "匈牙利语 (hu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:944
+#: rustconn/src/dialogs/connection/rdp.rs:941
 msgid "Romanian (ro)"
 msgstr "罗马尼亚语 (ro)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:945
+#: rustconn/src/dialogs/connection/rdp.rs:942
 msgid "Croatian (hr)"
 msgstr "克罗地亚语 (hr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:946
+#: rustconn/src/dialogs/connection/rdp.rs:943
 msgid "Slovenian (si)"
 msgstr "斯洛文尼亚语 (si)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:947
+#: rustconn/src/dialogs/connection/rdp.rs:944
 msgid "Serbian (rs)"
 msgstr "塞尔维亚语 (rs)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:948
+#: rustconn/src/dialogs/connection/rdp.rs:945
 msgid "Bulgarian (bg)"
 msgstr "保加利亚语 (bg)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:949
+#: rustconn/src/dialogs/connection/rdp.rs:946
 msgid "Russian (ru)"
 msgstr "俄语 (ru)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:950
+#: rustconn/src/dialogs/connection/rdp.rs:947
 msgid "Ukrainian (ua)"
 msgstr "乌克兰语 (ua)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:951
+#: rustconn/src/dialogs/connection/rdp.rs:948
 msgid "Turkish (tr)"
 msgstr "土耳其语 (tr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:952
+#: rustconn/src/dialogs/connection/rdp.rs:949
 msgid "Greek (gr)"
 msgstr "希腊语 (gr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:953
+#: rustconn/src/dialogs/connection/rdp.rs:950
 msgid "Japanese (jp)"
 msgstr "日语 (jp)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:954
+#: rustconn/src/dialogs/connection/rdp.rs:951
 msgid "Korean (kr)"
 msgstr "韩语 (kr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:955
+#: rustconn/src/dialogs/connection/rdp.rs:952
 msgid "United States - Dvorak"
 msgstr "英语 - 美国 (Dvorak)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:964
+#: rustconn/src/dialogs/connection/rdp.rs:961
 msgid "Keyboard Layout"
 msgstr "键盘布局"
 
-#: rustconn/src/dialogs/connection/rdp.rs:965
+#: rustconn/src/dialogs/connection/rdp.rs:962
 msgid "Layout sent to RDP server (Auto uses system setting)"
 msgstr "发送到 RDP 服务器的布局（自动使用系统设置）"
 
-#: rustconn/src/dialogs/connection/rdp.rs:972
+#: rustconn/src/dialogs/connection/rdp.rs:969
 #: rustconn/src/dialogs/connection/telnet.rs:43
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
 msgstr "附加命令行参数"
 
-#: rustconn/src/dialogs/connection/rdp.rs:978
+#: rustconn/src/dialogs/connection/rdp.rs:975
 #: rustconn/src/dialogs/template.rs:955
 msgid "Extra FreeRDP command-line options"
 msgstr "额外的 FreeRDP 命令行选项"
@@ -10729,51 +10729,51 @@ msgstr "不支持 FreeRDP {}。请安装 FreeRDP 3。"
 msgid "RDP connection failed. Install FreeRDP 3 for external RDP sessions."
 msgstr "RDP 连接失败。请安装 FreeRDP 3 以使用外部 RDP 会话。"
 
-#: rustconn/src/embedded_rdp/connection.rs:705
+#: rustconn/src/embedded_rdp/connection.rs:707
 msgid ""
 "The embedded client does not support the legacy RDP security layer. Using "
 "FreeRDP instead."
 msgstr "嵌入式客户端不支持旧版 RDP 安全层。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:708
+#: rustconn/src/embedded_rdp/connection.rs:710
 msgid ""
 "The embedded client does not support TLS without NLA. Using FreeRDP instead."
 msgstr "嵌入式客户端不支持不带 NLA 的 TLS。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:711
+#: rustconn/src/embedded_rdp/connection.rs:713
 msgid ""
 "The embedded client does not support TLS security levels below 2. Using "
 "FreeRDP instead."
 msgstr "嵌入式客户端不支持低于 2 的 TLS 安全级别。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:714
+#: rustconn/src/embedded_rdp/connection.rs:716
 msgid "The embedded client does not support RemoteApp. Using FreeRDP instead."
 msgstr "嵌入式客户端不支持 RemoteApp。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:717
+#: rustconn/src/embedded_rdp/connection.rs:719
 msgid ""
 "The embedded client does not support playing audio on the remote computer. "
 "Using FreeRDP instead."
 msgstr "嵌入式客户端不支持在远程计算机上播放音频。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:720
+#: rustconn/src/embedded_rdp/connection.rs:722
 msgid ""
 "The embedded client does not support microphone redirection. Using FreeRDP "
 "instead."
 msgstr "嵌入式客户端不支持麦克风重定向。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:723
+#: rustconn/src/embedded_rdp/connection.rs:725
 msgid ""
 "The embedded client does not support connection broker load balancing. Using "
 "FreeRDP instead."
 msgstr "嵌入式客户端不支持连接代理负载均衡。改用 FreeRDP。"
 
-#: rustconn/src/embedded_rdp/connection.rs:850
-#: rustconn/src/embedded_rdp/connection.rs:2837
+#: rustconn/src/embedded_rdp/connection.rs:852
+#: rustconn/src/embedded_rdp/connection.rs:2884
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr "连接已取消，因为服务器要求使用旧版 RDP 安全协议。"
 
-#: rustconn/src/embedded_rdp/connection.rs:954
+#: rustconn/src/embedded_rdp/connection.rs:956
 msgid ""
 "Custom FreeRDP arguments are ignored by the embedded "
 "client.                          Set the RDP client mode to External to "
@@ -10782,7 +10782,7 @@ msgstr ""
 "内嵌客户端会忽略自定义 FreeRDP 参数。请将 RDP 客户端模式设为“外部”以使其生"
 "效。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2363
+#: rustconn/src/embedded_rdp/connection.rs:2410
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -10790,7 +10790,7 @@ msgstr ""
 "H.264 已关闭——已安装的 OpenH264 并非 Cisco 版本。请打开“设置 → 连接 → 媒体编"
 "解码器”进行下载。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2367
+#: rustconn/src/embedded_rdp/connection.rs:2414
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -10798,7 +10798,7 @@ msgstr ""
 "H.264 已关闭——未安装 OpenH264 编解码器。请打开“设置 → 连接 → 媒体编解码器”进"
 "行下载。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2371
+#: rustconn/src/embedded_rdp/connection.rs:2418
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -10806,46 +10806,46 @@ msgstr ""
 "H.264 已关闭——无法加载 OpenH264 编解码器。请打开“设置 → 连接 → 媒体编解码器”"
 "重新下载。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2581
+#: rustconn/src/embedded_rdp/connection.rs:2628
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "连接已丢失。正在重连（第 {} 次，共 {} 次）…"
 
-#: rustconn/src/embedded_rdp/connection.rs:2874
+#: rustconn/src/embedded_rdp/connection.rs:2921
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "无法准备外部 RDP 兼容客户端。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2885
+#: rustconn/src/embedded_rdp/connection.rs:2932
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "使用外部 RDP 客户端（服务器需要 RDS 授权）"
 
-#: rustconn/src/embedded_rdp/connection.rs:2887
+#: rustconn/src/embedded_rdp/connection.rs:2934
 msgid "Using external RDP client (server incompatible)"
 msgstr "使用外部 RDP 客户端（服务器不兼容）"
 
-#: rustconn/src/embedded_rdp/connection.rs:2905
-#: rustconn/src/embedded_rdp/connection.rs:3487
+#: rustconn/src/embedded_rdp/connection.rs:2952
+#: rustconn/src/embedded_rdp/connection.rs:3534
 msgid "The external RDP client could not be started."
 msgstr "无法启动外部 RDP 客户端。"
 
-#: rustconn/src/embedded_rdp/connection.rs:2943
+#: rustconn/src/embedded_rdp/connection.rs:2990
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr "无法启动外部 RDP 客户端。请安装 FreeRDP 3 后重试。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3021
+#: rustconn/src/embedded_rdp/connection.rs:3068
 msgid "TLS connection failed. The server may not support this security level."
 msgstr "TLS 连接失败。服务器可能不支持此安全级别。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3025
+#: rustconn/src/embedded_rdp/connection.rs:3072
 msgid "Connection refused. Check host and port."
 msgstr "连接被拒绝。请检查主机和端口。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3028
+#: rustconn/src/embedded_rdp/connection.rs:3075
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "连接超时。请检查主机是否可达。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3048
+#: rustconn/src/embedded_rdp/connection.rs:3095
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -10857,7 +10857,7 @@ msgstr ""
 "到 6.7.90 或更高版本，或在服务器上设置 ExtSecurity=0（FreeRDP issue "
 "#13567）。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3053
+#: rustconn/src/embedded_rdp/connection.rs:3100
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -10865,39 +10865,39 @@ msgstr ""
 "账户限制拒绝了此次登录。Protected Users 成员无法使用 NTLM：请在连接的 RDP 设"
 "置中开启 Kerberos 身份验证。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3056
+#: rustconn/src/embedded_rdp/connection.rs:3103
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "身份验证失败：账户限制阻止了此次登录。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3059
+#: rustconn/src/embedded_rdp/connection.rs:3106
 msgid "Authentication failed: password must be changed before first login."
 msgstr "身份验证失败：首次登录前必须更改密码。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3061
+#: rustconn/src/embedded_rdp/connection.rs:3108
 msgid "Authentication failed: account is disabled."
 msgstr "身份验证失败：账户已禁用。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3062
+#: rustconn/src/embedded_rdp/connection.rs:3109
 msgid "Authentication failed: account is locked out."
 msgstr "身份验证失败：账户已锁定。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3063
+#: rustconn/src/embedded_rdp/connection.rs:3110
 msgid "Authentication failed: password has expired."
 msgstr "身份验证失败：密码已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3064
+#: rustconn/src/embedded_rdp/connection.rs:3111
 msgid "Authentication failed: account has expired."
 msgstr "身份验证失败：账户已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3066
+#: rustconn/src/embedded_rdp/connection.rs:3113
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr "身份验证失败：账户已禁用、已锁定或已过期。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3069
+#: rustconn/src/embedded_rdp/connection.rs:3116
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr "身份验证失败：用户无权登录此计算机。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3073
+#: rustconn/src/embedded_rdp/connection.rs:3120
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -10905,14 +10905,14 @@ msgstr ""
 "未找到 {} 领域的 Kerberos KDC。请在连接的 RDP 设置中输入 KDC 地址，或将该领域"
 "添加到 /etc/krb5.conf。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3077
-#: rustconn/src/embedded_rdp/connection.rs:3117
+#: rustconn/src/embedded_rdp/connection.rs:3124
+#: rustconn/src/embedded_rdp/connection.rs:3164
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
 msgstr "Kerberos 需要 DNS 域。请在“域”字段中输入，例如 EXAMPLE.COM。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3081
+#: rustconn/src/embedded_rdp/connection.rs:3128
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -10920,14 +10920,14 @@ msgstr ""
 "无法连接到 Kerberos KDC。请在连接的 RDP 设置中，将域控制器的名称或 IP 地址作"
 "为 KDC 地址输入。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3084
+#: rustconn/src/embedded_rdp/connection.rs:3131
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
 msgstr ""
 "Kerberos 登录失败：此计算机的时钟与域时钟相差超过五分钟。请同步时钟后重试。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3087
+#: rustconn/src/embedded_rdp/connection.rs:3134
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -10935,27 +10935,27 @@ msgstr ""
 "域无法通过 Host 中的名称识别此服务器。请使用服务器在域中注册的 DNS 名称进行连"
 "接。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3089
+#: rustconn/src/embedded_rdp/connection.rs:3136
 msgid "NLA authentication failed. Check username and password."
 msgstr "NLA 身份验证失败。请检查用户名和密码。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3111
+#: rustconn/src/embedded_rdp/connection.rs:3158
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
 msgstr "Kerberos 需要服务器的 DNS 名称。通过 IP 地址或 SSH 隧道连接会失败。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3114
+#: rustconn/src/embedded_rdp/connection.rs:3161
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
 msgstr "Kerberos 需要 DNS 域，例如 EXAMPLE.COM，而非短域名。"
 
-#: rustconn/src/embedded_rdp/connection.rs:3514
+#: rustconn/src/embedded_rdp/connection.rs:3561
 msgid "RDP session will open in an external window"
 msgstr "RDP 会话将在外部窗口中打开"
 
-#: rustconn/src/embedded_rdp/connection.rs:3543
+#: rustconn/src/embedded_rdp/connection.rs:3590
 msgid "Failed to start FreeRDP: {}"
 msgstr "无法启动 FreeRDP：{}"
 
@@ -14316,3 +14316,6 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Send the local microphone to the remote session (requires FreeRDP)"
+#~ msgstr "将本地麦克风发送到远程会话（需要 FreeRDP）"

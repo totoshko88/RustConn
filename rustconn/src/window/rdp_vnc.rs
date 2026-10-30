@@ -630,8 +630,8 @@ fn start_embedded_rdp_session(
     // Automatic reconnection after a dropped connection (IronRDP path)
     embedded_config.auto_reconnect = rdp_config.auto_reconnect;
 
-    // Microphone and broker routing send the session to FreeRDP, which has
-    // the channels IronRDP lacks; smart cards apply only once it runs there.
+    // The microphone runs on the embedded client; broker routing sends the
+    // session to FreeRDP, and smart cards apply only once it runs there.
     embedded_config.microphone_enabled = rdp_config.microphone_enabled;
     embedded_config.smartcard_enabled = rdp_config.smartcard_enabled;
     embedded_config.load_balance_info = rdp_config.load_balance_info.clone();

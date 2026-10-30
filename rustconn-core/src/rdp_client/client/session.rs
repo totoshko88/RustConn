@@ -1,30 +1,27 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use ironrdp::connector::ConnectionResult;
-use ironrdp::connector::connection_activation::{
+use ironrdp_connector::ConnectionResult;
+use ironrdp_connector::connection_activation::{
     ConnectionActivationFactory, ConnectionActivationState,
 };
-use ironrdp::graphics::image_processing::PixelFormat as IronPixelFormat;
-use ironrdp::pdu::WriteBuf;
-use ironrdp::session::image::DecodedImage;
-use ironrdp::session::{ActiveStage, ActiveStageBuilder, ActiveStageOutput, fast_path};
+use ironrdp_graphics::image_processing::PixelFormat as IronPixelFormat;
+use ironrdp_pdu::WriteBuf;
+use ironrdp_session::image::DecodedImage;
+use ironrdp_session::{ActiveStage, ActiveStageBuilder, ActiveStageOutput};
 use ironrdp_tokio::{
     Framed, FramedRead, FramedWrite, single_sequence_step_read, split_tokio_framed,
 };
 
-#[cfg(feature = "gfx-h264")]
-use super::super::gfx_handler::GfxFrameUpdate;
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
 
 /// Runs the active RDP session, processing framebuffer updates and input
 ///
-/// When the `gfx-h264` feature is enabled, `gfx_update_rx` carries decoded
-/// EGFX frame updates from the `GraphicsPipelineHandler`. The session loop
-/// drains it after each `ActiveStage::process()` call to convert RGBA→BGRA
-/// and emit `FrameUpdate` events to the GUI.
+/// Graphics-pipeline frames need nothing of their own here: `ActiveStage`
+/// composites them into `image` and reports them as `GraphicsUpdate`, like
+/// bitmap updates.
 #[expect(
     clippy::too_many_lines,
     reason = "long session loop over frame, command and EGFX dispatch; splitting it would only relocate the shared mutable state"
@@ -35,7 +32,7 @@ pub(super) async fn run_active_session(
     event_tx: std::sync::mpsc::Sender<RdpClientEvent>,
     mut command_rx: tokio::sync::mpsc::UnboundedReceiver<RdpClientCommand>,
     shutdown_signal: Arc<AtomicBool>,
-    #[cfg(feature = "gfx-h264")] gfx_update_rx: std::sync::mpsc::Receiver<GfxFrameUpdate>,
+    microphone: Option<super::connection::MicrophoneLink>,
 ) -> Result<(), RdpClientError> {
     let (mut reader, mut writer) = split_tokio_framed(framed);
 
@@ -61,7 +58,7 @@ pub(super) async fn run_active_session(
     // even in a working session — the other half of issue #262.
     let mut frame_stats = super::super::graphics::FrameStatistics::new();
 
-    // Build ActiveStage from ConnectionResult fields (ironrdp 0.17 builder pattern)
+    // Build ActiveStage from ConnectionResult fields (ironrdp-session builder)
     let activation_factory = connection_result.activation_factory;
     // Kept for the error path below: a PDU that fails to decode is only
     // survivable when we can prove it arrived on the message channel.
@@ -88,6 +85,11 @@ pub(super) async fn run_active_session(
     let mut clipboard_timeouts = tokio::time::interval(std::time::Duration::from_secs(5));
     clipboard_timeouts.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+    let (microphone_sink, mut microphone_uplink) = match microphone {
+        Some(link) => (Some(link.sink), Some(link.uplink_rx)),
+        None => (None, None),
+    };
+
     loop {
         // Check shutdown signal
         if shutdown_signal.load(Ordering::SeqCst) {
@@ -106,7 +108,16 @@ pub(super) async fn run_active_session(
         tokio::select! {
             // Branch 1: Command from GUI (keyboard, mouse, clipboard, disconnect)
             Some(cmd) = command_rx.recv() => {
-                if process_command(
+                // Microphone packets go to the AUDIO_INPUT channel, which
+                // queues the resulting messages for the branch below.
+                if let RdpClientCommand::MicrophoneData(packet) = cmd {
+                    if let Some(sink) = microphone_sink.as_ref()
+                        && let Ok(mut slot) = sink.lock()
+                        && let Some(sink) = slot.as_mut()
+                    {
+                        sink(packet);
+                    }
+                } else if process_command(
                     cmd,
                     &mut active_stage,
                     &mut image,
@@ -120,11 +131,25 @@ pub(super) async fn run_active_session(
                 }
             }
 
+            // Branch 1b: microphone audio the AUDIO_INPUT channel has encoded
+            Some(messages) = next_microphone_messages(&mut microphone_uplink) => {
+                match active_stage.encode_dvc_messages(messages) {
+                    Ok(frame) => {
+                        if let Err(e) = writer.write_all(&frame).await {
+                            return Err(RdpClientError::ServerDisconnected(format!(
+                                "Write error: {e}"
+                            )));
+                        }
+                    }
+                    Err(e) => tracing::warn!(error = %e, "Failed to encode microphone audio"),
+                }
+            }
+
             // Branch 2: PDU from RDP server (framebuffer update, cursor, etc.)
             result = reader.read_pdu() => {
                 match result {
                     Ok((action, payload)) => {
-                        match active_stage.process(&mut image, action, &payload) {
+                        match active_stage.process(&mut image, action, &payload, None) {
                             Ok(outputs) => {
                                 for output in outputs {
                                     if handle_active_stage_output(
@@ -142,9 +167,6 @@ pub(super) async fn run_active_session(
                                         return Ok(());
                                     }
                                 }
-
-                                #[cfg(feature = "gfx-h264")]
-                                drain_gfx_updates(&gfx_update_rx, &mut image, &event_tx, &mut frame_stats);
                             }
                             Err(e) if is_ignorable_message_channel_pdu(
                                 action,
@@ -238,20 +260,46 @@ pub(super) async fn run_active_session(
 ///
 /// [IronRDP#1814]: https://github.com/Devolutions/IronRDP/pull/1814
 /// [IronRDP#1629]: https://github.com/Devolutions/IronRDP/issues/1629
+/// Logs the session outputs a desktop session has no use for: no RemoteApp
+/// windows, one monitor, and no automatic reconnection cookie — the GUI
+/// reconnects with the stored credentials instead.
+fn log_session_notice(output: &ActiveStageOutput) {
+    match output {
+        ActiveStageOutput::SaveSessionInfo { .. } | ActiveStageOutput::SessionId(_) => {
+            tracing::debug!("Server sent session information");
+        }
+        ActiveStageOutput::LogonErrors(info) => {
+            tracing::debug!(?info, "Server reported a logon notification");
+        }
+        _ => {}
+    }
+}
+
+/// Waits for the next batch of microphone messages, or forever when the
+/// connection has no microphone, so the `select!` branch never fires.
+async fn next_microphone_messages(
+    uplink: &mut Option<tokio::sync::mpsc::UnboundedReceiver<Vec<ironrdp_svc::SvcMessage>>>,
+) -> Option<Vec<ironrdp_svc::SvcMessage>> {
+    match uplink {
+        Some(rx) => rx.recv().await,
+        None => std::future::pending().await,
+    }
+}
+
 fn is_ignorable_message_channel_pdu(
-    action: ironrdp::pdu::Action,
+    action: ironrdp_pdu::Action,
     payload: &[u8],
     message_channel_id: Option<u16>,
 ) -> bool {
     // Auto-detect, Heartbeat and multitransport all travel over X224; a fast-path
     // failure is a framebuffer problem and has nothing to do with this.
-    if action != ironrdp::pdu::Action::X224 {
+    if action != ironrdp_pdu::Action::X224 {
         return false;
     }
     let Some(message_channel_id) = message_channel_id else {
         return false;
     };
-    ironrdp::pdu::mcs::decode_send_data_indication(payload)
+    ironrdp_pdu::mcs::decode_send_data_indication(payload)
         .is_ok_and(|ctx| ctx.channel_id == message_channel_id)
 }
 
@@ -357,7 +405,7 @@ where
         ActiveStageOutput::AutoDetect(request) => {
             // Server sends a network-characteristics result (RTT/bandwidth
             // probe). Extract the RTT measurement and forward it to the GUI.
-            if let ironrdp::pdu::rdp::autodetect::AutoDetectRequest::NetworkCharacteristicsResult {
+            if let ironrdp_pdu::rdp::autodetect::AutoDetectRequest::NetworkCharacteristicsResult {
                 average_rtt_ms,
                 ..
             } = &request
@@ -371,6 +419,22 @@ where
                 "Received Auto-Detect network characteristics from server"
             );
         }
+        ActiveStageOutput::ServerRedirection(_) => {
+            // A connection broker moved the session mid-flight. Ending it as a
+            // dropped connection lets automatic reconnection go through the
+            // broker again, which routes the user back to their session.
+            return Err(RdpClientError::ServerDisconnected(
+                "Server redirection to another session host".to_string(),
+            ));
+        }
+        notice @ (ActiveStageOutput::MonitorLayout(_)
+        | ActiveStageOutput::WindowingOrders(_)
+        | ActiveStageOutput::WindowSurfaceUpdates(_)
+        | ActiveStageOutput::AutoReconnectCookie(_)
+        | ActiveStageOutput::AutoReconnectFailed
+        | ActiveStageOutput::SaveSessionInfo { .. }
+        | ActiveStageOutput::SessionId(_)
+        | ActiveStageOutput::LogonErrors(_)) => log_session_notice(&notice),
     }
     Ok(false)
 }
@@ -419,6 +483,8 @@ where
             share_id,
             enable_server_pointer,
             pointer_software_rendering,
+            static_channel_chunk_size,
+            ..
         } = connection_activation.connection_activation_state()
         {
             tracing::debug!(
@@ -433,28 +499,21 @@ where
                 desktop_size.height,
             );
 
-            // Update the active stage with new channel IDs
-            // and pointer settings
-            active_stage.set_fastpath_processor(
-                fast_path::ProcessorBuilder {
-                    io_channel_id,
-                    user_channel_id,
-                    share_id,
-                    enable_server_pointer,
-                    pointer_software_rendering,
-                    // Bulk compression is disabled at connection time
-                    // (`compression_type: None`), so the server never sends
-                    // compressed FastPath data and no decompressor is needed.
-                    // See the note in `connection.rs` and issue #200 for why
-                    // reactivation + bulk compression cannot be reconciled with
-                    // the current ironrdp-session API.
-                    bulk_decompressor: None,
-                }
-                .build(),
-            );
-            // Update share_id if the server assigned a new one
-            active_stage.set_share_id(share_id);
-            active_stage.set_enable_server_pointer(enable_server_pointer);
+            // Rebuild the session for the new activation: channel IDs, share
+            // ID, pointer settings and the static channel chunk size.
+            if !active_stage.reactivate(
+                io_channel_id,
+                user_channel_id,
+                share_id,
+                enable_server_pointer,
+                pointer_software_rendering,
+                static_channel_chunk_size,
+            ) {
+                tracing::warn!(
+                    static_channel_chunk_size,
+                    "Reactivation rejected the server's static channel chunk size"
+                );
+            }
 
             // Notify GUI about resolution change
             let _ = event_tx.send(RdpClientEvent::ResolutionChanged {
@@ -519,152 +578,6 @@ fn extract_region_data(image: &DecodedImage, rect: RdpRect) -> Vec<u8> {
 // GFX Pipeline Integration (gfx-h264 feature)
 // ============================================================================
 
-/// Drains pending GFX frame updates and sends them as `FrameUpdate` events.
-///
-/// Called after `ActiveStage::process()` returns — the `GraphicsPipelineHandler`
-/// fires during `process()` and enqueues decoded RGBA frames via the mpsc channel.
-/// We convert RGBA→BGRA and send directly to the GUI without blitting into
-/// `DecodedImage` (which has no mutable data accessor in the public API).
-///
-/// A sentinel update with empty `data` signals a resolution change from
-/// `on_reset_graphics` — the framebuffer is resized and the GUI is notified.
-///
-/// Bounds checking ensures updates that exceed the framebuffer dimensions are
-/// clipped to avoid panics.
-#[cfg(feature = "gfx-h264")]
-fn drain_gfx_updates(
-    gfx_update_rx: &std::sync::mpsc::Receiver<GfxFrameUpdate>,
-    image: &mut DecodedImage,
-    event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
-    frame_stats: &mut super::super::graphics::FrameStatistics,
-) {
-    while let Ok(update) = gfx_update_rx.try_recv() {
-        // Sentinel: empty data with non-zero dimensions = resolution reset
-        if update.data.is_empty() {
-            if update.width > 0 && update.height > 0 {
-                *image = DecodedImage::new(IronPixelFormat::BgrA32, update.width, update.height);
-                let _ = event_tx.send(RdpClientEvent::ResolutionChanged {
-                    width: update.width,
-                    height: update.height,
-                });
-                tracing::debug!(
-                    width = update.width,
-                    height = update.height,
-                    "GFX reset: framebuffer resized"
-                );
-            }
-            continue;
-        }
-
-        // Skip zero-dimension updates
-        if update.width == 0 || update.height == 0 {
-            continue;
-        }
-
-        let img_width = image.width();
-        let img_height = image.height();
-
-        // Clip update region to framebuffer bounds
-        let clipped_w = if update.x >= img_width {
-            continue;
-        } else {
-            update.width.min(img_width.saturating_sub(update.x))
-        };
-        let clipped_h = if update.y >= img_height {
-            continue;
-        } else {
-            update.height.min(img_height.saturating_sub(update.y))
-        };
-
-        // Measure RGBA→BGRA conversion time
-        let blit_start = std::time::Instant::now();
-        let bgra_data = convert_gfx_rgba_to_bgra(&update, clipped_w, clipped_h);
-        let blit_elapsed_us = blit_start.elapsed().as_micros() as u64;
-
-        // Update H.264 decode/blit time EMA
-        frame_stats.update_h264_decode_time(blit_elapsed_us);
-
-        let rect = RdpRect::new(update.x, update.y, clipped_w, clipped_h);
-        let bytes = bgra_data.len();
-        let _ = event_tx.send(RdpClientEvent::FrameUpdate {
-            rect,
-            data: bgra_data,
-        });
-        // Record the painted GFX frame so current_fps/frames_decoded track the
-        // H.264 path too, not just the RemoteFX one (issue #262).
-        frame_stats.record_frame(bytes, blit_elapsed_us);
-    }
-}
-
-/// Converts RGBA pixel data from a GFX frame update to BGRA format.
-///
-/// Performs row-by-row conversion with R↔B channel swap, respecting the
-/// clipped dimensions (which may be smaller than the original update when
-/// the update extends beyond the framebuffer boundary).
-///
-/// # Performance
-///
-/// Uses `chunks_exact(4)` which LLVM auto-vectorizes into SSSE3 `pshufb`
-/// (byte shuffle) on x86_64 — ~4× faster than byte-by-byte push on 4K frames.
-#[cfg(feature = "gfx-h264")]
-fn convert_gfx_rgba_to_bgra(update: &GfxFrameUpdate, clipped_w: u16, clipped_h: u16) -> Vec<u8> {
-    let src_stride = usize::from(update.width) * 4;
-    let clip_w = usize::from(clipped_w);
-    let clip_h = usize::from(clipped_h);
-    let dst_size = clip_w * clip_h * 4;
-    let mut result = vec![0u8; dst_size];
-
-    for row in 0..clip_h {
-        let src_row_start = row * src_stride;
-        let src_row_end = src_row_start + clip_w * 4;
-        let dst_row_start = row * clip_w * 4;
-
-        // If source row is fully available, use fast chunks_exact path
-        if src_row_end <= update.data.len() {
-            let src_row = &update.data[src_row_start..src_row_end];
-            let dst_row = &mut result[dst_row_start..dst_row_start + clip_w * 4];
-            for (src, dst) in src_row
-                .as_chunks::<4>()
-                .0
-                .iter()
-                .zip(dst_row.as_chunks_mut::<4>().0.iter_mut())
-            {
-                // RGBA → BGRA: swap R and B channels
-                dst[0] = src[2]; // B
-                dst[1] = src[1]; // G
-                dst[2] = src[0]; // R
-                dst[3] = src[3]; // A
-            }
-        } else {
-            // Partial row — fill available pixels, rest stays black (from vec![0u8; ..])
-            let available = update.data.len().saturating_sub(src_row_start);
-            let full_pixels = available / 4;
-            if full_pixels > 0 {
-                let src_row = &update.data[src_row_start..src_row_start + full_pixels * 4];
-                let dst_row = &mut result[dst_row_start..dst_row_start + full_pixels * 4];
-                for (src, dst) in src_row
-                    .as_chunks::<4>()
-                    .0
-                    .iter()
-                    .zip(dst_row.as_chunks_mut::<4>().0.iter_mut())
-                {
-                    dst[0] = src[2];
-                    dst[1] = src[1];
-                    dst[2] = src[0];
-                    dst[3] = src[3];
-                }
-            }
-            // Remaining pixels in this and subsequent rows are zero (opaque black
-            // with alpha=0). Set alpha to 255 for the unfilled pixels.
-            for px in full_pixels..clip_w {
-                result[dst_row_start + px * 4 + 3] = 255;
-            }
-        }
-    }
-
-    result
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -675,16 +588,16 @@ mod tests {
     /// test exercises the actual framing rather than a hand-rolled byte string that
     /// could drift from it.
     fn indication_frame(channel_id: u16, user_data: &[u8]) -> Vec<u8> {
-        use ironrdp::pdu::mcs::{McsMessage, SendDataIndication};
-        use ironrdp::pdu::x224::X224;
+        use ironrdp_pdu::mcs::{McsMessage, SendDataIndication};
+        use ironrdp_pdu::x224::X224;
 
         let msg = SendDataIndication {
             initiator_id: 1002,
             channel_id,
             user_data: std::borrow::Cow::Borrowed(user_data),
         };
-        let mut buf = ironrdp::pdu::WriteBuf::new();
-        ironrdp::core::encode_buf(&X224(McsMessage::SendDataIndication(msg)), &mut buf)
+        let mut buf = ironrdp_pdu::WriteBuf::new();
+        ironrdp_core::encode_buf(&X224(McsMessage::SendDataIndication(msg)), &mut buf)
             .expect("encoding a Send Data Indication must succeed");
         buf.into_inner()
     }
@@ -696,7 +609,7 @@ mod tests {
     fn a_pdu_on_the_message_channel_is_ignorable() {
         let frame = indication_frame(1005, &[0xff, 0xff, 0xff, 0xff]);
         assert!(is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::X224,
+            ironrdp_pdu::Action::X224,
             &frame,
             Some(1005)
         ));
@@ -709,7 +622,7 @@ mod tests {
         // The IO channel carries the framebuffer; a decode failure there is real.
         let frame = indication_frame(1003, &[0xff, 0xff, 0xff, 0xff]);
         assert!(!is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::X224,
+            ironrdp_pdu::Action::X224,
             &frame,
             Some(1005)
         ));
@@ -721,7 +634,7 @@ mod tests {
         // channel, so the channel id must not even be consulted.
         let frame = indication_frame(1005, &[0xff]);
         assert!(!is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::FastPath,
+            ironrdp_pdu::Action::FastPath,
             &frame,
             Some(1005)
         ));
@@ -733,7 +646,7 @@ mod tests {
         // anything on it, so a failure has some other cause.
         let frame = indication_frame(1005, &[0xff]);
         assert!(!is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::X224,
+            ironrdp_pdu::Action::X224,
             &frame,
             None
         ));
@@ -746,12 +659,12 @@ mod tests {
         // guard re-derives the channel instead of matching on the error kind:
         // `SessionErrorKind::Decode` covers this case too.
         assert!(!is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::X224,
+            ironrdp_pdu::Action::X224,
             &[0x00, 0x01, 0x02, 0x03],
             Some(1005)
         ));
         assert!(!is_ignorable_message_channel_pdu(
-            ironrdp::pdu::Action::X224,
+            ironrdp_pdu::Action::X224,
             &[],
             Some(1005)
         ));

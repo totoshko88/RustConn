@@ -653,7 +653,7 @@ enum FreeRdpRequirement {
     RemoteApp,
     /// Audio left playing on the remote computer, which IronRDP cannot request
     RemoteAudio,
-    /// The local microphone, for which IronRDP has no audio-input channel
+    /// The local microphone, in a build without `rdp-audio` to capture it
     Microphone,
     /// A connection broker routing value, which IronRDP cannot follow
     LoadBalancing,
@@ -685,7 +685,9 @@ impl FreeRdpRequirement {
         if config.audio_mode.requires_freerdp() {
             return Some(Self::RemoteAudio);
         }
-        if config.microphone_enabled {
+        // The embedded client carries the microphone itself when the GUI can
+        // capture (`rdp-audio`).
+        if config.microphone_enabled && !cfg!(feature = "rdp-audio") {
             return Some(Self::Microphone);
         }
         if config
@@ -1234,6 +1236,9 @@ impl super::EmbeddedRdpWidget {
             .with_performance_mode(config.performance_mode)
             .with_color_depth(config.performance_mode.color_depth())
             .with_scale_factor(rdp_scale_percent);
+        // The microphone needs the GUI to capture, which `rdp-audio` builds in;
+        // without it the session goes to FreeRDP (`FreeRdpRequirement`).
+        client_config.microphone_enabled = cfg!(feature = "rdp-audio") && config.microphone_enabled;
 
         if let Some(ref username) = config.username {
             client_config = client_config.with_username(username);
@@ -1443,6 +1448,12 @@ impl super::EmbeddedRdpWidget {
         let connection_generation = self.connection_generation.clone();
         #[cfg(feature = "rdp-audio")]
         let audio_player = self.audio_player.clone();
+        // Microphone capture for this connection; dropped, and so stopped,
+        // with the polling loop.
+        #[cfg(feature = "rdp-audio")]
+        let microphone: std::rc::Rc<
+            std::cell::RefCell<Option<crate::audio::RdpMicrophone>>,
+        > = std::rc::Rc::new(std::cell::RefCell::new(None));
         let clipboard_monitor = self.clipboard_monitor.clone();
 
         // Use the struct-level suppression flag so both the Copy button handler
@@ -2219,11 +2230,47 @@ impl super::EmbeddedRdpWidget {
                                     player.stop();
                                 }
                             }
+                            #[cfg(feature = "rdp-audio")]
+                            RdpClientEvent::MicrophoneOpened {
+                                channels,
+                                samples_per_sec,
+                                packet_size,
+                                ..
+                            } => {
+                                // A format change reopens capture; stop the
+                                // old stream before the new one claims the device.
+                                microphone.borrow_mut().take();
+                                let sender = ironrdp_tx.borrow().clone();
+                                if let Some(sender) = sender {
+                                    match crate::audio::RdpMicrophone::start(
+                                        channels,
+                                        samples_per_sec,
+                                        packet_size,
+                                        move |packet| {
+                                            let _ = sender
+                                                .send(RdpClientCommand::MicrophoneData(packet));
+                                        },
+                                    ) {
+                                        Ok(capture) => *microphone.borrow_mut() = Some(capture),
+                                        Err(e) => tracing::warn!(
+                                            protocol = "rdp",
+                                            error = %e,
+                                            "Microphone capture failed to start"
+                                        ),
+                                    }
+                                }
+                            }
+                            #[cfg(feature = "rdp-audio")]
+                            RdpClientEvent::MicrophoneClosed => {
+                                microphone.borrow_mut().take();
+                            }
                             #[cfg(not(feature = "rdp-audio"))]
                             RdpClientEvent::AudioFormatChanged(_)
                             | RdpClientEvent::AudioData { .. }
                             | RdpClientEvent::AudioVolume { .. }
-                            | RdpClientEvent::AudioClose => {
+                            | RdpClientEvent::AudioClose
+                            | RdpClientEvent::MicrophoneOpened { .. }
+                            | RdpClientEvent::MicrophoneClosed => {
                                 // Audio not enabled - ignore
                             }
                             RdpClientEvent::ClipboardDataReady { format_id, data } => {
@@ -3842,10 +3889,6 @@ mod tests {
                 FreeRdpRequirement::RemoteAudio,
             ),
             (
-                config_with(|c| c.microphone_enabled = true),
-                FreeRdpRequirement::Microphone,
-            ),
-            (
                 config_with(|c| c.load_balance_info = Some("tsv://x.1.y".to_string())),
                 FreeRdpRequirement::LoadBalancing,
             ),
@@ -3853,6 +3896,13 @@ mod tests {
         for (config, expected) in cases {
             assert_eq!(FreeRdpRequirement::of(&config), Some(expected));
         }
+    }
+
+    #[test]
+    fn microphone_needs_freerdp_only_without_local_audio() {
+        let config = config_with(|c| c.microphone_enabled = true);
+        let expected = (!cfg!(feature = "rdp-audio")).then_some(FreeRdpRequirement::Microphone);
+        assert_eq!(FreeRdpRequirement::of(&config), expected);
     }
 
     #[test]

@@ -2,21 +2,22 @@ use std::net::SocketAddr;
 use std::panic::AssertUnwindSafe;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use ironrdp::cliprdr::CliprdrClient;
-use ironrdp::connector::{
-    BitmapConfig, ClientConnector, Config, ConnectionResult, Credentials, DesktopSize, ServerName,
+use ironrdp_cliprdr::CliprdrClient;
+use ironrdp_connector::{
+    BitmapConfig, ClientConnector, Config, ConnectionOutcome, ConnectionResult, Credentials,
+    DesktopSize, ServerName,
 };
-use ironrdp::dvc::DrdynvcClient;
-use ironrdp::echo::client::EchoClient;
-use ironrdp::pdu::gcc::KeyboardType;
-use ironrdp::pdu::rdp::capability_sets::{
-    BitmapCodecs, MajorPlatformType, client_codecs_capabilities,
-};
-use ironrdp::pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
-use ironrdp::rdpdr::Rdpdr;
-use ironrdp::rdpsnd::client::Rdpsnd;
+use ironrdp_dvc::DrdynvcClient;
+use ironrdp_echo::client::EchoClient;
 #[cfg(feature = "gfx-h264")]
 use ironrdp_egfx::client::GraphicsPipelineClient;
+use ironrdp_pdu::gcc::KeyboardType;
+use ironrdp_pdu::rdp::capability_sets::{
+    BitmapCodecs, MajorPlatformType, client_codecs_capabilities,
+};
+use ironrdp_pdu::rdp::client_info::{PerformanceFlags, TimezoneInfo};
+use ironrdp_rdpdr::Rdpdr;
+use ironrdp_rdpsnd::client::Rdpsnd;
 use ironrdp_tokio::TokioFramed;
 use ironrdp_tokio::reqwest::ReqwestNetworkClient;
 use secrecy::ExposeSecret;
@@ -25,7 +26,7 @@ use tokio::net::TcpStream;
 use super::super::audio::RustConnAudioBackend;
 use super::super::clipboard::RustConnClipboardBackend;
 #[cfg(feature = "gfx-h264")]
-use super::super::gfx_handler::{GfxFrameUpdate, RustConnGfxHandler, try_load_openh264};
+use super::super::gfx_handler::{RustConnGfxHandler, try_load_openh264};
 use super::super::kerberos::{KerberosSettings, kerberos_settings_for};
 use super::super::rdpdr::{RustConnRdpdrBackend, cups_default_printer, list_cups_printers};
 use super::super::{RdpClientConfig, RdpClientError, RdpClientEvent};
@@ -61,7 +62,7 @@ fn map_connector_error(context: &str, display: &str, kind_debug: &str) -> RdpCli
 /// entry it cannot parse counts as not found here too. `sspi` is IronRDP's own
 /// re-export, so this always asks the sspi version that does the sign-in.
 fn sspi_finds_kdc(realm: &str) -> bool {
-    use ironrdp::connector::sspi;
+    use ironrdp_connector::sspi;
 
     let realm = sspi::kerberos::client::principal::get_client_principal_realm("", realm);
     sspi::detect_kdc_url(&realm).is_some()
@@ -75,8 +76,8 @@ fn sspi_finds_kdc(realm: &str) -> bool {
 fn kerberos_connector_config(
     config: &RdpClientConfig,
     settings: KerberosSettings,
-) -> Option<ironrdp::connector::credssp::KerberosConfig> {
-    use ironrdp::connector::credssp::KerberosConfig;
+) -> Option<ironrdp_connector::credssp::KerberosConfig> {
+    use ironrdp_connector::credssp::KerberosConfig;
 
     let KerberosSettings {
         kdc_url,
@@ -247,10 +248,19 @@ pub(super) struct ConnectionSetup {
     pub framed: UpgradedFramed,
     /// IronRDP connection result with negotiated capabilities
     pub connection_result: ConnectionResult,
-    /// Receiver for decoded GFX frame updates from the EGFX pipeline.
-    /// The session loop drains this to blit RGBA→BGRA into the framebuffer.
-    #[cfg(feature = "gfx-h264")]
-    pub gfx_update_rx: std::sync::mpsc::Receiver<GfxFrameUpdate>,
+    /// The microphone channel's link to the session loop, when the connection
+    /// asked for the microphone.
+    pub microphone: Option<MicrophoneLink>,
+}
+
+/// What the session loop needs to carry microphone audio (MS-RDPEAI).
+///
+/// The GUI's packets go into `sink`; the `AUDIO_INPUT` channel answers with
+/// DRDYNVC messages outside the server's turn, which arrive on `uplink_rx`
+/// for the session loop to send.
+pub(super) struct MicrophoneLink {
+    pub sink: crate::rdp_client::microphone::MicrophoneSink,
+    pub uplink_rx: tokio::sync::mpsc::UnboundedReceiver<Vec<ironrdp_svc::SvcMessage>>,
 }
 
 /// Establishes the RDP connection and returns the framed stream and connection result.
@@ -335,6 +345,7 @@ pub(super) async fn establish_connection(
             gw_endpoint,
             gw_user,
             gw_pass,
+            smart_card: None,
             server: config.host.clone(),
         });
         let client_name = hostname::get().map_or_else(
@@ -461,7 +472,7 @@ pub(super) async fn establish_connection(
             event_tx.clone(),
             config.clipboard_direction,
         );
-        let cliprdr: CliprdrClient = ironrdp::cliprdr::Cliprdr::new(Box::new(clipboard_backend));
+        let cliprdr: CliprdrClient = ironrdp_cliprdr::Cliprdr::new(Box::new(clipboard_backend));
         connector.static_channels.insert(cliprdr);
         tracing::debug!(direction = ?config.clipboard_direction, "Clipboard channel enabled");
     }
@@ -583,7 +594,7 @@ pub(super) async fn establish_connection(
         expect(unused_mut, reason = "mut needed when gfx-h264 adds a channel")
     )]
     let mut drdynvc = DrdynvcClient::new()
-        .with_dynamic_channel(ironrdp::displaycontrol::client::DisplayControlClient::new(
+        .with_dynamic_channel(ironrdp_displaycontrol::client::DisplayControlClient::new(
             move |_caps| {
                 // Capabilities have arrived → the Display Control channel is
                 // ready for MS-RDPEDISP resize. Signal the GUI so the initial
@@ -596,68 +607,76 @@ pub(super) async fn establish_connection(
         ))
         .with_dynamic_channel(EchoClient::new());
 
-    // Register EGFX Graphics Pipeline for H.264/AVC decoding when available.
+    // Register the EGFX graphics pipeline (MS-RDPEGFX) unless the connection
+    // asks for the Legacy or RemoteFX path, which is also the retry when the
+    // pipeline fails (issue #218).
     //
-    // Respects `config.graphics_mode`: Legacy and RemoteFx modes skip the EGFX
-    // channel entirely, forcing the server to use bitmap/RemoteFX updates
-    // through the static channel path. This enables a retry-without-GFX
-    // strategy when the GFX pipeline fails (issue #218).
+    // ironrdp-egfx decodes ClearCodec, Planar and RFX Progressive itself, so
+    // the channel works without OpenH264; the decoder adds AVC420, and AVC444
+    // where it returns YUV planes, and the client advertises only what it can
+    // decode. Up to ironrdp-egfx 0.3 nothing but H.264 could be painted, so a
+    // session without OpenH264 stayed off the pipeline to avoid the frozen
+    // desktop of issue #262; that reason is gone.
     //
-    // Fallback behavior (Req 6):
-    // - When the `gfx-h264` feature is disabled at compile time, this entire block
-    //   is absent — no EGFX DVC is registered, and the session uses the existing
-    //   RemoteFX/Legacy rendering path identically to before (Req 6 AC 2, AC 5).
-    // - When `graphics_mode` is Legacy or RemoteFx, the EGFX DVC is not
-    //   registered even if the feature is enabled — the session uses the
-    //   RemoteFX/Legacy path without the GFX pipeline.
-    // - When OpenH264 cannot be loaded the EGFX DVC is likewise not registered.
-    //   The comment here used to claim the pipeline degrades gracefully to
-    //   "uncompressed/RFX-progressive within the GFX channel". It does not:
-    //   without a decoder `ironrdp-egfx` advertises V8 only, Windows then sends
-    //   RFX Progressive, and `ironrdp-egfx` has no progressive decoder either —
-    //   it forwards those PDUs to a handler callback and the pixels are lost.
-    //   Opening a GFX channel we cannot paint through produces exactly the
-    //   frozen desktop of issue #262, so the session stays on the RemoteFX path
-    //   instead, which works.
+    // Advertising the pipeline in the early capability flags is what makes a
+    // Windows host open the channel at all ([MS-RDPEGFX] 1.5.1). The connector
+    // could not set it before ironrdp-connector 0.11, and such a host then kept
+    // the session on bitmap updates — blurry with RemoteFX, heavy without.
     #[cfg(feature = "gfx-h264")]
-    let gfx_update_rx = {
+    {
         use crate::rdp_client::graphics::GraphicsMode;
-        let skip_gfx = matches!(
+        if matches!(
             config.graphics_mode,
             GraphicsMode::Legacy | GraphicsMode::RemoteFx
-        );
-
-        let (gfx_update_tx, gfx_update_rx) = std::sync::mpsc::channel::<GfxFrameUpdate>();
-        // Drop the sender when GFX is skipped — the receiver's try_recv() then
-        // returns Disconnected immediately, which the session loop's
-        // `while let Ok` treats as "nothing pending".
-        if skip_gfx {
-            drop(gfx_update_tx);
+        ) {
             tracing::info!(
                 graphics_mode = ?config.graphics_mode,
                 "EGFX pipeline skipped (graphics_mode forces Legacy/RemoteFX path)"
             );
-        } else if let Some(h264_decoder) = try_load_openh264() {
-            let handler = RustConnGfxHandler::new(gfx_update_tx, event_tx.clone());
-            let gfx_client = GraphicsPipelineClient::new(Box::new(handler), Some(h264_decoder));
-            drdynvc = drdynvc.with_dynamic_channel(gfx_client);
-            tracing::info!("EGFX pipeline registered with H.264/AVC420 decoding");
         } else {
-            drop(gfx_update_tx);
-            // Tell the GUI why quality dropped: a GFX/H.264 mode was requested
-            // but no decoder loaded, so the session is on the RemoteFX path
-            // (issue #262). The reason distinguishes "not found" from the
-            // actionable "found but not a Cisco build".
-            if let Some(reason) = super::super::gfx_handler::openh264_unavailable_reason() {
-                let _ = event_tx.send(RdpClientEvent::H264Unavailable { reason });
+            let h264_decoder = try_load_openh264();
+            if h264_decoder.is_none() {
+                // Tell the GUI why quality dropped: H.264 was wanted but no
+                // decoder loaded (issue #262). The reason distinguishes "not
+                // found" from the actionable "found but not a Cisco build".
+                if let Some(reason) = super::super::gfx_handler::openh264_unavailable_reason() {
+                    let _ = event_tx.send(RdpClientEvent::H264Unavailable { reason });
+                }
+                tracing::warn!(
+                    reason = "openh264_unavailable",
+                    "EGFX pipeline registered without H.264 — the server picks a non-AVC codec"
+                );
             }
-            tracing::warn!(
-                reason = "openh264_unavailable",
-                "EGFX pipeline skipped — without an H.264 decoder the GFX channel \
-                 can only deliver content we cannot paint; using the RemoteFX path"
-            );
+            let has_h264 = h264_decoder.is_some();
+            let handler = RustConnGfxHandler::new(event_tx.clone());
+            let gfx_client = GraphicsPipelineClient::new(Box::new(handler), h264_decoder);
+            drdynvc = drdynvc.with_dynamic_channel(gfx_client);
+            connector.config.support_dyn_vc_gfx_protocol = true;
+            tracing::info!(h264 = has_h264, "EGFX pipeline registered");
         }
-        gfx_update_rx
+    }
+
+    // Microphone (MS-RDPEAI). Its data packets are sent between the server's
+    // turns, so the channel queues them for the session loop.
+    let microphone = if config.microphone_enabled {
+        use crate::rdp_client::microphone::{MicrophoneSink, RustConnMicrophone};
+
+        let sink: MicrophoneSink = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (uplink_tx, uplink_rx) = tokio::sync::mpsc::unbounded_channel();
+        let uplink: ironrdp_rdpeai::client::DvcUplink = Box::new(move |_channel_id, messages| {
+            uplink_tx
+                .send(messages)
+                .map_err(|_| ironrdp_pdu::pdu_other_err!("AUDIO_INPUT session loop has ended"))
+        });
+        let handler = RustConnMicrophone::new(std::sync::Arc::clone(&sink), event_tx.clone());
+        drdynvc = drdynvc.with_dynamic_channel(ironrdp_rdpeai::client::RdpeaiClient::new(
+            Box::new(handler),
+            uplink,
+        ));
+        tracing::info!("AUDIO_INPUT channel registered (microphone)");
+        Some(MicrophoneLink { sink, uplink_rx })
+    } else {
+        None
     };
 
     connector.static_channels.insert(drdynvc);
@@ -783,10 +802,10 @@ pub(super) async fn establish_connection(
         // Wrap in catch_unwind: IronRDP may panic on unexpected server
         // responses in edge cases. Convert the panic into an error
         // so the GUI can fall back to FreeRDP instead of crashing.
-        // Checked for 0.19.0: ironrdp 0.17 is now in use. The upstream
-        // connect_finalize panic reports remain open (e.g.
-        // https://github.com/Devolutions/IronRDP/issues/1016), so the
-        // wrapper stays. Re-evaluate on the next ironrdp bump (>0.17).
+        // Re-checked for ironrdp-connector 0.12: the upstream connect_finalize
+        // panic reports remain open (e.g.
+        // https://github.com/Devolutions/IronRDP/issues/1016), so the wrapper
+        // stays. Re-evaluate on the next IronRDP bump.
         let finalize_future = AssertUnwindSafe(ironrdp_tokio::connect_finalize(
             upgraded,
             connector,
@@ -798,7 +817,21 @@ pub(super) async fn establish_connection(
         ));
 
         let connection_result = match futures::FutureExt::catch_unwind(finalize_future).await {
-            Ok(Ok(result)) => result,
+            Ok(Ok(ConnectionOutcome::Connected(result))) => result,
+            // A connection broker hands the session to another host. Following
+            // it means a second connection with the routing token; until the
+            // embedded client does that, the external client — which does —
+            // takes the session over (`failure::PROTOCOL_MARKERS`).
+            Ok(Ok(ConnectionOutcome::Redirected(_))) => {
+                tracing::info!(
+                    protocol = "rdp",
+                    "IronRDP connect_finalize: the server redirected the session"
+                );
+                return Err(RdpClientError::ProtocolError(
+                    "Server redirection to another session host cannot be followed by the embedded client"
+                        .to_string(),
+                ));
+            }
             Ok(Err(e)) => {
                 let kind = format!("{:?}", e.kind());
                 tracing::error!(
@@ -839,8 +872,7 @@ pub(super) async fn establish_connection(
         Ok(ConnectionSetup {
             framed,
             connection_result,
-            #[cfg(feature = "gfx-h264")]
-            gfx_update_rx,
+            microphone,
         })
     } else if secure_channel_up.load(Ordering::Relaxed) {
         // TLS (and TOFU) succeeded before the budget ran out: the server is
@@ -930,7 +962,7 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         domain: config.domain.clone(),
         enable_tls: true,
         enable_credssp: config.nla_enabled,
-        keyboard_type: KeyboardType::IbmEnhanced,
+        keyboard_type: KeyboardType::IBM_ENHANCED,
         keyboard_subtype: 0,
         keyboard_functional_keys_count: 12,
         keyboard_layout: config
@@ -943,6 +975,16 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
             height: config.height,
         },
         desktop_scale_factor: config.scale_factor,
+        // What ironrdp-connector 0.10 sent implicitly: one monitor, no
+        // physical size, orientation from the desktop size, device scale 100.
+        monitor_layout: None,
+        monitor_extended_layout: None,
+        desktop_physical_size: None,
+        desktop_orientation: None,
+        device_scale_factor: None,
+        relative_mouse_input: false,
+        connection_type: ironrdp_pdu::gcc::ConnectionType::Lan,
+        enable_standard_rdp_security: false,
         bitmap: bitmap_config,
         client_build: 0,
         client_name: String::from("RustConn"),
@@ -958,6 +1000,10 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
             .as_ref()
             .and_then(|app| app.working_dir.clone())
             .unwrap_or_default(),
+        // RemoteApp always goes to FreeRDP, so the embedded client never
+        // enters the RAIL connection model.
+        remote_application_mode: false,
+        rail_support_level: ironrdp_pdu::rdp::capability_sets::RailSupportLevel::empty(),
         platform: MajorPlatformType::UNIX,
         hardware_id: None,
         request_data: None,
@@ -985,6 +1031,8 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
                 .as_ref()
                 .is_some_and(|password| !password.expose_secret().is_empty()),
         enable_audio_playback: config.audio_enabled,
+        // INFO_AUDIOCAPTURE, only alongside a registered AUDIO_INPUT channel.
+        enable_audio_capture: config.microphone_enabled,
         performance_flags,
         license_cache: None,
         timezone_info: get_timezone_info(),
@@ -1010,6 +1058,10 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         pointer_software_rendering: false,
         // Multitransport (UDP sideband) — not implemented yet
         multitransport_flags: None,
+        // Set once the EGFX channel is registered (`connect_with_stream`):
+        // advertising the graphics pipeline without a processor for it leaves
+        // the desktop blank.
+        support_dyn_vc_gfx_protocol: false,
     }
 }
 

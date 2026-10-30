@@ -1,9 +1,9 @@
-use ironrdp::cliprdr::CliprdrClient;
-use ironrdp::pdu::input::fast_path::FastPathInputEvent;
-use ironrdp::pdu::rdp::headers::ShareDataPdu;
-use ironrdp::session::image::DecodedImage;
-use ironrdp::session::{ActiveStage, ActiveStageOutput};
+use ironrdp_cliprdr::CliprdrClient;
 use ironrdp_input::{Database, MouseButton, MousePosition, Operation, Scancode, WheelRotations};
+use ironrdp_pdu::input::fast_path::FastPathInputEvent;
+use ironrdp_pdu::rdp::headers::ShareDataPdu;
+use ironrdp_session::image::DecodedImage;
+use ironrdp_session::{ActiveStage, ActiveStageOutput};
 use ironrdp_tokio::FramedWrite;
 
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent};
@@ -21,6 +21,9 @@ pub(super) async fn process_command<W: FramedWrite>(
     input_db: &mut Database,
 ) -> Result<bool, RdpClientError> {
     match cmd {
+        // The session loop hands microphone packets to the AUDIO_INPUT
+        // channel itself, before a command reaches this function.
+        RdpClientCommand::MicrophoneData(_) => {}
         RdpClientCommand::Disconnect => {
             if let Ok(frames) = active_stage.graceful_shutdown() {
                 for frame in frames {
@@ -182,18 +185,18 @@ pub(super) async fn process_command<W: FramedWrite>(
             let width = image.width();
             let height = image.height();
             if width > 0 && height > 0 {
-                let area = ironrdp::pdu::geometry::InclusiveRectangle {
+                let area = ironrdp_pdu::geometry::InclusiveRectangle {
                     left: 0,
                     top: 0,
                     right: width.saturating_sub(1),
                     bottom: height.saturating_sub(1),
                 };
                 let pdu = ShareDataPdu::RefreshRectangle(
-                    ironrdp::pdu::rdp::refresh_rectangle::RefreshRectanglePdu {
+                    ironrdp_pdu::rdp::refresh_rectangle::RefreshRectanglePdu {
                         areas_to_refresh: vec![area],
                     },
                 );
-                let mut frame = ironrdp::core::WriteBuf::new();
+                let mut frame = ironrdp_core::WriteBuf::new();
                 match active_stage.encode_static(&mut frame, pdu) {
                     Ok(_) => {
                         let _ = writer.write_all(frame.filled()).await;
@@ -232,7 +235,7 @@ pub(super) async fn process_command<W: FramedWrite>(
                 let allow = backend.allows_local_to_remote();
                 if allow {
                     backend.set_pending_copy_data(
-                        ironrdp::cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT.value(),
+                        ironrdp_cliprdr::pdu::ClipboardFormatId::CF_UNICODETEXT.value(),
                         utf16_data,
                     );
                 }
@@ -395,7 +398,7 @@ async fn send_file_contents_error<W: FramedWrite>(
     stream_id: u32,
 ) {
     if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-        let response = ironrdp::cliprdr::pdu::FileContentsResponse::new_error(stream_id);
+        let response = ironrdp_cliprdr::pdu::FileContentsResponse::new_error(stream_id);
         if let Ok(messages) = cliprdr.submit_file_contents(response)
             && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
         {
@@ -430,7 +433,7 @@ async fn handle_clipboard_data<W: FramedWrite>(
     data: Vec<u8>,
 ) {
     if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
-        let response = ironrdp::cliprdr::pdu::OwnedFormatDataResponse::new_data(data.clone());
+        let response = ironrdp_cliprdr::pdu::OwnedFormatDataResponse::new_data(data.clone());
         if let Ok(messages) = cliprdr.submit_format_data(response)
             && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
         {
@@ -476,16 +479,15 @@ async fn handle_clipboard_copy<W: FramedWrite>(
         return;
     };
 
-    let clipboard_formats: Vec<ironrdp::cliprdr::pdu::ClipboardFormat> = formats
+    let clipboard_formats: Vec<ironrdp_cliprdr::pdu::ClipboardFormat> = formats
         .iter()
         .map(|f| {
-            let mut format = ironrdp::cliprdr::pdu::ClipboardFormat::new(
-                ironrdp::cliprdr::pdu::ClipboardFormatId::new(f.id),
+            let mut format = ironrdp_cliprdr::pdu::ClipboardFormat::new(
+                ironrdp_cliprdr::pdu::ClipboardFormatId::new(f.id),
             );
             if let Some(ref name) = f.name {
-                format = format.with_name(ironrdp::cliprdr::pdu::ClipboardFormatName::new(
-                    name.clone(),
-                ));
+                format =
+                    format.with_name(ironrdp_cliprdr::pdu::ClipboardFormatName::new(name.clone()));
             }
             format
         })
@@ -552,7 +554,7 @@ async fn handle_initiate_file_copy<W: FramedWrite>(
     paths: Vec<std::path::PathBuf>,
     files: Vec<super::super::ClipboardFileInfo>,
 ) {
-    use ironrdp::cliprdr::pdu::{ClipboardFileAttributes, FileDescriptor};
+    use ironrdp_cliprdr::pdu::{ClipboardFileAttributes, FileDescriptor};
 
     let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() else {
         tracing::warn!(
@@ -636,7 +638,7 @@ async fn handle_clipboard_request<W: FramedWrite>(
         tracing::warn!("CLIPRDR channel not available");
         return;
     };
-    let format = ironrdp::cliprdr::pdu::ClipboardFormatId::new(format_id);
+    let format = ironrdp_cliprdr::pdu::ClipboardFormatId::new(format_id);
     let sent = match cliprdr.initiate_paste(format) {
         Ok(messages) => {
             tracing::debug!("initiate_paste succeeded");
@@ -723,8 +725,8 @@ fn build_download_request(
     request_size: bool,
     offset: u64,
     length: u32,
-) -> Option<ironrdp::cliprdr::pdu::FileContentsRequest> {
-    use ironrdp::cliprdr::pdu::{FileContentsFlags, FileContentsRequest};
+) -> Option<ironrdp_cliprdr::pdu::FileContentsRequest> {
+    use ironrdp_cliprdr::pdu::{FileContentsFlags, FileContentsRequest};
 
     let index = i32::try_from(file_index).ok()?;
     let (flags, position, requested_size) = if request_size {
@@ -959,7 +961,7 @@ async fn handle_provide_file_contents<W: FramedWrite>(
             tracing::debug!("File size response: index={}, size={}", file_index, size);
             if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
                 let response =
-                    ironrdp::cliprdr::pdu::FileContentsResponse::new_size_response(stream_id, size);
+                    ironrdp_cliprdr::pdu::FileContentsResponse::new_size_response(stream_id, size);
                 if let Ok(messages) = cliprdr.submit_file_contents(response)
                     && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
                 {
@@ -1011,7 +1013,7 @@ async fn handle_provide_file_contents<W: FramedWrite>(
             );
             if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>() {
                 let response =
-                    ironrdp::cliprdr::pdu::FileContentsResponse::new_data_response(stream_id, buf);
+                    ironrdp_cliprdr::pdu::FileContentsResponse::new_data_response(stream_id, buf);
                 if let Ok(messages) = cliprdr.submit_file_contents(response)
                     && let Ok(frame) = active_stage.process_svc_processor_messages(messages)
                 {
@@ -1027,7 +1029,7 @@ async fn handle_provide_file_contents<W: FramedWrite>(
 
 #[cfg(test)]
 mod tests {
-    use ironrdp::cliprdr::pdu::FileContentsFlags;
+    use ironrdp_cliprdr::pdu::FileContentsFlags;
 
     use super::build_download_request;
 
