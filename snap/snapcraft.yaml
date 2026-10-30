@@ -374,12 +374,20 @@ parts:
       # the literal path as fallback so this can never silently become a no-op.
       SDK_LIB="${SNAPCRAFT_GNOME_SDK:-/snap/gnome-core26-sdk/current}/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}"
       export RUSTFLAGS="-L native=${SDK_LIB} ${RUSTFLAGS:-}"
-      # Single workspace build: the crate's default features plus adw-1-8, the
-      # same libadwaita widget tier as packaging/flatpak, which builds
-      # `adw-1-10,vte-0-84,gtk-4-24` (the gnome-core26 platform provides
-      # libadwaita 1.10; adw-1-8 implies adw-1-7 and adw-1-6). Global LTO via
-      # --config keeps the binary small (equivalent to the plugin's
-      # rust-use-global-lto).
+      # Single workspace build: the crate's default features plus adw-1-8 and
+      # vte-0-84, the same libadwaita/VTE tiers as packaging/flatpak, which
+      # builds `adw-1-10,vte-0-84,gtk-4-24` (the gnome-core26 platform provides
+      # libadwaita 1.10 and VTE 0.84; adw-1-8 implies adw-1-7 and adw-1-6,
+      # vte-0-84 implies vte-0-78). Global LTO via --config keeps the binary
+      # small (equivalent to the plugin's rust-use-global-lto).
+      #
+      # vte-0-84 is REQUIRED, not optional: it gates the OSC 133 shell
+      # integration (prompt navigation + failed-command marker) added in 0.24.3,
+      # which compiles to a no-op below vte-0-78. The platform ships VTE 0.84, so
+      # without this flag the snap silently loses that feature even though the
+      # library is new enough. It is not a default feature (the VTE baseline is
+      # 0.76 for older distros), so the snap must opt in explicitly, exactly as
+      # the Flatpak does.
       #
       # Default features are used on purpose instead of a hand-written list: a
       # new default feature then reaches the snap without anyone remembering to
@@ -411,7 +419,7 @@ parts:
       cargo build --release \
         --config 'profile.release.lto = true' \
         --config 'profile.release.codegen-units = 1' \
-        --features adw-1-8 \
+        --features adw-1-8,vte-0-84 \
         -p rustconn
       cargo build --release \
         --config 'profile.release.lto = true' \
