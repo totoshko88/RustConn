@@ -1158,7 +1158,9 @@ Map local directories into the remote session. Files appear as network drives (`
 2. Add a local directory and give it a share name
 3. Connect — the folder is accessible in Windows Explorer under "This PC → Network Locations"
 
-Works with both IronRDP embedded and FreeRDP external modes.
+Works with both IronRDP embedded and FreeRDP external modes. In the embedded client,
+Windows Explorer refreshes a shared folder by itself when a file in it changes on this
+computer: the change is reported to the server within about a second.
 
 **Clipboard File Transfer (IronRDP embedded mode only):**
 
@@ -1379,9 +1381,13 @@ a file from Remote Desktop Connection usually says *Only in full screen*.
 An `.rdp` file published by RD Web Access for a session collection carries a
 `loadbalanceinfo` line, such as `tsv://MS Terminal Services Plugin.1.Sessions`, which
 tells the RD Connection Broker where to place the session. Paste it into
-**Load Balance Info** (Connection Dialog → RDP → Connection), or import the file. It
-reaches FreeRDP as `/load-balance-info:`. The embedded client cannot follow the broker's
-redirection, so a value here runs the session in FreeRDP.
+**Load Balance Info** (Connection Dialog → RDP → Connection), or import the file. The
+embedded client sends it as the routing token of the first connection and follows the
+broker's redirection to the session host — through the same RD Gateway, if one is set
+— with the session ID and token the broker hands back; FreeRDP gets it as
+`/load-balance-info:`. A broker that moves a running session reconnects it the same
+way. The session host is a new server to RustConn, so its certificate is trusted on
+first use like any other.
 
 #### Kerberos Authentication (Protected Users)
 

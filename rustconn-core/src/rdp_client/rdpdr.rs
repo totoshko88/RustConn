@@ -22,13 +22,14 @@ use ironrdp_pdu::PduResult;
 use ironrdp_rdpdr::RdpdrBackend;
 use ironrdp_rdpdr::pdu::RdpdrPdu;
 use ironrdp_rdpdr::pdu::efs::{
-    Boolean, ClientDriveQueryDirectoryResponse, ClientDriveQueryInformationResponse,
-    ClientDriveQuerySecurityResponse, ClientDriveQueryVolumeInformationResponse,
-    ClientDriveSetInformationResponse, ClientDriveSetSecurityResponse, CreateDisposition,
-    CreateOptions, DesiredAccess, DeviceCloseRequest, DeviceCloseResponse, DeviceControlRequest,
-    DeviceControlResponse, DeviceCreateRequest, DeviceCreateResponse, DeviceFlushBuffersResponse,
-    DeviceIoResponse, DeviceReadRequest, DeviceReadResponse, DeviceWriteRequest,
-    DeviceWriteResponse, FileAttributeTagInformation, FileAttributes, FileBasicInformation,
+    Boolean, ClientDriveNotifyChangeDirectoryResponse, ClientDriveQueryDirectoryResponse,
+    ClientDriveQueryInformationResponse, ClientDriveQuerySecurityResponse,
+    ClientDriveQueryVolumeInformationResponse, ClientDriveSetInformationResponse,
+    ClientDriveSetSecurityResponse, CreateDisposition, CreateOptions, DesiredAccess,
+    DeviceCloseRequest, DeviceCloseResponse, DeviceControlRequest, DeviceControlResponse,
+    DeviceCreateRequest, DeviceCreateResponse, DeviceFlushBuffersResponse, DeviceIoResponse,
+    DeviceReadRequest, DeviceReadResponse, DeviceWriteRequest, DeviceWriteResponse,
+    FileAttributeTagInformation, FileAttributes, FileBasicInformation,
     FileBothDirectoryInformation, FileDirectoryInformation, FileFsAttributeInformation,
     FileFsFullSizeInformation, FileFsSizeInformation, FileFsVolumeInformation,
     FileFullDirectoryInformation, FileInformationClass, FileInformationClassLevel,
@@ -213,65 +214,42 @@ impl RustConnRdpdrBackend {
         Ok(base.join(relative))
     }
 
-    /// Polls the directory watcher for pending change notifications
+    /// Answers the server's pending change notifications for every change the
+    /// directory watcher saw since the last call.
     ///
-    /// This should be called periodically to check for file system changes
-    /// and generate the appropriate RDP responses.
-    ///
-    /// # Current Limitations
-    ///
-    /// The inotify integration detects changes, but no notify response is sent
-    /// yet. `ironrdp-rdpdr` 0.7 had no `ClientDriveNotifyChangeDirectoryResponse`;
-    /// 0.9 has it, so this is now local work rather than an upstream blocker.
-    ///
-    /// Per MS-RDPEFS 2.2.3.4.11, the response should contain:
-    /// - `DeviceIoResponse` header with the original request's `DeviceIoRequest`
-    /// - Buffer containing `FILE_NOTIFY_INFORMATION` structures (MS-FSCC 2.4.42)
-    ///
-    /// When `ironrdp-rdpdr` adds `ClientDriveNotifyChangeDirectoryResponse`,
-    /// update this method to construct and return the proper response PDUs.
+    /// The session loop calls this periodically. Each notification is
+    /// one-shot (MS-RDPEFS 2.2.3.3.11): it is answered with the change as a
+    /// `FILE_NOTIFY_INFORMATION` entry (MS-FSCC 2.4.42) and its watch removed;
+    /// Windows Explorer then re-lists the folder and asks again.
     pub fn poll_directory_changes(&mut self) -> Vec<SvcMessage> {
         let Some(watcher) = &self.dir_watcher else {
             return Vec::new();
         };
 
         let changes = watcher.recv_all();
+        let mut responses = Vec::new();
         let mut responded_file_ids = Vec::new();
 
         for change in changes {
+            // A watch can report several changes before the first is
+            // answered; only the first finds the notification still pending.
+            if responded_file_ids.contains(&change.file_id) {
+                continue;
+            }
             if let Some(notification) = self.pending_notifications.get(&change.file_id) {
                 debug!(
                     "Directory change detected: file_id={}, action={:?}, file={}",
                     change.file_id, change.action, change.file_name
                 );
-
-                // TODO: Send actual response when ironrdp adds ClientDriveNotifyChangeDirectoryResponse.
-                // The response format per MS-RDPEFS 2.2.3.4.11:
-                // - DeviceIoResponse with original DeviceIoRequest and NtStatus::SUCCESS
-                // - Buffer containing FILE_NOTIFY_INFORMATION structures, built by
-                //   `build_file_notify_info` (kept ready below).
-                //
-                // Example (when available):
-                // responses.push(SvcMessage::from(RdpdrPdu::ClientDriveNotifyChangeDirectoryResponse(
-                //     ClientDriveNotifyChangeDirectoryResponse {
-                //         device_io_response: DeviceIoResponse::new(
-                //             notification.device_io_request.clone(),
-                //             NtStatus::SUCCESS,
-                //         ),
-                //         buffer: Some(build_file_notify_info(&change)),
-                //     },
-                // )));
-
-                trace!(
-                    "Directory change notification ready (awaiting ironrdp support): \
-                     file_id={}, action={:?}, device_id={}, completion_id={}",
-                    change.file_id,
-                    change.action,
-                    notification.device_io_request.device_id,
-                    notification.device_io_request.completion_id,
-                );
-
-                // Mark for removal (one-shot notification per MS-RDPEFS)
+                responses.push(SvcMessage::from(
+                    RdpdrPdu::ClientDriveNotifyChangeDirectoryResponse(
+                        ClientDriveNotifyChangeDirectoryResponse::new(
+                            notification.device_io_request.clone(),
+                            NtStatus::SUCCESS,
+                            build_file_notify_info(&change),
+                        ),
+                    ),
+                ));
                 responded_file_ids.push(change.file_id);
             }
         }
@@ -285,8 +263,7 @@ impl RustConnRdpdrBackend {
             }
         }
 
-        // Return empty until ironrdp adds ClientDriveNotifyChangeDirectoryResponse
-        Vec::new()
+        responses
     }
 }
 
@@ -1523,11 +1500,6 @@ const fn unix_to_filetime(unix_secs: i64) -> i64 {
 /// - Action: u32 (`FILE_ACTION_*`)
 /// - `FileNameLength`: u32 (in bytes)
 /// - `FileName`: \[u16\] (UTF-16LE, not null-terminated)
-#[expect(
-    dead_code,
-    reason = "FILE_NOTIFY_INFORMATION builder kept ready for when ironrdp adds \
-              ClientDriveNotifyChangeDirectoryResponse (MS-RDPEFS 2.2.3.4.11)"
-)]
 fn build_file_notify_info(change: &DirectoryChange) -> Vec<u8> {
     let file_name_utf16: Vec<u16> = change.file_name.encode_utf16().collect();
     let file_name_bytes = file_name_utf16.len() * 2;
@@ -1735,6 +1707,30 @@ fn parse_cups_default(stdout: &str) -> Option<String> {
         .nth(1)
         .map(|s| s.trim().to_owned())
         .filter(|s| !s.is_empty())
+}
+
+#[cfg(test)]
+mod notify_tests {
+    use super::build_file_notify_info;
+    use crate::rdp_client::dir_watcher::{DirectoryChange, FileAction};
+
+    /// MS-FSCC 2.4.42: offset, action, name length in bytes, UTF-16LE name.
+    #[test]
+    fn notify_information_is_one_last_entry_in_utf16() {
+        let buffer = build_file_notify_info(&DirectoryChange {
+            file_id: 7,
+            action: FileAction::Added,
+            file_name: "ñ.txt".to_string(),
+        });
+        let mut expected = Vec::new();
+        expected.extend_from_slice(&0u32.to_le_bytes());
+        expected.extend_from_slice(&1u32.to_le_bytes());
+        expected.extend_from_slice(&10u32.to_le_bytes());
+        for unit in "ñ.txt".encode_utf16() {
+            expected.extend_from_slice(&unit.to_le_bytes());
+        }
+        assert_eq!(buffer, expected);
+    }
 }
 
 #[cfg(test)]

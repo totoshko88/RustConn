@@ -869,7 +869,8 @@ remoteapplicationname:s:
             rdp.load_balance_info.as_deref(),
             Some("tsv://MS Terminal Services Plugin.1.Sessions")
         );
-        assert!(rdp.requires_freerdp_fallback());
+        // All of these run on the embedded client.
+        assert!(!rdp.requires_freerdp_fallback());
 
         let rdp = import(b"full address:s:server.example.com\nloadbalanceinfo:s:\n");
         assert!(!rdp.microphone_enabled);

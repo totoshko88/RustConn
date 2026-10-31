@@ -85,6 +85,11 @@ pub(super) async fn run_active_session(
     let mut clipboard_timeouts = tokio::time::interval(std::time::Duration::from_secs(5));
     clipboard_timeouts.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+    // Shared-folder changes are answered once a second: soon enough for
+    // Explorer to look live, rare enough to cost nothing on an idle session.
+    let mut directory_changes = tokio::time::interval(std::time::Duration::from_secs(1));
+    directory_changes.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
     let (microphone_sink, mut microphone_uplink) = match microphone {
         Some(link) => (Some(link.sink), Some(link.uplink_rx)),
         None => (None, None),
@@ -193,6 +198,10 @@ pub(super) async fn run_active_session(
             }
 
             // Branch 3: expire clipboard requests the server never answered.
+            _ = directory_changes.tick() => {
+                send_directory_changes(&mut active_stage, &mut writer).await;
+            }
+
             _ = clipboard_timeouts.tick() => {
                 super::commands::drive_clipboard_timeouts(&mut active_stage, &mut writer).await;
             }
@@ -260,6 +269,32 @@ pub(super) async fn run_active_session(
 ///
 /// [IronRDP#1814]: https://github.com/Devolutions/IronRDP/pull/1814
 /// [IronRDP#1629]: https://github.com/Devolutions/IronRDP/issues/1629
+/// Answers the shared-folder change notifications the directory watcher has
+/// collected (`RustConnRdpdrBackend::poll_directory_changes`).
+async fn send_directory_changes(active_stage: &mut ActiveStage, writer: &mut impl FramedWrite) {
+    let Some(backend) = active_stage
+        .get_svc_processor_mut::<ironrdp_rdpdr::Rdpdr>()
+        .and_then(|rdpdr| {
+            rdpdr.downcast_backend_mut::<crate::rdp_client::rdpdr::RustConnRdpdrBackend>()
+        })
+    else {
+        return;
+    };
+    let messages = backend.poll_directory_changes();
+    if messages.is_empty() {
+        return;
+    }
+    let messages = ironrdp_svc::SvcProcessorMessages::<ironrdp_rdpdr::Rdpdr>::new(messages);
+    match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => {
+            if let Err(e) = writer.write_all(&frame).await {
+                tracing::warn!(error = %e, "Failed to send directory change notifications");
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "Failed to encode directory change notifications"),
+    }
+}
+
 /// Logs the session outputs a desktop session has no use for: no RemoteApp
 /// windows, one monitor, and no automatic reconnection cookie — the GUI
 /// reconnects with the stored credentials instead.

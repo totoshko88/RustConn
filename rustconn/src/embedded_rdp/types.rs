@@ -250,8 +250,8 @@ pub struct RdpConfig {
     pub microphone_enabled: bool,
     /// Redirect local smart cards (`/smartcard`). External FreeRDP only.
     pub smartcard_enabled: bool,
-    /// RD Connection Broker routing value (`/load-balance-info:`). IronRDP
-    /// cannot follow a broker, so a value sends the session to FreeRDP.
+    /// RD Connection Broker routing value, sent as the routing token by the
+    /// embedded client and as `/load-balance-info:` by FreeRDP.
     pub load_balance_info: Option<String>,
     /// Authenticate NLA with Kerberos instead of NTLM (issue #351).
     ///

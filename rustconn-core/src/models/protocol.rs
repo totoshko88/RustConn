@@ -2646,9 +2646,9 @@ pub struct RdpConfig {
     /// `tsv://MS Terminal Services Plugin.1.Sessions`.
     ///
     /// `.rdp` files published by RD Web Access carry it so the broker can place
-    /// the session in the right collection. The embedded client neither sends
-    /// it nor follows the broker's redirection, so a value here sends the
-    /// session to FreeRDP. `None` (the default) sends none.
+    /// the session in the right collection. Both clients send it and follow
+    /// the broker's redirection to the session host. `None` (the default)
+    /// sends none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub load_balance_info: Option<String>,
 
@@ -2827,8 +2827,7 @@ impl RdpConfig {
     /// Returns `true` when the security layer or TLS level is incompatible
     /// with IronRDP's `rustls` backend (TLS 1.2+ only), when RemoteApp
     /// is configured (IronRDP does not support RAIL protocol), when the
-    /// audio mode is one IronRDP cannot signal, or when a connection broker
-    /// routing value is set.
+    /// audio mode is one IronRDP cannot signal.
     #[must_use]
     pub fn requires_freerdp_fallback(&self) -> bool {
         // RemoteApp requires RAIL protocol — not supported by IronRDP
@@ -2847,14 +2846,7 @@ impl RdpConfig {
         }
         // "Play on the remote computer" needs INFO_REMOTECONSOLEAUDIO, which
         // ironrdp-connector never sets (issue #245)
-        if self.effective_audio_mode().requires_freerdp() {
-            return true;
-        }
-        // The embedded client neither sends a routing token nor follows a
-        // broker's redirection
-        self.load_balance_info
-            .as_deref()
-            .is_some_and(|info| !info.trim().is_empty())
+        self.effective_audio_mode().requires_freerdp()
     }
 
     /// Returns whether this is a RemoteApp session.

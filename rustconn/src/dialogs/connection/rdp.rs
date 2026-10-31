@@ -760,8 +760,7 @@ pub(super) fn create_rdp_options() -> (
     rdp_connection_group.add(&rdp_jump_host_row);
 
     // RD Connection Broker routing value, as RD Web Access writes it into a
-    // farm's .rdp files. IronRDP cannot follow the broker, so a value here
-    // runs the session in FreeRDP.
+    // farm's .rdp files. Both clients send it and follow the broker.
     let rdp_load_balance_entry = Entry::builder()
         .hexpand(true)
         .valign(gtk4::Align::Center)
@@ -769,7 +768,7 @@ pub(super) fn create_rdp_options() -> (
     let load_balance_row = adw::ActionRow::builder()
         .title(i18n("Load Balance Info"))
         .subtitle(i18n(
-            "Connection broker routing value (loadbalanceinfo) from an .rdp file (requires FreeRDP)",
+            "Connection broker routing value (loadbalanceinfo) from an .rdp file",
         ))
         .build();
     load_balance_row.add_suffix(&rdp_load_balance_entry);

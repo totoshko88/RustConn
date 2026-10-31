@@ -655,8 +655,6 @@ enum FreeRdpRequirement {
     RemoteAudio,
     /// The local microphone, in a build without `rdp-audio` to capture it
     Microphone,
-    /// A connection broker routing value, which IronRDP cannot follow
-    LoadBalancing,
 }
 
 impl FreeRdpRequirement {
@@ -690,13 +688,6 @@ impl FreeRdpRequirement {
         if config.microphone_enabled && !cfg!(feature = "rdp-audio") {
             return Some(Self::Microphone);
         }
-        if config
-            .load_balance_info
-            .as_deref()
-            .is_some_and(|info| !info.trim().is_empty())
-        {
-            return Some(Self::LoadBalancing);
-        }
         None
     }
 
@@ -720,9 +711,6 @@ impl FreeRdpRequirement {
             ),
             Self::Microphone => i18n(
                 "The embedded client does not support microphone redirection. Using FreeRDP instead.",
-            ),
-            Self::LoadBalancing => i18n(
-                "The embedded client does not support connection broker load balancing. Using FreeRDP instead.",
             ),
         }
     }
@@ -1239,6 +1227,7 @@ impl super::EmbeddedRdpWidget {
         // The microphone needs the GUI to capture, which `rdp-audio` builds in;
         // without it the session goes to FreeRDP (`FreeRdpRequirement`).
         client_config.microphone_enabled = cfg!(feature = "rdp-audio") && config.microphone_enabled;
+        client_config.load_balance_info = config.load_balance_info.clone();
 
         if let Some(ref username) = config.username {
             client_config = client_config.with_username(username);
@@ -3888,10 +3877,6 @@ mod tests {
                 config_with(|c| c.audio_mode = RdpAudioMode::Remote),
                 FreeRdpRequirement::RemoteAudio,
             ),
-            (
-                config_with(|c| c.load_balance_info = Some("tsv://x.1.y".to_string())),
-                FreeRdpRequirement::LoadBalancing,
-            ),
         ];
         for (config, expected) in cases {
             assert_eq!(FreeRdpRequirement::of(&config), Some(expected));
@@ -3915,7 +3900,8 @@ mod tests {
             config_with(|c| c.audio_mode = RdpAudioMode::Local),
             // External-only, so it waits for a FreeRDP session instead of forcing one
             config_with(|c| c.smartcard_enabled = true),
-            config_with(|c| c.load_balance_info = Some("  ".to_string())),
+            // Brokers are followed by the embedded client too
+            config_with(|c| c.load_balance_info = Some("tsv://x.1.y".to_string())),
         ] {
             assert_eq!(FreeRdpRequirement::of(&config), None);
         }
@@ -3932,7 +3918,6 @@ mod tests {
             FreeRdpRequirement::RemoteApp,
             FreeRdpRequirement::RemoteAudio,
             FreeRdpRequirement::Microphone,
-            FreeRdpRequirement::LoadBalancing,
         ];
         let messages: Vec<String> = causes.iter().map(|cause| cause.message()).collect();
         for message in &messages {

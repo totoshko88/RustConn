@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 15:27-0500\n"
+"POT-Creation-Date: 2026-10-30 16:22-0500\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -203,8 +203,8 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:151
-#: rustconn/src/embedded_rdp/connection.rs:1752
-#: rustconn/src/embedded_rdp/connection.rs:2711
+#: rustconn/src/embedded_rdp/connection.rs:1741
+#: rustconn/src/embedded_rdp/connection.rs:2700
 #: rustconn/src/embedded_rdp/mod.rs:772 rustconn/src/embedded_rdp/mod.rs:2146
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
@@ -265,7 +265,7 @@ msgid "Enter Password Manually"
 msgstr "Indtast adgangskode manuelt"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2433 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2422 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr "Åbn indstillinger"
@@ -1102,7 +1102,7 @@ msgid "Executable name or path (e.g., chromaterm, pv, ccze)"
 msgstr "Programnavn eller sti (f.eks. chromaterm, pv, ccze)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:575
-#: rustconn/src/dialogs/connection/rdp.rs:866
+#: rustconn/src/dialogs/connection/rdp.rs:865
 msgid "Arguments"
 msgstr "Argumenter"
 
@@ -1303,7 +1303,7 @@ msgstr "Automatisering"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:437
 #: rustconn/src/dialogs/connection/kubernetes.rs:132
-#: rustconn/src/dialogs/connection/rdp.rs:915
+#: rustconn/src/dialogs/connection/rdp.rs:914
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
@@ -2372,7 +2372,7 @@ msgid "Container image for temporary pod"
 msgstr "Containerbillede til midlertidig pod"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:135
-#: rustconn/src/dialogs/connection/rdp.rs:974
+#: rustconn/src/dialogs/connection/rdp.rs:973
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
@@ -2976,39 +2976,36 @@ msgstr "(Ingen)"
 msgid "Jump Host"
 msgstr "Springvært"
 
-#: rustconn/src/dialogs/connection/rdp.rs:770
+#: rustconn/src/dialogs/connection/rdp.rs:769
 msgid "Load Balance Info"
 msgstr "Info om belastningsfordeling"
 
-#: rustconn/src/dialogs/connection/rdp.rs:772
-msgid ""
-"Connection broker routing value (loadbalanceinfo) from an .rdp file "
-"(requires FreeRDP)"
+#: rustconn/src/dialogs/connection/rdp.rs:771
+msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
 msgstr ""
-"Routingværdi for forbindelsesmægleren (loadbalanceinfo) fra en .rdp-fil "
-"(kræver FreeRDP)"
+"Routingværdi for forbindelsesmægleren (loadbalanceinfo) fra en .rdp-fil"
 
-#: rustconn/src/dialogs/connection/rdp.rs:782
+#: rustconn/src/dialogs/connection/rdp.rs:781
 #: rustconn/src/dialogs/connection/spice.rs:239
 msgid "Shared Folders"
 msgstr "Delte mapper"
 
-#: rustconn/src/dialogs/connection/rdp.rs:783
+#: rustconn/src/dialogs/connection/rdp.rs:782
 #: rustconn/src/dialogs/connection/spice.rs:240
 msgid "Local folders accessible from remote session"
 msgstr "Lokale mapper tilgængelige fra fjernsession"
 
-#: rustconn/src/dialogs/connection/rdp.rs:790
+#: rustconn/src/dialogs/connection/rdp.rs:789
 #: rustconn/src/dialogs/connection/spice.rs:247
 msgid "No shared folders"
 msgstr "Ingen delte mapper"
 
-#: rustconn/src/dialogs/connection/rdp.rs:805
+#: rustconn/src/dialogs/connection/rdp.rs:804
 #: rustconn/src/dialogs/connection/spice.rs:262
 msgid "Add"
 msgstr "Tilføj"
 
-#: rustconn/src/dialogs/connection/rdp.rs:809
+#: rustconn/src/dialogs/connection/rdp.rs:808
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
 #: rustconn/src/dialogs/flatpak_components.rs:325
@@ -3018,206 +3015,206 @@ msgstr "Tilføj"
 msgid "Remove"
 msgstr "Fjern"
 
-#: rustconn/src/dialogs/connection/rdp.rs:842
+#: rustconn/src/dialogs/connection/rdp.rs:841
 msgid "RemoteApp"
 msgstr "RemoteApp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:844
+#: rustconn/src/dialogs/connection/rdp.rs:843
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
 msgstr ""
 "Start en enkelt applikation i stedet for fuldt skrivebord (kræver FreeRDP)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:850
+#: rustconn/src/dialogs/connection/rdp.rs:849
 msgid "||notepad or C:\\Program Files\\app.exe"
 msgstr "||notepad eller C:\\Program Files\\app.exe"
 
-#: rustconn/src/dialogs/connection/rdp.rs:854
+#: rustconn/src/dialogs/connection/rdp.rs:853
 msgid "Program"
 msgstr "Program"
 
-#: rustconn/src/dialogs/connection/rdp.rs:855
+#: rustconn/src/dialogs/connection/rdp.rs:854
 msgid "Application alias (||name) or full path"
 msgstr "Applikationsalias (||navn) eller fuld sti"
 
-#: rustconn/src/dialogs/connection/rdp.rs:862
+#: rustconn/src/dialogs/connection/rdp.rs:861
 msgid "Command-line arguments"
 msgstr "Kommandolinjeargumenter"
 
-#: rustconn/src/dialogs/connection/rdp.rs:867
+#: rustconn/src/dialogs/connection/rdp.rs:866
 msgid "Arguments passed to the remote application"
 msgstr "Argumenter sendt til fjernapplikationen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:874
+#: rustconn/src/dialogs/connection/rdp.rs:873
 msgid "Display name (optional)"
 msgstr "Visningsnavn (valgfrit)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:878
+#: rustconn/src/dialogs/connection/rdp.rs:877
 #: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "Visningsnavn"
 
-#: rustconn/src/dialogs/connection/rdp.rs:879
+#: rustconn/src/dialogs/connection/rdp.rs:878
 msgid "Shown in taskbar and window title"
 msgstr "Vises i proceslinjen og vinduestitlen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:892
+#: rustconn/src/dialogs/connection/rdp.rs:891
 msgid "⚠ FreeRDP not found"
 msgstr "⚠ FreeRDP ikke fundet"
 
-#: rustconn/src/dialogs/connection/rdp.rs:894
+#: rustconn/src/dialogs/connection/rdp.rs:893
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
 "RemoteApp kræver FreeRDP. Installér sdl-freerdp3, xfreerdp eller wlfreerdp."
 
-#: rustconn/src/dialogs/connection/rdp.rs:920
+#: rustconn/src/dialogs/connection/rdp.rs:919
 msgid "Auto (detect)"
 msgstr "Auto (detect)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:921
+#: rustconn/src/dialogs/connection/rdp.rs:920
 msgid "US English"
 msgstr "US English"
 
-#: rustconn/src/dialogs/connection/rdp.rs:922
+#: rustconn/src/dialogs/connection/rdp.rs:921
 msgid "German (de)"
 msgstr "German (de)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:923
+#: rustconn/src/dialogs/connection/rdp.rs:922
 msgid "French (fr)"
 msgstr "French (fr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:924
+#: rustconn/src/dialogs/connection/rdp.rs:923
 msgid "Spanish (es)"
 msgstr "Spanish (es)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:925
+#: rustconn/src/dialogs/connection/rdp.rs:924
 msgid "Italian (it)"
 msgstr "Italian (it)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:926
+#: rustconn/src/dialogs/connection/rdp.rs:925
 msgid "Portuguese (pt)"
 msgstr "Portuguese (pt)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:927
+#: rustconn/src/dialogs/connection/rdp.rs:926
 msgid "Portuguese - Brazil (br)"
 msgstr "Portugisisk - Brasilien (br)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:928
+#: rustconn/src/dialogs/connection/rdp.rs:927
 msgid "English - UK (gb)"
 msgstr "Engelsk - Storbritannien (gb)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:929
+#: rustconn/src/dialogs/connection/rdp.rs:928
 msgid "German - Switzerland (ch)"
 msgstr "Tysk - Schweiz (ch)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:930
+#: rustconn/src/dialogs/connection/rdp.rs:929
 msgid "German - Austria (at)"
 msgstr "Tysk - Østrig (at)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:931
+#: rustconn/src/dialogs/connection/rdp.rs:930
 msgid "French - Belgium (be)"
 msgstr "Fransk - Belgien (be)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:932
+#: rustconn/src/dialogs/connection/rdp.rs:931
 msgid "Dutch (nl)"
 msgstr "Dutch (nl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:933
+#: rustconn/src/dialogs/connection/rdp.rs:932
 msgid "Swedish (se)"
 msgstr "Swedish (se)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:934
+#: rustconn/src/dialogs/connection/rdp.rs:933
 msgid "Norwegian (no)"
 msgstr "Norwegian (no)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:935
+#: rustconn/src/dialogs/connection/rdp.rs:934
 msgid "Danish (dk)"
 msgstr "Danish (dk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:936
+#: rustconn/src/dialogs/connection/rdp.rs:935
 msgid "Finnish (fi)"
 msgstr "Finnish (fi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:937
+#: rustconn/src/dialogs/connection/rdp.rs:936
 msgid "Polish (pl)"
 msgstr "Polish (pl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:938
+#: rustconn/src/dialogs/connection/rdp.rs:937
 msgid "Czech (cz)"
 msgstr "Czech (cz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:939
+#: rustconn/src/dialogs/connection/rdp.rs:938
 msgid "Slovak (sk)"
 msgstr "Slovak (sk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:940
+#: rustconn/src/dialogs/connection/rdp.rs:939
 msgid "Hungarian (hu)"
 msgstr "Hungarian (hu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:941
+#: rustconn/src/dialogs/connection/rdp.rs:940
 msgid "Romanian (ro)"
 msgstr "Romanian (ro)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:942
+#: rustconn/src/dialogs/connection/rdp.rs:941
 msgid "Croatian (hr)"
 msgstr "Croatian (hr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:943
+#: rustconn/src/dialogs/connection/rdp.rs:942
 msgid "Slovenian (si)"
 msgstr "Slovenian (si)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:944
+#: rustconn/src/dialogs/connection/rdp.rs:943
 msgid "Serbian (rs)"
 msgstr "Serbian (rs)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:945
+#: rustconn/src/dialogs/connection/rdp.rs:944
 msgid "Bulgarian (bg)"
 msgstr "Bulgarian (bg)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:946
+#: rustconn/src/dialogs/connection/rdp.rs:945
 msgid "Russian (ru)"
 msgstr "Russian (ru)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:947
+#: rustconn/src/dialogs/connection/rdp.rs:946
 msgid "Ukrainian (ua)"
 msgstr "Ukrainian (ua)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:948
+#: rustconn/src/dialogs/connection/rdp.rs:947
 msgid "Turkish (tr)"
 msgstr "Turkish (tr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:949
+#: rustconn/src/dialogs/connection/rdp.rs:948
 msgid "Greek (gr)"
 msgstr "Greek (gr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:950
+#: rustconn/src/dialogs/connection/rdp.rs:949
 msgid "Japanese (jp)"
 msgstr "Japanese (jp)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:951
+#: rustconn/src/dialogs/connection/rdp.rs:950
 msgid "Korean (kr)"
 msgstr "Korean (kr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:952
+#: rustconn/src/dialogs/connection/rdp.rs:951
 msgid "United States - Dvorak"
 msgstr "Engelsk - USA (Dvorak)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:961
+#: rustconn/src/dialogs/connection/rdp.rs:960
 msgid "Keyboard Layout"
 msgstr "Tastaturlayout"
 
-#: rustconn/src/dialogs/connection/rdp.rs:962
+#: rustconn/src/dialogs/connection/rdp.rs:961
 msgid "Layout sent to RDP server (Auto uses system setting)"
 msgstr "Layout sendt til RDP-server (Auto bruger systemindstilling)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:969
+#: rustconn/src/dialogs/connection/rdp.rs:968
 #: rustconn/src/dialogs/connection/telnet.rs:43
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
 msgstr "Yderligere kommandolinjeargumenter"
 
-#: rustconn/src/dialogs/connection/rdp.rs:975
+#: rustconn/src/dialogs/connection/rdp.rs:974
 #: rustconn/src/dialogs/template.rs:955
 msgid "Extra FreeRDP command-line options"
 msgstr "Ekstra FreeRDP-kommandolinjeindstillinger"
@@ -11003,7 +11000,7 @@ msgid "RDP connection failed. Install FreeRDP 3 for external RDP sessions."
 msgstr ""
 "RDP-forbindelsen mislykkedes. Installér FreeRDP 3 til eksterne RDP-sessioner."
 
-#: rustconn/src/embedded_rdp/connection.rs:707
+#: rustconn/src/embedded_rdp/connection.rs:698
 msgid ""
 "The embedded client does not support the legacy RDP security layer. Using "
 "FreeRDP instead."
@@ -11011,14 +11008,14 @@ msgstr ""
 "Den indlejrede klient understøtter ikke det ældre RDP-sikkerhedslag. Bruger "
 "FreeRDP i stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:710
+#: rustconn/src/embedded_rdp/connection.rs:701
 msgid ""
 "The embedded client does not support TLS without NLA. Using FreeRDP instead."
 msgstr ""
 "Den indlejrede klient understøtter ikke TLS uden NLA. Bruger FreeRDP i "
 "stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:713
+#: rustconn/src/embedded_rdp/connection.rs:704
 msgid ""
 "The embedded client does not support TLS security levels below 2. Using "
 "FreeRDP instead."
@@ -11026,12 +11023,12 @@ msgstr ""
 "Den indlejrede klient understøtter ikke TLS-sikkerhedsniveauer under 2. "
 "Bruger FreeRDP i stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:716
+#: rustconn/src/embedded_rdp/connection.rs:707
 msgid "The embedded client does not support RemoteApp. Using FreeRDP instead."
 msgstr ""
 "Den indlejrede klient understøtter ikke RemoteApp. Bruger FreeRDP i stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:719
+#: rustconn/src/embedded_rdp/connection.rs:710
 msgid ""
 "The embedded client does not support playing audio on the remote computer. "
 "Using FreeRDP instead."
@@ -11039,7 +11036,7 @@ msgstr ""
 "Den indlejrede klient understøtter ikke afspilning af lyd på "
 "fjerncomputeren. Bruger FreeRDP i stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:722
+#: rustconn/src/embedded_rdp/connection.rs:713
 msgid ""
 "The embedded client does not support microphone redirection. Using FreeRDP "
 "instead."
@@ -11047,21 +11044,13 @@ msgstr ""
 "Den indlejrede klient understøtter ikke mikrofonomdirigering. Bruger FreeRDP "
 "i stedet."
 
-#: rustconn/src/embedded_rdp/connection.rs:725
-msgid ""
-"The embedded client does not support connection broker load balancing. Using "
-"FreeRDP instead."
-msgstr ""
-"Den indlejrede klient understøtter ikke belastningsfordeling via "
-"forbindelsesmægler. Bruger FreeRDP i stedet."
-
-#: rustconn/src/embedded_rdp/connection.rs:852
-#: rustconn/src/embedded_rdp/connection.rs:2884
+#: rustconn/src/embedded_rdp/connection.rs:840
+#: rustconn/src/embedded_rdp/connection.rs:2873
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Forbindelsen blev annulleret, fordi serveren kræver ældre RDP-sikkerhed."
 
-#: rustconn/src/embedded_rdp/connection.rs:956
+#: rustconn/src/embedded_rdp/connection.rs:944
 msgid ""
 "Custom FreeRDP arguments are ignored by the embedded "
 "client.                          Set the RDP client mode to External to "
@@ -11070,7 +11059,7 @@ msgstr ""
 "Den indbyggede klient ignorerer egne FreeRDP-argumenter. Skift RDP-"
 "klienttilstand til Ekstern for at anvende dem."
 
-#: rustconn/src/embedded_rdp/connection.rs:2410
+#: rustconn/src/embedded_rdp/connection.rs:2399
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -11078,7 +11067,7 @@ msgstr ""
 "H.264 er slået fra — den installerede OpenH264 er ikke en Cisco-build. Åbn "
 "Indstillinger → Forbindelse → Mediekodeks for at hente den."
 
-#: rustconn/src/embedded_rdp/connection.rs:2414
+#: rustconn/src/embedded_rdp/connection.rs:2403
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -11086,7 +11075,7 @@ msgstr ""
 "H.264 er slået fra — der er ingen OpenH264-kodek installeret. Åbn "
 "Indstillinger → Forbindelse → Mediekodeks for at hente den."
 
-#: rustconn/src/embedded_rdp/connection.rs:2418
+#: rustconn/src/embedded_rdp/connection.rs:2407
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -11094,50 +11083,50 @@ msgstr ""
 "H.264 er slået fra — OpenH264-kodeken kunne ikke indlæses. Åbn Indstillinger "
 "→ Forbindelse → Mediekodeks for at hente den igen."
 
-#: rustconn/src/embedded_rdp/connection.rs:2628
+#: rustconn/src/embedded_rdp/connection.rs:2617
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Forbindelsen blev afbrudt. Genopretter (forsøg {} af {})…"
 
-#: rustconn/src/embedded_rdp/connection.rs:2921
+#: rustconn/src/embedded_rdp/connection.rs:2910
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "Den eksterne RDP-kompatibilitetsklient kunne ikke klargøres."
 
-#: rustconn/src/embedded_rdp/connection.rs:2932
+#: rustconn/src/embedded_rdp/connection.rs:2921
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Bruger ekstern RDP-klient (serveren kræver RDS-licensering)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2934
+#: rustconn/src/embedded_rdp/connection.rs:2923
 msgid "Using external RDP client (server incompatible)"
 msgstr "Bruger ekstern RDP-klient (server inkompatibel)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2952
-#: rustconn/src/embedded_rdp/connection.rs:3534
+#: rustconn/src/embedded_rdp/connection.rs:2941
+#: rustconn/src/embedded_rdp/connection.rs:3523
 msgid "The external RDP client could not be started."
 msgstr "Den eksterne RDP-klient kunne ikke startes."
 
-#: rustconn/src/embedded_rdp/connection.rs:2990
+#: rustconn/src/embedded_rdp/connection.rs:2979
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Den eksterne RDP-klient kunne ikke startes. Installér FreeRDP 3, og prøv "
 "igen."
 
-#: rustconn/src/embedded_rdp/connection.rs:3068
+#: rustconn/src/embedded_rdp/connection.rs:3057
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "TLS-forbindelse mislykkedes. Serveren understøtter muligvis ikke dette "
 "sikkerhedsniveau."
 
-#: rustconn/src/embedded_rdp/connection.rs:3072
+#: rustconn/src/embedded_rdp/connection.rs:3061
 msgid "Connection refused. Check host and port."
 msgstr "Forbindelse afvist. Kontrollér vært og port."
 
-#: rustconn/src/embedded_rdp/connection.rs:3075
+#: rustconn/src/embedded_rdp/connection.rs:3064
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Forbindelsen fik timeout. Kontrollér at værten er tilgængelig."
 
-#: rustconn/src/embedded_rdp/connection.rs:3095
+#: rustconn/src/embedded_rdp/connection.rs:3084
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11150,7 +11139,7 @@ msgstr ""
 "3.32 — opdater KRdp til 6.7.90 eller nyere, eller sæt ExtSecurity=0 på "
 "serveren (FreeRDP issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3100
+#: rustconn/src/embedded_rdp/connection.rs:3089
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11159,42 +11148,42 @@ msgstr ""
 "ikke bruge NTLM: slå Kerberos-godkendelse til i forbindelsens RDP-"
 "indstillinger."
 
-#: rustconn/src/embedded_rdp/connection.rs:3103
+#: rustconn/src/embedded_rdp/connection.rs:3092
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "Godkendelse mislykkedes: kontobegrænsninger forhindrer dette login."
 
-#: rustconn/src/embedded_rdp/connection.rs:3106
+#: rustconn/src/embedded_rdp/connection.rs:3095
 msgid "Authentication failed: password must be changed before first login."
 msgstr "Godkendelse mislykkedes: adgangskoden skal ændres før første login."
 
-#: rustconn/src/embedded_rdp/connection.rs:3108
+#: rustconn/src/embedded_rdp/connection.rs:3097
 msgid "Authentication failed: account is disabled."
 msgstr "Godkendelse mislykkedes: kontoen er deaktiveret."
 
-#: rustconn/src/embedded_rdp/connection.rs:3109
+#: rustconn/src/embedded_rdp/connection.rs:3098
 msgid "Authentication failed: account is locked out."
 msgstr "Godkendelse mislykkedes: kontoen er låst."
 
-#: rustconn/src/embedded_rdp/connection.rs:3110
+#: rustconn/src/embedded_rdp/connection.rs:3099
 msgid "Authentication failed: password has expired."
 msgstr "Godkendelse mislykkedes: adgangskoden er udløbet."
 
-#: rustconn/src/embedded_rdp/connection.rs:3111
+#: rustconn/src/embedded_rdp/connection.rs:3100
 msgid "Authentication failed: account has expired."
 msgstr "Godkendelse mislykkedes: kontoen er udløbet."
 
-#: rustconn/src/embedded_rdp/connection.rs:3113
+#: rustconn/src/embedded_rdp/connection.rs:3102
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr ""
 "Godkendelsen mislykkedes: kontoen er deaktiveret, låst ude eller udløbet."
 
-#: rustconn/src/embedded_rdp/connection.rs:3116
+#: rustconn/src/embedded_rdp/connection.rs:3105
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Godkendelse mislykkedes: brugeren har ikke tilladelse til at logge på denne "
 "computer."
 
-#: rustconn/src/embedded_rdp/connection.rs:3120
+#: rustconn/src/embedded_rdp/connection.rs:3109
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11202,8 +11191,8 @@ msgstr ""
 "Der blev ikke fundet nogen Kerberos-KDC for realmet {}. Angiv en KDC-adresse "
 "i forbindelsens RDP-indstillinger, eller tilføj realmet til /etc/krb5.conf."
 
-#: rustconn/src/embedded_rdp/connection.rs:3124
-#: rustconn/src/embedded_rdp/connection.rs:3164
+#: rustconn/src/embedded_rdp/connection.rs:3113
+#: rustconn/src/embedded_rdp/connection.rs:3153
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
@@ -11211,7 +11200,7 @@ msgstr ""
 "Kerberos skal bruge DNS-domænet. Angiv det i feltet Domæne, for eksempel "
 "EXAMPLE.COM."
 
-#: rustconn/src/embedded_rdp/connection.rs:3128
+#: rustconn/src/embedded_rdp/connection.rs:3117
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11219,7 +11208,7 @@ msgstr ""
 "Kerberos-KDC'en kunne ikke nås. Angiv navnet eller IP-adressen på en "
 "domænecontroller som KDC-adresse i forbindelsens RDP-indstillinger."
 
-#: rustconn/src/embedded_rdp/connection.rs:3131
+#: rustconn/src/embedded_rdp/connection.rs:3120
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
@@ -11227,7 +11216,7 @@ msgstr ""
 "Kerberos-login mislykkedes: denne computers ur afviger fra domænets med mere "
 "end fem minutter. Synkronisér uret, og prøv igen."
 
-#: rustconn/src/embedded_rdp/connection.rs:3134
+#: rustconn/src/embedded_rdp/connection.rs:3123
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11235,11 +11224,11 @@ msgstr ""
 "Domænet kender ikke denne server under navnet i Vært. Opret forbindelse via "
 "serverens DNS-navn, som det er registreret i domænet."
 
-#: rustconn/src/embedded_rdp/connection.rs:3136
+#: rustconn/src/embedded_rdp/connection.rs:3125
 msgid "NLA authentication failed. Check username and password."
 msgstr "NLA-godkendelse mislykkedes. Kontrollér brugernavn og adgangskode."
 
-#: rustconn/src/embedded_rdp/connection.rs:3158
+#: rustconn/src/embedded_rdp/connection.rs:3147
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
@@ -11247,7 +11236,7 @@ msgstr ""
 "Kerberos skal bruge serverens DNS-navn. Det mislykkes at oprette forbindelse "
 "via IP-adresse eller gennem en SSH-tunnel."
 
-#: rustconn/src/embedded_rdp/connection.rs:3161
+#: rustconn/src/embedded_rdp/connection.rs:3150
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
@@ -11255,11 +11244,11 @@ msgstr ""
 "Kerberos skal bruge DNS-domænet, for eksempel EXAMPLE.COM, ikke det korte "
 "domænenavn."
 
-#: rustconn/src/embedded_rdp/connection.rs:3561
+#: rustconn/src/embedded_rdp/connection.rs:3550
 msgid "RDP session will open in an external window"
 msgstr "RDP-sessionen åbnes i et eksternt vindue"
 
-#: rustconn/src/embedded_rdp/connection.rs:3590
+#: rustconn/src/embedded_rdp/connection.rs:3579
 msgid "Failed to start FreeRDP: {}"
 msgstr "Kunne ikke starte FreeRDP: {}"
 
@@ -14706,6 +14695,20 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid ""
+#~ "Connection broker routing value (loadbalanceinfo) from an .rdp file "
+#~ "(requires FreeRDP)"
+#~ msgstr ""
+#~ "Routingværdi for forbindelsesmægleren (loadbalanceinfo) fra en .rdp-fil "
+#~ "(kræver FreeRDP)"
+
+#~ msgid ""
+#~ "The embedded client does not support connection broker load balancing. "
+#~ "Using FreeRDP instead."
+#~ msgstr ""
+#~ "Den indlejrede klient understøtter ikke belastningsfordeling via "
+#~ "forbindelsesmægler. Bruger FreeRDP i stedet."
 
 #~ msgid "Send the local microphone to the remote session (requires FreeRDP)"
 #~ msgstr "Send den lokale mikrofon til fjernsessionen (kræver FreeRDP)"
