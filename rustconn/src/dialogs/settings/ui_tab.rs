@@ -82,6 +82,7 @@ pub fn create_ui_page() -> (
     adw::SwitchRow,
     adw::SwitchRow,
     adw::SwitchRow,
+    adw::SwitchRow,
     WindowTitleRows,
     adw::SwitchRow,
     // double_click_opens_new_session
@@ -416,6 +417,14 @@ pub fn create_ui_page() -> (
         .build();
     appearance_group.add(&keyboard_passthrough);
 
+    let remote_desktop_auto_capture_shortcuts = adw::SwitchRow::builder()
+        .title(i18n("Auto-capture shortcuts in remote desktop"))
+        .subtitle(i18n(
+            "Forward Alt+Tab, Super and other desktop shortcuts to Windows RDP and VNC sessions while focused",
+        ))
+        .build();
+    appearance_group.add(&remote_desktop_auto_capture_shortcuts);
+
     page.add(&appearance_group);
 
     // === Window Group ===
@@ -698,6 +707,7 @@ pub fn create_ui_page() -> (
         compact_auto,
         terminal_passthrough_ctrl,
         keyboard_passthrough,
+        remote_desktop_auto_capture_shortcuts,
         WindowTitleRows {
             shows_connection: window_title_shows_connection,
             shows_path: window_title_shows_path,
@@ -770,6 +780,7 @@ pub fn load_ui_settings(
     compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
+    remote_desktop_auto_capture_shortcuts: &adw::SwitchRow,
     window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
@@ -858,6 +869,8 @@ pub fn load_ui_settings(
 
     terminal_passthrough_ctrl.set_active(settings.terminal_passthrough_ctrl);
     keyboard_passthrough.set_active(settings.keyboard_passthrough);
+    remote_desktop_auto_capture_shortcuts
+        .set_active(settings.remote_desktop_auto_capture_shortcuts);
 
     window_title
         .shows_connection
@@ -954,6 +967,7 @@ pub fn collect_ui_settings(
     compact_auto: &adw::SwitchRow,
     terminal_passthrough_ctrl: &adw::SwitchRow,
     keyboard_passthrough: &adw::SwitchRow,
+    remote_desktop_auto_capture_shortcuts: &adw::SwitchRow,
     window_title: &WindowTitleRows,
     show_welcome_switch: &adw::SwitchRow,
     double_click_opens_new_session: &adw::SwitchRow,
@@ -1057,5 +1071,6 @@ pub fn collect_ui_settings(
         show_directional_tab_close: show_directional_tab_close.is_active(),
         reveal_session_toolbar_on_hover: reveal_toolbar_on_hover.is_active(),
         keyboard_passthrough: keyboard_passthrough.is_active(),
+        remote_desktop_auto_capture_shortcuts: remote_desktop_auto_capture_shortcuts.is_active(),
     }
 }

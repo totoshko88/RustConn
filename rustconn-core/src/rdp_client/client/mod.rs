@@ -135,6 +135,9 @@ impl RdpClient {
                                 old_fingerprint,
                             });
                         }
+                        lost @ RdpClientError::ServerDisconnected(_) => {
+                            let _ = event_tx.send(RdpClientEvent::ConnectionLost(lost.to_string()));
+                        }
                         other => {
                             let _ = event_tx.send(RdpClientEvent::Error(other.to_string()));
                         }
@@ -286,11 +289,6 @@ async fn run_rdp_client(
     // Phase 1-3: Establish connection
     let setup = connection::establish_connection(&config, event_tx.clone()).await?;
 
-    // Hold the GFX frame update receiver — pass to session loop for
-    // draining decoded EGFX bitmap updates into FrameUpdate events.
-    #[cfg(feature = "gfx-h264")]
-    let gfx_update_rx = setup.gfx_update_rx;
-
     // Send connected event
     let _ = event_tx.send(RdpClientEvent::Connected {
         width: setup.connection_result.desktop_size.width,
@@ -304,8 +302,7 @@ async fn run_rdp_client(
         event_tx,
         command_rx,
         shutdown_signal,
-        #[cfg(feature = "gfx-h264")]
-        gfx_update_rx,
+        setup.microphone,
     )
     .await
 }

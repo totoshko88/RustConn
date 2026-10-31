@@ -207,6 +207,9 @@ pub struct RdpConfig {
     /// Force full reconnect on resize instead of Display Control Channel.
     /// Useful for legacy servers that don't support MS-RDPEDISP.
     pub reconnect_on_resize: bool,
+    /// Reconnect by itself when an established session's connection drops
+    /// (`RdpConfig::auto_reconnect`). Read by the IronRDP path only.
+    pub auto_reconnect: bool,
     /// Request dynamic desktop resizing on the external client
     /// (`/dynamic-resolution`). Default true; turn off for legacy servers.
     /// Mutually exclusive with [`Self::smart_sizing`] (issue #341).
@@ -242,6 +245,14 @@ pub struct RdpConfig {
     /// Allows using local FIDO2 security keys for authentication in the remote session.
     /// Requires FreeRDP 3.x with `/fido` support. Only applies to External mode.
     pub fido2_enabled: bool,
+    /// Redirect the local microphone: the `AUDIO_INPUT` channel on the
+    /// embedded client (with `rdp-audio`), `/microphone` on FreeRDP.
+    pub microphone_enabled: bool,
+    /// Redirect local smart cards (`/smartcard`). External FreeRDP only.
+    pub smartcard_enabled: bool,
+    /// RD Connection Broker routing value, sent as the routing token by the
+    /// embedded client and as `/load-balance-info:` by FreeRDP.
+    pub load_balance_info: Option<String>,
     /// Authenticate NLA with Kerberos instead of NTLM (issue #351).
     ///
     /// On the embedded IronRDP path (CredSSP) this chooses Kerberos: it signs in
@@ -299,6 +310,7 @@ impl Default for RdpConfig {
             autotype_initial_delay_ms: 0,
             script_paste_via_clipboard: true,
             reconnect_on_resize: false,
+            auto_reconnect: true,
             dynamic_resolution: true,
             smart_sizing: false,
             remote_app_program: None,
@@ -308,6 +320,9 @@ impl Default for RdpConfig {
             force_legacy_graphics: false,
             mptcp: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
         }

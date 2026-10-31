@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-29 23:25+0200\n"
+"POT-Creation-Date: 2026-10-30 16:22-0500\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -37,8 +37,8 @@ msgstr "OK"
 #: rustconn/src/dialogs/script.rs:682
 #: rustconn/src/dialogs/settings/clients_tab.rs:351
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:174
-#: rustconn/src/dialogs/settings/mod.rs:592
-#: rustconn/src/dialogs/settings/mod.rs:938
+#: rustconn/src/dialogs/settings/mod.rs:595
+#: rustconn/src/dialogs/settings/mod.rs:942
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:448
 #: rustconn/src/dialogs/settings/terminal_tab.rs:823
 #: rustconn/src/dialogs/settings/terminal_tab.rs:882
@@ -59,16 +59,16 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:1957
 #: rustconn/src/window/edit_group.rs:2006
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3460
-#: rustconn/src/window/mod.rs:3524 rustconn/src/window/mod.rs:4479
+#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3464
+#: rustconn/src/window/mod.rs:3528 rustconn/src/window/mod.rs:4486
 #: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
 #: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Болдырмау"
 
-#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:759
-#: rustconn/src/dialogs/connection/dialog/save.rs:772
+#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:774
+#: rustconn/src/dialogs/connection/dialog/save.rs:787
 msgid "Validation Error"
 msgstr "Тексеру қатесі"
 
@@ -84,7 +84,7 @@ msgstr "Сақтамау"
 #: rustconn/src/dialogs/settings/terminal_tab.rs:883
 #: rustconn/src/dialogs/smart_folder.rs:82
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:420
-#: rustconn/src/dialogs/template.rs:2777
+#: rustconn/src/dialogs/template.rs:2782
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
 #: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:609
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
@@ -103,7 +103,7 @@ msgstr ""
 "енгізіңіз"
 
 #: rustconn/src/app.rs:841 rustconn/src/dialogs/shortcuts.rs:178
-#: rustconn/src/embedded_rdp/mod.rs:392 rustconn/src/split_view/bridge.rs:2030
+#: rustconn/src/embedded_rdp/mod.rs:403 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Баптаулар"
@@ -202,8 +202,10 @@ msgstr "Пәрмен макросы «{}»: {}"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:151 rustconn/src/embedded_rdp/mod.rs:761
-#: rustconn/src/embedded_rdp/mod.rs:2112
+#: rustconn/src/detached_window.rs:151
+#: rustconn/src/embedded_rdp/connection.rs:1741
+#: rustconn/src/embedded_rdp/connection.rs:2700
+#: rustconn/src/embedded_rdp/mod.rs:772 rustconn/src/embedded_rdp/mod.rs:2146
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
 #: rustconn/src/terminal/session_lifecycle.rs:388
@@ -263,8 +265,8 @@ msgid "Enter Password Manually"
 msgstr "Құпия сөзді қолмен енгізу"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2336 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1148
+#: rustconn/src/embedded_rdp/connection.rs:2422 rustconn/src/vault_ops.rs:66
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr "Параметрлерді ашу"
 
@@ -296,7 +298,7 @@ msgstr "Кластер мәліметтері"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:911
 #: rustconn/src/dialogs/connection/general_tab.rs:98
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
-#: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:2003
+#: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:2011
 #: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:512
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
@@ -342,7 +344,7 @@ msgid "Select at least one connection or set an auto-membership pattern"
 msgstr "Кемінде бір қосылымды таңдаңыз немесе авто-мүшелік үлгісін орнатыңыз"
 
 #: rustconn/src/dialogs/cluster.rs:297
-#: rustconn/src/dialogs/settings/ui_tab.rs:492
+#: rustconn/src/dialogs/settings/ui_tab.rs:501
 #: rustconn/src/dialogs/shortcuts.rs:150 rustconn/src/sidebar_ui.rs:1240
 msgid "Connections"
 msgstr "Қосылымдар"
@@ -456,7 +458,7 @@ msgid "Override terminal colors for this connection"
 msgstr "Осы қосылым үшін терминал түстерін қайта анықтау"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:91
-#: rustconn/src/dialogs/settings/ui_tab.rs:540
+#: rustconn/src/dialogs/settings/ui_tab.rs:549
 msgid "Custom"
 msgstr "Реттелетін"
 
@@ -512,7 +514,7 @@ msgid "Reset Theme"
 msgstr "Тақырыпты қалпына келтіру"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:286
-#: rustconn/src/dialogs/settings/mod.rs:939
+#: rustconn/src/dialogs/settings/mod.rs:943
 #: rustconn/src/dialogs/statistics.rs:87
 msgid "Reset"
 msgstr "Қалпына келтіру"
@@ -710,7 +712,7 @@ msgid "IP address to authorize in the SPA packet"
 msgstr "SPA пакетінде авторизациялайтын IP мекенжайы"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:606
-#: rustconn/src/dialogs/settings/mod.rs:377
+#: rustconn/src/dialogs/settings/mod.rs:380
 msgid "Highlight Rules"
 msgstr "Бөлектеу ережелері"
 
@@ -719,13 +721,13 @@ msgid "Regex-based text highlighting for this connection"
 msgstr "Осы қосылым үшін regex негізіндегі мәтінді бөлектеу"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:621
-#: rustconn/src/dialogs/settings/mod.rs:405
+#: rustconn/src/dialogs/settings/mod.rs:408
 msgid "No highlight rules"
 msgstr "Бөлектеу ережелері жоқ"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:633
 #: rustconn/src/dialogs/connection/automation_tab.rs:174
-#: rustconn/src/dialogs/settings/mod.rs:382
+#: rustconn/src/dialogs/settings/mod.rs:385
 #: rustconn/src/window/edit_group.rs:1265
 msgid "Add Rule"
 msgstr "Ереже қосу"
@@ -793,7 +795,7 @@ msgstr "Жаһандық параметрді пайдалану"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:822
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
-#: rustconn/src/dialogs/settings/ui_tab.rs:654
+#: rustconn/src/dialogs/settings/ui_tab.rs:663
 #: rustconn/src/window/edit_group.rs:2288
 msgid "Enabled"
 msgstr "Қосылған"
@@ -817,7 +819,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:924
 #: rustconn/src/dialogs/connection/advanced_tab.rs:928
-#: rustconn/src/dialogs/settings/mod.rs:2023
+#: rustconn/src/dialogs/settings/mod.rs:2031
 msgid "Pattern (regex)"
 msgstr "Үлгі (regex)"
 
@@ -829,22 +831,22 @@ msgstr "Асты сызылған"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:972
 #: rustconn/src/dialogs/connection/advanced_tab.rs:975
-#: rustconn/src/dialogs/settings/mod.rs:1967
-#: rustconn/src/dialogs/settings/mod.rs:1969
+#: rustconn/src/dialogs/settings/mod.rs:1975
+#: rustconn/src/dialogs/settings/mod.rs:1977
 msgid "Enable rule"
 msgstr "Ережені қосу"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:980
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
-#: rustconn/src/dialogs/settings/mod.rs:1984
+#: rustconn/src/dialogs/settings/mod.rs:1992
 #: rustconn/src/window/edit_group.rs:2124
 #: rustconn/src/window/edit_group.rs:2126
 msgid "Delete rule"
 msgstr "Ережені жою"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:984
-#: rustconn/src/dialogs/settings/mod.rs:1988
+#: rustconn/src/dialogs/settings/mod.rs:1996
 msgid "Delete highlight rule"
 msgstr "Бөлектеу ережесін жою"
 
@@ -1094,7 +1096,7 @@ msgid "Executable name or path (e.g., chromaterm, pv, ccze)"
 msgstr "Орындалатын файл атауы немесе жолы (мысалы, chromaterm, pv, ccze)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:575
-#: rustconn/src/dialogs/connection/rdp.rs:792
+#: rustconn/src/dialogs/connection/rdp.rs:865
 msgid "Arguments"
 msgstr "Аргументтер"
 
@@ -1116,31 +1118,31 @@ msgstr "Скриптті кітапханадан жою"
 msgid "Remove from this list"
 msgstr "Осы тізімнен алып тастау"
 
-#: rustconn/src/dialogs/connection/builders.rs:317
+#: rustconn/src/dialogs/connection/builders.rs:322
 msgid "Connection name is required"
 msgstr "Қосылым атауы қажет"
 
-#: rustconn/src/dialogs/connection/builders.rs:331
+#: rustconn/src/dialogs/connection/builders.rs:336
 msgid "Host is required"
 msgstr "Хост қажет"
 
-#: rustconn/src/dialogs/connection/builders.rs:336
+#: rustconn/src/dialogs/connection/builders.rs:341
 msgid "Host cannot contain spaces"
 msgstr "Хостта бос орындар болмауы керек"
 
-#: rustconn/src/dialogs/connection/builders.rs:346
+#: rustconn/src/dialogs/connection/builders.rs:351
 msgid "Port must be greater than 0"
 msgstr "Порт 0-ден үлкен болуы керек"
 
-#: rustconn/src/dialogs/connection/builders.rs:354
+#: rustconn/src/dialogs/connection/builders.rs:359
 msgid "Device path is required for serial connections"
 msgstr "Сериалдық қосылымдар үшін құрылғы жолы қажет"
 
-#: rustconn/src/dialogs/connection/builders.rs:373
+#: rustconn/src/dialogs/connection/builders.rs:378
 msgid "SSH key path is required for public key authentication"
 msgstr "Ашық кілт аутентификациясы үшін SSH кілт жолы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:385
+#: rustconn/src/dialogs/connection/builders.rs:390
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
@@ -1148,11 +1150,11 @@ msgstr ""
 "Құпия сөз көзі 'None', бірақ аутентификация әдісі — Құпия сөз. Көзді Prompt "
 "немесе Vault етіп орнатыңыз."
 
-#: rustconn/src/dialogs/connection/builders.rs:395
+#: rustconn/src/dialogs/connection/builders.rs:400
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "Busybox режимі өшірілгенде Pod атауы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:407
+#: rustconn/src/dialogs/connection/builders.rs:412
 msgid ""
 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, "
 "udp://, http:// or https:// address."
@@ -1160,62 +1162,62 @@ msgstr ""
 "KDC мекенжайы жарамсыз. Хост атын, host:port түрін немесе tcp://, udp://, "
 "http:// немесе https:// мекенжайын енгізіңіз."
 
-#: rustconn/src/dialogs/connection/builders.rs:416
+#: rustconn/src/dialogs/connection/builders.rs:421
 msgid "MAC address is required when WOL is enabled"
 msgstr "WOL қосылғанда MAC мекенжайы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:421
+#: rustconn/src/dialogs/connection/builders.rs:426
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr ""
 "Жарамсыз MAC мекенжай форматы. AA:BB:CC:DD:EE:FF немесе AA-BB-CC-DD-EE-FF "
 "пайдаланыңыз"
 
-#: rustconn/src/dialogs/connection/builders.rs:439
+#: rustconn/src/dialogs/connection/builders.rs:444
 msgid "Browser command is required when Custom mode is selected"
 msgstr "Реттелген режим таңдалғанда браузер командасы қажет"
 
-#: rustconn/src/dialogs/connection/builders.rs:460
+#: rustconn/src/dialogs/connection/builders.rs:465
 msgid "AWS SSM target instance ID is required"
 msgstr "AWS SSM мақсатты инстанс ID-і міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:465
+#: rustconn/src/dialogs/connection/builders.rs:470
 msgid "GCP instance name and zone are required"
 msgstr "GCP инстанс атауы мен аймағы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:474
+#: rustconn/src/dialogs/connection/builders.rs:479
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr "Azure Bastion ресурс ID-і, ресурс тобы және бастион атауы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:480
+#: rustconn/src/dialogs/connection/builders.rs:485
 msgid "Azure VM name and resource group are required"
 msgstr "Azure VM атауы мен ресурс тобы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:489
+#: rustconn/src/dialogs/connection/builders.rs:494
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr "OCI бастион OCID, мақсат OCID және мақсаттың жеке IP-і міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:495
+#: rustconn/src/dialogs/connection/builders.rs:500
 msgid "Cloudflare Access hostname is required"
 msgstr "Cloudflare Access хост атауы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:500
+#: rustconn/src/dialogs/connection/builders.rs:505
 msgid "Teleport host is required"
 msgstr "Teleport хосты міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:505
+#: rustconn/src/dialogs/connection/builders.rs:510
 msgid "Tailscale host is required"
 msgstr "Tailscale хосты міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:510
+#: rustconn/src/dialogs/connection/builders.rs:515
 msgid "Boundary target is required"
 msgstr "Boundary мақсаты міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:515
+#: rustconn/src/dialogs/connection/builders.rs:520
 msgid "Hoop.dev connection name is required"
 msgstr "Hoop.dev қосылу атауы міндетті"
 
-#: rustconn/src/dialogs/connection/builders.rs:521
+#: rustconn/src/dialogs/connection/builders.rs:526
 msgid "Command template is required for the Generic provider"
 msgstr "Команда шаблоны жалпы провайдер үшін міндетті"
 
@@ -1279,24 +1281,24 @@ msgstr "Қосылымды өңдеу (синхрондалған)"
 msgid "Basic"
 msgstr "Негізгі"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:368
+#: rustconn/src/dialogs/connection/dialog/build.rs:373
 msgid "Data"
 msgstr "Деректер"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:378
+#: rustconn/src/dialogs/connection/dialog/build.rs:383
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "Журналдау"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:388
+#: rustconn/src/dialogs/connection/dialog/build.rs:393
 #: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1080
 #: rustconn/src/window/edit_group.rs:1571
 msgid "Automation"
 msgstr "Автоматтандыру"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:432
+#: rustconn/src/dialogs/connection/dialog/build.rs:437
 #: rustconn/src/dialogs/connection/kubernetes.rs:132
-#: rustconn/src/dialogs/connection/rdp.rs:841
+#: rustconn/src/dialogs/connection/rdp.rs:914
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
@@ -1304,19 +1306,19 @@ msgstr "Автоматтандыру"
 msgid "Advanced"
 msgstr "Қосымша"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:448
+#: rustconn/src/dialogs/connection/dialog/build.rs:453
 msgid "No host set"
 msgstr "Хост орнатылмаған"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:449
+#: rustconn/src/dialogs/connection/dialog/build.rs:454
 msgid "Enter the host address first, then detect its MAC."
 msgstr "Алдымен хост мекенжайын енгізіңіз, содан кейін оның MAC-ын анықтаңыз."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:467
+#: rustconn/src/dialogs/connection/dialog/build.rs:472
 msgid "MAC address may be temporary"
 msgstr "MAC-мекенжайы уақытша болуы мүмкін"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:469
+#: rustconn/src/dialogs/connection/dialog/build.rs:474
 msgid ""
 "This looks like a randomized (private) address, which changes periodically. "
 "Wake-on-LAN will stop working once it rotates — turn off the private address "
@@ -1326,11 +1328,11 @@ msgstr ""
 "өзгергенде Wake-on-LAN жұмысын тоқтатады — мақсатты құрылғыда осы желі үшін "
 "жеке мекенжайды өшіріңіз немесе оны кейінірек қайта оқыңыз."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:477
+#: rustconn/src/dialogs/connection/dialog/build.rs:482
 msgid "MAC address not found"
 msgstr "MAC-мекенжайы табылмады"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:479
+#: rustconn/src/dialogs/connection/dialog/build.rs:484
 msgid ""
 "The host is not in this computer's ARP cache. It must be powered on and on "
 "the same local network. For a host beyond a router, read its MAC over an SSH "
@@ -1340,50 +1342,50 @@ msgstr ""
 "болуы керек. Маршрутизатордан тыс хост үшін оның MAC-ын SSH сеансы арқылы "
 "оқыңыз."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:834
+#: rustconn/src/dialogs/connection/dialog/build.rs:844
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1196
 #: rustconn/src/dialogs/connection/ssh.rs:687
 #: rustconn/src/dialogs/template.rs:699
 msgid "Jump host for tunneling (-J)"
 msgstr "Туннельдеу үшін аралық хост (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1160
+#: rustconn/src/dialogs/connection/dialog/build.rs:1175
 msgid "Username Loaded"
 msgstr "Пайдаланушы аты жүктелді"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1161
+#: rustconn/src/dialogs/connection/dialog/build.rs:1176
 msgid "Username loaded from group"
 msgstr "Пайдаланушы аты топтан жүктелді"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1167
+#: rustconn/src/dialogs/connection/dialog/build.rs:1182
 msgid "No Username"
 msgstr "Пайдаланушы аты жоқ"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1168
+#: rustconn/src/dialogs/connection/dialog/build.rs:1183
 msgid "Group has no username defined"
 msgstr "Топта пайдаланушы аты анықталмаған"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1194
+#: rustconn/src/dialogs/connection/dialog/build.rs:1209
 msgid "Domain Loaded"
 msgstr "Домен жүктелді"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1195
+#: rustconn/src/dialogs/connection/dialog/build.rs:1210
 msgid "Domain loaded from group"
 msgstr "Домен топтан жүктелді"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1201
+#: rustconn/src/dialogs/connection/dialog/build.rs:1216
 msgid "No Domain"
 msgstr "Домен жоқ"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1202
+#: rustconn/src/dialogs/connection/dialog/build.rs:1217
 msgid "Group has no domain defined"
 msgstr "Топта домен анықталмаған"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1230
+#: rustconn/src/dialogs/connection/dialog/build.rs:1245
 msgid "Zero Trust Connection Test"
 msgstr "Zero Trust қосылым тесті"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1231
+#: rustconn/src/dialogs/connection/dialog/build.rs:1246
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1399,35 +1401,35 @@ msgstr ""
 "2. Қосылу батырмасын пайдаланыңыз\n"
 "3. Провайдер CLI аутентификацияны өңдейді"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1239
-#: rustconn/src/dialogs/connection/dialog/build.rs:1401
-#: rustconn/src/dialogs/connection/dialog/build.rs:1406
+#: rustconn/src/dialogs/connection/dialog/build.rs:1254
+#: rustconn/src/dialogs/connection/dialog/build.rs:1416
+#: rustconn/src/dialogs/connection/dialog/build.rs:1421
 msgid "Connection Test Failed"
 msgstr "Қосылым тесті сәтсіз"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1240
+#: rustconn/src/dialogs/connection/dialog/build.rs:1255
 msgid "Fill in the required fields (name and host)"
 msgstr "Міндетті өрістерді толтырыңыз (атауы және хост)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1282
-#: rustconn/src/dialogs/connection/dialog/build.rs:1452
+#: rustconn/src/dialogs/connection/dialog/build.rs:1297
+#: rustconn/src/dialogs/connection/dialog/build.rs:1467
 msgid "Testing…"
 msgstr "Тексерілуде…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1381
+#: rustconn/src/dialogs/connection/dialog/build.rs:1396
 #: rustconn/src/dialogs/connection/general_tab.rs:366
 msgid "Test"
 msgstr "Тест"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1388
+#: rustconn/src/dialogs/connection/dialog/build.rs:1403
 msgid "Connection Test Successful"
 msgstr "Қосылым тесті сәтті"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1390
+#: rustconn/src/dialogs/connection/dialog/build.rs:1405
 msgid "Connection successful. Latency: {} ms"
 msgstr "Қосылым сәтті өтті. Кідіріс: {} мс"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1399
+#: rustconn/src/dialogs/connection/dialog/build.rs:1414
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1435,52 +1437,52 @@ msgstr ""
 "Сынақ нақты қатесіз сәтсіз аяқталды. Хост мекенжайы мен портты тексеріп, "
 "қайта көріңіз."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1407
+#: rustconn/src/dialogs/connection/dialog/build.rs:1422
 msgid "Test timed out"
 msgstr "Тест уақыты аяқталды"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1425
-#: rustconn/src/dialogs/connection/dialog/build.rs:1435
-#: rustconn/src/dialogs/connection/dialog/build.rs:1444
-#: rustconn/src/dialogs/connection/dialog/build.rs:1505
-#: rustconn/src/dialogs/connection/dialog/build.rs:1510
+#: rustconn/src/dialogs/connection/dialog/build.rs:1440
+#: rustconn/src/dialogs/connection/dialog/build.rs:1450
+#: rustconn/src/dialogs/connection/dialog/build.rs:1459
+#: rustconn/src/dialogs/connection/dialog/build.rs:1520
+#: rustconn/src/dialogs/connection/dialog/build.rs:1525
 msgid "Script Test Failed"
 msgstr "Скрипт тесті сәтсіз"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1426
+#: rustconn/src/dialogs/connection/dialog/build.rs:1441
 msgid "Script command is empty"
 msgstr "Скрипт командасы бос"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1436
+#: rustconn/src/dialogs/connection/dialog/build.rs:1451
 msgid "Script command is empty after parsing"
 msgstr "Скрипт командасы талдаудан кейін бос"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1445
+#: rustconn/src/dialogs/connection/dialog/build.rs:1460
 msgid "Failed to parse command"
 msgstr "Команданы талдау сәтсіз"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1475
+#: rustconn/src/dialogs/connection/dialog/build.rs:1490
 msgid "Test Script"
 msgstr "Скриптті тексеру"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1482
+#: rustconn/src/dialogs/connection/dialog/build.rs:1497
 msgid "(empty output)"
 msgstr "(бос шығыс)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1488
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "Script Test Successful"
 msgstr "Скрипт тесті сәтті"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1489
+#: rustconn/src/dialogs/connection/dialog/build.rs:1504
 #: rustconn/src/dialogs/export.rs:322
 msgid "Output"
 msgstr "Шығыс"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1496
+#: rustconn/src/dialogs/connection/dialog/build.rs:1511
 msgid "Command failed"
 msgstr "Команда сәтсіз"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1511
+#: rustconn/src/dialogs/connection/dialog/build.rs:1526
 msgid "Script timed out after 30 seconds"
 msgstr "Скрипт уақыт шегінен асты (30 секунд)"
 
@@ -1701,29 +1703,29 @@ msgstr ""
 msgid "Direct — an inherited jump host is ignored"
 msgstr "Тікелей — мұраланған аралық хост еленбейді"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1463
-#: rustconn/src/dialogs/connection/rdp.rs:699
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1472
+#: rustconn/src/dialogs/connection/rdp.rs:757
 msgid "Tunnel RDP through an SSH connection"
 msgstr "RDP-ді SSH қосылымы арқылы туннельдеу"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1533
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1542
 #: rustconn/src/dialogs/connection/vnc.rs:352
 msgid "Tunnel VNC through an SSH connection"
 msgstr "VNC-ді SSH қосылымы арқылы туннельдеу"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1591
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1600
 #: rustconn/src/dialogs/connection/spice.rs:348
 msgid "Tunnel SPICE through an SSH connection"
 msgstr "SPICE-ді SSH қосылымы арқылы туннельдеу"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1840
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1849
 msgid ""
 "Set to this connection itself, which is ignored — pick another jump host"
 msgstr ""
 "Осы қосылымның өзіне орнатылған, бұл еленбейді — басқа аралық түйінді "
 "таңдаңыз"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1843
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1852
 msgid ""
 "Saved jump host no longer exists and is skipped when connecting — pick "
 "another"
@@ -2069,13 +2071,13 @@ msgid "Zero Trust"
 msgstr "Zero Trust"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:146
-#: rustconn/src/dialogs/connection/rdp.rs:685
+#: rustconn/src/dialogs/connection/rdp.rs:743
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/connection/vnc.rs:338
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:101
-#: rustconn/src/dialogs/settings/mod.rs:435
+#: rustconn/src/dialogs/settings/mod.rs:438
 #: rustconn/src/dialogs/template.rs:687
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:84
 #: rustconn/src/dialogs/wol.rs:65 rustconn/src/dialogs/wol.rs:71
@@ -2369,7 +2371,7 @@ msgid "Container image for temporary pod"
 msgstr "Уақытша pod үшін контейнер бейнесі"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:135
-#: rustconn/src/dialogs/connection/rdp.rs:900
+#: rustconn/src/dialogs/connection/rdp.rs:973
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
@@ -2384,7 +2386,7 @@ msgid "Additional kubectl arguments"
 msgstr "Қосымша kubectl аргументтері"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:65
-#: rustconn/src/dialogs/settings/mod.rs:343
+#: rustconn/src/dialogs/settings/mod.rs:346
 msgid "Session Logging"
 msgstr "Сеанс журналдауы"
 
@@ -2476,135 +2478,135 @@ msgstr "Уақыт белгілерін қосу"
 msgid "Prepend timestamp to each log line"
 msgstr "Әр журнал жолына уақыт белгісін қосу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:97
+#: rustconn/src/dialogs/connection/rdp.rs:102
 #: rustconn/src/dialogs/connection/vnc.rs:62
 #: rustconn/src/dialogs/template.rs:811 rustconn/src/dialogs/template.rs:1010
 msgid "Display"
 msgstr "Дисплей"
 
-#: rustconn/src/dialogs/connection/rdp.rs:113
+#: rustconn/src/dialogs/connection/rdp.rs:118
 #: rustconn/src/dialogs/connection/vnc.rs:78
 #: rustconn/src/dialogs/template.rs:827 rustconn/src/dialogs/template.rs:1026
 msgid "Client Mode"
 msgstr "Клиент режимі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:115
+#: rustconn/src/dialogs/connection/rdp.rs:120
 #: rustconn/src/dialogs/connection/vnc.rs:80
 #: rustconn/src/dialogs/template.rs:829 rustconn/src/dialogs/template.rs:1028
 msgid "Embedded renders in tab, External opens separate window"
 msgstr "Кірістірілген қойындыда көрсетеді, сыртқы бөлек терезе ашады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:136
+#: rustconn/src/dialogs/connection/rdp.rs:141
 #: rustconn/src/dialogs/connection/vnc.rs:123
 msgid "Performance Mode"
 msgstr "Өнімділік режимі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:138
+#: rustconn/src/dialogs/connection/rdp.rs:143
 msgid "Quality/speed tradeoff for image rendering and visual effects"
 msgstr "Кескін көрсету және визуалды әсерлер үшін сапа/жылдамдық балансы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:146
-#: rustconn/src/dialogs/connection/rdp.rs:576
+#: rustconn/src/dialogs/connection/rdp.rs:151
+#: rustconn/src/dialogs/connection/rdp.rs:634
 #: rustconn/src/dialogs/connection/vnc.rs:89 rustconn/src/i18n_markers.rs:99
 msgid "Automatic"
 msgstr "Автоматты"
 
-#: rustconn/src/dialogs/connection/rdp.rs:147
+#: rustconn/src/dialogs/connection/rdp.rs:152
 msgid "Legacy (Compatible)"
 msgstr "Ескі (үйлесімді)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:148
+#: rustconn/src/dialogs/connection/rdp.rs:153
 msgid "RemoteFX"
 msgstr "RemoteFX"
 
-#: rustconn/src/dialogs/connection/rdp.rs:158
+#: rustconn/src/dialogs/connection/rdp.rs:163
 msgid "Graphics Pipeline"
 msgstr "Графикалық құбыр"
 
-#: rustconn/src/dialogs/connection/rdp.rs:160
+#: rustconn/src/dialogs/connection/rdp.rs:165
 msgid "Automatic uses GFX/H.264 when available. Legacy for older servers."
 msgstr ""
 "Автоматты режим қолжетімді болса GFX/H.264 пайдаланады. Ескі режим — ескі "
 "серверлер үшін."
 
-#: rustconn/src/dialogs/connection/rdp.rs:181
+#: rustconn/src/dialogs/connection/rdp.rs:186
 msgid "External Window"
 msgstr "Сыртқы терезе"
 
-#: rustconn/src/dialogs/connection/rdp.rs:183
+#: rustconn/src/dialogs/connection/rdp.rs:188
 msgid "Size of the separate window, also used when embedded mode falls back"
 msgstr ""
 "Жеке терезенің өлшемі, ендірілген режим сыртқы клиентке өткенде де "
 "қолданылады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:210
+#: rustconn/src/dialogs/connection/rdp.rs:215
 #: rustconn/src/dialogs/template.rs:856
 msgid "Resolution"
 msgstr "Ажыратымдылық"
 
-#: rustconn/src/dialogs/connection/rdp.rs:211
+#: rustconn/src/dialogs/connection/rdp.rs:216
 #: rustconn/src/dialogs/template.rs:857
 msgid "Width × Height in pixels"
 msgstr "Ені × биіктігі пиксельмен"
 
-#: rustconn/src/dialogs/connection/rdp.rs:232
+#: rustconn/src/dialogs/connection/rdp.rs:237
 #: rustconn/src/dialogs/template.rs:867
 msgid "Negotiate (server default)"
 msgstr "Келісу (сервердің әдепкісі)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:233
+#: rustconn/src/dialogs/connection/rdp.rs:238
 #: rustconn/src/dialogs/template.rs:868
 msgid "32-bit (True Color)"
 msgstr "32-bit (True Color)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:234
+#: rustconn/src/dialogs/connection/rdp.rs:239
 #: rustconn/src/dialogs/template.rs:869
 msgid "24-bit"
 msgstr "24-bit"
 
-#: rustconn/src/dialogs/connection/rdp.rs:235
+#: rustconn/src/dialogs/connection/rdp.rs:240
 #: rustconn/src/dialogs/template.rs:870
 msgid "16-bit (High Color)"
 msgstr "16-bit (High Color)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:236
+#: rustconn/src/dialogs/connection/rdp.rs:241
 #: rustconn/src/dialogs/template.rs:871
 msgid "15-bit"
 msgstr "15-bit"
 
-#: rustconn/src/dialogs/connection/rdp.rs:237
+#: rustconn/src/dialogs/connection/rdp.rs:242
 #: rustconn/src/dialogs/template.rs:872
 msgid "8-bit"
 msgstr "8-bit"
 
-#: rustconn/src/dialogs/connection/rdp.rs:246
+#: rustconn/src/dialogs/connection/rdp.rs:251
 #: rustconn/src/dialogs/template.rs:881
 msgid "Color Depth"
 msgstr "Түс тереңдігі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:247
+#: rustconn/src/dialogs/connection/rdp.rs:252
 #: rustconn/src/dialogs/template.rs:882
 msgid "Higher values provide better quality"
 msgstr "Жоғары мәндер жақсы сапаны қамтамасыз етеді"
 
-#: rustconn/src/dialogs/connection/rdp.rs:267
+#: rustconn/src/dialogs/connection/rdp.rs:272
 #: rustconn/src/dialogs/connection/vnc.rs:166
 msgid "Display Scale"
 msgstr "Дисплей масштабы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:268
+#: rustconn/src/dialogs/connection/rdp.rs:273
 msgid "HiDPI scaling for the session"
 msgstr "Сеанс үшін HiDPI масштабтауы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:275
+#: rustconn/src/dialogs/connection/rdp.rs:280
 msgid "Dynamic Resolution"
 msgstr "Динамикалық ажыратымдылық"
 
-#: rustconn/src/dialogs/connection/rdp.rs:276
+#: rustconn/src/dialogs/connection/rdp.rs:281
 msgid "Embedded mode automatically matches window size"
 msgstr "Кірістірілген режим терезе өлшеміне автоматты түрде сәйкес келеді"
 
-#: rustconn/src/dialogs/connection/rdp.rs:300
+#: rustconn/src/dialogs/connection/rdp.rs:305
 #: rustconn/src/dialogs/connection/spice.rs:158
 #: rustconn/src/dialogs/connection/vnc.rs:236
 #: rustconn/src/dialogs/template.rs:904 rustconn/src/dialogs/template.rs:1099
@@ -2612,53 +2614,95 @@ msgstr "Кірістірілген режим терезе өлшеміне ав
 msgid "Features"
 msgstr "Мүмкіндіктер"
 
-#: rustconn/src/dialogs/connection/rdp.rs:318
+#: rustconn/src/dialogs/connection/rdp.rs:323
 #: rustconn/src/dialogs/template.rs:920
 msgid "Audio"
 msgstr "Дыбыс"
 
-#: rustconn/src/dialogs/connection/rdp.rs:319
+#: rustconn/src/dialogs/connection/rdp.rs:324
 #: rustconn/src/dialogs/template.rs:921
 msgid "Where the remote sound is played"
 msgstr "Қашықтағы компьютердің дыбысы қайда ойнатылады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:326
+#: rustconn/src/dialogs/connection/rdp.rs:331
 msgid "Printer Redirection"
 msgstr "Принтерді қайта бағыттау"
 
-#: rustconn/src/dialogs/connection/rdp.rs:327
+#: rustconn/src/dialogs/connection/rdp.rs:332
 msgid "Share your local printer with the remote session"
 msgstr "Жергілікті принтерді қашықтағы сеанспен бөлісу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:343
+#: rustconn/src/dialogs/connection/rdp.rs:339
+msgid "Microphone"
+msgstr "Микрофон"
+
+#: rustconn/src/dialogs/connection/rdp.rs:340
+msgid "Send the local microphone to the remote session"
+msgstr "Жергілікті микрофонды қашықтағы сеансқа жіберу"
+
+#: rustconn/src/dialogs/connection/rdp.rs:349
+msgid "Smart Cards"
+msgstr "Смарт-карталар"
+
+#: rustconn/src/dialogs/connection/rdp.rs:351
+msgid ""
+"Use local smart card readers in the remote session (External client, needs "
+"PC/SC)"
+msgstr ""
+"Қашықтағы сеанста жергілікті смарт-карта оқу құрылғыларын пайдалану (сыртқы "
+"клиент, PC/SC қажет)"
+
+#: rustconn/src/dialogs/connection/rdp.rs:371
+msgid "Windows Key Combinations"
+msgstr "Windows пернелер тіркесімдері"
+
+#: rustconn/src/dialogs/connection/rdp.rs:373
+msgid ""
+"Where shortcuts such as Alt+Tab and Super apply while the session has focus "
+"(Embedded client)"
+msgstr ""
+"Сеанс фокуста болғанда Alt+Tab және Super сияқты тіркесімдер қай жерде "
+"әрекет етеді (кірістірілген клиент)"
+
+#: rustconn/src/dialogs/connection/rdp.rs:381
+msgid "Reconnect Automatically"
+msgstr "Автоматты түрде қайта қосылу"
+
+#: rustconn/src/dialogs/connection/rdp.rs:383
+msgid ""
+"Reconnect when the connection drops, up to {} attempts (Embedded client)"
+msgstr ""
+"Байланыс үзілгенде қайта қосылу, ең көбі {} әрекет (кірістірілген клиент)"
+
+#: rustconn/src/dialogs/connection/rdp.rs:401
 #: rustconn/src/dialogs/connection/spice.rs:171
 #: rustconn/src/dialogs/connection/vnc.rs:257
 #: rustconn/src/dialogs/template.rs:1111 rustconn/src/dialogs/template.rs:1246
 msgid "Clipboard Sharing"
 msgstr "Алмасу буферін бөлісу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:344
+#: rustconn/src/dialogs/connection/rdp.rs:402
 msgid "Which way the clipboard synchronises with the remote"
 msgstr "Алмасу буфері қашықтағымен қай бағытта синхрондалады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:352
+#: rustconn/src/dialogs/connection/rdp.rs:410
 #: rustconn/src/dialogs/connection/spice.rs:215
 #: rustconn/src/dialogs/connection/vnc.rs:265
 msgid "Show Local Cursor"
 msgstr "Жергілікті курсорды көрсету"
 
-#: rustconn/src/dialogs/connection/rdp.rs:353
+#: rustconn/src/dialogs/connection/rdp.rs:411
 #: rustconn/src/dialogs/connection/spice.rs:216
 #: rustconn/src/dialogs/connection/vnc.rs:266
 msgid "Hide to avoid double cursor in embedded mode"
 msgstr "Ендірілген режимде қос курсорды болдырмау үшін өшіріңіз"
 
-#: rustconn/src/dialogs/connection/rdp.rs:364
+#: rustconn/src/dialogs/connection/rdp.rs:422
 #: rustconn/src/dialogs/connection/vnc.rs:274
 msgid "Session Toolbar"
 msgstr "Сеанс құралдар тақтасы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:366
+#: rustconn/src/dialogs/connection/rdp.rs:424
 #: rustconn/src/dialogs/connection/vnc.rs:276
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Ctrl+Alt+Del "
@@ -2667,46 +2711,46 @@ msgstr ""
 "Қалқымалы құралдар тақтасын және оның ашу көрсеткісін алып тастау үшін "
 "өшіріңіз. Онымен бірге Ctrl+Alt+Del және тақта түймелері де жоғалады."
 
-#: rustconn/src/dialogs/connection/rdp.rs:374
+#: rustconn/src/dialogs/connection/rdp.rs:432
 msgid "Mouse Jiggler"
 msgstr "Тінтуір қозғалтқыш"
 
-#: rustconn/src/dialogs/connection/rdp.rs:375
+#: rustconn/src/dialogs/connection/rdp.rs:433
 msgid "Prevent idle disconnect by simulating mouse movement"
 msgstr ""
 "Тінтуір қозғалысын имитациялау арқылы бос тұрғанда ажыратуды "
 "болдырмауТінтуір қозғалысын имитациялау арқылы бос тұру кезінде ажыратуды "
 "болдырмайды"
 
-#: rustconn/src/dialogs/connection/rdp.rs:388
+#: rustconn/src/dialogs/connection/rdp.rs:446
 msgid "Jiggler Interval"
 msgstr "Қозғалыс аралығы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:389
+#: rustconn/src/dialogs/connection/rdp.rs:447
 msgid "Seconds between mouse movements"
 msgstr "Тінтуір қозғалыстары арасындағы секундтар"
 
-#: rustconn/src/dialogs/connection/rdp.rs:408
+#: rustconn/src/dialogs/connection/rdp.rs:466
 msgid "Autotype Delay"
 msgstr "Автотеру кідірісі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:410
+#: rustconn/src/dialogs/connection/rdp.rs:468
 msgid "Milliseconds between keystrokes (increase for Citrix)"
 msgstr "Пернелер арасындағы миллисекундтар (Citrix үшін арттырыңыз)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:423
+#: rustconn/src/dialogs/connection/rdp.rs:481
 msgid "Autotype Initial Delay"
 msgstr "Автотерудің бастапқы кідірісі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:424
+#: rustconn/src/dialogs/connection/rdp.rs:482
 msgid "Milliseconds to wait before typing starts"
 msgstr "Теру басталмас бұрын күту миллисекундтары"
 
-#: rustconn/src/dialogs/connection/rdp.rs:431
+#: rustconn/src/dialogs/connection/rdp.rs:489
 msgid "Dynamic resolution"
 msgstr "Динамикалық ажыратымдылық"
 
-#: rustconn/src/dialogs/connection/rdp.rs:433
+#: rustconn/src/dialogs/connection/rdp.rs:491
 msgid ""
 "Resize the remote desktop to match the window (External client). Turn off "
 "for legacy servers"
@@ -2714,11 +2758,11 @@ msgstr ""
 "Қашықтағы жұмыс үстелінің өлшемін терезеге сәйкестендіру (сыртқы клиент). "
 "Ескі серверлер үшін өшіріңіз"
 
-#: rustconn/src/dialogs/connection/rdp.rs:441
+#: rustconn/src/dialogs/connection/rdp.rs:499
 msgid "Smart sizing"
 msgstr "Ақылды өлшемдеу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:443
+#: rustconn/src/dialogs/connection/rdp.rs:501
 msgid ""
 "Scale the remote screen to fit the window (External client). For servers "
 "that do not resize dynamically, such as KDE KRdp, or legacy servers on HiDPI "
@@ -2728,11 +2772,11 @@ msgstr ""
 "динамикалық өзгертпейтін серверлер үшін, мысалы KDE KRdp, немесе HiDPI "
 "дисплейлеріндегі ескі серверлер үшін. Динамикалық ажыратымдылықты басып озады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:462
+#: rustconn/src/dialogs/connection/rdp.rs:520
 msgid "Reconnect on Resize"
 msgstr "Өлшемі өзгергенде қайта қосылу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:464
+#: rustconn/src/dialogs/connection/rdp.rs:522
 msgid ""
 "Full reconnect instead of dynamic resize (Embedded client). For legacy "
 "servers or fixed resolution"
@@ -2740,7 +2784,7 @@ msgstr ""
 "Динамикалық өлшем өзгертудің орнына толық қайта қосылу (ендірілген клиент). "
 "Ескі серверлер немесе тұрақты ажыратымдылық үшін"
 
-#: rustconn/src/dialogs/connection/rdp.rs:472
+#: rustconn/src/dialogs/connection/rdp.rs:530
 #: rustconn/src/dialogs/connection/vnc.rs:294
 msgid ""
 "Use multiple network paths for seamless mobility (Linux 5.6+, embedded mode "
@@ -2749,7 +2793,7 @@ msgstr ""
 "Үздіксіз мобильділік үшін бірнеше желі жолын пайдалану (Linux 5.6+, тек "
 "ендірілген режим)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:474
+#: rustconn/src/dialogs/connection/rdp.rs:532
 #: rustconn/src/dialogs/connection/vnc.rs:296
 msgid ""
 "Multiple network paths (embedded mode only). Not available: kernel MPTCP is "
@@ -2757,28 +2801,28 @@ msgid ""
 msgstr ""
 "Бірнеше желі жолы (тек ендірілген режим). Қолжетімсіз: ядро MPTCP өшірілген"
 
-#: rustconn/src/dialogs/connection/rdp.rs:477
+#: rustconn/src/dialogs/connection/rdp.rs:535
 #: rustconn/src/dialogs/connection/ssh.rs:850
 #: rustconn/src/dialogs/connection/vnc.rs:299
 msgid "Multipath TCP"
 msgstr "Multipath TCP"
 
-#: rustconn/src/dialogs/connection/rdp.rs:485
+#: rustconn/src/dialogs/connection/rdp.rs:543
 msgid "FIDO2 Passkey Redirection"
 msgstr "FIDO2 кіру кілттерін бағыттау"
 
-#: rustconn/src/dialogs/connection/rdp.rs:487
+#: rustconn/src/dialogs/connection/rdp.rs:545
 msgid ""
 "Use local security keys in the remote session (External client, FreeRDP 3.x)"
 msgstr ""
 "Қашықтағы сеанста жергілікті қауіпсіздік кілттерін пайдалану (сыртқы клиент, "
 "FreeRDP 3.x)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:499
+#: rustconn/src/dialogs/connection/rdp.rs:557
 msgid "Admin/console session (/admin)"
 msgstr "Әкімші/консоль сеансы (/admin)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:501
+#: rustconn/src/dialogs/connection/rdp.rs:559
 msgid ""
 "Connect to the console/admin session (External client). Bypasses RDS CAL "
 "licensing"
@@ -2786,7 +2830,7 @@ msgstr ""
 "Консоль/әкімші сеансына қосылу (сыртқы клиент). RDS CAL лицензиялауын "
 "айналып өтеді"
 
-#: rustconn/src/dialogs/connection/rdp.rs:506
+#: rustconn/src/dialogs/connection/rdp.rs:564
 msgid ""
 "Passes /admin to the external FreeRDP client, connecting to the server's "
 "console/administrative session instead of a normal RDS session. This "
@@ -2798,11 +2842,11 @@ msgstr ""
 "CAL лицензиялауын айналып өтеді. Тек сыртқы клиент; ендірілген клиент мұны "
 "әзірге сұрай алмайды."
 
-#: rustconn/src/dialogs/connection/rdp.rs:517
+#: rustconn/src/dialogs/connection/rdp.rs:575
 msgid "Kerberos Authentication"
 msgstr "Kerberos аутентификациясы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:519
+#: rustconn/src/dialogs/connection/rdp.rs:577
 msgid ""
 "Required for AD \"Protected Users\"; Host must be the server's DNS name. "
 "Embedded client: Kerberos only, with the saved password. External client: "
@@ -2812,11 +2856,11 @@ msgstr ""
 "Ендірілген клиент: тек Kerberos, сақталған құпиясөзбен. Сыртқы клиент: "
 "FreeRDP Kerberos-ты өзі байқайды, ал RemoteApp енді NTLM-мен шектелмейді"
 
-#: rustconn/src/dialogs/connection/rdp.rs:531
+#: rustconn/src/dialogs/connection/rdp.rs:589
 msgid "KDC Address"
 msgstr "KDC мекенжайы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:533
+#: rustconn/src/dialogs/connection/rdp.rs:591
 msgid ""
 "Optional. A domain controller name or IP address, a tcp:// or udp:// "
 "address, or an https:// KDC proxy URL. Leave empty to find it automatically. "
@@ -2828,88 +2872,88 @@ msgstr ""
 "қалдырыңыз. Сыртқы клиент тек https://…/KdcProxy проксиін пайдаланады, "
 "қалған жағдайда жүйелік Kerberos конфигурациясын ұстанады."
 
-#: rustconn/src/dialogs/connection/rdp.rs:548
+#: rustconn/src/dialogs/connection/rdp.rs:606
 msgid "Disable NLA"
 msgstr "NLA өшіру"
 
-#: rustconn/src/dialogs/connection/rdp.rs:549
+#: rustconn/src/dialogs/connection/rdp.rs:607
 msgid "Skip Network Level Authentication (less secure)"
 msgstr "Желі деңгейіндегі аутентификацияны өткізіп жіберу (қауіпсіздігі төмен)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:565
-#: rustconn/src/dialogs/connection/rdp.rs:567
+#: rustconn/src/dialogs/connection/rdp.rs:623
+#: rustconn/src/dialogs/connection/rdp.rs:625
 msgid "Security Layer"
 msgstr "Қауіпсіздік деңгейі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:568
+#: rustconn/src/dialogs/connection/rdp.rs:626
 msgid "RDP/TLS for legacy servers (forces external FreeRDP)"
 msgstr "Ескі серверлер үшін RDP/TLS (сыртқы FreeRDP мәжбүрлейді)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:584
-#: rustconn/src/dialogs/connection/rdp.rs:586
+#: rustconn/src/dialogs/connection/rdp.rs:642
+#: rustconn/src/dialogs/connection/rdp.rs:644
 msgid "FreeRDP client"
 msgstr "FreeRDP клиенті"
 
-#: rustconn/src/dialogs/connection/rdp.rs:588
+#: rustconn/src/dialogs/connection/rdp.rs:646
 msgid "External client binary. Automatic picks the best available"
 msgstr ""
 "Сыртқы клиенттің орындалатын файлы. «Автоматты» ең үздік қолжетімдісін "
 "таңдайды"
 
-#: rustconn/src/dialogs/connection/rdp.rs:603
+#: rustconn/src/dialogs/connection/rdp.rs:661
 msgid "TLS Security Level"
 msgstr "TLS қауіпсіздік деңгейі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:604
+#: rustconn/src/dialogs/connection/rdp.rs:662
 msgid "0 = legacy (Win7/2012), 2 = default, 5 = strict"
 msgstr "0 = ескі (Win7/2012), 2 = әдепкі, 5 = қатаң"
 
-#: rustconn/src/dialogs/connection/rdp.rs:620
+#: rustconn/src/dialogs/connection/rdp.rs:678
 #: rustconn/src/dialogs/connection/vnc.rs:284
 msgid "Accept Certificate"
 msgstr "Сертификатты қабылдау"
 
-#: rustconn/src/dialogs/connection/rdp.rs:622
+#: rustconn/src/dialogs/connection/rdp.rs:680
 msgid "Accept changed/self-signed certificates (removes stored fingerprint)"
 msgstr ""
 "Өзгертілген/өзі қол қойған сертификаттарды қабылдау (сақталған саусақ ізін "
 "жояды)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:631
+#: rustconn/src/dialogs/connection/rdp.rs:689
 msgid "gateway.example.com"
 msgstr "gateway.example.com"
 
-#: rustconn/src/dialogs/connection/rdp.rs:636
+#: rustconn/src/dialogs/connection/rdp.rs:694
 #: rustconn/src/dialogs/template.rs:934
 msgid "RDP Gateway"
 msgstr "RDP шлюзі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:637
+#: rustconn/src/dialogs/connection/rdp.rs:695
 #: rustconn/src/dialogs/template.rs:935
 msgid "Remote Desktop Gateway server"
 msgstr "Қашықтағы жұмыс үстелі шлюз сервері"
 
-#: rustconn/src/dialogs/connection/rdp.rs:651
+#: rustconn/src/dialogs/connection/rdp.rs:709
 msgid "Gateway Port"
 msgstr "Шлюз порты"
 
-#: rustconn/src/dialogs/connection/rdp.rs:652
+#: rustconn/src/dialogs/connection/rdp.rs:710
 msgid "Default: 443"
 msgstr "Әдепкі: 443"
 
-#: rustconn/src/dialogs/connection/rdp.rs:660
+#: rustconn/src/dialogs/connection/rdp.rs:718
 msgid "Same as connection username"
 msgstr "Қосылым пайдаланушы атымен бірдей"
 
-#: rustconn/src/dialogs/connection/rdp.rs:664
+#: rustconn/src/dialogs/connection/rdp.rs:722
 msgid "Gateway Username"
 msgstr "Шлюз пайдаланушы аты"
 
-#: rustconn/src/dialogs/connection/rdp.rs:665
+#: rustconn/src/dialogs/connection/rdp.rs:723
 msgid "If different from connection username"
 msgstr "Қосылым пайдаланушы атынан өзгеше болса"
 
-#: rustconn/src/dialogs/connection/rdp.rs:688
+#: rustconn/src/dialogs/connection/rdp.rs:746
 #: rustconn/src/dialogs/connection/spice.rs:336
 #: rustconn/src/dialogs/connection/ssh.rs:668
 #: rustconn/src/dialogs/connection/vnc.rs:341
@@ -2925,7 +2969,7 @@ msgstr "Қосылым пайдаланушы атынан өзгеше болс
 msgid "(None)"
 msgstr "(Жоқ)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:698
+#: rustconn/src/dialogs/connection/rdp.rs:756
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/ssh.rs:679
 #: rustconn/src/dialogs/connection/vnc.rs:351
@@ -2936,27 +2980,35 @@ msgstr "(Жоқ)"
 msgid "Jump Host"
 msgstr "Аралық хост"
 
-#: rustconn/src/dialogs/connection/rdp.rs:708
+#: rustconn/src/dialogs/connection/rdp.rs:769
+msgid "Load Balance Info"
+msgstr "Жүктемені теңгеру ақпараты"
+
+#: rustconn/src/dialogs/connection/rdp.rs:771
+msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
+msgstr "Қосылым брокерінің .rdp файлындағы маршруттау мәні (loadbalanceinfo)"
+
+#: rustconn/src/dialogs/connection/rdp.rs:781
 #: rustconn/src/dialogs/connection/spice.rs:239
 msgid "Shared Folders"
 msgstr "Ортақ қалталар"
 
-#: rustconn/src/dialogs/connection/rdp.rs:709
+#: rustconn/src/dialogs/connection/rdp.rs:782
 #: rustconn/src/dialogs/connection/spice.rs:240
 msgid "Local folders accessible from remote session"
 msgstr "Қашықтағы сеанстан қолжетімді жергілікті қалталар"
 
-#: rustconn/src/dialogs/connection/rdp.rs:716
+#: rustconn/src/dialogs/connection/rdp.rs:789
 #: rustconn/src/dialogs/connection/spice.rs:247
 msgid "No shared folders"
 msgstr "Ортақ қалталар жоқ"
 
-#: rustconn/src/dialogs/connection/rdp.rs:731
+#: rustconn/src/dialogs/connection/rdp.rs:804
 #: rustconn/src/dialogs/connection/spice.rs:262
 msgid "Add"
 msgstr "Қосу"
 
-#: rustconn/src/dialogs/connection/rdp.rs:735
+#: rustconn/src/dialogs/connection/rdp.rs:808
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
 #: rustconn/src/dialogs/flatpak_components.rs:325
@@ -2966,206 +3018,206 @@ msgstr "Қосу"
 msgid "Remove"
 msgstr "Жою"
 
-#: rustconn/src/dialogs/connection/rdp.rs:768
+#: rustconn/src/dialogs/connection/rdp.rs:841
 msgid "RemoteApp"
 msgstr "RemoteApp"
 
-#: rustconn/src/dialogs/connection/rdp.rs:770
+#: rustconn/src/dialogs/connection/rdp.rs:843
 msgid "Launch a single application instead of full desktop (requires FreeRDP)"
 msgstr "Толық жұмыс үстелінің орнына жеке қолданбаны іске қосу (FreeRDP қажет)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:776
+#: rustconn/src/dialogs/connection/rdp.rs:849
 msgid "||notepad or C:\\Program Files\\app.exe"
 msgstr "||notepad немесе C:\\Program Files\\app.exe"
 
-#: rustconn/src/dialogs/connection/rdp.rs:780
+#: rustconn/src/dialogs/connection/rdp.rs:853
 msgid "Program"
 msgstr "Бағдарлама"
 
-#: rustconn/src/dialogs/connection/rdp.rs:781
+#: rustconn/src/dialogs/connection/rdp.rs:854
 msgid "Application alias (||name) or full path"
 msgstr "Қолданба бүркеншік аты (||атау) немесе толық жол"
 
-#: rustconn/src/dialogs/connection/rdp.rs:788
+#: rustconn/src/dialogs/connection/rdp.rs:861
 msgid "Command-line arguments"
 msgstr "Пәрмен жолы аргументтері"
 
-#: rustconn/src/dialogs/connection/rdp.rs:793
+#: rustconn/src/dialogs/connection/rdp.rs:866
 msgid "Arguments passed to the remote application"
 msgstr "Қашықтағы қолданбаға берілетін аргументтер"
 
-#: rustconn/src/dialogs/connection/rdp.rs:800
+#: rustconn/src/dialogs/connection/rdp.rs:873
 msgid "Display name (optional)"
 msgstr "Көрсетілетін атау (міндетті емес)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:804
+#: rustconn/src/dialogs/connection/rdp.rs:877
 #: rustconn/src/dialogs/recording.rs:531
 msgid "Display Name"
 msgstr "Көрсетілетін атау"
 
-#: rustconn/src/dialogs/connection/rdp.rs:805
+#: rustconn/src/dialogs/connection/rdp.rs:878
 msgid "Shown in taskbar and window title"
 msgstr "Тапсырмалар тақтасы мен терезе тақырыбында көрсетіледі"
 
-#: rustconn/src/dialogs/connection/rdp.rs:818
+#: rustconn/src/dialogs/connection/rdp.rs:891
 msgid "⚠ FreeRDP not found"
 msgstr "⚠ FreeRDP табылмады"
 
-#: rustconn/src/dialogs/connection/rdp.rs:820
+#: rustconn/src/dialogs/connection/rdp.rs:893
 msgid ""
 "RemoteApp requires FreeRDP. Install sdl-freerdp3, xfreerdp, or wlfreerdp."
 msgstr ""
 "RemoteApp үшін FreeRDP қажет. sdl-freerdp3, xfreerdp немесе wlfreerdp "
 "орнатыңыз."
 
-#: rustconn/src/dialogs/connection/rdp.rs:846
+#: rustconn/src/dialogs/connection/rdp.rs:919
 msgid "Auto (detect)"
 msgstr "Auto (detect)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:847
+#: rustconn/src/dialogs/connection/rdp.rs:920
 msgid "US English"
 msgstr "US English"
 
-#: rustconn/src/dialogs/connection/rdp.rs:848
+#: rustconn/src/dialogs/connection/rdp.rs:921
 msgid "German (de)"
 msgstr "German (de)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:849
+#: rustconn/src/dialogs/connection/rdp.rs:922
 msgid "French (fr)"
 msgstr "French (fr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:850
+#: rustconn/src/dialogs/connection/rdp.rs:923
 msgid "Spanish (es)"
 msgstr "Spanish (es)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:851
+#: rustconn/src/dialogs/connection/rdp.rs:924
 msgid "Italian (it)"
 msgstr "Italian (it)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:852
+#: rustconn/src/dialogs/connection/rdp.rs:925
 msgid "Portuguese (pt)"
 msgstr "Portuguese (pt)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:853
+#: rustconn/src/dialogs/connection/rdp.rs:926
 msgid "Portuguese - Brazil (br)"
 msgstr "Португалша - Бразилия (br)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:854
+#: rustconn/src/dialogs/connection/rdp.rs:927
 msgid "English - UK (gb)"
 msgstr "Ағылшынша - Ұлыбритания (gb)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:855
+#: rustconn/src/dialogs/connection/rdp.rs:928
 msgid "German - Switzerland (ch)"
 msgstr "Немісше - Швейцария (ch)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:856
+#: rustconn/src/dialogs/connection/rdp.rs:929
 msgid "German - Austria (at)"
 msgstr "Немісше - Австрия (at)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:857
+#: rustconn/src/dialogs/connection/rdp.rs:930
 msgid "French - Belgium (be)"
 msgstr "Французша - Бельгия (be)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:858
+#: rustconn/src/dialogs/connection/rdp.rs:931
 msgid "Dutch (nl)"
 msgstr "Dutch (nl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:859
+#: rustconn/src/dialogs/connection/rdp.rs:932
 msgid "Swedish (se)"
 msgstr "Swedish (se)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:860
+#: rustconn/src/dialogs/connection/rdp.rs:933
 msgid "Norwegian (no)"
 msgstr "Norwegian (no)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:861
+#: rustconn/src/dialogs/connection/rdp.rs:934
 msgid "Danish (dk)"
 msgstr "Danish (dk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:862
+#: rustconn/src/dialogs/connection/rdp.rs:935
 msgid "Finnish (fi)"
 msgstr "Finnish (fi)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:863
+#: rustconn/src/dialogs/connection/rdp.rs:936
 msgid "Polish (pl)"
 msgstr "Polish (pl)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:864
+#: rustconn/src/dialogs/connection/rdp.rs:937
 msgid "Czech (cz)"
 msgstr "Czech (cz)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:865
+#: rustconn/src/dialogs/connection/rdp.rs:938
 msgid "Slovak (sk)"
 msgstr "Slovak (sk)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:866
+#: rustconn/src/dialogs/connection/rdp.rs:939
 msgid "Hungarian (hu)"
 msgstr "Hungarian (hu)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:867
+#: rustconn/src/dialogs/connection/rdp.rs:940
 msgid "Romanian (ro)"
 msgstr "Romanian (ro)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:868
+#: rustconn/src/dialogs/connection/rdp.rs:941
 msgid "Croatian (hr)"
 msgstr "Croatian (hr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:869
+#: rustconn/src/dialogs/connection/rdp.rs:942
 msgid "Slovenian (si)"
 msgstr "Slovenian (si)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:870
+#: rustconn/src/dialogs/connection/rdp.rs:943
 msgid "Serbian (rs)"
 msgstr "Serbian (rs)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:871
+#: rustconn/src/dialogs/connection/rdp.rs:944
 msgid "Bulgarian (bg)"
 msgstr "Bulgarian (bg)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:872
+#: rustconn/src/dialogs/connection/rdp.rs:945
 msgid "Russian (ru)"
 msgstr "Russian (ru)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:873
+#: rustconn/src/dialogs/connection/rdp.rs:946
 msgid "Ukrainian (ua)"
 msgstr "Ukrainian (ua)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:874
+#: rustconn/src/dialogs/connection/rdp.rs:947
 msgid "Turkish (tr)"
 msgstr "Turkish (tr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:875
+#: rustconn/src/dialogs/connection/rdp.rs:948
 msgid "Greek (gr)"
 msgstr "Greek (gr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:876
+#: rustconn/src/dialogs/connection/rdp.rs:949
 msgid "Japanese (jp)"
 msgstr "Japanese (jp)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:877
+#: rustconn/src/dialogs/connection/rdp.rs:950
 msgid "Korean (kr)"
 msgstr "Korean (kr)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:878
+#: rustconn/src/dialogs/connection/rdp.rs:951
 msgid "United States - Dvorak"
 msgstr "Ағылшынша - АҚШ (Dvorak)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:887
+#: rustconn/src/dialogs/connection/rdp.rs:960
 msgid "Keyboard Layout"
 msgstr "Пернетақта орналасуы"
 
-#: rustconn/src/dialogs/connection/rdp.rs:888
+#: rustconn/src/dialogs/connection/rdp.rs:961
 msgid "Layout sent to RDP server (Auto uses system setting)"
 msgstr "RDP серверіне жіберілетін орналасу (Auto жүйе параметрін пайдаланады)"
 
-#: rustconn/src/dialogs/connection/rdp.rs:895
+#: rustconn/src/dialogs/connection/rdp.rs:968
 #: rustconn/src/dialogs/connection/telnet.rs:43
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
 msgstr "Қосымша пәрмен жолы аргументтері"
 
-#: rustconn/src/dialogs/connection/rdp.rs:901
+#: rustconn/src/dialogs/connection/rdp.rs:974
 #: rustconn/src/dialogs/template.rs:955
 msgid "Extra FreeRDP command-line options"
 msgstr "Қосымша FreeRDP пәрмен жолы параметрлері"
@@ -3340,7 +3392,7 @@ msgstr "Алмасу буферін қашықтағымен синхронда�
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:131
 #: rustconn/src/dialogs/snippet.rs:237 rustconn/src/dialogs/template.rs:1261
-#: rustconn/src/embedded_rdp/mod.rs:401
+#: rustconn/src/embedded_rdp/mod.rs:412
 msgid "Auto"
 msgstr "Auto"
 
@@ -4362,7 +4414,7 @@ msgid "Choose key file"
 msgstr "Кілт файлын таңдау"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:135
-#: rustconn/src/dialogs/settings/ui_tab.rs:118
+#: rustconn/src/dialogs/settings/ui_tab.rs:119
 msgid "Appearance"
 msgstr "Сыртқы түрі"
 
@@ -4561,14 +4613,14 @@ msgstr "Тасымалды файлдың құпия тіркесі"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:613
-#: rustconn/src/embedded_rdp/mod.rs:572 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:583 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
 msgstr "Көшіру"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1200
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1204
 msgid "Stop"
 msgstr "Тоқтату"
 
@@ -4688,7 +4740,7 @@ msgstr "Көшіру тоқтатылды"
 #: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:479
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4480
+#: rustconn/src/window/mod.rs:4487
 msgid "Close"
 msgstr "Жабу"
 
@@ -6257,6 +6309,22 @@ msgstr "Тек жергіліктіден қашықтағыға"
 msgid "Both directions"
 msgstr "Екі бағытта да"
 
+#: rustconn/src/dialogs/mod.rs:49
+msgid "Follow the app setting"
+msgstr "Қолданба баптауына сәйкес"
+
+#: rustconn/src/dialogs/mod.rs:50
+msgid "On this computer"
+msgstr "Осы компьютерде"
+
+#: rustconn/src/dialogs/mod.rs:51
+msgid "On the remote computer"
+msgstr "Қашықтағы компьютерде"
+
+#: rustconn/src/dialogs/mod.rs:52
+msgid "Only in full screen"
+msgstr "Тек толық экранда"
+
 #: rustconn/src/dialogs/password.rs:58
 msgid "Authentication Required"
 msgstr "Аутентификация қажет"
@@ -6773,8 +6841,8 @@ msgstr "Импорт сәтсіз"
 msgid "Error"
 msgstr "Қате"
 
-#: rustconn/src/dialogs/script.rs:83 rustconn/src/embedded_rdp/mod.rs:407
-#: rustconn/src/embedded_rdp/mod.rs:1118
+#: rustconn/src/dialogs/script.rs:83 rustconn/src/embedded_rdp/mod.rs:418
+#: rustconn/src/embedded_rdp/mod.rs:1132
 msgid "Scripts"
 msgstr "Скрипттер"
 
@@ -6806,7 +6874,7 @@ msgstr "Скрипт идентификаторы"
 msgid "Select or create a script."
 msgstr "Скриптті таңдаңыз немесе жасаңыз."
 
-#: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1335
+#: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1349
 #: rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Орындау"
@@ -7039,7 +7107,7 @@ msgid "Download H.264 codec?"
 msgstr "H.264 кодегін жүктеп алу керек пе?"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:381
-#: rustconn/src/embedded_rdp/mod.rs:1684
+#: rustconn/src/embedded_rdp/mod.rs:1718
 msgid "Downloading…"
 msgstr "Жүктелуде…"
 
@@ -7275,31 +7343,31 @@ msgstr "Уақыт белгілері"
 msgid "Prepend [HH:MM:SS] to each line in session logs"
 msgstr "Сеанс журналындағы әр жолдың алдына [HH:MM:SS] қосу"
 
-#: rustconn/src/dialogs/settings/mod.rs:344
+#: rustconn/src/dialogs/settings/mod.rs:347
 msgid "Configure session log persistence and content"
 msgstr "Сеанс журналының сақталуын және мазмұнын конфигурациялау"
 
-#: rustconn/src/dialogs/settings/mod.rs:351
+#: rustconn/src/dialogs/settings/mod.rs:354
 msgid "Directory"
 msgstr "Каталог"
 
-#: rustconn/src/dialogs/settings/mod.rs:357
+#: rustconn/src/dialogs/settings/mod.rs:360
 msgid "Retention"
 msgstr "Сақтау мерзімі"
 
-#: rustconn/src/dialogs/settings/mod.rs:358
+#: rustconn/src/dialogs/settings/mod.rs:361
 msgid "Days to keep logs"
 msgstr "Журналдарды сақтау күндері"
 
-#: rustconn/src/dialogs/settings/mod.rs:378
+#: rustconn/src/dialogs/settings/mod.rs:381
 msgid "Global regex-based text highlighting rules"
 msgstr "Глобал regex негізіндегі мәтінді бөлектеу ережелері"
 
-#: rustconn/src/dialogs/settings/mod.rs:392
+#: rustconn/src/dialogs/settings/mod.rs:395
 msgid "Highlight ERROR, WARNING, CRITICAL and FATAL"
 msgstr "ERROR, WARNING, CRITICAL және FATAL бөлектеу"
 
-#: rustconn/src/dialogs/settings/mod.rs:394
+#: rustconn/src/dialogs/settings/mod.rs:397
 msgid ""
 "Built-in rules that colour common log levels. Turn off to use only your own "
 "rules."
@@ -7307,115 +7375,115 @@ msgstr ""
 "Журналдың жиі кездесетін деңгейлерін бояйтын кірістірілген ережелер. Тек өз "
 "ережелеріңізді пайдалану үшін өшіріңіз."
 
-#: rustconn/src/dialogs/settings/mod.rs:465
+#: rustconn/src/dialogs/settings/mod.rs:468
 msgid "Backup & Restore"
 msgstr "Сақтық көшірме және қалпына келтіру"
 
-#: rustconn/src/dialogs/settings/mod.rs:466
+#: rustconn/src/dialogs/settings/mod.rs:469
 msgid "Export or import all settings as a ZIP archive"
 msgstr "Барлық параметрлерді ZIP мұрағаты ретінде экспорттау немесе импорттау"
 
-#: rustconn/src/dialogs/settings/mod.rs:470
+#: rustconn/src/dialogs/settings/mod.rs:473
 msgid "Backup Settings…"
 msgstr "Параметрлерді сақтық көшірмелеу…"
 
-#: rustconn/src/dialogs/settings/mod.rs:471
+#: rustconn/src/dialogs/settings/mod.rs:474
 msgid "Save all configuration files to a ZIP archive"
 msgstr "Барлық конфигурация файлдарын ZIP мұрағатына сақтау"
 
-#: rustconn/src/dialogs/settings/mod.rs:474
+#: rustconn/src/dialogs/settings/mod.rs:477
 msgid "Restore Settings…"
 msgstr "Параметрлерді қалпына келтіру…"
 
-#: rustconn/src/dialogs/settings/mod.rs:476
+#: rustconn/src/dialogs/settings/mod.rs:479
 msgid "Load configuration from a ZIP archive (restart required)"
 msgstr "ZIP мұрағатынан конфигурацияны жүктеу (қайта іске қосу қажет)"
 
-#: rustconn/src/dialogs/settings/mod.rs:504
+#: rustconn/src/dialogs/settings/mod.rs:507
 msgid "Save Backup"
 msgstr "Сақтық көшірмені сақтау"
 
-#: rustconn/src/dialogs/settings/mod.rs:509
-#: rustconn/src/dialogs/settings/mod.rs:573
+#: rustconn/src/dialogs/settings/mod.rs:512
+#: rustconn/src/dialogs/settings/mod.rs:576
 msgid "ZIP archives"
 msgstr "ZIP мұрағаттары"
 
-#: rustconn/src/dialogs/settings/mod.rs:522
+#: rustconn/src/dialogs/settings/mod.rs:525
 msgid "Backup saved ({} files)"
 msgstr "Сақтық көшірме сақталды ({} файл)"
 
-#: rustconn/src/dialogs/settings/mod.rs:535
-#: rustconn/src/dialogs/settings/mod.rs:544
+#: rustconn/src/dialogs/settings/mod.rs:538
+#: rustconn/src/dialogs/settings/mod.rs:547
 msgid "Backup failed"
 msgstr "Сақтық көшірме сәтсіз"
 
-#: rustconn/src/dialogs/settings/mod.rs:546
-#: rustconn/src/dialogs/settings/mod.rs:679
+#: rustconn/src/dialogs/settings/mod.rs:549
+#: rustconn/src/dialogs/settings/mod.rs:682
 msgid "Cannot access the configuration directory: {}"
 msgstr "Баптау каталогына қол жеткізу мүмкін емес: {}"
 
-#: rustconn/src/dialogs/settings/mod.rs:569
+#: rustconn/src/dialogs/settings/mod.rs:572
 msgid "Open Backup"
 msgstr "Сақтық көшірмені ашу"
 
-#: rustconn/src/dialogs/settings/mod.rs:587
+#: rustconn/src/dialogs/settings/mod.rs:590
 msgid "Restore Settings?"
 msgstr "Параметрлерді қалпына келтіру керек пе?"
 
-#: rustconn/src/dialogs/settings/mod.rs:589
+#: rustconn/src/dialogs/settings/mod.rs:592
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
 msgstr ""
 "Бұл ағымдағы параметрлерді қайта жазады. Өзгерістерді қолдану үшін қайта "
 "іске қосу қажет."
 
-#: rustconn/src/dialogs/settings/mod.rs:593
+#: rustconn/src/dialogs/settings/mod.rs:596
 #: rustconn/src/window/session_restore.rs:199
 msgid "Restore"
 msgstr "Қалпына келтіру"
 
-#: rustconn/src/dialogs/settings/mod.rs:625
+#: rustconn/src/dialogs/settings/mod.rs:628
 msgid "Restored files but failed to reload settings. Please restart."
 msgstr ""
 "Файлдар қалпына келтірілді, бірақ параметрлерді қайта жүктеу сәтсіз. Қайта "
 "іске қосыңыз."
 
-#: rustconn/src/dialogs/settings/mod.rs:640
+#: rustconn/src/dialogs/settings/mod.rs:643
 msgid "Settings restored"
 msgstr "Параметрлер қалпына келтірілді"
 
-#: rustconn/src/dialogs/settings/mod.rs:642
+#: rustconn/src/dialogs/settings/mod.rs:645
 msgid "Restored {} files. Restart RustConn to apply the restored settings."
 msgstr ""
 "{} файл қалпына келтірілді. Қалпына келтірілген параметрлерді қолдану үшін "
 "RustConn қайта іске қосыңыз."
 
-#: rustconn/src/dialogs/settings/mod.rs:646
+#: rustconn/src/dialogs/settings/mod.rs:649
 msgid "Restart later"
 msgstr "Кейінірек қайта іске қосу"
 
-#: rustconn/src/dialogs/settings/mod.rs:647
+#: rustconn/src/dialogs/settings/mod.rs:650
 msgid "Quit now"
 msgstr "Қазір шығу"
 
-#: rustconn/src/dialogs/settings/mod.rs:668
-#: rustconn/src/dialogs/settings/mod.rs:677
+#: rustconn/src/dialogs/settings/mod.rs:671
+#: rustconn/src/dialogs/settings/mod.rs:680
 msgid "Restore failed"
 msgstr "Қалпына келтіру сәтсіз"
 
-#: rustconn/src/dialogs/settings/mod.rs:924
+#: rustconn/src/dialogs/settings/mod.rs:928
 msgid "No Overrides to Reset"
 msgstr "Қалпына келтіретін өзгертулер жоқ"
 
-#: rustconn/src/dialogs/settings/mod.rs:925
+#: rustconn/src/dialogs/settings/mod.rs:929
 msgid "Every connection already follows the global monitoring switch."
 msgstr "Әрбір қосылым жаһандық бақылау қосқышын қазірдің өзінде ұстанады."
 
-#: rustconn/src/dialogs/settings/mod.rs:932
+#: rustconn/src/dialogs/settings/mod.rs:936
 msgid "Reset Per-Connection Overrides?"
 msgstr "Қосылым бойынша өзгертулерді қалпына келтіру керек пе?"
 
-#: rustconn/src/dialogs/settings/mod.rs:934
+#: rustconn/src/dialogs/settings/mod.rs:938
 msgid ""
 "Connections that switch monitoring on or off themselves: {}. After the reset "
 "they follow the global switch. Polling intervals set per connection are kept."
@@ -7424,15 +7492,15 @@ msgstr ""
 "кейін олар жаһандық қосқышты ұстанады. Қосылым бойынша орнатылған сұрау салу "
 "аралықтары сақталады."
 
-#: rustconn/src/dialogs/settings/mod.rs:957
+#: rustconn/src/dialogs/settings/mod.rs:961
 msgid "Connections reset to the global monitoring setting: {}"
 msgstr "Жаһандық бақылау параметріне қалпына келтірілген қосылымдар: {}"
 
-#: rustconn/src/dialogs/settings/mod.rs:965
+#: rustconn/src/dialogs/settings/mod.rs:969
 msgid "Could Not Reset Overrides"
 msgstr "Өзгертулерді қалпына келтіру мүмкін болмады"
 
-#: rustconn/src/dialogs/settings/mod.rs:967
+#: rustconn/src/dialogs/settings/mod.rs:971
 msgid ""
 "The connections could not be saved. Check that the configuration folder is "
 "writable."
@@ -7440,24 +7508,24 @@ msgstr ""
 "Қосылымдарды сақтау мүмкін болмады. Конфигурация қалтасына жазуға болатынын "
 "тексеріңіз."
 
-#: rustconn/src/dialogs/settings/mod.rs:1004
+#: rustconn/src/dialogs/settings/mod.rs:1008
 msgid "There is no portable file at {}. Create it first, or correct the path."
 msgstr ""
 "{} жолында тасымалды файл жоқ. Алдымен оны жасаңыз немесе жолды түзетіңіз."
 
-#: rustconn/src/dialogs/settings/mod.rs:1059
+#: rustconn/src/dialogs/settings/mod.rs:1063
 msgid "Passphrase changed. Passwords encrypted again: {}"
 msgstr "Кодтық тіркес өзгертілді. Қайта шифрланған құпия сөздер: {}"
 
-#: rustconn/src/dialogs/settings/mod.rs:1230
+#: rustconn/src/dialogs/settings/mod.rs:1234
 msgid "Failed to start"
 msgstr "Іске қосу сәтсіз"
 
-#: rustconn/src/dialogs/settings/mod.rs:1730
+#: rustconn/src/dialogs/settings/mod.rs:1737
 msgid "Passphrase was not saved"
 msgstr "Құпия фраза сақталмады"
 
-#: rustconn/src/dialogs/settings/mod.rs:1732
+#: rustconn/src/dialogs/settings/mod.rs:1739
 msgid ""
 "The passphrase for the portable file was not confirmed, so it was not saved. "
 "Everything else you changed was. Open Secrets again and type the passphrase "
@@ -7467,11 +7535,11 @@ msgstr ""
 "қалған нәрселердің бәрі сақталды. Құпиялар бөлімін қайта ашып, құпия фразаны "
 "екі жолға да енгізіңіз."
 
-#: rustconn/src/dialogs/settings/mod.rs:1950
+#: rustconn/src/dialogs/settings/mod.rs:1958
 msgid "Untitled rule"
 msgstr "Атаусыз ереже"
 
-#: rustconn/src/dialogs/settings/mod.rs:2030
+#: rustconn/src/dialogs/settings/mod.rs:2038
 msgid ""
 "Regular expression, for example (?i)\\bINFO\\b. Set the colour in the fields "
 "below."
@@ -8614,8 +8682,8 @@ msgid "Colors"
 msgstr "Түстер"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:82
-#: rustconn/src/dialogs/settings/ui_tab.rs:149
-#: rustconn/src/dialogs/settings/ui_tab.rs:204
+#: rustconn/src/dialogs/settings/ui_tab.rs:150
+#: rustconn/src/dialogs/settings/ui_tab.rs:205
 msgid "Theme"
 msgstr "Тақырып"
 
@@ -8665,8 +8733,8 @@ msgstr "Қосулы"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:276
 #: rustconn/src/dialogs/settings/terminal_tab.rs:313
-#: rustconn/src/dialogs/settings/ui_tab.rs:125
-#: rustconn/src/dialogs/settings/ui_tab.rs:166
+#: rustconn/src/dialogs/settings/ui_tab.rs:126
+#: rustconn/src/dialogs/settings/ui_tab.rs:167
 msgid "System"
 msgstr "Жүйе"
 
@@ -8814,8 +8882,8 @@ msgid "Send Escape prefix instead of composed characters (for vim/emacs)"
 msgstr "Құрама таңбалардың орнына Escape префиксін жіберу (vim/emacs үшін)"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
-#: rustconn/src/dialogs/settings/ui_tab.rs:590
-#: rustconn/src/dialogs/settings/ui_tab.rs:913
+#: rustconn/src/dialogs/settings/ui_tab.rs:599
+#: rustconn/src/dialogs/settings/ui_tab.rs:926
 #: rustconn/src/dialogs/shortcuts.rs:170
 #: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:259
 #: rustconn/src/tray.rs:649 rustconn/src/window/ui.rs:266
@@ -8922,54 +8990,54 @@ msgstr "Ашық көгілдір"
 msgid "Bright White"
 msgstr "Ашық ақ"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:112
+#: rustconn/src/dialogs/settings/ui_tab.rs:113
 msgid "Interface"
 msgstr "Интерфейс"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:126
-#: rustconn/src/dialogs/settings/ui_tab.rs:171
+#: rustconn/src/dialogs/settings/ui_tab.rs:127
+#: rustconn/src/dialogs/settings/ui_tab.rs:172
 msgid "Light"
 msgstr "Жарық"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:127
-#: rustconn/src/dialogs/settings/ui_tab.rs:176
+#: rustconn/src/dialogs/settings/ui_tab.rs:128
+#: rustconn/src/dialogs/settings/ui_tab.rs:177
 msgid "Dark"
 msgstr "Қараңғы"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:216
+#: rustconn/src/dialogs/settings/ui_tab.rs:217
 msgid "Language"
 msgstr "Тіл"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:217
-#: rustconn/src/dialogs/settings/ui_tab.rs:233
+#: rustconn/src/dialogs/settings/ui_tab.rs:218
+#: rustconn/src/dialogs/settings/ui_tab.rs:234
 msgid "Restart required to apply"
 msgstr "Қолдану үшін қайта іске қосу қажет"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:232
+#: rustconn/src/dialogs/settings/ui_tab.rs:233
 msgid "Rendering"
 msgstr "Көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:241
+#: rustconn/src/dialogs/settings/ui_tab.rs:242
 msgid "Sidebar width"
 msgstr "Бүйір панелінің ені"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:242
+#: rustconn/src/dialogs/settings/ui_tab.rs:243
 msgid "Width of the connection sidebar in pixels"
 msgstr "Қосылымдар бүйір панелінің ені пиксельмен"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:258
+#: rustconn/src/dialogs/settings/ui_tab.rs:259
 msgid "Resize sidebar by dragging"
 msgstr "Бүйір панелінің енін сүйреп өзгерту"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:259
+#: rustconn/src/dialogs/settings/ui_tab.rs:260
 msgid "Drag the sidebar's edge to change the width above"
 msgstr "Жоғарыдағы енді өзгерту үшін бүйір панелінің шетін сүйреңіз"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:267
+#: rustconn/src/dialogs/settings/ui_tab.rs:268
 msgid "Compact interface"
 msgstr "Ықшам интерфейс"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:269
+#: rustconn/src/dialogs/settings/ui_tab.rs:270
 msgid ""
 "Reduce header bar, tab bar, and toolbar height for a denser layout. Applied "
 "instantly"
@@ -8977,21 +9045,21 @@ msgstr ""
 "Тығыздау орналасу үшін тақырып жолағының, қойынды жолағының және құралдар "
 "жолағының биіктігін азайтады. Бірден қолданылады"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:276
+#: rustconn/src/dialogs/settings/ui_tab.rs:277
 msgid "Compact automatically on small windows"
 msgstr "Кіші терезелерде автоматты түрде тығыздау"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:278
+#: rustconn/src/dialogs/settings/ui_tab.rs:279
 msgid ""
 "Switch to compact chrome when the window becomes short or narrow, and back "
 "when it grows"
 msgstr "Терезе кіші немесе тар болғанда тығыз көрініске ауысу, ұлғайғанда кері"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:289
+#: rustconn/src/dialogs/settings/ui_tab.rs:290
 msgid "Open session toolbar on hover"
 msgstr "Сеанс құралдар тақтасын меңзер апарғанда ашу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:291
+#: rustconn/src/dialogs/settings/ui_tab.rs:292
 msgid ""
 "Reveal the floating viewer toolbar (RDP, VNC and the embedded browser) from "
 "its handle on the top edge of the pane when the pointer touches it. When "
@@ -9003,15 +9071,15 @@ msgstr ""
 "кезде тұтқаны басу қажет. Қалқымалы құралдар тақтасы жоқ терминал "
 "сеанстарына әсер етпейді"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:311
+#: rustconn/src/dialogs/settings/ui_tab.rs:312
 msgid "Always on while Compact interface is enabled above"
 msgstr "Жоғарыдағы ықшам интерфейс қосулы тұрғанда әрқашан қосулы"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:337
+#: rustconn/src/dialogs/settings/ui_tab.rs:338
 msgid "Sidebar row spacing"
 msgstr "Бүйір панелі жолдарының аралығы"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:339
+#: rustconn/src/dialogs/settings/ui_tab.rs:340
 msgid ""
 "Vertical space above and below each connection row, in pixels. Lower values "
 "fit more hosts on screen. Applied instantly"
@@ -9019,19 +9087,19 @@ msgstr ""
 "Әр қосылым жолының үстіндегі және астындағы тік бос орын, пиксельмен. Төмен "
 "мәндер экранда көбірек хостты көрсетеді. Бірден қолданылады"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:354
+#: rustconn/src/dialogs/settings/ui_tab.rs:355
 msgid "Sidebar text size"
 msgstr "Бүйір панелі мәтінінің өлшемі"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:356
+#: rustconn/src/dialogs/settings/ui_tab.rs:357
 msgid "Font size of the connection names in the sidebar. Applied instantly"
 msgstr "Бүйір панеліндегі қосылым атауларының қаріп өлшемі. Бірден қолданылады"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:401
+#: rustconn/src/dialogs/settings/ui_tab.rs:402
 msgid "Send terminal control shortcuts to the session"
 msgstr "Терминалды басқару жылдам пернелерін сеансқа жіберу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:403
+#: rustconn/src/dialogs/settings/ui_tab.rs:404
 msgid ""
 "While a terminal or remote viewer is focused, let Ctrl+F/P/N and similar "
 "chords reach the session instead of the app"
@@ -9039,32 +9107,44 @@ msgstr ""
 "Терминал немесе қашықтағы көрініс белсенді болғанда, Ctrl+F/P/N және ұқсас "
 "тіркесімдер қолданбаға емес, сеансқа жетуіне рұқсат ету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:412
+#: rustconn/src/dialogs/settings/ui_tab.rs:413
 msgid "Remember keyboard passthrough"
 msgstr "Пернетақта өткізуді есте сақтау"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:414
+#: rustconn/src/dialogs/settings/ui_tab.rs:415
 msgid "Restore the passthrough state (Ctrl+Shift+Backspace) on the next start"
 msgstr ""
 "Келесі іске қосылғанда өткізу күйін (Ctrl+Shift+Backspace) қалпына келтіру"
 
+#: rustconn/src/dialogs/settings/ui_tab.rs:421
+msgid "Auto-capture shortcuts in remote desktop"
+msgstr "Қашықтағы жұмыс үстелінде пернелер тіркесімдерін автоматты түрде ұстау"
+
 #: rustconn/src/dialogs/settings/ui_tab.rs:423
+msgid ""
+"Forward Alt+Tab, Super and other desktop shortcuts to Windows RDP and VNC "
+"sessions while focused"
+msgstr ""
+"Фокуста болғанда Alt+Tab, Super және басқа жұмыс үстелі тіркесімдерін "
+"Windows RDP және VNC сеанстарына жіберу"
+
+#: rustconn/src/dialogs/settings/ui_tab.rs:432
 msgid "Window"
 msgstr "Терезе"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:427
+#: rustconn/src/dialogs/settings/ui_tab.rs:436
 msgid "Remember size"
 msgstr "Өлшемді есте сақтау"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:428
+#: rustconn/src/dialogs/settings/ui_tab.rs:437
 msgid "Restore window geometry on startup"
 msgstr "Іске қосылғанда терезе геометриясын қалпына келтіру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:436
+#: rustconn/src/dialogs/settings/ui_tab.rs:445
 msgid "Show connection in window title"
 msgstr "Терезе тақырыбында қосылуды көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:438
+#: rustconn/src/dialogs/settings/ui_tab.rs:447
 msgid ""
 "Append the active connection name to the window title, so time-tracking "
 "tools can identify it"
@@ -9072,21 +9152,21 @@ msgstr ""
 "Белсенді қосылу атауын терезе тақырыбына қосу, уақыт бақылау құралдары "
 "анықтай алуы үшін"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:444
+#: rustconn/src/dialogs/settings/ui_tab.rs:453
 msgid "Show hierarchy path in header"
 msgstr "Иерархия жолын тақырыпта көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:446
+#: rustconn/src/dialogs/settings/ui_tab.rs:455
 msgid ""
 "Show the groups that contain the active connection below the window title"
 msgstr ""
 "Белсенді қосылымды қамтитын топтарды терезе тақырыбының астында көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:456
+#: rustconn/src/dialogs/settings/ui_tab.rs:465
 msgid "Show connection name in split panes"
 msgstr "Бөлінген панельдерде қосылым атауын көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:458
+#: rustconn/src/dialogs/settings/ui_tab.rs:467
 msgid ""
 "Display a compact header with the connection name at the top of each split-"
 "view pane"
@@ -9094,11 +9174,11 @@ msgstr ""
 "Бөлінген көріністің әр панелінің жоғарғы жағында қосылым атауы бар ықшам "
 "тақырып көрсетеді"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:469
+#: rustconn/src/dialogs/settings/ui_tab.rs:478
 msgid "Hide hover controls in split panes"
 msgstr "Бөлінген панельдерде меңзегендегі басқару элементтерін жасыру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:471
+#: rustconn/src/dialogs/settings/ui_tab.rs:480
 msgid ""
 "Hide the reveal arrow with the close/detach/reconnect buttons at the middle "
 "of the right edge of every split-view pane (all protocols). Close and detach "
@@ -9109,11 +9189,11 @@ msgstr ""
 "Жабу және ажырату панель мәзірінен (Shift+F10) және бүйір панелінен "
 "қолжетімді болып қалады"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:481
+#: rustconn/src/dialogs/settings/ui_tab.rs:490
 msgid "Show directional tab-close items"
 msgstr "Қойындыларды бағыты бойынша жабу тармақтарын көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:483
+#: rustconn/src/dialogs/settings/ui_tab.rs:492
 msgid ""
 "Add \"Close to the Left\" and \"Close to the Right\" to the tab menu's close "
 "options"
@@ -9121,26 +9201,26 @@ msgstr ""
 "Қойынды мәзіріндегі жабу опцияларына «Сол жақтағыларды жабу» және «Оң "
 "жақтағыларды жабу» қосу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:493
+#: rustconn/src/dialogs/settings/ui_tab.rs:502
 msgid "Behavior when opening a connection from the sidebar"
 msgstr "Бүйір тақтадан қосылымды ашу тәртібі"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:499
+#: rustconn/src/dialogs/settings/ui_tab.rs:508
 msgid "Open a new session on every double-click"
 msgstr "Әр екі рет басқанда жаңа сеанс ашу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:501
+#: rustconn/src/dialogs/settings/ui_tab.rs:510
 msgid ""
 "Double-clicking a connection always starts another session instead of "
 "focusing the one already open"
 msgstr ""
 "Қосылымды екі рет басу әрқашан жаңа сеанс ашады, ашық сеансқа ауыспайды"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:510
+#: rustconn/src/dialogs/settings/ui_tab.rs:519
 msgid "Auto-hide the sidebar on connect"
 msgstr "Қосылу кезінде бүйір панелін автоматты жасыру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:512
+#: rustconn/src/dialogs/settings/ui_tab.rs:521
 msgid ""
 "Hide the connection list when a session opens, to free space. It returns "
 "when you show it again or when the last session closes"
@@ -9148,11 +9228,11 @@ msgstr ""
 "Сеанс ашылғанда орын босату үшін қосылымдар тізімін жасырады. Оны қайта "
 "көрсеткенде немесе соңғы сеанс жабылғанда ол қайтады"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:519
+#: rustconn/src/dialogs/settings/ui_tab.rs:528
 msgid "Open tunnelled browser in the embedded browser"
 msgstr "Тунельделген браузерді кіріктірілгенде ашу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:521
+#: rustconn/src/dialogs/settings/ui_tab.rs:530
 msgid ""
 "‘Open Browser via Tunnel’ uses the in-app browser; turn off to launch an "
 "external Chromium browser in incognito mode instead"
@@ -9160,31 +9240,31 @@ msgstr ""
 "«Браузерді тунель арқылы ашу» кіріктірілген браузерді пайдаланады; сыртқы "
 "Chromium браузерін инкогнито режимінде ашу үшін өшіріңіз"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:530
+#: rustconn/src/dialogs/settings/ui_tab.rs:539
 msgid "Tunnelled browser start page"
 msgstr "Туннельдік браузердің бастапқы беті"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:537
+#: rustconn/src/dialogs/settings/ui_tab.rs:546
 msgid "Google"
 msgstr "Google"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:538
+#: rustconn/src/dialogs/settings/ui_tab.rs:547
 msgid "DuckDuckGo"
 msgstr "DuckDuckGo"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:539
+#: rustconn/src/dialogs/settings/ui_tab.rs:548
 msgid "ifconfig.me (show exit IP)"
 msgstr "ifconfig.me (шығыс IP көрсету)"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:547
+#: rustconn/src/dialogs/settings/ui_tab.rs:556
 msgid "Fill in a common start page, or Custom to type your own"
 msgstr "Жиі қолданылатын бастапқы бетті толтыру немесе Custom (өзіңдікі)"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:568
+#: rustconn/src/dialogs/settings/ui_tab.rs:577
 msgid "External browser command (tunnelled)"
 msgstr "Туннельдік сыртқы браузер (пәрмен)"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:572
+#: rustconn/src/dialogs/settings/ui_tab.rs:581
 msgid ""
 "Command or path to a Chromium-based browser for the external tunnelled "
 "browser (e.g. chromium, brave-browser). Leave empty to auto-detect."
@@ -9192,84 +9272,84 @@ msgstr ""
 "Туннельдік сыртқы браузерге арналған Chromium негізіндегі браузердің пәрмені "
 "немесе жолы (мыс. chromium, brave-browser). Автоанықтау үшін бос қалдырыңыз."
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:580
+#: rustconn/src/dialogs/settings/ui_tab.rs:589
 msgid "Startup"
 msgstr "Іске қосу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:581
+#: rustconn/src/dialogs/settings/ui_tab.rs:590
 msgid "Action to perform when the application starts"
 msgstr "Қолданба іске қосылғанда орындалатын әрекет"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:586
+#: rustconn/src/dialogs/settings/ui_tab.rs:595
 msgid "On startup"
 msgstr "Іске қосылғанда"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:587
+#: rustconn/src/dialogs/settings/ui_tab.rs:596
 msgid "Open session automatically"
 msgstr "Сеансты автоматты түрде ашу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:589
-#: rustconn/src/dialogs/settings/ui_tab.rs:913
+#: rustconn/src/dialogs/settings/ui_tab.rs:598
+#: rustconn/src/dialogs/settings/ui_tab.rs:926
 msgid "Do Nothing"
 msgstr "Ештеңе істемеу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:607
+#: rustconn/src/dialogs/settings/ui_tab.rs:616
 msgid "Show Welcome tab"
 msgstr "«Қош келдіңіз» қойындысын көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:608
+#: rustconn/src/dialogs/settings/ui_tab.rs:617
 msgid "Display Welcome tab when no session opens at startup"
 msgstr "Іске қосылғанда сеанс ашылмаса «Қош келдіңіз» қойындысын көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:618
+#: rustconn/src/dialogs/settings/ui_tab.rs:627
 msgid "System Tray"
 msgstr "Жүйелік науа"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:619
+#: rustconn/src/dialogs/settings/ui_tab.rs:628
 msgid "Requires desktop environment with tray support"
 msgstr "Науа қолдауы бар жұмыс үстелі ортасы қажет"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:624
+#: rustconn/src/dialogs/settings/ui_tab.rs:633
 msgid "Show icon"
 msgstr "Белгішені көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:625
+#: rustconn/src/dialogs/settings/ui_tab.rs:634
 msgid "Display icon in system tray"
 msgstr "Жүйелік науада белгішені көрсету"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:630
+#: rustconn/src/dialogs/settings/ui_tab.rs:639
 msgid "Minimize to tray"
 msgstr "Науаға жіберу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:631
+#: rustconn/src/dialogs/settings/ui_tab.rs:640
 msgid "Hide window instead of closing"
 msgstr "Жабудың орнына терезені жасыру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:648
+#: rustconn/src/dialogs/settings/ui_tab.rs:657
 msgid "Session Restore"
 msgstr "Сеансты қалпына келтіру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:649
+#: rustconn/src/dialogs/settings/ui_tab.rs:658
 msgid "Restore previous connections on startup"
 msgstr "Іске қосылғанда алдыңғы қосылымдарды қалпына келтіру"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:655
+#: rustconn/src/dialogs/settings/ui_tab.rs:664
 msgid "Reconnect to previous sessions on startup"
 msgstr "Іске қосылғанда алдыңғы сеанстарға қайта қосылу"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:660
+#: rustconn/src/dialogs/settings/ui_tab.rs:669
 msgid "Ask first"
 msgstr "Алдымен сұрау"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:661
+#: rustconn/src/dialogs/settings/ui_tab.rs:670
 msgid "Prompt before restoring sessions"
 msgstr "Сеанстарды қалпына келтіру алдында сұрау"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:666
+#: rustconn/src/dialogs/settings/ui_tab.rs:675
 msgid "Max age"
 msgstr "Ең көп жас"
 
-#: rustconn/src/dialogs/settings/ui_tab.rs:667
+#: rustconn/src/dialogs/settings/ui_tab.rs:676
 msgid "Hours before sessions expire"
 msgstr "Сеанстардың мерзімі аяқталғанға дейінгі сағаттар"
 
@@ -9386,7 +9466,7 @@ msgstr "Терминалға өту"
 msgid "Command Palette (Commands)"
 msgstr "Пәрмен палитрасы (пәрмендер)"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/embedded_rdp/mod.rs:580
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/embedded_rdp/mod.rs:591
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
@@ -9408,7 +9488,7 @@ msgstr "Келесі қойынды"
 msgid "Previous Tab"
 msgstr "Алдыңғы қойынды"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:519
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:525
 msgid "Tab Overview"
 msgstr "Қойындылар шолуы"
 
@@ -9588,11 +9668,11 @@ msgstr "Мақсат"
 msgid "Where this snippet can be executed"
 msgstr "Бұл фрагментті қайда орындауға болады"
 
-#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:402
+#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:413
 msgid "Clipboard (fast)"
 msgstr "Алмасу буфері (жылдам)"
 
-#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:403
+#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:414
 msgid "Autotype (reliable)"
 msgstr "Автотерме (сенімді)"
 
@@ -9957,7 +10037,7 @@ msgstr "Hoop.dev gRPC сервер URL (міндетті емес)"
 msgid "Custom SSH command with proxy settings"
 msgstr "Прокси параметрлері бар арнайы SSH командасы"
 
-#: rustconn/src/dialogs/template.rs:2776
+#: rustconn/src/dialogs/template.rs:2781
 msgid "Edit Template"
 msgstr "Үлгіні өңдеу"
 
@@ -10930,7 +11010,7 @@ msgid "RDP connection failed. Install FreeRDP 3 for external RDP sessions."
 msgstr ""
 "RDP қосылымы сәтсіз аяқталды. Сыртқы RDP сеанстары үшін FreeRDP 3 орнатыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:691
+#: rustconn/src/embedded_rdp/connection.rs:698
 msgid ""
 "The embedded client does not support the legacy RDP security layer. Using "
 "FreeRDP instead."
@@ -10938,14 +11018,14 @@ msgstr ""
 "Кірістірілген клиент ескі RDP қауіпсіздік деңгейін қолдамайды. Оның орнына "
 "FreeRDP пайдаланылуда."
 
-#: rustconn/src/embedded_rdp/connection.rs:694
+#: rustconn/src/embedded_rdp/connection.rs:701
 msgid ""
 "The embedded client does not support TLS without NLA. Using FreeRDP instead."
 msgstr ""
 "Кірістірілген клиент NLA-сыз TLS қолдамайды. Оның орнына FreeRDP "
 "пайдаланылуда."
 
-#: rustconn/src/embedded_rdp/connection.rs:697
+#: rustconn/src/embedded_rdp/connection.rs:704
 msgid ""
 "The embedded client does not support TLS security levels below 2. Using "
 "FreeRDP instead."
@@ -10953,12 +11033,12 @@ msgstr ""
 "Кірістірілген клиент 2-ден төмен TLS қауіпсіздік деңгейлерін қолдамайды. "
 "Оның орнына FreeRDP пайдаланылуда."
 
-#: rustconn/src/embedded_rdp/connection.rs:700
+#: rustconn/src/embedded_rdp/connection.rs:707
 msgid "The embedded client does not support RemoteApp. Using FreeRDP instead."
 msgstr ""
 "Кірістірілген клиент RemoteApp қолдамайды. Оның орнына FreeRDP пайдаланылуда."
 
-#: rustconn/src/embedded_rdp/connection.rs:703
+#: rustconn/src/embedded_rdp/connection.rs:710
 msgid ""
 "The embedded client does not support playing audio on the remote computer. "
 "Using FreeRDP instead."
@@ -10966,14 +11046,22 @@ msgstr ""
 "Кірістірілген клиент қашықтағы компьютерде аудио ойнатуды қолдамайды. Оның "
 "орнына FreeRDP пайдаланылуда."
 
-#: rustconn/src/embedded_rdp/connection.rs:821
-#: rustconn/src/embedded_rdp/connection.rs:2667
+#: rustconn/src/embedded_rdp/connection.rs:713
+msgid ""
+"The embedded client does not support microphone redirection. Using FreeRDP "
+"instead."
+msgstr ""
+"Кірістірілген клиент микрофонды қайта бағыттауды қолдамайды. Оның орнына "
+"FreeRDP пайдаланылуда."
+
+#: rustconn/src/embedded_rdp/connection.rs:840
+#: rustconn/src/embedded_rdp/connection.rs:2873
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Сервер ескірген RDP қауіпсіздігін талап ететіндіктен, қосылымнан бас "
 "тартылды."
 
-#: rustconn/src/embedded_rdp/connection.rs:925
+#: rustconn/src/embedded_rdp/connection.rs:944
 msgid ""
 "Custom FreeRDP arguments are ignored by the embedded "
 "client.                          Set the RDP client mode to External to "
@@ -10982,7 +11070,7 @@ msgstr ""
 "Ендірілген клиент FreeRDP қосымша аргументтерін ескермейді. Оларды қолдану "
 "үшін RDP клиент режимін «Сыртқы» етіп қойыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2313
+#: rustconn/src/embedded_rdp/connection.rs:2399
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -10990,7 +11078,7 @@ msgstr ""
 "H.264 өшірулі — орнатылған OpenH264 Cisco құрастырмасы емес. Оны жүктеу үшін "
 "Параметрлер → Қосылым → Медиакодектер бетін ашыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2317
+#: rustconn/src/embedded_rdp/connection.rs:2403
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -10998,7 +11086,7 @@ msgstr ""
 "H.264 өшірулі — OpenH264 кодегі орнатылмаған. Оны жүктеу үшін Параметрлер → "
 "Қосылым → Медиакодектер бетін ашыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2321
+#: rustconn/src/embedded_rdp/connection.rs:2407
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -11006,45 +11094,49 @@ msgstr ""
 "H.264 өшірулі — OpenH264 кодегін жүктеу мүмкін болмады. Оны қайта жүктеу "
 "үшін Параметрлер → Қосылым → Медиакодектер бетін ашыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2704
+#: rustconn/src/embedded_rdp/connection.rs:2617
+msgid "Connection lost. Reconnecting (attempt {} of {})…"
+msgstr "Байланыс жоғалды. Қайта қосылуда ({} / {} әрекет)…"
+
+#: rustconn/src/embedded_rdp/connection.rs:2910
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "Үйлесімділікке арналған сыртқы RDP клиентін дайындау мүмкін болмады."
 
-#: rustconn/src/embedded_rdp/connection.rs:2715
+#: rustconn/src/embedded_rdp/connection.rs:2921
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr ""
 "Сыртқы RDP клиенті пайдаланылуда (сервер RDS лицензиялауын талап етеді)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2717
+#: rustconn/src/embedded_rdp/connection.rs:2923
 msgid "Using external RDP client (server incompatible)"
 msgstr "Сыртқы RDP клиенті пайдаланылуда (сервер сәйкес емес)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2735
-#: rustconn/src/embedded_rdp/connection.rs:3317
+#: rustconn/src/embedded_rdp/connection.rs:2941
+#: rustconn/src/embedded_rdp/connection.rs:3523
 msgid "The external RDP client could not be started."
 msgstr "Сыртқы RDP клиентін іске қосу мүмкін болмады."
 
-#: rustconn/src/embedded_rdp/connection.rs:2773
+#: rustconn/src/embedded_rdp/connection.rs:2979
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Сыртқы RDP клиентін іске қосу мүмкін болмады. FreeRDP 3 орнатып, қайта "
 "көріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2851
+#: rustconn/src/embedded_rdp/connection.rs:3057
 msgid "TLS connection failed. The server may not support this security level."
 msgstr "TLS қосылымы сәтсіз. Сервер бұл қауіпсіздік деңгейін қолдамауы мүмкін."
 
-#: rustconn/src/embedded_rdp/connection.rs:2855
+#: rustconn/src/embedded_rdp/connection.rs:3061
 msgid "Connection refused. Check host and port."
 msgstr "Қосылым қабылданбады. Хост пен портты тексеріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2858
+#: rustconn/src/embedded_rdp/connection.rs:3064
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Қосылым уақыты бітті. Хосттың қолжетімді екенін тексеріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2878
+#: rustconn/src/embedded_rdp/connection.rs:3084
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11057,7 +11149,7 @@ msgstr ""
 "KRdp нұсқасын 6.7.90 немесе одан жаңасына жаңартыңыз немесе серверде "
 "ExtSecurity=0 орнатыңыз (FreeRDP issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:2883
+#: rustconn/src/embedded_rdp/connection.rs:3089
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11066,42 +11158,42 @@ msgstr ""
 "пайдалана алмайды: қосылымның RDP параметрлерінде Kerberos аутентификациясын "
 "қосыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2886
+#: rustconn/src/embedded_rdp/connection.rs:3092
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "Аутентификация сәтсіз: тіркелгі шектеулері кіруге жол бермейді."
 
-#: rustconn/src/embedded_rdp/connection.rs:2889
+#: rustconn/src/embedded_rdp/connection.rs:3095
 msgid "Authentication failed: password must be changed before first login."
 msgstr "Аутентификация сәтсіз: алғашқы кіру алдында құпиясөзді өзгерту керек."
 
-#: rustconn/src/embedded_rdp/connection.rs:2891
+#: rustconn/src/embedded_rdp/connection.rs:3097
 msgid "Authentication failed: account is disabled."
 msgstr "Аутентификация сәтсіз: тіркелгі өшірілген."
 
-#: rustconn/src/embedded_rdp/connection.rs:2892
+#: rustconn/src/embedded_rdp/connection.rs:3098
 msgid "Authentication failed: account is locked out."
 msgstr "Аутентификация сәтсіз: тіркелгі құлыпталған."
 
-#: rustconn/src/embedded_rdp/connection.rs:2893
+#: rustconn/src/embedded_rdp/connection.rs:3099
 msgid "Authentication failed: password has expired."
 msgstr "Аутентификация сәтсіз: құпия сөздің мерзімі өтті."
 
-#: rustconn/src/embedded_rdp/connection.rs:2894
+#: rustconn/src/embedded_rdp/connection.rs:3100
 msgid "Authentication failed: account has expired."
 msgstr "Аутентификация сәтсіз: тіркелгінің мерзімі өтті."
 
-#: rustconn/src/embedded_rdp/connection.rs:2896
+#: rustconn/src/embedded_rdp/connection.rs:3102
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr ""
 "Аутентификация сәтсіз аяқталды: тіркелгі өшірілген, құлыпталған немесе "
 "мерзімі өткен."
 
-#: rustconn/src/embedded_rdp/connection.rs:2899
+#: rustconn/src/embedded_rdp/connection.rs:3105
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Аутентификация сәтсіз: пайдаланушыға бұл компьютерге кіруге рұқсат жоқ."
 
-#: rustconn/src/embedded_rdp/connection.rs:2903
+#: rustconn/src/embedded_rdp/connection.rs:3109
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11109,8 +11201,8 @@ msgstr ""
 "{} саласы үшін Kerberos KDC табылмады. Қосылымның RDP параметрлерінде KDC "
 "мекенжайын енгізіңіз немесе саланы /etc/krb5.conf файлына қосыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2907
-#: rustconn/src/embedded_rdp/connection.rs:2947
+#: rustconn/src/embedded_rdp/connection.rs:3113
+#: rustconn/src/embedded_rdp/connection.rs:3153
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
@@ -11118,7 +11210,7 @@ msgstr ""
 "Kerberos үшін DNS домені қажет. Оны Домен өрісіне енгізіңіз, мысалы "
 "EXAMPLE.COM."
 
-#: rustconn/src/embedded_rdp/connection.rs:2911
+#: rustconn/src/embedded_rdp/connection.rs:3117
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11127,7 +11219,7 @@ msgstr ""
 "KDC мекенжайы ретінде домен контроллерінің атауын немесе IP мекенжайын "
 "енгізіңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2914
+#: rustconn/src/embedded_rdp/connection.rs:3120
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
@@ -11135,7 +11227,7 @@ msgstr ""
 "Kerberos кіруі сәтсіз аяқталды: бұл компьютердің сағаты доменнің сағатынан "
 "бес минуттан артық ерекшеленеді. Сағатты синхрондап, қайталап көріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2917
+#: rustconn/src/embedded_rdp/connection.rs:3123
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11143,12 +11235,12 @@ msgstr ""
 "Домен бұл серверді Host өрісіндегі атауы бойынша танымайды. Доменде "
 "тіркелгендей, сервердің DNS атауы бойынша қосылыңыз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2919
+#: rustconn/src/embedded_rdp/connection.rs:3125
 msgid "NLA authentication failed. Check username and password."
 msgstr ""
 "NLA аутентификациясы сәтсіз. Пайдаланушы аты мен құпия сөзді тексеріңіз."
 
-#: rustconn/src/embedded_rdp/connection.rs:2941
+#: rustconn/src/embedded_rdp/connection.rs:3147
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
@@ -11156,18 +11248,18 @@ msgstr ""
 "Kerberos үшін сервердің DNS атауы қажет. IP мекенжайы бойынша немесе SSH "
 "туннелі арқылы қосылу сәтсіз аяқталады."
 
-#: rustconn/src/embedded_rdp/connection.rs:2944
+#: rustconn/src/embedded_rdp/connection.rs:3150
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
 msgstr ""
 "Kerberos үшін DNS домені қажет, мысалы EXAMPLE.COM, қысқа домен атауы емес."
 
-#: rustconn/src/embedded_rdp/connection.rs:3344
+#: rustconn/src/embedded_rdp/connection.rs:3550
 msgid "RDP session will open in an external window"
 msgstr "RDP сеансы сыртқы терезеде ашылады"
 
-#: rustconn/src/embedded_rdp/connection.rs:3373
+#: rustconn/src/embedded_rdp/connection.rs:3579
 msgid "Failed to start FreeRDP: {}"
 msgstr "FreeRDP іске қосу мүмкін болмады: {}"
 
@@ -11175,55 +11267,55 @@ msgstr "FreeRDP іске қосу мүмкін болмады: {}"
 msgid "File drag disabled: {}"
 msgstr "Файлды сүйреу өшірілген: {}"
 
-#: rustconn/src/embedded_rdp/mod.rs:391
+#: rustconn/src/embedded_rdp/mod.rs:402
 msgid "Task Manager"
 msgstr "Тапсырмалар реттеушісі"
 
-#: rustconn/src/embedded_rdp/mod.rs:393
+#: rustconn/src/embedded_rdp/mod.rs:404
 msgid "Registry Editor"
 msgstr "Тізілім редакторы"
 
-#: rustconn/src/embedded_rdp/mod.rs:394
+#: rustconn/src/embedded_rdp/mod.rs:405
 msgid "Device Manager"
 msgstr "Құрылғы менеджері"
 
-#: rustconn/src/embedded_rdp/mod.rs:395
+#: rustconn/src/embedded_rdp/mod.rs:406
 msgid "Event Viewer"
 msgstr "Оқиғалар көрушісі"
 
-#: rustconn/src/embedded_rdp/mod.rs:396
+#: rustconn/src/embedded_rdp/mod.rs:407
 msgid "Services"
 msgstr "Қызметтер"
 
-#: rustconn/src/embedded_rdp/mod.rs:397
+#: rustconn/src/embedded_rdp/mod.rs:408
 msgid "Disk Management"
 msgstr "Дискілерді басқару"
 
-#: rustconn/src/embedded_rdp/mod.rs:398
+#: rustconn/src/embedded_rdp/mod.rs:409
 msgid "Resource Monitor"
 msgstr "Ресурстар мониторы"
 
-#: rustconn/src/embedded_rdp/mod.rs:399
+#: rustconn/src/embedded_rdp/mod.rs:410
 msgid "Computer Management"
 msgstr "Компьютерді басқару"
 
-#: rustconn/src/embedded_rdp/mod.rs:405 rustconn/src/embedded_rdp/mod.rs:1101
+#: rustconn/src/embedded_rdp/mod.rs:416 rustconn/src/embedded_rdp/mod.rs:1115
 msgid "Shell Launchers"
 msgstr "Shell іске қосқыштары"
 
-#: rustconn/src/embedded_rdp/mod.rs:409 rustconn/src/embedded_rdp/mod.rs:1096
+#: rustconn/src/embedded_rdp/mod.rs:420 rustconn/src/embedded_rdp/mod.rs:1110
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Әкімші)"
 
-#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/embedded_rdp/mod.rs:1100
+#: rustconn/src/embedded_rdp/mod.rs:421 rustconn/src/embedded_rdp/mod.rs:1114
 msgid "CMD (Admin)"
 msgstr "CMD (Әкімші)"
 
-#: rustconn/src/embedded_rdp/mod.rs:553 rustconn/src/embedded_rdp/mod.rs:555
+#: rustconn/src/embedded_rdp/mod.rs:564 rustconn/src/embedded_rdp/mod.rs:566
 msgid "Fit resolution to window"
 msgstr "Қашықтағы жұмыс үстелін терезе өлшеміне сәйкестендіру"
 
-#: rustconn/src/embedded_rdp/mod.rs:574 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:585 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr ""
 "Қашықтағы алмасу буферін жергіліктіге көшіру (қашықтағы деректерді "
@@ -11231,102 +11323,102 @@ msgstr ""
 "күту…)Қашықтағы алмасу буферін жергіліктіге көшіру (қашықтағы деректер "
 "күтілуде…)"
 
-#: rustconn/src/embedded_rdp/mod.rs:581 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:592 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "Жергілікті алмасу буферінен қашықтағы сеансқа қою"
 
-#: rustconn/src/embedded_rdp/mod.rs:586 rustconn/src/embedded_rdp/mod.rs:591
+#: rustconn/src/embedded_rdp/mod.rs:597 rustconn/src/embedded_rdp/mod.rs:602
 msgid "Autotype"
 msgstr "Автотеру"
 
-#: rustconn/src/embedded_rdp/mod.rs:588
+#: rustconn/src/embedded_rdp/mod.rs:599
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr "Мәтінді пернелер ретінде жіберу (қою шектеулерін айналып өтеді)"
 
-#: rustconn/src/embedded_rdp/mod.rs:595
+#: rustconn/src/embedded_rdp/mod.rs:606
 msgid "Type Clipboard"
 msgstr "Буферді теру"
 
-#: rustconn/src/embedded_rdp/mod.rs:598
+#: rustconn/src/embedded_rdp/mod.rs:609
 msgid "Type Text…"
 msgstr "Мәтін теру…"
 
-#: rustconn/src/embedded_rdp/mod.rs:612
+#: rustconn/src/embedded_rdp/mod.rs:623
 msgid "Run PowerShell script on remote"
 msgstr "Қашықтағы құрылғыда PowerShell скриптін орындау"
 
-#: rustconn/src/embedded_rdp/mod.rs:615
+#: rustconn/src/embedded_rdp/mod.rs:626
 msgid "Run script on remote"
 msgstr "Қашықтағы құрылғыда скриптті орындау"
 
-#: rustconn/src/embedded_rdp/mod.rs:630 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:641 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:638 rustconn/src/embedded_vnc/ui.rs:79
+#: rustconn/src/embedded_rdp/mod.rs:649 rustconn/src/embedded_vnc/ui.rs:79
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "Қашықтағы сеансқа Ctrl+Alt+Del жіберу"
 
-#: rustconn/src/embedded_rdp/mod.rs:644 rustconn/src/embedded_rdp/mod.rs:647
+#: rustconn/src/embedded_rdp/mod.rs:655 rustconn/src/embedded_rdp/mod.rs:658
 msgid "Windows admin tools"
 msgstr "Windows басқару құралдары"
 
-#: rustconn/src/embedded_rdp/mod.rs:671
+#: rustconn/src/embedded_rdp/mod.rs:682
 msgid "Save Files"
 msgstr "Файлдарды сақтау"
 
-#: rustconn/src/embedded_rdp/mod.rs:674
+#: rustconn/src/embedded_rdp/mod.rs:685
 msgid "Save files from remote clipboard"
 msgstr "Қашықтағы алмасу буферінен файлдарды сақтау"
 
-#: rustconn/src/embedded_rdp/mod.rs:764 rustconn/src/embedded_vnc/ui.rs:149
+#: rustconn/src/embedded_rdp/mod.rs:775 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1431
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1439
 #: rustconn/src/terminal/session_lifecycle.rs:401
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr "Қайта қосылу"
 
-#: rustconn/src/embedded_rdp/mod.rs:766 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1433
+#: rustconn/src/embedded_rdp/mod.rs:777 rustconn/src/embedded_vnc/ui.rs:151
+#: rustconn/src/terminal/mod.rs:1441
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Бұл сеансқа қайта қосылу"
 
-#: rustconn/src/embedded_rdp/mod.rs:928
+#: rustconn/src/embedded_rdp/mod.rs:942
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr ""
 "Файлдарды қашықтағы сеансқа жіберу үшін алмасу буферін ортақтасуды қосыңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1016
+#: rustconn/src/embedded_rdp/mod.rs:1030
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
 msgstr ""
 "{} файл қашықтағы алмасу буферіне көшірілді — қою үшін сеанста Ctrl+V басыңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1094
+#: rustconn/src/embedded_rdp/mod.rs:1108
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1099
+#: rustconn/src/embedded_rdp/mod.rs:1113
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1178 rustconn/src/embedded_rdp/mod.rs:1249
-#: rustconn/src/embedded_rdp/mod.rs:1507
+#: rustconn/src/embedded_rdp/mod.rs:1192 rustconn/src/embedded_rdp/mod.rs:1263
+#: rustconn/src/embedded_rdp/mod.rs:1541
 msgid "Channel not ready"
 msgstr "Арна дайын емес"
 
-#: rustconn/src/embedded_rdp/mod.rs:1223 rustconn/src/embedded_rdp/mod.rs:1276
+#: rustconn/src/embedded_rdp/mod.rs:1237 rustconn/src/embedded_rdp/mod.rs:1290
 msgid "Script sent"
 msgstr "Скрипт жіберілді"
 
-#: rustconn/src/embedded_rdp/mod.rs:1322 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1336 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Үзіндіні орындау?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1329 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1343 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -11336,15 +11428,15 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1569
+#: rustconn/src/embedded_rdp/mod.rs:1603
 msgid "Select folder to save files"
 msgstr "Файлдарды сақтау үшін қалтаны таңдаңыз"
 
-#: rustconn/src/embedded_rdp/mod.rs:1702
+#: rustconn/src/embedded_rdp/mod.rs:1736
 msgid "Downloading files…"
 msgstr "Файлдар жүктелуде…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2097
+#: rustconn/src/embedded_rdp/mod.rs:2131
 msgid "Connection may have been lost while the computer slept"
 msgstr "Компьютер ұйықтап жатқанда қосылым үзілген болуы мүмкін"
 
@@ -11378,13 +11470,13 @@ msgstr "RTT: {} мс | {} | MPTCP"
 msgid "RTT: {} ms | {}"
 msgstr "RTT: {} мс | {}"
 
-#: rustconn/src/embedded_rdp/resize.rs:226
-#: rustconn/src/embedded_rdp/resize.rs:431
+#: rustconn/src/embedded_rdp/resize.rs:224
+#: rustconn/src/embedded_rdp/resize.rs:429
 msgid "Resizing…"
 msgstr "Өлшемін өзгерту…"
 
-#: rustconn/src/embedded_rdp/resize.rs:254
-#: rustconn/src/embedded_rdp/resize.rs:449
+#: rustconn/src/embedded_rdp/resize.rs:252
+#: rustconn/src/embedded_rdp/resize.rs:447
 msgid "Reconnecting…"
 msgstr "Қайта қосылу…"
 
@@ -12288,31 +12380,31 @@ msgstr "Көрсету үшін қойындыны таңдаңыз"
 msgid "Execute Snippet…"
 msgstr "Үзіндіні орындау…"
 
-#: rustconn/src/terminal/mod.rs:515
+#: rustconn/src/terminal/mod.rs:521
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Қойындылар шолуы (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:532 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:538 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Қош келдіңіз"
 
-#: rustconn/src/terminal/mod.rs:1075
+#: rustconn/src/terminal/mod.rs:1083
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "«{}» шығыс сүзгісі орнатылмаған; сеанс шығысы сүзгіленбейді"
 
-#: rustconn/src/terminal/mod.rs:1425
+#: rustconn/src/terminal/mod.rs:1433
 msgid "Command not found: {}"
 msgstr "Команда табылмады: {}"
 
-#: rustconn/src/terminal/mod.rs:1427
+#: rustconn/src/terminal/mod.rs:1435
 msgid "Failed to start '{}'"
 msgstr "«{}» іске қосу мүмкін болмады"
 
-#: rustconn/src/terminal/mod.rs:1449
+#: rustconn/src/terminal/mod.rs:1457
 msgid "'{}' is not installed"
 msgstr "«{}» орнатылмаған"
 
-#: rustconn/src/terminal/mod.rs:1452
+#: rustconn/src/terminal/mod.rs:1460
 msgid "Failed to start '{}': {}"
 msgstr "«{}» іске қосу мүмкін болмады: {}"
 
@@ -12585,7 +12677,7 @@ msgstr "{} белсенді сеанс"
 msgid "About RustConn"
 msgstr "RustConn туралы"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5447
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5454
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Құпия фраза тасымалды файлды ашпайды"
 
@@ -12786,8 +12878,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Аралық түйін қолжетімсіз"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3461
-#: rustconn/src/window/mod.rs:3527 rustconn/src/window/rdp_vnc.rs:767
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3465
+#: rustconn/src/window/mod.rs:3531 rustconn/src/window/rdp_vnc.rs:776
 msgid "Connect Anyway"
 msgstr "Сонда да қосылу"
 
@@ -13529,6 +13621,11 @@ msgstr "Shell командасы (мыс., export TERM=xterm-256color)"
 msgid "Command to execute after login"
 msgstr "Кіргеннен кейін орындалатын команда"
 
+#: rustconn/src/window/fullscreen_header.rs:103
+#: rustconn/src/window/fullscreen_header.rs:105
+msgid "Leave Fullscreen"
+msgstr "Толық экраннан шығу"
+
 #: rustconn/src/window/group_broadcast.rs:373
 msgid "Broadcast to all these tabs?"
 msgstr "Осы қойындылардың барлығына тарату керек пе?"
@@ -13718,39 +13815,39 @@ msgstr ""
 "«{}» дегенге қосылу енді сол аралық түйінді өткізіп жіберіп, тек бапталған "
 "маршруттың қалғанын пайдаланады."
 
-#: rustconn/src/window/mod.rs:1124 rustconn/src/window/mod.rs:1135
+#: rustconn/src/window/mod.rs:1128 rustconn/src/window/mod.rs:1139
 msgid "Dismiss"
 msgstr "Елемеу"
 
-#: rustconn/src/window/mod.rs:1164
+#: rustconn/src/window/mod.rs:1168
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Құпиясөздер дерекқорын құлыптан босату үшін аппараттық кілтке тиіңіз"
 
-#: rustconn/src/window/mod.rs:2656
+#: rustconn/src/window/mod.rs:2660
 msgid "Already running in an external window"
 msgstr "Сыртқы терезеде әлдеқашан жұмыс істеп тұр"
 
-#: rustconn/src/window/mod.rs:2807
+#: rustconn/src/window/mod.rs:2811
 msgid "Connection to ‘{}’ failed"
 msgstr "‘{}’ қосылу сәтсіз аяқталды"
 
-#: rustconn/src/window/mod.rs:3153 rustconn/src/window/mod.rs:3167
+#: rustconn/src/window/mod.rs:3157 rustconn/src/window/mod.rs:3171
 msgid "Pre-connect task failed: {}"
 msgstr "Қосылым алдындағы тапсырма сәтсіз: {}"
 
-#: rustconn/src/window/mod.rs:3201
+#: rustconn/src/window/mod.rs:3205
 msgid "Port knock failed: {}"
 msgstr "Port knock сәтсіз аяқталды: {}"
 
-#: rustconn/src/window/mod.rs:3250
+#: rustconn/src/window/mod.rs:3254
 msgid "SPA failed: {}"
 msgstr "SPA сәтсіз аяқталды: {}"
 
-#: rustconn/src/window/mod.rs:3446
+#: rustconn/src/window/mod.rs:3450
 msgid "{} (via {})"
 msgstr "{} ({} арқылы)"
 
-#: rustconn/src/window/mod.rs:3452
+#: rustconn/src/window/mod.rs:3456
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -13774,35 +13871,35 @@ msgstr ""
 "Егер бұл өзгерісті сіз жасамасаңыз, бас тартыңыз — қосылу сақталған тіркелгі "
 "деректерін басқа машинаға жіберуі мүмкін."
 
-#: rustconn/src/window/mod.rs:3457
+#: rustconn/src/window/mod.rs:3461
 msgid "Routing changed for “{}”"
 msgstr "«{}» үшін бағыт өзгерді"
 
-#: rustconn/src/window/mod.rs:3521
+#: rustconn/src/window/mod.rs:3525
 msgid "Jump Host Unavailable for “{}”"
 msgstr "«{}» үшін аралық түйін қолжетімсіз"
 
-#: rustconn/src/window/mod.rs:3526
+#: rustconn/src/window/mod.rs:3530
 msgid "Connect Directly"
 msgstr "Тікелей қосылу"
 
-#: rustconn/src/window/mod.rs:3615 rustconn/src/window/mod.rs:3790
+#: rustconn/src/window/mod.rs:3619 rustconn/src/window/mod.rs:3794
 msgid "Connection “{}” created"
 msgstr "“{}” қосылымы жасалды"
 
-#: rustconn/src/window/mod.rs:3997
+#: rustconn/src/window/mod.rs:4001
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4202
+#: rustconn/src/window/mod.rs:4209
 msgid "Settings saved"
 msgstr "Баптаулар сақталды"
 
-#: rustconn/src/window/mod.rs:4239
+#: rustconn/src/window/mod.rs:4246
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Құпия фраза осы компьютерде сақталмады"
 
-#: rustconn/src/window/mod.rs:4241
+#: rustconn/src/window/mod.rs:4248
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -13814,11 +13911,11 @@ msgstr ""
 "сұралады. Оның орнына «Жүйелік кілттер сақтағышын» таңдаңыз немесе RustConn "
 "өз деректер каталогына жаза алатынын тексеріңіз."
 
-#: rustconn/src/window/mod.rs:4287
+#: rustconn/src/window/mod.rs:4294
 msgid "Credentials Not Saved to Keyring"
 msgstr "Тіркелгі деректері кілттер қоймасына сақталмады"
 
-#: rustconn/src/window/mod.rs:4289
+#: rustconn/src/window/mod.rs:4296
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -13829,15 +13926,15 @@ msgstr ""
 "қоймасы қызметінің іске қосылғанын және құлпы ашылғанын тексеріп, "
 "баптауларды қайта сақтаңыз."
 
-#: rustconn/src/window/mod.rs:4473
+#: rustconn/src/window/mod.rs:4480
 msgid "Close RustConn?"
 msgstr "RustConn жабылсын ба?"
 
-#: rustconn/src/window/mod.rs:4475
+#: rustconn/src/window/mod.rs:4482
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "{} сессия қойындысы ашық. Белсенді қосылымдар ажыратылады."
 
-#: rustconn/src/window/mod.rs:4512
+#: rustconn/src/window/mod.rs:4519
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -13845,7 +13942,7 @@ msgstr ""
 "Параметрлерді оқу мүмкін болмады, сондықтан әдепкі мәндер пайдаланылуда. "
 "Оқылмайтын файл {} ретінде сақталды."
 
-#: rustconn/src/window/mod.rs:4517
+#: rustconn/src/window/mod.rs:4524
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -13853,35 +13950,35 @@ msgstr ""
 "Бұл параметрлер жаңарақ RustConn ({}) арқылы сақталды. Олар өзгертілмес "
 "бұрын сақтық көшірме сақталады."
 
-#: rustconn/src/window/mod.rs:4542
+#: rustconn/src/window/mod.rs:4549
 msgid "Cloud sync failed for '{}': {}"
 msgstr "«{}» үшін бұлтпен синхрондау сәтсіз аяқталды: {}"
 
-#: rustconn/src/window/mod.rs:4725
+#: rustconn/src/window/mod.rs:4732
 msgid "Startup connection not found"
 msgstr "Іске қосу қосылымы табылмады"
 
-#: rustconn/src/window/mod.rs:4761
+#: rustconn/src/window/mod.rs:4768
 msgid "Failed to open .rdp file"
 msgstr ".rdp файлын ашу сәтсіз"
 
-#: rustconn/src/window/mod.rs:4797
+#: rustconn/src/window/mod.rs:4804
 msgid "Failed to open .vv file"
 msgstr ".vv файлын ашу сәтсіз"
 
-#: rustconn/src/window/mod.rs:4834
+#: rustconn/src/window/mod.rs:4841
 msgid "Tunnel “{}” stopped: {}"
 msgstr "“{}” туннелі тоқтады: {}"
 
-#: rustconn/src/window/mod.rs:4850
+#: rustconn/src/window/mod.rs:4857
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "“{}” туннелін қайта қосу тоқтатылды: {}"
 
-#: rustconn/src/window/mod.rs:5363
+#: rustconn/src/window/mod.rs:5370
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "{} қосылым сәтті экспортталды. {} өткізіп жіберілді."
 
-#: rustconn/src/window/mod.rs:5449
+#: rustconn/src/window/mod.rs:5456
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14079,7 +14176,7 @@ msgstr "{} элементті жылжыту сәтсіз:"
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "Сыртқы көрушіні ‘{}’ іске қосу мүмкін болмады: {}"
 
-#: rustconn/src/window/protocols.rs:1281 rustconn/src/window/rdp_vnc.rs:1555
+#: rustconn/src/window/protocols.rs:1281 rustconn/src/window/rdp_vnc.rs:1571
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "VNC көрушісі табылмады. TigerVNC немесе Remmina орнатыңыз."
 
@@ -14115,11 +14212,11 @@ msgstr "MOSH қосылымдары үшін mosh орнатыңыз"
 msgid "SSH tunnel failed: {}"
 msgstr "SSH туннелі сәтсіз: {}"
 
-#: rustconn/src/window/rdp_vnc.rs:763
+#: rustconn/src/window/rdp_vnc.rs:772
 msgid "Use Legacy RDP Security?"
 msgstr "Ескірген RDP қауіпсіздігін пайдалану керек пе?"
 
-#: rustconn/src/window/rdp_vnc.rs:765
+#: rustconn/src/window/rdp_vnc.rs:774
 msgid ""
 "This server only supports Standard RDP Security, which is weaker than TLS or "
 "Network Level Authentication. Continue with the external RDP client?"
@@ -14128,11 +14225,11 @@ msgstr ""
 "деңгейіндегі аутентификациядан әлсіз. Сыртқы RDP клиентімен жалғастыру керек "
 "пе?"
 
-#: rustconn/src/window/rdp_vnc.rs:796 rustconn/src/window/rdp_vnc.rs:1096
+#: rustconn/src/window/rdp_vnc.rs:805 rustconn/src/window/rdp_vnc.rs:1112
 msgid "Certificate changed"
 msgstr "Сертификат өзгерді"
 
-#: rustconn/src/window/rdp_vnc.rs:798 rustconn/src/window/rdp_vnc.rs:1098
+#: rustconn/src/window/rdp_vnc.rs:807 rustconn/src/window/rdp_vnc.rs:1114
 msgid "Accept new certificate"
 msgstr "Жаңа сертификатты қабылдау"
 
@@ -14604,3 +14701,20 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid ""
+#~ "Connection broker routing value (loadbalanceinfo) from an .rdp file "
+#~ "(requires FreeRDP)"
+#~ msgstr ""
+#~ "Қосылым брокерінің .rdp файлындағы маршруттау мәні (loadbalanceinfo) "
+#~ "(FreeRDP қажет)"
+
+#~ msgid ""
+#~ "The embedded client does not support connection broker load balancing. "
+#~ "Using FreeRDP instead."
+#~ msgstr ""
+#~ "Кірістірілген клиент қосылым брокері арқылы жүктемені теңгеруді "
+#~ "қолдамайды. Оның орнына FreeRDP пайдаланылуда."
+
+#~ msgid "Send the local microphone to the remote session (requires FreeRDP)"
+#~ msgstr "Жергілікті микрофонды қашықтағы сеансқа жіберу (FreeRDP қажет)"

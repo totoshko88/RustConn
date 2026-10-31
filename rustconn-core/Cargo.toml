@@ -87,49 +87,50 @@ vnc-rs = { version = "0.6", optional = true }
 # transitively; re-exports zune_core so no second direct dependency is needed.
 zune-jpeg = { version = "0.5.15", optional = true }
 # Pure Rust RDP client for embedded RDP sessions using IronRDP (crates.io)
-# native-tls instead of rustls to match rdw approach
-# Features: cliprdr (clipboard), rdpdr (shared folders + printer), dvc (dynamic channels),
-# displaycontrol (dynamic resolution), rdpsnd (audio), echo (RTT measurement)
+# native-tls instead of rustls to match rdw approach.
 #
-# ON UPGRADE (0.17 → next) — re-check whether these are now usable upstream:
-#   * RAIL / RemoteApp (MS-RDPERP): only opaque CapabilitySet::Rail buffer exists,
-#     no channel/handshake → RemoteApp still forces external xfreerdp3 fallback.
-#   * GFX pipeline + H.264/AVC420 (MS-RDPEGFX): ✅ DONE — integrated via
-#     ironrdp-egfx 0.3 + gfx-h264 feature (AVC420 decode, OpenH264 dlopen).
-#   * GFX + AVC444: ❌ NOT usable. ironrdp-egfx 0.3.0 client.rs matches
-#     Codec1Type::Avc444 / Avc444v2 and forwards them to on_unhandled_pdu with
-#     "AVC444 codec not yet implemented" instead of decoding. Because Windows
-#     picks the client's best offer, advertising AVC444 froze whole sessions
-#     (issue #262). rdp_client::gfx_handler::RustConnGfxHandler::capabilities()
-#     therefore advertises V8_1(AVC420)+V8 only, never V10.x. When AVC444 lands
-#     upstream, re-add CapabilitySet::V10_7 there — the test
-#     `advertised_capabilities_exclude_avc444` marks the spot.
-#   * Audio input / microphone (MS-RDPEAI): no channel → microphone_enabled field
-#     in RdpClientConfig is still dead (unrelated to GFX work; needs upstream support).
+# Depended on crate by crate since the 2026-10-27/28 releases: the `ironrdp`
+# meta crate is still 0.17 and pins the July stack (connector 0.10, dvc 0.8),
+# which has no graphics-pipeline flag in the early capabilities, no AVC444 and
+# no audio input. Keep the whole set on one release train — every crate below
+# shares ironrdp-core 0.3 / ironrdp-pdu 0.11 / ironrdp-dvc 0.10.
+#
+# ON UPGRADE — re-check whether these are now usable upstream:
+#   * RAIL / RemoteApp (MS-RDPERP): RemoteApp still forces the external
+#     xfreerdp3 fallback.
 #   * Drive change notifications: needs ClientDriveNotifyChangeDirectoryResponse
-#     PDU. Confirmed absent in ironrdp-rdpdr 0.7 (the version paired with ironrdp
-#     0.17): only the server-side request and ClientDriveQueryDirectoryResponse
-#     exist. inotify detection works; the response cannot be sent until upstream
-#     adds the type.
-# Features (kept on one line so manifest scanners can parse the dependency):
-#   cliprdr        — clipboard redirection
-#   rdpdr          — device/drive redirection (shared folders)
-#   dvc            — dynamic virtual channels
-#   displaycontrol — dynamic resolution changes (MS-RDPEDISP)
-#   rdpsnd         — audio redirection
-#   echo           — echo DVC for RTT measurement (MS-RDPEECO)
-ironrdp = { version = "0.17", features = ["connector", "session", "graphics", "pdu", "core", "svc", "cliprdr", "rdpdr", "dvc", "displaycontrol", "rdpsnd", "echo"], optional = true }
-ironrdp-input = { version = "0.7", optional = true }
-ironrdp-tokio = { version = "0.10", features = ["reqwest"], optional = true }
-ironrdp-tls = { version = "0.2", features = ["native-tls"], optional = true }
+#     in ironrdp-rdpdr; inotify detection works, the response cannot be sent.
+ironrdp-connector = { version = "0.12", optional = true }
+ironrdp-session = { version = "0.13", optional = true }
+ironrdp-graphics = { version = "0.11", optional = true }
+ironrdp-pdu = { version = "0.11", optional = true }
+ironrdp-core = { version = "0.3", optional = true }
+ironrdp-svc = { version = "0.10", optional = true }
+# clipboard redirection
+ironrdp-cliprdr = { version = "0.9", optional = true }
+# device/drive redirection (shared folders, printers)
+ironrdp-rdpdr = { version = "0.9", optional = true }
+# dynamic virtual channels
+ironrdp-dvc = { version = "0.10", optional = true }
+# dynamic resolution changes (MS-RDPEDISP)
+ironrdp-displaycontrol = { version = "0.10", optional = true }
+# audio output (MS-RDPEA)
+ironrdp-rdpsnd = { version = "0.11", optional = true }
+# microphone (MS-RDPEAI, AUDIO_INPUT channel)
+ironrdp-rdpeai = { version = "0.2", optional = true }
+# echo DVC for RTT measurement (MS-RDPEECO)
+ironrdp-echo = { version = "0.6", optional = true }
+ironrdp-input = { version = "0.9", optional = true }
+ironrdp-tokio = { version = "0.12", features = ["reqwest-native-tls"], optional = true }
+ironrdp-tls = { version = "0.3", features = ["native-tls"], optional = true }
 # `ironrdp_tls::upgrade` returns the server certificate as an `x509_cert::Certificate`;
 # we re-encode it to DER to compute the TOFU fingerprint. Same version already in the
 # tree via ironrdp-tls, kept as a direct dep so the type is nameable here.
-x509-cert = { version = "0.2", optional = true }
-# GFX pipeline (MS-RDPEGFX) with H.264/AVC decoding via OpenH264 dlopen
-ironrdp-egfx = { version = "0.3", features = ["openh264-libloading"], optional = true }
+x509-cert = { version = "0.3", optional = true }
+# GFX pipeline (MS-RDPEGFX) with H.264/AVC420 and AVC444 decoding via OpenH264 dlopen
+ironrdp-egfx = { version = "0.5", features = ["openh264-libloading"], optional = true }
 # RD Gateway (MS-TSGU) — HTTPS tunneling for RDP through corporate gateways
-ironrdp-mstsgu = { version = "0.0.1", features = ["native-tls"], optional = true }
+ironrdp-mstsgu = { version = "0.1", features = ["native-tls"], optional = true }
 # Pin native-tls to avoid Tlsv13 compile bug in 0.2.17
 native-tls = { workspace = true, optional = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
@@ -146,8 +147,6 @@ security-framework = { version = "3.3", optional = true }
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 oo7 = { workspace = true, optional = true }
 
-# Note: ironrdp-rdpdr-native 0.7 requires ironrdp-rdpdr 0.7.x which matches ironrdp 0.17
-
 [features]
 default = []
 # Domain-only builds should keep this crate usable without desktop/session
@@ -159,7 +158,19 @@ vnc-embedded = ["dep:vnc-rs", "dep:zune-jpeg"]
 web-embedded = []
 # rdp-embedded feature enables the RdpClient struct with IronRDP
 rdp-embedded = [
-    "dep:ironrdp",
+    "dep:ironrdp-connector",
+    "dep:ironrdp-session",
+    "dep:ironrdp-graphics",
+    "dep:ironrdp-pdu",
+    "dep:ironrdp-core",
+    "dep:ironrdp-svc",
+    "dep:ironrdp-cliprdr",
+    "dep:ironrdp-rdpdr",
+    "dep:ironrdp-dvc",
+    "dep:ironrdp-displaycontrol",
+    "dep:ironrdp-rdpsnd",
+    "dep:ironrdp-rdpeai",
+    "dep:ironrdp-echo",
     "dep:ironrdp-input",
     "dep:ironrdp-tokio",
     "dep:ironrdp-tls",

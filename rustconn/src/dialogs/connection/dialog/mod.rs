@@ -219,6 +219,11 @@ pub struct ConnectionDialog {
     rdp_mptcp_check: adw::SwitchRow,
     rdp_fido2_check: adw::SwitchRow,
     rdp_admin_session_check: adw::SwitchRow,
+    rdp_microphone_check: adw::SwitchRow,
+    rdp_smartcard_check: adw::SwitchRow,
+    rdp_load_balance_entry: Entry,
+    rdp_auto_reconnect_check: adw::SwitchRow,
+    rdp_keyboard_hook_dropdown: DropDown,
     rdp_kerberos_check: adw::SwitchRow,
     /// KDC Address for Kerberos NLA, saved normalized as `kdc_proxy_url`.
     rdp_kdc_address_entry: adw::EntryRow,

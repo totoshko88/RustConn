@@ -1358,6 +1358,15 @@ impl ConnectionDialog {
         self.rdp_mptcp_check.set_active(rdp.mptcp);
         self.rdp_fido2_check.set_active(rdp.fido2_enabled);
         self.rdp_admin_session_check.set_active(rdp.admin_session);
+        self.rdp_microphone_check.set_active(rdp.microphone_enabled);
+        self.rdp_smartcard_check.set_active(rdp.smartcard_enabled);
+        self.rdp_auto_reconnect_check.set_active(rdp.auto_reconnect);
+        self.rdp_keyboard_hook_dropdown.set_selected(
+            rustconn_core::models::RdpKeyboardHook::index_of(rdp.keyboard_hook),
+        );
+        if let Some(ref info) = rdp.load_balance_info {
+            self.rdp_load_balance_entry.set_text(info);
+        }
         self.rdp_kerberos_check.set_active(rdp.kerberos_enabled);
         // `set_active` only notifies on a change, so the KDC Address row's
         // sensitivity is set here too rather than left to the switch handler.

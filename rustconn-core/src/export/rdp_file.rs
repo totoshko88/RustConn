@@ -111,10 +111,14 @@ impl RdpFileExporter {
             Self::write_gateway_settings(&mut output, rdp);
             Self::write_security_settings(&mut output, rdp);
             Self::write_remoteapp_settings(&mut output, rdp);
+            let _ = writeln!(
+                output,
+                "autoreconnection enabled:i:{}",
+                i32::from(rdp.auto_reconnect)
+            );
         }
 
         // Common settings
-        let _ = writeln!(output, "autoreconnection enabled:i:1");
         let _ = writeln!(output, "prompt for credentials:i:1");
 
         Ok(output)
@@ -266,8 +270,28 @@ impl RdpFileExporter {
             let _ = writeln!(output, "drivestoredirect:s:{}", drives.join(";"));
         }
 
-        // Smart card redirection (not currently configurable, default off)
-        let _ = writeln!(output, "redirectsmartcards:i:0");
+        // Windows key combinations, only when the connection chose; without
+        // the key Remote Desktop Connection applies them in full screen only
+        if let Some(hook) = rdp.keyboard_hook {
+            let _ = writeln!(output, "keyboardhook:i:{}", hook.rdp_value());
+        }
+
+        // Microphone, smart cards and FIDO2/WebAuthn
+        let _ = writeln!(
+            output,
+            "audiocapturemode:i:{}",
+            i32::from(rdp.microphone_enabled)
+        );
+        let _ = writeln!(
+            output,
+            "redirectsmartcards:i:{}",
+            i32::from(rdp.smartcard_enabled)
+        );
+        let _ = writeln!(
+            output,
+            "redirectwebauthn:i:{}",
+            i32::from(rdp.fido2_enabled)
+        );
 
         // COM ports and POS devices (default off)
         let _ = writeln!(output, "redirectcomports:i:0");
@@ -302,6 +326,14 @@ impl RdpFileExporter {
         } else {
             // No gateway
             let _ = writeln!(output, "gatewayusagemethod:i:0");
+        }
+
+        // RD Connection Broker routing value, which RD Web Access files carry
+        // beside the gateway
+        if let Some(info) = rdp.load_balance_info.as_deref().map(str::trim)
+            && !info.is_empty()
+        {
+            let _ = writeln!(output, "loadbalanceinfo:s:{}", rdp_value(info));
         }
     }
 
@@ -580,6 +612,46 @@ mod tests {
 
         assert!(content.contains("desktopwidth:i:1920"));
         assert!(content.contains("desktopheight:i:1080"));
+    }
+
+    #[test]
+    fn device_and_broker_settings_are_exported() {
+        let conn = make_rdp_connection("Default", "server.example.com", 3389);
+        let content = RdpFileExporter::export_to_rdp_content(&conn).unwrap();
+        assert!(content.contains("audiocapturemode:i:0"));
+        assert!(content.contains("redirectsmartcards:i:0"));
+        assert!(content.contains("redirectwebauthn:i:0"));
+        assert!(!content.contains("loadbalanceinfo"));
+
+        let mut conn = make_rdp_connection("Farm", "broker.corp", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = conn.protocol_config {
+            rdp.microphone_enabled = true;
+            rdp.smartcard_enabled = true;
+            rdp.fido2_enabled = true;
+            rdp.load_balance_info = Some("tsv://MS Terminal Services Plugin.1.Sessions".into());
+        }
+        let content = RdpFileExporter::export_to_rdp_content(&conn).unwrap();
+        assert!(content.contains("audiocapturemode:i:1"));
+        assert!(content.contains("redirectsmartcards:i:1"));
+        assert!(content.contains("redirectwebauthn:i:1"));
+        assert!(content.contains("loadbalanceinfo:s:tsv://MS Terminal Services Plugin.1.Sessions"));
+    }
+
+    #[test]
+    fn reconnect_and_keyboard_settings_are_exported() {
+        let conn = make_rdp_connection("Default", "server.example.com", 3389);
+        let content = RdpFileExporter::export_to_rdp_content(&conn).unwrap();
+        assert!(content.contains("autoreconnection enabled:i:1"));
+        assert!(!content.contains("keyboardhook"));
+
+        let mut conn = make_rdp_connection("Local keys", "server.example.com", 3389);
+        if let ProtocolConfig::Rdp(ref mut rdp) = conn.protocol_config {
+            rdp.auto_reconnect = false;
+            rdp.keyboard_hook = Some(crate::models::RdpKeyboardHook::Local);
+        }
+        let content = RdpFileExporter::export_to_rdp_content(&conn).unwrap();
+        assert!(content.contains("autoreconnection enabled:i:0"));
+        assert!(content.contains("keyboardhook:i:0"));
     }
 
     /// Defaults: dynamic resolution on, smart sizing off.

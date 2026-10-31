@@ -334,7 +334,7 @@ impl TerminalNotebook {
         // #197: suspend single-Ctrl accelerators while the viewer has focus.
         self.attach_focus_passthrough(vnc_widget.widget());
         // #356: in passthrough, desktop shortcuts go to the remote desktop too.
-        self.attach_shortcut_inhibit(vnc_widget.widget());
+        self.attach_shortcut_inhibit(vnc_widget.widget(), None);
 
         let container = GtkBox::new(Orientation::Vertical, 0);
         container.set_hexpand(true);
@@ -403,7 +403,7 @@ impl TerminalNotebook {
         // #197: suspend single-Ctrl accelerators while the viewer has focus.
         self.attach_focus_passthrough(widget.widget());
         // #356: in passthrough, desktop shortcuts go to the remote desktop too.
-        self.attach_shortcut_inhibit(widget.widget());
+        self.attach_shortcut_inhibit(widget.widget(), Some(widget.keyboard_hook_cell()));
 
         // Wrap in ToastOverlay for file DnD notifications
         let toast_overlay = libadwaita::ToastOverlay::new();

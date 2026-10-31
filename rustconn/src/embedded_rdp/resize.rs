@@ -22,20 +22,18 @@ use super::types::RdpConnectionState;
 use crate::i18n::i18n;
 
 /// Minimum pixel difference (in device pixels) before triggering an RDP
-/// resolution change on widget resize. Prevents unnecessary resize requests
-/// from minor layout adjustments.
-const RESIZE_THRESHOLD_PX: u32 = 50;
+/// resolution change on widget resize. Absorbs residual layout noise
+/// while allowing small intentional window resizes to adapt smoothly.
+const RESIZE_THRESHOLD_PX: u32 = 8;
 
 /// Minimum change in the widget's *logical* (CSS) size, in pixels, before a
 /// settled resize issues a new remote-resolution request.
 ///
 /// A resolution change can nudge the widget's allocation by a handful of pixels
-/// (toolbar reflow, tab re-measure). Without this dead zone that nudge would be
-/// read as a fresh resize and request another resolution, which nudges again —
-/// an endless ping-pong (observed as the window "breathing" on small sizes).
-/// Comfortably larger than the observed few-pixel jitter, small enough that a
-/// real user drag still registers.
-const RESIZE_HYSTERESIS_CSS_PX: u32 = 48;
+/// (toolbar reflow, tab re-measure). This dead zone prevents that nudge from
+/// triggering another resize request while keeping intentional window resizing
+/// responsive.
+const RESIZE_HYSTERESIS_CSS_PX: u32 = 8;
 
 #[cfg(feature = "rdp-embedded")]
 use rustconn_core::rdp_client::RdpClientCommand;

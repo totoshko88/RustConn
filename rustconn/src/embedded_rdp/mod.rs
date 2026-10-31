@@ -320,6 +320,17 @@ pub struct EmbeddedRdpWidget {
     reconnect_button: Button,
     /// Reconnect timer source ID for debounced resize reconnect
     reconnect_timer: Rc<RefCell<Option<glib::SourceId>>>,
+    /// Automatic reconnection attempts made since the connection dropped; `0`
+    /// while none is under way. Lives on the widget because every attempt is a
+    /// fresh `connect()` with a fresh polling loop.
+    auto_reconnect_attempt: Rc<Cell<u32>>,
+    /// The pending automatic reconnection attempt, cancelled by a manual
+    /// reconnect or a disconnect.
+    auto_reconnect_timer: Rc<RefCell<Option<glib::SourceId>>>,
+    /// Where Windows key combinations go while this viewer has focus
+    /// (`RdpConfig::keyboard_hook`); read by the notebook on every focus
+    /// change, so it may be set after the tab exists.
+    keyboard_hook: Rc<Cell<Option<rustconn_core::models::RdpKeyboardHook>>>,
     /// Remote clipboard text (received from server via CLIPRDR)
     remote_clipboard_text: Rc<RefCell<Option<String>>>,
     /// Available clipboard formats from server
@@ -822,6 +833,9 @@ impl EmbeddedRdpWidget {
             reconnect_label,
             reconnect_button,
             reconnect_timer: Rc::new(RefCell::new(None)),
+            auto_reconnect_attempt: Rc::new(Cell::new(0)),
+            auto_reconnect_timer: Rc::new(RefCell::new(None)),
+            keyboard_hook: Rc::new(Cell::new(None)),
             remote_clipboard_text: Rc::new(RefCell::new(None)),
             remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),
             #[cfg(feature = "rdp-audio")]
@@ -1371,12 +1385,32 @@ impl EmbeddedRdpWidget {
     /// Sets up the reconnect button click handler
     fn setup_reconnect_button(&self) {
         let on_reconnect = self.on_reconnect.clone();
+        let auto_reconnect_attempt = self.auto_reconnect_attempt.clone();
+        let auto_reconnect_timer = self.auto_reconnect_timer.clone();
 
         self.reconnect_button.connect_clicked(move |_| {
+            // A click takes over from automatic reconnection: it connects now,
+            // and a failure is reported instead of starting another wait.
+            auto_reconnect_attempt.set(0);
+            if let Some(timer) = auto_reconnect_timer.borrow_mut().take() {
+                timer.remove();
+            }
             if let Some(ref callback) = *on_reconnect.borrow() {
                 callback();
             }
         });
+    }
+
+    /// Applies the connection's `keyboard_hook` choice. `None` follows the
+    /// application's auto-capture setting.
+    pub fn set_keyboard_hook(&self, hook: Option<rustconn_core::models::RdpKeyboardHook>) {
+        self.keyboard_hook.set(hook);
+    }
+
+    /// The cell the notebook reads the keyboard choice from on focus changes.
+    #[must_use]
+    pub fn keyboard_hook_cell(&self) -> Rc<Cell<Option<rustconn_core::models::RdpKeyboardHook>>> {
+        self.keyboard_hook.clone()
     }
 
     /// Registers GIO actions for the Autotype dropdown menu.
