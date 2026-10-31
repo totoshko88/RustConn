@@ -13795,7 +13795,7 @@ msgstr "Налаштування успадковано від групи «{}»
 
 #: rustconn/src/window/mod.rs:425
 msgid "The setting is the Global Jump Host in Settings."
-msgstr "Це глобальний проміжний вузол у налаштуваннях."
+msgstr "Це глобальний проміжний вузол в Уставах."
 
 #: rustconn/src/window/mod.rs:430
 msgid ""
