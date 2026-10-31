@@ -2391,7 +2391,12 @@ impl TerminalNotebook {
         } else {
             registry.next_after(viewport_top)
         };
-        tracing::debug!(viewport_top, oldest_row, ?target, "scroll_to_adjacent_prompt: computed target");
+        tracing::debug!(
+            viewport_top,
+            oldest_row,
+            ?target,
+            "scroll_to_adjacent_prompt: computed target"
+        );
         if let Some(row) = target {
             adjustment.set_value(row as f64);
         }
