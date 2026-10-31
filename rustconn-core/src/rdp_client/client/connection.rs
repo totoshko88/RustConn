@@ -295,7 +295,7 @@ pub(super) async fn establish_connection(
         match connect_once(&target, redirect.as_ref(), event_tx.clone()).await? {
             Attempt::Connected(setup) => return Ok(*setup),
             Attempt::Redirected(pdu) => {
-                let (next, next_redirect) = follow_redirection(&target, &pdu);
+                let (next, next_redirect) = follow_redirection(&target, *pdu);
                 tracing::info!(
                     protocol = "rdp",
                     from = %target.host,
@@ -351,9 +351,12 @@ enum Attempt {
 /// redirection that only carries a routing token reconnects to the broker.
 /// The port, gateway and credentials stay; a user name or domain in the PDU
 /// replaces the configured one.
+///
+/// Takes the PDU by value so the password cookie can be moved, not copied,
+/// into the zeroizing [`Redirect`].
 fn follow_redirection(
     config: &RdpClientConfig,
-    pdu: &ironrdp_pdu::rdp::server_redirection::ServerRedirectionPdu,
+    mut pdu: ironrdp_pdu::rdp::server_redirection::ServerRedirectionPdu,
 ) -> (RdpClientConfig, Redirect) {
     fn clean(value: Option<&String>) -> Option<String> {
         value
@@ -387,7 +390,8 @@ fn follow_redirection(
             .as_deref()
             .and_then(routing_token_from_bytes),
         session_id: pdu.session_id,
-        password_cookie: pdu.password.clone().map(zeroize::Zeroizing::new),
+        // Moved out of the PDU so the only RustConn-owned copy is wiped on drop.
+        password_cookie: std::mem::take(&mut pdu.password).map(zeroize::Zeroizing::new),
     };
     (next, redirect)
 }
@@ -396,12 +400,81 @@ fn follow_redirection(
 /// routing token the X.224 Connection Request carries, without the CRLF the
 /// encoder appends itself. `None` for bytes that cannot be sent as one.
 fn routing_token_from_bytes(bytes: &[u8]) -> Option<String> {
-    let token = std::str::from_utf8(bytes).ok()?.trim_end_matches("\r\n");
+    printable_routing_token(std::str::from_utf8(bytes).ok()?.trim_end_matches("\r\n"))
+}
+
+/// A routing token the X.224 Connection Request can carry: non-empty,
+/// printable ASCII only. The encoder terminates the token with CRLF itself, so
+/// a CR, LF or any other control byte inside it would end the token early and
+/// smuggle the rest into the request. Applies to the configured broker value
+/// (from the GUI or an imported `.rdp` file) as much as to a broker's own.
+fn printable_routing_token(token: &str) -> Option<String> {
     (!token.is_empty() && token.bytes().all(|byte| (0x20..=0x7E).contains(&byte)))
         .then(|| token.to_owned())
 }
 
-/// One connection attempt: TCP or gateway, TLS, NLA and capabilities.
+/// The Client Cluster Data block (MS-RDPBCGR 2.2.1.3.5) for a connection.
+///
+/// Sent on every connection: `REDIRECTION_SUPPORTED` is how the client tells a
+/// broker it can receive a Server Redirection PDU, and without it a Windows
+/// redirector logs the user on locally instead of redirecting. Only a
+/// redirected hop also names the session the broker chose.
+fn cluster_data(redirect: Option<&Redirect>) -> ironrdp_pdu::gcc::ClientClusterData {
+    use ironrdp_pdu::gcc::{ClientClusterData, RedirectionFlags, RedirectionVersion};
+
+    let (flags, redirected_session_id) = match redirect {
+        Some(redirect) => (
+            RedirectionFlags::REDIRECTION_SUPPORTED
+                | RedirectionFlags::REDIRECTED_SESSION_FIELD_VALID,
+            redirect.session_id,
+        ),
+        None => (RedirectionFlags::REDIRECTION_SUPPORTED, 0),
+    };
+    ClientClusterData {
+        flags,
+        redirection_version: RedirectionVersion::V4,
+        redirected_session_id,
+    }
+}
+
+/// Adds what a connection broker needs to route this connection: the routing
+/// token (the configured value on the first hop, the broker's on a redirected
+/// one), the cluster data and, on a redirected hop, the password cookie.
+fn with_broker_routing(
+    mut connector: ClientConnector,
+    config: &RdpClientConfig,
+    redirect: Option<&Redirect>,
+) -> ClientConnector {
+    let routing_token = match redirect {
+        Some(redirect) => redirect.routing_token.as_deref(),
+        None => config.load_balance_info.as_deref(),
+    }
+    .map(str::trim)
+    .filter(|value| !value.is_empty())
+    .and_then(|value| {
+        let token = printable_routing_token(value);
+        if token.is_none() {
+            tracing::warn!(
+                protocol = "rdp",
+                "Broker routing value is not printable ASCII; not sending it"
+            );
+        }
+        token
+    });
+    if let Some(token) = routing_token {
+        connector = connector.with_load_balance_info(token);
+    }
+    connector = connector.with_cluster_data(cluster_data(redirect));
+    if let Some(cookie) = redirect.and_then(|redirect| redirect.password_cookie.as_ref()) {
+        // ponytail: `.to_vec()` hands ClientConnector a plain copy that RustConn
+        // cannot zeroize, and its derived `Debug` prints it raw. The API takes
+        // an owned `Vec<u8>`; raise upstream (a zeroizing or redacted field in
+        // ironrdp-connector) to close this.
+        connector = connector.with_redirection_password_cookie(cookie.to_vec());
+    }
+    connector
+}
+
 /// Opens the direct TCP connection to the RDP host.
 async fn connect_direct(
     config: &RdpClientConfig,
@@ -428,6 +501,11 @@ async fn connect_direct(
     Ok((GatewayOrTcp::Tcp(stream), addr))
 }
 
+/// One connection attempt: TCP or gateway, TLS, NLA and capabilities.
+///
+/// `redirect` is set on a hop that follows a broker's Server Redirection.
+/// Returns [`Attempt::Redirected`] when the server redirects this connection
+/// in turn, so the caller can follow it.
 #[expect(
     clippy::too_many_lines,
     reason = "long match/dispatch over many enum variants; splitting per variant only relocates the boilerplate"
@@ -534,32 +612,11 @@ async fn connect_once(
 
     // Phase 2: Build IronRDP connector configuration
     let connector_config = build_connector_config(config);
-    let mut connector = ClientConnector::new(connector_config, client_addr);
-
-    // Routing to the right session host: the configured broker routing value
-    // on the first connection, then what the broker's redirection asks for.
-    let routing_token = redirect
-        .map_or_else(
-            || config.load_balance_info.clone(),
-            |redirect| redirect.routing_token.clone(),
-        )
-        .map(|token| token.trim().to_owned())
-        .filter(|token| !token.is_empty());
-    if let Some(token) = routing_token {
-        connector = connector.with_load_balance_info(token);
-    }
-    if let Some(redirect) = redirect {
-        use ironrdp_pdu::gcc::{ClientClusterData, RedirectionFlags, RedirectionVersion};
-        connector = connector.with_cluster_data(ClientClusterData {
-            flags: RedirectionFlags::REDIRECTION_SUPPORTED
-                | RedirectionFlags::REDIRECTED_SESSION_FIELD_VALID,
-            redirection_version: RedirectionVersion::V4,
-            redirected_session_id: redirect.session_id,
-        });
-        if let Some(cookie) = redirect.password_cookie.as_ref() {
-            connector = connector.with_redirection_password_cookie(cookie.to_vec());
-        }
-    }
+    let mut connector = with_broker_routing(
+        ClientConnector::new(connector_config, client_addr),
+        config,
+        redirect,
+    );
 
     // Phase 2.5: Add clipboard channel if enabled
     if config.clipboard_direction.enabled() {
@@ -1145,7 +1202,7 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
         pointer_software_rendering: false,
         // Multitransport (UDP sideband) — not implemented yet
         multitransport_flags: None,
-        // Set once the EGFX channel is registered (`connect_with_stream`):
+        // Set once the EGFX channel is registered (`connect_once`):
         // advertising the graphics pipeline without a processor for it leaves
         // the desktop blank.
         support_dyn_vc_gfx_protocol: false,
@@ -1287,7 +1344,7 @@ mod tests {
             domain: Some("CORP".to_string()),
             ..ServerRedirectionPdu::default()
         };
-        let (next, redirect) = follow_redirection(&broker, &pdu);
+        let (next, redirect) = follow_redirection(&broker, pdu);
         assert_eq!(
             next.host, "host7.corp.example",
             "FQDN wins over the address"
@@ -1318,8 +1375,82 @@ mod tests {
             load_balance_info: Some(b"Cookie: msts=9\r\n".to_vec()),
             ..ServerRedirectionPdu::default()
         };
-        let (same, _) = follow_redirection(&broker, &token_only);
+        let (same, _) = follow_redirection(&broker, token_only);
         assert_eq!(same.host, "broker.corp.example");
+    }
+
+    /// The first connection must tell a broker it can be redirected, or the
+    /// broker logs the user on locally and redirection never happens.
+    #[test]
+    fn every_connection_advertises_redirection_support() {
+        use ironrdp_pdu::gcc::{RedirectionFlags, RedirectionVersion};
+
+        let first = cluster_data(None);
+        assert!(
+            first
+                .flags
+                .contains(RedirectionFlags::REDIRECTION_SUPPORTED)
+        );
+        assert!(
+            !first
+                .flags
+                .contains(RedirectionFlags::REDIRECTED_SESSION_FIELD_VALID)
+        );
+        assert_eq!(first.redirection_version, RedirectionVersion::V4);
+        assert_eq!(first.redirected_session_id, 0);
+
+        let redirect = Redirect {
+            routing_token: None,
+            session_id: 42,
+            password_cookie: None,
+        };
+        let hop = cluster_data(Some(&redirect));
+        assert!(hop.flags.contains(
+            RedirectionFlags::REDIRECTION_SUPPORTED
+                | RedirectionFlags::REDIRECTED_SESSION_FIELD_VALID
+        ));
+        assert_eq!(hop.redirected_session_id, 42);
+
+        // The connector built for a first hop carries the block.
+        let config = RdpClientConfig::new("broker.corp.example");
+        let connector = with_broker_routing(
+            ClientConnector::new(
+                build_connector_config(&config),
+                SocketAddr::from(([127, 0, 0, 1], 0)),
+            ),
+            &config,
+            None,
+        );
+        let debug = format!("{connector:?}");
+        assert!(
+            debug.contains("cluster_data: Some(") && debug.contains("REDIRECTION_SUPPORTED"),
+            "first hop must send ClientClusterData with REDIRECTION_SUPPORTED: {debug}"
+        );
+        assert!(!debug.contains("REDIRECTED_SESSION_FIELD_VALID"));
+    }
+
+    #[test]
+    fn a_configured_routing_value_must_be_printable() {
+        assert_eq!(
+            printable_routing_token("tsv://MS Terminal Services Plugin.1.Sessions").as_deref(),
+            Some("tsv://MS Terminal Services Plugin.1.Sessions")
+        );
+        assert_eq!(printable_routing_token("a\r\nInjected: header"), None);
+        assert_eq!(printable_routing_token("tab\there"), None);
+        assert_eq!(printable_routing_token("ünïcode"), None);
+        assert_eq!(printable_routing_token(""), None);
+
+        let mut config = RdpClientConfig::new("broker.corp.example");
+        config.load_balance_info = Some("bad\r\nvalue".to_string());
+        let connector = with_broker_routing(
+            ClientConnector::new(
+                build_connector_config(&config),
+                SocketAddr::from(([127, 0, 0, 1], 0)),
+            ),
+            &config,
+            None,
+        );
+        assert!(format!("{connector:?}").contains("load_balance_info: None"));
     }
 
     #[test]
