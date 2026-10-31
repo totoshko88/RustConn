@@ -766,7 +766,7 @@ pub(super) fn create_rdp_options() -> (
         .valign(gtk4::Align::Center)
         .build();
     let load_balance_row = adw::ActionRow::builder()
-        .title(i18n("Load Balance Info"))
+        .title(i18n("Broker Routing Value"))
         .subtitle(i18n(
             "Connection broker routing value (loadbalanceinfo) from an .rdp file",
         ))
