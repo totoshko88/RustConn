@@ -415,8 +415,6 @@ pub struct FrameStatistics {
     pub bytes_received: u64,
     /// Average decode time in microseconds
     pub avg_decode_time_us: u64,
-    /// H.264 decode/blit time in microseconds (exponential moving average, alpha=0.1)
-    pub h264_decode_time_us: u64,
     /// Currently active graphics pipeline mode.
     ///
     /// Do not populate this from `cfg!(feature = ...)`: the session loop used to
@@ -445,7 +443,6 @@ impl FrameStatistics {
             frames_dropped: 0,
             bytes_received: 0,
             avg_decode_time_us: 0,
-            h264_decode_time_us: 0,
             active_graphics_mode: GraphicsMode::Auto,
             current_fps: 0.0,
             peak_fps: 0.0,
@@ -492,23 +489,11 @@ impl FrameStatistics {
             if drop_rate > 0.05 {
                 tracing::warn!(
                     drop_rate_percent = format_args!("{:.1}", drop_rate * 100.0),
-                    avg_decode_time_us = self.h264_decode_time_us,
+                    avg_decode_time_us = self.avg_decode_time_us,
                     current_fps = format_args!("{:.1}", self.current_fps),
                     "Frame drop rate exceeds 5% threshold"
                 );
             }
-        }
-    }
-
-    /// Updates the H.264 decode/blit time EMA (exponential moving average, alpha=0.1)
-    ///
-    /// Call this with each measured blit duration in microseconds.
-    pub fn update_h264_decode_time(&mut self, sample_us: u64) {
-        if self.h264_decode_time_us == 0 {
-            self.h264_decode_time_us = sample_us;
-        } else {
-            // EMA: alpha=0.1 → new/10 + old*9/10
-            self.h264_decode_time_us = (sample_us / 10) + (self.h264_decode_time_us * 9 / 10);
         }
     }
 

@@ -197,11 +197,12 @@ pub(super) async fn run_active_session(
                 }
             }
 
-            // Branch 3: expire clipboard requests the server never answered.
+            // Branch 3: report shared-folder changes the directory watcher collected.
             _ = directory_changes.tick() => {
                 send_directory_changes(&mut active_stage, &mut writer).await;
             }
 
+            // Branch 4: expire clipboard requests the server never answered.
             _ = clipboard_timeouts.tick() => {
                 super::commands::drive_clipboard_timeouts(&mut active_stage, &mut writer).await;
             }
@@ -209,6 +210,58 @@ pub(super) async fn run_active_session(
     }
 
     Ok(())
+}
+
+/// Answers the shared-folder change notifications the directory watcher has
+/// collected (`RustConnRdpdrBackend::poll_directory_changes`).
+async fn send_directory_changes(active_stage: &mut ActiveStage, writer: &mut impl FramedWrite) {
+    let Some(backend) = active_stage
+        .get_svc_processor_mut::<ironrdp_rdpdr::Rdpdr>()
+        .and_then(|rdpdr| {
+            rdpdr.downcast_backend_mut::<crate::rdp_client::rdpdr::RustConnRdpdrBackend>()
+        })
+    else {
+        return;
+    };
+    let messages = backend.poll_directory_changes();
+    if messages.is_empty() {
+        return;
+    }
+    let messages = ironrdp_svc::SvcProcessorMessages::<ironrdp_rdpdr::Rdpdr>::new(messages);
+    match active_stage.process_svc_processor_messages(messages) {
+        Ok(frame) => {
+            if let Err(e) = writer.write_all(&frame).await {
+                tracing::warn!(error = %e, "Failed to send directory change notifications");
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "Failed to encode directory change notifications"),
+    }
+}
+
+/// Logs the session outputs a desktop session has no use for: no RemoteApp
+/// windows, one monitor, and no automatic reconnection cookie — the GUI
+/// reconnects with the stored credentials instead.
+fn log_session_notice(output: &ActiveStageOutput) {
+    match output {
+        ActiveStageOutput::SaveSessionInfo { .. } | ActiveStageOutput::SessionId(_) => {
+            tracing::debug!("Server sent session information");
+        }
+        ActiveStageOutput::LogonErrors(info) => {
+            tracing::debug!(?info, "Server reported a logon notification");
+        }
+        _ => {}
+    }
+}
+
+/// Waits for the next batch of microphone messages, or forever when the
+/// connection has no microphone, so the `select!` branch never fires.
+async fn next_microphone_messages(
+    uplink: &mut Option<tokio::sync::mpsc::UnboundedReceiver<Vec<ironrdp_svc::SvcMessage>>>,
+) -> Option<Vec<ironrdp_svc::SvcMessage>> {
+    match uplink {
+        Some(rx) => rx.recv().await,
+        None => std::future::pending().await,
+    }
 }
 
 /// Whether a PDU that `ActiveStage::process` rejected arrived on the MCS message
@@ -269,58 +322,6 @@ pub(super) async fn run_active_session(
 ///
 /// [IronRDP#1814]: https://github.com/Devolutions/IronRDP/pull/1814
 /// [IronRDP#1629]: https://github.com/Devolutions/IronRDP/issues/1629
-/// Answers the shared-folder change notifications the directory watcher has
-/// collected (`RustConnRdpdrBackend::poll_directory_changes`).
-async fn send_directory_changes(active_stage: &mut ActiveStage, writer: &mut impl FramedWrite) {
-    let Some(backend) = active_stage
-        .get_svc_processor_mut::<ironrdp_rdpdr::Rdpdr>()
-        .and_then(|rdpdr| {
-            rdpdr.downcast_backend_mut::<crate::rdp_client::rdpdr::RustConnRdpdrBackend>()
-        })
-    else {
-        return;
-    };
-    let messages = backend.poll_directory_changes();
-    if messages.is_empty() {
-        return;
-    }
-    let messages = ironrdp_svc::SvcProcessorMessages::<ironrdp_rdpdr::Rdpdr>::new(messages);
-    match active_stage.process_svc_processor_messages(messages) {
-        Ok(frame) => {
-            if let Err(e) = writer.write_all(&frame).await {
-                tracing::warn!(error = %e, "Failed to send directory change notifications");
-            }
-        }
-        Err(e) => tracing::warn!(error = %e, "Failed to encode directory change notifications"),
-    }
-}
-
-/// Logs the session outputs a desktop session has no use for: no RemoteApp
-/// windows, one monitor, and no automatic reconnection cookie — the GUI
-/// reconnects with the stored credentials instead.
-fn log_session_notice(output: &ActiveStageOutput) {
-    match output {
-        ActiveStageOutput::SaveSessionInfo { .. } | ActiveStageOutput::SessionId(_) => {
-            tracing::debug!("Server sent session information");
-        }
-        ActiveStageOutput::LogonErrors(info) => {
-            tracing::debug!(?info, "Server reported a logon notification");
-        }
-        _ => {}
-    }
-}
-
-/// Waits for the next batch of microphone messages, or forever when the
-/// connection has no microphone, so the `select!` branch never fires.
-async fn next_microphone_messages(
-    uplink: &mut Option<tokio::sync::mpsc::UnboundedReceiver<Vec<ironrdp_svc::SvcMessage>>>,
-) -> Option<Vec<ironrdp_svc::SvcMessage>> {
-    match uplink {
-        Some(rx) => rx.recv().await,
-        None => std::future::pending().await,
-    }
-}
-
 fn is_ignorable_message_channel_pdu(
     action: ironrdp_pdu::Action,
     payload: &[u8],

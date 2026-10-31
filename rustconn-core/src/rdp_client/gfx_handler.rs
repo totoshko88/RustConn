@@ -57,8 +57,6 @@ pub struct RustConnGfxHandler {
     decode_failure_reported: bool,
     /// Surface updates dropped because their codec has no decoder
     unsupported_codec_frames: u32,
-    /// Whether the EGFX pipeline has completed capability negotiation
-    active: bool,
 }
 
 impl RustConnGfxHandler {
@@ -70,14 +68,7 @@ impl RustConnGfxHandler {
             consecutive_empty: 0,
             decode_failure_reported: false,
             unsupported_codec_frames: 0,
-            active: false,
         }
-    }
-
-    /// Returns whether the EGFX pipeline is active (capabilities confirmed).
-    #[must_use]
-    pub const fn is_active(&self) -> bool {
-        self.active
     }
 
     /// Records surface content the pipeline has no decoder for, and reports it
@@ -131,7 +122,6 @@ impl RustConnGfxHandler {
 
 impl GraphicsPipelineHandler for RustConnGfxHandler {
     fn on_capabilities_confirmed(&mut self, caps: &CapabilitySet) {
-        self.active = true;
         let mode = negotiated_graphics_mode(caps);
         tracing::info!(?caps, ?mode, "EGFX capabilities confirmed");
         // Tell the GUI what really negotiated. Until 0.19.15 the status bar
@@ -181,7 +171,6 @@ impl GraphicsPipelineHandler for RustConnGfxHandler {
     }
 
     fn on_close(&mut self) {
-        self.active = false;
         tracing::info!("EGFX channel closed");
     }
 }
@@ -865,20 +854,6 @@ mod tests {
         // Reported once, not on every subsequent frame.
         handler.on_unhandled_pdu(&pdu);
         assert!(event_rx.try_recv().is_err(), "must report only once");
-    }
-
-    #[test]
-    fn handler_activation() {
-        let (mut handler, _event_rx) = test_handler();
-        assert!(!handler.is_active());
-
-        handler.on_capabilities_confirmed(&CapabilitySet::V8 {
-            flags: ironrdp_egfx::pdu::CapabilitiesV8Flags::SMALL_CACHE,
-        });
-        assert!(handler.is_active());
-
-        handler.on_close();
-        assert!(!handler.is_active());
     }
 
     /// A run of empty bitmap updates reports a persistent decode failure once.
