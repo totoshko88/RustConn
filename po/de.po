@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 16:22-0500\n"
+"POT-Creation-Date: 2026-11-01 00:08+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -61,9 +61,9 @@ msgstr "OK"
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3464
 #: rustconn/src/window/mod.rs:3528 rustconn/src/window/mod.rs:4486
-#: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
-#: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
-#: rustconn/src/window/workspaces.rs:554
+#: rustconn/src/window/mod.rs:5537 rustconn/src/window/operations.rs:116
+#: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
+#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -229,7 +229,7 @@ msgstr "‚{}‘ benötigt Folgendes, bevor eine Verbindung möglich ist."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:614
 #: rustconn/src/sidebar_ui.rs:396 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:777
-#: rustconn/src/window/edit_dialogs.rs:778
+#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/mod.rs:5538
 msgid "Connect"
 msgstr "Verbinden"
 
@@ -2649,7 +2649,7 @@ msgstr "Druckerumleitung"
 msgid "Share your local printer with the remote session"
 msgstr "Ihren lokalen Drucker mit der Remote-Sitzung teilen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:339
+#: rustconn/src/dialogs/connection/rdp.rs:339 rustconn/src/window/mod.rs:5511
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2657,7 +2657,7 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Lokales Mikrofon an die Remote-Sitzung senden"
 
-#: rustconn/src/dialogs/connection/rdp.rs:349
+#: rustconn/src/dialogs/connection/rdp.rs:349 rustconn/src/window/mod.rs:5514
 msgid "Smart Cards"
 msgstr "Smartcards"
 
@@ -3000,8 +3000,8 @@ msgid "Jump Host"
 msgstr "Sprunghost"
 
 #: rustconn/src/dialogs/connection/rdp.rs:769
-msgid "Load Balance Info"
-msgstr "Lastenausgleichsinformationen"
+msgid "Broker Routing Value"
+msgstr "Broker-Routingwert"
 
 #: rustconn/src/dialogs/connection/rdp.rs:771
 msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
@@ -3598,7 +3598,7 @@ msgstr "SSH-Agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
-#: rustconn/src/dialogs/template.rs:635
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5517
 msgid "Security Key (FIDO2)"
 msgstr "Sicherheitsschlüssel (FIDO2)"
 
@@ -7317,7 +7317,7 @@ msgid "Keybindings"
 msgstr "Tastenkürzel"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:305
+#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:307
 #: rustconn/src/split_view/bridge.rs:2018
 msgid "Keyboard Shortcuts"
 msgstr "Tastenkürzel"
@@ -9583,7 +9583,7 @@ msgstr "Nächster Tab"
 msgid "Previous Tab"
 msgstr "Vorheriger Tab"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:525
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:546
 msgid "Tab Overview"
 msgstr "Tab-Übersicht"
 
@@ -9595,65 +9595,73 @@ msgstr "Tab wechseln"
 msgid "Move Session to New Window"
 msgstr "Sitzung in neues Fenster verschieben"
 
+#: rustconn/src/dialogs/shortcuts.rs:189
+msgid "Previous Prompt"
+msgstr "Vorherige Eingabeaufforderung"
+
 #: rustconn/src/dialogs/shortcuts.rs:190
+msgid "Next Prompt"
+msgstr "Nächste Eingabeaufforderung"
+
+#: rustconn/src/dialogs/shortcuts.rs:192
 msgid "Split Horizontal"
 msgstr "Horizontal teilen"
 
-#: rustconn/src/dialogs/shortcuts.rs:191
+#: rustconn/src/dialogs/shortcuts.rs:193
 msgid "Split Vertical"
 msgstr "Vertikal teilen"
 
-#: rustconn/src/dialogs/shortcuts.rs:192
+#: rustconn/src/dialogs/shortcuts.rs:194
 msgid "Close Pane"
 msgstr "Bereich schließen"
 
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/sidebar_ui.rs:470
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:470
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Aus geteilter Ansicht entfernen"
 
-#: rustconn/src/dialogs/shortcuts.rs:194
+#: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1200
 msgid "Remove Split"
 msgstr "Teilung entfernen"
 
-#: rustconn/src/dialogs/shortcuts.rs:195
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Focus Next Pane"
 msgstr "Nächsten Bereich fokussieren"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Reconnect Session"
 msgstr "Sitzung neu verbinden"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:200
 msgid "Toggle Fullscreen"
 msgstr "Vollbild umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Seitenleiste umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:200
+#: rustconn/src/dialogs/shortcuts.rs:202
 msgid "Toggle Compact Interface"
 msgstr "Kompakte Oberfläche umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:201
+#: rustconn/src/dialogs/shortcuts.rs:203
 msgid "Toggle Keyboard Passthrough"
 msgstr "Tastaturweiterleitung umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:204
 msgid "Toggle Split Broadcast"
 msgstr "Übertragung an geteilte Ansicht umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:205
 msgid "Toggle Group Broadcast"
 msgstr "Gruppen-Broadcast umschalten"
 
-#: rustconn/src/dialogs/shortcuts.rs:331
+#: rustconn/src/dialogs/shortcuts.rs:333
 msgid "Search shortcuts…"
 msgstr "Tastenkürzel suchen…"
 
@@ -11498,14 +11506,14 @@ msgstr "Dateien aus Remote-Zwischenablage speichern"
 
 #: rustconn/src/embedded_rdp/mod.rs:775 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1439
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1469
 #: rustconn/src/terminal/session_lifecycle.rs:401
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr "Neu verbinden"
 
 #: rustconn/src/embedded_rdp/mod.rs:777 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1441
+#: rustconn/src/terminal/mod.rs:1471
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Erneut mit dieser Sitzung verbinden"
@@ -11599,13 +11607,13 @@ msgstr "RTT: {} ms | {} | MPTCP"
 msgid "RTT: {} ms | {}"
 msgstr "RTT: {} ms | {}"
 
-#: rustconn/src/embedded_rdp/resize.rs:224
-#: rustconn/src/embedded_rdp/resize.rs:429
+#: rustconn/src/embedded_rdp/resize.rs:226
+#: rustconn/src/embedded_rdp/resize.rs:431
 msgid "Resizing…"
 msgstr "Größenanpassung…"
 
-#: rustconn/src/embedded_rdp/resize.rs:252
-#: rustconn/src/embedded_rdp/resize.rs:447
+#: rustconn/src/embedded_rdp/resize.rs:254
+#: rustconn/src/embedded_rdp/resize.rs:449
 msgid "Reconnecting…"
 msgstr "Verbindung wird wiederhergestellt…"
 
@@ -12513,33 +12521,33 @@ msgstr "Tab zur Anzeige auswählen"
 msgid "Execute Snippet…"
 msgstr "Snippet ausführen…"
 
-#: rustconn/src/terminal/mod.rs:521
+#: rustconn/src/terminal/mod.rs:542
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Tab-Übersicht (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:538 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:559 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Willkommen"
 
-#: rustconn/src/terminal/mod.rs:1083
+#: rustconn/src/terminal/mod.rs:1113
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Der Ausgabefilter „{}“ ist nicht installiert; die Sitzungsausgabe wird nicht "
 "gefiltert"
 
-#: rustconn/src/terminal/mod.rs:1433
+#: rustconn/src/terminal/mod.rs:1463
 msgid "Command not found: {}"
 msgstr "Befehl nicht gefunden: {}"
 
-#: rustconn/src/terminal/mod.rs:1435
+#: rustconn/src/terminal/mod.rs:1465
 msgid "Failed to start '{}'"
 msgstr "Start von „{}“ fehlgeschlagen"
 
-#: rustconn/src/terminal/mod.rs:1457
+#: rustconn/src/terminal/mod.rs:1487
 msgid "'{}' is not installed"
 msgstr "„{}“ ist nicht installiert"
 
-#: rustconn/src/terminal/mod.rs:1460
+#: rustconn/src/terminal/mod.rs:1490
 msgid "Failed to start '{}': {}"
 msgstr "Start von „{}“ fehlgeschlagen: {}"
 
@@ -12812,7 +12820,7 @@ msgstr "{} aktive Sitzung(en)"
 msgid "About RustConn"
 msgstr "Über RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5454
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5494
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Passphrase öffnet die portable Datei nicht"
 
@@ -14129,27 +14137,27 @@ msgstr "Cloud-Synchronisierung für „{}“ fehlgeschlagen: {}"
 msgid "Startup connection not found"
 msgstr "Startverbindung nicht gefunden"
 
-#: rustconn/src/window/mod.rs:4768
+#: rustconn/src/window/mod.rs:4808
 msgid "Failed to open .rdp file"
 msgstr "Fehler beim Öffnen der .rdp-Datei"
 
-#: rustconn/src/window/mod.rs:4804
+#: rustconn/src/window/mod.rs:4844
 msgid "Failed to open .vv file"
 msgstr "Fehler beim Öffnen der .vv-Datei"
 
-#: rustconn/src/window/mod.rs:4841
+#: rustconn/src/window/mod.rs:4881
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunnel “{}” gestoppt: {}"
 
-#: rustconn/src/window/mod.rs:4857
+#: rustconn/src/window/mod.rs:4897
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Wiederverbinden des Tunnels “{}” aufgegeben: {}"
 
-#: rustconn/src/window/mod.rs:5370
+#: rustconn/src/window/mod.rs:5410
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Erfolgreich {} Verbindung(en) exportiert. {} übersprungen."
 
-#: rustconn/src/window/mod.rs:5456
+#: rustconn/src/window/mod.rs:5496
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14159,6 +14167,24 @@ msgstr ""
 "nicht, daher lässt sich keines der darin enthaltenen Passwörter lesen. "
 "Öffnen Sie Einstellungen ▸ Geheimnisse und geben Sie die Passphrase ein, mit "
 "der die Datei erstellt wurde."
+
+#: rustconn/src/window/mod.rs:5531
+msgid "Share Local Devices?"
+msgstr "Lokale Geräte freigeben?"
+
+#: rustconn/src/window/mod.rs:5533
+msgid ""
+"The file {} asks to share these devices with {}:\n"
+"\n"
+"{}\n"
+"\n"
+"Connect only if you trust where the file came from."
+msgstr ""
+"Die Datei {} möchte diese Geräte für {} freigeben:\n"
+"\n"
+"{}\n"
+"\n"
+"Verbinden Sie sich nur, wenn Sie der Herkunft der Datei vertrauen."
 
 #: rustconn/src/window/navigation_actions.rs:230
 msgid "Keyboard passthrough enabled — shortcuts disabled"
@@ -14672,7 +14698,7 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "Benutzer: {}"
 
-#: rustconn/src/window/terminal_actions.rs:390
+#: rustconn/src/window/terminal_actions.rs:407
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -14680,7 +14706,7 @@ msgstr ""
 "Aufzeichnung für „{}“ konnte nicht gestartet werden – der "
 "Aufzeichnungsordner fehlt oder ist nicht beschreibbar"
 
-#: rustconn/src/window/terminal_actions.rs:454
+#: rustconn/src/window/terminal_actions.rs:471
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr ""
 "Dieser Viewer läuft eigenständig und kann nicht aus RustConn geschlossen "
@@ -14886,6 +14912,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;verbindung;terminal;remote;kubernetes;k8s;seriell;sftp;"
+
+#~ msgid "Load Balance Info"
+#~ msgstr "Lastenausgleichsinformationen"
 
 #~ msgid ""
 #~ "Connection broker routing value (loadbalanceinfo) from an .rdp file "

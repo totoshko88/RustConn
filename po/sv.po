@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 16:22-0500\n"
+"POT-Creation-Date: 2026-11-01 00:08+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -61,9 +61,9 @@ msgstr "OK"
 #: rustconn/src/window/group_broadcast.rs:379
 #: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3464
 #: rustconn/src/window/mod.rs:3528 rustconn/src/window/mod.rs:4486
-#: rustconn/src/window/operations.rs:116 rustconn/src/window/operations.rs:487
-#: rustconn/src/window/operations.rs:670 rustconn/src/window/sessions.rs:339
-#: rustconn/src/window/workspaces.rs:554
+#: rustconn/src/window/mod.rs:5537 rustconn/src/window/operations.rs:116
+#: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
+#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -229,7 +229,7 @@ msgstr "”{}” behöver följande innan anslutning kan ske."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:614
 #: rustconn/src/sidebar_ui.rs:396 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:777
-#: rustconn/src/window/edit_dialogs.rs:778
+#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/mod.rs:5538
 msgid "Connect"
 msgstr "Anslut"
 
@@ -2633,7 +2633,7 @@ msgstr "Skrivaromdirigering"
 msgid "Share your local printer with the remote session"
 msgstr "Dela din lokala skrivare med fjärrsessionen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:339
+#: rustconn/src/dialogs/connection/rdp.rs:339 rustconn/src/window/mod.rs:5511
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2641,7 +2641,7 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Skicka den lokala mikrofonen till fjärrsessionen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:349
+#: rustconn/src/dialogs/connection/rdp.rs:349 rustconn/src/window/mod.rs:5514
 msgid "Smart Cards"
 msgstr "Smartkort"
 
@@ -2975,8 +2975,8 @@ msgid "Jump Host"
 msgstr "Mellanvärd"
 
 #: rustconn/src/dialogs/connection/rdp.rs:769
-msgid "Load Balance Info"
-msgstr "Lastbalanseringsinformation"
+msgid "Broker Routing Value"
+msgstr "Routningsvärde för mäklare"
 
 #: rustconn/src/dialogs/connection/rdp.rs:771
 msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
@@ -3569,7 +3569,7 @@ msgstr "SSH-agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
-#: rustconn/src/dialogs/template.rs:635
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5517
 msgid "Security Key (FIDO2)"
 msgstr "Säkerhetsnyckel (FIDO2)"
 
@@ -7236,7 +7236,7 @@ msgid "Keybindings"
 msgstr "Tangentbordsgenvägar"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:305
+#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:307
 #: rustconn/src/split_view/bridge.rs:2018
 msgid "Keyboard Shortcuts"
 msgstr "Tangentbordsgenvägar"
@@ -9483,7 +9483,7 @@ msgstr "Nästa flik"
 msgid "Previous Tab"
 msgstr "Föregående flik"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:525
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:546
 msgid "Tab Overview"
 msgstr "Fliköversikt"
 
@@ -9495,65 +9495,73 @@ msgstr "Växla flik"
 msgid "Move Session to New Window"
 msgstr "Flytta sessionen till ett nytt fönster"
 
+#: rustconn/src/dialogs/shortcuts.rs:189
+msgid "Previous Prompt"
+msgstr "Föregående prompt"
+
 #: rustconn/src/dialogs/shortcuts.rs:190
+msgid "Next Prompt"
+msgstr "Nästa prompt"
+
+#: rustconn/src/dialogs/shortcuts.rs:192
 msgid "Split Horizontal"
 msgstr "Dela horisontellt"
 
-#: rustconn/src/dialogs/shortcuts.rs:191
+#: rustconn/src/dialogs/shortcuts.rs:193
 msgid "Split Vertical"
 msgstr "Dela vertikalt"
 
-#: rustconn/src/dialogs/shortcuts.rs:192
+#: rustconn/src/dialogs/shortcuts.rs:194
 msgid "Close Pane"
 msgstr "Stäng panelen"
 
-#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/sidebar_ui.rs:470
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:470
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Ta bort från delad vy"
 
-#: rustconn/src/dialogs/shortcuts.rs:194
+#: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1200
 msgid "Remove Split"
 msgstr "Ta bort delning"
 
-#: rustconn/src/dialogs/shortcuts.rs:195
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Focus Next Pane"
 msgstr "Fokusera nästa panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Reconnect Session"
 msgstr "Återanslut session"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:200
 msgid "Toggle Fullscreen"
 msgstr "Växla helskärm"
 
-#: rustconn/src/dialogs/shortcuts.rs:199 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Växla sidopanel"
 
-#: rustconn/src/dialogs/shortcuts.rs:200
+#: rustconn/src/dialogs/shortcuts.rs:202
 msgid "Toggle Compact Interface"
 msgstr "Växla kompakt gränssnitt"
 
-#: rustconn/src/dialogs/shortcuts.rs:201
+#: rustconn/src/dialogs/shortcuts.rs:203
 msgid "Toggle Keyboard Passthrough"
 msgstr "Växla tangentbordsgenomsläpp"
 
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:204
 msgid "Toggle Split Broadcast"
 msgstr "Växla sändning i delad vy"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:205
 msgid "Toggle Group Broadcast"
 msgstr "Växla gruppsändning"
 
-#: rustconn/src/dialogs/shortcuts.rs:331
+#: rustconn/src/dialogs/shortcuts.rs:333
 msgid "Search shortcuts…"
 msgstr "Sök genvägar…"
 
@@ -11367,14 +11375,14 @@ msgstr "Spara filer från fjärrurklipp"
 
 #: rustconn/src/embedded_rdp/mod.rs:775 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1439
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1469
 #: rustconn/src/terminal/session_lifecycle.rs:401
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr "Återanslut"
 
 #: rustconn/src/embedded_rdp/mod.rs:777 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1441
+#: rustconn/src/terminal/mod.rs:1471
 #: rustconn/src/terminal/session_lifecycle.rs:403
 msgid "Reconnect to this session"
 msgstr "Återanslut till denna session"
@@ -11464,13 +11472,13 @@ msgstr "RTT: {} ms | {} | MPTCP"
 msgid "RTT: {} ms | {}"
 msgstr "RTT: {} ms | {}"
 
-#: rustconn/src/embedded_rdp/resize.rs:224
-#: rustconn/src/embedded_rdp/resize.rs:429
+#: rustconn/src/embedded_rdp/resize.rs:226
+#: rustconn/src/embedded_rdp/resize.rs:431
 msgid "Resizing…"
 msgstr "Ändrar storlek…"
 
-#: rustconn/src/embedded_rdp/resize.rs:252
-#: rustconn/src/embedded_rdp/resize.rs:447
+#: rustconn/src/embedded_rdp/resize.rs:254
+#: rustconn/src/embedded_rdp/resize.rs:449
 msgid "Reconnecting…"
 msgstr "Återansluter…"
 
@@ -12375,32 +12383,32 @@ msgstr "Välj en flik att visa"
 msgid "Execute Snippet…"
 msgstr "Kör kodsnutt…"
 
-#: rustconn/src/terminal/mod.rs:521
+#: rustconn/src/terminal/mod.rs:542
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Fliköversikt (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:538 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:559 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Välkommen"
 
-#: rustconn/src/terminal/mod.rs:1083
+#: rustconn/src/terminal/mod.rs:1113
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Utdatafiltret ”{}” är inte installerat; sessionens utdata filtreras inte"
 
-#: rustconn/src/terminal/mod.rs:1433
+#: rustconn/src/terminal/mod.rs:1463
 msgid "Command not found: {}"
 msgstr "Kommandot hittades inte: {}"
 
-#: rustconn/src/terminal/mod.rs:1435
+#: rustconn/src/terminal/mod.rs:1465
 msgid "Failed to start '{}'"
 msgstr "Det gick inte att starta ”{}”"
 
-#: rustconn/src/terminal/mod.rs:1457
+#: rustconn/src/terminal/mod.rs:1487
 msgid "'{}' is not installed"
 msgstr "”{}” är inte installerat"
 
-#: rustconn/src/terminal/mod.rs:1460
+#: rustconn/src/terminal/mod.rs:1490
 msgid "Failed to start '{}': {}"
 msgstr "Det gick inte att starta ”{}”: {}"
 
@@ -12673,7 +12681,7 @@ msgstr "{} aktiv(a) session(er)"
 msgid "About RustConn"
 msgstr "Om RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5454
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5494
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Lösenfrasen öppnar inte den portabla filen"
 
@@ -13961,27 +13969,27 @@ msgstr "Molnsynkronisering misslyckades för '{}': {}"
 msgid "Startup connection not found"
 msgstr "Uppstartsanslutning hittades inte"
 
-#: rustconn/src/window/mod.rs:4768
+#: rustconn/src/window/mod.rs:4808
 msgid "Failed to open .rdp file"
 msgstr "Kunde inte öppna .rdp-fil"
 
-#: rustconn/src/window/mod.rs:4804
+#: rustconn/src/window/mod.rs:4844
 msgid "Failed to open .vv file"
 msgstr "Kunde inte öppna .vv-fil"
 
-#: rustconn/src/window/mod.rs:4841
+#: rustconn/src/window/mod.rs:4881
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunneln “{}” stoppades: {}"
 
-#: rustconn/src/window/mod.rs:4857
+#: rustconn/src/window/mod.rs:4897
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Gav upp att återansluta tunneln “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5370
+#: rustconn/src/window/mod.rs:5410
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Exporterade {} anslutning(ar). {} hoppades över."
 
-#: rustconn/src/window/mod.rs:5456
+#: rustconn/src/window/mod.rs:5496
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13990,6 +13998,24 @@ msgstr ""
 "Den lösenfras du sparade dekrypterar inte den portabla inloggningsfilen, så "
 "inga av lösenorden i den kan läsas. Öppna Inställningar ▸ Hemligheter och "
 "ange den lösenfras filen skapades med."
+
+#: rustconn/src/window/mod.rs:5531
+msgid "Share Local Devices?"
+msgstr "Dela lokala enheter?"
+
+#: rustconn/src/window/mod.rs:5533
+msgid ""
+"The file {} asks to share these devices with {}:\n"
+"\n"
+"{}\n"
+"\n"
+"Connect only if you trust where the file came from."
+msgstr ""
+"Filen {} vill dela dessa enheter med {}:\n"
+"\n"
+"{}\n"
+"\n"
+"Anslut bara om du litar på var filen kommer ifrån."
 
 #: rustconn/src/window/navigation_actions.rs:230
 msgid "Keyboard passthrough enabled — shortcuts disabled"
@@ -14495,7 +14521,7 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "Användare: {}"
 
-#: rustconn/src/window/terminal_actions.rs:390
+#: rustconn/src/window/terminal_actions.rs:407
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -14503,7 +14529,7 @@ msgstr ""
 "Det gick inte att starta inspelning för ”{}” — inspelningsmappen saknas "
 "eller går inte att skriva till"
 
-#: rustconn/src/window/terminal_actions.rs:454
+#: rustconn/src/window/terminal_actions.rs:471
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Den här visaren körs oberoende och kan inte stängas från RustConn"
 
@@ -14706,6 +14732,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Load Balance Info"
+#~ msgstr "Lastbalanseringsinformation"
 
 #~ msgid ""
 #~ "Connection broker routing value (loadbalanceinfo) from an .rdp file "
