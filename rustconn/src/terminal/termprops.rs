@@ -114,21 +114,19 @@ where
 /// is what keeps the whole feature dormant on a host without `vte.sh`.
 #[cfg(feature = "vte-0-78")]
 pub fn connect_shell_integration(terminal: &Terminal, registry: Rc<RefCell<MarkRegistry>>) -> bool {
-    // `vadjustment` comes from gtk4's ScrollableExt (VTE's Terminal is a
-    // GtkScrollable); `cursor_position`/`termprop_uint` from vte4's TerminalExt.
-    use gtk4::prelude::*;
+    // `cursor_position`/`termprop_uint` come from vte4's TerminalExt.
     use vte4::prelude::TerminalExt;
 
     terminal.connect_termprop_changed(Some(SHELL_POSTEXEC), move |terminal, _name| {
-        // cursor_position() returns (column, row) in the live grid; the row is
-        // the line the prompt has returned to. Offset by the scrollback already
-        // above the viewport so the stored row is in the same buffer coordinate
-        // space MarkRegistry::trim_below and the navigation scroll use. The
-        // adjustment is absent only before the widget is realized, which cannot
-        // be the case while the shell is emitting output — treat it as zero.
+        // cursor_position()'s row is already absolute in the buffer's
+        // coordinate space — the same space MarkRegistry::trim_below and the
+        // navigation scroll (vadjustment.value()) use — so it is recorded as
+        // is. Adding the scrollback offset on top double-counted it: once the
+        // buffer had history the stored row sat far below the real prompt and
+        // navigation never found it. (VTE docs: "The row coordinate is
+        // absolute.")
         let (_col, cursor_row) = terminal.cursor_position();
-        let scroll_offset = terminal.vadjustment().map_or(0, |adj| adj.value() as i64);
-        let buffer_row = scroll_offset + cursor_row;
+        let buffer_row = cursor_row;
 
         let exit_code = terminal.termprop_uint(SHELL_POSTEXEC);
 
@@ -137,8 +135,6 @@ pub fn connect_shell_integration(terminal: &Terminal, registry: Rc<RefCell<MarkR
         reg.set_last_exit(exit_code);
         tracing::debug!(
             buffer_row,
-            scroll_offset,
-            cursor_row,
             ?exit_code,
             registry_empty = reg.is_empty(),
             "OSC133 postexec: recorded prompt mark"
