@@ -135,6 +135,14 @@ pub fn connect_shell_integration(terminal: &Terminal, registry: Rc<RefCell<MarkR
         let mut reg = registry.borrow_mut();
         reg.record_prompt(buffer_row);
         reg.set_last_exit(exit_code);
+        tracing::debug!(
+            buffer_row,
+            scroll_offset,
+            cursor_row,
+            ?exit_code,
+            registry_empty = reg.is_empty(),
+            "OSC133 postexec: recorded prompt mark"
+        );
     });
     true
 }

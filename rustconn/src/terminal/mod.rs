@@ -2344,18 +2344,28 @@ impl TerminalNotebook {
     /// build below the `vte-0-78` feature (the registry is never populated).
     /// (shell-integration-osc133 spec, task 4.)
     pub fn scroll_to_adjacent_prompt(&self, previous: bool) {
+        tracing::debug!(previous, "scroll_to_adjacent_prompt: action invoked");
         let Some(session_id) = self.get_active_session_id() else {
+            tracing::debug!("scroll_to_adjacent_prompt: no active session");
             return;
         };
         let Some(terminal) = self.get_terminal(session_id) else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no terminal");
             return;
         };
         let registry = self.mark_registries.borrow().get(&session_id).cloned();
         let Some(registry) = registry else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no registry");
             return;
         };
+        tracing::debug!(
+            %session_id,
+            registry_empty = registry.borrow().is_empty(),
+            "scroll_to_adjacent_prompt: registry resolved"
+        );
 
         let Some(adjustment) = terminal.vadjustment() else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no vadjustment");
             return;
         };
         // The viewport's top buffer row — the same coordinate space the registry
@@ -2373,6 +2383,7 @@ impl TerminalNotebook {
         } else {
             registry.next_after(viewport_top)
         };
+        tracing::debug!(viewport_top, oldest_row, ?target, "scroll_to_adjacent_prompt: computed target");
         if let Some(row) = target {
             adjustment.set_value(row as f64);
         }
