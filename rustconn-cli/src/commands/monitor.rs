@@ -30,7 +30,7 @@ pub(super) fn cmd_monitor(
         }
         MonitorCommands::Disable { name } => cmd_monitor_disable(config_path, &name),
         MonitorCommands::Metrics { name, format } => {
-            cmd_monitor_metrics(config_path, &name, format.effective())
+            cmd_monitor_metrics(config_path, &name, OutputFormat::effective(format))
         }
         MonitorCommands::Reset { name, all } => match (name, all) {
             (_, true) => cmd_monitor_reset_all(config_path),

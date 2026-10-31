@@ -684,6 +684,269 @@ fn connect_warns_about_kerberos_with_an_ip_host() {
     );
 }
 
+// ============================================================================
+// CLI usability (0.24.3): explicit --format, group feedback, aws_ssm validation,
+// bulk --from-file, --password-stdin
+// ============================================================================
+
+/// #2 — an explicit `--format table` is honoured even when stdout is piped.
+/// The test harness runs the CLI with a non-terminal stdout, so the bare
+/// default downgrades to JSON while an explicit `--format table` must still
+/// print a table.
+#[test]
+fn explicit_format_table_is_honored_when_piped() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let add = run_cli(
+        &[
+            "add", "--name", "web1", "--host", "web1.example.com", "--protocol", "ssh",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "seed add should succeed");
+
+    // No --format: piped stdout downgrades to JSON (clig.dev default).
+    let defaulted = run_cli(&["list"], Some(config_dir));
+    assert!(defaulted.status.success());
+    let defaulted_out = stdout_str(&defaulted);
+    assert!(
+        defaulted_out.contains('[') || defaulted_out.contains('{'),
+        "a bare piped `list` must default to JSON. Got: {defaulted_out}"
+    );
+
+    // Explicit --format table: honoured verbatim even though stdout is piped.
+    let explicit = run_cli(&["list", "--format", "table"], Some(config_dir));
+    assert!(explicit.status.success());
+    let explicit_out = stdout_str(&explicit);
+    assert!(
+        explicit_out.contains("NAME") && !explicit_out.trim_start().starts_with('['),
+        "an explicit --format table must stay a table when piped. Got: {explicit_out}"
+    );
+}
+
+/// #1/#6 — `add --group` reports whether the group was created or already
+/// existed, and prints the group's ID.
+#[test]
+fn add_group_reports_created_then_existing_with_id() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let first = run_cli(
+        &[
+            "add", "--name", "a1", "--host", "a1.example.com", "--group", "Ops",
+        ],
+        Some(config_dir),
+    );
+    assert!(first.status.success(), "first add should succeed");
+    let first_out = stdout_str(&first);
+    assert!(
+        first_out.contains("(created, ID "),
+        "the first --group use must report the group as created with its ID. Got: {first_out}"
+    );
+
+    let second = run_cli(
+        &[
+            "add", "--name", "a2", "--host", "a2.example.com", "--group", "Ops",
+        ],
+        Some(config_dir),
+    );
+    assert!(second.status.success(), "second add should succeed");
+    let second_out = stdout_str(&second);
+    assert!(
+        second_out.contains("(existing group, ID "),
+        "reusing the group must report it as existing with its ID. Got: {second_out}"
+    );
+}
+
+/// #5 — `add --provider aws_ssm` accepts an EC2 instance ID in --host and
+/// rejects a plain hostname before the connection is written.
+#[test]
+fn add_aws_ssm_requires_an_instance_id_in_host() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let ok = run_cli(
+        &[
+            "add", "--name", "ec2a", "--protocol", "zt", "--provider", "aws_ssm", "--host",
+            "i-0123456789abcdef0",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        ok.status.success(),
+        "a valid i-… instance ID must be accepted. stderr: {}",
+        stderr_str(&ok)
+    );
+
+    let bad = run_cli(
+        &[
+            "add", "--name", "ec2b", "--protocol", "zt", "--provider", "aws_ssm", "--host",
+            "ec2.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(
+        !bad.status.success(),
+        "a plain hostname must be rejected for aws_ssm"
+    );
+    assert_eq!(
+        bad.status.code().unwrap_or(-1),
+        1,
+        "aws_ssm validation failure uses the general error exit code"
+    );
+    assert!(
+        stderr_str(&bad).contains("EC2 instance ID"),
+        "the error should name the expected form. stderr: {}",
+        stderr_str(&bad)
+    );
+}
+
+/// #4 — `add --from-file` bulk-adds every connection in a JSON document and
+/// reports the count. Uses the serde shape of `Connection` the CLI already
+/// reads, built through the public API so the fixture stays valid as the model
+/// evolves.
+#[test]
+fn add_from_file_adds_every_connection() {
+    use rustconn_core::models::Connection;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let conns = vec![
+        Connection::new_ssh("bulk1".to_string(), "h1.example.com".to_string(), 22),
+        Connection::new_ssh("bulk2".to_string(), "h2.example.com".to_string(), 22),
+        Connection::new_rdp("bulk3".to_string(), "h3.example.com".to_string(), 3389),
+    ];
+    let doc = serde_json::json!({ "connections": conns });
+    let file = config_dir.join("bulk.json");
+    std::fs::write(&file, serde_json::to_string_pretty(&doc).unwrap()).expect("write fixture");
+
+    let out = run_cli(
+        &["add", "--from-file", file.to_str().unwrap()],
+        Some(config_dir),
+    );
+    assert!(
+        out.status.success(),
+        "bulk add should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+    assert!(
+        stdout_str(&out).contains("Added 3 connection(s)"),
+        "it should report three added. Got: {}",
+        stdout_str(&out)
+    );
+
+    // All three are now listed.
+    let listed = run_cli(&["list", "--format", "json"], Some(config_dir));
+    let listed_out = stdout_str(&listed);
+    for name in ["bulk1", "bulk2", "bulk3"] {
+        assert!(
+            listed_out.contains(name),
+            "'{name}' should be in the list. Got: {listed_out}"
+        );
+    }
+}
+
+/// #4 — a duplicate name in the bulk file is skipped with a reason, the rest
+/// still added.
+#[test]
+fn add_from_file_skips_duplicates_with_a_reason() {
+    use rustconn_core::models::Connection;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    // Seed an existing connection whose name collides with one in the file.
+    let seed = run_cli(
+        &["add", "--name", "dup", "--host", "existing.example.com"],
+        Some(config_dir),
+    );
+    assert!(seed.status.success(), "seed add should succeed");
+
+    let conns = vec![
+        Connection::new_ssh("dup".to_string(), "h.example.com".to_string(), 22),
+        Connection::new_ssh("fresh".to_string(), "h2.example.com".to_string(), 22),
+    ];
+    let doc = serde_json::json!({ "connections": conns });
+    let file = config_dir.join("bulk.json");
+    std::fs::write(&file, serde_json::to_string(&doc).unwrap()).expect("write fixture");
+
+    let out = run_cli(
+        &["add", "--from-file", file.to_str().unwrap()],
+        Some(config_dir),
+    );
+    assert!(out.status.success(), "bulk add should succeed overall");
+    let out_s = stdout_str(&out);
+    assert!(
+        out_s.contains("Added 1 connection(s)"),
+        "only the fresh one is added. Got: {out_s}"
+    );
+    assert!(
+        out_s.contains("Skipped") && out_s.contains("'dup'"),
+        "the duplicate must be reported as skipped. Got: {out_s}"
+    );
+}
+
+/// #3 — `--password-stdin` never echoes the password, regardless of build. On a
+/// build without `secret-management` it fails before writing anything and names
+/// the feature; on a build with it, the password is stored (keyring permitting)
+/// and still never appears in the output.
+#[test]
+fn add_password_stdin_never_echoes_the_secret() {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let secret = "sup3r-s3cret-value";
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rustconn-cli"))
+        .env("RUSTCONN_CONFIG_DIR", config_dir)
+        .args([
+            "add",
+            "--name",
+            "pw1",
+            "--host",
+            "pw.example.com",
+            "--password-stdin",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn CLI");
+    child
+        .stdin
+        .as_mut()
+        .expect("stdin")
+        .write_all(format!("{secret}\n").as_bytes())
+        .expect("write password");
+    let output = child.wait_with_output().expect("wait CLI");
+
+    let combined = format!("{}{}", stdout_str(&output), stderr_str(&output));
+    assert!(
+        !combined.contains(secret),
+        "the password must never appear in stdout or stderr. Got: {combined}"
+    );
+
+    if cfg!(feature = "secret-management") {
+        // With a backend the add succeeds (or fails only because the test
+        // environment has no Secret Service); either way the secret stays out
+        // of the output, which is asserted above.
+    } else {
+        assert!(
+            !output.status.success(),
+            "without secret-management, --password-stdin must fail rather than drop the password"
+        );
+        assert!(
+            stderr_str(&output).contains("secret-management"),
+            "the error should name the required feature. stderr: {}",
+            stderr_str(&output)
+        );
+    }
+}
+
 #[cfg(feature = "client-launch")]
 #[test]
 fn connect_is_quiet_about_kerberos_when_settings_are_fine() {

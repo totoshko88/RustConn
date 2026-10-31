@@ -80,7 +80,7 @@ fn create_pass_backend(
 /// legacy key that was never written deletes nothing.
 #[cfg(feature = "secret-management")]
 #[derive(Debug, PartialEq, Eq)]
-struct VaultKeys {
+pub(super) struct VaultKeys {
     primary: String,
     legacy: Vec<String>,
 }
@@ -763,12 +763,318 @@ fn cmd_secret_get(
     }
 }
 
+/// Stores a connection's credential in the resolved backend, under the GUI's
+/// vault key, and prints the one-line confirmation.
+///
+/// This is the single store path shared by `secret set` and `add
+/// --password-stdin`, so a password provisioned at `add` time lands exactly
+/// where the GUI's resolver and a later `secret get` look for it. The
+/// `password` is consumed (moved into the backend's `Credentials`) so it is not
+/// copied past this call.
+///
+/// # Errors
+///
+/// Returns [`CliError::Secret`] when the backend is unreachable, not configured
+/// (KeePass without a database), or rejects the write.
 #[cfg(feature = "secret-management")]
 #[expect(
     clippy::too_many_lines,
-    reason = "set handler dispatches across every backend kind with backend-specific \
-              storage paths; splitting would duplicate the password prompt logic"
+    reason = "store dispatches across every backend kind with backend-specific storage \
+              paths and construction; splitting per backend would only relocate the arms"
 )]
+pub(super) fn store_connection_credentials_in_backend(
+    settings: &rustconn_core::config::AppSettings,
+    backend_type: rustconn_core::config::SecretBackendType,
+    keys: &VaultKeys,
+    keepass_key: &str,
+    connection: &rustconn_core::models::Connection,
+    username_value: &str,
+    password_value: secrecy::SecretString,
+) -> Result<(), CliError> {
+    use rustconn_core::config::SecretBackendType;
+    use rustconn_core::secret::KeePassStatus;
+
+    match backend_type {
+        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::SecretBackend;
+
+            let rt = secret_runtime()?;
+
+            // macOS routes the keyring backend to the system Keychain;
+            // LibSecretBackend is not compiled there (R10.1, R10.2).
+            #[cfg(target_os = "macos")]
+            let backend = rustconn_core::secret::MacOsKeychainBackend::new();
+            #[cfg(not(target_os = "macos"))]
+            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Keyring (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
+            if !settings.secrets.kdbx_enabled {
+                return Err(CliError::Secret(
+                    "KeePass is not enabled in settings".into(),
+                ));
+            }
+            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
+                return Err(CliError::Secret("KeePass database not configured".into()));
+            };
+
+            let key_file = settings
+                .secrets
+                .kdbx_key_file
+                .as_ref()
+                .map(std::path::Path::new);
+
+            KeePassStatus::save_password_to_kdbx(
+                std::path::Path::new(kdbx_path),
+                settings.secrets.kdbx_password.as_ref(),
+                key_file,
+                keepass_key,
+                username_value,
+                &password_value,
+                Some(&format!(
+                    "{}://{}:{}",
+                    connection.protocol.as_str().to_lowercase(),
+                    connection.host,
+                    connection.port
+                )),
+                settings.secrets.kdbx_yubikey_slot.as_deref(),
+                settings.secrets.kdbx_read_only,
+            )
+            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in KeePass (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::Bitwarden => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{BitwardenBackend, SecretBackend};
+
+            let rt = secret_runtime()?;
+
+            let backend = BitwardenBackend::new().with_settings_toggles(&settings.secrets);
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Bitwarden (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::OnePassword => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{OnePasswordBackend, SecretBackend};
+
+            let rt = secret_runtime()?;
+
+            // Token plus the read-only / root-search toggles from settings.
+            let backend = OnePasswordBackend::from_secret_settings(&settings.secrets);
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in 1Password (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::Passbolt => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{PassboltBackend, SecretBackend};
+
+            let rt = secret_runtime()?;
+
+            // Server, passphrase and the read-only / root-search toggles.
+            let backend = PassboltBackend::from_secret_settings(&settings.secrets);
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Passbolt (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::Pass => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::SecretBackend;
+
+            let rt = secret_runtime()?;
+
+            let backend = create_pass_backend(settings);
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in Pass (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::EncryptedFile => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::{EncryptedFileBackend, SecretBackend};
+
+            let rt = secret_runtime()?;
+
+            let backend = EncryptedFileBackend::new();
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Encrypted file error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in encrypted file (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+        SecretBackendType::PortableEncryptedFile => {
+            use rustconn_core::models::Credentials;
+            use rustconn_core::secret::SecretBackend;
+
+            let rt = secret_runtime()?;
+
+            let backend = open_portable_backend(&settings.secrets)?;
+            let creds = Credentials {
+                username: Some(username_value.to_string()),
+                password: Some(password_value),
+                key_passphrase: None,
+                domain: connection.domain.clone(),
+            };
+
+            rt.block_on(backend.store(&keys.primary, &creds))
+                .map_err(|e| CliError::Secret(format!("Portable file error: {e}")))?;
+
+            println!(
+                "Stored credentials for '{}' in the portable encrypted file (user: {})",
+                connection.name, username_value
+            );
+            Ok(())
+        }
+    }
+}
+
+/// Promotes a connection's `password_source` to `Vault` when it is still `None`.
+///
+/// Storing a vault secret for a connection whose source is `None` is pointless:
+/// a connect never reads the vault, so the credential just saved would never be
+/// used (found while testing issue #353). Only `None` is promoted — an explicit
+/// `Prompt`, `Variable`, `Inherit` or `Script` is the user's choice and is left
+/// untouched. Shared by `secret set` and `add --password-stdin`.
+///
+/// # Errors
+///
+/// Returns [`CliError::Config`] when the connection list cannot be re-saved.
+#[cfg(feature = "secret-management")]
+pub(super) fn promote_password_source_to_vault(
+    config_manager: &rustconn_core::config::ConfigManager,
+    connection_id: uuid::Uuid,
+) -> Result<bool, CliError> {
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+    if let Some(conn) = connections.iter_mut().find(|c| c.id == connection_id)
+        && conn.password_source == rustconn_core::models::PasswordSource::None
+    {
+        conn.password_source = rustconn_core::models::PasswordSource::Vault;
+        config_manager
+            .save_connections(&connections)
+            .map_err(|e| CliError::Config(format!("Failed to save connection: {e}")))?;
+        return Ok(true);
+    }
+    Ok(false)
+}
+
+/// Resolves the vault key material (GUI primary + legacy keys, and the KeePass
+/// entry key) for a connection, so `add --password-stdin` stores under exactly
+/// the keys `secret set` and the GUI use.
+#[cfg(feature = "secret-management")]
+pub(super) fn vault_keys_and_keepass_key(
+    connection: &rustconn_core::models::Connection,
+    groups: &[rustconn_core::models::ConnectionGroup],
+    backend_type: rustconn_core::config::SecretBackendType,
+) -> (VaultKeys, String) {
+    use rustconn_core::secret::KeePassHierarchy;
+    let keepass_base = KeePassHierarchy::build_entry_path(connection, groups);
+    let keepass_key = format!(
+        "{} ({})",
+        keepass_base
+            .strip_prefix("RustConn/")
+            .unwrap_or(&keepass_base),
+        connection.protocol.as_str().to_lowercase()
+    );
+    (vault_keys(connection, groups, backend_type), keepass_key)
+}
+
+/// Parses an optional backend name, defaulting to the preferred backend.
+///
+/// # Errors
+///
+/// Returns [`CliError::Secret`] when the name is not a known backend.
+#[cfg(feature = "secret-management")]
+pub(super) fn resolve_backend_type(
+    backend: Option<&str>,
+    settings: &rustconn_core::config::AppSettings,
+) -> Result<rustconn_core::config::SecretBackendType, CliError> {
+    Ok(backend
+        .map(parse_backend)
+        .transpose()?
+        .unwrap_or(settings.secrets.preferred_backend))
+}
+
+#[cfg(feature = "secret-management")]
 fn cmd_secret_set(
     config_path: Option<&Path>,
     connection_name: &str,
@@ -777,8 +1083,7 @@ fn cmd_secret_set(
     password_stdin: bool,
     backend: Option<&str>,
 ) -> Result<(), CliError> {
-    use rustconn_core::config::SecretBackendType;
-    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
+    use rustconn_core::secret::KeePassHierarchy;
     use zeroize::Zeroizing;
 
     if password_arg.is_some() {
@@ -860,244 +1165,20 @@ fn cmd_secret_set(
         .or_else(|| connection.username.clone())
         .unwrap_or_default();
 
-    // Needed after the store to mark the connection as vault-backed; captured
-    // here while `connection` is still borrowed from the immutable list.
+    // Needed after the store to mark the connection as vault-backed.
     let connection_id = connection.id;
 
-    let store_result: Result<(), CliError> = match backend_type {
-        SecretBackendType::LibSecret | SecretBackendType::MacOsKeychain => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::SecretBackend;
+    store_connection_credentials_in_backend(
+        &settings,
+        backend_type,
+        &keys,
+        &keepass_key,
+        connection,
+        &username_value,
+        password_value,
+    )?;
 
-            let rt = secret_runtime()?;
-
-            // macOS routes the keyring backend to the system Keychain;
-            // LibSecretBackend is not compiled there (R10.1, R10.2).
-            #[cfg(target_os = "macos")]
-            let backend = rustconn_core::secret::MacOsKeychainBackend::new();
-            #[cfg(not(target_os = "macos"))]
-            let backend = rustconn_core::secret::LibSecretBackend::new("rustconn");
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Keyring error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in Keyring (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if !settings.secrets.kdbx_enabled {
-                return Err(CliError::Secret(
-                    "KeePass is not enabled in settings".into(),
-                ));
-            }
-            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
-                return Err(CliError::Secret("KeePass database not configured".into()));
-            };
-
-            let key_file = settings
-                .secrets
-                .kdbx_key_file
-                .as_ref()
-                .map(std::path::Path::new);
-
-            KeePassStatus::save_password_to_kdbx(
-                std::path::Path::new(kdbx_path),
-                settings.secrets.kdbx_password.as_ref(),
-                key_file,
-                &keepass_key,
-                &username_value,
-                &password_value,
-                Some(&format!(
-                    "{}://{}:{}",
-                    connection.protocol.as_str().to_lowercase(),
-                    connection.host,
-                    connection.port
-                )),
-                settings.secrets.kdbx_yubikey_slot.as_deref(),
-                settings.secrets.kdbx_read_only,
-            )
-            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in KeePass (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::Bitwarden => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{BitwardenBackend, SecretBackend};
-
-            let rt = secret_runtime()?;
-
-            let backend = BitwardenBackend::new().with_settings_toggles(&settings.secrets);
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Bitwarden error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in Bitwarden \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::OnePassword => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{OnePasswordBackend, SecretBackend};
-
-            let rt = secret_runtime()?;
-
-            // Token plus the read-only / root-search toggles from settings.
-            let backend = OnePasswordBackend::from_secret_settings(&settings.secrets);
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("1Password error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in 1Password \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::Passbolt => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{PassboltBackend, SecretBackend};
-
-            let rt = secret_runtime()?;
-
-            // Server, passphrase and the read-only / root-search toggles.
-            let backend = PassboltBackend::from_secret_settings(&settings.secrets);
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Passbolt error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in Passbolt \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::Pass => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::SecretBackend;
-
-            let rt = secret_runtime()?;
-
-            let backend = create_pass_backend(&settings);
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Pass error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in Pass \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::EncryptedFile => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::{EncryptedFileBackend, SecretBackend};
-
-            let rt = secret_runtime()?;
-
-            let backend = EncryptedFileBackend::new();
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Encrypted file error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in encrypted file \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-        SecretBackendType::PortableEncryptedFile => {
-            use rustconn_core::models::Credentials;
-            use rustconn_core::secret::SecretBackend;
-
-            let rt = secret_runtime()?;
-
-            let backend = open_portable_backend(&settings.secrets)?;
-            let creds = Credentials {
-                username: Some(username_value.clone()),
-                password: Some(password_value),
-                key_passphrase: None,
-                domain: connection.domain.clone(),
-            };
-
-            rt.block_on(backend.store(&keys.primary, &creds))
-                .map_err(|e| CliError::Secret(format!("Portable file error: {e}")))?;
-
-            println!(
-                "Stored credentials for '{}' in the portable encrypted file \
-                 (user: {})",
-                connection.name, username_value
-            );
-            Ok(())
-        }
-    };
-
-    store_result?;
-
-    // Storing a vault secret for a connection whose password source is still
-    // `None` is pointless: a connect never reads the vault, so the credential
-    // just saved would never be used. Mark the connection vault-backed so the
-    // resolver actually consults the backend. Only `None` is promoted — an
-    // explicit `Prompt`, `Variable`, `Inherit` or `Script` is the user's choice
-    // and is left untouched. (Found while testing issue #353: `add` + `secret
-    // set` left a connection unusable because nothing set the source.)
-    let mut connections = connections;
-    if let Some(conn) = connections.iter_mut().find(|c| c.id == connection_id)
-        && conn.password_source == rustconn_core::models::PasswordSource::None
-    {
-        conn.password_source = rustconn_core::models::PasswordSource::Vault;
-        config_manager
-            .save_connections(&connections)
-            .map_err(|e| CliError::Config(format!("Failed to save connection: {e}")))?;
+    if promote_password_source_to_vault(&config_manager, connection_id)? {
         println!("Set password source to Vault for this connection.");
     }
 

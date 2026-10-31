@@ -16,6 +16,10 @@ rustconn-core = { path = "../rustconn-core", version = "0.24.2", default-feature
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Bulk `add --from-file` parses connection definitions as YAML or JSON through a
+# single parser: YAML is a JSON superset, so serde_yaml reads both. Already a
+# workspace dependency (rustconn-core uses it for the Ásbrú importer).
+serde_yaml = { workspace = true }
 uuid = { workspace = true }
 thiserror = { workspace = true }
 clap = { version = "4.5.60", features = ["derive", "env"] }

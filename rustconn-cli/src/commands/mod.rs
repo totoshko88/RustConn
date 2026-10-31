@@ -54,7 +54,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             tag,
         } => list::cmd_list(
             config_path,
-            format.effective(),
+            crate::cli::OutputFormat::effective(format),
             protocol.as_deref(),
             group.as_deref(),
             tag.as_deref(),
@@ -67,8 +67,10 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             port,
             protocol,
             user,
+            password_stdin,
             key,
             auth_method,
+            from_file,
             device,
             baud_rate,
             icon,
@@ -171,7 +173,18 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             private_mode,
             zoom_level,
             tunnel_via,
-        } => add::cmd_add(
+        } => {
+            // Bulk add from a file (or stdin) short-circuits the single-connection
+            // flag assembly: --from-file conflicts with --name/--host at the clap
+            // layer, so the other flags are irrelevant here.
+            if let Some(path) = from_file {
+                return add::cmd_add_from_file(config_path, &path);
+            }
+            // clap's `required_unless_present = "from_file"` guarantees both are
+            // present on this path.
+            let name = name.expect("clap requires --name unless --from-file");
+            let host = host.expect("clap requires --host unless --from-file");
+            add::cmd_add(
             config_path,
             add::AddParams {
                 name: &name,
@@ -179,6 +192,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 port,
                 protocol: &protocol,
                 user: user.as_deref(),
+                password_stdin,
                 key: key.as_deref(),
                 auth_method: auth_method.as_deref(),
                 device: device.as_deref(),
@@ -284,7 +298,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 zoom_level,
                 tunnel_via: tunnel_via.as_deref(),
             },
-        ),
+        )
+        }
         Commands::Export {
             format,
             output,
@@ -307,9 +322,16 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             name,
             timeout,
             format,
-        } => test::cmd_test(config_path, &name, timeout, format.effective()),
+        } => test::cmd_test(
+            config_path,
+            &name,
+            timeout,
+            crate::cli::OutputFormat::effective(format),
+        ),
         Commands::Delete { name, force } => delete::cmd_delete(config_path, &name, force),
-        Commands::Show { name, format } => show::cmd_show(config_path, &name, format.effective()),
+        Commands::Show { name, format } => {
+            show::cmd_show(config_path, &name, crate::cli::OutputFormat::effective(format))
+        }
         Commands::Update {
             name,
             new_name,
@@ -567,7 +589,9 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             duplicate::cmd_duplicate(config_path, &name, new_name.as_deref())
         }
         Commands::Sftp { name, cli, mc } => sftp::cmd_sftp(config_path, &name, cli, mc),
-        Commands::Stats { format } => stats::cmd_stats(config_path, format.effective()),
+        Commands::Stats { format } => {
+            stats::cmd_stats(config_path, crate::cli::OutputFormat::effective(format))
+        }
         Commands::Completions { shell } => completions::cmd_completions(shell),
         Commands::ManPage => manpage::cmd_manpage(),
         Commands::Sync(subcmd) => cloud_sync::cmd_cloud_sync(config_path, subcmd),

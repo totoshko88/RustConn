@@ -33,7 +33,9 @@ pub(super) fn cmd_cloud_sync(
 ) -> Result<(), CliError> {
     match subcmd {
         SyncCommands::Status => cmd_sync_status(config_path),
-        SyncCommands::List { format } => cmd_sync_list(config_path, format.effective()),
+        SyncCommands::List { format } => {
+            cmd_sync_list(config_path, OutputFormat::effective(format))
+        }
         SyncCommands::Export { group } => cmd_sync_export(config_path, &group),
         SyncCommands::Import { file } => cmd_sync_import(config_path, &file),
         SyncCommands::Now => cmd_sync_now(config_path),

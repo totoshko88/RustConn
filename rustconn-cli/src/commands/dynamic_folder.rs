@@ -24,7 +24,7 @@ pub(super) fn cmd_dynamic_folder(
 ) -> Result<(), CliError> {
     match subcmd {
         DynamicFolderCommands::List { format } => {
-            cmd_dynamic_folder_list(config_path, format.effective())
+            cmd_dynamic_folder_list(config_path, OutputFormat::effective(format))
         }
         DynamicFolderCommands::Show { name } => cmd_dynamic_folder_show(config_path, &name),
         DynamicFolderCommands::Refresh { name } => cmd_dynamic_folder_refresh(config_path, &name),

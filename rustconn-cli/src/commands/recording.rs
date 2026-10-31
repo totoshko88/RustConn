@@ -18,7 +18,7 @@ use crate::format::escape_csv_field;
 /// - [`CliError::Io`] when the recordings directory cannot be created or read
 pub(super) fn cmd_recording(subcmd: RecordingCommands) -> Result<(), CliError> {
     match subcmd {
-        RecordingCommands::List { format } => cmd_recording_list(format.effective()),
+        RecordingCommands::List { format } => cmd_recording_list(OutputFormat::effective(format)),
         RecordingCommands::Delete { name, force } => cmd_recording_delete(&name, force),
         RecordingCommands::Import {
             data_file,

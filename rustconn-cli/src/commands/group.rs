@@ -19,9 +19,11 @@ use crate::util::create_config_manager;
 /// - [`CliError::Group`] when a referenced group does not exist or a name conflicts
 pub(super) fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Result<(), CliError> {
     match subcmd {
-        GroupCommands::List { format } => cmd_group_list(config_path, format.effective()),
+        GroupCommands::List { format } => {
+            cmd_group_list(config_path, OutputFormat::effective(format))
+        }
         GroupCommands::Show { name, format } => {
-            cmd_group_show(config_path, &name, format.effective())
+            cmd_group_show(config_path, &name, OutputFormat::effective(format))
         }
         GroupCommands::Create {
             name,

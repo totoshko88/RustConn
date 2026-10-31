@@ -30,7 +30,7 @@ pub(super) fn cmd_snippet(
             tag,
         } => cmd_snippet_list(
             config_path,
-            format.effective(),
+            OutputFormat::effective(format),
             category.as_deref(),
             tag.as_deref(),
         ),
