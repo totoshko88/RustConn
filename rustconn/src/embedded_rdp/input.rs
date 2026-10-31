@@ -352,13 +352,13 @@ impl super::EmbeddedRdpWidget {
         self.drawing_area.add_controller(click_controller);
 
         // Mouse scroll handler for wheel events
-        let scroll_controller = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
+        let scroll_controller = EventControllerScroll::new(EventControllerScrollFlags::BOTH_AXES);
         let state = self.state.clone();
         let is_embedded = self.is_embedded.clone();
         let is_ironrdp = self.is_ironrdp.clone();
         let ironrdp_tx = self.ironrdp_command_tx.clone();
 
-        scroll_controller.connect_scroll(move |_controller, _dx, dy| {
+        scroll_controller.connect_scroll(move |controller, dx, dy| {
             let current_state = *state.borrow();
             let embedded = *is_embedded.borrow();
             let using_ironrdp = *is_ironrdp.borrow();
@@ -368,11 +368,26 @@ impl super::EmbeddedRdpWidget {
                 && using_ironrdp
                 && let Some(ref tx) = *ironrdp_tx.borrow()
             {
-                let wheel_delta = (-dy * 120.0) as i16;
-                if wheel_delta != 0 {
+                // In GTK4 on Wayland, controller.unit() differentiates discrete wheel
+                // clicks from smooth touchpad pixels.
+                let multiplier = match controller.unit() {
+                    gtk4::gdk::ScrollUnit::Wheel => 120.0,
+                    _ => 6.0,
+                };
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "clamped wheel delta comfortably fits i16"
+                )]
+                let v_delta = (-dy * multiplier).clamp(-240.0, 240.0) as i16;
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "clamped wheel delta comfortably fits i16"
+                )]
+                let h_delta = (dx * multiplier).clamp(-240.0, 240.0) as i16;
+                if v_delta != 0 || h_delta != 0 {
                     let _ = tx.send(RdpClientCommand::WheelEvent {
-                        horizontal: 0,
-                        vertical: wheel_delta,
+                        horizontal: h_delta,
+                        vertical: v_delta,
                     });
                 }
             }

@@ -165,6 +165,11 @@ impl RdpProtocol {
                 }
                 args.push(format!("/gateway:{value}"));
             }
+            args.extend(super::freerdp::freerdp_device_and_broker_args(
+                rdp_config.microphone_enabled,
+                rdp_config.smartcard_enabled,
+                rdp_config.load_balance_info.as_deref(),
+            ));
             for folder in &rdp_config.shared_folders {
                 if folder.share_name.contains(',') || folder.share_name.contains('/') {
                     tracing::warn!(share_name = %folder.share_name, "Skipping shared folder with invalid share name");
@@ -324,6 +329,28 @@ mod tests {
             ..RdpConfig::default()
         });
         assert_eq!(count_option(&off, "dynamic-resolution"), 0);
+    }
+
+    /// The CLI builder sends the microphone, smart card and broker settings
+    /// the same way as the GUI's FreeRDP launch.
+    #[test]
+    fn build_args_carries_microphone_smartcard_and_broker() {
+        let args = cli_args(RdpConfig {
+            microphone_enabled: true,
+            smartcard_enabled: true,
+            load_balance_info: Some("tsv://MS Terminal Services Plugin.1.Sessions".to_string()),
+            ..RdpConfig::default()
+        });
+        assert!(args.contains(&"/microphone".to_string()));
+        assert!(args.contains(&"/smartcard".to_string()));
+        assert!(args.contains(
+            &"/load-balance-info:tsv://MS Terminal Services Plugin.1.Sessions".to_string()
+        ));
+
+        let default = cli_args(RdpConfig::default());
+        assert_eq!(count_option(&default, "microphone"), 0);
+        assert_eq!(count_option(&default, "smartcard"), 0);
+        assert_eq!(count_option(&default, "load-balance-info"), 0);
     }
 
     /// A custom `/smart-sizing` must not go out beside `/dynamic-resolution`,

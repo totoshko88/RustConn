@@ -36,6 +36,10 @@ pub enum AudioError {
     #[error("No audio output device available")]
     NoDevice,
 
+    /// No audio input (microphone) device available
+    #[error("No audio input device available")]
+    NoInputDevice,
+
     /// Unsupported audio format
     #[error("Unsupported audio format: {0}")]
     UnsupportedFormat(String),
@@ -47,6 +51,119 @@ pub enum AudioError {
     /// Playback error
     #[error("Audio playback error: {0}")]
     Playback(String),
+}
+
+/// Cuts captured audio into the fixed-size 16-bit PCM packets that MS-RDPEAI
+/// Data PDUs carry, and hands each one to `send`.
+struct PacketBuilder {
+    pending: Vec<u8>,
+    packet_size: usize,
+    send: Box<dyn FnMut(Vec<u8>) + Send>,
+}
+
+impl PacketBuilder {
+    fn new(packet_size: usize, send: Box<dyn FnMut(Vec<u8>) + Send>) -> Self {
+        // A zero size would never complete a packet; one sample is the floor.
+        let packet_size = packet_size.max(2);
+        Self {
+            pending: Vec::with_capacity(packet_size * 2),
+            packet_size,
+            send,
+        }
+    }
+
+    fn push_i16(&mut self, samples: impl IntoIterator<Item = i16>) {
+        for sample in samples {
+            self.pending.extend_from_slice(&sample.to_le_bytes());
+        }
+        while self.pending.len() >= self.packet_size {
+            let rest = self.pending.split_off(self.packet_size);
+            let packet = std::mem::replace(&mut self.pending, rest);
+            (self.send)(packet);
+        }
+    }
+}
+
+/// Converts an `f32` sample in `[-1.0, 1.0]` to 16-bit PCM.
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "clamped to the i16 range before the cast"
+)]
+fn f32_to_i16(sample: f32) -> i16 {
+    (sample.clamp(-1.0, 1.0) * f32::from(i16::MAX)) as i16
+}
+
+/// Captures the default microphone for the RDP `AUDIO_INPUT` channel.
+///
+/// The device is asked for the server's channel count and sample rate
+/// directly — PipeWire and PulseAudio convert — as 16-bit samples, or as
+/// `f32` converted here when the device offers only that. Capture stops when
+/// this is dropped.
+pub struct RdpMicrophone {
+    _stream: Stream,
+}
+
+impl RdpMicrophone {
+    /// Starts capturing, handing `send` packets of exactly `packet_size` bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is no input device or it cannot capture in
+    /// the requested format.
+    pub fn start(
+        channels: u16,
+        sample_rate: u32,
+        packet_size: usize,
+        send: impl FnMut(Vec<u8>) + Send + 'static,
+    ) -> Result<Self, AudioError> {
+        let host = cpal::default_host();
+        let device = host
+            .default_input_device()
+            .ok_or(AudioError::NoInputDevice)?;
+        let config = StreamConfig {
+            channels,
+            sample_rate,
+            buffer_size: cpal::BufferSize::Default,
+        };
+        let packets = Arc::new(Mutex::new(PacketBuilder::new(packet_size, Box::new(send))));
+
+        let i16_packets = Arc::clone(&packets);
+        let stream = device
+            .build_input_stream(
+                config,
+                move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                    if let Ok(mut packets) = i16_packets.lock() {
+                        packets.push_i16(data.iter().copied());
+                    }
+                },
+                |err| tracing::error!("[Audio] Microphone stream error: {}", err),
+                None,
+            )
+            .or_else(|_| {
+                device.build_input_stream(
+                    config,
+                    move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                        if let Ok(mut packets) = packets.lock() {
+                            packets.push_i16(data.iter().copied().map(f32_to_i16));
+                        }
+                    },
+                    |err| tracing::error!("[Audio] Microphone stream error: {}", err),
+                    None,
+                )
+            })
+            .map_err(|e| AudioError::StreamCreation(e.to_string()))?;
+        stream
+            .play()
+            .map_err(|e| AudioError::Playback(e.to_string()))?;
+
+        tracing::debug!(
+            channels,
+            sample_rate,
+            packet_size,
+            "[Audio] Microphone capture started"
+        );
+        Ok(Self { _stream: stream })
+    }
 }
 
 /// Audio buffer for queuing PCM data
@@ -334,6 +451,28 @@ impl Drop for RdpAudioPlayer {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn microphone_packets_are_cut_to_the_requested_size() {
+        let sent = std::sync::Arc::new(std::sync::Mutex::new(Vec::<Vec<u8>>::new()));
+        let sink = std::sync::Arc::clone(&sent);
+        let mut packets =
+            super::PacketBuilder::new(6, Box::new(move |packet| sink.lock().unwrap().push(packet)));
+        // Five samples are ten bytes: one six-byte packet, four bytes pending.
+        packets.push_i16([1, -1, 2, -2, 3]);
+        assert_eq!(*sent.lock().unwrap(), vec![vec![1, 0, 255, 255, 2, 0]]);
+        packets.push_i16([-3]);
+        assert_eq!(sent.lock().unwrap().len(), 2);
+        assert_eq!(sent.lock().unwrap()[1], vec![254, 255, 3, 0, 253, 255]);
+    }
+
+    #[test]
+    fn f32_samples_are_clamped_to_pcm() {
+        assert_eq!(super::f32_to_i16(0.0), 0);
+        assert_eq!(super::f32_to_i16(1.0), i16::MAX);
+        assert_eq!(super::f32_to_i16(2.0), i16::MAX);
+        assert_eq!(super::f32_to_i16(-2.0), -i16::MAX);
+    }
+
     use super::*;
 
     #[test]

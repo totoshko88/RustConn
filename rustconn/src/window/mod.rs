@@ -643,6 +643,10 @@ impl MainWindow {
                 .unwrap_or(true)
         };
         let terminal_notebook = Rc::new(TerminalNotebook::new(show_welcome));
+        let auto_capture_shortcuts = with_state(&state, |s| {
+            s.settings().ui.remote_desktop_auto_capture_shortcuts
+        });
+        terminal_notebook.set_auto_capture_shortcuts(auto_capture_shortcuts);
 
         // Refresh VTE font state when fontconfig changes (#171).
         // VTE reads `gtk-fontconfig-timestamp` only when it creates its
@@ -4138,6 +4142,9 @@ impl MainWindow {
 
                 // Apply the tab menu's directional-close visibility setting
                 notebook.set_show_directional_close(settings.ui.show_directional_tab_close);
+
+                // Apply the auto-capture shortcuts setting for remote desktop sessions
+                notebook.set_auto_capture_shortcuts(settings.ui.remote_desktop_auto_capture_shortcuts);
 
                 // Apply the sidebar width (issue #3: one value, 180..=500) and show
                 // or hide the drag handle to match the opt-in toggle.

@@ -22,15 +22,15 @@ use gtk4::{
 };
 use libadwaita as adw;
 use rustconn_core::models::{
-    RdpAudioMode, RdpClientMode, RdpClipboardDirection, RdpDisplayMode, RdpPerformanceMode,
-    ScaleOverride, SharedFolder,
+    RdpAudioMode, RdpClientMode, RdpClipboardDirection, RdpDisplayMode, RdpKeyboardHook,
+    RdpPerformanceMode, ScaleOverride, SharedFolder,
 };
 
 use crate::i18n::i18n;
 
 /// Creates the RDP options panel with all protocol-specific widgets.
 ///
-/// Returns a 42-element tuple matching the fields expected by `ConnectionDialog`.
+/// Returns a 47-element tuple matching the fields expected by `ConnectionDialog`.
 pub(super) fn create_rdp_options() -> (
     GtkBox,
     DropDown,
@@ -73,6 +73,11 @@ pub(super) fn create_rdp_options() -> (
     Entry,
     Entry,
     DropDown,
+    DropDown,
+    adw::SwitchRow,
+    adw::SwitchRow,
+    Entry,
+    adw::SwitchRow,
     DropDown,
 ) {
     let scrolled = ScrolledWindow::builder()
@@ -328,6 +333,59 @@ pub(super) fn create_rdp_options() -> (
         .active(false)
         .build();
     features_group.add(&printer_check);
+
+    // Microphone, over the AUDIO_INPUT channel on the embedded client.
+    let rdp_microphone_check = adw::SwitchRow::builder()
+        .title(i18n("Microphone"))
+        .subtitle(i18n("Send the local microphone to the remote session"))
+        .active(false)
+        .build();
+    features_group.add(&rdp_microphone_check);
+
+    // Smart cards. External client only, like FIDO2: mstsc writes
+    // `redirectsmartcards:i:1` into every .rdp file, so forcing FreeRDP here
+    // would move every imported Windows profile out of the embedded viewer.
+    let rdp_smartcard_check = adw::SwitchRow::builder()
+        .title(i18n("Smart Cards"))
+        .subtitle(i18n(
+            "Use local smart card readers in the remote session (External client, needs PC/SC)",
+        ))
+        .active(false)
+        .build();
+    features_group.add(&rdp_smartcard_check);
+
+    // Windows key combinations (mstsc's "Apply Windows key combinations"). The
+    // first entry follows Settings → Interface, so a connection only overrides
+    // the application setting when asked to.
+    let keyboard_hook_items: Vec<String> = std::iter::once(None)
+        .chain(RdpKeyboardHook::all().iter().copied().map(Some))
+        .map(crate::dialogs::rdp_keyboard_hook_label)
+        .collect();
+    let keyboard_hook_strs: Vec<&str> = keyboard_hook_items.iter().map(String::as_str).collect();
+    let rdp_keyboard_hook_dropdown = DropDown::builder()
+        .model(&StringList::new(&keyboard_hook_strs))
+        .valign(gtk4::Align::Center)
+        .build();
+    rdp_keyboard_hook_dropdown.set_selected(RdpKeyboardHook::index_of(None));
+    let keyboard_hook_row = adw::ActionRow::builder()
+        .title(i18n("Windows Key Combinations"))
+        .subtitle(i18n(
+            "Where shortcuts such as Alt+Tab and Super apply while the session has focus (Embedded client)",
+        ))
+        .build();
+    keyboard_hook_row.add_suffix(&rdp_keyboard_hook_dropdown);
+    features_group.add(&keyboard_hook_row);
+
+    // Automatic reconnection after a dropped connection, as mstsc does it.
+    let rdp_auto_reconnect_check = adw::SwitchRow::builder()
+        .title(i18n("Reconnect Automatically"))
+        .subtitle(crate::i18n::i18n_f(
+            "Reconnect when the connection drops, up to {} attempts (Embedded client)",
+            &[&rustconn_core::rdp_client::AUTO_RECONNECT_MAX_ATTEMPTS.to_string()],
+        ))
+        .active(true)
+        .build();
+    features_group.add(&rdp_auto_reconnect_check);
 
     // Clipboard direction. Replaces the old on/off switch so one-way sync no
     // longer needs a /clipboard:direction-to: custom argument. The audio row
@@ -701,6 +759,21 @@ pub(super) fn create_rdp_options() -> (
     rdp_jump_host_row.add_suffix(&rdp_jump_host_dropdown);
     rdp_connection_group.add(&rdp_jump_host_row);
 
+    // RD Connection Broker routing value, as RD Web Access writes it into a
+    // farm's .rdp files. Both clients send it and follow the broker.
+    let rdp_load_balance_entry = Entry::builder()
+        .hexpand(true)
+        .valign(gtk4::Align::Center)
+        .build();
+    let load_balance_row = adw::ActionRow::builder()
+        .title(i18n("Load Balance Info"))
+        .subtitle(i18n(
+            "Connection broker routing value (loadbalanceinfo) from an .rdp file",
+        ))
+        .build();
+    load_balance_row.add_suffix(&rdp_load_balance_entry);
+    rdp_connection_group.add(&load_balance_row);
+
     content.append(&rdp_connection_group);
 
     // === Shared Folders Group ===
@@ -954,5 +1027,10 @@ pub(super) fn create_rdp_options() -> (
         remote_app_name_entry,
         graphics_mode_dropdown,
         display_mode_dropdown,
+        rdp_microphone_check,
+        rdp_smartcard_check,
+        rdp_load_balance_entry,
+        rdp_auto_reconnect_check,
+        rdp_keyboard_hook_dropdown,
     )
 }

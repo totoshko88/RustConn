@@ -15,9 +15,9 @@
 use std::borrow::Cow;
 use std::sync::mpsc::Sender;
 
-use ironrdp::core::impl_as_any;
-use ironrdp::rdpsnd::client::RdpsndClientHandler;
-use ironrdp::rdpsnd::pdu::{AudioFormat, AudioFormatFlags, PitchPdu, VolumePdu, WaveFormat};
+use ironrdp_core::impl_as_any;
+use ironrdp_rdpsnd::client::RdpsndClientHandler;
+use ironrdp_rdpsnd::pdu::{AudioFormat, AudioFormatFlags, PitchPdu, VolumePdu, WaveFormat};
 use tracing::{debug, trace};
 
 use super::{AudioFormatInfo, RdpClientEvent};
@@ -188,24 +188,30 @@ impl RdpsndClientHandler for RustConnAudioBackend {
         }
     }
 
-    fn wave(&mut self, format_no: usize, ts: u32, data: Cow<'_, [u8]>) {
+    fn wave(&mut self, format: &AudioFormat, ts: u32, data: Cow<'_, [u8]>) {
         if !self.enabled {
             return;
         }
 
+        // The GUI keys playback on the index into the list advertised here,
+        // which is what ironrdp-rdpsnd used to hand over before it passed the
+        // negotiated format itself.
+        let Some(format_no) = self.supported_formats.iter().position(|f| f == format) else {
+            debug!("Dropping a wave block in a format that was never advertised");
+            return;
+        };
+
         // Update current format if changed
         if self.current_format != Some(format_no) {
             self.current_format = Some(format_no);
-            if let Some(format) = self.supported_formats.get(format_no) {
-                debug!(
-                    "Audio format selected: {} Hz, {} ch, {} bit",
-                    format.n_samples_per_sec, format.n_channels, format.bits_per_sample
-                );
-                let format_info = AudioFormatInfo::from(format);
-                let _ = self
-                    .event_tx
-                    .send(RdpClientEvent::AudioFormatChanged(format_info));
-            }
+            debug!(
+                "Audio format selected: {} Hz, {} ch, {} bit",
+                format.n_samples_per_sec, format.n_channels, format.bits_per_sample
+            );
+            let format_info = AudioFormatInfo::from(format);
+            let _ = self
+                .event_tx
+                .send(RdpClientEvent::AudioFormatChanged(format_info));
         }
 
         trace!(
@@ -300,7 +306,8 @@ mod tests {
         let mut backend = RustConnAudioBackend::new(tx);
 
         let data = vec![0u8; 1024];
-        backend.wave(0, 12345, Cow::Borrowed(&data));
+        let format = backend.get_formats()[0].clone();
+        backend.wave(&format, 12345, Cow::Borrowed(&data));
 
         // Should receive format change event first
         let event = rx.try_recv().unwrap();

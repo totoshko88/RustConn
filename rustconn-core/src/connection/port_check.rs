@@ -87,6 +87,9 @@ pub fn check_port(
     }
 
     // Try each resolved address
+    // ponytail: one address at a time, so an address that never answers (a
+    // VPN's unrouted AAAA record) delays the probe by a full `timeout`; race
+    // them like `connection::connect_tcp` if that delay starts to matter.
     let mut last_error = String::new();
     for addr in addrs {
         match TcpStream::connect_timeout(&addr, timeout) {
