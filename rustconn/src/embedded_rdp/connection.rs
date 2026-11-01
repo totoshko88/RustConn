@@ -2710,42 +2710,46 @@ Open Settings → Connection → Media Codecs to re-download it.",
         // HYBRID_EX exactly as Remmina does. Guarded to fire once: if the
         // TLS-only path is rejected too, the real auth error (with the KRdp
         // advice from `parse_ironrdp_error`) surfaces instead of looping.
-        let should_route_tls_only = !*ctx.tls_only_fallback_attempted.borrow()
-            && rustconn_core::rdp_client::warrants_tls_only_fallback(msg);
+        // Two distinct failures against the same family of Linux RDP servers
+        // (GRD/KRdp, FreeRDP 3.32) are reached only by negotiating plain TLS,
+        // exactly as Remmina and GNOME Connections do, so both hand off to the
+        // external client with the security layer pinned to `/sec:tls`:
+        //
+        // * a CredSSP rejection — KRdp 6.6.x advertises HYBRID_EX it cannot
+        //   complete, so the embedded client's NLA is refused with
+        //   STATUS_LOGON_FAILURE (0xc000006d) even with correct credentials
+        //   (issue #366, FreeRDP #13567);
+        // * a silent post-TLS connect stall — a GNOME Remote Desktop server (or
+        //   one reached over an SSH bridge) completes TLS and then never answers
+        //   the embedded client's NLA/finalize, producing the #392/#381 stall.
+        //   `ProtocolIncompatible` already falls this back to the external
+        //   client, but the generic path keeps the default HYBRID_EX
+        //   negotiation and an explicit `/bpp`, which re-create the same
+        //   problem; the TLS-only config matches the working external command.
+        //
+        // Guarded to fire once (shared guard): if the TLS-only path is rejected
+        // too, the real error — the #366 auth advice or the "server
+        // incompatible" banner — surfaces instead of looping.
+        let tls_only_reason = if rustconn_core::rdp_client::warrants_tls_only_fallback(msg) {
+            Some("CredSSP rejected (possible KRdp/FreeRDP-3.32 HYBRID_EX regression)")
+        } else if rustconn_core::rdp_client::warrants_tls_only_stall_fallback(msg) {
+            Some("connect stalled after TLS (GNOME Remote Desktop / SSH-bridge, #392/#381)")
+        } else {
+            None
+        };
+        let should_route_tls_only =
+            !*ctx.tls_only_fallback_attempted.borrow() && tls_only_reason.is_some();
 
         if should_route_tls_only {
             *ctx.tls_only_fallback_attempted.borrow_mut() = true;
             tracing::info!(
                 protocol = "rdp",
                 error = %msg,
-                "[IronRDP] CredSSP rejected (possible KRdp/FreeRDP-3.32 HYBRID_EX \
-                 regression) — handing off to external FreeRDP pinned to TLS (/sec:tls)"
+                reason = tls_only_reason.unwrap_or_default(),
+                "[IronRDP] handing off to external FreeRDP pinned to TLS (/sec:tls)"
             );
             if let Some(ref mut config) = *ctx.fallback_config.borrow_mut() {
-                // Pin TLS only — this emits `/sec:tls`, which drops HYBRID/HYBRID_EX
-                // from the negotiation. Deliberately NOT `disable_nla`: `/sec:tls`
-                // already excludes NLA, and adding `/sec:nla:off` on top produced
-                // a conflicting negotiation that failed against KRdp.
-                config.security_layer = rustconn_core::models::RdpSecurityLayer::Tls;
-                // Drop an explicit colour depth: KRdp drives its own framebuffer
-                // and answers an explicit `/bpp:32` in the capabilities exchange
-                // with PDU_TYPE_DEACTIVATE_ALL (bisected live against a real KRdp
-                // — issue #366). None lets FreeRDP negotiate bpp with the server,
-                // which is what the working `xfreerdp … /sec:tls` command does.
-                config.color_depth = None;
-                // Open a resizable window instead of `/size:100%`. FitScreen
-                // emits `/size:100%`, which opens a fixed monitor-sized window
-                // the user cannot resize; this external fallback is a standalone
-                // window, so a Custom start size with `/smart-sizing` opens a
-                // smaller resizable window whose content scales to fit (issue
-                // #366 — confirmed against KRdp, where `/dynamic-resolution`
-                // left the content not fitting). smart_sizing and
-                // dynamic_resolution are mutually exclusive (#341).
-                config.external_display_mode = rustconn_core::models::RdpDisplayMode::Custom;
-                config.external_resolution =
-                    Some(rustconn_core::models::Resolution::new(1280, 800));
-                config.dynamic_resolution = false;
-                config.smart_sizing = true;
+                Self::pin_fallback_to_tls_only(config);
             }
             Self::prepare_freerdp_fallback(ctx);
             Self::launch_freerdp_fallback(ctx, msg);
@@ -2833,6 +2837,39 @@ Open Settings → Connection → Media Codecs to re-download it.",
         } else {
             Self::launch_freerdp_fallback(ctx, msg);
         }
+    }
+
+    /// Pins an external-FreeRDP fallback config to plain TLS for a Linux RDP
+    /// server (GRD/KRdp, FreeRDP 3.32).
+    ///
+    /// Shared by the two routes that need it — the #366 CredSSP rejection and
+    /// the #392/#381 post-TLS stall — so the exact set of flags that was
+    /// bisected live against a real KRdp server lives in one place and cannot
+    /// drift between the callers.
+    #[cfg(feature = "rdp-embedded")]
+    fn pin_fallback_to_tls_only(config: &mut RdpConfig) {
+        // Pin TLS only — this emits `/sec:tls`, which drops HYBRID/HYBRID_EX
+        // from the negotiation. Deliberately NOT `disable_nla`: `/sec:tls`
+        // already excludes NLA, and adding `/sec:nla:off` on top produced a
+        // conflicting negotiation that failed against KRdp.
+        config.security_layer = rustconn_core::models::RdpSecurityLayer::Tls;
+        // Drop an explicit colour depth: these servers drive their own
+        // framebuffer and answer an explicit `/bpp:32` in the capabilities
+        // exchange with PDU_TYPE_DEACTIVATE_ALL (bisected live against a real
+        // KRdp — issue #366). None lets FreeRDP negotiate bpp with the server,
+        // which is what the working `xfreerdp … /sec:tls` command does.
+        config.color_depth = None;
+        // Open a resizable window instead of `/size:100%`. FitScreen emits
+        // `/size:100%`, which opens a fixed monitor-sized window the user
+        // cannot resize; this external fallback is a standalone window, so a
+        // Custom start size with `/smart-sizing` opens a smaller resizable
+        // window whose content scales to fit (issue #366 — confirmed against
+        // KRdp, where `/dynamic-resolution` left the content not fitting).
+        // smart_sizing and dynamic_resolution are mutually exclusive (#341).
+        config.external_display_mode = rustconn_core::models::RdpDisplayMode::Custom;
+        config.external_resolution = Some(rustconn_core::models::Resolution::new(1280, 800));
+        config.dynamic_resolution = false;
+        config.smart_sizing = true;
     }
 
     /// Clears embedded-client state before an external fallback or consent prompt.

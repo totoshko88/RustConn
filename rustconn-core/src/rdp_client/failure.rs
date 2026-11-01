@@ -407,6 +407,39 @@ pub fn warrants_tls_only_fallback(msg: &str) -> bool {
     is_invalid_token || is_logon_reject
 }
 
+/// Returns `true` when a *post-TLS connect stall* is worth one external-FreeRDP
+/// retry pinned to **TLS only** (`/sec:tls`), the same treatment the CredSSP
+/// case in [`warrants_tls_only_fallback`] gets.
+///
+/// A GNOME Remote Desktop or GNOME-RDP-over-SSH-bridge server completes X.224
+/// and the TLS upgrade, then the embedded IronRDP client waits out its whole
+/// handshake budget inside `connect_finalize` with no error — the silent stall
+/// classified as [`RdpFailureClass::ProtocolIncompatible`] via
+/// [`POST_TLS_STALL_MARKER`] (issues [#392], [#381]). That class already lets
+/// the session fall back to external FreeRDP, but through the *generic* path,
+/// which keeps the default `[SSL | HYBRID | HYBRID_EX]` negotiation and an
+/// explicit `/bpp`. Both re-create the original problem: these GRD-based Linux
+/// servers behave like KRdp (issue #366) — they are reached by negotiating
+/// plain TLS, exactly as Remmina and GNOME Connections do, and an explicit
+/// colour depth makes them answer with `PDU_TYPE_DEACTIVATE_ALL`.
+///
+/// So a post-TLS stall is routed to the **same** TLS-only external config the
+/// #366 path builds (`/sec:tls`, `color_depth = None`, smart-sizing). The
+/// trigger is deliberately the stall marker alone, not a host probe: a Windows
+/// host does not silently stall after TLS, it returns a concrete auth or
+/// licensing error, so the marker is itself the Linux-server gate. The caller
+/// fires it **once** (shared with the CredSSP path's one-shot guard), so a
+/// server that rejects the TLS-only path too surfaces the real incompatibility
+/// banner instead of looping.
+///
+/// [#392]: https://github.com/totoshko88/RustConn/issues/392
+/// [#381]: https://github.com/totoshko88/RustConn/issues/381
+/// [#366]: https://github.com/totoshko88/RustConn/issues/366
+#[must_use]
+pub fn warrants_tls_only_stall_fallback(msg: &str) -> bool {
+    msg.to_ascii_lowercase().contains(POST_TLS_STALL_MARKER)
+}
+
 /// What a rejected CredSSP/NLA sign-in was rejected for, as far as the message says.
 ///
 /// Finer than [`RdpFailureClass::Authentication`]: that class decides that no
@@ -810,9 +843,37 @@ mod tests {
         assert!(!class.requires_explicit_consent(), "message: {msg}");
         assert!(!is_authentication_failure(&msg), "message: {msg}");
         assert_eq!(classify_auth_failure(&msg), None, "message: {msg}");
+        // It is the post-TLS stall, not the CredSSP shape, so it must not trip
+        // the CredSSP (#366) TLS-only gate — but it must trip the stall gate.
         assert!(!warrants_tls_only_fallback(&msg), "message: {msg}");
+        assert!(warrants_tls_only_stall_fallback(&msg), "message: {msg}");
         // The "server incompatible" banner is right here, not the licensing one.
         assert!(!is_license_exchange_failure(&msg), "message: {msg}");
+    }
+
+    /// Issues #392 / #381: the post-TLS stall gets the SAME /sec:tls external
+    /// treatment as the #366 CredSSP case, so it must trip the stall gate while
+    /// the CredSSP logon-reject must not (they route through the same one-shot
+    /// guard but name different reasons).
+    #[test]
+    fn post_tls_stall_warrants_a_tls_only_fallback() {
+        let stall = post_tls_stall_error(45).to_string();
+        assert!(warrants_tls_only_stall_fallback(&stall), "message: {stall}");
+        assert!(warrants_tls_only_stall_fallback(&stall.to_uppercase()));
+
+        // The CredSSP #366 shape is the other gate, not this one.
+        assert!(!warrants_tls_only_stall_fallback(CREDSSP_LOGON_FAILURE));
+
+        // Unrelated failures never trip the stall gate.
+        for msg in [
+            ISSUE_235,
+            CONNECTOR_STANDARD_RDP_DOWNSELECT,
+            "TLS handshake failed: invalid peer certificate",
+            "Failed to connect to host:3389: connection refused",
+            "Operation timed out",
+        ] {
+            assert!(!warrants_tls_only_stall_fallback(msg), "message: {msg}");
+        }
     }
 
     /// Issue #392: a timeout that happens *before* TLS — an unreachable host, a
