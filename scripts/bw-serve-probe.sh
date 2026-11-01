@@ -38,8 +38,14 @@ BW_VERSION="$("$BW" --version 2>/dev/null | tr -d '\r')"
 say "bw version:            ${BW_VERSION:-unknown}"
 
 # `fd+connected://` support is the risky assumption — probe the help text.
-if "$BW" serve --help 2>&1 | grep -qi 'fd+connected\|--hostname'; then
-  say "serve --hostname:      present in --help"
+# The socketpair transport the plan centres on needs a CLI new enough to list
+# the fd schemes (clients PR #14262, present in cli-v2026.10.0). An older build
+# — e.g. the Flatpak-bundled 2026.4.2 — offers only TCP `--hostname`/`--port`,
+# so the production transport must fall back to loopback TCP there.
+if "$BW" serve --help 2>&1 | grep -qi 'fd+connected'; then
+  say "serve fd+connected://: present in --help (socketpair transport available)"
+elif "$BW" serve --help 2>&1 | grep -qi -- '--hostname'; then
+  say "serve fd+connected://: NOT advertised (TCP-serve only on this bw ${BW_VERSION:-?}) — socketpair transport needs a newer CLI"
 else
   say "serve --hostname:      NOT advertised in --help (note the risk)"
 fi
@@ -85,10 +91,15 @@ fi
 printf 'Master password (not echoed, used once for POST /unlock): '
 stty -echo 2>/dev/null; read -r MASTER; stty echo 2>/dev/null; printf '\n'
 
+# The password goes through curl's STDIN (`--data @-`), never an argv token:
+# `curl -d "{...$MASTER...}"` would put the master password in curl's
+# /proc/<pid>/cmdline, readable by every uid on the box — the exact leak the
+# whole W2 serve work exists to close. Piping the body keeps it off argv.
 T0="$(now_ms)"
-UNLOCK_JSON="$(curl -s -X POST "http://$HOST:$PORT/unlock" \
-  -H 'Content-Type: application/json' \
-  -d "{\"password\":\"$MASTER\"}" 2>/dev/null)"
+UNLOCK_JSON="$(printf '{"password":%s}' "$(printf '%s' "$MASTER" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
+  | curl -s -X POST "http://$HOST:$PORT/unlock" \
+      -H 'Content-Type: application/json' \
+      --data @- 2>/dev/null)"
 T1="$(now_ms)"
 MASTER=""  # drop it
 UNLOCK_MS=$((T1 - T0))
