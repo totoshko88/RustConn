@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.3
+Version:        0.24.4
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,17 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.4-0
+- Version bump to 0.24.4
+- Fixed: embedded RDP to GNOME Remote Desktop (and over an SSH bridge) no
+  longer stalls on connect; the fallback is pinned to TLS-only (#392, #381)
+- Fixed: AppImage release build failed on a missing .DirIcon; the icon is now
+  copied into the AppDir root explicitly
+- Fixed: embedded RDP showed evenly spaced horizontal stripes; damage regions
+  are now sized inclusively (#389)
+- Security: CodeQL cleartext-logging alerts triaged as false positives — no
+  secret is logged; a canary test and note pin the invariant
+
 * Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.3-0
 - Version bump to 0.24.3
 - Added: embedded Remote Desktop Connection features (PR #402 by @pony-svg) —

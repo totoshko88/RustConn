@@ -97,7 +97,7 @@ pub use event::{
 pub use failure::{
     AUTO_RECONNECT_MAX_ATTEMPTS, AuthFailureKind, RdpFailureClass, auto_reconnect_delay,
     classify_auth_failure, classify_rdp_failure, is_authentication_failure,
-    is_license_exchange_failure, warrants_tls_only_fallback,
+    is_license_exchange_failure, warrants_tls_only_fallback, warrants_tls_only_stall_fallback,
 };
 pub use gateway::{
     GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState, resolve_gateway_user,

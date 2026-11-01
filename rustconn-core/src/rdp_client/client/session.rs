@@ -365,12 +365,12 @@ where
             }
         }
         ActiveStageOutput::GraphicsUpdate(region) => {
-            let rect = RdpRect::new(
-                region.left,
-                region.top,
-                region.right.saturating_sub(region.left),
-                region.bottom.saturating_sub(region.top),
-            );
+            // `region` is an IronRDP `InclusiveRectangle`; see
+            // `inclusive_region_to_rect` for why the span needs `+ 1`. The clamp
+            // inside `extract_region_data` keeps the last band from reading past
+            // the framebuffer.
+            let rect =
+                inclusive_region_to_rect(region.left, region.top, region.right, region.bottom);
             // Measure the region extraction (the per-frame CPU work on this
             // path) and record the painted frame. This is the RemoteFX/legacy
             // path, the one a session actually uses when H.264 is unavailable —
@@ -563,6 +563,23 @@ where
     Ok(())
 }
 
+/// Converts an IronRDP `InclusiveRectangle` damage region into an `RdpRect`.
+///
+/// `InclusiveRectangle` includes the pixel at (`right`, `bottom`), so the span
+/// is `right - left + 1` wide and `bottom - top + 1` tall. Treating it as
+/// exclusive (`right - left`) drops the last row and column of every region;
+/// with RemoteFX's stacked short bands those dropped rows become the horizontal
+/// stripes of issue #389. `saturating_*` keeps a degenerate `right < left`
+/// region (never emitted in practice) from panicking.
+fn inclusive_region_to_rect(left: u16, top: u16, right: u16, bottom: u16) -> RdpRect {
+    RdpRect::new(
+        left,
+        top,
+        right.saturating_sub(left).saturating_add(1),
+        bottom.saturating_sub(top).saturating_add(1),
+    )
+}
+
 /// Extracts pixel data for a specific region from the decoded image.
 ///
 /// IronRDP outputs pixels in BgrA32 which matches Cairo's ARGB32 format
@@ -704,5 +721,41 @@ mod tests {
             &[],
             Some(1005)
         ));
+    }
+
+    /// The bug behind issue #389: IronRDP reports a damage region as an
+    /// `InclusiveRectangle`, so a band covering rows 0..=2 (top=0, bottom=2) is
+    /// three rows tall, not two. The exclusive subtraction left the last row of
+    /// every band unpainted, which stacked into horizontal stripes.
+    #[test]
+    fn inclusive_region_includes_its_last_row_and_column() {
+        // A short full-width RemoteFX band: columns 0..=1241, rows 992..=994.
+        let rect = inclusive_region_to_rect(0, 992, 1241, 994);
+        assert_eq!(rect.x, 0);
+        assert_eq!(rect.y, 992);
+        assert_eq!(rect.width, 1242, "right=1241 inclusive means 1242 columns");
+        assert_eq!(rect.height, 3, "rows 992..=994 inclusive is 3 rows, not 2");
+    }
+
+    /// Two vertically adjacent bands must tile with no gap: the first band's
+    /// last row and the second band's first row have to be consecutive, which
+    /// only holds once the inclusive bottom is counted.
+    #[test]
+    fn adjacent_bands_leave_no_unpainted_row() {
+        let upper = inclusive_region_to_rect(0, 787, 1551, 894);
+        let lower = inclusive_region_to_rect(0, 895, 1551, 1002);
+        // Upper paints rows 787..=894; lower starts at 895 — contiguous.
+        assert_eq!(u32::from(upper.y) + u32::from(upper.height), 895);
+        assert_eq!(u32::from(lower.y), 895);
+    }
+
+    /// A single-pixel region (left==right, top==bottom) is one pixel each way,
+    /// and a degenerate inverted region must not panic.
+    #[test]
+    fn single_pixel_and_degenerate_regions_are_safe() {
+        let one = inclusive_region_to_rect(10, 20, 10, 20);
+        assert_eq!((one.width, one.height), (1, 1));
+        let degenerate = inclusive_region_to_rect(10, 20, 5, 15);
+        assert_eq!((degenerate.width, degenerate.height), (1, 1));
     }
 }

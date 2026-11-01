@@ -1,3 +1,21 @@
+rustconn (0.24.4-1) unstable; urgency=medium
+
+  * Version bump to 0.24.4
+  * Fixed: embedded RDP to GNOME Remote Desktop (and over an SSH bridge) no
+    longer stalls on connect — the post-TLS fallback is pinned to TLS-only
+    like the KDE KRdp case, instead of the generic HYBRID_EX path these
+    servers reject (#392, #381)
+  * Fixed: AppImage release build failed on a missing .DirIcon — the 256x256
+    icon is now copied into the AppDir root and .DirIcon written explicitly
+  * Fixed: embedded RDP showed evenly spaced horizontal stripes across the
+    desktop — IronRDP damage regions are InclusiveRectangles and are now sized
+    with +1 on each axis so the last row and column are painted (#389)
+  * Security: the CodeQL rust/cleartext-logging alerts were triaged as false
+    positives — no secret is logged; a canary test pins that ironrdp
+    Credentials Debug is not redacted and a note forbids formatting it
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Sun, 01 Nov 2026 12:00:00 +0200
+
 rustconn (0.24.3-1) unstable; urgency=medium
 
   * Added: embedded Remote Desktop Connection features (contributed by
