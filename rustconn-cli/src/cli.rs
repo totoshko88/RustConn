@@ -113,10 +113,11 @@ pub enum Commands {
         #[arg(long, value_name = "METHOD")]
         auth_method: Option<String>,
 
-        /// Bulk-add connections from a YAML or JSON file (native `.rcn` format),
-        /// or `-` for stdin. Adds every definition in one invocation and reports
-        /// how many were added and which were skipped. Mutually exclusive with
-        /// the single-connection flags.
+        /// Bulk-add connections from a YAML or JSON file — an object with a
+        /// `connections` array (and an optional `groups` array), or a bare
+        /// array of connections — or `-` for stdin. Adds every definition in
+        /// one invocation and reports how many were added and which were
+        /// skipped. Mutually exclusive with the single-connection flags.
         #[arg(long, value_name = "PATH", conflicts_with_all = ["name", "host"])]
         from_file: Option<String>,
 

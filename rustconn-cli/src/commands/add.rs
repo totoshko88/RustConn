@@ -829,13 +829,22 @@ pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Resul
         .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
 
     // Merge any groups the file carries, keyed by name (case-insensitive), so a
-    // connection's group_id resolves. A group whose name already exists is kept.
+    // connection's group_id resolves. A group whose name already exists is kept,
+    // and the file's id for it is remapped to the existing group's id below so a
+    // connection referring to it is not orphaned by a dangling group_id.
     let mut new_groups = 0usize;
+    let mut group_id_remap: std::collections::HashMap<uuid::Uuid, uuid::Uuid> =
+        std::collections::HashMap::new();
     for group in incoming_groups {
-        if !groups
+        if let Some(existing) = groups
             .iter()
-            .any(|g| g.name.eq_ignore_ascii_case(&group.name))
+            .find(|g| g.name.eq_ignore_ascii_case(&group.name))
         {
+            // Duplicate by name: point the file's group_id at the kept group.
+            if group.id != existing.id {
+                group_id_remap.insert(group.id, existing.id);
+            }
+        } else {
             groups.push(group);
             new_groups += 1;
         }
@@ -844,7 +853,13 @@ pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Resul
     let mut added = 0usize;
     let mut skipped: Vec<String> = Vec::new();
 
-    for conn in incoming_conns {
+    for mut conn in incoming_conns {
+        // Repoint a connection whose group was deduplicated to the kept group.
+        if let Some(gid) = conn.group_id
+            && let Some(canonical) = group_id_remap.get(&gid)
+        {
+            conn.group_id = Some(*canonical);
+        }
         if let Err(e) = ConfigManager::validate_connection(&conn) {
             skipped.push(format!("'{}' — invalid: {e}", conn.name));
             continue;
