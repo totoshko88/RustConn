@@ -289,4 +289,41 @@ impl super::EmbeddedRdpWidget {
             });
         }
     }
+
+    /// Wires the "Open in external client" toolbar button.
+    ///
+    /// Invokes the `on_manual_external_fallback` closure the embedded connect
+    /// flow installed, which tears down the live IronRDP session and hands it
+    /// to the external FreeRDP client. Guarded so it only acts while the
+    /// embedded IronRDP path is actually connected — on the external path or
+    /// before connect it is a no-op. See the toolbar button comment and
+    /// Devolutions/IronRDP #2351 for why xrdp needs this escape hatch.
+    #[cfg(feature = "rdp-embedded")]
+    pub(super) fn setup_external_client_button(&self, button: &Button) {
+        let trigger = self.on_manual_external_fallback.clone();
+        let state = self.state.clone();
+        let is_embedded = self.is_embedded.clone();
+        let is_ironrdp = self.is_ironrdp.clone();
+        let status_label = self.status_label.clone();
+
+        button.connect_clicked(move |_| {
+            let connected = *state.borrow() == RdpConnectionState::Connected;
+            if !connected || !*is_embedded.borrow() || !*is_ironrdp.borrow() {
+                // Already on the external client, or not connected: nothing to switch.
+                show_status_briefly(
+                    &status_label,
+                    &i18n("Already using the external RDP client"),
+                    2,
+                );
+                return;
+            }
+            // Take-invoke-restore so the closure may rewrite the cell (it tears
+            // down and relaunches) without keeping the RefCell borrowed.
+            let callback = trigger.borrow_mut().take();
+            if let Some(ref cb) = callback {
+                cb();
+            }
+            *trigger.borrow_mut() = callback;
+        });
+    }
 }
