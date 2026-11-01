@@ -700,7 +700,13 @@ fn explicit_format_table_is_honored_when_piped() {
 
     let add = run_cli(
         &[
-            "add", "--name", "web1", "--host", "web1.example.com", "--protocol", "ssh",
+            "add",
+            "--name",
+            "web1",
+            "--host",
+            "web1.example.com",
+            "--protocol",
+            "ssh",
         ],
         Some(config_dir),
     );
@@ -734,7 +740,13 @@ fn add_group_reports_created_then_existing_with_id() {
 
     let first = run_cli(
         &[
-            "add", "--name", "a1", "--host", "a1.example.com", "--group", "Ops",
+            "add",
+            "--name",
+            "a1",
+            "--host",
+            "a1.example.com",
+            "--group",
+            "Ops",
         ],
         Some(config_dir),
     );
@@ -747,7 +759,13 @@ fn add_group_reports_created_then_existing_with_id() {
 
     let second = run_cli(
         &[
-            "add", "--name", "a2", "--host", "a2.example.com", "--group", "Ops",
+            "add",
+            "--name",
+            "a2",
+            "--host",
+            "a2.example.com",
+            "--group",
+            "Ops",
         ],
         Some(config_dir),
     );
@@ -768,7 +786,14 @@ fn add_aws_ssm_requires_an_instance_id_in_host() {
 
     let ok = run_cli(
         &[
-            "add", "--name", "ec2a", "--protocol", "zt", "--provider", "aws_ssm", "--host",
+            "add",
+            "--name",
+            "ec2a",
+            "--protocol",
+            "zt",
+            "--provider",
+            "aws_ssm",
+            "--host",
             "i-0123456789abcdef0",
         ],
         Some(config_dir),
@@ -781,7 +806,14 @@ fn add_aws_ssm_requires_an_instance_id_in_host() {
 
     let bad = run_cli(
         &[
-            "add", "--name", "ec2b", "--protocol", "zt", "--provider", "aws_ssm", "--host",
+            "add",
+            "--name",
+            "ec2b",
+            "--protocol",
+            "zt",
+            "--provider",
+            "aws_ssm",
+            "--host",
             "ec2.example.com",
         ],
         Some(config_dir),

@@ -917,7 +917,11 @@ pub(super) fn cmd_update(
     let name = connection.name.clone();
 
     let group_feedback = group_outcome.as_ref().map(|o| {
-        let state = if o.created { "created" } else { "existing group" };
+        let state = if o.created {
+            "created"
+        } else {
+            "existing group"
+        };
         format!(
             " into group '{}' ({state}, ID {})",
             o.resolved_name, o.group_id

@@ -22,9 +22,11 @@ pub(super) fn cmd_template(
     subcmd: TemplateCommands,
 ) -> Result<(), CliError> {
     match subcmd {
-        TemplateCommands::List { format, protocol } => {
-            cmd_template_list(config_path, OutputFormat::effective(format), protocol.as_deref())
-        }
+        TemplateCommands::List { format, protocol } => cmd_template_list(
+            config_path,
+            OutputFormat::effective(format),
+            protocol.as_deref(),
+        ),
         TemplateCommands::Show { name } => cmd_template_show(config_path, &name),
         TemplateCommands::Create {
             name,

@@ -606,7 +606,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         }
         connection.group_id = Some(group_id);
         let state = if created { "created" } else { "existing group" };
-        Some(format!(" to group '{resolved_name}' ({state}, ID {group_id})"))
+        Some(format!(
+            " to group '{resolved_name}' ({state}, ID {group_id})"
+        ))
     } else {
         None
     };
@@ -794,19 +796,21 @@ pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Resul
 
     // Try the object shape first, then a bare array of connections. serde_yaml
     // parses JSON as well, so both document formats work through one path.
-    let (incoming_conns, incoming_groups): (Vec<Connection>, Vec<rustconn_core::models::ConnectionGroup>) =
-        match serde_yaml::from_str::<BulkAddDoc>(&content) {
-            Ok(doc) if !doc.connections.is_empty() => (doc.connections, doc.groups),
-            _ => {
-                let conns: Vec<Connection> = serde_yaml::from_str(&content).map_err(|e| {
-                    CliError::Config(format!(
-                        "Failed to parse connection definitions (expected a YAML/JSON object with \
+    let (incoming_conns, incoming_groups): (
+        Vec<Connection>,
+        Vec<rustconn_core::models::ConnectionGroup>,
+    ) = match serde_yaml::from_str::<BulkAddDoc>(&content) {
+        Ok(doc) if !doc.connections.is_empty() => (doc.connections, doc.groups),
+        _ => {
+            let conns: Vec<Connection> = serde_yaml::from_str(&content).map_err(|e| {
+                CliError::Config(format!(
+                    "Failed to parse connection definitions (expected a YAML/JSON object with \
                          a 'connections' array, or a bare array of connections): {e}"
-                    ))
-                })?;
-                (conns, Vec::new())
-            }
-        };
+                ))
+            })?;
+            (conns, Vec::new())
+        }
+    };
 
     if incoming_conns.is_empty() {
         return Err(CliError::Config(
@@ -849,7 +853,10 @@ pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Resul
             .iter()
             .any(|c| c.name.eq_ignore_ascii_case(&conn.name))
         {
-            skipped.push(format!("'{}' — a connection with that name already exists", conn.name));
+            skipped.push(format!(
+                "'{}' — a connection with that name already exists",
+                conn.name
+            ));
             continue;
         }
         connections.push(conn);
@@ -1024,7 +1031,10 @@ fn require<'a>(value: Option<&'a str>, flag: &str, provider: &str) -> Result<&'a
 /// fixed length — AWS has lengthened the ID once already and may again.
 fn validate_aws_ssm_target(target: &str) -> Result<(), CliError> {
     let rest = target.strip_prefix("i-").filter(|rest| !rest.is_empty());
-    let valid = rest.is_some_and(|rest| rest.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()));
+    let valid = rest.is_some_and(|rest| {
+        rest.bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    });
     if valid {
         Ok(())
     } else {
@@ -1751,7 +1761,14 @@ mod aws_ssm_target_tests {
     /// (AWS IDs are lowercase), and non-hex characters.
     #[test]
     fn rejects_other_malformed_targets() {
-        for bad in ["i-", "i-xyz", "0123456789abcdef0", "I-0123ABCD", "i-0123ABCD", ""] {
+        for bad in [
+            "i-",
+            "i-xyz",
+            "0123456789abcdef0",
+            "I-0123ABCD",
+            "i-0123ABCD",
+            "",
+        ] {
             assert!(
                 validate_aws_ssm_target(bad).is_err(),
                 "expected '{bad}' to be rejected"
