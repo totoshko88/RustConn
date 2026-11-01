@@ -439,8 +439,16 @@ jobs:
              AppDir/usr/share/icons/hicolor/scalable/apps/ || true
           for size in 256 128; do
             cp "rustconn/assets/icons/hicolor/${size}x${size}/apps/io.github.totoshko88.RustConn.png" \
-               "AppDir/usr/share/icons/hicolor/${size}x${size}/apps/" 2>/dev/null || true
+               "AppDir/usr/share/icons/hicolor/${size}x${size}/apps/"
           done
+
+          # appimagetool needs the Icon= PNG in the AppDir root to build .DirIcon.
+          # Newer appimagetool continuous builds no longer copy it from
+          # usr/share/icons themselves, so place it (and .DirIcon) explicitly —
+          # otherwise the appimage output plugin fails with ".DirIcon is not valid".
+          cp rustconn/assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png \
+             AppDir/io.github.totoshko88.RustConn.png
+          cp AppDir/io.github.totoshko88.RustConn.png AppDir/.DirIcon
           
           # Locale files (compile .po to .mo)
           for po_file in po/*.po; do
