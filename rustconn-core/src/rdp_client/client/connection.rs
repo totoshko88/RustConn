@@ -1075,6 +1075,14 @@ fn build_connector_config(config: &RdpClientConfig) -> Config {
     // so wrapping the intermediate in `Zeroizing` protects only the temporary
     // that bridges expose_secret() → Credentials construction. Re-check on
     // ironrdp bumps whether a secrecy-aware credentials type became available.
+    //
+    // SECURITY: `ironrdp_connector::Credentials` derives `Debug` and does NOT
+    // redact the password (checked against ironrdp-connector 0.12.0). So never
+    // log or format `Credentials`, `Config`, or the `ClientConnector` built
+    // from them with `{:?}` on a path that can carry a real password — the
+    // secret would reach the output verbatim. The `redacted_debug_is_a_canary`
+    // test below pins this so a future ironrdp bump that starts redacting (or a
+    // code change that starts printing one) is noticed.
     let credentials = {
         use zeroize::Zeroizing;
         let pw = config
@@ -1451,6 +1459,25 @@ mod tests {
             None,
         );
         assert!(format!("{connector:?}").contains("load_balance_info: None"));
+    }
+
+    /// Canary: `ironrdp_connector::Credentials` derives `Debug` and prints the
+    /// password verbatim (ironrdp-connector 0.12.0). This test documents that
+    /// fact so the production rule "never `{:?}` a connector/config/credentials
+    /// that can carry a real password" stays justified. If a future ironrdp
+    /// bump starts redacting the password, this assertion fails — update the
+    /// SECURITY note at the `Credentials` construction site when it does.
+    #[test]
+    fn credentials_debug_is_not_redacted_canary() {
+        let creds = Credentials::UsernamePassword {
+            username: "alice".to_owned(),
+            password: "canary-secret-7f3a".to_owned(),
+        };
+        assert!(
+            format!("{creds:?}").contains("canary-secret-7f3a"),
+            "ironrdp Credentials Debug now redacts the password — revisit the \
+             SECURITY note; it may be safe to relax the no-debug-logging rule"
+        );
     }
 
     #[test]

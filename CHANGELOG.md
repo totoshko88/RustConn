@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- **CodeQL `rust/cleartext-logging` alerts triaged — no secret is logged** — the seven high-severity alerts GitHub reported against `rustconn-cli/src/commands/secret.rs` (the `secret set` success lines) and the embedded-RDP broker-routing unit test were confirmed false positives: each `println!` prints only the connection name and username, and the test formats a connector built from a password-less config. A canary test now pins the fact that `ironrdp_connector::Credentials` derives a non-redacting `Debug` (ironrdp-connector 0.12.0), and a `SECURITY` note at the `Credentials` construction site forbids `{:?}`-formatting a connector, config or credentials that can carry a real password, so a future regression is caught at build time rather than by a scanner. (`rustconn-core/src/rdp_client/client/connection.rs`)
+
+### Fixed
+- **AppImage release build failed on `.DirIcon`** — a newer `appimagetool` continuous build stopped creating `.DirIcon` from `usr/share/icons` on its own, so the AppImage job failed with ".DirIcon is not valid". The release workflow now copies the 256×256 icon into the AppDir root and writes `.DirIcon` explicitly, and no longer silences a missing-icon copy. (`.github/workflows/release.yml`)
+
 ## [0.24.3] - 2026-11-01
 
 > 💜 The embedded Remote Desktop Connection features in this release — the
