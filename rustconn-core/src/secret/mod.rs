@@ -12,6 +12,9 @@
 mod async_resolver;
 mod backend;
 mod bitwarden;
+/// Persistent `bw serve` HTTP transport (feature `bitwarden-serve`, W2).
+#[cfg(feature = "bitwarden-serve")]
+pub mod bitwarden_serve;
 mod detection;
 mod encrypted_file;
 pub mod hierarchy;

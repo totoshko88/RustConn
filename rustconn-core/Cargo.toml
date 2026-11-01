@@ -138,6 +138,18 @@ nix = { version = "0.31.2", features = ["fs", "signal", "process"] }
 socket2 = { version = "0.6", features = ["all"] }
 fs2 = "0.4"
 
+# HTTP/1.1 client for the persistent `bw serve` transport (feature
+# `bitwarden-serve`, W2). All already in Cargo.lock transitively (hyper 1.12,
+# hyper-util 0.1.21, http-body-util 0.1.5, bytes 1.12), so enabling the feature
+# adds NO new crate to the build graph — only direct edges. The `http` crate's
+# types (StatusCode, header names) are reached through hyper's re-exports, so it
+# is not named here; cargo-machete flags an unused direct `http`. Kept optional
+# so a default build stays headless and does not name them.
+hyper = { version = "1.12", default-features = false, features = ["client", "http1"], optional = true }
+hyper-util = { version = "0.1", default-features = false, features = ["tokio"], optional = true }
+http-body-util = { version = "0.1", optional = true }
+bytes = { version = "1", optional = true }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 security-framework = { version = "3.3", optional = true }
 
@@ -181,6 +193,11 @@ rdp-embedded = [
 gfx-h264 = ["dep:ironrdp-egfx", "rdp-embedded"]
 # rd-gateway enables native RD Gateway (MS-TSGU) tunneling without external client
 rd-gateway = ["dep:ironrdp-mstsgu", "rdp-embedded"]
+# bitwarden-serve enables the persistent `bw serve` transport (W2). A long-lived
+# `bw serve` on a random loopback port replaces one-shot `bw` spawns, driven over
+# HTTP/1.1 with hyper. Opt-in so a default build keeps the spawn-per-call path and
+# does not pull hyper into its direct dependency set.
+bitwarden-serve = ["dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:bytes"]
 
 [dev-dependencies]
 proptest = { workspace = true }
