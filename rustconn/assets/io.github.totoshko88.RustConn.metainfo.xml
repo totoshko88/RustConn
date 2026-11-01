@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.4" date="2026-11-01">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.4</url>
+      <description>
+        <p>Version 0.24.4 - embedded RDP connection and rendering fixes:</p>
+        <ul>
+          <li>Embedded RDP to GNOME Remote Desktop, including over an SSH bridge, no longer stalls after the TLS upgrade; the fallback is now pinned to TLS-only (#392, #381).</li>
+          <li>The AppImage release build no longer fails on a missing .DirIcon; the icon is copied into the AppDir root explicitly.</li>
+          <li>Embedded RDP no longer shows evenly spaced horizontal stripes; damage regions are sized inclusively (#389).</li>
+          <li>Security: the CodeQL cleartext-logging alerts were triaged as false positives, with a canary test and a note pinning that no secret is logged.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.3" date="2026-11-01">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.3</url>
       <description>
