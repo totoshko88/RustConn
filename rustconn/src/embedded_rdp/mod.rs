@@ -312,13 +312,6 @@ pub struct EmbeddedRdpWidget {
     on_cert_changed: Rc<RefCell<Option<super::embedded_rdp::types::CertChangedCallback>>>,
     /// Reconnect callback
     on_reconnect: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
-    /// Manual "open in external client" trigger. Populated by the embedded
-    /// connect flow with a closure that tears down the IronRDP session and
-    /// hands it to the external FreeRDP client, so the toolbar button can offer
-    /// that escape hatch when a server (e.g. xrdp, IronRDP #2351) renders
-    /// correctly only through the external client.
-    #[cfg(feature = "rdp-embedded")]
-    on_manual_external_fallback: Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
     /// Reconnect banner (shown when disconnected, at bottom of container)
     reconnect_banner: GtkBox,
     /// Label inside the reconnect banner, so its wording can state the reason.
@@ -656,26 +649,6 @@ impl EmbeddedRdpWidget {
         ctrl_alt_del_button.set_tooltip_text(Some(&i18n("Send Ctrl+Alt+Del to remote session")));
         toolbar.append(&ctrl_alt_del_button);
 
-        // "Open in external client" escape hatch. Some Linux RDP servers render
-        // correctly only through the external FreeRDP client — notably xrdp,
-        // whose 32bpp RDP6 bitmaps the embedded IronRDP decoder still tears on
-        // (upstream Devolutions/IronRDP #2351). This hands the live session to
-        // the external client without the user having to disconnect, edit the
-        // connection to "external" and reconnect. Only meaningful while the
-        // embedded IronRDP path is active; the handler no-ops otherwise.
-        #[cfg(feature = "rdp-embedded")]
-        let external_client_button = Button::from_icon_name("external-link-symbolic");
-        #[cfg(feature = "rdp-embedded")]
-        {
-            external_client_button.add_css_class("flat");
-            external_client_button
-                .set_tooltip_text(Some(&i18n("Open this session in the external RDP client")));
-            external_client_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
-                "Open this session in the external RDP client",
-            ))]);
-            toolbar.append(&external_client_button);
-        }
-
         // Windows Admin quick actions dropdown menu
         let quick_actions_button = gtk4::MenuButton::new();
         quick_actions_button.set_icon_name("view-more-symbolic");
@@ -853,8 +826,6 @@ impl EmbeddedRdpWidget {
             on_state_changed: Rc::new(RefCell::new(None)),
             on_error: Rc::new(RefCell::new(None)),
             on_fallback: Rc::new(RefCell::new(None)),
-            #[cfg(feature = "rdp-embedded")]
-            on_manual_external_fallback: Rc::new(RefCell::new(None)),
             on_legacy_security_required: Rc::new(RefCell::new(None)),
             on_cert_changed: Rc::new(RefCell::new(None)),
             on_reconnect: Rc::new(RefCell::new(None)),
@@ -896,8 +867,6 @@ impl EmbeddedRdpWidget {
         widget.setup_fit_resolution_button(&fit_resolution_button);
         widget.setup_clipboard_buttons(&copy_button, &paste_button);
         widget.setup_ctrl_alt_del_button(&ctrl_alt_del_button);
-        #[cfg(feature = "rdp-embedded")]
-        widget.setup_external_client_button(&external_client_button);
         #[cfg(feature = "rdp-embedded")]
         widget.setup_autotype_clipboard_button(&type_clipboard_button);
         #[cfg(feature = "rdp-embedded")]

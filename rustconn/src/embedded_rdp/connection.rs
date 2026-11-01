@@ -1617,57 +1617,6 @@ impl super::EmbeddedRdpWidget {
         // issue #366) is handed once to external FreeRDP pinned to /sec:tls.
         let tls_only_fallback_attempted = std::rc::Rc::new(std::cell::RefCell::new(false));
 
-        // Install the manual "open in external client" trigger for this session.
-        // Fired by the toolbar button when a server renders correctly only
-        // through the external FreeRDP client (e.g. xrdp's 32bpp RDP6 bitmaps
-        // the embedded decoder still tears on — Devolutions/IronRDP #2351). It
-        // tears down the live IronRDP client and hands the session to external
-        // FreeRDP via the same path the automatic fallbacks use, so no
-        // disconnect/edit/reconnect round-trip is needed. Keyed to this
-        // connection's generation so a stale widget never relaunches.
-        {
-            let manual_ctx = RdpConnectionContext {
-                state: state.clone(),
-                drawing_area: drawing_area.clone(),
-                toolbar: toolbar.clone(),
-                on_state_changed: on_state_changed.clone(),
-                on_error: on_error.clone(),
-                on_fallback: on_fallback.clone(),
-                on_legacy_security_required: on_legacy_security_required.clone(),
-                on_cert_changed: on_cert_changed.clone(),
-                is_embedded: is_embedded.clone(),
-                is_ironrdp: is_ironrdp.clone(),
-                ironrdp_tx: ironrdp_tx.clone(),
-                client_ref: client_ref.clone(),
-                fallback_config: fallback_config.clone(),
-                fallback_process: fallback_process.clone(),
-                clipboard_monitor: clipboard_monitor.clone(),
-                gfx_retry_attempted: gfx_retry_attempted.clone(),
-                tls_only_fallback_attempted: tls_only_fallback_attempted.clone(),
-                on_reconnect: on_reconnect.clone(),
-                connection_generation: connection_generation.clone(),
-                generation,
-                reconnect_banner: stale_banner.clone(),
-                reconnect_label: stale_label.clone(),
-                auto_reconnect_attempt: auto_reconnect_attempt.clone(),
-                auto_reconnect_timer: auto_reconnect_timer.clone(),
-            };
-            *self.on_manual_external_fallback.borrow_mut() = Some(Box::new(move || {
-                if *manual_ctx.connection_generation.borrow() != manual_ctx.generation {
-                    return;
-                }
-                tracing::info!(
-                    protocol = "rdp",
-                    "[IronRDP] user requested hand-off to the external FreeRDP client"
-                );
-                Self::prepare_freerdp_fallback(&manual_ctx);
-                Self::launch_freerdp_fallback(
-                    &manual_ctx,
-                    "user requested the external RDP client",
-                );
-            }));
-        }
-
         // Graphics pipeline shown in the status bar. Starts at the mode our
         // advertised capabilities imply and is corrected by
         // `GraphicsModeActive` if the EGFX channel actually comes up — which
