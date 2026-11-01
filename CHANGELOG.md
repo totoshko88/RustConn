@@ -5,14 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.3] - 2026-11-01
+
 > 💜 The embedded Remote Desktop Connection features in this release — the
 > graphics pipeline and AVC444, the microphone, automatic reconnection,
 > connection broker support, Happy Eyeballs dialling and the wider `.rdp`
 > import/export — come from [@pony-svg](https://github.com/pony-svg)'s
 > contribution in [#402](https://github.com/totoshko88/RustConn/pull/402).
 > Thank you!
-
-## [Unreleased]
 
 ### Added
 - **Remote working directory on the tab tooltip** — a terminal tab's tooltip now shows the session's current remote directory as its last line, updated live as you `cd` around. It reads VTE's OSC 7 current-directory report (emitted by the same `vte.sh` that drives shell integration), so it fills in on a host that sends OSC 7 and stays absent otherwise. The `file://host/path` URI is parsed directly for its path, so the directory shows for a genuinely remote host rather than only a local one. The line is maintained independently of the host, group and broadcast tooltip lines, so assigning a group, toggling broadcast or renaming the tab all leave it in place. (`rustconn/src/terminal/tab_lifecycle.rs`, `rustconn/src/terminal/mod.rs`)
@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Groundwork
 - **tmux control-mode parser and session model (core only, no UI)** — the GUI-free foundation for a future `tmux -CC` integration: a streaming parser for the control-mode line protocol (`%begin`/`%end`/`%error` blocks, `%output` with octal un-escaping, and every `%window-*`/`%session-*`/`%pane-*`/flow-control notification) and an in-memory window/pane/session model that folds those events, keyed by tmux IDs. It lives in `rustconn-core` with no GTK/VTE dependency and is covered by golden-stream tests from the tmux wiki examples, including chunk-boundary robustness (every byte offset) and non-UTF-8 payloads. No tabs, splits, reconnect or UI yet — that is the 0.25 epic; this only de-risks the protocol layer. (`rustconn-core/src/tmux_control/`)
+
+### Dependencies
+- **IronRDP moved to the October 2026 per-crate releases** — the embedded RDP client now depends on `ironrdp-connector` 0.12, `ironrdp-session` 0.13, `ironrdp-egfx` 0.5, `ironrdp-pdu` 0.11, `ironrdp-rdpdr` 0.9, `ironrdp-rdpeai` 0.2 and the rest of the 27/28 October train, crate by crate, instead of the `ironrdp` 0.17 meta crate that still pinned the July stack. This is what unlocks the graphics pipeline, AVC444 and the microphone (see Added). (`rustconn-core/Cargo.toml`)
+- **Updated** (semver-compatible, transitive): js-sys 0.3.106→0.3.107, log 0.4.34→0.4.35, wasm-bindgen 0.2.129→0.2.130 (with js-sys/web-sys/futures/macro), yuv 0.8.19→0.8.20, zip 9.1.3→9.2.0. A `cargo update` refresh for the release; `cargo deny check advisories` clean. `cargo-sources.json` regenerated for the Flatpak/Flathub manifests.
 
 ## [0.24.2] - 2026-10-30
 

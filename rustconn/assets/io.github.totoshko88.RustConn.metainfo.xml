@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.3" date="2026-11-01">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.3</url>
+      <description>
+        <p>Version 0.24.3 - embedded Remote Desktop Connection features, CLI improvements, and shell-integration prompt navigation:</p>
+        <ul>
+          <li>The embedded RDP client gains the graphics pipeline with AVC444, the microphone, automatic reconnection and connection broker redirection (contributed by @pony-svg).</li>
+          <li>The RDP connection editor adds microphone, smart card and connection broker (Load Balance Info) settings, and wider .rdp file import and export.</li>
+          <li>Six rustconn-cli usability improvements for headless provisioning, including bulk add from a file and reading a password from stdin.</li>
+          <li>OSC 133 shell integration adds Previous/Next Prompt navigation and a failed-command marker, plus the remote directory on the tab tooltip.</li>
+          <li>Embedded RDP and VNC no longer time out on hosts with an unreachable IPv6 address (RFC 8305 Happy Eyeballs), and an untrusted .rdp file asks before enabling device redirection.</li>
+          <li>Fixes for RDP sound without a shared folder, uneven text on fractional-scaling displays, and a mouse-wheel scroll crash.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.2" date="2026-10-30">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.2</url>
       <description>
