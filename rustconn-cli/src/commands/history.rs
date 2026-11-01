@@ -26,7 +26,7 @@ pub(super) fn cmd_history(
             connection,
         } => cmd_history_list(
             config_path,
-            format.effective(),
+            OutputFormat::effective(format),
             limit,
             connection.as_deref(),
         ),

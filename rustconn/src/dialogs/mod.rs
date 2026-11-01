@@ -35,6 +35,24 @@ pub(crate) fn rdp_clipboard_direction_label(
     }
 }
 
+/// Returns the translated label for an RDP connection's choice of where
+/// Windows key combinations go; `None` follows the application setting.
+///
+/// The literals are re-stated here for `xgettext`, as in
+/// [`rdp_audio_mode_label`].
+#[must_use]
+pub(crate) fn rdp_keyboard_hook_label(
+    hook: Option<rustconn_core::models::RdpKeyboardHook>,
+) -> String {
+    use rustconn_core::models::RdpKeyboardHook;
+    match hook {
+        None => crate::i18n::i18n("Follow the app setting"),
+        Some(RdpKeyboardHook::Local) => crate::i18n::i18n("On this computer"),
+        Some(RdpKeyboardHook::Remote) => crate::i18n::i18n("On the remote computer"),
+        Some(RdpKeyboardHook::FullscreenOnly) => crate::i18n::i18n("Only in full screen"),
+    }
+}
+
 mod adw_dialogs;
 mod ask_prompt;
 mod backend_missing;

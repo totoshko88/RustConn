@@ -1,4 +1,31 @@
 -------------------------------------------------------------------
+Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.3
+
+- Added: embedded Remote Desktop Connection features (contributed by
+  @pony-svg, PR #402); the graphics pipeline with AVC444, the microphone
+  (MS-RDPEAI), automatic reconnection, connection broker redirection, a
+  keyboard hook setting, and wider .rdp import/export
+- Added: RDP microphone, smart card and connection broker (Load Balance
+  Info) settings in the connection editor
+- Added: six rustconn-cli usability improvements for headless provisioning;
+  created-vs-existing group feedback with ID, explicit --format honoured when
+  piped, --password-stdin, --from-file bulk add, aws_ssm target validation
+- Added: OSC 133 shell integration; Previous/Next Prompt navigation and a
+  failed-command marker; remote working directory on the tab tooltip
+- Fixed: embedded RDP/VNC sessions timed out on hosts with an unreachable
+  IPv6 address; connecting now races the addresses (RFC 8305, Happy Eyeballs)
+- Fixed: a device-redirection confirmation is now shown before opening an
+  untrusted .rdp file that requests the microphone, smart cards or FIDO2
+- Fixed: embedded RDP played no sound unless a folder or printer was shared;
+  uneven text on fractional-scaling displays; a mouse-wheel scroll panic; and
+  OSC 133 prompt marks that double-counted the scroll offset
+- Changed: the Quality performance mode no longer offers the server a lossy
+  codec, so text stays sharp without the GFX pipeline
+- Dependencies: IronRDP moved to the October 2026 per-crate releases;
+  js-sys 0.3.106→0.3.107, log 0.4.34→0.4.35, wasm-bindgen 0.2.129→0.2.130,
+  yuv 0.8.19→0.8.20, zip 9.1.3→9.2.0
+
+-------------------------------------------------------------------
 Fri Oct 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.2
 
 - Added: RDP clipboard direction control; the "Clipboard Sharing" switch is

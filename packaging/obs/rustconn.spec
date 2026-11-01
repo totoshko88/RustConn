@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.2
+Version:        0.24.3
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,22 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.3-0
+- Version bump to 0.24.3
+- Added: embedded Remote Desktop Connection features (PR #402 by @pony-svg) —
+  graphics pipeline with AVC444, microphone, auto-reconnection, broker
+  redirection, keyboard hook, wider .rdp import/export
+- Added: RDP microphone, smart card and connection broker settings
+- Added: six rustconn-cli usability improvements (group feedback, explicit
+  --format, --password-stdin, --from-file, aws_ssm validation)
+- Added: OSC 133 shell integration (prompt navigation, failed-command marker)
+- Fixed: RDP/VNC IPv6 timeout (RFC 8305 Happy Eyeballs); untrusted .rdp
+  device-redirection confirmation; RDP sound without a shared folder; text on
+  fractional scaling; scroll panic; OSC 133 prompt-mark offset
+- Changed: Quality mode no longer offers a lossy codec
+- Dependencies: IronRDP October 2026 per-crate releases; js-sys, log,
+  wasm-bindgen, yuv, zip refreshed
+
 * Fri Oct 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.2-0
 - Version bump to 0.24.2
 - Added: RDP clipboard direction control; the "Clipboard Sharing" switch is

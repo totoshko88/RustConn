@@ -17,7 +17,7 @@ use crate::util::{create_config_manager, find_connection};
 /// - [`CliError::ConnectionNotFound`] when a referenced connection does not exist
 pub(super) fn cmd_tag(config_path: Option<&Path>, subcmd: TagCommands) -> Result<(), CliError> {
     match subcmd {
-        TagCommands::List { format } => cmd_tag_list(config_path, format.effective()),
+        TagCommands::List { format } => cmd_tag_list(config_path, OutputFormat::effective(format)),
         TagCommands::Add { connection, tag } => cmd_tag_add(config_path, &connection, &tag),
         TagCommands::Remove { connection, tag } => cmd_tag_remove(config_path, &connection, &tag),
     }

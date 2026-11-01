@@ -26,8 +26,10 @@ mod child_teardown;
 mod config;
 mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
+mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;
+mod mark_registry;
 pub mod osc52;
 pub mod playback;
 pub mod pty_relay;
@@ -52,7 +54,7 @@ use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Orientation, Widget, gio, glib};
 use libadwaita as adw;
 use libadwaita::prelude::*;
-use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends};
+use rustconn_core::models::{AutomationConfig, BackspaceSends, DeleteSends, RdpKeyboardHook};
 use rustconn_core::terminal_themes::TerminalTheme;
 pub use types::{
     ClusterTabs, LOCAL_SHELL_PROTOCOL, PendingCluster, SessionWidgetStorage, TerminalSession,
@@ -284,10 +286,16 @@ pub struct TerminalNotebook {
     tab_connection_menu: Rc<RefCell<Option<tab_menu::TabConnectionMenuProvider>>>,
     /// Whether keyboard passthrough is on; mirrors `win.toggle-passthrough`.
     keyboard_passthrough: Rc<std::cell::Cell<bool>>,
+    /// Whether to automatically capture system shortcuts (Alt+Tab, Super)
+    /// when an embedded RDP/VNC viewer gains keyboard focus.
+    auto_capture_shortcuts: Rc<std::cell::Cell<bool>>,
     /// The embedded RDP/VNC viewer that has keyboard focus, if any. Its window
     /// asks the compositor for the desktop shortcuts while passthrough is on
     /// (issue #356).
     focused_viewer: Rc<RefCell<Option<glib::WeakRef<gtk4::Widget>>>>,
+    /// The focused viewer's `keyboard_hook` (an RDP connection's choice of
+    /// where Windows key combinations go); `None` follows auto-capture.
+    focused_hook: Rc<std::cell::Cell<Option<RdpKeyboardHook>>>,
     /// Callback fired when terminal focus changes (`true` = focus entered the
     /// VTE, `false` = focus left). Drives focus-based accelerator suspend (#197).
     on_terminal_focus: Rc<RefCell<Option<Box<dyn Fn(bool)>>>>,
@@ -324,6 +332,25 @@ pub struct TerminalNotebook {
     /// that output has actually landed. A session with no entry started on an
     /// empty buffer and needs no baseline.
     cursor_row_base: Rc<RefCell<HashMap<Uuid, Option<i64>>>>,
+    /// OSC 133 prompt marks per session (shell-integration-osc133 spec).
+    ///
+    /// Populated by [`termprops::connect_shell_integration`] from the remote
+    /// shell's command-end events and read by the prompt-navigation actions and
+    /// the failed-command marker. Shared via `Rc` so the VTE termprop handler and
+    /// the window actions see the same registry. Empty — and the whole feature
+    /// dormant — on a host without shell integration, and on a build below the
+    /// `vte-0-78` feature (the hook is a no-op there). Dropped with the session.
+    mark_registries: Rc<RefCell<HashMap<Uuid, Rc<RefCell<mark_registry::MarkRegistry>>>>>,
+    /// The failed-command marker layer per session, kept alive so it keeps
+    /// painting and is removed from the terminal when dropped on tab close.
+    /// Reads the matching [`Self::mark_registries`] entry; invisible when that
+    /// registry has no failed rows.
+    failed_markers: Rc<RefCell<HashMap<Uuid, failed_marker::FailedMarkerOverlay>>>,
+    /// The remote working directory a session last reported via OSC 7, shown as
+    /// the last line of the tab tooltip. Updated from VTE's
+    /// `current-directory-uri-changed`; absent until the shell reports one (it
+    /// needs OSC 7, which the same `vte.sh` that drives shell integration emits).
+    session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -560,13 +587,18 @@ impl TerminalNotebook {
             tab_broadcast_membership: Rc::new(RefCell::new(None)),
             tab_connection_menu: Rc::new(RefCell::new(None)),
             keyboard_passthrough: Rc::new(std::cell::Cell::new(false)),
+            auto_capture_shortcuts: Rc::new(std::cell::Cell::new(true)),
             focused_viewer: Rc::new(RefCell::new(None)),
+            focused_hook: Rc::new(std::cell::Cell::new(None)),
             on_terminal_focus: Rc::new(RefCell::new(None)),
             reconnect_shown: Rc::new(RefCell::new(HashSet::new())),
             disconnected_sessions: Rc::new(RefCell::new(HashSet::new())),
             keep_history_on_reconnect: Rc::new(std::cell::Cell::new(true)),
             max_scrollback_on_reconnect: Rc::new(std::cell::Cell::new(None)),
             cursor_row_base: Rc::new(RefCell::new(HashMap::new())),
+            mark_registries: Rc::new(RefCell::new(HashMap::new())),
+            failed_markers: Rc::new(RefCell::new(HashMap::new())),
+            session_cwd: Rc::new(RefCell::new(HashMap::new())),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
@@ -632,6 +664,9 @@ impl TerminalNotebook {
         let show_welcome_on_close = self.show_welcome.clone();
         let disconnected_on_close = Rc::clone(&self.disconnected_sessions);
         let cursor_row_base_on_close = Rc::clone(&self.cursor_row_base);
+        let mark_registries_on_close = Rc::clone(&self.mark_registries);
+        let failed_markers_on_close = Rc::clone(&self.failed_markers);
+        let session_cwd_on_close = Rc::clone(&self.session_cwd);
         let pty_relays_on_close = Rc::clone(&self.pty_relays);
         let output_observers_on_close = Rc::clone(&self.output_observers);
         let output_filters_on_close = Rc::clone(&self.output_filters);
@@ -761,6 +796,9 @@ impl TerminalNotebook {
                 session_info.borrow_mut().remove(&session_id);
                 disconnected_on_close.borrow_mut().remove(&session_id);
                 cursor_row_base_on_close.borrow_mut().remove(&session_id);
+                mark_registries_on_close.borrow_mut().remove(&session_id);
+                failed_markers_on_close.borrow_mut().remove(&session_id);
+                session_cwd_on_close.borrow_mut().remove(&session_id);
 
                 // Stop the session's PTY: dropping the relay ends its reader and
                 // writer threads and closes the descriptor. The child is killed
@@ -2003,13 +2041,23 @@ impl TerminalNotebook {
                 page.set_title(base);
             }
 
+            // Lift the CWD line out first so it is not mistaken for the
+            // broadcast suffix (and so toggling broadcast never drops it), then
+            // re-append it after rebuilding the broadcast portion.
             let tooltip = page.tooltip().unwrap_or_default().to_string();
-            let base_tooltip = tooltip.strip_suffix(TOOLTIP_LINE).unwrap_or(&tooltip);
-            if member {
-                page.set_tooltip(&format!("{base_tooltip}{TOOLTIP_LINE}"));
+            let (without_cwd, cwd_line) = Self::split_cwd_line(&tooltip);
+            let base_tooltip = without_cwd
+                .strip_suffix(TOOLTIP_LINE)
+                .unwrap_or(&without_cwd);
+            let mut new_tooltip = if member {
+                format!("{base_tooltip}{TOOLTIP_LINE}")
             } else {
-                page.set_tooltip(base_tooltip);
+                base_tooltip.to_string()
+            };
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
             }
+            page.set_tooltip(&new_tooltip);
         }
     }
 
@@ -2295,6 +2343,65 @@ impl TerminalNotebook {
         None
     }
 
+    /// Scrolls the active terminal to the previous or next shell prompt.
+    ///
+    /// Reads the active session's OSC 133 [`mark_registry::MarkRegistry`], finds
+    /// the nearest prompt strictly above (`previous`) or below the top of the
+    /// current viewport, and scrolls there. A silent no-op when there is no such
+    /// prompt, no shell integration on this session (empty registry), or on a
+    /// build below the `vte-0-78` feature (the registry is never populated).
+    /// (shell-integration-osc133 spec, task 4.)
+    pub fn scroll_to_adjacent_prompt(&self, previous: bool) {
+        tracing::debug!(previous, "scroll_to_adjacent_prompt: action invoked");
+        let Some(session_id) = self.get_active_session_id() else {
+            tracing::debug!("scroll_to_adjacent_prompt: no active session");
+            return;
+        };
+        let Some(terminal) = self.get_terminal(session_id) else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no terminal");
+            return;
+        };
+        let registry = self.mark_registries.borrow().get(&session_id).cloned();
+        let Some(registry) = registry else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no registry");
+            return;
+        };
+        tracing::debug!(
+            %session_id,
+            registry_empty = registry.borrow().is_empty(),
+            "scroll_to_adjacent_prompt: registry resolved"
+        );
+
+        let Some(adjustment) = terminal.vadjustment() else {
+            tracing::debug!(%session_id, "scroll_to_adjacent_prompt: no vadjustment");
+            return;
+        };
+        // The viewport's top buffer row — the same coordinate space the registry
+        // stores, documented in `highlight_overlay`.
+        let viewport_top = adjustment.value() as i64;
+        // The adjustment's lower bound is the oldest row still in the buffer:
+        // VTE moves it up as scrollback is trimmed. Discard marks below it before
+        // querying so a stale row can never be a navigation target (task 2.5).
+        let oldest_row = adjustment.lower() as i64;
+
+        let mut registry = registry.borrow_mut();
+        registry.trim_below(oldest_row);
+        let target = if previous {
+            registry.prev_before(viewport_top)
+        } else {
+            registry.next_after(viewport_top)
+        };
+        tracing::debug!(
+            viewport_top,
+            oldest_row,
+            ?target,
+            "scroll_to_adjacent_prompt: computed target"
+        );
+        if let Some(row) = target {
+            adjustment.set_value(row as f64);
+        }
+    }
+
     /// Sends text to the active terminal
     pub fn send_text(&self, text: &str) {
         if let Some(terminal) = self.get_active_terminal() {
@@ -2358,54 +2465,143 @@ impl TerminalNotebook {
     /// to an embedded RDP or VNC viewer while one has focus; see
     /// [`Self::attach_shortcut_inhibit`].
     pub fn set_keyboard_passthrough(&self, enabled: bool) {
-        self.tab_view
-            .set_shortcuts(tab_view_shortcuts_for_passthrough(enabled));
-        self.keyboard_passthrough.set(enabled);
-
         let focused = self
             .focused_viewer
             .borrow()
             .as_ref()
             .and_then(glib::WeakRef::upgrade);
+        let viewer_takes = focused.as_ref().is_some_and(|viewer| {
+            viewer_takes_shortcuts(
+                viewer,
+                self.focused_hook.get(),
+                self.auto_capture_shortcuts.get(),
+            )
+        });
+        self.tab_view
+            .set_shortcuts(tab_view_shortcuts_for_passthrough(enabled || viewer_takes));
+        self.keyboard_passthrough.set(enabled);
+
         if let Some(viewer) = focused {
-            set_system_shortcuts_inhibited(&viewer, enabled);
+            set_system_shortcuts_inhibited(&viewer, enabled || viewer_takes);
         } else if !enabled {
             // The viewer may have gone away while it held the shortcuts.
             set_system_shortcuts_inhibited(self.container.upcast_ref(), false);
         }
     }
 
+    /// Enables or disables automatic system shortcut capture for embedded
+    /// remote desktop viewers (RDP and VNC) on focus.
+    pub fn set_auto_capture_shortcuts(&self, enabled: bool) {
+        self.auto_capture_shortcuts.set(enabled);
+        if let Some(viewer) = self
+            .focused_viewer
+            .borrow()
+            .as_ref()
+            .and_then(glib::WeakRef::upgrade)
+        {
+            let should_inhibit = self.keyboard_passthrough.get()
+                || viewer_takes_shortcuts(&viewer, self.focused_hook.get(), enabled);
+            set_system_shortcuts_inhibited(&viewer, should_inhibit);
+            if should_inhibit {
+                self.tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
+            } else {
+                self.tab_view
+                    .set_shortcuts(adw::TabViewShortcuts::ALL_SHORTCUTS);
+            }
+        }
+    }
+
+    /// Whether automatic system shortcut capture for remote desktop viewers is on.
+    #[must_use]
+    pub fn auto_capture_shortcuts(&self) -> bool {
+        self.auto_capture_shortcuts.get()
+    }
+
     /// Asks the compositor for the desktop shortcuts while `widget` (an
-    /// embedded RDP or VNC viewer) has focus and passthrough is on, and gives
-    /// them back when focus leaves (issue #356).
+    /// embedded RDP or VNC viewer) has focus and passthrough or auto-capture
+    /// is on, and gives them back when focus leaves (issue #356).
+    ///
+    /// `hook` is an RDP connection's own choice of where Windows key
+    /// combinations go (`RdpConfig::keyboard_hook`), read on every focus change;
+    /// `None`, or a cell holding `None`, follows auto-capture. "Only in full
+    /// screen" also follows the window going in and out of full screen while
+    /// the viewer has focus.
     ///
     /// This is the Wayland keyboard-shortcuts-inhibit request that an external
     /// FreeRDP window already makes. GNOME asks the user once whether to allow
     /// it, and Super+Esc always gives the shortcuts back. Terminals are left
     /// out on purpose: in an SSH tab Alt+Tab is expected to switch windows.
-    fn attach_shortcut_inhibit<W: IsA<gtk4::Widget>>(&self, widget: &W) {
+    fn attach_shortcut_inhibit<W: IsA<gtk4::Widget>>(
+        &self,
+        widget: &W,
+        hook: Option<Rc<std::cell::Cell<Option<RdpKeyboardHook>>>>,
+    ) {
         let focus_ctrl = gtk4::EventControllerFocus::new();
+        // The full-screen watch of a focused "Only in full screen" viewer.
+        let fullscreen_watch: Rc<
+            RefCell<Option<(glib::WeakRef<gtk4::Window>, glib::SignalHandlerId)>>,
+        > = Rc::new(RefCell::new(None));
         let passthrough = self.keyboard_passthrough.clone();
+        let auto_capture = self.auto_capture_shortcuts.clone();
         let focused = self.focused_viewer.clone();
+        let focused_hook = self.focused_hook.clone();
+        let tab_view = self.tab_view.clone();
+        let watch = fullscreen_watch.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_enter(move |_| {
             let Some(viewer) = viewer.upgrade() else {
                 return;
             };
             *focused.borrow_mut() = Some(viewer.downgrade());
-            if passthrough.get() {
+            let viewer_hook = hook.as_ref().and_then(|cell| cell.get());
+            focused_hook.set(viewer_hook);
+            if passthrough.get() || viewer_takes_shortcuts(&viewer, viewer_hook, auto_capture.get())
+            {
                 set_system_shortcuts_inhibited(&viewer, true);
+                tab_view.set_shortcuts(adw::TabViewShortcuts::NONE);
+            }
+            if viewer_hook == Some(RdpKeyboardHook::FullscreenOnly)
+                && let Some(window) = viewer.root().and_downcast::<gtk4::Window>()
+            {
+                let passthrough = passthrough.clone();
+                let tab_view = tab_view.clone();
+                let viewer = viewer.downgrade();
+                let handler = window.connect_fullscreened_notify(move |window| {
+                    let Some(viewer) = viewer.upgrade() else {
+                        return;
+                    };
+                    let take = passthrough.get() || window.is_fullscreen();
+                    set_system_shortcuts_inhibited(&viewer, take);
+                    tab_view.set_shortcuts(tab_view_shortcuts_for_passthrough(take));
+                });
+                if let Some((old_window, old_handler)) =
+                    watch.borrow_mut().replace((window.downgrade(), handler))
+                    && let Some(old_window) = old_window.upgrade()
+                {
+                    old_window.disconnect(old_handler);
+                }
             }
         });
         let passthrough = self.keyboard_passthrough.clone();
         let focused = self.focused_viewer.clone();
+        let focused_hook = self.focused_hook.clone();
+        let tab_view = self.tab_view.clone();
         let viewer = widget.upcast_ref::<gtk4::Widget>().downgrade();
         focus_ctrl.connect_leave(move |_| {
             *focused.borrow_mut() = None;
-            if passthrough.get()
-                && let Some(viewer) = viewer.upgrade()
+            focused_hook.set(None);
+            if let Some((window, handler)) = fullscreen_watch.borrow_mut().take()
+                && let Some(window) = window.upgrade()
+            {
+                window.disconnect(handler);
+            }
+            if let Some(viewer) = viewer.upgrade()
+                && !passthrough.get()
             {
                 set_system_shortcuts_inhibited(&viewer, false);
+            }
+            if !passthrough.get() {
+                tab_view.set_shortcuts(adw::TabViewShortcuts::ALL_SHORTCUTS);
             }
         });
         widget.add_controller(focus_ctrl);
@@ -2782,14 +2978,20 @@ impl TerminalNotebook {
         // Apply group label prefix to tab title (independent of split/protocol indicator)
         self.apply_group_color(session_id, color_index);
 
-        // Update tooltip to include group name
+        // Update tooltip to include group name. Lift the CWD line out first so
+        // the `\n[` split cannot land on a `[Broadcast]`/old group line and
+        // discard the directory beyond it; re-append it at the end afterwards.
         if let Some(page) = self.sessions.borrow().get(&session_id) {
-            let current_tooltip = page.tooltip().unwrap_or_default();
-            let base_tooltip = current_tooltip
-                .as_str()
+            let current_tooltip = page.tooltip().unwrap_or_default().to_string();
+            let (without_cwd, cwd_line) = Self::split_cwd_line(&current_tooltip);
+            let base_tooltip = without_cwd
                 .rsplit_once("\n[")
-                .map_or(current_tooltip.as_str(), |(base, _)| base);
-            page.set_tooltip(&format!("{base_tooltip}\n[{group_name}]"));
+                .map_or(without_cwd.as_str(), |(base, _)| base);
+            let mut new_tooltip = format!("{base_tooltip}\n[{group_name}]");
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
+            }
+            page.set_tooltip(&new_tooltip);
         }
 
         tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
@@ -2858,7 +3060,16 @@ impl TerminalNotebook {
         let page = sessions.borrow().get(&session_id).cloned();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
-            page.set_tooltip(&Self::tab_tooltip(label, host.as_deref(), group.as_deref()));
+            // `tab_tooltip` rebuilds the title/host/group tooltip from scratch
+            // and knows nothing of the CWD line, so carry the existing one over
+            // from the old tooltip and re-append it, keeping it alive across a
+            // rename.
+            let cwd_line = page.tooltip().and_then(|t| Self::split_cwd_line(&t).1);
+            let mut new_tooltip = Self::tab_tooltip(label, host.as_deref(), group.as_deref());
+            if let Some(cwd) = cwd_line {
+                new_tooltip.push_str(&cwd);
+            }
+            page.set_tooltip(&new_tooltip);
         }
     }
 
@@ -3429,6 +3640,40 @@ const fn tab_view_shortcuts_for_passthrough(enabled: bool) -> adw::TabViewShortc
     }
 }
 
+/// Whether the desktop's shortcuts should go to `viewer` while it has focus.
+///
+/// `hook` is the connection's own choice; `None` follows `auto_capture`, the
+/// application's "Auto-capture shortcuts in remote desktop" setting.
+/// Keyboard passthrough, which sends them in every case, is checked by the
+/// callers.
+fn viewer_takes_shortcuts(
+    viewer: &gtk4::Widget,
+    hook: Option<RdpKeyboardHook>,
+    auto_capture: bool,
+) -> bool {
+    hook_takes_shortcuts(hook, auto_capture, || {
+        viewer
+            .root()
+            .and_downcast::<gtk4::Window>()
+            .is_some_and(|window| window.is_fullscreen())
+    })
+}
+
+/// The decision behind [`viewer_takes_shortcuts`], with the window's full-screen
+/// state asked for only when the hook depends on it.
+fn hook_takes_shortcuts(
+    hook: Option<RdpKeyboardHook>,
+    auto_capture: bool,
+    fullscreen: impl FnOnce() -> bool,
+) -> bool {
+    match hook {
+        None => auto_capture,
+        Some(RdpKeyboardHook::Local) => false,
+        Some(RdpKeyboardHook::Remote) => true,
+        Some(RdpKeyboardHook::FullscreenOnly) => fullscreen(),
+    }
+}
+
 /// Inhibits or restores the compositor's shortcuts for the window `widget` is
 /// in, so a detached session window asks for its own surface.
 ///
@@ -3453,8 +3698,36 @@ fn set_system_shortcuts_inhibited(widget: &gtk4::Widget, inhibit: bool) {
 #[cfg(test)]
 mod passthrough_shortcut_tests {
     use libadwaita as adw;
+    use rustconn_core::models::RdpKeyboardHook;
 
-    use super::tab_view_shortcuts_for_passthrough;
+    use super::{hook_takes_shortcuts, tab_view_shortcuts_for_passthrough};
+
+    /// A connection's own choice wins over the app's auto-capture setting, and
+    /// "only in full screen" follows the window.
+    #[test]
+    fn keyboard_hook_decides_where_shortcuts_go() {
+        for auto in [true, false] {
+            assert_eq!(hook_takes_shortcuts(None, auto, || unreachable!()), auto);
+            assert!(!hook_takes_shortcuts(
+                Some(RdpKeyboardHook::Local),
+                auto,
+                || true
+            ));
+            assert!(hook_takes_shortcuts(
+                Some(RdpKeyboardHook::Remote),
+                auto,
+                || false
+            ));
+            for fullscreen in [true, false] {
+                assert_eq!(
+                    hook_takes_shortcuts(Some(RdpKeyboardHook::FullscreenOnly), auto, || {
+                        fullscreen
+                    }),
+                    fullscreen
+                );
+            }
+        }
+    }
 
     /// Issue #356: Ctrl+Shift+Tab and friends switched tabs in passthrough.
     #[test]
@@ -3592,6 +3865,166 @@ mod tab_tooltip_tests {
             TerminalNotebook::tab_tooltip("prod-db", Some("10.0.0.5"), Some("Production")),
             "prod-db\n10.0.0.5\n[Production]"
         );
+    }
+
+    // The working-directory line is added by `update_session_cwd` through
+    // `strip_cwd_line`, which must remove exactly its own line wherever it sits.
+    const CWD: &str = TerminalNotebook::CWD_TOOLTIP_PREFIX; // "\n📁 "
+
+    #[test]
+    fn strip_cwd_line_is_a_noop_without_one() {
+        assert_eq!(
+            TerminalNotebook::strip_cwd_line("prod-db\n10.0.0.5"),
+            "prod-db\n10.0.0.5"
+        );
+    }
+
+    #[test]
+    fn strip_cwd_line_removes_a_trailing_cwd() {
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        assert_eq!(TerminalNotebook::strip_cwd_line(&t), "prod-db\n10.0.0.5");
+    }
+
+    #[test]
+    fn strip_cwd_line_removes_a_cwd_followed_by_a_group_line() {
+        // A group toggle may append after the CWD line; the strip must remove
+        // only the CWD line and keep the group line and its leading newline.
+        let t = format!("prod-db{CWD}/home/me\n[Production]");
+        assert_eq!(
+            TerminalNotebook::strip_cwd_line(&t),
+            "prod-db\n[Production]"
+        );
+    }
+
+    #[test]
+    fn stripping_then_appending_replaces_in_place() {
+        let t = format!("prod-db{CWD}/old\n[Production]");
+        let base = TerminalNotebook::strip_cwd_line(&t);
+        assert_eq!(base, "prod-db\n[Production]");
+        // Appending the fresh CWD line, then stripping again, returns the base —
+        // the update is idempotent however many times the directory changes.
+        let updated = format!("{base}{CWD}/new");
+        assert_eq!(updated, format!("prod-db\n[Production]{CWD}/new"));
+        assert_eq!(TerminalNotebook::strip_cwd_line(&updated), base);
+    }
+
+    #[test]
+    fn split_cwd_line_returns_the_line_for_reappending() {
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        let (without, cwd) = TerminalNotebook::split_cwd_line(&t);
+        assert_eq!(without, "prod-db\n10.0.0.5");
+        assert_eq!(cwd.as_deref(), Some(format!("{CWD}/var/log").as_str()));
+        // Re-appending the lifted line restores the original exactly.
+        assert_eq!(format!("{without}{}", cwd.unwrap()), t);
+    }
+
+    #[test]
+    fn split_cwd_line_is_none_without_one() {
+        let (without, cwd) = TerminalNotebook::split_cwd_line("prod-db\n[Production]");
+        assert_eq!(without, "prod-db\n[Production]");
+        assert_eq!(cwd, None);
+    }
+
+    // The three tooltip mutators that rebuild the host/group/broadcast portion
+    // must lift the CWD line out first and re-append it, so a group assignment,
+    // a broadcast toggle or a rename never drops or mis-orders the directory.
+    // These reproduce each mutator's exact string transformation.
+
+    /// Replays `set_broadcast_member_marker`'s tooltip transformation.
+    fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
+        const TOOLTIP_LINE: &str = "\n[Broadcast]";
+        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let base = without_cwd
+            .strip_suffix(TOOLTIP_LINE)
+            .unwrap_or(&without_cwd);
+        let mut out = if member {
+            format!("{base}{TOOLTIP_LINE}")
+        } else {
+            base.to_string()
+        };
+        if let Some(cwd) = cwd_line {
+            out.push_str(&cwd);
+        }
+        out
+    }
+
+    /// Replays `set_tab_group`'s tooltip transformation.
+    fn group_tooltip(tooltip: &str, group: &str) -> String {
+        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let base = without_cwd
+            .rsplit_once("\n[")
+            .map_or(without_cwd.as_str(), |(base, _)| base);
+        let mut out = format!("{base}\n[{group}]");
+        if let Some(cwd) = cwd_line {
+            out.push_str(&cwd);
+        }
+        out
+    }
+
+    #[test]
+    fn broadcast_toggle_keeps_the_cwd_line() {
+        let with_cwd = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        // Enabling broadcast keeps the directory, with broadcast before it.
+        let on = broadcast_tooltip(&with_cwd, true);
+        assert_eq!(on, format!("prod-db\n10.0.0.5\n[Broadcast]{CWD}/var/log"));
+        // Disabling it again strips only the broadcast line, directory intact.
+        let off = broadcast_tooltip(&on, false);
+        assert_eq!(off, with_cwd);
+    }
+
+    #[test]
+    fn group_assignment_keeps_the_cwd_line_even_with_broadcast_present() {
+        // The exact clobber case: broadcast line sits before the CWD line.
+        let t = format!("prod-db\n10.0.0.5\n[Broadcast]{CWD}/var/log");
+        let grouped = group_tooltip(&t, "Production");
+        // The group split lands on `[Broadcast]` (not the CWD line), and the
+        // directory is re-appended last rather than discarded.
+        assert_eq!(
+            grouped,
+            format!("prod-db\n10.0.0.5\n[Production]{CWD}/var/log")
+        );
+    }
+
+    #[test]
+    fn osc7_uri_keeps_the_path_for_a_remote_host() {
+        // The remote case GIO's File::path() drops to None — we must keep the
+        // path and ignore the authority.
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://remotehost/var/log"),
+            Some("/var/log".to_string())
+        );
+        // Local / empty authority still works.
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file:///home/me"),
+            Some("/home/me".to_string())
+        );
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://localhost/etc"),
+            Some("/etc".to_string())
+        );
+    }
+
+    #[test]
+    fn osc7_uri_percent_decodes_and_rejects_non_file() {
+        assert_eq!(
+            TerminalNotebook::path_from_osc7_uri("file://host/home/a%20b/%D1%82"),
+            Some("/home/a b/т".to_string())
+        );
+        // Non-file scheme or no path → None (CWD line removed).
+        assert_eq!(TerminalNotebook::path_from_osc7_uri("http://host/x"), None);
+        assert_eq!(TerminalNotebook::path_from_osc7_uri("file://host"), None);
+    }
+
+    #[test]
+    fn rename_keeps_the_cwd_line() {
+        // `apply_session_label` rebuilds via `tab_tooltip` then re-appends CWD.
+        let old = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        let cwd_line = TerminalNotebook::split_cwd_line(&old).1;
+        let mut rebuilt = TerminalNotebook::tab_tooltip("renamed", Some("10.0.0.5"), None);
+        if let Some(cwd) = cwd_line {
+            rebuilt.push_str(&cwd);
+        }
+        assert_eq!(rebuilt, format!("renamed\n10.0.0.5{CWD}/var/log"));
     }
 }
 

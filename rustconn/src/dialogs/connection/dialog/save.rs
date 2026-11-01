@@ -116,6 +116,11 @@ impl ConnectionDialog {
         rdp_mptcp_check: &adw::SwitchRow,
         rdp_fido2_check: &adw::SwitchRow,
         rdp_admin_session_check: &adw::SwitchRow,
+        rdp_microphone_check: &adw::SwitchRow,
+        rdp_smartcard_check: &adw::SwitchRow,
+        rdp_load_balance_entry: &Entry,
+        rdp_auto_reconnect_check: &adw::SwitchRow,
+        rdp_keyboard_hook_dropdown: &DropDown,
         rdp_kerberos_check: &adw::SwitchRow,
         rdp_kdc_address_entry: &adw::EntryRow,
         rdp_jump_host_dropdown: &DropDown,
@@ -344,6 +349,11 @@ impl ConnectionDialog {
         let rdp_mptcp_check = rdp_mptcp_check.clone();
         let rdp_fido2_check = rdp_fido2_check.clone();
         let rdp_admin_session_check = rdp_admin_session_check.clone();
+        let rdp_microphone_check = rdp_microphone_check.clone();
+        let rdp_smartcard_check = rdp_smartcard_check.clone();
+        let rdp_load_balance_entry = rdp_load_balance_entry.clone();
+        let rdp_auto_reconnect_check = rdp_auto_reconnect_check.clone();
+        let rdp_keyboard_hook_dropdown = rdp_keyboard_hook_dropdown.clone();
         let rdp_kerberos_check = rdp_kerberos_check.clone();
         let rdp_kdc_address_entry = rdp_kdc_address_entry.clone();
         let rdp_jump_host_dropdown = rdp_jump_host_dropdown.clone();
@@ -590,6 +600,11 @@ impl ConnectionDialog {
                 rdp_mptcp_check: &rdp_mptcp_check,
                 rdp_fido2_check: &rdp_fido2_check,
                 rdp_admin_session_check: &rdp_admin_session_check,
+                rdp_microphone_check: &rdp_microphone_check,
+                rdp_smartcard_check: &rdp_smartcard_check,
+                rdp_load_balance_entry: &rdp_load_balance_entry,
+                rdp_auto_reconnect_check: &rdp_auto_reconnect_check,
+                rdp_keyboard_hook_dropdown: &rdp_keyboard_hook_dropdown,
                 rdp_kerberos_check: &rdp_kerberos_check,
                 rdp_kdc_address_entry: &rdp_kdc_address_entry,
                 rdp_jump_host_dropdown: &rdp_jump_host_dropdown,

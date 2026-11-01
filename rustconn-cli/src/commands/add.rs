@@ -28,6 +28,8 @@ pub(super) struct AddParams<'a> {
     pub port: Option<u16>,
     pub protocol: &'a str,
     pub user: Option<&'a str>,
+    /// Read a password from stdin and store it in the secret backend.
+    pub password_stdin: bool,
     pub key: Option<&'a Path>,
     pub auth_method: Option<&'a str>,
     pub device: Option<&'a str>,
@@ -155,6 +157,15 @@ pub(super) struct AddParams<'a> {
               from Clap; the long body builds every protocol's connection inline"
 )]
 pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Result<(), CliError> {
+    // Reject --password-stdin on a build without a secret backend before writing
+    // anything, rather than saving the connection and then failing on the store.
+    #[cfg(not(feature = "secret-management"))]
+    if params.password_stdin {
+        return Err(CliError::Secret(
+            "--password-stdin requires a build with the 'secret-management' feature".into(),
+        ));
+    }
+
     let (protocol_type, default_port) = parse_protocol(params.protocol)?;
     let port = params.port.unwrap_or(default_port);
 
@@ -567,21 +578,40 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
 
     let config_manager = create_config_manager(config_path)?;
 
-    // Resolve --group: find or create the group, then assign group_id
-    if let Some(group_name) = params.group {
+    // Resolve --group: find or create the group, then assign group_id. Report
+    // whether the group already existed or was created, with its resolved name
+    // and ID, so a typo in the group name does not silently spawn a second
+    // group under a near-identical name (issue: CLI group feedback). The
+    // resolved name is read back from the group list rather than echoing the
+    // argument, so a case-insensitive match to an existing group shows the
+    // group's real spelling.
+    let group_feedback: Option<String> = if let Some(group_name) = params.group {
         let mut groups = config_manager
             .load_groups()
             .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
         let groups_before = groups.len();
         let group_id = crate::util::find_or_create_group_id(&mut groups, group_name)?;
-        if groups.len() > groups_before {
+        let created = groups.len() > groups_before;
+        // The resolved group is the one just found or appended; its stored name
+        // may differ in case from the argument.
+        let resolved_name = groups
+            .iter()
+            .find(|g| g.id == group_id)
+            .map_or_else(|| group_name.to_string(), |g| g.name.clone());
+        if created {
             config_manager
                 .save_groups(&groups)
                 .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
-            println!("Created group '{group_name}'");
+            println!("Created group '{resolved_name}' with ID {group_id}");
         }
         connection.group_id = Some(group_id);
-    }
+        let state = if created { "created" } else { "existing group" };
+        Some(format!(
+            " to group '{resolved_name}' ({state}, ID {group_id})"
+        ))
+    } else {
+        None
+    };
 
     let mut connections = config_manager
         .load_connections()
@@ -625,10 +655,248 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         .save_connections(&connections)
         .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
 
+    // --password-stdin: read one line from stdin and store it in the secret
+    // backend (the same vault path the GUI uses), then promote the connection's
+    // password source to Vault. The password never touches the connections file
+    // or argv. Done after the connection is saved so the backend keys and the
+    // source promotion resolve against a persisted connection.
+    if params.password_stdin {
+        store_password_from_stdin(config_path, &connection)?;
+    }
+
     println!(
-        "Added connection '{}' ({} {}:{}) with ID {}",
-        connection.name, connection.protocol, connection.host, connection.port, connection.id
+        "Added connection '{}' ({} {}:{}) with ID {}{}",
+        connection.name,
+        connection.protocol,
+        connection.host,
+        connection.port,
+        connection.id,
+        group_feedback.as_deref().unwrap_or("")
     );
+
+    Ok(())
+}
+
+/// Reads a password from stdin (one line) and stores it in the configured
+/// secret backend for `connection`, then promotes the connection's password
+/// source to `Vault`.
+///
+/// The password is wrapped in `Zeroizing`/`SecretString` on the way through and
+/// is never printed, logged, or placed in argv — it reaches the backend via the
+/// shared store path used by `secret set` and the GUI.
+///
+/// Only compiled with the `secret-management` feature; without it the CLI has no
+/// keyring backends to store into.
+#[cfg(feature = "secret-management")]
+fn store_password_from_stdin(
+    config_path: Option<&Path>,
+    connection: &Connection,
+) -> Result<(), CliError> {
+    use std::io::BufRead;
+
+    use zeroize::Zeroizing;
+
+    let config_manager = create_config_manager(config_path)?;
+    let groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+    let settings = config_manager
+        .load_settings()
+        .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
+
+    let backend_type = crate::commands::secret::resolve_backend_type(None, &settings)?;
+    let (keys, keepass_key) =
+        crate::commands::secret::vault_keys_and_keepass_key(connection, &groups, backend_type);
+
+    let line = {
+        let stdin = std::io::stdin();
+        let first = stdin
+            .lock()
+            .lines()
+            .next()
+            .ok_or_else(|| CliError::Secret("No password on stdin for --password-stdin".into()))?
+            .map_err(|e| CliError::Secret(format!("Failed to read stdin: {e}")))?;
+        Zeroizing::new(first)
+    };
+    let password_value = secrecy::SecretString::from(line.as_str());
+
+    let username_value = connection.username.clone().unwrap_or_default();
+
+    crate::commands::secret::store_connection_credentials_in_backend(
+        &settings,
+        backend_type,
+        &keys,
+        &keepass_key,
+        connection,
+        &username_value,
+        password_value,
+    )?;
+
+    if crate::commands::secret::promote_password_source_to_vault(&config_manager, connection.id)? {
+        println!("Set password source to Vault for this connection.");
+    }
+
+    Ok(())
+}
+
+/// Stub for builds without the `secret-management` feature: there is no keyring
+/// backend to store into, so `--password-stdin` cannot do its job. Fail clearly
+/// rather than silently dropping the password.
+#[cfg(not(feature = "secret-management"))]
+fn store_password_from_stdin(
+    _config_path: Option<&Path>,
+    _connection: &Connection,
+) -> Result<(), CliError> {
+    Err(CliError::Secret(
+        "--password-stdin requires a build with the 'secret-management' feature".into(),
+    ))
+}
+
+/// A bulk-add document: a set of connection definitions, optionally with the
+/// groups they reference. Accepts either a top-level object with `connections`
+/// (and optional `groups`) keys, or a bare array of connections (handled by the
+/// caller). Parsed as YAML, which is a JSON superset, so the same parser reads
+/// both formats.
+#[derive(serde::Deserialize)]
+struct BulkAddDoc {
+    #[serde(default)]
+    connections: Vec<Connection>,
+    #[serde(default)]
+    groups: Vec<rustconn_core::models::ConnectionGroup>,
+}
+
+/// Bulk-adds connections from a YAML or JSON file (native shape), or from stdin
+/// when `path` is `-`.
+///
+/// Reuses the existing serde models (`Connection`, `ConnectionGroup`) and a
+/// single YAML parser (YAML is a JSON superset, so JSON files parse too) rather
+/// than inventing a bespoke format. The document is either a top-level object
+/// with `connections` and optional `groups` arrays, or a bare array of
+/// connections. Every valid, non-duplicate connection is added in one save; the
+/// command reports how many were added and names each skipped entry with its
+/// reason (duplicate name, or failed validation), without aborting the whole
+/// batch on the first bad entry.
+///
+/// # Errors
+///
+/// Returns [`CliError::Config`] when the file cannot be read, the document
+/// cannot be parsed, or the merged set cannot be saved.
+pub(super) fn cmd_add_from_file(config_path: Option<&Path>, path: &str) -> Result<(), CliError> {
+    let content = if path == "-" {
+        use std::io::Read;
+        let mut buf = String::new();
+        std::io::stdin()
+            .read_to_string(&mut buf)
+            .map_err(|e| CliError::Config(format!("Failed to read stdin: {e}")))?;
+        buf
+    } else {
+        std::fs::read_to_string(path)
+            .map_err(|e| CliError::Config(format!("Failed to read {path}: {e}")))?
+    };
+
+    // Try the object shape first, then a bare array of connections. serde_yaml
+    // parses JSON as well, so both document formats work through one path.
+    let (incoming_conns, incoming_groups): (
+        Vec<Connection>,
+        Vec<rustconn_core::models::ConnectionGroup>,
+    ) = match serde_yaml::from_str::<BulkAddDoc>(&content) {
+        Ok(doc) if !doc.connections.is_empty() => (doc.connections, doc.groups),
+        _ => {
+            let conns: Vec<Connection> = serde_yaml::from_str(&content).map_err(|e| {
+                CliError::Config(format!(
+                    "Failed to parse connection definitions (expected a YAML/JSON object with \
+                         a 'connections' array, or a bare array of connections): {e}"
+                ))
+            })?;
+            (conns, Vec::new())
+        }
+    };
+
+    if incoming_conns.is_empty() {
+        return Err(CliError::Config(
+            "No connections found in the input. Provide a 'connections' array or a bare array."
+                .into(),
+        ));
+    }
+
+    let config_manager = create_config_manager(config_path)?;
+
+    let mut groups = config_manager
+        .load_groups()
+        .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
+    let mut connections = config_manager
+        .load_connections()
+        .map_err(|e| CliError::Config(format!("Failed to load connections: {e}")))?;
+
+    // Merge any groups the file carries, keyed by name (case-insensitive), so a
+    // connection's group_id resolves. A group whose name already exists is kept,
+    // and the file's id for it is remapped to the existing group's id below so a
+    // connection referring to it is not orphaned by a dangling group_id.
+    let mut new_groups = 0usize;
+    let mut group_id_remap: std::collections::HashMap<uuid::Uuid, uuid::Uuid> =
+        std::collections::HashMap::new();
+    for group in incoming_groups {
+        if let Some(existing) = groups
+            .iter()
+            .find(|g| g.name.eq_ignore_ascii_case(&group.name))
+        {
+            // Duplicate by name: point the file's group_id at the kept group.
+            if group.id != existing.id {
+                group_id_remap.insert(group.id, existing.id);
+            }
+        } else {
+            groups.push(group);
+            new_groups += 1;
+        }
+    }
+
+    let mut added = 0usize;
+    let mut skipped: Vec<String> = Vec::new();
+
+    for mut conn in incoming_conns {
+        // Repoint a connection whose group was deduplicated to the kept group.
+        if let Some(gid) = conn.group_id
+            && let Some(canonical) = group_id_remap.get(&gid)
+        {
+            conn.group_id = Some(*canonical);
+        }
+        if let Err(e) = ConfigManager::validate_connection(&conn) {
+            skipped.push(format!("'{}' — invalid: {e}", conn.name));
+            continue;
+        }
+        if connections
+            .iter()
+            .any(|c| c.name.eq_ignore_ascii_case(&conn.name))
+        {
+            skipped.push(format!(
+                "'{}' — a connection with that name already exists",
+                conn.name
+            ));
+            continue;
+        }
+        connections.push(conn);
+        added += 1;
+    }
+
+    if new_groups > 0 {
+        config_manager
+            .save_groups(&groups)
+            .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
+    }
+    config_manager
+        .save_connections(&connections)
+        .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
+
+    println!("Added {added} connection(s) from {path}.");
+    if new_groups > 0 {
+        println!("Created {new_groups} group(s).");
+    }
+    if !skipped.is_empty() {
+        println!("Skipped {} entry/entries:", skipped.len());
+        for reason in &skipped {
+            println!("  - {reason}");
+        }
+    }
 
     Ok(())
 }
@@ -766,6 +1034,32 @@ fn require<'a>(value: Option<&'a str>, flag: &str, provider: &str) -> Result<&'a
     value.ok_or_else(|| CliError::Config(format!("{flag} is required for --provider {provider}")))
 }
 
+/// Validates the `aws_ssm` target (taken from `--host`) is an EC2 instance ID.
+///
+/// AWS SSM Session Manager addresses an instance by its ID (`i-` followed by
+/// hex), not a hostname or DNS name — a plain hostname fails only at connect
+/// time, deep inside the AWS CLI, long after the connection was saved. Reject
+/// it here, at `add`, so the mistake surfaces before anything is written.
+///
+/// Accepts the historical 8-hex-digit form (`i-0123abcd`) and the 17-hex-digit
+/// form (`i-0123456789abcdef0`) alike, by matching `^i-[0-9a-f]+$` rather than a
+/// fixed length — AWS has lengthened the ID once already and may again.
+fn validate_aws_ssm_target(target: &str) -> Result<(), CliError> {
+    let rest = target.strip_prefix("i-").filter(|rest| !rest.is_empty());
+    let valid = rest.is_some_and(|rest| {
+        rest.bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    });
+    if valid {
+        Ok(())
+    } else {
+        Err(CliError::ZeroTrust(format!(
+            "--host must be an EC2 instance ID for --provider aws_ssm \
+             (expected 'i-' followed by hex, e.g. i-0123456789abcdef0), got '{target}'"
+        )))
+    }
+}
+
 /// Create a Zero Trust connection from CLI parameters
 #[expect(
     clippy::too_many_lines,
@@ -797,6 +1091,7 @@ fn create_zerotrust_connection(name: &str, params: &AddParams<'_>) -> Result<Con
             Ok(zt_connection(name, params, cfg))
         }
         "aws_ssm" => {
+            validate_aws_ssm_target(params.host)?;
             let cfg = zt_cfg(
                 ZeroTrustProvider::AwsSsm,
                 ZeroTrustProviderConfig::AwsSsm(AwsSsmConfig {
@@ -1451,4 +1746,48 @@ pub(super) fn apply_serial_wave2_fields(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod aws_ssm_target_tests {
+    use super::validate_aws_ssm_target;
+    use crate::error::CliError;
+
+    /// The historical 8-hex form and the current 17-hex form are both accepted:
+    /// AWS lengthened the instance ID once already, so the check matches the
+    /// shape (`i-` + hex) rather than a fixed length.
+    #[test]
+    fn accepts_both_instance_id_lengths() {
+        assert!(validate_aws_ssm_target("i-0123abcd").is_ok());
+        assert!(validate_aws_ssm_target("i-0123456789abcdef0").is_ok());
+    }
+
+    /// A plain hostname is the mistake this check exists to catch at `add` time
+    /// rather than at connect time, and it must fail with the Zero Trust variant
+    /// (exit code 1) naming `--host`.
+    #[test]
+    fn rejects_a_plain_hostname() {
+        let err = validate_aws_ssm_target("ec2.example.com").unwrap_err();
+        assert!(matches!(err, CliError::ZeroTrust(_)));
+        assert!(err.to_string().contains("--host"));
+    }
+
+    /// Other malformed targets: a bare prefix, the wrong prefix, uppercase hex
+    /// (AWS IDs are lowercase), and non-hex characters.
+    #[test]
+    fn rejects_other_malformed_targets() {
+        for bad in [
+            "i-",
+            "i-xyz",
+            "0123456789abcdef0",
+            "I-0123ABCD",
+            "i-0123ABCD",
+            "",
+        ] {
+            assert!(
+                validate_aws_ssm_target(bad).is_err(),
+                "expected '{bad}' to be rejected"
+            );
+        }
+    }
 }

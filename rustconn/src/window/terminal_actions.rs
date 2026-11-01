@@ -306,6 +306,23 @@ impl MainWindow {
         });
         window.add_action(&local_shell_action);
 
+        // OSC 133 prompt navigation (shell-integration-osc133 spec, task 4).
+        // Each scrolls the active terminal to the previous/next shell prompt; a
+        // silent no-op without shell integration on the session.
+        let prompt_prev_action = gio::SimpleAction::new("prompt-prev", None);
+        let notebook_clone = terminal_notebook.clone();
+        prompt_prev_action.connect_activate(move |_, _| {
+            notebook_clone.scroll_to_adjacent_prompt(true);
+        });
+        window.add_action(&prompt_prev_action);
+
+        let prompt_next_action = gio::SimpleAction::new("prompt-next", None);
+        let notebook_clone = terminal_notebook.clone();
+        prompt_next_action.connect_activate(move |_, _| {
+            notebook_clone.scroll_to_adjacent_prompt(false);
+        });
+        window.add_action(&prompt_next_action);
+
         // Quick connect action
         let quick_connect_action = gio::SimpleAction::new("quick-connect", None);
         let window_weak = window.downgrade();

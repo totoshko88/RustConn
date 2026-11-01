@@ -23,7 +23,9 @@ pub(super) fn cmd_cluster(
     subcmd: ClusterCommands,
 ) -> Result<(), CliError> {
     match subcmd {
-        ClusterCommands::List { format } => cmd_cluster_list(config_path, format.effective()),
+        ClusterCommands::List { format } => {
+            cmd_cluster_list(config_path, OutputFormat::effective(format))
+        }
         ClusterCommands::Show { name } => cmd_cluster_show(config_path, &name),
         ClusterCommands::Create {
             name,

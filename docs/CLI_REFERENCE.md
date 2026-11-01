@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.24.2** | Command-line interface for RustConn connection management
+**Version 0.24.3** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -97,7 +97,7 @@ Commands that list or display data support three output formats:
 | `json` | `--format json` | Machine-readable JSON (default when piped) |
 | `csv` | `--format csv` | Comma-separated values |
 
-When stdout is not a terminal (piped or redirected), the format automatically switches from `table` to `json` for scripting convenience. Long table output is paged through `less` when available.
+When stdout is not a terminal (piped or redirected) **and no `--format` was given**, the format automatically switches from `table` to `json` for scripting convenience. An **explicit** `--format` value is always honoured verbatim: `--format table` stays a table even in a pipe (so `rustconn-cli list --format table | grep` keeps working), and `--format json`/`--format csv` are emitted as asked. Long table output is paged through `less` when available.
 
 Commands supporting `--format`: `list`, `show`, `test`, `stats`, `group list`, `group show`, `snippet list`, `template list`, `cluster list`, `var list`, `smart-folder list`, `dynamic-folder list`, `recording list`, `sync list`, `history list`, `tag list`, `monitor metrics`.
 
@@ -141,11 +141,13 @@ Options:
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--name` | `-n` | Connection name (required) |
-| `--host` | `-H` | Hostname, IP, or device path (required) |
+| `--name` | `-n` | Connection name (required, unless `--from-file`) |
+| `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
+| `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
 | `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23) |
 | `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
+| `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
 | `--key` | `-k` | Path to SSH private key file |
 | `--auth-method` | — | SSH auth: `password`, `publickey`, `keyboard-interactive`, `agent`, `security-key` |
 | `--device` | — | Serial device path (alias for `--host` with serial protocol) |
@@ -160,7 +162,7 @@ Options:
 | `--ignore-certificate` | — | Accept any RDP server certificate (skip TOFU verification) |
 | `--tags` | — | Comma-separated tags (e.g. `"production,linux,critical"`) |
 | `--description` | — | Description text for the connection |
-| `--group` | — | Group name (creates the group if missing) |
+| `--group` | — | Group name (creates the group if missing). The success line reports whether the group was `created` or an `existing group`, with its ID — so a typo does not silently create a second group |
 | `--domain` | — | Windows domain for RDP/SPICE authentication |
 | `--window-mode` | — | Window mode: `embedded`, `external`, or `fullscreen` (RDP/VNC only) |
 | `--skip-port-check` | — | Skip pre-connect TCP port check |
@@ -302,8 +304,8 @@ rustconn-cli add -n "Pod" -H pod-name -P k8s
 **Zero Trust examples:**
 
 ```bash
-# AWS SSM
-rustconn-cli add -n "EC2" -H i-0123456789 -P zt --provider aws_ssm --aws-region eu-west-1
+# AWS SSM (the --host must be an EC2 instance ID, validated at add time)
+rustconn-cli add -n "EC2" -H i-0123456789abcdef0 -P zt --provider aws_ssm --aws-region eu-west-1
 
 # GCP IAP
 rustconn-cli add -n "GCE" -H instance-1 -P zt --provider gcp_iap --gcp-zone us-central1-a
@@ -332,6 +334,8 @@ rustconn-cli add -n "Custom" -H host -P zt --provider generic \
     --custom-command "ssh -o ProxyCommand='...' {host}"
 ```
 
+Each provider's required fields are validated at `add` time, before the connection is written, rather than at connect time. In particular `--provider aws_ssm` requires `--host` to be an EC2 instance ID (`i-` followed by hex, e.g. `i-0123456789abcdef0`); a plain hostname is rejected with exit code 1. The other providers reject a missing required flag (for example `--gcp-zone` for `gcp_iap`, or `--boundary-target` for `boundary`) the same way.
+
 Zero Trust provider flags:
 
 | Flag | Providers | Description |
@@ -354,6 +358,41 @@ Zero Trust provider flags:
 | `--hoop-gateway-url` | `hoop_dev` | Hoop.dev gateway URL |
 | `--hoop-grpc-url` | `hoop_dev` | Hoop.dev gRPC URL |
 | `--custom-command` | `generic` | Command template with `{host}`, `{user}`, `{port}` placeholders |
+
+#### Setting a password without an interactive prompt
+
+`--password-stdin` reads one line from stdin and stores it in the configured secret backend — the same vault the GUI uses — so a connection can be provisioned headlessly without typing a password and without ever putting the secret in the connections file or in `argv`. The value is never echoed, logged, or passed as a command-line argument.
+
+```bash
+echo "s3cret" | rustconn-cli add -n "Prod" -H prod.example.com -u admin --password-stdin
+```
+
+The connection's password source is set to `Vault`, so a later connect reads the credential back. This flag requires a build with the `secret-management` feature (the `full`/`desktop-integration` feature sets enable it); without it the command fails and names the feature rather than dropping the password. To set or change a password on an existing connection, use [`secret set`](#secret--manage-credentials).
+
+#### Bulk add from a file
+
+`--from-file PATH` adds many connections in one invocation, reading a YAML or JSON document; pass `-` to read the document from stdin. It reuses RustConn's own serde models, so the file is either a top-level object with a `connections` array (and an optional `groups` array), or a bare array of connection objects. The command reports how many connections were added and names each entry it skipped, with the reason — a name that already exists, or one that fails validation — without aborting the whole batch.
+
+```bash
+rustconn-cli add --from-file servers.json        # JSON document
+rustconn-cli add --from-file servers.yaml        # YAML document
+cat servers.json | rustconn-cli add --from-file -  # from stdin
+```
+
+Example JSON (the `connections` objects use the same field names `show --format json` prints):
+
+```json
+{
+  "connections": [
+    { "name": "web1", "host": "web1.example.com", "port": 22,
+      "protocol_config": { "Ssh": {} } },
+    { "name": "db1", "host": "db1.example.com", "port": 22,
+      "protocol_config": { "Ssh": {} } }
+  ]
+}
+```
+
+The easiest way to produce a valid file is `rustconn-cli show <name> --format json` for the field shape, or an `export --format native` archive. `--from-file` is mutually exclusive with the single-connection flags (`--name`, `--host`, …).
 
 ### connect — Initiate a connection
 

@@ -627,6 +627,15 @@ fn start_embedded_rdp_session(
     // FIDO2/WebAuthn device redirection (FreeRDP 3.x only, external mode)
     embedded_config.fido2_enabled = rdp_config.fido2_enabled;
 
+    // Automatic reconnection after a dropped connection (IronRDP path)
+    embedded_config.auto_reconnect = rdp_config.auto_reconnect;
+
+    // The microphone and broker routing run on the embedded client; smart
+    // cards apply only once the session runs in FreeRDP.
+    embedded_config.microphone_enabled = rdp_config.microphone_enabled;
+    embedded_config.smartcard_enabled = rdp_config.smartcard_enabled;
+    embedded_config.load_balance_info = rdp_config.load_balance_info.clone();
+
     // Kerberos NLA opt-in (issue #351). Embedded IronRDP path only — what an
     // account in AD "Protected Users" needs, since NTLM is refused for it. There
     // is no NTLM fallback once Kerberos is on. The KDC Address (stored as
@@ -886,6 +895,10 @@ fn start_embedded_rdp_session(
     // this session in its own corner buttons.
     widget_for_connect.set_toolbar_enabled(!rdp_config.hide_floating_toolbar);
 
+    // Where Windows key combinations go while the viewer has focus; read by the
+    // notebook on each focus change, so setting it after the tab exists is fine.
+    widget_for_connect.set_keyboard_hook(rdp_config.keyboard_hook);
+
     // Reveal the toolbar briefly so the user sees the actions that are
     // available while the connection is being established; the auto-hide timer
     // takes over once connected, and this is a no-op when the connection asked
@@ -996,6 +1009,9 @@ fn start_external_rdp_session(
         remember_window_position: false,
         ignore_certificate: rdp_config.ignore_certificate,
         fido2_enabled: rdp_config.fido2_enabled,
+        microphone_enabled: rdp_config.microphone_enabled,
+        smartcard_enabled: rdp_config.smartcard_enabled,
+        load_balance_info: rdp_config.load_balance_info.clone(),
         client_override: rdp_config.freerdp_client_override.clone(),
         // Lets a RemoteApp session negotiate Kerberos instead of NTLM, which an
         // AD "Protected Users" account cannot use (issue #351), and gates the

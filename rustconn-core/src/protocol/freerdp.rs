@@ -129,6 +129,12 @@ pub struct FreeRdpConfig {
     pub ignore_certificate: bool,
     /// Enable FIDO2/WebAuthn device redirection
     pub fido2_enabled: bool,
+    /// Redirect the local microphone (`/microphone`)
+    pub microphone_enabled: bool,
+    /// Redirect local smart cards (`/smartcard`)
+    pub smartcard_enabled: bool,
+    /// RD Connection Broker routing value (`/load-balance-info:`)
+    pub load_balance_info: Option<String>,
     /// Explicit FreeRDP client binary. `None` auto-detects. Consumed by the
     /// launcher when choosing which binary to spawn, not by the argument
     /// builder (issue #340).
@@ -202,6 +208,9 @@ impl FreeRdpConfig {
             remember_window_position: true,
             ignore_certificate: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
             client_override: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
@@ -652,7 +661,7 @@ fn push_experience_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
     }
 }
 
-/// Pushes drive and printer redirection arguments.
+/// Pushes drive, printer and device redirection arguments.
 fn push_redirection_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
     for folder in &config.shared_folders {
         // A share pointing at a path that no longer exists makes FreeRDP fail
@@ -679,6 +688,43 @@ fn push_redirection_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
     if config.fido2_enabled {
         args.push("/fido".to_string());
     }
+
+    args.extend(freerdp_device_and_broker_args(
+        config.microphone_enabled,
+        config.smartcard_enabled,
+        config.load_balance_info.as_deref(),
+    ));
+}
+
+/// Returns the microphone (`/microphone`), smart card (`/smartcard`) and RD
+/// Connection Broker (`/load-balance-info:`) arguments.
+///
+/// These are the `.rdp` `audiocapturemode`, `redirectsmartcards` and
+/// `loadbalanceinfo` settings, which only FreeRDP can serve. Both switches are
+/// sent bare, which redirects the default input device and every reader. A
+/// blank routing value is left out rather than sent empty.
+///
+/// Shared by both external argument builders, [`build_freerdp_args`] and
+/// `RdpProtocol::build_args`.
+#[must_use]
+pub fn freerdp_device_and_broker_args(
+    microphone: bool,
+    smartcard: bool,
+    load_balance_info: Option<&str>,
+) -> Vec<String> {
+    let mut args = Vec::new();
+    if microphone {
+        args.push("/microphone".to_string());
+    }
+    if smartcard {
+        args.push("/smartcard".to_string());
+    }
+    if let Some(info) = load_balance_info.map(str::trim)
+        && !info.is_empty()
+    {
+        args.push(format!("/load-balance-info:{info}"));
+    }
+    args
 }
 
 /// Pushes the security layer, TLS level and NLA arguments.
@@ -1128,6 +1174,49 @@ mod tests {
         assert!(
             !build_freerdp_args(&FreeRdpConfig::new("server.example.com"))
                 .contains(&"/admin".to_string())
+        );
+    }
+
+    #[test]
+    fn microphone_smartcard_and_broker_reach_freerdp_only_when_set() {
+        let on = FreeRdpConfig {
+            microphone_enabled: true,
+            smartcard_enabled: true,
+            load_balance_info: Some("tsv://MS Terminal Services Plugin.1.Sessions".to_string()),
+            ..FreeRdpConfig::new("broker.example.com")
+        };
+        let args_on = build_freerdp_args(&on);
+        for expected in [
+            "/microphone",
+            "/smartcard",
+            "/load-balance-info:tsv://MS Terminal Services Plugin.1.Sessions",
+        ] {
+            assert!(
+                args_on.contains(&expected.to_string()),
+                "{expected} missing: {args_on:?}"
+            );
+        }
+        // The server address must stay last.
+        assert_eq!(
+            args_on.last().map(String::as_str),
+            Some("/v:broker.example.com")
+        );
+
+        let args_off = build_freerdp_args(&FreeRdpConfig::new("broker.example.com"));
+        assert!(
+            !args_off.iter().any(|arg| arg == "/microphone"
+                || arg == "/smartcard"
+                || arg.starts_with("/load-balance-info")),
+            "none may be sent by default: {args_off:?}"
+        );
+    }
+
+    #[test]
+    fn blank_load_balance_info_is_not_sent() {
+        assert!(freerdp_device_and_broker_args(false, false, Some("   ")).is_empty());
+        assert_eq!(
+            freerdp_device_and_broker_args(false, false, Some(" tsv://x.1.y ")),
+            vec!["/load-balance-info:tsv://x.1.y".to_string()]
         );
     }
 

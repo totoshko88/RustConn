@@ -24,7 +24,7 @@ pub(super) fn cmd_smart_folder(
 ) -> Result<(), CliError> {
     match subcmd {
         SmartFolderCommands::List { format } => {
-            cmd_smart_folder_list(config_path, format.effective())
+            cmd_smart_folder_list(config_path, OutputFormat::effective(format))
         }
         SmartFolderCommands::Show { name } => cmd_smart_folder_show(config_path, &name),
         SmartFolderCommands::Create {

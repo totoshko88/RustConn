@@ -590,6 +590,16 @@ pub enum RdpClientEvent {
     /// Error occurred
     Error(String),
 
+    /// The connection of an established session broke — a read or write on
+    /// the transport failed — as opposed to the server ending the session.
+    ///
+    /// Kept apart from [`Self::Error`] so the GUI can reconnect automatically,
+    /// as Remote Desktop Connection does after a network drop, without parsing
+    /// an error string. A logoff or an administrator's disconnect ends the
+    /// session cleanly and never produces this. Carries the error text, for
+    /// the report once reconnecting gives up.
+    ConnectionLost(String),
+
     /// The server's TLS certificate changed since a previous connection (TOFU).
     ///
     /// Delivered structured rather than folded into [`Self::Error`] so the GUI
@@ -635,6 +645,24 @@ pub enum RdpClientEvent {
 
     /// Audio channel closed
     AudioClose,
+
+    /// The server opened the microphone (MS-RDPEAI): capture 16-bit PCM in
+    /// this format and send it back as [`RdpClientCommand::MicrophoneData`]
+    /// packets of `packet_size` bytes. Sent again when the server changes the
+    /// format while capture is running.
+    MicrophoneOpened {
+        /// Channel count
+        channels: u16,
+        /// Sample rate in Hz
+        samples_per_sec: u32,
+        /// Bits per sample (always 16)
+        bits_per_sample: u16,
+        /// Bytes per capture packet
+        packet_size: usize,
+    },
+
+    /// The server closed the microphone: stop capturing.
+    MicrophoneClosed,
 
     /// Round-trip time measured via Echo DVC (MS-RDPEECO).
     ///
@@ -756,6 +784,10 @@ pub enum RdpClientEvent {
 pub enum RdpClientCommand {
     /// Disconnect from server
     Disconnect,
+
+    /// One packet of captured microphone audio, in the format of the last
+    /// [`RdpClientEvent::MicrophoneOpened`]
+    MicrophoneData(Vec<u8>),
 
     /// Send keyboard event
     KeyEvent {

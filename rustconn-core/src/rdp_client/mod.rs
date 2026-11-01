@@ -65,6 +65,8 @@ pub mod graphics;
 pub mod input;
 pub mod kerberos;
 pub mod keyboard_layout;
+#[cfg(feature = "rdp-embedded")]
+pub mod microphone;
 pub mod multimonitor;
 // Opt-in, explicit-consent downloader for Cisco's official OpenH264 binary.
 // Deliberately NOT gated behind `gfx-h264`: the GUI loader wiring in
@@ -93,8 +95,9 @@ pub use event::{
     create_frame_update_with_conversion,
 };
 pub use failure::{
-    AuthFailureKind, RdpFailureClass, classify_auth_failure, classify_rdp_failure,
-    is_authentication_failure, is_license_exchange_failure, warrants_tls_only_fallback,
+    AUTO_RECONNECT_MAX_ATTEMPTS, AuthFailureKind, RdpFailureClass, auto_reconnect_delay,
+    classify_auth_failure, classify_rdp_failure, is_authentication_failure,
+    is_license_exchange_failure, warrants_tls_only_fallback,
 };
 pub use gateway::{
     GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState, resolve_gateway_user,

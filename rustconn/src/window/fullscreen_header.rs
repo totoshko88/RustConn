@@ -38,6 +38,10 @@
 //! Touch has no hover, so on a touch screen without a keyboard the top-edge
 //! reveal does not fire and F11 remains the way out of fullscreen.
 //!
+//! While fullscreen the header also carries a Leave Fullscreen button, the
+//! counterpart of the Restore button on Remote Desktop Connection's connection
+//! bar, so leaving does not depend on knowing F11 or finding the menu entry.
+//!
 //! The sidebar has a header bar of its own, which this revealer does not hold,
 //! so entering fullscreen hides the sidebar too and leaving it brings the
 //! sidebar back only if it was shown before. F9 still reveals it meanwhile.
@@ -51,6 +55,7 @@ use gtk4::{gdk, glib};
 use libadwaita as adw;
 
 use crate::embedded_toolbar_overflow::contains_active_menu;
+use crate::i18n::i18n;
 use crate::terminal::TerminalNotebook;
 
 /// How close to the top edge, in logical pixels, the pointer has to come to
@@ -78,6 +83,7 @@ const SLIDE_MS: u32 = 150;
 pub(super) struct Chrome {
     revealer: gtk4::Revealer,
     rows: gtk4::Box,
+    leave_button: gtk4::Button,
 }
 
 impl Chrome {
@@ -91,6 +97,15 @@ impl Chrome {
         let rows = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         rows.append(header_bar);
 
+        // Shown only while fullscreen; the action is the one F11 runs.
+        let leave_button = gtk4::Button::from_icon_name("view-restore-symbolic");
+        leave_button.set_action_name(Some("win.toggle-fullscreen"));
+        leave_button.set_tooltip_text(Some(&i18n("Leave Fullscreen")));
+        leave_button
+            .update_property(&[gtk4::accessible::Property::Label(&i18n("Leave Fullscreen"))]);
+        leave_button.set_visible(false);
+        header_bar.pack_end(&leave_button);
+
         // Slide rather than crossfade: a crossfading revealer keeps its full
         // height while hidden, which would leave an empty raised strip — and an
         // input-swallowing one — across the top of the session. The slide moves
@@ -102,7 +117,11 @@ impl Chrome {
         revealer.set_reveal_child(true);
         revealer.set_child(Some(&rows));
 
-        Self { revealer, rows }
+        Self {
+            revealer,
+            rows,
+            leave_button,
+        }
     }
 
     /// The widget to add as the toolbar view's top bar.
@@ -137,6 +156,7 @@ pub(super) fn install(
         sidebar_before_fullscreen: Cell::new(None),
         revealer: chrome.revealer,
         rows: chrome.rows,
+        leave_button: chrome.leave_button,
         tab_bar: notebook.tab_bar().clone(),
         tab_bar_home: notebook.widget().clone(),
         drop_motion,
@@ -264,6 +284,8 @@ pub(super) fn install(
 /// Everything the fullscreen chrome handlers share.
 struct State {
     window: glib::WeakRef<adw::ApplicationWindow>,
+    /// The header's Leave Fullscreen button, visible only while fullscreen.
+    leave_button: gtk4::Button,
     toolbar_view: adw::ToolbarView,
     /// The window's split view; weak, it is the window's own descendant.
     split_view: glib::WeakRef<adw::OverlaySplitView>,
@@ -305,6 +327,7 @@ impl State {
     /// every frame of the animation.
     fn apply_fullscreen(&self, fullscreen: bool) {
         self.cancel_hide();
+        self.leave_button.set_visible(fullscreen);
         if fullscreen {
             self.toolbar_view
                 .set_top_bar_style(adw::ToolbarStyle::Raised);

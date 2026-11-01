@@ -16,6 +16,7 @@
 
 pub mod automation_inheritance;
 pub mod copy_field;
+mod dial;
 mod interning;
 pub mod jump_chain;
 pub mod keepalive;
@@ -34,6 +35,7 @@ mod ssh_prompt;
 mod virtual_scroll;
 
 pub use copy_field::{CopyField, copy_fields, copy_text, format_address};
+pub use dial::connect_tcp;
 pub use interning::{
     check_interning_stats, get_interning_stats, intern_connection_strings, intern_hostname,
     intern_protocol_name, intern_username, log_interning_stats, log_interning_stats_with_warning,

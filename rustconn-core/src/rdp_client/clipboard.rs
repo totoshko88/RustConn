@@ -27,13 +27,13 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::Sender;
 
-use ironrdp::cliprdr::backend::{ClipboardMessage, ClipboardMessageProxy, CliprdrBackend};
-use ironrdp::cliprdr::pdu::{
+use ironrdp_cliprdr::backend::{ClipboardMessage, ClipboardMessageProxy, CliprdrBackend};
+use ironrdp_cliprdr::pdu::{
     ClipboardFormat, ClipboardFormatId, ClipboardFormatName, ClipboardGeneralCapabilityFlags,
     FileContentsFlags, FileContentsRequest, FileContentsResponse, FileDescriptor,
     FormatDataRequest, FormatDataResponse, LockDataId,
 };
-use ironrdp::core::impl_as_any;
+use ironrdp_core::impl_as_any;
 use tracing::{debug, trace, warn};
 
 use super::{ClipboardFileInfo, ClipboardFormatInfo, RdpClientEvent};
@@ -1097,11 +1097,11 @@ mod tests {
     mod session {
         use std::sync::mpsc::Receiver;
 
-        use ironrdp::cliprdr::CliprdrClient;
-        use ironrdp::cliprdr::pdu::{
+        use ironrdp_cliprdr::CliprdrClient;
+        use ironrdp_cliprdr::pdu::{
             Capabilities, ClipboardPdu, ClipboardProtocolVersion, FormatList, FormatListResponse,
         };
-        use ironrdp::svc::SvcProcessor as _;
+        use ironrdp_svc::SvcProcessor as _;
 
         use super::super::*;
 
@@ -1114,7 +1114,7 @@ mod tests {
         pub(super) fn ready_client() -> (CliprdrClient, Receiver<RdpClientEvent>) {
             let (tx, rx) = std::sync::mpsc::channel();
             let mut cliprdr: CliprdrClient =
-                ironrdp::cliprdr::Cliprdr::new(Box::new(RustConnClipboardBackend::new(tx)));
+                ironrdp_cliprdr::Cliprdr::new(Box::new(RustConnClipboardBackend::new(tx)));
             let server = Capabilities::new(
                 ClipboardProtocolVersion::V2,
                 ClipboardGeneralCapabilityFlags::USE_LONG_FORMAT_NAMES
@@ -1135,7 +1135,7 @@ mod tests {
 
         /// Hands `pdu` to the client exactly as it would arrive on the channel.
         pub(super) fn feed(cliprdr: &mut CliprdrClient, pdu: &ClipboardPdu<'_>) {
-            let bytes = ironrdp::core::encode_vec(pdu).expect("encode PDU");
+            let bytes = ironrdp_core::encode_vec(pdu).expect("encode PDU");
             cliprdr.process(&bytes).expect("client accepts PDU");
         }
 
@@ -1183,7 +1183,7 @@ mod tests {
 
         /// The server answers the file-list request with `files`.
         pub(super) fn reply_file_list(cliprdr: &mut CliprdrClient, files: Vec<FileDescriptor>) {
-            use ironrdp::cliprdr::pdu::PackedFileList;
+            use ironrdp_cliprdr::pdu::PackedFileList;
             let reply = FormatDataResponse::new_file_list(&PackedFileList { files })
                 .expect("file list reply");
             feed(cliprdr, &ClipboardPdu::FormatDataResponse(reply));
@@ -1229,7 +1229,7 @@ mod tests {
     /// implemented. The button could not appear against a real server (issue #74).
     #[test]
     fn a_remote_file_copy_reaches_the_gui_as_a_file_list() {
-        use ironrdp::cliprdr::pdu::ClipboardFileAttributes;
+        use ironrdp_cliprdr::pdu::ClipboardFileAttributes;
 
         let (mut cliprdr, rx) = session::ready_client();
 
@@ -1281,7 +1281,7 @@ mod tests {
         session::fetch(&mut cliprdr, ClipboardFormatId::CF_UNICODETEXT.value());
         session::feed(
             &mut cliprdr,
-            &ironrdp::cliprdr::pdu::ClipboardPdu::FormatDataResponse(
+            &ironrdp_cliprdr::pdu::ClipboardPdu::FormatDataResponse(
                 FormatDataResponse::new_unicode_string("hello"),
             ),
         );
@@ -1312,7 +1312,7 @@ mod tests {
         session::fetch(&mut cliprdr, ClipboardFormatId::CF_UNICODETEXT.value());
         session::feed(
             &mut cliprdr,
-            &ironrdp::cliprdr::pdu::ClipboardPdu::FormatDataResponse(
+            &ironrdp_cliprdr::pdu::ClipboardPdu::FormatDataResponse(
                 FormatDataResponse::new_unicode_string("serverBak.py"),
             ),
         );
@@ -1341,9 +1341,7 @@ mod tests {
         session::drain(&rx);
         session::feed(
             &mut cliprdr,
-            &ironrdp::cliprdr::pdu::ClipboardPdu::FormatDataResponse(
-                FormatDataResponse::new_error(),
-            ),
+            &ironrdp_cliprdr::pdu::ClipboardPdu::FormatDataResponse(FormatDataResponse::new_error()),
         );
 
         let events = session::drain(&rx);
@@ -1365,9 +1363,7 @@ mod tests {
         session::drain(&rx);
         session::feed(
             &mut cliprdr,
-            &ironrdp::cliprdr::pdu::ClipboardPdu::FormatDataResponse(
-                FormatDataResponse::new_error(),
-            ),
+            &ironrdp_cliprdr::pdu::ClipboardPdu::FormatDataResponse(FormatDataResponse::new_error()),
         );
 
         assert!(session::texts(&session::drain(&rx)).is_empty());
@@ -1420,7 +1416,7 @@ mod tests {
         for reply in ["old", "new"] {
             session::feed(
                 &mut cliprdr,
-                &ironrdp::cliprdr::pdu::ClipboardPdu::FormatDataResponse(
+                &ironrdp_cliprdr::pdu::ClipboardPdu::FormatDataResponse(
                     FormatDataResponse::new_unicode_string(reply),
                 ),
             );

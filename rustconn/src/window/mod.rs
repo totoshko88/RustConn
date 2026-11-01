@@ -643,6 +643,10 @@ impl MainWindow {
                 .unwrap_or(true)
         };
         let terminal_notebook = Rc::new(TerminalNotebook::new(show_welcome));
+        let auto_capture_shortcuts = with_state(&state, |s| {
+            s.settings().ui.remote_desktop_auto_capture_shortcuts
+        });
+        terminal_notebook.set_auto_capture_shortcuts(auto_capture_shortcuts);
 
         // Refresh VTE font state when fontconfig changes (#171).
         // VTE reads `gtk-fontconfig-timestamp` only when it creates its
@@ -4139,6 +4143,9 @@ impl MainWindow {
                 // Apply the tab menu's directional-close visibility setting
                 notebook.set_show_directional_close(settings.ui.show_directional_tab_close);
 
+                // Apply the auto-capture shortcuts setting for remote desktop sessions
+                notebook.set_auto_capture_shortcuts(settings.ui.remote_desktop_auto_capture_shortcuts);
+
                 // Apply the sidebar width (issue #3: one value, 180..=500) and show
                 // or hide the drag handle to match the opt-in toggle.
                 if let Some(w) = settings.ui.sidebar_width {
@@ -4729,27 +4736,64 @@ impl MainWindow {
                 tracing::info!(path = %path.display(), "Startup action: opening .rdp file");
                 match rustconn_core::import::RdpFileImporter::parse_rdp_file(path) {
                     Ok(connection) => {
+                        let devices = rdp_file_requested_devices(&connection);
+                        let host = connection.host.clone();
                         // Add the imported connection to state and connect
-                        let conn_id = connection.id;
-                        if let Ok(mut state_mut) = self.state.try_borrow_mut()
-                            && let Err(e) = state_mut.create_connection(connection)
-                        {
-                            tracing::error!(%e, "Failed to add imported .rdp connection");
+                        let state = self.state.clone();
+                        let notebook = self.terminal_notebook.clone();
+                        let split_view = self.split_view.clone();
+                        let sidebar = Rc::clone(&self.sidebar);
+                        let monitoring = Rc::clone(&self.monitoring);
+                        let activity = self.activity_coordinator.clone();
+                        let connect = move |connection: rustconn_core::models::Connection| {
+                            let conn_id = connection.id;
+                            if let Ok(mut state_mut) = state.try_borrow_mut()
+                                && let Err(e) = state_mut.create_connection(connection)
+                            {
+                                tracing::error!(%e, "Failed to add imported .rdp connection");
+                            }
+                            Self::start_connection_with_split(
+                                &state,
+                                &notebook,
+                                &split_view,
+                                &sidebar,
+                                &monitoring,
+                                conn_id,
+                                Some(&activity),
+                            );
+                            let state_clone = state.clone();
+                            let sidebar_clone = Rc::clone(&sidebar);
+                            glib::idle_add_local_once(move || {
+                                Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
+                            });
+                        };
+                        if devices.is_empty() {
+                            connect(connection);
+                        } else {
+                            // A double-clicked .rdp file is untrusted input: one
+                            // that turns on device redirection is the shape of
+                            // rogue-RDP phishing, so ask first, as mstsc does for
+                            // unsigned files. The import dialog needs no prompt —
+                            // the user reviews the result there.
+                            let file_name = path.file_name().map_or_else(
+                                || path.display().to_string(),
+                                |name| name.to_string_lossy().into_owned(),
+                            );
+                            let dialog = rdp_file_devices_dialog(&file_name, &host, &devices);
+                            let pending = std::cell::Cell::new(Some(connection));
+                            dialog.connect_response(None, move |_, response| {
+                                if response != "connect" {
+                                    tracing::info!(
+                                        "Startup .rdp file declined: device redirection not confirmed"
+                                    );
+                                    return;
+                                }
+                                if let Some(connection) = pending.take() {
+                                    connect(connection);
+                                }
+                            });
+                            dialog.present(Some(&self.window));
                         }
-                        Self::start_connection_with_split(
-                            &self.state,
-                            &self.terminal_notebook,
-                            &self.split_view,
-                            &self.sidebar,
-                            &self.monitoring,
-                            conn_id,
-                            Some(&self.activity_coordinator),
-                        );
-                        let state_clone = self.state.clone();
-                        let sidebar_clone = Rc::clone(&self.sidebar);
-                        glib::idle_add_local_once(move || {
-                            Self::reload_sidebar_preserving_state(&state_clone, &sidebar_clone);
-                        });
                     }
                     Err(e) => {
                         tracing::error!(
@@ -5451,9 +5495,69 @@ async fn verify_portable_passphrase_after_save(
     );
 }
 
+/// The local devices an imported `.rdp` file asks to redirect into the
+/// session, as translated labels for the confirmation dialog. Empty when the
+/// file requests none of them.
+fn rdp_file_requested_devices(connection: &rustconn_core::models::Connection) -> Vec<String> {
+    let rustconn_core::ProtocolConfig::Rdp(rdp) = &connection.protocol_config else {
+        return Vec::new();
+    };
+    // Literal `i18n()` calls, so `po/update-pot.sh` extracts each label.
+    let mut devices = Vec::new();
+    if rdp.microphone_enabled {
+        devices.push(crate::i18n::i18n("Microphone"));
+    }
+    if rdp.smartcard_enabled {
+        devices.push(crate::i18n::i18n("Smart Cards"));
+    }
+    if rdp.fido2_enabled {
+        devices.push(crate::i18n::i18n("Security Key (FIDO2)"));
+    }
+    devices
+}
+
+/// Asks before connecting with an opened `.rdp` file that redirects local
+/// devices. Cancel is both the default and the Escape response.
+fn rdp_file_devices_dialog(file_name: &str, host: &str, devices: &[String]) -> adw::AlertDialog {
+    let list = devices
+        .iter()
+        .map(|device| format!("• {device}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let dialog = adw::AlertDialog::new(
+        Some(&crate::i18n::i18n("Share Local Devices?")),
+        Some(&crate::i18n::i18n_f(
+            "The file {} asks to share these devices with {}:\n\n{}\n\nConnect only if you trust where the file came from.",
+            &[file_name, host, &list],
+        )),
+    );
+    dialog.add_response("cancel", &crate::i18n::i18n("Cancel"));
+    dialog.add_response("connect", &crate::i18n::i18n("Connect"));
+    dialog.set_default_response(Some("cancel"));
+    dialog.set_close_response("cancel");
+    dialog
+}
+
 #[cfg(test)]
 mod tests {
-    use super::open_session_count;
+    use super::{open_session_count, rdp_file_requested_devices};
+
+    #[test]
+    fn an_rdp_file_without_device_redirection_needs_no_prompt() {
+        let mut connection = rustconn_core::models::Connection::new_rdp(
+            "host".to_string(),
+            "host.example".to_string(),
+            3389,
+        );
+        assert!(rdp_file_requested_devices(&connection).is_empty());
+
+        if let rustconn_core::ProtocolConfig::Rdp(rdp) = &mut connection.protocol_config {
+            rdp.microphone_enabled = true;
+            rdp.smartcard_enabled = true;
+            rdp.fido2_enabled = true;
+        }
+        assert_eq!(rdp_file_requested_devices(&connection).len(), 3);
+    }
 
     #[test]
     fn tabless_sessions_are_counted_for_the_close_confirmation() {

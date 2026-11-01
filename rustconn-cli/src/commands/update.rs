@@ -12,6 +12,17 @@ use crate::commands::add::{
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
 
+/// The result of resolving `--group` on an update: whether the group was newly
+/// created (and so the group list needs saving), its resolved name and ID. Keeps
+/// the `--group` branch out of a tuple that would trip `clippy::type_complexity`.
+struct GroupResolution {
+    /// The updated group list to persist — `Some` only when a group was created.
+    groups: Option<Vec<rustconn_core::models::ConnectionGroup>>,
+    resolved_name: String,
+    group_id: uuid::Uuid,
+    created: bool,
+}
+
 /// Applies `--postpend-*` to the connection's output filter.
 ///
 /// An empty `--postpend-command` removes the filter outright; a non-empty one
@@ -873,19 +884,28 @@ pub(super) fn cmd_update(
         connection.skip_port_check = flag;
     }
 
-    // Resolve --group: find or create the group, then assign group_id (defer save)
-    let group_to_save = if let Some(group_name) = params.group {
+    // Resolve --group: find or create the group, then assign group_id (defer
+    // save). Report whether the group was created or already existed, with its
+    // resolved name and ID, so a typo does not silently move the connection
+    // into a new near-identical group (matching `add --group`).
+    let group_outcome = if let Some(group_name) = params.group {
         let mut groups = config_manager
             .load_groups()
             .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
         let groups_before = groups.len();
         let group_id = crate::util::find_or_create_group_id(&mut groups, group_name)?;
         connection.group_id = Some(group_id);
-        if groups.len() > groups_before {
-            Some((groups, group_name.to_string()))
-        } else {
-            None
-        }
+        let created = groups.len() > groups_before;
+        let resolved_name = groups
+            .iter()
+            .find(|g| g.id == group_id)
+            .map_or_else(|| group_name.to_string(), |g| g.name.clone());
+        Some(GroupResolution {
+            groups: created.then_some(groups),
+            resolved_name,
+            group_id,
+            created,
+        })
     } else {
         None
     };
@@ -896,18 +916,38 @@ pub(super) fn cmd_update(
     let id = connection.id;
     let name = connection.name.clone();
 
-    if let Some((groups, new_group_name)) = group_to_save {
+    let group_feedback = group_outcome.as_ref().map(|o| {
+        let state = if o.created {
+            "created"
+        } else {
+            "existing group"
+        };
+        format!(
+            " into group '{}' ({state}, ID {})",
+            o.resolved_name, o.group_id
+        )
+    });
+
+    if let Some(outcome) = &group_outcome
+        && let Some(groups) = &outcome.groups
+    {
         config_manager
-            .save_groups(&groups)
+            .save_groups(groups)
             .map_err(|e| CliError::Config(format!("Failed to save groups: {e}")))?;
-        println!("Created group '{new_group_name}'");
+        println!(
+            "Created group '{}' with ID {}",
+            outcome.resolved_name, outcome.group_id
+        );
     }
 
     config_manager
         .save_connections(&connections)
         .map_err(|e| CliError::Config(format!("Failed to save connections: {e}")))?;
 
-    println!("Updated connection '{name}' (ID: {id})");
+    println!(
+        "Updated connection '{name}' (ID: {id}){}",
+        group_feedback.as_deref().unwrap_or("")
+    );
 
     Ok(())
 }

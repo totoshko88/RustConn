@@ -144,12 +144,9 @@ pub struct RdpClientConfig {
     #[serde(default)]
     pub smartcard_enabled: bool,
 
-    /// Enable microphone redirection.
-    ///
-    /// **Reserved / not yet implemented.** The embedded IronRDP client has no
-    /// audio-input (audin) virtual channel, so setting this currently has no
-    /// effect. The field is kept for forward-compatibility and round-tripping;
-    /// it is not surfaced in the GUI.
+    /// Enable microphone redirection: registers the MS-RDPEAI `AUDIO_INPUT`
+    /// channel, sets `INFO_AUDIOCAPTURE`, and reports the format to capture in
+    /// as `RdpClientEvent::MicrophoneOpened`.
     #[serde(default)]
     pub microphone_enabled: bool,
 
@@ -200,6 +197,12 @@ pub struct RdpClientConfig {
     /// `[realms]`), and failing that the realm's own DNS name is tried.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kdc_proxy_url: Option<String>,
+
+    /// RD Connection Broker routing value (`.rdp` `loadbalanceinfo`), sent
+    /// as the X.224 routing token of the first connection. The broker answers
+    /// with a Server Redirection that the client follows to the session host.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub load_balance_info: Option<String>,
 }
 
 const fn default_true() -> bool {
@@ -302,6 +305,7 @@ impl Default for RdpClientConfig {
             mptcp: false,
             kerberos_enabled: false,
             kdc_proxy_url: None,
+            load_balance_info: None,
         }
     }
 }

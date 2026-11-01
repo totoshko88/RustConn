@@ -41,8 +41,8 @@ pub enum Commands {
     #[command(about = "List all connections in the configuration")]
     List {
         /// Output format for the connection list
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
 
         /// Filter connections by protocol (ssh, rdp, vnc, spice)
         #[arg(short, long)]
@@ -72,13 +72,14 @@ pub enum Commands {
     /// Add a new connection
     #[command(about = "Add a new connection to the configuration")]
     Add {
-        /// Name for the new connection
-        #[arg(short, long)]
-        name: String,
+        /// Name for the new connection (required unless --from-file is used)
+        #[arg(short, long, required_unless_present = "from_file")]
+        name: Option<String>,
 
         /// Host address (hostname or IP), or device path for serial
-        #[arg(short = 'H', long)]
-        host: String,
+        /// (required unless --from-file is used)
+        #[arg(short = 'H', long, required_unless_present = "from_file")]
+        host: Option<String>,
 
         /// Port number (defaults to protocol default: SSH=22, RDP=3389,
         /// VNC=5900)
@@ -94,6 +95,15 @@ pub enum Commands {
         #[arg(short, long)]
         user: Option<String>,
 
+        /// Read a password from stdin (one line) and store it in the configured
+        /// secret backend — the same vault the GUI uses — not in the
+        /// connections file. For headless/CI provisioning without an
+        /// interactive prompt. The value never appears in argv, output or logs.
+        /// Example: echo "s3cret" | rustconn-cli add -n host -H h --password-stdin
+        /// Requires a build with the `secret-management` feature.
+        #[arg(long)]
+        password_stdin: bool,
+
         /// Path to SSH private key file
         #[arg(short, long)]
         key: Option<PathBuf>,
@@ -102,6 +112,14 @@ pub enum Commands {
         /// keyboard-interactive, agent, security-key)
         #[arg(long, value_name = "METHOD")]
         auth_method: Option<String>,
+
+        /// Bulk-add connections from a YAML or JSON file — an object with a
+        /// `connections` array (and an optional `groups` array), or a bare
+        /// array of connections — or `-` for stdin. Adds every definition in
+        /// one invocation and reports how many were added and which were
+        /// skipped. Mutually exclusive with the single-connection flags.
+        #[arg(long, value_name = "PATH", conflicts_with_all = ["name", "host"])]
+        from_file: Option<String>,
 
         /// Serial device path (e.g., /dev/ttyUSB0). Alias for --host
         /// with serial protocol
@@ -602,8 +620,8 @@ pub enum Commands {
         timeout: u64,
 
         /// Output format (table, json, csv)
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Delete a connection
@@ -624,8 +642,8 @@ pub enum Commands {
         name: String,
 
         /// Output format (table, json, csv)
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Update a connection
@@ -1224,8 +1242,8 @@ pub enum Commands {
     #[command(about = "Show connection statistics")]
     Stats {
         /// Output format (table, json, csv)
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Generate shell completions
@@ -1328,16 +1346,32 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
-    /// Returns the effective format, defaulting to JSON when stdout is not a terminal.
+    /// Resolves the format a listing/show command should actually print, given
+    /// what the user asked for on the command line.
     ///
-    /// Per clig.dev: "If stdin or stdout is not an interactive terminal,
-    /// prefer structured output."
+    /// `requested` is `None` when no `--format` was given (the field defaulted)
+    /// and `Some(fmt)` when the user passed `--format fmt` explicitly.
+    ///
+    /// Per clig.dev, "If stdin or stdout is not an interactive terminal, prefer
+    /// structured output." That downgrade applies **only** to the defaulted
+    /// case: a bare `rustconn-cli list` piped into a file emits JSON. An
+    /// explicit `--format table` is honoured verbatim even when piped — the user
+    /// asked for a table and a surprise JSON downgrade breaks `… | grep` and
+    /// `… | column`. An explicit `--format json`/`--format csv` is likewise
+    /// returned unchanged (they were never downgraded).
     #[must_use]
-    pub(crate) fn effective(self) -> Self {
-        if matches!(self, Self::Table) && !std::io::stdout().is_terminal() {
-            Self::Json
-        } else {
-            self
+    pub(crate) fn effective(requested: Option<Self>) -> Self {
+        match requested {
+            // No --format given: default to table on a terminal, JSON off it.
+            None => {
+                if std::io::stdout().is_terminal() {
+                    Self::Table
+                } else {
+                    Self::Json
+                }
+            }
+            // --format given explicitly: honour it verbatim, pipe or not.
+            Some(fmt) => fmt,
         }
     }
 }
@@ -1412,8 +1446,8 @@ pub enum SnippetCommands {
     #[command(about = "List all command snippets")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
 
         /// Filter by category
         #[arg(short, long)]
@@ -1537,8 +1571,8 @@ pub enum GroupCommands {
     #[command(about = "List all connection groups")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Show group details
@@ -1548,8 +1582,8 @@ pub enum GroupCommands {
         name: String,
 
         /// Output format (table, json, csv)
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Create a new group
@@ -1677,8 +1711,8 @@ pub enum TemplateCommands {
     #[command(about = "List all connection templates")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
 
         /// Filter by protocol (ssh, rdp, vnc, spice)
         #[arg(short, long)]
@@ -1785,8 +1819,8 @@ pub enum ClusterCommands {
     #[command(about = "List all connection clusters")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Show cluster details
@@ -1866,8 +1900,8 @@ pub enum VariableCommands {
     #[command(about = "List all global variables")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Show variable details
@@ -1995,8 +2029,8 @@ pub enum SmartFolderCommands {
     #[command(about = "List all smart folders")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Show connections matching a smart folder
@@ -2072,8 +2106,8 @@ pub enum DynamicFolderCommands {
     #[command(about = "List groups with dynamic folder configuration")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Refresh a dynamic folder (execute its script)
@@ -2128,8 +2162,8 @@ pub enum RecordingCommands {
     #[command(about = "List all recordings with metadata")]
     List {
         /// Output format
-        #[arg(long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Delete a recording by name
@@ -2165,8 +2199,8 @@ pub enum SyncCommands {
     #[command(about = "List all synced groups")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Export a Master group to its sync file
@@ -2214,8 +2248,8 @@ pub enum HistoryCommands {
     #[command(about = "List recent connection history entries")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
 
         /// Maximum number of entries to show
         #[arg(short, long, default_value = "20")]
@@ -2249,8 +2283,8 @@ pub enum TagCommands {
     #[command(about = "List all tags used across connections")]
     List {
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Add a tag to a connection
@@ -2306,8 +2340,8 @@ pub enum MonitorCommands {
         name: String,
 
         /// Output format
-        #[arg(short, long, default_value = "table", value_enum)]
-        format: OutputFormat,
+        #[arg(short, long, value_enum)]
+        format: Option<OutputFormat>,
     },
 
     /// Make connections follow the global monitoring setting again

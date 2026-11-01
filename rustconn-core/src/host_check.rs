@@ -6,8 +6,9 @@
 use std::time::Duration;
 
 use thiserror::Error;
-use tokio::net::TcpStream;
 use tokio::time::timeout;
+
+use crate::connection::connect_tcp;
 
 /// Default TCP connect timeout in seconds
 const DEFAULT_TIMEOUT_SECS: u64 = 3;
@@ -140,10 +141,9 @@ impl HostCheckConfig {
 ///
 /// Returns an error only for DNS resolution failures.
 pub async fn check_host_online(host: &str, port: u16, timeout_secs: u64) -> HostCheckResult<bool> {
-    let addr = format!("{host}:{port}");
     let connect_timeout = Duration::from_secs(timeout_secs.max(1));
 
-    match timeout(connect_timeout, TcpStream::connect(&addr)).await {
+    match timeout(connect_timeout, connect_tcp(host, port, false)).await {
         Ok(Ok(_stream)) => Ok(true),
         Ok(Err(e)) => {
             // Connection refused, network unreachable, etc.

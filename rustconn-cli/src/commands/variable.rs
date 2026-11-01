@@ -24,7 +24,9 @@ pub(super) fn cmd_var(
     subcmd: VariableCommands,
 ) -> Result<(), CliError> {
     match subcmd {
-        VariableCommands::List { format } => cmd_var_list(config_path, format.effective()),
+        VariableCommands::List { format } => {
+            cmd_var_list(config_path, OutputFormat::effective(format))
+        }
         VariableCommands::Show { name } => cmd_var_show(config_path, &name),
         VariableCommands::Set {
             name,

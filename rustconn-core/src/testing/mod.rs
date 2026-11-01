@@ -11,10 +11,10 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
 use tokio::time::timeout;
 use uuid::Uuid;
 
+use crate::connection::connect_tcp;
 use crate::models::{Connection, ProtocolType};
 
 /// Default timeout for connection tests (10 seconds)
@@ -350,12 +350,11 @@ impl ConnectionTester {
     /// Returns an error if the connection fails due to timeout, connection refused,
     /// host unreachable, DNS resolution failure, or other I/O errors.
     pub async fn test_port(&self, host: &str, port: u16) -> TestResult2<Duration> {
-        let addr = format!("{host}:{port}");
         let start = std::time::Instant::now();
 
         let timeout_secs = self.timeout.as_secs();
 
-        match timeout(self.timeout, TcpStream::connect(&addr)).await {
+        match timeout(self.timeout, connect_tcp(host, port, false)).await {
             Ok(Ok(_stream)) => Ok(start.elapsed()),
             Ok(Err(e)) => {
                 let error_str = e.to_string().to_lowercase();
@@ -397,9 +396,8 @@ impl ConnectionTester {
     /// Returns an error if the connection fails, times out, or the SSH banner
     /// is invalid or missing.
     pub async fn test_ssh(&self, connection: &Connection) -> TestResult2<()> {
-        let addr = format!("{}:{}", connection.host, connection.port);
-
-        let stream = match timeout(self.timeout, TcpStream::connect(&addr)).await {
+        let dial = connect_tcp(&connection.host, connection.port, false);
+        let stream = match timeout(self.timeout, dial).await {
             Ok(Ok(s)) => s,
             Ok(Err(e)) => return Err(TestError::IoError(e.to_string())),
             Err(_) => return Err(TestError::Timeout(self.timeout.as_secs())),

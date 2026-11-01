@@ -2143,6 +2143,100 @@ impl RdpAudioMode {
     }
 }
 
+/// Where Windows key combinations such as Alt+Tab and Super apply while an
+/// embedded RDP viewer has keyboard focus — Remote Desktop Connection's "Apply
+/// Windows key combinations" (`.rdp` `keyboardhook`).
+///
+/// Stored as `Option<Self>` in [`RdpConfig::keyboard_hook`]: `None` follows the
+/// application's "Auto-capture shortcuts in remote desktop" setting, so a
+/// connection only overrides it when asked to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RdpKeyboardHook {
+    /// The shortcuts stay with the local desktop (`keyboardhook:i:0`).
+    Local,
+    /// The shortcuts go to the remote session while it has focus
+    /// (`keyboardhook:i:1`).
+    Remote,
+    /// The shortcuts go to the remote session only while its window is full
+    /// screen (`keyboardhook:i:2`, Remote Desktop Connection's default).
+    FullscreenOnly,
+}
+
+impl RdpKeyboardHook {
+    /// Returns all values, in dropdown order after "follow the app setting".
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Local, Self::Remote, Self::FullscreenOnly]
+    }
+
+    /// Returns the untranslated display name.
+    ///
+    /// Callers in the GUI wrap the result in `i18n()`.
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Local => "On this computer",
+            Self::Remote => "On the remote computer",
+            Self::FullscreenOnly => "Only in full screen",
+        }
+    }
+
+    /// Returns the `.rdp` `keyboardhook` value.
+    #[must_use]
+    pub const fn rdp_value(self) -> u32 {
+        match self {
+            Self::Local => 0,
+            Self::Remote => 1,
+            Self::FullscreenOnly => 2,
+        }
+    }
+
+    /// Reads an `.rdp` `keyboardhook` value, or `None` for anything else —
+    /// including `3`, which applies only to a published Remote Desktop
+    /// Connection app.
+    #[must_use]
+    pub const fn from_rdp_value(value: u32) -> Option<Self> {
+        match value {
+            0 => Some(Self::Local),
+            1 => Some(Self::Remote),
+            2 => Some(Self::FullscreenOnly),
+            _ => None,
+        }
+    }
+
+    /// Returns the dropdown index of `hook`, where `0` is "follow the app
+    /// setting" (`None`).
+    #[must_use]
+    pub fn index_of(hook: Option<Self>) -> u32 {
+        hook.map_or(0, |hook| hook.rdp_value() + 1)
+    }
+
+    /// The inverse of [`Self::index_of`]; an index past the end follows the
+    /// app setting.
+    #[must_use]
+    pub fn from_index(index: u32) -> Option<Self> {
+        index.checked_sub(1).and_then(Self::from_rdp_value)
+    }
+}
+
+#[cfg(test)]
+mod keyboard_hook_tests {
+    use super::RdpKeyboardHook;
+
+    #[test]
+    fn dropdown_index_round_trips_with_follow_app_first() {
+        assert_eq!(RdpKeyboardHook::index_of(None), 0);
+        assert_eq!(RdpKeyboardHook::from_index(0), None);
+        for (position, hook) in RdpKeyboardHook::all().iter().enumerate() {
+            let index = RdpKeyboardHook::index_of(Some(*hook));
+            assert_eq!(index as usize, position + 1);
+            assert_eq!(RdpKeyboardHook::from_index(index), Some(*hook));
+        }
+        assert_eq!(RdpKeyboardHook::from_index(99), None);
+    }
+}
+
 /// Which way the RDP clipboard synchronises.
 ///
 /// Supersedes the `clipboard_enabled: bool` the same way [`RdpAudioMode`]
@@ -2525,6 +2619,57 @@ pub struct RdpConfig {
     #[serde(default)]
     pub fido2_enabled: bool,
 
+    /// Redirect the local microphone into the session (`.rdp`
+    /// `audiocapturemode`, FreeRDP `/microphone`).
+    ///
+    /// The embedded client carries it over the MS-RDPEAI `AUDIO_INPUT`
+    /// channel, captured by the GUI; the external client gets `/microphone`.
+    /// Off by default.
+    #[serde(default)]
+    pub microphone_enabled: bool,
+
+    /// Redirect local smart cards into the session (`.rdp`
+    /// `redirectsmartcards`, FreeRDP `/smartcard`).
+    ///
+    /// External FreeRDP only, like [`Self::fido2_enabled`]: the embedded
+    /// IronRDP client answers no smart-card calls. Unlike the microphone it
+    /// does not send the session to FreeRDP, because Remote Desktop Connection
+    /// writes `redirectsmartcards:i:1` into every `.rdp` file it saves, and
+    /// every imported Windows profile would otherwise leave the embedded
+    /// client. That FreeRDP must be built with PC/SC and find a running
+    /// `pcscd`. Off by default.
+    #[serde(default)]
+    pub smartcard_enabled: bool,
+
+    /// RD Connection Broker routing value (`.rdp` `loadbalanceinfo`, FreeRDP
+    /// `/load-balance-info:`), such as
+    /// `tsv://MS Terminal Services Plugin.1.Sessions`.
+    ///
+    /// `.rdp` files published by RD Web Access carry it so the broker can place
+    /// the session in the right collection. Both clients send it and follow
+    /// the broker's redirection to the session host. `None` (the default)
+    /// sends none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub load_balance_info: Option<String>,
+
+    /// Reconnect by itself when the connection of an established session
+    /// drops, as Remote Desktop Connection does (`.rdp` `autoreconnection
+    /// enabled`).
+    ///
+    /// Embedded IronRDP client only: up to
+    /// [`crate::rdp_client::AUTO_RECONNECT_MAX_ATTEMPTS`] attempts, spaced by
+    /// [`crate::rdp_client::auto_reconnect_delay`]. A session the server ends —
+    /// a logoff, or an administrator disconnecting it — is not reconnected.
+    /// On by default, like the Windows client.
+    #[serde(default = "default_true")]
+    pub auto_reconnect: bool,
+
+    /// Where Windows key combinations apply while the embedded viewer has
+    /// focus (`.rdp` `keyboardhook`). `None` (the default) follows the
+    /// application's "Auto-capture shortcuts in remote desktop" setting.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keyboard_hook: Option<RdpKeyboardHook>,
+
     /// Authenticate NLA (CredSSP) with Kerberos instead of NTLM.
     ///
     /// Only affects the embedded IronRDP path. Required for accounts in the AD
@@ -2608,6 +2753,11 @@ impl Default for RdpConfig {
             remote_app_name: None,
             mptcp: false,
             fido2_enabled: false,
+            microphone_enabled: false,
+            smartcard_enabled: false,
+            load_balance_info: None,
+            auto_reconnect: default_true(),
+            keyboard_hook: None,
             kerberos_enabled: false,
             kdc_proxy_url: None,
         }
@@ -2676,7 +2826,7 @@ impl RdpConfig {
     ///
     /// Returns `true` when the security layer or TLS level is incompatible
     /// with IronRDP's `rustls` backend (TLS 1.2+ only), when RemoteApp
-    /// is configured (IronRDP does not support RAIL protocol), or when the
+    /// is configured (IronRDP does not support RAIL protocol), when the
     /// audio mode is one IronRDP cannot signal.
     #[must_use]
     pub fn requires_freerdp_fallback(&self) -> bool {
@@ -2696,10 +2846,7 @@ impl RdpConfig {
         }
         // "Play on the remote computer" needs INFO_REMOTECONSOLEAUDIO, which
         // ironrdp-connector never sets (issue #245)
-        if self.effective_audio_mode().requires_freerdp() {
-            return true;
-        }
-        false
+        self.effective_audio_mode().requires_freerdp()
     }
 
     /// Returns whether this is a RemoteApp session.

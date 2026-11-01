@@ -80,6 +80,10 @@ pub enum CliError {
     #[error("Connection error: {0}")]
     Connection(String),
 
+    /// Zero Trust provider validation error (missing or malformed required field)
+    #[error("Zero Trust validation error: {0}")]
+    ZeroTrust(String),
+
     /// IO error
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
@@ -128,7 +132,8 @@ impl CliError {
             | Self::SmartFolder(_)
             | Self::DynamicFolder(_)
             | Self::Recording(_)
-            | Self::Protocol(_) => exit_codes::GENERAL_ERROR,
+            | Self::Protocol(_)
+            | Self::ZeroTrust(_) => exit_codes::GENERAL_ERROR,
         }
     }
 }
