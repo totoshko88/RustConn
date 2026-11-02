@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Remote monitoring now works on OpenWrt and other BusyBox-based Linux hosts** — the metrics command used GNU `df -x`, which BusyBox does not implement, so the disk section came back empty and the bar reported 0% for the root filesystem. The command also excluded `overlay`/`squashfs`, exactly the filesystems OpenWrt boots from. The collector now runs plain `df -Pk` and filters pseudo-mounts in the parser, keeping `/` (the writable overlay) and `/overlay` and dropping `/rom`. The IP list falls back to `hostname -i`, and `/etc/openwrt_release` supplies the distro name on releases without `/etc/os-release`. (`rustconn-core/src/monitoring/parser.rs`, `docs/USER_GUIDE.md`)
+
 ## [0.24.4] - 2026-11-01
 
 ### Fixed
