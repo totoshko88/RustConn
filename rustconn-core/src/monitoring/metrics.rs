@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 pub enum RemoteOsType {
     /// Linux (reads `/proc/*`)
     Linux,
+    /// MikroTik RouterOS (reads `/system resource`, `/interface` via its own CLI)
+    RouterOs,
     /// Unknown or unsupported OS
     #[default]
     Unknown,

@@ -3471,7 +3471,7 @@ Tracks: total connections, success rate, connection duration (average/total), mo
 
 ### Remote Monitoring
 
-MobaXterm-style monitoring bar below SSH terminals showing real-time system metrics from remote Linux hosts, including OpenWrt and other BusyBox-based systems. Completely agentless — no software needs to be installed on the remote host. RustConn collects data by parsing `/proc/*` and `df` output over a separate SSH connection. Monitoring runs for SSH connections only; Telnet, Kubernetes and other session types have no monitoring bar. It displays metrics only, with no thresholds, alerts or actions.
+MobaXterm-style monitoring bar below SSH terminals showing real-time system metrics from remote Linux hosts, including OpenWrt and other BusyBox-based systems, and from MikroTik RouterOS devices. Completely agentless — no software needs to be installed on the remote host. On Linux, RustConn parses `/proc/*` and `df` output over a separate SSH connection; on RouterOS, whose SSH runs its own console instead of a POSIX shell, it reads `/system resource` and `/interface` and the bar switches to that command set automatically on first contact. Monitoring runs for SSH connections only; Telnet, Kubernetes and other session types have no monitoring bar. It displays metrics only, with no thresholds, alerts or actions.
 
 **Monitoring Bar:**
 ```
@@ -3482,12 +3482,12 @@ MobaXterm-style monitoring bar below SSH terminals showing real-time system metr
 
 | Metric | Source | Details |
 |--------|--------|---------|
-| CPU usage | `/proc/stat` | Percentage with level bar; delta-based calculation |
-| Memory usage | `/proc/meminfo` | Percentage with level bar; swap in tooltip |
-| Disk usage | `df -Pk` | Root filesystem; on OpenWrt this is the writable overlay at `/` (read-only `/rom` is ignored); all mount points in tooltip |
-| Load average | `/proc/loadavg` | 1, 5, 15 minute values |
-| Network throughput | `/proc/net/dev` | Download/upload rates (auto-scaled) |
-| System info | One-time collection | Distro, kernel, arch, RAM, CPU cores, IP |
+| CPU usage | `/proc/stat` (Linux), `/system resource cpu-load` (RouterOS) | Percentage with level bar; delta-based on Linux, reported directly on RouterOS |
+| Memory usage | `/proc/meminfo` (Linux), `/system resource` (RouterOS) | Percentage with level bar; swap in tooltip (Linux only) |
+| Disk usage | `df -Pk` (Linux), `/system resource` HDD space (RouterOS) | Root filesystem; on OpenWrt this is the writable overlay at `/` (read-only `/rom` is ignored); all mount points in tooltip |
+| Load average | `/proc/loadavg` | 1, 5, 15 minute values; not available on RouterOS (shown as N/A) |
+| Network throughput | `/proc/net/dev` (Linux), summed `/interface` byte counters (RouterOS) | Download/upload rates (auto-scaled) |
+| System info | One-time collection | Distro/version, kernel, arch, RAM, CPU cores, IP (RouterOS reports version, board and architecture) |
 
 **Enable Monitoring:**
 1. Open **Settings** (Ctrl+,) → **Monitoring** page → **General** group
@@ -3503,7 +3503,7 @@ MobaXterm-style monitoring bar below SSH terminals showing real-time system metr
 
 Before 0.22.13 this was an on/off switch, and saving a connection in the editor stored **Enabled** whenever it was on, so such connections keep monitoring after the global switch is turned off. To make them follow the global switch again, use **Settings → Monitoring → Reset Per-Connection Overrides**, which shows how many connections set their own value before anything changes, or run `rustconn-cli monitor reset --all`. A polling interval set for one connection with `rustconn-cli monitor enable --interval` is kept by both the editor and the reset.
 
-**Requirements:** Remote host must be Linux with `/proc` and a POSIX `df`; BusyBox `df` (OpenWrt, EdgeOS) is supported. No agent installation needed. Works with SSH connections. Network appliances (Cisco IOS, Junos, RouterOS) are not Linux and are not supported — use a snippet or an SNMP monitor for those.
+**Requirements:** A Linux host with `/proc` and a POSIX `df` (BusyBox `df`, as on OpenWrt and EdgeOS, is supported), or a MikroTik RouterOS device (detected automatically from its SSH console). No agent installation needed. Works with SSH connections. Other network appliances (Cisco IOS, Junos) are neither Linux nor RouterOS and are not supported — use a snippet or an SNMP monitor for those.
 
 ### Flatpak Components
 
