@@ -105,8 +105,10 @@ MASTER=""  # drop it
 UNLOCK_MS=$((T1 - T0))
 
 if printf '%s' "$UNLOCK_JSON" | grep -q '"success":true'; then
+  UNLOCK_OK=1
   say "unlock:                ${UNLOCK_MS} ms  (success)"
 else
+  UNLOCK_OK=0
   MSG="$(printf '%s' "$UNLOCK_JSON" | sed 's/.*"message":"\([^"]*\)".*/\1/')"
   say "unlock:                ${UNLOCK_MS} ms  (FAILED: ${MSG:-see /tmp/bw-serve-probe.out})"
 fi
@@ -121,19 +123,43 @@ LIST_JSON="$(curl -s "http://$HOST:$PORT/list/object/items?search=$SEARCH" 2>/de
 T1="$(now_ms)"
 RETRIEVE_MS=$((T1 - T0))
 COUNT="$(printf '%s' "$LIST_JSON" | grep -o '"id"' | wc -l | tr -d ' ')"
+# The list route still answers {success:true} on a locked/not-logged-in vault,
+# just with an empty array, so success alone is not enough — but a request that
+# did not even return success is a real failure.
+if printf '%s' "$LIST_JSON" | grep -q '"success":true'; then
+  RETRIEVE_OK=1
+else
+  RETRIEVE_OK=0
+fi
 say "retrieve (root search):${RETRIEVE_MS} ms  (${COUNT} items for \"$SEARCH\")"
 
 # ── Verdict ─────────────────────────────────────────────────────────────────
+# A timing "pass" is meaningless if the operation did not actually succeed: a
+# 33 ms unlock against a vault you are not logged in to is a FAIL, not a GO.
+# The verdict requires BOTH the operation to succeed AND the time to be within
+# the threshold.
 say ""
 say "── go/no-go (plan thresholds: unlock <= 4000 ms, retrieve <= 1000 ms) ──"
 GO=1
-[ "${UNLOCK_MS:-999999}" -le 4000 ]   && say "  unlock   <= 4 s   : PASS (${UNLOCK_MS} ms)"   || { say "  unlock   <= 4 s   : FAIL (${UNLOCK_MS} ms)"; GO=0; }
-[ "${RETRIEVE_MS:-999999}" -le 1000 ] && say "  retrieve <= 1 s   : PASS (${RETRIEVE_MS} ms)" || { say "  retrieve <= 1 s   : FAIL (${RETRIEVE_MS} ms)"; GO=0; }
+if [ "${UNLOCK_OK:-0}" -eq 1 ] && [ "${UNLOCK_MS:-999999}" -le 4000 ]; then
+  say "  unlock   <= 4 s   : PASS (${UNLOCK_MS} ms)"
+elif [ "${UNLOCK_OK:-0}" -ne 1 ]; then
+  say "  unlock   <= 4 s   : FAIL (unlock did not succeed — see /tmp/bw-serve-probe.out)"; GO=0
+else
+  say "  unlock   <= 4 s   : FAIL (${UNLOCK_MS} ms)"; GO=0
+fi
+if [ "${RETRIEVE_OK:-0}" -eq 1 ] && [ "${RETRIEVE_MS:-999999}" -le 1000 ]; then
+  say "  retrieve <= 1 s   : PASS (${RETRIEVE_MS} ms)"
+elif [ "${RETRIEVE_OK:-0}" -ne 1 ]; then
+  say "  retrieve <= 1 s   : FAIL (list did not succeed — see /tmp/bw-serve-probe.out)"; GO=0
+else
+  say "  retrieve <= 1 s   : FAIL (${RETRIEVE_MS} ms)"; GO=0
+fi
 say ""
 if [ "$GO" -eq 1 ]; then
   say "VERDICT: GO — bw serve meets the latency thresholds on this environment."
 else
-  say "VERDICT: NO-GO (on these numbers) — review /tmp/bw-serve-probe.out before deciding."
+  say "VERDICT: NO-GO — review /tmp/bw-serve-probe.out before deciding."
 fi
 say ""
 say "Re-run on each target environment the plan names: snap bw, Flatpak bw,"
