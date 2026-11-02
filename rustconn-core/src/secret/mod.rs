@@ -52,10 +52,10 @@ pub use bitwarden::{
     BitwardenBackend, BitwardenVersion, auto_unlock, clear_bitwarden_session_state,
     clear_session_key, configure_server, delete_api_credentials_from_keyring,
     delete_master_password_from_keyring, get_api_credentials_from_keyring, get_bitwarden_version,
-    get_bw_cmd, get_master_password_from_keyring, get_session_key, has_session_key, lock_vault,
-    login_with_api_key, logout, resolve_bw_cmd, set_bw_cmd, set_session_key,
-    store_api_credentials_in_keyring, store_master_password_in_keyring, sync_on_next_unlock,
-    unlock_vault, unlock_vault_blocking,
+    get_bw_cmd, get_master_password_from_keyring, get_session_key, has_session_key,
+    is_serve_preferred, lock_vault, login_with_api_key, logout, resolve_bw_cmd, set_bw_cmd,
+    set_serve_preferred, set_session_key, shutdown_serve, store_api_credentials_in_keyring,
+    store_master_password_in_keyring, sync_on_next_unlock, unlock_vault, unlock_vault_blocking,
 };
 pub use detection::{
     PasswordManagerInfo, VERSION_REGEX, detect_bitwarden, detect_gnome_secrets, detect_keepass,

@@ -373,6 +373,191 @@ async fn reserve_loopback_port() -> SecretResult<u16> {
     Ok(port)
 }
 
+/// One `bw` operation mapped onto a `bw serve` HTTP route.
+///
+/// Built by [`map_cli_to_route`] from the same `&[&str]` argv the spawn path
+/// passes to `bw`, so the backend keeps describing operations in CLI terms and
+/// the transport owns the translation. `body` is a JSON document (already the
+/// decoded item/folder, not base64) sent with `POST`/`PUT`.
+struct ServeRoute {
+    method: &'static str,
+    path: String,
+    body: Option<Vec<u8>>,
+    /// How to reshape the envelope's `data` into what the spawn path's stdout
+    /// parser expects (see [`ServeRoute::unwrap_data`]).
+    shape: DataShape,
+}
+
+/// How a route's `data` payload maps to the `bw` CLI stdout the callers parse.
+#[derive(Clone, Copy)]
+enum DataShape {
+    /// `bw status` prints the status object; serve wraps it as
+    /// `data.template`. Unwrap one level.
+    StatusTemplate,
+    /// `bw list …` prints a bare array; serve wraps it as `data.data`. Return
+    /// the inner array.
+    ListArray,
+    /// `bw create/edit/get …` prints the object; serve returns it as `data`.
+    /// Return `data` verbatim.
+    Object,
+    /// `bw sync`/`lock` print a message, not JSON the caller parses; the empty
+    /// string is fine.
+    None,
+}
+
+impl DataShape {
+    /// Reshapes an envelope `data` value into the string the spawn path's
+    /// `stdout` would have carried, so callers' `serde_json::from_str` is
+    /// unchanged.
+    fn unwrap_data(self, data: serde_json::Value) -> SecretResult<String> {
+        let reshaped = match self {
+            Self::StatusTemplate => data
+                .get("template")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null),
+            Self::ListArray => data
+                .get("data")
+                .cloned()
+                .unwrap_or(serde_json::Value::Array(Vec::new())),
+            Self::Object => data,
+            Self::None => return Ok(String::new()),
+        };
+        serde_json::to_string(&reshaped)
+            .map_err(|e| SecretError::ConnectionFailed(format!("bw serve: reshape data: {e}")))
+    }
+}
+
+/// Maps a `bw` CLI argv to the `bw serve` route that performs the same thing.
+///
+/// `input` is the stdin the spawn path would have piped (the base64-encoded
+/// item/folder for `create`/`edit`); it is decoded back to the JSON document the
+/// serve body wants. Returns `None` for an argv the serve transport does not
+/// implement, so the caller falls back to a one-shot spawn for that verb rather
+/// than guessing.
+///
+/// Supported: `status`, `sync`, `lock`, `list folders`, `list items --search T`,
+/// `create folder <b64>`, `create item` (stdin), `edit item <id>` (stdin),
+/// `delete item <id>`.
+fn map_cli_to_route(args: &[&str], input: Option<&[u8]>) -> Option<ServeRoute> {
+    // The body for create/edit comes in as base64 (argv for folder, stdin for
+    // item); decode it to the raw JSON document the serve endpoint expects.
+    let decode_body = |encoded: &[u8]| -> Option<Vec<u8>> {
+        let text = std::str::from_utf8(encoded).ok()?.trim();
+        base64_decode(text)
+    };
+
+    match args {
+        ["status"] => Some(ServeRoute {
+            method: "GET",
+            path: "/status".to_string(),
+            body: None,
+            shape: DataShape::StatusTemplate,
+        }),
+        ["sync"] => Some(ServeRoute {
+            method: "POST",
+            path: "/sync".to_string(),
+            body: None,
+            shape: DataShape::None,
+        }),
+        ["lock"] => Some(ServeRoute {
+            method: "POST",
+            path: "/lock".to_string(),
+            body: None,
+            shape: DataShape::None,
+        }),
+        ["list", "folders"] => Some(ServeRoute {
+            method: "GET",
+            path: "/list/object/folders".to_string(),
+            body: None,
+            shape: DataShape::ListArray,
+        }),
+        ["list", "items", "--search", term] => Some(ServeRoute {
+            method: "GET",
+            path: format!("/list/object/items?search={}", encode_query_value(term)),
+            body: None,
+            shape: DataShape::ListArray,
+        }),
+        ["create", "folder", encoded] => Some(ServeRoute {
+            method: "POST",
+            path: "/object/folder".to_string(),
+            body: decode_body(encoded.as_bytes()),
+            shape: DataShape::Object,
+        }),
+        ["create", "item"] => Some(ServeRoute {
+            method: "POST",
+            path: "/object/item".to_string(),
+            body: input.and_then(decode_body),
+            shape: DataShape::Object,
+        }),
+        ["edit", "item", id] => Some(ServeRoute {
+            method: "PUT",
+            path: format!("/object/item/{id}"),
+            body: input.and_then(decode_body),
+            shape: DataShape::Object,
+        }),
+        ["delete", "item", id] => Some(ServeRoute {
+            method: "DELETE",
+            path: format!("/object/item/{id}"),
+            body: None,
+            shape: DataShape::None,
+        }),
+        _ => None,
+    }
+}
+
+/// Whether the serve transport implements the verb in `args`.
+///
+/// Lets the backend skip taking the serve lock (and starting a child) for a verb
+/// that would only fall back to a spawn anyway.
+#[must_use]
+pub fn is_supported_verb(args: &[&str]) -> bool {
+    map_cli_to_route(args, None).is_some()
+}
+
+/// Decodes standard (padded) base64 without pulling in a new crate.
+///
+/// `data-encoding` is already a direct dependency of this crate; use its
+/// `BASE64` alphabet so this matches what [`super::bitwarden`]'s
+/// `base64_encode`/`base64_encode_secret` produce.
+fn base64_decode(text: &str) -> Option<Vec<u8>> {
+    data_encoding::BASE64.decode(text.as_bytes()).ok()
+}
+
+impl ServeProcess {
+    /// Runs a `bw` operation described by its CLI argv over the serve transport.
+    ///
+    /// This is the single entry point [`super::bitwarden`] calls when the serve
+    /// transport is active: it maps the argv to a route, performs it, and
+    /// returns the JSON string the spawn path's `stdout` would have carried, so
+    /// the caller's parser is unchanged. The body (item/folder) is held in a
+    /// [`Zeroizing`] buffer because it carries the plaintext password.
+    ///
+    /// # Errors
+    /// Returns [`SecretError::ConnectionFailed`] with an
+    /// `unsupported-serve-verb` marker for a verb the transport does not
+    /// implement (so the caller falls back to spawn), or the transport/CLI
+    /// error otherwise.
+    pub async fn run_cli(&self, args: &[&str], input: Option<&[u8]>) -> SecretResult<String> {
+        let ServeRoute {
+            method,
+            path,
+            body,
+            shape,
+        } = map_cli_to_route(args, input).ok_or_else(|| {
+            SecretError::ConnectionFailed(format!(
+                "unsupported-serve-verb: {}",
+                args.iter().take(2).copied().collect::<Vec<_>>().join(" ")
+            ))
+        })?;
+        let body = body.map(Zeroizing::new);
+        let env = self
+            .request(method, &path, body.as_deref().map(|b| &b[..]))
+            .await?;
+        let data = env.into_data()?;
+        shape.unwrap_data(data)
+    }
+}
+
 /// Percent-encodes a `bw serve` search/query value for a URL query string.
 ///
 /// `bw serve` routes a root search through `GET /list/object/items?search=<term>`.
@@ -560,5 +745,107 @@ mod tests {
     #[test]
     fn transport_default_is_spawn() {
         assert_eq!(BwTransport::default(), BwTransport::Spawn);
+    }
+
+    // ---- verb mapping (P3) ----
+
+    /// `(argv, stdin, expected method, expected path)` for the mapping table.
+    type VerbCase<'a> = (&'a [&'a str], Option<&'a [u8]>, &'a str, &'a str);
+
+    #[test]
+    fn maps_every_supported_verb_to_the_right_route() {
+        let b64 = data_encoding::BASE64.encode(br#"{"name":"RustConn"}"#);
+        let cases: &[VerbCase] = &[
+            (&["status"], None, "GET", "/status"),
+            (&["sync"], None, "POST", "/sync"),
+            (&["lock"], None, "POST", "/lock"),
+            (&["list", "folders"], None, "GET", "/list/object/folders"),
+            (
+                &["delete", "item", "abc"],
+                None,
+                "DELETE",
+                "/object/item/abc",
+            ),
+        ];
+        for (args, input, method, path) in cases {
+            let route = map_cli_to_route(args, *input)
+                .unwrap_or_else(|| panic!("verb should map: {args:?}"));
+            assert_eq!(route.method, *method, "{args:?}");
+            assert_eq!(route.path, *path, "{args:?}");
+        }
+        // create folder decodes the base64 argv into the JSON body.
+        let route = map_cli_to_route(&["create", "folder", &b64], None).unwrap();
+        assert_eq!(route.method, "POST");
+        assert_eq!(route.path, "/object/folder");
+        assert_eq!(route.body.as_deref(), Some(&br#"{"name":"RustConn"}"#[..]));
+    }
+
+    #[test]
+    fn list_search_route_encodes_the_term() {
+        let route = map_cli_to_route(&["list", "items", "--search", "a b"], None).unwrap();
+        assert_eq!(route.method, "GET");
+        assert_eq!(route.path, "/list/object/items?search=a%20b");
+    }
+
+    #[test]
+    fn create_and_edit_item_take_the_body_from_stdin() {
+        let item = data_encoding::BASE64.encode(br#"{"type":1,"name":"x"}"#);
+        let create = map_cli_to_route(&["create", "item"], Some(item.as_bytes())).unwrap();
+        assert_eq!(create.method, "POST");
+        assert_eq!(create.path, "/object/item");
+        assert_eq!(
+            create.body.as_deref(),
+            Some(&br#"{"type":1,"name":"x"}"#[..])
+        );
+
+        let edit = map_cli_to_route(&["edit", "item", "id9"], Some(item.as_bytes())).unwrap();
+        assert_eq!(edit.method, "PUT");
+        assert_eq!(edit.path, "/object/item/id9");
+        assert_eq!(edit.body.as_deref(), Some(&br#"{"type":1,"name":"x"}"#[..]));
+    }
+
+    #[test]
+    fn an_unmapped_verb_is_none_so_the_caller_falls_back_to_spawn() {
+        assert!(map_cli_to_route(&["login", "--apikey"], None).is_none());
+        assert!(map_cli_to_route(&["get", "item", "x"], None).is_none());
+        assert!(!is_supported_verb(&["login", "--apikey"]));
+        assert!(is_supported_verb(&["status"]));
+    }
+
+    #[test]
+    fn data_shapes_reshape_to_cli_stdout() {
+        // status: serve wraps the object under data.template.
+        let status = serde_json::json!({"template": {"status": "unlocked"}});
+        let out = DataShape::StatusTemplate.unwrap_data(status).unwrap();
+        assert_eq!(out, r#"{"status":"unlocked"}"#);
+
+        // list: serve wraps the array under data.data; callers expect a bare array.
+        let list = serde_json::json!({"object": "list", "data": [{"id": "a"}]});
+        let out = DataShape::ListArray.unwrap_data(list).unwrap();
+        assert_eq!(out, r#"[{"id":"a"}]"#);
+
+        // object: returned verbatim.
+        let obj = serde_json::json!({"id": "a", "name": "n"});
+        let out = DataShape::Object.unwrap_data(obj.clone()).unwrap();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&out).unwrap(),
+            obj
+        );
+
+        // none: sync/lock carry no parsed stdout.
+        assert_eq!(
+            DataShape::None
+                .unwrap_data(serde_json::Value::Null)
+                .unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn base64_decode_round_trips_the_encoder_the_backend_uses() {
+        let doc = br#"{"type":1,"name":"RustConn: x"}"#;
+        let encoded = data_encoding::BASE64.encode(doc);
+        assert_eq!(base64_decode(&encoded).as_deref(), Some(&doc[..]));
+        assert!(base64_decode("not valid base64 !!!").is_none());
     }
 }
