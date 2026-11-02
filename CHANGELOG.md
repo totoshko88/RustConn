@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.5] - 2026-11-02
+
+### Added
+- **Bitwarden is much faster with an optional persistent CLI** — the Bitwarden backend used to start a fresh `bw` process for every vault operation, and each one paid the Bitwarden CLI's Node.js startup cost (about 2.7 s on a typical machine), so a single credential lookup that runs several searches took on the order of 13 seconds. A new **Keep the CLI running (faster)** switch in Settings → Secrets → Bitwarden keeps one `bw serve` process running for the session instead: the unlocked vault stays in its memory and answers each operation over a local loopback socket, which brought unlock to about 1 second and a root-search retrieve of a 56-item vault to under a second in testing. The switch is off by default; when it is on, the backend still falls back to starting one `bw` per call automatically if the CLI is too old to serve or the running process stops answering, so a lookup never fails for want of the faster path, it only loses the speed-up. The persistent process is shut down when the vault is locked or you log out, so the unlocked vault does not outlive the session. The master password and every saved item now travel to the CLI in a request body rather than on the command line, so they no longer appear in the process list while a save is in flight. (`rustconn-core/src/secret/bitwarden_serve.rs`, `rustconn-core/src/secret/bitwarden.rs`, `rustconn-core/src/config/settings.rs`, `rustconn/src/dialogs/settings/secrets_tab/mod.rs`, `rustconn/Cargo.toml`)
+
+### Fixed
+- **The "Bitwarden vault is locked" banner cleared after unlocking through a connection** — the startup banner that warns the selected password backend cannot store secrets yet was only re-checked at launch and after saving Settings, so unlocking the vault by opening a connection left the banner up even though the vault was then unlocked. A successful credential lookup now re-probes the backend and clears the banner. (`rustconn/src/state/mod.rs`, `rustconn/src/app.rs`)
+
 ## [0.24.4] - 2026-11-01
 
 ### Fixed
