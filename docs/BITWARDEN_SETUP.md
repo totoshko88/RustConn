@@ -216,6 +216,25 @@ It governs **reading only**. Saving a password always targets Bitwarden and noth
 
 > **Earlier releases behaved differently.** Up to and including 0.21.2 this switch was labelled "Enable fallback", its description named libsecret (which had not been the fallback store for some time), and a save that Bitwarden refused was redirected to the encrypted file with only a transient notice. If you have passwords that Bitwarden does not have but that connections somehow still find, that is where they are; **Copy Passwords…** in Settings ▸ Secrets moves them into the vault.
 
+### Keep the CLI running (optional, faster)
+
+By default RustConn starts a fresh `bw` process for every vault operation and lets it exit afterwards. Each of those processes has to load and decrypt the vault from scratch, which is why a Bitwarden lookup can take several seconds.
+
+With **Keep the CLI running (faster)** on, RustConn instead starts one `bw serve` process when the vault is unlocked and sends every lookup to it. The difference is large:
+
+| Operation | Spawn per call (default) | Kept running |
+|-----------|--------------------------|--------------|
+| Unlock | ~13 s | ~1 s |
+| Retrieve a password from the vault root (56-item vault) | a full vault load per call | under a second |
+
+The switch is **off by default** because of what makes it fast. That one `bw serve` process holds the unlocked vault in its memory for as long as the vault stays unlocked, and it answers requests over a local loopback socket on this computer. With the switch off, the decrypted vault exists only for the few seconds a single `bw` call runs. Turn it on if you trust the local machine and want the speed; leave it off if you would rather not have an unlocked vault resident in a long-lived process.
+
+What you can rely on either way:
+
+- **A lookup never fails for want of it.** If the installed CLI is too old to provide `bw serve`, or the process stops answering, RustConn falls back to spawning `bw` per call on its own, and the lookup goes through at the old speed.
+- **The vault does not outlive the session.** Locking the vault or logging out shuts the `bw serve` process down, taking the unlocked vault in its memory with it.
+- **Secrets stay off the command line.** When the CLI is kept running, the master password and the items being saved travel in the request body sent to `bw serve`, not as command-line arguments, so they do not show up in a process listing.
+
 ## Step 5: Store connection passwords
 
 1. Edit a connection (Ctrl+E or double-click → Edit)

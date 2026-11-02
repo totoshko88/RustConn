@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.4
+Version:        0.24.5
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,20 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Nov 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.5-0
+- Version bump to 0.24.5
+- Added: optional persistent Bitwarden CLI (bw serve) behind a "Keep the CLI
+  running (faster)" switch, with automatic per-call fallback
+- Added: remote monitoring supports MikroTik RouterOS
+- Added: per-connection RDP Server OS choice; Linux hides the Windows-only
+  toolbar menus (#366)
+- Fixed: Bitwarden locked banner clears after unlocking through a connection
+- Fixed: imported passwords go to the selected password backend
+- Fixed: remote monitoring on OpenWrt/BusyBox hosts (#405, #406)
+- Dependencies: aes 0.9.3→0.9.4, cc 1.10.0→1.11.0, crc32fast 1.5.3→1.5.4,
+  ctutils 0.4.7→0.4.8, openssl 0.10.81→0.10.82, openssl-sys 0.9.117→0.9.118,
+  unicode-script 0.5.8→0.5.9, zip 9.2.0→9.2.2
+
 * Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.4-0
 - Version bump to 0.24.4
 - Fixed: embedded RDP to GNOME Remote Desktop (and over an SSH bridge) no
