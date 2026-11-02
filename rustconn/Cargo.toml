@@ -114,6 +114,7 @@ default = [
     "rd-gateway",
     "wayland-native",
     "web-embedded",
+    "bitwarden-serve",
 ]
 tray = ["dep:ksni", "dep:resvg"]
 tray-macos = ["dep:tray-icon", "dep:muda", "dep:resvg"]
@@ -122,11 +123,13 @@ vnc-embedded = ["rustconn-core/vnc-embedded"]
 rdp-embedded = ["rustconn-core/rdp-embedded"]
 gfx-h264 = ["rustconn-core/gfx-h264"]
 rd-gateway = ["rustconn-core/rd-gateway"]
-# Persistent `bw serve` transport for the Bitwarden backend (W2). The Settings →
-# Secrets "Keep the CLI running" toggle only changes behaviour in a build with
-# this on; without it the toggle persists but the backend stays on spawn-per-call
-# (core's no-op stubs). Not in `default` yet — enable once the maintainer records
-# the per-environment GO.
+# Persistent `bw serve` transport for the Bitwarden backend (W2). In `default`
+# since the maintainer's on-device GO (snap bw 2026.10.1: unlock ~1 s, root-search
+# retrieve ~0.5-0.9 s vs ~13 s on spawn). The Settings → Secrets "Keep the CLI
+# running" toggle (default off) chooses at runtime whether to use it; the backend
+# falls back to spawn-per-call automatically on an older CLI or any transport
+# failure. A build with this feature OFF keeps the toggle inert (core's no-op
+# stubs).
 bitwarden-serve = ["rustconn-core/bitwarden-serve"]
 rdp-audio = ["rdp-embedded", "dep:cpal"]
 wayland-native = ["dep:gdk4-wayland"]

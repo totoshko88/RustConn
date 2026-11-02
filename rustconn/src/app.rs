@@ -1446,6 +1446,32 @@ fn register_secret_backend_recheck(
     window.add_action(&action);
 }
 
+/// Re-probes the selected secret backend and refreshes its banner, from anywhere
+/// without a window handle, by activating `win.recheck-secret-backend` on the
+/// active window.
+///
+/// The startup banner is only cleared by the launch probe and by a Settings
+/// save, so a vault unlocked through the *connect* flow (resolving a
+/// connection's credentials) left the "vault is locked" banner up even though it
+/// was now unlocked. The connect-path resolver calls this on a successful
+/// resolution so the banner catches up. A no-op when there is no active window
+/// or the action is absent (e.g. a detached window).
+pub fn recheck_secret_backend_on_active_window() {
+    use gtk4::prelude::{Cast as _, GtkApplicationExt as _, WidgetExt as _};
+
+    let Some(window) = gtk4::gio::Application::default()
+        .and_then(|app| app.downcast::<gtk4::Application>().ok())
+        .and_then(|app| app.active_window())
+    else {
+        return;
+    };
+    // Deferred to idle: the caller runs inside a credential-resolution callback
+    // that may still hold a state borrow the action's handler needs.
+    glib::idle_add_local_once(move || {
+        let _ = window.activate_action("win.recheck-secret-backend", None);
+    });
+}
+
 /// Refreshes the sidebar secret backend status indicator.
 fn refresh_sidebar_secret_status(
     state: &SharedAppState,
