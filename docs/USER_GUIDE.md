@@ -3469,7 +3469,7 @@ Tracks: total connections, success rate, connection duration (average/total), mo
 
 ### Remote Monitoring
 
-MobaXterm-style monitoring bar below SSH terminals showing real-time system metrics from remote Linux hosts. Completely agentless — no software needs to be installed on the remote host. RustConn collects data by parsing `/proc/*` and `df` output over a separate SSH connection. Monitoring runs for SSH connections only; Telnet, Kubernetes and other session types have no monitoring bar. It displays metrics only, with no thresholds, alerts or actions.
+MobaXterm-style monitoring bar below SSH terminals showing real-time system metrics from remote Linux hosts, including OpenWrt and other BusyBox-based systems. Completely agentless — no software needs to be installed on the remote host. RustConn collects data by parsing `/proc/*` and `df` output over a separate SSH connection. Monitoring runs for SSH connections only; Telnet, Kubernetes and other session types have no monitoring bar. It displays metrics only, with no thresholds, alerts or actions.
 
 **Monitoring Bar:**
 ```
@@ -3482,7 +3482,7 @@ MobaXterm-style monitoring bar below SSH terminals showing real-time system metr
 |--------|--------|---------|
 | CPU usage | `/proc/stat` | Percentage with level bar; delta-based calculation |
 | Memory usage | `/proc/meminfo` | Percentage with level bar; swap in tooltip |
-| Disk usage | `df -Pk` | Root filesystem; all mount points in tooltip |
+| Disk usage | `df -Pk` | Root filesystem; on OpenWrt this is the writable overlay at `/` (read-only `/rom` is ignored); all mount points in tooltip |
 | Load average | `/proc/loadavg` | 1, 5, 15 minute values |
 | Network throughput | `/proc/net/dev` | Download/upload rates (auto-scaled) |
 | System info | One-time collection | Distro, kernel, arch, RAM, CPU cores, IP |
@@ -3501,7 +3501,7 @@ MobaXterm-style monitoring bar below SSH terminals showing real-time system metr
 
 Before 0.22.13 this was an on/off switch, and saving a connection in the editor stored **Enabled** whenever it was on, so such connections keep monitoring after the global switch is turned off. To make them follow the global switch again, use **Settings → Monitoring → Reset Per-Connection Overrides**, which shows how many connections set their own value before anything changes, or run `rustconn-cli monitor reset --all`. A polling interval set for one connection with `rustconn-cli monitor enable --interval` is kept by both the editor and the reset.
 
-**Requirements:** Remote host must be Linux. No agent installation needed. Works with SSH connections.
+**Requirements:** Remote host must be Linux with `/proc` and a POSIX `df`; BusyBox `df` (OpenWrt, EdgeOS) is supported. No agent installation needed. Works with SSH connections. Network appliances (Cisco IOS, Junos, RouterOS) are not Linux and are not supported — use a snippet or an SNMP monitor for those.
 
 ### Flatpak Components
 
@@ -4626,7 +4626,7 @@ alias clear='printf "\033[H\033[2J\033[3J"'
 ### Monitoring Issues
 
 1. Verify SSH connection works normally
-2. Check remote host has `uptime`, `free`, `df`, `cat /proc/loadavg`
+2. Check the remote host exposes `/proc/stat`, `/proc/meminfo`, `/proc/loadavg`, `/proc/net/dev`, and that `df -Pk` works (BusyBox `df` is supported)
 3. Ensure `MaxSessions` in `sshd_config` allows multiple sessions
 4. Increase polling interval if metrics show "N/A"
 
