@@ -145,6 +145,9 @@ pub struct RdpConfig {
     /// Where the session audio is played. `Remote` forces FreeRDP fallback —
     /// IronRDP cannot signal `INFO_REMOTECONSOLEAUDIO` (issue #245).
     pub audio_mode: rustconn_core::models::RdpAudioMode,
+    /// What OS the server runs, for tailoring the toolbar (issue #366). `Linux`
+    /// hides the Windows-only admin tools and shell launchers.
+    pub server_os: rustconn_core::models::RdpServerOs,
     /// Additional FreeRDP arguments
     pub extra_args: Vec<String>,
     /// Window geometry for external mode (x, y, width, height)
@@ -288,6 +291,7 @@ impl Default for RdpConfig {
             shared_folders: Vec::new(),
             printer_enabled: false,
             audio_mode: rustconn_core::models::RdpAudioMode::default(),
+            server_os: rustconn_core::models::RdpServerOs::default(),
             extra_args: Vec::new(),
             window_geometry: None,
             remember_window_position: true,
@@ -434,6 +438,13 @@ impl RdpConfig {
     #[must_use]
     pub const fn with_printer(mut self, enabled: bool) -> Self {
         self.printer_enabled = enabled;
+        self
+    }
+
+    /// Sets what OS the server runs (tailors the toolbar; issue #366)
+    #[must_use]
+    pub const fn with_server_os(mut self, os: rustconn_core::models::RdpServerOs) -> Self {
+        self.server_os = os;
         self
     }
 

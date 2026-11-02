@@ -2017,6 +2017,80 @@ impl RdpSecurityLayer {
     }
 }
 
+/// What operating system the RDP server runs, for tailoring the embedded
+/// viewer's toolbar.
+///
+/// The embedded viewer's quick-actions menu launches Windows admin consoles
+/// (`compmgmt.msc`, `regedit`, …) and offers PowerShell/CMD shell launchers.
+/// Against a Linux RDP server (GNOME Remote Desktop, KDE's KRdp) those are
+/// meaningless — they only open a Run dialog that does not exist — so the viewer
+/// hides them when the server is known to be Linux (issue #366).
+///
+/// RDP does not reliably report the server OS (a Linux server advertises no
+/// Windows build), so this is a per-connection hint the user sets. `Auto`
+/// preserves today's behaviour (the Windows tools are shown), since the vast
+/// majority of RDP targets are Windows and that is the safe default for an
+/// existing profile.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RdpServerOs {
+    /// Unknown / not set: show the Windows admin tools, as RustConn always has.
+    #[default]
+    Auto,
+    /// A Windows server: show the Windows admin tools and shell launchers.
+    Windows,
+    /// A Linux server (GNOME Remote Desktop, KRdp, xrdp): hide the Windows-only
+    /// admin tools and PowerShell/CMD launchers; keep Copy/Paste, Ctrl+Alt+Del,
+    /// Auto Type and user scripts, which work on any server.
+    Linux,
+}
+
+impl RdpServerOs {
+    /// Returns all variants, in dropdown order.
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[Self::Auto, Self::Windows, Self::Linux]
+    }
+
+    /// Returns the untranslated display name (the GUI wraps it in `i18n()`).
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Auto => "Auto (Windows tools shown)",
+            Self::Windows => "Windows",
+            Self::Linux => "Linux (hide Windows tools)",
+        }
+    }
+
+    /// Returns the dropdown index for this value.
+    #[must_use]
+    pub const fn index(self) -> u32 {
+        match self {
+            Self::Auto => 0,
+            Self::Windows => 1,
+            Self::Linux => 2,
+        }
+    }
+
+    /// Creates a value from a dropdown index.
+    #[must_use]
+    pub const fn from_index(index: u32) -> Self {
+        match index {
+            1 => Self::Windows,
+            2 => Self::Linux,
+            _ => Self::Auto,
+        }
+    }
+
+    /// Whether the embedded viewer should show the Windows-only admin tools and
+    /// shell launchers for this server. True for `Auto` and `Windows`; false for
+    /// `Linux`.
+    #[must_use]
+    pub const fn shows_windows_tools(self) -> bool {
+        matches!(self, Self::Auto | Self::Windows)
+    }
+}
+
 /// Where the remote session's audio is played.
 ///
 /// Mirrors the three RDP audio modes defined by MS-RDPBCGR and offered by
@@ -2449,6 +2523,10 @@ pub struct RdpConfig {
     /// fall back to `audio_redirect`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_mode: Option<RdpAudioMode>,
+    /// What OS the server runs, for tailoring the embedded viewer toolbar
+    /// (issue #366). `Auto` (the default) keeps the Windows admin tools shown.
+    #[serde(default)]
+    pub server_os: RdpServerOs,
     /// Enable printer redirection (maps local CUPS printer into the session)
     #[serde(default)]
     pub printer_enabled: bool,
@@ -2723,6 +2801,7 @@ impl Default for RdpConfig {
             color_depth: None,
             audio_redirect: false,
             audio_mode: None,
+            server_os: RdpServerOs::default(),
             clipboard_direction: None,
             printer_enabled: false,
             gateway: None,
@@ -5566,5 +5645,23 @@ mod keep_alive_default_tests {
             !args.iter().any(|a| a == "ConnectTimeout=15"),
             "the default must not be emitted alongside the user's value"
         );
+    }
+
+    #[test]
+    fn rdp_server_os_round_trips_and_gates_the_windows_tools() {
+        // Default is Auto, which keeps today's behaviour (Windows tools shown).
+        assert_eq!(RdpServerOs::default(), RdpServerOs::Auto);
+        assert!(RdpServerOs::Auto.shows_windows_tools());
+        assert!(RdpServerOs::Windows.shows_windows_tools());
+        // Only Linux hides them.
+        assert!(!RdpServerOs::Linux.shows_windows_tools());
+
+        // index <-> from_index is a stable round-trip for every variant, so the
+        // dropdown order and the persisted value cannot drift apart.
+        for os in RdpServerOs::all() {
+            assert_eq!(RdpServerOs::from_index(os.index()), *os, "{os:?}");
+        }
+        // An out-of-range index falls back to Auto, never panics.
+        assert_eq!(RdpServerOs::from_index(99), RdpServerOs::Auto);
     }
 }

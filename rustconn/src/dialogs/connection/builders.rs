@@ -102,6 +102,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_color_dropdown: &'a DropDown,
     pub rdp_scale_override_dropdown: &'a DropDown,
     pub rdp_audio_mode_dropdown: &'a DropDown,
+    pub rdp_server_os_dropdown: &'a DropDown,
     pub rdp_printer_check: &'a adw::SwitchRow,
     pub rdp_gateway_entry: &'a Entry,
     pub rdp_gateway_port_spin: &'a SpinButton,
@@ -1646,6 +1647,8 @@ impl ConnectionDialogData<'_> {
         // older RustConn reading this profile still sees local redirection
         // correctly, and the Remmina/MobaXterm exporters keep working.
         let audio_mode = RdpAudioMode::from_index(self.rdp_audio_mode_dropdown.selected());
+        let server_os =
+            rustconn_core::models::RdpServerOs::from_index(self.rdp_server_os_dropdown.selected());
 
         // The legacy `clipboard_enabled` bool is written alongside the direction
         // (via `clipboard_direction.enabled()`) so an older RustConn and the
@@ -1676,6 +1679,7 @@ impl ConnectionDialogData<'_> {
             color_depth,
             audio_redirect: audio_mode.is_local_playback(),
             audio_mode: Some(audio_mode),
+            server_os,
             printer_enabled: self.rdp_printer_check.is_active(),
             gateway,
             shared_folders,

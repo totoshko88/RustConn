@@ -1333,6 +1333,8 @@ impl ConnectionDialog {
             .set_selected(rdp.scale_override.index());
         self.rdp_audio_mode_dropdown
             .set_selected(rdp.effective_audio_mode().index());
+        self.rdp_server_os_dropdown
+            .set_selected(rdp.server_os.index());
         self.rdp_printer_check.set_active(rdp.printer_enabled);
         self.rdp_clipboard_row
             .set_selected(rdp.effective_clipboard_direction().index());

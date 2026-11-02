@@ -386,6 +386,8 @@ pub struct EmbeddedRdpWidget {
     toast_overlay: Rc<RefCell<Option<libadwaita::ToastOverlay>>>,
     /// Scripts dropdown button (kept for dynamic menu updates with user snippets)
     scripts_button: gtk4::MenuButton,
+    /// Windows-admin-tools dropdown button, hidden for a Linux server (issue #366)
+    quick_actions_button: gtk4::MenuButton,
 }
 
 /// String extraction for xgettext — labels defined in `rustconn-core` as
@@ -408,6 +410,10 @@ fn _extract_builtin_labels() {
     i18n("Disk Management");
     i18n("Resource Monitor");
     i18n("Computer Management");
+    // RdpServerOs display names (defined in rustconn-core, issue #366)
+    i18n("Auto (Windows tools shown)");
+    i18n("Windows");
+    i18n("Linux (hide Windows tools)");
     // ScriptDelivery display names (defined in rustconn-core)
     i18n("Auto");
     i18n("Clipboard (fast)");
@@ -859,6 +865,7 @@ impl EmbeddedRdpWidget {
             file_dnd_circuit_breaker: Rc::new(RefCell::new(file_dnd::FileDndCircuitBreaker::new())),
             toast_overlay: Rc::new(RefCell::new(None)),
             scripts_button: scripts_button.clone(),
+            quick_actions_button: quick_actions_button.clone(),
         };
 
         widget.setup_drawing();
@@ -1136,6 +1143,21 @@ impl EmbeddedRdpWidget {
         }
 
         self.scripts_button.set_menu_model(Some(&menu));
+    }
+
+    /// Tailors the toolbar to the server OS (issue #366).
+    ///
+    /// The quick-actions menu launches Windows admin consoles (via `Win+R` and
+    /// `compmgmt.msc`, `regedit`, …) and the Scripts menu offers PowerShell/CMD,
+    /// all of which do nothing on a Linux RDP server (GNOME Remote Desktop,
+    /// KRdp). When the connection says the server is Linux, both dropdowns are
+    /// hidden; everything else on the toolbar — Copy/Paste, Ctrl+Alt+Del, Auto
+    /// Type — works on any server and stays. `Auto`/`Windows` keep both shown,
+    /// preserving today's behaviour.
+    pub fn apply_server_os(&self, server_os: rustconn_core::models::RdpServerOs) {
+        let show = server_os.shows_windows_tools();
+        self.quick_actions_button.set_visible(show);
+        self.scripts_button.set_visible(show);
     }
 
     /// Registers GIO actions for user-defined Windows snippets.

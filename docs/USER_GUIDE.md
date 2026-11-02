@@ -1513,6 +1513,8 @@ The menu is split into two sections separated by a divider:
 
 The Quick Actions menu is accessible via the dropdown button (arrow icon) on the RDP toolbar. All labels are translatable.
 
+These tools are Windows-only: each one opens the Run dialog and types a Windows command, so against a Linux RDP server (GNOME Remote Desktop, KDE's KRdp, xrdp) they do nothing. Set **Server OS** to **Linux** in the connection's RDP settings (Features) to hide both the Quick Actions menu and the Scripts (PowerShell/CMD) menu for that connection; Copy, Paste, Ctrl+Alt+Del and Autotype stay, since they work on any server. **Auto** (the default) and **Windows** keep the tools shown, so existing Windows profiles are unchanged.
+
 #### RDP Scripts
 
 The Scripts dropdown (terminal icon) in the RDP toolbar provides two sections:

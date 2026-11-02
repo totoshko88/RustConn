@@ -2496,6 +2496,9 @@ impl TemplateDialog {
             audio_redirect: RdpAudioMode::from_index(audio_mode_dropdown.selected())
                 .is_local_playback(),
             audio_mode: Some(RdpAudioMode::from_index(audio_mode_dropdown.selected())),
+            // Templates do not expose the Server OS hint; it defaults to Auto
+            // (Windows tools shown) and is set per-connection (issue #366).
+            server_os: rustconn_core::models::RdpServerOs::default(),
             // ponytail: template editor doesn't expose printer redirection yet;
             // configure it per-connection in the connection editor. Wire a switch
             // here if templates need it.

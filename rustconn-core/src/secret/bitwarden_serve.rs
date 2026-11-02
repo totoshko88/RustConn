@@ -1,6 +1,6 @@
 //! Persistent `bw serve` transport (W2 P2-transport).
 //!
-//! RustConn's Bitwarden backend ([`super::bitwarden`]) spawns one `bw` process
+//! RustConn's Bitwarden backend (`super::bitwarden`) spawns one `bw` process
 //! per vault operation. Each spawn pays the Node.js startup cost (~2.7 s on the
 //! maintainer's machine), so a root-search retrieve that runs three `bw list`
 //! calls took ~13.7 s. The Bitwarden CLI can instead run a long-lived local
@@ -27,14 +27,14 @@
 //! by the kernel (bind to `127.0.0.1:0`, then read it back), and the session key
 //! an attacker could obtain already lives in this process's memory anyway. A
 //! future CLI that advertises `fd+connected://` can be adopted opportunistically
-//! without changing the request layer; only [`ServeProcess::spawn`] would gain a
+//! without changing the request layer; only `ServeProcess::spawn` would gain a
 //! socketpair branch.
 //!
 //! # What this module is (and is not)
 //!
 //! This is the transport only: spawn/health/shutdown of the `bw serve` child and
 //! typed request/response over HTTP/1.1. It does not yet replace the verbs in
-//! [`super::bitwarden`]; wiring `BitwardenBackend` to prefer this transport (the
+//! `super::bitwarden`; wiring `BitwardenBackend` to prefer this transport (the
 //! `BwTransport { Spawn, Serve }` switch) is the next W2 step and is gated on the
 //! maintainer's per-environment GO. Nothing here runs unless the crate is built
 //! with the `bitwarden-serve` feature.
@@ -44,7 +44,7 @@
 //! The master password reaches `bw serve` only in the JSON body of `POST
 //! /unlock`, never on a URL or argv — the leak (`/proc/<pid>/cmdline`, world
 //! readable) that the one-shot `bw create item <base64>` path still has. Request
-//! and response bodies that can carry a secret are held in [`Zeroizing`]
+//! and response bodies that can carry a secret are held in `Zeroizing`
 //! buffers, and no response body is ever logged.
 
 use std::process::Stdio;
@@ -218,7 +218,7 @@ impl ServeProcess {
     ///
     /// `path` includes any query string (already percent-encoded by the caller).
     /// `body`, when present, is sent as `application/json`; it is held in a
-    /// [`Zeroizing`] buffer by the caller, and hyper takes an owned [`Bytes`]
+    /// `Zeroizing` buffer by the caller, and hyper takes an owned [`Bytes`]
     /// copy for the single request, dropped when the exchange ends.
     ///
     /// # Errors
@@ -384,7 +384,7 @@ struct ServeRoute {
     path: String,
     body: Option<Vec<u8>>,
     /// How to reshape the envelope's `data` into what the spawn path's stdout
-    /// parser expects (see [`ServeRoute::unwrap_data`]).
+    /// parser expects (see [`DataShape::unwrap_data`]).
     shape: DataShape,
 }
 
@@ -517,7 +517,7 @@ pub fn is_supported_verb(args: &[&str]) -> bool {
 /// Decodes standard (padded) base64 without pulling in a new crate.
 ///
 /// `data-encoding` is already a direct dependency of this crate; use its
-/// `BASE64` alphabet so this matches what [`super::bitwarden`]'s
+/// `BASE64` alphabet so this matches what `super::bitwarden`'s
 /// `base64_encode`/`base64_encode_secret` produce.
 fn base64_decode(text: &str) -> Option<Vec<u8>> {
     data_encoding::BASE64.decode(text.as_bytes()).ok()
@@ -526,11 +526,11 @@ fn base64_decode(text: &str) -> Option<Vec<u8>> {
 impl ServeProcess {
     /// Runs a `bw` operation described by its CLI argv over the serve transport.
     ///
-    /// This is the single entry point [`super::bitwarden`] calls when the serve
+    /// This is the single entry point `super::bitwarden` calls when the serve
     /// transport is active: it maps the argv to a route, performs it, and
     /// returns the JSON string the spawn path's `stdout` would have carried, so
     /// the caller's parser is unchanged. The body (item/folder) is held in a
-    /// [`Zeroizing`] buffer because it carries the plaintext password.
+    /// `Zeroizing` buffer because it carries the plaintext password.
     ///
     /// # Errors
     /// Returns [`SecretError::ConnectionFailed`] with an

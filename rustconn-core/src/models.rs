@@ -33,7 +33,7 @@ pub use protocol::{
     HoopDevConfig, KubernetesConfig, MAX_ELEVATED_DELAY_MS, MoshConfig, MoshPredictMode,
     OciBastionConfig, PortForward, PortForwardDirection, ProtocolConfig, ProtocolType,
     RdpAudioMode, RdpClientMode, RdpClipboardDirection, RdpConfig, RdpDisplayMode, RdpGateway,
-    RdpKeyboardHook, RdpPerformanceMode, RdpSecurityLayer, Resolution, ScaleOverride,
+    RdpKeyboardHook, RdpPerformanceMode, RdpSecurityLayer, RdpServerOs, Resolution, ScaleOverride,
     SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
     SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
     TailscaleSshConfig, TeleportConfig, TelnetConfig, VncClientMode, VncConfig, VncPerformanceMode,
