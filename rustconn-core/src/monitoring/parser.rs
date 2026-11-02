@@ -35,7 +35,7 @@ pub const METRICS_COMMAND: &str = concat!(
     "echo '---RUSTCONN_NET_DEV---';",
     "tail -n +3 /proc/net/dev;",
     "echo '---RUSTCONN_DF---';",
-    "df -Pk -x tmpfs -x devtmpfs -x squashfs -x overlay 2>/dev/null | tail -n +2;",
+    "df -Pk 2>/dev/null | tail -n +2;",
     "echo '---RUSTCONN_END---'",
 );
 
@@ -47,7 +47,7 @@ pub const SYSTEM_INFO_COMMAND: &str = concat!(
     "echo '---RUSTCONN_UNAME---';",
     "uname -r;",
     "echo '---RUSTCONN_OSRELEASE---';",
-    "cat /etc/os-release 2>/dev/null;",
+    "cat /etc/os-release 2>/dev/null; cat /etc/openwrt_release 2>/dev/null;",
     "echo '---RUSTCONN_UPTIME---';",
     "cat /proc/uptime;",
     "echo '---RUSTCONN_HWINFO---';",
@@ -58,7 +58,7 @@ pub const SYSTEM_INFO_COMMAND: &str = concat!(
     "echo '---RUSTCONN_NETWORK_ID---';",
     "hostname -f 2>/dev/null || hostname;",
     "echo '---RUSTCONN_IPS---';",
-    "hostname -I 2>/dev/null;",
+    "hostname -I 2>/dev/null || hostname -i 2>/dev/null;",
     "echo '---RUSTCONN_SYSINFO_END---'",
 );
 
@@ -225,8 +225,10 @@ impl MetricsParser {
     ///
     /// Format per line: `Filesystem  1024-blocks  Used  Available  Capacity  Mounted`
     ///
-    /// Virtual filesystems (tmpfs, devtmpfs, squashfs, overlay) are excluded
-    /// by the `df` flags. Snap loop devices (`/snap/`) are also filtered out.
+    /// BusyBox `df` (OpenWrt, EdgeOS) has no `-x`, so pseudo-filesystems are
+    /// filtered here instead of in the command. Snap loop devices (`/snap/`)
+    /// are filtered out too. `/rom` is OpenWrt's read-only squashfs; the
+    /// writable space is `/` (overlayfs) and `/overlay`.
     fn parse_df(output: &str) -> MonitoringResult<Vec<DiskMetrics>> {
         let section = Self::section(output, "---RUSTCONN_DF---", "---RUSTCONN_END---")
             .ok_or_else(|| MonitoringError::ParseError("Missing df section".into()))?;
@@ -245,6 +247,16 @@ impl MetricsParser {
             }
 
             let mount_point = parts[5];
+
+            if matches!(mount_point, "/dev" | "/proc" | "/sys" | "/run" | "/rom")
+                || mount_point.starts_with("/dev/")
+                || mount_point.starts_with("/proc/")
+                || mount_point.starts_with("/sys/")
+                || mount_point == "/run/lock"
+                || mount_point.starts_with("/run/user/")
+            {
+                continue;
+            }
 
             // Skip snap mounts (loop devices mounted at /snap/*)
             if mount_point.starts_with("/snap/") || mount_point.starts_with("/var/snap/") {
@@ -398,7 +410,8 @@ impl MetricsParser {
     }
 
     /// Extracts `PRETTY_NAME` from `/etc/os-release` content, falling back
-    /// to `NAME` + `VERSION` if `PRETTY_NAME` is absent.
+    /// to `DISTRIB_DESCRIPTION` from `/etc/openwrt_release`, then to
+    /// `NAME` + `VERSION` if neither is present.
     fn extract_pretty_name(os_release: &str) -> Option<String> {
         let mut pretty_name = None;
         let mut name = None;
@@ -407,6 +420,9 @@ impl MetricsParser {
         for line in os_release.lines() {
             if let Some(val) = line.strip_prefix("PRETTY_NAME=") {
                 pretty_name = Some(val.trim_matches('"').to_string());
+            } else if let Some(val) = line.strip_prefix("DISTRIB_DESCRIPTION=") {
+                pretty_name
+                    .get_or_insert_with(|| val.trim_matches(|c| c == '\'' || c == '"').to_string());
             } else if let Some(val) = line.strip_prefix("NAME=") {
                 name = Some(val.trim_matches('"').to_string());
             } else if let Some(val) = line.strip_prefix("VERSION=") {
@@ -573,6 +589,66 @@ MemAvailable:    8192000 kB
         assert_eq!(result.disks[1].total_kib, 204_800_000);
         assert_eq!(result.disks[2].mount_point, "/var");
         assert_eq!(result.disks[2].used_kib, 40_960_000);
+    }
+
+    #[test]
+    fn test_parse_openwrt_busybox_df() {
+        let output = "\
+---RUSTCONN_PROC_STAT---
+cpu  100 0 50 800 50 0 0 0 0 0
+---RUSTCONN_MEMINFO---
+MemTotal:         126708 kB
+MemAvailable:      80000 kB
+---RUSTCONN_LOADAVG---
+0.00 0.00 0.00 1/100 1234
+---RUSTCONN_NET_DEV---
+  br-lan: 1000 10 0 0 0 0 0 0 500 8 0 0 0 0 0 0
+---RUSTCONN_DF---
+/dev/root                  5632    5632         0     100% /rom
+tmpfs                    126708      92    126616       0% /tmp
+/dev/mtdblock5            14608    1240     13368       8% /overlay
+overlayfs:/overlay        14608    1240     13368       8% /
+---RUSTCONN_END---
+";
+        let result = MetricsParser::parse(output).unwrap();
+
+        // The writable overlay is the root filesystem, and it comes first.
+        assert_eq!(result.disks[0].mount_point, "/");
+        assert_eq!(result.disks[0].total_kib, 14_608);
+        assert_eq!(result.disks[0].available_kib, 13_368);
+        // The read-only squashfs is not a free-space metric.
+        assert!(result.disks.iter().all(|d| d.mount_point != "/rom"));
+        assert!(result.disks.iter().any(|d| d.mount_point == "/overlay"));
+    }
+
+    #[test]
+    fn test_parse_system_info_openwrt_release() {
+        let output = "\
+---RUSTCONN_UNAME---
+5.15.137
+---RUSTCONN_OSRELEASE---
+DISTRIB_ID='OpenWrt'
+DISTRIB_RELEASE='23.05.3'
+DISTRIB_DESCRIPTION='OpenWrt 23.05.3 r23809-234f1a2efa'
+---RUSTCONN_UPTIME---
+12345.67 23456.78
+---RUSTCONN_HWINFO---
+MemTotal:         126708 kB
+CPUTHREADS=2
+CPUCORES=
+ARCH=mips
+---RUSTCONN_NETWORK_ID---
+OpenWrt.lan
+---RUSTCONN_IPS---
+192.168.1.1
+---RUSTCONN_SYSINFO_END---
+";
+        let info = MetricsParser::parse_system_info(output).unwrap();
+        assert_eq!(info.distro_name, "OpenWrt 23.05.3 r23809-234f1a2efa");
+        assert_eq!(info.cpu_cores, 2); // falls back to threads
+        assert_eq!(info.cpu_threads, 2);
+        assert_eq!(info.arch, "mips");
+        assert_eq!(info.hostname, "OpenWrt.lan");
     }
 
     #[test]
