@@ -122,6 +122,12 @@ vnc-embedded = ["rustconn-core/vnc-embedded"]
 rdp-embedded = ["rustconn-core/rdp-embedded"]
 gfx-h264 = ["rustconn-core/gfx-h264"]
 rd-gateway = ["rustconn-core/rd-gateway"]
+# Persistent `bw serve` transport for the Bitwarden backend (W2). The Settings →
+# Secrets "Keep the CLI running" toggle only changes behaviour in a build with
+# this on; without it the toggle persists but the backend stays on spawn-per-call
+# (core's no-op stubs). Not in `default` yet — enable once the maintainer records
+# the per-environment GO.
+bitwarden-serve = ["rustconn-core/bitwarden-serve"]
 rdp-audio = ["rdp-embedded", "dep:cpal"]
 wayland-native = ["dep:gdk4-wayland"]
 # Embedded WebKitGTK 6.0 web browser for in-tab Web protocol connections (Linux only)

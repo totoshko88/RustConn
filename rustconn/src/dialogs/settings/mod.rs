@@ -1480,6 +1480,8 @@ impl SettingsDialog {
         let bitwarden_read_only_row_clone = self.secrets_widgets.bitwarden_read_only_row.clone();
         let bitwarden_root_search_row_clone =
             self.secrets_widgets.bitwarden_root_search_row.clone();
+        let bitwarden_persistent_cli_row_clone =
+            self.secrets_widgets.bitwarden_persistent_cli_row.clone();
         // Passbolt, 1Password, Pass — collect-only widgets cloned for the
         // close-time settings collection.
         let passbolt_passphrase_entry_clone =
@@ -1664,6 +1666,7 @@ impl SettingsDialog {
                 bitwarden_client_secret_entry: bitwarden_client_secret_entry_clone.clone(),
                 bitwarden_read_only_row: bitwarden_read_only_row_clone.clone(),
                 bitwarden_root_search_row: bitwarden_root_search_row_clone.clone(),
+                bitwarden_persistent_cli_row: bitwarden_persistent_cli_row_clone.clone(),
                 bitwarden_cmd: Rc::new(RefCell::new(String::new())), // dummy, not used in collect
                 onepassword_group: adw::PreferencesGroup::new(),     // dummy
                 onepassword_status_label: Label::new(None),          // dummy
