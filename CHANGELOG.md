@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **The "Bitwarden vault is locked" banner cleared after unlocking through a connection** — the startup banner that warns the selected password backend cannot store secrets yet was only re-checked at launch and after saving Settings, so unlocking the vault by opening a connection left the banner up even though the vault was then unlocked. A successful credential lookup now re-probes the backend and clears the banner. (`rustconn/src/state/mod.rs`, `rustconn/src/app.rs`)
+- **Imported passwords are stored in the password backend you actually chose** — importing connections (Remmina, MobaXterm, `.rdp` and the rest) wrote every imported password to the system keyring, whatever backend was selected. If that backend was Bitwarden, KeePass, 1Password or an encrypted file, the imported connections then came up with no password, because RustConn looked for it in the chosen backend and the keyring is not where it had gone. Imported credentials are now written to the selected backend, so they are found on the next connect. (`rustconn/src/state/sync.rs`, `rustconn/src/vault_ops.rs`)
 
 ## [0.24.4] - 2026-11-01
 
