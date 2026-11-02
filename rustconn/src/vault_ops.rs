@@ -3244,6 +3244,60 @@ pub fn run_credential_transfer(
     .and_then(|r| r)
 }
 
+/// Stores freshly imported credentials into the user's chosen secret backend.
+///
+/// Import used to write every credential to the system keyring with synchronous
+/// `secret-tool` calls regardless of which backend the user actually selected,
+/// so on a Bitwarden/KeePass/1Password/encrypted-file setup the imported
+/// passwords landed somewhere the resolver never looks, and the connections came
+/// up with no password (W4). This routes them through [`TransferPort`] for the
+/// preferred backend instead — the same backend-aware writer the vault-transfer
+/// feature uses — so the secret goes where retrieval will find it.
+///
+/// Each entry is `(destination_key, credentials)` where `destination_key` is the
+/// lookup key the resolver reads (`"{name} ({protocol})"`). Runs on a dedicated
+/// runtime via [`crate::async_utils::with_runtime`], which is the deadlock-safe
+/// pattern the old sync path was working around: it never touches the GTK/GLib
+/// main loop. Returns `(stored, total)`.
+///
+/// # Errors
+/// Returns an error only when the backend cannot be opened at all (e.g. a locked
+/// KDBX with no password); a per-entry write failure is logged and counted, not
+/// fatal, so one bad entry does not abandon the rest of the import.
+pub fn store_imported_credentials(
+    settings: &rustconn_core::config::AppSettings,
+    entries: &[(String, rustconn_core::models::Credentials)],
+) -> Result<(usize, usize), String> {
+    let backend = settings.secrets.preferred_backend;
+    let total = entries.len();
+    crate::async_utils::with_runtime(|rt| {
+        let port = TransferPort::open(settings, backend, rt)
+            .map_err(|e| format!("cannot open the {} backend: {e}", backend_display_name(backend)))?;
+        let mut stored = 0usize;
+        for (destination_key, creds) in entries {
+            // A minimal item: import already holds the full credential, so there
+            // is nothing to read from a source — only the destination key and the
+            // username matter to `TransferPort::store`.
+            let item = CredentialTransferItem {
+                label: destination_key.clone(),
+                source_keys: Vec::new(),
+                destination_key: destination_key.clone(),
+                username: creds.username.clone(),
+            };
+            match port.store(&item, creds, rt) {
+                Ok(_dropped) => stored += 1,
+                Err(e) => {
+                    // Backend output can quote a password back, so the key (never
+                    // a secret) is the only identifier logged.
+                    tracing::warn!(key = %destination_key, error = %e, "failed to store an imported credential");
+                }
+            }
+        }
+        Ok((stored, total))
+    })
+    .and_then(|r| r)
+}
+
 /// Selects the appropriate storage backend for variable secrets.
 ///
 /// Mirrors `CredentialResolver::select_storage_backend` logic.

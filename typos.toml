@@ -47,6 +47,12 @@ uk = "uk"
 # "Hashi" is the head of HashiCorp (Boundary, Vault).
 Hashi = "Hashi"
 
+# MikroTik RouterOS — the product name, used in the remote-monitoring RouterOS
+# support (parser/collector constants `ROUTEROS_*`, `looks_like_routeros`, and
+# the `RouterOS` prose in docs/CHANGELOG). `typos` reads the "routeros" run as a
+# misspelling of "routers"; it is the real OS name, not a plural of router.
+routeros = "routeros"
+
 # Huawei OLT MA5800 — Optical Line Terminal, real telecom hardware whose login
 # banner the Telnet prompt detector matches on. Both cases appear (device class
 # in prose, host name `olt-1` in tests).

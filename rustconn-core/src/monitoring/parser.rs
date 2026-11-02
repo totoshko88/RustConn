@@ -62,6 +62,63 @@ pub const SYSTEM_INFO_COMMAND: &str = concat!(
     "echo '---RUSTCONN_SYSINFO_END---'",
 );
 
+/// Per-poll metrics command for a MikroTik RouterOS host (issue #405 follow-up).
+///
+/// RouterOS SSH runs its own console, not a POSIX shell, so none of the Linux
+/// commands exist (`cat`, `df`, `uname` all return "bad command name"). Metrics
+/// come from `/system resource` and `/interface` instead. Each value is printed
+/// on its own line with `:put` in a fixed order, framed by the same delimiter
+/// markers the Linux path uses so one `exec` returns everything. The interface
+/// loop sums rx/tx across all interfaces for an aggregate throughput counter,
+/// the RouterOS analogue of `/proc/net/dev`.
+pub const ROUTEROS_METRICS_COMMAND: &str = concat!(
+    ":put \"---RUSTCONN_ROS_METRICS---\";",
+    ":put [/system resource get cpu-load];",
+    ":put [/system resource get free-memory];",
+    ":put [/system resource get total-memory];",
+    ":put [/system resource get free-hdd-space];",
+    ":put [/system resource get total-hdd-space];",
+    ":local rx 0; :local tx 0;",
+    ":foreach i in=[/interface find] do={",
+    ":set rx ($rx + [/interface get $i rx-byte]);",
+    ":set tx ($tx + [/interface get $i tx-byte]) };",
+    ":put ($rx . \" \" . $tx);",
+    ":put \"---RUSTCONN_ROS_END---\"",
+);
+
+/// One-time system-info command for a RouterOS host.
+///
+/// The RouterOS counterpart of [`SYSTEM_INFO_COMMAND`]: version, board and
+/// architecture name, CPU count, total memory, uptime and identity, each on its
+/// own `:put` line in a fixed order.
+pub const ROUTEROS_SYSINFO_COMMAND: &str = concat!(
+    ":put \"---RUSTCONN_ROS_SYSINFO---\";",
+    ":put [/system resource get version];",
+    ":put [/system resource get board-name];",
+    ":put [/system resource get architecture-name];",
+    ":put [/system resource get cpu-count];",
+    ":put [/system resource get total-memory];",
+    ":put [/system resource get uptime];",
+    ":put [/system identity get name];",
+    ":put \"---RUSTCONN_ROS_SYSINFO_END---\"",
+);
+
+/// Returns true when `output`/error text looks like RouterOS refusing the Linux
+/// metrics command.
+///
+/// RouterOS 7 shows two shapes depending on the command: a bare command gets
+/// `bad command name <x> (line N column M)` from its console, while the
+/// `echo`-prefixed metrics pipeline (RouterOS does run `:put`/`echo`) reaches a
+/// real tool and fails with `command not found` and a non-zero exit. Either is a
+/// strong hint; the collector then confirms by running the RouterOS sysinfo
+/// command and checking it parses, so this heuristic only has to be sensitive,
+/// not perfect. A genuine Linux host never hits it: the metrics command uses
+/// `cat`/`tail`/`df`, which exist on Linux and BusyBox alike.
+#[must_use]
+pub fn looks_like_routeros(output: &str) -> bool {
+    output.contains("bad command name") || output.contains("command not found")
+}
+
 /// Parsed raw output from a single metrics collection
 #[derive(Debug, Clone)]
 pub struct ParsedMetrics {
@@ -77,6 +134,12 @@ pub struct ParsedMetrics {
     pub load_average: LoadAverage,
     /// Detected OS type
     pub os_type: RemoteOsType,
+    /// A CPU percentage the source reports directly, bypassing the two-snapshot
+    /// delta. `None` for Linux (CPU% comes from `/proc/stat` counters via
+    /// [`crate::monitoring::collector::MetricsComputer`]); `Some` for RouterOS,
+    /// whose `/system resource` already gives a load percentage, so the bar is
+    /// correct on the very first sample instead of showing 0% until the second.
+    pub cpu_percent_direct: Option<f32>,
 }
 
 /// Stateless parser for remote metrics output
@@ -103,7 +166,182 @@ impl MetricsParser {
             disks,
             load_average,
             os_type: RemoteOsType::Linux,
+            cpu_percent_direct: None,
         })
+    }
+
+    /// Parses the output of [`ROUTEROS_METRICS_COMMAND`].
+    ///
+    /// The RouterOS console prints each `:put` value on its own line, in the
+    /// command's fixed order: cpu-load (%), free-memory, total-memory,
+    /// free-hdd-space, total-hdd-space (all bytes), then `"<rx> <tx>"` aggregate
+    /// interface byte counters. CPU% is reported directly (no delta), memory and
+    /// disk are byte values converted to KiB, and the byte counters feed the
+    /// same network-throughput delta the Linux path uses. RouterOS has no load
+    /// average, so that stays at its default (shown as N/A).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonitoringError::ParseError`] if the section is missing or a
+    /// required numeric line cannot be read.
+    pub fn parse_routeros(output: &str) -> MonitoringResult<ParsedMetrics> {
+        let section = Self::section(
+            output,
+            "---RUSTCONN_ROS_METRICS---",
+            "---RUSTCONN_ROS_END---",
+        )
+        .ok_or_else(|| MonitoringError::ParseError("Missing RouterOS metrics section".into()))?;
+        let mut lines = section.lines().map(str::trim).filter(|l| !l.is_empty());
+
+        let mut next_u64 = |what: &str| -> MonitoringResult<u64> {
+            lines
+                .next()
+                .and_then(|l| l.parse::<u64>().ok())
+                .ok_or_else(|| MonitoringError::ParseError(format!("RouterOS: missing {what}")))
+        };
+
+        let cpu_load = next_u64("cpu-load")?;
+        let free_mem = next_u64("free-memory")?;
+        let total_mem = next_u64("total-memory")?;
+        let free_hdd = next_u64("free-hdd-space")?;
+        let total_hdd = next_u64("total-hdd-space")?;
+
+        // "<rx> <tx>" aggregate byte counters.
+        let (rx_bytes, tx_bytes) = lines
+            .next()
+            .and_then(|l| {
+                let mut it = l.split_whitespace();
+                let rx = it.next()?.parse::<u64>().ok()?;
+                let tx = it.next()?.parse::<u64>().ok()?;
+                Some((rx, tx))
+            })
+            .ok_or_else(|| {
+                MonitoringError::ParseError("RouterOS: missing interface counters".into())
+            })?;
+
+        // RouterOS reports bytes; the metrics model is in KiB.
+        let total_kib = total_mem / 1024;
+        let used_kib = total_mem.saturating_sub(free_mem) / 1024;
+        let available_kib = free_mem / 1024;
+        let disk = DiskMetrics {
+            total_kib: total_hdd / 1024,
+            used_kib: total_hdd.saturating_sub(free_hdd) / 1024,
+            available_kib: free_hdd / 1024,
+            mount_point: String::from("/"),
+        };
+
+        Ok(ParsedMetrics {
+            cpu: CpuSnapshot::default(),
+            memory: MemoryMetrics {
+                total_kib,
+                used_kib,
+                available_kib,
+                swap_total_kib: 0,
+                swap_used_kib: 0,
+            },
+            network: NetworkSnapshot { rx_bytes, tx_bytes },
+            disks: vec![disk],
+            load_average: LoadAverage::default(),
+            os_type: RemoteOsType::RouterOs,
+            // Clamp the CPU percentage into range; RouterOS already gives 0–100.
+            cpu_percent_direct: Some((cpu_load as f32).clamp(0.0, 100.0)),
+        })
+    }
+
+    /// Parses the output of [`ROUTEROS_SYSINFO_COMMAND`] into a [`SystemInfo`].
+    ///
+    /// Order: version, board-name, architecture-name, cpu-count, total-memory
+    /// (bytes), uptime (`6d11h` / `6d11:05:54` style), identity. RouterOS has no
+    /// separate kernel version, so the RouterOS version doubles as both the
+    /// distro name and the kernel field.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MonitoringError::ParseError`] if the section is missing.
+    pub fn parse_system_info_routeros(output: &str) -> MonitoringResult<SystemInfo> {
+        let section = Self::section(
+            output,
+            "---RUSTCONN_ROS_SYSINFO---",
+            "---RUSTCONN_ROS_SYSINFO_END---",
+        )
+        .ok_or_else(|| MonitoringError::ParseError("Missing RouterOS sysinfo section".into()))?;
+        let mut lines = section.lines().map(str::trim);
+        let mut next = || lines.next().unwrap_or("").to_string();
+
+        let version = next();
+        let board = next();
+        let arch = next();
+        let cpu_count = next().parse::<u16>().unwrap_or(1);
+        let total_mem_bytes = next().parse::<u64>().unwrap_or(0);
+        let uptime_secs = Self::parse_routeros_uptime(&next());
+        let identity = next();
+
+        let distro_name = if board.is_empty() {
+            format!("RouterOS {version}")
+        } else {
+            format!("RouterOS {version} ({board})")
+        };
+
+        Ok(SystemInfo {
+            kernel_version: version,
+            distro_name,
+            uptime_secs,
+            total_ram_kib: total_mem_bytes / 1024,
+            cpu_cores: cpu_count,
+            cpu_threads: cpu_count,
+            arch,
+            hostname: identity,
+            ip_addresses: Vec::new(),
+        })
+    }
+
+    /// Parses a RouterOS uptime string into seconds.
+    ///
+    /// RouterOS formats uptime as a run of `<n>w`/`d`/`h`/`m`/`s` units, and on
+    /// some builds the trailing time as `h:mm:ss` (e.g. `6d11:05:54`). Both are
+    /// handled: unit suffixes are summed, and a bare `h:mm:ss` tail is read
+    /// positionally. An unrecognised string yields 0.
+    fn parse_routeros_uptime(raw: &str) -> u64 {
+        let raw = raw.trim();
+        let mut total: u64 = 0;
+        let mut num = String::new();
+        for ch in raw.chars() {
+            match ch {
+                '0'..='9' => num.push(ch),
+                'w' | 'd' | 'h' | 'm' | 's' => {
+                    let n: u64 = num.parse().unwrap_or(0);
+                    num.clear();
+                    total += n * match ch {
+                        'w' => 604_800,
+                        'd' => 86_400,
+                        'h' => 3_600,
+                        'm' => 60,
+                        _ => 1,
+                    };
+                }
+                ':' => {
+                    // `h:mm:ss` tail (e.g. the `11:05:54` in `6d11:05:54`): the
+                    // accumulated `num` was hours, and the remaining colon-parts
+                    // are minutes then seconds.
+                    let hours: u64 = num.parse().unwrap_or(0);
+                    num.clear();
+                    let tail: Vec<u64> = raw
+                        .rsplit(['d', 'w'])
+                        .next()
+                        .unwrap_or("")
+                        .split(':')
+                        .filter_map(|p| p.trim().parse::<u64>().ok())
+                        .collect();
+                    // tail is [hours, minutes, seconds]; hours already captured.
+                    let minutes = tail.get(1).copied().unwrap_or(0);
+                    let seconds = tail.get(2).copied().unwrap_or(0);
+                    total += hours * 3_600 + minutes * 60 + seconds;
+                    return total;
+                }
+                _ => num.clear(),
+            }
+        }
+        total
     }
 
     /// Extracts text between two marker lines
@@ -743,5 +981,118 @@ ARCH=x86_64
         assert_eq!(info.kernel_version, "6.1.0");
         assert_eq!(info.hostname, "");
         assert!(info.ip_addresses.is_empty());
+    }
+
+    // ---- RouterOS (MikroTik) — captured from a live hAP ax S, RouterOS 7.24.5 ----
+
+    #[test]
+    fn test_looks_like_routeros_detects_both_console_error_shapes() {
+        // Bare-command form (RouterOS console).
+        assert!(looks_like_routeros(
+            "bad command name cat (line 1 column 1)"
+        ));
+        // echo-prefixed pipeline form: RouterOS runs `echo`, then fails the real
+        // tool with `command not found` and a non-zero exit — the actual error
+        // the monitoring METRICS_COMMAND produced on a live hAP ax S.
+        assert!(looks_like_routeros(
+            "SSH command failed (exit exit status: 127):  ---RUSTCONN_PROC_STAT---\nhead: command not found"
+        ));
+        // A normal Linux metrics sample is not mistaken for RouterOS.
+        assert!(!looks_like_routeros("cpu  100 0 50 800 50 0 0 0 0 0"));
+    }
+
+    #[test]
+    fn test_parse_routeros_metrics() {
+        // Exactly the lines ROUTEROS_METRICS_COMMAND prints (byte values).
+        let output = "\
+---RUSTCONN_ROS_METRICS---
+0
+441466880
+536870912
+103944192
+134217728
+218404270 82010202
+---RUSTCONN_ROS_END---
+";
+        let parsed = MetricsParser::parse_routeros(output).unwrap();
+        assert_eq!(parsed.os_type, RemoteOsType::RouterOs);
+        // CPU is reported directly, so the bar is correct on the first sample.
+        assert_eq!(parsed.cpu_percent_direct, Some(0.0));
+        // 512 MiB total, ~421 MiB free -> used is the difference, all in KiB.
+        assert_eq!(parsed.memory.total_kib, 536_870_912 / 1024);
+        assert_eq!(parsed.memory.available_kib, 441_466_880 / 1024);
+        assert_eq!(
+            parsed.memory.used_kib,
+            (536_870_912u64 - 441_466_880) / 1024
+        );
+        // Disk is the single RouterOS store, mounted as "/".
+        assert_eq!(parsed.disks.len(), 1);
+        assert_eq!(parsed.disks[0].mount_point, "/");
+        assert_eq!(parsed.disks[0].total_kib, 134_217_728 / 1024);
+        // Aggregate interface counters feed the throughput delta.
+        assert_eq!(parsed.network.rx_bytes, 218_404_270);
+        assert_eq!(parsed.network.tx_bytes, 82_010_202);
+        // RouterOS has no load average.
+        assert_eq!(parsed.load_average, LoadAverage::default());
+    }
+
+    #[test]
+    fn test_parse_routeros_metrics_cpu_under_load() {
+        let output = "\
+---RUSTCONN_ROS_METRICS---
+37
+100000000
+536870912
+103944192
+134217728
+10 20
+---RUSTCONN_ROS_END---
+";
+        let parsed = MetricsParser::parse_routeros(output).unwrap();
+        assert_eq!(parsed.cpu_percent_direct, Some(37.0));
+    }
+
+    #[test]
+    fn test_parse_routeros_metrics_missing_section_is_an_error() {
+        assert!(MetricsParser::parse_routeros("nothing here").is_err());
+    }
+
+    #[test]
+    fn test_parse_system_info_routeros() {
+        let output = "\
+---RUSTCONN_ROS_SYSINFO---
+7.24.5 (stable)
+hAP ax S
+arm
+2
+536870912
+6d11:05:54
+hAP
+---RUSTCONN_ROS_SYSINFO_END---
+";
+        let info = MetricsParser::parse_system_info_routeros(output).unwrap();
+        assert_eq!(info.distro_name, "RouterOS 7.24.5 (stable) (hAP ax S)");
+        assert_eq!(info.kernel_version, "7.24.5 (stable)");
+        assert_eq!(info.arch, "arm");
+        assert_eq!(info.cpu_cores, 2);
+        assert_eq!(info.cpu_threads, 2);
+        assert_eq!(info.total_ram_kib, 536_870_912 / 1024);
+        assert_eq!(info.hostname, "hAP");
+        // 6d 11h 05m 54s = 6*86400 + 11*3600 + 5*60 + 54.
+        assert_eq!(info.uptime_secs, 6 * 86_400 + 11 * 3_600 + 5 * 60 + 54);
+    }
+
+    #[test]
+    fn test_routeros_uptime_formats() {
+        assert_eq!(
+            MetricsParser::parse_routeros_uptime("6d11:05:54"),
+            6 * 86_400 + 11 * 3_600 + 5 * 60 + 54
+        );
+        assert_eq!(
+            MetricsParser::parse_routeros_uptime("1w2d3h4m5s"),
+            604_800 + 2 * 86_400 + 3 * 3_600 + 4 * 60 + 5
+        );
+        assert_eq!(MetricsParser::parse_routeros_uptime("45m"), 45 * 60);
+        assert_eq!(MetricsParser::parse_routeros_uptime(""), 0);
     }
 }

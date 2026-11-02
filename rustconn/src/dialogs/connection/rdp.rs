@@ -40,6 +40,7 @@ pub(super) fn create_rdp_options() -> (
     DropDown,
     DropDown,
     DropDown,
+    DropDown,
     adw::SwitchRow,
     Entry,
     SpinButton,
@@ -325,6 +326,29 @@ pub(super) fn create_rdp_options() -> (
         .build();
     audio_row.add_suffix(&audio_mode_dropdown);
     features_group.add(&audio_row);
+
+    // Server OS. The embedded viewer's toolbar carries Windows admin consoles
+    // and PowerShell/CMD launchers that do nothing on a Linux RDP server, so a
+    // Linux hint hides them (issue #366). Auto keeps them, as RustConn always has.
+    let server_os_items: Vec<String> = rustconn_core::models::RdpServerOs::all()
+        .iter()
+        .map(|m| i18n(m.display_name()))
+        .collect();
+    let server_os_strs: Vec<&str> = server_os_items.iter().map(String::as_str).collect();
+    let server_os_list = StringList::new(&server_os_strs);
+    let server_os_dropdown = DropDown::builder()
+        .model(&server_os_list)
+        .valign(gtk4::Align::Center)
+        .build();
+    server_os_dropdown.set_selected(rustconn_core::models::RdpServerOs::default().index());
+    let server_os_row = adw::ActionRow::builder()
+        .title(i18n("Server OS"))
+        .subtitle(i18n(
+            "Hide the Windows admin tools when the server runs Linux",
+        ))
+        .build();
+    server_os_row.add_suffix(&server_os_dropdown);
+    features_group.add(&server_os_row);
 
     // Printer redirection
     let printer_check = adw::SwitchRow::builder()
@@ -993,6 +1017,7 @@ pub(super) fn create_rdp_options() -> (
         color_dropdown,
         scale_override_dropdown,
         audio_mode_dropdown,
+        server_os_dropdown,
         printer_check,
         gateway_entry,
         gateway_port_spin,

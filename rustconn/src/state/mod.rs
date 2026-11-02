@@ -2388,6 +2388,17 @@ where
             && let Some(state) = state_weak.upgrade()
         {
             cache_resolved_credentials(&state, connection_id, protocol, creds);
+            // A Resolved result from the Bitwarden backend means the vault is now
+            // unlocked; the "vault is locked" launch banner would otherwise stay
+            // up until a Settings save. Re-probe so it clears. Gated to Bitwarden
+            // because the other backends do not show that unlock-at-connect
+            // banner and the probe spawns `bw` children.
+            if state.try_borrow().is_ok_and(|s| {
+                s.settings().secrets.preferred_backend
+                    == rustconn_core::config::SecretBackendType::Bitwarden
+            }) {
+                crate::app::recheck_secret_backend_on_active_window();
+            }
         }
         callback(result);
     });

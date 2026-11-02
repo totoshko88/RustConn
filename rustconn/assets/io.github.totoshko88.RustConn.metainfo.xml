@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.5" date="2026-11-02">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.5</url>
+      <description>
+        <p>Version 0.24.5 - a faster Bitwarden backend, MikroTik RouterOS monitoring, and a per-connection RDP Server OS choice:</p>
+        <ul>
+          <li>Bitwarden can keep one bw serve process running for the session, so a credential lookup takes about a second instead of several; it falls back to one bw per call automatically and shuts down when the vault is locked.</li>
+          <li>Remote monitoring supports MikroTik RouterOS, detected automatically, and works on OpenWrt and other BusyBox-based hosts (#405, #406).</li>
+          <li>The RDP connection editor gains a Server OS choice; setting it to Linux hides the Windows-only Quick Actions and Scripts toolbar menus (#366).</li>
+          <li>Imported passwords are stored in the selected password backend, and the Bitwarden locked banner clears after unlocking through a connection.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.4" date="2026-11-01">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.4</url>
       <description>

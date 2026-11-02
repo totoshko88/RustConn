@@ -742,11 +742,20 @@ pub fn ssh_exec_factory(
                         String::from_utf8(output.stdout)
                             .map_err(|e| format!("Invalid UTF-8 in SSH output: {e}"))
                     } else {
+                        // A non-zero exit still carries diagnostic output, and for
+                        // RouterOS the signal the collector keys on ("bad command
+                        // name") is printed to STDOUT, not stderr — its console
+                        // exits non-zero for every Linux command. Include both so
+                        // the collector can detect RouterOS from the error, and a
+                        // real Linux failure is easier to read. (See
+                        // `looks_like_routeros` and the collector's OS detection.)
                         let stderr = String::from_utf8_lossy(&output.stderr);
+                        let stdout = String::from_utf8_lossy(&output.stdout);
                         Err(format!(
-                            "SSH command failed (exit {}): {}",
+                            "SSH command failed (exit {}): {} {}",
                             output.status,
-                            stderr.trim()
+                            stderr.trim(),
+                            stdout.trim()
                         ))
                     }
                 }

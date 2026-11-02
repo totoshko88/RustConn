@@ -69,11 +69,13 @@ impl MetricsComputer {
     pub fn compute(&mut self, parsed: &ParsedMetrics) -> RemoteMetrics {
         let now = std::time::Instant::now();
 
-        // CPU: delta between two snapshots
-        let cpu_percent = self
-            .cpu
-            .as_ref()
-            .map_or(0.0, |prev| parsed.cpu.cpu_percent_since(prev));
+        // CPU: a source that reports a percentage directly (RouterOS) uses it
+        // as-is; otherwise it is the delta between two `/proc/stat` snapshots.
+        let cpu_percent = parsed.cpu_percent_direct.unwrap_or_else(|| {
+            self.cpu
+                .as_ref()
+                .map_or(0.0, |prev| parsed.cpu.cpu_percent_since(prev))
+        });
 
         // Network: bytes/sec from delta
         let network =
@@ -166,11 +168,18 @@ where
     let command = super::parser::METRICS_COMMAND.to_string();
     let sysinfo_command = super::parser::SYSTEM_INFO_COMMAND.to_string();
 
+    let ros_command = super::parser::ROUTEROS_METRICS_COMMAND.to_string();
+    let ros_sysinfo_command = super::parser::ROUTEROS_SYSINFO_COMMAND.to_string();
+
     tokio::spawn(async move {
         let mut computer = MetricsComputer::new();
         let mut ticker = tokio::time::interval(interval);
         let mut sysinfo_fetched = false;
         let mut consecutive_errors: u32 = 0;
+        // Default to Linux; flipped to RouterOS the first time the Linux metrics
+        // command comes back as "bad command name" (RouterOS' own console). Once
+        // detected it sticks for the session, so the probe cost is paid once.
+        let mut remote_os = super::metrics::RemoteOsType::Linux;
 
         loop {
             tokio::select! {
@@ -179,8 +188,11 @@ where
                     break;
                 }
                 _ = ticker.tick() => {
-                    // Fetch static system info once on first tick
-                    if !sysinfo_fetched {
+                    // Fetch static system info once on first tick, using whichever
+                    // command set matches the detected OS. On the first tick the OS
+                    // may still be Linux-by-default; if detection later flips it to
+                    // RouterOS, sysinfo is re-fetched with the RouterOS command.
+                    if !sysinfo_fetched && remote_os == super::metrics::RemoteOsType::Linux {
                         sysinfo_fetched = true;
                         if let Ok(output) = exec_command(sysinfo_command.clone()).await
                             && let Ok(info) = MetricsParser::parse_system_info(&output)
@@ -191,9 +203,44 @@ where
                         }
                     }
 
-                    match exec_command(command.clone()).await {
+                    let metrics_cmd = if remote_os == super::metrics::RemoteOsType::RouterOs {
+                        ros_command.clone()
+                    } else {
+                        command.clone()
+                    };
+                    match exec_command(metrics_cmd).await {
                         Ok(output) => {
-                            match MetricsParser::parse(&output) {
+                            // RouterOS detection: the Linux command returns
+                            // "bad command name". Switch the command set, fetch
+                            // RouterOS sysinfo, and parse this tick as RouterOS.
+                            if remote_os == super::metrics::RemoteOsType::Linux
+                                && super::parser::looks_like_routeros(&output)
+                            {
+                                remote_os = super::metrics::RemoteOsType::RouterOs;
+                                tracing::info!("Remote monitoring: detected RouterOS, switching command set");
+                                if let Ok(si) = exec_command(ros_sysinfo_command.clone()).await
+                                    && let Ok(info) = MetricsParser::parse_system_info_routeros(&si)
+                                {
+                                    sysinfo_fetched = true;
+                                    let _ = event_tx.send(MetricsEvent::SystemInfoReady(info)).await;
+                                }
+                            }
+                            let parse_result = if remote_os == super::metrics::RemoteOsType::RouterOs {
+                                // Re-fetch via the RouterOS command when we only
+                                // just switched (this tick's output is the Linux
+                                // probe's error), otherwise parse it directly.
+                                if super::parser::looks_like_routeros(&output) {
+                                    match exec_command(ros_command.clone()).await {
+                                        Ok(ros_out) => MetricsParser::parse_routeros(&ros_out),
+                                        Err(e) => Err(MonitoringError::ParseError(e)),
+                                    }
+                                } else {
+                                    MetricsParser::parse_routeros(&output)
+                                }
+                            } else {
+                                MetricsParser::parse(&output)
+                            };
+                            match parse_result {
                                 Ok(parsed) => {
                                     consecutive_errors = 0;
                                     let metrics = computer.compute(&parsed);
@@ -236,6 +283,39 @@ where
                             }
                         }
                         Err(err) => {
+                            // RouterOS detection on the ERROR path: its console
+                            // exits non-zero for every Linux command, so the
+                            // "bad command name" signal arrives here, not as an
+                            // Ok(output). Switch the command set, fetch RouterOS
+                            // sysinfo, run the RouterOS metrics command once now,
+                            // and do NOT count this probe as a failure.
+                            // RouterOS detection on the ERROR path: its console
+                            // exits non-zero for every Linux command, so the
+                            // signal arrives here, not as an Ok(output). The
+                            // error text is only a hint; CONFIRM by running the
+                            // RouterOS metrics command and requiring it to parse
+                            // before switching, so a real Linux host that merely
+                            // lacks one tool is never mistaken for RouterOS.
+                            if remote_os == super::metrics::RemoteOsType::Linux
+                                && super::parser::looks_like_routeros(&err)
+                                && let Ok(ros_out) = exec_command(ros_command.clone()).await
+                                && let Ok(parsed) = MetricsParser::parse_routeros(&ros_out)
+                            {
+                                remote_os = super::metrics::RemoteOsType::RouterOs;
+                                tracing::info!("Remote monitoring: detected RouterOS, switching command set");
+                                if let Ok(si) = exec_command(ros_sysinfo_command.clone()).await
+                                    && let Ok(info) = MetricsParser::parse_system_info_routeros(&si)
+                                {
+                                    sysinfo_fetched = true;
+                                    let _ = event_tx.send(MetricsEvent::SystemInfoReady(info)).await;
+                                }
+                                consecutive_errors = 0;
+                                let metrics = computer.compute(&parsed);
+                                if event_tx.send(MetricsEvent::Update(metrics)).await.is_err() {
+                                    break;
+                                }
+                                continue;
+                            }
                             consecutive_errors += 1;
                             tracing::debug!(
                                 error = %err,
@@ -309,6 +389,7 @@ mod tests {
             }],
             load_average: LoadAverage::default(),
             os_type: RemoteOsType::Linux,
+            cpu_percent_direct: None,
         };
 
         let metrics = computer.compute(&parsed);
@@ -356,6 +437,7 @@ mod tests {
             }],
             load_average: LoadAverage::default(),
             os_type: RemoteOsType::Linux,
+            cpu_percent_direct: None,
         };
         let _ = computer.compute(&parsed1);
 
@@ -392,6 +474,7 @@ mod tests {
             }],
             load_average: LoadAverage::default(),
             os_type: RemoteOsType::Linux,
+            cpu_percent_direct: None,
         };
         let metrics = computer.compute(&parsed2);
 
@@ -431,6 +514,7 @@ mod tests {
             }],
             load_average: LoadAverage::default(),
             os_type: RemoteOsType::Linux,
+            cpu_percent_direct: None,
         };
         let _ = computer.compute(&parsed);
         assert!(computer.cpu.is_some());

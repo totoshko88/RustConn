@@ -899,6 +899,10 @@ impl super::EmbeddedRdpWidget {
         // Store configuration
         *self.config.borrow_mut() = Some(config.clone());
 
+        // Tailor the toolbar to the server OS: a Linux server hides the
+        // Windows-only admin tools and shell launchers (issue #366).
+        self.apply_server_os(config.server_os);
+
         // Update state
         self.set_state(RdpConnectionState::Connecting);
 

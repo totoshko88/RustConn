@@ -155,6 +155,7 @@ pub fn sample_rdp_connection_with_domain() -> Connection {
         color_depth: Some(32),
         audio_redirect: true,
         audio_mode: Some(rustconn_core::models::RdpAudioMode::Local),
+        server_os: rustconn_core::models::RdpServerOs::default(),
         printer_enabled: false,
         gateway: None,
         shared_folders: Vec::new(),

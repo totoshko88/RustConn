@@ -943,17 +943,20 @@ impl AppState {
             }
         }
 
-        // Store imported credentials using synchronous secret-tool calls.
-        // We avoid the async LibSecretBackend here because block_on inside
-        // the GTK main thread can deadlock with the D-Bus/GLib main loop
-        // that secret-tool relies on.
+        // Store imported credentials into the backend the user actually chose.
+        // This used to write to the keyring with synchronous `secret-tool` calls
+        // no matter what — so a Bitwarden/KeePass/1Password/encrypted-file user
+        // ended up with the imported passwords in a store the resolver never
+        // reads, and the connections came up blank (W4). `store_imported_
+        // credentials` routes them through the backend-aware `TransferPort` on a
+        // dedicated runtime (the same deadlock-safe pattern, no GTK/GLib loop).
         if result.has_credentials() {
-            let mut stored = 0usize;
             let total = result.credentials.len();
-
+            let mut entries: Vec<(String, rustconn_core::models::Credentials)> =
+                Vec::with_capacity(total);
             for (conn_id, creds) in &result.credentials {
                 // Build the lookup key in the same "{name} ({protocol})" format
-                // that resolve_from_keyring uses for retrieval
+                // the resolver uses for retrieval.
                 let Some(conn) = self.connection_manager.get_connection(*conn_id) else {
                     tracing::warn!(
                         connection_id = %conn_id,
@@ -966,26 +969,19 @@ impl AppState {
                     &conn.name.trim().replace('/', "-"),
                 );
                 let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
-
-                match Self::store_credential_sync(&lookup_key, creds) {
-                    Ok(()) => {
-                        stored += 1;
-                        tracing::debug!(lookup_key, "Stored imported credential");
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            lookup_key,
-                            error = %e,
-                            "Failed to store imported credential"
-                        );
-                    }
-                }
+                entries.push((lookup_key, creds.clone()));
             }
 
-            if stored == total {
-                tracing::info!("Stored {stored} imported credential(s)");
-            } else {
-                tracing::warn!("Stored {stored}/{total} imported credential(s)");
+            match crate::vault_ops::store_imported_credentials(self.settings(), &entries) {
+                Ok((stored, _)) if stored == total => {
+                    tracing::info!("Stored {stored} imported credential(s)");
+                }
+                Ok((stored, total)) => {
+                    tracing::warn!("Stored {stored}/{total} imported credential(s)");
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Could not store imported credentials");
+                }
             }
         }
 
@@ -1010,83 +1006,5 @@ impl AppState {
         }
 
         Ok(imported)
-    }
-
-    /// Stores a single credential field via synchronous `secret-tool store`.
-    ///
-    /// Uses `std::process::Command` instead of the async `LibSecretBackend`
-    /// to avoid deadlocks when `block_on` is called on the GTK main thread
-    /// (the D-Bus calls that `secret-tool` makes can re-enter the GLib main
-    /// loop, which is blocked by the tokio runtime).
-    fn store_secret_tool_sync(
-        lookup_key: &str,
-        key: &str,
-        value: &str,
-        label: &str,
-    ) -> Result<(), String> {
-        use std::io::Write;
-        use std::process::{Command, Stdio};
-
-        let mut child = Command::new("secret-tool")
-            .args([
-                "store",
-                "--label",
-                label,
-                "application",
-                "rustconn",
-                "connection_id",
-                lookup_key,
-                "key",
-                key,
-            ])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| format!("Failed to spawn secret-tool: {e}"))?;
-
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin
-                .write_all(value.as_bytes())
-                .map_err(|e| format!("Failed to write secret: {e}"))?;
-        }
-        // stdin is closed here (dropped), signalling EOF to secret-tool
-
-        let output = child
-            .wait_with_output()
-            .map_err(|e| format!("Failed to wait for secret-tool: {e}"))?;
-
-        if output.status.success() {
-            Ok(())
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            Err(format!("secret-tool store failed: {stderr}"))
-        }
-    }
-
-    /// Stores credentials for an imported connection using synchronous I/O.
-    fn store_credential_sync(
-        lookup_key: &str,
-        creds: &rustconn_core::models::Credentials,
-    ) -> Result<(), String> {
-        let label = format!("RustConn: {lookup_key}");
-
-        if let Some(username) = &creds.username {
-            Self::store_secret_tool_sync(lookup_key, "username", username, &label)?;
-        }
-
-        if let Some(password) = creds.expose_password() {
-            Self::store_secret_tool_sync(lookup_key, "password", password, &label)?;
-        }
-
-        if let Some(passphrase) = creds.expose_key_passphrase() {
-            Self::store_secret_tool_sync(lookup_key, "key_passphrase", passphrase, &label)?;
-        }
-
-        if let Some(domain) = &creds.domain {
-            Self::store_secret_tool_sync(lookup_key, "domain", domain, &label)?;
-        }
-
-        Ok(())
     }
 }

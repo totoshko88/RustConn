@@ -543,6 +543,7 @@ fn start_embedded_rdp_session(
     // dialog and then never read at connect time, so every session silently
     // ran with audio disabled (issue #245).
     embedded_config = embedded_config.with_audio_mode(rdp_config.effective_audio_mode());
+    embedded_config = embedded_config.with_server_os(rdp_config.server_os);
 
     // Pass keyboard layout override if configured
     embedded_config.keyboard_layout = rdp_config.keyboard_layout;

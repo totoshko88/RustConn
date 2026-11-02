@@ -177,6 +177,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 // None exercises the legacy-bool fallback in
                 // effective_audio_mode(), which is what old profiles hit.
                 audio_mode: None,
+                server_os: rustconn_core::models::RdpServerOs::default(),
                 printer_enabled: false,
                 gateway,
                 shared_folders: Vec::new(),

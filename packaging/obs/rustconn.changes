@@ -1,4 +1,25 @@
 -------------------------------------------------------------------
+Mon Nov 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.5
+
+- Version bump to 0.24.5
+- Added: optional persistent Bitwarden CLI; a "Keep the CLI running (faster)"
+  switch keeps one bw serve process for the session, with automatic fallback
+  to one bw per call and shutdown on lock or logout
+- Added: remote monitoring supports MikroTik RouterOS, detected automatically
+  (/system resource and /interface counters; load average shows as N/A)
+- Added: per-connection RDP Server OS choice; Linux hides the Windows-only
+  Quick Actions and Scripts toolbar menus (#366)
+- Fixed: the "Bitwarden vault is locked" banner clears after unlocking
+  through a connection
+- Fixed: imported passwords are stored in the selected password backend
+  instead of always the system keyring
+- Fixed: remote monitoring works on OpenWrt and other BusyBox hosts
+  (#405, #406, contributed by @shafiev)
+- Dependencies: aes 0.9.3→0.9.4, cc 1.10.0→1.11.0, crc32fast 1.5.3→1.5.4,
+  ctutils 0.4.7→0.4.8, openssl 0.10.81→0.10.82, openssl-sys 0.9.117→0.9.118,
+  unicode-script 0.5.8→0.5.9, zip 9.2.0→9.2.2
+
+-------------------------------------------------------------------
 Sun Nov 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.4
 
 - Version bump to 0.24.4

@@ -189,6 +189,8 @@ pub struct SecretsPageWidgets {
     pub bitwarden_read_only_row: adw::SwitchRow,
     /// Search the whole Bitwarden vault, not just the RustConn folder.
     pub bitwarden_root_search_row: adw::SwitchRow,
+    /// Keep a persistent `bw serve` process for the session (faster retrieves).
+    pub bitwarden_persistent_cli_row: adw::SwitchRow,
     /// Detected Bitwarden CLI command path (updated async)
     pub bitwarden_cmd: Rc<RefCell<String>>,
     // 1Password widgets
@@ -1319,6 +1321,14 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         ))
         .build();
     bitwarden_group.add(&bitwarden_root_search_row);
+
+    let bitwarden_persistent_cli_row = adw::SwitchRow::builder()
+        .title(i18n("Keep the CLI running (faster)"))
+        .subtitle(i18n(
+            "Keep one Bitwarden CLI process running for the session instead of starting one per lookup. Much faster, but the unlocked vault stays in the CLI's memory while unlocked. Falls back automatically on an older CLI",
+        ))
+        .build();
+    bitwarden_group.add(&bitwarden_persistent_cli_row);
 
     page.add(&bitwarden_group);
 
@@ -3022,6 +3032,7 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
         bitwarden_client_secret_entry,
         bitwarden_read_only_row,
         bitwarden_root_search_row,
+        bitwarden_persistent_cli_row,
         bitwarden_cmd,
         onepassword_group,
         onepassword_status_label,
@@ -3159,6 +3170,9 @@ pub fn load_secret_settings(widgets: &SecretsPageWidgets, settings: &SecretSetti
     widgets
         .bitwarden_root_search_row
         .set_active(settings.bitwarden_root_search);
+    widgets
+        .bitwarden_persistent_cli_row
+        .set_active(settings.bitwarden_persistent_cli);
     widgets
         .onepassword_read_only_row
         .set_active(settings.onepassword_read_only);
@@ -4005,6 +4019,7 @@ pub fn collect_secret_settings(
         // straight back when the Secrets tab had no widgets for them.
         bitwarden_read_only: widgets.bitwarden_read_only_row.is_active(),
         bitwarden_root_search: widgets.bitwarden_root_search_row.is_active(),
+        bitwarden_persistent_cli: widgets.bitwarden_persistent_cli_row.is_active(),
         onepassword_read_only: widgets.onepassword_read_only_row.is_active(),
         onepassword_root_search: widgets.onepassword_root_search_row.is_active(),
         passbolt_read_only: widgets.passbolt_read_only_row.is_active(),

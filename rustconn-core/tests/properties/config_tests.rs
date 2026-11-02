@@ -187,6 +187,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 // None exercises the legacy-bool fallback in
                 // effective_audio_mode(), which is what old profiles hit.
                 audio_mode: None,
+                server_os: rustconn_core::models::RdpServerOs::default(),
                 printer_enabled: false,
                 gateway,
                 shared_folders: Vec::new(),
@@ -453,6 +454,7 @@ fn arb_secret_settings() -> impl Strategy<Value = SecretSettings> {
                 onepassword_save_to_keyring: false,
                 bitwarden_read_only: false,
                 bitwarden_root_search: false,
+                bitwarden_persistent_cli: false,
                 onepassword_read_only: false,
                 onepassword_root_search: false,
                 passbolt_read_only: false,
@@ -566,6 +568,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         pass_store_dir: None,
                         bitwarden_read_only: false,
                         bitwarden_root_search: false,
+                        bitwarden_persistent_cli: false,
                         onepassword_read_only: false,
                         onepassword_root_search: false,
                         passbolt_read_only: false,

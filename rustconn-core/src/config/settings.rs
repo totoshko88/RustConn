@@ -498,6 +498,14 @@ pub struct SecretSettings {
     /// Widen Bitwarden reads to the whole vault, not just the RustConn scope.
     #[serde(default)]
     pub bitwarden_root_search: bool,
+    /// Keep a persistent `bw serve` process for the session instead of spawning
+    /// one `bw` per vault operation. Faster (the unlocked vault stays in memory
+    /// and answers over a local loopback socket) but holds the decrypted vault
+    /// in the CLI process for the whole unlocked session. Falls back to
+    /// spawn-per-call automatically when the CLI is too old or the transport
+    /// fails. Default false (feature `bitwarden-serve`). See W2.
+    #[serde(default)]
+    pub bitwarden_persistent_cli: bool,
     /// Open the 1Password backend read-only (refuses writes). Default false.
     #[serde(default)]
     pub onepassword_read_only: bool,
@@ -645,6 +653,7 @@ impl std::fmt::Debug for SecretSettings {
             .field("pass_store_dir", &self.pass_store_dir)
             .field("bitwarden_read_only", &self.bitwarden_read_only)
             .field("bitwarden_root_search", &self.bitwarden_root_search)
+            .field("bitwarden_persistent_cli", &self.bitwarden_persistent_cli)
             .field("onepassword_read_only", &self.onepassword_read_only)
             .field("onepassword_root_search", &self.onepassword_root_search)
             .field("passbolt_read_only", &self.passbolt_read_only)
@@ -697,6 +706,7 @@ impl Default for SecretSettings {
             pass_store_dir: None,
             bitwarden_read_only: false,
             bitwarden_root_search: false,
+            bitwarden_persistent_cli: false,
             onepassword_read_only: false,
             onepassword_root_search: false,
             passbolt_read_only: false,
@@ -739,6 +749,7 @@ impl PartialEq for SecretSettings {
             && self.pass_store_dir == other.pass_store_dir
             && self.bitwarden_read_only == other.bitwarden_read_only
             && self.bitwarden_root_search == other.bitwarden_root_search
+            && self.bitwarden_persistent_cli == other.bitwarden_persistent_cli
             && self.onepassword_read_only == other.onepassword_read_only
             && self.onepassword_root_search == other.onepassword_root_search
             && self.passbolt_read_only == other.passbolt_read_only
@@ -2608,6 +2619,7 @@ mod tests {
 
         assert_toggle_distinguishes!(bitwarden_read_only);
         assert_toggle_distinguishes!(bitwarden_root_search);
+        assert_toggle_distinguishes!(bitwarden_persistent_cli);
         assert_toggle_distinguishes!(onepassword_read_only);
         assert_toggle_distinguishes!(onepassword_root_search);
         assert_toggle_distinguishes!(passbolt_read_only);

@@ -128,6 +128,111 @@ static BW_UNLOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 /// must sync regardless of the TTL.
 static BW_SYNC: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
+/// The persistent `bw serve` transport (feature `bitwarden-serve`, W2 P3).
+///
+/// Holds the running serve child once started, and a `disabled` latch set when
+/// the transport failed and the session fell back to one-shot spawns. Behind a
+/// tokio mutex because [`BitwardenBackend::run_command_inner`] holds it across
+/// the HTTP await, and because one serve child serves the whole process (the
+/// GUI already serializes vault ops under `VAULT_OP_LOCK`, and `bw serve` itself
+/// races under concurrent writes — bitwarden/clients#20951).
+#[cfg(feature = "bitwarden-serve")]
+static BW_SERVE: tokio::sync::Mutex<ServeManager> =
+    tokio::sync::Mutex::const_new(ServeManager::new());
+
+/// Whether the serve transport is PREFERRED. Off by default: the backend keeps
+/// spawning one `bw` per call until the maintainer opts in (Settings → Secrets,
+/// `bitwarden_persistent_cli`). Separate from [`BW_SERVE`] so the preference can
+/// be read without taking the child's lock.
+#[cfg(feature = "bitwarden-serve")]
+static BW_SERVE_PREFERRED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Set whenever the in-process session key changes out of band (a spawn-path
+/// `bw unlock`, or a clear on lock/logout). A running serve child came up with
+/// the *previous* session — or none — and keeps its own lock state in the Node
+/// process's memory, which does not pick up a `BW_SESSION` that appears after it
+/// started. So an unlock done outside serve leaves the serve child still locked,
+/// and its next data op fails with "Vault is locked" (seen in a real run before
+/// the one-shot respawn recovered it). This flag makes the next serve op respawn
+/// the child with the current session *before* the op, turning that recovered
+/// failure into a clean start. `AtomicBool` because [`set_session_key`] /
+/// [`clear_session_key`] are sync and cannot take the async [`BW_SERVE`] lock.
+#[cfg(feature = "bitwarden-serve")]
+static BW_SERVE_STALE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Marks the running serve child stale so the next serve op respawns it with the
+/// current session. A no-op without the feature.
+#[cfg(feature = "bitwarden-serve")]
+fn mark_serve_session_stale() {
+    BW_SERVE_STALE.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+#[cfg(not(feature = "bitwarden-serve"))]
+const fn mark_serve_session_stale() {}
+
+/// The process-wide serve child plus the session fallback latch.
+#[cfg(feature = "bitwarden-serve")]
+struct ServeManager {
+    process: Option<super::bitwarden_serve::ServeProcess>,
+    /// Set once a serve failure made the session fall back to spawns; stays set
+    /// until a lock/logout/rebuild clears it, so a dead CLI is not retried on
+    /// every call.
+    disabled: bool,
+}
+
+#[cfg(feature = "bitwarden-serve")]
+impl ServeManager {
+    const fn new() -> Self {
+        Self {
+            process: None,
+            disabled: false,
+        }
+    }
+}
+
+/// Turns the preferred serve transport on or off (Settings → Secrets toggle).
+///
+/// Turning it off also shuts any running child down on the next lock/rebuild;
+/// turning it on lets the next vault op start one lazily.
+#[cfg(feature = "bitwarden-serve")]
+pub fn set_serve_preferred(preferred: bool) {
+    BW_SERVE_PREFERRED.store(preferred, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Whether the serve transport is currently preferred.
+#[cfg(feature = "bitwarden-serve")]
+#[must_use]
+pub fn is_serve_preferred() -> bool {
+    BW_SERVE_PREFERRED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Shuts down any running serve child and clears the session fallback latch.
+///
+/// Called on lock, logout, backend rebuild and settings changes: the next vault
+/// op then starts a fresh child (if still preferred) with the current session.
+#[cfg(feature = "bitwarden-serve")]
+pub async fn shutdown_serve() {
+    let mut guard = BW_SERVE.lock().await;
+    guard.disabled = false;
+    BW_SERVE_STALE.store(false, std::sync::atomic::Ordering::Relaxed);
+    if let Some(process) = guard.process.take() {
+        process.shutdown().await;
+    }
+}
+
+/// No-op stand-ins so call sites do not need `#[cfg]` around every use.
+#[cfg(not(feature = "bitwarden-serve"))]
+pub fn set_serve_preferred(_preferred: bool) {}
+/// Always false without the feature.
+#[cfg(not(feature = "bitwarden-serve"))]
+#[must_use]
+pub const fn is_serve_preferred() -> bool {
+    false
+}
+/// Nothing to shut down without the feature.
+#[cfg(not(feature = "bitwarden-serve"))]
+pub async fn shutdown_serve() {}
+
 /// Ceiling on a single `bw` invocation.
 ///
 /// One number for "one child process", so the guarantee is the same wherever a
@@ -209,6 +314,9 @@ pub fn set_session_key(key: SecretString) {
     if let Ok(mut guard) = BW_SESSION_STORE.write() {
         *guard = Some(key);
     }
+    // A serve child started before this unlock is still locked (it does not see
+    // a BW_SESSION that appears after it spawned); respawn it on the next op.
+    mark_serve_session_stale();
 }
 
 /// Retrieves the Bitwarden session key from thread-safe in-process storage.
@@ -236,6 +344,9 @@ pub fn clear_session_key() {
         *guard = None;
     }
     clear_verified();
+    // The serve child now holds a session we no longer trust; respawn it on the
+    // next op (lock_vault/logout also shut it down outright).
+    mark_serve_session_stale();
 }
 
 /// Clears every process-global Bitwarden unlock mark: the session key, the
@@ -712,6 +823,16 @@ impl BitwardenBackend {
             "Bitwarden run_command"
         );
 
+        // Serve transport first, when preferred. On any serve-side failure the
+        // call falls through to the one-shot spawn path below, so a wedged or
+        // too-old CLI never blocks an operation — it only loses the speed-up.
+        #[cfg(feature = "bitwarden-serve")]
+        if is_serve_preferred()
+            && let Some(result) = self.try_serve(args, input, &verb).await
+        {
+            return result;
+        }
+
         // Timeout prevents hanging when Bitwarden CLI stalls on network
         // requests (e.g. expired session triggers a sync attempt that blocks).
         let mut cmd = self.build_command(args);
@@ -763,6 +884,107 @@ impl BitwardenBackend {
             "Bitwarden run_command: success"
         );
         Ok(stdout)
+    }
+
+    /// Runs `args` over the persistent `bw serve` transport when it is preferred
+    /// and healthy.
+    ///
+    /// Returns:
+    /// - `None` — the caller must fall back to a one-shot spawn: the verb is not
+    ///   one the transport maps, the transport is disabled for this session, a
+    ///   serve child could not be started, or the operation failed even after a
+    ///   one-shot respawn. The fallback keeps the operation working; it only
+    ///   loses the speed-up.
+    /// - `Some(Ok(stdout))` / `Some(Err(_))` — the transport handled the verb
+    ///   and this is its result, shaped like the spawn path's stdout.
+    ///
+    /// The child is started lazily with the current session key so it comes up
+    /// unlocked. One serve process serves the whole backend; a transport error
+    /// triggers exactly one respawn-and-retry before the session latches back to
+    /// spawns, so a wedged CLI is not retried on every call
+    /// (`bw serve` can race under load — bitwarden/clients#20951).
+    #[cfg(feature = "bitwarden-serve")]
+    async fn try_serve(
+        &self,
+        args: &[&str],
+        input: Option<&[u8]>,
+        verb: &str,
+    ) -> Option<SecretResult<String>> {
+        // Don't even reserve the lock for a verb the transport cannot map.
+        if !super::bitwarden_serve::is_supported_verb(args) {
+            return None;
+        }
+
+        let mut manager = BW_SERVE.lock().await;
+        if manager.disabled {
+            return None;
+        }
+
+        let session = self.session_key.clone().or_else(get_session_key);
+        let bw_cmd = self.bw_cmd.clone();
+
+        // If the session changed out of band since the child started (a
+        // spawn-path unlock, or a clear), the running child is still on the old
+        // lock state: drop it so the lazy start below brings up a fresh one with
+        // the current session. Clearing the flag first means a concurrent change
+        // still re-trips it.
+        if BW_SERVE_STALE.swap(false, std::sync::atomic::Ordering::Relaxed)
+            && let Some(stale) = manager.process.take()
+        {
+            tracing::debug!(%verb, "Bitwarden serve: session changed, respawning with the current session");
+            stale.shutdown().await;
+        }
+
+        // Ensure a child exists (lazy start with the current session).
+        if manager.process.is_none() {
+            match super::bitwarden_serve::ServeProcess::spawn(&bw_cmd, session.as_ref()).await {
+                Ok(process) => manager.process = Some(process),
+                Err(e) => {
+                    tracing::warn!(%verb, error = %e, "Bitwarden serve: spawn failed, falling back to spawn-per-call");
+                    manager.disabled = true;
+                    return None;
+                }
+            }
+        }
+
+        // First attempt.
+        let first = {
+            let process = manager.process.as_ref()?;
+            process.run_cli(args, input).await
+        };
+        match first {
+            Ok(out) => {
+                tracing::debug!(%verb, transport = "serve", output_len = out.len(), "Bitwarden serve: ok");
+                return Some(Ok(out));
+            }
+            Err(e) => {
+                tracing::warn!(%verb, error = %e, "Bitwarden serve: request failed, respawning once");
+            }
+        }
+
+        // One-shot respawn, then retry the same op.
+        if let Some(dead) = manager.process.take() {
+            dead.shutdown().await;
+        }
+        match super::bitwarden_serve::ServeProcess::spawn(&bw_cmd, session.as_ref()).await {
+            Ok(process) => {
+                let retry = process.run_cli(args, input).await;
+                manager.process = Some(process);
+                match retry {
+                    Ok(out) => Some(Ok(out)),
+                    Err(e) => {
+                        tracing::warn!(%verb, error = %e, "Bitwarden serve: retry failed, falling back to spawn for the rest of the session");
+                        manager.disabled = true;
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!(%verb, error = %e, "Bitwarden serve: respawn failed, falling back to spawn");
+                manager.disabled = true;
+                None
+            }
+        }
     }
 
     /// Gets the vault status
@@ -1869,6 +2091,10 @@ fn extract_session_key(output: &str) -> Option<String> {
 pub async fn lock_vault() -> SecretResult<()> {
     clear_verified();
     clear_session_key();
+    // Drop any persistent serve child: it holds the unlocked vault in its own
+    // memory, so killing it is the lock for the serve transport. The external
+    // `bw lock` below still runs for the CLI's own on-disk session state.
+    shutdown_serve().await;
     let bw_cmd = get_bw_cmd();
     // Bounded like every other bw invocation: `lock` can trigger a network sync
     // that stalls, and this is awaited from the GUI's teardown path.
@@ -1950,6 +2176,9 @@ pub async fn login_with_api_key(
 /// Returns `SecretError` if logout fails
 pub async fn logout() -> SecretResult<()> {
     clear_verified();
+    // A persistent serve child outlives a logout otherwise, still holding the
+    // vault; drop it first.
+    shutdown_serve().await;
     let bw_cmd = get_bw_cmd();
     // Bounded like the others: `logout` can attempt a final server round-trip.
     let output = tokio::time::timeout(
@@ -2231,6 +2460,13 @@ pub async fn auto_unlock(
     // Times the whole unlock to "vault ready" — the 0.24 target of ≤ 4 s starts
     // here. Off unless `RUST_LOG=rustconn::perf=info`; see `tracing::perf`.
     let _perf = crate::tracing::perf::PerfSpan::new("vault.unlock", "bitwarden");
+
+    // Apply the persistent-CLI preference from the current settings. This is the
+    // one choke point every startup and connect unlock passes through, so saving
+    // the Settings → Secrets toggle and reconnecting is enough to switch the
+    // transport; a toggle turned off also means the next lock/rebuild tears the
+    // serve child down (see `set_serve_preferred` / `shutdown_serve`).
+    set_serve_preferred(settings.bitwarden_persistent_cli);
 
     // One unlock at a time, process-wide. The GUI's startup unlock runs on a
     // thread of its own, outside the vault-op lock, so a connect made while it
@@ -2705,9 +2941,22 @@ mod unlock_tests {
                 ..BitwardenBackend::with_session(SecretString::from("test-session"))
                     .with_root_search(root_search)
             };
-            let found = runtime
-                .block_on(backend.find_item_with_aliases(id, &["host.example"]))
-                .expect("lookup through the stub bw");
+            // ETXTBSY race: a just-written, just-chmod-executable stub can still
+            // be held open for write under parallel test load, so the exec here
+            // intermittently fails with "Text file busy". That is a test-harness
+            // artefact, not a backend bug (the sibling `store` test retries the
+            // same way); retry the lookup a few times on exactly that error.
+            let mut attempts = 0;
+            let found = loop {
+                attempts += 1;
+                match runtime.block_on(backend.find_item_with_aliases(id, &["host.example"])) {
+                    Ok(found) => break found,
+                    Err(e) if e.to_string().contains("Text file busy") && attempts < 10 => {
+                        std::thread::sleep(std::time::Duration::from_millis(20));
+                    }
+                    Err(e) => panic!("lookup through the stub bw: {e:?}"),
+                }
+            };
             assert!(found.is_none());
 
             let argv = std::fs::read_to_string(dir.path().join("argv")).unwrap();
