@@ -103,14 +103,20 @@ pub const ROUTEROS_SYSINFO_COMMAND: &str = concat!(
     ":put \"---RUSTCONN_ROS_SYSINFO_END---\"",
 );
 
-/// Returns true when `output` is RouterOS refusing a POSIX command.
+/// Returns true when `output`/error text looks like RouterOS refusing the Linux
+/// metrics command.
 ///
-/// RouterOS answers an unknown command (every Linux metrics command) with
-/// `bad command name <x> (line N column M)`. The collector probes once with the
-/// Linux command and, on this signal, switches to the RouterOS command set.
+/// RouterOS 7 shows two shapes depending on the command: a bare command gets
+/// `bad command name <x> (line N column M)` from its console, while the
+/// `echo`-prefixed metrics pipeline (RouterOS does run `:put`/`echo`) reaches a
+/// real tool and fails with `command not found` and a non-zero exit. Either is a
+/// strong hint; the collector then confirms by running the RouterOS sysinfo
+/// command and checking it parses, so this heuristic only has to be sensitive,
+/// not perfect. A genuine Linux host never hits it: the metrics command uses
+/// `cat`/`tail`/`df`, which exist on Linux and BusyBox alike.
 #[must_use]
 pub fn looks_like_routeros(output: &str) -> bool {
-    output.contains("bad command name")
+    output.contains("bad command name") || output.contains("command not found")
 }
 
 /// Parsed raw output from a single metrics collection
@@ -980,10 +986,18 @@ ARCH=x86_64
     // ---- RouterOS (MikroTik) — captured from a live hAP ax S, RouterOS 7.24.5 ----
 
     #[test]
-    fn test_looks_like_routeros_detects_the_console_error() {
+    fn test_looks_like_routeros_detects_both_console_error_shapes() {
+        // Bare-command form (RouterOS console).
         assert!(looks_like_routeros(
             "bad command name cat (line 1 column 1)"
         ));
+        // echo-prefixed pipeline form: RouterOS runs `echo`, then fails the real
+        // tool with `command not found` and a non-zero exit — the actual error
+        // the monitoring METRICS_COMMAND produced on a live hAP ax S.
+        assert!(looks_like_routeros(
+            "SSH command failed (exit exit status: 127):  ---RUSTCONN_PROC_STAT---\nhead: command not found"
+        ));
+        // A normal Linux metrics sample is not mistaken for RouterOS.
         assert!(!looks_like_routeros("cpu  100 0 50 800 50 0 0 0 0 0"));
     }
 

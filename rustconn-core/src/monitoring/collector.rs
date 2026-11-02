@@ -283,6 +283,39 @@ where
                             }
                         }
                         Err(err) => {
+                            // RouterOS detection on the ERROR path: its console
+                            // exits non-zero for every Linux command, so the
+                            // "bad command name" signal arrives here, not as an
+                            // Ok(output). Switch the command set, fetch RouterOS
+                            // sysinfo, run the RouterOS metrics command once now,
+                            // and do NOT count this probe as a failure.
+                            // RouterOS detection on the ERROR path: its console
+                            // exits non-zero for every Linux command, so the
+                            // signal arrives here, not as an Ok(output). The
+                            // error text is only a hint; CONFIRM by running the
+                            // RouterOS metrics command and requiring it to parse
+                            // before switching, so a real Linux host that merely
+                            // lacks one tool is never mistaken for RouterOS.
+                            if remote_os == super::metrics::RemoteOsType::Linux
+                                && super::parser::looks_like_routeros(&err)
+                                && let Ok(ros_out) = exec_command(ros_command.clone()).await
+                                && let Ok(parsed) = MetricsParser::parse_routeros(&ros_out)
+                            {
+                                remote_os = super::metrics::RemoteOsType::RouterOs;
+                                tracing::info!("Remote monitoring: detected RouterOS, switching command set");
+                                if let Ok(si) = exec_command(ros_sysinfo_command.clone()).await
+                                    && let Ok(info) = MetricsParser::parse_system_info_routeros(&si)
+                                {
+                                    sysinfo_fetched = true;
+                                    let _ = event_tx.send(MetricsEvent::SystemInfoReady(info)).await;
+                                }
+                                consecutive_errors = 0;
+                                let metrics = computer.compute(&parsed);
+                                if event_tx.send(MetricsEvent::Update(metrics)).await.is_err() {
+                                    break;
+                                }
+                                continue;
+                            }
                             consecutive_errors += 1;
                             tracing::debug!(
                                 error = %err,
