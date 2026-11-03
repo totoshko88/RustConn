@@ -35,18 +35,25 @@ You are editing a file that handles credentials.
 - A key RustConn adds on its own (`SshAgentManager::add_own_key`,
   `sftp::ensure_identity_loaded`) goes in with `ssh-add -t` `OWN_KEY_LIFETIME`
   (12 h). `own_keys::add_and_record` asks the agent which identities it holds,
-  adds, asks again, and records the blobs that appeared — all on one socket
-  (for SFTP: `AGENT_INFO`, then `SSH_AUTH_SOCK`). Record what the agent
-  reports, never a blob read from a `.pub`, which may be stale.
-  `evict_own_keys` removes exactly those, one native
+  adds, asks again, and records the key once the agent shows it — all on one
+  socket (for SFTP: `AGENT_INFO`, then `SSH_AUTH_SOCK`). Record only a blob
+  read from the private key file itself (`KeyFileBlobs::key_file`), never one
+  from a `.pub`, which may be stale: a key without it (legacy PEM/PKCS#8) is
+  added but not recorded, and its lifetime is its only expiry.
+  `evict_own_keys` removes exactly the recorded ones, one native
   `SSH_AGENTC_REMOVE_IDENTITY` each to that socket, on exit, screen lock and
   suspend (`lock_events`).
-- The automatic `ssh-add` is bounded (`proc::wait_bounded`), has no stdin and
-  no host `SSH_ASKPASS`: it runs on the GTK thread.
+- The automatic `ssh-add` is bounded (`proc::wait_bounded`), has no stdin, no
+  host `SSH_ASKPASS` and `SSH_ASKPASS_REQUIRE=never` (else OpenSSH falls back
+  to its compiled-in askpass when `DISPLAY`/`WAYLAND_DISPLAY` is set): it runs
+  on the GTK thread.
 - Never touch the user's keys: no `ssh-add -D`, no `REMOVE_ALL_IDENTITIES`, no
-  re-add of a key the agent already holds. When that cannot be told (agent
-  query failed, unreadable public half with other keys present), do not add.
-  A Settings → SSH Agent "Add" is the user's (`add_key`) and un-records the key.
+  re-add of a key the agent already holds. When the agent query fails, do not
+  add (`AddKeyFailed`); when its answer cannot settle it (unreadable public
+  half with other keys present), do not add either (`KeyPresenceUnknown`,
+  `IdentityLoadError::Unverified`: the mc launch warns and goes on).
+  A Settings → SSH Agent "Add" is the user's (`add_key`) and un-records the
+  key; without the key file's own blob, every key recorded for that socket.
 
 ## New Backends
 
