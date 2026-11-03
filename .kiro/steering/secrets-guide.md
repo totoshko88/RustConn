@@ -34,12 +34,19 @@ You are editing a file that handles credentials.
   in memory for the session, and never store it in or fetch it from a vault.
 - A key RustConn adds on its own (`SshAgentManager::add_own_key`,
   `sftp::ensure_identity_loaded`) goes in with `ssh-add -t` `OWN_KEY_LIFETIME`
-  (12 h) and is recorded in `ssh_agent::own_keys`. `evict_own_keys` removes
-  exactly those, one native `SSH_AGENTC_REMOVE_IDENTITY` each to the socket the
-  add used, on exit, screen lock and suspend (`lock_events`).
+  (12 h). `own_keys::add_and_record` asks the agent which identities it holds,
+  adds, asks again, and records the blobs that appeared — all on one socket
+  (for SFTP: `AGENT_INFO`, then `SSH_AUTH_SOCK`). Record what the agent
+  reports, never a blob read from a `.pub`, which may be stale.
+  `evict_own_keys` removes exactly those, one native
+  `SSH_AGENTC_REMOVE_IDENTITY` each to that socket, on exit, screen lock and
+  suspend (`lock_events`).
+- The automatic `ssh-add` is bounded (`proc::wait_bounded`), has no stdin and
+  no host `SSH_ASKPASS`: it runs on the GTK thread.
 - Never touch the user's keys: no `ssh-add -D`, no `REMOVE_ALL_IDENTITIES`, no
-  re-add of a key the agent already holds. A Settings → SSH Agent "Add" is the
-  user's (`add_key`) and un-records the key.
+  re-add of a key the agent already holds. When that cannot be told (agent
+  query failed, unreadable public half with other keys present), do not add.
+  A Settings → SSH Agent "Add" is the user's (`add_key`) and un-records the key.
 
 ## New Backends
 
