@@ -765,13 +765,24 @@ impl MainWindow {
                         ));
                     }
                     tracing::info!(?kp, "Adding SSH key to agent for mc");
-                    if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp) {
-                        toast_clone.show_error(&format!(
-                            "{}: {}",
-                            crate::i18n::i18n("SSH key not available"),
-                            stderr
-                        ));
-                        return;
+                    match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                        Ok(()) => {}
+                        // The agent may hold the key anyway (the user loaded
+                        // it); mc finds out when it logs in.
+                        Err(rustconn_core::IdentityLoadError::Unverified(detail)) => {
+                            tracing::warn!(?kp, %detail, "opening mc without adding the SSH key");
+                            toast_clone.show_warning(&crate::i18n::i18n(
+                                "Could not check whether the SSH agent holds the key. Opening mc anyway.",
+                            ));
+                        }
+                        Err(rustconn_core::IdentityLoadError::Failed(stderr)) => {
+                            toast_clone.show_error(&format!(
+                                "{}: {}",
+                                crate::i18n::i18n("SSH key not available"),
+                                stderr
+                            ));
+                            return;
+                        }
                     }
                 }
 
@@ -2269,14 +2280,22 @@ impl MainWindow {
 
             tracing::info!(?mc_args, "SFTP connect: opening mc");
 
-            if let Some(ref kp) = key_path
-                && let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp)
-            {
-                tracing::warn!(?kp, %stderr, "ssh-add failed");
-                if let Some(sb) = sidebar {
-                    sb.update_connection_status(&connection_id.to_string(), "failed");
+            if let Some(ref kp) = key_path {
+                match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                    Ok(()) => {}
+                    // The agent may hold the key anyway; mc finds out when it
+                    // logs in.
+                    Err(rustconn_core::IdentityLoadError::Unverified(detail)) => {
+                        tracing::warn!(?kp, %detail, "opening mc without adding the SSH key");
+                    }
+                    Err(rustconn_core::IdentityLoadError::Failed(stderr)) => {
+                        tracing::warn!(?kp, %stderr, "ssh-add failed");
+                        if let Some(sb) = sidebar {
+                            sb.update_connection_status(&connection_id.to_string(), "failed");
+                        }
+                        return;
+                    }
                 }
-                return;
             }
 
             // Update sidebar status for SFTP connection

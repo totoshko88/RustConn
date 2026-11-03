@@ -67,6 +67,11 @@ pub enum AgentError {
     #[error("Failed to add key: {0}")]
     AddKeyFailed(String),
 
+    /// Whether the agent already holds the key could not be told, so it was
+    /// not added; the agent may hold it anyway
+    #[error("Cannot tell whether the agent holds the key: {0}")]
+    KeyPresenceUnknown(String),
+
     /// Failed to remove key from agent
     #[error("Failed to remove key: {0}")]
     RemoveKeyFailed(String),
@@ -503,6 +508,11 @@ mod manager_tests {
             Some(Some("/run/user/1000/rustconn-test/agent.sock".to_owned()))
         );
         assert_eq!(env("SSH_ASKPASS"), Some(None), "SSH_ASKPASS is removed");
+        assert_eq!(
+            env("SSH_ASKPASS_REQUIRE"),
+            Some(Some("never".to_owned())),
+            "no compiled-in default askpass either"
+        );
     }
 
     #[test]
@@ -835,21 +845,24 @@ impl SshAgentManager {
     /// user's, and re-adding would replace its constraints. When that cannot
     /// be told (the agent does not answer, or the key's public half is
     /// unreadable and the agent holds other keys) nothing is added. Otherwise
-    /// the key goes in with `ssh-add -t` [`OWN_KEY_LIFETIME`], and the
-    /// identities that appeared in the agent are recorded for
-    /// [`evict_own_keys`].
+    /// the key goes in with `ssh-add -t` [`OWN_KEY_LIFETIME`]. It is recorded
+    /// for [`evict_own_keys`] only when its own private key file carries its
+    /// public blob (an OpenSSH key) and the agent shows that blob after the
+    /// add; any other key is left to its lifetime.
     ///
-    /// No passphrase is taken and no askpass is offered: an encrypted key
-    /// loads only if `ssh-add` can decrypt it without asking. The `ssh-add`
-    /// run is bounded, so a caller on the GTK thread never waits on it for
-    /// more than 30 s.
+    /// No passphrase is taken and no askpass is offered
+    /// (`SSH_ASKPASS_REQUIRE=never`): an encrypted key loads only if
+    /// `ssh-add` can decrypt it without asking. The `ssh-add` run is bounded,
+    /// so a caller on the GTK thread never waits on it for more than 30 s.
     ///
     /// # Errors
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
+    /// Returns `AgentError::KeyPresenceUnknown` if the agent's answer cannot
+    /// settle whether it already holds this key (the key's public half is
+    /// unreadable and the agent holds other keys).
     /// Returns `AgentError::AddKeyFailed` if the agent cannot be asked which
-    /// keys it holds, if that question cannot settle whether it already holds
-    /// this key, or if `ssh-add` fails or times out.
+    /// keys it holds, or if `ssh-add` fails or times out.
     pub fn add_own_key(&self, key_path: &std::path::Path) -> AgentResult<()> {
         let socket_path = self
             .socket_path
@@ -1316,11 +1329,14 @@ fn ssh_add_command(
 
 /// The `ssh-add` command for a key RustConn adds on its own: the
 /// [`OWN_KEY_LIFETIME`], into the agent at `socket_path` and no other, and
-/// the host `SSH_ASKPASS` stripped, so no passphrase prompt can open (a host
-/// helper may also be missing inside the Flatpak sandbox).
+/// the host `SSH_ASKPASS` stripped (it may name a helper missing inside the
+/// Flatpak sandbox). `SSH_ASKPASS_REQUIRE=never` as well, because without a
+/// tty and with `DISPLAY` or `WAYLAND_DISPLAY` set, `ssh-add` would otherwise
+/// fall back to its compiled-in default askpass and open a passphrase prompt.
 fn own_ssh_add_command(key_path: &std::path::Path, socket_path: &str) -> std::process::Command {
     let mut cmd = ssh_add_command(key_path, socket_path, Some(OWN_KEY_LIFETIME));
-    cmd.env_remove("SSH_ASKPASS");
+    cmd.env_remove("SSH_ASKPASS")
+        .env("SSH_ASKPASS_REQUIRE", "never");
     cmd
 }
 

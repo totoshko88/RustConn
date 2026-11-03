@@ -196,26 +196,46 @@ fn pub_line_blob(line: &str) -> AgentResult<Vec<u8>> {
         .map_err(|e| AgentError::ParseError(format!("public-key base64 is invalid: {e}")))
 }
 
-/// The public-key blob of the private key at `key_path`, read without a
-/// passphrase, or `None` when it cannot be read.
-///
-/// Tries the key file itself first (an OpenSSH private key carries its public
-/// key in the clear, even when encrypted), then a sibling `<path>.pub`, the
-/// only source for a legacy PEM or PKCS#8 key. A `.pub` is not checked against
-/// the private key, so a stale one names some other key: use the blob to ask
-/// whether the agent already holds the key, never as the thing to remove (see
-/// `super::own_keys`, which records what the agent itself reports).
-pub(super) fn public_blob_for_key_path(key_path: &std::path::Path) -> Option<Vec<u8>> {
-    if let Ok(contents) = std::fs::read_to_string(key_path)
-        && detect_format(&contents) == KeyFormat::OpenSsh
-        && let Ok(blob) = decode_openssh_body(&contents).and_then(|b| openssh_public_blob(&b))
-    {
-        return Some(blob);
+/// What the files of a private key say its public-key blob is, read without a
+/// passphrase. Public material only.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(super) struct KeyFileBlobs {
+    /// From the private key file itself: an OpenSSH private key carries its
+    /// public key in the clear, even when encrypted, so this names the key
+    /// `ssh-add` loads from that file.
+    pub(super) key_file: Option<Vec<u8>>,
+    /// From a sibling `<path>.pub`, the only source for a legacy PEM or
+    /// PKCS#8 key. Not checked against the private key: a stale one names
+    /// some other key.
+    pub(super) pub_file: Option<Vec<u8>>,
+}
+
+impl KeyFileBlobs {
+    /// The best guess at the key's blob: the key file's own, else the `.pub`.
+    /// Good for asking whether the agent already holds the key; only
+    /// [`Self::key_file`] is good enough to decide what to remove.
+    pub(super) fn best(&self) -> Option<&[u8]> {
+        self.key_file.as_deref().or(self.pub_file.as_deref())
     }
+}
+
+/// Reads [`KeyFileBlobs`] for the private key at `key_path`; a source that
+/// cannot be read is `None`.
+pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
+    let key_file = std::fs::read_to_string(key_path)
+        .ok()
+        .filter(|contents| detect_format(contents) == KeyFormat::OpenSsh)
+        .and_then(|contents| {
+            decode_openssh_body(&contents)
+                .and_then(|b| openssh_public_blob(&b))
+                .ok()
+        });
     let mut pub_path = key_path.as_os_str().to_os_string();
     pub_path.push(".pub");
-    let line = std::fs::read_to_string(std::path::PathBuf::from(pub_path)).ok()?;
-    pub_line_blob(line.trim()).ok()
+    let pub_file = std::fs::read_to_string(std::path::PathBuf::from(pub_path))
+        .ok()
+        .and_then(|line| pub_line_blob(line.trim()).ok());
+    KeyFileBlobs { key_file, pub_file }
 }
 
 /// The public-key line (`<type> <base64>`, no comment) of an OpenSSH private
@@ -586,8 +606,27 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let key = dir.path().join("id_ed25519");
         std::fs::write(&key, make_openssh_key("aes256-ctr")).unwrap();
-        let blob = public_blob_for_key_path(&key).expect("blob read without a passphrase");
+        let blobs = key_file_blobs(&key);
+        let blob = blobs
+            .key_file
+            .clone()
+            .expect("blob read without a passphrase");
         assert_eq!(key_type_from_blob(&blob), "ED25519");
+        assert_eq!(blobs.pub_file, None, "no .pub beside it");
+        assert_eq!(blobs.best(), Some(blob.as_slice()));
+    }
+
+    /// A `.pub` beside an OpenSSH key is read, but the key file's own blob
+    /// is the one `best` returns, so a stale `.pub` cannot win.
+    #[test]
+    fn the_key_files_own_blob_wins_over_its_pub_sibling() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("id_ed25519");
+        std::fs::write(&key, make_openssh_key("none")).unwrap();
+        std::fs::write(dir.path().join("id_ed25519.pub"), ED25519_PUB).unwrap();
+        let blobs = key_file_blobs(&key);
+        assert!(blobs.pub_file.is_some());
+        assert_eq!(blobs.best(), blobs.key_file.as_deref());
     }
 
     #[test]
@@ -599,11 +638,13 @@ mod tests {
             "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
         )
         .unwrap();
-        assert!(public_blob_for_key_path(&key).is_none(), "no .pub yet");
+        assert_eq!(key_file_blobs(&key), KeyFileBlobs::default(), "no .pub yet");
         std::fs::write(dir.path().join("legacy_rsa.pub"), ED25519_PUB).unwrap();
-        let blob = public_blob_for_key_path(&key).expect("blob from the .pub sibling");
+        let blobs = key_file_blobs(&key);
+        assert_eq!(blobs.key_file, None, "a legacy PEM has no public section");
+        let blob = blobs.best().expect("blob from the .pub sibling");
         assert_eq!(
-            sha256_fingerprint(&blob),
+            sha256_fingerprint(blob),
             PublicKeyInfo::from_pub_line(ED25519_PUB)
                 .unwrap()
                 .fingerprint

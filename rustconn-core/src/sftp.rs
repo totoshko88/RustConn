@@ -697,25 +697,30 @@ fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Op
 /// `SSH_AUTH_SOCK`. That socket is resolved once and used for the whole add,
 /// through [`crate::ssh_agent::SshAgentManager::add_own_key`]: asking the agent
 /// which keys it holds, the `ssh-add -t 43200`
-/// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and recording the identities that
-/// appeared, which the GUI removes again on exit, screen lock and suspend
-/// ([`crate::ssh_agent::evict_own_keys`]). The CLI never evicts; the lifetime
-/// alone bounds what it added. A key the agent already holds is left as it
-/// is, because it may be the user's, and when that cannot be told the key is
-/// not added. The `ssh-add` has no stdin and no host `SSH_ASKPASS` (it may
-/// name a helper absent in the Flatpak sandbox), and is bounded to 30 s.
+/// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and recording the key when its own
+/// file carries its public blob, which the GUI removes again on exit, screen
+/// lock and suspend ([`crate::ssh_agent::evict_own_keys`]). The CLI never
+/// evicts; the lifetime alone bounds what it added. A key the agent already
+/// holds is left as it is, because it may be the user's, and when that cannot
+/// be told the key is not added. The `ssh-add` has no stdin, no host
+/// `SSH_ASKPASS` (it may name a helper absent in the Flatpak sandbox) and
+/// `SSH_ASKPASS_REQUIRE=never`, so no passphrase prompt opens, and it is
+/// bounded to 30 s.
 ///
-/// The caller decides what a failure means, so this returns a message rather
-/// than a bool: a path that shows the user a message needs the text, and a
-/// path that only logs can ignore it.
+/// The caller decides what a failure means, so this returns the reason rather
+/// than a bool: a path that shows the user a message needs it, and a path
+/// that only logs can ignore it. The text is untranslated English; a GUI
+/// caller translates its own message.
 ///
 /// # Errors
 ///
-/// Returns the trimmed `ssh-add` stderr when the agent rejects the key, or a
-/// message when no agent socket is known, the agent cannot be asked which keys
-/// it holds, its answer cannot settle whether it already holds this key, or
+/// Returns [`IdentityLoadError::Unverified`] when the agent's answer cannot
+/// settle whether it already holds this key (the key was left out, but the
+/// agent may hold it). Returns [`IdentityLoadError::Failed`] with the trimmed
+/// `ssh-add` stderr when the agent rejects the key, or a message when no
+/// agent socket is known, the agent cannot be asked which keys it holds, or
 /// `ssh-add` could not be run or did not finish in time.
-pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), String> {
+pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), IdentityLoadError> {
     let Some(socket) = agent_socket_from(
         AGENT_INFO.get().map(|info| info.socket_path.as_str()),
         std::env::var("SSH_AUTH_SOCK").ok(),
@@ -724,17 +729,42 @@ pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), String> 
             ?key_path,
             "no SSH agent socket is known; not adding the key"
         );
-        return Err("no SSH agent is running (SSH_AUTH_SOCK is not set)".to_owned());
+        return Err(IdentityLoadError::Failed(
+            "no SSH agent is running (SSH_AUTH_SOCK is not set)".to_owned(),
+        ));
     };
     crate::ssh_agent::SshAgentManager::new(Some(socket))
         .add_own_key(key_path)
         .map_err(|e| {
             tracing::warn!(?key_path, error = %e, "could not add the SSH key to the agent");
-            match e {
-                crate::ssh_agent::AgentError::AddKeyFailed(message) => message,
-                other => other.to_string(),
-            }
+            IdentityLoadError::from(e)
         })
+}
+
+/// Why [`ensure_identity_loaded`] did not put the key in the agent. The text
+/// is untranslated English.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum IdentityLoadError {
+    /// RustConn could not tell whether the agent already holds the key, so it
+    /// left the agent alone. The agent may hold it anyway: a launch that
+    /// needs the key can go ahead with a warning.
+    #[error("{0}")]
+    Unverified(String),
+    /// The key is not in the agent through RustConn: no agent, the agent
+    /// could not be asked, or `ssh-add` failed or did not finish in time.
+    #[error("{0}")]
+    Failed(String),
+}
+
+impl From<crate::ssh_agent::AgentError> for IdentityLoadError {
+    fn from(error: crate::ssh_agent::AgentError) -> Self {
+        use crate::ssh_agent::AgentError;
+        match error {
+            AgentError::KeyPresenceUnknown(message) => Self::Unverified(message),
+            AgentError::AddKeyFailed(message) => Self::Failed(message),
+            other => Self::Failed(other.to_string()),
+        }
+    }
 }
 
 /// Ensures the connection's SSH key is loaded in ssh-agent.
@@ -1139,6 +1169,25 @@ mod tests {
     }
 
     // ── A3: ensure_key_in_agent invariants kept during ssh-add consolidation ──
+
+    /// "Cannot tell" stays its own outcome, so the mc launcher can warn and
+    /// go on instead of refusing.
+    #[test]
+    fn a_key_presence_rustconn_cannot_tell_is_unverified_not_failed() {
+        use crate::ssh_agent::AgentError;
+        assert_eq!(
+            IdentityLoadError::from(AgentError::KeyPresenceUnknown("why".to_owned())),
+            IdentityLoadError::Unverified("why".to_owned())
+        );
+        assert_eq!(
+            IdentityLoadError::from(AgentError::AddKeyFailed("bad key".to_owned())),
+            IdentityLoadError::Failed("bad key".to_owned())
+        );
+        assert!(matches!(
+            IdentityLoadError::from(AgentError::NotRunning),
+            IdentityLoadError::Failed(_)
+        ));
+    }
 
     #[test]
     fn ensure_key_in_agent_proceeds_when_no_key_is_configured() {
