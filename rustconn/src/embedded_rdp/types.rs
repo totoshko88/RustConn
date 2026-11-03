@@ -448,6 +448,23 @@ impl RdpConfig {
         self
     }
 
+    /// Whether a widget resize must go through a full reconnect rather than the
+    /// Display Control Channel (MS-RDPEDISP).
+    ///
+    /// True when the user forced it (`reconnect_on_resize`) or the server is a
+    /// Linux RDP server. A Linux server (xrdp with xorgxrdp) accepts the
+    /// MS-RDPEDISP monitor layout and resizes its RANDR screen, but — unlike
+    /// Windows — does not follow it with a Deactivation-Reactivation Sequence,
+    /// so the embedded client never rebuilds its framebuffer for the new size
+    /// and the desktop stays at the old resolution with black bars. A reconnect
+    /// starts a fresh session at the requested resolution, which is how a Linux
+    /// server reaches the new size reliably.
+    #[must_use]
+    pub fn resize_needs_reconnect(&self) -> bool {
+        self.reconnect_on_resize
+            || matches!(self.server_os, rustconn_core::models::RdpServerOs::Linux)
+    }
+
     /// Sets where the session audio is played
     #[must_use]
     pub const fn with_audio_mode(mut self, mode: rustconn_core::models::RdpAudioMode) -> Self {
@@ -622,6 +639,36 @@ mod tests {
     fn test_rdp_config_default_polling() {
         let config = RdpConfig::new("test.example.com");
         assert_eq!(config.polling_interval_ms, 16); // Default ~60 FPS
+    }
+
+    #[test]
+    fn resize_needs_reconnect_follows_server_os_and_toggle() {
+        use rustconn_core::models::RdpServerOs;
+
+        // Default (Auto) with the toggle off uses the seamless MS-RDPEDISP path.
+        let base = RdpConfig::new("host");
+        assert!(!base.resize_needs_reconnect());
+
+        // Windows keeps the seamless path — Windows honours MS-RDPEDISP.
+        assert!(
+            !base
+                .clone()
+                .with_server_os(RdpServerOs::Windows)
+                .resize_needs_reconnect()
+        );
+
+        // Linux forces reconnect: xrdp resizes RANDR but sends no
+        // Deactivation-Reactivation, so the seamless path leaves black bars.
+        assert!(
+            base.clone()
+                .with_server_os(RdpServerOs::Linux)
+                .resize_needs_reconnect()
+        );
+
+        // The explicit user toggle still forces reconnect regardless of OS.
+        let mut forced = base.with_server_os(RdpServerOs::Auto);
+        forced.reconnect_on_resize = true;
+        assert!(forced.resize_needs_reconnect());
     }
 
     #[test]

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 22:04+0200\n"
+"POT-Creation-Date: 2026-11-03 16:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2535,7 +2535,7 @@ msgid "Server OS"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/rdp.rs:347
-msgid "Hide the Windows admin tools when the server runs Linux"
+msgid "On Linux, hide the Windows admin tools and reconnect to resize"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/rdp.rs:355
@@ -13562,27 +13562,27 @@ msgstr ""
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1847 rustconn/src/window/protocols.rs:2346
+#: rustconn/src/window/protocols.rs:1847 rustconn/src/window/protocols.rs:2355
 msgid "Invalid variable: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2266
+#: rustconn/src/window/protocols.rs:2275
 msgid "Invalid config: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2452
+#: rustconn/src/window/protocols.rs:2461
 msgid "Install picocom for Serial connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2628
+#: rustconn/src/window/protocols.rs:2637
 msgid "Install kubectl for Kubernetes connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2646
+#: rustconn/src/window/protocols.rs:2655
 msgid "Configure pod and container for Kubernetes"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2886
+#: rustconn/src/window/protocols.rs:2895
 msgid "Install mosh for MOSH connections"
 msgstr ""
 
