@@ -7,7 +7,8 @@
 //! round trip with no process at all.
 //!
 //! Two requests are spoken here: [`request_identities`], which fingerprints
-//! each key with the shared helper in [`super::keyfile`], and
+//! each key with the shared helper in [`super::keyfile`] (or, as
+//! [`request_identity_blobs`], returns the raw blobs), and
 //! [`remove_identity`], which takes back one key RustConn added itself (see
 //! `super::own_keys`). Adding keys still goes through `ssh-add` in
 //! [`super::SshAgentManager`]: adding an *encrypted* key needs an in-process
@@ -73,12 +74,31 @@ const MAX_REPLY_BYTES: u32 = 1024 * 1024;
 /// times out, and [`AgentError::ParseError`] if the reply is not a well-formed
 /// `SSH_AGENT_IDENTITIES_ANSWER`.
 pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>> {
+    let body = request_identities_body(socket_path)?;
+    parse_identities_answer(&body)
+}
+
+/// The public-key blobs of the identities the agent at `socket_path` holds,
+/// in agent order: what [`remove_identity`] takes.
+///
+/// # Errors
+///
+/// Same as [`request_identities`].
+pub(super) fn request_identity_blobs(socket_path: &str) -> AgentResult<Vec<Vec<u8>>> {
+    let body = request_identities_body(socket_path)?;
+    Ok(parse_identity_entries(&body)?
+        .into_iter()
+        .map(|(blob, _comment)| blob.to_vec())
+        .collect())
+}
+
+/// Sends `SSH_AGENTC_REQUEST_IDENTITIES` and returns the reply body.
+fn request_identities_body(socket_path: &str) -> AgentResult<Vec<u8>> {
     // Request: length (1 for the type byte) + type, empty body.
     let mut request = Vec::with_capacity(5);
     request.extend_from_slice(&1u32.to_be_bytes());
     request.push(REQUEST_IDENTITIES);
-    let body = round_trip(socket_path, &request)?;
-    parse_identities_answer(&body)
+    round_trip(socket_path, &request)
 }
 
 /// Asks the agent at `socket_path` to drop the one key whose public blob is
@@ -155,6 +175,19 @@ fn round_trip(socket_path: &str, request: &[u8]) -> AgentResult<Vec<u8>> {
 /// Split from the I/O so it can be tested against captured bytes without a live
 /// agent.
 fn parse_identities_answer(body: &[u8]) -> AgentResult<Vec<AgentKey>> {
+    Ok(parse_identity_entries(body)?
+        .into_iter()
+        .map(|(blob, comment)| AgentKey {
+            fingerprint: super::keyfile::sha256_fingerprint(blob),
+            bits: 0,
+            key_type: super::keyfile::key_type_from_blob(blob),
+            comment: String::from_utf8_lossy(comment).into_owned(),
+        })
+        .collect())
+}
+
+/// The `(key blob, comment)` pairs of an `SSH_AGENT_IDENTITIES_ANSWER` body.
+fn parse_identity_entries(body: &[u8]) -> AgentResult<Vec<(&[u8], &[u8])>> {
     let mut reader = Reader::new(body);
 
     let msg_type = reader.u8()?;
@@ -173,19 +206,14 @@ fn parse_identities_answer(body: &[u8]) -> AgentResult<Vec<AgentKey>> {
         )));
     }
 
-    let mut keys = Vec::with_capacity(nkeys as usize);
+    let mut entries = Vec::with_capacity(nkeys as usize);
     for _ in 0..nkeys {
         let blob = reader.string()?;
         let comment = reader.string()?;
-        keys.push(AgentKey {
-            fingerprint: super::keyfile::sha256_fingerprint(blob),
-            bits: 0,
-            key_type: super::keyfile::key_type_from_blob(blob),
-            comment: String::from_utf8_lossy(comment).into_owned(),
-        });
+        entries.push((blob, comment));
     }
 
-    Ok(keys)
+    Ok(entries)
 }
 
 /// A bounds-checked cursor over the reply bytes.

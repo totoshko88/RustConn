@@ -201,8 +201,10 @@ fn pub_line_blob(line: &str) -> AgentResult<Vec<u8>> {
 ///
 /// Tries the key file itself first (an OpenSSH private key carries its public
 /// key in the clear, even when encrypted), then a sibling `<path>.pub`, the
-/// only source for a legacy PEM or PKCS#8 key. The blob is what the agent
-/// identifies a key by, so it is what `SSH_AGENTC_REMOVE_IDENTITY` needs.
+/// only source for a legacy PEM or PKCS#8 key. A `.pub` is not checked against
+/// the private key, so a stale one names some other key: use the blob to ask
+/// whether the agent already holds the key, never as the thing to remove (see
+/// `super::own_keys`, which records what the agent itself reports).
 pub(super) fn public_blob_for_key_path(key_path: &std::path::Path) -> Option<Vec<u8>> {
     if let Ok(contents) = std::fs::read_to_string(key_path)
         && detect_format(&contents) == KeyFormat::OpenSsh

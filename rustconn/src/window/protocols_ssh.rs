@@ -239,8 +239,8 @@ impl JumpAuthShape {
 /// the only identity every hop can see is one the agent already holds. Adding
 /// it here (idempotently — a key the agent already holds is not added again) makes a
 /// key-authenticated multi-hop chain work without the user pre-running
-/// `ssh-add`. Best-effort: a passphrase-protected key whose passphrase nothing
-/// can supply cannot be added non-interactively, so a failure is logged and the
+/// `ssh-add`. Best-effort: a passphrase-protected key cannot be added
+/// non-interactively, so a failure is logged and the
 /// connection still proceeds (the agent may already hold it, or the user can add
 /// it).
 fn ensure_identity_in_agent(key_path: &std::path::Path) {
@@ -261,11 +261,11 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     }
     // One add-key round trip against the agent — the call this phase exists for.
     perf.add_calls(1);
-    // No passphrase: this covers unencrypted keys and keys the agent/askpass
-    // can resolve; an encrypted key with no resolvable passphrase fails here
-    // and is left to the agent/user. A key added here gets the 12 h lifetime
-    // and is removed again on exit, screen lock and suspend; a key the agent
-    // already holds is left alone.
+    // No passphrase and no askpass: this covers keys ssh-add can load without
+    // asking; an encrypted key fails here (bounded, off any prompt) and is
+    // left to the agent/user. A key added here gets the 12 h lifetime and is
+    // removed again on exit, screen lock and suspend; a key the agent already
+    // holds, or may hold, is left alone.
     if let Err(e) = manager.add_own_key(key_path) {
         tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
     }
