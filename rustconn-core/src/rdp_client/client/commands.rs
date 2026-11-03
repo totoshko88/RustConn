@@ -152,25 +152,37 @@ pub(super) async fn process_command<W: FramedWrite>(
             height,
             scale_percent,
         } => {
-            if let Some(result) =
-                active_stage.encode_resize(u32::from(width), u32::from(height), scale_percent, None)
+            // Build the monitor layout ourselves with an explicit Landscape
+            // orientation rather than calling `ActiveStage::encode_resize`.
+            // `encode_resize` goes through
+            // `DisplayControlMonitorLayout::new_single_primary_monitor`, which
+            // derives the orientation from the aspect ratio — Portrait (90°)
+            // whenever `width < height`. A tall-but-not-rotated window (a narrow
+            // embedded pane, e.g. 798x988) then tells the server its monitor is
+            // rotated 90°. A real desktop server ignores the invalid rotation
+            // or applies it wrong: xrdp kept the old resolution and the pane
+            // showed black bars instead of resizing. The GTK widget is never
+            // rotated, so the monitor is always Landscape; only the pixel size
+            // changes.
+            match build_primary_monitor_layout(u32::from(width), u32::from(height), scale_percent)
+                .and_then(|layout| active_stage.encode_monitor_layout(&layout))
             {
-                match result {
-                    Ok(frame) => {
-                        let _ = writer.write_all(&frame).await;
-                        tracing::debug!("Resolution change requested: {}x{}", width, height);
-                    }
-                    Err(e) => {
-                        tracing::warn!("Failed to encode resize request: {}", e);
-                    }
+                Some(Ok(frame)) => {
+                    let _ = writer.write_all(&frame).await;
+                    tracing::debug!("Resolution change requested: {}x{}", width, height);
                 }
-            } else {
-                tracing::debug!(
-                    "Display Control not available for resize {}x{} — signaling GUI for reconnect",
-                    width,
-                    height
-                );
-                let _ = event_tx.send(RdpClientEvent::DisplayControlUnavailable { width, height });
+                Some(Err(e)) => {
+                    tracing::warn!("Failed to encode resize request: {}", e);
+                }
+                None => {
+                    tracing::debug!(
+                        "Display Control not available for resize {}x{} — signaling GUI for reconnect",
+                        width,
+                        height
+                    );
+                    let _ =
+                        event_tx.send(RdpClientEvent::DisplayControlUnavailable { width, height });
+                }
             }
         }
         RdpClientCommand::RefreshScreen => {
@@ -1027,11 +1039,87 @@ async fn handle_provide_file_contents<W: FramedWrite>(
     }
 }
 
+/// Builds a single-primary-monitor Display Control layout with an explicit
+/// Landscape orientation for a dynamic resolution change.
+///
+/// This exists so a resize never infers a Portrait monitor from a tall-narrow
+/// pane. `MonitorLayoutEntry::new_primary` defaults to Landscape and nothing
+/// here overrides it, unlike
+/// `DisplayControlMonitorLayout::new_single_primary_monitor`, which rotates the
+/// monitor to Portrait whenever `width < height`. The width is forced even and
+/// both axes are clamped to the MS-RDPEDISP 200..=8192 range; a scale factor is
+/// applied only when it is in the valid 100..=500 percent range (an out-of-range
+/// value is dropped rather than failing the whole layout).
+///
+/// Returns `None` if the dimensions cannot form a valid primary monitor entry.
+fn build_primary_monitor_layout(
+    width: u32,
+    height: u32,
+    scale_percent: Option<u32>,
+) -> Option<ironrdp_displaycontrol::pdu::DisplayControlMonitorLayout> {
+    use ironrdp_displaycontrol::pdu::{DisplayControlMonitorLayout, MonitorLayoutEntry};
+
+    let (width, height) = MonitorLayoutEntry::adjust_display_size(width, height);
+    // new_primary defaults to Landscape (orientation 0); we deliberately never
+    // call with_orientation, so a narrow pane stays Landscape.
+    let mut entry = MonitorLayoutEntry::new_primary(width, height).ok()?;
+    if let Some(scale) = scale_percent
+        && (100..=500).contains(&scale)
+    {
+        entry = entry.with_desktop_scale_factor(scale).ok()?;
+    }
+    DisplayControlMonitorLayout::new(&[entry]).ok()
+}
+
 #[cfg(test)]
 mod tests {
     use ironrdp_cliprdr::pdu::FileContentsFlags;
 
-    use super::build_download_request;
+    use super::{build_download_request, build_primary_monitor_layout};
+
+    /// A tall-narrow pane must still describe a Landscape monitor: the bug was
+    /// `encode_resize` inferring Portrait (90°) from `width < height`, which
+    /// xrdp honoured as a rotation and refused to resize.
+    #[test]
+    fn narrow_pane_stays_landscape() {
+        let layout = build_primary_monitor_layout(798, 988, Some(100)).expect("valid layout");
+        let monitors = layout.monitors();
+        assert_eq!(monitors.len(), 1);
+        // Landscape is orientation angle 0; Portrait would be 90.
+        assert_eq!(
+            monitors[0].orientation().map(|o| o.angle()),
+            Some(0),
+            "a narrow pane must not be reported as a rotated (Portrait) monitor"
+        );
+        assert!(monitors[0].is_primary());
+    }
+
+    /// A wide pane is Landscape too — the orientation never depends on aspect.
+    #[test]
+    fn wide_pane_is_landscape() {
+        let layout = build_primary_monitor_layout(1186, 988, Some(100)).expect("valid layout");
+        assert_eq!(
+            layout.monitors()[0].orientation().map(|o| o.angle()),
+            Some(0)
+        );
+    }
+
+    /// An odd width is made even and both axes are clamped into the
+    /// MS-RDPEDISP 200..=8192 range.
+    #[test]
+    fn dimensions_are_adjusted_to_the_valid_range() {
+        let layout = build_primary_monitor_layout(647, 100, None).expect("valid layout");
+        let (w, h) = layout.monitors()[0].dimensions();
+        assert_eq!(w % 2, 0, "width must be even");
+        assert!(h >= 200, "height clamped up to the 200px minimum");
+    }
+
+    /// An out-of-range scale factor is dropped, not fatal.
+    #[test]
+    fn out_of_range_scale_is_ignored() {
+        assert!(build_primary_monitor_layout(1186, 988, Some(50)).is_some());
+        assert!(build_primary_monitor_layout(1186, 988, Some(999)).is_some());
+    }
 
     #[test]
     fn size_request_pins_position_and_size() {
