@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **A reconnected AWS SSM (and other Zero Trust) session no longer stays yellow in the sidebar** — after an expired SSM session was reconnected in place through the cloud-login prompt, the connection stayed marked "connecting" (the yellow sidebar indicator) even though the terminal was live again. The in-place reconnect decides a Zero Trust session is established the first time the terminal produces output, but it measured that against a `cursor row > 2` threshold relative to the preserved scrollback; an SSM reconnect prints only two lines (the `Starting session…` banner and the shell prompt), which advances the cursor by exactly two rows and never clears the threshold. The reconnect detector now treats any output as established (`cursor row > 0`), matching the primary Zero Trust connect path, so the sidebar flips to connected as soon as the reconnected session responds. (`rustconn/src/window/protocols.rs`)
+
 ## [0.24.5] - 2026-11-02
 
 ### Added

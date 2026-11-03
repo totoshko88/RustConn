@@ -1951,12 +1951,21 @@ pub fn reconnect_generic_vte_in_place(
         let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
         let session_connected_clone = session_connected.clone();
 
+        // Any output on the reconnected terminal means the session is live
+        // again: a short banner (an SSM reconnect prints only two lines,
+        // "Starting session…" and the shell prompt) advances the cursor by too
+        // few rows to clear a larger threshold, so the sidebar stayed on
+        // "connecting" (yellow) after a working reconnect. The primary Zero
+        // Trust detector in `start_connection_observed` already treats any
+        // output as established (threshold 0); this matches it, instead of the
+        // row>2 heuristic that only ever worked for a fresh connection whose
+        // cursor starts at the top of an empty buffer.
         notebook.connect_contents_changed(session_id, move || {
             if session_connected_clone.get() {
                 return;
             }
             if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 2
+                && row > 0
             {
                 sidebar_clone.increment_session_count(&connection_id_str);
                 session_connected_clone.set(true);
