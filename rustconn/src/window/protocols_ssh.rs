@@ -260,10 +260,15 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     }
     // One add-key round trip against the agent — the call this phase exists for.
     perf.add_calls(1);
-    // `add_key` with no passphrase covers unencrypted keys and keys whose
-    // passphrase the agent/askpass can still resolve. Encrypted keys without a
-    // resolvable passphrase fail here and are left to the agent/user.
-    if let Err(e) = manager.add_key(key_path, None) {
+    // Prefer a passphrase the user already unlocked this session (W3 phase 4):
+    // if the key was added with a passphrase earlier — via the SSH Agent
+    // settings dialog or a prior connect — reuse it so an encrypted key loads
+    // non-interactively now. With no cached passphrase, `add_key(_, None)`
+    // still covers unencrypted keys and keys the agent/askpass can resolve;
+    // an encrypted key with no resolvable passphrase fails here and is left to
+    // the agent/user, exactly as before.
+    let cached = rustconn_core::ssh_agent::passphrase_cache::get(key_path);
+    if let Err(e) = manager.add_key(key_path, cached.as_ref()) {
         tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
     }
 }

@@ -4,6 +4,7 @@
 //! including starting the agent, managing keys, and parsing agent output.
 
 mod keyfile;
+pub mod passphrase_cache;
 #[cfg(unix)]
 mod wire;
 
@@ -825,6 +826,12 @@ impl SshAgentManager {
                 }
                 return Err(AgentError::AddKeyFailed(stderr.to_string()));
             }
+
+            // ssh-add accepted the passphrase, so remember it for the rest of
+            // the session: a later non-interactive `ensure identity` on the same
+            // key (a multi-hop `-J` connect) can reuse it instead of asking
+            // again. Only cached on success, so a wrong guess is never stored.
+            passphrase_cache::remember(key_path, pass);
         } else {
             // No passphrase - simple ssh-add
             let output = Command::new("ssh-add")
