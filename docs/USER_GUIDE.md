@@ -265,6 +265,13 @@ Set the auth method (or the key source) to **SSH Agent** and pick one of the key
 
 If the agent is not running when the session starts, or no longer holds the selected key, the connection still goes ahead with every agent key offered, and the reason is written to the log.
 
+**Keys RustConn adds to the agent itself:**
+Some steps need a key in the agent that you have not loaded: a multi-hop jump-host chain (`ProxyJump`, `-J`), where OpenSSH does not hand `-i` to the per-hop processes, and SFTP or Midnight Commander, which cannot take a key file. If the agent does not hold the key yet, RustConn adds it with a 12-hour lifetime (`ssh-add -t 43200`) and remembers which key it added. It removes exactly those keys again when you quit RustConn and, on Linux, when the screen locks or the system suspends; the next connection that needs a key adds it again. RustConn does not keep the passphrase: an encrypted key is unlocked once by the agent, during the add.
+
+Keys you loaded yourself are left alone. A key the agent already holds is not added again, a key you add in **Settings → Secrets → SSH Agent** is yours even if RustConn had added it earlier, and RustConn never removes all keys from the agent. The 12-hour lifetime is the limit when RustConn cannot clean up: after a crash, for keys `rustconn-cli` added (it exits right after starting the file manager), and for a legacy PEM key without a `.pub` file beside it, whose public half cannot be read without the passphrase.
+
+Lock and suspend are detected over D-Bus: `ActiveChanged` from `org.freedesktop.ScreenSaver` or `org.gnome.ScreenSaver`, and login1 `PrepareForSleep`. RustConn holds a login1 delay lock so the keys are removed before the machine sleeps. A desktop that provides neither signal still gets the removal on exit. In the Snap, connect the `login-session-observe` interface for suspend (`sudo snap connect rustconn:login-session-observe`); the Snap cannot take the delay lock, so a fast suspend may happen before the keys are removed. macOS has neither service, so there the keys are removed on exit and by their lifetime.
+
 **Security Key / FIDO2 Authentication (SSH):**
 SSH connections support hardware security keys (YubiKey, SoloKey, etc.) via the `security-key` auth method. Requirements:
 - OpenSSH 8.2+ on both client and server
@@ -1798,7 +1805,7 @@ Browse remote files on SSH connections via your system file manager or Midnight 
 SFTP is always available for SSH connections — no checkbox or flag needed. The "Open SFTP" option only appears in the sidebar context menu for SSH connections (not RDP, VNC, SPICE, or Serial).
 
 **SSH Key Handling:**
-Before opening SFTP, RustConn automatically runs `ssh-add` with your configured SSH key. This is required because neither file managers nor mc can pass identity files directly — the key must be in the SSH agent.
+Before opening SFTP, RustConn automatically runs `ssh-add` with your configured SSH key, unless the agent already holds it. This is required because neither file managers nor mc can pass identity files directly — the key must be in the SSH agent. A key added this way has a 12-hour lifetime and is removed again on exit, screen lock and suspend (see *Keys RustConn adds to the agent itself* under [Full Connection Editor](#full-connection-editor-ctrlshiftn)), so a file manager left open after you quit RustConn loses access to it.
 
 **Open SFTP (File Manager):**
 - Right-click an SSH connection in sidebar → "Open SFTP"
@@ -3706,7 +3713,7 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 - **System Keyring Requirements:** Requires `libsecret-tools` (`secret-tool` binary)
 - **Installed Password Managers** — Auto-detected managers with versions
 
-**SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option).
+**SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option). A key added here is yours: it has no lifetime and RustConn does not remove it on exit, lock or suspend.
 
 ### Connection page
 

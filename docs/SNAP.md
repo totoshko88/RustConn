@@ -79,7 +79,16 @@ sudo snap connect rustconn:oci-credentials        # ~/.oci (read-only)
 
 # Kubernetes config
 sudo snap connect rustconn:kube-credentials       # ~/.kube (read-only)
+
+# Suspend detection (removes the SSH keys RustConn added before the system sleeps)
+sudo snap connect rustconn:login-session-observe
 ```
+
+Screen-lock detection needs no extra step: the `desktop` interface, connected
+automatically, already lets RustConn receive the screensaver's `ActiveChanged`
+signal. A Snap cannot take logind's delay lock (that needs the `shutdown`
+interface, which store snaps are not granted), so a fast suspend may happen
+before the keys are removed; their 12-hour lifetime still applies.
 
 ## Bundled Components
 
