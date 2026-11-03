@@ -14,10 +14,13 @@
 //!   Emitted with `true` just before the system suspends/hibernates. On suspend
 //!   we both clear the cache and ask the agent to drop its own keys (`ssh-add
 //!   -D`), matching what a lock-on-suspend policy would do.
-//! - `org.freedesktop.ScreenSaver` → `ActiveChanged(bool)` on the **session**
-//!   bus. Emitted with `true` when the screensaver/lock engages. On a plain lock
-//!   we clear the cache but leave the agent alone: active sessions may still need
-//!   it, and the user is expected to unlock shortly.
+//! - `ScreenSaver` → `ActiveChanged(bool)` on the **session** bus. Emitted with
+//!   `true` when the screensaver/lock engages. We subscribe to both the portable
+//!   `org.freedesktop.ScreenSaver` name and the `org.gnome.ScreenSaver` name,
+//!   because GNOME emits the signal on its own name and leaves the freedesktop
+//!   one silent; a desktop that serves only one simply skips the other. On a
+//!   plain lock we clear the cache but leave the agent alone: active sessions may
+//!   still need it, and the user is expected to unlock shortly.
 //!
 //! # Threading
 //!
@@ -49,7 +52,10 @@ trait Login1Manager {
 }
 
 /// freedesktop `ScreenSaver` `ActiveChanged` on the session bus. The argument is
-/// `true` when the screensaver/lock becomes active.
+/// `true` when the screensaver/lock becomes active. This is the portable name,
+/// but on some desktops (notably GNOME) the freedesktop name is only a shim that
+/// never emits the signal, so the GNOME `ScreenSaver` proxy is subscribed in
+/// parallel (see the `gnome` module below).
 #[zbus::proxy(
     interface = "org.freedesktop.ScreenSaver",
     default_service = "org.freedesktop.ScreenSaver",
@@ -58,6 +64,28 @@ trait Login1Manager {
 trait ScreenSaver {
     #[zbus(signal)]
     fn active_changed(&self, active: bool) -> zbus::Result<()>;
+}
+
+/// GNOME `ScreenSaver` `ActiveChanged` on the session bus — the name GNOME Shell
+/// actually emits on lock/unlock. Same signal shape as the freedesktop one; both
+/// are subscribed so a plain screen lock (no suspend) clears the cache under
+/// GNOME, where the freedesktop shim stays silent. A desktop that implements
+/// only one of the two simply has the other connect-fail and get skipped.
+///
+/// It lives in its own module because the `#[proxy]` macro derives its generated
+/// type names (`ActiveChangedStream`, `ActiveChangedArgs`, …) from the wire
+/// signal name, which is identical to the freedesktop one — so the two proxies
+/// would collide in a shared namespace.
+mod gnome {
+    #[zbus::proxy(
+        interface = "org.gnome.ScreenSaver",
+        default_service = "org.gnome.ScreenSaver",
+        default_path = "/org/gnome/ScreenSaver"
+    )]
+    pub(super) trait GnomeScreenSaver {
+        #[zbus(signal)]
+        fn active_changed(&self, active: bool) -> zbus::Result<()>;
+    }
 }
 
 /// Starts the lock/suspend listener on a dedicated background thread.
@@ -106,24 +134,32 @@ async fn listen() {
             None
         }
     };
-    let saver = match connect_saver_stream().await {
-        Ok(pair) => Some(pair),
+
+    // Both ScreenSaver names live on the session bus, so one connection serves
+    // both proxies. Open it once; if it cannot be reached, neither lock source
+    // is available (but login1 suspend may still be).
+    let session = match Connection::session().await {
+        Ok(conn) => Some(conn),
         Err(e) => {
-            tracing::info!(error = %e, "lock listener: ScreenSaver ActiveChanged unavailable");
+            tracing::info!(error = %e, "lock listener: session bus unavailable; no lock source");
             None
         }
     };
+
+    let fdo_saver = connect_fdo_saver_stream(session.as_ref()).await;
+    let gnome_saver = connect_gnome_saver_stream(session.as_ref()).await;
 
     let (_sleep_conn, mut sleep_stream) = match sleep {
         Some((conn, stream)) => (Some(conn), Some(stream)),
         None => (None, None),
     };
-    let (_saver_conn, mut saver_stream) = match saver {
-        Some((conn, stream)) => (Some(conn), Some(stream)),
-        None => (None, None),
-    };
+    let mut fdo_stream = fdo_saver;
+    let mut gnome_stream = gnome_saver;
 
-    if sleep_stream.is_none() && saver_stream.is_none() {
+    // `session` is held so both ScreenSaver streams stay open.
+    let _session = session;
+
+    if sleep_stream.is_none() && fdo_stream.is_none() && gnome_stream.is_none() {
         tracing::info!("lock listener: no lock/suspend signal source available; exiting");
         return;
     }
@@ -141,20 +177,30 @@ async fn listen() {
                     None => sleep_stream = None, // stream ended; stop polling it
                 }
             }
-            active = next_opt(saver_stream.as_mut()) => {
+            active = next_opt(fdo_stream.as_mut()) => {
                 match active {
                     Some(signal) => {
                         if let Ok(args) = signal.args() {
-                            on_screensaver_active(args.active);
+                            on_screensaver_active("org.freedesktop.ScreenSaver", args.active);
                         }
                     }
-                    None => saver_stream = None,
+                    None => fdo_stream = None,
+                }
+            }
+            active = next_opt(gnome_stream.as_mut()) => {
+                match active {
+                    Some(signal) => {
+                        if let Ok(args) = signal.args() {
+                            on_screensaver_active("org.gnome.ScreenSaver", args.active);
+                        }
+                    }
+                    None => gnome_stream = None,
                 }
             }
         }
 
-        if sleep_stream.is_none() && saver_stream.is_none() {
-            tracing::info!("lock listener: both signal sources ended; exiting");
+        if sleep_stream.is_none() && fdo_stream.is_none() && gnome_stream.is_none() {
+            tracing::info!("lock listener: all signal sources ended; exiting");
             return;
         }
     }
@@ -182,13 +228,47 @@ async fn connect_sleep_stream() -> zbus::Result<(Connection, PrepareForSleepStre
     Ok((conn, stream))
 }
 
-/// Opens the session bus and returns its connection plus the raw `ActiveChanged`
-/// signal stream. The caller keeps the connection alive.
-async fn connect_saver_stream() -> zbus::Result<(Connection, ActiveChangedStream)> {
-    let conn = Connection::session().await?;
-    let proxy = ScreenSaverProxy::new(&conn).await?;
-    let stream = proxy.receive_active_changed().await?;
-    Ok((conn, stream))
+/// Subscribes to the freedesktop `ScreenSaver` `ActiveChanged` signal on the
+/// shared session connection. Returns `None` if the session bus was unavailable
+/// or the interface is not served here; that half is then simply skipped.
+async fn connect_fdo_saver_stream(session: Option<&Connection>) -> Option<ActiveChangedStream> {
+    let conn = session?;
+    match ScreenSaverProxy::new(conn).await {
+        Ok(proxy) => match proxy.receive_active_changed().await {
+            Ok(stream) => Some(stream),
+            Err(e) => {
+                tracing::info!(error = %e, "lock listener: org.freedesktop.ScreenSaver signal unavailable");
+                None
+            }
+        },
+        Err(e) => {
+            tracing::info!(error = %e, "lock listener: org.freedesktop.ScreenSaver unavailable");
+            None
+        }
+    }
+}
+
+/// Subscribes to the GNOME `ScreenSaver` `ActiveChanged` signal on the shared
+/// session connection. Returns `None` on a non-GNOME desktop (the name is not
+/// served), leaving the freedesktop subscription to carry the lock event.
+async fn connect_gnome_saver_stream(
+    session: Option<&Connection>,
+) -> Option<gnome::ActiveChangedStream> {
+    use gnome::GnomeScreenSaverProxy;
+    let conn = session?;
+    match GnomeScreenSaverProxy::new(conn).await {
+        Ok(proxy) => match proxy.receive_active_changed().await {
+            Ok(stream) => Some(stream),
+            Err(e) => {
+                tracing::info!(error = %e, "lock listener: org.gnome.ScreenSaver signal unavailable");
+                None
+            }
+        },
+        Err(e) => {
+            tracing::info!(error = %e, "lock listener: org.gnome.ScreenSaver unavailable");
+            None
+        }
+    }
 }
 
 /// login1 `PrepareForSleep`: `true` just before sleep, `false` on resume.
@@ -208,14 +288,17 @@ fn on_prepare_for_sleep(going_to_sleep: bool) {
 
 /// ScreenSaver `ActiveChanged`: `true` on lock. Clear the cache but leave the
 /// agent's keys in place — an active session may still need them, and the user
-/// is expected back shortly.
-fn on_screensaver_active(active: bool) {
+/// is expected back shortly. `source` is the D-Bus name that emitted it, for the
+/// log; when both the freedesktop and GNOME names fire for one lock, the second
+/// call simply clears an already-empty cache.
+fn on_screensaver_active(source: &str, active: bool) {
     if !active {
         return;
     }
     let cleared = passphrase_cache::len();
     passphrase_cache::clear();
     tracing::info!(
+        source,
         cleared_entries = cleared,
         "screen locked: cleared SSH passphrase cache"
     );
@@ -281,14 +364,14 @@ mod tests {
 
         // Unlock edge: active=false must not touch the cache.
         let unlock_path = seed_one("saver-inactive");
-        on_screensaver_active(false);
+        on_screensaver_active("org.gnome.ScreenSaver", false);
         assert!(
             passphrase_cache::get(&unlock_path).is_some(),
             "an unlock (active=false) does not touch the cache"
         );
 
         // Lock edge: active=true clears the whole cache.
-        on_screensaver_active(true);
+        on_screensaver_active("org.gnome.ScreenSaver", true);
         assert!(
             passphrase_cache::get(&resume_path).is_none()
                 && passphrase_cache::get(&unlock_path).is_none(),
