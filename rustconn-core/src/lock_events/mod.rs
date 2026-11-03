@@ -61,6 +61,9 @@ impl Subscribers {
 
     /// Calls every handler with `event`, in subscription order, and returns
     /// once all of them have.
+    ///
+    /// A handler that panics is logged and the next one still runs: one
+    /// consumer's bug must not keep another from dropping its state.
     #[cfg_attr(
         not(all(feature = "lock-events", not(target_os = "macos"))),
         allow(
@@ -74,8 +77,13 @@ impl Subscribers {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        for handler in &handlers {
-            handler(event);
+        for (index, handler) in handlers.iter().enumerate() {
+            // A handler shares nothing with the others through this loop, so
+            // a panic cannot leave state here half-updated.
+            let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| handler(event)));
+            if outcome.is_err() {
+                tracing::error!(?event, handler = index, "a lock-event handler panicked");
+            }
         }
     }
 }
@@ -140,6 +148,23 @@ mod tests {
                 (0, LockEvent::Suspending),
                 (1, LockEvent::Suspending),
             ]
+        );
+    }
+
+    #[test]
+    fn a_panicking_handler_does_not_stop_a_later_one() {
+        let subscribers = Subscribers::new();
+        let seen: Arc<Mutex<Vec<LockEvent>>> = Arc::default();
+        subscribers.add(Arc::new(|_| panic!("a consumer's bug")));
+        let later = Arc::clone(&seen);
+        subscribers.add(Arc::new(move |event| later.lock().unwrap().push(event)));
+
+        subscribers.dispatch(LockEvent::Suspending);
+        subscribers.dispatch(LockEvent::ScreenLocked);
+
+        assert_eq!(
+            *seen.lock().unwrap(),
+            vec![LockEvent::Suspending, LockEvent::ScreenLocked]
         );
     }
 

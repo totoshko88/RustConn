@@ -204,23 +204,18 @@ pub(super) struct KeyFileBlobs {
     /// public key in the clear, even when encrypted, so this names the key
     /// `ssh-add` loads from that file.
     pub(super) key_file: Option<Vec<u8>>,
-    /// From a sibling `<path>.pub`, the only source for a legacy PEM or
-    /// PKCS#8 key. Not checked against the private key: a stale one names
-    /// some other key.
-    pub(super) pub_file: Option<Vec<u8>>,
-}
-
-impl KeyFileBlobs {
-    /// The best guess at the key's blob: the key file's own, else the `.pub`.
-    /// Good for asking whether the agent already holds the key; only
-    /// [`Self::key_file`] is good enough to decide what to remove.
-    pub(super) fn best(&self) -> Option<&[u8]> {
-        self.key_file.as_deref().or(self.pub_file.as_deref())
-    }
+    /// From a sibling `<path>-cert.pub`, the certificate `ssh-add` loads
+    /// together with the key when that file exists. Not checked against the
+    /// key here: `ssh-add` skips a certificate that does not match, so only a
+    /// certificate the agent shows after the add counts.
+    pub(super) cert_file: Option<Vec<u8>>,
 }
 
 /// Reads [`KeyFileBlobs`] for the private key at `key_path`; a source that
 /// cannot be read is `None`.
+///
+/// A sibling `<path>.pub` is not read: it is not checked against the private
+/// key, and a stale one names some other key.
 pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
     let key_file = std::fs::read_to_string(key_path)
         .ok()
@@ -230,12 +225,15 @@ pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
                 .and_then(|b| openssh_public_blob(&b))
                 .ok()
         });
-    let mut pub_path = key_path.as_os_str().to_os_string();
-    pub_path.push(".pub");
-    let pub_file = std::fs::read_to_string(std::path::PathBuf::from(pub_path))
+    let mut cert_path = key_path.as_os_str().to_os_string();
+    cert_path.push("-cert.pub");
+    let cert_file = std::fs::read_to_string(std::path::PathBuf::from(cert_path))
         .ok()
         .and_then(|line| pub_line_blob(line.trim()).ok());
-    KeyFileBlobs { key_file, pub_file }
+    KeyFileBlobs {
+        key_file,
+        cert_file,
+    }
 }
 
 /// The public-key line (`<type> <base64>`, no comment) of an OpenSSH private
@@ -612,25 +610,13 @@ mod tests {
             .clone()
             .expect("blob read without a passphrase");
         assert_eq!(key_type_from_blob(&blob), "ED25519");
-        assert_eq!(blobs.pub_file, None, "no .pub beside it");
-        assert_eq!(blobs.best(), Some(blob.as_slice()));
+        assert_eq!(blobs.cert_file, None, "no certificate beside it");
     }
 
-    /// A `.pub` beside an OpenSSH key is read, but the key file's own blob
-    /// is the one `best` returns, so a stale `.pub` cannot win.
+    /// A `.pub` beside a key is never read: it may be stale. Only the key
+    /// file and its `-cert.pub` count.
     #[test]
-    fn the_key_files_own_blob_wins_over_its_pub_sibling() {
-        let dir = tempfile::tempdir().unwrap();
-        let key = dir.path().join("id_ed25519");
-        std::fs::write(&key, make_openssh_key("none")).unwrap();
-        std::fs::write(dir.path().join("id_ed25519.pub"), ED25519_PUB).unwrap();
-        let blobs = key_file_blobs(&key);
-        assert!(blobs.pub_file.is_some());
-        assert_eq!(blobs.best(), blobs.key_file.as_deref());
-    }
-
-    #[test]
-    fn public_blob_of_a_legacy_pem_comes_from_its_pub_sibling() {
+    fn a_pub_sibling_is_ignored_and_a_cert_sibling_is_read() {
         let dir = tempfile::tempdir().unwrap();
         let key = dir.path().join("legacy_rsa");
         std::fs::write(
@@ -638,13 +624,22 @@ mod tests {
             "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
         )
         .unwrap();
-        assert_eq!(key_file_blobs(&key), KeyFileBlobs::default(), "no .pub yet");
         std::fs::write(dir.path().join("legacy_rsa.pub"), ED25519_PUB).unwrap();
-        let blobs = key_file_blobs(&key);
-        assert_eq!(blobs.key_file, None, "a legacy PEM has no public section");
-        let blob = blobs.best().expect("blob from the .pub sibling");
         assert_eq!(
-            sha256_fingerprint(blob),
+            key_file_blobs(&key),
+            KeyFileBlobs::default(),
+            "a legacy PEM has no public section, and the .pub is not read"
+        );
+
+        // The certificate line's shape is all that matters here: its base64
+        // field is what the agent lists the certificate by.
+        let cert_line = ED25519_PUB.replacen("ssh-ed25519", "ssh-ed25519-cert-v01@openssh.com", 1);
+        std::fs::write(dir.path().join("legacy_rsa-cert.pub"), &cert_line).unwrap();
+        let blobs = key_file_blobs(&key);
+        assert_eq!(blobs.key_file, None);
+        let cert = blobs.cert_file.expect("blob from the -cert.pub sibling");
+        assert_eq!(
+            sha256_fingerprint(&cert),
             PublicKeyInfo::from_pub_line(ED25519_PUB)
                 .unwrap()
                 .fingerprint

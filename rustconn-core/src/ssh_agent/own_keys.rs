@@ -9,20 +9,24 @@
 //! [`evict_own_keys`] sends one `SSH_AGENTC_REMOVE_IDENTITY` per recorded blob
 //! to that same socket.
 //!
-//! Keys the user loaded are never recorded. A key the agent already holds is
-//! not added again, because re-adding would replace its constraints. When the
-//! agent cannot say what it holds, or the key's public half is unreadable (a
-//! legacy PEM with no `.pub` beside it) and the agent holds keys this one could
-//! be, nothing is added.
+//! Keys the user loaded before RustConn's add are never recorded. A key the
+//! agent already holds is not added again, because re-adding would replace its
+//! constraints. When the agent cannot say what it holds, or the key file does
+//! not carry its public key (a legacy PEM or PKCS#8 key) and the agent holds
+//! any key at all, nothing is added: a `.pub` beside such a key may be stale,
+//! so it is not trusted to tell.
 //!
 //! Only a blob read from the private key file itself is ever recorded (an
 //! OpenSSH key carries its public key in the clear), and only once the agent
-//! shows it after the add. A key whose file does not carry it (a legacy PEM or
-//! PKCS#8 key, with or without a `.pub` that may be stale) is added but not
-//! recorded: the lifetime is its only expiry, so the record can never cover a
-//! key the user adds later. A key the user adds in Settings → SSH Agent is
-//! dropped from the record, because from then on it is theirs. Nothing here
-//! removes all identities.
+//! shows it after the add. The key's certificate (`<key>-cert.pub`, which
+//! `ssh-add` loads with it) is recorded with it when the agent shows it after
+//! the add and not before. A key whose file does not carry its public key goes
+//! only into an empty agent and is not recorded: the lifetime is its only
+//! expiry, so the record can never cover a key the user adds later. A key the
+//! user adds in Settings → SSH Agent is dropped from the record, because from
+//! then on it is theirs. The agent does not say who added a key, so a recorded
+//! key the user loads again with `ssh-add` in a terminal stays recorded and is
+//! removed. Nothing here removes all identities.
 //!
 //! No passphrase is asked for or kept.
 
@@ -82,14 +86,16 @@ impl OwnKeys {
 
     /// Runs `add` (the `ssh-add` of the key at `key_path` into the agent at
     /// `socket_path`) unless the agent may already hold the key, and records
-    /// the key when its own file names it.
+    /// what the add put there when the key's own file names it.
     ///
-    /// `blobs` is what the key's files say its public blob is. Their best
-    /// guess decides whether to add: a key the agent already holds is left
-    /// alone, and with no guess at all the add runs only into an agent that
-    /// holds nothing. Only [`KeyFileBlobs::key_file`] is recorded, and only
-    /// when the agent shows it after the add; a key without it is left to its
-    /// lifetime. `key_path` only names the key in the log.
+    /// `blobs` is what the key's files say. Only [`KeyFileBlobs::key_file`]
+    /// decides whether to add: a key the agent already holds is left alone,
+    /// and a key whose file does not name it is added only into an agent that
+    /// holds nothing (a `.pub` beside it may be stale, so it is not trusted).
+    /// The key is recorded when the agent shows it after the add; its
+    /// certificate ([`KeyFileBlobs::cert_file`]) is recorded too when the
+    /// agent shows it after the add and did not before. A key without its own
+    /// blob is left to its lifetime. `key_path` only names the key in the log.
     #[cfg(unix)]
     pub(crate) fn add_and_record(
         &self,
@@ -104,7 +110,7 @@ impl OwnKeys {
                 "could not ask the SSH agent which keys it holds, so the key was not added: {e}"
             ))
         })?;
-        match blobs.best() {
+        match blobs.key_file.as_deref() {
             Some(blob) if before.iter().any(|held| held == blob) => {
                 tracing::debug!(?key_path, "SSH key already in the agent; not adding it");
                 return Ok(());
@@ -112,12 +118,12 @@ impl OwnKeys {
             None if !before.is_empty() => {
                 tracing::warn!(
                     ?key_path,
-                    "the public half of this SSH key is unreadable, so whether the agent \
+                    "this SSH key file does not carry its public key, so whether the agent \
                      already holds it cannot be told; not adding it"
                 );
                 return Err(AgentError::KeyPresenceUnknown(
-                    "the agent holds other keys and this key has no readable public half \
-                     (no .pub file beside it), so RustConn did not add it"
+                    "the agent holds keys and this key file does not carry its public \
+                     key (a legacy PEM or PKCS#8 key), so RustConn did not add it"
                         .to_owned(),
                 ));
             }
@@ -137,6 +143,14 @@ impl OwnKeys {
         match super::wire::request_identity_blobs(socket_path) {
             Ok(after) if after.iter().any(|held| held == blob) => {
                 self.record(socket_path, blob.to_vec());
+                // `ssh-add` loads `<key>-cert.pub` too when it matches. A
+                // certificate the agent already held before is not ours.
+                if let Some(cert) = blobs.cert_file.as_deref()
+                    && !before.iter().any(|held| held == cert)
+                    && after.iter().any(|held| held == cert)
+                {
+                    self.record(socket_path, cert.to_vec());
+                }
             }
             Ok(_) => tracing::warn!(
                 ?key_path,
@@ -170,14 +184,21 @@ impl OwnKeys {
     /// Stops tracking a key the user has just added at `socket_path`
     /// themselves: from then on it is theirs.
     ///
-    /// With the key file's own blob, only that key is dropped. Without it (a
-    /// legacy PEM or PKCS#8 key) the user's key could be any recorded one, as
-    /// the same key can sit in two files, so every key recorded for that
-    /// socket is dropped; those then leave the agent when their lifetime ends.
+    /// With the key file's own blob, only that key and its certificate are
+    /// dropped. Without it (a legacy PEM or PKCS#8 key) the user's key could
+    /// be any recorded one, as the same key can sit in two files, so every key
+    /// recorded for that socket is dropped; those then leave the agent when
+    /// their lifetime ends.
     pub(crate) fn forget(&self, socket_path: &str, blobs: &KeyFileBlobs) {
         let mut keys = self.lock();
         match blobs.key_file.as_deref() {
-            Some(blob) => keys.retain(|k| !(k.socket_path == socket_path && k.blob == blob)),
+            Some(blob) => {
+                let cert = blobs.cert_file.as_deref();
+                keys.retain(|k| {
+                    !(k.socket_path == socket_path
+                        && (k.blob == blob || Some(k.blob.as_slice()) == cert))
+                });
+            }
             None => keys.retain(|k| k.socket_path != socket_path),
         }
     }
@@ -391,16 +412,21 @@ mod tests {
     fn from_key_file(blob: &[u8]) -> KeyFileBlobs {
         KeyFileBlobs {
             key_file: Some(blob.to_vec()),
-            pub_file: None,
+            cert_file: None,
         }
     }
 
-    /// What a legacy PEM key with a `.pub` beside it says.
-    fn from_pub_file(blob: &[u8]) -> KeyFileBlobs {
+    /// What an OpenSSH key with a `-cert.pub` beside it says.
+    fn with_cert(blob: &[u8], cert: &[u8]) -> KeyFileBlobs {
         KeyFileBlobs {
-            key_file: None,
-            pub_file: Some(blob.to_vec()),
+            key_file: Some(blob.to_vec()),
+            cert_file: Some(cert.to_vec()),
         }
+    }
+
+    /// What a legacy PEM or PKCS#8 key says: nothing it can be known by.
+    fn legacy() -> KeyFileBlobs {
+        KeyFileBlobs::default()
     }
 
     /// Adds `adds` to `agent` through `own`, as `ssh-add` would, with
@@ -462,7 +488,7 @@ mod tests {
         own.record(&agent.socket, second.clone());
         own.record("/nonexistent/rustconn-test/other.sock", elsewhere);
 
-        own.forget(&agent.socket, &from_pub_file(&first));
+        own.forget(&agent.socket, &legacy());
         assert_eq!(own.len(), 1, "only the other agent's key is still recorded");
 
         own.evict();
@@ -566,20 +592,109 @@ mod tests {
         assert_eq!(agent.keys(), vec![users]);
     }
 
+    /// The user already loaded a legacy PEM key; the `.pub` beside its file is
+    /// stale and names some other key. Trusting the `.pub` would re-add the
+    /// user's key and replace its constraints with RustConn's lifetime, so
+    /// nothing is added and the outcome is "cannot tell".
     #[test]
-    fn a_key_its_pub_file_names_as_held_is_not_added() {
-        let users = blob(22);
+    fn a_stale_pub_beside_a_key_the_user_loaded_does_not_re_add_it() {
+        let (users_real_key, named_by_stale_pub) = (blob(22), blob(26));
+        let dir = tempfile::tempdir().unwrap();
+        let key_path = dir.path().join("legacy_rsa");
+        std::fs::write(
+            &key_path,
+            "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
+        )
+        .unwrap();
+        let stale_pub = format!(
+            "ssh-ed25519 {} stale",
+            data_encoding::BASE64.encode(&named_by_stale_pub)
+        );
+        std::fs::write(dir.path().join("legacy_rsa.pub"), stale_pub).unwrap();
+        let agent = FakeAgent::holding(&[&users_real_key]);
+        let own = OwnKeys::new();
+
+        let ran = Cell::new(false);
+        let blobs = super::super::keyfile::key_file_blobs(&key_path);
+        let result = own.add_and_record(&agent.socket, &key_path, &blobs, || {
+            ran.set(true);
+            agent.insert(&users_real_key);
+            Ok(())
+        });
+
+        assert!(matches!(result, Err(AgentError::KeyPresenceUnknown(_))));
+        assert!(!ran.get(), "the user's key is not re-added");
+        assert_eq!(own.len(), 0);
+        assert_eq!(agent.keys(), vec![users_real_key]);
+        assert_eq!(agent.requests(), vec![REQUEST_IDENTITIES]);
+    }
+
+    /// `ssh-add` loads the key's certificate with it; both are recorded, so
+    /// eviction removes both and leaves the user's key.
+    #[test]
+    fn a_certificate_added_with_the_key_is_recorded_and_evicted() {
+        let (ours, our_cert, users) = (blob(27), blob(28), blob(29));
         let agent = FakeAgent::holding(&[&users]);
         let own = OwnKeys::new();
 
-        let (result, ran) = add_via(&own, &agent, &from_pub_file(&users), &users);
+        let result = own.add_and_record(
+            &agent.socket,
+            Path::new(KEY_PATH),
+            &with_cert(&ours, &our_cert),
+            || {
+                agent.insert(&ours);
+                agent.insert(&our_cert);
+                Ok(())
+            },
+        );
         assert!(result.is_ok());
-        assert!(!ran);
-        assert_eq!(own.len(), 0);
+        assert_eq!(own.len(), 2);
+        assert_eq!(own.evict(), 2);
+        assert_eq!(agent.keys(), vec![users]);
     }
 
-    /// Whether the agent holds a key with no readable public half cannot be
-    /// told; that is its own outcome, so a launcher can warn and go on.
+    /// A certificate the agent held before RustConn's add was loaded by
+    /// someone else; only the key RustConn added is recorded.
+    #[test]
+    fn a_certificate_held_before_the_add_is_not_recorded() {
+        let (ours, users_cert) = (blob(30), blob(31));
+        let agent = FakeAgent::holding(&[&users_cert]);
+        let own = OwnKeys::new();
+
+        let result = own.add_and_record(
+            &agent.socket,
+            Path::new(KEY_PATH),
+            &with_cert(&ours, &users_cert),
+            || {
+                agent.insert(&ours);
+                Ok(())
+            },
+        );
+        assert!(result.is_ok());
+        assert_eq!(own.len(), 1);
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![users_cert]);
+    }
+
+    /// The user adds the key in Settings: its certificate is theirs too.
+    #[test]
+    fn forgetting_a_key_forgets_its_certificate() {
+        let (key, cert, other) = (blob(32), blob(33), blob(34));
+        let agent = FakeAgent::holding(&[&key, &cert, &other]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, key.clone());
+        own.record(&agent.socket, cert.clone());
+        own.record(&agent.socket, other);
+
+        own.forget(&agent.socket, &with_cert(&key, &cert));
+        assert_eq!(own.len(), 1, "only the unrelated key is still recorded");
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![key, cert]);
+    }
+
+    /// Whether the agent holds a key whose file does not carry its public key
+    /// cannot be told; that is its own outcome, so a launcher can warn and go
+    /// on.
     #[test]
     fn an_unreadable_public_half_is_not_added_beside_other_keys() {
         let users = blob(13);
@@ -634,23 +749,6 @@ mod tests {
                 .requests()
                 .contains(&super::super::wire::REMOVE_IDENTITY)
         );
-    }
-
-    /// A stale `.pub` names a key other than the one `ssh-add` loads. Only a
-    /// blob from the key file itself is ever recorded, so neither the key it
-    /// names nor the key that did appear is: the latter stays to its lifetime.
-    #[test]
-    fn a_stale_public_half_records_nothing() {
-        let (named_by_stale_pub, loaded) = (blob(15), blob(16));
-        let agent = FakeAgent::holding(&[]);
-        let own = OwnKeys::new();
-
-        let (result, ran) = add_via(&own, &agent, &from_pub_file(&named_by_stale_pub), &loaded);
-        assert!(result.is_ok());
-        assert!(ran);
-        assert_eq!(own.len(), 0);
-        assert_eq!(own.evict(), 0);
-        assert_eq!(agent.keys(), vec![loaded]);
     }
 
     /// The key file's blob did not show up after the add: nothing else that

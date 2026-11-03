@@ -843,12 +843,14 @@ impl SshAgentManager {
     /// and after the add, and that one socket is also the one `ssh-add` writes
     /// to. A key it already holds is left exactly as it is: it may be the
     /// user's, and re-adding would replace its constraints. When that cannot
-    /// be told (the agent does not answer, or the key's public half is
-    /// unreadable and the agent holds other keys) nothing is added. Otherwise
-    /// the key goes in with `ssh-add -t` [`OWN_KEY_LIFETIME`]. It is recorded
-    /// for [`evict_own_keys`] only when its own private key file carries its
+    /// be told (the agent does not answer, or the key file does not carry its
+    /// public key and the agent holds any key; a `.pub` beside it may be
+    /// stale and is not trusted) nothing is added. Otherwise the key goes in
+    /// with `ssh-add -t` [`OWN_KEY_LIFETIME`]. It is recorded for
+    /// [`evict_own_keys`] only when its own private key file carries its
     /// public blob (an OpenSSH key) and the agent shows that blob after the
-    /// add; any other key is left to its lifetime.
+    /// add, together with its `<key>-cert.pub` certificate when the add put
+    /// that in the agent too; any other key is left to its lifetime.
     ///
     /// No passphrase is taken and no askpass is offered
     /// (`SSH_ASKPASS_REQUIRE=never`): an encrypted key loads only if
@@ -859,8 +861,8 @@ impl SshAgentManager {
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
     /// Returns `AgentError::KeyPresenceUnknown` if the agent's answer cannot
-    /// settle whether it already holds this key (the key's public half is
-    /// unreadable and the agent holds other keys).
+    /// settle whether it already holds this key (the key file does not carry
+    /// its public key and the agent holds any key).
     /// Returns `AgentError::AddKeyFailed` if the agent cannot be asked which
     /// keys it holds, or if `ssh-add` fails or times out.
     pub fn add_own_key(&self, key_path: &std::path::Path) -> AgentResult<()> {
