@@ -586,6 +586,12 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Present window immediately — no waiting for secret backends
     window.present();
 
+    // Start the session lock/suspend listener (W3 phase 4): on screen lock or
+    // suspend it clears the in-memory SSH key passphrase cache. Fire-and-forget
+    // on its own thread; Linux/BSD only (D-Bus / login1 / ScreenSaver).
+    #[cfg(not(target_os = "macos"))]
+    crate::lock_listener::start();
+
     // Debug helper: RUSTCONN_OPEN_SETTINGS=1 auto-opens the Settings dialog
     // shortly after startup, so dialog timing instrumentation can be captured
     // hands-free (also works inside flatpak/snap where input automation is

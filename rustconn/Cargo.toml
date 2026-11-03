@@ -99,6 +99,25 @@ rustconn-dock-sys = { path = "../rustconn-dock-sys", version = "0.24.5" }
 # WebKitGTK 6.0 bindings for embedded web browser (Linux only)
 webkit6 = { version = "0.6", optional = true }
 
+# D-Bus client for the session lock/suspend listener (W3 phase 4). Subscribes to
+# login1 `PrepareForSleep` and the freedesktop ScreenSaver `ActiveChanged` signal
+# so a screen lock or suspend drops every cached SSH key passphrase. Gated to
+# non-macOS: D-Bus, login1 and the ScreenSaver interface are Linux/BSD-only, and
+# zbus already compiles for every Linux/BSD build as a transitive dependency
+# (via ashpd, ksni and oo7), so this only promotes it to a direct dependency.
+# `tokio` feature: zbus runs on a tokio reactor in this build, matching the
+# dedicated runtime thread the listener spawns. `default-features = false` drops
+# the `async-io` executor we do not use.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+zbus = { version = "5", default-features = false, features = ["tokio"] }
+# `StreamExt` (`next`, `filter_map`) for the zbus signal streams in the lock
+# listener. Already in the graph transitively; `default-features = false` keeps
+# it to the stream/async-await combinators we use, no executor or I/O.
+futures-util = { version = "0.3", default-features = false, features = [
+    "std",
+    "async-await",
+] }
+
 [features]
 # SPICE sessions always use an external viewer (virt-viewer/remote-viewer).
 # The native embedded SPICE path was removed in 0.18.0: spice-client 0.2 exposes
