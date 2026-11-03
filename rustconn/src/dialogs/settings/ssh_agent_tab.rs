@@ -771,9 +771,9 @@ fn create_loaded_key_row(
                 let ssh_dir = home.join(".ssh");
                 // Try to find key by fingerprint in available keys
                 if let Ok(key_files) = SshAgentManager::list_key_files() {
-                    // For now, we'll use ssh-add -d with the fingerprint directly
-                    // This requires a different approach - use ssh-add -D to remove all
-                    // or find the key file that matches
+                    // `ssh-add -d` needs a key file, not a fingerprint, so
+                    // find the key file that matches. Never remove all keys:
+                    // only this one was asked for.
                     for key_file in key_files {
                         // We can't easily match fingerprint to file without loading each key
                         // So we'll try the comment as a hint

@@ -4925,7 +4925,6 @@ dependencies = [
  "chrono",
  "cpal",
  "dirs 7.0.0",
- "futures-util",
  "gdk4-wayland",
  "gettext-rs",
  "gtk4",
@@ -4955,7 +4954,6 @@ dependencies = [
  "uuid",
  "vte4",
  "webkit6",
- "zbus",
  "zeroize",
 ]
 
@@ -5054,6 +5052,7 @@ dependencies = [
  "uuid",
  "vnc-rs",
  "x509-cert",
+ "zbus",
  "zeroize",
  "zip",
  "zune-jpeg",

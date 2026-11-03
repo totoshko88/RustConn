@@ -4,7 +4,7 @@
 //! including starting the agent, managing keys, and parsing agent output.
 
 mod keyfile;
-pub mod passphrase_cache;
+mod own_keys;
 #[cfg(unix)]
 mod wire;
 
@@ -13,6 +13,8 @@ pub(crate) use keyfile::openssh_key_fixture;
 pub use keyfile::{
     KeyEncryption, KeyFileInfo, KeyFormat, PublicKeyInfo, inspect_key_file, openssh_public_key_line,
 };
+pub(crate) use own_keys::record as record_own_key;
+pub use own_keys::{OWN_KEY_LIFETIME, evict_own_keys};
 
 use std::path::{Path, PathBuf};
 
@@ -464,6 +466,34 @@ mod manager_tests {
         assert!(status.keys.is_empty());
     }
 
+    /// A key RustConn adds on its own carries the 12 h lifetime ahead of the
+    /// key path; the user's own add carries none.
+    #[test]
+    fn own_key_add_carries_the_twelve_hour_lifetime() {
+        let args = |lifetime| {
+            ssh_add_command(
+                std::path::Path::new("/home/u/.ssh/id_ed25519"),
+                "/tmp/agent.sock",
+                lifetime,
+            )
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            args(Some(OWN_KEY_LIFETIME)),
+            vec!["-t", "43200", "/home/u/.ssh/id_ed25519"]
+        );
+        assert_eq!(args(None), vec!["/home/u/.ssh/id_ed25519"]);
+    }
+
+    #[test]
+    fn add_own_key_requires_socket() {
+        let manager = SshAgentManager::new(None);
+        let result = manager.add_own_key(std::path::Path::new("/nonexistent/id_ed25519"));
+        assert!(matches!(result, Err(AgentError::NotRunning)));
+    }
+
     /// `add_key` used to put the passphrase itself in the `ssh-add`
     /// environment, readable in `/proc/<pid>/environ`. Now only the paths of
     /// the askpass helper and of the owner-only secret file are there, and the
@@ -483,6 +513,7 @@ mod manager_tests {
         let cmd = ssh_add_askpass_command(
             std::path::Path::new("/home/u/.ssh/id_ed25519"),
             "/tmp/agent.sock",
+            None,
             &script,
             &secret,
         );
@@ -757,6 +788,11 @@ impl SshAgentManager {
     /// su/sudo/container shells, the file is readable only by the same uid,
     /// and the one-shot helper empties it right after its single read.
     ///
+    /// This is the user's own add (Settings → SSH Agent): no lifetime, and the
+    /// key counts as the user's from now on, so RustConn will not remove it on
+    /// exit, lock or suspend even if it had added the same key itself earlier.
+    /// The passphrase is used for this one add and not kept.
+    ///
     /// # Errors
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
@@ -766,89 +802,139 @@ impl SshAgentManager {
         key_path: &std::path::Path,
         passphrase: Option<&secrecy::SecretString>,
     ) -> AgentResult<()> {
-        use std::process::Command;
-
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
+        run_ssh_add(key_path, socket_path, passphrase, None)?;
+        own_keys::forget(socket_path, key_path);
+        Ok(())
+    }
 
-        if let Some(pass) = passphrase {
-            use crate::ssh_tunnel::{
-                cleanup_askpass_script, create_one_shot_askpass_script, create_tunnel_secret_file,
-            };
+    /// Adds a key RustConn needs in the agent on its own (a multi-hop `-J`
+    /// connect), to be removed again on exit, screen lock and suspend.
+    ///
+    /// A key the agent already holds is left exactly as it is: it may be the
+    /// user's, and re-adding would replace its constraints. Otherwise the key
+    /// goes in with `ssh-add -t` [`OWN_KEY_LIFETIME`] and is recorded for
+    /// [`evict_own_keys`]. No passphrase is taken: an encrypted key loads only
+    /// if `ssh-add` can get its passphrase some other way, as before.
+    ///
+    /// # Errors
+    ///
+    /// Returns `AgentError::NotRunning` if no socket is configured.
+    /// Returns `AgentError::AddKeyFailed` if the key cannot be added.
+    pub fn add_own_key(&self, key_path: &std::path::Path) -> AgentResult<()> {
+        let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
+        if agent_holds_key(socket_path, key_path) {
+            tracing::debug!(?key_path, "SSH key already in the agent; not adding it");
+            return Ok(());
+        }
+        run_ssh_add(key_path, socket_path, None, Some(OWN_KEY_LIFETIME))?;
+        own_keys::record(socket_path, key_path);
+        Ok(())
+    }
+}
 
-            // The passphrase reaches ssh-add's askpass helper through an
-            // owner-only (0600) file in `$XDG_RUNTIME_DIR`; the environment
-            // carries only that file's path. It used to travel as the value of
-            // an env var, which the same user can read in `/proc/<pid>/environ`
-            // for as long as ssh-add runs. The secret file is the SSH tunnel's;
-            // the helper is its one-shot variant, because ssh-add asks again
-            // after a wrong passphrase and only an empty answer stops it.
-            let script_path = create_one_shot_askpass_script().map_err(AgentError::AddKeyFailed)?;
-            // ponytail: temp_dir fallback kept by decision (K1, 0.24): one
-            // resolver for every askpass secret file, `ssh_askpass::secret_dir`;
-            // refusing would break su/sudo/container sessions, and a private
-            // /tmp subdir adds a DoS vector and no secrecy over 0600 O_EXCL
-            // random names. Follow-ups: tunnel scripts to the runtime dir,
-            // atomic GUI script.
-            let secret_path = match create_tunnel_secret_file(pass) {
-                Ok(path) => path,
-                Err(e) => {
-                    cleanup_askpass_script(&script_path);
-                    return Err(AgentError::AddKeyFailed(e));
-                }
-            };
+/// Whether the agent at `socket_path` already holds the key at `key_path`,
+/// compared by public blob over the native protocol. `false` whenever that
+/// cannot be told (unreadable public half, agent query failed).
+fn agent_holds_key(socket_path: &str, key_path: &std::path::Path) -> bool {
+    #[cfg(unix)]
+    {
+        let Some(blob) = keyfile::public_blob_for_key_path(key_path) else {
+            return false;
+        };
+        let fingerprint = keyfile::sha256_fingerprint(&blob);
+        wire::request_identities(socket_path)
+            .is_ok_and(|keys| keys.iter().any(|k| k.fingerprint == fingerprint))
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (socket_path, key_path);
+        false
+    }
+}
 
-            // Bounded, so the files below are always cleaned up and the caller
-            // (the GTK thread) never waits on an ssh-add that does not finish.
-            let output = ssh_add_askpass_command(key_path, socket_path, &script_path, &secret_path)
+/// Runs `ssh-add` for `key_path` against `socket_path`, with the passphrase
+/// through the one-shot askpass when one is given and `-t lifetime` when one is
+/// given.
+fn run_ssh_add(
+    key_path: &std::path::Path,
+    socket_path: &str,
+    passphrase: Option<&secrecy::SecretString>,
+    lifetime: Option<std::time::Duration>,
+) -> AgentResult<()> {
+    if let Some(pass) = passphrase {
+        use crate::ssh_tunnel::{
+            cleanup_askpass_script, create_one_shot_askpass_script, create_tunnel_secret_file,
+        };
+
+        // The passphrase reaches ssh-add's askpass helper through an
+        // owner-only (0600) file in `$XDG_RUNTIME_DIR`; the environment
+        // carries only that file's path. It used to travel as the value of
+        // an env var, which the same user can read in `/proc/<pid>/environ`
+        // for as long as ssh-add runs. The secret file is the SSH tunnel's;
+        // the helper is its one-shot variant, because ssh-add asks again
+        // after a wrong passphrase and only an empty answer stops it.
+        let script_path = create_one_shot_askpass_script().map_err(AgentError::AddKeyFailed)?;
+        // ponytail: temp_dir fallback kept by decision (K1, 0.24): one
+        // resolver for every askpass secret file, `ssh_askpass::secret_dir`;
+        // refusing would break su/sudo/container sessions, and a private
+        // /tmp subdir adds a DoS vector and no secrecy over 0600 O_EXCL
+        // random names. Follow-ups: tunnel scripts to the runtime dir,
+        // atomic GUI script.
+        let secret_path = match create_tunnel_secret_file(pass) {
+            Ok(path) => path,
+            Err(e) => {
+                cleanup_askpass_script(&script_path);
+                return Err(AgentError::AddKeyFailed(e));
+            }
+        };
+
+        // Bounded, so the files below are always cleaned up and the caller
+        // (the GTK thread) never waits on an ssh-add that does not finish.
+        let output =
+            ssh_add_askpass_command(key_path, socket_path, lifetime, &script_path, &secret_path)
                 .spawn()
                 .and_then(|child| {
                     crate::proc::wait_bounded(child, SSH_ADD_TIMEOUT, "ssh-add with askpass")
                 })
                 .map_err(|e| AgentError::AddKeyFailed(e.to_string()));
 
-            // The child has exited or been killed and reaped, so neither file
-            // is needed any more. The secret file is zeroized before it is
-            // unlinked.
-            cleanup_askpass_script(&secret_path);
-            cleanup_askpass_script(&script_path);
+        // The child has exited or been killed and reaped, so neither file
+        // is needed any more. The secret file is zeroized before it is
+        // unlinked.
+        cleanup_askpass_script(&secret_path);
+        cleanup_askpass_script(&script_path);
 
-            let output = output?.output().ok_or_else(|| {
-                AgentError::AddKeyFailed(format!(
-                    "ssh-add did not finish within {} s",
-                    SSH_ADD_TIMEOUT.as_secs()
-                ))
-            })?;
+        let output = output?.output().ok_or_else(|| {
+            AgentError::AddKeyFailed(format!(
+                "ssh-add did not finish within {} s",
+                SSH_ADD_TIMEOUT.as_secs()
+            ))
+        })?;
 
-            if !output.status.success() {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                if stderr.contains("passphrase") || stderr.contains("bad passphrase") {
-                    return Err(AgentError::AddKeyFailed("Incorrect passphrase".to_string()));
-                }
-                return Err(AgentError::AddKeyFailed(stderr.to_string()));
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("passphrase") || stderr.contains("bad passphrase") {
+                return Err(AgentError::AddKeyFailed("Incorrect passphrase".to_string()));
             }
-
-            // ssh-add accepted the passphrase, so remember it for the rest of
-            // the session: a later non-interactive `ensure identity` on the same
-            // key (a multi-hop `-J` connect) can reuse it instead of asking
-            // again. Only cached on success, so a wrong guess is never stored.
-            passphrase_cache::remember(key_path, pass);
-        } else {
-            // No passphrase - simple ssh-add
-            let output = Command::new("ssh-add")
-                .arg(key_path)
-                .env("SSH_AUTH_SOCK", socket_path)
-                .output()
-                .map_err(|e| AgentError::AddKeyFailed(e.to_string()))?;
-
-            if !output.status.success() {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(AgentError::AddKeyFailed(stderr.to_string()));
-            }
+            return Err(AgentError::AddKeyFailed(stderr.to_string()));
         }
+    } else {
+        // No passphrase - simple ssh-add
+        let output = ssh_add_command(key_path, socket_path, lifetime)
+            .output()
+            .map_err(|e| AgentError::AddKeyFailed(e.to_string()))?;
 
-        Ok(())
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(AgentError::AddKeyFailed(stderr.to_string()));
+        }
     }
 
+    Ok(())
+}
+
+impl SshAgentManager {
     /// Removes a key from the SSH agent.
     ///
     /// # Arguments
@@ -1176,6 +1262,21 @@ mod list_key_files_tests {
 /// bcrypt KDF rounds (`ssh-keygen -a`) takes seconds to decrypt.
 const SSH_ADD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
+/// The `ssh-add` command that loads `key_path` into the agent at
+/// `socket_path`, with `-t <seconds>` when a `lifetime` is given.
+fn ssh_add_command(
+    key_path: &std::path::Path,
+    socket_path: &str,
+    lifetime: Option<std::time::Duration>,
+) -> std::process::Command {
+    let mut cmd = std::process::Command::new("ssh-add");
+    if let Some(lifetime) = lifetime {
+        cmd.arg("-t").arg(lifetime.as_secs().to_string());
+    }
+    cmd.arg(key_path).env("SSH_AUTH_SOCK", socket_path);
+    cmd
+}
+
 /// The `ssh-add` command that loads `key_path` with its passphrase supplied by
 /// the askpass helper at `script_path`, which reads it from `secret_path`.
 ///
@@ -1183,15 +1284,14 @@ const SSH_ADD_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 fn ssh_add_askpass_command(
     key_path: &std::path::Path,
     socket_path: &str,
+    lifetime: Option<std::time::Duration>,
     script_path: &std::path::Path,
     secret_path: &std::path::Path,
 ) -> std::process::Command {
-    use std::process::{Command, Stdio};
+    use std::process::Stdio;
 
-    let mut cmd = Command::new("ssh-add");
-    cmd.arg(key_path)
-        .env("SSH_AUTH_SOCK", socket_path)
-        .env("SSH_ASKPASS", script_path)
+    let mut cmd = ssh_add_command(key_path, socket_path, lifetime);
+    cmd.env("SSH_ASKPASS", script_path)
         .env("SSH_ASKPASS_REQUIRE", "force")
         .env("DISPLAY", ":0")
         .env(crate::ssh_tunnel::TUNNEL_ASKPASS_ENV_VAR, secret_path)

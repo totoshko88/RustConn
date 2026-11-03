@@ -1,4 +1,4 @@
-//! Native ssh-agent wire protocol — the read half (A1).
+//! Native ssh-agent wire protocol (A1).
 //!
 //! Speaks the ssh-agent protocol directly over the `SSH_AUTH_SOCK` Unix socket
 //! instead of spawning `ssh-add -l` and a per-key `ssh-keygen`. On an SSH
@@ -6,11 +6,14 @@
 //! about (1+N)×5 ms on the GTK main thread (issue, A1); this answers in one
 //! round trip with no process at all.
 //!
-//! Scope is deliberately the READ half — [`request_identities`], which
-//! fingerprints each key with the shared helper in [`super::keyfile`]. Adding
-//! and removing keys still go through `ssh-add` in [`super::SshAgentManager`]:
-//! adding an *encrypted* key needs an in-process passphrase decrypt, which is
-//! blocked by a dependency conflict (see `keyfile`), so the askpass path stays.
+//! Two requests are spoken here: [`request_identities`], which fingerprints
+//! each key with the shared helper in [`super::keyfile`], and
+//! [`remove_identity`], which takes back one key RustConn added itself (see
+//! `super::own_keys`). Adding keys still goes through `ssh-add` in
+//! [`super::SshAgentManager`]: adding an *encrypted* key needs an in-process
+//! passphrase decrypt, which is blocked by a dependency conflict (see
+//! `keyfile`), so the askpass path stays. `SSH_AGENTC_REMOVE_ALL_IDENTITIES`
+//! is deliberately not implemented: RustConn never removes keys it did not add.
 //!
 //! # Protocol
 //!
@@ -18,8 +21,10 @@
 //! (draft-miller-ssh-agent). The client sends `SSH_AGENTC_REQUEST_IDENTITIES`
 //! (11) with an empty body; the agent answers `SSH_AGENT_IDENTITIES_ANSWER`
 //! (12): `uint32 nkeys`, then for each key a `string` key blob and a `string`
-//! comment. A `string` is a `uint32` length followed by that many bytes. All
-//! integers are big-endian.
+//! comment. `SSH_AGENTC_REMOVE_IDENTITY` (18) carries one `string` key blob and
+//! is answered with `SSH_AGENT_SUCCESS` (6) or `SSH_AGENT_FAILURE` (5). A
+//! `string` is a `uint32` length followed by that many bytes. All integers are
+//! big-endian.
 
 use std::io::{Read as _, Write as _};
 use std::os::unix::net::UnixStream;
@@ -32,6 +37,12 @@ use super::{AgentError, AgentKey, AgentResult};
 const REQUEST_IDENTITIES: u8 = 11;
 /// `SSH_AGENT_IDENTITIES_ANSWER`.
 const IDENTITIES_ANSWER: u8 = 12;
+/// `SSH_AGENTC_REMOVE_IDENTITY`.
+pub(super) const REMOVE_IDENTITY: u8 = 18;
+/// `SSH_AGENT_FAILURE`.
+const FAILURE: u8 = 5;
+/// `SSH_AGENT_SUCCESS`.
+const SUCCESS: u8 = 6;
 
 /// How long one agent round trip may take.
 ///
@@ -62,15 +73,67 @@ const MAX_REPLY_BYTES: u32 = 1024 * 1024;
 /// times out, and [`AgentError::ParseError`] if the reply is not a well-formed
 /// `SSH_AGENT_IDENTITIES_ANSWER`.
 pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>> {
-    let mut stream = UnixStream::connect(Path::new(socket_path))?;
-    stream.set_read_timeout(Some(AGENT_IO_TIMEOUT))?;
-    stream.set_write_timeout(Some(AGENT_IO_TIMEOUT))?;
-
     // Request: length (1 for the type byte) + type, empty body.
     let mut request = Vec::with_capacity(5);
     request.extend_from_slice(&1u32.to_be_bytes());
     request.push(REQUEST_IDENTITIES);
-    stream.write_all(&request)?;
+    let body = round_trip(socket_path, &request)?;
+    parse_identities_answer(&body)
+}
+
+/// Asks the agent at `socket_path` to drop the one key whose public blob is
+/// `blob`.
+///
+/// Returns `Ok(true)` when the agent removed it and `Ok(false)` when it
+/// answered `SSH_AGENT_FAILURE` — it no longer holds that key (its lifetime ran
+/// out, or the user removed it), which for a caller cleaning up is not an error.
+///
+/// # Errors
+///
+/// Returns [`AgentError::Io`] if the socket cannot be reached or the exchange
+/// times out, and [`AgentError::ParseError`] if the blob is too large to frame
+/// or the reply is neither success nor failure.
+pub(super) fn remove_identity(socket_path: &str, blob: &[u8]) -> AgentResult<bool> {
+    let request = remove_identity_request(blob)?;
+    let body = round_trip(socket_path, &request)?;
+    parse_status_reply(&body)
+}
+
+/// The framed `SSH_AGENTC_REMOVE_IDENTITY` request for `blob`.
+fn remove_identity_request(blob: &[u8]) -> AgentResult<Vec<u8>> {
+    let too_large = || AgentError::ParseError("key blob too large to frame".to_string());
+    let blob_len = u32::try_from(blob.len()).map_err(|_| too_large())?;
+    // type byte + uint32 string length + the blob
+    let frame_len = blob_len.checked_add(5).ok_or_else(too_large)?;
+    let mut request = Vec::with_capacity(blob.len() + 9);
+    request.extend_from_slice(&frame_len.to_be_bytes());
+    request.push(REMOVE_IDENTITY);
+    request.extend_from_slice(&blob_len.to_be_bytes());
+    request.extend_from_slice(blob);
+    Ok(request)
+}
+
+/// Maps a one-byte `SSH_AGENT_SUCCESS` / `SSH_AGENT_FAILURE` reply to a bool.
+fn parse_status_reply(body: &[u8]) -> AgentResult<bool> {
+    match body.first() {
+        Some(&SUCCESS) => Ok(true),
+        Some(&FAILURE) => Ok(false),
+        Some(other) => Err(AgentError::ParseError(format!(
+            "expected SUCCESS or FAILURE, got message type {other}"
+        ))),
+        None => Err(AgentError::ParseError("empty agent reply".to_string())),
+    }
+}
+
+/// Sends one framed request and reads one framed reply, returning the reply
+/// body (type byte + payload). Every read and write is bounded by
+/// [`AGENT_IO_TIMEOUT`].
+fn round_trip(socket_path: &str, request: &[u8]) -> AgentResult<Vec<u8>> {
+    let mut stream = UnixStream::connect(Path::new(socket_path))?;
+    stream.set_read_timeout(Some(AGENT_IO_TIMEOUT))?;
+    stream.set_write_timeout(Some(AGENT_IO_TIMEOUT))?;
+
+    stream.write_all(request)?;
     stream.flush()?;
 
     // Reply: uint32 length, then that many bytes (type + body).
@@ -84,8 +147,7 @@ pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>
     }
     let mut body = vec![0u8; reply_len as usize];
     stream.read_exact(&mut body)?;
-
-    parse_identities_answer(&body)
+    Ok(body)
 }
 
 /// Parses the body of an `SSH_AGENT_IDENTITIES_ANSWER` (type byte + payload).
@@ -257,6 +319,32 @@ mod tests {
         body.extend_from_slice(&1u32.to_be_bytes());
         assert!(matches!(
             parse_identities_answer(&body),
+            Err(AgentError::ParseError(_))
+        ));
+    }
+
+    #[test]
+    fn remove_identity_request_frames_one_blob() {
+        let blob = ed25519_blob();
+        let request = remove_identity_request(&blob).unwrap();
+        let mut expected = Vec::new();
+        #[expect(clippy::cast_possible_truncation, reason = "test inputs are tiny")]
+        expected.extend_from_slice(&((blob.len() + 5) as u32).to_be_bytes());
+        expected.push(REMOVE_IDENTITY);
+        expected.extend(ssh_string(&blob));
+        assert_eq!(request, expected);
+    }
+
+    #[test]
+    fn status_reply_maps_success_and_failure() {
+        assert!(parse_status_reply(&[SUCCESS]).unwrap());
+        assert!(!parse_status_reply(&[FAILURE]).unwrap());
+        assert!(matches!(
+            parse_status_reply(&[IDENTITIES_ANSWER]),
+            Err(AgentError::ParseError(_))
+        ));
+        assert!(matches!(
+            parse_status_reply(&[]),
             Err(AgentError::ParseError(_))
         ));
     }

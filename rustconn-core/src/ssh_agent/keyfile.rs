@@ -162,15 +162,7 @@ impl PublicKeyInfo {
     /// Returns [`AgentError::ParseError`] when the line has no base64 field or
     /// the field is not valid base64.
     pub fn from_pub_line(line: &str) -> AgentResult<Self> {
-        let mut fields = line.split_whitespace();
-        let _algo = fields.next();
-        let b64 = fields.next().ok_or_else(|| {
-            AgentError::ParseError("public-key line has no base64 field".to_string())
-        })?;
-        let blob = data_encoding::BASE64
-            .decode(b64.as_bytes())
-            .map_err(|e| AgentError::ParseError(format!("public-key base64 is invalid: {e}")))?;
-        Ok(Self::from_blob(&blob))
+        Ok(Self::from_blob(&pub_line_blob(line)?))
     }
 
     /// Reads the public key from a **private** OpenSSH key file, without a
@@ -190,6 +182,38 @@ impl PublicKeyInfo {
         let blob = openssh_public_blob(&body)?;
         Ok(Self::from_blob(&blob))
     }
+}
+
+/// Decodes the blob of a `.pub` line (`algo base64blob [comment]`).
+fn pub_line_blob(line: &str) -> AgentResult<Vec<u8>> {
+    let mut fields = line.split_whitespace();
+    let _algo = fields.next();
+    let b64 = fields
+        .next()
+        .ok_or_else(|| AgentError::ParseError("public-key line has no base64 field".to_string()))?;
+    data_encoding::BASE64
+        .decode(b64.as_bytes())
+        .map_err(|e| AgentError::ParseError(format!("public-key base64 is invalid: {e}")))
+}
+
+/// The public-key blob of the private key at `key_path`, read without a
+/// passphrase, or `None` when it cannot be read.
+///
+/// Tries the key file itself first (an OpenSSH private key carries its public
+/// key in the clear, even when encrypted), then a sibling `<path>.pub`, the
+/// only source for a legacy PEM or PKCS#8 key. The blob is what the agent
+/// identifies a key by, so it is what `SSH_AGENTC_REMOVE_IDENTITY` needs.
+pub(super) fn public_blob_for_key_path(key_path: &std::path::Path) -> Option<Vec<u8>> {
+    if let Ok(contents) = std::fs::read_to_string(key_path)
+        && detect_format(&contents) == KeyFormat::OpenSsh
+        && let Ok(blob) = decode_openssh_body(&contents).and_then(|b| openssh_public_blob(&b))
+    {
+        return Some(blob);
+    }
+    let mut pub_path = key_path.as_os_str().to_os_string();
+    pub_path.push(".pub");
+    let line = std::fs::read_to_string(std::path::PathBuf::from(pub_path)).ok()?;
+    pub_line_blob(line.trim()).ok()
 }
 
 /// The public-key line (`<type> <base64>`, no comment) of an OpenSSH private
@@ -553,6 +577,35 @@ mod tests {
             openssh_public_key_line("not a key at all"),
             Err(AgentError::ParseError(_))
         ));
+    }
+
+    #[test]
+    fn public_blob_comes_from_an_encrypted_openssh_key_itself() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("id_ed25519");
+        std::fs::write(&key, make_openssh_key("aes256-ctr")).unwrap();
+        let blob = public_blob_for_key_path(&key).expect("blob read without a passphrase");
+        assert_eq!(key_type_from_blob(&blob), "ED25519");
+    }
+
+    #[test]
+    fn public_blob_of_a_legacy_pem_comes_from_its_pub_sibling() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("legacy_rsa");
+        std::fs::write(
+            &key,
+            "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
+        )
+        .unwrap();
+        assert!(public_blob_for_key_path(&key).is_none(), "no .pub yet");
+        std::fs::write(dir.path().join("legacy_rsa.pub"), ED25519_PUB).unwrap();
+        let blob = public_blob_for_key_path(&key).expect("blob from the .pub sibling");
+        assert_eq!(
+            sha256_fingerprint(&blob),
+            PublicKeyInfo::from_pub_line(ED25519_PUB)
+                .unwrap()
+                .fingerprint
+        );
     }
 
     #[test]

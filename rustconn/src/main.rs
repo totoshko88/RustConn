@@ -81,10 +81,6 @@ pub mod external_session;
 pub mod i18n;
 mod i18n_markers;
 pub mod icon_render;
-// Session lock/suspend listener (W3 phase 4): clears the SSH passphrase cache on
-// screen lock / suspend. D-Bus based, so Linux/BSD only — never built on macOS.
-#[cfg(not(target_os = "macos"))]
-mod lock_listener;
 pub mod monitor_mode;
 pub mod monitoring;
 mod renderer;

@@ -63,6 +63,7 @@ pub mod flatpak;
 pub mod highlight;
 pub mod host_check;
 pub mod import;
+pub mod lock_events;
 pub mod mc_ssh;
 pub mod models;
 pub mod monitoring;

@@ -158,6 +158,9 @@ security-framework = { version = "3.3", optional = true }
 # path in Part C.
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 oo7 = { workspace = true, optional = true }
+# login1 and ScreenSaver signals for the `lock-events` feature. Gated to
+# non-macOS with it: neither D-Bus service exists there.
+zbus = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -198,6 +201,11 @@ rd-gateway = ["dep:ironrdp-mstsgu", "rdp-embedded"]
 # HTTP/1.1 with hyper. Opt-in so a default build keeps the spawn-per-call path and
 # does not pull hyper into its direct dependency set.
 bitwarden-serve = ["dep:hyper", "dep:hyper-util", "dep:http-body-util", "dep:bytes"]
+# lock-events starts a D-Bus listener for screen lock (ScreenSaver ActiveChanged)
+# and suspend (login1 PrepareForSleep) that dispatches to
+# `lock_events::subscribe` handlers. Off by default so a headless build has no
+# D-Bus client; it does nothing on macOS, where neither service exists.
+lock-events = ["dep:zbus"]
 
 [dev-dependencies]
 proptest = { workspace = true }

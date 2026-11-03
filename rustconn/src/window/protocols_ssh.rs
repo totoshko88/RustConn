@@ -237,11 +237,12 @@ impl JumpAuthShape {
 /// The multi-hop `-J` path needs this: OpenSSH's `ProxyJump` does not pass the
 /// outer command's `-i <path>` to the ssh processes it spawns for each hop, so
 /// the only identity every hop can see is one the agent already holds. Adding
-/// it here (idempotently — `ssh-add` re-adding a loaded key is a no-op) makes a
+/// it here (idempotently — a key the agent already holds is not added again) makes a
 /// key-authenticated multi-hop chain work without the user pre-running
-/// `ssh-add`. Best-effort: a passphrase-protected key with no cached passphrase
-/// cannot be added non-interactively, so a failure is logged and the connection
-/// still proceeds (the agent may already hold it, or the user can add it).
+/// `ssh-add`. Best-effort: a passphrase-protected key whose passphrase nothing
+/// can supply cannot be added non-interactively, so a failure is logged and the
+/// connection still proceeds (the agent may already hold it, or the user can add
+/// it).
 fn ensure_identity_in_agent(key_path: &std::path::Path) {
     use rustconn_core::ssh_agent::SshAgentManager;
 
@@ -260,15 +261,12 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     }
     // One add-key round trip against the agent — the call this phase exists for.
     perf.add_calls(1);
-    // Prefer a passphrase the user already unlocked this session (W3 phase 4):
-    // if the key was added with a passphrase earlier — via the SSH Agent
-    // settings dialog or a prior connect — reuse it so an encrypted key loads
-    // non-interactively now. With no cached passphrase, `add_key(_, None)`
-    // still covers unencrypted keys and keys the agent/askpass can resolve;
-    // an encrypted key with no resolvable passphrase fails here and is left to
-    // the agent/user, exactly as before.
-    let cached = rustconn_core::ssh_agent::passphrase_cache::get(key_path);
-    if let Err(e) = manager.add_key(key_path, cached.as_ref()) {
+    // No passphrase: this covers unencrypted keys and keys the agent/askpass
+    // can resolve; an encrypted key with no resolvable passphrase fails here
+    // and is left to the agent/user. A key added here gets the 12 h lifetime
+    // and is removed again on exit, screen lock and suspend; a key the agent
+    // already holds is left alone.
+    if let Err(e) = manager.add_own_key(key_path) {
         tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
     }
 }

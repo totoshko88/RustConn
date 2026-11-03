@@ -578,6 +578,13 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             rt.block_on(rustconn_core::close_all_control_sockets());
         }
 
+        // Take the SSH keys RustConn added to the agent back out (on every
+        // platform); keys the user added stay.
+        let removed = rustconn_core::ssh_agent::evict_own_keys();
+        if removed > 0 {
+            tracing::info!(removed, "removed the SSH keys RustConn added");
+        }
+
         if let Some(Err(e)) = try_with_state(&state_shutdown, |s| s.flush_persistence()) {
             tracing::error!(%e, "Failed to flush persistence on shutdown");
         }
@@ -586,11 +593,19 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Present window immediately — no waiting for secret backends
     window.present();
 
-    // Start the session lock/suspend listener (W3 phase 4): on screen lock or
-    // suspend it clears the in-memory SSH key passphrase cache. Fire-and-forget
-    // on its own thread; Linux/BSD only (D-Bus / login1 / ScreenSaver).
+    // On screen lock and suspend, remove the SSH keys RustConn added to the
+    // agent itself (never the user's). The listener runs on its own thread and
+    // the handler touches no GTK object. Linux/BSD only: login1 and the
+    // ScreenSaver interface do not exist on macOS, where exit is the only
+    // trigger (see `connect_shutdown` above).
     #[cfg(not(target_os = "macos"))]
-    crate::lock_listener::start();
+    {
+        rustconn_core::lock_events::subscribe(|event| {
+            let removed = rustconn_core::ssh_agent::evict_own_keys();
+            tracing::info!(?event, removed, "removed the SSH keys RustConn added");
+        });
+        rustconn_core::lock_events::start();
+    }
 
     // Debug helper: RUSTCONN_OPEN_SETTINGS=1 auto-opens the Settings dialog
     // shortly after startup, so dialog timing instrumentation can be captured

@@ -734,8 +734,13 @@ fn agent_already_holds_key(key_path: &std::path::Path) -> bool {
 ///
 /// First checks whether the agent already holds the key (by public
 /// fingerprint, over the native protocol — no passphrase, no process) and
-/// returns `Ok(())` at once if so. Otherwise runs `ssh-add <key_path>` with no
-/// stdin, output discarded, host
+/// returns `Ok(())` at once if so; a key that is already there may be the
+/// user's, and is left as it is. Otherwise runs `ssh-add -t 43200 <key_path>`
+/// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and records the key, so the GUI
+/// removes it again on exit, screen lock and suspend
+/// ([`crate::ssh_agent::evict_own_keys`]); the CLI never evicts, and the
+/// lifetime alone bounds what it added. The spawn has no stdin, output
+/// discarded, host
 /// `SSH_ASKPASS` stripped (it may name a helper absent in the Flatpak sandbox)
 /// and the agent environment applied through [`apply_agent_env`]. This is the
 /// one place the spawn lives: the GUI's mc/file-manager launch paths and the
@@ -773,7 +778,9 @@ pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), String> 
 
     tracing::info!(?key_path, "Adding SSH key to agent");
     let mut cmd = std::process::Command::new("ssh-add");
-    cmd.arg(key_path)
+    cmd.arg("-t")
+        .arg(crate::ssh_agent::OWN_KEY_LIFETIME.as_secs().to_string())
+        .arg(key_path)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::piped())
@@ -784,6 +791,20 @@ pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), String> 
     match cmd.output() {
         Ok(output) if output.status.success() => {
             tracing::info!(?key_path, "SSH key added to agent");
+            // The socket `apply_agent_env` gave ssh-add, else the inherited one.
+            let socket = AGENT_INFO
+                .get()
+                .map(|info| info.socket_path.clone())
+                .or_else(|| std::env::var("SSH_AUTH_SOCK").ok())
+                .filter(|s| !s.is_empty());
+            if let Some(socket) = socket {
+                crate::ssh_agent::record_own_key(&socket, key_path);
+            } else {
+                tracing::debug!(
+                    ?key_path,
+                    "agent socket unknown; only its lifetime will remove the added key"
+                );
+            }
             Ok(())
         }
         Ok(output) => {
