@@ -213,6 +213,17 @@ apps:
       - azure-credentials
       - oci-credentials
       - kube-credentials
+      # Screen lock and suspend remove the SSH keys RustConn added to the agent.
+      # `desktop` grants receiving ActiveChanged from org.freedesktop.ScreenSaver
+      # and org.gnome.ScreenSaver; the gnome extension adds it today, declared
+      # here so a core26 extension change cannot drop it (as it did gsettings).
+      # `login-session-observe` grants receiving login1 PrepareForSleep. It is
+      # not auto-connected: `snap connect rustconn:login-session-observe`, or a
+      # store auto-connect request. logind's Inhibit needs the `shutdown`
+      # interface, which the store does not grant, so in the Snap a suspend does
+      # not wait for the removal.
+      - desktop
+      - login-session-observe
 
   rustconn-cli:
     command: usr/bin/rustconn-cli
