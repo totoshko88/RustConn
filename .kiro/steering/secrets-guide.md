@@ -38,8 +38,10 @@ You are editing a file that handles credentials.
   adds, asks again, and records the key once the agent shows it — all on one
   socket (for SFTP: `AGENT_INFO`, then `SSH_AUTH_SOCK`). Record only a blob
   read from the private key file itself (`KeyFileBlobs::key_file`), never one
-  from a `.pub`, which may be stale: a key without it (legacy PEM/PKCS#8) is
-  added but not recorded, and its lifetime is its only expiry.
+  from a `.pub`, which may be stale and is not read at all: a key without it
+  (legacy PEM/PKCS#8) is added only into an empty agent and not recorded, and
+  its lifetime is its only expiry. Its `<key>-cert.pub` blob
+  (`KeyFileBlobs::cert_file`) is recorded too when it is new after the add.
   `evict_own_keys` removes exactly the recorded ones, one native
   `SSH_AGENTC_REMOVE_IDENTITY` each to that socket, on exit, screen lock and
   suspend (`lock_events`).
@@ -49,8 +51,8 @@ You are editing a file that handles credentials.
   on the GTK thread.
 - Never touch the user's keys: no `ssh-add -D`, no `REMOVE_ALL_IDENTITIES`, no
   re-add of a key the agent already holds. When the agent query fails, do not
-  add (`AddKeyFailed`); when its answer cannot settle it (unreadable public
-  half with other keys present), do not add either (`KeyPresenceUnknown`,
+  add (`AddKeyFailed`); when its answer cannot settle it (no `key_file` blob
+  and any key present), do not add either (`KeyPresenceUnknown`,
   `IdentityLoadError::Unverified`: the mc launch warns and goes on).
   A Settings → SSH Agent "Add" is the user's (`add_key`) and un-records the
   key; without the key file's own blob, every key recorded for that socket.
