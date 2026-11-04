@@ -240,11 +240,12 @@ impl OwnKeys {
     ///
     /// Returns how many the agents actually removed. A key the agent no longer
     /// holds (its lifetime ran out, or the user removed it) is not an error. An
-    /// agent whose socket is gone or refuses connections took its keys with it,
-    /// so those leave the record too. An agent that is there but did not answer
-    /// in time (or failed some other I/O) may still hold the key: it stays
-    /// recorded, so the next exit, lock or suspend tries again, unless
-    /// [`Self::forget`] dropped it while the removal was under way.
+    /// agent that is there but did not answer in time (or was interrupted) may
+    /// still hold the key: it stays recorded, so the next exit, lock or suspend
+    /// tries again, unless [`Self::forget`] dropped it while the removal was
+    /// under way. Any other error lasts (the socket is gone, refuses
+    /// connections or denies access, or the reply is malformed): the key
+    /// leaves the record with one warning, and its lifetime bounds it.
     pub(crate) fn evict(&self) -> usize {
         self.evict_with(remove_one)
     }
@@ -299,7 +300,8 @@ impl OwnKeys {
                 Err(e) => tracing::warn!(
                     %fingerprint,
                     error = %e,
-                    "could not remove an SSH key RustConn added; the agent is gone"
+                    "could not remove an SSH key RustConn added, and retrying will not help; \
+                     no longer tracking it (its lifetime still bounds it)"
                 ),
             }
         }
@@ -312,18 +314,24 @@ impl OwnKeys {
     }
 }
 
-/// Whether a failed removal leaves the key possibly still in the agent.
+/// Whether a failed removal is worth retrying at the next exit, lock or
+/// suspend.
 ///
-/// A socket that does not exist or refuses connections means the agent is
-/// gone, and its keys with it. Any other I/O error — a timeout above all — is
-/// an agent that is there and slow, which still holds the key. A reply that
-/// does not parse came from an agent that answered, so retrying will not help.
+/// Only a transient I/O error is: a timeout (the connect, a read or a write
+/// ran out; a socket read timeout surfaces as `WouldBlock`) or an interrupted
+/// call, from an agent that is there and slow and still holds the key. Every
+/// other error lasts: a socket that is gone or refuses connections took its
+/// keys with it, one the process may not open (`PermissionDenied`) will not
+/// open next time either, and a reply that does not parse came from an agent
+/// that answered. Retrying those would only repeat the warning at every lock.
 fn agent_may_still_hold_key(error: &AgentError) -> bool {
     matches!(
         error,
-        AgentError::Io(e) if !matches!(
+        AgentError::Io(e) if matches!(
             e.kind(),
-            std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused
+            std::io::ErrorKind::TimedOut
+                | std::io::ErrorKind::WouldBlock
+                | std::io::ErrorKind::Interrupted
         )
     )
 }
@@ -618,39 +626,53 @@ mod tests {
         assert_eq!(own.len(), 0);
     }
 
-    /// An agent that is there but did not answer in time still holds the key,
-    /// so the record survives for the next exit, lock or suspend. A refused
-    /// connection means the agent is gone and is dropped like a missing socket.
+    /// An agent that is there but did not answer in time (a read timeout is
+    /// `WouldBlock`, a connect timeout `TimedOut`) or was interrupted still
+    /// holds the key, so the record survives for the next exit, lock or
+    /// suspend. A lasting error (gone, refused, permission denied) drops it,
+    /// so it is not retried and warned about at every lock.
     #[test]
-    fn a_slow_agent_keeps_the_record_and_a_gone_one_drops_it() {
-        let (slow, refused, missing, ok) = (blob(22), blob(23), blob(24), blob(25));
+    fn a_transient_error_keeps_the_record_and_a_lasting_one_drops_it() {
+        use std::io::ErrorKind;
+
         let own = OwnKeys::new();
-        own.record("/slow.sock", slow.clone());
-        own.record("/refused.sock", refused);
-        own.record("/missing.sock", missing);
-        own.record("/ok.sock", ok);
+        let sockets = [
+            ("/ok.sock", None),
+            ("/would-block.sock", Some(ErrorKind::WouldBlock)),
+            ("/timed-out.sock", Some(ErrorKind::TimedOut)),
+            ("/interrupted.sock", Some(ErrorKind::Interrupted)),
+            ("/refused.sock", Some(ErrorKind::ConnectionRefused)),
+            ("/missing.sock", Some(ErrorKind::NotFound)),
+            ("/denied.sock", Some(ErrorKind::PermissionDenied)),
+        ];
+        for (i, (socket, _)) in (0u8..).zip(sockets) {
+            own.record(socket, blob(40 + i));
+        }
 
-        let removed = own.evict_with(|key| {
-            let kind = match key.socket_path.as_str() {
-                "/ok.sock" => return Ok(true),
-                "/slow.sock" => std::io::ErrorKind::WouldBlock,
-                "/refused.sock" => std::io::ErrorKind::ConnectionRefused,
-                _ => std::io::ErrorKind::NotFound,
-            };
-            Err(AgentError::Io(std::io::Error::from(kind)))
-        });
-
-        assert_eq!(removed, 1);
+        let remove = |key: &OwnKey| {
+            let kind = sockets
+                .iter()
+                .find(|(socket, _)| *socket == key.socket_path)
+                .and_then(|(_, kind)| *kind);
+            kind.map_or(Ok(true), |kind| {
+                Err(AgentError::Io(std::io::Error::from(kind)))
+            })
+        };
+        assert_eq!(own.evict_with(remove), 1);
+        let kept: Vec<String> = own
+            .lock()
+            .keys
+            .iter()
+            .map(|k| k.socket_path.clone())
+            .collect();
         assert_eq!(
-            own.lock().keys,
-            vec![OwnKey {
-                socket_path: "/slow.sock".to_owned(),
-                blob: slow,
-            }],
-            "only the slow agent's key is still recorded"
+            kept,
+            vec!["/would-block.sock", "/timed-out.sock", "/interrupted.sock"],
+            "only the transient failures are still recorded"
         );
-        // The retry removes it once the agent answers.
-        assert_eq!(own.evict_with(|_| Ok(true)), 1);
+
+        // The retry removes them once their agents answer.
+        assert_eq!(own.evict_with(|_| Ok(true)), 3);
         assert_eq!(own.len(), 0);
     }
 
