@@ -2058,8 +2058,11 @@ impl MainWindow {
                      (no access to sandbox SSH_AUTH_SOCK)"
                 );
                 toast_clone.show_warning(&crate::i18n::i18n(
+                    // xgettext keeps the spaces after the `\` (Rust drops
+                    // them), so this line keeps the column of the copy in
+                    // `handle_sftp_connect_internal`: one msgid for both.
                     "External file managers cannot access SSH agent in Flatpak. \
-                     Enable \"SFTP via mc\" in Settings for reliable access.",
+                         Enable \"SFTP via mc\" in Settings for reliable access.",
                 ));
             }
 
