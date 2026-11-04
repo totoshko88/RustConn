@@ -1471,6 +1471,16 @@ When you resize the RustConn window, the embedded RDP session automatically adju
 
 **Tip:** For Windows Server connections where you notice a brief reconnect on every resize, enable "Reconnect on Resize" to make the transition slightly faster by skipping the Display Control probe.
 
+**Server OS and resizing** (Connection Dialog → Protocol → Features → Server OS):
+
+| Server OS | Resize behavior |
+|-----------|-----------------|
+| Auto (default) | Sends the new layout over the Display Control Channel and waits up to 3 seconds for the server to apply it. If the desktop size has not changed by then (xrdp accepts the layout but keeps the old size), RustConn reconnects at the new size, and every later resize of that session reconnects straight away. |
+| Windows | Always uses the Display Control Channel and never falls back to a reconnect on a slow answer. |
+| Linux | Always reconnects to resize. |
+
+A slow Windows server on **Auto** that takes longer than 3 seconds to apply a layout is switched to reconnect-on-resize too, and stays switched until you close the tab: once the switch is made no layout is sent, so RustConn cannot see that the server applies them after all. Set **Server OS** to **Windows** for such a server to keep the seamless resize.
+
 #### Clipboard
 
 The embedded IronRDP client provides clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is made available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback.
