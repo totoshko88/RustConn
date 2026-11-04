@@ -8,6 +8,7 @@ members = [
     "rustconn-locale-sys",
     "rustconn-env-sys",
     "rustconn-dock-sys",
+    "rustconn-lock-sys",
 ]
 
 [workspace.package]
@@ -114,7 +115,7 @@ tempfile = "3.26"
 [workspace.lints.rust]
 # `deny`, not `forbid`, and the difference is load-bearing. `forbid` cannot be
 # overridden at any level, so the sanctioned FFI crates — rustconn-pty-sys,
-# rustconn-locale-sys, rustconn-env-sys, rustconn-dock-sys — could not inherit
+# rustconn-locale-sys, rustconn-env-sys, rustconn-dock-sys, rustconn-lock-sys — could not inherit
 # this table at all; each declared its own `[lints.rust] unsafe_code = "allow"`
 # instead, and that replaces the inherited set rather than adding to it. The
 # result was that the only crates where `unsafe` is allowed were also the only
@@ -129,7 +130,7 @@ unsafe_code = "deny"
 # Unsafe-hardening set, IronRDP-derived, added 2026-08-20. These three are off by
 # default and sit in no lint group, so nothing was enforcing them. They became
 # relevant when the workspace moved from `forbid` to `deny` + a crate-level
-# `#![expect(unsafe_code)]` in the four -sys crates: under `forbid` there was no
+# `#![expect(unsafe_code)]` in the -sys crates: under `forbid` there was no
 # sanctioned `unsafe` to check, now there is.
 # No `unsafe fn` exists in the workspace today, so the first is a forward guard —
 # it makes an `unsafe fn` require its own inner `unsafe` block rather than

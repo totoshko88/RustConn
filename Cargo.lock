@@ -5079,6 +5079,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustconn-lock-sys"
+version = "0.24.5"
+dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+]
+
+[[package]]
 name = "rustconn-pty-sys"
 version = "0.24.5"
 dependencies = [
