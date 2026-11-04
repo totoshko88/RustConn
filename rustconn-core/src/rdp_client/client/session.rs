@@ -18,7 +18,7 @@ use super::super::failure::error_chain;
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
-use super::resize_watch::{ResizeVerdict, ResizeWatch};
+use super::resize_watch::ResizeWatch;
 
 /// Runs the active RDP session, processing framebuffer updates and input
 ///
@@ -104,11 +104,10 @@ pub(super) async fn run_active_session(
     loop {
         // Both a reactivation and a graphics reset replace `image`, so its size
         // tells whether the server applied the layout, whichever path it took.
-        if let Some(watch) = resize_watch
-            && watch.verdict(image_size(&image), Instant::now()) == ResizeVerdict::Applied
+        if let Some(watch) =
+            ResizeWatch::take_applied(&mut resize_watch, image_size(&image), Instant::now())
         {
             tracing::debug!(requested = ?watch.requested(), "Server applied the monitor layout");
-            resize_watch = None;
         }
         let resize_deadline = resize_watch.map(|watch| watch.deadline());
 
@@ -251,21 +250,10 @@ pub(super) async fn run_active_session(
 
             // Branch 5: a monitor layout the server has not applied in time.
             () = sleep_until_deadline(resize_deadline) => {
-                if let Some(watch) = resize_watch.take()
-                    && watch.verdict(image_size(&image), Instant::now()) == ResizeVerdict::Ignored
+                if let Some(event) =
+                    ResizeWatch::expire(&mut resize_watch, image_size(&image), Instant::now())
                 {
-                    let (width, height) = watch.requested();
-                    tracing::info!(
-                        protocol = "rdp",
-                        width,
-                        height,
-                        "Server did not apply the monitor layout — falling back to reconnect"
-                    );
-                    let _ = event_tx.send(RdpClientEvent::DisplayControlUnavailable {
-                        width,
-                        height,
-                        layout_ignored: true,
-                    });
+                    let _ = event_tx.send(event);
                 }
             }
         }
@@ -710,6 +698,27 @@ fn extract_region_data(image: &DecodedImage, rect: RdpRect) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// With no layout watched, the deadline branch of the session loop must
+    /// never fire.
+    #[tokio::test]
+    async fn no_resize_deadline_never_wakes_the_loop() {
+        let wait = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            sleep_until_deadline(None),
+        );
+        assert!(wait.await.is_err());
+    }
+
+    /// A deadline that has passed wakes the deadline branch at once.
+    #[tokio::test]
+    async fn a_passed_resize_deadline_wakes_the_loop() {
+        let wait = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            sleep_until_deadline(Some(Instant::now())),
+        );
+        assert!(wait.await.is_ok());
+    }
 
     /// Issue #407 reported only `[payload error] PDU error`; the reason the
     /// channel gave sits in the source and has to reach the message.
