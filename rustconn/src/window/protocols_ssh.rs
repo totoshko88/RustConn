@@ -242,8 +242,13 @@ impl JumpAuthShape {
 /// `ssh-add`. Best-effort: a passphrase-protected key cannot be added
 /// non-interactively, so a failure is logged and the
 /// connection still proceeds (the agent may already hold it, or the user can add
-/// it).
-fn ensure_identity_in_agent(key_path: &std::path::Path) {
+/// it). An encrypted key the user unlocked in RustConn's dialog before this
+/// connect is already in the agent and is left as it is.
+///
+/// `socket` is the agent the session's ssh uses (the connection's or group's
+/// own socket, else the one RustConn found or started, else the inherited
+/// `SSH_AUTH_SOCK`), so the key goes where the `-J` hops look for it.
+fn ensure_identity_in_agent(key_path: &std::path::Path, socket: Option<String>) {
     use rustconn_core::ssh_agent::SshAgentManager;
 
     // Times the ssh-agent identity phase and counts the agent operations it
@@ -254,7 +259,7 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     if !key_path.exists() {
         return;
     }
-    let manager = SshAgentManager::from_env();
+    let manager = SshAgentManager::new(socket);
     if manager.socket_path().is_none() {
         tracing::debug!("no ssh-agent socket; multi-hop -J relies on an existing agent identity");
         return;
@@ -284,6 +289,24 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
             tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
         }
     }
+}
+
+/// The identity file ssh gets with `-i` for `conn`: the key path inherited
+/// through connection → group → parent group → root, with a stale portal path
+/// resolved to the Flatpak SSH dir. Shared by `build_ssh_command_args` (the
+/// target and its first jump hop) and the key-unlock check, so the key that is
+/// unlocked is the key ssh is given.
+pub(super) fn resolved_key_file(
+    conn: &rustconn_core::Connection,
+    groups: &[rustconn_core::ConnectionGroup],
+) -> Option<String> {
+    ssh_inheritance::resolve_ssh_key_path(conn, groups)
+        .and_then(|p| {
+            // Resolve stale portal paths: if the stored path doesn't exist,
+            // check the Flatpak SSH dir for a file with the same name.
+            rustconn_core::resolve_key_path(&p)
+        })
+        .map(|p| p.to_string_lossy().to_string())
 }
 
 /// Builds the SSH command pieces shared by initial connect and in-place
@@ -333,13 +356,7 @@ fn build_ssh_command_args(
     let _perf = rustconn_core::tracing::perf::PerfSpan::new("ssh.connect.args", "ssh");
 
     // Resolve key path via inheritance (connection → group → parent group → root)
-    let key = ssh_inheritance::resolve_ssh_key_path(conn, groups)
-        .and_then(|p| {
-            // Resolve stale portal paths: if the stored path doesn't exist,
-            // check the Flatpak SSH dir for a file with the same name.
-            rustconn_core::resolve_key_path(&p)
-        })
-        .map(|p| p.to_string_lossy().to_string());
+    let key = resolved_key_file(conn, groups);
 
     // When the user picked a specific key from the SSH agent, honour it.
     // `resolve_ssh_key_path` returns None for agent sources by design — it deals
@@ -585,12 +602,7 @@ fn build_ssh_command_args(
                             // Resolve the jump host's OWN identity file so it
                             // can be passed to ProxyCommand (issue #241: -J does
                             // NOT inherit -i from the outer ssh).
-                            first_hop_identity =
-                                rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(
-                                    jump_conn, &groups,
-                                )
-                                .and_then(|p| rustconn_core::resolve_key_path(&p))
-                                .map(|p| p.to_string_lossy().to_string());
+                            first_hop_identity = resolved_key_file(jump_conn, groups);
                             // Resolve the bastion's OWN password (issue #191).
                             // First try the in-memory cache (fast path).
                             first_hop_password = state_ref
@@ -1006,7 +1018,12 @@ fn build_ssh_command_args(
             if multi_hop_identity_only
                 && let Some(ref key_path) = first_hop_identity.as_ref().or(key.as_ref())
             {
-                ensure_identity_in_agent(std::path::Path::new(key_path.as_str()));
+                ensure_identity_in_agent(
+                    std::path::Path::new(key_path.as_str()),
+                    ssh_inheritance::resolve_ssh_agent_socket(conn, groups)
+                        .filter(|s| !s.is_empty())
+                        .or_else(rustconn_core::sftp::default_agent_socket),
+                );
             }
             args.push("-J".to_string());
             args.push(rustconn_core::ssh_tunnel::proxy_jump_arg(&chain));
@@ -1303,11 +1320,64 @@ fn install_ssh_autofill_fallback(
 }
 
 /// Starts SSH and observes a session created after asynchronous setup.
+///
+/// When a key the connect passes is encrypted and not in the agent, RustConn's
+/// unlock dialog comes first (`key_unlock::unlock_then`); the session is then
+/// created asynchronously and this returns `None`, as for the port check.
 #[expect(
     clippy::too_many_arguments,
     reason = "SSH startup requires the shared UI owners, monitoring, connection data, logging policy, and observer"
 )]
 pub fn start_ssh_connection_observed(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+    observer: Option<super::types::SessionStartObserver>,
+) -> Option<Uuid> {
+    let targets = super::key_unlock::ssh_unlock_targets(state, conn);
+    if targets.is_empty() {
+        return start_ssh_connection_unlocked(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            conn,
+            logging_enabled,
+            observer,
+        );
+    }
+    let state = state.clone();
+    let notebook_rc = notebook.clone();
+    let sidebar = sidebar.clone();
+    let monitoring = Rc::clone(monitoring);
+    let conn = conn.clone();
+    super::key_unlock::unlock_then(notebook.widget(), targets, move || {
+        start_ssh_connection_unlocked(
+            &state,
+            &notebook_rc,
+            &sidebar,
+            &monitoring,
+            connection_id,
+            &conn,
+            logging_enabled,
+            observer,
+        );
+    });
+    None
+}
+
+/// [`start_ssh_connection_observed`] once any key unlock is done: the port
+/// check, then the session.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "SSH startup requires the shared UI owners, monitoring, connection data, logging policy, and observer"
+)]
+fn start_ssh_connection_unlocked(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,
@@ -1879,8 +1949,6 @@ pub fn reconnect_ssh_in_place(
     session_id: Uuid,
     connection_id: Uuid,
 ) -> bool {
-    use rustconn_core::protocol::{format_command_message, format_connection_message};
-
     // Prepare the existing tab for reconnect
     if !notebook.prepare_for_reconnect(session_id) {
         tracing::warn!(%session_id, "Tab no longer exists, cannot reconnect in-place");
@@ -1900,6 +1968,57 @@ pub fn reconnect_ssh_in_place(
             None => return false,
         }
     };
+
+    // An encrypted key the agent no longer holds (its lifetime ran out, or a
+    // lock or suspend removed it) is unlocked again before ssh restarts.
+    let targets = super::key_unlock::ssh_unlock_targets(state, &conn);
+    if targets.is_empty() {
+        reconnect_ssh_after_unlock(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            session_id,
+            connection_id,
+            conn,
+        );
+        return true;
+    }
+    let state = state.clone();
+    let notebook_rc = notebook.clone();
+    let sidebar = sidebar.clone();
+    let monitoring = Rc::clone(monitoring);
+    super::key_unlock::unlock_then(notebook.widget(), targets, move || {
+        // The tab may have been closed while the dialog was open.
+        if notebook_rc.get_session_info(session_id).is_none() {
+            tracing::debug!(%session_id, "tab closed during the key unlock; not reconnecting");
+            return;
+        }
+        reconnect_ssh_after_unlock(
+            &state,
+            &notebook_rc,
+            &sidebar,
+            &monitoring,
+            session_id,
+            connection_id,
+            conn,
+        );
+    });
+    true
+}
+
+/// [`reconnect_ssh_in_place`] once any key unlock is done: restarts ssh in the
+/// prepared tab.
+fn reconnect_ssh_after_unlock(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    session_id: Uuid,
+    connection_id: Uuid,
+    conn: rustconn_core::Connection,
+) {
+    use rustconn_core::protocol::{format_command_message, format_connection_message};
 
     // Discard the previous connection's monitoring bar and collector so a
     // stale, dimmed bar (or a race with a collector that has not yet
@@ -2226,8 +2345,6 @@ pub fn reconnect_ssh_in_place(
     {
         tracing::warn!(?e, "Failed to update last_connected");
     }
-
-    true
 }
 
 #[cfg(all(test, unix))]
