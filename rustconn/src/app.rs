@@ -2024,6 +2024,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         // names no individual. `\n`-separated so each is its own clickable row.
         .translator_credits(
             "Albano Battistella (Italian) https://github.com/albanobattistella\n\
+             dinhkarate (Vietnamese) https://github.com/dinhkarate\n\
              Ekaterine Papava (Georgian) · papava.e@gtu.ge https://github.com/EkaterinePapava\n\
              GaaChun (Simplified Chinese) https://github.com/GaaChun\n\
              Jürgen Hörmann (German) https://github.com/jhit\n\
