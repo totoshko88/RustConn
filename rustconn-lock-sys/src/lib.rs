@@ -218,6 +218,10 @@ mod macos {
         // implements no `Drop`, so none of the rules for a `Drop` on a defined
         // class can be broken.
         #[unsafe(super(NSObject))]
+        // The Objective-C runtime has one flat class namespace per process; a
+        // generic name like `Observer` collides with any other library that
+        // registers the same one, and `define_class!` panics on a collision.
+        #[name = "RustConnLockObserver"]
         #[ivars = Ivars]
         pub(super) struct Observer;
 
