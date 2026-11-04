@@ -179,13 +179,15 @@ Apply this discipline to avoid them:
 - **One command per `executeBash` call.** Do not chain unrelated commands with
   `;`/`&&` into a single line that the shared shell may split incorrectly.
 
-## 17 Translation Languages
+## Translation Languages
 
-be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, zh_CN
+be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, vi, zh_CN
 
 This list said 16 and omitted `ka` (Georgian) until 2026-08-20, while
 `core-rules.md` and `AGENTS.md` both said 17 and included it. `ls po/*.po` is the
-authoritative count — check it rather than any of the three prose copies.
+authoritative count — check it rather than any of the three prose copies. The
+Settings language selector must offer every code in `po/LINGUAS`; a test in
+`rustconn/src/i18n.rs` fails when it does not.
 
 ## External Standards
 

@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        RustConn ships 17 languages from the `.po` catalogues in
+        RustConn ships its translations from the `.po` catalogues in
         [`po/`](https://github.com/totoshko88/RustConn/tree/main/po). Corrections
         are always welcome, and a pull request against the `.po` file is even
         more welcome than an issue — see

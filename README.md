@@ -55,7 +55,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | **Workflow** | Smart folders, SSH port forwarding, visual SSH tunnel builder, workspace profiles (save/restore open sessions, including split layout and divider ratio), settings backup/restore, .rdp file association |
 | **Cloud Sync** | Synchronize connections via shared cloud directory (Google Drive, Syncthing, Nextcloud, Dropbox); group sync with Master/Import access model; simple sync with UUID-based merge |
 | **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, WoL, shell completions; optional secret and client-launch commands behind features |
-| **Languages** | English + 17 translations (Belarusian, Czech, Danish, German, Spanish, French, Italian, Georgian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Chinese) |
+| **Languages** | English, plus translations into Belarusian, Czech, Danish, German, Spanish, French, Italian, Georgian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Vietnamese and Simplified Chinese |
 
 ### Protocol support
 
@@ -140,8 +140,9 @@ and the conventions a pull request is checked against. Participation is under th
 - **Questions** — [Discussions](https://github.com/totoshko88/RustConn/discussions).
 - **Code** — see the [Build Guide](docs/BUILD.md) and
   [Architecture](docs/ARCHITECTURE.md) to get started.
-- **Translations** — RustConn ships 17 translated languages; `.po` files live in
-  [`po/`](po/). New languages and corrections are appreciated.
+- **Translations** — RustConn ships every catalogue listed in
+  [`po/LINGUAS`](po/LINGUAS); the `.po` files live in [`po/`](po/). New
+  languages and corrections are appreciated.
 - **Vulnerabilities** — privately, via
   [Security Advisories](https://github.com/totoshko88/RustConn/security/advisories/new)
   rather than an issue ([SECURITY.md](SECURITY.md)).

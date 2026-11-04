@@ -62,7 +62,7 @@
 # po/rustconn.pot still have this — find them with `grep -n '   ' po/rustconn.pot`
 # (three consecutive spaces); rustconn/src/dialogs/flatpak_components.rs:158,
 # rustconn/src/dialogs/variables.rs:170 and rustconn/src/app.rs:1176 are
-# examples. Fixing them changes the msgid, so it touches all 17 catalogues and
+# examples. Fixing them changes the msgid, so it touches every catalogue and
 # was deferred out of 0.20.9. A guard for it belongs in this script.
 #
 # Usage: ./scripts/check-i18n-escapes.sh        (exit 0 = clean, 1 = violations)

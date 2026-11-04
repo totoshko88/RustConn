@@ -174,8 +174,8 @@ bullet:
 
 ## Translations
 
-RustConn ships 17 locales. `ls po/*.po` is the authoritative list — numbers
-written in prose have been wrong before.
+RustConn ships every catalogue listed in `po/LINGUAS`. `ls po/*.po` is the
+authoritative list — numbers written in prose have been wrong before.
 
 To correct or complete an existing language, edit its `po/<lang>.po` and run the
 three gates:

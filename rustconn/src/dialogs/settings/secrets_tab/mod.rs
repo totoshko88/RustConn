@@ -511,7 +511,7 @@ pub fn backend_choices() -> Vec<BackendChoice> {
         // `display_name()` like the rows above. `po/update-pot.sh` runs xgettext,
         // which extracts by matching `i18n("…")` on a string literal: pass it an
         // expression and the string is silently dropped from the catalogue and
-        // ships untranslated in all 17 locales. The strings are asserted equal to
+        // ships untranslated in every locale. The strings are asserted equal to
         // `display_name()` in this module's tests so the two cannot drift.
         choice(
             &i18n("Encrypted file"),
