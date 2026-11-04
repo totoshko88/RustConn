@@ -266,8 +266,23 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     // left to the agent/user. A key added here gets the 12 h lifetime and is
     // removed again on exit, screen lock and suspend; a key the agent already
     // holds, or may hold, is left alone.
-    if let Err(e) = manager.add_own_key(key_path) {
-        tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
+    match manager.add_own_key(key_path) {
+        Ok(()) => {}
+        // The agent holds keys and this key file (legacy PEM or PKCS#8) does
+        // not say which key it is, so it was not added. The jump host then
+        // sees only what the agent holds, and the connect may fail there:
+        // keep the reason in the default log, where that failure is read.
+        Err(e @ rustconn_core::ssh_agent::AgentError::KeyPresenceUnknown(_)) => {
+            tracing::warn!(
+                ?key_path,
+                error = %e,
+                "SSH key not added to the agent for multi-hop -J; the jump host may refuse \
+                 the connection. Add the key with ssh-add or in Settings → SSH Agent"
+            );
+        }
+        Err(e) => {
+            tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
+        }
     }
 }
 
