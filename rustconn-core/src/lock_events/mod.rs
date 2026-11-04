@@ -34,9 +34,11 @@ pub use dbus::start;
 pub enum LockEvent {
     /// The screen locked (the screensaver became active).
     ScreenLocked,
-    /// The system is about to suspend or hibernate. The listener holds a login1
-    /// delay lock until every handler has returned, so a handler can still
-    /// reach a local socket before the machine sleeps.
+    /// The system is about to suspend or hibernate. From the D-Bus listener,
+    /// which holds a login1 delay lock until every handler has returned, a
+    /// handler can still reach a local socket before the machine sleeps. From
+    /// [`notify()`] (macOS sleep) nothing holds the sleep back, so the handlers
+    /// race it and may finish on wake.
     Suspending,
 }
 
@@ -107,9 +109,11 @@ static SUBSCRIBERS: Subscribers = Subscribers::new();
 /// Registers `handler` to be called on every [`LockEvent`].
 ///
 /// Handlers run on the D-Bus listener's blocking pool or on the dispatch thread
-/// [`notify()`] starts, never the GTK main thread, so they must not touch GTK
-/// objects. They run one after another: a slow handler delays the next one, and
-/// on [`LockEvent::Suspending`] from D-Bus it delays the suspend up to logind's
+/// [`notify()`] starts, so they must not touch GTK objects. One exception: if
+/// that dispatch thread cannot be spawned, [`notify()`] runs the handlers on its
+/// caller's thread, which in the GUI is the GTK main loop. They run one after
+/// another: a slow handler delays the next one, and on
+/// [`LockEvent::Suspending`] from D-Bus it delays the suspend up to logind's
 /// `InhibitDelayMaxSec` (5 s by default).
 pub fn subscribe(handler: impl Fn(LockEvent) + Send + Sync + 'static) {
     SUBSCRIBERS.add(Arc::new(handler));
@@ -140,7 +144,19 @@ static NOTIFY_QUEUE: OnceLock<Option<Sender<LockEvent>>> = OnceLock::new();
 /// thread instead, with a warning: removing the keys late is better than not
 /// removing them.
 pub fn notify(event: LockEvent) {
-    let queue = NOTIFY_QUEUE.get_or_init(|| spawn_dispatch_thread(&SUBSCRIBERS));
+    notify_through(&NOTIFY_QUEUE, &SUBSCRIBERS, spawn_dispatch_thread, event);
+}
+
+/// [`notify()`] with its process-wide queue, subscribers and thread spawner
+/// passed in, so tests can drive the caching and the fallback without touching
+/// the globals.
+fn notify_through(
+    queue: &OnceLock<Option<Sender<LockEvent>>>,
+    subscribers: &'static Subscribers,
+    spawn: impl FnOnce(&'static Subscribers) -> Option<Sender<LockEvent>>,
+    event: LockEvent,
+) {
+    let queue = queue.get_or_init(|| spawn(subscribers));
     if let Some(queue) = queue
         && queue.send(event).is_ok()
     {
@@ -150,7 +166,7 @@ pub fn notify(event: LockEvent) {
         ?event,
         "lock events: no dispatch thread; running the handlers on the caller's thread"
     );
-    SUBSCRIBERS.dispatch(event);
+    subscribers.dispatch(event);
 }
 
 /// Starts the thread that dispatches every event sent into the returned queue
@@ -176,6 +192,8 @@ fn spawn_dispatch_thread(subscribers: &'static Subscribers) -> Option<Sender<Loc
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::thread::ThreadId;
 
     use super::*;
 
@@ -244,6 +262,82 @@ mod tests {
         let dispatch_thread = Some("rustconn-lock-dispatch".to_owned());
         assert_eq!(first, (dispatch_thread.clone(), LockEvent::ScreenLocked));
         assert_eq!(second, (dispatch_thread, LockEvent::Suspending));
+    }
+
+    /// Subscribers of their own, leaked for the `'static` the dispatch thread
+    /// needs, whose one handler reports the thread it ran on and the event.
+    fn recording_subscribers() -> (&'static Subscribers, mpsc::Receiver<(ThreadId, LockEvent)>) {
+        let subscribers: &'static Subscribers = Box::leak(Box::new(Subscribers::new()));
+        let (seen, received) = mpsc::channel();
+        subscribers.add(Arc::new(move |event| {
+            seen.send((std::thread::current().id(), event)).unwrap();
+        }));
+        (subscribers, received)
+    }
+
+    /// `notify` starts its dispatch thread on the first event only and queues
+    /// every later event to that same thread.
+    #[test]
+    fn notify_spawns_the_dispatch_thread_once_and_reuses_it() {
+        let (subscribers, received) = recording_subscribers();
+        let queue = OnceLock::new();
+        let spawns = AtomicUsize::new(0);
+        let spawn = |subscribers: &'static Subscribers| {
+            spawns.fetch_add(1, Ordering::SeqCst);
+            spawn_dispatch_thread(subscribers)
+        };
+
+        notify_through(&queue, subscribers, spawn, LockEvent::ScreenLocked);
+        notify_through(&queue, subscribers, spawn, LockEvent::Suspending);
+
+        assert_eq!(spawns.load(Ordering::SeqCst), 1);
+        let timeout = std::time::Duration::from_secs(10);
+        let (first_thread, first) = received.recv_timeout(timeout).unwrap();
+        let (second_thread, second) = received.recv_timeout(timeout).unwrap();
+        assert_eq!(
+            (first, second),
+            (LockEvent::ScreenLocked, LockEvent::Suspending)
+        );
+        assert_ne!(first_thread, std::thread::current().id());
+        assert_eq!(first_thread, second_thread);
+    }
+
+    /// With no dispatch thread, the event is still delivered, on the caller's
+    /// thread, before `notify` returns.
+    #[test]
+    fn without_a_dispatch_thread_notify_runs_the_handlers_on_the_caller() {
+        let (subscribers, received) = recording_subscribers();
+
+        notify_through(
+            &OnceLock::new(),
+            subscribers,
+            |_| None,
+            LockEvent::ScreenLocked,
+        );
+
+        assert_eq!(
+            received.try_recv().unwrap(),
+            (std::thread::current().id(), LockEvent::ScreenLocked)
+        );
+    }
+
+    /// A dispatch thread that has gone away (its queue rejects the send) falls
+    /// back to the caller's thread the same way.
+    #[test]
+    fn a_failed_send_runs_the_handlers_on_the_caller() {
+        let (subscribers, received) = recording_subscribers();
+        let gone = |_| {
+            let (queue, events) = mpsc::channel();
+            drop(events);
+            Some(queue)
+        };
+
+        notify_through(&OnceLock::new(), subscribers, gone, LockEvent::Suspending);
+
+        assert_eq!(
+            received.try_recv().unwrap(),
+            (std::thread::current().id(), LockEvent::Suspending)
+        );
     }
 
     #[test]
