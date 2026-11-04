@@ -13,6 +13,10 @@
 //! encrypted is not parsed here, and whether the agent holds them cannot be
 //! told. Neither can an agent that does not answer.
 //!
+//! [`key_is_encrypted_openssh`] is the file-only half of that check, cheap
+//! enough for the GTK thread, so a connect whose keys cannot need a dialog
+//! starts without waiting on it.
+//!
 //! An agent that refuses the add (the 1Password agent, for one) is recorded
 //! by its socket path for the rest of the process, so the dialog is not shown
 //! again for it. Only socket paths are kept. No passphrase passes through this
@@ -175,27 +179,42 @@ pub fn check_key_unlock(socket_path: Option<&str>, key_path: &Path) -> UnlockDec
     decision
 }
 
+/// Whether the key at `key_path` is an encrypted OpenSSH key, the only kind
+/// [`check_key_unlock`] can ask about.
+///
+/// Reads the key file (wiped from memory afterwards) and nothing else: no
+/// agent query, no process. A connect calls it on the GTK thread to tell
+/// whether the unlock check, and with it an asynchronous start, is needed at
+/// all, so a key that cannot need a dialog starts ssh exactly as before.
+#[must_use]
+pub fn key_is_encrypted_openssh(key_path: &Path) -> bool {
+    key_encryption(key_path) == Some(KeyEncryption::Encrypted)
+}
+
+/// The encryption of the key at `key_path`; `None` when the file cannot be
+/// read or is a malformed OpenSSH key.
+fn key_encryption(key_path: &Path) -> Option<KeyEncryption> {
+    // The private section of an unencrypted key is in this file in the clear,
+    // so the text is wiped when it drops.
+    let contents = std::fs::read_to_string(key_path).map(Zeroizing::new).ok()?;
+    inspect_key_file(&contents).ok().map(|info| info.encryption)
+}
+
 fn check(socket_path: Option<&str>, key_path: &Path) -> UnlockDecision {
     let Some(socket_path) = socket_path.filter(|s| !s.is_empty()) else {
         return UnlockDecision::Skip(SkipReason::NoAgent);
     };
-    // The private section of an unencrypted key is in this file in the clear,
-    // so the text is wiped when it drops.
-    let Ok(contents) = std::fs::read_to_string(key_path).map(Zeroizing::new) else {
+    let Some(encryption) = key_encryption(key_path) else {
         return UnlockDecision::Skip(SkipReason::KeyUnreadable);
     };
-    let Ok(info) = inspect_key_file(&contents) else {
-        return UnlockDecision::Skip(SkipReason::KeyUnreadable);
-    };
-    drop(contents);
-    if info.encryption != KeyEncryption::Encrypted {
+    if encryption != KeyEncryption::Encrypted {
         // No agent query for a key that needs no passphrase.
-        return decide(info.encryption, AgentHolds::Unknown, false);
+        return decide(encryption, AgentHolds::Unknown, false);
     }
     let holds = key_file_blobs(key_path)
         .key_file
         .map_or(AgentHolds::Unknown, |blob| agent_holds(socket_path, &blob));
-    decide(info.encryption, holds, agent_refused_add(socket_path))
+    decide(encryption, holds, agent_refused_add(socket_path))
 }
 
 #[cfg(unix)]
@@ -347,6 +366,27 @@ mod tests {
             check_key_unlock(Some(NO_AGENT), &path),
             UnlockDecision::Skip(SkipReason::EncryptionUnknown)
         );
+    }
+
+    #[test]
+    fn only_an_encrypted_openssh_key_may_need_unlocking() {
+        let (_e, encrypted) = key_file(&crate::ssh_agent::openssh_key_fixture(
+            "aes256-ctr",
+            &ed25519_blob(4),
+        ));
+        let (_u, unencrypted) = key_file(&crate::ssh_agent::openssh_key_fixture(
+            "none",
+            &ed25519_blob(5),
+        ));
+        let (_l, legacy) = key_file(
+            "-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\n\nAAAA\n-----END RSA PRIVATE KEY-----\n",
+        );
+        assert!(key_is_encrypted_openssh(&encrypted));
+        assert!(!key_is_encrypted_openssh(&unencrypted));
+        assert!(!key_is_encrypted_openssh(&legacy));
+        assert!(!key_is_encrypted_openssh(Path::new(
+            "/nonexistent/rustconn-test/id_x"
+        )));
     }
 
     #[test]

@@ -17,7 +17,7 @@ pub use keyfile::{
 pub use own_keys::{OWN_KEY_LIFETIME, evict_own_keys};
 pub use unlock::{
     AfterWrongPassphrase, AgentHolds, MAX_PASSPHRASE_ATTEMPTS, SkipReason, UnlockDecision,
-    after_wrong_passphrase, agent_refused_add, check_key_unlock, decide,
+    after_wrong_passphrase, agent_refused_add, check_key_unlock, decide, key_is_encrypted_openssh,
 };
 
 use std::path::{Path, PathBuf};
