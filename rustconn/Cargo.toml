@@ -252,6 +252,9 @@ branches_sharing_code = "allow"
 map_unwrap_or = "allow"
 manual_map = "allow"
 assigning_clones = "allow"
+# A direct adw::Toast / adw::Banner constructor (listed in .clippy.toml) shows
+# caller text as Pango markup; build them with toast::plain_toast/plain_banner.
+disallowed_methods = "deny"
 # assert_is_empty (new in Rust 1.99): a style lint that rewrites
 # assert!(x.is_empty()) into assert_eq!(x, [] as [T; 0]) for a richer failure
 # message. All sites are test assertions where assert!(x.is_empty()) is clearer;

@@ -148,7 +148,7 @@ impl DetachedSessionWindow {
 
         // Hidden until the session's connection drops; reuses the wording of the
         // tab reconnect banner so both placements say the same thing.
-        let disconnect_banner = adw::Banner::new(&i18n("Session disconnected"));
+        let disconnect_banner = crate::toast::plain_banner(&i18n("Session disconnected"));
         disconnect_banner.set_revealed(false);
 
         let toolbar_view = adw::ToolbarView::new();

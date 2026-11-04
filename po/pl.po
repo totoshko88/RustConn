@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-04 16:18+0200\n"
+"POT-Creation-Date: 2026-11-04 17:45+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Polish\n"
@@ -20,7 +20,7 @@ msgstr ""
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
 #: rustconn/src/app.rs:2116 rustconn/src/script_runner.rs:774
-#: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:246
+#: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
 
@@ -104,7 +104,7 @@ msgstr ""
 "Ustawieniach"
 
 #: rustconn/src/app.rs:862 rustconn/src/dialogs/shortcuts.rs:178
-#: rustconn/src/embedded_rdp/mod.rs:405 rustconn/src/split_view/bridge.rs:2030
+#: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Ustawienia"
@@ -204,9 +204,9 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:151
-#: rustconn/src/embedded_rdp/connection.rs:1757
-#: rustconn/src/embedded_rdp/connection.rs:2729
-#: rustconn/src/embedded_rdp/mod.rs:778 rustconn/src/embedded_rdp/mod.rs:2168
+#: rustconn/src/embedded_rdp/connection.rs:1758
+#: rustconn/src/embedded_rdp/connection.rs:2735
+#: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
 #: rustconn/src/terminal/session_lifecycle.rs:394
@@ -266,7 +266,7 @@ msgid "Enter Password Manually"
 msgstr "Wprowadź hasło ręcznie"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2451 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2457 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr "Otwórz ustawienia"
@@ -3405,7 +3405,7 @@ msgstr "Synchronizuj schowek ze zdalnym"
 #: rustconn/src/dialogs/connection/spice.rs:179
 #: rustconn/src/dialogs/connection/vnc.rs:131
 #: rustconn/src/dialogs/snippet.rs:237 rustconn/src/dialogs/template.rs:1261
-#: rustconn/src/embedded_rdp/mod.rs:418
+#: rustconn/src/embedded_rdp/mod.rs:423
 msgid "Auto"
 msgstr "Auto"
 
@@ -4625,7 +4625,7 @@ msgstr "Hasło pliku przenośnego"
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
 #: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:613
-#: rustconn/src/embedded_rdp/mod.rs:589 rustconn/src/embedded_vnc/ui.rs:51
+#: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
 msgstr "Kopiuj"
@@ -5178,7 +5178,7 @@ msgid "Update component"
 msgstr "Zaktualizuj komponent"
 
 #: rustconn/src/dialogs/flatpak_components.rs:328
-#: rustconn/src/dialogs/flatpak_components.rs:509 rustconn/src/toast.rs:339
+#: rustconn/src/dialogs/flatpak_components.rs:509 rustconn/src/toast.rs:376
 msgid "Install"
 msgstr "Zainstaluj"
 
@@ -5651,7 +5651,7 @@ msgid "RDP File"
 msgstr "Plik RDP"
 
 #: rustconn/src/dialogs/import/sources.rs:269
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:715
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:717
 msgid "Unknown"
 msgstr "Nieznany"
 
@@ -6145,7 +6145,7 @@ msgstr ""
 "wraz ze snapem. Bez agenta SSH hasło-fraza klucza jest pytane przy każdym "
 "połączeniu."
 
-#: rustconn/src/dialogs/key_setup.rs:529 rustconn/src/toast.rs:72
+#: rustconn/src/dialogs/key_setup.rs:529 rustconn/src/toast.rs:109
 msgid "Warning"
 msgstr "Ostrzeżenie"
 
@@ -6847,8 +6847,8 @@ msgid "Import failed"
 msgstr "Import nie powiódł się"
 
 #: rustconn/src/dialogs/recording.rs:828 rustconn/src/dialogs/recording.rs:840
-#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:285 rustconn/src/toast.rs:73
-#: rustconn/src/toast.rs:333 rustconn/src/toast.rs:363
+#: rustconn/src/dialogs/settings/ssh_agent_tab.rs:285 rustconn/src/toast.rs:110
+#: rustconn/src/toast.rs:370 rustconn/src/toast.rs:400
 #: rustconn/src/window/clusters.rs:599
 #: rustconn/src/window/connection_dialogs.rs:888
 #: rustconn/src/window/edit_dialogs.rs:407
@@ -6857,8 +6857,8 @@ msgstr "Import nie powiódł się"
 msgid "Error"
 msgstr "Błąd"
 
-#: rustconn/src/dialogs/script.rs:83 rustconn/src/embedded_rdp/mod.rs:424
-#: rustconn/src/embedded_rdp/mod.rs:1139
+#: rustconn/src/dialogs/script.rs:83 rustconn/src/embedded_rdp/mod.rs:429
+#: rustconn/src/embedded_rdp/mod.rs:1146
 msgid "Scripts"
 msgstr "Skrypty"
 
@@ -6890,7 +6890,7 @@ msgstr "Identyfikator skryptu"
 msgid "Select or create a script."
 msgstr "Wybierz lub utwórz skrypt."
 
-#: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1371
+#: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
 #: rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Uruchom"
@@ -7125,7 +7125,7 @@ msgid "Download H.264 codec?"
 msgstr "Pobrać kodek H.264?"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:381
-#: rustconn/src/embedded_rdp/mod.rs:1740
+#: rustconn/src/embedded_rdp/mod.rs:1747
 msgid "Downloading…"
 msgstr "Pobieranie…"
 
@@ -7741,67 +7741,67 @@ msgstr "Wprowadź hasło pliku poniżej"
 msgid "Initialized at {}"
 msgstr "Zainicjalizowano w {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:600
-msgid "Not initialized (run 'pass init &lt;gpg-id&gt;')"
-msgstr "Nie zainicjalizowano (uruchom 'pass init &lt;gpg-id&gt;')"
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:602
+msgid "Not initialized (run 'pass init <gpg-id>')"
+msgstr "Nie zainicjalizowano (uruchom 'pass init <gpg-id>')"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:605
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:607
 msgid "Cannot determine store directory"
 msgstr "Nie można określić katalogu magazynu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:711
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:713
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1283
 msgid "Unlocked"
 msgstr "Odblokowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:712
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:714
 msgid "Locked"
 msgstr "Zablokowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:713
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:715
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1296
 msgid "Not logged in"
 msgstr "Nie zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:714
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:716
 msgid "Status: {}"
 msgstr "Status: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:716
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:842
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:865
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:718
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:844
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:867
 msgid "Error checking status"
 msgstr "Błąd sprawdzania statusu"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:828
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:830
 msgid "Signed in: {}"
 msgstr "Zalogowany: {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:830
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:832
 msgid "Signed in"
 msgstr "Zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:835
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:839
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:837
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:841
 msgid "Not signed in"
 msgstr "Nie zalogowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:837
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:839
 msgid "Session expired"
 msgstr "Sesja wygasła"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:854
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:856
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3325
 msgid "Configured"
 msgstr "Skonfigurowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:858
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:860
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:864
 #: rustconn/src/embedded_vnc/ui.rs:322
 msgid "Not configured"
 msgstr "Nie skonfigurowany"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:860
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
 msgid "Authentication failed"
 msgstr "Uwierzytelnienie nieudane"
 
@@ -9505,7 +9505,7 @@ msgstr "Przejdź do terminala"
 msgid "Command Palette (Commands)"
 msgstr "Paleta poleceń (polecenia)"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/embedded_rdp/mod.rs:597
+#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/embedded_rdp/mod.rs:602
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
@@ -9715,11 +9715,11 @@ msgstr "Cel"
 msgid "Where this snippet can be executed"
 msgstr "Gdzie ten fragment może być wykonany"
 
-#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:419
+#: rustconn/src/dialogs/snippet.rs:238 rustconn/src/embedded_rdp/mod.rs:424
 msgid "Clipboard (fast)"
 msgstr "Schowek (szybko)"
 
-#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:420
+#: rustconn/src/dialogs/snippet.rs:239 rustconn/src/embedded_rdp/mod.rs:425
 msgid "Autotype (reliable)"
 msgstr "Autopisanie (niezawodne)"
 
@@ -11109,7 +11109,7 @@ msgstr ""
 "zostanie użyty FreeRDP."
 
 #: rustconn/src/embedded_rdp/connection.rs:840
-#: rustconn/src/embedded_rdp/connection.rs:2939
+#: rustconn/src/embedded_rdp/connection.rs:2945
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 "Połączenie anulowano, ponieważ serwer wymaga starszych zabezpieczeń RDP."
@@ -11123,11 +11123,11 @@ msgstr ""
 "Klient wbudowany ignoruje własne argumenty FreeRDP. Aby ich użyć, przełącz "
 "tryb klienta RDP na Zewnętrzny."
 
-#: rustconn/src/embedded_rdp/connection.rs:2363
+#: rustconn/src/embedded_rdp/connection.rs:2368
 msgid "The server refused the shared folder “{}”"
 msgstr "Serwer odrzucił folder udostępniony „{}”"
 
-#: rustconn/src/embedded_rdp/connection.rs:2428
+#: rustconn/src/embedded_rdp/connection.rs:2434
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -11135,7 +11135,7 @@ msgstr ""
 "H.264 wyłączone — zainstalowany OpenH264 nie jest kompilacją Cisco. Otwórz "
 "Ustawienia → Połączenie → Kodeki multimedialne, aby go pobrać."
 
-#: rustconn/src/embedded_rdp/connection.rs:2432
+#: rustconn/src/embedded_rdp/connection.rs:2438
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -11143,7 +11143,7 @@ msgstr ""
 "H.264 wyłączone — nie zainstalowano kodeka OpenH264. Otwórz Ustawienia → "
 "Połączenie → Kodeki multimedialne, aby go pobrać."
 
-#: rustconn/src/embedded_rdp/connection.rs:2436
+#: rustconn/src/embedded_rdp/connection.rs:2442
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -11151,51 +11151,51 @@ msgstr ""
 "H.264 wyłączone — nie udało się załadować kodeka OpenH264. Otwórz Ustawienia "
 "→ Połączenie → Kodeki multimedialne, aby pobrać go ponownie."
 
-#: rustconn/src/embedded_rdp/connection.rs:2646
+#: rustconn/src/embedded_rdp/connection.rs:2652
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Utracono połączenie. Ponowne łączenie (próba {} z {})…"
 
-#: rustconn/src/embedded_rdp/connection.rs:2976
+#: rustconn/src/embedded_rdp/connection.rs:2982
 msgid "Could not prepare the external RDP compatibility client."
 msgstr ""
 "Nie udało się przygotować zewnętrznego klienta RDP do obsługi zgodności."
 
-#: rustconn/src/embedded_rdp/connection.rs:2987
+#: rustconn/src/embedded_rdp/connection.rs:2993
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Używanie zewnętrznego klienta RDP (serwer wymaga licencjonowania RDS)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2989
+#: rustconn/src/embedded_rdp/connection.rs:2995
 msgid "Using external RDP client (server incompatible)"
 msgstr "Używanie zewnętrznego klienta RDP (serwer niekompatybilny)"
 
-#: rustconn/src/embedded_rdp/connection.rs:3007
-#: rustconn/src/embedded_rdp/connection.rs:3589
+#: rustconn/src/embedded_rdp/connection.rs:3013
+#: rustconn/src/embedded_rdp/connection.rs:3599
 msgid "The external RDP client could not be started."
 msgstr "Nie udało się uruchomić zewnętrznego klienta RDP."
 
-#: rustconn/src/embedded_rdp/connection.rs:3045
+#: rustconn/src/embedded_rdp/connection.rs:3051
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Nie udało się uruchomić zewnętrznego klienta RDP. Zainstaluj FreeRDP 3 i "
 "spróbuj ponownie."
 
-#: rustconn/src/embedded_rdp/connection.rs:3123
+#: rustconn/src/embedded_rdp/connection.rs:3132
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Połączenie TLS nie powiodło się. Serwer może nie obsługiwać tego poziomu "
 "zabezpieczeń."
 
-#: rustconn/src/embedded_rdp/connection.rs:3127
+#: rustconn/src/embedded_rdp/connection.rs:3136
 msgid "Connection refused. Check host and port."
 msgstr "Połączenie odrzucone. Sprawdź host i port."
 
-#: rustconn/src/embedded_rdp/connection.rs:3130
+#: rustconn/src/embedded_rdp/connection.rs:3139
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Przekroczono limit czasu połączenia. Sprawdź, czy host jest osiągalny."
 
-#: rustconn/src/embedded_rdp/connection.rs:3150
+#: rustconn/src/embedded_rdp/connection.rs:3160
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11208,7 +11208,7 @@ msgstr ""
 "— zaktualizuj KRdp do 6.7.90 lub nowszej albo ustaw ExtSecurity=0 na "
 "serwerze (FreeRDP issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3155
+#: rustconn/src/embedded_rdp/connection.rs:3165
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11217,47 +11217,47 @@ msgstr ""
 "mogą używać NTLM: włącz uwierzytelnianie Kerberos w ustawieniach RDP "
 "połączenia."
 
-#: rustconn/src/embedded_rdp/connection.rs:3158
+#: rustconn/src/embedded_rdp/connection.rs:3168
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: ograniczenia konta uniemożliwiają "
 "logowanie."
 
-#: rustconn/src/embedded_rdp/connection.rs:3161
+#: rustconn/src/embedded_rdp/connection.rs:3171
 msgid "Authentication failed: password must be changed before first login."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: hasło musi zostać zmienione przed "
 "pierwszym logowaniem."
 
-#: rustconn/src/embedded_rdp/connection.rs:3163
+#: rustconn/src/embedded_rdp/connection.rs:3173
 msgid "Authentication failed: account is disabled."
 msgstr "Uwierzytelnianie nie powiodło się: konto jest wyłączone."
 
-#: rustconn/src/embedded_rdp/connection.rs:3164
+#: rustconn/src/embedded_rdp/connection.rs:3174
 msgid "Authentication failed: account is locked out."
 msgstr "Uwierzytelnianie nie powiodło się: konto jest zablokowane."
 
-#: rustconn/src/embedded_rdp/connection.rs:3165
+#: rustconn/src/embedded_rdp/connection.rs:3175
 msgid "Authentication failed: password has expired."
 msgstr "Uwierzytelnianie nie powiodło się: hasło wygasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:3166
+#: rustconn/src/embedded_rdp/connection.rs:3176
 msgid "Authentication failed: account has expired."
 msgstr "Uwierzytelnianie nie powiodło się: konto wygasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:3168
+#: rustconn/src/embedded_rdp/connection.rs:3178
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: konto jest wyłączone, zablokowane lub "
 "wygasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:3171
+#: rustconn/src/embedded_rdp/connection.rs:3181
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Uwierzytelnianie nie powiodło się: użytkownik nie ma uprawnień do logowania "
 "na tym komputerze."
 
-#: rustconn/src/embedded_rdp/connection.rs:3175
+#: rustconn/src/embedded_rdp/connection.rs:3185
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11265,8 +11265,8 @@ msgstr ""
 "Nie znaleziono serwera KDC Kerberos dla obszaru {}. Wprowadź adres KDC w "
 "ustawieniach RDP połączenia lub dodaj obszar do /etc/krb5.conf."
 
-#: rustconn/src/embedded_rdp/connection.rs:3179
-#: rustconn/src/embedded_rdp/connection.rs:3219
+#: rustconn/src/embedded_rdp/connection.rs:3189
+#: rustconn/src/embedded_rdp/connection.rs:3229
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
@@ -11274,7 +11274,7 @@ msgstr ""
 "Kerberos wymaga domeny DNS. Wprowadź ją w polu Domena, na przykład "
 "EXAMPLE.COM."
 
-#: rustconn/src/embedded_rdp/connection.rs:3183
+#: rustconn/src/embedded_rdp/connection.rs:3193
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11282,7 +11282,7 @@ msgstr ""
 "Nie można połączyć się z serwerem KDC Kerberos. Wprowadź nazwę lub adres IP "
 "kontrolera domeny jako adres KDC w ustawieniach RDP połączenia."
 
-#: rustconn/src/embedded_rdp/connection.rs:3186
+#: rustconn/src/embedded_rdp/connection.rs:3196
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
@@ -11290,7 +11290,7 @@ msgstr ""
 "Logowanie Kerberos nie powiodło się: zegar tego komputera różni się od "
 "zegara domeny o ponad pięć minut. Zsynchronizuj zegar i spróbuj ponownie."
 
-#: rustconn/src/embedded_rdp/connection.rs:3189
+#: rustconn/src/embedded_rdp/connection.rs:3199
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11298,12 +11298,12 @@ msgstr ""
 "Domena nie rozpoznaje tego serwera pod nazwą podaną w polu Host. Połącz się "
 "przy użyciu nazwy DNS serwera zarejestrowanej w domenie."
 
-#: rustconn/src/embedded_rdp/connection.rs:3191
+#: rustconn/src/embedded_rdp/connection.rs:3201
 msgid "NLA authentication failed. Check username and password."
 msgstr ""
 "Uwierzytelnianie NLA nie powiodło się. Sprawdź nazwę użytkownika i hasło."
 
-#: rustconn/src/embedded_rdp/connection.rs:3213
+#: rustconn/src/embedded_rdp/connection.rs:3223
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
@@ -11311,7 +11311,7 @@ msgstr ""
 "Kerberos wymaga nazwy DNS serwera. Łączenie się przy użyciu adresu IP lub "
 "przez tunel SSH nie powiedzie się."
 
-#: rustconn/src/embedded_rdp/connection.rs:3216
+#: rustconn/src/embedded_rdp/connection.rs:3226
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
@@ -11319,11 +11319,11 @@ msgstr ""
 "Kerberos wymaga domeny DNS, na przykład EXAMPLE.COM, a nie krótkiej nazwy "
 "domeny."
 
-#: rustconn/src/embedded_rdp/connection.rs:3616
+#: rustconn/src/embedded_rdp/connection.rs:3626
 msgid "RDP session will open in an external window"
 msgstr "Sesja RDP otworzy się w zewnętrznym oknie"
 
-#: rustconn/src/embedded_rdp/connection.rs:3645
+#: rustconn/src/embedded_rdp/connection.rs:3655
 msgid "Failed to start FreeRDP: {}"
 msgstr "Nie udało się uruchomić FreeRDP: {}"
 
@@ -11331,119 +11331,119 @@ msgstr "Nie udało się uruchomić FreeRDP: {}"
 msgid "File drag disabled: {}"
 msgstr "Przeciąganie plików wyłączone: {}"
 
-#: rustconn/src/embedded_rdp/mod.rs:404
+#: rustconn/src/embedded_rdp/mod.rs:409
 msgid "Task Manager"
 msgstr "Menedżer zadań"
 
-#: rustconn/src/embedded_rdp/mod.rs:406
+#: rustconn/src/embedded_rdp/mod.rs:411
 msgid "Registry Editor"
 msgstr "Edytor rejestru"
 
-#: rustconn/src/embedded_rdp/mod.rs:407
+#: rustconn/src/embedded_rdp/mod.rs:412
 msgid "Device Manager"
 msgstr "Menedżer urządzeń"
 
-#: rustconn/src/embedded_rdp/mod.rs:408
+#: rustconn/src/embedded_rdp/mod.rs:413
 msgid "Event Viewer"
 msgstr "Podgląd zdarzeń"
 
-#: rustconn/src/embedded_rdp/mod.rs:409
+#: rustconn/src/embedded_rdp/mod.rs:414
 msgid "Services"
 msgstr "Usługi"
 
-#: rustconn/src/embedded_rdp/mod.rs:410
+#: rustconn/src/embedded_rdp/mod.rs:415
 msgid "Disk Management"
 msgstr "Zarządzanie dyskami"
 
-#: rustconn/src/embedded_rdp/mod.rs:411
+#: rustconn/src/embedded_rdp/mod.rs:416
 msgid "Resource Monitor"
 msgstr "Monitor zasobów"
 
-#: rustconn/src/embedded_rdp/mod.rs:412
+#: rustconn/src/embedded_rdp/mod.rs:417
 msgid "Computer Management"
 msgstr "Zarządzanie komputerem"
 
-#: rustconn/src/embedded_rdp/mod.rs:414
+#: rustconn/src/embedded_rdp/mod.rs:419
 msgid "Auto (Windows tools shown)"
 msgstr "Automatycznie (narzędzia Windows widoczne)"
 
-#: rustconn/src/embedded_rdp/mod.rs:415
+#: rustconn/src/embedded_rdp/mod.rs:420
 msgid "Windows"
 msgstr "Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:416
+#: rustconn/src/embedded_rdp/mod.rs:421
 msgid "Linux (hide Windows tools)"
 msgstr "Linux (narzędzia Windows ukryte)"
 
-#: rustconn/src/embedded_rdp/mod.rs:422 rustconn/src/embedded_rdp/mod.rs:1122
+#: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_rdp/mod.rs:1129
 msgid "Shell Launchers"
 msgstr "Uruchamianie powłok"
 
-#: rustconn/src/embedded_rdp/mod.rs:426 rustconn/src/embedded_rdp/mod.rs:1117
+#: rustconn/src/embedded_rdp/mod.rs:431 rustconn/src/embedded_rdp/mod.rs:1124
 msgid "PowerShell (Admin)"
 msgstr "PowerShell (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:427 rustconn/src/embedded_rdp/mod.rs:1121
+#: rustconn/src/embedded_rdp/mod.rs:432 rustconn/src/embedded_rdp/mod.rs:1128
 msgid "CMD (Admin)"
 msgstr "CMD (Admin)"
 
-#: rustconn/src/embedded_rdp/mod.rs:570 rustconn/src/embedded_rdp/mod.rs:572
+#: rustconn/src/embedded_rdp/mod.rs:575 rustconn/src/embedded_rdp/mod.rs:577
 msgid "Fit resolution to window"
 msgstr "Dopasuj pulpit zdalny do rozmiaru okna"
 
-#: rustconn/src/embedded_rdp/mod.rs:591 rustconn/src/embedded_vnc/ui.rs:53
+#: rustconn/src/embedded_rdp/mod.rs:596 rustconn/src/embedded_vnc/ui.rs:53
 msgid "Copy remote clipboard to local (waiting for remote data…)"
 msgstr "Kopiuj zdalny schowek do lokalnego (oczekiwanie na dane zdalne…)"
 
-#: rustconn/src/embedded_rdp/mod.rs:598 rustconn/src/embedded_vnc/ui.rs:63
+#: rustconn/src/embedded_rdp/mod.rs:603 rustconn/src/embedded_vnc/ui.rs:63
 msgid "Paste from local clipboard to remote session"
 msgstr "Wklej z lokalnego schowka do sesji zdalnej"
 
-#: rustconn/src/embedded_rdp/mod.rs:603 rustconn/src/embedded_rdp/mod.rs:608
+#: rustconn/src/embedded_rdp/mod.rs:608 rustconn/src/embedded_rdp/mod.rs:613
 msgid "Autotype"
 msgstr "Autowpisywanie"
 
-#: rustconn/src/embedded_rdp/mod.rs:605
+#: rustconn/src/embedded_rdp/mod.rs:610
 msgid "Send text as keystrokes (bypasses paste restrictions)"
 msgstr "Wyślij tekst jako naciśnięcia klawiszy (omija ograniczenia wklejania)"
 
-#: rustconn/src/embedded_rdp/mod.rs:612
+#: rustconn/src/embedded_rdp/mod.rs:617
 msgid "Type Clipboard"
 msgstr "Wpisz schowek"
 
-#: rustconn/src/embedded_rdp/mod.rs:615
+#: rustconn/src/embedded_rdp/mod.rs:620
 msgid "Type Text…"
 msgstr "Wpisz tekst…"
 
-#: rustconn/src/embedded_rdp/mod.rs:629
+#: rustconn/src/embedded_rdp/mod.rs:634
 msgid "Run PowerShell script on remote"
 msgstr "Uruchom skrypt PowerShell na zdalnym hoście"
 
-#: rustconn/src/embedded_rdp/mod.rs:632
+#: rustconn/src/embedded_rdp/mod.rs:637
 msgid "Run script on remote"
 msgstr "Uruchom skrypt na zdalnym hoście"
 
-#: rustconn/src/embedded_rdp/mod.rs:647 rustconn/src/embedded_vnc/ui.rs:73
+#: rustconn/src/embedded_rdp/mod.rs:652 rustconn/src/embedded_vnc/ui.rs:73
 msgid "Ctrl+Alt+Del"
 msgstr "Ctrl+Alt+Del"
 
-#: rustconn/src/embedded_rdp/mod.rs:655 rustconn/src/embedded_vnc/ui.rs:79
+#: rustconn/src/embedded_rdp/mod.rs:660 rustconn/src/embedded_vnc/ui.rs:79
 msgid "Send Ctrl+Alt+Del to remote session"
 msgstr "Wyślij Ctrl+Alt+Del do sesji zdalnej"
 
-#: rustconn/src/embedded_rdp/mod.rs:661 rustconn/src/embedded_rdp/mod.rs:664
+#: rustconn/src/embedded_rdp/mod.rs:666 rustconn/src/embedded_rdp/mod.rs:669
 msgid "Windows admin tools"
 msgstr "Narzędzia administracyjne Windows"
 
-#: rustconn/src/embedded_rdp/mod.rs:688
+#: rustconn/src/embedded_rdp/mod.rs:693
 msgid "Save Files"
 msgstr "Zapisz pliki"
 
-#: rustconn/src/embedded_rdp/mod.rs:691
+#: rustconn/src/embedded_rdp/mod.rs:696
 msgid "Save files from remote clipboard"
 msgstr "Zapisz pliki ze zdalnego schowka"
 
-#: rustconn/src/embedded_rdp/mod.rs:781 rustconn/src/embedded_vnc/ui.rs:149
+#: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1469
 #: rustconn/src/terminal/session_lifecycle.rs:407
@@ -11451,17 +11451,17 @@ msgstr "Zapisz pliki ze zdalnego schowka"
 msgid "Reconnect"
 msgstr "Połącz ponownie"
 
-#: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_vnc/ui.rs:151
+#: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
 #: rustconn/src/terminal/mod.rs:1471
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Połącz ponownie z tą sesją"
 
-#: rustconn/src/embedded_rdp/mod.rs:949
+#: rustconn/src/embedded_rdp/mod.rs:956
 msgid "Enable clipboard sharing to send files to the remote session"
 msgstr "Włącz udostępnianie schowka, aby wysyłać pliki do sesji zdalnej"
 
-#: rustconn/src/embedded_rdp/mod.rs:1037
+#: rustconn/src/embedded_rdp/mod.rs:1044
 msgid ""
 "{} file(s) copied to the remote clipboard — press Ctrl+V in the session to "
 "paste"
@@ -11469,28 +11469,28 @@ msgstr ""
 "Skopiowano {} plik(ów) do zdalnego schowka — naciśnij Ctrl+V w sesji, aby "
 "wkleić"
 
-#: rustconn/src/embedded_rdp/mod.rs:1115
+#: rustconn/src/embedded_rdp/mod.rs:1122
 msgid "PowerShell"
 msgstr "PowerShell"
 
-#: rustconn/src/embedded_rdp/mod.rs:1120
+#: rustconn/src/embedded_rdp/mod.rs:1127
 msgid "CMD"
 msgstr "CMD"
 
-#: rustconn/src/embedded_rdp/mod.rs:1214 rustconn/src/embedded_rdp/mod.rs:1285
-#: rustconn/src/embedded_rdp/mod.rs:1563
+#: rustconn/src/embedded_rdp/mod.rs:1221 rustconn/src/embedded_rdp/mod.rs:1292
+#: rustconn/src/embedded_rdp/mod.rs:1570
 msgid "Channel not ready"
 msgstr "Kanał niegotowy"
 
-#: rustconn/src/embedded_rdp/mod.rs:1259 rustconn/src/embedded_rdp/mod.rs:1312
+#: rustconn/src/embedded_rdp/mod.rs:1266 rustconn/src/embedded_rdp/mod.rs:1319
 msgid "Script sent"
 msgstr "Skrypt wysłany"
 
-#: rustconn/src/embedded_rdp/mod.rs:1358 rustconn/src/window/snippets.rs:108
+#: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:108
 msgid "Run Snippet?"
 msgstr "Uruchomić fragment?"
 
-#: rustconn/src/embedded_rdp/mod.rs:1365 rustconn/src/window/snippets.rs:110
+#: rustconn/src/embedded_rdp/mod.rs:1372 rustconn/src/window/snippets.rs:110
 msgid ""
 "This runs “{}” in the active session:\n"
 "\n"
@@ -11500,15 +11500,15 @@ msgstr ""
 "\n"
 "{}"
 
-#: rustconn/src/embedded_rdp/mod.rs:1625
+#: rustconn/src/embedded_rdp/mod.rs:1632
 msgid "Select folder to save files"
 msgstr "Wybierz folder do zapisania plików"
 
-#: rustconn/src/embedded_rdp/mod.rs:1758
+#: rustconn/src/embedded_rdp/mod.rs:1765
 msgid "Downloading files…"
 msgstr "Pobieranie plików…"
 
-#: rustconn/src/embedded_rdp/mod.rs:2153
+#: rustconn/src/embedded_rdp/mod.rs:2160
 msgid "Connection may have been lost while the computer slept"
 msgstr "Połączenie mogło zostać utracone, gdy komputer był uśpiony"
 
@@ -12699,16 +12699,16 @@ msgstr "Zamknij wszystkie niezgrupowane"
 msgid "Close All Tabs"
 msgstr "Zamknij wszystkie karty"
 
-#: rustconn/src/toast.rs:244
+#: rustconn/src/toast.rs:281
 msgid "Info"
 msgstr "Informacja"
 
-#: rustconn/src/toast.rs:295 rustconn/src/window/batch_edit.rs:239
+#: rustconn/src/toast.rs:332 rustconn/src/window/batch_edit.rs:240
 #: rustconn/src/window/key_setup.rs:867
 msgid "Undo"
 msgstr "Cofnij"
 
-#: rustconn/src/toast.rs:360
+#: rustconn/src/toast.rs:397
 msgid "Retry"
 msgstr "Ponów"
 
@@ -12888,7 +12888,7 @@ msgstr "Zastosuj zmianę ikony"
 msgid "Icon (emoji or GTK icon name, empty clears)"
 msgstr "Ikona (emoji lub nazwa ikony GTK, puste aby wyczyścić)"
 
-#: rustconn/src/window/batch_edit.rs:238
+#: rustconn/src/window/batch_edit.rs:239
 msgid "Updated {} connections"
 msgstr "Zaktualizowano {} połączeń"
 

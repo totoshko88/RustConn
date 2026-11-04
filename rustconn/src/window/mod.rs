@@ -1122,9 +1122,9 @@ impl MainWindow {
         // Persistent banner for config files startup could not read, or found
         // written by a newer RustConn (GNOME HIG: a state that needs attention
         // belongs in a banner). Hidden until `show_config_file_notice` fills it.
-        let config_banner = adw::Banner::new("");
-        // The message carries a file path, which is not Pango markup.
-        config_banner.set_use_markup(false);
+        // Every banner here is a `plain_banner`: their text carries paths, names
+        // and error strings, which are not Pango markup.
+        let config_banner = crate::toast::plain_banner("");
         config_banner.set_button_label(Some(&crate::i18n::i18n("Dismiss")));
         config_banner.connect_button_clicked(|banner| {
             banner.set_revealed(false);
@@ -1135,7 +1135,7 @@ impl MainWindow {
         // that needs attention belongs in a banner, not a transient toast).
         // Hidden by default; shown via show_sync_error_banner(), hidden on
         // the next successful sync.
-        let sync_banner = adw::Banner::new("");
+        let sync_banner = crate::toast::plain_banner("");
         sync_banner.set_button_label(Some(&crate::i18n::i18n("Dismiss")));
         sync_banner.connect_button_clicked(|banner| {
             banner.set_revealed(false);
@@ -1148,7 +1148,7 @@ impl MainWindow {
         // Hidden by default; shown via check_secret_backend_available(). Its
         // action button opens Settings, where the user picks a working backend
         // in the Secrets section (#201).
-        let secret_banner = adw::Banner::new("");
+        let secret_banner = crate::toast::plain_banner("");
         secret_banner.set_button_label(Some(&crate::i18n::i18n("Open Settings")));
         secret_banner.connect_button_clicked(|banner| {
             // The banner lives inside the window that owns the `win.settings`
@@ -1164,7 +1164,7 @@ impl MainWindow {
         // BusyStack does: it sends a +1/-1 delta over an mpsc channel, and a
         // glib::timeout_add_local drain tracks the in-flight count and reveals
         // the banner whenever it is above zero. Informational — no button.
-        let touch_banner = adw::Banner::new(&crate::i18n::i18n(
+        let touch_banner = crate::toast::plain_banner(&crate::i18n::i18n(
             "Touch your hardware key to unlock the password database",
         ));
         toolbar_view.add_top_bar(&touch_banner);
@@ -1200,7 +1200,7 @@ impl MainWindow {
         // a group broadcast reaches tabs the user cannot see, so its active state
         // must be unmissable — a banner, not a transient toast. Its button turns
         // the broadcast off. Hidden until group broadcast is enabled.
-        let group_broadcast_banner = adw::Banner::new("");
+        let group_broadcast_banner = crate::toast::plain_banner("");
         group_broadcast_banner.set_button_label(Some(&crate::i18n::i18n("Stop")));
         group_broadcast_banner.add_css_class("accent");
         group_broadcast_banner.connect_button_clicked(|banner| {

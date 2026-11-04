@@ -144,7 +144,7 @@ impl FlatpakComponentsDialog {
         let inner = GtkBox::new(Orientation::Vertical, 24);
 
         // Info banner
-        let info_banner = adw::Banner::new(&i18n(
+        let info_banner = crate::toast::plain_banner(&i18n(
             "Showing sandbox-compatible components only. \
              Downloads are verified with SHA256 checksums.",
         ));

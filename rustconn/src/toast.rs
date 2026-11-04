@@ -2,6 +2,7 @@
 //!
 //! Wraps `adw::ToastOverlay` to provide a simple interface for showing notifications.
 //! Supports standard toast types (info, success, warning, error) and actions.
+//! Also home to [`plain_banner`], so both plain-text constructors live together.
 //!
 //! # Accessibility
 //!
@@ -20,9 +21,31 @@ use libadwaita as adw;
 /// or `<` would render an empty toast, and `<b>x</b>` would render as bold.
 /// Every toast in this crate is built here so caller text is never markup.
 #[must_use]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the one sanctioned adw::Toast constructor: it turns use-markup off"
+)]
 pub fn plain_toast(message: &str) -> adw::Toast {
     adw::Toast::builder()
         .title(message)
+        .use_markup(false)
+        .build()
+}
+
+/// Builds a banner whose title is shown as plain text.
+///
+/// `adw::Banner` parses its title as Pango markup by default, the same trap as
+/// [`plain_toast`]: a database path, sync group or error text containing `&` or
+/// `<` would break the banner or render as markup. Every banner in this crate is
+/// built here; set the text later with `set_title`, which keeps the flag.
+#[must_use]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the one sanctioned adw::Banner constructor: it turns use-markup off"
+)]
+pub fn plain_banner(title: &str) -> adw::Banner {
+    adw::Banner::builder()
+        .title(title)
         .use_markup(false)
         .build()
 }
