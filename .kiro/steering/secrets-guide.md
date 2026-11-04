@@ -86,7 +86,9 @@ You are editing a file that handles credentials.
   and any key present), do not add either (`KeyPresenceUnknown`,
   `IdentityLoadError::Unverified`: the mc launch warns and goes on).
   A Settings → SSH Agent "Add" is the user's (`add_key`) and un-records the
-  key; without the key file's own blob, every key recorded for that socket.
+  key, before and after the `ssh-add`; without the key file's own blob,
+  every key recorded for that socket. A `REMOVE_IDENTITY` already sent can
+  still land after the add; no shared lock, by decision (w6).
 
 ## New Backends
 

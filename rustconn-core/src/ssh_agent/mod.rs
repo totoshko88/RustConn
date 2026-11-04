@@ -759,9 +759,16 @@ impl SshAgentManager {
     /// and the one-shot helper empties it right after its single read.
     ///
     /// This is the user's own add (Settings → SSH Agent): no lifetime, and the
-    /// key counts as the user's from now on, so RustConn will not remove it on
-    /// exit, lock or suspend even if it had added the same key itself earlier.
-    /// The passphrase is used for this one add and not kept.
+    /// key comes off RustConn's own-key list, so a later exit, lock or suspend
+    /// does not remove it even if RustConn had added the same key itself
+    /// earlier. It is taken off before `ssh-add` runs and again after, so an
+    /// eviction that starts in between does not pick it up; a failed add
+    /// leaves it off the list too, and RustConn's earlier copy then expires
+    /// with its lifetime. A `SSH_AGENTC_REMOVE_IDENTITY` an eviction had
+    /// already sent can still reach the agent after the add and remove the
+    /// key: closing that would need the add and the eviction to share a lock,
+    /// which they do not. The passphrase is used for this one add and not
+    /// kept.
     ///
     /// # Errors
     ///
@@ -773,6 +780,7 @@ impl SshAgentManager {
         passphrase: Option<&secrecy::SecretString>,
     ) -> AgentResult<()> {
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
+        own_keys::forget(socket_path, key_path);
         run_ssh_add(key_path, socket_path, passphrase)?;
         own_keys::forget(socket_path, key_path);
         Ok(())
