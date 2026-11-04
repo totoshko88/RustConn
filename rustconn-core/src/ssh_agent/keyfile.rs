@@ -209,7 +209,8 @@ pub(super) struct KeyFileBlobs {
     /// From a sibling `<path>-cert.pub`, the certificate `ssh-add` loads
     /// together with the key when that file exists. Not checked against the
     /// key here: `ssh-add` skips a certificate that does not match, so only a
-    /// certificate the agent shows after the add counts.
+    /// certificate the agent shows after the add counts. A removal checks it
+    /// with [`certifies`] first.
     pub(super) cert_file: Option<Vec<u8>>,
 }
 
@@ -267,6 +268,30 @@ pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
 pub(super) fn pub_file_blob(path: &std::path::Path) -> Option<Vec<u8>> {
     let contents = Zeroizing::new(std::fs::read_to_string(path).ok()?);
     pub_line_blob(contents.lines().next()?.trim()).ok()
+}
+
+/// Whether the OpenSSH certificate blob `cert` certifies the public key `key`.
+///
+/// A key blob is `string <type>` followed by the key's public fields. A
+/// certificate blob (PROTOCOL.certkeys) is `string <type>-cert-v01@openssh.com`
+/// (`@openssh.com` dropped from the key type first, as for `sk-` keys), then
+/// `string nonce`, then the same public fields in the same encoding, then the
+/// serial and the rest. Only the type and those fields are compared, the way
+/// `ssh-add -d` compares them before it removes a certificate.
+pub(super) fn certifies(cert: &[u8], key: &[u8]) -> bool {
+    let Some((key_type, fields_at)) = read_ssh_string(key, 0) else {
+        return false;
+    };
+    let Some((cert_type, nonce_at)) = read_ssh_string(cert, 0) else {
+        return false;
+    };
+    let Some((_nonce, cert_fields_at)) = read_ssh_string(cert, nonce_at) else {
+        return false;
+    };
+    let base = key_type.strip_suffix(b"@openssh.com").unwrap_or(key_type);
+    let expected_type = [base, b"-cert-v01@openssh.com"].concat();
+    let fields = &key[fields_at..];
+    !fields.is_empty() && cert_type == expected_type && cert[cert_fields_at..].starts_with(fields)
 }
 
 /// The public-key line (`<type> <base64>`, no comment) of a public-key blob.
@@ -473,6 +498,28 @@ pub(crate) fn openssh_key_fixture(ciphername: &str, pub_blob: &[u8]) -> String {
     format!("{OPENSSH_BEGIN}\n{b64}\n{OPENSSH_END}\n")
 }
 
+/// Test fixture: an OpenSSH certificate blob for the public key blob `key`,
+/// shaped as PROTOCOL.certkeys lays it out up to the public fields; the
+/// serial and everything after it are a dummy tail no reader here parses.
+#[cfg(test)]
+pub(crate) fn openssh_cert_fixture(key: &[u8]) -> Vec<u8> {
+    fn ssh_string(out: &mut Vec<u8>, bytes: &[u8]) {
+        out.extend_from_slice(&u32::try_from(bytes.len()).unwrap().to_be_bytes());
+        out.extend_from_slice(bytes);
+    }
+    let (key_type, fields_at) = read_ssh_string(key, 0).expect("a key blob with a type");
+    let mut cert = Vec::new();
+    ssh_string(
+        &mut cert,
+        &[key_type, b"-cert-v01@openssh.com".as_slice()].concat(),
+    );
+    ssh_string(&mut cert, &[0x5a; 32]); // nonce
+    cert.extend_from_slice(&key[fields_at..]);
+    cert.extend_from_slice(&7u64.to_be_bytes()); // serial
+    ssh_string(&mut cert, b"signature-and-the-rest-ignored");
+    cert
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -673,6 +720,47 @@ mod tests {
                 .unwrap()
                 .fingerprint
         );
+    }
+
+    /// A certificate counts only for the key it embeds: another key's
+    /// certificate, a plain key blob and a truncated blob do not.
+    #[test]
+    fn a_certificate_certifies_only_its_own_key() {
+        fn ed25519(tag: u8) -> Vec<u8> {
+            let mut blob = Vec::new();
+            blob.extend_from_slice(&11u32.to_be_bytes());
+            blob.extend_from_slice(b"ssh-ed25519");
+            blob.extend_from_slice(&32u32.to_be_bytes());
+            blob.extend_from_slice(&[tag; 32]);
+            blob
+        }
+        let (key, other) = (ed25519(1), ed25519(2));
+        let cert = openssh_cert_fixture(&key);
+
+        assert!(certifies(&cert, &key));
+        assert!(!certifies(&cert, &other), "another key's certificate");
+        assert!(!certifies(&openssh_cert_fixture(&other), &key));
+        assert!(
+            !certifies(&other, &key),
+            "a plain key blob is no certificate"
+        );
+        assert!(!certifies(&cert[..cert.len() / 3], &key), "truncated");
+        assert!(!certifies(&cert, &key[..15]), "a key blob with no fields");
+
+        // `sk-` key types drop their `@openssh.com` before the cert suffix.
+        let mut sk_key = Vec::new();
+        let sk_type = b"sk-ssh-ed25519@openssh.com";
+        sk_key.extend_from_slice(&u32::try_from(sk_type.len()).unwrap().to_be_bytes());
+        sk_key.extend_from_slice(sk_type);
+        sk_key.extend_from_slice(&key[15..]);
+        let mut sk_cert = Vec::new();
+        let sk_cert_type = b"sk-ssh-ed25519-cert-v01@openssh.com";
+        sk_cert.extend_from_slice(&u32::try_from(sk_cert_type.len()).unwrap().to_be_bytes());
+        sk_cert.extend_from_slice(sk_cert_type);
+        // The nonce, the fields and the tail of the ed25519 certificate, whose
+        // type string ("ssh-ed25519-cert-v01@openssh.com") is 4 + 32 bytes.
+        sk_cert.extend_from_slice(&cert[4 + 32..]);
+        assert!(certifies(&sk_cert, &sk_key));
     }
 
     #[test]

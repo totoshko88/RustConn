@@ -942,9 +942,12 @@ impl SshAgentManager {
     /// When the public half can be read without a passphrase (an OpenSSH
     /// private key, or a `.pub` file passed as `key_path`) the key is removed
     /// with one native `SSH_AGENTC_REMOVE_IDENTITY`, followed by its
-    /// `<key>-cert.pub` certificate when one sits beside it, as `ssh-add -d`
-    /// does. Otherwise `ssh-add -d` runs, bounded by
-    /// [`AGENT_COMMAND_TIMEOUT`].
+    /// `<key>-cert.pub` certificate when one sits beside it and certifies
+    /// this key. As with `ssh-add -d`, the certificate is tried even when the
+    /// agent no longer holds the key, and the removal succeeds when either
+    /// went; a certificate for another key is left in the agent (where
+    /// `ssh-add -d` stops with an error). Otherwise `ssh-add -d` runs,
+    /// bounded by [`AGENT_COMMAND_TIMEOUT`].
     ///
     /// # Arguments
     ///
@@ -969,7 +972,17 @@ impl SshAgentManager {
                 .clone()
                 .or_else(|| is_pub.then(|| keyfile::pub_file_blob(key_path)).flatten())
             {
-                return remove_natively(socket_path, &blob, blobs.cert_file.as_deref());
+                let cert = blobs.cert_file.as_deref().filter(|cert| {
+                    let matches = keyfile::certifies(cert, &blob);
+                    if !matches {
+                        tracing::warn!(
+                            ?key_path,
+                            "the -cert.pub beside the key does not certify it; leaving it in the agent"
+                        );
+                    }
+                    matches
+                });
+                return remove_natively(socket_path, &blob, cert);
             }
         }
 
@@ -1310,30 +1323,33 @@ pub(crate) fn run_agent_command(
 }
 
 /// Removes the key with public blob `blob` from the agent at `socket_path`
-/// over the native protocol, then its certificate `cert` if given (which the
-/// agent may not hold; that is not an error).
+/// over the native protocol, then its certificate `cert` if given, the way
+/// `ssh-add -d` does: the certificate is tried whether or not the agent held
+/// the key, and either one going counts as success.
+///
+/// `cert` must already be checked to certify `blob` ([`keyfile::certifies`]).
 ///
 /// # Errors
 ///
-/// Returns `AgentError::RemoveKeyFailed` if the agent cannot be reached or
-/// does not hold the key.
+/// Returns `AgentError::RemoveKeyFailed` if the agent cannot be reached, or
+/// holds neither the key nor the certificate.
 #[cfg(unix)]
 fn remove_natively(socket_path: &str, blob: &[u8], cert: Option<&[u8]>) -> AgentResult<()> {
-    match wire::remove_identity(socket_path, blob) {
-        Ok(true) => {}
-        Ok(false) => {
-            return Err(AgentError::RemoveKeyFailed(
-                "the agent does not hold this key".to_string(),
-            ));
-        }
-        Err(e) => return Err(AgentError::RemoveKeyFailed(e.to_string())),
+    let key_removed = wire::remove_identity(socket_path, blob)
+        .map_err(|e| AgentError::RemoveKeyFailed(e.to_string()))?;
+    let cert_removed = cert.is_some_and(|cert| {
+        wire::remove_identity(socket_path, cert).unwrap_or_else(|e| {
+            tracing::debug!(error = %e, "could not remove the key's certificate from the agent");
+            false
+        })
+    });
+    if key_removed || cert_removed {
+        Ok(())
+    } else {
+        Err(AgentError::RemoveKeyFailed(
+            "the agent does not hold this key".to_string(),
+        ))
     }
-    if let Some(cert) = cert
-        && let Err(e) = wire::remove_identity(socket_path, cert)
-    {
-        tracing::debug!(error = %e, "could not remove the key's certificate from the agent");
-    }
-    Ok(())
 }
 
 /// Ceiling on every `ssh-add` that adds a key.
@@ -1543,22 +1559,30 @@ mod native_path_tests {
         );
     }
 
+    /// Writes an OpenSSH private key carrying `key` and a `-cert.pub` beside
+    /// it holding `cert`; returns the key path.
+    fn key_with_cert(dir: &Path, key: &[u8], cert: &[u8]) -> PathBuf {
+        let key_path = dir.join("id_ed25519");
+        std::fs::write(&key_path, keyfile::openssh_key_fixture("none", key)).unwrap();
+        std::fs::write(
+            dir.join("id_ed25519-cert.pub"),
+            format!(
+                "ssh-ed25519-cert-v01@openssh.com {}\n",
+                data_encoding::BASE64.encode(cert)
+            ),
+        )
+        .unwrap();
+        key_path
+    }
+
     /// An OpenSSH private key names its public half, so the key and the
     /// certificate beside it are removed natively and nothing else is.
     #[test]
     fn an_openssh_key_and_its_certificate_are_removed_natively() {
         let dir = tempfile::tempdir().unwrap();
-        let (key, cert, users) = (blob(3), blob(4), blob(5));
-        let key_path = dir.path().join("id_ed25519");
-        std::fs::write(&key_path, keyfile::openssh_key_fixture("none", &key)).unwrap();
-        std::fs::write(
-            dir.path().join("id_ed25519-cert.pub"),
-            format!(
-                "ssh-ed25519-cert-v01@openssh.com {}\n",
-                data_encoding::BASE64.encode(&cert)
-            ),
-        )
-        .unwrap();
+        let (key, users) = (blob(3), blob(5));
+        let cert = keyfile::openssh_cert_fixture(&key);
+        let key_path = key_with_cert(dir.path(), &key, &cert);
         let (socket, state) = fake_agent(dir.path(), &[&key, &cert, &users]);
 
         SshAgentManager::new(Some(socket))
@@ -1566,6 +1590,42 @@ mod native_path_tests {
             .unwrap();
         let state = state.lock().unwrap();
         assert_eq!(state.0, vec![users], "the user's other key stays");
+        assert_eq!(state.1, vec![18, 18]);
+    }
+
+    /// A `-cert.pub` that certifies some other key is not sent to the agent:
+    /// the key goes, the certificate stays.
+    #[test]
+    fn a_certificate_for_another_key_is_left_in_the_agent() {
+        let dir = tempfile::tempdir().unwrap();
+        let (key, other) = (blob(8), blob(9));
+        let foreign_cert = keyfile::openssh_cert_fixture(&other);
+        let key_path = key_with_cert(dir.path(), &key, &foreign_cert);
+        let (socket, state) = fake_agent(dir.path(), &[&key, &foreign_cert]);
+
+        SshAgentManager::new(Some(socket))
+            .remove_key(&key_path)
+            .unwrap();
+        let state = state.lock().unwrap();
+        assert_eq!(state.0, vec![foreign_cert], "the foreign certificate stays");
+        assert_eq!(state.1, vec![18], "only the key was asked for");
+    }
+
+    /// As with `ssh-add -d`, the certificate is removed even when the agent
+    /// no longer holds the key itself, and that counts as success.
+    #[test]
+    fn the_certificate_goes_even_when_the_key_is_already_gone() {
+        let dir = tempfile::tempdir().unwrap();
+        let (key, users) = (blob(10), blob(11));
+        let cert = keyfile::openssh_cert_fixture(&key);
+        let key_path = key_with_cert(dir.path(), &key, &cert);
+        let (socket, state) = fake_agent(dir.path(), &[&cert, &users]);
+
+        SshAgentManager::new(Some(socket))
+            .remove_key(&key_path)
+            .unwrap();
+        let state = state.lock().unwrap();
+        assert_eq!(state.0, vec![users]);
         assert_eq!(state.1, vec![18, 18]);
     }
 
