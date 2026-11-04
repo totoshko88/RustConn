@@ -15,7 +15,6 @@ mod inner {
     };
     use zeroize::Zeroizing;
 
-    use super::super::LEGACY_KEY_PASSPHRASE_FIELD;
     use super::super::backend::SecretBackend;
     use crate::error::{SecretError, SecretResult};
     use crate::models::Credentials;
@@ -29,7 +28,7 @@ mod inner {
     /// Security.framework generic password API. Each credential field
     /// (username, password, domain) is stored as a separate Keychain item
     /// with a composite account name. An SSH key passphrase item an earlier
-    /// release stored is neither read nor rewritten; `delete` still removes it.
+    /// release stored is never read, rewritten or deleted.
     pub struct MacOsKeychainBackend;
 
     impl std::fmt::Debug for MacOsKeychainBackend {
@@ -187,9 +186,9 @@ mod inner {
                 // Ignore individual errors (fields might not exist)
                 let _ = Self::delete_field(&conn_id, "username");
                 let _ = Self::delete_field(&conn_id, "password");
-                // Legacy: removed with the rest of the connection's items,
-                // never read.
-                let _ = Self::delete_field(&conn_id, LEGACY_KEY_PASSPHRASE_FIELD);
+                // A `key_passphrase` item an earlier release stored is left
+                // alone: a rename or move is retrieve + store + delete, so
+                // deleting it here would destroy the only copy.
                 let _ = Self::delete_field(&conn_id, "domain");
                 Ok(())
             })

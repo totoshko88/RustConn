@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use secrecy::SecretString;
 use tokio::process::Command;
 
-use super::LEGACY_KEY_PASSPHRASE_FIELD;
 use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
@@ -30,6 +29,8 @@ pub struct PassBackend {
     /// `<id>/<field>` at the store root, so an entry the user keeps outside the
     /// `rustconn/` subtree is still found. Writes stay `rustconn/`-prefixed.
     root_search: bool,
+    /// The `pass` program to run; a stub in tests.
+    program: String,
 }
 
 impl Default for PassBackend {
@@ -52,7 +53,16 @@ impl PassBackend {
             store_dir,
             read_only: false,
             root_search: false,
+            program: "pass".to_string(),
         }
+    }
+
+    /// Runs `program` instead of `pass`, so a test can drive the backend
+    /// through a stub.
+    #[cfg(test)]
+    fn with_program(mut self, program: String) -> Self {
+        self.program = program;
+        self
     }
 
     /// Puts the backend in read-only mode, where `store` and `delete` are
@@ -106,8 +116,9 @@ impl PassBackend {
     /// Builds the pass path for a connection's credential field
     ///
     /// Structure: `rustconn/<connection_id>/<field>`
-    /// Where field is one of: username, password, domain (and the legacy
-    /// [`LEGACY_KEY_PASSPHRASE_FIELD`], which only `delete` still names)
+    /// Where field is one of: username, password, domain. A legacy
+    /// `key_passphrase` entry an earlier release stored is never read, written
+    /// or removed.
     #[expect(
         clippy::unused_self,
         reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
@@ -139,7 +150,7 @@ impl PassBackend {
 
     /// Sets up the Command with optional PASSWORD_STORE_DIR
     fn setup_command(&self) -> Command {
-        let mut cmd = Command::new("pass");
+        let mut cmd = Command::new(&self.program);
         cmd.env("PATH", crate::cli_download::get_extended_path());
         if let Some(ref dir) = self.store_dir {
             cmd.env("PASSWORD_STORE_DIR", dir);
@@ -425,13 +436,13 @@ impl SecretBackend for PassBackend {
         // Ignore errors for individual fields (they might not exist)
         let _ = self.delete_value(connection_id, "username").await;
         let _ = self.delete_value(connection_id, "password").await;
-        // Legacy: removed with the rest of the connection's entries, never read.
-        let _ = self
-            .delete_value(connection_id, LEGACY_KEY_PASSPHRASE_FIELD)
-            .await;
+        // A `key_passphrase` entry an earlier release stored is left alone: a
+        // rename or move is retrieve + store + delete, so removing it here
+        // would destroy the only copy (secrets-guide.md).
         let _ = self.delete_value(connection_id, "domain").await;
 
-        // Try to clean up empty directories
+        // Try to clean up empty directories; one still holding a legacy
+        // `key_passphrase` entry stays.
         let _ = self.cleanup_directory(connection_id).await;
 
         Ok(())
@@ -475,6 +486,7 @@ impl std::fmt::Debug for PassBackend {
             .field("store_dir", &self.store_dir)
             .field("read_only", &self.read_only)
             .field("root_search", &self.root_search)
+            .field("program", &self.program)
             .finish()
     }
 }
@@ -636,6 +648,90 @@ mod root_search_tests {
         assert_ne!(
             backend.build_root_path("db.example.com", "password"),
             backend.build_pass_path("conn-1", "password")
+        );
+    }
+}
+
+#[cfg(test)]
+#[cfg(unix)]
+mod legacy_passphrase_tests {
+    use std::os::unix::fs::PermissionsExt as _;
+    use std::path::Path;
+
+    use super::*;
+
+    /// A plain-file stand-in for `pass`: `show`, `insert --force --multiline`
+    /// and `rm --force` on `$PASSWORD_STORE_DIR/<path>.gpg`, with pass's own
+    /// "is not in the password store" wording for a missing entry.
+    const STUB_PASS: &str = "#!/bin/sh\n\
+        miss() { echo \"Error: $1 is not in the password store.\" >&2; exit 1; }\n\
+        case \"$1\" in\n\
+          show) f=\"$PASSWORD_STORE_DIR/$2.gpg\"; [ -f \"$f\" ] || miss \"$2\"; cat \"$f\" ;;\n\
+          insert) f=\"$PASSWORD_STORE_DIR/$4.gpg\"; mkdir -p \"${f%/*}\"; cat > \"$f\" ;;\n\
+          rm) f=\"$PASSWORD_STORE_DIR/$3.gpg\"; [ -f \"$f\" ] || miss \"$3\"; rm \"$f\" ;;\n\
+          *) exit 2 ;;\n\
+        esac\n";
+
+    const LEGACY_SECRET: &str = "legacy-key-passphrase-sentinel";
+
+    fn write_entry(store: &Path, path: &str, value: &str) {
+        let file = store.join(format!("{path}.gpg"));
+        std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+        std::fs::write(file, format!("{value}\n")).unwrap();
+    }
+
+    /// A key move (rename, group move, protocol change, legacy-key migration)
+    /// is `retrieve(old)`, `store(new)`, `delete(old)`. The legacy passphrase
+    /// entry an earlier release stored must come out of that untouched: not
+    /// read into the credentials, not copied, and not removed with the rest.
+    #[tokio::test]
+    async fn key_move_leaves_legacy_passphrase_entry_in_place() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let store = dir.path().join("store");
+        let stub = dir.path().join("pass");
+        std::fs::write(&stub, STUB_PASS).unwrap();
+        std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o700)).unwrap();
+
+        write_entry(&store, "rustconn/old/username", "alice");
+        write_entry(&store, "rustconn/old/password", "hunter2");
+        write_entry(&store, "rustconn/old/key_passphrase", LEGACY_SECRET);
+
+        let backend = PassBackend::new(Some(store.to_string_lossy().into_owned()))
+            .with_program(stub.to_string_lossy().into_owned());
+
+        // ETXTBSY race: a just-written stub can still be held open for write
+        // by a fork in a parallel test, so the first exec may fail with "Text
+        // file busy". A harness artefact, not a backend bug: retry on it.
+        let mut attempts = 0;
+        let creds = loop {
+            attempts += 1;
+            match backend.retrieve("old").await {
+                Ok(creds) => break creds.expect("the old entry is found"),
+                Err(e) if e.to_string().contains("Text file busy") && attempts < 10 => {
+                    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                }
+                Err(e) => panic!("retrieve through the stub pass: {e:?}"),
+            }
+        };
+        assert_eq!(creds.username.as_deref(), Some("alice"));
+        assert_eq!(creds.expose_password(), Some("hunter2"));
+        assert!(!format!("{creds:?}").contains(LEGACY_SECRET));
+
+        backend.store("new", &creds).await.unwrap();
+        backend.delete("old").await.unwrap();
+
+        let legacy = store.join("rustconn/old/key_passphrase.gpg");
+        assert_eq!(
+            std::fs::read_to_string(&legacy).unwrap(),
+            format!("{LEGACY_SECRET}\n"),
+            "the legacy entry stays where it was"
+        );
+        assert!(!store.join("rustconn/old/password.gpg").exists());
+        assert!(!store.join("rustconn/old/username.gpg").exists());
+        assert!(store.join("rustconn/new/password.gpg").exists());
+        assert!(
+            !store.join("rustconn/new/key_passphrase.gpg").exists(),
+            "nothing writes a key passphrase"
         );
     }
 }

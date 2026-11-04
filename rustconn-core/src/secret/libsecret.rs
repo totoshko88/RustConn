@@ -16,7 +16,6 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use secrecy::SecretString;
 
-use super::LEGACY_KEY_PASSPHRASE_FIELD;
 use super::backend::{BackendAvailability, SecretBackend};
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
@@ -81,8 +80,8 @@ impl LibSecretBackend {
     /// The map preserves the attribute scheme used by earlier `secret-tool`
     /// releases so entries stay mutually findable (backward compatibility,
     /// R11.1/R11.3): `application`, `connection_id`, and `key` (one of
-    /// `username` / `password` / `domain`, plus the legacy
-    /// [`LEGACY_KEY_PASSPHRASE_FIELD`], which only `delete` still names).
+    /// `username` / `password` / `domain`). A legacy `key_passphrase` item an
+    /// earlier release stored is never read, written or deleted.
     fn build_attributes(&self, connection_id: &str, key: &str) -> HashMap<String, String> {
         let mut attrs = HashMap::new();
         attrs.insert("application".to_string(), self.application_id.clone());
@@ -372,10 +371,9 @@ impl SecretBackend for LibSecretBackend {
         let _ = self
             .delete_value(&collection, connection_id, "password")
             .await;
-        // Legacy: removed with the rest of the connection's items, never read.
-        let _ = self
-            .delete_value(&collection, connection_id, LEGACY_KEY_PASSPHRASE_FIELD)
-            .await;
+        // A `key_passphrase` item an earlier release stored is left alone: a
+        // rename or move is retrieve + store + delete, so deleting it here
+        // would destroy the only copy (secrets-guide.md).
         let _ = self
             .delete_value(&collection, connection_id, "domain")
             .await;

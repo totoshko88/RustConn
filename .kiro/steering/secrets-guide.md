@@ -36,11 +36,14 @@ You are editing a file that handles credentials.
   `Credentials` has no passphrase field for that reason; do not add one back.
 - Releases before 0.24.6 stored a `key_passphrase` field. Leave it in users'
   vaults — no migration, no cleanup pass; a delete cannot be undone — and
-  ignore it: `secret::LEGACY_KEY_PASSPHRASE_FIELD` is passed only to a
-  backend's `delete`, so deleting a connection's credentials still takes it
-  along. The encrypted-file payload (`StoredCredentials`) keeps the field as
+  ignore it. No backend names the field at all, `delete` included: a rename
+  or move is `retrieve` + `store` + `delete`, so a `delete` that took the
+  field along would destroy the only copy. After a rename, a move or a
+  credential delete the old item stays behind, orphaned. The encrypted-file
+  payload (`StoredCredentials`) keeps the field as
   `#[serde(default, skip_serializing)]`, wiped on drop and never handed on,
-  so an old entry decrypts and the next save rewrites it without the field.
+  so an old entry decrypts and the next rewrite of that entry (save, rename,
+  move, migration between the two file stores) drops the field.
   A user removes old ones with `secret-tool clear application rustconn key
   key_passphrase`, `pass rm rustconn/<id>/key_passphrase`, or
   `security delete-generic-password -s rustconn -a '<id>/key_passphrase'`
