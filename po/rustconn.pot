@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 21:03+0200\n"
+"POT-Creation-Date: 2026-11-04 15:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,12 +191,12 @@ msgid "{} — RustConn"
 msgstr ""
 
 #: rustconn/src/detached_window.rs:151
-#: rustconn/src/embedded_rdp/connection.rs:1745
-#: rustconn/src/embedded_rdp/connection.rs:2704
+#: rustconn/src/embedded_rdp/connection.rs:1757
+#: rustconn/src/embedded_rdp/connection.rs:2721
 #: rustconn/src/embedded_rdp/mod.rs:778 rustconn/src/embedded_rdp/mod.rs:2168
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
-#: rustconn/src/terminal/session_lifecycle.rs:388
+#: rustconn/src/terminal/session_lifecycle.rs:394
 msgid "Session disconnected"
 msgstr ""
 
@@ -250,7 +250,7 @@ msgid "Enter Password Manually"
 msgstr ""
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2426 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2443 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr ""
@@ -2535,7 +2535,9 @@ msgid "Server OS"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/rdp.rs:347
-msgid "On Linux, hide the Windows admin tools and reconnect to resize"
+msgid ""
+"On Linux, hide the Windows admin tools and reconnect to resize. Auto "
+"reconnects once the server ignores a resize"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/rdp.rs:355
@@ -10585,7 +10587,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/embedded_rdp/connection.rs:840
-#: rustconn/src/embedded_rdp/connection.rs:2914
+#: rustconn/src/embedded_rdp/connection.rs:2931
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr ""
 
@@ -10596,64 +10598,64 @@ msgid ""
 "apply them."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2403
+#: rustconn/src/embedded_rdp/connection.rs:2420
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2407
+#: rustconn/src/embedded_rdp/connection.rs:2424
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2411
+#: rustconn/src/embedded_rdp/connection.rs:2428
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2621
+#: rustconn/src/embedded_rdp/connection.rs:2638
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2951
+#: rustconn/src/embedded_rdp/connection.rs:2968
 msgid "Could not prepare the external RDP compatibility client."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2962
+#: rustconn/src/embedded_rdp/connection.rs:2979
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2964
+#: rustconn/src/embedded_rdp/connection.rs:2981
 msgid "Using external RDP client (server incompatible)"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:2982
-#: rustconn/src/embedded_rdp/connection.rs:3564
+#: rustconn/src/embedded_rdp/connection.rs:2999
+#: rustconn/src/embedded_rdp/connection.rs:3581
 msgid "The external RDP client could not be started."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3020
+#: rustconn/src/embedded_rdp/connection.rs:3037
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3098
+#: rustconn/src/embedded_rdp/connection.rs:3115
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3102
+#: rustconn/src/embedded_rdp/connection.rs:3119
 msgid "Connection refused. Check host and port."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3105
+#: rustconn/src/embedded_rdp/connection.rs:3122
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3125
+#: rustconn/src/embedded_rdp/connection.rs:3142
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -10661,96 +10663,96 @@ msgid ""
 "6.7.90 or newer, or set ExtSecurity=0 on the server (FreeRDP issue #13567)."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3130
+#: rustconn/src/embedded_rdp/connection.rs:3147
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3133
+#: rustconn/src/embedded_rdp/connection.rs:3150
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3136
+#: rustconn/src/embedded_rdp/connection.rs:3153
 msgid "Authentication failed: password must be changed before first login."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3138
+#: rustconn/src/embedded_rdp/connection.rs:3155
 msgid "Authentication failed: account is disabled."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3139
+#: rustconn/src/embedded_rdp/connection.rs:3156
 msgid "Authentication failed: account is locked out."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3140
+#: rustconn/src/embedded_rdp/connection.rs:3157
 msgid "Authentication failed: password has expired."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3141
+#: rustconn/src/embedded_rdp/connection.rs:3158
 msgid "Authentication failed: account has expired."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3143
+#: rustconn/src/embedded_rdp/connection.rs:3160
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3146
+#: rustconn/src/embedded_rdp/connection.rs:3163
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3150
+#: rustconn/src/embedded_rdp/connection.rs:3167
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3154
-#: rustconn/src/embedded_rdp/connection.rs:3194
+#: rustconn/src/embedded_rdp/connection.rs:3171
+#: rustconn/src/embedded_rdp/connection.rs:3211
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3158
+#: rustconn/src/embedded_rdp/connection.rs:3175
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3161
+#: rustconn/src/embedded_rdp/connection.rs:3178
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3164
+#: rustconn/src/embedded_rdp/connection.rs:3181
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3166
+#: rustconn/src/embedded_rdp/connection.rs:3183
 msgid "NLA authentication failed. Check username and password."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3188
+#: rustconn/src/embedded_rdp/connection.rs:3205
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3191
+#: rustconn/src/embedded_rdp/connection.rs:3208
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3591
+#: rustconn/src/embedded_rdp/connection.rs:3608
 msgid "RDP session will open in an external window"
 msgstr ""
 
-#: rustconn/src/embedded_rdp/connection.rs:3620
+#: rustconn/src/embedded_rdp/connection.rs:3637
 msgid "Failed to start FreeRDP: {}"
 msgstr ""
 
@@ -10873,14 +10875,14 @@ msgstr ""
 #: rustconn/src/embedded_rdp/mod.rs:781 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1469
-#: rustconn/src/terminal/session_lifecycle.rs:401
+#: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr ""
 
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_vnc/ui.rs:151
 #: rustconn/src/terminal/mod.rs:1471
-#: rustconn/src/terminal/session_lifecycle.rs:403
+#: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr ""
 
@@ -11954,29 +11956,29 @@ msgid ""
 "pasted — check it before continuing."
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:178
+#: rustconn/src/terminal/session_lifecycle.rs:179
 msgid "Reconnected at {}"
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:395
-#: rustconn/src/terminal/session_lifecycle.rs:450
+#: rustconn/src/terminal/session_lifecycle.rs:401
+#: rustconn/src/terminal/session_lifecycle.rs:456
 msgid "Auto-reconnecting…"
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:490
-#: rustconn/src/terminal/session_lifecycle.rs:500
+#: rustconn/src/terminal/session_lifecycle.rs:496
+#: rustconn/src/terminal/session_lifecycle.rs:506
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:578
+#: rustconn/src/terminal/session_lifecycle.rs:584
 msgid "Sign-in expired"
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:587
+#: rustconn/src/terminal/session_lifecycle.rs:593
 msgid "Log In to {}"
 msgstr ""
 
-#: rustconn/src/terminal/session_lifecycle.rs:591
+#: rustconn/src/terminal/session_lifecycle.rs:597
 msgid "Run “{}” to sign in again in the browser"
 msgstr ""
 
@@ -13558,35 +13560,35 @@ msgstr ""
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1281 rustconn/src/window/rdp_vnc.rs:1572
+#: rustconn/src/window/protocols.rs:1455 rustconn/src/window/rdp_vnc.rs:1572
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1613
+#: rustconn/src/window/protocols.rs:1787
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:1847 rustconn/src/window/protocols.rs:2355
+#: rustconn/src/window/protocols.rs:2021 rustconn/src/window/protocols.rs:2537
 msgid "Invalid variable: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2275
+#: rustconn/src/window/protocols.rs:2457
 msgid "Invalid config: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2461
+#: rustconn/src/window/protocols.rs:2643
 msgid "Install picocom for Serial connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2637
+#: rustconn/src/window/protocols.rs:2819
 msgid "Install kubectl for Kubernetes connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2655
+#: rustconn/src/window/protocols.rs:2837
 msgid "Configure pod and container for Kubernetes"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2895
+#: rustconn/src/window/protocols.rs:3077
 msgid "Install mosh for MOSH connections"
 msgstr ""
 

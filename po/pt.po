@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 22:04+0200\n"
+"POT-Creation-Date: 2026-11-04 15:20+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2095 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2116 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:246
 msgid "OK"
 msgstr "OK"
@@ -96,19 +96,19 @@ msgstr "Guardar"
 msgid "Initialization Error"
 msgstr "Erro de Inicialização"
 
-#: rustconn/src/app.rs:836
+#: rustconn/src/app.rs:857
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Palavra-passe do KeePass não carregada do porta-chaves — reintroduza-a nas "
 "Definições"
 
-#: rustconn/src/app.rs:841 rustconn/src/dialogs/shortcuts.rs:178
+#: rustconn/src/app.rs:862 rustconn/src/dialogs/shortcuts.rs:178
 #: rustconn/src/embedded_rdp/mod.rs:405 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Configurações"
 
-#: rustconn/src/app.rs:1625
+#: rustconn/src/app.rs:1646
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -118,7 +118,7 @@ msgstr ""
 "sudo snap connect rustconn:password-manager-service — ou abra Definições e "
 "depois Segredos para escolher outro backend."
 
-#: rustconn/src/app.rs:1630
+#: rustconn/src/app.rs:1651
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
@@ -126,7 +126,7 @@ msgstr ""
 "{} está selecionado, mas ainda não pode armazenar palavras-passe: {}. Abra "
 "as Definições e depois Segredos."
 
-#: rustconn/src/app.rs:1941
+#: rustconn/src/app.rs:1962
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -136,31 +136,31 @@ msgstr ""
 "Gerir ligações SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes e Zero Trust "
 "a partir de uma única aplicação."
 
-#: rustconn/src/app.rs:2018
+#: rustconn/src/app.rs:2039
 msgid "User Guide"
 msgstr "Guia do Utilizador"
 
-#: rustconn/src/app.rs:2022
+#: rustconn/src/app.rs:2043
 msgid "Installation"
 msgstr "Instalação"
 
-#: rustconn/src/app.rs:2026
+#: rustconn/src/app.rs:2047
 msgid "Releases"
 msgstr "Versões"
 
-#: rustconn/src/app.rs:2030
+#: rustconn/src/app.rs:2051
 msgid "Changelog"
 msgstr "Registo de Alterações"
 
-#: rustconn/src/app.rs:2040
+#: rustconn/src/app.rs:2061
 msgid "Special Thanks"
 msgstr "Agradecimentos Especiais"
 
-#: rustconn/src/app.rs:2055
+#: rustconn/src/app.rs:2076
 msgid "Made in Ukraine"
 msgstr "Feito na Ucrânia"
 
-#: rustconn/src/app.rs:2056
+#: rustconn/src/app.rs:2077
 msgid "All contributors and supporters"
 msgstr "Todos os contribuidores e apoiantes"
 
@@ -204,12 +204,12 @@ msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
 #: rustconn/src/detached_window.rs:151
-#: rustconn/src/embedded_rdp/connection.rs:1745
-#: rustconn/src/embedded_rdp/connection.rs:2704
+#: rustconn/src/embedded_rdp/connection.rs:1757
+#: rustconn/src/embedded_rdp/connection.rs:2721
 #: rustconn/src/embedded_rdp/mod.rs:778 rustconn/src/embedded_rdp/mod.rs:2168
 #: rustconn/src/embedded_rdp/polling_handlers.rs:75
 #: rustconn/src/embedded_vnc/ui.rs:146
-#: rustconn/src/terminal/session_lifecycle.rs:388
+#: rustconn/src/terminal/session_lifecycle.rs:394
 msgid "Session disconnected"
 msgstr "Sessão desligada"
 
@@ -267,7 +267,7 @@ msgid "Enter Password Manually"
 msgstr "Introduzir palavra-passe manualmente"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
-#: rustconn/src/embedded_rdp/connection.rs:2426 rustconn/src/vault_ops.rs:66
+#: rustconn/src/embedded_rdp/connection.rs:2443 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1152
 msgid "Open Settings"
 msgstr "Abrir definições"
@@ -2642,8 +2642,13 @@ msgid "Server OS"
 msgstr "SO do servidor"
 
 #: rustconn/src/dialogs/connection/rdp.rs:347
-msgid "Hide the Windows admin tools when the server runs Linux"
-msgstr "Ocultar as ferramentas de administração do Windows quando o servidor executa Linux"
+msgid ""
+"On Linux, hide the Windows admin tools and reconnect to resize. Auto "
+"reconnects once the server ignores a resize"
+msgstr ""
+"Com Linux, oculta as ferramentas de administração do Windows e reconecta "
+"para redimensionar. Automático reconecta assim que o servidor ignora um "
+"redimensionamento"
 
 #: rustconn/src/dialogs/connection/rdp.rs:355
 msgid "Printer Redirection"
@@ -11145,7 +11150,7 @@ msgstr ""
 "utilizar o FreeRDP em alternativa."
 
 #: rustconn/src/embedded_rdp/connection.rs:840
-#: rustconn/src/embedded_rdp/connection.rs:2914
+#: rustconn/src/embedded_rdp/connection.rs:2931
 msgid "Connection cancelled because the server requires legacy RDP security."
 msgstr "A ligação foi cancelada porque o servidor requer segurança RDP legada."
 
@@ -11158,7 +11163,7 @@ msgstr ""
 "O cliente integrado ignora argumentos personalizados do FreeRDP. Defina o "
 "modo do cliente RDP como Externo para os aplicar."
 
-#: rustconn/src/embedded_rdp/connection.rs:2403
+#: rustconn/src/embedded_rdp/connection.rs:2420
 msgid ""
 "H.264 is off — the installed OpenH264 isn't a Cisco build. Open Settings → "
 "Connection → Media Codecs to download it."
@@ -11166,7 +11171,7 @@ msgstr ""
 "O H.264 está desligado — o OpenH264 instalado não é uma compilação da Cisco. "
 "Abra Definições → Ligação → Codecs multimédia para o transferir."
 
-#: rustconn/src/embedded_rdp/connection.rs:2407
+#: rustconn/src/embedded_rdp/connection.rs:2424
 msgid ""
 "H.264 is off — no OpenH264 codec is installed. Open Settings → Connection → "
 "Media Codecs to download it."
@@ -11174,7 +11179,7 @@ msgstr ""
 "O H.264 está desligado — não há nenhum codec OpenH264 instalado. Abra "
 "Definições → Ligação → Codecs multimédia para o transferir."
 
-#: rustconn/src/embedded_rdp/connection.rs:2411
+#: rustconn/src/embedded_rdp/connection.rs:2428
 msgid ""
 "H.264 is off — the OpenH264 codec could not be loaded. Open Settings → "
 "Connection → Media Codecs to re-download it."
@@ -11182,49 +11187,49 @@ msgstr ""
 "O H.264 está desligado — não foi possível carregar o codec OpenH264. Abra "
 "Definições → Ligação → Codecs multimédia para o transferir novamente."
 
-#: rustconn/src/embedded_rdp/connection.rs:2621
+#: rustconn/src/embedded_rdp/connection.rs:2638
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
 msgstr "Ligação perdida. A reconectar (tentativa {} de {})…"
 
-#: rustconn/src/embedded_rdp/connection.rs:2951
+#: rustconn/src/embedded_rdp/connection.rs:2968
 msgid "Could not prepare the external RDP compatibility client."
 msgstr "Não foi possível preparar o cliente RDP externo de compatibilidade."
 
-#: rustconn/src/embedded_rdp/connection.rs:2962
+#: rustconn/src/embedded_rdp/connection.rs:2979
 msgid "Using external RDP client (server requires RDS licensing)"
 msgstr "Usando cliente RDP externo (o servidor requer licenciamento RDS)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2964
+#: rustconn/src/embedded_rdp/connection.rs:2981
 msgid "Using external RDP client (server incompatible)"
 msgstr "Usando cliente RDP externo (servidor incompatível)"
 
-#: rustconn/src/embedded_rdp/connection.rs:2982
-#: rustconn/src/embedded_rdp/connection.rs:3564
+#: rustconn/src/embedded_rdp/connection.rs:2999
+#: rustconn/src/embedded_rdp/connection.rs:3581
 msgid "The external RDP client could not be started."
 msgstr "Não foi possível iniciar o cliente RDP externo."
 
-#: rustconn/src/embedded_rdp/connection.rs:3020
+#: rustconn/src/embedded_rdp/connection.rs:3037
 msgid ""
 "Could not start the external RDP client. Install FreeRDP 3 and try again."
 msgstr ""
 "Não foi possível iniciar o cliente RDP externo. Instale o FreeRDP 3 e tente "
 "novamente."
 
-#: rustconn/src/embedded_rdp/connection.rs:3098
+#: rustconn/src/embedded_rdp/connection.rs:3115
 msgid "TLS connection failed. The server may not support this security level."
 msgstr ""
 "Conexão TLS falhou. O servidor pode não suportar este nível de segurança."
 
-#: rustconn/src/embedded_rdp/connection.rs:3102
+#: rustconn/src/embedded_rdp/connection.rs:3119
 msgid "Connection refused. Check host and port."
 msgstr "Conexão recusada. Verifique o anfitrião e a porta."
 
-#: rustconn/src/embedded_rdp/connection.rs:3105
+#: rustconn/src/embedded_rdp/connection.rs:3122
 #: rustconn/src/embedded_web/mod.rs:640
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Conexão expirou. Verifique se o anfitrião está acessível."
 
-#: rustconn/src/embedded_rdp/connection.rs:3125
+#: rustconn/src/embedded_rdp/connection.rs:3142
 msgid ""
 "Authentication failed: invalid username or password. If the credentials are "
 "correct and the server is a Linux RDP host (KDE KRdp, xrdp), this can "
@@ -11237,7 +11242,7 @@ msgstr ""
 "atualize o KRdp para 6.7.90 ou mais recente, ou defina ExtSecurity=0 no "
 "servidor (FreeRDP issue #13567)."
 
-#: rustconn/src/embedded_rdp/connection.rs:3130
+#: rustconn/src/embedded_rdp/connection.rs:3147
 msgid ""
 "Account restrictions refused this sign-in. Protected Users members cannot "
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
@@ -11246,42 +11251,42 @@ msgstr ""
 "Protected Users não podem utilizar NTLM: ative a Autenticação Kerberos nas "
 "definições de RDP da ligação."
 
-#: rustconn/src/embedded_rdp/connection.rs:3133
+#: rustconn/src/embedded_rdp/connection.rs:3150
 msgid "Authentication failed: account restrictions prevent this login."
 msgstr "Autenticação falhou: restrições da conta impedem este login."
 
-#: rustconn/src/embedded_rdp/connection.rs:3136
+#: rustconn/src/embedded_rdp/connection.rs:3153
 msgid "Authentication failed: password must be changed before first login."
 msgstr ""
 "Autenticação falhou: a senha deve ser alterada antes do primeiro login."
 
-#: rustconn/src/embedded_rdp/connection.rs:3138
+#: rustconn/src/embedded_rdp/connection.rs:3155
 msgid "Authentication failed: account is disabled."
 msgstr "Autenticação falhou: a conta está desativada."
 
-#: rustconn/src/embedded_rdp/connection.rs:3139
+#: rustconn/src/embedded_rdp/connection.rs:3156
 msgid "Authentication failed: account is locked out."
 msgstr "Autenticação falhou: a conta está bloqueada."
 
-#: rustconn/src/embedded_rdp/connection.rs:3140
+#: rustconn/src/embedded_rdp/connection.rs:3157
 msgid "Authentication failed: password has expired."
 msgstr "Autenticação falhou: a palavra-passe expirou."
 
-#: rustconn/src/embedded_rdp/connection.rs:3141
+#: rustconn/src/embedded_rdp/connection.rs:3158
 msgid "Authentication failed: account has expired."
 msgstr "Autenticação falhou: a conta expirou."
 
-#: rustconn/src/embedded_rdp/connection.rs:3143
+#: rustconn/src/embedded_rdp/connection.rs:3160
 msgid "Authentication failed: account is disabled, locked out or expired."
 msgstr "Falha na autenticação: a conta está desativada, bloqueada ou expirada."
 
-#: rustconn/src/embedded_rdp/connection.rs:3146
+#: rustconn/src/embedded_rdp/connection.rs:3163
 msgid "Authentication failed: user is not allowed to log on to this computer."
 msgstr ""
 "Autenticação falhou: o utilizador não tem permissão para iniciar sessão "
 "neste computador."
 
-#: rustconn/src/embedded_rdp/connection.rs:3150
+#: rustconn/src/embedded_rdp/connection.rs:3167
 msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
@@ -11290,8 +11295,8 @@ msgstr ""
 "Endereço do KDC nas definições de RDP da ligação ou adicione o realm a /etc/"
 "krb5.conf."
 
-#: rustconn/src/embedded_rdp/connection.rs:3154
-#: rustconn/src/embedded_rdp/connection.rs:3194
+#: rustconn/src/embedded_rdp/connection.rs:3171
+#: rustconn/src/embedded_rdp/connection.rs:3211
 msgid ""
 "Kerberos needs the DNS domain. Enter it in the Domain field, for example "
 "EXAMPLE.COM."
@@ -11299,7 +11304,7 @@ msgstr ""
 "O Kerberos precisa do domínio DNS. Introduza-o no campo Domínio, por "
 "exemplo, EXAMPLE.COM."
 
-#: rustconn/src/embedded_rdp/connection.rs:3158
+#: rustconn/src/embedded_rdp/connection.rs:3175
 msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
@@ -11308,7 +11313,7 @@ msgstr ""
 "de um controlador de domínio como Endereço do KDC nas definições de RDP da "
 "ligação."
 
-#: rustconn/src/embedded_rdp/connection.rs:3161
+#: rustconn/src/embedded_rdp/connection.rs:3178
 msgid ""
 "Kerberos sign-in failed: this computer's clock differs from the domain's by "
 "more than five minutes. Synchronize the clock and try again."
@@ -11316,7 +11321,7 @@ msgstr ""
 "Falha no início de sessão Kerberos: o relógio deste computador difere do do "
 "domínio em mais de cinco minutos. Sincronize o relógio e tente novamente."
 
-#: rustconn/src/embedded_rdp/connection.rs:3164
+#: rustconn/src/embedded_rdp/connection.rs:3181
 msgid ""
 "The domain does not know this server by the name in Host. Connect by the "
 "server's DNS name, as registered in the domain."
@@ -11324,12 +11329,12 @@ msgstr ""
 "O domínio não reconhece este servidor pelo nome indicado em Host. Ligue-se "
 "através do nome DNS do servidor, tal como registado no domínio."
 
-#: rustconn/src/embedded_rdp/connection.rs:3166
+#: rustconn/src/embedded_rdp/connection.rs:3183
 msgid "NLA authentication failed. Check username and password."
 msgstr ""
 "Autenticação NLA falhou. Verifique o nome de utilizador e a palavra-passe."
 
-#: rustconn/src/embedded_rdp/connection.rs:3188
+#: rustconn/src/embedded_rdp/connection.rs:3205
 msgid ""
 "Kerberos needs the server's DNS name. Connecting by IP address or through an "
 "SSH tunnel fails."
@@ -11337,7 +11342,7 @@ msgstr ""
 "O Kerberos precisa do nome DNS do servidor. A ligação por endereço IP ou "
 "através de um túnel SSH falha."
 
-#: rustconn/src/embedded_rdp/connection.rs:3191
+#: rustconn/src/embedded_rdp/connection.rs:3208
 msgid ""
 "Kerberos needs the DNS domain, for example EXAMPLE.COM, not the short domain "
 "name."
@@ -11345,11 +11350,11 @@ msgstr ""
 "O Kerberos precisa do domínio DNS, por exemplo EXAMPLE.COM, e não do nome "
 "abreviado do domínio."
 
-#: rustconn/src/embedded_rdp/connection.rs:3591
+#: rustconn/src/embedded_rdp/connection.rs:3608
 msgid "RDP session will open in an external window"
 msgstr "A sessão RDP será aberta numa janela externa"
 
-#: rustconn/src/embedded_rdp/connection.rs:3620
+#: rustconn/src/embedded_rdp/connection.rs:3637
 msgid "Failed to start FreeRDP: {}"
 msgstr "Não foi possível iniciar o FreeRDP: {}"
 
@@ -11475,14 +11480,14 @@ msgstr "Guardar ficheiros da área de transferência remota"
 #: rustconn/src/embedded_rdp/mod.rs:781 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1469
-#: rustconn/src/terminal/session_lifecycle.rs:401
+#: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1127
 msgid "Reconnect"
 msgstr "Reconectar"
 
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_vnc/ui.rs:151
 #: rustconn/src/terminal/mod.rs:1471
-#: rustconn/src/terminal/session_lifecycle.rs:403
+#: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Reconectar a esta sessão"
 
@@ -12571,29 +12576,29 @@ msgstr ""
 "A área de transferência contém mais de uma linha. Cada linha é executada "
 "assim que é colada — verifique antes de continuar."
 
-#: rustconn/src/terminal/session_lifecycle.rs:178
+#: rustconn/src/terminal/session_lifecycle.rs:179
 msgid "Reconnected at {}"
 msgstr "Reconectado às {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:395
-#: rustconn/src/terminal/session_lifecycle.rs:450
+#: rustconn/src/terminal/session_lifecycle.rs:401
+#: rustconn/src/terminal/session_lifecycle.rs:456
 msgid "Auto-reconnecting…"
 msgstr "Reconectando automaticamente…"
 
-#: rustconn/src/terminal/session_lifecycle.rs:490
-#: rustconn/src/terminal/session_lifecycle.rs:500
+#: rustconn/src/terminal/session_lifecycle.rs:496
+#: rustconn/src/terminal/session_lifecycle.rs:506
 msgid "Auto-reconnecting (attempt {}/{})"
 msgstr "A reconectar automaticamente (tentativa {}/{})"
 
-#: rustconn/src/terminal/session_lifecycle.rs:578
+#: rustconn/src/terminal/session_lifecycle.rs:584
 msgid "Sign-in expired"
 msgstr "O login expirou"
 
-#: rustconn/src/terminal/session_lifecycle.rs:587
+#: rustconn/src/terminal/session_lifecycle.rs:593
 msgid "Log In to {}"
 msgstr "Entrar em {}"
 
-#: rustconn/src/terminal/session_lifecycle.rs:591
+#: rustconn/src/terminal/session_lifecycle.rs:597
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Executar “{}” para entrar novamente no navegador"
 
@@ -13221,7 +13226,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1021
 #: rustconn/src/window/credentials.rs:1257
-#: rustconn/src/window/edit_actions.rs:2226
+#: rustconn/src/window/edit_actions.rs:2237
 msgid "Connection failed. Host unreachable."
 msgstr "Ligação falhada. Anfitrião inacessível."
 
@@ -13304,8 +13309,8 @@ msgid "Host check failed: {}"
 msgstr "Verificação do host falhou: {}"
 
 #: rustconn/src/window/edit_actions.rs:746
-#: rustconn/src/window/edit_actions.rs:838
-#: rustconn/src/window/edit_actions.rs:893
+#: rustconn/src/window/edit_actions.rs:849
+#: rustconn/src/window/edit_actions.rs:904
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP está disponível apenas para ligações SSH."
 
@@ -13321,20 +13326,26 @@ msgstr ""
 "O agente SSH não está em execução. Execute «eval $(ssh-agent)» e tente "
 "novamente."
 
-#: rustconn/src/window/edit_actions.rs:771
+#: rustconn/src/window/edit_actions.rs:775
+msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
+msgstr ""
+"Não foi possível verificar se o agente SSH tem a chave. O mc será aberto "
+"mesmo assim."
+
+#: rustconn/src/window/edit_actions.rs:781
 msgid "SSH key not available"
 msgstr "Chave SSH não disponível"
 
-#: rustconn/src/window/edit_actions.rs:781
+#: rustconn/src/window/edit_actions.rs:792
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) não está instalado."
 
-#: rustconn/src/window/edit_actions.rs:786
+#: rustconn/src/window/edit_actions.rs:797
 msgid "Opening mc SFTP…"
 msgstr "A abrir mc SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:864
-#: rustconn/src/window/edit_actions.rs:2374
+#: rustconn/src/window/edit_actions.rs:875
+#: rustconn/src/window/edit_actions.rs:2393
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13344,48 +13355,48 @@ msgstr ""
 "Flatpak.                          Ative \"SFTP via mc\" nas Definições para "
 "um acesso fiável."
 
-#: rustconn/src/window/edit_actions.rs:880
-#: rustconn/src/window/edit_actions.rs:2392
+#: rustconn/src/window/edit_actions.rs:891
+#: rustconn/src/window/edit_actions.rs:2411
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Anfitrião de salto detetado. O SFTP é aberto através do mc em vez do gestor "
 "de ficheiros."
 
-#: rustconn/src/window/edit_actions.rs:943
+#: rustconn/src/window/edit_actions.rs:954
 msgid "Opening SFTP…"
 msgstr "A abrir SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:990
+#: rustconn/src/window/edit_actions.rs:1001
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "O agente SSH não está em execução — o gestor de ficheiros pode não se "
 "autenticar."
 
-#: rustconn/src/window/edit_actions.rs:1085
+#: rustconn/src/window/edit_actions.rs:1096
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Este tipo de ligação não suporta um túnel SOCKS"
 
-#: rustconn/src/window/edit_actions.rs:1106
+#: rustconn/src/window/edit_actions.rs:1117
 msgid "application is busy"
 msgstr "a aplicação está ocupada"
 
-#: rustconn/src/window/edit_actions.rs:1109
+#: rustconn/src/window/edit_actions.rs:1120
 msgid "the SSH connection it tunnels through is gone"
 msgstr "a ligação SSH através da qual faz o túnel deixou de existir"
 
-#: rustconn/src/window/edit_actions.rs:1478
-#: rustconn/src/window/edit_actions.rs:1612
-#: rustconn/src/window/edit_actions.rs:1848
-#: rustconn/src/window/edit_actions.rs:1946
+#: rustconn/src/window/edit_actions.rs:1489
+#: rustconn/src/window/edit_actions.rs:1623
+#: rustconn/src/window/edit_actions.rs:1859
+#: rustconn/src/window/edit_actions.rs:1957
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Não foi possível abrir o túnel SSH: {}"
 
-#: rustconn/src/window/edit_actions.rs:1491
-#: rustconn/src/window/edit_actions.rs:1591
+#: rustconn/src/window/edit_actions.rs:1502
+#: rustconn/src/window/edit_actions.rs:1602
 msgid "Starting the tunnel…"
 msgstr "A iniciar o túnel…"
 
-#: rustconn/src/window/edit_actions.rs:1551
+#: rustconn/src/window/edit_actions.rs:1562
 msgid ""
 "The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
 "tunnelled; opening the embedded browser instead. Set a chromium/chrome/brave/"
@@ -13396,7 +13407,7 @@ msgstr ""
 "comando chromium/chrome/brave/vivaldi/edge nas Definições para usar um "
 "navegador externo."
 
-#: rustconn/src/window/edit_actions.rs:1555
+#: rustconn/src/window/edit_actions.rs:1566
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13406,7 +13417,7 @@ msgstr ""
 "Chromium. Só navegadores da família Chromium podem passar pelo túnel; defina "
 "um comando chromium/chrome/brave/vivaldi/edge nas Definições."
 
-#: rustconn/src/window/edit_actions.rs:1561
+#: rustconn/src/window/edit_actions.rs:1572
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13416,7 +13427,7 @@ msgstr ""
 "navegador incorporado. Verifique o comando nas Definições ou limpe-o para "
 "detetar um navegador automaticamente."
 
-#: rustconn/src/window/edit_actions.rs:1565
+#: rustconn/src/window/edit_actions.rs:1576
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13425,7 +13436,7 @@ msgstr ""
 "o comando nas Definições ou limpe-o para detetar um navegador "
 "automaticamente."
 
-#: rustconn/src/window/edit_actions.rs:1571
+#: rustconn/src/window/edit_actions.rs:1582
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13434,7 +13445,7 @@ msgstr ""
 "incorporado. Instale um navegador baseado em Chromium para encaminhar um "
 "externo pelo túnel."
 
-#: rustconn/src/window/edit_actions.rs:1574
+#: rustconn/src/window/edit_actions.rs:1585
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13443,31 +13454,31 @@ msgstr ""
 "baseado em Chromium, ou use uma compilação com o navegador incorporado, para "
 "abrir um navegador por túnel."
 
-#: rustconn/src/window/edit_actions.rs:1688
+#: rustconn/src/window/edit_actions.rs:1699
 msgid "Opened a tunnelled browser"
 msgstr "Navegador em túnel aberto"
 
-#: rustconn/src/window/edit_actions.rs:1693
-#: rustconn/src/window/edit_actions.rs:1746
+#: rustconn/src/window/edit_actions.rs:1704
+#: rustconn/src/window/edit_actions.rs:1757
 msgid "Failed to open browser: {}"
 msgstr "Não foi possível abrir o navegador: {}"
 
-#: rustconn/src/window/edit_actions.rs:1723
+#: rustconn/src/window/edit_actions.rs:1734
 msgid "{} (tunnel)"
 msgstr "{} (túnel)"
 
-#: rustconn/src/window/edit_actions.rs:1737
-#: rustconn/src/window/edit_actions.rs:1887
+#: rustconn/src/window/edit_actions.rs:1748
+#: rustconn/src/window/edit_actions.rs:1898
 msgid "Could not open the page: {}"
 msgstr "Não foi possível abrir a página: {}"
 
-#: rustconn/src/window/edit_actions.rs:1919
-#: rustconn/src/window/edit_actions.rs:2033
-#: rustconn/src/window/edit_actions.rs:2061
+#: rustconn/src/window/edit_actions.rs:1930
+#: rustconn/src/window/edit_actions.rs:2044
+#: rustconn/src/window/edit_actions.rs:2072
 msgid "Failed to open URL: {}"
 msgstr "Falha ao abrir URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1979
+#: rustconn/src/window/edit_actions.rs:1990
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -13475,12 +13486,12 @@ msgstr ""
 "Este navegador não pode ser encaminhado a partir da linha de comandos. Use "
 "um navegador baseado em Chromium ou o navegador integrado para o túnel SSH."
 
-#: rustconn/src/window/edit_actions.rs:2022
-#: rustconn/src/window/edit_actions.rs:2075
+#: rustconn/src/window/edit_actions.rs:2033
+#: rustconn/src/window/edit_actions.rs:2086
 msgid "Opened in browser"
 msgstr "Aberto no navegador"
 
-#: rustconn/src/window/edit_actions.rs:2048
+#: rustconn/src/window/edit_actions.rs:2059
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
@@ -14325,35 +14336,35 @@ msgstr "Falha ao mover {} item(ns):"
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "Não foi possível iniciar o visualizador externo ‘{}’: {}"
 
-#: rustconn/src/window/protocols.rs:1281 rustconn/src/window/rdp_vnc.rs:1572
+#: rustconn/src/window/protocols.rs:1455 rustconn/src/window/rdp_vnc.rs:1572
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Nenhum visualizador VNC encontrado. Instale o TigerVNC ou o Remmina."
 
-#: rustconn/src/window/protocols.rs:1613
+#: rustconn/src/window/protocols.rs:1787
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Nenhum visualizador SPICE encontrado. Instale o virt-viewer."
 
-#: rustconn/src/window/protocols.rs:1847 rustconn/src/window/protocols.rs:2346
+#: rustconn/src/window/protocols.rs:2021 rustconn/src/window/protocols.rs:2537
 msgid "Invalid variable: {}"
 msgstr "Variável inválida: {}"
 
-#: rustconn/src/window/protocols.rs:2266
+#: rustconn/src/window/protocols.rs:2457
 msgid "Invalid config: {}"
 msgstr "Configuração inválida: {}"
 
-#: rustconn/src/window/protocols.rs:2452
+#: rustconn/src/window/protocols.rs:2643
 msgid "Install picocom for Serial connections"
 msgstr "Instale o picocom para conexões série"
 
-#: rustconn/src/window/protocols.rs:2628
+#: rustconn/src/window/protocols.rs:2819
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Instale kubectl para conexões Kubernetes"
 
-#: rustconn/src/window/protocols.rs:2646
+#: rustconn/src/window/protocols.rs:2837
 msgid "Configure pod and container for Kubernetes"
 msgstr "Configure pod e contêiner para Kubernetes"
 
-#: rustconn/src/window/protocols.rs:2886
+#: rustconn/src/window/protocols.rs:3077
 msgid "Install mosh for MOSH connections"
 msgstr "Instale o mosh para ligações MOSH"
 
@@ -14854,6 +14865,11 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;ligação;terminal;remoto;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "Hide the Windows admin tools when the server runs Linux"
+#~ msgstr ""
+#~ "Ocultar as ferramentas de administração do Windows quando o servidor "
+#~ "executa Linux"
 
 #~ msgid "Load Balance Info"
 #~ msgstr "Informação de balanceamento de carga"
