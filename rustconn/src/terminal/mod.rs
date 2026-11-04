@@ -31,6 +31,7 @@ pub mod file_drop;
 pub mod highlight_overlay;
 mod mark_registry;
 pub mod osc52;
+mod output_start;
 pub mod playback;
 pub mod pty_relay;
 pub mod pty_spawn;
@@ -321,17 +322,16 @@ pub struct TerminalNotebook {
     /// When set, the old scrollback is trimmed to this many lines by temporarily
     /// lowering VTE's cap before feeding the reconnect separator.
     max_scrollback_on_reconnect: Rc<std::cell::Cell<Option<u32>>>,
-    /// Absolute VTE row at which a session's current connection started.
+    /// Where a session's current connection output starts.
     ///
     /// VTE cursor rows are absolute buffer coordinates — they include the
     /// scrollback — so every "the cursor advanced past the connect banner"
     /// check needs a baseline once a reconnect keeps the previous session's
-    /// output (issue #253). `None` means "capture the baseline on the next
-    /// read": `prepare_for_reconnect` feeds its separator through VTE, which
-    /// processes input asynchronously, so the row is only meaningful once
-    /// that output has actually landed. A session with no entry started on an
-    /// empty buffer and needs no baseline.
-    cursor_row_base: Rc<RefCell<HashMap<Uuid, Option<i64>>>>,
+    /// output (issue #253). A reconnect pins it explicitly with
+    /// [`Self::display_reconnect_banner`]; see [`output_start`] for why the row
+    /// is located by content rather than read when the banner is fed. A
+    /// session with no entry started on an empty buffer and needs no baseline.
+    cursor_row_base: Rc<RefCell<HashMap<Uuid, output_start::OutputStart>>>,
     /// OSC 133 prompt marks per session (shell-integration-osc133 spec).
     ///
     /// Populated by [`termprops::connect_shell_integration`] from the remote
@@ -2177,15 +2177,107 @@ impl TerminalNotebook {
     /// absolute buffer coordinates — scrollback included. Callers use the row
     /// to tell whether the session produced output past its connect banner, so
     /// the value is reported relative to the row the current connection started
-    /// on. That is 0 for a fresh session and, when a reconnect keeps the
-    /// previous scrollback, the row the preserved history ended on (issue #253).
+    /// on. That is 0 for a fresh session and, after an in-place reconnect, the
+    /// row just below RustConn's reconnect banner, so only the new process's
+    /// output counts (issue #253).
+    ///
+    /// Returns `None` when the session has no terminal or the reconnect banner
+    /// has not been processed yet; callers wait for the next output.
     pub fn get_terminal_cursor_row(&self, session_id: Uuid) -> Option<i64> {
-        let row = self.get_terminal(session_id)?.cursor_position().1;
-        let mut bases = self.cursor_row_base.borrow_mut();
-        let Some(base) = bases.get_mut(&session_id) else {
-            return Some(row);
+        let terminal = self.get_terminal(session_id)?;
+        let row = terminal.cursor_position().1;
+        let base = self.connection_start_row(session_id, &terminal, row)?;
+        Some((row - base).max(0))
+    }
+
+    /// Feeds an in-place reconnect's connect banner and pins the connection
+    /// start below it.
+    ///
+    /// Call this, not [`Self::display_output`], for the banner a reconnect
+    /// prints after [`Self::prepare_for_reconnect`] and before it spawns the
+    /// new process: from then on [`Self::get_terminal_cursor_row`] and
+    /// [`Self::get_connection_output`] count only what the new process prints.
+    pub fn display_reconnect_banner(&self, session_id: Uuid, banner: &str) {
+        self.display_output(session_id, banner);
+        self.cursor_row_base.borrow_mut().insert(
+            session_id,
+            output_start::OutputStart::AfterBanner {
+                last_line: output_start::banner_last_line(banner),
+            },
+        );
+    }
+
+    /// The text the current connection printed below its connect banner.
+    ///
+    /// For a fresh session this is the whole buffer up to the cursor; after an
+    /// in-place reconnect it excludes the kept scrollback and RustConn's own
+    /// banner, so a failure printed by an earlier attempt is not read again.
+    /// `None` when the session has no terminal or the banner has not landed.
+    #[must_use]
+    pub fn get_connection_output(&self, session_id: Uuid) -> Option<String> {
+        let terminal = self.get_terminal(session_id)?;
+        let row = terminal.cursor_position().1;
+        let base = self.connection_start_row(session_id, &terminal, row)?;
+        let (text, _len) = terminal.text_range_format(
+            vte4::Format::Text,
+            base.min(row),
+            0,
+            row,
+            terminal.column_count(),
+        );
+        Some(text.map_or_else(String::new, |g| g.to_string()))
+    }
+
+    /// The absolute row the session's current connection output starts on.
+    ///
+    /// Resolves a pending [`output_start::OutputStart::AfterBanner`] by finding
+    /// the banner in the rows above the cursor, and stores the result so the
+    /// search runs once. `None` while the banner has not landed.
+    fn connection_start_row(
+        &self,
+        session_id: Uuid,
+        terminal: &Terminal,
+        cursor_row: i64,
+    ) -> Option<i64> {
+        let last_line = match self.cursor_row_base.borrow().get(&session_id) {
+            None => return Some(0),
+            Some(output_start::OutputStart::Row(base)) => return Some(*base),
+            Some(output_start::OutputStart::AfterBanner { last_line }) => last_line.clone(),
         };
-        Some((row - *base.get_or_insert(row)).max(0))
+        let first_row = (cursor_row - output_start::BANNER_SEARCH_ROWS).max(0);
+        let col_count = terminal.column_count();
+        let rows: Vec<String> = (first_row..=cursor_row)
+            .map(|row| {
+                terminal
+                    .text_range_format(vte4::Format::Text, row, 0, row, col_count)
+                    .0
+                    .map_or_else(String::new, |g| g.to_string())
+            })
+            .collect();
+        let base = match output_start::row_below_banner(&rows, first_row, &last_line) {
+            Some(base) => base,
+            // A screenful printed since the banner: count from the window top.
+            None if cursor_row - first_row >= output_start::BANNER_SEARCH_ROWS => first_row,
+            None => return None,
+        };
+        self.cursor_row_base
+            .borrow_mut()
+            .insert(session_id, output_start::OutputStart::Row(base));
+        Some(base)
+    }
+
+    /// When the session's current process started: its in-place reconnect, or
+    /// the session's creation.
+    ///
+    /// A status detector captures this when it is installed and stops once it
+    /// changes, so a detector left armed by a failed attempt does not count a
+    /// later attempt's output as its own.
+    #[must_use]
+    pub fn session_started_at(&self, session_id: Uuid) -> Option<chrono::DateTime<chrono::Utc>> {
+        self.session_info
+            .borrow()
+            .get(&session_id)
+            .map(TerminalSession::started_at)
     }
 
     /// Gets session info for a session

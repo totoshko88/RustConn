@@ -80,7 +80,8 @@ impl TerminalNotebook {
                 self.reset_keeping_history(session_id, terminal);
             } else {
                 terminal.reset(true, true);
-                // A cleared buffer restarts at row 0, so no baseline is needed.
+                // A cleared buffer restarts at row 0, so no baseline is needed
+                // until the caller's banner pins one.
                 self.cursor_row_base.borrow_mut().remove(&session_id);
             }
         }
@@ -178,9 +179,14 @@ impl TerminalNotebook {
         terminal.feed(reconnect_separator(&i18n_f("Reconnected at {}", &[&stamp])).as_bytes());
 
         // Everything fed above is processed asynchronously by VTE, so the
-        // cursor row is not final yet — mark the baseline as pending and let
-        // `get_terminal_cursor_row` capture it once the output has landed.
-        self.cursor_row_base.borrow_mut().insert(session_id, None);
+        // cursor is still where the preserved history ended. That row is the
+        // baseline until the caller's banner pins a better one
+        // (`display_reconnect_banner`); it keeps the kept scrollback out of
+        // the count either way.
+        self.cursor_row_base.borrow_mut().insert(
+            session_id,
+            super::output_start::OutputStart::Row(terminal.cursor_position().1),
+        );
 
         if let Some(adjustment) = terminal.vadjustment() {
             adjustment.set_value(adjustment.upper() - adjustment.page_size());

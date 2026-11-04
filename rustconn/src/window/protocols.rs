@@ -897,6 +897,52 @@ pub(super) fn ssh_connection_established(
     text.is_some_and(|t| !contains_ssh_failure(t) && ends_with_shell_prompt(t))
 }
 
+/// Failure messages the non-SSH clients of an in-place reconnect print before
+/// they exit: the Zero Trust CLIs, telnet, picocom, kubectl and mosh. Matched
+/// case-insensitively, like [`SSH_FAILURE_PATTERNS`], which also apply (mosh,
+/// gcloud IAP and several brokers run OpenSSH underneath).
+const CLIENT_FAILURE_PATTERNS: &[&str] = &[
+    // AWS CLI: "An error occurred (TargetNotConnected) when calling ..."
+    "An error occurred",
+    // "SessionManagerPlugin is not found", "Error from server (NotFound)"
+    "is not found",
+    "Error from server",
+    // kubectl "error: ...", gcloud and az "ERROR: ..."
+    "error:",
+    // picocom: "FATAL: cannot open /dev/ttyUSB0: No such file or directory"
+    "FATAL:",
+    "No such file or directory",
+    // telnet: "Unable to connect to remote host", "could not resolve ..."
+    "Unable to connect",
+    "could not resolve",
+    "Name or service not known",
+    "command not found",
+    "Did not find mosh server startup message",
+];
+
+/// Returns `true` if a client's output contains a known connection failure.
+fn contains_client_failure(text: &str) -> bool {
+    let lower = text.to_lowercase();
+    contains_ssh_failure(text)
+        || CLIENT_FAILURE_PATTERNS
+            .iter()
+            .any(|p| lower.contains(&p.to_lowercase()))
+}
+
+/// Whether an in-place reconnect through [`reconnect_generic_vte_in_place`] is
+/// established.
+///
+/// `cursor_row` and `output` both count from just below RustConn's reconnect
+/// banner (`TerminalNotebook::display_reconnect_banner`), so they describe only
+/// what the new process printed. Established once that is at least one full
+/// line and none of it is a known failure: an SSM reconnect prints "Starting
+/// session…" and a prompt, a failed one prints the CLI's error and exits.
+/// `None` output (unreadable, or the banner not processed yet) fails closed;
+/// the detector runs again on the next output.
+pub(super) fn reconnect_output_established(cursor_row: i64, output: Option<&str>) -> bool {
+    cursor_row > 0 && output.is_some_and(|text| !contains_client_failure(text))
+}
+
 /// Delegates to [`rustconn_core::ssh_tunnel::append_proxy_command_destination`].
 pub(super) fn append_proxy_command_destination(proxy_parts: &mut Vec<String>, jump_host: &str) {
     rustconn_core::ssh_tunnel::append_proxy_command_destination(proxy_parts, jump_host);
@@ -1853,7 +1899,8 @@ pub fn reconnect_generic_vte_in_place(
 
             let conn_msg = format_connection_message(zt_config.provider.display_name(), &conn.name);
             let cmd_msg = format_command_message(&launch.display);
-            notebook.display_output(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+            notebook
+                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             let argv: Vec<&str> = launch.argv.iter().map(String::as_str).collect();
             let env = launch.env_refs();
@@ -1863,7 +1910,8 @@ pub fn reconnect_generic_vte_in_place(
         rustconn_core::ProtocolConfig::Telnet(telnet_config) => {
             let conn_msg = format_connection_message("Telnet", &conn.host);
             let cmd_msg = format_command_message(&format!("telnet {} {}", conn.host, conn.port));
-            notebook.display_output(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+            notebook
+                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             notebook.spawn_telnet(
                 session_id,
@@ -1889,7 +1937,8 @@ pub fn reconnect_generic_vte_in_place(
 
             let conn_msg = format_connection_message("Serial", &serial_config.device);
             let cmd_msg = format_command_message(&command.join(" "));
-            notebook.display_output(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+            notebook
+                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             notebook.spawn_serial(session_id, &command);
         }
@@ -1902,7 +1951,8 @@ pub fn reconnect_generic_vte_in_place(
 
             let conn_msg = format_connection_message("Kubernetes", &conn.name);
             let cmd_msg = format_command_message(&command.join(" "));
-            notebook.display_output(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+            notebook
+                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             // Spawn argv directly (no `sh -c`) so namespace/pod/container fields
             // are never shell-interpreted. This prevents command injection from
@@ -1921,7 +1971,8 @@ pub fn reconnect_generic_vte_in_place(
 
             let conn_msg = format_connection_message("MOSH", &conn.host);
             let cmd_msg = format_command_message(&command.join(" "));
-            notebook.display_output(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+            notebook
+                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             // Re-assert the erase mode (issue #271): a reconnect spawns into the
             // same terminal, and nothing else restores it after a VTE reset.
@@ -1943,32 +1994,35 @@ pub fn reconnect_generic_vte_in_place(
         let _ = state_mut.update_last_connected(connection_id);
     }
 
-    // Status detection: mark connected when cursor advances past initial output
+    // Status detection: mark connected once the new process has printed a line
+    // that is not a failure. The rows and text both count from below the
+    // reconnect banner pinned above, so an SSM reconnect that prints only
+    // "Starting session…" and a prompt — even in the same VTE pass as the
+    // banner — turns the sidebar green, and a failed one, whose CLI prints its
+    // error and exits, stays on "connecting" until the exit marks it failed.
     {
         let sidebar_clone = sidebar.clone();
         let notebook_clone = notebook.clone();
         let connection_id_str = connection_id.to_string();
-        let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-        let session_connected_clone = session_connected.clone();
+        let done = std::rc::Rc::new(std::cell::Cell::new(false));
+        let started_at = notebook.session_started_at(session_id);
 
-        // Any output on the reconnected terminal means the session is live
-        // again: a short banner (an SSM reconnect prints only two lines,
-        // "Starting session…" and the shell prompt) advances the cursor by too
-        // few rows to clear a larger threshold, so the sidebar stayed on
-        // "connecting" (yellow) after a working reconnect. The primary Zero
-        // Trust detector in `start_connection_observed` already treats any
-        // output as established (threshold 0); this matches it, instead of the
-        // row>2 heuristic that only ever worked for a fresh connection whose
-        // cursor starts at the top of an empty buffer.
         notebook.connect_contents_changed(session_id, move || {
-            if session_connected_clone.get() {
+            if done.get() {
                 return;
             }
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 0
-            {
+            // A later reconnect replaced this attempt; its own detector counts it.
+            if notebook_clone.session_started_at(session_id) != started_at {
+                done.set(true);
+                return;
+            }
+            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
+                return;
+            };
+            let output = notebook_clone.get_connection_output(session_id);
+            if reconnect_output_established(row, output.as_deref()) {
                 sidebar_clone.increment_session_count(&connection_id_str);
-                session_connected_clone.set(true);
+                done.set(true);
             }
         });
     }
@@ -3313,5 +3367,49 @@ mod established_tests {
         assert!(!ends_with_shell_prompt("Welcome to Ubuntu 22.04"));
         assert!(!ends_with_shell_prompt("System information as of now"));
         assert!(!ends_with_shell_prompt(""));
+    }
+}
+
+#[cfg(test)]
+mod reconnect_established_tests {
+    //! The generic in-place reconnect verdict (Zero Trust, Telnet, Serial,
+    //! Kubernetes, Mosh). Row and text count from below the reconnect banner.
+    use super::reconnect_output_established;
+
+    #[test]
+    fn ssm_reply_in_one_chunk_is_established() {
+        let output = "\nStarting session with SessionId: me-0123abcd\nsh-5.2$ ";
+        assert!(reconnect_output_established(2, Some(output)));
+    }
+
+    #[test]
+    fn nothing_printed_yet_is_not_established() {
+        assert!(!reconnect_output_established(0, Some("")));
+        assert!(!reconnect_output_established(0, Some("sh-5.2$ ")));
+    }
+
+    #[test]
+    fn unreadable_or_pending_output_fails_closed() {
+        assert!(!reconnect_output_established(3, None));
+    }
+
+    #[test]
+    fn failed_reconnects_are_not_established() {
+        for output in [
+            "\nAn error occurred (TargetNotConnected) when calling the StartSession \
+             operation: i-0123 is not connected.\n",
+            "SessionManagerPlugin is not found. Please refer to SessionManager Documentation\n",
+            "ERROR: (gcloud.compute.start-iap-tunnel) Error while connecting [4003]\n",
+            "Trying 192.0.2.1...\ntelnet: Unable to connect to remote host: Connection refused\n",
+            "FATAL: cannot open /dev/ttyUSB0: No such file or directory\n",
+            "Error from server (NotFound): pods \"web-0\" not found\n",
+            "ssh: connect to host example.com port 22: No route to host\n",
+            "aws: command not found\n",
+        ] {
+            assert!(
+                !reconnect_output_established(2, Some(output)),
+                "treated as established: {output}"
+            );
+        }
     }
 }

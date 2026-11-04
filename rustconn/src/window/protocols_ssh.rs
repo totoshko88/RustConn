@@ -2022,7 +2022,7 @@ pub fn reconnect_ssh_in_place(
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_reconnect_banner(session_id, &feedback);
 
     // Spawn SSH in the existing terminal
     {
@@ -2092,9 +2092,16 @@ pub fn reconnect_ssh_in_place(
         let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
         let session_connected_clone = session_connected.clone();
         let uses_jump_host = has_jump_host;
+        let started_at = notebook.session_started_at(session_id);
 
         notebook.connect_contents_changed(session_id, move || {
             if session_connected_clone.get() {
+                return;
+            }
+            // A later reconnect replaced this attempt; counting its output here
+            // as well would leave the sidebar's session count one too high.
+            if notebook_clone.session_started_at(session_id) != started_at {
+                session_connected_clone.set(true);
                 return;
             }
             let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
