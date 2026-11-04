@@ -21,7 +21,7 @@
 //! dynamic virtual channel (`ironrdp-egfx`) for the GFX pipeline with
 //! H.264/AVC decoding via OpenH264 (loaded at runtime via `dlopen`).
 //! The pipeline auto-selects the best mode: GfxAvc444 > GfxH264 > Gfx >
-//! RemoteFX > Legacy. See [`gfx_handler`] and [`graphics`] for details.
+//! RemoteFX > Legacy. See the `gfx_handler` and `graphics` modules for details.
 //!
 //! # Feature Flag
 //!

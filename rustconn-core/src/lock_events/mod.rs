@@ -14,7 +14,7 @@
 //!   the non-default `lock-events` feature and only off macOS: login1 and the
 //!   `ScreenSaver` interface are Linux/BSD D-Bus services, and a headless build
 //!   has no session to watch;
-//! - [`notify`], for a source this crate does not own. The GUI feeds it the
+//! - [`notify()`], for a source this crate does not own. The GUI feeds it the
 //!   macOS screen-lock and sleep notifications from `rustconn-lock-sys`, so this
 //!   crate stays free of AppKit and of `unsafe`.
 //!
@@ -107,7 +107,7 @@ static SUBSCRIBERS: Subscribers = Subscribers::new();
 /// Registers `handler` to be called on every [`LockEvent`].
 ///
 /// Handlers run on the D-Bus listener's blocking pool or on the dispatch thread
-/// [`notify`] starts, never the GTK main thread, so they must not touch GTK
+/// [`notify()`] starts, never the GTK main thread, so they must not touch GTK
 /// objects. They run one after another: a slow handler delays the next one, and
 /// on [`LockEvent::Suspending`] from D-Bus it delays the suspend up to logind's
 /// `InhibitDelayMaxSec` (5 s by default).
@@ -121,7 +121,7 @@ fn dispatch(event: LockEvent) {
     SUBSCRIBERS.dispatch(event);
 }
 
-/// The queue into the dispatch thread behind [`notify`]; `None` when that
+/// The queue into the dispatch thread behind [`notify()`]; `None` when that
 /// thread could not be spawned.
 static NOTIFY_QUEUE: OnceLock<Option<Sender<LockEvent>>> = OnceLock::new();
 
