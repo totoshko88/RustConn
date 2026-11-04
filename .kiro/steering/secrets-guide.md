@@ -66,10 +66,22 @@ You are editing a file that handles credentials.
   and never suspend. Exit and the 12 h lifetime are the only bounds that hold
   everywhere; do not add sandbox permissions for the listener without the
   maintainer.
-- The automatic `ssh-add` is bounded (`proc::wait_bounded`), has no stdin, no
-  host `SSH_ASKPASS` and `SSH_ASKPASS_REQUIRE=never` (else OpenSSH falls back
-  to its compiled-in askpass when `DISPLAY`/`WAYLAND_DISPLAY` is set): it runs
-  on the GTK thread.
+- The automatic `ssh-add` (`add_own_key`) is bounded (`proc::wait_bounded`),
+  has no stdin, no host `SSH_ASKPASS` and `SSH_ASKPASS_REQUIRE=never` (else
+  OpenSSH falls back to its compiled-in askpass when `DISPLAY`/`WAYLAND_DISPLAY`
+  is set): it runs on the GTK thread.
+- The key-unlock dialog (`dialogs/key_unlock.rs`, gated by
+  `window/key_unlock.rs` → `ssh_agent::check_key_unlock`) is the one place a
+  connect asks for a key passphrase. It clears the entry when it reads it and
+  moves the `SecretString` into the off-thread worker running
+  `SshAgentManager::add_own_key_with_passphrase`, where it drops after the
+  add. Only that function takes it, and only through the one-shot askpass
+  secret file (0600, path in env, zeroized and unlinked before return); never
+  argv, never an env value, never a log line, never a vault (no store, no
+  fetch). Agents that refuse adds are remembered per socket path
+  (`ssh_agent::agent_refused_add`) and get no dialog again; nothing secret is
+  kept there. Never detect or answer a passphrase prompt by watching terminal
+  output.
 - Every other agent child (`ssh-agent -s`, the `ssh-add -l`/`-L`/`-d`
   fallbacks) goes through `ssh_agent::run_agent_command` with
   `AGENT_COMMAND_TIMEOUT` (5 s); never `.output()` or `wait_with_output()` on

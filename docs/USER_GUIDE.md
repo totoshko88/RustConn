@@ -312,6 +312,25 @@ Some connections still have their password typed into the terminal, exactly as b
 
 The last row is detected by asking `ssh -G` what your configuration resolves to, which costs a few milliseconds and touches the network not at all. A bastion configured **in RustConn** is handled and does not fall back — each hop gets its own password out of band.
 
+#### Unlocking an encrypted SSH key
+
+When a connection uses a key file protected by a passphrase, RustConn asks for the passphrase once, in its own **Unlock SSH Key** dialog, before `ssh` starts. The dialog appears when all of these hold:
+
+- the key is in the OpenSSH format (`-----BEGIN OPENSSH PRIVATE KEY-----`, what `ssh-keygen` writes by default) and is encrypted;
+- an SSH agent is running, and it does not hold the key yet;
+- that agent has not refused a key earlier in this session.
+
+It covers a connect, a reconnect, the key of the first jump host, and an SFTP or Midnight Commander launch. With the right passphrase the key goes into the SSH agent with a 12-hour lifetime (`ssh-add -t 43200`), and later connects in the session find it there and do not ask. RustConn removes the key from the agent again when you quit, and on screen lock and suspend where those can be detected (in the Flatpak only after the opt-in described in [INSTALL.md](INSTALL.md)); the next connect then asks again.
+
+The passphrase is used for that one `ssh-add` and then forgotten. It is not saved, not put in any password vault and never read from one, so logging in with a key never depends on a vault. It reaches `ssh-add` through a file only your account can read, which is wiped and removed as soon as the add is done.
+
+- **Wrong passphrase:** the dialog stays open and says so. After three wrong attempts it closes, and the connect goes on without the key in the agent: `ssh` asks for the passphrase in the terminal, as it did before.
+- **Cancel:** the connect goes on exactly as before, with `ssh` asking in the terminal.
+- **An agent that does not accept added keys** (the 1Password agent, for one): RustConn shows a short notice, `ssh` asks in the terminal, and RustConn does not open the dialog for that agent again in this session.
+- **Legacy key formats** (`BEGIN RSA PRIVATE KEY`, PKCS#8): no dialog; nothing changes for them. The same holds when the agent does not answer.
+
+> **Agent Forwarding:** a connection with **Agent Forwarding** on lets the remote host use every key in your agent while you are connected, a key RustConn unlocked included. The connection editor shows a note when the option is on. Turn it on only for hosts you trust.
+
 ### Network Mode and Where a Jump Host Comes From
 
 A connection can reach its target through a bastion without naming one itself. Three tiers are consulted, nearest first, and the nearest one that has a value wins — separately for each of the two ways a bastion can be named, *Jump Host* and *ProxyJump*:
@@ -808,7 +827,7 @@ The SSH tab in the connection dialog contains session-level toggles that control
 
 | Option | SSH Flag | Description |
 |--------|----------|-------------|
-| Agent Forwarding | `-A` | Forward your local SSH agent to the remote host, allowing key-based authentication to further servers without copying keys |
+| Agent Forwarding | `-A` | Forward your local SSH agent to the remote host, allowing key-based authentication to further servers without copying keys. While connected, the remote host can use every key in the agent, including keys RustConn unlocked (see [Unlocking an encrypted SSH key](#unlocking-an-encrypted-ssh-key)) |
 | X11 Forwarding | `-X` | Forward X11 display to your local machine — run graphical X11 apps on the remote host and see them locally |
 | Compression | `-C` | Compress the SSH data stream — useful on slow or high-latency connections |
 | Connection Multiplexing | `ControlMaster=auto` | Reuse a single TCP connection for multiple SSH sessions to the same host. Subsequent connections open instantly without re-authenticating. RustConn adds `ControlPersist=60` so the master connection stays alive for 60 seconds after the last session closes. The shorter persist time (reduced from 10 minutes in 0.18.7) combined with proactive socket cleanup on network change prevents new connections from trying to multiplex through dead master sockets. When RustConn exits, all ControlMaster sockets are automatically closed to prevent stale sockets from lingering in the filesystem |
