@@ -847,8 +847,7 @@ All passwords and keys use `secrecy::SecretString`:
 // rustconn-core/src/models/credentials.rs
 pub struct Credentials {
     pub username: Option<String>,
-    pub password: Option<SecretString>,      // Zeroed on drop
-    pub key_passphrase: Option<SecretString>, // Zeroed on drop
+    pub password: Option<SecretString>, // Zeroed on drop
     pub domain: Option<String>,
 }
 ```

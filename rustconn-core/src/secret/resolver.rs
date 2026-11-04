@@ -1269,7 +1269,8 @@ impl CredentialResolver {
                     SecretBackendType::EncryptedFile => {
                         // EncryptedFile uses the same "rustconn/{name}" flat key
                         // as the other app-managed backends; rename moves the
-                        // entry without data loss.
+                        // credentials, and a legacy key passphrase in the old
+                        // entry is dropped with it (StoredCredentials).
                         // (Flat-key; correct, not a 2.5 placeholder.)
                         let old_key = Self::generate_lookup_key(&old_connection);
                         let new_key = Self::generate_lookup_key(connection);

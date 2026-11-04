@@ -686,8 +686,8 @@ fn show_report(dialog: &adw::Dialog, report: &CredentialTransferReport, planned:
 
     // Named separately from the failures: the password did arrive, so calling
     // these failures would be wrong, and calling them successes would hide that
-    // the entry lost something. A KeePass entry has no field for a key passphrase
-    // or a domain, which libsecret and both file backends do store.
+    // the entry lost something. A KeePass entry has no field for a domain,
+    // which libsecret and both file backends do store.
     if !report.incomplete.is_empty() {
         body.push_str("\n\n");
         body.push_str(&i18n(

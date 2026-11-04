@@ -71,9 +71,10 @@ pub(crate) struct StoredCredentials {
     ///
     /// Still accepted on read so an old entry decrypts, then wiped and dropped:
     /// [`Self::into_credentials`] does not pass it on, and it is never written
-    /// (`skip_serializing`). An old entry keeps it until that connection's
-    /// credentials are saved again, or the entry is migrated between this
-    /// store and the portable one; both rewrite the entry without it.
+    /// (`skip_serializing`). An old entry keeps it until the entry is next
+    /// rewritten: the connection's credentials are saved again, the connection
+    /// is renamed or moved (a key move is retrieve + store + delete), or the
+    /// entry is migrated between this store and the portable one.
     #[serde(default, skip_serializing)]
     key_passphrase: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
