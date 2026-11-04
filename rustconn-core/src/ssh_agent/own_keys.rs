@@ -207,13 +207,48 @@ impl OwnKeys {
     ///
     /// Returns how many the agents actually removed. A key the agent no longer
     /// holds (its lifetime ran out, or the user removed it) is not an error. An
-    /// agent that cannot be reached is logged; the record is cleared anyway,
-    /// because a vanished agent took its keys with it.
+    /// agent whose socket is gone or refuses connections took its keys with it,
+    /// so those leave the record too. An agent that is there but did not answer
+    /// in time (or failed some other I/O) may still hold the key: it stays
+    /// recorded, so the next exit, lock or suspend tries again.
     pub(crate) fn evict(&self) -> usize {
+        self.evict_with(remove_one)
+    }
+
+    /// [`Self::evict`] with the per-key removal passed in, so tests can stand
+    /// in for the agent.
+    fn evict_with(&self, remove: impl Fn(&OwnKey) -> AgentResult<bool>) -> usize {
         // Taken out under the lock, removed outside it: each removal is a
         // socket round trip of up to a few seconds.
         let keys = std::mem::take(&mut *self.lock());
-        keys.iter().filter(|key| remove_one(key)).count()
+        let mut removed = 0;
+        for key in keys {
+            let fingerprint = super::keyfile::sha256_fingerprint(&key.blob);
+            match remove(&key) {
+                Ok(true) => {
+                    tracing::debug!(%fingerprint, "removed an SSH key RustConn added");
+                    removed += 1;
+                }
+                Ok(false) => tracing::debug!(
+                    %fingerprint,
+                    "the agent no longer held an SSH key RustConn added"
+                ),
+                Err(e) if agent_may_still_hold_key(&e) => {
+                    tracing::warn!(
+                        %fingerprint,
+                        error = %e,
+                        "could not remove an SSH key RustConn added; keeping it recorded to retry"
+                    );
+                    self.record(&key.socket_path, key.blob);
+                }
+                Err(e) => tracing::warn!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added; the agent is gone"
+                ),
+            }
+        }
+        removed
     }
 
     #[cfg(test)]
@@ -222,30 +257,33 @@ impl OwnKeys {
     }
 }
 
-/// Sends `SSH_AGENTC_REMOVE_IDENTITY` for one key; `true` when it was removed.
+/// Whether a failed removal leaves the key possibly still in the agent.
+///
+/// A socket that does not exist or refuses connections means the agent is
+/// gone, and its keys with it. Any other I/O error — a timeout above all — is
+/// an agent that is there and slow, which still holds the key. A reply that
+/// does not parse came from an agent that answered, so retrying will not help.
+fn agent_may_still_hold_key(error: &AgentError) -> bool {
+    matches!(
+        error,
+        AgentError::Io(e) if !matches!(
+            e.kind(),
+            std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused
+        )
+    )
+}
+
+/// Sends `SSH_AGENTC_REMOVE_IDENTITY` for one key; `Ok(true)` when it was
+/// removed, `Ok(false)` when the agent no longer held it.
 #[cfg(unix)]
-fn remove_one(key: &OwnKey) -> bool {
-    let fingerprint = super::keyfile::sha256_fingerprint(&key.blob);
-    match super::wire::remove_identity(&key.socket_path, &key.blob) {
-        Ok(true) => {
-            tracing::debug!(%fingerprint, "removed an SSH key RustConn added");
-            true
-        }
-        Ok(false) => {
-            tracing::debug!(%fingerprint, "the agent no longer held an SSH key RustConn added");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(%fingerprint, error = %e, "could not remove an SSH key RustConn added");
-            false
-        }
-    }
+fn remove_one(key: &OwnKey) -> AgentResult<bool> {
+    super::wire::remove_identity(&key.socket_path, &key.blob)
 }
 
 /// No agent socket protocol off Unix; the lifetime is the only bound there.
 #[cfg(not(unix))]
-fn remove_one(_key: &OwnKey) -> bool {
-    false
+fn remove_one(_key: &OwnKey) -> AgentResult<bool> {
+    Ok(false)
 }
 
 /// The process-wide record.
@@ -522,6 +560,50 @@ mod tests {
         let own = OwnKeys::new();
         own.record("/nonexistent/rustconn-test/agent.sock", blob(6));
         assert_eq!(own.evict(), 0);
+        assert_eq!(own.len(), 0);
+    }
+
+    /// An agent that is there but did not answer in time still holds the key,
+    /// so the record survives for the next exit, lock or suspend. A refused
+    /// connection means the agent is gone and is dropped like a missing socket.
+    #[test]
+    fn a_slow_agent_keeps_the_record_and_a_gone_one_drops_it() {
+        let (slow, refused, missing, ok) = (blob(22), blob(23), blob(24), blob(25));
+        let own = OwnKeys::new();
+        own.record("/slow.sock", slow.clone());
+        own.record("/refused.sock", refused);
+        own.record("/missing.sock", missing);
+        own.record("/ok.sock", ok);
+
+        let removed = own.evict_with(|key| {
+            let kind = match key.socket_path.as_str() {
+                "/ok.sock" => return Ok(true),
+                "/slow.sock" => std::io::ErrorKind::WouldBlock,
+                "/refused.sock" => std::io::ErrorKind::ConnectionRefused,
+                _ => std::io::ErrorKind::NotFound,
+            };
+            Err(AgentError::Io(std::io::Error::from(kind)))
+        });
+
+        assert_eq!(removed, 1);
+        assert_eq!(
+            *own.lock(),
+            vec![OwnKey {
+                socket_path: "/slow.sock".to_owned(),
+                blob: slow,
+            }],
+            "only the slow agent's key is still recorded"
+        );
+        // The retry removes it once the agent answers.
+        assert_eq!(own.evict_with(|_| Ok(true)), 1);
+        assert_eq!(own.len(), 0);
+    }
+
+    #[test]
+    fn a_malformed_reply_does_not_keep_the_record() {
+        let own = OwnKeys::new();
+        own.record("/odd.sock", blob(26));
+        own.evict_with(|_| Err(AgentError::ParseError("not a status reply".to_owned())));
         assert_eq!(own.len(), 0);
     }
 
