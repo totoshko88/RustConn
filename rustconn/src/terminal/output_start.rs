@@ -38,9 +38,21 @@ const BANNER_MATCH_MIN_CHARS: usize = 12;
 pub(super) enum OutputStart {
     /// The absolute VTE row is known.
     Row(i64),
-    /// RustConn fed a connect banner ending in `last_line`; the row below it
-    /// is located on the next read.
-    AfterBanner { last_line: String },
+    /// RustConn fed a connect banner ending in `last_line` while the cursor was
+    /// on `fed_at_row`; the row below the banner is located on the next read.
+    AfterBanner { last_line: String, fed_at_row: i64 },
+}
+
+/// The base to count from when the banner was not found above the cursor.
+///
+/// Only once the cursor is [`BANNER_SEARCH_ROWS`] below `fed_at_row`, the row
+/// the banner was fed on, has the new process printed a screenful past the
+/// search window; the window's top row is then below the banner. Before that,
+/// the banner has simply not been processed yet, and taking the window top
+/// would pin the base inside the kept scrollback, so this returns `None`.
+#[must_use]
+pub(super) fn base_without_banner(fed_at_row: i64, cursor_row: i64) -> Option<i64> {
+    (cursor_row - fed_at_row >= BANNER_SEARCH_ROWS).then_some(cursor_row - BANNER_SEARCH_ROWS)
 }
 
 /// The last non-blank line of a banner as fed to the terminal.
@@ -184,6 +196,17 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn a_banner_not_processed_yet_never_falls_back_into_the_scrollback() {
+        // 500 rows of kept history; the banner was fed with the cursor on row
+        // 500 and VTE has not processed it yet.
+        assert_eq!(base_without_banner(500, 500), None);
+        assert_eq!(base_without_banner(500, 699), None);
+        // A screenful printed since the banner: the window top is below it.
+        assert_eq!(base_without_banner(500, 700), Some(500));
+        assert_eq!(base_without_banner(500, 900), Some(700));
     }
 
     #[test]

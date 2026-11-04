@@ -2198,11 +2198,20 @@ impl TerminalNotebook {
     /// new process: from then on [`Self::get_terminal_cursor_row`] and
     /// [`Self::get_connection_output`] count only what the new process prints.
     pub fn display_reconnect_banner(&self, session_id: Uuid, banner: &str) {
+        // The row the banner starts on: VTE has not processed it yet, so the
+        // cursor is still where the kept history ended.
+        let Some(fed_at_row) = self
+            .get_terminal(session_id)
+            .map(|terminal| terminal.cursor_position().1)
+        else {
+            return;
+        };
         self.display_output(session_id, banner);
         self.cursor_row_base.borrow_mut().insert(
             session_id,
             output_start::OutputStart::AfterBanner {
                 last_line: output_start::banner_last_line(banner),
+                fed_at_row,
             },
         );
     }
@@ -2239,10 +2248,13 @@ impl TerminalNotebook {
         terminal: &Terminal,
         cursor_row: i64,
     ) -> Option<i64> {
-        let last_line = match self.cursor_row_base.borrow().get(&session_id) {
+        let (last_line, fed_at_row) = match self.cursor_row_base.borrow().get(&session_id) {
             None => return Some(0),
             Some(output_start::OutputStart::Row(base)) => return Some(*base),
-            Some(output_start::OutputStart::AfterBanner { last_line }) => last_line.clone(),
+            Some(output_start::OutputStart::AfterBanner {
+                last_line,
+                fed_at_row,
+            }) => (last_line.clone(), *fed_at_row),
         };
         let first_row = (cursor_row - output_start::BANNER_SEARCH_ROWS).max(0);
         let col_count = terminal.column_count();
@@ -2257,8 +2269,7 @@ impl TerminalNotebook {
         let base = match output_start::row_below_banner(&rows, first_row, &last_line) {
             Some(base) => base,
             // A screenful printed since the banner: count from the window top.
-            None if cursor_row - first_row >= output_start::BANNER_SEARCH_ROWS => first_row,
-            None => return None,
+            None => output_start::base_without_banner(fed_at_row, cursor_row)?,
         };
         self.cursor_row_base
             .borrow_mut()
