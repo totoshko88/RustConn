@@ -51,6 +51,27 @@ impl ResizeWatch {
         })
     }
 
+    /// The watch to keep after a layout of `requested` size was offered to the
+    /// server while the desktop was `current`.
+    ///
+    /// It replaces any earlier watch. A layout that did not go out (`sent` is
+    /// `false`) leaves nothing to watch. Keeping the earlier watch armed would
+    /// let it time out after the failed send, report a layout the user no
+    /// longer wants as ignored, and switch the session to reconnect-on-resize.
+    #[must_use]
+    pub(super) fn after_send(
+        sent: bool,
+        requested: (u16, u16),
+        current: (u16, u16),
+        now: Instant,
+    ) -> Option<Self> {
+        if sent {
+            Self::arm(requested, current, now)
+        } else {
+            None
+        }
+    }
+
     /// The size the layout asked for.
     #[must_use]
     pub(super) const fn requested(&self) -> (u16, u16) {
@@ -126,6 +147,16 @@ mod tests {
         assert_eq!(
             watch.verdict(FROM, now + LAYOUT_APPLY_TIMEOUT),
             ResizeVerdict::Ignored
+        );
+    }
+
+    #[test]
+    fn a_failed_send_clears_the_watch_and_a_sent_one_replaces_it() {
+        let now = Instant::now();
+        assert_eq!(ResizeWatch::after_send(false, TO, FROM, now), None);
+        assert_eq!(
+            ResizeWatch::after_send(true, TO, FROM, now),
+            ResizeWatch::arm(TO, FROM, now)
         );
     }
 

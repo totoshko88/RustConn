@@ -141,7 +141,8 @@ pub(super) async fn run_active_session(
                     // Sent here rather than in `process_command` so the layout
                     // can be watched: a server that ignores it would otherwise
                     // leave the old desktop size with black bars around it.
-                    if super::commands::send_desktop_size(
+                    // A layout that did not go out also clears an earlier watch.
+                    let sent = super::commands::send_desktop_size(
                         &mut active_stage,
                         &mut writer,
                         &event_tx,
@@ -149,11 +150,13 @@ pub(super) async fn run_active_session(
                         height,
                         scale_percent,
                     )
-                    .await
-                    {
-                        resize_watch =
-                            ResizeWatch::arm((width, height), image_size(&image), Instant::now());
-                    }
+                    .await;
+                    resize_watch = ResizeWatch::after_send(
+                        sent,
+                        (width, height),
+                        image_size(&image),
+                        Instant::now(),
+                    );
                 } else if process_command(
                     cmd,
                     &mut active_stage,
