@@ -197,8 +197,10 @@ async fn listen() {
 
 /// Runs the handlers on tokio's blocking pool and waits for all of them.
 async fn dispatch_blocking(event: LockEvent) {
+    // `dispatch` catches a handler's panic itself, so a `JoinError` here means
+    // the task was cancelled: the runtime shut down before the handlers ran.
     if let Err(e) = tokio::task::spawn_blocking(move || super::dispatch(event)).await {
-        tracing::warn!(error = %e, ?event, "lock listener: a handler panicked");
+        tracing::warn!(error = %e, ?event, "lock listener: the handler task was cancelled");
     }
 }
 
