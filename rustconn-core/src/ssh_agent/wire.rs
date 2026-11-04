@@ -151,48 +151,33 @@ fn parse_status_reply(body: &[u8]) -> AgentResult<bool> {
 /// `UnixStream` has no `connect_timeout`, and a blocking `connect` to a Unix
 /// socket whose listen queue is full (an agent that has stopped accepting)
 /// waits until the agent accepts or dies. A non-blocking connect does not help
-/// here: on Linux it fails with `EAGAIN` on a full queue rather than becoming
-/// pollable, and the FFI to retry it would be `unsafe`. So the connect runs on
-/// a short-lived worker thread and this waits for it on a channel.
+/// either: on Linux it fails with `EAGAIN` on a full queue rather than
+/// becoming pollable. What does bound it is `SO_SNDTIMEO`: Linux's
+/// `unix_stream_connect` waits for room in the queue for at most the send
+/// timeout and then fails with `EAGAIN`. So the socket is made with
+/// `socket2` (safe, already a dependency), given the send timeout, and
+/// connected blocking on the calling thread; no worker thread is left behind.
+/// macOS and the BSDs refuse a full queue at once with `ECONNREFUSED`, so the
+/// timeout never comes into play there.
 ///
 /// # Errors
 ///
 /// The connect's own error, kind preserved (`NotFound`, `ConnectionRefused`
-/// and so on), or `ErrorKind::TimedOut` when `budget` ran out first. A worker
-/// still blocked then ends on its own when the agent accepts or goes away; the
-/// stream it gets is dropped unused.
+/// and so on), or `ErrorKind::TimedOut` when `budget` ran out first.
 fn connect_bounded(socket_path: &str, budget: Duration) -> std::io::Result<UnixStream> {
-    let path = Path::new(socket_path).to_path_buf();
-    within(budget, move || UnixStream::connect(path))
-}
-
-/// Runs `connect` on a worker thread and waits at most `budget` for it.
-///
-/// Split from [`connect_bounded`] so a test can stand in a connect that never
-/// returns.
-fn within<T: Send + 'static>(
-    budget: Duration,
-    connect: impl FnOnce() -> std::io::Result<T> + Send + 'static,
-) -> std::io::Result<T> {
-    let (tx, rx) = std::sync::mpsc::sync_channel(1);
-    std::thread::Builder::new()
-        .name("ssh-agent-connect".to_owned())
-        .spawn(move || {
-            // The receiver is gone after a timeout; the result is dropped.
-            let _ = tx.send(connect());
-        })?;
-    match rx.recv_timeout(budget) {
-        Ok(result) => result,
-        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(std::io::Error::new(
+    let address = socket2::SockAddr::unix(Path::new(socket_path))?;
+    let socket = socket2::Socket::new(socket2::Domain::UNIX, socket2::Type::STREAM, None)?;
+    socket.set_write_timeout(Some(budget))?;
+    match socket.connect(&address) {
+        Ok(()) => Ok(UnixStream::from(socket)),
+        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => Err(std::io::Error::new(
             std::io::ErrorKind::TimedOut,
             format!(
                 "the SSH agent did not accept a connection within {} ms",
                 budget.as_millis()
             ),
         )),
-        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => Err(std::io::Error::other(
-            "the SSH agent connect worker ended without a result",
-        )),
+        Err(e) => Err(e),
     }
 }
 
@@ -428,23 +413,39 @@ mod tests {
         ));
     }
 
-    /// A connect that never returns (an agent whose listen queue is full and
-    /// that never accepts) is given up after the budget, as a timeout, so a
-    /// caller on the GTK thread or at shutdown is not parked on it.
+    /// A connect to an agent whose listen queue is full and that never
+    /// accepts is given up after the budget, as a timeout, so a caller on the
+    /// GTK thread or at shutdown is not parked on it. Linux only: elsewhere a
+    /// full queue refuses the connect at once.
+    #[cfg(target_os = "linux")]
     #[test]
-    fn a_connect_that_never_returns_times_out() {
-        let (release, blocked) = std::sync::mpsc::channel::<()>();
-        let started = std::time::Instant::now();
-        let result = within(Duration::from_millis(100), move || {
-            // Blocks until the test ends and drops `release`.
-            let _ = blocked.recv();
-            Ok(())
-        });
-        let elapsed = started.elapsed();
-        drop(release);
+    fn a_connect_to_an_agent_that_never_accepts_times_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("agent.sock");
+        // Backlog 0: one connection waits in the queue, the next finds it full.
+        let listener =
+            socket2::Socket::new(socket2::Domain::UNIX, socket2::Type::STREAM, None).unwrap();
+        listener
+            .bind(&socket2::SockAddr::unix(&path).unwrap())
+            .unwrap();
+        listener.listen(0).unwrap();
 
-        let err = result.expect_err("a connect that never returns must time out");
-        assert_eq!(err.kind(), std::io::ErrorKind::TimedOut);
+        let budget = Duration::from_millis(100);
+        let mut queued = Vec::new();
+        let (err, elapsed) = loop {
+            let started = std::time::Instant::now();
+            match connect_bounded(path.to_str().unwrap(), budget) {
+                Ok(stream) => queued.push(stream),
+                Err(err) => break (err, started.elapsed()),
+            }
+            assert!(queued.len() < 64, "the listen queue never filled");
+        };
+
+        assert_eq!(err.kind(), std::io::ErrorKind::TimedOut, "{err}");
+        assert!(
+            elapsed >= budget / 2,
+            "gave up after {elapsed:?}: refused rather than waited"
+        );
         assert!(
             elapsed < Duration::from_secs(2),
             "returned after {elapsed:?}, so the budget was not enforced"

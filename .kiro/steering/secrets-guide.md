@@ -72,8 +72,10 @@ You are editing a file that handles credentials.
   `AGENT_COMMAND_TIMEOUT` (5 s); never `.output()` or `wait_with_output()` on
   one. Prefer the native `wire` request (key removal, lookup by fingerprint)
   when the public blob is known. The socket connect is bounded too
-  (`wire::connect_bounded`, a worker thread, since `UnixStream` has no
-  connect timeout and the bounded FFI would be `unsafe`).
+  (`wire::connect_bounded`: a `socket2` socket with `SO_SNDTIMEO` and a
+  blocking connect on the caller's thread, no `unsafe`, no worker thread;
+  Linux waits a full listen queue out for the send timeout, macOS refuses
+  it at once).
 - Eviction keeps a key recorded only on a transient error (`TimedOut`,
   `WouldBlock`, `Interrupted`); a lasting one drops it with one `warn`. A
   `forget` during an eviction wins: the in-flight key is not put back.
