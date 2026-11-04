@@ -1730,6 +1730,47 @@ mod native_path_tests {
         );
     }
 
+    /// An agent command that outlives its budget is killed and reaped:
+    /// `Ok(None)`, back in about the budget, and the child's pid is gone.
+    /// `kill(pid, 0)` answers `ESRCH` only once the process is both dead and
+    /// reaped, since a zombie child of this process still answers it.
+    #[test]
+    fn an_agent_command_past_its_budget_is_killed_and_reaped() {
+        let dir = tempfile::tempdir().unwrap();
+        let pid_file = dir.path().join("pid");
+        // A stand-in for a wedged `ssh-add`: records its pid, then hangs.
+        let mut cmd = std::process::Command::new("sh");
+        cmd.arg("-c")
+            .arg("echo $$ > \"$1\"; exec sleep 30")
+            .arg("sh")
+            .arg(&pid_file);
+
+        let started = std::time::Instant::now();
+        let output = run_agent_command(
+            cmd,
+            std::time::Duration::from_millis(500),
+            "test-agent-command",
+        )
+        .unwrap();
+        let elapsed = started.elapsed();
+
+        assert!(output.is_none(), "a run past its budget has no output");
+        assert!(
+            elapsed < std::time::Duration::from_secs(5),
+            "returned after {elapsed:?}, so the budget was not enforced"
+        );
+        let pid: i32 = std::fs::read_to_string(&pid_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        assert_eq!(
+            nix::sys::signal::kill(nix::unistd::Pid::from_raw(pid), None),
+            Err(nix::errno::Errno::ESRCH),
+            "the timed-out child is still alive or was left a zombie"
+        );
+    }
+
     /// The fallback `ssh-add` paths run bounded: a missing binary or agent
     /// still returns promptly with an error, never a hang.
     #[test]
