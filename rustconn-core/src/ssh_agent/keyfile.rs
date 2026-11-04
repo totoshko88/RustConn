@@ -251,8 +251,24 @@ pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
 /// is missing or not valid UTF-8.
 pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
     let body = decode_openssh_body(contents)?;
-    let blob = openssh_public_blob(&body)?;
-    let (algo, _) = read_ssh_string(&blob, 0).ok_or_else(|| {
+    public_key_line(&openssh_public_blob(&body)?)
+}
+
+/// The blob of the public-key line in the file at `path` (a `.pub` file), or
+/// `None` when the file cannot be read or is not a public-key line.
+pub(super) fn pub_file_blob(path: &std::path::Path) -> Option<Vec<u8>> {
+    let contents = std::fs::read_to_string(path).ok()?;
+    pub_line_blob(contents.lines().next()?.trim()).ok()
+}
+
+/// The public-key line (`<type> <base64>`, no comment) of a public-key blob.
+///
+/// # Errors
+///
+/// Returns [`AgentError::ParseError`] when the blob's key type is missing,
+/// empty or not valid UTF-8.
+pub(super) fn public_key_line(blob: &[u8]) -> AgentResult<String> {
+    let (algo, _) = read_ssh_string(blob, 0).ok_or_else(|| {
         AgentError::ParseError("OpenSSH public blob has no type string".to_string())
     })?;
     let algo = std::str::from_utf8(algo).map_err(|_| {
@@ -263,7 +279,7 @@ pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
             "OpenSSH public blob type is empty".to_string(),
         ));
     }
-    Ok(format!("{algo} {}", data_encoding::BASE64.encode(&blob)))
+    Ok(format!("{algo} {}", data_encoding::BASE64.encode(blob)))
 }
 
 /// Inspects a key file's contents: format, encryption, and the public key when

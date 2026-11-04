@@ -618,13 +618,21 @@ pub fn ensure_ssh_agent() -> Option<SshAgentInfo> {
     }
     cmd.arg("-s");
 
-    let output = match cmd
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .output()
-    {
-        Ok(o) => o,
+    // Bounded: this runs at startup, before the main window, so an
+    // `ssh-agent` that never exits must not hold the whole program.
+    let output = match crate::ssh_agent::run_agent_command(
+        cmd,
+        crate::ssh_agent::AGENT_COMMAND_TIMEOUT,
+        "ssh-agent -s",
+    ) {
+        Ok(Some(o)) => o,
+        Ok(None) => {
+            tracing::warn!(
+                timeout_s = crate::ssh_agent::AGENT_COMMAND_TIMEOUT.as_secs(),
+                "ssh-agent did not finish in time; killed it"
+            );
+            return None;
+        }
         Err(e) => {
             tracing::warn!(?e, "Failed to run ssh-agent");
             return None;

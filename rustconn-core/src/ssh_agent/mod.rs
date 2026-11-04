@@ -597,17 +597,23 @@ impl SshAgentManager {
     /// Starts a new SSH agent and returns the socket path.
     ///
     /// Executes `ssh-agent -s` and parses the output to extract the socket path.
+    /// The run is bounded by [`AGENT_COMMAND_TIMEOUT`].
     ///
     /// # Errors
     ///
-    /// Returns `AgentError::StartFailed` if the agent cannot be started.
+    /// Returns `AgentError::StartFailed` if the agent cannot be started or
+    /// `ssh-agent` does not finish in time (it has then been killed and reaped).
     pub fn start_agent() -> AgentResult<String> {
-        use std::process::Command;
-
-        let output = Command::new("ssh-agent")
-            .arg("-s")
-            .output()
-            .map_err(|e| AgentError::StartFailed(e.to_string()))?;
+        let mut cmd = std::process::Command::new("ssh-agent");
+        cmd.arg("-s");
+        let output = run_agent_command(cmd, AGENT_COMMAND_TIMEOUT, "ssh-agent -s")
+            .map_err(|e| AgentError::StartFailed(e.to_string()))?
+            .ok_or_else(|| {
+                AgentError::StartFailed(format!(
+                    "ssh-agent did not finish within {} s",
+                    AGENT_COMMAND_TIMEOUT.as_secs()
+                ))
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -622,15 +628,16 @@ impl SshAgentManager {
 
     /// Gets the current agent status including loaded keys.
     ///
-    /// This calls `ssh-add -l` synchronously. On macOS, if the system ssh-agent
-    /// is broken or launchd-throttled, this can block indefinitely. Prefer
-    /// [`Self::get_status_timeout`] when calling from a UI thread.
+    /// [`Self::get_status_timeout`] with [`AGENT_COMMAND_TIMEOUT`]: the native
+    /// query is bounded by the wire timeouts, and its `ssh-add -l` fallback is
+    /// killed after that budget, so a broken or launchd-throttled agent cannot
+    /// park the caller.
     ///
     /// # Errors
     ///
     /// Returns `AgentError::NotRunning` if no socket path is configured.
     pub fn get_status(&self) -> AgentResult<AgentStatus> {
-        self.get_status_inner(None)
+        self.get_status_timeout(AGENT_COMMAND_TIMEOUT)
     }
 
     /// The agent's identities over the native wire protocol, or `None` to make
@@ -660,9 +667,10 @@ impl SshAgentManager {
 
     /// Gets the current agent status with a timeout.
     ///
-    /// Spawns `ssh-add -l` as a child process and waits up to `timeout` for it
-    /// to complete. If the process does not finish in time it is killed and the
-    /// agent is reported as not running. This prevents the caller from hanging
+    /// Asks the agent over its socket first. When that fails, spawns `ssh-add
+    /// -l` and waits up to `timeout` for it to complete. If the process does
+    /// not finish in time it is killed and reaped, and the agent is reported as
+    /// not running. This prevents the caller from hanging
     /// when the system ssh-agent is broken or launchd-throttled (common on
     /// macOS).
     ///
@@ -670,13 +678,6 @@ impl SshAgentManager {
     ///
     /// Returns `AgentError::NotRunning` if no socket path is configured.
     pub fn get_status_timeout(&self, timeout: std::time::Duration) -> AgentResult<AgentStatus> {
-        self.get_status_inner(Some(timeout))
-    }
-
-    /// Internal implementation shared by `get_status` and `get_status_timeout`.
-    fn get_status_inner(&self, timeout: Option<std::time::Duration>) -> AgentResult<AgentStatus> {
-        use std::process::{Command, Stdio};
-
         let socket_path = match &self.socket_path {
             Some(path) => path.clone(),
             None => {
@@ -697,70 +698,12 @@ impl SshAgentManager {
             return Ok(status);
         }
 
-        // Spawn the child process so we can apply a timeout.
-        let child_result = Command::new("ssh-add")
-            .arg("-l")
-            .env("SSH_AUTH_SOCK", &socket_path)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn();
-
-        let child = match child_result {
-            Ok(c) => c,
-            Err(_) => {
-                return Ok(AgentStatus {
-                    running: false,
-                    socket_path: Some(socket_path),
-                    keys: Vec::new(),
-                });
-            }
-        };
-
-        let output = if let Some(dur) = timeout {
-            // Wait with timeout using a helper thread + channel.
-            let (tx, rx) = std::sync::mpsc::sync_channel(1);
-            let child_id = child.id();
-            std::thread::spawn(move || {
-                let result = child.wait_with_output();
-                // Send result; ignore error if receiver dropped (timeout).
-                let _ = tx.send(result);
-            });
-
-            match rx.recv_timeout(dur) {
-                Ok(Ok(out)) => Some(out),
-                Ok(Err(_)) => None,
-                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                    // Timeout expired — kill the child process.
-                    #[expect(
-                        clippy::cast_possible_truncation,
-                        reason = "timeout duration is always small enough to fit u64 milliseconds"
-                    )]
-                    let timeout_ms = dur.as_millis() as u64;
-                    tracing::warn!(
-                        pid = child_id,
-                        timeout_ms,
-                        "ssh-add timed out, killing child process"
-                    );
-                    // Best-effort kill on Unix via SIGKILL.
-                    #[cfg(unix)]
-                    {
-                        #[expect(
-                            clippy::cast_possible_wrap,
-                            reason = "PID values never exceed i32::MAX on any supported OS"
-                        )]
-                        let _ = nix::sys::signal::kill(
-                            nix::unistd::Pid::from_raw(child_id as i32),
-                            nix::sys::signal::Signal::SIGKILL,
-                        );
-                    }
-                    None
-                }
-                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => None,
-            }
-        } else {
-            // No timeout — blocking wait (original behaviour).
-            child.wait_with_output().ok()
-        };
+        // Fallback: `ssh-add -l`, killed and reaped once `timeout` runs out.
+        // A spawn failure, a wait failure and a timeout all report the agent
+        // as not running.
+        let mut cmd = std::process::Command::new("ssh-add");
+        cmd.arg("-l").env("SSH_AUTH_SOCK", &socket_path);
+        let output = run_agent_command(cmd, timeout, "ssh-add -l").ok().flatten();
 
         match output {
             Some(output) => {
@@ -988,6 +931,13 @@ fn wait_ssh_add(
 impl SshAgentManager {
     /// Removes a key from the SSH agent.
     ///
+    /// When the public half can be read without a passphrase (an OpenSSH
+    /// private key, or a `.pub` file passed as `key_path`) the key is removed
+    /// with one native `SSH_AGENTC_REMOVE_IDENTITY`, followed by its
+    /// `<key>-cert.pub` certificate when one sits beside it, as `ssh-add -d`
+    /// does. Otherwise `ssh-add -d` runs, bounded by
+    /// [`AGENT_COMMAND_TIMEOUT`].
+    ///
     /// # Arguments
     ///
     /// * `key_path` - Path to the private key file (or public key)
@@ -995,18 +945,35 @@ impl SshAgentManager {
     /// # Errors
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
-    /// Returns `AgentError::RemoveKeyFailed` if the key cannot be removed.
+    /// Returns `AgentError::RemoveKeyFailed` if the key cannot be removed, the
+    /// agent does not hold it, or `ssh-add -d` does not finish in time.
     pub fn remove_key(&self, key_path: &std::path::Path) -> AgentResult<()> {
-        use std::process::Command;
-
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
 
-        let output = Command::new("ssh-add")
-            .arg("-d")
+        #[cfg(unix)]
+        {
+            let blobs = keyfile::key_file_blobs(key_path);
+            if let Some(blob) = blobs
+                .key_file
+                .clone()
+                .or_else(|| keyfile::pub_file_blob(key_path))
+            {
+                return remove_natively(socket_path, &blob, blobs.cert_file.as_deref());
+            }
+        }
+
+        let mut cmd = std::process::Command::new("ssh-add");
+        cmd.arg("-d")
             .arg(key_path)
-            .env("SSH_AUTH_SOCK", socket_path)
-            .output()
-            .map_err(|e| AgentError::RemoveKeyFailed(e.to_string()))?;
+            .env("SSH_AUTH_SOCK", socket_path);
+        let output = run_agent_command(cmd, AGENT_COMMAND_TIMEOUT, "ssh-add -d")
+            .map_err(|e| AgentError::RemoveKeyFailed(e.to_string()))?
+            .ok_or_else(|| {
+                AgentError::RemoveKeyFailed(format!(
+                    "ssh-add -d did not finish within {} s",
+                    AGENT_COMMAND_TIMEOUT.as_secs()
+                ))
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1036,7 +1003,10 @@ impl SshAgentManager {
 
     /// Gets the public key for a specific fingerprint from the SSH agent.
     ///
-    /// Uses `ssh-add -L` to list all public keys and matches by fingerprint.
+    /// Asks the agent for its identities over the socket and fingerprints each
+    /// blob in-process; no process runs. Only when the agent cannot be asked
+    /// that way does `ssh-add -L` run, bounded by [`AGENT_COMMAND_TIMEOUT`],
+    /// and its lines are fingerprinted in-process too.
     /// This is useful when you need to specify a particular agent key for SSH connection.
     ///
     /// # Arguments
@@ -1052,16 +1022,37 @@ impl SshAgentManager {
     /// Returns `AgentError::NotRunning` if no socket is configured.
     /// Returns `AgentError::KeyNotFound` if no key matches the fingerprint.
     pub fn get_public_key_by_fingerprint(&self, fingerprint: &str) -> AgentResult<String> {
-        use std::process::Command;
-
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
 
-        // Get all public keys from agent
-        let output = Command::new("ssh-add")
-            .arg("-L")
-            .env("SSH_AUTH_SOCK", socket_path)
-            .output()
-            .map_err(AgentError::Io)?;
+        #[cfg(unix)]
+        match wire::request_identity_blobs(socket_path) {
+            Ok(blobs) => {
+                return match blobs
+                    .iter()
+                    .find(|blob| keyfile::sha256_fingerprint(blob) == fingerprint)
+                {
+                    Some(blob) => keyfile::public_key_line(blob),
+                    None => Err(AgentError::KeyNotFound(fingerprint.to_string())),
+                };
+            }
+            Err(e) => tracing::debug!(
+                error = %e,
+                "native ssh-agent query failed; falling back to ssh-add -L"
+            ),
+        }
+
+        let mut cmd = std::process::Command::new("ssh-add");
+        cmd.arg("-L").env("SSH_AUTH_SOCK", socket_path);
+        let output =
+            run_agent_command(cmd, AGENT_COMMAND_TIMEOUT, "ssh-add -L")?.ok_or_else(|| {
+                AgentError::Io(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    format!(
+                        "ssh-add -L did not finish within {} s",
+                        AGENT_COMMAND_TIMEOUT.as_secs()
+                    ),
+                ))
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1071,45 +1062,15 @@ impl SshAgentManager {
             return Err(AgentError::ParseError(stderr.to_string()));
         }
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // For each public key line, compute its fingerprint and compare
-        for line in stdout.lines() {
-            let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
-
-            // Compute fingerprint of this public key using ssh-keygen
-            let keygen_output = Command::new("ssh-keygen")
-                .arg("-lf")
-                .arg("-")
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .spawn();
-
-            if let Ok(mut child) = keygen_output {
-                use std::io::Write;
-                if let Some(ref mut stdin) = child.stdin {
-                    let _ = stdin.write_all(line.as_bytes());
-                }
-
-                if let Ok(output) = child.wait_with_output()
-                    && output.status.success()
-                {
-                    let fp_line = String::from_utf8_lossy(&output.stdout);
-                    // Output format: "256 SHA256:xxx comment (ED25519)"
-                    // Extract fingerprint (second field)
-                    let parts: Vec<&str> = fp_line.split_whitespace().collect();
-                    if parts.len() >= 2 && parts[1] == fingerprint {
-                        return Ok(line.to_string());
-                    }
-                }
-            }
-        }
-
-        Err(AgentError::KeyNotFound(fingerprint.to_string()))
+        // Each line is `algo base64 [comment]`; fingerprinted in-process.
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .map(str::trim)
+            .find(|line| {
+                PublicKeyInfo::from_pub_line(line).is_ok_and(|info| info.fingerprint == fingerprint)
+            })
+            .map(str::to_string)
+            .ok_or_else(|| AgentError::KeyNotFound(fingerprint.to_string()))
     }
 
     /// Writes the agent key with `fingerprint` to a public-key file for `ssh -i`.
@@ -1306,6 +1267,64 @@ mod list_key_files_tests {
     }
 }
 
+/// Ceiling on every agent child process that does not decrypt a key:
+/// `ssh-agent -s`, and the `ssh-add -l`, `-L` and `-d` fallbacks.
+///
+/// Each of them answers in milliseconds from a healthy agent; this only bounds
+/// a wedged or launchd-throttled one so the caller (often the GTK thread, or
+/// startup) is never parked on it.
+pub(crate) const AGENT_COMMAND_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Spawns `cmd` with no stdin and piped output and waits for it at most
+/// `budget`. `Ok(None)` means it ran over and has been killed and reaped.
+///
+/// `cmd` must not carry a secret in its arguments or environment: none of the
+/// agent commands routed here takes one.
+///
+/// # Errors
+///
+/// Returns the `io::Error` from spawning or waiting.
+pub(crate) fn run_agent_command(
+    mut cmd: std::process::Command,
+    budget: std::time::Duration,
+    what: &'static str,
+) -> std::io::Result<Option<std::process::Output>> {
+    use std::process::Stdio;
+
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let child = cmd.spawn()?;
+    Ok(crate::proc::wait_bounded(child, budget, what)?.output())
+}
+
+/// Removes the key with public blob `blob` from the agent at `socket_path`
+/// over the native protocol, then its certificate `cert` if given (which the
+/// agent may not hold; that is not an error).
+///
+/// # Errors
+///
+/// Returns `AgentError::RemoveKeyFailed` if the agent cannot be reached or
+/// does not hold the key.
+#[cfg(unix)]
+fn remove_natively(socket_path: &str, blob: &[u8], cert: Option<&[u8]>) -> AgentResult<()> {
+    match wire::remove_identity(socket_path, blob) {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err(AgentError::RemoveKeyFailed(
+                "the agent does not hold this key".to_string(),
+            ));
+        }
+        Err(e) => return Err(AgentError::RemoveKeyFailed(e.to_string())),
+    }
+    if let Some(cert) = cert
+        && let Err(e) = wire::remove_identity(socket_path, cert)
+    {
+        tracing::debug!(error = %e, "could not remove the key's certificate from the agent");
+    }
+    Ok(())
+}
+
 /// Ceiling on every `ssh-add` that adds a key.
 ///
 /// A backstop, not the loop guard — the one-shot askpass already ends the
@@ -1408,5 +1427,167 @@ pub fn prune_stale_agent_keys() {
             tracing::debug!(path = %path.display(), "Removing stale agent key file");
             let _ = std::fs::remove_file(&path);
         }
+    }
+}
+
+/// `remove_key` and `get_public_key_by_fingerprint` against an agent that
+/// speaks the protocol: answered natively, so no `ssh-add` or `ssh-keygen`
+/// runs (a fallback would show up as no request reaching this agent).
+#[cfg(test)]
+#[cfg(unix)]
+mod native_path_tests {
+    use std::io::{Read as _, Write as _};
+    use std::os::unix::net::UnixListener;
+    use std::sync::{Arc, Mutex};
+
+    use super::*;
+
+    /// What the fake agent holds and every message type it was sent.
+    type State = Arc<Mutex<(Vec<Vec<u8>>, Vec<u8>)>>;
+
+    fn ssh_string(out: &mut Vec<u8>, bytes: &[u8]) {
+        out.extend_from_slice(&u32::try_from(bytes.len()).unwrap().to_be_bytes());
+        out.extend_from_slice(bytes);
+    }
+
+    fn blob(tag: u8) -> Vec<u8> {
+        let mut blob = Vec::new();
+        ssh_string(&mut blob, b"ssh-ed25519");
+        ssh_string(&mut blob, &[tag; 32]);
+        blob
+    }
+
+    /// A minimal agent answering `REQUEST_IDENTITIES` (11) and
+    /// `REMOVE_IDENTITY` (18). The accept thread ends with the test process.
+    fn fake_agent(dir: &Path, keys: &[&[u8]]) -> (String, State) {
+        let path = dir.join("agent.sock");
+        let listener = UnixListener::bind(&path).unwrap();
+        let state: State = Arc::new(Mutex::new((
+            keys.iter().map(|k| k.to_vec()).collect(),
+            Vec::new(),
+        )));
+        let served = Arc::clone(&state);
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { return };
+                let mut len = [0u8; 4];
+                while stream.read_exact(&mut len).is_ok() {
+                    let mut body = vec![0u8; u32::from_be_bytes(len) as usize];
+                    stream.read_exact(&mut body).unwrap();
+                    let mut state = served.lock().unwrap();
+                    state.1.push(body[0]);
+                    let reply = match body[0] {
+                        11 => {
+                            let mut answer = vec![12];
+                            let count = u32::try_from(state.0.len()).unwrap();
+                            answer.extend_from_slice(&count.to_be_bytes());
+                            for key in &state.0 {
+                                ssh_string(&mut answer, key);
+                                ssh_string(&mut answer, b"comment");
+                            }
+                            answer
+                        }
+                        18 => {
+                            let held = state.0.iter().position(|k| k[..] == body[5..]);
+                            vec![if held.map(|i| state.0.remove(i)).is_some() {
+                                6
+                            } else {
+                                5
+                            }]
+                        }
+                        _ => vec![5],
+                    };
+                    drop(state);
+                    let mut framed = u32::try_from(reply.len()).unwrap().to_be_bytes().to_vec();
+                    framed.extend_from_slice(&reply);
+                    stream.write_all(&framed).unwrap();
+                }
+            }
+        });
+        (path.to_string_lossy().into_owned(), state)
+    }
+
+    #[test]
+    fn a_public_key_is_found_by_fingerprint_without_a_process() {
+        let dir = tempfile::tempdir().unwrap();
+        let (wanted, other) = (blob(1), blob(2));
+        let (socket, state) = fake_agent(dir.path(), &[&other, &wanted]);
+        let manager = SshAgentManager::new(Some(socket));
+
+        let line = manager
+            .get_public_key_by_fingerprint(&keyfile::sha256_fingerprint(&wanted))
+            .unwrap();
+        assert_eq!(
+            line,
+            format!("ssh-ed25519 {}", data_encoding::BASE64.encode(&wanted))
+        );
+        assert!(matches!(
+            manager.get_public_key_by_fingerprint("SHA256:not-held"),
+            Err(AgentError::KeyNotFound(_))
+        ));
+        assert_eq!(
+            state.lock().unwrap().1,
+            vec![11, 11],
+            "both answered natively"
+        );
+    }
+
+    /// An OpenSSH private key names its public half, so the key and the
+    /// certificate beside it are removed natively and nothing else is.
+    #[test]
+    fn an_openssh_key_and_its_certificate_are_removed_natively() {
+        let dir = tempfile::tempdir().unwrap();
+        let (key, cert, users) = (blob(3), blob(4), blob(5));
+        let key_path = dir.path().join("id_ed25519");
+        std::fs::write(&key_path, keyfile::openssh_key_fixture("none", &key)).unwrap();
+        std::fs::write(
+            dir.path().join("id_ed25519-cert.pub"),
+            format!(
+                "ssh-ed25519-cert-v01@openssh.com {}\n",
+                data_encoding::BASE64.encode(&cert)
+            ),
+        )
+        .unwrap();
+        let (socket, state) = fake_agent(dir.path(), &[&key, &cert, &users]);
+
+        SshAgentManager::new(Some(socket))
+            .remove_key(&key_path)
+            .unwrap();
+        let state = state.lock().unwrap();
+        assert_eq!(state.0, vec![users], "the user's other key stays");
+        assert_eq!(state.1, vec![18, 18]);
+    }
+
+    #[test]
+    fn a_pub_file_is_removed_natively_and_a_key_not_held_is_an_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let (held, not_held) = (blob(6), blob(7));
+        let line = |b: &[u8]| format!("ssh-ed25519 {} c\n", data_encoding::BASE64.encode(b));
+        let held_pub = dir.path().join("held.pub");
+        let not_held_pub = dir.path().join("not_held.pub");
+        std::fs::write(&held_pub, line(&held)).unwrap();
+        std::fs::write(&not_held_pub, line(&not_held)).unwrap();
+        let (socket, state) = fake_agent(dir.path(), &[&held]);
+        let manager = SshAgentManager::new(Some(socket));
+
+        manager.remove_key(&held_pub).unwrap();
+        assert!(matches!(
+            manager.remove_key(&not_held_pub),
+            Err(AgentError::RemoveKeyFailed(_))
+        ));
+        let state = state.lock().unwrap();
+        assert!(state.0.is_empty());
+        assert_eq!(state.1, vec![18, 18]);
+    }
+
+    /// The fallback `ssh-add` paths run bounded: a missing binary or agent
+    /// still returns promptly with an error, never a hang.
+    #[test]
+    fn get_status_without_a_reachable_agent_reports_not_running() {
+        let manager = SshAgentManager::new(Some("/nonexistent/rustconn-test/agent.sock".into()));
+        let started = std::time::Instant::now();
+        let status = manager.get_status().unwrap();
+        assert!(!status.running);
+        assert!(started.elapsed() < AGENT_COMMAND_TIMEOUT + std::time::Duration::from_secs(2));
     }
 }
