@@ -699,8 +699,9 @@ fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Op
 /// which keys it holds, the `ssh-add -t 43200`
 /// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and recording the key when its own
 /// file carries its public blob, which the GUI removes again on exit, screen
-/// lock and suspend ([`crate::ssh_agent::evict_own_keys`]). The CLI never
-/// evicts; the lifetime alone bounds what it added. A key the agent already
+/// lock and suspend ([`crate::ssh_agent::evict_own_keys`]). The CLI removes it
+/// once a `--cli` or `--mc` session's child exits; for the detached file
+/// manager it launches, the lifetime alone bounds the key. A key the agent already
 /// holds is left as it is, because it may be the user's, and when that cannot
 /// be told the key is not added. The `ssh-add` has no stdin, no host
 /// `SSH_ASKPASS` (it may name a helper absent in the Flatpak sandbox) and
