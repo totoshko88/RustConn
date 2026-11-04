@@ -79,18 +79,22 @@ sudo snap connect rustconn:oci-credentials        # ~/.oci (read-only)
 
 # Kubernetes config
 sudo snap connect rustconn:kube-credentials       # ~/.kube (read-only)
-
-# Suspend detection (removes the SSH keys RustConn added before the system sleeps)
-sudo snap connect rustconn:login-session-observe
 ```
 
-Screen-lock detection needs no extra step: the `desktop` interface, connected
-automatically, already lets RustConn receive the screensaver's `ActiveChanged`
-signal. A Snap has no logind delay lock (that needs the `shutdown`
-interface, which store snaps are not granted), so removal on suspend is
-best-effort: a fast suspend may happen before the keys are removed, and their
-12-hour lifetime still applies. Removal on screen lock and on exit is
-unaffected.
+### Screen lock and suspend
+
+When a jump-host (`-J`) connect, SFTP or Midnight Commander needs a key the SSH
+agent does not hold, RustConn adds it with a 12-hour lifetime and later removes
+exactly those keys again. In the snap:
+
+- **Exit:** the keys are removed when you quit RustConn.
+- **Screen lock:** the keys are removed. The `desktop` interface, connected
+  automatically, lets RustConn receive the screensaver's `ActiveChanged` signal.
+- **Suspend:** not detected. The snap declares no interface that delivers
+  login1's `PrepareForSleep`, and a snap user can only connect interfaces the
+  snap declares, so there is no step that turns it on. The keys stay in the
+  agent while the machine sleeps.
+- **12-hour lifetime:** applies in every case, also after a crash.
 
 ## Bundled Components
 
