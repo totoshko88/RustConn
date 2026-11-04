@@ -55,13 +55,11 @@ fn arb_connection_id() -> impl Strategy<Value = String> {
 fn make_credentials(
     username: Option<String>,
     password: Option<String>,
-    key_passphrase: Option<String>,
     domain: Option<String>,
 ) -> Credentials {
     Credentials {
         username,
         password: password.map(SecretString::from),
-        key_passphrase: key_passphrase.map(SecretString::from),
         domain,
     }
 }
@@ -83,17 +81,16 @@ proptest! {
     /// **Validates: Requirements 18.1, 5.5**
     ///
     /// For arbitrary credentials, `store` followed by `retrieve` yields an
-    /// equivalent credential — every field (username/password/passphrase/domain)
+    /// equivalent credential — every field (username/password/domain)
     /// is preserved across the encrypt -> on-disk -> decrypt round trip.
     #[test]
     fn store_then_retrieve_preserves_credentials(
         connection_id in arb_connection_id(),
         username in arb_field(),
         password in arb_field(),
-        key_passphrase in arb_field(),
         domain in arb_field(),
     ) {
-        let creds = make_credentials(username, password, key_passphrase, domain);
+        let creds = make_credentials(username, password, domain);
 
         // Isolated temp store per case so nothing leaks between iterations.
         let dir = TempDir::new().expect("failed to create temp dir");
@@ -174,7 +171,6 @@ fn backend_debug_does_not_leak_secret() {
 #[test]
 fn retrieved_credentials_debug_does_not_leak_secret() {
     const SENTINEL_PW: &str = "R3trieved-Secret-XYZ";
-    const SENTINEL_PASS: &str = "Passphrase-LEAK-CHECK-42";
 
     let dir = TempDir::new().expect("failed to create temp dir");
     let backend = EncryptedFileBackend::with_path(dir.path().join("credentials.enc"));
@@ -184,7 +180,6 @@ fn retrieved_credentials_debug_does_not_leak_secret() {
         let creds = Credentials {
             username: Some("bob".to_string()),
             password: Some(SecretString::from(SENTINEL_PW.to_string())),
-            key_passphrase: Some(SecretString::from(SENTINEL_PASS.to_string())),
             domain: Some("EXAMPLE".to_string()),
         };
         backend
@@ -202,10 +197,6 @@ fn retrieved_credentials_debug_does_not_leak_secret() {
         assert!(
             !rendered.contains(SENTINEL_PW),
             "retrieved Credentials Debug leaked the password: {rendered}"
-        );
-        assert!(
-            !rendered.contains(SENTINEL_PASS),
-            "retrieved Credentials Debug leaked the passphrase: {rendered}"
         );
     });
 }
@@ -313,7 +304,6 @@ fn fallback_to_encrypted_file_when_primary_fails() {
     let creds = Credentials {
         username: Some("fallback-user".to_string()),
         password: Some(SecretString::from("fallback-secret-pw")),
-        key_passphrase: None,
         domain: Some("EXAMPLE".to_string()),
     };
 

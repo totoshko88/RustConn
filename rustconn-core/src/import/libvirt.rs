@@ -393,7 +393,6 @@ impl LibvirtXmlImporter {
             let creds = Credentials {
                 username: None,
                 password: Some(pw.clone()),
-                key_passphrase: None,
                 domain: None,
             };
             result.credentials.insert(conn.id, creds);

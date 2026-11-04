@@ -16,6 +16,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use secrecy::SecretString;
 
+use super::LEGACY_KEY_PASSPHRASE_FIELD;
 use super::backend::{BackendAvailability, SecretBackend};
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
@@ -80,7 +81,8 @@ impl LibSecretBackend {
     /// The map preserves the attribute scheme used by earlier `secret-tool`
     /// releases so entries stay mutually findable (backward compatibility,
     /// R11.1/R11.3): `application`, `connection_id`, and `key` (one of
-    /// `username` / `password` / `key_passphrase` / `domain`).
+    /// `username` / `password` / `domain`, plus the legacy
+    /// [`LEGACY_KEY_PASSPHRASE_FIELD`], which only `delete` still names).
     fn build_attributes(&self, connection_id: &str, key: &str) -> HashMap<String, String> {
         let mut attrs = HashMap::new();
         attrs.insert("application".to_string(), self.application_id.clone());
@@ -298,7 +300,7 @@ impl SecretBackend for LibSecretBackend {
     async fn store(&self, connection_id: &str, credentials: &Credentials) -> SecretResult<()> {
         let label = Self::item_label(connection_id);
 
-        // One session for all four fields — see `open_collection`.
+        // One session for all three fields — see `open_collection`.
         let service = Self::connect().await?;
         let collection = Self::open_collection(&service).await?;
 
@@ -314,18 +316,6 @@ impl SecretBackend for LibSecretBackend {
                 .await?;
         }
 
-        // Store key passphrase if present
-        if let Some(passphrase) = credentials.expose_key_passphrase() {
-            self.store_value(
-                &collection,
-                connection_id,
-                "key_passphrase",
-                passphrase,
-                &label,
-            )
-            .await?;
-        }
-
         // Store domain if present
         if let Some(domain) = &credentials.domain {
             self.store_value(&collection, connection_id, "domain", domain, &label)
@@ -336,7 +326,7 @@ impl SecretBackend for LibSecretBackend {
     }
 
     async fn retrieve(&self, connection_id: &str) -> SecretResult<Option<Credentials>> {
-        // One session for all four fields — see `open_collection`.
+        // One session for all three fields — see `open_collection`.
         let service = Self::connect().await?;
         let collection = Self::open_collection(&service).await?;
 
@@ -354,21 +344,17 @@ impl SecretBackend for LibSecretBackend {
             .retrieve_value(&collection, connection_id, "password")
             .await?
             .map(SecretString::from);
-        let key_passphrase = self
-            .retrieve_value(&collection, connection_id, "key_passphrase")
-            .await?
-            .map(SecretString::from);
+        // A key passphrase an earlier release stored is not read: SSH login
+        // must not depend on the vault.
 
         // If nothing was found, return None
-        if username.is_none() && password.is_none() && key_passphrase.is_none() && domain.is_none()
-        {
+        if username.is_none() && password.is_none() && domain.is_none() {
             return Ok(None);
         }
 
         Ok(Some(Credentials {
             username,
             password,
-            key_passphrase,
             domain,
         }))
     }
@@ -386,8 +372,9 @@ impl SecretBackend for LibSecretBackend {
         let _ = self
             .delete_value(&collection, connection_id, "password")
             .await;
+        // Legacy: removed with the rest of the connection's items, never read.
         let _ = self
-            .delete_value(&collection, connection_id, "key_passphrase")
+            .delete_value(&collection, connection_id, LEGACY_KEY_PASSPHRASE_FIELD)
             .await;
         let _ = self
             .delete_value(&collection, connection_id, "domain")

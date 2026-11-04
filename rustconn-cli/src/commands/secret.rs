@@ -810,7 +810,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -873,7 +872,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -897,7 +895,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -921,7 +918,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -944,7 +940,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -967,7 +962,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 
@@ -990,7 +984,6 @@ pub(super) fn store_connection_credentials_in_backend(
             let creds = Credentials {
                 username: Some(username_value.to_string()),
                 password: Some(password_value),
-                key_passphrase: None,
                 domain: connection.domain.clone(),
             };
 

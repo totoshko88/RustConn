@@ -665,7 +665,6 @@ pub fn save_password_to_vault(
         let creds = std::sync::Arc::new(rustconn_core::models::Credentials {
             username: Some(username.to_string()),
             password: Some(password.clone()),
-            key_passphrase: None,
             domain: None,
         });
         let secret_settings = settings.secrets.clone();
@@ -813,7 +812,6 @@ pub fn save_group_password_to_vault(
         let creds = std::sync::Arc::new(rustconn_core::models::Credentials {
             username: Some(username.to_string()),
             password: Some(password.clone()),
-            key_passphrase: None,
             domain: None,
         });
         let secret_settings = settings.secrets.clone();
@@ -1500,7 +1498,6 @@ pub fn save_variable_to_vault(
     let creds = rustconn_core::models::Credentials {
         username: None,
         password: Some(password.clone()),
-        key_passphrase: None,
         domain: None,
     };
 
@@ -2783,7 +2780,6 @@ impl TransferPort {
                             password.map(|password| rustconn_core::models::Credentials {
                                 username,
                                 password: Some(password),
-                                key_passphrase: None,
                                 domain: None,
                             })
                         })
@@ -2876,13 +2872,9 @@ impl TransferPort {
                 })?;
 
                 // `save_password_to_kdbx` writes a title, username, password and
-                // URL. A key passphrase or a domain has nowhere to go, and the
-                // caller has to know that rather than being told the entry copied
-                // cleanly.
+                // URL. A domain has nowhere to go, and the caller has to know
+                // that rather than being told the entry copied cleanly.
                 let mut dropped = Vec::new();
-                if creds.key_passphrase.is_some() {
-                    dropped.push("key passphrase");
-                }
                 if creds.domain.is_some() {
                     dropped.push("domain");
                 }
@@ -2931,8 +2923,8 @@ pub struct CredentialTransferReport {
     /// cannot hold, as `(label, field list)`.
     ///
     /// Separate from both counters above because it is neither: the entry works,
-    /// but not identically. Writing a KeePass database drops a key passphrase and
-    /// a domain, which libsecret and both file backends do store.
+    /// but not identically. Writing a KeePass database drops a domain, which
+    /// libsecret and both file backends do store.
     pub incomplete: Vec<(String, String)>,
     /// Entries that could not be transferred, as `(label, error description)`.
     pub failures: Vec<(String, String)>,

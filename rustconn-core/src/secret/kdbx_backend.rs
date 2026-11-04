@@ -218,7 +218,6 @@ impl KdbxBackend {
         Ok(password.map(|secret| Credentials {
             username: None,
             password: Some(secret),
-            key_passphrase: None,
             domain: None,
         }))
     }

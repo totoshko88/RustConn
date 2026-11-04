@@ -104,7 +104,6 @@ pub async fn resolve_script(command: &str) -> SecretResult<Option<Credentials>> 
     Ok(Some(Credentials {
         username: None,
         password: Some(password),
-        key_passphrase: None,
         domain: None,
     }))
 }

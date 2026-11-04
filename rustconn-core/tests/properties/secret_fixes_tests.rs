@@ -149,7 +149,6 @@ proptest! {
         let creds = Credentials {
             username: cred_username.clone(),
             password: Some(secrecy::SecretString::from(cred_password.clone())),
-            key_passphrase: None,
             domain: cred_domain.clone(),
         };
 

@@ -919,7 +919,6 @@ impl RdmImporter {
             let creds = Credentials {
                 username: username.clone(),
                 password: Some(password),
-                key_passphrase: None,
                 domain: domain.clone(),
             };
             (PasswordSource::Vault, Some(creds))

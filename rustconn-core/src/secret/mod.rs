@@ -43,6 +43,16 @@ mod touch;
 mod vault_identity;
 mod verification;
 
+/// The per-field name under which releases before 0.24.6 stored an SSH key
+/// passphrase (libsecret `key` attribute, `pass` entry name, Keychain account
+/// suffix).
+///
+/// Legacy, and only ever passed to a backend's `delete`: RustConn no longer
+/// stores or fetches a key passphrase, and leaves one already stored where it
+/// is. Deleting a connection's credentials still removes it with them, so that
+/// delete leaves nothing of the connection behind.
+pub(crate) const LEGACY_KEY_PASSPHRASE_FIELD: &str = "key_passphrase";
+
 pub use async_resolver::{
     AsyncCredentialResolver, AsyncCredentialResult, CancellationToken, PendingCredentialResolution,
     resolve_with_callback, spawn_credential_resolution,

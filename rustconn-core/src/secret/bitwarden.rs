@@ -1467,7 +1467,6 @@ impl BitwardenBackend {
         Ok(Some(Credentials {
             username: login.username,
             password: login.password,
-            key_passphrase: None,
             domain,
         }))
     }

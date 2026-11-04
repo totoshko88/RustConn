@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use secrecy::SecretString;
 use tokio::process::Command;
 
+use super::LEGACY_KEY_PASSPHRASE_FIELD;
 use super::backend::SecretBackend;
 use crate::error::{SecretError, SecretResult};
 use crate::models::Credentials;
@@ -105,7 +106,8 @@ impl PassBackend {
     /// Builds the pass path for a connection's credential field
     ///
     /// Structure: `rustconn/<connection_id>/<field>`
-    /// Where field is one of: username, password, key_passphrase, domain
+    /// Where field is one of: username, password, domain (and the legacy
+    /// [`LEGACY_KEY_PASSPHRASE_FIELD`], which only `delete` still names)
     #[expect(
         clippy::unused_self,
         reason = "method is part of a uniform helper API where most operations need &self; keeping &self preserves the consistent signature"
@@ -310,23 +312,20 @@ impl PassBackend {
         let password = self
             .retrieve_value_with_aliases(connection_id, aliases, "password")
             .await?;
-        let key_passphrase = self
-            .retrieve_value_with_aliases(connection_id, aliases, "key_passphrase")
-            .await?;
         let domain = self
             .retrieve_value_with_aliases(connection_id, aliases, "domain")
             .await?;
+        // A key passphrase an earlier release stored is not read: SSH login
+        // must not depend on the vault.
 
         // If nothing was found, return None
-        if username.is_none() && password.is_none() && key_passphrase.is_none() && domain.is_none()
-        {
+        if username.is_none() && password.is_none() && domain.is_none() {
             return Ok(None);
         }
 
         Ok(Some(Credentials {
             username,
             password: password.map(SecretString::from),
-            key_passphrase: key_passphrase.map(SecretString::from),
             domain,
         }))
     }
@@ -400,12 +399,6 @@ impl SecretBackend for PassBackend {
                 .await?;
         }
 
-        // Store key passphrase if present
-        if let Some(passphrase) = credentials.expose_key_passphrase() {
-            self.store_value(connection_id, "key_passphrase", passphrase)
-                .await?;
-        }
-
         // Store domain if present
         if let Some(domain) = &credentials.domain {
             self.store_value(connection_id, "domain", domain).await?;
@@ -432,7 +425,10 @@ impl SecretBackend for PassBackend {
         // Ignore errors for individual fields (they might not exist)
         let _ = self.delete_value(connection_id, "username").await;
         let _ = self.delete_value(connection_id, "password").await;
-        let _ = self.delete_value(connection_id, "key_passphrase").await;
+        // Legacy: removed with the rest of the connection's entries, never read.
+        let _ = self
+            .delete_value(connection_id, LEGACY_KEY_PASSPHRASE_FIELD)
+            .await;
         let _ = self.delete_value(connection_id, "domain").await;
 
         // Try to clean up empty directories

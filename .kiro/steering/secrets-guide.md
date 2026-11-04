@@ -31,7 +31,20 @@ You are editing a file that handles credentials.
 ## SSH key passphrases and the agent
 
 - A key passphrase is used for one `ssh-add` and then dropped. Never cache it
-  in memory for the session, and never store it in or fetch it from a vault.
+  in memory for the session, and never store it in or fetch it from a vault
+  (maintainer rule, 2026-10-23): SSH login must not depend on the vault.
+  `Credentials` has no passphrase field for that reason; do not add one back.
+- Releases before 0.24.6 stored a `key_passphrase` field. Leave it in users'
+  vaults — no migration, no cleanup pass; a delete cannot be undone — and
+  ignore it: `secret::LEGACY_KEY_PASSPHRASE_FIELD` is passed only to a
+  backend's `delete`, so deleting a connection's credentials still takes it
+  along. The encrypted-file payload (`StoredCredentials`) keeps the field as
+  `#[serde(default, skip_serializing)]`, wiped on drop and never handed on,
+  so an old entry decrypts and the next save rewrites it without the field.
+  A user removes old ones with `secret-tool clear application rustconn key
+  key_passphrase`, `pass rm rustconn/<id>/key_passphrase`, or
+  `security delete-generic-password -s rustconn -a '<id>/key_passphrase'`
+  (CHANGELOG 0.24.6).
 - A key RustConn adds on its own (`SshAgentManager::add_own_key`,
   `sftp::ensure_identity_loaded`) goes in with `ssh-add -t` `OWN_KEY_LIFETIME`
   (12 h). `own_keys::add_and_record` asks the agent which identities it holds,

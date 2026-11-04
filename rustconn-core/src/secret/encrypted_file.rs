@@ -67,7 +67,14 @@ pub(crate) struct StoredCredentials {
     username: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     password: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Legacy: an SSH key passphrase stored by a release before 0.24.6.
+    ///
+    /// Still accepted on read so an old entry decrypts, then wiped and dropped:
+    /// [`Self::into_credentials`] does not pass it on, and it is never written
+    /// (`skip_serializing`). An old entry keeps it until that connection's
+    /// credentials are saved again, or the entry is migrated between this
+    /// store and the portable one; both rewrite the entry without it.
+    #[serde(default, skip_serializing)]
     key_passphrase: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     domain: Option<String>,
@@ -103,18 +110,19 @@ impl StoredCredentials {
         Self {
             username: creds.username.clone(),
             password: creds.expose_password().map(ToOwned::to_owned),
-            key_passphrase: creds.expose_key_passphrase().map(ToOwned::to_owned),
+            key_passphrase: None,
             domain: creds.domain.clone(),
         }
     }
 
     /// Rebuilds in-memory [`Credentials`], moving secret strings into
     /// [`SecretString`] (which zeroizes on drop) without copying them again.
+    ///
+    /// A legacy `key_passphrase` stays behind and is wiped when `self` drops.
     pub(crate) fn into_credentials(mut self) -> Credentials {
         Credentials {
             username: self.username.take(),
             password: self.password.take().map(SecretString::from),
-            key_passphrase: self.key_passphrase.take().map(SecretString::from),
             domain: self.domain.take(),
         }
     }
@@ -421,5 +429,38 @@ mod tests {
         assert!(rendered.contains("carol"));
         assert!(rendered.contains("EXAMPLE"));
         assert!(rendered.contains("<redacted>"));
+    }
+
+    /// The plaintext an entry is encrypted from never carries a key
+    /// passphrase field.
+    #[test]
+    fn stored_payload_has_no_key_passphrase_field() {
+        let creds = Credentials::with_password("carol", "pw");
+        let json = serde_json::to_string(&StoredCredentials::from_credentials(&creds)).unwrap();
+        assert!(!json.contains("key_passphrase"), "{json}");
+        assert!(json.contains("carol"), "{json}");
+    }
+
+    /// An entry written by a release that stored a key passphrase still
+    /// decrypts; the passphrase does not reach the credentials, and saving
+    /// them again writes an entry without it.
+    #[test]
+    fn a_legacy_key_passphrase_is_read_past_and_not_written_back() {
+        const SENTINEL_PASS: &str = "StoredCreds-LEGACY-pass-003";
+        let legacy = format!(
+            r#"{{"username":"carol","password":"pw","key_passphrase":"{SENTINEL_PASS}","domain":"EXAMPLE"}}"#
+        );
+
+        let stored: StoredCredentials = serde_json::from_str(&legacy).unwrap();
+        let creds = stored.into_credentials();
+
+        assert_eq!(creds.username.as_deref(), Some("carol"));
+        assert_eq!(creds.expose_password(), Some("pw"));
+        assert_eq!(creds.domain.as_deref(), Some("EXAMPLE"));
+        assert!(!format!("{creds:?}").contains(SENTINEL_PASS));
+        let rewritten =
+            serde_json::to_string(&StoredCredentials::from_credentials(&creds)).unwrap();
+        assert!(!rewritten.contains("key_passphrase"), "{rewritten}");
+        assert!(!rewritten.contains(SENTINEL_PASS), "{rewritten}");
     }
 }

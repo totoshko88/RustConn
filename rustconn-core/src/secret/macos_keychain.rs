@@ -15,6 +15,7 @@ mod inner {
     };
     use zeroize::Zeroizing;
 
+    use super::super::LEGACY_KEY_PASSPHRASE_FIELD;
     use super::super::backend::SecretBackend;
     use crate::error::{SecretError, SecretResult};
     use crate::models::Credentials;
@@ -26,8 +27,9 @@ mod inner {
     ///
     /// Stores credentials in the user's default Keychain using the
     /// Security.framework generic password API. Each credential field
-    /// (username, password, key_passphrase, domain) is stored as a
-    /// separate Keychain item with a composite account name.
+    /// (username, password, domain) is stored as a separate Keychain item
+    /// with a composite account name. An SSH key passphrase item an earlier
+    /// release stored is neither read nor rewritten; `delete` still removes it.
     pub struct MacOsKeychainBackend;
 
     impl std::fmt::Debug for MacOsKeychainBackend {
@@ -141,11 +143,6 @@ mod inner {
                     Self::store_field(&conn_id, "password", password)?;
                 }
 
-                // Store key passphrase if present
-                if let Some(passphrase) = creds.expose_key_passphrase() {
-                    Self::store_field(&conn_id, "key_passphrase", passphrase)?;
-                }
-
                 // Store domain if present
                 if let Some(ref domain) = creds.domain {
                     Self::store_field(&conn_id, "domain", domain)?;
@@ -163,22 +160,18 @@ mod inner {
             tokio::task::spawn_blocking(move || {
                 let username = Self::retrieve_field(&conn_id, "username")?;
                 let password = Self::retrieve_field(&conn_id, "password")?;
-                let key_passphrase = Self::retrieve_field(&conn_id, "key_passphrase")?;
                 let domain = Self::retrieve_field(&conn_id, "domain")?;
+                // A key passphrase an earlier release stored is not read: SSH
+                // login must not depend on the vault.
 
                 // If nothing was found, return None
-                if username.is_none()
-                    && password.is_none()
-                    && key_passphrase.is_none()
-                    && domain.is_none()
-                {
+                if username.is_none() && password.is_none() && domain.is_none() {
                     return Ok(None);
                 }
 
                 Ok(Some(Credentials {
                     username,
                     password: password.map(SecretString::from),
-                    key_passphrase: key_passphrase.map(SecretString::from),
                     domain,
                 }))
             })
@@ -194,7 +187,9 @@ mod inner {
                 // Ignore individual errors (fields might not exist)
                 let _ = Self::delete_field(&conn_id, "username");
                 let _ = Self::delete_field(&conn_id, "password");
-                let _ = Self::delete_field(&conn_id, "key_passphrase");
+                // Legacy: removed with the rest of the connection's items,
+                // never read.
+                let _ = Self::delete_field(&conn_id, LEGACY_KEY_PASSPHRASE_FIELD);
                 let _ = Self::delete_field(&conn_id, "domain");
                 Ok(())
             })
