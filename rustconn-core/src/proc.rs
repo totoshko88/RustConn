@@ -69,10 +69,13 @@ impl Waited {
 /// credential or a lookup key into it.
 ///
 /// Stdout and stderr are collected only in the [`Waited::Exited`] case, so the
-/// child must have been spawned with them piped if the caller wants them. Note
-/// that a child which fills a pipe buffer and is never read from can block
-/// before it exits: for a chatty child, `budget` bounds the wait but the output
-/// may be truncated by the kill.
+/// child must have been spawned with them piped if the caller wants them.
+/// They are read only after the child has exited, never while it runs. A child
+/// that writes more than a pipe buffer holds (64 KiB on Linux) therefore
+/// blocks on the full pipe, never exits, and is killed at `budget` and
+/// reported as [`Waited::TimedOut`], with its output lost. Use this only for
+/// children whose output stays well under that, or drain the pipes on a
+/// thread of your own.
 ///
 /// # Errors
 /// Returns the `io::Error` from `try_wait` or from collecting the output. A

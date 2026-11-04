@@ -1324,12 +1324,20 @@ pub(crate) const AGENT_COMMAND_TIMEOUT: std::time::Duration = std::time::Duratio
 /// Spawns `cmd` with no stdin and piped output and waits for it at most
 /// `budget`. `Ok(None)` means it ran over and has been killed and reaped.
 ///
+/// The output is read only after the child exits ([`crate::proc::wait_bounded`]),
+/// so a child that writes more than a pipe buffer (about 64 KiB on Linux)
+/// blocks and comes back as `Ok(None)`, a timeout. For the `ssh-add -l` / `-L`
+/// fallbacks that takes an agent holding several hundred keys, and only after
+/// the native query, which has no such limit, has failed.
+///
 /// `cmd` must not carry a secret in its arguments or environment: none of the
 /// agent commands routed here takes one.
 ///
 /// # Errors
 ///
 /// Returns the `io::Error` from spawning or waiting.
+// ponytail: pipes are read after exit, fine for agent-sized output (< 64 KiB);
+// drain them on a thread in `proc` if a fallback ever has to list more.
 pub(crate) fn run_agent_command(
     mut cmd: std::process::Command,
     budget: std::time::Duration,
