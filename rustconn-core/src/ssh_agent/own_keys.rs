@@ -28,6 +28,13 @@
 //! key the user loads again with `ssh-add` in a terminal stays recorded and is
 //! removed. Nothing here removes all identities.
 //!
+//! The record is per process. The GUI and `rustconn-cli sftp` each keep their
+//! own and do not talk to each other: a key one of them loaded first is in the
+//! other's "before" answer, so the other neither adds nor records it. The
+//! reverse is a known limit: when the GUI needs a key that the CLI added, it
+//! finds the key in the agent and leaves it to the CLI, whose eviction on exit
+//! then takes it from the GUI's sessions too, until the GUI's next add.
+//!
 //! No passphrase is asked for or kept.
 
 use std::path::Path;

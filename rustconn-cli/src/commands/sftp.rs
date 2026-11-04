@@ -184,6 +184,15 @@ pub(super) fn cmd_sftp(
         // sftp and mc have exited, so the key added above for them leaves the
         // agent now instead of staying for its whole lifetime. Only a key this
         // command added is removed; one the agent already held is left alone.
+        //
+        // That before/after check is what keeps the GUI's keys safe: a key the
+        // GUI (or the user) loaded before this command ran is in the agent's
+        // "before" answer, so it is neither added nor recorded here. The other
+        // order is a known limit: each process keeps its own record and they
+        // do not talk, so when the GUI needs a key while this command is the
+        // one that added it, the GUI finds it in the agent and leaves it
+        // alone, and this eviction then takes it from the GUI's sessions too.
+        // The GUI's next connect or launch adds it again. Not worth IPC.
         let removed = rustconn_core::ssh_agent::evict_own_keys();
         tracing::debug!(
             removed,
