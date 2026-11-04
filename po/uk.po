@@ -3773,8 +3773,8 @@ msgid ""
 "While connected, the remote host can use the keys in your SSH agent, "
 "including keys RustConn unlocked."
 msgstr ""
-"Під час з'єднання віддалений вузол може використовувати ключі з вашого "
-"агента SSH, зокрема ключі, які розблокував RustConn."
+"Поки з'єднано, віддалений гост може використовувати ключі з твого агента "
+"SSH, зокрема ключі, які розблокував RustConn."
 
 #: rustconn/src/dialogs/connection/ssh.rs:831
 msgid "Waypipe"
@@ -6270,13 +6270,13 @@ msgid ""
 "Enter the passphrase for “{}”. The key is added to the SSH agent for up to "
 "12 hours and removed when you quit RustConn. The passphrase is not saved."
 msgstr ""
-"Введіть парольну фразу для «{}». Ключ буде додано до агента SSH щонайбільше "
-"на 12 годин і вилучено, коли ви закриєте RustConn. Парольну фразу не буде "
+"Уведи парольну фразу для «{}». Ключ буде додано до агента SSH щонайбільше "
+"на 12 годин і вилучено, коли ти вийдеш із RustConn. Парольну фразу не буде "
 "збережено."
 
 #: rustconn/src/dialogs/key_unlock.rs:50
 msgid "Unlock SSH Key"
-msgstr "Розблокувати ключ SSH"
+msgstr "Розблокування ключа SSH"
 
 #: rustconn/src/dialogs/key_unlock.rs:55
 #: rustconn/src/dialogs/portable_unlock.rs:75
