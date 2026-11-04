@@ -4,7 +4,8 @@
 //! does not hold. The passphrase the user enters is moved into a background
 //! `ssh-add` (12 h lifetime, recorded as one of RustConn's own keys) and
 //! dropped there when the add returns. It is never stored, never sent to a
-//! vault and never logged; the entry is cleared as soon as it is read.
+//! vault and never logged; the entry is cleared as soon as it is read, and
+//! again whenever the dialog closes.
 //!
 //! GNOME HIG: `AdwAlertDialog` with an `extra_child`, as `portable_unlock.rs`.
 
@@ -77,17 +78,24 @@ pub fn show_key_unlock_dialog(
 
     dialog.set_response_enabled("unlock", false);
     let busy = Rc::new(Cell::new(false));
+    // The row's handlers hold the dialog weakly: the dialog owns the row, so a
+    // strong reference would keep both, and any text typed, alive.
     {
-        let dialog = dialog.clone();
+        let dialog = dialog.downgrade();
         let busy = busy.clone();
         passphrase_row.connect_changed(move |row| {
-            dialog.set_response_enabled("unlock", !busy.get() && !row.text().is_empty());
+            if let Some(dialog) = dialog.upgrade() {
+                dialog.set_response_enabled("unlock", !busy.get() && !row.text().is_empty());
+            }
         });
     }
     {
-        let dialog = dialog.clone();
+        let dialog = dialog.downgrade();
         passphrase_row.connect_entry_activated(move |row| {
-            if !row.text().is_empty() && dialog.is_response_enabled("unlock") {
+            if let Some(dialog) = dialog.upgrade()
+                && !row.text().is_empty()
+                && dialog.is_response_enabled("unlock")
+            {
                 dialog.emit_by_name::<()>("response", &[&"unlock"]);
             }
         });
@@ -97,7 +105,12 @@ pub fn show_key_unlock_dialog(
         Rc::new(RefCell::new(Some(Box::new(on_done))));
     let finish = {
         let on_done = on_done.clone();
+        let passphrase_row = passphrase_row.downgrade();
         move |dialog: &adw::AlertDialog, outcome: KeyUnlockOutcome| {
+            // A cancelled or unfinished passphrase does not stay in the entry.
+            if let Some(row) = passphrase_row.upgrade() {
+                row.set_text("");
+            }
             dialog.force_close();
             // Taken into a local, so no borrow is held while it runs.
             let callback = on_done.borrow_mut().take();
