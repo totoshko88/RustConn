@@ -409,6 +409,7 @@ pub fn available_languages() -> Vec<(&'static str, &'static str)> {
         ("es", "Español"),
         ("fr", "Français"),
         ("it", "Italiano"),
+        ("ka", "ქართული"),
         ("kk", "Қазақша"),
         ("nl", "Nederlands"),
         ("pl", "Polski"),
@@ -416,6 +417,8 @@ pub fn available_languages() -> Vec<(&'static str, &'static str)> {
         ("sk", "Slovenčina"),
         ("sv", "Svenska"),
         ("uk", "Українська"),
+        ("uz", "Oʻzbekcha"),
+        ("vi", "Tiếng Việt"),
         ("zh_CN", "简体中文"),
     ]
 }
@@ -442,6 +445,7 @@ fn lang_to_locale(lang: &str) -> String {
         "es" => "es_ES",
         "fr" => "fr_FR",
         "it" => "it_IT",
+        "ka" => "ka_GE",
         "kk" => "kk_KZ",
         "nl" => "nl_NL",
         "pl" => "pl_PL",
@@ -449,6 +453,8 @@ fn lang_to_locale(lang: &str) -> String {
         "sk" => "sk_SK",
         "sv" => "sv_SE",
         "uk" => "uk_UA",
+        "uz" => "uz_UZ",
+        "vi" => "vi_VN",
         "zh-cn" | "zh_CN" => "zh_CN",
         other => other,
     };
@@ -545,6 +551,47 @@ fn apply_language_setlocale(lang: &str) {
 // Changing the language from the Settings dialog still only persists the value
 // to `config.toml`; it takes effect on the next start. That was already true —
 // the old runtime call could not retranslate already-rendered GTK labels.
+
+#[cfg(test)]
+mod language_list_tests {
+    use super::{available_languages, lang_to_locale};
+
+    /// The locale codes in `po/LINGUAS`, the list every build installs a
+    /// catalogue for.
+    fn linguas() -> Vec<&'static str> {
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../po/LINGUAS"))
+            .lines()
+            .filter(|line| !line.trim_start().starts_with('#'))
+            .flat_map(str::split_whitespace)
+            .collect()
+    }
+
+    /// A catalogue added to `po/LINGUAS` but not to the selector ships and can
+    /// never be picked in Settings — `ka`, `uz` and `vi` were all missed once.
+    #[test]
+    fn every_linguas_locale_is_offered_and_mapped() {
+        let offered: Vec<&str> = available_languages()
+            .into_iter()
+            .map(|(code, _)| code)
+            .collect();
+        let locales = linguas();
+        assert!(!locales.is_empty(), "po/LINGUAS lists no locales");
+
+        for lang in locales {
+            assert!(
+                offered.contains(&lang),
+                "po/LINGUAS has `{lang}` but available_languages() does not offer it"
+            );
+            let locale = lang_to_locale(lang);
+            assert!(
+                locale
+                    .strip_suffix(".UTF-8")
+                    .is_some_and(|name| name.contains('_')),
+                "lang_to_locale(\"{lang}\") gives `{locale}`, not an ll_CC.UTF-8 locale"
+            );
+        }
+    }
+}
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {
