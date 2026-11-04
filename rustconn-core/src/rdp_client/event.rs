@@ -724,6 +724,13 @@ pub enum RdpClientEvent {
     /// should disable file drag-and-drop for this session.
     FileClipboardUnsupported,
 
+    /// The server refused a shared folder in its device announce response
+    /// (MS-RDPEFS 2.2.2.1); the session continues without it (issue #407).
+    SharedFolderRejected {
+        /// Share name as configured on the connection
+        name: String,
+    },
+
     /// H.264 (OpenH264) is unavailable, so the GFX H.264 pipeline was not
     /// opened and the session uses the RemoteFX path.
     ///

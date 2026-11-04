@@ -220,7 +220,10 @@ pub(super) async fn run_active_session(
                                 );
                             }
                             Err(e) => {
-                                return Err(RdpClientError::ProtocolError(format!("Session error: {e}")));
+                                return Err(RdpClientError::ProtocolError(format!(
+                                    "Session error: {}",
+                                    error_chain(&e)
+                                )));
                             }
                         }
                     }
@@ -265,6 +268,24 @@ pub(super) async fn run_active_session(
     }
 
     Ok(())
+}
+
+/// Formats `error` followed by every `source()` beneath it.
+///
+/// `SessionError`'s own text is only the wrapper, such as `[payload error] PDU
+/// error`; the PDU and the reason that failed are in its sources, and without
+/// them a trace cannot say what ended the session (issue #407). Session errors
+/// come from decoding server PDUs and channel processors, which carry no
+/// credentials: those are only handled during the connection phase.
+fn error_chain(error: &dyn std::error::Error) -> String {
+    let mut text = error.to_string();
+    let mut source = error.source();
+    while let Some(cause) = source {
+        text.push_str(", caused by: ");
+        text.push_str(&cause.to_string());
+        source = cause.source();
+    }
+    text
 }
 
 /// The session image's size, the desktop size the server last set.
@@ -703,6 +724,26 @@ fn extract_region_data(image: &DecodedImage, rect: RdpRect) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Issue #407 reported only `[payload error] PDU error`; the reason the
+    /// channel gave sits in the source and has to reach the message.
+    #[test]
+    fn a_session_error_names_its_cause() {
+        use ironrdp_session::{SessionError, SessionErrorExt as _};
+
+        let error = SessionError::pdu(ironrdp_pdu::pdu_other_err!(
+            "dynamic drive removal is not supported by this RDPDR backend"
+        ));
+        let text = error_chain(&error);
+        assert!(
+            text.starts_with("[payload error] PDU error, caused by: "),
+            "{text}"
+        );
+        assert!(
+            text.contains("dynamic drive removal is not supported"),
+            "{text}"
+        );
+    }
 
     /// Builds a real MCS Send Data Indication frame for `channel_id`.
     ///

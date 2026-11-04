@@ -2356,6 +2356,14 @@ impl super::EmbeddedRdpWidget {
                                     .borrow_mut()
                                     .disable("Server does not support file clipboard");
                             }
+                            RdpClientEvent::SharedFolderRejected { name } => {
+                                // The core logged the refusal at warn; the session
+                                // continues, so this is a notice, not an error.
+                                crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                                    "The server refused the shared folder “{}”",
+                                    &[&name],
+                                ));
+                            }
                             RdpClientEvent::GfxDecodeFailure {
                                 consecutive_failures,
                             } => {

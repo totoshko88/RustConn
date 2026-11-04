@@ -16,6 +16,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::mpsc::Sender;
 
 use ironrdp_core::impl_as_any;
 use ironrdp_pdu::PduResult;
@@ -44,6 +45,7 @@ use ironrdp_rdpdr::pdu::esc::{ScardCall, ScardIoCtlCode};
 use ironrdp_svc::SvcMessage;
 use tracing::{debug, trace, warn};
 
+use super::RdpClientEvent;
 use super::dir_watcher::{DirectoryChange, DirectoryWatcher, WatchRequest};
 
 /// A cached directory entry returned one PDU at a time.
@@ -84,6 +86,10 @@ pub struct RustConnRdpdrBackend {
     printer_queues: HashMap<u32, String>,
     /// Directory watcher for change notifications
     dir_watcher: Option<DirectoryWatcher>,
+    /// Share names by device ID, for the notice when the server refuses one.
+    share_names: HashMap<u32, String>,
+    /// Where [`RdpClientEvent::SharedFolderRejected`] goes; `None` in tests.
+    event_tx: Option<Sender<RdpClientEvent>>,
 }
 
 /// Pending directory change notification
@@ -148,7 +154,22 @@ impl RustConnRdpdrBackend {
             print_jobs: HashMap::new(),
             printer_queues,
             dir_watcher,
+            share_names: HashMap::new(),
+            event_tx: None,
         }
+    }
+
+    /// Reports each shared folder the server refuses to `event_tx` as
+    /// [`RdpClientEvent::SharedFolderRejected`], named from `share_names`.
+    #[must_use]
+    pub fn with_rejection_events(
+        mut self,
+        share_names: HashMap<u32, String>,
+        event_tx: Sender<RdpClientEvent>,
+    ) -> Self {
+        self.share_names = share_names;
+        self.event_tx = Some(event_tx);
+        self
     }
 
     /// Allocates a new file ID
@@ -265,6 +286,48 @@ impl RustConnRdpdrBackend {
 
         responses
     }
+
+    /// Drops every open file of `device_id` and cancels its pending change
+    /// notifications, returning the cancellations for the server.
+    ///
+    /// Files are closed without delete-on-close: the server never closed them.
+    fn release_drive(&mut self, device_id: u32) -> Vec<SvcMessage> {
+        let file_ids: Vec<u32> = self
+            .file_device_map
+            .iter()
+            .filter(|(_, device)| **device == device_id)
+            .map(|(file_id, _)| *file_id)
+            .collect();
+        let mut cancellations = Vec::new();
+        for file_id in &file_ids {
+            self.file_device_map.remove(file_id);
+            self.file_handles.remove(file_id);
+            self.file_paths.remove(file_id);
+            self.dir_entries.remove(file_id);
+            self.delete_pending.remove(file_id);
+            if let Some(notification) = self.pending_notifications.remove(file_id) {
+                cancellations.push(SvcMessage::from(
+                    RdpdrPdu::ClientDriveNotifyChangeDirectoryResponse(
+                        ClientDriveNotifyChangeDirectoryResponse::new(
+                            notification.device_io_request,
+                            NtStatus::CANCELLED,
+                            Vec::new(),
+                        ),
+                    ),
+                ));
+            }
+            if let Some(watcher) = &mut self.dir_watcher {
+                watcher.remove_watch(*file_id);
+            }
+        }
+        debug!(
+            device_id,
+            closed_files = file_ids.len(),
+            cancelled_notifications = cancellations.len(),
+            "RDPDR shared folder released"
+        );
+        cancellations
+    }
 }
 
 impl RdpdrBackend for RustConnRdpdrBackend {
@@ -272,8 +335,45 @@ impl RdpdrBackend for RustConnRdpdrBackend {
         &mut self,
         pdu: ServerDeviceAnnounceResponse,
     ) -> PduResult<()> {
-        tracing::debug!("RDPDR device announce response: {:?}", pdu);
+        let device_id = pdu.device_id;
+        if pdu.result_code == NtStatus::SUCCESS {
+            debug!(device_id, "RDPDR device accepted by the server");
+            return Ok(());
+        }
+        // A refusal is the server's decision about one device, not a protocol
+        // failure: `Rdpdr` stops serving the device and then calls
+        // `remove_drive` for a shared folder (issue #407).
+        if self.drive_paths.contains_key(&device_id) {
+            let name = self
+                .share_names
+                .get(&device_id)
+                .map_or_else(String::new, Clone::clone);
+            warn!(
+                device_id,
+                share = %name,
+                status = ?pdu.result_code,
+                "The server refused a shared folder; the session continues without it"
+            );
+            if let Some(event_tx) = &self.event_tx {
+                let _ = event_tx.send(RdpClientEvent::SharedFolderRejected { name });
+            }
+        } else {
+            warn!(
+                device_id,
+                status = ?pdu.result_code,
+                "The server refused a redirected device; the session continues without it"
+            );
+        }
         Ok(())
+    }
+
+    /// Releases a shared folder. `Rdpdr` calls this for every folder the
+    /// server refuses, after it has stopped serving the folder.
+    ///
+    /// The default implementation returns an error, and that error ended the
+    /// whole session as `[payload error] PDU error` (issue #407).
+    fn remove_drive(&mut self, device_id: u32) -> PduResult<Vec<SvcMessage>> {
+        Ok(self.release_drive(device_id))
     }
 
     fn handle_scard_call(
@@ -2159,10 +2259,207 @@ mod drive_io_tests {
     }
 
     #[test]
+    fn removing_a_drive_cancels_its_notifications_and_closes_its_files() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (mut backend, file_id) = backend_with_open_file(&dir);
+        let notify = ServerDriveIoRequest::ServerDriveNotifyChangeDirectoryRequest(
+            ServerDriveNotifyChangeDirectoryRequest {
+                device_io_request: io_request(file_id, MajorFunction::DirectoryControl),
+                watch_tree: 0,
+                completion_filter: 0x1,
+            },
+        );
+        assert!(
+            backend
+                .handle_drive_io_request(notify)
+                .expect("notify is deferred")
+                .is_empty()
+        );
+
+        let cancellations = backend.remove_drive(1).expect("remove_drive succeeds");
+        assert_eq!(cancellations.len(), 1);
+        let bytes = cancellations[0]
+            .encode_unframed_pdu()
+            .expect("cancellation encodes");
+        assert_eq!(
+            read_u32_at(&bytes, IO_STATUS_OFFSET),
+            0xC000_0120,
+            "STATUS_CANCELLED"
+        );
+        assert!(backend.file_handles.is_empty());
+        assert!(backend.pending_notifications.is_empty());
+        assert!(
+            dir.path().join("probe.txt").exists(),
+            "removal closes files, it does not delete them"
+        );
+    }
+
+    #[test]
     fn windows_wildcards_are_case_insensitive() {
         assert!(wildcard_match("*.TXT", "report.txt"));
         assert!(wildcard_match("file?.log", "File1.log"));
         assert!(!wildcard_match("file?.log", "file10.log"));
         assert_eq!(directory_search_pattern("\\folder\\*.*"), "*");
+    }
+}
+
+/// Replays the RDPDR exchange from issue #407 through the real `Rdpdr`
+/// channel with this backend, so the test sees what the session loop sees.
+#[cfg(test)]
+mod rejected_drive_tests {
+    use std::collections::HashMap;
+
+    use ironrdp_rdpdr::Rdpdr;
+    use ironrdp_rdpdr::pdu::RdpdrPdu;
+    use ironrdp_rdpdr::pdu::efs::{
+        CapabilityMessage, CoreCapability, CoreCapabilityKind, DeviceIoRequest, MajorFunction,
+        MinorFunction, NtStatus, ServerDeviceAnnounceResponse, VERSION_MAJOR, VERSION_MINOR_13,
+        VersionAndIdPdu, VersionAndIdPduKind,
+    };
+    use ironrdp_svc::{SvcMessage, SvcProcessor};
+    use std::sync::mpsc::{Receiver, channel};
+
+    use super::{RdpClientEvent, RustConnRdpdrBackend};
+
+    const CLIENT_ID: u32 = 3;
+    /// `PAKID_CORE_DEVICELIST_ANNOUNCE`
+    const DEVICELIST_ANNOUNCE: u16 = 0x4441;
+    /// `PAKID_CORE_DEVICELIST_REMOVE`
+    const DEVICELIST_REMOVE: u16 = 0x444D;
+    /// `PAKID_CORE_DEVICE_IOCOMPLETION`
+    const DEVICE_IOCOMPLETION: u16 = 0x4943;
+    /// Device IDs as `connection.rs` assigns them: shared folders from 1.
+    const CYRILLIC_DRIVE: u32 = 1;
+    const ASCII_DRIVE: u32 = 2;
+
+    fn server_pdu(pdu: &RdpdrPdu) -> Vec<u8> {
+        ironrdp_core::encode_vec(pdu).expect("server PDU encodes")
+    }
+
+    fn version_pdu(kind: VersionAndIdPduKind) -> Vec<u8> {
+        server_pdu(&RdpdrPdu::VersionAndIdPdu(VersionAndIdPdu {
+            version_major: VERSION_MAJOR,
+            version_minor: VERSION_MINOR_13,
+            client_id: CLIENT_ID,
+            kind,
+        }))
+    }
+
+    fn announce_response(device_id: u32, result_code: NtStatus) -> Vec<u8> {
+        server_pdu(&RdpdrPdu::ServerDeviceAnnounceResponse(
+            ServerDeviceAnnounceResponse {
+                device_id,
+                result_code,
+            },
+        ))
+    }
+
+    /// A close IRP: the request header and the 32 padding bytes of
+    /// `DR_CLOSE_REQ` (MS-RDPEFS 2.2.1.4.2).
+    fn close_irp(device_id: u32) -> Vec<u8> {
+        let mut bytes = server_pdu(&RdpdrPdu::DeviceIoRequest(DeviceIoRequest {
+            device_id,
+            file_id: 42,
+            completion_id: 9,
+            major_function: MajorFunction::Close,
+            minor_function: MinorFunction::from(0),
+        }));
+        bytes.extend_from_slice(&[0; 32]);
+        bytes
+    }
+
+    fn packet_ids(messages: &[SvcMessage]) -> Vec<u16> {
+        messages
+            .iter()
+            .map(|message| {
+                let bytes = message.encode_unframed_pdu().expect("client PDU encodes");
+                u16::from_le_bytes([bytes[2], bytes[3]])
+            })
+            .collect()
+    }
+
+    /// Takes a channel with the reporter's Cyrillic share and an ASCII share
+    /// through the trace in issue #407 up to the device announce.
+    fn logged_on_channel(dir: &tempfile::TempDir) -> (Rdpdr, Receiver<RdpClientEvent>) {
+        let cyrillic = dir.path().join("Загрузки");
+        let ascii = dir.path().join("share");
+        std::fs::create_dir(&cyrillic).expect("create Cyrillic share");
+        std::fs::create_dir(&ascii).expect("create ASCII share");
+        let drive_paths = HashMap::from([
+            (CYRILLIC_DRIVE, cyrillic.to_string_lossy().into_owned()),
+            (ASCII_DRIVE, ascii.to_string_lossy().into_owned()),
+        ]);
+        let drives = vec![
+            (CYRILLIC_DRIVE, "Загрузки".to_owned()),
+            (ASCII_DRIVE, "share".to_owned()),
+        ];
+        let (event_tx, event_rx) = channel();
+        let backend = RustConnRdpdrBackend::new(drive_paths, HashMap::new())
+            .with_rejection_events(drives.iter().cloned().collect(), event_tx);
+        let mut rdpdr =
+            Rdpdr::new(Box::new(backend), "rustconn-test".to_owned()).with_drives(Some(drives));
+
+        rdpdr
+            .process(&version_pdu(VersionAndIdPduKind::ServerAnnounceRequest))
+            .expect("server announce");
+        rdpdr
+            .process(&server_pdu(&RdpdrPdu::CoreCapability(CoreCapability {
+                capabilities: vec![
+                    CapabilityMessage::new_general(0),
+                    CapabilityMessage::new_drive(),
+                ],
+                kind: CoreCapabilityKind::ServerCoreCapabilityRequest,
+            })))
+            .expect("server capabilities");
+        rdpdr
+            .process(&version_pdu(VersionAndIdPduKind::ServerClientIdConfirm))
+            .expect("client ID confirm");
+        let announce = rdpdr
+            .process(&server_pdu(&RdpdrPdu::UserLoggedon))
+            .expect("user logged on");
+        assert_eq!(packet_ids(&announce), vec![DEVICELIST_ANNOUNCE]);
+        (rdpdr, event_rx)
+    }
+
+    #[test]
+    fn a_rejected_shared_folder_is_skipped_and_the_channel_continues() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (mut rdpdr, events) = logged_on_channel(&dir);
+
+        // Windows Server 2025 refused the Cyrillic share in issue #407.
+        let reply = rdpdr
+            .process(&announce_response(CYRILLIC_DRIVE, NtStatus::UNSUCCESSFUL))
+            .expect("a rejected shared folder must not be a channel error");
+        assert_eq!(packet_ids(&reply), vec![DEVICELIST_REMOVE]);
+        match events.try_recv() {
+            Ok(RdpClientEvent::SharedFolderRejected { name }) => assert_eq!(name, "Загрузки"),
+            other => panic!("expected SharedFolderRejected, got {other:?}"),
+        }
+
+        // The server keeps talking about the rejected drive: ignored.
+        let ignored = rdpdr
+            .process(&close_irp(CYRILLIC_DRIVE))
+            .expect("an IRP for the rejected drive is not an error");
+        assert!(ignored.is_empty());
+    }
+
+    #[test]
+    fn an_accepted_shared_folder_is_still_served_after_another_is_rejected() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (mut rdpdr, events) = logged_on_channel(&dir);
+        rdpdr
+            .process(&announce_response(CYRILLIC_DRIVE, NtStatus::UNSUCCESSFUL))
+            .expect("rejection is handled");
+
+        let accepted = rdpdr
+            .process(&announce_response(ASCII_DRIVE, NtStatus::SUCCESS))
+            .expect("acceptance is handled");
+        assert!(accepted.is_empty());
+        let served = rdpdr
+            .process(&close_irp(ASCII_DRIVE))
+            .expect("the accepted drive serves IRPs");
+        assert_eq!(packet_ids(&served), vec![DEVICE_IOCOMPLETION]);
+        // Only the refused folder is reported.
+        assert_eq!(events.try_iter().count(), 1);
     }
 }

@@ -710,8 +710,10 @@ async fn connect_once(
             }
         }
 
+        let share_names = initial_drives.iter().cloned().collect();
         let rdpdr_backend =
-            RustConnRdpdrBackend::new(drive_paths, printer_queues.clone().into_iter().collect());
+            RustConnRdpdrBackend::new(drive_paths, printer_queues.clone().into_iter().collect())
+                .with_rejection_events(share_names, event_tx.clone());
         let mut rdpdr = Rdpdr::new(Box::new(rdpdr_backend), computer_name);
         if !initial_drives.is_empty() {
             rdpdr = rdpdr.with_drives(Some(initial_drives));
