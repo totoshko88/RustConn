@@ -327,6 +327,11 @@ pub struct EmbeddedRdpWidget {
     /// The pending automatic reconnection attempt, cancelled by a manual
     /// reconnect or a disconnect.
     auto_reconnect_timer: Rc<RefCell<Option<glib::SourceId>>>,
+    /// Shared folders the server has refused, by share name. Every reconnect
+    /// (on resize, the xrdp fallback, an automatic reconnection) announces the
+    /// folders again, so this keeps the notice to once per tab (issue #407).
+    #[cfg(feature = "rdp-embedded")]
+    refused_shared_folders: Rc<RefCell<std::collections::HashSet<String>>>,
     /// Where Windows key combinations go while this viewer has focus
     /// (`RdpConfig::keyboard_hook`); read by the notebook on every focus
     /// change, so it may be set after the tab exists.
@@ -841,6 +846,8 @@ impl EmbeddedRdpWidget {
             reconnect_timer: Rc::new(RefCell::new(None)),
             auto_reconnect_attempt: Rc::new(Cell::new(0)),
             auto_reconnect_timer: Rc::new(RefCell::new(None)),
+            #[cfg(feature = "rdp-embedded")]
+            refused_shared_folders: Rc::new(RefCell::new(std::collections::HashSet::new())),
             keyboard_hook: Rc::new(Cell::new(None)),
             remote_clipboard_text: Rc::new(RefCell::new(None)),
             remote_clipboard_formats: Rc::new(RefCell::new(Vec::new())),

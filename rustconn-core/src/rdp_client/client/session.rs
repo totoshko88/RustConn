@@ -14,6 +14,7 @@ use ironrdp_tokio::{
     Framed, FramedRead, FramedWrite, single_sequence_step_read, split_tokio_framed,
 };
 
+use super::super::failure::error_chain;
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
@@ -230,7 +231,10 @@ pub(super) async fn run_active_session(
                     Err(e) => {
                         // The session was up, so this is the link dropping, not
                         // a connection failing to start; see `ConnectionLost`.
-                        return Err(RdpClientError::ServerDisconnected(format!("Read error: {e}")));
+                        return Err(RdpClientError::ServerDisconnected(format!(
+                            "Read error: {}",
+                            error_chain(&e)
+                        )));
                     }
                 }
             }
@@ -268,24 +272,6 @@ pub(super) async fn run_active_session(
     }
 
     Ok(())
-}
-
-/// Formats `error` followed by every `source()` beneath it.
-///
-/// `SessionError`'s own text is only the wrapper, such as `[payload error] PDU
-/// error`; the PDU and the reason that failed are in its sources, and without
-/// them a trace cannot say what ended the session (issue #407). Session errors
-/// come from decoding server PDUs and channel processors, which carry no
-/// credentials: those are only handled during the connection phase.
-fn error_chain(error: &dyn std::error::Error) -> String {
-    let mut text = error.to_string();
-    let mut source = error.source();
-    while let Some(cause) = source {
-        text.push_str(", caused by: ");
-        text.push_str(&cause.to_string());
-        source = cause.source();
-    }
-    text
 }
 
 /// The session image's size, the desktop size the server last set.

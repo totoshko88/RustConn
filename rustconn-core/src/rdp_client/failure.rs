@@ -260,12 +260,56 @@ const PROTOCOL_MARKERS: &[&str] = &[
 /// yet published (`ironrdp-pdu` on crates.io is still 0.9.0).
 const LICENSE_MARKERS: &[&str] = &["server_new_license", "licenseexchangestate"];
 
+/// Joins an error's own text to the text of each of its causes.
+const CAUSE_SEPARATOR: &str = ", caused by: ";
+
+/// Formats `error` followed by every `source()` beneath it.
+///
+/// `SessionError`'s own text is only the wrapper, such as `[payload error] PDU
+/// error`; the PDU and the reason that failed are in its sources, and without
+/// them a trace cannot say what ended the session (issue #407). Session errors
+/// come from decoding server PDUs and channel processors, which carry no
+/// credentials: those are only handled during the connection phase.
+///
+/// The causes are diagnostics only. Every classifier in this module reads the
+/// text before them ([`split_error_cause`]): a cause such as a channel's
+/// `decode error` or a `tls` in some inner message must not change whether the
+/// session falls back to the external client or is retried.
+#[cfg(feature = "rdp-embedded")]
+pub(crate) fn error_chain(error: &dyn std::error::Error) -> String {
+    let mut text = error.to_string();
+    let mut source = error.source();
+    while let Some(cause) = source {
+        text.push_str(CAUSE_SEPARATOR);
+        text.push_str(&cause.to_string());
+        source = cause.source();
+    }
+    text
+}
+
+/// Splits a failure message into its own text and, when it carries one, the
+/// cause chain that `error_chain` appended.
+///
+/// Classify and word the first part; log or store the whole message.
+#[must_use]
+pub fn split_error_cause(msg: &str) -> (&str, Option<&str>) {
+    match msg.split_once(CAUSE_SEPARATOR) {
+        Some((own, causes)) => (own, Some(causes)),
+        None => (msg, None),
+    }
+}
+
+/// Lowercases the part of `msg` the classifiers match, without its causes.
+fn classified_text(msg: &str) -> String {
+    split_error_cause(msg).0.to_ascii_lowercase()
+}
+
 /// Returns `true` when the failure happened in the RDP licensing exchange.
 ///
 /// Used only to choose the message shown to the user; see [`LICENSE_MARKERS`].
 #[must_use]
 pub fn is_license_exchange_failure(msg: &str) -> bool {
-    let lower = msg.to_ascii_lowercase();
+    let lower = classified_text(msg);
     LICENSE_MARKERS.iter().any(|m| lower.contains(m))
 }
 
@@ -277,9 +321,11 @@ pub fn is_license_exchange_failure(msg: &str) -> bool {
 /// wording in the wrapped cause can never re-classify them as `Other`. TLS,
 /// certificate, and transport roots take precedence over the remaining
 /// fallback-worthy protocol markers.
+///
+/// A cause chain appended by `error_chain` is not read ([`split_error_cause`]).
 #[must_use]
 pub fn classify_rdp_failure(msg: &str) -> RdpFailureClass {
-    let lower = msg.to_ascii_lowercase();
+    let lower = classified_text(msg);
 
     if is_authentication_failure_lower(&lower) {
         return RdpFailureClass::Authentication;
@@ -321,7 +367,7 @@ pub fn classify_rdp_failure(msg: &str) -> RdpFailureClass {
 /// Returns `true` when the message describes a rejected credential.
 #[must_use]
 pub fn is_authentication_failure(msg: &str) -> bool {
-    is_authentication_failure_lower(&msg.to_ascii_lowercase())
+    is_authentication_failure_lower(&classified_text(msg))
 }
 
 fn is_authentication_failure_lower(lower: &str) -> bool {
@@ -385,7 +431,7 @@ const TLS_ONLY_FALLBACK_BLOCKED_STATUSES: &[&str] = &[
 /// [#235]: https://github.com/totoshko88/RustConn/issues/235
 #[must_use]
 pub fn warrants_tls_only_fallback(msg: &str) -> bool {
-    let lower = msg.to_ascii_lowercase();
+    let lower = classified_text(msg);
 
     // An account-state refusal is unambiguous and TLS cannot change it.
     if TLS_ONLY_FALLBACK_BLOCKED_STATUSES
@@ -437,7 +483,7 @@ pub fn warrants_tls_only_fallback(msg: &str) -> bool {
 /// [#366]: https://github.com/totoshko88/RustConn/issues/366
 #[must_use]
 pub fn warrants_tls_only_stall_fallback(msg: &str) -> bool {
-    msg.to_ascii_lowercase().contains(POST_TLS_STALL_MARKER)
+    classified_text(msg).contains(POST_TLS_STALL_MARKER)
 }
 
 /// What a rejected CredSSP/NLA sign-in was rejected for, as far as the message says.
@@ -571,6 +617,7 @@ const KDC_TRANSPORT_MARKERS: &[&str] = &[
 /// tried is [`classify_rdp_failure`]'s call alone.
 #[must_use]
 pub fn classify_auth_failure(msg: &str) -> Option<AuthFailureKind> {
+    let msg = split_error_cause(msg).0;
     let lower = msg.to_ascii_lowercase();
     if let Some(kind) = first_listed(&lower, NTSTATUS_KINDS) {
         return Some(kind);
@@ -718,6 +765,67 @@ mod tests {
             classify_rdp_failure("SERVER ONLY SUPPORTS STANDARD RDP SECURITY"),
             RdpFailureClass::SecurityUnsupported
         );
+    }
+
+    /// The cause chain a session error carries since issue #407 is for the log
+    /// and history. A channel's `decode error` beneath `[payload error] PDU
+    /// error` must not hand a running session to the external client, and a
+    /// `tls` or `timed out` in a cause must not turn a fallback into `Other`.
+    #[test]
+    fn a_cause_chain_does_not_change_the_classification() {
+        const OUTER: &str = "Protocol error: Session error: [payload error] PDU error";
+        let decode = format!(
+            "{OUTER}, caused by: [ironrdp_rdpdr::pdu::efs] decode error, caused by: not enough bytes"
+        );
+        assert_eq!(classify_rdp_failure(OUTER), RdpFailureClass::Other);
+        assert_eq!(classify_rdp_failure(&decode), RdpFailureClass::Other);
+        assert!(!is_license_exchange_failure(
+            "Session error: x, caused by: server_new_license"
+        ));
+        assert!(!warrants_tls_only_fallback(
+            "Session error: x, caused by: CredSSP InvalidToken 0xc000006d"
+        ));
+        assert!(!warrants_tls_only_stall_fallback(&format!(
+            "Session error: x, caused by: {POST_TLS_STALL_MARKER}"
+        )));
+        assert_eq!(
+            classify_auth_failure("Session error: x, caused by: 0xc000006d"),
+            None
+        );
+
+        let incompatible = "Session error: unexpected share control pdu";
+        assert_eq!(
+            classify_rdp_failure(&format!(
+                "{incompatible}, caused by: tls transport timed out"
+            )),
+            RdpFailureClass::ProtocolIncompatible
+        );
+    }
+
+    #[test]
+    fn split_error_cause_separates_the_chain() {
+        assert_eq!(split_error_cause("plain"), ("plain", None));
+        assert_eq!(
+            split_error_cause("outer, caused by: inner, caused by: root"),
+            ("outer", Some("inner, caused by: root"))
+        );
+    }
+
+    /// The real shape: what `error_chain` makes of an IronRDP session error
+    /// wrapping a channel decode error is classified by its outer text.
+    #[cfg(feature = "rdp-embedded")]
+    #[test]
+    fn a_chained_session_decode_error_is_not_a_protocol_fallback() {
+        use ironrdp_session::{SessionError, SessionErrorExt as _};
+
+        let error = SessionError::pdu(ironrdp_pdu::PduError::new(
+            "ironrdp_rdpdr::pdu::efs",
+            ironrdp_pdu::PduErrorKind::Decode,
+        ));
+        let msg = format!("Protocol error: Session error: {}", error_chain(&error));
+        assert!(msg.contains(", caused by: "), "{msg}");
+        assert!(msg.contains("decode error"), "{msg}");
+        assert_eq!(classify_rdp_failure(&msg), RdpFailureClass::Other);
     }
 
     #[test]
