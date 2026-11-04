@@ -19,7 +19,8 @@ path = "src/main.rs"
 [dependencies]
 # `lock-events` on in every build, not behind a GUI feature: removing the SSH
 # keys RustConn added on screen lock and suspend is a security behaviour, not an
-# option a packaging channel should be able to drop. A no-op on macOS.
+# option a packaging channel should be able to drop. Its D-Bus listener is a
+# no-op on macOS, where rustconn-lock-sys below is the source.
 rustconn-core = { path = "../rustconn-core", version = "0.24.5", default-features = false, features = ["lock-events"] }
 tokio = { workspace = true }
 # Event-driven tray message delivery to the GTK main loop (no polling)
@@ -99,6 +100,12 @@ rustconn-env-sys = { path = "../rustconn-env-sys", version = "0.24.5" }
 # here. Unconditional for the same reason as the three above; the AppKit bindings
 # it needs are target-gated inside that crate, since they build nowhere else.
 rustconn-dock-sys = { path = "../rustconn-dock-sys", version = "0.24.5" }
+# The macOS screen-lock and sleep notifications, fed into rustconn-core's
+# `lock_events` so the SSH keys RustConn added are removed there too. Observing
+# them takes `unsafe` objc2 calls, forbidden here. Unconditional like the four
+# above, so the bridge in app.rs compiles on every platform; the AppKit bindings
+# are target-gated inside that crate.
+rustconn-lock-sys = { path = "../rustconn-lock-sys", version = "0.24.5" }
 # WebKitGTK 6.0 bindings for embedded web browser (Linux only)
 webkit6 = { version = "0.6", optional = true }
 

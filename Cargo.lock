@@ -4940,6 +4940,7 @@ dependencies = [
  "rustconn-dock-sys",
  "rustconn-env-sys",
  "rustconn-locale-sys",
+ "rustconn-lock-sys",
  "rustconn-pty-sys",
  "secrecy",
  "serde",
