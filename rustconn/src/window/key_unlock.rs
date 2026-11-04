@@ -7,8 +7,10 @@
 //! go to) and hand the rest of their work to [`unlock_then`]. For an encrypted
 //! OpenSSH key the agent does not hold, that shows RustConn's unlock dialog
 //! once (`dialogs::key_unlock`) and then goes on; for everything else it goes
-//! on at once. The decision is `rustconn_core::ssh_agent::check_key_unlock`,
-//! run off the GTK thread. Every outcome continues the connect: Cancel, too
+//! on at once. Only an encrypted OpenSSH key is a target at all, so a connect
+//! with any other key starts synchronously, as before. The decision is
+//! `rustconn_core::ssh_agent::check_key_unlock`, run off the GTK thread.
+//! Every outcome continues the connect: Cancel, too
 //! many wrong passphrases and a refusing agent leave ssh to ask as before.
 //!
 //! A cluster or a restored session can connect several times with one key at
@@ -22,7 +24,9 @@ use std::path::PathBuf;
 
 use gtk4::prelude::*;
 use rustconn_core::connection::ssh_inheritance;
-use rustconn_core::ssh_agent::{UnlockDecision, check_key_unlock};
+use rustconn_core::ssh_agent::{
+    UnlockDecision, agent_refused_add, check_key_unlock, key_is_encrypted_openssh,
+};
 
 use crate::dialogs::key_unlock::{KeyUnlockOutcome, show_key_unlock_dialog};
 use crate::i18n::{i18n, i18n_f};
@@ -72,7 +76,10 @@ pub(super) fn ssh_unlock_targets(
     let socket = ssh_inheritance::resolve_ssh_agent_socket(conn, &groups)
         .filter(|s| !s.is_empty())
         .or_else(rustconn_core::sftp::default_agent_socket);
-    targets_from(keys.into_iter().map(PathBuf::from), socket.as_deref())
+    retain_askable(targets_from(
+        keys.into_iter().map(PathBuf::from),
+        socket.as_deref(),
+    ))
 }
 
 /// The key an SFTP or mc launch of `conn` adds to the agent, and the agent
@@ -83,10 +90,27 @@ pub(super) fn sftp_unlock_targets(
 ) -> Vec<UnlockTarget> {
     let key = rustconn_core::sftp::get_ssh_key_path(conn, groups)
         .and_then(|p| rustconn_core::resolve_key_path(&p));
-    targets_from(
+    retain_askable(targets_from(
         key.into_iter(),
         rustconn_core::sftp::default_agent_socket().as_deref(),
-    )
+    ))
+}
+
+/// Keeps the targets the unlock check could ask about: an encrypted OpenSSH
+/// key, with an agent that has not refused an add. The rest cannot need a
+/// dialog, so a connect left with none starts at once, synchronously, as it
+/// did before this check existed.
+///
+/// Reads each key file here, on the GTK thread: a few hundred bytes from a
+/// local file, no agent query. The agent is asked off the thread later.
+fn retain_askable(mut targets: Vec<UnlockTarget>) -> Vec<UnlockTarget> {
+    targets.retain(|t| {
+        t.socket
+            .as_deref()
+            .is_some_and(|s| !s.is_empty() && !agent_refused_add(s))
+            && key_is_encrypted_openssh(&t.key_path)
+    });
+    targets
 }
 
 fn targets_from(keys: impl Iterator<Item = PathBuf>, socket: Option<&str>) -> Vec<UnlockTarget> {
@@ -105,9 +129,10 @@ fn targets_from(keys: impl Iterator<Item = PathBuf>, socket: Option<&str>) -> Ve
 /// Runs `then` once every key in `targets` that needs unlocking has had its
 /// dialog, or at once when none does.
 ///
-/// With no targets (a password or agent-key connection) `then` runs
-/// synchronously, so nothing changes for those connects. Otherwise the check
-/// runs off the GTK thread and `then` runs from its callback.
+/// With no targets (a password connection, or keys that cannot need a dialog,
+/// see [`retain_askable`]) `then` runs synchronously, so nothing changes for
+/// those connects. Otherwise the check runs off the GTK thread and `then`
+/// runs from its callback.
 pub(super) fn unlock_then(
     parent: &impl IsA<gtk4::Widget>,
     targets: Vec<UnlockTarget>,
@@ -260,6 +285,36 @@ mod tests {
     fn a_waiter_with_no_dialog_open_is_handed_back() {
         let mut in_flight: InFlight<&str, u8> = InFlight::new();
         assert_eq!(in_flight.park(&"key", 7), Some(7));
+    }
+
+    /// A target that cannot need a dialog is dropped, so the connect stays
+    /// synchronous. The encrypted case is covered in `rustconn-core`
+    /// (`key_is_encrypted_openssh`), which owns the key fixtures.
+    #[test]
+    fn a_key_that_cannot_need_a_dialog_is_not_a_target() {
+        let dir = tempfile::tempdir().unwrap();
+        let unencrypted = dir.path().join("id_plain");
+        std::fs::write(
+            &unencrypted,
+            "-----BEGIN RSA PRIVATE KEY-----\nAAAA\n-----END RSA PRIVATE KEY-----\n",
+        )
+        .unwrap();
+        let missing = dir.path().join("id_missing");
+        let targets = vec![
+            UnlockTarget {
+                key_path: unencrypted,
+                socket: Some("/run/agent.sock".to_owned()),
+            },
+            UnlockTarget {
+                key_path: missing,
+                socket: Some("/run/agent.sock".to_owned()),
+            },
+            UnlockTarget {
+                key_path: dir.path().join("id_any"),
+                socket: None,
+            },
+        ];
+        assert!(retain_askable(targets).is_empty());
     }
 
     #[test]

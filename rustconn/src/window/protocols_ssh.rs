@@ -1321,9 +1321,13 @@ fn install_ssh_autofill_fallback(
 
 /// Starts SSH and observes a session created after asynchronous setup.
 ///
-/// When a key the connect passes is encrypted and not in the agent, RustConn's
-/// unlock dialog comes first (`key_unlock::unlock_then`); the session is then
-/// created asynchronously and this returns `None`, as for the port check.
+/// When a key the connect passes is an encrypted OpenSSH key, the unlock
+/// check comes first (`key_unlock::unlock_then`), and the dialog when the
+/// agent lacks the key; the session is then created asynchronously and this
+/// returns `None`, as for the port check. The key sequence and the split-view
+/// registration follow the session through `observer`
+/// (`MainWindow::start_connection_observed`), so an asynchronous start keeps
+/// both. A connect with any other key starts as before.
 #[expect(
     clippy::too_many_arguments,
     reason = "SSH startup requires the shared UI owners, monitoring, connection data, logging policy, and observer"
