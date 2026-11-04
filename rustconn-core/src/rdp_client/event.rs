@@ -698,16 +698,23 @@ pub enum RdpClientEvent {
     /// not yet negotiated, which would fail over to a disruptive reconnect).
     DisplayControlReady,
 
-    /// Display Control Channel is not available on this server.
+    /// A resize could not be applied over the Display Control Channel.
     ///
-    /// Emitted when `encode_resize` returns `None`, indicating the server
-    /// does not support MS-RDPEDISP dynamic resolution changes. The GUI
-    /// should fall back to a full reconnect with the new resolution.
+    /// Emitted when the channel is not open, so no monitor layout could be
+    /// encoded, or when a layout was sent and the server applied neither a
+    /// Deactivation-Reactivation Sequence nor a graphics reset within three
+    /// seconds — xrdp accepts the layout and keeps the old desktop size. The
+    /// GUI should fall back to a full reconnect with the new resolution.
     DisplayControlUnavailable {
         /// Requested width that could not be applied
         width: u16,
         /// Requested height that could not be applied
         height: u16,
+        /// `true` when the layout was sent and the server ignored it, as
+        /// opposed to a channel that is not open (yet). Only an ignored
+        /// layout says something lasting about the server: later resizes
+        /// will be ignored the same way.
+        layout_ignored: bool,
     },
 
     /// Server does not support file clipboard (`STREAM_FILECLIP_ENABLED`).

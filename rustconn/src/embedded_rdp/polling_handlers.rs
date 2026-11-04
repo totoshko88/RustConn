@@ -578,24 +578,49 @@ pub(super) fn handle_rtt(
 /// reconnects: the "Reconnect on Resize" toggle controls whether `resize.rs`
 /// sends the initial `SetDesktopSize` attempt at all, but once dynamic resize
 /// has been tried and refused, reconnect is the correct fallback.
+///
+/// `layout_ignored` means the layout was sent and the server did not apply it
+/// in time. Server OS `Windows` keeps the seamless path then; otherwise the
+/// runtime config remembers it (`layout_resize_ignored`), so this reconnect
+/// and every later resize of the session go straight to a reconnect instead of
+/// waiting for the server again.
 pub(super) fn handle_display_control_unavailable(
     config: &Rc<RefCell<Option<super::types::RdpConfig>>>,
     ironrdp_tx: &Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
     on_reconnect: &Rc<RefCell<Option<Box<dyn Fn() + 'static>>>>,
     width: u16,
     height: u16,
+    layout_ignored: bool,
 ) {
+    if layout_ignored
+        && !config
+            .borrow()
+            .as_ref()
+            .is_none_or(super::types::RdpConfig::falls_back_when_layout_ignored)
+    {
+        tracing::info!(
+            protocol = "rdp",
+            width,
+            height,
+            "Windows server has not applied the monitor layout yet — keeping Display Control"
+        );
+        return;
+    }
     tracing::info!(
         protocol = "rdp",
         width,
         height,
-        "Display Control Channel unavailable — reconnecting with new resolution"
+        layout_ignored,
+        "Display Control resize not possible — reconnecting with new resolution"
     );
     // Update config with the requested resolution
     {
         let current_config = config.borrow().clone();
         if let Some(mut cfg) = current_config {
             cfg = cfg.with_resolution(u32::from(width), u32::from(height));
+            if layout_ignored {
+                cfg.layout_resize_ignored = true;
+            }
             *config.borrow_mut() = Some(cfg);
         }
     }

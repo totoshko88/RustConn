@@ -1494,6 +1494,18 @@ impl super::EmbeddedRdpWidget {
                 if snap_attempted.get() {
                     return;
                 }
+                // A server that resizes only by reconnecting (Linux, the
+                // toggle, or an Auto server that ignored a layout) would leave
+                // the snap's layout unapplied, and an ignored layout falls back
+                // to a reconnect: not worth it for a few pixels the viewer
+                // already scales away.
+                if config
+                    .borrow()
+                    .as_ref()
+                    .is_some_and(super::types::RdpConfig::resize_needs_reconnect)
+                {
+                    return;
+                }
                 let server_w = *rdp_width_ref.borrow();
                 let server_h = *rdp_height_ref.borrow();
                 let effective_scale = config.borrow().as_ref().map_or(1.0, |c| {
@@ -2305,13 +2317,18 @@ impl super::EmbeddedRdpWidget {
                                 let snap: &dyn Fn() = &*snap_to_settled;
                                 snap();
                             }
-                            RdpClientEvent::DisplayControlUnavailable { width, height } => {
+                            RdpClientEvent::DisplayControlUnavailable {
+                                width,
+                                height,
+                                layout_ignored,
+                            } => {
                                 super::polling_handlers::handle_display_control_unavailable(
                                     &config,
                                     &ironrdp_tx,
                                     &on_reconnect,
                                     width,
                                     height,
+                                    layout_ignored,
                                 );
                             }
                             RdpClientEvent::Rtt { rtt_ms } => {

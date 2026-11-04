@@ -344,7 +344,7 @@ pub(super) fn create_rdp_options() -> (
     let server_os_row = adw::ActionRow::builder()
         .title(i18n("Server OS"))
         .subtitle(i18n(
-            "On Linux, hide the Windows admin tools and reconnect to resize",
+            "On Linux, hide the Windows admin tools and reconnect to resize. Auto reconnects once the server ignores a resize",
         ))
         .build();
     server_os_row.add_suffix(&server_os_dropdown);

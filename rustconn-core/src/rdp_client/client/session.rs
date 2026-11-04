@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
 
 use ironrdp_connector::ConnectionResult;
 use ironrdp_connector::connection_activation::{
@@ -16,6 +17,7 @@ use ironrdp_tokio::{
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
+use super::resize_watch::{ResizeVerdict, ResizeWatch};
 
 /// Runs the active RDP session, processing framebuffer updates and input
 ///
@@ -95,7 +97,20 @@ pub(super) async fn run_active_session(
         None => (None, None),
     };
 
+    // The last monitor layout sent and not yet applied; see `resize_watch`.
+    let mut resize_watch: Option<ResizeWatch> = None;
+
     loop {
+        // Both a reactivation and a graphics reset replace `image`, so its size
+        // tells whether the server applied the layout, whichever path it took.
+        if let Some(watch) = resize_watch
+            && watch.verdict(image_size(&image), Instant::now()) == ResizeVerdict::Applied
+        {
+            tracing::debug!(requested = ?watch.requested(), "Server applied the monitor layout");
+            resize_watch = None;
+        }
+        let resize_deadline = resize_watch.map(|watch| watch.deadline());
+
         // Check shutdown signal
         if shutdown_signal.load(Ordering::SeqCst) {
             if let Ok(frames) = active_stage.graceful_shutdown() {
@@ -121,6 +136,23 @@ pub(super) async fn run_active_session(
                         && let Some(sink) = slot.as_mut()
                     {
                         sink(packet);
+                    }
+                } else if let RdpClientCommand::SetDesktopSize { width, height, scale_percent } = cmd {
+                    // Sent here rather than in `process_command` so the layout
+                    // can be watched: a server that ignores it would otherwise
+                    // leave the old desktop size with black bars around it.
+                    if super::commands::send_desktop_size(
+                        &mut active_stage,
+                        &mut writer,
+                        &event_tx,
+                        width,
+                        height,
+                        scale_percent,
+                    )
+                    .await
+                    {
+                        resize_watch =
+                            ResizeWatch::arm((width, height), image_size(&image), Instant::now());
                     }
                 } else if process_command(
                     cmd,
@@ -206,10 +238,44 @@ pub(super) async fn run_active_session(
             _ = clipboard_timeouts.tick() => {
                 super::commands::drive_clipboard_timeouts(&mut active_stage, &mut writer).await;
             }
+
+            // Branch 5: a monitor layout the server has not applied in time.
+            () = sleep_until_deadline(resize_deadline) => {
+                if let Some(watch) = resize_watch.take()
+                    && watch.verdict(image_size(&image), Instant::now()) == ResizeVerdict::Ignored
+                {
+                    let (width, height) = watch.requested();
+                    tracing::info!(
+                        protocol = "rdp",
+                        width,
+                        height,
+                        "Server did not apply the monitor layout — falling back to reconnect"
+                    );
+                    let _ = event_tx.send(RdpClientEvent::DisplayControlUnavailable {
+                        width,
+                        height,
+                        layout_ignored: true,
+                    });
+                }
+            }
         }
     }
 
     Ok(())
+}
+
+/// The session image's size, the desktop size the server last set.
+fn image_size(image: &DecodedImage) -> (u16, u16) {
+    (image.width(), image.height())
+}
+
+/// Sleeps until `deadline`, or forever when there is none, so the `select!`
+/// branch only fires while a layout is being watched.
+async fn sleep_until_deadline(deadline: Option<Instant>) {
+    match deadline {
+        Some(deadline) => tokio::time::sleep_until(tokio::time::Instant::from_std(deadline)).await,
+        None => std::future::pending().await,
+    }
 }
 
 /// Answers the shared-folder change notifications the directory watcher has

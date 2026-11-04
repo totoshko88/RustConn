@@ -152,38 +152,9 @@ pub(super) async fn process_command<W: FramedWrite>(
             height,
             scale_percent,
         } => {
-            // Build the monitor layout ourselves with an explicit Landscape
-            // orientation rather than calling `ActiveStage::encode_resize`.
-            // `encode_resize` goes through
-            // `DisplayControlMonitorLayout::new_single_primary_monitor`, which
-            // derives the orientation from the aspect ratio — Portrait (90°)
-            // whenever `width < height`. A tall-but-not-rotated window (a narrow
-            // embedded pane, e.g. 798x988) then tells the server its monitor is
-            // rotated 90°. A real desktop server ignores the invalid rotation
-            // or applies it wrong: xrdp kept the old resolution and the pane
-            // showed black bars instead of resizing. The GTK widget is never
-            // rotated, so the monitor is always Landscape; only the pixel size
-            // changes.
-            match build_primary_monitor_layout(u32::from(width), u32::from(height), scale_percent)
-                .and_then(|layout| active_stage.encode_monitor_layout(&layout))
-            {
-                Some(Ok(frame)) => {
-                    let _ = writer.write_all(&frame).await;
-                    tracing::debug!("Resolution change requested: {}x{}", width, height);
-                }
-                Some(Err(e)) => {
-                    tracing::warn!("Failed to encode resize request: {}", e);
-                }
-                None => {
-                    tracing::debug!(
-                        "Display Control not available for resize {}x{} — signaling GUI for reconnect",
-                        width,
-                        height
-                    );
-                    let _ =
-                        event_tx.send(RdpClientEvent::DisplayControlUnavailable { width, height });
-                }
-            }
+            // The session loop sends layouts itself so it can watch them
+            // (`send_desktop_size`); this arm only keeps the match total.
+            send_desktop_size(active_stage, writer, event_tx, width, height, scale_percent).await;
         }
         RdpClientCommand::RefreshScreen => {
             // Ask the server to redraw the whole desktop via a Refresh Rect PDU
@@ -384,6 +355,62 @@ pub(super) async fn process_command<W: FramedWrite>(
         }
     }
     Ok(false)
+}
+
+/// Sends a monitor layout of `width`×`height` over the Display Control channel.
+///
+/// Returns `true` when the layout went out, so the caller can watch for the
+/// server applying it. When the channel is not open the GUI is told with
+/// [`RdpClientEvent::DisplayControlUnavailable`] and falls back to a reconnect.
+pub(super) async fn send_desktop_size<W: FramedWrite>(
+    active_stage: &mut ActiveStage,
+    writer: &mut W,
+    event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
+    width: u16,
+    height: u16,
+    scale_percent: Option<u32>,
+) -> bool {
+    // Build the monitor layout ourselves with an explicit Landscape
+    // orientation rather than calling `ActiveStage::encode_resize`.
+    // `encode_resize` goes through
+    // `DisplayControlMonitorLayout::new_single_primary_monitor`, which
+    // derives the orientation from the aspect ratio — Portrait (90°)
+    // whenever `width < height`. A tall-but-not-rotated window (a narrow
+    // embedded pane, e.g. 798x988) then tells the server its monitor is
+    // rotated 90°. A real desktop server ignores the invalid rotation
+    // or applies it wrong: xrdp kept the old resolution and the pane
+    // showed black bars instead of resizing. The GTK widget is never
+    // rotated, so the monitor is always Landscape; only the pixel size
+    // changes.
+    match build_primary_monitor_layout(u32::from(width), u32::from(height), scale_percent)
+        .and_then(|layout| active_stage.encode_monitor_layout(&layout))
+    {
+        Some(Ok(frame)) => {
+            if let Err(e) = writer.write_all(&frame).await {
+                tracing::warn!("Failed to send resize request: {}", e);
+                return false;
+            }
+            tracing::debug!("Resolution change requested: {}x{}", width, height);
+            true
+        }
+        Some(Err(e)) => {
+            tracing::warn!("Failed to encode resize request: {}", e);
+            false
+        }
+        None => {
+            tracing::debug!(
+                "Display Control not available for resize {}x{} — signaling GUI for reconnect",
+                width,
+                height
+            );
+            let _ = event_tx.send(RdpClientEvent::DisplayControlUnavailable {
+                width,
+                height,
+                layout_ignored: false,
+            });
+            false
+        }
+    }
 }
 
 /// Maps RDP button numbers to `ironrdp_input::MouseButton`.
