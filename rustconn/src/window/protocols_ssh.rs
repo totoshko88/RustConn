@@ -2122,10 +2122,10 @@ pub fn reconnect_ssh_in_place(
             let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
                 return;
             };
-            let text = uses_jump_host
-                .then(|| notebook_clone.get_terminal_text(session_id))
-                .flatten();
-            if super::protocols::ssh_connection_established(row, uses_jump_host, text.as_deref()) {
+            // Counted from below the reconnect banner — see
+            // `ssh_reconnect_established`.
+            let output = notebook_clone.get_connection_output(session_id);
+            if super::protocols::ssh_reconnect_established(row, uses_jump_host, output.as_deref()) {
                 sidebar_clone.increment_session_count(&connection_id_str);
                 session_connected_clone.set(true);
             }
@@ -2171,17 +2171,15 @@ pub fn reconnect_ssh_in_place(
                 let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
                     return;
                 };
-                // See the initial-connect path and `ssh_connection_established`:
-                // don't open the monitor for a jump-chain session whose terminal
-                // has not really established — the accept-new probe could
-                // otherwise show live data for a session that never came up.
-                let text = mon_uses_jump_host
-                    .then(|| notebook_clone.get_terminal_text(session_id))
-                    .flatten();
-                if !super::protocols::ssh_connection_established(
+                // The sidebar verdict above (`ssh_reconnect_established`): don't
+                // open the monitor for a session whose terminal has not really
+                // established — the accept-new probe could otherwise show live
+                // data for a session that never came up.
+                let output = notebook_clone.get_connection_output(session_id);
+                if !super::protocols::ssh_reconnect_established(
                     row,
                     mon_uses_jump_host,
-                    text.as_deref(),
+                    output.as_deref(),
                 ) {
                     return;
                 }

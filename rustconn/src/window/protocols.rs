@@ -897,6 +897,37 @@ pub(super) fn ssh_connection_established(
     text.is_some_and(|t| !contains_ssh_failure(t) && ends_with_shell_prompt(t))
 }
 
+/// Whether an SSH in-place reconnect (`reconnect_ssh_in_place`) is established.
+///
+/// The reconnect variant of [`ssh_connection_established`], shared by the
+/// reconnect's sidebar flip and its deferred monitoring start. `cursor_row` and
+/// `output` count from just below RustConn's reconnect banner
+/// (`TerminalNotebook::display_reconnect_banner`), so the fresh-connect
+/// threshold [`SSH_ESTABLISHED_MIN_ROW`], which was met partly by that banner,
+/// does not apply: a quiet login that prints only a prompt sits on row 0.
+///
+/// - Neither path is established while `output` holds a known SSH failure, or
+///   while it is `None` (unreadable, or the banner not processed yet); the
+///   caller's closure re-runs on the next output.
+/// - Direct connection: established once the new output reaches a full line
+///   (`cursor_row > 0`) or ends on a shell prompt.
+/// - Jump-host connection: established only on a shell prompt, as on a fresh
+///   connect; `output` excludes the kept scrollback, so a prompt or an error
+///   from the previous session is not read again.
+pub(super) fn ssh_reconnect_established(
+    cursor_row: i64,
+    uses_jump_host: bool,
+    output: Option<&str>,
+) -> bool {
+    let Some(text) = output else {
+        return false;
+    };
+    if contains_ssh_failure(text) {
+        return false;
+    }
+    ends_with_shell_prompt(text) || (!uses_jump_host && cursor_row > 0)
+}
+
 /// Failure messages the non-SSH clients of an in-place reconnect print before
 /// they exit: the Zero Trust CLIs, telnet, picocom, kubectl and mosh. Matched
 /// case-insensitively, like [`SSH_FAILURE_PATTERNS`], which also apply (mosh,
@@ -3367,6 +3398,67 @@ mod established_tests {
         assert!(!ends_with_shell_prompt("Welcome to Ubuntu 22.04"));
         assert!(!ends_with_shell_prompt("System information as of now"));
         assert!(!ends_with_shell_prompt(""));
+    }
+}
+
+#[cfg(test)]
+mod ssh_reconnect_established_tests {
+    //! The SSH in-place reconnect verdict. Row and output count from below the
+    //! reconnect banner, so they hold only what the new ssh process printed.
+    use super::ssh_reconnect_established;
+
+    #[test]
+    fn prompt_only_direct_reconnect_is_established() {
+        // Key auth, no MOTD, no last-login line: the prompt alone, on row 0.
+        assert!(ssh_reconnect_established(0, false, Some("ubuntu@host:~$ ")));
+    }
+
+    #[test]
+    fn direct_reconnect_with_a_full_line_is_established() {
+        let output = "Last login: Tue Nov  4 14:00:00 2025\nubuntu@host:~$ ";
+        assert!(ssh_reconnect_established(1, false, Some(output)));
+    }
+
+    #[test]
+    fn direct_reconnect_with_nothing_printed_is_not_established() {
+        assert!(!ssh_reconnect_established(0, false, Some("")));
+        // A password or host-key question is not a prompt.
+        assert!(!ssh_reconnect_established(
+            0,
+            false,
+            Some("ubuntu@host's password: ")
+        ));
+    }
+
+    #[test]
+    fn ssh_failure_line_is_not_established() {
+        for output in [
+            "ssh: connect to host example.com port 22: Connection refused\n",
+            "Connection reset by 192.0.2.1 port 22\n",
+        ] {
+            assert!(
+                !ssh_reconnect_established(1, false, Some(output)),
+                "treated as established: {output}"
+            );
+            assert!(
+                !ssh_reconnect_established(1, true, Some(output)),
+                "treated as established through a jump host: {output}"
+            );
+        }
+    }
+
+    #[test]
+    fn unreadable_or_pending_output_fails_closed() {
+        assert!(!ssh_reconnect_established(5, false, None));
+        assert!(!ssh_reconnect_established(5, true, None));
+    }
+
+    #[test]
+    fn jump_host_reconnect_needs_a_prompt() {
+        let banner = "Welcome to the bastion\n\n";
+        assert!(!ssh_reconnect_established(2, true, Some(banner)));
+        let output = "Welcome to the bastion\n\nubuntu@target:~$ ";
+        assert!(ssh_reconnect_established(2, true, Some(output)));
     }
 }
 
