@@ -77,14 +77,14 @@ include `cargo test --workspace`. It writes everything to `target/verify.log`.
 
 These are structural, not stylistic, and they are the ones most often missed.
 
-**Crate boundaries.** There are seven crates and only `rustconn` may import
+**Crate boundaries.** There are eight crates and only `rustconn` may import
 `gtk4`, `adw`, or `vte4`. `rustconn-core` is the domain logic and
 `rustconn-cli` sits on top of it; neither may touch a GUI crate. Business logic
 belongs in core even when the bug was reported against a dialog.
 
-**`unsafe` lives in exactly four crates.** `rustconn-pty-sys`,
-`rustconn-locale-sys`, `rustconn-env-sys`, and `rustconn-dock-sys` are the
-isolated FFI helpers, and the workspace denies `unsafe_code` everywhere else.
+**`unsafe` lives in exactly five crates.** `rustconn-pty-sys`,
+`rustconn-locale-sys`, `rustconn-env-sys`, `rustconn-dock-sys`, and
+`rustconn-lock-sys` are the isolated FFI helpers, and the workspace denies `unsafe_code` everywhere else.
 New FFI gets a new `-sys` crate rather than an exception where the caller lives.
 
 **Credentials.** Passwords, keys, and tokens are `secrecy::SecretString`, never

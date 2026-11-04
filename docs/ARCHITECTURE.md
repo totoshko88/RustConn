@@ -102,7 +102,7 @@ lint in the main crates. New FFI gets a new `-sys` crate; it never earns an
 exception where the caller lives.
 
 The mechanism is `unsafe_code = "deny"` in `[workspace.lints.rust]`, plus a
-crate-level `#![expect(unsafe_code, reason = "…")]` in each of the three helpers.
+crate-level `#![expect(unsafe_code, reason = "…")]` in each helper.
 It used to be `forbid`, which cannot be overridden at any level — so the helpers
 could not inherit the workspace lint table and each declared its own
 `[lints.rust]` instead. Because a crate-local `[lints]` table *replaces* the
@@ -197,6 +197,19 @@ be the worse failure. `rustconn/src/app.rs` calls it once from `run()`, after
 `macos_bundle_resources_dir()` reports no bundle — inside a real one the `.icns`
 is strictly better, since it carries every size from 16px to 1024px and preserves
 a custom icon a user pasted on in Finder.
+
+`rustconn-lock-sys` is the fifth, with the same shape as `rustconn-dock-sys`:
+its objc2/AppKit dependencies are limited to macOS, the crate itself is not. It
+observes `com.apple.screenIsLocked` on the distributed notification centre (with
+immediate delivery, so a lock while RustConn is in the background is not held
+back) and `NSWorkspaceWillSleepNotification` on the workspace notification
+centre, and reports each as a `LockSignal`. The observers are removed when the
+returned guard drops, the main-thread rule is proved by `MainThreadMarker` and
+reported as an outcome, and a panic in the handler is caught before it can unwind
+into Foundation. `rustconn/src/app.rs` maps each signal onto a
+`rustconn-core::lock_events::LockEvent` and passes it to `lock_events::notify`,
+which queues it for a dispatch thread, so the handler returns to the main loop at
+once. `rustconn-core` does not depend on this crate.
 
 ### Who Owns a Session's PTY
 

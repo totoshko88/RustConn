@@ -4,7 +4,7 @@ Sanctioned FFI crate (M-UNSAFE). Isolated `libc` helpers for the PTY layer:
 `setsid` + `TIOCSCTTY` in a `pre_exec` hook, `openpty(2)`, `TIOCSWINSZ`,
 `poll(2)` with a timeout, and a close-on-exec `dup`.
 
-**`unsafe` is allowed here and nowhere else in the workspace except the three
+**`unsafe` is allowed here and nowhere else in the workspace except the four
 sibling `-sys` crates.** It is re-opened by the crate-level
 `#![expect(unsafe_code, reason = "…")]` in `lib.rs` — `expect`, not `allow`, so
 that if the last `unsafe` block ever goes away the compiler says so, and the crate
