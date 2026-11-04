@@ -643,10 +643,13 @@ impl SshAgentManager {
     /// The agent's identities over the native wire protocol, or `None` to make
     /// the caller fall back to `ssh-add -l`.
     ///
-    /// `Some(status)` is a complete answer with `running: true`; `None` means
-    /// the native client could not talk to this agent (an unexpected socket, a
-    /// non-standard implementation, an I/O timeout) and the shell-out path
-    /// should be tried instead, so behaviour is never worse than before (A1).
+    /// `Some(status)` is a complete answer: `running: true` with the keys, or
+    /// `running: false` when the agent did not answer in time, which is what
+    /// an `ssh-add -l` against the same agent would end in too, only after
+    /// another wait. `None` means the native client could not talk to this
+    /// agent for another reason (an unexpected socket, a non-standard
+    /// implementation) and the shell-out path should be tried instead, so
+    /// behaviour is never worse than before (A1).
     #[cfg(unix)]
     fn native_status(socket_path: &str) -> Option<AgentStatus> {
         match wire::request_identities(socket_path) {
@@ -655,6 +658,17 @@ impl SshAgentManager {
                 socket_path: Some(socket_path.to_string()),
                 keys,
             }),
+            Err(e) if is_timeout(&e) => {
+                tracing::debug!(
+                    error = %e,
+                    "ssh-agent did not answer in time; not falling back to ssh-add -l"
+                );
+                Some(AgentStatus {
+                    running: false,
+                    socket_path: Some(socket_path.to_string()),
+                    keys: Vec::new(),
+                })
+            }
             Err(e) => {
                 tracing::debug!(
                     error = %e,
@@ -667,8 +681,10 @@ impl SshAgentManager {
 
     /// Gets the current agent status with a timeout.
     ///
-    /// Asks the agent over its socket first. When that fails, spawns `ssh-add
-    /// -l` and waits up to `timeout` for it to complete. If the process does
+    /// Asks the agent over its socket first. When the agent does not answer
+    /// that in time, it is reported as not running without a second wait.
+    /// When the native query fails otherwise, spawns `ssh-add -l` and waits up
+    /// to `timeout` for it to complete. If the process does
     /// not finish in time it is killed and reaped, and the agent is reported as
     /// not running. This prevents the caller from hanging
     /// when the system ssh-agent is broken or launchd-throttled (common on
@@ -1029,8 +1045,9 @@ impl SshAgentManager {
     ///
     /// Asks the agent for its identities over the socket and fingerprints each
     /// blob in-process; no process runs. Only when the agent cannot be asked
-    /// that way does `ssh-add -L` run, bounded by [`AGENT_COMMAND_TIMEOUT`],
-    /// and its lines are fingerprinted in-process too.
+    /// that way, for a reason other than a timeout, does `ssh-add -L` run,
+    /// bounded by [`AGENT_COMMAND_TIMEOUT`], and its lines are fingerprinted
+    /// in-process too.
     /// This is useful when you need to specify a particular agent key for SSH connection.
     ///
     /// # Arguments
@@ -1045,6 +1062,8 @@ impl SshAgentManager {
     ///
     /// Returns `AgentError::NotRunning` if no socket is configured.
     /// Returns `AgentError::KeyNotFound` if no key matches the fingerprint.
+    /// Returns `AgentError::Io` (`TimedOut` or `WouldBlock`) if the agent did
+    /// not answer the socket in time, or if `ssh-add -L` did not finish.
     pub fn get_public_key_by_fingerprint(&self, fingerprint: &str) -> AgentResult<String> {
         let socket_path = self.socket_path.as_ref().ok_or(AgentError::NotRunning)?;
 
@@ -1059,6 +1078,9 @@ impl SshAgentManager {
                     None => Err(AgentError::KeyNotFound(fingerprint.to_string())),
                 };
             }
+            // An agent that did not answer the socket in time would not
+            // answer `ssh-add -L` either: fail now rather than wait again.
+            Err(e) if is_timeout(&e) => return Err(e),
             Err(e) => tracing::debug!(
                 error = %e,
                 "native ssh-agent query failed; falling back to ssh-add -L"
@@ -1320,6 +1342,22 @@ pub(crate) fn run_agent_command(
         .stderr(Stdio::piped());
     let child = cmd.spawn()?;
     Ok(crate::proc::wait_bounded(child, budget, what)?.output())
+}
+
+/// Whether a native agent request failed because the agent did not answer in
+/// time: the connect's `TimedOut`, or a read or write timeout, which a Unix
+/// socket reports as `WouldBlock`.
+///
+/// An agent in that state would not answer an `ssh-add` fallback either, so
+/// callers skip the fallback and do not make the caller (often the GTK
+/// thread) wait a second time.
+#[cfg(unix)]
+fn is_timeout(error: &AgentError) -> bool {
+    matches!(
+        error,
+        AgentError::Io(e)
+            if matches!(e.kind(), std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock)
+    )
 }
 
 /// Removes the key with public blob `blob` from the agent at `socket_path`
@@ -1649,6 +1687,39 @@ mod native_path_tests {
         let state = state.lock().unwrap();
         assert!(state.0.is_empty());
         assert_eq!(state.1, vec![18, 18]);
+    }
+
+    /// An agent that takes the connection but never answers is a timeout, and
+    /// neither query then falls back to `ssh-add`, which would wait on the
+    /// same agent for another [`AGENT_COMMAND_TIMEOUT`].
+    #[test]
+    fn a_silent_agent_is_not_asked_again_through_ssh_add() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("agent.sock");
+        // Never accepts: the connect lands in the listen queue, the request
+        // fits in the socket buffer, and no reply ever comes.
+        let _listener = UnixListener::bind(&path).unwrap();
+        let socket = path.to_string_lossy().into_owned();
+
+        let started = std::time::Instant::now();
+        let status = {
+            let socket = socket.clone();
+            std::thread::spawn(move || SshAgentManager::new(Some(socket)).get_status())
+        };
+        let lookup = SshAgentManager::new(Some(socket)).get_public_key_by_fingerprint("SHA256:x");
+        let status = status.join().unwrap().unwrap();
+        let elapsed = started.elapsed();
+
+        assert!(!status.running);
+        assert!(
+            matches!(&lookup, Err(e) if is_timeout(e)),
+            "expected a timeout, got {lookup:?}"
+        );
+        // One 3 s wire timeout, not that plus an `ssh-add` budget.
+        assert!(
+            elapsed < AGENT_COMMAND_TIMEOUT,
+            "took {elapsed:?}, so an ssh-add fallback ran"
+        );
     }
 
     /// The fallback `ssh-add` paths run bounded: a missing binary or agent
