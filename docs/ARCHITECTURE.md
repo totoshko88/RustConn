@@ -6,7 +6,7 @@ This document describes the internal architecture of RustConn for contributors a
 
 ## Crate Structure
 
-RustConn is a seven-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
+RustConn is an eight-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
 
 ```
 rustconn/            # GTK4 GUI application
@@ -16,6 +16,7 @@ rustconn-pty-sys/    # Isolated FFI helper (PTY + controlling terminal)
 rustconn-locale-sys/ # Isolated FFI helper (startup setlocale)
 rustconn-env-sys/    # Isolated FFI helper (startup GSK_RENDERER write)
 rustconn-dock-sys/   # Isolated FFI helper (macOS Dock tile image)
+rustconn-lock-sys/   # Isolated FFI helper (macOS screen lock + sleep notifications)
 ```
 
 ### Dependency Graph
@@ -37,6 +38,7 @@ rustconn-dock-sys/   # Isolated FFI helper (macOS Dock tile image)
                        │  rustconn-locale-sys │
                        │  rustconn-env-sys    │
                        │  rustconn-dock-sys   │
+                       │  rustconn-lock-sys   │
                        │    (FFI, no GUI)     │
                        └──────────────────────┘
 ```
@@ -55,6 +57,7 @@ Only `rustconn` depends on the `-sys` crates. `rustconn-cli` depends on
 | `rustconn-locale-sys` | FFI helper: the startup `setlocale` call, refused once this program spawns a thread of its own, once a call arrives from a second thread, or once the startup window is sealed ([#267](https://github.com/totoshko88/RustConn/issues/267)) | `gettext-rs` only — NO GTK |
 | `rustconn-env-sys` | FFI helper: the startup `GSK_RENDERER` and `LANGUAGE` writes, guarded the same way. Neither GTK nor gettext offers an API, so the environment is the only interface and it has to be written before `gtk_init` ([#274](https://github.com/totoshko88/RustConn/issues/274), [#158](https://github.com/totoshko88/RustConn/issues/158)) | No dependencies — NO GTK |
 | `rustconn-dock-sys` | FFI helper: `-[NSApplication setApplicationIconImage:]`, so the macOS Dock shows RustConn's icon when no `.app` bundle is behind the process. GDK exposes no Dock API and `set_icon_name` is a no-op on its macOS backend | `objc2` + AppKit bindings, macOS-gated — NO GTK |
+| `rustconn-lock-sys` | FFI helper: observes the macOS screen lock (`com.apple.screenIsLocked`, delivered immediately even in the background) and `NSWorkspaceWillSleepNotification`, which the GUI maps onto `rustconn-core::lock_events` so the SSH keys RustConn added are removed there as on Linux. `rustconn-core` does not depend on it | `objc2` + AppKit bindings, macOS-gated — NO GTK |
 
 **Decision Rule:** "Does this code need GTK widgets?" → No → `rustconn-core` / Yes → `rustconn`
 

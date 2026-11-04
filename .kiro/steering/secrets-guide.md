@@ -63,9 +63,11 @@ You are editing a file that handles credentials.
   suspend (`lock_events`). The packages grant no extra permission for the
   listener: the Flatpak sees lock and suspend only after the user's opt-in
   `flatpak override` (`docs/INSTALL.md`), the Snap sees lock through `desktop`
-  and never suspend. Exit and the 12 h lifetime are the only bounds that hold
-  everywhere; do not add sandbox permissions for the listener without the
-  maintainer.
+  and never suspend. On macOS the source is `rustconn-lock-sys`
+  (`com.apple.screenIsLocked`, `NSWorkspaceWillSleepNotification`), bridged in
+  `app.rs` into `lock_events::notify`; sleep does not wait for the handlers
+  there. Exit and the 12 h lifetime are the only bounds that hold everywhere; do
+  not add sandbox permissions for the listener without the maintainer.
 - The automatic `ssh-add` (`add_own_key`) is bounded (`proc::wait_bounded`),
   has no stdin, no host `SSH_ASKPASS` and `SSH_ASKPASS_REQUIRE=never` (else
   OpenSSH falls back to its compiled-in askpass when `DISPLAY`/`WAYLAND_DISPLAY`

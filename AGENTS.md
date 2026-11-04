@@ -62,8 +62,8 @@ pinned in `rust-toolchain.toml`; MSRV is `rust-version` in `Cargo.toml`.
 
 ## Crate boundaries — the rule most often broken
 
-Seven crates. `rustconn` alone may import `gtk4`/`adw`/`vte4`; `rustconn-core`
-and `rustconn-cli` may not. The four `rustconn-*-sys` crates are isolated FFI and
+Eight crates. `rustconn` alone may import `gtk4`/`adw`/`vte4`; `rustconn-core`
+and `rustconn-cli` may not. The five `rustconn-*-sys` crates are isolated FFI and
 the only legal home for `unsafe` (`unsafe_code = "deny"`, re-opened per helper).
 New FFI gets a new `-sys` crate — never an exception where the caller lives, and
 never a macOS-only crate. A pre-write hook blocks both violations; do not rely on it.
