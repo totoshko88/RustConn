@@ -49,11 +49,6 @@ finish-args:
   - --talk-name=org.keepassxc.KeePassXC.BrowserServer
   # System tray (StatusNotifierItem)
   - --talk-name=org.kde.StatusNotifierWatcher
-  # Screen lock (ScreenSaver ActiveChanged) and suspend (login1 PrepareForSleep
-  # plus a delay inhibitor): remove the SSH keys RustConn added to the agent
-  - --talk-name=org.freedesktop.ScreenSaver
-  - --talk-name=org.gnome.ScreenSaver
-  - --system-talk-name=org.freedesktop.login1
   # Device access (serial ports for picocom require --device=all; no granular option exists)
   - --device=all
   # Host shell access: flatpak-spawn --host needs to talk to the Flatpak session helper
