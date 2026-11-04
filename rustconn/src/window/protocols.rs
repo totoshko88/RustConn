@@ -855,16 +855,85 @@ const SSH_ESTABLISHED_MIN_ROW: i64 = 2;
 ///
 /// The heuristic is deliberately loose — the last non-blank line ending in one of
 /// the common prompt terminators (`$`, `#`, `%`, `>`), optionally followed by a
-/// space or cursor. It is only ever consulted for jump-host connections (a direct
-/// connection is already gated by the pre-connect port check) and only alongside
-/// a failure-pattern scan, so a false positive is bounded by that scan and a false
-/// negative simply defers the decision to the next output line.
+/// space or cursor. A fresh connect consults it only for jump-host connections (a
+/// direct connection is already gated by the pre-connect port check); the in-place
+/// reconnect verdicts ([`reconnect_established`]) consult it for every connection.
+/// It is always used alongside a failure-pattern scan, so a false positive is
+/// bounded by that scan and a false negative simply defers the decision to the
+/// next output line.
 fn ends_with_shell_prompt(text: &str) -> bool {
-    let Some(last) = text.lines().rev().find(|l| !l.trim().is_empty()) else {
+    last_non_blank_line(text).is_some_and(is_shell_prompt_line)
+}
+
+/// The last line of `text` that holds anything but whitespace.
+fn last_non_blank_line(text: &str) -> Option<&str> {
+    text.lines().rev().find(|l| !l.trim().is_empty())
+}
+
+/// Whether one line looks like an interactive shell prompt; see
+/// [`ends_with_shell_prompt`].
+fn is_shell_prompt_line(line: &str) -> bool {
+    matches!(line.trim_end().chars().last(), Some('$' | '#' | '%' | '>'))
+}
+
+/// Whether one line is a question for a password, a key passphrase or a
+/// one-time code: OpenSSH's `user@host's password: `, `Enter passphrase for
+/// key '…': `, `Verification code: `, or a telnet `Password:`.
+fn is_credential_question(line: &str) -> bool {
+    let lower = line.trim_end().to_lowercase();
+    lower.ends_with(':')
+        && ["password", "passphrase", "verification code"]
+            .iter()
+            .any(|word| lower.contains(word))
+}
+
+/// The part of `text` after its last shell prompt or credential question.
+///
+/// The output a reconnect verdict reads only grows, so a failure line anywhere
+/// in it would be sticky: OpenSSH prints `Permission denied, please try again.`
+/// after a rejected password and then asks again, and a successful retry must
+/// still count. Every prompt or question means the client went on after what
+/// came before it, so only what follows the last one can be the client's final
+/// word. A client that fails for good prints its error and exits, with no
+/// prompt after it. Scanning only this tail also bounds the work the detector
+/// repeats on every change.
+fn output_after_last_prompt(text: &str) -> &str {
+    let mut tail_start = 0;
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        offset += line.len();
+        if is_shell_prompt_line(line) || is_credential_question(line) {
+            tail_start = offset;
+        }
+    }
+    &text[tail_start..]
+}
+
+/// The one rule behind both in-place reconnect verdicts
+/// ([`ssh_reconnect_established`] and [`reconnect_output_established`]).
+///
+/// `output` counts from below the reconnect banner. `None` fails closed. A
+/// failure (`is_failure`) in the output after the last prompt or credential
+/// question means not established. Otherwise a trailing shell prompt means
+/// established, on any row. Without a prompt, `row_suffices` decides whether
+/// one full line of output (`cursor_row > 0`) is enough, unless the client is
+/// waiting on a credential question.
+fn reconnect_established(
+    cursor_row: i64,
+    output: Option<&str>,
+    row_suffices: bool,
+    is_failure: fn(&str) -> bool,
+) -> bool {
+    let Some(text) = output else {
         return false;
     };
-    let trimmed = last.trim_end();
-    matches!(trimmed.chars().last(), Some('$' | '#' | '%' | '>'))
+    if is_failure(output_after_last_prompt(text)) {
+        return false;
+    }
+    if ends_with_shell_prompt(text) {
+        return true;
+    }
+    row_suffices && cursor_row > 0 && !last_non_blank_line(text).is_some_and(is_credential_question)
 }
 
 /// Whether an SSH session should be treated as established from its terminal
@@ -906,11 +975,17 @@ pub(super) fn ssh_connection_established(
 /// threshold [`SSH_ESTABLISHED_MIN_ROW`], which was met partly by that banner,
 /// does not apply: a quiet login that prints only a prompt sits on row 0.
 ///
-/// - Neither path is established while `output` holds a known SSH failure, or
-///   while it is `None` (unreadable, or the banner not processed yet); the
-///   caller's closure re-runs on the next output.
-/// - Direct connection: established once the new output reaches a full line
-///   (`cursor_row > 0`) or ends on a shell prompt.
+/// The rule is [`reconnect_established`], with [`contains_ssh_failure`]:
+///
+/// - Neither path is established while `output` is `None` (unreadable, or the
+///   banner not processed yet), or while a known SSH failure follows the last
+///   prompt or password question; the caller's closure re-runs on the next
+///   output. A `Permission denied, please try again.` before a retry that
+///   succeeds does not count.
+/// - A trailing shell prompt means established, also on row 0.
+/// - Direct connection without a prompt: established once the new output
+///   reaches a full line (`cursor_row > 0`) and is not waiting on a password
+///   or passphrase question.
 /// - Jump-host connection: established only on a shell prompt, as on a fresh
 ///   connect; `output` excludes the kept scrollback, so a prompt or an error
 ///   from the previous session is not read again.
@@ -919,45 +994,60 @@ pub(super) fn ssh_reconnect_established(
     uses_jump_host: bool,
     output: Option<&str>,
 ) -> bool {
-    let Some(text) = output else {
-        return false;
-    };
-    if contains_ssh_failure(text) {
-        return false;
-    }
-    ends_with_shell_prompt(text) || (!uses_jump_host && cursor_row > 0)
+    reconnect_established(cursor_row, output, !uses_jump_host, contains_ssh_failure)
 }
 
 /// Failure messages the non-SSH clients of an in-place reconnect print before
 /// they exit: the Zero Trust CLIs, telnet, picocom, kubectl and mosh. Matched
-/// case-insensitively, like [`SSH_FAILURE_PATTERNS`], which also apply (mosh,
-/// gcloud IAP and several brokers run OpenSSH underneath).
+/// case-insensitively anywhere in a line, like [`SSH_FAILURE_PATTERNS`], which
+/// also apply (mosh, gcloud IAP and several brokers run OpenSSH underneath).
+/// Each one is specific to the client that prints it; a generic word such as
+/// `error:` goes in [`CLIENT_FAILURE_LINE_STARTS`] instead, so the first output
+/// of a working session cannot match it by accident.
 const CLIENT_FAILURE_PATTERNS: &[&str] = &[
+    // AWS CLI without the Session Manager plugin.
+    "SessionManagerPlugin is not found",
+    // telnet: "Unable to connect to remote host", "could not resolve ..."
+    "Unable to connect to remote host",
+    "could not resolve",
+    "Name or service not known",
+    "Did not find mosh server startup message",
+];
+
+/// Failure messages that count only at the start of a line (after leading
+/// whitespace), matched case-insensitively.
+const CLIENT_FAILURE_LINE_STARTS: &[&str] = &[
     // AWS CLI: "An error occurred (TargetNotConnected) when calling ..."
-    "An error occurred",
-    // "SessionManagerPlugin is not found", "Error from server (NotFound)"
-    "is not found",
+    "An error occurred (",
+    // kubectl: "Error from server (NotFound): ...", "error: unable to upgrade ..."
     "Error from server",
     // kubectl "error: ...", gcloud and az "ERROR: ..."
     "error:",
     // picocom: "FATAL: cannot open /dev/ttyUSB0: No such file or directory"
     "FATAL:",
-    "No such file or directory",
-    // telnet: "Unable to connect to remote host", "could not resolve ..."
-    "Unable to connect",
-    "could not resolve",
-    "Name or service not known",
-    "command not found",
-    "Did not find mosh server startup message",
+    // zsh: "zsh: command not found: aws"
+    "zsh: command not found:",
 ];
+
+/// Failure messages that count only at the end of a line, matched
+/// case-insensitively: bash and sh print `bash: aws: command not found`.
+const CLIENT_FAILURE_LINE_ENDS: &[&str] = &[": command not found"];
 
 /// Returns `true` if a client's output contains a known connection failure.
 fn contains_client_failure(text: &str) -> bool {
-    let lower = text.to_lowercase();
     contains_ssh_failure(text)
-        || CLIENT_FAILURE_PATTERNS
-            .iter()
-            .any(|p| lower.contains(&p.to_lowercase()))
+        || text.lines().any(|line| {
+            let lower = line.trim().to_lowercase();
+            CLIENT_FAILURE_PATTERNS
+                .iter()
+                .any(|p| lower.contains(&p.to_lowercase()))
+                || CLIENT_FAILURE_LINE_STARTS
+                    .iter()
+                    .any(|p| lower.starts_with(&p.to_lowercase()))
+                || CLIENT_FAILURE_LINE_ENDS
+                    .iter()
+                    .any(|p| lower.ends_with(&p.to_lowercase()))
+        })
 }
 
 /// Whether an in-place reconnect through [`reconnect_generic_vte_in_place`] is
@@ -965,13 +1055,16 @@ fn contains_client_failure(text: &str) -> bool {
 ///
 /// `cursor_row` and `output` both count from just below RustConn's reconnect
 /// banner (`TerminalNotebook::display_reconnect_banner`), so they describe only
-/// what the new process printed. Established once that is at least one full
-/// line and none of it is a known failure: an SSM reconnect prints "Starting
-/// session…" and a prompt, a failed one prints the CLI's error and exits.
+/// what the new process printed. The rule is the one the SSH reconnect uses
+/// ([`reconnect_established`]), with [`contains_client_failure`]: established
+/// on a trailing shell prompt (also on row 0, as with `kubectl exec -it`), or
+/// once the output is at least one full line, unless a known failure follows
+/// the last prompt or password question. An SSM reconnect prints "Starting
+/// session…" and a prompt; a failed one prints the CLI's error and exits.
 /// `None` output (unreadable, or the banner not processed yet) fails closed;
 /// the detector runs again on the next output.
 pub(super) fn reconnect_output_established(cursor_row: i64, output: Option<&str>) -> bool {
-    cursor_row > 0 && output.is_some_and(|text| !contains_client_failure(text))
+    reconnect_established(cursor_row, output, true, contains_client_failure)
 }
 
 /// Delegates to [`rustconn_core::ssh_tunnel::append_proxy_command_destination`].
@@ -3454,6 +3547,38 @@ mod ssh_reconnect_established_tests {
     }
 
     #[test]
+    fn a_rejected_password_then_a_prompt_is_established() {
+        let output = "Permission denied, please try again.\nuser@host:~$ ";
+        assert!(ssh_reconnect_established(1, false, Some(output)));
+        assert!(ssh_reconnect_established(1, true, Some(output)));
+        let retried = "user@host's password: \nPermission denied, please try again.\n\
+                       user@host's password: \nLast login: Tue Nov  4 14:00:00 2025\n\
+                       user@host:~$ ";
+        assert!(ssh_reconnect_established(4, false, Some(retried)));
+    }
+
+    #[test]
+    fn a_password_asked_again_is_not_established_yet() {
+        let output = "user@host's password: \nPermission denied, please try again.\n\
+                      user@host's password: ";
+        assert!(!ssh_reconnect_established(2, false, Some(output)));
+    }
+
+    #[test]
+    fn a_failure_after_the_last_password_question_is_not_established() {
+        let output = "user@host's password: \n\
+                      user@host: Permission denied (publickey,password).\n";
+        assert!(!ssh_reconnect_established(2, false, Some(output)));
+    }
+
+    #[test]
+    fn a_prompt_then_a_later_failure_is_not_established() {
+        let output = "user@host:~$ \nConnection reset by 192.0.2.1 port 22\n";
+        assert!(!ssh_reconnect_established(2, false, Some(output)));
+        assert!(!ssh_reconnect_established(2, true, Some(output)));
+    }
+
+    #[test]
     fn jump_host_reconnect_needs_a_prompt() {
         let banner = "Welcome to the bastion\n\n";
         assert!(!ssh_reconnect_established(2, true, Some(banner)));
@@ -3477,7 +3602,48 @@ mod reconnect_established_tests {
     #[test]
     fn nothing_printed_yet_is_not_established() {
         assert!(!reconnect_output_established(0, Some("")));
-        assert!(!reconnect_output_established(0, Some("sh-5.2$ ")));
+    }
+
+    #[test]
+    fn a_prompt_on_row_zero_is_established() {
+        // `kubectl exec -it` or a quiet login: the prompt alone, on row 0.
+        assert!(reconnect_output_established(0, Some("sh-5.2$ ")));
+    }
+
+    #[test]
+    fn a_failure_then_a_prompt_is_established() {
+        let output = "Permission denied, please try again.\nuser@host:~$ ";
+        assert!(reconnect_output_established(1, Some(output)));
+    }
+
+    #[test]
+    fn a_prompt_then_a_later_failure_is_not_established() {
+        let output = "sh-5.2$ \nAn error occurred (TargetNotConnected) when calling the \
+                      StartSession operation\n";
+        assert!(!reconnect_output_established(2, Some(output)));
+    }
+
+    #[test]
+    fn a_waiting_password_question_is_not_established_yet() {
+        assert!(!reconnect_output_established(
+            2,
+            Some("Trying 192.0.2.1...\nConnected to host.\nPassword:")
+        ));
+    }
+
+    #[test]
+    fn generic_words_in_normal_output_are_not_failures() {
+        for output in [
+            "Welcome. Last run reported error: none\n",
+            "motd: /etc/motd.d: No such file or directory\n",
+            "the plugin is not found in this list, which is fine\n",
+            "Hint: if a command not found message appears, run setup\n",
+        ] {
+            assert!(
+                reconnect_output_established(1, Some(output)),
+                "treated as a failure: {output}"
+            );
+        }
     }
 
     #[test]
