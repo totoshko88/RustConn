@@ -2256,7 +2256,7 @@ impl TerminalNotebook {
                 fed_at_row,
             }) => (last_line.clone(), *fed_at_row),
         };
-        let first_row = (cursor_row - output_start::BANNER_SEARCH_ROWS).max(0);
+        let first_row = output_start::search_first_row(fed_at_row, cursor_row);
         let col_count = terminal.column_count();
         let rows: Vec<String> = (first_row..=cursor_row)
             .map(|row| {

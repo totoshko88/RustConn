@@ -1012,6 +1012,10 @@ const CLIENT_FAILURE_PATTERNS: &[&str] = &[
     "could not resolve",
     "Name or service not known",
     "Did not find mosh server startup message",
+    // kubectl: "Unable to connect to the server: dial tcp ...: i/o timeout",
+    // "The connection to the server localhost:8080 was refused - ..."
+    "Unable to connect to the server",
+    "The connection to the server",
 ];
 
 /// Failure messages that count only at the start of a line (after leading
@@ -3661,6 +3665,9 @@ mod reconnect_established_tests {
             "Trying 192.0.2.1...\ntelnet: Unable to connect to remote host: Connection refused\n",
             "FATAL: cannot open /dev/ttyUSB0: No such file or directory\n",
             "Error from server (NotFound): pods \"web-0\" not found\n",
+            "Unable to connect to the server: dial tcp 192.0.2.10:6443: i/o timeout\n",
+            "The connection to the server localhost:8080 was refused - did you specify \
+             the right host or port?\n",
             "ssh: connect to host example.com port 22: No route to host\n",
             "aws: command not found\n",
         ] {

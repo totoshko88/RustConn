@@ -55,6 +55,17 @@ pub(super) fn base_without_banner(fed_at_row: i64, cursor_row: i64) -> Option<i6
     (cursor_row - fed_at_row >= BANNER_SEARCH_ROWS).then_some(cursor_row - BANNER_SEARCH_ROWS)
 }
 
+/// The first buffer row searched for the banner.
+///
+/// The search covers at most [`BANNER_SEARCH_ROWS`] rows above the cursor and
+/// never starts above `fed_at_row`, the row the banner was fed on. Everything
+/// above that row is the kept scrollback, so an identical banner left there by
+/// an earlier reconnect cannot be matched before the new one is processed.
+#[must_use]
+pub(super) fn search_first_row(fed_at_row: i64, cursor_row: i64) -> i64 {
+    (cursor_row - BANNER_SEARCH_ROWS).max(fed_at_row).max(0)
+}
+
 /// The last non-blank line of a banner as fed to the terminal.
 ///
 /// The banner is `"{connecting}\r\n{command}\r\n\r\n"`, so this is the command
@@ -129,6 +140,18 @@ mod tests {
             "⚡ Executing: aws ssm start-session --target i-1"
         );
         assert_eq!(banner_last_line("\r\n\r\n"), "");
+    }
+
+    #[test]
+    fn search_never_starts_in_the_kept_scrollback() {
+        // The new banner was fed on row 500 but not processed yet; an older,
+        // identical banner sits on row 450. The search must start at 500.
+        assert_eq!(search_first_row(500, 500), 500);
+        assert_eq!(search_first_row(500, 520), 500);
+        // Far below the banner the window bound takes over again.
+        assert_eq!(search_first_row(500, 900), 700);
+        // A fresh buffer never goes negative.
+        assert_eq!(search_first_row(0, 3), 0);
     }
 
     #[test]
