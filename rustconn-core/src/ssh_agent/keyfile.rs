@@ -30,6 +30,8 @@
 //! base64) and `ring` (already the project's SHA-256), so it builds on every
 //! platform — unlike `wire.rs`, which is `#[cfg(unix)]` for the agent socket.
 
+use zeroize::Zeroizing;
+
 use super::{AgentError, AgentResult};
 
 /// The OpenSSH private-key PEM armour.
@@ -217,8 +219,11 @@ pub(super) struct KeyFileBlobs {
 /// A sibling `<path>.pub` is not read: it is not checked against the private
 /// key, and a stale one names some other key.
 pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
+    // The private section of an unencrypted key is in this file in the clear,
+    // so the text is wiped when it drops.
     let key_file = std::fs::read_to_string(key_path)
         .ok()
+        .map(Zeroizing::new)
         .filter(|contents| detect_format(contents) == KeyFormat::OpenSsh)
         .and_then(|contents| {
             decode_openssh_body(&contents)
@@ -256,8 +261,11 @@ pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
 
 /// The blob of the public-key line in the file at `path` (a `.pub` file), or
 /// `None` when the file cannot be read or is not a public-key line.
+///
+/// Callers pass only a `.pub` path. The text is wiped on drop all the same,
+/// in case a private key is passed by mistake.
 pub(super) fn pub_file_blob(path: &std::path::Path) -> Option<Vec<u8>> {
-    let contents = std::fs::read_to_string(path).ok()?;
+    let contents = Zeroizing::new(std::fs::read_to_string(path).ok()?);
     pub_line_blob(contents.lines().next()?.trim()).ok()
 }
 
@@ -340,7 +348,12 @@ fn detect_format(contents: &str) -> KeyFormat {
 }
 
 /// Base64-decodes the body between the OpenSSH armour lines.
-fn decode_openssh_body(contents: &str) -> AgentResult<Vec<u8>> {
+///
+/// The body holds the private section too, in the clear for an unencrypted
+/// key, so both the base64 text and the decoded bytes are wiped on drop. The
+/// text buffer is sized up front so it never reallocates and leaves an
+/// unwiped copy behind.
+fn decode_openssh_body(contents: &str) -> AgentResult<Zeroizing<Vec<u8>>> {
     let start = contents
         .find(OPENSSH_BEGIN)
         .ok_or_else(|| AgentError::ParseError("not an OpenSSH private key".to_string()))?;
@@ -348,12 +361,12 @@ fn decode_openssh_body(contents: &str) -> AgentResult<Vec<u8>> {
     let end = contents[after_begin..]
         .find(OPENSSH_END)
         .ok_or_else(|| AgentError::ParseError("OpenSSH key is missing its END line".to_string()))?;
-    let b64: String = contents[after_begin..after_begin + end]
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .collect();
+    let armoured = &contents[after_begin..after_begin + end];
+    let mut b64 = Zeroizing::new(String::with_capacity(armoured.len()));
+    b64.extend(armoured.chars().filter(|c| !c.is_whitespace()));
     let body = data_encoding::BASE64
         .decode(b64.as_bytes())
+        .map(Zeroizing::new)
         .map_err(|e| AgentError::ParseError(format!("OpenSSH key base64 is invalid: {e}")))?;
     if !body.starts_with(OPENSSH_MAGIC) {
         return Err(AgentError::ParseError(

@@ -953,10 +953,13 @@ impl SshAgentManager {
         #[cfg(unix)]
         {
             let blobs = keyfile::key_file_blobs(key_path);
+            // A public-key line is read only from a `.pub` path: a legacy PEM
+            // or PKCS#8 private key goes to `ssh-add -d` instead.
+            let is_pub = key_path.extension().is_some_and(|ext| ext == "pub");
             if let Some(blob) = blobs
                 .key_file
                 .clone()
-                .or_else(|| keyfile::pub_file_blob(key_path))
+                .or_else(|| is_pub.then(|| keyfile::pub_file_blob(key_path)).flatten())
             {
                 return remove_natively(socket_path, &blob, blobs.cert_file.as_deref());
             }
