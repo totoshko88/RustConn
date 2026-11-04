@@ -561,8 +561,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: clippy
 
-      # The only system library any of the four needs: rustconn-locale-sys binds
-      # gettext. The other three are libc, nix and objc2, all pure Rust.
+      # The only system library any of the -sys crates needs: rustconn-locale-sys
+      # binds gettext. The others are libc, nix and objc2, all pure Rust.
       - name: Install gettext
         run: brew install gettext
 
@@ -581,7 +581,7 @@ jobs:
       # the only machine that ran it was the maintainer's. A test guarding
       # `unsafe` that no CI job executes is a test nobody knows the state of.
       #
-      # Scoped to the four -sys crates rather than the whole workspace on
+      # Scoped to the -sys crates rather than the whole workspace on
       # purpose. They hold every `unsafe` block in the repository, they are where
       # the platform differences actually live, and between them they need one
       # Homebrew package. Building the GUI here would mean gtk4, libadwaita, vte3
@@ -589,10 +589,10 @@ jobs:
       # a default feature that cannot build on macOS at all — which is a separate
       # thing worth fixing before this scope grows.
       #
-      # rustconn-dock-sys is the reason `--all-targets` matters here: off macOS
-      # its AppKit call is `cfg`-ed out and it contains no `unsafe`, so this is
-      # the only place its `unsafe` block and its main-thread guard are compiled
-      # and its contract test is run.
+      # rustconn-dock-sys and rustconn-lock-sys are the reason `--all-targets`
+      # matters here: off macOS their AppKit calls are `cfg`-ed out and they
+      # contain no `unsafe`, so this is the only place their `unsafe` blocks and
+      # main-thread guards are compiled and their contract tests are run.
       - name: Clippy the -sys crates
         run: |
           cargo clippy --all-targets \
@@ -600,6 +600,7 @@ jobs:
             -p rustconn-locale-sys \
             -p rustconn-env-sys \
             -p rustconn-dock-sys \
+            -p rustconn-lock-sys \
             -- -D warnings
 
       - name: Test the -sys crates
@@ -608,7 +609,8 @@ jobs:
             -p rustconn-pty-sys \
             -p rustconn-locale-sys \
             -p rustconn-env-sys \
-            -p rustconn-dock-sys
+            -p rustconn-dock-sys \
+            -p rustconn-lock-sys
 
   macos-formula:
     name: macOS Homebrew formula

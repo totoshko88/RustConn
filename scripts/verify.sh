@@ -358,7 +358,7 @@ else
                 "$CARGO" test -p rustconn "${clippy_features[@]}"
             run_gate 'cargo test the -sys crates' \
                 "$CARGO" test -p rustconn-pty-sys -p rustconn-locale-sys \
-                -p rustconn-env-sys -p rustconn-dock-sys
+                -p rustconn-env-sys -p rustconn-dock-sys -p rustconn-lock-sys
         else
             run_gate 'cargo test --workspace' "$CARGO" test --workspace
         fi
