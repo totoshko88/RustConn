@@ -863,7 +863,7 @@ fn switch_connection_to_key(c: &Rc<Controller>, key_path: &Path) {
     }
 
     let name = original.name.clone();
-    let toast = adw::Toast::new(&i18n_f("'{}' now signs in with a key", &[&name]));
+    let toast = crate::toast::plain_toast(&i18n_f("'{}' now signs in with a key", &[&name]));
     toast.set_button_label(Some(&i18n("Undo")));
     toast.set_timeout(10);
     let state = c.ctx.state.clone();

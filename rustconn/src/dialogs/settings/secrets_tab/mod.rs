@@ -271,7 +271,7 @@ fn enclosing_preferences_dialog(widget: &impl IsA<gtk4::Widget>) -> Option<adw::
 
 /// Shows a toast on a preferences dialog.
 fn show_toast(dialog: &adw::PreferencesDialog, message: &str, timeout_secs: u32) {
-    let toast = adw::Toast::new(message);
+    let toast = crate::toast::plain_toast(message);
     toast.set_timeout(timeout_secs);
     dialog.add_toast(toast);
 }

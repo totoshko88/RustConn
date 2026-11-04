@@ -121,7 +121,7 @@ pub fn run_migration<F>(
         // away the only copy of *which* three.
         match result {
             Ok(Ok(ref res)) if res.is_complete() => {
-                let toast = adw::Toast::new(&i18n_f(
+                let toast = crate::toast::plain_toast(&i18n_f(
                     "Copied {} credentials to the portable file",
                     &[&res.migrated.to_string()],
                 ));

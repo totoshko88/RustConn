@@ -225,7 +225,7 @@ impl StepReviewPage {
             let command_text = text.to_string();
             if !command_text.is_empty() {
                 text_view_c.clipboard().set_text(&command_text);
-                let toast = adw::Toast::new(&i18n("Copied"));
+                let toast = crate::toast::plain_toast(&i18n("Copied"));
                 toast_overlay_c.add_toast(toast);
             }
         });

@@ -13,6 +13,20 @@ use gtk4 as gui;
 use gui::glib;
 use libadwaita as adw;
 
+/// Builds a toast whose title is shown as plain text.
+///
+/// `adw::Toast` parses its title as Pango markup by default (`use-markup` is
+/// true), so a connection, tunnel, script or shared-folder name containing `&`
+/// or `<` would render an empty toast, and `<b>x</b>` would render as bold.
+/// Every toast in this crate is built here so caller text is never markup.
+#[must_use]
+pub fn plain_toast(message: &str) -> adw::Toast {
+    adw::Toast::builder()
+        .title(message)
+        .use_markup(false)
+        .build()
+}
+
 /// Toast message types for styling and semantic meaning
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToastType {
@@ -103,7 +117,7 @@ impl ToastOverlay {
 
     /// Shows a toast message with default options
     pub fn show_toast(&self, message: &str) {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         self.overlay.add_toast(toast);
     }
 
@@ -113,7 +127,7 @@ impl ToastOverlay {
     /// are shown before less important ones. Applies a custom title prefix
     /// for error/warning toasts to improve scannability.
     pub fn show_toast_with_type(&self, message: &str, toast_type: ToastType) {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(toast_type.priority());
         if let Some(title) = toast_type.custom_title() {
             let title_text = format!("{title}: {message}");
@@ -160,7 +174,7 @@ impl ToastOverlay {
         action_name: &str,
         action_target: Option<&glib::Variant>,
     ) {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_button_label(Some(action_label));
         toast.set_action_name(Some(action_name));
         if let Some(target) = action_target {
@@ -188,7 +202,7 @@ pub fn show_toast_with_action_on_window(
     toast_type: ToastType,
 ) {
     let build_toast = |overlay: &adw::ToastOverlay| {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(toast_type.priority());
         toast.set_button_label(Some(button_label));
         toast.set_action_name(Some(action_name));
@@ -221,7 +235,7 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, toast
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
     {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(toast_type.priority());
         overlay.add_toast(toast);
         return;
@@ -231,7 +245,7 @@ pub fn show_toast_on_window(window: &impl IsA<gui::Window>, message: &str, toast
     // since adw::Window.child() may return None while content is set via set_content()
     let widget = window.as_ref().upcast_ref::<gui::Widget>();
     if let Some(overlay) = find_toast_overlay(widget) {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(toast_type.priority());
         overlay.add_toast(toast);
         return;
@@ -291,7 +305,7 @@ pub fn show_undo_toast_on_window(
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
     {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_button_label(Some(&crate::i18n::i18n("Undo")));
         toast.set_action_name(Some("win.undo-delete"));
         toast.set_action_target_value(Some(&glib::Variant::from(action_target)));
@@ -328,7 +342,7 @@ pub fn show_missing_cli_toast(window: &impl IsA<gui::Window>, message: &str) {
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
     {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(adw::ToastPriority::High);
         let title_text = format!("{}: {}", crate::i18n::i18n("Error"), message);
         toast.set_custom_title(Some(&ToastOverlay::build_toast_title_widget(
@@ -355,7 +369,7 @@ pub fn show_retry_toast_on_window(
     if let Some(child) = window.child()
         && let Some(overlay) = find_toast_overlay(&child)
     {
-        let toast = adw::Toast::new(message);
+        let toast = plain_toast(message);
         toast.set_priority(adw::ToastPriority::High);
         toast.set_button_label(Some(&crate::i18n::i18n("Retry")));
         toast.set_action_name(Some("win.retry-connect"));

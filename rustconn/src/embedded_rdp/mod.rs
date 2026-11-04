@@ -1051,7 +1051,7 @@ impl EmbeddedRdpWidget {
                         // the status line as the fallback (and for the brief moment
                         // before the overlay is wired after the widget is parented).
                         if let Some(ref overlay) = *toast_for_success.borrow() {
-                            let toast = libadwaita::Toast::new(&message);
+                            let toast = crate::toast::plain_toast(&message);
                             toast.set_timeout(6);
                             overlay.add_toast(toast);
                         } else {

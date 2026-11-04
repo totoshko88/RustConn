@@ -235,7 +235,8 @@ pub fn show_batch_edit_dialog(
             }
         }
 
-        let toast = adw::Toast::new(&i18n_f("Updated {} connections", &[&updated.to_string()]));
+        let toast =
+            crate::toast::plain_toast(&i18n_f("Updated {} connections", &[&updated.to_string()]));
         toast.set_button_label(Some(&i18n("Undo")));
         // Longer timeout for bulk operations — give the user more time to notice
         toast.set_timeout(10);

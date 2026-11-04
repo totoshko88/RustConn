@@ -8,18 +8,17 @@
 use gtk4::prelude::*;
 use libadwaita as adw;
 
+use crate::toast::plain_toast;
+
 /// Shows a toast notification in an AdwToastOverlay
 pub fn show_toast(overlay: &adw::ToastOverlay, message: &str) {
-    let toast = adw::Toast::builder().title(message).timeout(3).build();
-    overlay.add_toast(toast);
+    show_toast_with_timeout(overlay, message, 3);
 }
 
 /// Shows a toast with custom timeout
 pub fn show_toast_with_timeout(overlay: &adw::ToastOverlay, message: &str, timeout_secs: u32) {
-    let toast = adw::Toast::builder()
-        .title(message)
-        .timeout(timeout_secs)
-        .build();
+    let toast = plain_toast(message);
+    toast.set_timeout(timeout_secs);
     overlay.add_toast(toast);
 }
 
@@ -30,12 +29,10 @@ pub fn show_toast_with_action(
     action_label: &str,
     action_name: &str,
 ) {
-    let toast = adw::Toast::builder()
-        .title(message)
-        .timeout(5)
-        .button_label(action_label)
-        .action_name(action_name)
-        .build();
+    let toast = plain_toast(message);
+    toast.set_timeout(5);
+    toast.set_button_label(Some(action_label));
+    toast.set_action_name(Some(action_name));
     overlay.add_toast(toast);
 }
 

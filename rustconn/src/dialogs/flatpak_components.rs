@@ -539,7 +539,8 @@ impl FlatpakComponentsDialog {
 
     /// Show a toast message
     pub fn show_toast(&self, message: &str) {
-        self.toast_overlay.add_toast(adw::Toast::new(message));
+        self.toast_overlay
+            .add_toast(crate::toast::plain_toast(message));
     }
 
     /// Get toast overlay for external error display
