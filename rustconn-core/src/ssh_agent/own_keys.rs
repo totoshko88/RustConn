@@ -51,37 +51,66 @@ struct OwnKey {
     blob: Vec<u8>,
 }
 
+/// What [`OwnKeys`] guards: the record, and the keys an eviction has taken out
+/// of it and is removing right now.
+#[derive(Debug, Default)]
+struct Record {
+    /// The keys RustConn added, in the order it added them.
+    keys: Vec<OwnKey>,
+    /// Keys taken out by a running [`OwnKeys::evict_with`], one entry per key
+    /// in flight. [`OwnKeys::forget`] drops matching entries here too, which
+    /// is how an eviction learns not to put a forgotten key back.
+    in_flight: Vec<OwnKey>,
+}
+
+impl Record {
+    fn push_unique(&mut self, key: OwnKey) {
+        if !self.keys.contains(&key) {
+            self.keys.push(key);
+        }
+    }
+
+    /// Ends `key`'s flight; `true` if it was still in flight, `false` if a
+    /// [`OwnKeys::forget`] dropped it meanwhile.
+    fn land(&mut self, key: &OwnKey) -> bool {
+        self.in_flight
+            .iter()
+            .position(|k| k == key)
+            .map(|i| self.in_flight.swap_remove(i))
+            .is_some()
+    }
+}
+
 /// The keys RustConn added, in the order it added them.
 ///
 /// The process has one, behind [`add_and_record`], [`forget`] and
 /// [`evict_own_keys`]; tests build their own so they never share state.
 #[derive(Debug)]
 pub(crate) struct OwnKeys {
-    keys: Mutex<Vec<OwnKey>>,
+    record: Mutex<Record>,
 }
 
 impl OwnKeys {
     pub(crate) const fn new() -> Self {
         Self {
-            keys: Mutex::new(Vec::new()),
+            record: Mutex::new(Record {
+                keys: Vec::new(),
+                in_flight: Vec::new(),
+            }),
         }
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, Vec<OwnKey>> {
-        // The data is a plain list that no panic can leave half-written.
-        self.keys.lock().unwrap_or_else(PoisonError::into_inner)
+    fn lock(&self) -> std::sync::MutexGuard<'_, Record> {
+        // The data is two plain lists that no panic can leave half-written.
+        self.record.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     /// Records that RustConn added `blob` to the agent at `socket_path`.
     fn record(&self, socket_path: &str, blob: Vec<u8>) {
-        let key = OwnKey {
+        self.lock().push_unique(OwnKey {
             socket_path: socket_path.to_owned(),
             blob,
-        };
-        let mut keys = self.lock();
-        if !keys.contains(&key) {
-            keys.push(key);
-        }
+        });
     }
 
     /// Runs `add` (the `ssh-add` of the key at `key_path` into the agent at
@@ -189,18 +218,22 @@ impl OwnKeys {
     /// be any recorded one, as the same key can sit in two files, so every key
     /// recorded for that socket is dropped; those then leave the agent when
     /// their lifetime ends.
+    ///
+    /// A key an eviction is removing right now is dropped from its flight as
+    /// well, so a removal that fails does not put it back on the record.
     pub(crate) fn forget(&self, socket_path: &str, blobs: &KeyFileBlobs) {
-        let mut keys = self.lock();
-        match blobs.key_file.as_deref() {
-            Some(blob) => {
-                let cert = blobs.cert_file.as_deref();
-                keys.retain(|k| {
-                    !(k.socket_path == socket_path
-                        && (k.blob == blob || Some(k.blob.as_slice()) == cert))
-                });
-            }
-            None => keys.retain(|k| k.socket_path != socket_path),
-        }
+        let forgotten = |k: &OwnKey| {
+            k.socket_path == socket_path
+                && match blobs.key_file.as_deref() {
+                    Some(blob) => {
+                        k.blob == blob || Some(k.blob.as_slice()) == blobs.cert_file.as_deref()
+                    }
+                    None => true,
+                }
+        };
+        let mut record = self.lock();
+        record.keys.retain(|k| !forgotten(k));
+        record.in_flight.retain(|k| !forgotten(k));
     }
 
     /// Removes every recorded key from its agent and clears the record.
@@ -210,7 +243,8 @@ impl OwnKeys {
     /// agent whose socket is gone or refuses connections took its keys with it,
     /// so those leave the record too. An agent that is there but did not answer
     /// in time (or failed some other I/O) may still hold the key: it stays
-    /// recorded, so the next exit, lock or suspend tries again.
+    /// recorded, so the next exit, lock or suspend tries again, unless
+    /// [`Self::forget`] dropped it while the removal was under way.
     pub(crate) fn evict(&self) -> usize {
         self.evict_with(remove_one)
     }
@@ -219,12 +253,30 @@ impl OwnKeys {
     /// in for the agent.
     fn evict_with(&self, remove: impl Fn(&OwnKey) -> AgentResult<bool>) -> usize {
         // Taken out under the lock, removed outside it: each removal is a
-        // socket round trip of up to a few seconds.
-        let keys = std::mem::take(&mut *self.lock());
+        // socket round trip of up to a few seconds. Meanwhile they stay
+        // visible as in flight, so a `forget` in between still reaches them.
+        let keys = {
+            let mut record = self.lock();
+            let keys = std::mem::take(&mut record.keys);
+            record.in_flight.extend(keys.iter().cloned());
+            keys
+        };
         let mut removed = 0;
         for key in keys {
             let fingerprint = super::keyfile::sha256_fingerprint(&key.blob);
-            match remove(&key) {
+            let outcome = remove(&key);
+            let retry = matches!(&outcome, Err(e) if agent_may_still_hold_key(e));
+            // Landed and put back under one lock, so no `forget` can slip in
+            // between the check and the restore.
+            let still_ours = {
+                let mut record = self.lock();
+                let still_ours = record.land(&key);
+                if retry && still_ours {
+                    record.push_unique(key);
+                }
+                still_ours
+            };
+            match outcome {
                 Ok(true) => {
                     tracing::debug!(%fingerprint, "removed an SSH key RustConn added");
                     removed += 1;
@@ -233,14 +285,17 @@ impl OwnKeys {
                     %fingerprint,
                     "the agent no longer held an SSH key RustConn added"
                 ),
-                Err(e) if agent_may_still_hold_key(&e) => {
-                    tracing::warn!(
-                        %fingerprint,
-                        error = %e,
-                        "could not remove an SSH key RustConn added; keeping it recorded to retry"
-                    );
-                    self.record(&key.socket_path, key.blob);
-                }
+                Err(e) if retry && !still_ours => tracing::debug!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added, but the user has added it \
+                     since; not keeping it recorded"
+                ),
+                Err(e) if retry => tracing::warn!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added; keeping it recorded to retry"
+                ),
                 Err(e) => tracing::warn!(
                     %fingerprint,
                     error = %e,
@@ -253,7 +308,7 @@ impl OwnKeys {
 
     #[cfg(test)]
     fn len(&self) -> usize {
-        self.lock().len()
+        self.lock().keys.len()
     }
 }
 
@@ -587,7 +642,7 @@ mod tests {
 
         assert_eq!(removed, 1);
         assert_eq!(
-            *own.lock(),
+            own.lock().keys,
             vec![OwnKey {
                 socket_path: "/slow.sock".to_owned(),
                 blob: slow,
@@ -597,6 +652,67 @@ mod tests {
         // The retry removes it once the agent answers.
         assert_eq!(own.evict_with(|_| Ok(true)), 1);
         assert_eq!(own.len(), 0);
+    }
+
+    /// The user adds a key in Settings while a slow eviction is removing it:
+    /// the removal times out, and the key must not be put back on the record,
+    /// or the next lock would take the user's key out of the agent. A key that
+    /// was not forgotten is still kept to retry.
+    #[test]
+    fn a_key_forgotten_during_a_slow_eviction_is_not_put_back() {
+        let (users_now, still_ours) = (blob(35), blob(36));
+        let own = OwnKeys::new();
+        own.record("/slow.sock", users_now.clone());
+        own.record("/slow.sock", still_ours.clone());
+
+        own.evict_with(|key| {
+            if key.blob == users_now {
+                // Settings → SSH Agent → Add, while this removal hangs.
+                own.forget("/slow.sock", &from_key_file(&users_now));
+            }
+            Err(AgentError::Io(std::io::Error::from(
+                std::io::ErrorKind::TimedOut,
+            )))
+        });
+
+        assert_eq!(
+            own.lock().keys,
+            vec![OwnKey {
+                socket_path: "/slow.sock".to_owned(),
+                blob: still_ours,
+            }],
+            "only the key nobody forgot is kept to retry"
+        );
+        assert!(own.lock().in_flight.is_empty(), "every flight landed");
+    }
+
+    /// The same race with a second thread, as it happens in the GUI: the
+    /// eviction runs on the lock-event task while the Settings add runs on
+    /// another thread.
+    #[test]
+    fn a_forget_from_another_thread_during_eviction_wins() {
+        let key = blob(37);
+        let own = Arc::new(OwnKeys::new());
+        own.record("/slow.sock", key.clone());
+        let (started_tx, started_rx) = std::sync::mpsc::channel();
+        let (forgot_tx, forgot_rx) = std::sync::mpsc::channel();
+
+        let evicting = Arc::clone(&own);
+        let evictor = std::thread::spawn(move || {
+            evicting.evict_with(|_| {
+                started_tx.send(()).unwrap();
+                forgot_rx.recv().unwrap();
+                Err(AgentError::Io(std::io::Error::from(
+                    std::io::ErrorKind::WouldBlock,
+                )))
+            })
+        });
+        started_rx.recv().unwrap();
+        own.forget("/slow.sock", &from_key_file(&key));
+        forgot_tx.send(()).unwrap();
+        evictor.join().unwrap();
+
+        assert_eq!(own.len(), 0, "the forgotten key is not put back");
     }
 
     #[test]
