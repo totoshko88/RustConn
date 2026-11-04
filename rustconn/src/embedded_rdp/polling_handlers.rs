@@ -592,19 +592,20 @@ pub(super) fn handle_display_control_unavailable(
     height: u16,
     layout_ignored: bool,
 ) {
-    if layout_ignored
-        && !config
-            .borrow()
-            .as_ref()
-            .is_none_or(super::types::RdpConfig::falls_back_when_layout_ignored)
-    {
-        tracing::info!(
-            protocol = "rdp",
-            width,
-            height,
-            "Windows server has not applied the monitor layout yet — keeping Display Control"
-        );
-        return;
+    // Update config with the requested resolution (and the ignored layout).
+    let current_config = config.borrow().clone();
+    if let Some(cfg) = current_config {
+        let Some(next) = cfg.after_display_control_unavailable(width, height, layout_ignored)
+        else {
+            tracing::info!(
+                protocol = "rdp",
+                width,
+                height,
+                "Windows server has not applied the monitor layout yet — keeping Display Control"
+            );
+            return;
+        };
+        *config.borrow_mut() = Some(next);
     }
     tracing::info!(
         protocol = "rdp",
@@ -613,17 +614,6 @@ pub(super) fn handle_display_control_unavailable(
         layout_ignored,
         "Display Control resize not possible — reconnecting with new resolution"
     );
-    // Update config with the requested resolution
-    {
-        let current_config = config.borrow().clone();
-        if let Some(mut cfg) = current_config {
-            cfg = cfg.with_resolution(u32::from(width), u32::from(height));
-            if layout_ignored {
-                cfg.layout_resize_ignored = true;
-            }
-            *config.borrow_mut() = Some(cfg);
-        }
-    }
     // Disconnect current session
     if let Some(ref sender) = *ironrdp_tx.borrow() {
         let _ = sender.send(RdpClientCommand::Disconnect);

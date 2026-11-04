@@ -493,6 +493,32 @@ impl RdpConfig {
         !matches!(self.server_os, rustconn_core::models::RdpServerOs::Windows)
     }
 
+    /// The config to reconnect with after the session client reported
+    /// `DisplayControlUnavailable` for a `width` × `height` layout, or `None`
+    /// when the session keeps Display Control instead
+    /// ([`Self::falls_back_when_layout_ignored`]).
+    ///
+    /// An ignored layout also sets [`Self::layout_resize_ignored`]. The
+    /// reconnect reuses this runtime config, so the flag lasts for the rest of
+    /// the session: once it is set no layout is sent again, and nothing could
+    /// show that a later one would be applied.
+    #[must_use]
+    pub fn after_display_control_unavailable(
+        &self,
+        width: u16,
+        height: u16,
+        layout_ignored: bool,
+    ) -> Option<Self> {
+        if layout_ignored && !self.falls_back_when_layout_ignored() {
+            return None;
+        }
+        let mut next = self
+            .clone()
+            .with_resolution(u32::from(width), u32::from(height));
+        next.layout_resize_ignored |= layout_ignored;
+        Some(next)
+    }
+
     /// Sets where the session audio is played
     #[must_use]
     pub const fn with_audio_mode(mut self, mode: rustconn_core::models::RdpAudioMode) -> Self {
@@ -720,6 +746,58 @@ mod tests {
                 .with_server_os(RdpServerOs::Windows)
                 .falls_back_when_layout_ignored()
         );
+    }
+
+    #[test]
+    fn an_ignored_layout_on_auto_reconnects_at_the_new_size_for_good() {
+        let auto = RdpConfig::new("host").with_resolution(1280, 800);
+        let next = auto
+            .after_display_control_unavailable(1600, 900, true)
+            .expect("Auto falls back to a reconnect");
+        assert_eq!((next.width, next.height), (1600, 900));
+        assert!(next.layout_resize_ignored);
+        assert!(next.resize_needs_reconnect());
+
+        // The reconnect and every later resize start from this runtime config
+        // (`reconnect`, `reconnect_with_resolution` and the resize handler
+        // clone it and change the resolution), so the session keeps resizing
+        // by reconnecting.
+        let mut after_reconnect = next.clone().with_resolution(1920, 1080);
+        after_reconnect.force_legacy_graphics = false;
+        assert!(after_reconnect.resize_needs_reconnect());
+
+        // A second report keeps the flag.
+        let again = after_reconnect
+            .after_display_control_unavailable(1024, 768, false)
+            .expect("an unavailable channel reconnects");
+        assert!(again.layout_resize_ignored);
+    }
+
+    #[test]
+    fn windows_keeps_display_control_when_a_layout_is_ignored() {
+        let windows =
+            RdpConfig::new("host").with_server_os(rustconn_core::models::RdpServerOs::Windows);
+        assert!(
+            windows
+                .after_display_control_unavailable(1600, 900, true)
+                .is_none()
+        );
+        assert!(!windows.resize_needs_reconnect());
+    }
+
+    #[test]
+    fn an_unavailable_channel_reconnects_without_marking_the_layout_ignored() {
+        use rustconn_core::models::RdpServerOs;
+
+        for os in [RdpServerOs::Auto, RdpServerOs::Windows] {
+            let next = RdpConfig::new("host")
+                .with_server_os(os)
+                .after_display_control_unavailable(1600, 900, false)
+                .expect("no Display Control channel always reconnects");
+            assert_eq!((next.width, next.height), (1600, 900));
+            assert!(!next.layout_resize_ignored, "{os:?}");
+            assert!(!next.resize_needs_reconnect(), "{os:?}");
+        }
     }
 
     #[test]
