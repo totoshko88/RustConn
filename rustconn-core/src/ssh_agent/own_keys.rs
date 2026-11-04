@@ -35,7 +35,10 @@
 //! finds the key in the agent and leaves it to the CLI, whose eviction on exit
 //! then takes it from the GUI's sessions too, until the GUI's next add.
 //!
-//! No passphrase is asked for or kept.
+//! An encrypted key goes in the same way, with the passphrase the user gave
+//! in RustConn's unlock dialog
+//! ([`super::SshAgentManager::add_own_key_with_passphrase`]); that passphrase
+//! is used for that one add and not kept, here or anywhere else.
 
 use std::path::Path;
 use std::sync::{Mutex, PoisonError};
@@ -357,7 +360,7 @@ fn remove_one(_key: &OwnKey) -> AgentResult<bool> {
 }
 
 /// The process-wide record.
-static OWN_KEYS: OwnKeys = OwnKeys::new();
+pub(super) static OWN_KEYS: OwnKeys = OwnKeys::new();
 
 /// Adds the key at `key_path` to the agent at `socket_path` through `add`, on
 /// the terms of [`OwnKeys::add_and_record`], and records what it added in the
@@ -1022,5 +1025,168 @@ mod tests {
         );
         assert!(matches!(result, Err(AgentError::AddKeyFailed(_))));
         assert_eq!(own.len(), 0);
+    }
+
+    /// An encrypted OpenSSH key file whose public section is `blob`.
+    fn encrypted_key_file(blob: &[u8]) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("id_encrypted");
+        std::fs::write(
+            &path,
+            crate::ssh_agent::openssh_key_fixture("aes256-ctr", blob),
+        )
+        .unwrap();
+        (dir, path)
+    }
+
+    /// The path a staged `ssh-add` command carries in its environment as
+    /// `name`.
+    fn env_path(cmd: &std::process::Command, name: &str) -> std::path::PathBuf {
+        cmd.get_envs()
+            .find(|(k, _)| *k == name)
+            .and_then(|(_, v)| v)
+            .map(std::path::PathBuf::from)
+            .unwrap()
+    }
+
+    /// What a finished `ssh-add` returns.
+    fn exited(code: i32, stderr: &str) -> std::process::Output {
+        use std::os::unix::process::ExitStatusExt as _;
+        std::process::Output {
+            status: std::process::ExitStatus::from_raw(code << 8),
+            stdout: Vec::new(),
+            stderr: stderr.as_bytes().to_vec(),
+        }
+    }
+
+    /// The dialog's add: the passphrase reaches `ssh-add` only through the
+    /// secret file, the key is recorded like any own key, both staged files
+    /// are gone afterwards, and nothing kept holds the passphrase. The next
+    /// connect finds the key in the agent and does not ask.
+    #[test]
+    fn a_passphrase_add_records_the_key_and_keeps_no_secret() {
+        const PASSPHRASE: &str = "correct horse 50";
+        let key = blob(50);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::AskPassphrase
+        );
+
+        let mut staged = Vec::new();
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from(PASSPHRASE),
+            |cmd| {
+                let secret = env_path(&cmd, crate::ssh_tunnel::TUNNEL_ASKPASS_ENV_VAR);
+                assert_eq!(std::fs::read_to_string(&secret).unwrap(), PASSPHRASE);
+                assert!(
+                    cmd.get_args().all(|a| a.to_string_lossy() != PASSPHRASE),
+                    "the passphrase is not an argument"
+                );
+                assert!(
+                    cmd.get_envs()
+                        .filter_map(|(_, v)| v)
+                        .all(|v| !v.to_string_lossy().contains(PASSPHRASE)),
+                    "the passphrase is not an environment value"
+                );
+                staged.extend([secret, env_path(&cmd, "SSH_ASKPASS")]);
+                agent.insert(&key);
+                Ok(exited(
+                    0,
+                    "Identity added: /k (u@h)\nLifetime set to 12:00:00\n",
+                ))
+            },
+        );
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(
+            own.lock().keys,
+            vec![OwnKey {
+                socket_path: agent.socket.clone(),
+                blob: key,
+            }]
+        );
+        assert_eq!(staged.len(), 2);
+        assert!(
+            staged.iter().all(|p| !p.exists()),
+            "the secret file and the helper are removed"
+        );
+        assert!(!format!("{own:?}").contains(PASSPHRASE));
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(crate::ssh_agent::SkipReason::AlreadyInAgent)
+        );
+    }
+
+    /// An agent that refuses adds (1Password) is remembered for its socket,
+    /// so the dialog is not shown for it again; nothing is recorded.
+    #[test]
+    fn a_refused_passphrase_add_is_remembered_for_that_socket() {
+        let key = blob(51);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from("pw"),
+            |_| {
+                Ok(exited(
+                    1,
+                    "Could not add identity \"/k\": agent refused operation\n",
+                ))
+            },
+        );
+
+        assert!(
+            matches!(result, Err(AgentError::AddRefused(_))),
+            "{result:?}"
+        );
+        assert!(crate::ssh_agent::agent_refused_add(&agent.socket));
+        assert_eq!(own.len(), 0);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(
+                crate::ssh_agent::SkipReason::AgentRefusedBefore
+            )
+        );
+    }
+
+    #[test]
+    fn a_wrong_passphrase_is_reported_as_such() {
+        let key = blob(52);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let mut staged = Vec::new();
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from("wrong"),
+            |cmd| {
+                staged.extend([
+                    env_path(&cmd, crate::ssh_tunnel::TUNNEL_ASKPASS_ENV_VAR),
+                    env_path(&cmd, "SSH_ASKPASS"),
+                ]);
+                Ok(exited(1, ""))
+            },
+        );
+
+        assert!(
+            matches!(result, Err(AgentError::WrongPassphrase)),
+            "{result:?}"
+        );
+        assert_eq!(own.len(), 0);
+        assert!(!crate::ssh_agent::agent_refused_add(&agent.socket));
+        assert!(staged.iter().all(|p| !p.exists()));
     }
 }

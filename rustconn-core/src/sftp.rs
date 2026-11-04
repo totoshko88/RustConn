@@ -697,6 +697,17 @@ fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Op
         .or_else(|| env_socket.filter(|s| !s.is_empty()))
 }
 
+/// The agent socket SFTP, mc and an SSH session without a per-connection
+/// agent socket use: the agent RustConn found or started at startup, else the
+/// inherited `SSH_AUTH_SOCK`. `None` when neither is set.
+#[must_use]
+pub fn default_agent_socket() -> Option<String> {
+    agent_socket_from(
+        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
+        std::env::var("SSH_AUTH_SOCK").ok(),
+    )
+}
+
 /// Loads one SSH private key into the ssh-agent that SFTP and mc will use, the
 /// add path the GUI's launchers and the CLI share (A3).
 ///
@@ -730,10 +741,7 @@ fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Op
 /// agent socket is known, the agent cannot be asked which keys it holds, or
 /// `ssh-add` could not be run or did not finish in time.
 pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), IdentityLoadError> {
-    let Some(socket) = agent_socket_from(
-        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
-        std::env::var("SSH_AUTH_SOCK").ok(),
-    ) else {
+    let Some(socket) = default_agent_socket() else {
         tracing::warn!(
             ?key_path,
             "no SSH agent socket is known; not adding the key"
