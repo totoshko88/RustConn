@@ -106,9 +106,9 @@ esac
 # hardcoded list: the point of the invariant is that unsafe stays inside a
 # small, separately reviewable FFI crate, not that there is exactly one of
 # them. There are five today (rustconn-pty-sys, rustconn-locale-sys,
-# rustconn-env-sys, rustconn-dock-sys, rustconn-lock-sys). Each re-opens the lint with a crate-level
-# #![expect(unsafe_code, reason = "…")] in its own src/lib.rs, so adding one is a
-# visible, reviewed act.
+# rustconn-env-sys, rustconn-dock-sys, rustconn-lock-sys). Each re-opens the
+# lint with a crate-level #![expect(unsafe_code, reason = "…")] in its own
+# src/lib.rs, so adding one is a visible, reviewed act.
 #
 # `extern` is in the keyword list for edition-2024 `unsafe extern "C" { … }` and
 # `unsafe extern "C" fn`. The compiler's `unsafe_code = "deny"` already rejects

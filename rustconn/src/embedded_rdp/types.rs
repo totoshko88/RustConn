@@ -762,8 +762,7 @@ mod tests {
         // (`reconnect`, `reconnect_with_resolution` and the resize handler
         // clone it and change the resolution), so the session keeps resizing
         // by reconnecting.
-        let mut after_reconnect = next.clone().with_resolution(1920, 1080);
-        after_reconnect.force_legacy_graphics = false;
+        let after_reconnect = next.clone().with_resolution(1920, 1080);
         assert!(after_reconnect.resize_needs_reconnect());
 
         // A second report keeps the flag.

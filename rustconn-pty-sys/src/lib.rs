@@ -4,8 +4,8 @@
 //! code (per the M-UNSAFE guideline), alongside `rustconn-locale-sys` for the
 //! startup `setlocale` call, `rustconn-env-sys` for the startup environment
 //! writes, `rustconn-dock-sys` for the macOS Dock tile image, and
-//! `rustconn-lock-sys` for the macOS screen-lock and sleep notifications. It was the
-//! first, hence the wording it used to carry. It provides:
+//! `rustconn-lock-sys` for the macOS screen-lock and sleep notifications. It
+//! was the first, hence the wording it used to carry. It provides:
 //!
 //! - [`set_controlling_terminal`] — `pre_exec` hook for `setsid` + `TIOCSCTTY`
 //! - [`open_pty_pair`] — creates a PTY master/slave pair via `openpty(2)`

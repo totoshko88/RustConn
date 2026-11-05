@@ -81,11 +81,12 @@ precondition guard instead — see the existing tests in `rustconn-locale-sys` a
 
 The macOS-only `unsafe` in `rustconn-pty-sys`, `rustconn-dock-sys` and
 `rustconn-lock-sys` is covered by the `macos-sys` CI job (since 0.21.0), which
-clippies and tests the five helper crates on a macOS runner. That is the only macOS job in the matrix, so it covers
-the helpers and nothing else: for a macOS-gated path anywhere *outside* them, flag
-in your report that it needs `cargo clippy -p <crate> --target aarch64-apple-darwin`.
-You review by reading — you have `read` and `grep`, not a shell — so name the check
-for the maintainer to run; do not attempt to run it yourself.
+clippies and tests the five helper crates on a macOS runner. That is the only
+macOS job in the matrix, so it covers the helpers and nothing else: for a
+macOS-gated path anywhere *outside* them, flag in your report that it needs
+`cargo clippy -p <crate> --target aarch64-apple-darwin`. You review by reading
+— you have `read` and `grep`, not a shell — so name the check for the
+maintainer to run; do not attempt to run it yourself.
 
 ## Report format
 

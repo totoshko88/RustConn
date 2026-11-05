@@ -84,8 +84,9 @@ belongs in core even when the bug was reported against a dialog.
 
 **`unsafe` lives in exactly five crates.** `rustconn-pty-sys`,
 `rustconn-locale-sys`, `rustconn-env-sys`, `rustconn-dock-sys`, and
-`rustconn-lock-sys` are the isolated FFI helpers, and the workspace denies `unsafe_code` everywhere else.
-New FFI gets a new `-sys` crate rather than an exception where the caller lives.
+`rustconn-lock-sys` are the isolated FFI helpers, and the workspace denies
+`unsafe_code` everywhere else. New FFI gets a new `-sys` crate rather than an
+exception where the caller lives.
 
 **Credentials.** Passwords, keys, and tokens are `secrecy::SecretString`, never
 `String`. An intermediate `expose_secret().to_string()` gets wrapped in
