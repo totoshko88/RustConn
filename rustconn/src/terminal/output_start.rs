@@ -54,7 +54,8 @@ pub struct ConnectionOutput {
     /// How many rows below the first row of the process's output the cursor
     /// is; 0 while the process has printed no full line.
     pub row: i64,
-    /// The text from the first row of the process's output to the cursor.
+    /// The text from the first row of the process's output to the cursor,
+    /// limited to the last [`BANNER_SEARCH_ROWS`] rows.
     pub text: String,
     /// The client has taken over the screen: the cursor is above the first
     /// row of its output and the connect banner is no longer shown above the

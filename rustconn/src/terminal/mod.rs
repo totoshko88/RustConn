@@ -1535,7 +1535,18 @@ fn read_connection_output(
     let Some((base, banner, resolved)) = connection_start_row(terminal, start, cursor_row) else {
         return (None, None);
     };
-    let text = rows_text(terminal, base.min(cursor_row), cursor_row);
+    // At most the last BANNER_SEARCH_ROWS rows: a detector the heuristic
+    // never decides (a jump-host session whose prompt it misses) reads on
+    // every change for the whole session, and copying everything from the
+    // start row grew with the session. The verdict reads the last line, the
+    // last prompt or question and the failures after it; a failure further
+    // up than this with no prompt or question below it would need a client
+    // that printed a screenful after failing, and one that fails exits.
+    // `row` still counts from the start row.
+    let first_row = base
+        .min(cursor_row)
+        .max(cursor_row - output_start::BANNER_SEARCH_ROWS);
+    let text = rows_text(terminal, first_row, cursor_row);
     // Only a cursor above the start row can mean another screen, so the
     // wider read runs only then.
     let screen_replaced = cursor_row < base
