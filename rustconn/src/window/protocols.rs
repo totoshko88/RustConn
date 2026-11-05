@@ -852,7 +852,7 @@ pub(super) fn contains_ssh_failure(text: &str) -> bool {
 /// `Connection timed out during banner exchange`, and never a prompt.
 ///
 /// The heuristic is deliberately loose — the last non-blank line ending in one of
-/// the common prompt terminators (`$`, `#`, `%`, `>`), optionally followed by a
+/// the common prompt terminators (`$`, `#`, `%`, `>`, `❯`, `➜`), optionally followed by a
 /// space or cursor. [`output_established`] consults it for every connection; it
 /// is the only evidence it accepts through a jump host. It is always used
 /// alongside a failure-pattern scan, so a false positive is bounded by that
@@ -869,8 +869,16 @@ fn last_non_blank_line(text: &str) -> Option<&str> {
 
 /// Whether one line looks like an interactive shell prompt; see
 /// [`ends_with_shell_prompt`].
+///
+/// Besides `$ # % >`, `❯` (starship, pure, powerlevel10k) and `➜` (several
+/// zsh themes) end common prompts. Neither is ASCII, so ordinary output ends
+/// in one even more rarely than in `>` or `%`. A prompt that only *starts*
+/// with `➜`, such as oh-my-zsh's default `➜  ~ `, still does not count.
 fn is_shell_prompt_line(line: &str) -> bool {
-    matches!(line.trim_end().chars().last(), Some('$' | '#' | '%' | '>'))
+    matches!(
+        line.trim_end().chars().last(),
+        Some('$' | '#' | '%' | '>' | '❯' | '➜')
+    )
 }
 
 /// Whether one line is a question for a password, a key passphrase or a
@@ -3662,6 +3670,8 @@ mod established_tests {
         assert!(ends_with_shell_prompt("root@host:~# "));
         assert!(ends_with_shell_prompt("zsh %"));
         assert!(ends_with_shell_prompt("PS>"));
+        assert!(ends_with_shell_prompt("~/src on main ❯ "));
+        assert!(ends_with_shell_prompt("user@web ~ ➜"));
         // Trailing blank lines are ignored — the last non-blank line decides.
         assert!(ends_with_shell_prompt("user@host:~$ \n\n"));
     }
@@ -3671,6 +3681,22 @@ mod established_tests {
         assert!(!ends_with_shell_prompt("Welcome to Ubuntu 22.04"));
         assert!(!ends_with_shell_prompt("System information as of now"));
         assert!(!ends_with_shell_prompt(""));
+        // The new terminators count only at the end of the line, as the
+        // others do: a MOTD or menu line that merely contains one is not a
+        // prompt.
+        assert!(!ends_with_shell_prompt("Press ❯ to open the menu"));
+        assert!(!ends_with_shell_prompt(
+            "➜ Documentation: https://help.example"
+        ));
+    }
+
+    #[test]
+    fn a_quiet_login_with_a_starship_prompt_is_established() {
+        // Key login, no MOTD or last-login line, a one-line `❯` prompt: it
+        // sits on row 0, so only the prompt can say it is connected.
+        assert!(ssh_output_established(0, false, Some("❯ ")));
+        assert!(ssh_output_established(0, true, Some("~ ❯ ")));
+        assert!(ssh_output_established(0, false, Some("~/src ➜ ")));
     }
 
     fn output(row: i64, text: &str, screen_replaced: bool) -> ConnectionOutput {
