@@ -140,6 +140,20 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.6" date="2026-11-05">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.6</url>
+      <description>
+        <p>Version 0.24.6 - safer SSH key handling, embedded RDP fixes, and a Vietnamese translation:</p>
+        <ul>
+          <li>SSH keys RustConn adds to the agent itself expire after 12 hours and are removed on exit, screen lock and suspend; keys already in the agent before RustConn added its own, or added in Settings, are left alone.</li>
+          <li>Encrypted SSH keys are unlocked once per session in an Unlock SSH Key dialog, and the passphrase is never stored.</li>
+          <li>Embedded RDP no longer ends when the server refuses a shared folder (#407), and resizing follows the window on Linux servers (xrdp).</li>
+          <li>Terminal connection status is accurate after connects and reconnects, and a wedged ssh-agent can no longer freeze the app.</li>
+          <li>Background SSH checks no longer accept an unknown host key before you answer the prompt.</li>
+          <li>Vietnamese translation added (contributed by dinhkarate); Georgian and Uzbek can now be chosen in the language selector.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.5" date="2026-11-02">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.5</url>
       <description>

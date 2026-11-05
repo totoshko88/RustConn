@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.5
+Version:        0.24.6
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,24 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Nov 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.6-0
+- Version bump to 0.24.6
+- Added: SSH keys RustConn adds to the agent expire after 12 hours and are
+  removed on exit, screen lock and suspend
+- Added: Unlock SSH Key dialog for encrypted keys, once per session
+- Added: Vietnamese translation (PR #408, contributed by dinhkarate)
+- Fixed: embedded RDP survives a refused shared folder (#407)
+- Fixed: embedded RDP resize on Linux servers (xrdp)
+- Fixed: terminal connection status after connects and reconnects
+- Fixed: a wedged ssh-agent no longer freezes RustConn or rustconn-cli
+- Fixed: toasts and banners show &, < and > as typed
+- Fixed: Georgian and Uzbek in the language selector
+- Security: background ssh no longer accepts unknown host keys on its own
+- Changed: SSH key passphrases are no longer stored in a secret backend
+- Dependencies: lzma-rust2 0.23.0→0.24.0, svgtypes 0.16.1→0.16.2,
+  toml 1.1.8→1.2.0, toml_edit 0.25.17→0.25.18, toml_writer 1.1.3→1.2.0,
+  winnow 1.0.4→1.0.5, zip 9.2.2→9.3.0; Flatpak FreeRDP 3.32.2→3.33.0
+
 * Mon Nov 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.5-0
 - Version bump to 0.24.5
 - Added: optional persistent Bitwarden CLI (bw serve) behind a "Keep the CLI
