@@ -293,6 +293,11 @@ These workflows are triggered only via `workflow_dispatch` for manual testing:
 | `flatpak.yml` | Test Flatpak build without creating a release |
 | `snap.yml` | Test Snap build without publishing (dual-arch matrix: amd64 + arm64) |
 
+The snap build/verify steps live once in the reusable `snap-build.yml`
+(`workflow_call`). `snap.yml` calls it build-only; `release.yml`'s `build-snap`
+job calls it with `publish: true` to add the Snap Store upload and the
+release-attach. Edit the shared steps there, not in either caller.
+
 ## CLI Version Check (`check-cli-versions.yml`)
 
 Runs weekly (Monday 06:00 UTC) to check for updates to bundled CLI tools

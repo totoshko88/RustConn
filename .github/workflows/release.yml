@@ -482,101 +482,22 @@ jobs:
     # The release is created first; the snap is then built, published to the
     # store, and attached to the existing release. A snap failure no longer
     # blocks the release.
+    #
+    # The build/verify/publish steps live in the reusable snap-build.yml, shared
+    # with the manual snap.yml so the two cannot drift. publish=true turns on the
+    # store upload + release attach that only the release flow needs; the v* tag
+    # guard stays inside the reusable workflow's publish step.
     needs: [release]
     if: startsWith(github.ref, 'refs/tags/')
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { runner: ubuntu-24.04,     arch: amd64 }
-          - { runner: ubuntu-24.04-arm, arch: arm64 }
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
     permissions:
       contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup LXD
-        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
-
-      - name: Install Snapcraft
-        run: |
-          # core26 + the `gnome` extension need Snapcraft >= 9.2 (the release that
-          # added core26 support to the extension); stable provides it.
-          # See RustConn#174.
-          sudo snap install snapcraft --classic
-          snapcraft --version
-
-      - name: Build Snap
-        id: build
-        run: |
-          # The `gnome` extension pulls build-snaps (mesa-2604, gnome-core26-sdk)
-          # from the store during "Installing build-snaps". On the arm64 runner
-          # this intermittently fails with "Error installing snap 'mesa-2604'
-          # from channel 'latest/stable'" (transient store/network flakiness),
-          # which killed the arm64 revision for v0.17.7. Retry the whole pack a
-          # few times: snapcraft is incremental (no `clean`), so a retry only
-          # re-runs the failed build-snap install, not the ~50-min cargo build.
-          for attempt in 1 2 3; do
-            if snapcraft pack --verbose; then break; fi
-            [ "$attempt" = 3 ] && { echo "::error::snapcraft pack failed after 3 attempts"; exit 1; }
-            echo "::warning::snapcraft pack attempt $attempt failed (often a transient build-snap install error); retrying in 30s"
-            sleep 30
-          done
-          SNAP_FILE=$(ls *.snap)
-          echo "snap=$SNAP_FILE" >> $GITHUB_OUTPUT
-          echo "Built: $SNAP_FILE"
-
-      - name: Verify runtime libraries resolve
-        # Gate the store publish below: a '-dev' entry in build-packages satisfies
-        # the linker at build time but ships nothing, so without the matching
-        # stage-packages entry the snap packs, uploads and installs cleanly and
-        # then dies at the dynamic linker before main() (issue #244, shipped in
-        # 0.19.0 and unnoticed for six releases). Resolve the packed binaries'
-        # DT_NEEDED list against what the snap, the base and the gnome platform
-        # actually provide at runtime.
-        run: |
-          command -v unsquashfs > /dev/null 2>&1 || {
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends squashfs-tools
-          }
-          sudo snap install core26 gnome-core26 mesa-2604
-          ./scripts/check-snap-runtime-libs.sh "${{ steps.build.outputs.snap }}"
-
-      - name: Upload Snap artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: snap-package-${{ matrix.arch }}
-          path: ${{ steps.build.outputs.snap }}
-
-      - name: Publish to Snap Store
-        if: startsWith(github.ref, 'refs/tags/v')
-        continue-on-error: true
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_TOKEN }}
-        # Channel layout since snapcraft.io Builds (Launchpad) was enabled:
-        #   edge      — rolling builds from main, auto-published by the
-        #               snapcraft.io build service (do NOT upload here: two
-        #               publishers racing for edge produce confusing history)
-        #   candidate — tagged release builds from this workflow (exact
-        #               released code, CI provenance)
-        #   stable    — manual promote of a tested candidate revision;
-        #               "Update metadata on release" then syncs the store
-        #               listing from that revision's snapcraft.yaml
-        timeout-minutes: 10
-        run: snapcraft upload ${{ steps.build.outputs.snap }} --release candidate
-
-      - name: Attach snap to the GitHub release
-        # Best-effort: the release already exists (this job needs it). A failure
-        # here does not affect the store publish above or the release itself.
-        continue-on-error: true
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          files: ${{ steps.build.outputs.snap }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/snap-build.yml
+    with:
+      artifact-prefix: snap-package
+      publish: true
+      release-channel: candidate
+    secrets:
+      SNAP_STORE_TOKEN: ${{ secrets.SNAP_STORE_TOKEN }}
 
   build-flatpak:
     name: Build Flatpak
