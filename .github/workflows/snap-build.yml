@@ -40,8 +40,11 @@ on:
         description: Snapcraft store credentials; required only when publish is true.
         required: false
 
-permissions:
-  contents: read
+# No `permissions` here, at workflow or job level: a called workflow's
+# GITHUB_TOKEN comes from the caller's job (release.yml's build-snap grants
+# contents: write for the release attach, snap.yml stays read-only), and a
+# block here could only downgrade it. The `permissions` key does not evaluate
+# expressions, so a conditional `${{ inputs.publish && ... }}` is not an option.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -56,10 +59,6 @@ jobs:
           - { runner: ubuntu-24.04-arm, arch: arm64 }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
-    # Attaching the snap to the release needs write; the build-only caller runs
-    # with the default read and never reaches the attach step.
-    permissions:
-      contents: ${{ inputs.publish && 'write' || 'read' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
