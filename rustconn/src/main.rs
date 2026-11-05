@@ -544,6 +544,12 @@ fn main() -> gtk4::glib::ExitCode {
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
+    // Record a Rust panic to a local crash log the next launch can surface.
+    // Installed right after the subscriber so the hook can also log through it,
+    // and before anything spawns a thread that might panic. Rust panics only;
+    // a SIGSEGV in a C library does not come through here.
+    rustconn_core::crash_report::install_panic_hook();
+
     // Choose the GSK renderer before GTK reads it. Placed after the subscriber
     // so the choice — a heuristic, when the setting is Automatic — is visible in
     // the log, and before anything spawns a thread, which is what makes writing

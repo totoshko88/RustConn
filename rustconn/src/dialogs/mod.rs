@@ -101,7 +101,7 @@ pub use adw_dialogs::*;
 pub use ask_prompt::{show_ask_dialog, show_macro_ask_dialog};
 pub use backend_missing::{BackendMissingResponse, show_backend_missing_dialog};
 pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog, ClusterSummary};
-pub use command_palette::{CommandPaletteDialog, OpenTabInfo};
+pub use command_palette::{CommandPaletteDialog, OpenTabInfo, SnippetSummary};
 pub use connection::ConnectionDialog;
 pub use connection_wizard::{ConnectionWizard, PartialConnection, WizardResult};
 pub use export::{ExportCallback, ExportDialog};

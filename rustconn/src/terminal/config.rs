@@ -292,6 +292,10 @@ pub fn setup_context_menu(
         Some(&crate::i18n::i18n("Select All")),
         Some("terminal.select-all"),
     );
+    clipboard_section.append(
+        Some(&crate::i18n::i18n("Save Selection as Snippet…")),
+        Some("win.save-selection-snippet"),
+    );
     menu.append_section(None, &clipboard_section);
 
     // Snippet section — shared live model, updated externally

@@ -173,6 +173,51 @@ impl MainWindow {
         });
         window.add_action(&run_snippet_for_conn_action);
 
+        // Save Selection as Snippet… (from the terminal right-click menu, W5).
+        // Reads the active terminal's current selection and opens the snippet
+        // editor in create mode with the command pre-filled. The user names and
+        // trims it before saving, so a selection that happens to contain a
+        // secret is never written to the snippet store without their action.
+        let save_selection_snippet_action = gio::SimpleAction::new("save-selection-snippet", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        save_selection_snippet_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            let selection = notebook_clone.get_active_terminal().and_then(|term| {
+                term.has_selection()
+                    .then(|| term.text_selected(vte4::Format::Text))
+                    .flatten()
+                    .map(|s| s.to_string())
+            });
+            let Some(selection) = selection.filter(|s| !s.trim().is_empty()) else {
+                crate::toast::show_toast_on_window(
+                    &win,
+                    &crate::i18n::i18n("Select some text in the terminal first"),
+                    crate::toast::ToastType::Info,
+                );
+                return;
+            };
+            let dialog = crate::dialogs::SnippetDialog::new(Some(win.upcast_ref()));
+            dialog.set_command(&selection);
+            let state_inner = state_clone.clone();
+            let notebook_inner = notebook_clone.clone();
+            dialog.run(move |result| {
+                if let Some(snippet) = result
+                    && let Ok(mut state_mut) = state_inner.try_borrow_mut()
+                {
+                    if let Err(e) = state_mut.create_snippet(snippet) {
+                        tracing::warn!(?e, "Failed to create snippet from selection");
+                    }
+                    drop(state_mut);
+                    notebook_inner.rebuild_snippet_menu(&state_inner);
+                }
+            });
+        });
+        window.add_action(&save_selection_snippet_action);
+
         // Show sessions action
         let show_sessions_action = gio::SimpleAction::new("show-sessions", None);
         let window_weak = window.downgrade();

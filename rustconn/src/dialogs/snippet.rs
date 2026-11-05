@@ -465,6 +465,15 @@ impl SnippetDialog {
         }
     }
 
+    /// Pre-fills the command field, for "Save Selection as Snippet…".
+    ///
+    /// The dialog stays in create mode (no editing id, no other field touched);
+    /// the user still names it and chooses what to keep, so a selection that
+    /// happens to contain a secret is never persisted without their say.
+    pub fn set_command(&self, command: &str) {
+        self.form.command_view.buffer().set_text(command);
+    }
+
     /// Validates the input fields
     ///
     /// Validates that name and command fields are non-empty.

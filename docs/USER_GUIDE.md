@@ -3149,8 +3149,11 @@ pg_dump -h ${host} -U ${user} -d ${database} > /tmp/${database}_backup.sql
 1. **Right-click inside the terminal** — up to five snippets appear inline for one-click use; beyond that the list becomes **Execute Snippet…**, which opens the picker
 2. **Right-click a connection in the sidebar** → **Run Snippet...** — connects first if needed, then opens the picker
 3. **Menu → Tools → Snippets...** → the ▶ button on a snippet's row
+4. **Command Palette** (**Ctrl+P**) with the `!` prefix — type `!` to list snippets and run the one you pick. Because the palette belongs to the main window, it cannot be sure which terminal has your focus (a detached window or a split pane may), so a palette-launched snippet **always asks for confirmation first**, naming the snippet and that it goes to the focused terminal.
 
 Any of them fills in variable values first if the snippet needs them and they cannot be resolved from [Global Variables](#global-variables).
+
+**Save a selection as a snippet:** select text in a terminal, right-click and choose **Save Selection as Snippet…**. The snippet editor opens with the command pre-filled; you name and trim it before saving, so nothing is stored until you do — a selection that happens to contain a password never lands in the snippet store on its own.
 
 **Global Variables Auto-Resolution:**
 
@@ -4516,6 +4519,9 @@ Export (File > Export) in Native `.rcn`, SSH Config, or CSV format → send to c
 
 **Why does RustConn ask for my keyring password on startup?**
 Your desktop keyring may be locked. Configure it to unlock automatically on login, or switch to a different secret backend.
+
+**RustConn says it crashed last time — where is the log?**
+When RustConn hits a Rust panic it writes a report to `$XDG_STATE_HOME/rustconn/crash-<timestamp>.log` (usually `~/.local/state/rustconn/`; on a system without a state directory it uses the OS data directory). The next launch shows a banner with an **Open Log** button, which opens the file and clears the saved logs so the banner does not keep returning. The log stays on your machine and is never sent anywhere automatically — open it and review it before attaching it to a bug report, since a panic message can contain data from your session. This covers Rust panics only: a crash inside a C library such as GTK or VTE (a `SIGSEGV`) does not go through this and leaves no crash log, so run RustConn from a terminal to capture its output if you need to report one of those.
 
 **How do I connect to a host behind a jump server?**
 Set the **Proxy Jump** field in the SSH connection dialog's Advanced tab (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.

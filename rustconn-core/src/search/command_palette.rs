@@ -5,6 +5,7 @@
 //! - `>` prefix → application commands
 //! - `@` prefix → filter by tags
 //! - `#` prefix → filter by groups
+//! - `!` prefix → run a saved snippet
 //! - Plain text → fuzzy search connections
 
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,10 @@ pub enum CommandPaletteAction {
     LocalShell,
     /// Quick connect (ad-hoc host:port)
     QuickConnect,
+    /// Run a saved snippet in the active terminal, by snippet ID. The GUI
+    /// dispatches it through the existing snippet execution path, so snippet
+    /// variables and the per-snippet "confirm before run" still apply.
+    RunSnippet(Uuid),
     /// Execute a named GTK action (e.g. "win.toggle-fullscreen")
     GtkAction(String),
 }
@@ -98,6 +103,8 @@ pub enum PaletteMode {
     Groups,
     /// `%` prefix: switch to an open tab
     OpenTabs,
+    /// `!` prefix: run a saved snippet
+    Snippets,
 }
 
 /// Parses the raw input text into a mode and the remaining query
@@ -112,6 +119,8 @@ pub fn parse_palette_input(input: &str) -> (PaletteMode, &str) {
         (PaletteMode::Groups, rest.trim_start())
     } else if let Some(rest) = trimmed.strip_prefix('%') {
         (PaletteMode::OpenTabs, rest.trim_start())
+    } else if let Some(rest) = trimmed.strip_prefix('!') {
+        (PaletteMode::Snippets, rest.trim_start())
     } else {
         (PaletteMode::Connections, trimmed)
     }
@@ -238,6 +247,13 @@ mod tests {
         let (mode, query) = parse_palette_input("%prod");
         assert_eq!(mode, PaletteMode::OpenTabs);
         assert_eq!(query, "prod");
+    }
+
+    #[test]
+    fn test_parse_palette_input_snippets() {
+        let (mode, query) = parse_palette_input("!deploy");
+        assert_eq!(mode, PaletteMode::Snippets);
+        assert_eq!(query, "deploy");
     }
 
     #[test]
