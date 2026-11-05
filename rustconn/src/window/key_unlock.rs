@@ -178,11 +178,7 @@ thread_local! {
 
 /// Asks for the first of `asks`, then the rest, then runs `then`.
 fn ask_each(parent: gtk4::Widget, mut asks: Vec<(String, PathBuf)>, then: Continuation) {
-    // Cancelled since this connect's check ran (another connect's dialog).
-    DECLINED.with(|d| {
-        let declined = d.borrow();
-        asks.retain(|(socket, key_path)| !declined.contains(socket, key_path));
-    });
+    drop_declined(&mut asks);
     if asks.is_empty() {
         then();
         return;
@@ -213,6 +209,15 @@ fn ask_each(parent: gtk4::Widget, mut asks: Vec<(String, PathBuf)>, then: Contin
         for waiter in waiters {
             waiter();
         }
+    });
+}
+
+/// Drops the keys cancelled since this connect's check ran (in another
+/// connect's dialog), see [`DECLINED`].
+fn drop_declined(asks: &mut Vec<(String, PathBuf)>) {
+    DECLINED.with(|d| {
+        let declined = d.borrow();
+        asks.retain(|(socket, key_path)| !declined.contains(socket, key_path));
     });
 }
 
@@ -367,6 +372,85 @@ mod tests {
             },
         ];
         assert!(retain_askable(targets).is_empty());
+    }
+
+    /// An encrypted OpenSSH key file, built the way OpenSSH lays one out up to
+    /// the private section (which nothing here reads): the `openssh-key-v1`
+    /// magic, an `aes256-ctr` cipher with `bcrypt`, and one public key.
+    fn encrypted_key_file(dir: &Path, name: &str) -> PathBuf {
+        fn ssh_string(out: &mut Vec<u8>, bytes: &[u8]) {
+            out.extend_from_slice(&u32::try_from(bytes.len()).unwrap().to_be_bytes());
+            out.extend_from_slice(bytes);
+        }
+        let mut public = Vec::new();
+        ssh_string(&mut public, b"ssh-ed25519");
+        ssh_string(&mut public, &[7; 32]);
+        let mut body = b"openssh-key-v1\0".to_vec();
+        ssh_string(&mut body, b"aes256-ctr");
+        ssh_string(&mut body, b"bcrypt");
+        ssh_string(&mut body, b"");
+        body.extend_from_slice(&1u32.to_be_bytes());
+        ssh_string(&mut body, &public);
+        ssh_string(&mut body, b"private-section-not-read");
+        let armoured = format!(
+            "-----BEGIN OPENSSH PRIVATE KEY-----\n{}\n-----END OPENSSH PRIVATE KEY-----\n",
+            gtk4::glib::base64_encode(&body)
+        );
+        let path = dir.join(name);
+        std::fs::write(&path, armoured).unwrap();
+        path
+    }
+
+    /// A Cancel drops the key from later connects' targets, for that agent
+    /// only. Tests run on threads of their own, so this thread's `DECLINED`
+    /// starts empty.
+    #[test]
+    fn a_cancelled_key_is_no_longer_a_target_for_that_agent() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = encrypted_key_file(dir.path(), "id_locked");
+        assert!(
+            key_is_encrypted_openssh(&key),
+            "the fixture must be a target"
+        );
+        let target = |socket: &str| UnlockTarget {
+            key_path: key.clone(),
+            socket: Some(socket.to_owned()),
+        };
+        assert_eq!(retain_askable(vec![target("/run/a.sock")]).len(), 1);
+
+        DECLINED.with(|d| {
+            d.borrow_mut()
+                .insert(("/run/a.sock".to_owned(), key.clone()));
+        });
+        assert!(retain_askable(vec![target("/run/a.sock")]).is_empty());
+        assert_eq!(
+            retain_askable(vec![target("/run/b.sock")]),
+            vec![target("/run/b.sock")],
+            "another agent still asks"
+        );
+    }
+
+    /// A Cancel in another connect's dialog, made after this connect's check,
+    /// still spares this connect the dialog.
+    #[test]
+    fn a_key_cancelled_since_the_check_is_not_asked() {
+        let mut asks = vec![
+            ("/run/a.sock".to_owned(), PathBuf::from("/k/a")),
+            ("/run/a.sock".to_owned(), PathBuf::from("/k/b")),
+            ("/run/b.sock".to_owned(), PathBuf::from("/k/a")),
+        ];
+        DECLINED.with(|d| {
+            d.borrow_mut()
+                .insert(("/run/a.sock".to_owned(), PathBuf::from("/k/a")));
+        });
+        drop_declined(&mut asks);
+        assert_eq!(
+            asks,
+            vec![
+                ("/run/a.sock".to_owned(), PathBuf::from("/k/b")),
+                ("/run/b.sock".to_owned(), PathBuf::from("/k/a")),
+            ]
+        );
     }
 
     #[test]
