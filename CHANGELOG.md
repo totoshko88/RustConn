@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Importing connections with passwords no longer freezes the window** — storing the imported credentials in the chosen secret backend now runs on a background task with a toast when it starts and another reporting how many were stored, instead of blocking the UI for the whole batch. The connections and groups still appear at once; only the credential storage, which is several seconds per credential for a CLI-backed backend such as Bitwarden, moves off the main thread. (An earlier fix had already stopped these passwords going to the system keyring regardless of backend; this removes the remaining freeze, W4/FC §6a.) (`rustconn/src/state/sync.rs`, `rustconn/src/window/connection_dialogs.rs`, `po/`)
+- **Opening the Passbolt vault and the export output folder now goes through the desktop portal** — both used to spawn `xdg-open` (or `open` on macOS); they now use `gtk4::UriLauncher` / `gtk4::FileLauncher`, so they let the desktop choose the handler and work inside the Flatpak sandbox. The external file manager for an `sftp://` browse is deliberately left spawning directly, because it must inherit RustConn's ssh-agent socket, which a portal launch would not pass on. The now-unused `open` crate dependency is dropped. (`rustconn/src/dialogs/settings/secrets_tab/mod.rs`, `rustconn/src/dialogs/export.rs`, `rustconn/Cargo.toml`)
 
 ## [0.24.6] - 2026-11-05
 

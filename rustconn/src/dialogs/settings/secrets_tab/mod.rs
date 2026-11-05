@@ -1527,12 +1527,27 @@ pub fn create_secrets_page() -> SecretsPageWidgets {
             };
 
             if let Some(ref server_url) = url {
-                let result = std::process::Command::new(rustconn_core::secret::url_open_command())
-                    .arg(server_url)
-                    .spawn();
-                if result.is_err() {
-                    update_status_label(&status_label, &i18n("Failed to open browser"), "error");
-                }
+                // Portal-aware open: works inside the Flatpak and lets the
+                // desktop pick the browser, instead of spawning xdg-open/open.
+                // The Passbolt server URL is a plain https address that needs no
+                // RustConn environment, so no ssh-agent inheritance is lost (the
+                // SFTP file-manager path still spawns directly for that reason).
+                let launcher = gtk4::UriLauncher::new(server_url);
+                let status_label = status_label.clone();
+                launcher.launch(
+                    gtk4::Window::NONE,
+                    gtk4::gio::Cancellable::NONE,
+                    move |result| {
+                        if let Err(e) = result {
+                            tracing::warn!(error = %e, "Failed to open the Passbolt server URL");
+                            update_status_label(
+                                &status_label,
+                                &i18n("Failed to open browser"),
+                                "error",
+                            );
+                        }
+                    },
+                );
             } else {
                 update_status_label(
                     &status_label,

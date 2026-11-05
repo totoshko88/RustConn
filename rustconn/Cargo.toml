@@ -36,7 +36,6 @@ serde_json = { workspace = true }
 secrecy = { workspace = true }
 zeroize = { workspace = true }
 thiserror = { workspace = true }
-open = "5"
 dirs = { workspace = true }
 # Tray icon support via StatusNotifierItem D-Bus protocol
 # Requires libdbus-1-dev on Ubuntu/Debian or dbus-devel on Fedora
