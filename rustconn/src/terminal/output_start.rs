@@ -1,10 +1,11 @@
 //! Where the current connection's own output starts in a session's buffer.
 //!
 //! Status detection ("has the session printed anything past RustConn's connect
-//! banner?") compares the cursor row with a base row. A fresh session starts on
-//! an empty buffer and needs no base. A reconnect does: the previous session's
-//! scrollback may be kept (issue #253), and the reconnect feeds its own
-//! separator and banner before the new process starts.
+//! banner?") compares the cursor row with a base row: the row below the banner
+//! RustConn prints before it starts the client. A fresh connect needs it so
+//! that the banner itself is not taken for the client's output; a reconnect
+//! also has the previous session's scrollback above it (issue #253) and a
+//! separator.
 //!
 //! VTE processes fed text asynchronously, in the same queue as the child's
 //! output, so the row below the banner cannot be read when the banner is fed.
@@ -12,14 +13,14 @@
 //! VTE processed the banner and the child's first output in one pass — a hidden
 //! tab, or a child that answers at once: that output became the base, was never
 //! counted, and a reconnect that printed everything in one chunk stayed on
-//! "connecting". The base is now located by content instead: the reconnect
+//! "connecting". The base is now located by content instead: the connect
 //! records the banner's last line, and the first read finds that line in the
 //! buffer, whatever else landed in the same pass.
 //!
 //! The search is kept free of GTK and VTE types so it can be unit-tested; the
 //! notebook reads the row texts and stores the result.
 
-/// How many rows above the cursor are searched for the reconnect banner.
+/// How many rows above the cursor are searched for the connect banner.
 ///
 /// A reconnect's first processing pass normally holds the banner and at most a
 /// few lines of output. If the banner is further up than this, the new process
@@ -36,11 +37,31 @@ const BANNER_MATCH_MIN_CHARS: usize = 12;
 /// The recorded start of a session's current connection.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum OutputStart {
-    /// The absolute VTE row is known.
+    /// The absolute VTE row is known, with no banner above it to look for.
     Row(i64),
+    /// The absolute VTE row is known: the row below the connect banner whose
+    /// last line is `last_line`.
+    BelowBanner { row: i64, last_line: String },
     /// RustConn fed a connect banner ending in `last_line` while the cursor was
     /// on `fed_at_row`; the row below the banner is located on the next read.
     AfterBanner { last_line: String, fed_at_row: i64 },
+}
+
+/// What the session's current process has shown since its connect banner, as
+/// the connection status detectors read it.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ConnectionOutput {
+    /// How many rows below the first row of the process's output the cursor
+    /// is; 0 while the process has printed no full line.
+    pub row: i64,
+    /// The text from the first row of the process's output to the cursor.
+    pub text: String,
+    /// The client has taken over the screen: the cursor is above the first
+    /// row of its output and the connect banner is no longer shown above the
+    /// cursor. A switch to the alternate screen (mosh-client, a full-screen
+    /// program started on login) does this; rows of that screen cannot be
+    /// compared with the base row, so `row` and `text` say nothing then.
+    pub screen_replaced: bool,
 }
 
 /// The base to count from when the banner was not found above the cursor.
@@ -89,6 +110,21 @@ fn is_banner_start(row_text: &str, last_line: &str) -> bool {
     !text.is_empty()
         && last_line.starts_with(text)
         && text.chars().count() >= last_line.chars().count().min(BANNER_MATCH_MIN_CHARS)
+}
+
+/// Whether `text`, the rows above the cursor as one string (a wrapped line
+/// joined into one), still holds the banner line `last_line`.
+///
+/// VTE has no API that says which screen is active (`vte4` binds none up to
+/// its `v0_84` tier). The alternate screen has a buffer and row numbering of
+/// its own (`Terminal::switch_screen` in VTE's `vteseq.cc`), and
+/// `cursor_position()` and `text_range_format()` read the active screen, so a
+/// banner that vanished from above the cursor is the evidence that the client
+/// switched to it. On the normal screen the banner stays in the buffer, even
+/// after a resize rewrapped it into other rows.
+#[must_use]
+pub(super) fn shows_banner(text: &str, last_line: &str) -> bool {
+    text.lines().any(|line| is_banner_start(line, last_line))
 }
 
 /// Finds the row just below the most recent banner.
@@ -230,6 +266,23 @@ mod tests {
         // A screenful printed since the banner: the window top is below it.
         assert_eq!(base_without_banner(500, 700), Some(500));
         assert_eq!(base_without_banner(500, 900), Some(700));
+    }
+
+    #[test]
+    fn the_normal_screen_still_shows_the_banner() {
+        let last = banner_last_line(BANNER);
+        // A resize may rewrap the rows, and VTE joins a wrapped line in one.
+        let normal = "old output\n⚡ Executing: aws ssm start-session --target i-1\n\nuser@web:~$ ";
+        assert!(shows_banner(normal, &last));
+    }
+
+    #[test]
+    fn the_alternate_screen_does_not_show_the_banner() {
+        let last = banner_last_line(BANNER);
+        // What mosh-client draws: the remote screen, and nothing of RustConn's.
+        let alternate = "Last login: Mon Nov  3 10:00:00 2026\nuser@web:~ ❯ ";
+        assert!(!shows_banner(alternate, &last));
+        assert!(!shows_banner("", &last));
     }
 
     #[test]

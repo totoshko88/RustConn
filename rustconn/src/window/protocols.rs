@@ -17,7 +17,7 @@ use super::{MainWindow, prompt_autofill};
 use crate::i18n::{i18n, i18n_f};
 use crate::sidebar::ConnectionSidebar;
 use crate::state::SharedAppState;
-use crate::terminal::TerminalNotebook;
+use crate::terminal::{ConnectionOutput, TerminalNotebook};
 use crate::utils::spawn_blocking_with_callback;
 
 /// Type alias for shared sidebar reference
@@ -835,13 +835,6 @@ pub(super) fn contains_ssh_failure(text: &str) -> bool {
         .any(|p| lower.contains(&p.to_lowercase()))
 }
 
-/// The cursor row past which a *direct* SSH session is treated as established.
-///
-/// A direct connection either reaches the host or the pre-connect port check
-/// already failed it, so the first prompt-height output is enough. The value is
-/// the historical threshold (`row > 2`).
-const SSH_ESTABLISHED_MIN_ROW: i64 = 2;
-
 /// Returns `true` if the terminal text ends on what looks like an interactive
 /// shell prompt.
 ///
@@ -855,12 +848,11 @@ const SSH_ESTABLISHED_MIN_ROW: i64 = 2;
 ///
 /// The heuristic is deliberately loose — the last non-blank line ending in one of
 /// the common prompt terminators (`$`, `#`, `%`, `>`), optionally followed by a
-/// space or cursor. A fresh connect consults it only for jump-host connections (a
-/// direct connection is already gated by the pre-connect port check); the in-place
-/// reconnect verdicts ([`reconnect_established`]) consult it for every connection.
-/// It is always used alongside a failure-pattern scan, so a false positive is
-/// bounded by that scan and a false negative simply defers the decision to the
-/// next output line.
+/// space or cursor. [`output_established`] consults it for every connection; it
+/// is the only evidence it accepts through a jump host. It is always used
+/// alongside a failure-pattern scan, so a false positive is bounded by that
+/// scan and a false negative simply defers the decision to the next output
+/// line.
 fn ends_with_shell_prompt(text: &str) -> bool {
     last_non_blank_line(text).is_some_and(is_shell_prompt_line)
 }
@@ -887,38 +879,67 @@ fn is_credential_question(line: &str) -> bool {
             .any(|word| lower.contains(word))
 }
 
-/// The part of `text` after its last shell prompt or credential question.
+/// Whether one line is telnet's `Trying <address>...`: the client is about to
+/// try one address, and says nothing yet about whether it will answer.
 ///
-/// The output a reconnect verdict reads only grows, so a failure line anywhere
+/// telnet tries each address of a name in turn and prints this before each
+/// one, so a line like it also means that any failure above it was for an
+/// earlier address. `Connected to <host>.` and `Escape character is '^]'.`,
+/// which follow once the connection is up, are not progress lines: they are
+/// what telnet prints for a connected session, and a device that waits for a
+/// key press before its login prompt prints nothing else.
+fn is_retry_line(line: &str) -> bool {
+    let line = line.trim();
+    line.starts_with("Trying ") && line.ends_with("...")
+}
+
+/// Whether one line is a client's note on the way to a connection, which is
+/// not evidence of one: telnet's `Trying …` ([`is_retry_line`]) and OpenSSH's
+/// `Warning: Permanently added '<host>' (…) to the list of known hosts.`,
+/// printed before authentication.
+fn is_progress_line(line: &str) -> bool {
+    let line = line.trim();
+    is_retry_line(line)
+        || (line.starts_with("Warning: Permanently added ")
+            && line.ends_with("to the list of known hosts."))
+}
+
+/// The part of `text` after its last shell prompt, credential question or
+/// telnet retry line.
+///
+/// The output a status verdict reads only grows, so a failure line anywhere
 /// in it would be sticky: OpenSSH prints `Permission denied, please try again.`
 /// after a rejected password and then asks again, and a successful retry must
 /// still count. Every prompt or question means the client went on after what
 /// came before it, so only what follows the last one can be the client's final
-/// word. A client that fails for good prints its error and exits, with no
-/// prompt after it. Scanning only this tail also bounds the work the detector
-/// repeats on every change.
+/// word; the same holds for telnet's `Trying …` before its next address. A
+/// client that fails for good prints its error and exits, with no prompt after
+/// it. Scanning only this tail also bounds the work the detector repeats on
+/// every change.
 fn output_after_last_prompt(text: &str) -> &str {
     let mut tail_start = 0;
     let mut offset = 0;
     for line in text.split_inclusive('\n') {
         offset += line.len();
-        if is_shell_prompt_line(line) || is_credential_question(line) {
+        if is_shell_prompt_line(line) || is_credential_question(line) || is_retry_line(line) {
             tail_start = offset;
         }
     }
     &text[tail_start..]
 }
 
-/// The one rule behind both in-place reconnect verdicts
-/// ([`ssh_reconnect_established`] and [`reconnect_output_established`]).
+/// The one rule behind both status verdicts ([`ssh_output_established`] and
+/// [`client_output_established`]), for a fresh connect and an in-place
+/// reconnect alike.
 ///
-/// `output` counts from below the reconnect banner. `None` fails closed. A
-/// failure (`is_failure`) in the output after the last prompt or credential
-/// question means not established. Otherwise a trailing shell prompt means
-/// established, on any row. Without a prompt, `row_suffices` decides whether
-/// one full line of output (`cursor_row > 0`) is enough, unless the client is
-/// waiting on a credential question.
-fn reconnect_established(
+/// `output` counts from below RustConn's connect banner. `None` fails closed. A
+/// failure (`is_failure`) in the output after the last prompt, credential
+/// question or telnet retry line means not established. Otherwise a trailing
+/// shell prompt means established, on any row. Without a prompt,
+/// `row_suffices` decides whether one full line of output (`cursor_row > 0`)
+/// is enough, unless the client is waiting on a credential question or its
+/// last line is only a progress note ([`is_progress_line`]).
+fn output_established(
     cursor_row: i64,
     output: Option<&str>,
     row_suffices: bool,
@@ -933,49 +954,24 @@ fn reconnect_established(
     if ends_with_shell_prompt(text) {
         return true;
     }
-    row_suffices && cursor_row > 0 && !last_non_blank_line(text).is_some_and(is_credential_question)
+    row_suffices
+        && cursor_row > 0
+        && !last_non_blank_line(text)
+            .is_some_and(|line| is_credential_question(line) || is_progress_line(line))
 }
 
-/// Whether an SSH session should be treated as established from its terminal
-/// state, given whether it is routed through a jump host.
+/// Whether an SSH session is established, from what ssh printed below the
+/// connect banner (`TerminalNotebook::display_connect_banner`), given whether
+/// it is routed through a jump host.
 ///
-/// This is the single decision shared by the sidebar "connected" flip and the
-/// deferred monitoring start; both used to inline the same `row > 2` +
-/// [`contains_ssh_failure`] check, and a fix to one that missed the other is
-/// exactly how a jump-host session came up green while monitoring showed a
-/// timeout (and vice versa). Keep it here so the two callers cannot drift.
+/// Shared by the sidebar "connected" flip, the deferred monitoring start and
+/// the session-recording start of both the initial connect and the in-place
+/// reconnect (`reconnect_ssh_in_place`), so none of them can drift from the
+/// others. `cursor_row` and `output` count from just below the banner, so the
+/// banner itself never counts, and a quiet login that prints only a prompt
+/// sits on row 0.
 ///
-/// - Direct connection: established once output passes [`SSH_ESTABLISHED_MIN_ROW`].
-///   The pre-connect port check has already rejected an unreachable direct host,
-///   so the first prompt-height output is trustworthy.
-/// - Jump-host connection: the port check is skipped (the target is not directly
-///   reachable), so cursor height alone is meaningless — a bastion banner reaches
-///   it while the final host is still timing out. Established only once the buffer
-///   holds **no** known SSH failure pattern **and** shows an interactive shell
-///   prompt (proof the *final* hop handed over a shell). `text` is the current
-///   terminal buffer; `None` (unreadable) fails closed, and the caller's closure
-///   re-runs on the next output.
-pub(super) fn ssh_connection_established(
-    cursor_row: i64,
-    uses_jump_host: bool,
-    text: Option<&str>,
-) -> bool {
-    if !uses_jump_host {
-        return cursor_row > SSH_ESTABLISHED_MIN_ROW;
-    }
-    text.is_some_and(|t| !contains_ssh_failure(t) && ends_with_shell_prompt(t))
-}
-
-/// Whether an SSH in-place reconnect (`reconnect_ssh_in_place`) is established.
-///
-/// The reconnect variant of [`ssh_connection_established`], shared by the
-/// reconnect's sidebar flip and its deferred monitoring start. `cursor_row` and
-/// `output` count from just below RustConn's reconnect banner
-/// (`TerminalNotebook::display_reconnect_banner`), so the fresh-connect
-/// threshold [`SSH_ESTABLISHED_MIN_ROW`], which was met partly by that banner,
-/// does not apply: a quiet login that prints only a prompt sits on row 0.
-///
-/// The rule is [`reconnect_established`], with [`contains_ssh_failure`]:
+/// The rule is [`output_established`], with [`contains_ssh_failure`]:
 ///
 /// - Neither path is established while `output` is `None` (unreadable, or the
 ///   banner not processed yet), or while a known SSH failure follows the last
@@ -983,22 +979,25 @@ pub(super) fn ssh_connection_established(
 ///   output. A `Permission denied, please try again.` before a retry that
 ///   succeeds does not count.
 /// - A trailing shell prompt means established, also on row 0.
-/// - Direct connection without a prompt: established once the new output
-///   reaches a full line (`cursor_row > 0`) and is not waiting on a password
-///   or passphrase question.
-/// - Jump-host connection: established only on a shell prompt, as on a fresh
-///   connect; `output` excludes the kept scrollback, so a prompt or an error
-///   from the previous session is not read again.
-pub(super) fn ssh_reconnect_established(
+/// - Direct connection without a prompt: established once the output reaches
+///   a full line (`cursor_row > 0`) and is not waiting on a password or
+///   passphrase question or ending in the known-hosts warning.
+/// - Jump-host connection: established only on a shell prompt. The pre-connect
+///   port check is skipped for it (the target is not directly reachable), and a
+///   bastion banner arrives while the final host is still timing out, so only
+///   a prompt proves that the final hop handed over a shell. `output` excludes
+///   the kept scrollback, so a prompt or an error from the previous session is
+///   not read again.
+pub(super) fn ssh_output_established(
     cursor_row: i64,
     uses_jump_host: bool,
     output: Option<&str>,
 ) -> bool {
-    reconnect_established(cursor_row, output, !uses_jump_host, contains_ssh_failure)
+    output_established(cursor_row, output, !uses_jump_host, contains_ssh_failure)
 }
 
-/// Failure messages the non-SSH clients of an in-place reconnect print before
-/// they exit: the Zero Trust CLIs, telnet, picocom, kubectl and mosh. Matched
+/// Failure messages the non-SSH terminal clients print before they exit: the
+/// Zero Trust CLIs, telnet, picocom, kubectl and mosh. Matched
 /// case-insensitively anywhere in a line, like [`SSH_FAILURE_PATTERNS`], which
 /// also apply (mosh, gcloud IAP and several brokers run OpenSSH underneath).
 /// Each one is specific to the client that prints it; a generic word such as
@@ -1054,21 +1053,77 @@ fn contains_client_failure(text: &str) -> bool {
         })
 }
 
-/// Whether an in-place reconnect through [`reconnect_generic_vte_in_place`] is
-/// established.
+/// Whether a Zero Trust, Telnet, Serial, Kubernetes or Mosh session is
+/// established, from what its client printed below the connect banner.
 ///
-/// `cursor_row` and `output` both count from just below RustConn's reconnect
-/// banner (`TerminalNotebook::display_reconnect_banner`), so they describe only
-/// what the new process printed. The rule is the one the SSH reconnect uses
-/// ([`reconnect_established`]), with [`contains_client_failure`]: established
-/// on a trailing shell prompt (also on row 0, as with `kubectl exec -it`), or
-/// once the output is at least one full line, unless a known failure follows
-/// the last prompt or password question. An SSM reconnect prints "Starting
+/// `cursor_row` and `output` both count from just below RustConn's connect
+/// banner (`TerminalNotebook::display_connect_banner`), so they describe only
+/// what the client printed, on a fresh connect and after an in-place reconnect
+/// ([`reconnect_generic_vte_in_place`]) alike. The rule is the one the SSH
+/// verdict uses ([`output_established`]), with [`contains_client_failure`]:
+/// established on a trailing shell prompt (also on row 0, as with
+/// `kubectl exec -it`), or once the output is at least one full line that is
+/// not telnet's `Trying …`, unless a known failure follows the last prompt,
+/// password question or `Trying …` line. An SSM session prints "Starting
 /// session…" and a prompt; a failed one prints the CLI's error and exits.
 /// `None` output (unreadable, or the banner not processed yet) fails closed;
 /// the detector runs again on the next output.
-pub(super) fn reconnect_output_established(cursor_row: i64, output: Option<&str>) -> bool {
-    reconnect_established(cursor_row, output, true, contains_client_failure)
+pub(super) fn client_output_established(cursor_row: i64, output: Option<&str>) -> bool {
+    output_established(cursor_row, output, true, contains_client_failure)
+}
+
+/// Which client a terminal session's status detector judges.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum StatusClient {
+    /// OpenSSH, directly or through a jump host: [`ssh_output_established`].
+    Ssh { jump_host: bool },
+    /// Any other terminal client: [`client_output_established`].
+    Other,
+}
+
+/// The verdict every terminal status detector applies, on a fresh connect and
+/// after an in-place reconnect: the sidebar "connected" flip, the deferred
+/// monitoring start and the session-recording start.
+///
+/// A client that has taken over the screen
+/// ([`ConnectionOutput::screen_replaced`], such as mosh-client on the
+/// alternate screen) is established: a client that fails prints its error on
+/// the normal screen and exits. Otherwise the client's own verdict decides.
+pub(super) fn connection_established(
+    client: StatusClient,
+    output: Option<&ConnectionOutput>,
+) -> bool {
+    output.is_some_and(|output| {
+        output.screen_replaced
+            || match client {
+                StatusClient::Ssh { jump_host } => {
+                    ssh_output_established(output.row, jump_host, Some(&output.text))
+                }
+                StatusClient::Other => client_output_established(output.row, Some(&output.text)),
+            }
+    })
+}
+
+/// Runs `on_established` once the session's current process is established
+/// by [`connection_established`].
+///
+/// The detector stops (and its handler disconnects) once it has run
+/// `on_established`, or once a later in-place reconnect replaced the process
+/// it was installed for; see `TerminalNotebook::watch_connection_output`.
+pub(super) fn when_established(
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    client: StatusClient,
+    on_established: impl FnOnce() + 'static,
+) {
+    let on_established = std::cell::Cell::new(Some(on_established));
+    notebook.watch_connection_output(session_id, move |output| {
+        let established = connection_established(client, output);
+        if established && let Some(on_established) = on_established.take() {
+            on_established();
+        }
+        established
+    });
 }
 
 /// Delegates to [`rustconn_core::ssh_tunnel::append_proxy_command_destination`].
@@ -2028,7 +2083,7 @@ pub fn reconnect_generic_vte_in_place(
             let conn_msg = format_connection_message(zt_config.provider.display_name(), &conn.name);
             let cmd_msg = format_command_message(&launch.display);
             notebook
-                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+                .display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             let argv: Vec<&str> = launch.argv.iter().map(String::as_str).collect();
             let env = launch.env_refs();
@@ -2039,7 +2094,7 @@ pub fn reconnect_generic_vte_in_place(
             let conn_msg = format_connection_message("Telnet", &conn.host);
             let cmd_msg = format_command_message(&format!("telnet {} {}", conn.host, conn.port));
             notebook
-                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+                .display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             notebook.spawn_telnet(
                 session_id,
@@ -2066,7 +2121,7 @@ pub fn reconnect_generic_vte_in_place(
             let conn_msg = format_connection_message("Serial", &serial_config.device);
             let cmd_msg = format_command_message(&command.join(" "));
             notebook
-                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+                .display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             notebook.spawn_serial(session_id, &command);
         }
@@ -2080,7 +2135,7 @@ pub fn reconnect_generic_vte_in_place(
             let conn_msg = format_connection_message("Kubernetes", &conn.name);
             let cmd_msg = format_command_message(&command.join(" "));
             notebook
-                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+                .display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             // Spawn argv directly (no `sh -c`) so namespace/pod/container fields
             // are never shell-interpreted. This prevents command injection from
@@ -2100,7 +2155,7 @@ pub fn reconnect_generic_vte_in_place(
             let conn_msg = format_connection_message("MOSH", &conn.host);
             let cmd_msg = format_command_message(&command.join(" "));
             notebook
-                .display_reconnect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+                .display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
 
             // Re-assert the erase mode (issue #271): a reconnect spawns into the
             // same terminal, and nothing else restores it after a VTE reset.
@@ -2124,36 +2179,14 @@ pub fn reconnect_generic_vte_in_place(
 
     // Status detection: mark connected once the new process has printed a line
     // that is not a failure. The rows and text both count from below the
-    // reconnect banner pinned above, so an SSM reconnect that prints only
+    // connect banner pinned above, so an SSM reconnect that prints only
     // "Starting session…" and a prompt — even in the same VTE pass as the
     // banner — turns the sidebar green, and a failed one, whose CLI prints its
     // error and exits, stays on "connecting" until the exit marks it failed.
-    {
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = notebook.clone();
-        let connection_id_str = connection_id.to_string();
-        let done = std::rc::Rc::new(std::cell::Cell::new(false));
-        let started_at = notebook.session_started_at(session_id);
-
-        notebook.connect_contents_changed(session_id, move || {
-            if done.get() {
-                return;
-            }
-            // A later reconnect replaced this attempt; its own detector counts it.
-            if notebook_clone.session_started_at(session_id) != started_at {
-                done.set(true);
-                return;
-            }
-            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                return;
-            };
-            let output = notebook_clone.get_connection_output(session_id);
-            if reconnect_output_established(row, output.as_deref()) {
-                sidebar_clone.increment_session_count(&connection_id_str);
-                done.set(true);
-            }
-        });
-    }
+    let sidebar = sidebar.clone();
+    when_established(notebook, session_id, StatusClient::Other, move || {
+        sidebar.increment_session_count(&connection_id.to_string());
+    });
 
     true
 }
@@ -2355,7 +2388,7 @@ fn start_telnet_connection_internal(
     let conn_msg = format_connection_message("Telnet", &host);
     let cmd_msg = format_command_message(&telnet_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn telnet
     let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
@@ -2391,8 +2424,6 @@ fn start_telnet_connection_internal(
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name.clone();
-        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let recording_started_clone = recording_started.clone();
         let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
             host: host.clone(),
             port,
@@ -2400,24 +2431,12 @@ fn start_telnet_connection_internal(
             identity_file: None,
         });
 
-        notebook.connect_contents_changed(session_id, move || {
-            if recording_started_clone.get() {
-                return;
-            }
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 0
-            {
-                recording_started_clone.set(true);
-                notebook_clone.start_recording(
-                    session_id,
-                    &recording_conn_name,
-                    recording_ssh_params.clone(),
-                );
-                tracing::info!(
-                    %session_id,
-                    "Auto-recording started after Telnet connection"
-                );
-            }
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after Telnet connection"
+            );
         });
     }
 
@@ -2600,7 +2619,7 @@ pub fn start_zerotrust_connection(
     let conn_msg = format_connection_message(provider_name, &conn_name);
     let cmd_msg = format_command_message(&launch.display);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     let argv: Vec<&str> = launch.argv.iter().map(String::as_str).collect();
     let env = launch.env_refs();
@@ -2739,7 +2758,7 @@ pub fn start_serial_connection(
     let conn_msg = format_connection_message("Serial", &device);
     let cmd_msg = format_command_message(&serial_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn picocom
     notebook.spawn_serial(session_id, &command);
@@ -2928,7 +2947,7 @@ pub fn start_kubernetes_connection(
     let conn_msg = format_connection_message("Kubernetes", &target);
     let cmd_msg = format_command_message(&kubectl_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn argv directly (no `sh -c`) so namespace/pod/container fields are
     // never shell-interpreted — prevents command injection from shell metachars
@@ -2941,23 +2960,13 @@ pub fn start_kubernetes_connection(
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name;
-        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let recording_started_clone = recording_started.clone();
 
-        notebook.connect_contents_changed(session_id, move || {
-            if recording_started_clone.get() {
-                return;
-            }
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 0
-            {
-                recording_started_clone.set(true);
-                notebook_clone.start_recording(session_id, &recording_conn_name, None);
-                tracing::info!(
-                    %session_id,
-                    "Auto-recording started after Kubernetes connection"
-                );
-            }
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            notebook_clone.start_recording(session_id, &recording_conn_name, None);
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after Kubernetes connection"
+            );
         });
     }
 
@@ -3169,7 +3178,7 @@ fn start_mosh_connection_internal(
     let conn_msg = format_connection_message("MOSH", &conn.host);
     let cmd_msg = format_command_message(&mosh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Backspace/Delete bytes this host expects (issue #271). MOSH draws into a
     // VTE widget like SSH and Telnet do, so the setting applies to the widget
@@ -3188,8 +3197,6 @@ fn start_mosh_connection_internal(
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name;
-        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let recording_started_clone = recording_started.clone();
         let ssh_port = if let rustconn_core::ProtocolConfig::Mosh(ref cfg) = conn.protocol_config {
             cfg.ssh_port.unwrap_or(22)
         } else {
@@ -3202,24 +3209,14 @@ fn start_mosh_connection_internal(
             identity_file: None,
         });
 
-        notebook.connect_contents_changed(session_id, move || {
-            if recording_started_clone.get() {
-                return;
-            }
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 2
-            {
-                recording_started_clone.set(true);
-                notebook_clone.start_recording(
-                    session_id,
-                    &recording_conn_name,
-                    recording_ssh_params.clone(),
-                );
-                tracing::info!(
-                    %session_id,
-                    "Auto-recording started after MOSH connection"
-                );
-            }
+        // mosh-client draws on the alternate screen; see
+        // `ConnectionOutput::screen_replaced`.
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after MOSH connection"
+            );
         });
     }
 
@@ -3423,22 +3420,30 @@ mod tests {
 #[cfg(test)]
 mod established_tests {
     //! The shared SSH-established verdict (issue: jump-host sessions to
-    //! unreachable targets shown as connected + monitoring started). No GTK
-    //! widgets: the helper is pure, driven by cursor row + terminal text.
-    use super::{ends_with_shell_prompt, ssh_connection_established};
+    //! unreachable targets shown as connected + monitoring started), as a fresh
+    //! connect applies it. No GTK widgets: the helper is pure, driven by the
+    //! cursor row and text counted from below RustConn's connect banner.
+    use super::{
+        ConnectionOutput, StatusClient, connection_established, ends_with_shell_prompt,
+        ssh_output_established,
+    };
 
     #[test]
-    fn direct_connection_established_past_threshold() {
-        // A direct connection is gated upstream by the port check, so cursor
-        // height alone is trusted and terminal text is irrelevant.
-        assert!(ssh_connection_established(3, false, None));
-        assert!(ssh_connection_established(7, false, Some("anything")));
+    fn a_direct_connection_with_a_full_line_is_established() {
+        assert!(ssh_output_established(
+            1,
+            false,
+            Some("Last login: today\n")
+        ));
+        assert!(ssh_output_established(5, false, Some("anything\n")));
     }
 
     #[test]
-    fn direct_connection_not_established_at_or_below_threshold() {
-        assert!(!ssh_connection_established(0, false, None));
-        assert!(!ssh_connection_established(2, false, Some("banner")));
+    fn the_connect_banner_alone_is_not_established() {
+        // The banner sits above the counted rows: nothing printed yet.
+        assert!(!ssh_output_established(0, false, Some("")));
+        assert!(!ssh_output_established(0, true, Some("")));
+        assert!(!ssh_output_established(0, false, None));
     }
 
     #[test]
@@ -3447,7 +3452,7 @@ mod established_tests {
         // final host is still timing out. No prompt yet, no failure yet — must
         // NOT latch connected.
         let banner = "Welcome to Ubuntu 22.04\n\n  System information as of ...\n\n";
-        assert!(!ssh_connection_established(7, true, Some(banner)));
+        assert!(!ssh_output_established(7, true, Some(banner)));
     }
 
     #[test]
@@ -3456,12 +3461,12 @@ mod established_tests {
         // banner. "Connection timed out" is a contains_ssh_failure pattern and a
         // substring of the banner-exchange message from the logs.
         let text = "Welcome to Ubuntu\n\nConnection timed out during banner exchange\n";
-        assert!(!ssh_connection_established(9, true, Some(text)));
+        assert!(!ssh_output_established(9, true, Some(text)));
     }
 
     #[test]
     fn jump_host_unreadable_buffer_fails_closed() {
-        assert!(!ssh_connection_established(9, true, None));
+        assert!(!ssh_output_established(9, true, None));
     }
 
     #[test]
@@ -3469,15 +3474,24 @@ mod established_tests {
         // The final host handed over a shell — a prompt line appears and no
         // failure pattern is present. Now (and only now) it is established.
         let text = "Welcome to Ubuntu\nLast login: ...\nubuntu@target:~$ ";
-        assert!(ssh_connection_established(9, true, Some(text)));
+        assert!(ssh_output_established(9, true, Some(text)));
     }
 
     #[test]
-    fn jump_host_prompt_but_failure_present_is_not_established() {
-        // A failure anywhere in the buffer wins over a prompt-looking line, so a
-        // stale prompt from a prior session cannot mask a fresh timeout.
-        let text = "user@bastion:~$ ssh target\nConnection refused\nuser@bastion:~$ ";
-        assert!(!ssh_connection_established(9, true, Some(text)));
+    fn jump_host_prompt_then_a_failure_is_not_established() {
+        let text = "ubuntu@target:~$ \nConnection reset by 192.0.2.1 port 22\n";
+        assert!(!ssh_output_established(2, true, Some(text)));
+    }
+
+    #[test]
+    fn the_known_hosts_warning_alone_is_not_established() {
+        let text =
+            "Warning: Permanently added 'web.example' (ED25519) to the list of known hosts.\n";
+        assert!(!ssh_output_established(1, false, Some(text)));
+        let then_failed = format!("{text}user@web.example: Permission denied (publickey).\n");
+        assert!(!ssh_output_established(2, false, Some(&then_failed)));
+        let then_logged_in = format!("{text}Last login: today\n");
+        assert!(ssh_output_established(2, false, Some(&then_logged_in)));
     }
 
     #[test]
@@ -3496,31 +3510,73 @@ mod established_tests {
         assert!(!ends_with_shell_prompt("System information as of now"));
         assert!(!ends_with_shell_prompt(""));
     }
+
+    fn output(row: i64, text: &str, screen_replaced: bool) -> ConnectionOutput {
+        ConnectionOutput {
+            row,
+            text: text.to_owned(),
+            screen_replaced,
+        }
+    }
+
+    #[test]
+    fn a_client_that_took_over_the_screen_is_established() {
+        // mosh-client on the alternate screen: the rows cannot be compared
+        // with the base, so the row and text say nothing.
+        let replaced = output(0, "", true);
+        for client in [
+            StatusClient::Other,
+            StatusClient::Ssh { jump_host: false },
+            StatusClient::Ssh { jump_host: true },
+        ] {
+            assert!(
+                connection_established(client, Some(&replaced)),
+                "{client:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_shared_verdict_follows_the_clients_rule() {
+        let bastion = output(3, "Welcome to the bastion\n\n", false);
+        assert!(connection_established(
+            StatusClient::Ssh { jump_host: false },
+            Some(&bastion)
+        ));
+        assert!(!connection_established(
+            StatusClient::Ssh { jump_host: true },
+            Some(&bastion)
+        ));
+        let trying = output(1, "Trying 192.0.2.1...\n", false);
+        assert!(!connection_established(StatusClient::Other, Some(&trying)));
+        assert!(!connection_established(StatusClient::Other, None));
+    }
 }
 
 #[cfg(test)]
-mod ssh_reconnect_established_tests {
-    //! The SSH in-place reconnect verdict. Row and output count from below the
-    //! reconnect banner, so they hold only what the new ssh process printed.
-    use super::ssh_reconnect_established;
+mod ssh_output_established_tests {
+    //! The SSH verdict after an in-place reconnect. Row and output count from
+    //! below the connect banner, so they hold only what the new ssh process
+    //! printed.
+    use super::ssh_output_established;
 
     #[test]
     fn prompt_only_direct_reconnect_is_established() {
         // Key auth, no MOTD, no last-login line: the prompt alone, on row 0.
-        assert!(ssh_reconnect_established(0, false, Some("ubuntu@host:~$ ")));
+        assert!(ssh_output_established(0, false, Some("ubuntu@host:~$ ")));
     }
 
     #[test]
     fn direct_reconnect_with_a_full_line_is_established() {
         let output = "Last login: Tue Nov  4 14:00:00 2025\nubuntu@host:~$ ";
-        assert!(ssh_reconnect_established(1, false, Some(output)));
+        assert!(ssh_output_established(1, false, Some(output)));
     }
 
     #[test]
     fn direct_reconnect_with_nothing_printed_is_not_established() {
-        assert!(!ssh_reconnect_established(0, false, Some("")));
+        assert!(!ssh_output_established(0, false, Some("")));
         // A password or host-key question is not a prompt.
-        assert!(!ssh_reconnect_established(
+        assert!(!ssh_output_established(
             0,
             false,
             Some("ubuntu@host's password: ")
@@ -3534,11 +3590,11 @@ mod ssh_reconnect_established_tests {
             "Connection reset by 192.0.2.1 port 22\n",
         ] {
             assert!(
-                !ssh_reconnect_established(1, false, Some(output)),
+                !ssh_output_established(1, false, Some(output)),
                 "treated as established: {output}"
             );
             assert!(
-                !ssh_reconnect_established(1, true, Some(output)),
+                !ssh_output_established(1, true, Some(output)),
                 "treated as established through a jump host: {output}"
             );
         }
@@ -3546,90 +3602,124 @@ mod ssh_reconnect_established_tests {
 
     #[test]
     fn unreadable_or_pending_output_fails_closed() {
-        assert!(!ssh_reconnect_established(5, false, None));
-        assert!(!ssh_reconnect_established(5, true, None));
+        assert!(!ssh_output_established(5, false, None));
+        assert!(!ssh_output_established(5, true, None));
     }
 
     #[test]
     fn a_rejected_password_then_a_prompt_is_established() {
         let output = "Permission denied, please try again.\nuser@host:~$ ";
-        assert!(ssh_reconnect_established(1, false, Some(output)));
-        assert!(ssh_reconnect_established(1, true, Some(output)));
+        assert!(ssh_output_established(1, false, Some(output)));
+        assert!(ssh_output_established(1, true, Some(output)));
         let retried = "user@host's password: \nPermission denied, please try again.\n\
                        user@host's password: \nLast login: Tue Nov  4 14:00:00 2025\n\
                        user@host:~$ ";
-        assert!(ssh_reconnect_established(4, false, Some(retried)));
+        assert!(ssh_output_established(4, false, Some(retried)));
     }
 
     #[test]
     fn a_password_asked_again_is_not_established_yet() {
         let output = "user@host's password: \nPermission denied, please try again.\n\
                       user@host's password: ";
-        assert!(!ssh_reconnect_established(2, false, Some(output)));
+        assert!(!ssh_output_established(2, false, Some(output)));
     }
 
     #[test]
     fn a_failure_after_the_last_password_question_is_not_established() {
         let output = "user@host's password: \n\
                       user@host: Permission denied (publickey,password).\n";
-        assert!(!ssh_reconnect_established(2, false, Some(output)));
+        assert!(!ssh_output_established(2, false, Some(output)));
     }
 
     #[test]
     fn a_prompt_then_a_later_failure_is_not_established() {
         let output = "user@host:~$ \nConnection reset by 192.0.2.1 port 22\n";
-        assert!(!ssh_reconnect_established(2, false, Some(output)));
-        assert!(!ssh_reconnect_established(2, true, Some(output)));
+        assert!(!ssh_output_established(2, false, Some(output)));
+        assert!(!ssh_output_established(2, true, Some(output)));
     }
 
     #[test]
     fn jump_host_reconnect_needs_a_prompt() {
         let banner = "Welcome to the bastion\n\n";
-        assert!(!ssh_reconnect_established(2, true, Some(banner)));
+        assert!(!ssh_output_established(2, true, Some(banner)));
         let output = "Welcome to the bastion\n\nubuntu@target:~$ ";
-        assert!(ssh_reconnect_established(2, true, Some(output)));
+        assert!(ssh_output_established(2, true, Some(output)));
     }
 }
 
 #[cfg(test)]
-mod reconnect_established_tests {
-    //! The generic in-place reconnect verdict (Zero Trust, Telnet, Serial,
-    //! Kubernetes, Mosh). Row and text count from below the reconnect banner.
-    use super::reconnect_output_established;
+mod client_output_established_tests {
+    //! The verdict for the other terminal clients (Zero Trust, Telnet, Serial,
+    //! Kubernetes, Mosh). Row and text count from below the connect banner.
+    use super::client_output_established;
 
     #[test]
     fn ssm_reply_in_one_chunk_is_established() {
         let output = "\nStarting session with SessionId: me-0123abcd\nsh-5.2$ ";
-        assert!(reconnect_output_established(2, Some(output)));
+        assert!(client_output_established(2, Some(output)));
     }
 
     #[test]
     fn nothing_printed_yet_is_not_established() {
-        assert!(!reconnect_output_established(0, Some("")));
+        assert!(!client_output_established(0, Some("")));
     }
 
     #[test]
     fn a_prompt_on_row_zero_is_established() {
         // `kubectl exec -it` or a quiet login: the prompt alone, on row 0.
-        assert!(reconnect_output_established(0, Some("sh-5.2$ ")));
+        assert!(client_output_established(0, Some("sh-5.2$ ")));
     }
 
     #[test]
     fn a_failure_then_a_prompt_is_established() {
         let output = "Permission denied, please try again.\nuser@host:~$ ";
-        assert!(reconnect_output_established(1, Some(output)));
+        assert!(client_output_established(1, Some(output)));
     }
 
     #[test]
     fn a_prompt_then_a_later_failure_is_not_established() {
         let output = "sh-5.2$ \nAn error occurred (TargetNotConnected) when calling the \
                       StartSession operation\n";
-        assert!(!reconnect_output_established(2, Some(output)));
+        assert!(!client_output_established(2, Some(output)));
+    }
+
+    #[test]
+    fn telnet_trying_alone_is_not_established() {
+        // telnet prints this in a pass of its own before the TCP connect.
+        assert!(!client_output_established(1, Some("Trying 192.0.2.1...\n")));
+        assert!(!client_output_established(
+            1,
+            Some("Trying 2001:db8::1...\n")
+        ));
+    }
+
+    #[test]
+    fn telnet_connected_is_established() {
+        // A device that waits for a key press prints nothing after this.
+        let output = "Trying 192.0.2.1...\nConnected to router.example.\n\
+                      Escape character is '^]'.\n";
+        assert!(client_output_established(3, Some(output)));
+        assert!(client_output_established(
+            2,
+            Some("Trying 192.0.2.1...\nConnected to router.example.\n")
+        ));
+    }
+
+    #[test]
+    fn a_failed_telnet_address_before_the_next_one_does_not_count() {
+        // telnet tries each address of a name in turn.
+        let output = "Trying ::1...\ntelnet: connect to address ::1: Connection refused\n\
+                      Trying 127.0.0.1...\nConnected to localhost.\n\
+                      Escape character is '^]'.\n";
+        assert!(client_output_established(5, Some(output)));
+        let still_trying = "Trying ::1...\ntelnet: connect to address ::1: Connection refused\n\
+                            Trying 127.0.0.1...\n";
+        assert!(!client_output_established(3, Some(still_trying)));
     }
 
     #[test]
     fn a_waiting_password_question_is_not_established_yet() {
-        assert!(!reconnect_output_established(
+        assert!(!client_output_established(
             2,
             Some("Trying 192.0.2.1...\nConnected to host.\nPassword:")
         ));
@@ -3644,7 +3734,7 @@ mod reconnect_established_tests {
             "Hint: if a command not found message appears, run setup\n",
         ] {
             assert!(
-                reconnect_output_established(1, Some(output)),
+                client_output_established(1, Some(output)),
                 "treated as a failure: {output}"
             );
         }
@@ -3652,7 +3742,7 @@ mod reconnect_established_tests {
 
     #[test]
     fn unreadable_or_pending_output_fails_closed() {
-        assert!(!reconnect_output_established(3, None));
+        assert!(!client_output_established(3, None));
     }
 
     #[test]
@@ -3672,7 +3762,7 @@ mod reconnect_established_tests {
             "aws: command not found\n",
         ] {
             assert!(
-                !reconnect_output_established(2, Some(output)),
+                !client_output_established(2, Some(output)),
                 "treated as established: {output}"
             );
         }

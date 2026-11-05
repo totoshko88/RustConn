@@ -181,7 +181,7 @@ impl TerminalNotebook {
         // Everything fed above is processed asynchronously by VTE, so the
         // cursor is still where the preserved history ended. That row is the
         // baseline until the caller's banner pins a better one
-        // (`display_reconnect_banner`); it keeps the kept scrollback out of
+        // (`display_connect_banner`); it keeps the kept scrollback out of
         // the count either way.
         self.cursor_row_base.borrow_mut().insert(
             session_id,

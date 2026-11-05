@@ -2908,34 +2908,22 @@ impl MainWindow {
                     sidebar.update_connection_status(&connection_id.to_string(), "connecting");
                 }
 
-                let sidebar_clone = sidebar.clone();
-                let notebook_clone = notebook.clone();
-                let connection_id_str = connection_id.to_string();
-                let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-                let session_connected_clone = session_connected.clone();
-
-                notebook.connect_contents_changed(session_id, move || {
-                    if !session_connected_clone.get() {
-                        // Zero Trust: any output indicates success (threshold 0)
-                        if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) {
-                            tracing::debug!(
-                                protocol = "zerotrust",
-                                cursor_row = row,
-                                threshold = 0,
-                                "Zero Trust status detection: checking cursor row"
-                            );
-                            if row > 0 {
-                                sidebar_clone.increment_session_count(&connection_id_str);
-                                session_connected_clone.set(true);
-                                tracing::info!(
-                                    protocol = "zerotrust",
-                                    cursor_row = row,
-                                    "Terminal connection detected as established"
-                                );
-                            }
-                        }
-                    }
-                });
+                // The verdict an in-place reconnect uses, counted from below
+                // the connect banner, so the banner alone no longer turns the
+                // session green.
+                let sidebar = sidebar.clone();
+                protocols::when_established(
+                    notebook,
+                    session_id,
+                    protocols::StatusClient::Other,
+                    move || {
+                        sidebar.increment_session_count(&connection_id.to_string());
+                        tracing::info!(
+                            protocol = "zerotrust",
+                            "Terminal connection detected as established"
+                        );
+                    },
+                );
             }
         }
 

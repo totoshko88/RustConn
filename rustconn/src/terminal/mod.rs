@@ -26,6 +26,7 @@ mod child_teardown;
 mod config;
 mod detach;
 pub use detach::{DetachMonitor, DetachPresentation};
+pub use output_start::ConnectionOutput;
 mod failed_marker;
 pub mod file_drop;
 pub mod highlight_overlay;
@@ -326,11 +327,11 @@ pub struct TerminalNotebook {
     ///
     /// VTE cursor rows are absolute buffer coordinates — they include the
     /// scrollback — so every "the cursor advanced past the connect banner"
-    /// check needs a baseline once a reconnect keeps the previous session's
-    /// output (issue #253). A reconnect pins it explicitly with
-    /// [`Self::display_reconnect_banner`]; see [`output_start`] for why the row
-    /// is located by content rather than read when the banner is fed. A
-    /// session with no entry started on an empty buffer and needs no baseline.
+    /// check needs a baseline: the banner itself, and after a reconnect the
+    /// previous session's output (issue #253), are above it. Every terminal
+    /// connect pins it with [`Self::display_connect_banner`]; see
+    /// [`output_start`] for why the row is located by content rather than read
+    /// when the banner is fed. A session with no entry counts from row 0.
     cursor_row_base: Rc<RefCell<HashMap<Uuid, output_start::OutputStart>>>,
     /// OSC 133 prompt marks per session (shell-integration-osc133 spec).
     ///
@@ -1504,6 +1505,21 @@ fn grid_size(terminal: &Terminal) -> (u16, u16) {
     (clamp(terminal.row_count()), clamp(terminal.column_count()))
 }
 
+/// The text of the active screen's rows `first_row..=last_row`, with a
+/// wrapped line joined into one.
+fn rows_text(terminal: &Terminal, first_row: i64, last_row: i64) -> String {
+    terminal
+        .text_range_format(
+            vte4::Format::Text,
+            first_row,
+            0,
+            last_row,
+            terminal.column_count(),
+        )
+        .0
+        .map_or_else(String::new, |g| g.to_string())
+}
+
 /// Whether an output filter's program can actually be executed.
 ///
 /// Both shapes a filter can take — a bare command name and an absolute path — go
@@ -2171,35 +2187,84 @@ impl TerminalNotebook {
         }
     }
 
-    /// Gets the cursor row of a terminal session, relative to its connect.
+    /// What the session's current process has printed below its connect
+    /// banner, for the connection status detectors.
     ///
     /// VTE's `cursor_position()` returns `(column, row)` with the row in
-    /// absolute buffer coordinates — scrollback included. Callers use the row
-    /// to tell whether the session produced output past its connect banner, so
-    /// the value is reported relative to the row the current connection started
-    /// on. That is 0 for a fresh session and, after an in-place reconnect, the
-    /// row just below RustConn's reconnect banner, so only the new process's
-    /// output counts (issue #253).
+    /// absolute buffer coordinates — scrollback included — so the row and the
+    /// text are counted from the row the current connection's output starts
+    /// on: the row just below RustConn's connect banner, pinned by
+    /// [`Self::display_connect_banner`]. Neither the banner nor, after an
+    /// in-place reconnect, the kept scrollback counts (issue #253). See
+    /// [`ConnectionOutput::screen_replaced`] for a client on the alternate
+    /// screen, whose rows cannot be compared with that start row.
     ///
-    /// Returns `None` when the session has no terminal or the reconnect banner
-    /// has not been processed yet; callers wait for the next output.
-    pub fn get_terminal_cursor_row(&self, session_id: Uuid) -> Option<i64> {
+    /// Returns `None` when the session has no terminal or the banner has not
+    /// been processed yet; callers wait for the next output.
+    #[must_use]
+    pub fn connection_output(&self, session_id: Uuid) -> Option<ConnectionOutput> {
         let terminal = self.get_terminal(session_id)?;
-        let row = terminal.cursor_position().1;
-        let base = self.connection_start_row(session_id, &terminal, row)?;
-        Some((row - base).max(0))
+        let cursor_row = terminal.cursor_position().1;
+        let (base, banner) = self.connection_start_row(session_id, &terminal, cursor_row)?;
+        let text = rows_text(&terminal, base.min(cursor_row), cursor_row);
+        // Only a cursor above the start row can mean another screen, so the
+        // wider read runs only then.
+        let screen_replaced = cursor_row < base
+            && banner.is_some_and(|last_line| {
+                let first_row = (cursor_row - output_start::BANNER_SEARCH_ROWS).max(0);
+                !output_start::shows_banner(
+                    &rows_text(&terminal, first_row, cursor_row),
+                    &last_line,
+                )
+            });
+        Some(ConnectionOutput {
+            row: (cursor_row - base).max(0),
+            text,
+            screen_replaced,
+        })
     }
 
-    /// Feeds an in-place reconnect's connect banner and pins the connection
-    /// start below it.
+    /// Runs `decide` on [`Self::connection_output`] after every change in the
+    /// session's terminal, until it returns `true`.
     ///
-    /// Call this, not [`Self::display_output`], for the banner a reconnect
-    /// prints after [`Self::prepare_for_reconnect`] and before it spawns the
-    /// new process: from then on [`Self::get_terminal_cursor_row`] and
-    /// [`Self::get_connection_output`] count only what the new process prints.
-    pub fn display_reconnect_banner(&self, session_id: Uuid, banner: &str) {
+    /// The handler disconnects itself once `decide` returns `true`, and also,
+    /// without calling it again, once an in-place reconnect has started
+    /// another process in the session: a detector left armed by a failed
+    /// attempt never counts a later attempt's output, and detectors do not
+    /// pile up across reconnects. Closing the tab drops the terminal, and the
+    /// handler with it.
+    pub fn watch_connection_output<F>(self: &Rc<Self>, session_id: Uuid, decide: F)
+    where
+        F: Fn(Option<&ConnectionOutput>) -> bool + 'static,
+    {
+        let Some(terminal) = self.get_terminal(session_id) else {
+            return;
+        };
+        let started_at = self.session_started_at(session_id);
+        let notebook = Rc::downgrade(self);
+        let handler: Rc<RefCell<Option<glib::SignalHandlerId>>> = Rc::default();
+        let handler_in_callback = Rc::clone(&handler);
+        let id = terminal.connect_contents_changed(move |terminal| {
+            let done = notebook.upgrade().is_none_or(|notebook| {
+                notebook.session_started_at(session_id) != started_at
+                    || decide(notebook.connection_output(session_id).as_ref())
+            });
+            if done && let Some(id) = handler_in_callback.borrow_mut().take() {
+                terminal.disconnect(id);
+            }
+        });
+        *handler.borrow_mut() = Some(id);
+    }
+
+    /// Feeds a terminal connect's banner and pins the connection start below
+    /// it.
+    ///
+    /// Call this, not [`Self::display_output`], for the banner every terminal
+    /// connect and in-place reconnect prints before it spawns its client: from
+    /// then on [`Self::connection_output`] counts only what the client prints.
+    pub fn display_connect_banner(&self, session_id: Uuid, banner: &str) {
         // The row the banner starts on: VTE has not processed it yet, so the
-        // cursor is still where the kept history ended.
+        // cursor is still where the buffer (or the kept history) ended.
         let Some(fed_at_row) = self
             .get_terminal(session_id)
             .map(|terminal| terminal.cursor_position().1)
@@ -2216,28 +2281,8 @@ impl TerminalNotebook {
         );
     }
 
-    /// The text the current connection printed below its connect banner.
-    ///
-    /// For a fresh session this is the whole buffer up to the cursor; after an
-    /// in-place reconnect it excludes the kept scrollback and RustConn's own
-    /// banner, so a failure printed by an earlier attempt is not read again.
-    /// `None` when the session has no terminal or the banner has not landed.
-    #[must_use]
-    pub fn get_connection_output(&self, session_id: Uuid) -> Option<String> {
-        let terminal = self.get_terminal(session_id)?;
-        let row = terminal.cursor_position().1;
-        let base = self.connection_start_row(session_id, &terminal, row)?;
-        let (text, _len) = terminal.text_range_format(
-            vte4::Format::Text,
-            base.min(row),
-            0,
-            row,
-            terminal.column_count(),
-        );
-        Some(text.map_or_else(String::new, |g| g.to_string()))
-    }
-
-    /// The absolute row the session's current connection output starts on.
+    /// The absolute row the session's current connection output starts on,
+    /// with the banner line above it when it was found by that line.
     ///
     /// Resolves a pending [`output_start::OutputStart::AfterBanner`] by finding
     /// the banner in the rows above the cursor, and stores the result so the
@@ -2247,10 +2292,13 @@ impl TerminalNotebook {
         session_id: Uuid,
         terminal: &Terminal,
         cursor_row: i64,
-    ) -> Option<i64> {
+    ) -> Option<(i64, Option<String>)> {
         let (last_line, fed_at_row) = match self.cursor_row_base.borrow().get(&session_id) {
-            None => return Some(0),
-            Some(output_start::OutputStart::Row(base)) => return Some(*base),
+            None => return Some((0, None)),
+            Some(output_start::OutputStart::Row(base)) => return Some((*base, None)),
+            Some(output_start::OutputStart::BelowBanner { row, last_line }) => {
+                return Some((*row, Some(last_line.clone())));
+            }
             Some(output_start::OutputStart::AfterBanner {
                 last_line,
                 fed_at_row,
@@ -2266,15 +2314,22 @@ impl TerminalNotebook {
                     .map_or_else(String::new, |g| g.to_string())
             })
             .collect();
-        let base = match output_start::row_below_banner(&rows, first_row, &last_line) {
-            Some(base) => base,
+        let mut bases = self.cursor_row_base.borrow_mut();
+        if let Some(row) = output_start::row_below_banner(&rows, first_row, &last_line) {
+            bases.insert(
+                session_id,
+                output_start::OutputStart::BelowBanner {
+                    row,
+                    last_line: last_line.clone(),
+                },
+            );
+            Some((row, Some(last_line)))
+        } else {
             // A screenful printed since the banner: count from the window top.
-            None => output_start::base_without_banner(fed_at_row, cursor_row)?,
-        };
-        self.cursor_row_base
-            .borrow_mut()
-            .insert(session_id, output_start::OutputStart::Row(base));
-        Some(base)
+            let row = output_start::base_without_banner(fed_at_row, cursor_row)?;
+            bases.insert(session_id, output_start::OutputStart::Row(row));
+            Some((row, None))
+        }
     }
 
     /// When the session's current process started: its in-place reconnect, or

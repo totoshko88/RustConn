@@ -12,8 +12,8 @@ use uuid::Uuid;
 
 use super::MainWindow;
 use super::protocols::{
-    SharedNotebook, SharedSidebar, append_proxy_command_destination,
-    resolve_automation_for_connection, substitute_variables,
+    SharedNotebook, SharedSidebar, StatusClient, append_proxy_command_destination,
+    resolve_automation_for_connection, substitute_variables, when_established,
 };
 use crate::state::SharedAppState;
 use crate::utils::spawn_blocking_with_callback;
@@ -1718,7 +1718,7 @@ fn start_ssh_connection_internal(
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH. Password-only targets use prompt-aware OpenSSH askpass;
     // mixed or custom authentication remains an interactive terminal prompt.
@@ -1784,47 +1784,21 @@ fn start_ssh_connection_internal(
         );
     }
 
-    // --- SSH status detection: mark sidebar "connected" once terminal output appears ---
-    // For jump host connections, also check terminal text for SSH failure patterns
-    // to avoid false positives (jump host connects but destination times out).
+    // --- SSH status detection: mark sidebar "connected" once ssh is established ---
+    // The verdict the in-place reconnect uses, counted from below the connect
+    // banner: the banner alone no longer turns the session green, and through
+    // a jump host only the final host's shell prompt does.
+    let status_client = StatusClient::Ssh {
+        jump_host: has_jump_host,
+    };
     {
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = notebook.clone();
-        let connection_id_str = connection_id.to_string();
-        let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-        let session_connected_clone = session_connected.clone();
-        let protocol_str = String::from("ssh");
-        let uses_jump_host = has_jump_host;
-
-        notebook.connect_contents_changed(session_id, move || {
-            if session_connected_clone.get() {
-                return;
-            }
-            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                return;
-            };
-            tracing::debug!(
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, status_client, move || {
+            sidebar.increment_session_count(&connection_id.to_string());
+            tracing::info!(
                 protocol = "ssh",
-                cursor_row = row,
-                uses_jump_host,
-                "SSH status detection: checking cursor row"
+                "Terminal connection detected as established"
             );
-            // Single shared verdict — see `ssh_connection_established`. For a
-            // jump host it requires more output and a failure-free buffer, so a
-            // bastion banner alone no longer latches the session green over a
-            // target that never came up.
-            let text = uses_jump_host
-                .then(|| notebook_clone.get_terminal_text(session_id))
-                .flatten();
-            if super::protocols::ssh_connection_established(row, uses_jump_host, text.as_deref()) {
-                sidebar_clone.increment_session_count(&connection_id_str);
-                session_connected_clone.set(true);
-                tracing::info!(
-                    protocol = %protocol_str,
-                    cursor_row = row,
-                    "Terminal connection detected as established"
-                );
-            }
         });
     }
 
@@ -1832,8 +1806,6 @@ fn start_ssh_connection_internal(
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name.clone();
-        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let recording_started_clone = recording_started.clone();
         let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
             host: host.clone(),
             port,
@@ -1841,25 +1813,12 @@ fn start_ssh_connection_internal(
             identity_file: identity_file.clone(),
         });
 
-        notebook.connect_contents_changed(session_id, move || {
-            if recording_started_clone.get() {
-                return;
-            }
-            // Wait for connection to be established (cursor row > 2)
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 2
-            {
-                recording_started_clone.set(true);
-                notebook_clone.start_recording(
-                    session_id,
-                    &recording_conn_name,
-                    recording_ssh_params.clone(),
-                );
-                tracing::info!(
-                    %session_id,
-                    "Auto-recording started after SSH connection established"
-                );
-            }
+        when_established(notebook, session_id, status_client, move || {
+            notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after SSH connection established"
+            );
         });
     }
 
@@ -1893,37 +1852,17 @@ fn start_ssh_connection_internal(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain.clone();
-            let mon_uses_jump_host = has_jump_host;
-            let monitoring_started = std::rc::Rc::new(std::cell::Cell::new(false));
-            let monitoring_started_clone = monitoring_started.clone();
 
-            notebook.connect_contents_changed(session_id, move || {
-                if monitoring_started_clone.get() {
-                    return;
-                }
-                let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                    return;
-                };
-                // Exactly the sidebar "connected" verdict — see
-                // `ssh_connection_established`. A jump chain can push the cursor
-                // past the direct threshold with a bastion banner or an SSH error
-                // even when the FINAL host never came up. Starting monitoring then
-                // opens the bar for a session that failed — and because the
-                // monitoring probe uses accept-new + its own ControlMaster, it can
-                // even reach the target and show live data for a session the user
-                // saw fail. The closure runs again on the next output, so a later
-                // successful prompt still starts it.
-                let text = mon_uses_jump_host
-                    .then(|| notebook_clone.get_terminal_text(session_id))
-                    .flatten();
-                if !super::protocols::ssh_connection_established(
-                    row,
-                    mon_uses_jump_host,
-                    text.as_deref(),
-                ) {
-                    return;
-                }
-                monitoring_started_clone.set(true);
+            // Exactly the sidebar "connected" verdict — see
+            // `ssh_output_established`. A jump chain can push the cursor
+            // past the direct threshold with a bastion banner or an SSH error
+            // even when the FINAL host never came up. Starting monitoring then
+            // opens the bar for a session that failed — and because the
+            // monitoring probe uses accept-new + its own ControlMaster, it can
+            // even reach the target and show live data for a session the user
+            // saw fail. The detector runs again on the next output, so a later
+            // successful prompt still starts it.
+            when_established(notebook, session_id, status_client, move || {
                 if let Some(container) = notebook_clone.get_session_container(session_id) {
                     monitoring_clone.start_monitoring(
                         session_id,
@@ -1933,7 +1872,7 @@ fn start_ssh_connection_internal(
                         mon_port,
                         mon_username.as_deref(),
                         identity_file_mon.as_deref(),
-                        cached_pw.clone(),
+                        cached_pw,
                         mon_jump_host.as_deref(),
                     );
                 }
@@ -2160,7 +2099,7 @@ fn reconnect_ssh_after_unlock(
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_reconnect_banner(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH in the existing terminal
     {
@@ -2222,36 +2161,17 @@ fn reconnect_ssh_after_unlock(
         );
     }
 
-    // SSH status detection
+    // SSH status detection, counted from below the connect banner — the same
+    // detector as on the initial connect. It stands down when a later
+    // reconnect replaces this attempt, so the sidebar's session count is not
+    // raised twice.
+    let status_client = StatusClient::Ssh {
+        jump_host: has_jump_host,
+    };
     {
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = notebook.clone();
-        let connection_id_str = connection_id.to_string();
-        let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-        let session_connected_clone = session_connected.clone();
-        let uses_jump_host = has_jump_host;
-        let started_at = notebook.session_started_at(session_id);
-
-        notebook.connect_contents_changed(session_id, move || {
-            if session_connected_clone.get() {
-                return;
-            }
-            // A later reconnect replaced this attempt; counting its output here
-            // as well would leave the sidebar's session count one too high.
-            if notebook_clone.session_started_at(session_id) != started_at {
-                session_connected_clone.set(true);
-                return;
-            }
-            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                return;
-            };
-            // Counted from below the reconnect banner — see
-            // `ssh_reconnect_established`.
-            let output = notebook_clone.get_connection_output(session_id);
-            if super::protocols::ssh_reconnect_established(row, uses_jump_host, output.as_deref()) {
-                sidebar_clone.increment_session_count(&connection_id_str);
-                session_connected_clone.set(true);
-            }
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, status_client, move || {
+            sidebar.increment_session_count(&connection_id.to_string());
         });
     }
 
@@ -2283,30 +2203,14 @@ fn reconnect_ssh_after_unlock(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain;
-            let mon_uses_jump_host = has_jump_host;
-            let monitoring_started = std::rc::Rc::new(std::cell::Cell::new(false));
-            let monitoring_started_clone = monitoring_started.clone();
 
-            notebook.connect_contents_changed(session_id, move || {
-                if monitoring_started_clone.get() {
-                    return;
-                }
-                let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                    return;
-                };
-                // The sidebar verdict above (`ssh_reconnect_established`): don't
-                // open the monitor for a session whose terminal has not really
-                // established — the accept-new probe could otherwise show live
-                // data for a session that never came up.
-                let output = notebook_clone.get_connection_output(session_id);
-                if !super::protocols::ssh_reconnect_established(
-                    row,
-                    mon_uses_jump_host,
-                    output.as_deref(),
-                ) {
-                    return;
-                }
-                monitoring_started_clone.set(true);
+            // The sidebar verdict above: don't open the monitor for a session
+            // whose terminal has not really established — the accept-new probe
+            // could otherwise show live data for a session that never came up.
+            // Like the sidebar detector it stands down when a later reconnect
+            // replaces this attempt, so a failed attempt's detector cannot
+            // start monitoring on the next attempt's output.
+            when_established(notebook, session_id, status_client, move || {
                 // Resolve through `get_session_container` first (tab-only).
                 // Only fall back to `session_content_box` when a bar existed
                 // before the reconnect reset it (#398) AND the session is
@@ -2335,7 +2239,7 @@ fn reconnect_ssh_after_unlock(
                         mon_port,
                         mon_username.as_deref(),
                         identity_file_mon.as_deref(),
-                        cached_pw.clone(),
+                        cached_pw,
                         mon_jump_host.as_deref(),
                     );
                 }
