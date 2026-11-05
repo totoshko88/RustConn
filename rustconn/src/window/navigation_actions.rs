@@ -84,6 +84,7 @@ impl MainWindow {
         let sidebar_clone = sidebar.clone();
         let notebook_clone = terminal_notebook.clone();
         let monitoring_clone = self.monitoring.clone();
+        let bridges_clone = self.session_split_bridges.clone();
         switch_tab_action.connect_activate(move |_, _| {
             if let Some(win) = window_weak.upgrade() {
                 Self::show_command_palette(
@@ -92,6 +93,7 @@ impl MainWindow {
                     &sidebar_clone,
                     &notebook_clone,
                     &monitoring_clone,
+                    &bridges_clone,
                     "%",
                 );
             }

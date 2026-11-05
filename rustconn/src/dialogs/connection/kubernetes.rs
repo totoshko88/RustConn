@@ -4,7 +4,10 @@
 
 use adw::prelude::*;
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, CheckButton, DropDown, Entry, StringList};
+use gtk4::{
+    Box as GtkBox, CheckButton, DropDown, Entry, Label, ListBox, MenuButton, Popover,
+    ScrolledWindow, StringList,
+};
 use libadwaita as adw;
 
 use super::protocol_layout::ProtocolLayoutBuilder;
@@ -58,6 +61,12 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
         .subtitle(i18n("Kubernetes context (current-context if empty)"))
         .placeholder("my-cluster")
         .build();
+    // A button that lists the contexts found in the kubeconfig the user named
+    // (or the default one) so a context can be picked instead of typed. The
+    // Context field stays a free-text entry — a context not yet in the file, or
+    // a kubeconfig the agent cannot read, can still be entered by hand (W5).
+    let context_picker = build_context_picker(&kubeconfig_entry, &context_entry);
+    context_row.add_suffix(&context_picker);
     connection_group.add(&context_row);
 
     let (namespace_row, namespace_entry) = EntryRowBuilder::new(i18n("Namespace"))
@@ -152,4 +161,116 @@ pub fn create_kubernetes_options() -> KubernetesOptionsWidgets {
         busybox_image_entry,
         custom_args_entry,
     )
+}
+
+/// Builds the "pick a context" button shown as a suffix on the Context row.
+///
+/// Clicking it opens a popover listing the contexts in whatever kubeconfig the
+/// Kubeconfig field currently names (or the default one when it is empty). The
+/// list is rebuilt every time the popover opens, so editing the Kubeconfig path
+/// first and then opening this shows that file's contexts. Choosing one fills
+/// the Context entry. The current-context is marked, and an empty or unreadable
+/// kubeconfig shows a short "no contexts" note rather than an empty popover.
+fn build_context_picker(kubeconfig_entry: &Entry, context_entry: &Entry) -> MenuButton {
+    let popover = Popover::new();
+    let menu_button = MenuButton::builder()
+        .icon_name("view-list-symbolic")
+        .valign(gtk4::Align::Center)
+        .tooltip_text(i18n("Choose a context from the kubeconfig"))
+        .popover(&popover)
+        .build();
+    menu_button.add_css_class("flat");
+    menu_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Choose a context from the kubeconfig",
+    ))]);
+
+    let kubeconfig_entry = kubeconfig_entry.clone();
+    let context_entry = context_entry.clone();
+    let popover_rebuild = popover.clone();
+    // Rebuild on each open so a changed Kubeconfig path is reflected.
+    menu_button.connect_active_notify(move |button| {
+        if !button.is_active() {
+            return;
+        }
+        let kubeconfig_text = kubeconfig_entry.text().to_string();
+        let path = resolve_kubeconfig_entry_path(&kubeconfig_text);
+        let contexts = rustconn_core::protocol::read_kubeconfig_contexts(path.as_deref());
+        popover_rebuild.set_child(Some(&build_context_list(
+            &contexts,
+            &context_entry,
+            &popover_rebuild,
+        )));
+    });
+
+    menu_button
+}
+
+/// Turns a Kubeconfig entry value into a path to read, or `None` to let the core
+/// fall back to `$KUBECONFIG` / `~/.kube/config`. Expands a leading `~`.
+fn resolve_kubeconfig_entry_path(text: &str) -> Option<std::path::PathBuf> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if let Some(rest) = trimmed.strip_prefix("~/")
+        && let Some(home) = dirs::home_dir()
+    {
+        return Some(home.join(rest));
+    }
+    Some(std::path::PathBuf::from(trimmed))
+}
+
+/// Builds the popover body listing `contexts`; clicking a row fills `entry`.
+fn build_context_list(
+    contexts: &rustconn_core::protocol::KubeconfigContexts,
+    entry: &Entry,
+    popover: &Popover,
+) -> gtk4::Widget {
+    if contexts.names.is_empty() {
+        return Label::builder()
+            .label(i18n("No contexts found in the kubeconfig"))
+            .css_classes(["dim-label"])
+            .margin_top(12)
+            .margin_bottom(12)
+            .margin_start(12)
+            .margin_end(12)
+            .build()
+            .upcast();
+    }
+
+    let list = ListBox::builder()
+        .selection_mode(gtk4::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .build();
+
+    for name in &contexts.names {
+        let row = adw::ActionRow::builder()
+            .title(name)
+            .activatable(true)
+            .build();
+        if contexts.current.as_deref() == Some(name.as_str()) {
+            // Mark the current-context with a check, so the default is obvious.
+            let check = gtk4::Image::from_icon_name("object-select-symbolic");
+            row.add_suffix(&check);
+            row.set_subtitle(&i18n("Current context"));
+        }
+        let entry = entry.clone();
+        let popover = popover.clone();
+        let name = name.clone();
+        row.connect_activated(move |_| {
+            entry.set_text(&name);
+            popover.popdown();
+        });
+        list.append(&row);
+    }
+
+    ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .min_content_width(240)
+        .max_content_height(320)
+        .propagate_natural_height(true)
+        .child(&list)
+        .build()
+        .upcast()
 }

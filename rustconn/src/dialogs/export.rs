@@ -1188,12 +1188,15 @@ impl ExportDialog {
 
     /// Opens the output location in the file manager.
     ///
-    /// Spawns the operation in the background so `xdg-open` doesn't block the
-    /// GTK main loop. Errors are logged but cannot easily be reported to the
-    /// user since the operation completes asynchronously.
+    /// Uses `gtk4::FileLauncher` so the open is portal-aware (it works inside
+    /// the Flatpak and lets the desktop pick the handler) and asynchronous, so
+    /// it does not block the GTK main loop. A local directory needs no RustConn
+    /// environment, so nothing is lost by not spawning a child directly (unlike
+    /// the SFTP file-manager path, which must inherit the ssh-agent socket).
+    /// Errors are logged; the open completes asynchronously so there is nothing
+    /// to report back inline.
     pub fn open_output_location(path: &std::path::Path) {
-        // For directories, open the directory
-        // For files, open the parent directory
+        // Open the directory itself; for a file, open its parent directory.
         let dir_to_open = if path.is_dir() {
             path.to_path_buf()
         } else {
@@ -1202,9 +1205,17 @@ impl ExportDialog {
                 .unwrap_or_else(|| path.to_path_buf())
         };
 
-        // Spawn non-blocking so xdg-open doesn't block the GTK main loop.
-        // The JoinHandle is intentionally dropped — we fire-and-forget.
-        let _handle = open::that_in_background(&dir_to_open);
+        let file = gtk4::gio::File::for_path(&dir_to_open);
+        let launcher = gtk4::FileLauncher::new(Some(&file));
+        launcher.launch(
+            gtk4::Window::NONE,
+            gtk4::gio::Cancellable::NONE,
+            move |result| {
+                if let Err(e) = result {
+                    tracing::warn!(error = %e, "Failed to open the export output folder");
+                }
+            },
+        );
     }
 }
 

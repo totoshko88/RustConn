@@ -40,6 +40,18 @@ pub struct OpenTabInfo {
     pub group: Option<String>,
 }
 
+/// A saved snippet as the palette's `!` mode shows it: its id, its name, and a
+/// short preview of the command (first line, trimmed), used as the description.
+#[derive(Debug, Clone)]
+pub struct SnippetSummary {
+    /// Snippet UUID, dispatched as `CommandPaletteAction::RunSnippet`.
+    pub id: uuid::Uuid,
+    /// Snippet name, used as the result label.
+    pub name: String,
+    /// One-line preview of the command, used as the result description.
+    pub preview: String,
+}
+
 /// Command Palette dialog
 pub struct CommandPaletteDialog {
     dialog: adw::Dialog,
@@ -49,6 +61,10 @@ pub struct CommandPaletteDialog {
     connections: Rc<RefCell<Vec<Connection>>>,
     groups: Rc<RefCell<Vec<ConnectionGroup>>>,
     open_tabs: Rc<RefCell<Vec<OpenTabInfo>>>,
+    /// Saved snippets, as `(id, name, command preview)`, for the `!` mode. The
+    /// palette holds only this summary, not the snippet model, so it stays a
+    /// view over data the window materialises.
+    snippets: Rc<RefCell<Vec<SnippetSummary>>>,
     on_action: PaletteCallback,
     search_engine: Rc<SearchEngine>,
     parent: Option<gtk4::Widget>,
@@ -70,7 +86,7 @@ impl CommandPaletteDialog {
         // Search entry at top
         let search_entry = gtk4::SearchEntry::builder()
             .placeholder_text(i18n(
-                "Search connections, > commands, @ tags, # groups, % tabs",
+                "Search connections, > commands, @ tags, # groups, % tabs, ! snippets",
             ))
             .hexpand(true)
             .margin_top(12)
@@ -126,6 +142,7 @@ impl CommandPaletteDialog {
             search_entry: search_entry.clone(),
             list_box: list_box.clone(),
             items: Rc::new(RefCell::new(Vec::new())),
+            snippets: Rc::new(RefCell::new(Vec::new())),
             connections: Rc::new(RefCell::new(Vec::new())),
             groups: Rc::new(RefCell::new(Vec::new())),
             open_tabs: Rc::new(RefCell::new(Vec::new())),
@@ -140,6 +157,7 @@ impl CommandPaletteDialog {
             let connections = palette.connections.clone();
             let groups = palette.groups.clone();
             let open_tabs = palette.open_tabs.clone();
+            let snippets = palette.snippets.clone();
             let list_box_clone = list_box.clone();
             let engine = palette.search_engine.clone();
             search_entry.connect_search_changed(move |entry| {
@@ -149,6 +167,7 @@ impl CommandPaletteDialog {
                     &connections.borrow(),
                     &groups.borrow(),
                     &open_tabs.borrow(),
+                    &snippets.borrow(),
                     &engine,
                 );
                 Self::populate_list(&list_box_clone, &new_items);
@@ -251,6 +270,11 @@ impl CommandPaletteDialog {
         *self.open_tabs.borrow_mut() = tabs;
     }
 
+    /// Sets the snippets available for `!` run mode
+    pub fn set_snippets(&self, snippets: Vec<SnippetSummary>) {
+        *self.snippets.borrow_mut() = snippets;
+    }
+
     /// Registers a callback for when an action is selected
     pub fn connect_on_action<F>(&self, callback: F)
     where
@@ -268,6 +292,7 @@ impl CommandPaletteDialog {
             &self.connections.borrow(),
             &self.groups.borrow(),
             &self.open_tabs.borrow(),
+            &self.snippets.borrow(),
             &self.search_engine,
         );
         Self::populate_list(&self.list_box, &items);
@@ -292,6 +317,7 @@ impl CommandPaletteDialog {
         connections: &[Connection],
         groups: &[ConnectionGroup],
         open_tabs: &[OpenTabInfo],
+        snippets: &[SnippetSummary],
         engine: &SearchEngine,
     ) -> Vec<PaletteItem> {
         let (mode, query) = parse_palette_input(input);
@@ -300,10 +326,41 @@ impl CommandPaletteDialog {
             PaletteMode::Tags => Self::filter_by_tag(query, connections),
             PaletteMode::Groups => Self::filter_by_group(query, connections, groups),
             PaletteMode::OpenTabs => Self::filter_open_tabs(query, open_tabs, engine),
+            PaletteMode::Snippets => Self::filter_snippets(query, snippets, engine),
             PaletteMode::Connections => {
                 Self::search_connections(query, connections, groups, engine)
             }
         }
+    }
+
+    /// Filters saved snippets by fuzzy query for the `!` mode.
+    fn filter_snippets(
+        query: &str,
+        snippets: &[SnippetSummary],
+        engine: &SearchEngine,
+    ) -> Vec<PaletteItem> {
+        let to_item = |s: &SnippetSummary| {
+            let mut item = PaletteItem::new(s.name.clone(), CommandPaletteAction::RunSnippet(s.id))
+                .with_icon("utilities-terminal-symbolic");
+            if !s.preview.is_empty() {
+                item = item.with_description(s.preview.clone());
+            }
+            item
+        };
+
+        if query.is_empty() {
+            return snippets.iter().map(to_item).collect();
+        }
+
+        let mut scored: Vec<_> = snippets
+            .iter()
+            .filter_map(|s| {
+                let score = engine.fuzzy_score(query, &s.name);
+                (score > 0.0).then_some((s, score))
+            })
+            .collect();
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        scored.into_iter().map(|(s, _)| to_item(s)).collect()
     }
 
     /// Filters built-in commands by query

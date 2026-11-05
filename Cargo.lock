@@ -1507,7 +1507,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2000,7 +2000,7 @@ dependencies = [
  "gobject-sys",
  "libc",
  "system-deps 9.0.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2955,25 +2955,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "is-docker"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "928bae27f42bc99b60d9ac7334e3a21d10ad8f1835a4e12ec3ec0464765ed1b3"
-dependencies = [
- "once_cell",
-]
-
-[[package]]
-name = "is-wsl"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "173609498df190136aa7dea1a91db051746d339e18476eed5ca40521f02d7aa5"
-dependencies = [
- "is-docker",
- "once_cell",
-]
-
-[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3900,16 +3881,6 @@ name = "oorandom"
 version = "11.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
-
-[[package]]
-name = "open"
-version = "5.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d8c8b8e725ad26404d6896eb2f064294a0a7b4f1d9120210d85544684c4ca95"
-dependencies = [
- "is-wsl",
- "libc",
-]
 
 [[package]]
 name = "openh264"
@@ -4919,7 +4890,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "async-channel",
  "chrono",
@@ -4932,7 +4903,6 @@ dependencies = [
  "libadwaita",
  "muda",
  "nix",
- "open",
  "proptest",
  "regex",
  "resvg",
@@ -4960,7 +4930,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-cli"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "chrono",
  "clap",
@@ -4983,7 +4953,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-core"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "aes 0.9.4",
  "ar",
@@ -5061,7 +5031,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-dock-sys"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5070,18 +5040,18 @@ dependencies = [
 
 [[package]]
 name = "rustconn-env-sys"
-version = "0.24.6"
+version = "0.24.7"
 
 [[package]]
 name = "rustconn-locale-sys"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "gettext-rs",
 ]
 
 [[package]]
 name = "rustconn-lock-sys"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "objc2",
  "objc2-app-kit",
@@ -5090,7 +5060,7 @@ dependencies = [
 
 [[package]]
 name = "rustconn-pty-sys"
-version = "0.24.6"
+version = "0.24.7"
 dependencies = [
  "libc",
  "nix",
@@ -5115,7 +5085,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5877,10 +5847,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6785,7 +6755,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -7294,9 +7264,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.3.0"
+version = "9.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaeb7f16d2605b49aef586996ded29e65642fab7259a3077e537351df6d80426"
+checksum = "3cec733c9820347a592f6375c3c0089b479ba0a0b1cbf3dd1958b02959b7c033"
 dependencies = [
  "aes 0.9.4",
  "bzip2",

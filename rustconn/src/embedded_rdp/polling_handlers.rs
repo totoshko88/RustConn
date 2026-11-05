@@ -501,11 +501,17 @@ fn finish_batch_if_settled(ctx: &FileTransferContext<'_>) {
     ctx.status_label.set_text(&summary);
     ctx.status_label.set_visible(true);
     let status_hide = ctx.status_label.clone();
-    // The confirmation is transient — 3 s is the same dwell time the other
-    // inline status messages use.
+    // The inline status is transient — 3 s is the same dwell the other inline
+    // messages use. That was the whole feedback a failed save got, and the
+    // reporter never saw it before it vanished (issue #390). A failure also
+    // raises an error toast, which the user can read after the inline line is
+    // gone; a clean save stays inline-only to avoid nagging on success.
     glib::timeout_add_local_once(std::time::Duration::from_secs(3), move || {
         status_hide.set_visible(false);
     });
+    if missing > 0 {
+        crate::toast::show_error_toast_on_active_window(&summary);
+    }
 
     // The batch just settled, so the local-clipboard monitor's hold
     // (`holds_local_announce`) may now be down; send on whatever change it

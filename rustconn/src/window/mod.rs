@@ -1159,6 +1159,66 @@ impl MainWindow {
         });
         toolbar_view.add_top_bar(&secret_banner);
 
+        // Persistent banner shown at startup when the previous run left a Rust
+        // panic crash log (W5). GNOME HIG: a past failure the user should know
+        // about is a banner, not a transient toast. Its button opens the log
+        // (portal-aware FileLauncher, which also escapes the path for the URI);
+        // the report is a local file that is never sent anywhere automatically,
+        // so the banner only points at it. The logs are cleared only once the
+        // log actually opened: a failed open keeps the file and the banner, and
+        // names the path in a toast so the user can still find it. adw::Banner
+        // has no dismiss of its own, so until then it returns on each launch.
+        let crash_banner = crate::toast::plain_banner("");
+        crash_banner.set_button_label(Some(&crate::i18n::i18n("Open Log")));
+        if let Some(report) = rustconn_core::crash_report::take_pending_crash() {
+            crash_banner.set_title(&crate::i18n::i18n(
+                "RustConn closed unexpectedly the last time it ran. A crash log was saved locally.",
+            ));
+            let log_path = report.path.clone();
+            crash_banner.connect_button_clicked(move |banner| {
+                let file = gtk4::gio::File::for_path(&log_path);
+                let launcher = gtk4::FileLauncher::new(Some(&file));
+                let win = banner
+                    .root()
+                    .and_then(|r| r.downcast::<gtk4::Window>().ok());
+                let banner_weak = banner.downgrade();
+                let win_for_toast = win.clone();
+                let shown_path = log_path.display().to_string();
+                launcher.launch(
+                    win.as_ref(),
+                    gtk4::gio::Cancellable::NONE,
+                    move |res| match res {
+                        Ok(()) => {
+                            rustconn_core::crash_report::clear_crash_reports();
+                            if let Some(banner) = banner_weak.upgrade() {
+                                banner.set_revealed(false);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!(error = %e, "could not open the crash log");
+                            let message = crate::i18n::i18n_f(
+                                "Could not open the crash log. It is saved at {}",
+                                &[&shown_path],
+                            );
+                            if let Some(win) = win_for_toast {
+                                crate::toast::show_toast_on_window(
+                                    &win,
+                                    &message,
+                                    crate::toast::ToastType::Error,
+                                );
+                            } else {
+                                crate::toast::show_error_toast_on_active_window(&message);
+                            }
+                        }
+                    },
+                );
+            });
+            crash_banner.set_revealed(true);
+        } else {
+            crash_banner.set_revealed(false);
+        }
+        toolbar_view.add_top_bar(&crash_banner);
+
         // Persistent banner shown while a `keepassxc-cli` run blocks on a
         // hardware-key touch (issue #350). GTK widgets are !Send, so the
         // worker-thread touch observer bridges to the main thread the same way
@@ -3902,6 +3962,7 @@ impl MainWindow {
         sidebar: &SharedSidebar,
         notebook: &SharedNotebook,
         monitoring: &types::SharedMonitoring,
+        session_bridges: &SessionSplitBridges,
         prefix: &str,
     ) {
         let gtk_window: &gtk4::Window = window.upcast_ref();
@@ -3931,11 +3992,37 @@ impl MainWindow {
             palette.set_open_tabs(open_tabs);
         }
 
+        // Populate saved snippets for ! mode (W5). The palette holds only the
+        // id/name/preview summary; running one goes back through the existing
+        // execute_snippet path so variables and "confirm before run" apply.
+        {
+            let state_ref = state.borrow();
+            let snippets: Vec<crate::dialogs::SnippetSummary> = state_ref
+                .list_snippets()
+                .into_iter()
+                .map(|s| crate::dialogs::SnippetSummary {
+                    id: s.id,
+                    name: s.name.clone(),
+                    // First non-empty line, so a multi-line snippet gives a
+                    // one-line hint rather than wrapping the row.
+                    preview: s
+                        .command
+                        .lines()
+                        .find(|l| !l.trim().is_empty())
+                        .unwrap_or("")
+                        .trim()
+                        .to_string(),
+                })
+                .collect();
+            palette.set_snippets(snippets);
+        }
+
         // Wire action callback
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
         let notebook_clone = notebook.clone();
         let monitoring_clone = monitoring.clone();
+        let session_bridges_clone = session_bridges.clone();
         let window_weak = window.downgrade();
         palette.connect_on_action(move |action| match action {
             rustconn_core::search::command_palette::CommandPaletteAction::Connect(uuid) => {
@@ -3949,6 +4036,29 @@ impl MainWindow {
             }
             rustconn_core::search::command_palette::CommandPaletteAction::SwitchTab(session_id) => {
                 notebook_clone.switch_to_tab(session_id);
+            }
+            rustconn_core::search::command_palette::CommandPaletteAction::RunSnippet(id) => {
+                // Resolve the snippet by id and run it through the existing
+                // path, so variables and "confirm before run" still apply.
+                let snippet = state_clone
+                    .borrow()
+                    .list_snippets()
+                    .into_iter()
+                    .find(|s| s.id == id)
+                    .cloned();
+                if let Some(snippet) = snippet
+                    && let Some(win) = window_weak.upgrade()
+                {
+                    // Always confirm: the palette hangs off the main window, so
+                    // the send could reach the wrong focused terminal (#315).
+                    crate::window::snippets::execute_snippet_confirmed(
+                        &win,
+                        &notebook_clone,
+                        &session_bridges_clone,
+                        &snippet,
+                        &state_clone,
+                    );
+                }
             }
             rustconn_core::search::command_palette::CommandPaletteAction::GtkAction(name) => {
                 if let Some(win) = window_weak.upgrade() {

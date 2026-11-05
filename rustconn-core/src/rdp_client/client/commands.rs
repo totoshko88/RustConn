@@ -327,11 +327,14 @@ pub(super) async fn process_command<W: FramedWrite>(
             handle_download_file_contents(
                 active_stage,
                 writer,
-                stream_id,
-                file_index,
-                request_size,
-                offset,
-                length,
+                event_tx,
+                DownloadRequest {
+                    stream_id,
+                    file_index,
+                    request_size,
+                    offset,
+                    length,
+                },
             )
             .await;
         }
@@ -790,18 +793,84 @@ fn build_download_request(
 ///
 /// The download paths that fail before a request goes out — an out-of-range file
 /// index, `request_file_contents` refusing because the file clipboard was not
-/// negotiated — otherwise leave the batch's "Save N Files" button on
-/// "Downloading…" for that stream, because no size or data reply is coming.
-/// Routes through the backend so the same `ClipboardFileError` a server refusal
-/// raises is emitted here, which the GUI already knows how to unwind. A no-op
-/// when the CLIPRDR channel is gone, since there is then no backend to reach.
-fn fail_download(active_stage: &mut ActiveStage, stream_id: u32) {
+/// negotiated, or the CLIPRDR channel being gone entirely — otherwise leave the
+/// batch's "Save N Files" button on "Downloading…" for that stream, because no
+/// size or data reply is coming. The same `ClipboardFileError` a server refusal
+/// raises is emitted, which the GUI already knows how to unwind.
+///
+/// Prefers the backend's sender (it already owns the stream bookkeeping and
+/// clears the size expectation), and falls back to the session `event_tx` when
+/// the CLIPRDR channel is gone — the case that used to return silently and hang
+/// the button forever (issue #390).
+fn fail_download(
+    active_stage: &mut ActiveStage,
+    event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
+    stream_id: u32,
+) {
     if let Some(cliprdr) = active_stage.get_svc_processor_mut::<CliprdrClient>()
         && let Some(backend) =
             cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
     {
         backend.emit_download_failed(stream_id);
+    } else {
+        // No CLIPRDR channel, so no backend to reach: tell the GUI directly so
+        // the batch unwinds instead of waiting on a reply that cannot come.
+        let _ = event_tx.send(RdpClientEvent::ClipboardFileError { stream_id });
     }
+}
+
+/// One "Save N Files" download step: the stream it belongs to, which file, and
+/// whether this is the size probe or a byte range. Groups the five scalars that
+/// come straight from [`RdpClientCommand::RequestFileContents`] so
+/// [`handle_download_file_contents`] stays within the argument-count lint.
+struct DownloadRequest {
+    stream_id: u32,
+    file_index: u32,
+    request_size: bool,
+    offset: u64,
+    length: u32,
+}
+
+/// Trims a RANGE download to the bytes the server's file list says remain.
+///
+/// IronRDP refuses a RANGE reaching past the end of the file, and a zero-length
+/// one outright. A `request_size` probe is passed through unchanged (its length
+/// is not a byte count). Returns `None` when nothing remains to download, having
+/// first told the backend the file has ended — the caller then stops without
+/// sending a request that cannot go out. When the CLIPRDR channel is gone the
+/// length is passed through and the caller's own channel lookup reports it.
+fn resolve_range_length(
+    active_stage: &mut ActiveStage,
+    stream_id: u32,
+    request_size: bool,
+    file_index: u32,
+    offset: u64,
+    length: u32,
+) -> Option<u32> {
+    if request_size {
+        return Some(length);
+    }
+    let backend = active_stage
+        .get_svc_processor_mut::<CliprdrClient>()
+        .and_then(|cliprdr| {
+            cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
+        });
+    let Some(backend) = backend else {
+        // No channel: the caller's lookup reports it.
+        return Some(length);
+    };
+    let trimmed = backend.range_request_length(file_index, offset, length);
+    if trimmed == 0 {
+        tracing::debug!(
+            protocol = "rdp",
+            stream_id,
+            offset,
+            "Nothing left to download; ending the file"
+        );
+        backend.emit_end_of_file(stream_id);
+        return None;
+    }
+    Some(trimmed)
 }
 
 /// Downloads a file from the *server's* clipboard (server → client).
@@ -815,42 +884,27 @@ fn fail_download(active_stage: &mut ActiveStage, stream_id: u32) {
 async fn handle_download_file_contents<W: FramedWrite>(
     active_stage: &mut ActiveStage,
     writer: &mut W,
-    stream_id: u32,
-    file_index: u32,
-    request_size: bool,
-    offset: u64,
-    length: u32,
+    event_tx: &std::sync::mpsc::Sender<RdpClientEvent>,
+    req: DownloadRequest,
 ) {
-    // IronRDP refuses a RANGE reaching past the end of the file as the server's
-    // file list describes it, and a zero-length one outright. Trim the slice to
-    // what remains; when nothing does, report the end the way a server would
-    // rather than send a request that cannot go out.
-    let length = if request_size {
-        length
-    } else {
-        let backend = active_stage
-            .get_svc_processor_mut::<CliprdrClient>()
-            .and_then(|cliprdr| {
-                cliprdr.downcast_backend_mut::<super::super::clipboard::RustConnClipboardBackend>()
-            });
-        match backend {
-            Some(backend) => {
-                let trimmed = backend.range_request_length(file_index, offset, length);
-                if trimmed == 0 {
-                    tracing::debug!(
-                        protocol = "rdp",
-                        stream_id,
-                        offset,
-                        "Nothing left to download; ending the file"
-                    );
-                    backend.emit_end_of_file(stream_id);
-                    return;
-                }
-                trimmed
-            }
-            // No channel: the lookup below reports it.
-            None => length,
-        }
+    let DownloadRequest {
+        stream_id,
+        file_index,
+        request_size,
+        offset,
+        length,
+    } = req;
+    let Some(length) = resolve_range_length(
+        active_stage,
+        stream_id,
+        request_size,
+        file_index,
+        offset,
+        length,
+    ) else {
+        // RANGE with nothing left: `resolve_range_length` already reported the
+        // end of the file to the backend.
+        return;
     };
 
     let Some(request) = build_download_request(stream_id, file_index, request_size, offset, length)
@@ -862,7 +916,7 @@ async fn handle_download_file_contents<W: FramedWrite>(
         );
         // The GUI is waiting on this stream id; tell it the download will never
         // arrive so its "Save N Files" button does not stay on "Downloading…".
-        fail_download(active_stage, stream_id);
+        fail_download(active_stage, event_tx, stream_id);
         return;
     };
 
@@ -872,6 +926,10 @@ async fn handle_download_file_contents<W: FramedWrite>(
             stream_id,
             "CLIPRDR channel not available for download"
         );
+        // Without the channel there is no backend to raise the error, so the
+        // button would hang on "Downloading…" forever. Tell the GUI directly
+        // through the session sender so the batch unwinds (issue #390).
+        fail_download(active_stage, event_tx, stream_id);
         return;
     };
 
@@ -898,7 +956,7 @@ async fn handle_download_file_contents<W: FramedWrite>(
                     // and the size expectation recorded above would sit parked
                     // forever. Unwind the download instead of leaving the batch
                     // waiting on a stream that is already lost.
-                    fail_download(active_stage, stream_id);
+                    fail_download(active_stage, event_tx, stream_id);
                     return;
                 }
                 tracing::debug!(
@@ -916,7 +974,7 @@ async fn handle_download_file_contents<W: FramedWrite>(
                     error = %e,
                     "encoding the file contents request failed"
                 );
-                fail_download(active_stage, stream_id);
+                fail_download(active_stage, event_tx, stream_id);
             }
         },
         Err(e) => {
@@ -928,7 +986,7 @@ async fn handle_download_file_contents<W: FramedWrite>(
             );
             // No request went out, so no reply is coming. Surface it as a failed
             // download rather than leaving the batch waiting forever.
-            fail_download(active_stage, stream_id);
+            fail_download(active_stage, event_tx, stream_id);
         }
     }
 }

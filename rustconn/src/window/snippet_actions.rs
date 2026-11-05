@@ -173,6 +173,69 @@ impl MainWindow {
         });
         window.add_action(&run_snippet_for_conn_action);
 
+        // Save Selection as Snippet… (from the terminal right-click menu, W5).
+        // The parameter is the selection of the terminal that was right-clicked,
+        // read by that terminal's own `terminal.save-selection-snippet` action —
+        // not the notebook's active tab, which is another terminal for a split
+        // pane or a detached window (#315). Opens the snippet editor in create
+        // mode with the command pre-filled, over whichever window is active. The
+        // user names and trims it before saving, so a selection that happens to
+        // contain a secret is never written to the snippet store on its own.
+        let save_selection_snippet_action =
+            gio::SimpleAction::new("save-selection-snippet", Some(glib::VariantTy::STRING));
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let notebook_clone = terminal_notebook.clone();
+        save_selection_snippet_action.connect_activate(move |_, param| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            // The window the right-click happened in: a detached session window
+            // is the active one then, and the editor belongs over it.
+            let parent: gtk4::Window = win
+                .application()
+                .and_then(|app| app.active_window())
+                .unwrap_or_else(|| win.clone().upcast());
+            let selection = param
+                .and_then(glib::Variant::get::<String>)
+                .filter(|s| !s.trim().is_empty());
+            let Some(selection) = selection else {
+                crate::toast::show_toast_on_window(
+                    &parent,
+                    &crate::i18n::i18n("Select some text in the terminal first"),
+                    crate::toast::ToastType::Info,
+                );
+                return;
+            };
+            let dialog = crate::dialogs::SnippetDialog::new(Some(&parent));
+            dialog.set_command(&selection);
+            let state_inner = state_clone.clone();
+            let notebook_inner = notebook_clone.clone();
+            dialog.run(move |result| {
+                let Some(snippet) = result else {
+                    return;
+                };
+                // The user just pressed Save: a failure here loses what they
+                // typed, so it is a dialog, not a log line (GNOME HIG).
+                let outcome = match state_inner.try_borrow_mut() {
+                    Ok(mut state_mut) => state_mut.create_snippet(snippet).map(|_| ()),
+                    Err(e) => Err(e.to_string()),
+                };
+                match outcome {
+                    Ok(()) => notebook_inner.rebuild_snippet_menu(&state_inner),
+                    Err(e) => {
+                        tracing::warn!(error = %e, "Failed to create snippet from selection");
+                        crate::alert::show_error(
+                            &parent,
+                            &crate::i18n::i18n("Could Not Save Snippet"),
+                            &e,
+                        );
+                    }
+                }
+            });
+        });
+        window.add_action(&save_selection_snippet_action);
+
         // Show sessions action
         let show_sessions_action = gio::SimpleAction::new("show-sessions", None);
         let window_weak = window.downgrade();

@@ -989,7 +989,8 @@ fn apply_import_result(
     tracing::info!(count = connection_count, "Importing connections");
 
     match state_mut.import_connections_with_source(&import_result, source_name) {
-        Ok(count) => {
+        Ok(outcome) => {
+            let count = outcome.connections;
             // Merge snippets if present (native format)
             let snippet_count = import_result.snippets.len();
             for snippet in import_result.snippets {
@@ -997,7 +998,15 @@ fn apply_import_result(
                     tracing::warn!("Failed to import snippet: {e}");
                 }
             }
+            let settings = state_mut.settings().clone();
             drop(state_mut);
+
+            // Store the imported credentials in the chosen secret backend off
+            // the main thread. For a CLI-backed backend (Bitwarden) this is
+            // several seconds per credential, so doing it inline froze the UI
+            // for the whole batch; a background task with start/finish toasts
+            // keeps the window responsive (W4, FC §6a).
+            store_imported_credentials_in_background(window, settings, outcome.credential_entries);
             // Defer sidebar reload to prevent UI freeze
             let state_clone = state.clone();
             let sidebar_clone = sidebar.clone();
@@ -1024,4 +1033,63 @@ fn apply_import_result(
             alert::show_error(window, &i18n("Import Failed"), &e);
         }
     }
+}
+
+/// Stores imported credentials in the chosen secret backend off the main thread.
+///
+/// Connection creation already finished on the main thread; this is the slow,
+/// backend-bound step (several seconds per credential for Bitwarden). It runs on
+/// a background task so the window stays responsive, with a toast when it starts
+/// and another reporting how many were stored. A no-op when the import carried
+/// no passwords (W4, FC §6a).
+fn store_imported_credentials_in_background(
+    window: &gtk4::Window,
+    settings: rustconn_core::config::AppSettings,
+    entries: Vec<(String, rustconn_core::models::Credentials)>,
+) {
+    let total = entries.len();
+    if total == 0 {
+        return;
+    }
+
+    crate::toast::show_toast_on_window(
+        window,
+        &i18n_f("Storing {} imported credentials…", &[&total.to_string()]),
+        crate::toast::ToastType::Info,
+    );
+
+    let window = window.clone();
+    crate::utils::spawn_blocking_with_callback(
+        move || crate::vault_ops::store_imported_credentials(&settings, &entries),
+        move |result| match result {
+            Ok((stored, total)) if stored == total => {
+                crate::toast::show_toast_on_window(
+                    &window,
+                    &i18n_f("Stored {} imported credentials", &[&stored.to_string()]),
+                    crate::toast::ToastType::Success,
+                );
+            }
+            Ok((stored, total)) => {
+                // Partial success: name the shortfall, which is actionable
+                // (usually a locked or misconfigured backend). The backend error
+                // itself was already logged per credential inside the store.
+                crate::toast::show_toast_on_window(
+                    &window,
+                    &i18n_f(
+                        "Stored {} of {} imported credentials — check the secret backend",
+                        &[&stored.to_string(), &total.to_string()],
+                    ),
+                    crate::toast::ToastType::Warning,
+                );
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Could not store imported credentials");
+                crate::toast::show_toast_on_window(
+                    &window,
+                    &i18n("Could not store imported credentials in the secret backend"),
+                    crate::toast::ToastType::Error,
+                );
+            }
+        },
+    );
 }

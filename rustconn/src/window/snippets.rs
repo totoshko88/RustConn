@@ -694,6 +694,32 @@ pub fn show_snippet_picker(
     picker_dialog.present(Some(window));
 }
 
+/// Executes a snippet, always asking for confirmation first.
+///
+/// The Command Palette's `!` mode uses this instead of [`execute_snippet`]
+/// because the palette hangs off the main window: `send_text_to_focused`
+/// targets the main window's focused pane, which may not be where the user is
+/// looking if a detached session window or a changed split pane holds focus
+/// (issue #315). Running a snippet is not idempotent, so the palette forces the
+/// confirmation dialog — which names the snippet and that it goes to the focused
+/// terminal — regardless of the snippet's own `confirm_before_run` flag, turning
+/// a possible wrong-target send into a deliberate one.
+pub fn execute_snippet_confirmed(
+    parent: &impl IsA<gtk4::Window>,
+    notebook: &SharedNotebook,
+    session_bridges: &SessionSplitBridges,
+    snippet: &rustconn_core::models::Snippet,
+    state: &SharedAppState,
+) {
+    if snippet.confirm_before_run {
+        execute_snippet(parent, notebook, session_bridges, snippet, state);
+        return;
+    }
+    let mut forced = snippet.clone();
+    forced.confirm_before_run = true;
+    execute_snippet(parent, notebook, session_bridges, &forced, state);
+}
+
 /// Executes a snippet in the active terminal
 pub fn execute_snippet(
     parent: &impl IsA<gtk4::Window>,

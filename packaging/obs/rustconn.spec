@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.6
+Version:        0.24.7
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,20 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Nov 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7-0
+- Version bump to 0.24.7
+- Added: kubeconfig context picker in the Kubernetes editor
+- Added: local crash log for Rust panics with an Open Log banner
+- Added: snippets in the Command Palette (! prefix, #315) and Save
+  Selection as Snippet
+- Fixed: Save N Files RDP download no longer hangs without CLIPRDR (#390)
+- Fixed: embedded RDP locks the remote file clipboard during a copy (#390)
+- Fixed: KRDP rejecting the external client points at the embedded one (#409)
+- Changed: imported credentials are stored in the background
+- Changed: Passbolt vault and export folder open through the portal
+- Known issue: embedded RDP share names (first letter only, non-ASCII
+  refused; IronRDP, #407)
+- Dependencies: zip 9.3.0→9.4.0; dropped open, is-docker, is-wsl
 * Thu Nov 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.6-0
 - Version bump to 0.24.6
 - Added: SSH keys RustConn adds to the agent expire after 12 hours and are

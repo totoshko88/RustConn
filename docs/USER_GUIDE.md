@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.6** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.7** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -1189,6 +1189,16 @@ Works with both IronRDP embedded and FreeRDP external modes. In the embedded cli
 Windows Explorer refreshes a shared folder by itself when a file in it changes on this
 computer: the change is reported to the server within about a second.
 
+> **Known issue — share names in the embedded client.** Windows currently shows an
+> embedded-client share under the first letter of its name only (`Downloads` becomes
+> `\\tsclient\D`), and refuses a share whose name contains non-ASCII characters
+> (Cyrillic, for example); RustConn then shows a "The server refused the shared folder"
+> notice and the session continues without it. The cause is in the IronRDP version
+> RustConn uses; the fix is being made upstream and arrives with a later IronRDP
+> release. Until then, use Client Mode
+> **External** (FreeRDP) for a connection whose share name matters; it shows the full
+> name, Cyrillic included.
+
 **Clipboard File Transfer (IronRDP embedded mode only):**
 
 When the remote Windows user copies files to the clipboard (Ctrl+C in Explorer), RustConn detects the file list and shows a **"Save N Files"** button in the RDP toolbar.
@@ -1197,7 +1207,7 @@ When the remote Windows user copies files to the clipboard (Ctrl+C in Explorer),
 2. The "Save N Files" button appears in the RustConn toolbar
 3. Click it and choose a local folder — files are downloaded from the remote clipboard
 
-This uses the RDP clipboard channel (`CF_HDROP` / `FILEDESCRIPTORW` format) and works without shared folders. Progress is tracked per-file. Only available in embedded mode (IronRDP), not with FreeRDP external.
+This uses the RDP clipboard channel (`CF_HDROP` / `FILEDESCRIPTORW` format) and works without shared folders. Progress is tracked per-file. Only available in embedded mode (IronRDP), not with FreeRDP external. Files copied in the session stay available to save even if you switch to another window and come back before clicking Save: RustConn locks the remote file clipboard for the duration, so the server keeps the data instead of dropping it when its clipboard next changes.
 
 #### External Window Sizing
 
@@ -1807,7 +1817,7 @@ Connect to Kubernetes pods via `kubectl exec -it`. Two modes: exec into an exist
 **Create a Kubernetes Connection:**
 1. Press **Ctrl+N** → select **Kubernetes** protocol
 2. Configure kubeconfig path (optional, defaults to `~/.kube/config`)
-3. Set context, namespace, pod name, container (optional), and shell (default: `/bin/sh`)
+3. Set context, namespace, pod name, container (optional), and shell (default: `/bin/sh`). The Context field has a button beside it that lists the contexts in the kubeconfig above (or the default one) so you can pick instead of type; the current-context is marked. You can still type a context by hand, which is what to do for a kubeconfig RustConn cannot read.
 4. Optionally enable **Busybox mode** to launch a temporary pod instead
 5. Click **Create**
 6. Double-click to connect
@@ -3149,8 +3159,11 @@ pg_dump -h ${host} -U ${user} -d ${database} > /tmp/${database}_backup.sql
 1. **Right-click inside the terminal** — up to five snippets appear inline for one-click use; beyond that the list becomes **Execute Snippet…**, which opens the picker
 2. **Right-click a connection in the sidebar** → **Run Snippet...** — connects first if needed, then opens the picker
 3. **Menu → Tools → Snippets...** → the ▶ button on a snippet's row
+4. **Command Palette** (**Ctrl+P**) with the `!` prefix — type `!` to list snippets and run the one you pick. Because the palette belongs to the main window, it cannot be sure which terminal has your focus (a detached window or a split pane may), so a palette-launched snippet **always asks for confirmation first**, naming the snippet and that it goes to the focused terminal.
 
 Any of them fills in variable values first if the snippet needs them and they cannot be resolved from [Global Variables](#global-variables).
+
+**Save a selection as a snippet:** select text in a terminal, right-click and choose **Save Selection as Snippet…**. The snippet editor opens with the command pre-filled; you name and trim it before saving, so nothing is stored until you do — a selection that happens to contain a password never lands in the snippet store on its own.
 
 **Global Variables Auto-Resolution:**
 
@@ -4516,6 +4529,9 @@ Export (File > Export) in Native `.rcn`, SSH Config, or CSV format → send to c
 
 **Why does RustConn ask for my keyring password on startup?**
 Your desktop keyring may be locked. Configure it to unlock automatically on login, or switch to a different secret backend.
+
+**RustConn says it crashed last time — where is the log?**
+When RustConn hits a Rust panic it writes a report to `$XDG_STATE_HOME/rustconn/crash-<timestamp>.log` (usually `~/.local/state/rustconn/`; on a system without a state directory it uses the OS data directory). The next launch shows a banner with an **Open Log** button, which opens the file and clears the saved logs so the banner does not keep returning. The log stays on your machine and is never sent anywhere automatically — open it and review it before attaching it to a bug report, since a panic message can contain data from your session. This covers Rust panics only: a crash inside a C library such as GTK or VTE (a `SIGSEGV`) does not go through this and leaves no crash log, so run RustConn from a terminal to capture its output if you need to report one of those.
 
 **How do I connect to a host behind a jump server?**
 Set the **Proxy Jump** field in the SSH connection dialog's Advanced tab (e.g., `user@bastion.example.com`). Chain multiple jump hosts with commas.

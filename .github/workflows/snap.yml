@@ -3,72 +3,14 @@ name: Snap Build
 on:
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 permissions:
   contents: read
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { runner: ubuntu-24.04,     arch: amd64 }
-          - { runner: ubuntu-24.04-arm, arch: arm64 }
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup LXD
-        uses: canonical/setup-lxd@8c6a87bfb56aa48f3fb9b830baa18562d8bfd4ee # v1
-
-      - name: Install Snapcraft
-        run: |
-          # core26 + the `gnome` extension need Snapcraft >= 9.2 (the release that
-          # added core26 support to the extension); stable provides it.
-          # See RustConn#174.
-          sudo snap install snapcraft --classic
-          snapcraft --version
-
-      - name: Build Snap
-        id: build
-        run: |
-          # The `gnome` extension pulls build-snaps (mesa-2604, gnome-core26-sdk)
-          # from the store during "Installing build-snaps". On the arm64 runner
-          # this intermittently fails with "Error installing snap 'mesa-2604'
-          # from channel 'latest/stable'" (transient store/network flakiness).
-          # Retry the whole pack a few times: snapcraft is incremental (no
-          # `clean`), so a retry only re-runs the failed build-snap install.
-          for attempt in 1 2 3; do
-            if snapcraft pack --verbose; then break; fi
-            [ "$attempt" = 3 ] && { echo "::error::snapcraft pack failed after 3 attempts"; exit 1; }
-            echo "::warning::snapcraft pack attempt $attempt failed (often a transient build-snap install error); retrying in 30s"
-            sleep 30
-          done
-          SNAP_FILE=$(ls *.snap)
-          echo "snap=$SNAP_FILE" >> $GITHUB_OUTPUT
-          echo "Built: $SNAP_FILE"
-
-      - name: Verify runtime libraries resolve
-        # A '-dev' entry in build-packages satisfies the linker at build time but
-        # ships nothing; without the matching stage-packages entry the snap packs,
-        # uploads and installs cleanly and then dies at the dynamic linker before
-        # main() (issue #244, shipped in 0.19.0 and unnoticed for six releases).
-        # Resolve the packed binaries' DT_NEEDED list against what the snap, the
-        # base and the gnome platform actually provide at runtime.
-        run: |
-          command -v unsquashfs > /dev/null 2>&1 || {
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends squashfs-tools
-          }
-          sudo snap install core26 gnome-core26 mesa-2604
-          ./scripts/check-snap-runtime-libs.sh "${{ steps.build.outputs.snap }}"
-
-      - name: Upload Snap artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: snap-${{ github.ref_name }}-${{ matrix.arch }}
-          path: ${{ steps.build.outputs.snap }}
+    # Build-only: the shared workflow's publish/attach steps stay off (publish
+    # defaults to false), so a manual run never touches the Snap Store or a
+    # GitHub release. Artifacts are named snap-<ref>-<arch>.
+    uses: ./.github/workflows/snap-build.yml
+    with:
+      artifact-prefix: snap-${{ github.ref_name }}

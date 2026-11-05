@@ -292,6 +292,10 @@ pub fn setup_context_menu(
         Some(&crate::i18n::i18n("Select All")),
         Some("terminal.select-all"),
     );
+    clipboard_section.append(
+        Some(&crate::i18n::i18n("Save Selection as Snippet…")),
+        Some("terminal.save-selection-snippet"),
+    );
     menu.append_section(None, &clipboard_section);
 
     // Snippet section — shared live model, updated externally
@@ -302,7 +306,7 @@ pub fn setup_context_menu(
     let action_group = gio::SimpleActionGroup::new();
 
     let term_copy = terminal.clone();
-    let sel_copy = last_selection;
+    let sel_copy = last_selection.clone();
     let action_copy = gio::SimpleAction::new("copy", None);
     action_copy.connect_activate(move |_, _| {
         // Always use cached selection to avoid the race where VTE clears
@@ -337,6 +341,28 @@ pub fn setup_context_menu(
         term_select.select_all();
     });
     action_group.add_action(&action_select);
+
+    // Save Selection as Snippet… reads the selection of *this* terminal — the
+    // one that was right-clicked — not the main notebook's active tab, which is
+    // a different terminal for a split pane or a detached window (#315). The
+    // snippet editor lives on the main window, so the text is handed to its
+    // `win.save-selection-snippet` action, looked up through the application
+    // because a detached window has no such action of its own.
+    let term_save = terminal.clone();
+    let sel_save = last_selection;
+    let action_save = gio::SimpleAction::new("save-selection-snippet", None);
+    action_save.connect_activate(move |_, _| {
+        let text = if term_save.has_selection() {
+            term_save
+                .text_selected(vte4::Format::Text)
+                .map(|s| s.to_string())
+                .or_else(|| sel_save.borrow().clone())
+        } else {
+            sel_save.borrow().clone()
+        };
+        request_save_selection_snippet(&term_save, &text.unwrap_or_default());
+    });
+    action_group.add_action(&action_save);
 
     // Install on the terminal itself so the action group follows the
     // widget when it is reparented between TabView and split view panels.
@@ -384,6 +410,37 @@ pub fn rebuild_snippet_menu_section(
             Some(&crate::i18n::i18n("Execute Snippet…")),
             Some("win.execute-snippet"),
         );
+    }
+}
+
+/// Hands `text` (the right-clicked terminal's selection) to the main window's
+/// `win.save-selection-snippet` action, which opens the snippet editor.
+///
+/// Inside the main window the action resolves through the widget tree. A
+/// detached session window has no such action, so the request is routed to the
+/// application window that does.
+fn request_save_selection_snippet(terminal: &Terminal, text: &str) {
+    let param = text.to_variant();
+    if WidgetExt::activate_action(terminal, "win.save-selection-snippet", Some(&param)).is_ok() {
+        return;
+    }
+    let main_window = gtk4::gio::Application::default()
+        .and_downcast::<gtk4::Application>()
+        .and_then(|app| {
+            app.windows().into_iter().find_map(|w| {
+                w.downcast::<gtk4::ApplicationWindow>()
+                    .ok()
+                    .filter(|w| w.has_action("save-selection-snippet"))
+            })
+        });
+    if let Some(win) = main_window {
+        gtk4::gio::prelude::ActionGroupExt::activate_action(
+            &win,
+            "save-selection-snippet",
+            Some(&param),
+        );
+    } else {
+        tracing::warn!("no window offers save-selection-snippet");
     }
 }
 

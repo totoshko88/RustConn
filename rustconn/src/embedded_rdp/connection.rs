@@ -262,6 +262,22 @@ fn classify_freerdp_failure(
     classify_client_output(&joined, status_str)
 }
 
+/// Returns `true` when the client output shows the server dropped the session
+/// during the RDP capabilities exchange — the signature of a minimal
+/// rdpgfx/AVC-only server such as KRDP refusing the external client (issue #409).
+///
+/// FreeRDP's transport loop reports the connection state it failed in and the
+/// generic run-loop failure separately, so both markers must be present: the
+/// `CAPABILITIES_EXCHANGE` state name and `STATE_RUN_FAILED`. Requiring both
+/// keeps an unrelated `STATE_RUN_FAILED` (which FreeRDP also logs for a broker
+/// redirection or a mid-session transport drop) from being mis-read as this
+/// case. The connection and sign-in have already succeeded by this phase, so the
+/// earlier, more specific transport and authentication markers are checked ahead
+/// of this one in [`classify_client_output`].
+fn reports_minimal_server_rejection(joined: &str) -> bool {
+    joined.contains("CAPABILITIES_EXCHANGE") && joined.contains("STATE_RUN_FAILED")
+}
+
 /// Maps joined client output to a failure, split out from the locking so the
 /// pattern table is reachable from tests.
 fn classify_client_output(joined: &str, status_str: &str) -> FreerdpFailure {
@@ -310,6 +326,23 @@ fn classify_client_output(joined: &str, status_str: &str) -> FreerdpFailure {
     {
         FreerdpFailure::Error(i18n(
             "Connection failed: server is unreachable. Check the host address and port.",
+        ))
+    } else if reports_minimal_server_rejection(joined) {
+        // The TCP/TLS connection and sign-in succeeded, then the server tore it
+        // down during the capabilities exchange: FreeRDP logs the connection
+        // state it was in (`CAPABILITIES_EXCHANGE`) and `STATE_RUN_FAILED [-1]`.
+        // A minimal screen-sharing peer such as KRDP implements only the
+        // rdpgfx/AVC (EGFX) capability set and refuses the full standard RDP
+        // caps the external FreeRDP client advertises in Demand Active; the
+        // embedded IronRDP client negotiates only the EGFX caps and connects to
+        // the same server. Tell the user which client to use (the UI calls it
+        // the "Embedded" Client Mode) rather than leaving them with a bare
+        // `exit status`. (issue #409)
+        // One literal on purpose: a `\`-continued string drops the next line's
+        // indent at compile time but xgettext keeps it, so the msgid would
+        // never match the runtime text and the translation would never load.
+        FreerdpFailure::Error(i18n(
+            "The server rejected the external client during the capabilities exchange. This server (for example KRDP) only speaks the embedded client's protocol. Set the connection's Client Mode to Embedded and connect again.",
         ))
     } else if reports_changed_certificate(joined)
         || joined.contains("certificate not trusted")
@@ -4145,6 +4178,45 @@ mod tests {
                     "raw exit status leaked to the user: {msg}"
                 );
             }
+            FreerdpFailure::CertificateMismatch(msg) => {
+                panic!("unexpected certificate classification: {msg}")
+            }
+        }
+    }
+
+    #[test]
+    fn capabilities_exchange_rejection_points_at_the_builtin_client() {
+        // #409: the external client reaches the capabilities exchange against a
+        // minimal rdpgfx/AVC-only server (KRDP) and the server tears the session
+        // down. FreeRDP logs the state it was in plus STATE_RUN_FAILED. The user
+        // must be told to use the built-in client, not shown a bare exit status.
+        let joined = "[ERROR][com.freerdp.core.rdp] - \
+             [rdp_recv_callback]: CONNECTION_STATE_CAPABILITIES_EXCHANGE_DEMAND_ACTIVE - \
+             freerdp_peer::Capabilities() callback failed\n\
+             [ERROR][com.freerdp.core.transport] - [transport_check_fds]: \
+             transport->ReceiveCallback() - STATE_RUN_FAILED [-1]";
+        match classify_client_output(joined, "exit status: 1") {
+            FreerdpFailure::Error(msg) => {
+                assert!(msg.contains("Embedded"), "{msg}");
+                assert!(msg.contains("capabilities exchange"), "{msg}");
+                assert!(!msg.contains("exit status"), "raw status leaked: {msg}");
+            }
+            FreerdpFailure::CertificateMismatch(msg) => {
+                panic!("unexpected certificate classification: {msg}")
+            }
+        }
+    }
+
+    #[test]
+    fn a_lone_state_run_failed_is_not_the_minimal_server_case() {
+        // STATE_RUN_FAILED alone (a mid-session transport drop or a broker
+        // redirection) must not be mis-read as the #409 capabilities rejection:
+        // without the CAPABILITIES_EXCHANGE state it falls through to the status.
+        match classify_client_output(
+            "transport->ReceiveCallback() - STATE_RUN_FAILED [-1]",
+            "exit status: 137",
+        ) {
+            FreerdpFailure::Error(msg) => assert!(msg.contains("exit status: 137"), "{msg}"),
             FreerdpFailure::CertificateMismatch(msg) => {
                 panic!("unexpected certificate classification: {msg}")
             }

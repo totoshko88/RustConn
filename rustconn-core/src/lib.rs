@@ -52,6 +52,7 @@ pub mod cli_download;
 pub mod cluster;
 pub mod config;
 pub mod connection;
+pub mod crash_report;
 pub mod dialog_utils;
 pub mod display_geometry;
 pub mod drag_drop;
