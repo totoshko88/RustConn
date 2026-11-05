@@ -58,9 +58,12 @@ pub struct ConnectionOutput {
     pub text: String,
     /// The client has taken over the screen: the cursor is above the first
     /// row of its output and the connect banner is no longer shown above the
-    /// cursor. A switch to the alternate screen (mosh-client, a full-screen
-    /// program started on login) does this; rows of that screen cannot be
-    /// compared with the base row, so `row` and `text` say nothing then.
+    /// cursor. Only a switch to the alternate screen (mosh-client, a
+    /// full-screen program started on login) whose rows number above the base
+    /// row does this; `row` and `text` say nothing then. The VTE measured in
+    /// `vte_contract_tests` numbers the alternate screen's rows below the base
+    /// instead, so `row` and `text` hold what the client drew and this stays
+    /// `false`.
     pub screen_replaced: bool,
 }
 
@@ -116,12 +119,12 @@ fn is_banner_start(row_text: &str, last_line: &str) -> bool {
 /// joined into one), still holds the banner line `last_line`.
 ///
 /// VTE has no API that says which screen is active (`vte4` binds none up to
-/// its `v0_84` tier). The alternate screen has a buffer and row numbering of
-/// its own (`Terminal::switch_screen` in VTE's `vteseq.cc`), and
-/// `cursor_position()` and `text_range_format()` read the active screen, so a
-/// banner that vanished from above the cursor is the evidence that the client
-/// switched to it. On the normal screen the banner stays in the buffer, even
-/// after a resize rewrapped it into other rows.
+/// its `v0_84` tier). The alternate screen has a buffer of its own
+/// (`Terminal::switch_screen` in VTE's `vteseq.cc`), and `cursor_position()`
+/// and `text_range_format()` read the active screen, so a banner that
+/// vanished from above the cursor is the evidence that the client switched
+/// to it. On the normal screen the banner stays in the buffer, even after a
+/// resize rewrapped it into other rows.
 #[must_use]
 pub(super) fn shows_banner(text: &str, last_line: &str) -> bool {
     text.lines().any(|line| is_banner_start(line, last_line))
