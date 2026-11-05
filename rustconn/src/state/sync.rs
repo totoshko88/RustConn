@@ -30,6 +30,21 @@ impl SimpleSyncReport {
     }
 }
 
+/// What an import created, plus the credentials still to be stored.
+///
+/// Connections, groups and snippets are created synchronously on the main
+/// thread (fast, in-memory). The credential entries are handed back for the
+/// caller to store in the chosen secret backend on a background task, because
+/// that step is slow — several seconds per credential for a CLI-backed backend
+/// such as Bitwarden — and must not block the UI.
+pub struct ImportOutcome {
+    /// Number of connections created.
+    pub connections: usize,
+    /// Credentials to store, keyed in the `"{name} ({protocol})"` form the
+    /// resolver retrieves by. Empty when the import carried no passwords.
+    pub credential_entries: Vec<(String, rustconn_core::models::Credentials)>,
+}
+
 impl AppState {
     /// Gets the sync manager
     pub fn sync_manager(&self) -> &SyncManager {
@@ -744,12 +759,20 @@ impl AppState {
     ///
     /// Creates a parent group for the import source (e.g., "Remmina Import", "SSH Config Import")
     /// and organizes connections into subgroups based on their original grouping.
+    ///
+    /// Returns an [`ImportOutcome`]: the connection count and the credentials
+    /// the caller must still store in the chosen backend (off the main thread).
+    ///
+    /// # Errors
+    /// Returns the error text when the parent import group cannot be created.
     pub fn import_connections_with_source(
         &mut self,
         result: &ImportResult,
         source_name: &str,
-    ) -> Result<usize, String> {
+    ) -> Result<ImportOutcome, String> {
         let mut imported = 0;
+        let mut credential_entries: Vec<(String, rustconn_core::models::Credentials)> =
+            Vec::with_capacity(result.credentials.len());
 
         // Create parent group for this import source
         // Use generate_unique_group_name to handle duplicate names
@@ -943,46 +966,32 @@ impl AppState {
             }
         }
 
-        // Store imported credentials into the backend the user actually chose.
-        // This used to write to the keyring with synchronous `secret-tool` calls
-        // no matter what — so a Bitwarden/KeePass/1Password/encrypted-file user
-        // ended up with the imported passwords in a store the resolver never
-        // reads, and the connections came up blank (W4). `store_imported_
-        // credentials` routes them through the backend-aware `TransferPort` on a
-        // dedicated runtime (the same deadlock-safe pattern, no GTK/GLib loop).
-        if result.has_credentials() {
-            let total = result.credentials.len();
-            let mut entries: Vec<(String, rustconn_core::models::Credentials)> =
-                Vec::with_capacity(total);
-            for (conn_id, creds) in &result.credentials {
-                // Build the lookup key in the same "{name} ({protocol})" format
-                // the resolver uses for retrieval.
-                let Some(conn) = self.connection_manager.get_connection(*conn_id) else {
-                    tracing::warn!(
-                        connection_id = %conn_id,
-                        "Skipping credential store: connection not found"
-                    );
-                    continue;
-                };
-                let protocol = conn.protocol_config.protocol_type();
-                let name = rustconn_core::import::sanitize_imported_value(
-                    &conn.name.trim().replace('/', "-"),
+        // Collect imported credentials keyed the way the resolver retrieves
+        // them, for the caller to store into the backend the user actually chose.
+        //
+        // The connection lookup below needs `connection_manager`, so it runs
+        // here on the main thread where it is cheap and in-memory. The storage
+        // itself (`vault_ops::store_imported_credentials`) is the slow part — for
+        // Bitwarden it is several seconds of CLI round trips PER credential — so
+        // it must NOT run on this thread: the caller dispatches it to a
+        // background task with a progress banner. Storing here used to freeze the
+        // UI for the whole batch with no feedback, after an earlier W4 fix had
+        // already moved it off the keyring onto the backend-aware `TransferPort`.
+        for (conn_id, creds) in &result.credentials {
+            // Build the lookup key in the same "{name} ({protocol})" format
+            // the resolver uses for retrieval.
+            let Some(conn) = self.connection_manager.get_connection(*conn_id) else {
+                tracing::warn!(
+                    connection_id = %conn_id,
+                    "Skipping credential store: connection not found"
                 );
-                let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
-                entries.push((lookup_key, creds.clone()));
-            }
-
-            match crate::vault_ops::store_imported_credentials(self.settings(), &entries) {
-                Ok((stored, _)) if stored == total => {
-                    tracing::info!("Stored {stored} imported credential(s)");
-                }
-                Ok((stored, total)) => {
-                    tracing::warn!("Stored {stored}/{total} imported credential(s)");
-                }
-                Err(e) => {
-                    tracing::warn!(error = %e, "Could not store imported credentials");
-                }
-            }
+                continue;
+            };
+            let protocol = conn.protocol_config.protocol_type();
+            let name =
+                rustconn_core::import::sanitize_imported_value(&conn.name.trim().replace('/', "-"));
+            let lookup_key = format!("{} ({})", name, protocol.as_str().to_lowercase());
+            credential_entries.push((lookup_key, creds.clone()));
         }
 
         // Import smart folders with remapped group IDs
@@ -1005,6 +1014,9 @@ impl AppState {
             tracing::info!(count = result.smart_folders.len(), "Imported smart folders");
         }
 
-        Ok(imported)
+        Ok(ImportOutcome {
+            connections: imported,
+            credential_entries,
+        })
     }
 }

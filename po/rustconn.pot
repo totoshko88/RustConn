@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 17:20+0200\n"
+"POT-Creation-Date: 2026-11-05 17:46+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5485,7 +5485,7 @@ msgid ""
 msgstr ""
 
 #: rustconn/src/dialogs/import/sources.rs:704
-#: rustconn/src/window/connection_dialogs.rs:1024
+#: rustconn/src/window/connection_dialogs.rs:1037
 msgid "Import Failed"
 msgstr ""
 
@@ -12540,12 +12540,28 @@ msgstr ""
 msgid "Import All"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1010
+#: rustconn/src/window/connection_dialogs.rs:1023
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr ""
 
-#: rustconn/src/window/connection_dialogs.rs:1015
+#: rustconn/src/window/connection_dialogs.rs:1028
 msgid "Imported {} connections to '{}' group"
+msgstr ""
+
+#: rustconn/src/window/connection_dialogs.rs:1061
+msgid "Storing {} imported credentials…"
+msgstr ""
+
+#: rustconn/src/window/connection_dialogs.rs:1072
+msgid "Stored {} imported credentials"
+msgstr ""
+
+#: rustconn/src/window/connection_dialogs.rs:1083
+msgid "Stored {} of {} imported credentials — check the secret backend"
+msgstr ""
+
+#: rustconn/src/window/connection_dialogs.rs:1093
+msgid "Could not store imported credentials in the secret backend"
 msgstr ""
 
 #: rustconn/src/window/copy_field_actions.rs:80
