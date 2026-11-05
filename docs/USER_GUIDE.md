@@ -1197,7 +1197,7 @@ When the remote Windows user copies files to the clipboard (Ctrl+C in Explorer),
 2. The "Save N Files" button appears in the RustConn toolbar
 3. Click it and choose a local folder — files are downloaded from the remote clipboard
 
-This uses the RDP clipboard channel (`CF_HDROP` / `FILEDESCRIPTORW` format) and works without shared folders. Progress is tracked per-file. Only available in embedded mode (IronRDP), not with FreeRDP external.
+This uses the RDP clipboard channel (`CF_HDROP` / `FILEDESCRIPTORW` format) and works without shared folders. Progress is tracked per-file. Only available in embedded mode (IronRDP), not with FreeRDP external. Files copied in the session stay available to save even if you switch to another window and come back before clicking Save: RustConn locks the remote file clipboard for the duration, so the server keeps the data instead of dropping it when its clipboard next changes.
 
 #### External Window Sizing
 

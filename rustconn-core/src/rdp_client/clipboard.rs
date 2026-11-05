@@ -422,10 +422,28 @@ impl CliprdrBackend for RustConnClipboardBackend {
         //
         // FILECLIP_NO_FILE_PATHS: we describe files by name only and never
         // hand out local paths, which is what this flag promises the peer.
-        // FreeRDP advertises the same trio.
+        //
+        // CAN_LOCK_CLIPDATA (issue #390, Fix B): tells the server we lock the
+        // remote file clipboard while a download is in flight. Without it the
+        // server is free to drop the File Stream data the moment its clipboard
+        // changes — which is exactly the "copy a file in the session, switch
+        // apps, come back, Save" race Fix A could not cover, because the focus
+        // -return format announce replaces the clipboard before the download
+        // even starts. IronRDP owns the rest once the flag is set: it sends the
+        // Lock PDU automatically after the FormatListResponse for any Format
+        // List carrying files (`Cliprdr::send_lock`), carries the `clipDataId`
+        // on every FileContentsRequest, and expires and unlocks each lock on its
+        // own. Verified against ironrdp-cliprdr 0.7.0: `send_lock` is gated on
+        // `self.capabilities.flags()`, which IronRDP downgrades against the
+        // server's advertised set (`Capabilities::downgrade`), so the lock is
+        // sent only when BOTH ends advertise the flag — as a real Windows host
+        // does — and a server without lock support is correctly never sent one.
+        //
+        // FreeRDP advertises the same quartet.
         ClipboardGeneralCapabilityFlags::USE_LONG_FORMAT_NAMES
             | ClipboardGeneralCapabilityFlags::STREAM_FILECLIP_ENABLED
             | ClipboardGeneralCapabilityFlags::FILECLIP_NO_FILE_PATHS
+            | ClipboardGeneralCapabilityFlags::CAN_LOCK_CLIPDATA
     }
 
     fn on_process_negotiated_capabilities(
@@ -1112,15 +1130,27 @@ mod tests {
         /// A client through the initialization a Windows server performs, with
         /// its startup events drained.
         pub(super) fn ready_client() -> (CliprdrClient, Receiver<RdpClientEvent>) {
-            let (tx, rx) = std::sync::mpsc::channel();
-            let mut cliprdr: CliprdrClient =
-                ironrdp_cliprdr::Cliprdr::new(Box::new(RustConnClipboardBackend::new(tx)));
-            let server = Capabilities::new(
-                ClipboardProtocolVersion::V2,
+            ready_client_with_server_caps(
                 ClipboardGeneralCapabilityFlags::USE_LONG_FORMAT_NAMES
                     | ClipboardGeneralCapabilityFlags::STREAM_FILECLIP_ENABLED
                     | ClipboardGeneralCapabilityFlags::FILECLIP_NO_FILE_PATHS,
-            );
+            )
+        }
+
+        /// Like [`ready_client`], but with an explicit server capability set.
+        ///
+        /// IronRDP downgrades the client's advertised flags against the server's
+        /// (`Capabilities::downgrade`), so a capability only takes effect when
+        /// BOTH ends advertise it — which is why the clipboard lock (issue #390)
+        /// needs a server that announces `CAN_LOCK_CLIPDATA`, exactly as a real
+        /// Windows host does.
+        pub(super) fn ready_client_with_server_caps(
+            server_flags: ClipboardGeneralCapabilityFlags,
+        ) -> (CliprdrClient, Receiver<RdpClientEvent>) {
+            let (tx, rx) = std::sync::mpsc::channel();
+            let mut cliprdr: CliprdrClient =
+                ironrdp_cliprdr::Cliprdr::new(Box::new(RustConnClipboardBackend::new(tx)));
+            let server = Capabilities::new(ClipboardProtocolVersion::V2, server_flags);
             feed(&mut cliprdr, &ClipboardPdu::Capabilities(server));
             feed(&mut cliprdr, &ClipboardPdu::MonitorReady);
             // The session loop answers the backend's initial empty format list.
@@ -1143,6 +1173,27 @@ mod tests {
         pub(super) fn announce(cliprdr: &mut CliprdrClient, formats: &[ClipboardFormat]) {
             let list = FormatList::new_unicode(formats, true).expect("format list");
             feed(cliprdr, &ClipboardPdu::FormatList(list));
+        }
+
+        /// Like [`announce`], but returns the message type of every PDU the
+        /// client sent back in response. Used to assert the Lock PDU the
+        /// `CAN_LOCK_CLIPDATA` capability triggers (issue #390).
+        pub(super) fn announce_capturing(
+            cliprdr: &mut CliprdrClient,
+            formats: &[ClipboardFormat],
+        ) -> Vec<String> {
+            let list = FormatList::new_unicode(formats, true).expect("format list");
+            let bytes = ironrdp_core::encode_vec(&ClipboardPdu::FormatList(list)).expect("encode");
+            let out = cliprdr.process(&bytes).expect("client accepts PDU");
+            out.iter()
+                .map(|msg| {
+                    let pdu_bytes = msg.encode_unframed_pdu().expect("encode outgoing PDU");
+                    let mut cursor = ironrdp_core::ReadCursor::new(&pdu_bytes);
+                    let pdu = <ClipboardPdu<'_> as ironrdp_core::Decode>::decode(&mut cursor)
+                        .expect("decode outgoing PDU");
+                    pdu.message_name().to_owned()
+                })
+                .collect()
         }
 
         /// What Windows Explorer announces for Ctrl+C on a file, minus the
@@ -1219,6 +1270,58 @@ mod tests {
                 })
                 .collect()
         }
+    }
+
+    /// A remote file copy now locks the clipboard against a lock-capable server
+    /// (issue #390, Fix B).
+    ///
+    /// With `CAN_LOCK_CLIPDATA` negotiated by both ends, IronRDP sends a Lock
+    /// PDU after the Format List Response for any list carrying files, so the
+    /// server keeps the File Stream data even if its clipboard changes before
+    /// the download — the "copy a file, switch apps, come back, Save" race Fix A
+    /// could not cover. A text-only announce must not lock.
+    #[test]
+    fn a_remote_file_copy_locks_the_clipboard_but_a_text_copy_does_not() {
+        let (mut cliprdr, _rx) = session::ready_client_with_server_caps(
+            ClipboardGeneralCapabilityFlags::USE_LONG_FORMAT_NAMES
+                | ClipboardGeneralCapabilityFlags::STREAM_FILECLIP_ENABLED
+                | ClipboardGeneralCapabilityFlags::FILECLIP_NO_FILE_PATHS
+                | ClipboardGeneralCapabilityFlags::CAN_LOCK_CLIPDATA,
+        );
+
+        let sent = session::announce_capturing(&mut cliprdr, &session::file_copy_formats());
+        assert!(
+            sent.iter().any(|m| m == "CLIPRDR_LOCK_CLIPDATA"),
+            "a file list must trigger a clipboard lock, got {sent:?}"
+        );
+
+        let sent = session::announce_capturing(
+            &mut cliprdr,
+            &[ClipboardFormat::new(ClipboardFormatId::CF_UNICODETEXT)],
+        );
+        assert!(
+            !sent.iter().any(|m| m == "CLIPRDR_LOCK_CLIPDATA"),
+            "a text-only list must not lock the clipboard, got {sent:?}"
+        );
+    }
+
+    /// The lock is only sent when the server also advertises `CAN_LOCK_CLIPDATA`
+    /// (issue #390). IronRDP downgrades the client's flags against the server's,
+    /// so a server that does not support locking never receives a Lock PDU even
+    /// for a file list — the client must not assume a capability the peer lacks.
+    #[test]
+    fn a_server_without_lock_support_is_not_sent_a_lock() {
+        let (mut cliprdr, _rx) = session::ready_client_with_server_caps(
+            ClipboardGeneralCapabilityFlags::USE_LONG_FORMAT_NAMES
+                | ClipboardGeneralCapabilityFlags::STREAM_FILECLIP_ENABLED
+                | ClipboardGeneralCapabilityFlags::FILECLIP_NO_FILE_PATHS,
+        );
+
+        let sent = session::announce_capturing(&mut cliprdr, &session::file_copy_formats());
+        assert!(
+            !sent.iter().any(|m| m == "CLIPRDR_LOCK_CLIPDATA"),
+            "a server without CAN_LOCK_CLIPDATA must not be sent a lock, got {sent:?}"
+        );
     }
 
     /// Ctrl+C on a file in the remote session must end with "Save N Files".
