@@ -3542,6 +3542,8 @@ Before 0.22.13 this was an on/off switch, and saving a connection in the editor 
 
 **Requirements:** A Linux host with `/proc` and a POSIX `df` (BusyBox `df`, as on OpenWrt and EdgeOS, is supported), or a MikroTik RouterOS device (detected automatically from its SSH console). No agent installation needed. Works with SSH connections. Other network appliances (Cisco IOS, Junos) are neither Linux nor RouterOS and are not supported — use a snippet or an SNMP monitor for those.
 
+**Host keys:** the monitoring connection trusts only a host key that is already in `known_hosts` (`StrictHostKeyChecking=yes`, on every jump host too), and it starts only once the session's terminal is connected, never while `ssh` is still asking whether to trust a new host. It therefore never records a key you have not accepted. When it finds no known key (for example, the session's own custom options point `ssh` at another `known_hosts` file), monitoring fails without asking and the failure goes to the log.
+
 ### Flatpak Components
 
 **Available only in Flatpak environment**

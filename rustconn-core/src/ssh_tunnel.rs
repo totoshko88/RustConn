@@ -1245,11 +1245,24 @@ pub fn target_password_askpass_allowed(config: &SshConfig, has_resolved_identity
         && !has_unmanaged_proxy_route(config)
 }
 
+/// What a proxy hop's `ssh` does with a host key that is not in `known_hosts`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HopHostKeys {
+    /// The user's ssh configuration decides: no `StrictHostKeyChecking` is
+    /// passed (except to a hop that answers through a forced askpass helper,
+    /// see [`build_nested_proxy_command_with_askpass`]).
+    UserConfig,
+    /// `StrictHostKeyChecking=yes`: a hop whose key is unknown fails, with no
+    /// question and nothing written to `known_hosts`. For background probes,
+    /// which must never accept a key the user has not accepted.
+    KnownOnly,
+}
+
 /// Builds a (possibly nested) SSH `ProxyCommand` value that reaches `hops[0]`
 /// (the hop closest to the target) through every deeper hop in `hops[1..]`.
 ///
-/// Each hop receives `identity_file`, `known_hosts`, and — when
-/// `accept_new_host_keys` — `StrictHostKeyChecking=accept-new`. This is
+/// Each hop receives `identity_file`, `known_hosts`, and — with
+/// [`HopHostKeys::KnownOnly`] — `StrictHostKeyChecking=yes`. This is
 /// required because ProxyJump (`-J`) children do NOT inherit `-i`/`-o` from the
 /// parent command: in Flatpak that breaks multi-hop chains, where deeper hops
 /// fail key auth and host-key verification (issue #191 follow-up — double jump).
@@ -1266,13 +1279,13 @@ pub fn build_nested_proxy_command(
     hops: &[&str],
     identity_file: Option<&str>,
     known_hosts: Option<&std::path::Path>,
-    accept_new_host_keys: bool,
+    host_keys: HopHostKeys,
 ) -> String {
     build_nested_proxy_command_inner(
         hops,
         identity_file,
         known_hosts,
-        accept_new_host_keys,
+        host_keys,
         &[],
         false,
         (0, hops.len()),
@@ -1296,10 +1309,13 @@ pub fn build_nested_proxy_command(
 /// original chain. The helper opens and unlinks that file before returning its
 /// contents, so no password value enters the SSH process environment.
 ///
-/// Any hop that gets an askpass helper is forced to
-/// `StrictHostKeyChecking=accept-new` regardless of `accept_new_host_keys`,
-/// because a forced-askpass hop with an unknown host key would otherwise feed
-/// its password into the host-key confirmation prompt and loop (issue #203).
+/// The other hops leave `StrictHostKeyChecking` to the user's ssh
+/// configuration ([`HopHostKeys::UserConfig`]). Any hop that gets an askpass
+/// helper is forced to `StrictHostKeyChecking=accept-new`, because a
+/// forced-askpass hop with an unknown host key would otherwise feed its
+/// password into the host-key confirmation prompt and loop (issue #203). That
+/// chain belongs to a connect the user started, and a *changed* key is still
+/// refused.
 ///
 /// # Panics
 /// Panics in debug builds if `hops` is empty.
@@ -1308,7 +1324,6 @@ pub fn build_nested_proxy_command_with_askpass(
     hops: &[&str],
     identity_file: Option<&str>,
     known_hosts: Option<&std::path::Path>,
-    accept_new_host_keys: bool,
     askpass_scripts: &[Option<&std::path::Path>],
     hop_index_offset: usize,
     total_hop_count: usize,
@@ -1317,7 +1332,7 @@ pub fn build_nested_proxy_command_with_askpass(
         hops,
         identity_file,
         known_hosts,
-        accept_new_host_keys,
+        HopHostKeys::UserConfig,
         askpass_scripts,
         true,
         (hop_index_offset, total_hop_count),
@@ -1328,7 +1343,7 @@ fn build_nested_proxy_command_inner(
     hops: &[&str],
     identity_file: Option<&str>,
     known_hosts: Option<&std::path::Path>,
-    accept_new_host_keys: bool,
+    host_keys: HopHostKeys,
     askpass_scripts: &[Option<&std::path::Path>],
     isolate_outer_askpass: bool,
     hop_scope: (usize, usize),
@@ -1349,11 +1364,19 @@ fn build_nested_proxy_command_inner(
     // the PASSWORD. SSH rejects it, re-prompts, and loops until the bastion
     // drops the connection — surfacing as "Connection closed by UNKNOWN port
     // 65535" (issue #203). accept-new auto-accepts a first-seen key while still
-    // rejecting a CHANGED one, so MITM protection is preserved.
+    // rejecting a CHANGED one, so MITM protection is preserved. `KnownOnly`
+    // asks no question either, so it needs no such exception.
     let this_hop_uses_askpass = matches!(askpass_scripts.first(), Some(Some(_)));
-    if accept_new_host_keys || this_hop_uses_askpass {
+    let strict_host_key_checking = match host_keys {
+        HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
+        HopHostKeys::UserConfig if this_hop_uses_askpass => {
+            Some("StrictHostKeyChecking=accept-new")
+        }
+        HopHostKeys::UserConfig => None,
+    };
+    if let Some(option) = strict_host_key_checking {
         parts.push("-o".to_string());
-        parts.push("StrictHostKeyChecking=accept-new".to_string());
+        parts.push(option.to_string());
     }
     if let Some(kh) = known_hosts {
         parts.push("-o".to_string());
@@ -1378,7 +1401,7 @@ fn build_nested_proxy_command_inner(
             &hops[1..],
             identity_file,
             known_hosts,
-            accept_new_host_keys,
+            host_keys,
             inner_askpass,
             isolate_outer_askpass,
             (hop_scope.0 + 1, hop_scope.1),
@@ -1675,14 +1698,32 @@ mod tests {
     }
 
     #[test]
-    fn test_nested_proxy_single_hop_accept_new() {
-        let cmd = build_nested_proxy_command(&["bastion.example.com"], None, None, true);
+    fn test_nested_proxy_single_hop_known_only() {
+        let cmd = build_nested_proxy_command(
+            &["bastion.example.com"],
+            None,
+            None,
+            HopHostKeys::KnownOnly,
+        );
         assert_eq!(
             cmd,
-            "ssh -W %h:%p -o StrictHostKeyChecking=accept-new bastion.example.com"
+            "ssh -W %h:%p -o StrictHostKeyChecking=yes bastion.example.com"
         );
         // A single hop must not wrap itself in a ProxyCommand.
         assert!(!cmd.contains("ProxyCommand"));
+    }
+
+    /// A background probe's chain: every hop refuses a key it does not know,
+    /// the deeper ones included, and none accepts one on its own.
+    #[test]
+    fn test_nested_proxy_known_only_reaches_every_hop() {
+        let cmd = build_nested_proxy_command(&["near", "far"], None, None, HopHostKeys::KnownOnly);
+        assert_eq!(
+            cmd,
+            "ssh -W %h:%p -o StrictHostKeyChecking=yes \
+             -o ProxyCommand='ssh -W %h:%p -o StrictHostKeyChecking=yes far' near"
+        );
+        assert!(!cmd.contains("accept-new"));
     }
 
     #[test]
@@ -1691,9 +1732,9 @@ mod tests {
             &["admin@bastion:2222"],
             Some("/home/me/.ssh/id_ed25519"),
             Some(std::path::Path::new("/run/kh")),
-            false,
+            HopHostKeys::UserConfig,
         );
-        // accept_new=false must not emit StrictHostKeyChecking.
+        // UserConfig must not emit StrictHostKeyChecking.
         assert!(!cmd.contains("StrictHostKeyChecking"));
         assert_eq!(
             cmd,
@@ -1707,7 +1748,7 @@ mod tests {
         // `hops[0]` (closest to the target) is the destination of the OUTER ssh;
         // it is reached THROUGH `hops[1]` via the nested, single-quoted
         // ProxyCommand. Reversing this would break double-jump chains (#191).
-        let cmd = build_nested_proxy_command(&["near", "far"], None, None, false);
+        let cmd = build_nested_proxy_command(&["near", "far"], None, None, HopHostKeys::UserConfig);
         assert_eq!(cmd, "ssh -W %h:%p -o ProxyCommand='ssh -W %h:%p far' near");
     }
 
@@ -1715,7 +1756,8 @@ mod tests {
     fn test_nested_proxy_three_hops_orders_target_to_client() {
         // chain[0] reached via chain[1] reached via chain[2]: the innermost
         // command targets the hop closest to the client.
-        let cmd = build_nested_proxy_command(&["h0", "h1", "h2"], None, None, false);
+        let cmd =
+            build_nested_proxy_command(&["h0", "h1", "h2"], None, None, HopHostKeys::UserConfig);
         assert_eq!(
             cmd,
             "ssh -W %h:%p -o ProxyCommand='ssh -W %h:%p -o ProxyCommand='\\''ssh -W %h:%p h2'\\'' h1' h0"
@@ -1926,8 +1968,7 @@ mod tests {
 
     #[test]
     fn test_nested_askpass_empty_scripts_isolates_every_hop() {
-        let cmd =
-            build_nested_proxy_command_with_askpass(&["near", "far"], None, None, false, &[], 0, 2);
+        let cmd = build_nested_proxy_command_with_askpass(&["near", "far"], None, None, &[], 0, 2);
         assert_eq!(
             cmd,
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
@@ -1946,14 +1987,13 @@ mod tests {
             &["near", "far"],
             None,
             None,
-            false,
             &[Some(script), None],
             0,
             2,
         );
         // hops[0]=near uses forced askpass → must get accept-new so an unknown
         // host key never routes the yes/no prompt to the password helper (#203).
-        // far has no askpass and accept_new=false → no StrictHostKeyChecking.
+        // far has no askpass → the user's config decides, no StrictHostKeyChecking.
         assert_eq!(
             cmd,
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
@@ -1974,7 +2014,6 @@ mod tests {
             &["near", "far"],
             None,
             None,
-            false,
             &[None, Some(inner)],
             0,
             2,

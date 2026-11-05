@@ -295,8 +295,16 @@ pub fn resolve_remote_home(
     // bounds the TCP connect. ServerAliveInterval/CountMax bound a channel that
     // stalls *after* connect (3s × 2 missed keepalives ≈ 6s) so a dead link
     // mid-`pwd` cannot pin the blocking thread. `pwd` runs instantly otherwise.
+    // StrictHostKeyChecking=yes → a background probe never records a host key
+    // the user has not accepted, even when their ssh config says `accept-new`
+    // or `no`; an unknown key fails the probe like any other failure. The
+    // `-J` hops do not inherit `-o` and keep the user's own setting; this
+    // probe hands them no askpass, so a key they accept is one the user
+    // configured or answered for.
     cmd.arg("-o")
         .arg("BatchMode=yes")
+        .arg("-o")
+        .arg("StrictHostKeyChecking=yes")
         .arg("-o")
         .arg("ConnectTimeout=8")
         .arg("-o")

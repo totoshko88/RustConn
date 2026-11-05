@@ -820,6 +820,11 @@ const SSH_FAILURE_PATTERNS: &[&str] = &[
     "No route to host",
     "Network is unreachable",
     "Host key verification failed",
+    // The banner OpenSSH prints for a changed host key. With the default
+    // `StrictHostKeyChecking` it is followed by "Host key verification
+    // failed."; with `no` ssh goes on with password and keyboard-interactive
+    // logins disabled, so only a later shell prompt counts.
+    "REMOTE HOST IDENTIFICATION HAS CHANGED",
     "Permission denied",
     "Too many authentication failures",
     "Connection closed by",
@@ -879,6 +884,30 @@ fn is_credential_question(line: &str) -> bool {
             .any(|word| lower.contains(word))
 }
 
+/// Whether one line is OpenSSH's host-key question for a host it does not
+/// know yet: `Are you sure you want to continue connecting
+/// (yes/no/[fingerprint])? `, or `Please type 'yes', 'no' or the fingerprint: `
+/// after an answer it did not take.
+///
+/// It ends in `? `, so [`is_credential_question`] does not catch it. Until
+/// the user answers, nothing is connected, and a background probe that
+/// started now could record the key the user is still looking at. Matched
+/// anywhere in the line, because the answer typed after it is echoed on the
+/// same line.
+fn is_host_key_question(line: &str) -> bool {
+    let lower = line.to_lowercase();
+    lower.contains("(yes/no")
+        || lower.contains("continue connecting")
+        || lower.contains("please type 'yes', 'no'")
+}
+
+/// Whether one line is a question the client waits on: a credential
+/// ([`is_credential_question`]) or the host-key confirmation
+/// ([`is_host_key_question`]).
+fn is_waiting_question(line: &str) -> bool {
+    is_credential_question(line) || is_host_key_question(line)
+}
+
 /// Whether one line is telnet's `Trying <address>...`: the client is about to
 /// try one address, and says nothing yet about whether it will answer.
 ///
@@ -904,8 +933,8 @@ fn is_progress_line(line: &str) -> bool {
             && line.ends_with("to the list of known hosts."))
 }
 
-/// The part of `text` after its last shell prompt, credential question or
-/// telnet retry line.
+/// The part of `text` after its last shell prompt, credential or host-key
+/// question, or telnet retry line.
 ///
 /// The output a status verdict reads only grows, so a failure line anywhere
 /// in it would be sticky: OpenSSH prints `Permission denied, please try again.`
@@ -921,7 +950,7 @@ fn output_after_last_prompt(text: &str) -> &str {
     let mut offset = 0;
     for line in text.split_inclusive('\n') {
         offset += line.len();
-        if is_shell_prompt_line(line) || is_credential_question(line) || is_retry_line(line) {
+        if is_shell_prompt_line(line) || is_waiting_question(line) || is_retry_line(line) {
             tail_start = offset;
         }
     }
@@ -937,8 +966,9 @@ fn output_after_last_prompt(text: &str) -> &str {
 /// question or telnet retry line means not established. Otherwise a trailing
 /// shell prompt means established, on any row. Without a prompt,
 /// `row_suffices` decides whether one full line of output (`cursor_row > 0`)
-/// is enough, unless the client is waiting on a credential question or its
-/// last line is only a progress note ([`is_progress_line`]).
+/// is enough, unless the client is waiting on a credential or host-key
+/// question ([`is_waiting_question`]) or its last line is only a progress
+/// note ([`is_progress_line`]).
 fn output_established(
     cursor_row: i64,
     output: Option<&str>,
@@ -957,7 +987,7 @@ fn output_established(
     row_suffices
         && cursor_row > 0
         && !last_non_blank_line(text)
-            .is_some_and(|line| is_credential_question(line) || is_progress_line(line))
+            .is_some_and(|line| is_waiting_question(line) || is_progress_line(line))
 }
 
 /// Whether an SSH session is established, from what ssh printed below the
@@ -980,8 +1010,8 @@ fn output_established(
 ///   succeeds does not count.
 /// - A trailing shell prompt means established, also on row 0.
 /// - Direct connection without a prompt: established once the output reaches
-///   a full line (`cursor_row > 0`) and is not waiting on a password or
-///   passphrase question or ending in the known-hosts warning.
+///   a full line (`cursor_row > 0`) and is not waiting on a password,
+///   passphrase or host-key question or ending in the known-hosts warning.
 /// - Jump-host connection: established only on a shell prompt. The pre-connect
 ///   port check is skipped for it (the target is not directly reachable), and a
 ///   bastion banner arrives while the final host is still timing out, so only
@@ -1358,7 +1388,7 @@ pub fn resolve_jump_chain_for_tunnel(
                 &inner_hops,
                 first_hop_identity.as_deref(),
                 flatpak_kh.as_deref(),
-                false,
+                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
             );
             proxy_parts.push("-o".to_string());
             proxy_parts.push(format!(
@@ -3494,6 +3524,74 @@ mod established_tests {
         assert!(ssh_output_established(2, false, Some(&then_logged_in)));
     }
 
+    /// What OpenSSH prints on a first connect to a host it does not know.
+    const HOST_KEY_QUESTION: &str = "The authenticity of host 'web.example (192.0.2.1)' \
+         can't be established.\n\
+         ED25519 key fingerprint is SHA256:4Kq1nT0vYk2mVjV9b1yQ3m8yS6c3C1yJ8m5f0hJx2aQ.\n\
+         This key is not known by any other names.\n\
+         Are you sure you want to continue connecting (yes/no/[fingerprint])? ";
+
+    #[test]
+    fn an_unanswered_host_key_question_is_not_established() {
+        // Four full lines and no failure: before the host-key question was
+        // recognised this counted as established, and the monitoring probe
+        // could record the key while the user was still reading it.
+        assert!(!ssh_output_established(3, false, Some(HOST_KEY_QUESTION)));
+        assert!(!ssh_output_established(3, true, Some(HOST_KEY_QUESTION)));
+        // The typed answer is echoed on the same line.
+        let answered = format!("{HOST_KEY_QUESTION}yes\n");
+        assert!(!ssh_output_established(4, false, Some(&answered)));
+        let retyped = format!("{HOST_KEY_QUESTION}y\nPlease type 'yes', 'no' or the fingerprint: ");
+        assert!(!ssh_output_established(4, false, Some(&retyped)));
+        // The same question under a client that runs OpenSSH (mosh).
+        assert!(!connection_established(
+            StatusClient::Other,
+            Some(&output(3, HOST_KEY_QUESTION, false))
+        ));
+    }
+
+    #[test]
+    fn a_host_key_question_answered_no_is_not_established() {
+        let declined = format!("{HOST_KEY_QUESTION}no\nHost key verification failed.\n");
+        assert!(!ssh_output_established(5, false, Some(&declined)));
+    }
+
+    #[test]
+    fn a_host_key_question_answered_yes_then_a_login_is_established() {
+        let accepted = format!(
+            "{HOST_KEY_QUESTION}yes\n\
+             Warning: Permanently added 'web.example' (ED25519) to the list of known hosts.\n"
+        );
+        assert!(
+            !ssh_output_established(5, false, Some(&accepted)),
+            "the known-hosts warning alone is still progress"
+        );
+        let password = format!("{accepted}user@web.example's password: ");
+        assert!(!ssh_output_established(5, false, Some(&password)));
+        let logged_in = format!("{accepted}Last login: today\nuser@web:~$ ");
+        assert!(ssh_output_established(6, false, Some(&logged_in)));
+    }
+
+    #[test]
+    fn a_changed_host_key_is_not_established() {
+        let changed = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n\
+             @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n\
+             @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n\
+             IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n";
+        assert!(!ssh_output_established(4, false, Some(changed)));
+        let refused = format!("{changed}Host key verification failed.\n");
+        assert!(!ssh_output_established(5, false, Some(&refused)));
+        // `StrictHostKeyChecking=no` goes on with key login; only a shell
+        // prompt after the warning counts.
+        let went_on = format!(
+            "{changed}Password authentication is disabled to avoid man-in-the-middle \
+             attacks.\nWelcome to Ubuntu\n"
+        );
+        assert!(!ssh_output_established(6, false, Some(&went_on)));
+        let prompt = format!("{went_on}user@web:~$ ");
+        assert!(ssh_output_established(7, false, Some(&prompt)));
+    }
+
     #[test]
     fn shell_prompt_terminators_are_recognised() {
         assert!(ends_with_shell_prompt("ubuntu@host:~$ "));
@@ -3636,6 +3734,22 @@ mod ssh_output_established_tests {
         let output = "user@host:~$ \nConnection reset by 192.0.2.1 port 22\n";
         assert!(!ssh_output_established(2, false, Some(output)));
         assert!(!ssh_output_established(2, true, Some(output)));
+    }
+
+    #[test]
+    fn a_host_key_question_on_reconnect_is_not_established() {
+        // The host was reinstalled (new key, old entry removed) or the
+        // known_hosts entry is gone: the reconnect asks again.
+        let output = "The authenticity of host 'host (192.0.2.1)' can't be established.\n\
+                      ED25519 key fingerprint is SHA256:abc.\n\
+                      Are you sure you want to continue connecting (yes/no/[fingerprint])? ";
+        assert!(!ssh_output_established(2, false, Some(output)));
+        assert!(!ssh_output_established(2, true, Some(output)));
+        let failed = format!("{output}no\nHost key verification failed.\n");
+        assert!(!ssh_output_established(4, false, Some(&failed)));
+        let changed = "@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n\
+                       Host key verification failed.\n";
+        assert!(!ssh_output_established(2, false, Some(changed)));
     }
 
     #[test]

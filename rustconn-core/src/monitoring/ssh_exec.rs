@@ -514,49 +514,41 @@ impl Drop for AskpassScript {
 
 /// Builds jump host arguments for the SSH monitoring command.
 ///
-/// In Flatpak, `-J` (ProxyJump) spawns a nested SSH process that does NOT
-/// inherit `-o` flags from the outer command. The jump host SSH tries to
-/// write to `~/.ssh/known_hosts` (read-only in Flatpak) and prompts for
-/// host key verification. This function replaces `-J` with a `ProxyCommand`
-/// that passes `StrictHostKeyChecking` and `UserKnownHostsFile` to the
-/// jump host SSH process.
+/// `-J` (ProxyJump) spawns a nested SSH process per hop that does NOT inherit
+/// `-o` flags from the outer command, so a hop would fall back to the user's
+/// `StrictHostKeyChecking` (usually `ask`) and could put the host-key question
+/// to a desktop askpass, or to the monitoring password helper. This replaces
+/// `-J` with a nested `ProxyCommand` that gives every hop
+/// `StrictHostKeyChecking=yes` ([`HopHostKeys::KnownOnly`]). In Flatpak each
+/// hop also gets the identity and the writable known_hosts file, which `-J`
+/// would drop as well (issue #191 follow-up); outside it, as with `-J`, the
+/// user's ssh config supplies them.
 ///
-/// Outside Flatpak, standard `-J` is used.
+/// [`HopHostKeys::KnownOnly`]: crate::ssh_tunnel::HopHostKeys::KnownOnly
 fn build_jump_host_args(cmd: &mut Command, jump_host: &str, identity_file: Option<&str>) {
     let flatpak_kh = crate::flatpak::get_flatpak_known_hosts_path();
-    if flatpak_kh.is_some() {
-        // The chain may carry several hops (`a,b,c`). Each must inherit the
-        // identity and Flatpak known_hosts, so nest a ProxyCommand per hop —
-        // `-J` alone drops them and the deeper hops fail (issue #191 follow-up).
-        let hops: Vec<&str> = jump_host
-            .split(',')
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .collect();
-        if hops.is_empty() {
-            cmd.arg("-J").arg(jump_host);
-            return;
-        }
-        // Monitoring probes have no controlling TTY, so unknown host keys are
-        // accepted automatically (accept-new) — they cannot be prompted for.
-        let proxy_cmd = crate::ssh_tunnel::build_nested_proxy_command(
-            &hops,
-            identity_file,
-            flatpak_kh.as_deref(),
-            true,
-        );
-        tracing::debug!(
-            protocol = "ssh",
-            proxy_command = %proxy_cmd,
-            "Monitoring: using ProxyCommand instead of -J for Flatpak compatibility"
-        );
-        cmd.arg("-o").arg(format!("ProxyCommand={proxy_cmd}"));
-    } else {
-        // Non-Flatpak: standard -J. `jump_host` is target-first (RustConn's
-        // internal order); OpenSSH `-J` visits hops client-first, so reverse.
-        cmd.arg("-J")
-            .arg(crate::ssh_tunnel::proxy_jump_arg(jump_host));
+    // The chain may carry several hops (`a,b,c`), target-first (RustConn's
+    // internal order), which is the order the nested command takes.
+    let hops: Vec<&str> = jump_host
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    if hops.is_empty() {
+        return;
     }
+    let proxy_cmd = crate::ssh_tunnel::build_nested_proxy_command(
+        &hops,
+        identity_file.filter(|_| flatpak_kh.is_some()),
+        flatpak_kh.as_deref(),
+        crate::ssh_tunnel::HopHostKeys::KnownOnly,
+    );
+    tracing::debug!(
+        protocol = "ssh",
+        proxy_command = %proxy_cmd,
+        "Monitoring: using a ProxyCommand that refuses unknown host keys on every hop"
+    );
+    cmd.arg("-o").arg(format!("ProxyCommand={proxy_cmd}"));
 }
 
 /// Waits for the main SSH session's ControlMaster socket to appear.
@@ -694,11 +686,12 @@ pub fn ssh_exec_factory(
                 cmd.arg("-o").arg("BatchMode=yes");
             }
 
-            // Accept new host keys but reject changed ones (OpenSSH 7.6+).
-            // Using `accept-new` instead of `no` prevents MITM attacks on
-            // hosts whose key has changed while still allowing first-time
-            // connections without manual intervention.
-            cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
+            // Only a host key already in known_hosts: the probe runs in the
+            // background, so it must never accept a key the user has not
+            // accepted in the session's terminal, nor ask about one. A probe
+            // that meets an unknown key fails like any other probe (logged at
+            // debug by the collector).
+            cmd.arg("-o").arg("StrictHostKeyChecking=yes");
 
             // In Flatpak, ~/.ssh is read-only — use writable known_hosts path
             if let Some(kh_path) = crate::flatpak::get_flatpak_known_hosts_path() {

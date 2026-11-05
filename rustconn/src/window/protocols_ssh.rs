@@ -977,13 +977,13 @@ fn build_ssh_command_args(
                 let askpass_refs: Vec<Option<&std::path::Path>> =
                     inner_askpass.iter().map(|opt| opt.as_deref()).collect();
 
-                // accept_new = false: keep the existing host-key posture (the
-                // bastions are expected to already be in known_hosts).
+                // The user's config decides the host-key posture of hops
+                // without a password (the bastions are expected to already be
+                // in known_hosts); a password hop gets accept-new (#203).
                 let inner = rustconn_core::ssh_tunnel::build_nested_proxy_command_with_askpass(
                     &inner_hops,
                     identity_key,
                     flatpak_known_hosts.as_deref(),
-                    false,
                     &askpass_refs,
                     1,
                     jump_hosts.len(),
@@ -1858,10 +1858,12 @@ fn start_ssh_connection_internal(
             // past the direct threshold with a bastion banner or an SSH error
             // even when the FINAL host never came up. Starting monitoring then
             // opens the bar for a session that failed — and because the
-            // monitoring probe uses accept-new + its own ControlMaster, it can
-            // even reach the target and show live data for a session the user
-            // saw fail. The detector runs again on the next output, so a later
-            // successful prompt still starts it.
+            // monitoring probe can open its own ControlMaster, it can even
+            // reach the target and show live data for a session the user saw
+            // fail. An unanswered host-key question is not established either
+            // (the probe itself only trusts keys already in known_hosts). The
+            // detector runs again on the next output, so a later successful
+            // prompt still starts it.
             when_established(notebook, session_id, status_client, move || {
                 if let Some(container) = notebook_clone.get_session_container(session_id) {
                     monitoring_clone.start_monitoring(
@@ -2205,8 +2207,9 @@ fn reconnect_ssh_after_unlock(
             let mon_jump_host = jump_host_chain;
 
             // The sidebar verdict above: don't open the monitor for a session
-            // whose terminal has not really established — the accept-new probe
-            // could otherwise show live data for a session that never came up.
+            // whose terminal has not really established — the probe, with its
+            // own ControlMaster, could otherwise show live data for a session
+            // that never came up.
             // Like the sidebar detector it stands down when a later reconnect
             // replaces this attempt, so a failed attempt's detector cannot
             // start monitoring on the next attempt's output.
