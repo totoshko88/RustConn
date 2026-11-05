@@ -588,6 +588,11 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         if let Some(Err(e)) = try_with_state(&state_shutdown, |s| s.flush_persistence()) {
             tracing::error!(%e, "Failed to flush persistence on shutdown");
         }
+
+        // A run that reaches a clean shutdown survived any panic it hit (a
+        // caught one, or one that only ended a worker thread), so its crash
+        // logs are not a crash for the next launch to report.
+        rustconn_core::crash_report::discard_this_run_reports();
     });
 
     // Present window immediately — no waiting for secret backends

@@ -1162,9 +1162,12 @@ impl MainWindow {
         // Persistent banner shown at startup when the previous run left a Rust
         // panic crash log (W5). GNOME HIG: a past failure the user should know
         // about is a banner, not a transient toast. Its button opens the log
-        // (portal-aware UriLauncher); the report is a local file that is never
-        // sent anywhere automatically, so the banner only points at it. Dismiss
-        // and opening both clear the logs so a handled crash does not reappear.
+        // (portal-aware FileLauncher, which also escapes the path for the URI);
+        // the report is a local file that is never sent anywhere automatically,
+        // so the banner only points at it. The logs are cleared only once the
+        // log actually opened: a failed open keeps the file and the banner, and
+        // names the path in a toast so the user can still find it. adw::Banner
+        // has no dismiss of its own, so until then it returns on each launch.
         let crash_banner = crate::toast::plain_banner("");
         crash_banner.set_button_label(Some(&crate::i18n::i18n("Open Log")));
         if let Some(report) = rustconn_core::crash_report::take_pending_crash() {
@@ -1173,20 +1176,42 @@ impl MainWindow {
             ));
             let log_path = report.path.clone();
             crash_banner.connect_button_clicked(move |banner| {
-                let uri = format!("file://{}", log_path.display());
-                let launcher = gtk4::UriLauncher::new(&uri);
-                if let Some(win) = banner
+                let file = gtk4::gio::File::for_path(&log_path);
+                let launcher = gtk4::FileLauncher::new(Some(&file));
+                let win = banner
                     .root()
-                    .and_then(|r| r.downcast::<gtk4::Window>().ok())
-                {
-                    launcher.launch(Some(&win), gtk4::gio::Cancellable::NONE, |res| {
-                        if let Err(e) = res {
-                            tracing::warn!(error = %e, "could not open the crash log");
+                    .and_then(|r| r.downcast::<gtk4::Window>().ok());
+                let banner_weak = banner.downgrade();
+                let win_for_toast = win.clone();
+                let shown_path = log_path.display().to_string();
+                launcher.launch(
+                    win.as_ref(),
+                    gtk4::gio::Cancellable::NONE,
+                    move |res| match res {
+                        Ok(()) => {
+                            rustconn_core::crash_report::clear_crash_reports();
+                            if let Some(banner) = banner_weak.upgrade() {
+                                banner.set_revealed(false);
+                            }
                         }
-                    });
-                }
-                rustconn_core::crash_report::clear_crash_reports();
-                banner.set_revealed(false);
+                        Err(e) => {
+                            tracing::warn!(error = %e, "could not open the crash log");
+                            let message = crate::i18n::i18n_f(
+                                "Could not open the crash log. It is saved at {}",
+                                &[&shown_path],
+                            );
+                            if let Some(win) = win_for_toast {
+                                crate::toast::show_toast_on_window(
+                                    &win,
+                                    &message,
+                                    crate::toast::ToastType::Error,
+                                );
+                            } else {
+                                crate::toast::show_error_toast_on_active_window(&message);
+                            }
+                        }
+                    },
+                );
             });
             crash_banner.set_revealed(true);
         } else {

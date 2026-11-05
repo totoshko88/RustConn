@@ -13,12 +13,19 @@
 //! This catches Rust panics only. A `SIGSEGV` inside a C library (GTK, VTE,
 //! libwayland) does not unwind through this hook and is not recorded here; the
 //! user guide says so plainly.
+//!
+//! The hook fires for *every* panic, including ones the program survives: a
+//! panic caught by `catch_unwind` (the IronRDP connect fallback, lock-event
+//! handlers) or one that only ends a worker thread. Those runs then exit
+//! normally, and [`discard_this_run_reports`] — called on a clean shutdown —
+//! removes the logs they wrote, so the next launch reports a crash only when
+//! the previous run really did not finish.
 
 use std::backtrace::Backtrace;
 use std::fs;
 use std::io::Write as _;
 use std::path::PathBuf;
-use std::sync::Once;
+use std::sync::{Mutex, Once, PoisonError};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A crash log left by a previous run, ready to show the user.
@@ -32,6 +39,9 @@ pub struct CrashReport {
 
 /// Guards against installing the hook more than once.
 static HOOK_INSTALLED: Once = Once::new();
+
+/// Crash logs written by this process, removed again on a clean shutdown.
+static WRITTEN_THIS_RUN: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 
 /// The directory crash logs are written to and read from.
 ///
@@ -105,14 +115,49 @@ fn write_crash_log(info: &std::panic::PanicHookInfo<'_>) {
     // Also mirror to the log so a user running from a terminal sees it at once.
     tracing::error!(path = %path.display(), %location, "RustConn panicked; wrote a crash log");
 
-    match fs::File::create(&path) {
+    // Append, so two panics within the same second (two threads) land in one
+    // file instead of the second truncating the first. Owner-only on Unix: the
+    // panic message can carry formatted session data.
+    let mut options = fs::OpenOptions::new();
+    options.create(true).append(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    match options.open(&path) {
         Ok(mut file) => {
             if let Err(e) = file.write_all(body.as_bytes()) {
                 tracing::error!(error = %e, "could not write the crash log");
             }
+            // A poisoned lock only means another panic held it; the list is
+            // still a plain Vec, so keep using it.
+            let mut written = WRITTEN_THIS_RUN
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            if !written.contains(&path) {
+                written.push(path);
+            }
         }
         Err(e) => {
             tracing::error!(error = %e, path = %path.display(), "could not create the crash log");
+        }
+    }
+}
+
+/// Removes the crash logs this process wrote.
+///
+/// Call on a clean shutdown: a run that reaches it survived its panics (caught by `catch_unwind`, or confined
+/// to a worker thread), so they are not a crash for the next launch to report.
+/// They were already logged through `tracing` when they happened.
+pub fn discard_this_run_reports() {
+    let paths = std::mem::take(
+        &mut *WRITTEN_THIS_RUN
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner),
+    );
+    for path in paths {
+        if let Err(e) = fs::remove_file(&path)
+            && e.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!(error = %e, "could not remove a crash log from this run");
         }
     }
 }
@@ -193,6 +238,24 @@ mod tests {
         let tmp = tempfile::tempdir().expect("temp dir");
         fs::write(tmp.path().join("other.txt"), b"x").unwrap();
         assert!(newest_in(tmp.path()).is_none());
+    }
+
+    /// A clean shutdown removes exactly the logs this run recorded, and leaves
+    /// a log from an earlier run (the one the banner is about) alone.
+    #[test]
+    fn discard_removes_only_this_runs_logs() {
+        let tmp = tempfile::tempdir().expect("temp dir");
+        let ours = tmp.path().join("crash-500.log");
+        let earlier = tmp.path().join("crash-400.log");
+        fs::write(&ours, b"this run").unwrap();
+        fs::write(&earlier, b"previous run").unwrap();
+        WRITTEN_THIS_RUN.lock().unwrap().push(ours.clone());
+
+        discard_this_run_reports();
+
+        assert!(!ours.exists());
+        assert!(earlier.exists());
+        assert!(WRITTEN_THIS_RUN.lock().unwrap().is_empty());
     }
 
     /// Test-only mirror of [`take_pending_crash`] scoped to an explicit dir, so
