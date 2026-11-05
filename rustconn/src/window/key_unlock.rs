@@ -12,15 +12,17 @@
 //! `rustconn_core::ssh_agent::check_key_unlock`, run off the GTK thread.
 //! Every outcome continues the connect: Cancel, too
 //! many wrong passphrases and a refusing agent leave ssh to ask as before.
+//! A Cancel is remembered for that key and agent for the rest of the process,
+//! so later connects with it do not ask again.
 //!
 //! A cluster or a restored session can connect several times with one key at
 //! once. The second connect does not open a second dialog: it waits for the
 //! first one's dialog and goes on when it closes (`InFlight`).
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use gtk4::prelude::*;
 use rustconn_core::connection::ssh_inheritance;
@@ -103,12 +105,17 @@ pub(super) fn sftp_unlock_targets(
 ///
 /// Reads each key file here, on the GTK thread: a few hundred bytes from a
 /// local file, no agent query. The agent is asked off the thread later.
+///
+/// A key whose dialog the user cancelled for that agent is dropped too
+/// ([`DECLINED`]), so a later connect with it starts at once and ssh asks in
+/// the terminal, as it did right after the Cancel.
 fn retain_askable(mut targets: Vec<UnlockTarget>) -> Vec<UnlockTarget> {
     targets.retain(|t| {
-        t.socket
-            .as_deref()
-            .is_some_and(|s| !s.is_empty() && !agent_refused_add(s))
-            && key_is_encrypted_openssh(&t.key_path)
+        t.socket.as_deref().is_some_and(|s| {
+            !s.is_empty()
+                && !agent_refused_add(s)
+                && !DECLINED.with(|d| d.borrow().contains(s, &t.key_path))
+        }) && key_is_encrypted_openssh(&t.key_path)
     });
     targets
 }
@@ -162,10 +169,20 @@ thread_local! {
     /// The keys whose unlock dialog is open, with the connects waiting on it.
     static IN_FLIGHT: RefCell<InFlight<(String, PathBuf), Continuation>> =
         RefCell::new(InFlight::new());
+
+    /// The keys whose unlock dialog the user cancelled, per agent socket, for
+    /// the rest of the process. Later connects with such a key do not ask
+    /// again; the user can still add it in Settings → SSH Agent.
+    static DECLINED: RefCell<Declined> = RefCell::new(Declined::default());
 }
 
 /// Asks for the first of `asks`, then the rest, then runs `then`.
 fn ask_each(parent: gtk4::Widget, mut asks: Vec<(String, PathBuf)>, then: Continuation) {
+    // Cancelled since this connect's check ran (another connect's dialog).
+    DECLINED.with(|d| {
+        let declined = d.borrow();
+        asks.retain(|(socket, key_path)| !declined.contains(socket, key_path));
+    });
     if asks.is_empty() {
         then();
         return;
@@ -187,6 +204,9 @@ fn ask_each(parent: gtk4::Widget, mut asks: Vec<(String, PathBuf)>, then: Contin
     let dialog_key_path = key_path.clone();
     show_key_unlock_dialog(&parent, &dialog_key_path, &socket, move |outcome| {
         report(&key_path, &outcome);
+        if outcome == KeyUnlockOutcome::Cancelled {
+            DECLINED.with(|d| d.borrow_mut().insert(key.clone()));
+        }
         // Taken out first, so no borrow is held while they run.
         let waiters = IN_FLIGHT.with(|f| f.borrow_mut().finish(&key));
         next();
@@ -214,6 +234,23 @@ fn report(key_path: &std::path::Path, outcome: &KeyUnlockOutcome) {
                 &[detail.as_str()],
             ));
         }
+    }
+}
+
+/// The (agent socket, key path) pairs whose unlock the user cancelled.
+#[derive(Debug, Default)]
+struct Declined {
+    keys: HashSet<(String, PathBuf)>,
+}
+
+impl Declined {
+    fn insert(&mut self, key: (String, PathBuf)) {
+        self.keys.insert(key);
+    }
+
+    fn contains(&self, socket: &str, key_path: &Path) -> bool {
+        self.keys
+            .contains(&(socket.to_owned(), key_path.to_path_buf()))
     }
 }
 
@@ -279,6 +316,21 @@ mod tests {
         assert_eq!(in_flight.park(&"a", 1), None);
         assert_eq!(in_flight.finish(&"b"), Vec::<u8>::new());
         assert_eq!(in_flight.finish(&"a"), vec![1]);
+    }
+
+    #[test]
+    fn a_cancel_is_remembered_for_that_key_and_agent_only() {
+        let mut declined = Declined::default();
+        declined.insert(("/run/a.sock".to_owned(), PathBuf::from("/k/a")));
+        assert!(declined.contains("/run/a.sock", Path::new("/k/a")));
+        assert!(
+            !declined.contains("/run/b.sock", Path::new("/k/a")),
+            "another agent still asks"
+        );
+        assert!(
+            !declined.contains("/run/a.sock", Path::new("/k/b")),
+            "another key still asks"
+        );
     }
 
     #[test]
