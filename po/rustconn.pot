@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 18:34+0200\n"
+"POT-Creation-Date: 2026-11-05 19:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1260,7 +1260,7 @@ msgid "Automation"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:438
-#: rustconn/src/dialogs/connection/kubernetes.rs:132
+#: rustconn/src/dialogs/connection/kubernetes.rs:141
 #: rustconn/src/dialogs/connection/rdp.rs:938
 #: rustconn/src/dialogs/connection/vnc.rs:318
 #: rustconn/src/dialogs/connection/zerotrust.rs:189
@@ -2193,94 +2193,94 @@ msgstr ""
 msgid "Dynamic"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:47
+#: rustconn/src/dialogs/connection/kubernetes.rs:50
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:182
 #: rustconn/src/sidebar/mod.rs:953
 msgid "Kubernetes"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:48
+#: rustconn/src/dialogs/connection/kubernetes.rs:51
 msgid "Connect to pod shell via kubectl exec"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:51
+#: rustconn/src/dialogs/connection/kubernetes.rs:54
 msgid "Kubeconfig"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:52
+#: rustconn/src/dialogs/connection/kubernetes.rs:55
 msgid "Path to kubeconfig file (default if empty)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:57
+#: rustconn/src/dialogs/connection/kubernetes.rs:60
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:186
 msgid "Context"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:58
+#: rustconn/src/dialogs/connection/kubernetes.rs:61
 msgid "Kubernetes context (current-context if empty)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:63
+#: rustconn/src/dialogs/connection/kubernetes.rs:72
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:191
 msgid "Namespace"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:64
+#: rustconn/src/dialogs/connection/kubernetes.rs:73
 msgid "Target namespace (default if empty)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:69
+#: rustconn/src/dialogs/connection/kubernetes.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:196
 msgid "Pod"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:70
+#: rustconn/src/dialogs/connection/kubernetes.rs:79
 msgid "Pod name to exec into"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:75
+#: rustconn/src/dialogs/connection/kubernetes.rs:84
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:199
 msgid "Container"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:76
+#: rustconn/src/dialogs/connection/kubernetes.rs:85
 msgid "Container name (optional for single-container)"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:85
+#: rustconn/src/dialogs/connection/kubernetes.rs:94
 #: rustconn/src/window/ui.rs:124
 msgid "Shell"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:86
+#: rustconn/src/dialogs/connection/kubernetes.rs:95
 msgid "Shell to use inside the container"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:96
+#: rustconn/src/dialogs/connection/kubernetes.rs:105
 msgid "Temporary Pod"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:97
+#: rustconn/src/dialogs/connection/kubernetes.rs:106
 msgid "Run a temporary pod instead of exec into existing"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:102
+#: rustconn/src/dialogs/connection/kubernetes.rs:111
 msgid "Busybox Mode"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:103
+#: rustconn/src/dialogs/connection/kubernetes.rs:112
 msgid "Creates a temporary pod with kubectl run"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:109
+#: rustconn/src/dialogs/connection/kubernetes.rs:118
 msgid "Image"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:110
+#: rustconn/src/dialogs/connection/kubernetes.rs:119
 msgid "Container image for temporary pod"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:135
+#: rustconn/src/dialogs/connection/kubernetes.rs:144
 #: rustconn/src/dialogs/connection/rdp.rs:997
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
@@ -2291,8 +2291,21 @@ msgstr ""
 msgid "Custom Arguments"
 msgstr ""
 
-#: rustconn/src/dialogs/connection/kubernetes.rs:136
+#: rustconn/src/dialogs/connection/kubernetes.rs:145
 msgid "Additional kubectl arguments"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/kubernetes.rs:179
+#: rustconn/src/dialogs/connection/kubernetes.rs:184
+msgid "Choose a context from the kubeconfig"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/kubernetes.rs:231
+msgid "No contexts found in the kubeconfig"
+msgstr ""
+
+#: rustconn/src/dialogs/connection/kubernetes.rs:252
+msgid "Current context"
 msgstr ""
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:65
@@ -13836,7 +13849,7 @@ msgstr ""
 msgid "Could not save preference"
 msgstr ""
 
-#: rustconn/src/window/snippet_actions.rs:199
+#: rustconn/src/window/snippet_actions.rs:198
 msgid "Select some text in the terminal first"
 msgstr ""
 

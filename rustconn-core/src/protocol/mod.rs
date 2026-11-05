@@ -51,7 +51,9 @@ pub use icons::{
     detect_provider, get_protocol_color_rgb, get_protocol_icon, get_protocol_icon_by_name,
     get_protocol_tab_css_class, get_zero_trust_provider_icon,
 };
-pub use kubernetes::KubernetesProtocol;
+pub use kubernetes::{
+    KubeconfigContexts, KubernetesProtocol, read_kubeconfig_contexts, resolve_kubeconfig_path,
+};
 pub use mosh::MoshProtocol;
 pub use rdp::RdpProtocol;
 pub use registry::ProtocolRegistry;

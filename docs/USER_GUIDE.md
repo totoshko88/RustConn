@@ -1807,7 +1807,7 @@ Connect to Kubernetes pods via `kubectl exec -it`. Two modes: exec into an exist
 **Create a Kubernetes Connection:**
 1. Press **Ctrl+N** → select **Kubernetes** protocol
 2. Configure kubeconfig path (optional, defaults to `~/.kube/config`)
-3. Set context, namespace, pod name, container (optional), and shell (default: `/bin/sh`)
+3. Set context, namespace, pod name, container (optional), and shell (default: `/bin/sh`). The Context field has a button beside it that lists the contexts in the kubeconfig above (or the default one) so you can pick instead of type; the current-context is marked. You can still type a context by hand, which is what to do for a kubeconfig RustConn cannot read.
 4. Optionally enable **Busybox mode** to launch a temporary pod instead
 5. Click **Create**
 6. Double-click to connect

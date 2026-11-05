@@ -35,6 +35,93 @@ impl Default for KubernetesProtocol {
     }
 }
 
+/// The contexts a kubeconfig file defines, plus which one is current.
+///
+/// Populated by [`read_kubeconfig_contexts`] so the connection editor can offer
+/// the contexts to pick from instead of making the user type one.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct KubeconfigContexts {
+    /// Context names in file order, deduplicated.
+    pub names: Vec<String>,
+    /// The `current-context` value, if the file sets one.
+    pub current: Option<String>,
+}
+
+/// Just the fields of a kubeconfig this reader cares about. A kubeconfig has
+/// much more (clusters, users, auth), all of which `serde_yaml` ignores here.
+#[derive(serde::Deserialize)]
+struct KubeconfigDoc {
+    #[serde(default)]
+    contexts: Vec<KubeconfigContextEntry>,
+    #[serde(rename = "current-context", default)]
+    current_context: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct KubeconfigContextEntry {
+    #[serde(default)]
+    name: String,
+}
+
+/// Resolves the kubeconfig path to read: the given one, else `$KUBECONFIG`'s
+/// first entry, else `~/.kube/config`.
+///
+/// `$KUBECONFIG` may list several files separated by the platform path
+/// separator; kubectl merges them, but for offering contexts in the editor the
+/// first existing entry is enough, so only the first is read.
+#[must_use]
+pub fn resolve_kubeconfig_path(explicit: Option<&std::path::Path>) -> Option<std::path::PathBuf> {
+    if let Some(path) = explicit {
+        return Some(path.to_path_buf());
+    }
+    if let Some(env) = std::env::var_os("KUBECONFIG")
+        && let Some(first) = std::env::split_paths(&env).next()
+        && !first.as_os_str().is_empty()
+    {
+        return Some(first);
+    }
+    dirs::home_dir().map(|home| home.join(".kube").join("config"))
+}
+
+/// Reads the contexts defined in a kubeconfig file.
+///
+/// `explicit` is the path the connection names; `None` falls back to
+/// `$KUBECONFIG` then `~/.kube/config` via [`resolve_kubeconfig_path`]. A
+/// missing, unreadable or malformed file yields an empty result rather than an
+/// error — the editor simply offers nothing to pick, and the user can still
+/// type a context by hand. Names are returned in file order with blanks and
+/// duplicates removed.
+///
+/// Reads YAML with `serde_yaml`, taking only `contexts[].name` and
+/// `current-context`; every other kubeconfig field (clusters, users, tokens) is
+/// ignored and never parsed into memory.
+#[must_use]
+pub fn read_kubeconfig_contexts(explicit: Option<&std::path::Path>) -> KubeconfigContexts {
+    let Some(path) = resolve_kubeconfig_path(explicit) else {
+        return KubeconfigContexts::default();
+    };
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return KubeconfigContexts::default();
+    };
+    let Ok(doc) = serde_yaml::from_str::<KubeconfigDoc>(&text) else {
+        tracing::debug!(path = %path.display(), "kubeconfig is not valid YAML; offering no contexts");
+        return KubeconfigContexts::default();
+    };
+
+    let mut names: Vec<String> = Vec::new();
+    for entry in doc.contexts {
+        let name = entry.name.trim();
+        if !name.is_empty() && !names.iter().any(|n| n == name) {
+            names.push(name.to_string());
+        }
+    }
+    let current = doc
+        .current_context
+        .map(|c| c.trim().to_string())
+        .filter(|c| !c.is_empty());
+    KubeconfigContexts { names, current }
+}
+
 impl Protocol for KubernetesProtocol {
     fn protocol_id(&self) -> &'static str {
         "kubernetes"
@@ -312,6 +399,66 @@ mod tests {
         assert!(cmd.contains(&"--image".to_string()));
         assert!(cmd.contains(&"alpine:latest".to_string()));
         assert!(cmd.contains(&"/bin/ash".to_string()));
+    }
+
+    #[test]
+    fn reads_context_names_and_current_from_a_kubeconfig() {
+        let tmp = tempfile::tempdir().expect("temp dir");
+        let path = tmp.path().join("config");
+        // A raw string so YAML indentation is preserved exactly (a `\`-continued
+        // literal would eat the leading spaces and break the nesting).
+        let kubeconfig = r"apiVersion: v1
+current-context: staging
+contexts:
+- name: prod
+  context: {cluster: c1, user: u1}
+- name: staging
+  context: {cluster: c2, user: u2}
+- name: prod
+  context: {cluster: c1, user: u1}
+clusters: []
+users: []
+";
+        std::fs::write(&path, kubeconfig).unwrap();
+
+        let ctx = read_kubeconfig_contexts(Some(&path));
+        // File order, duplicate "prod" collapsed.
+        assert_eq!(ctx.names, vec!["prod".to_string(), "staging".to_string()]);
+        assert_eq!(ctx.current.as_deref(), Some("staging"));
+    }
+
+    #[test]
+    fn a_missing_or_malformed_kubeconfig_yields_no_contexts() {
+        let tmp = tempfile::tempdir().expect("temp dir");
+        let missing = tmp.path().join("does-not-exist");
+        assert_eq!(
+            read_kubeconfig_contexts(Some(&missing)),
+            KubeconfigContexts::default()
+        );
+
+        let malformed = tmp.path().join("bad");
+        std::fs::write(&malformed, ": not : valid : yaml :\n\t- broken").unwrap();
+        assert_eq!(
+            read_kubeconfig_contexts(Some(&malformed)),
+            KubeconfigContexts::default()
+        );
+    }
+
+    #[test]
+    fn explicit_path_wins_over_the_environment() {
+        let tmp = tempfile::tempdir().expect("temp dir");
+        let path = tmp.path().join("explicit");
+        std::fs::write(&path, "contexts:\n- name: only-ctx\n").unwrap();
+        // resolve_kubeconfig_path returns the explicit path unchanged, so no
+        // environment or home lookup happens.
+        assert_eq!(
+            resolve_kubeconfig_path(Some(&path)).as_deref(),
+            Some(path.as_path())
+        );
+        assert_eq!(
+            read_kubeconfig_contexts(Some(&path)).names,
+            vec!["only-ctx"]
+        );
     }
 
     #[test]
