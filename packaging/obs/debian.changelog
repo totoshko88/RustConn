@@ -1,3 +1,28 @@
+rustconn (0.24.7-1) unstable; urgency=medium
+
+  * Version bump to 0.24.7
+  * Added: the Kubernetes editor can pick a context from the kubeconfig
+  * Added: a Rust panic is recorded to a local crash log, and the next
+    launch shows a banner with an Open Log button; nothing is sent anywhere
+  * Added: run a saved snippet from the Command Palette (! prefix, always
+    confirmed, #315) and save a terminal selection as a snippet
+  * Fixed: a Save N Files RDP download no longer hangs when the clipboard
+    channel is gone, and a failed save is shown as a toast (#390)
+  * Fixed: embedded RDP locks the remote file clipboard during a copy, so
+    a copied file survives a focus change (#390)
+  * Fixed: a minimal RDP server (KRDP) that rejects the external client now
+    says to use the embedded client (#409)
+  * Changed: importing connections with passwords no longer freezes the
+    window; credentials are stored in the background
+  * Changed: the Passbolt vault and the export folder open through the
+    desktop portal
+  * Known issue: embedded RDP shared folders show only the first letter of
+    their name, and non-ASCII names are refused (IronRDP, #407); use the
+    external client meanwhile
+  * Dependencies: zip 9.3.0→9.4.0; dropped open, is-docker, is-wsl
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 05 Nov 2026 23:00:00 +0200
+
 rustconn (0.24.6-1) unstable; urgency=medium
 
   * Version bump to 0.24.6

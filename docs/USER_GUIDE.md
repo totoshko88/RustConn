@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.6** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.7** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -1188,6 +1188,16 @@ Map local directories into the remote session. Files appear as network drives (`
 Works with both IronRDP embedded and FreeRDP external modes. In the embedded client,
 Windows Explorer refreshes a shared folder by itself when a file in it changes on this
 computer: the change is reported to the server within about a second.
+
+> **Known issue — share names in the embedded client.** Windows currently shows an
+> embedded-client share under the first letter of its name only (`Downloads` becomes
+> `\\tsclient\D`), and refuses a share whose name contains non-ASCII characters
+> (Cyrillic, for example); RustConn then shows a "The server refused the shared folder"
+> notice and the session continues without it. The cause is in the IronRDP version
+> RustConn uses; the fix is being made upstream and arrives with a later IronRDP
+> release. Until then, use Client Mode
+> **External** (FreeRDP) for a connection whose share name matters; it shows the full
+> name, Cyrillic included.
 
 **Clipboard File Transfer (IronRDP embedded mode only):**
 

@@ -140,6 +140,21 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.7" date="2026-11-05">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.7</url>
+      <description>
+        <p>Version 0.24.7 - snippets in the Command Palette, a local crash log, and embedded RDP clipboard fixes:</p>
+        <ul>
+          <li>Run a saved snippet from the Command Palette with the ! prefix (always confirmed first), and save a terminal selection as a snippet from the right-click menu.</li>
+          <li>The Kubernetes connection editor can pick a context from the kubeconfig.</li>
+          <li>A crash from a Rust panic is recorded to a local log, and the next launch offers to open it; nothing is sent anywhere.</li>
+          <li>Embedded RDP locks the remote file clipboard during a copy, so a copied file survives a focus change, and a failed Save N Files download is reported instead of hanging (#390).</li>
+          <li>A minimal RDP server such as KRDP that rejects the external client now tells you to use the embedded client (#409).</li>
+          <li>Importing connections with passwords no longer freezes the window.</li>
+          <li>Known issue: embedded RDP shared folders show only the first letter of their name, and non-ASCII names are refused; use the external client until the IronRDP fix is released.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.6" date="2026-11-05">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.6</url>
       <description>
