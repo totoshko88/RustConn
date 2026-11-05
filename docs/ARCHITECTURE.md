@@ -1,12 +1,12 @@
 # RustConn Architecture Guide
 
-**Version 0.24.5** | Last updated: October 2026
+**Version 0.24.6** | Last updated: October 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
 ## Crate Structure
 
-RustConn is a seven-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
+RustConn is an eight-crate Cargo workspace (Rust 2024 edition) with strict separation of concerns:
 
 ```
 rustconn/            # GTK4 GUI application
@@ -16,6 +16,7 @@ rustconn-pty-sys/    # Isolated FFI helper (PTY + controlling terminal)
 rustconn-locale-sys/ # Isolated FFI helper (startup setlocale)
 rustconn-env-sys/    # Isolated FFI helper (startup GSK_RENDERER write)
 rustconn-dock-sys/   # Isolated FFI helper (macOS Dock tile image)
+rustconn-lock-sys/   # Isolated FFI helper (macOS screen lock + sleep notifications)
 ```
 
 ### Dependency Graph
@@ -37,6 +38,7 @@ rustconn-dock-sys/   # Isolated FFI helper (macOS Dock tile image)
                        │  rustconn-locale-sys │
                        │  rustconn-env-sys    │
                        │  rustconn-dock-sys   │
+                       │  rustconn-lock-sys   │
                        │    (FFI, no GUI)     │
                        └──────────────────────┘
 ```
@@ -55,6 +57,7 @@ Only `rustconn` depends on the `-sys` crates. `rustconn-cli` depends on
 | `rustconn-locale-sys` | FFI helper: the startup `setlocale` call, refused once this program spawns a thread of its own, once a call arrives from a second thread, or once the startup window is sealed ([#267](https://github.com/totoshko88/RustConn/issues/267)) | `gettext-rs` only — NO GTK |
 | `rustconn-env-sys` | FFI helper: the startup `GSK_RENDERER` and `LANGUAGE` writes, guarded the same way. Neither GTK nor gettext offers an API, so the environment is the only interface and it has to be written before `gtk_init` ([#274](https://github.com/totoshko88/RustConn/issues/274), [#158](https://github.com/totoshko88/RustConn/issues/158)) | No dependencies — NO GTK |
 | `rustconn-dock-sys` | FFI helper: `-[NSApplication setApplicationIconImage:]`, so the macOS Dock shows RustConn's icon when no `.app` bundle is behind the process. GDK exposes no Dock API and `set_icon_name` is a no-op on its macOS backend | `objc2` + AppKit bindings, macOS-gated — NO GTK |
+| `rustconn-lock-sys` | FFI helper: observes the macOS screen lock (`com.apple.screenIsLocked`, delivered immediately even in the background) and `NSWorkspaceWillSleepNotification`, which the GUI maps onto `rustconn-core::lock_events` so the SSH keys RustConn added are removed there as on Linux. `rustconn-core` does not depend on it | `objc2` + AppKit bindings, macOS-gated — NO GTK |
 
 **Decision Rule:** "Does this code need GTK widgets?" → No → `rustconn-core` / Yes → `rustconn`
 
@@ -99,7 +102,7 @@ lint in the main crates. New FFI gets a new `-sys` crate; it never earns an
 exception where the caller lives.
 
 The mechanism is `unsafe_code = "deny"` in `[workspace.lints.rust]`, plus a
-crate-level `#![expect(unsafe_code, reason = "…")]` in each of the three helpers.
+crate-level `#![expect(unsafe_code, reason = "…")]` in each helper.
 It used to be `forbid`, which cannot be overridden at any level — so the helpers
 could not inherit the workspace lint table and each declared its own
 `[lints.rust]` instead. Because a crate-local `[lints]` table *replaces* the
@@ -194,6 +197,19 @@ be the worse failure. `rustconn/src/app.rs` calls it once from `run()`, after
 `macos_bundle_resources_dir()` reports no bundle — inside a real one the `.icns`
 is strictly better, since it carries every size from 16px to 1024px and preserves
 a custom icon a user pasted on in Finder.
+
+`rustconn-lock-sys` is the fifth, with the same shape as `rustconn-dock-sys`:
+its objc2/AppKit dependencies are limited to macOS, the crate itself is not. It
+observes `com.apple.screenIsLocked` on the distributed notification centre (with
+immediate delivery, so a lock while RustConn is in the background is not held
+back) and `NSWorkspaceWillSleepNotification` on the workspace notification
+centre, and reports each as a `LockSignal`. The observers are removed when the
+returned guard drops, the main-thread rule is proved by `MainThreadMarker` and
+reported as an outcome, and a panic in the handler is caught before it can unwind
+into Foundation. `rustconn/src/app.rs` maps each signal onto a
+`rustconn-core::lock_events::LockEvent` and passes it to `lock_events::notify`,
+which queues it for a dispatch thread, so the handler returns to the main loop at
+once. `rustconn-core` does not depend on this crate.
 
 ### Who Owns a Session's PTY
 
@@ -847,8 +863,7 @@ All passwords and keys use `secrecy::SecretString`:
 // rustconn-core/src/models/credentials.rs
 pub struct Credentials {
     pub username: Option<String>,
-    pub password: Option<SecretString>,      // Zeroed on drop
-    pub key_passphrase: Option<SecretString>, // Zeroed on drop
+    pub password: Option<SecretString>, // Zeroed on drop
     pub domain: Option<String>,
 }
 ```

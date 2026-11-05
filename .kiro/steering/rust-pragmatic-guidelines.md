@@ -78,13 +78,14 @@ Library functions in `rustconn-core` MUST still use `thiserror::Error`
 ### M-UNSAFE — `unsafe` is confined to the `-sys` crates
 
 Workspace `[lints.rust] unsafe_code = "deny"`, re-opened only by a crate-level
-`#![expect(unsafe_code, reason = "…")]` in the four sanctioned FFI crates:
+`#![expect(unsafe_code, reason = "…")]` in the five sanctioned FFI crates:
 `rustconn-pty-sys` (macOS PTY controlling terminal), `rustconn-locale-sys` (the
 startup `setlocale` call), `rustconn-env-sys` (the startup `GSK_RENDERER` and
-`LANGUAGE` writes) and `rustconn-dock-sys` (the macOS Dock tile image via
-`-[NSApplication setApplicationIconImage:]`; its `expect` is wrapped in
-`cfg_attr(target_os = "macos", …)`, since off macOS the crate contains no
-`unsafe` and a bare `expect` would fire `unfulfilled_lint_expectations`).
+`LANGUAGE` writes), `rustconn-dock-sys` (the macOS Dock tile image via
+`-[NSApplication setApplicationIconImage:]`) and `rustconn-lock-sys` (the macOS
+screen-lock and sleep notifications). The last two wrap their `expect` in
+`cfg_attr(target_os = "macos", …)`, since off macOS they contain no `unsafe` and
+a bare `expect` would fire `unfulfilled_lint_expectations`.
 `deny` rather than `forbid` because `forbid` cannot be
 overridden at any level. Under `forbid` each helper had to declare its own
 `[lints]` table, and a crate-local `[lints]` table *replaces* the inherited one
@@ -92,7 +93,7 @@ rather than adding to it — so the only crates allowed to write `unsafe` became
 the only crates in the workspace running without `clippy::pedantic`,
 `clippy::nursery` or `clippy::unwrap_used`.
 
-**That is history, not the current state.** All four helpers carry
+**That is history, not the current state.** All five helpers carry
 `[lints] workspace = true` and do inherit the full table; verify with
 `grep -A1 '^\[lints\]' rustconn-*-sys/Cargo.toml` rather than trusting this
 paragraph. The reason it is written down at all is that the trap is easy to walk
@@ -106,7 +107,7 @@ the lint where the caller lives. Miri cannot execute the syscalls/FFI used here
 `rustconn-locale-sys` and `rustconn-env-sys`, where the precondition guard is a
 testable type precisely because the FFI call itself is not reachable from a test
 harness. Keep the new crate an unconditional dependency even when only one
-platform reaches the call. The `macos-sys` job covers the four existing helpers;
+platform reaches the call. The `macos-sys` job covers the five existing helpers;
 every other job is Linux, so a platform-gated `-sys` crate would still be
 `unsafe` that only one job in the matrix compiles, and its guard, API and
 contract tests would go unchecked everywhere else.
@@ -160,7 +161,7 @@ This section used to be a list of suggestions. Most of it had already been
 applied, so it read as a TODO of finished work, and two entries were dismissed
 with `# not relevant, we have forbid` — which stopped being true when the
 workspace moved from `forbid` to `deny` + a crate-level `#![expect(unsafe_code)]`
-in the four helpers, as the M-UNSAFE section above describes. `Cargo.toml` is the
+in each helper, as the M-UNSAFE section above describes. `Cargo.toml` is the
 source of truth; this is a reader's map of it.
 
 **Already in `[workspace.lints.rust]`:** `unsafe_code = "deny"`,

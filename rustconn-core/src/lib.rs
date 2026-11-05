@@ -63,6 +63,7 @@ pub mod flatpak;
 pub mod highlight;
 pub mod host_check;
 pub mod import;
+pub mod lock_events;
 pub mod mc_ssh;
 pub mod models;
 pub mod monitoring;
@@ -286,9 +287,9 @@ pub use session::{
 // Session placement (tab / split / detached window) decisions
 pub use session_placement::{DetachContext, DetachVerdict, detach_verdict, may_place_in_split};
 pub use sftp::{
-    build_mc_sftp_command, build_sftp_browser_uri, build_sftp_command, build_sftp_uri,
-    build_sftp_uri_from_connection, ensure_identity_loaded, ensure_key_in_agent, get_downloads_dir,
-    get_ssh_key_path, resolve_remote_home,
+    IdentityLoadError, build_mc_sftp_command, build_sftp_browser_uri, build_sftp_command,
+    build_sftp_uri, build_sftp_uri_from_connection, ensure_identity_loaded, ensure_key_in_agent,
+    get_downloads_dir, get_ssh_key_path, resolve_remote_home,
 };
 // `ensure_flatpak_mc_ssh_wrapper` was replaced by `mc_ssh::prepare_mc_ssh_env`,
 // which generates a full ssh_config instead of only a known_hosts override.

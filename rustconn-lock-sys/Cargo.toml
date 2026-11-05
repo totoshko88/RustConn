@@ -1,0 +1,44 @@
+[package]
+name = "rustconn-lock-sys"
+description = "Isolated FFI helper for RustConn's macOS screen-lock and sleep notifications: NSWorkspace will-sleep and the com.apple.screenIsLocked distributed notification."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+# Same shape as `rustconn-dock-sys`, and for the same reason: AppKit has no
+# counterpart off Apple platforms, so the bindings are the one thing here that
+# must be target-gated — `objc2-app-kit` does not compile elsewhere. The *crate*
+# is not: it is an unconditional workspace member and an unconditional
+# dependency of `rustconn`, so its API, its panic barrier and their tests are
+# built and run by Linux CI, and the GUI's bridge to `lock_events` is compiled on
+# every platform.
+[target.'cfg(target_os = "macos")'.dependencies]
+# `define_class!` (the observer object both notification centres call),
+# `MainThreadMarker` and `sel!`.
+objc2 = { version = "0.6", default-features = false, features = ["std"] }
+# NSWorkspace for its notification centre and `NSWorkspaceWillSleepNotification`.
+# The default feature set is *every* AppKit class, which is why it is switched
+# off here.
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSWorkspace",
+] }
+# The two notification centres and NSString for the distributed notification's
+# name. `NSDistributedNotificationCenter` is what carries
+# `NSNotificationSuspensionBehaviorDeliverImmediately`.
+objc2-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSDistributedNotificationCenter",
+    "NSNotification",
+    "NSString",
+] }
+
+# A sanctioned location for `unsafe` (M-UNSAFE), opting into the workspace lint
+# set like every other crate; the one exemption it needs is re-opened in
+# src/lib.rs with a crate-level `#![cfg_attr(target_os = "macos", expect(unsafe_code, …))]`.
+# A `[lints.rust]` table here would *replace* the inherited one and drop
+# clippy::pedantic, clippy::nursery and clippy::unwrap_used from this crate.
+[lints]
+workspace = true

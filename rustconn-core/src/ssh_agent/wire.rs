@@ -1,4 +1,4 @@
-//! Native ssh-agent wire protocol — the read half (A1).
+//! Native ssh-agent wire protocol (A1).
 //!
 //! Speaks the ssh-agent protocol directly over the `SSH_AUTH_SOCK` Unix socket
 //! instead of spawning `ssh-add -l` and a per-key `ssh-keygen`. On an SSH
@@ -6,11 +6,15 @@
 //! about (1+N)×5 ms on the GTK main thread (issue, A1); this answers in one
 //! round trip with no process at all.
 //!
-//! Scope is deliberately the READ half — [`request_identities`], which
-//! fingerprints each key with the shared helper in [`super::keyfile`]. Adding
-//! and removing keys still go through `ssh-add` in [`super::SshAgentManager`]:
-//! adding an *encrypted* key needs an in-process passphrase decrypt, which is
-//! blocked by a dependency conflict (see `keyfile`), so the askpass path stays.
+//! Two requests are spoken here: [`request_identities`], which fingerprints
+//! each key with the shared helper in [`super::keyfile`] (or, as
+//! [`request_identity_blobs`], returns the raw blobs), and
+//! [`remove_identity`], which takes back one key RustConn added itself (see
+//! `super::own_keys`). Adding keys still goes through `ssh-add` in
+//! [`super::SshAgentManager`]: adding an *encrypted* key needs an in-process
+//! passphrase decrypt, which is blocked by a dependency conflict (see
+//! `keyfile`), so the askpass path stays. `SSH_AGENTC_REMOVE_ALL_IDENTITIES`
+//! is deliberately not implemented: RustConn never removes keys it did not add.
 //!
 //! # Protocol
 //!
@@ -18,8 +22,10 @@
 //! (draft-miller-ssh-agent). The client sends `SSH_AGENTC_REQUEST_IDENTITIES`
 //! (11) with an empty body; the agent answers `SSH_AGENT_IDENTITIES_ANSWER`
 //! (12): `uint32 nkeys`, then for each key a `string` key blob and a `string`
-//! comment. A `string` is a `uint32` length followed by that many bytes. All
-//! integers are big-endian.
+//! comment. `SSH_AGENTC_REMOVE_IDENTITY` (18) carries one `string` key blob and
+//! is answered with `SSH_AGENT_SUCCESS` (6) or `SSH_AGENT_FAILURE` (5). A
+//! `string` is a `uint32` length followed by that many bytes. All integers are
+//! big-endian.
 
 use std::io::{Read as _, Write as _};
 use std::os::unix::net::UnixStream;
@@ -32,8 +38,15 @@ use super::{AgentError, AgentKey, AgentResult};
 const REQUEST_IDENTITIES: u8 = 11;
 /// `SSH_AGENT_IDENTITIES_ANSWER`.
 const IDENTITIES_ANSWER: u8 = 12;
+/// `SSH_AGENTC_REMOVE_IDENTITY`.
+pub(super) const REMOVE_IDENTITY: u8 = 18;
+/// `SSH_AGENT_FAILURE`.
+const FAILURE: u8 = 5;
+/// `SSH_AGENT_SUCCESS`.
+const SUCCESS: u8 = 6;
 
-/// How long one agent round trip may take.
+/// How long the connect, and each read and write, of one agent round trip may
+/// take.
 ///
 /// The agent is a local Unix socket, so a well-behaved one answers in under a
 /// millisecond; this only bounds a wedged or launchd-throttled agent so the
@@ -62,15 +75,121 @@ const MAX_REPLY_BYTES: u32 = 1024 * 1024;
 /// times out, and [`AgentError::ParseError`] if the reply is not a well-formed
 /// `SSH_AGENT_IDENTITIES_ANSWER`.
 pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>> {
-    let mut stream = UnixStream::connect(Path::new(socket_path))?;
-    stream.set_read_timeout(Some(AGENT_IO_TIMEOUT))?;
-    stream.set_write_timeout(Some(AGENT_IO_TIMEOUT))?;
+    let body = request_identities_body(socket_path)?;
+    parse_identities_answer(&body)
+}
 
+/// The public-key blobs of the identities the agent at `socket_path` holds,
+/// in agent order: what [`remove_identity`] takes.
+///
+/// # Errors
+///
+/// Same as [`request_identities`].
+pub(super) fn request_identity_blobs(socket_path: &str) -> AgentResult<Vec<Vec<u8>>> {
+    let body = request_identities_body(socket_path)?;
+    Ok(parse_identity_entries(&body)?
+        .into_iter()
+        .map(|(blob, _comment)| blob.to_vec())
+        .collect())
+}
+
+/// Sends `SSH_AGENTC_REQUEST_IDENTITIES` and returns the reply body.
+fn request_identities_body(socket_path: &str) -> AgentResult<Vec<u8>> {
     // Request: length (1 for the type byte) + type, empty body.
     let mut request = Vec::with_capacity(5);
     request.extend_from_slice(&1u32.to_be_bytes());
     request.push(REQUEST_IDENTITIES);
-    stream.write_all(&request)?;
+    round_trip(socket_path, &request)
+}
+
+/// Asks the agent at `socket_path` to drop the one key whose public blob is
+/// `blob`.
+///
+/// Returns `Ok(true)` when the agent removed it and `Ok(false)` when it
+/// answered `SSH_AGENT_FAILURE` — it no longer holds that key (its lifetime ran
+/// out, or the user removed it), which for a caller cleaning up is not an error.
+///
+/// # Errors
+///
+/// Returns [`AgentError::Io`] if the socket cannot be reached or the exchange
+/// times out, and [`AgentError::ParseError`] if the blob is too large to frame
+/// or the reply is neither success nor failure.
+pub(super) fn remove_identity(socket_path: &str, blob: &[u8]) -> AgentResult<bool> {
+    let request = remove_identity_request(blob)?;
+    let body = round_trip(socket_path, &request)?;
+    parse_status_reply(&body)
+}
+
+/// The framed `SSH_AGENTC_REMOVE_IDENTITY` request for `blob`.
+fn remove_identity_request(blob: &[u8]) -> AgentResult<Vec<u8>> {
+    let too_large = || AgentError::ParseError("key blob too large to frame".to_string());
+    let blob_len = u32::try_from(blob.len()).map_err(|_| too_large())?;
+    // type byte + uint32 string length + the blob
+    let frame_len = blob_len.checked_add(5).ok_or_else(too_large)?;
+    let mut request = Vec::with_capacity(blob.len() + 9);
+    request.extend_from_slice(&frame_len.to_be_bytes());
+    request.push(REMOVE_IDENTITY);
+    request.extend_from_slice(&blob_len.to_be_bytes());
+    request.extend_from_slice(blob);
+    Ok(request)
+}
+
+/// Maps a one-byte `SSH_AGENT_SUCCESS` / `SSH_AGENT_FAILURE` reply to a bool.
+fn parse_status_reply(body: &[u8]) -> AgentResult<bool> {
+    match body.first() {
+        Some(&SUCCESS) => Ok(true),
+        Some(&FAILURE) => Ok(false),
+        Some(other) => Err(AgentError::ParseError(format!(
+            "expected SUCCESS or FAILURE, got message type {other}"
+        ))),
+        None => Err(AgentError::ParseError("empty agent reply".to_string())),
+    }
+}
+
+/// Connects to the agent at `socket_path`, giving up after `budget`.
+///
+/// `UnixStream` has no `connect_timeout`, and a blocking `connect` to a Unix
+/// socket whose listen queue is full (an agent that has stopped accepting)
+/// waits until the agent accepts or dies. A non-blocking connect does not help
+/// either: on Linux it fails with `EAGAIN` on a full queue rather than
+/// becoming pollable. What does bound it is `SO_SNDTIMEO`: Linux's
+/// `unix_stream_connect` waits for room in the queue for at most the send
+/// timeout and then fails with `EAGAIN`. So the socket is made with
+/// `socket2` (safe, already a dependency), given the send timeout, and
+/// connected blocking on the calling thread; no worker thread is left behind.
+/// macOS and the BSDs refuse a full queue at once with `ECONNREFUSED`, so the
+/// timeout never comes into play there.
+///
+/// # Errors
+///
+/// The connect's own error, kind preserved (`NotFound`, `ConnectionRefused`
+/// and so on), or `ErrorKind::TimedOut` when `budget` ran out first.
+fn connect_bounded(socket_path: &str, budget: Duration) -> std::io::Result<UnixStream> {
+    let address = socket2::SockAddr::unix(Path::new(socket_path))?;
+    let socket = socket2::Socket::new(socket2::Domain::UNIX, socket2::Type::STREAM, None)?;
+    socket.set_write_timeout(Some(budget))?;
+    match socket.connect(&address) {
+        Ok(()) => Ok(UnixStream::from(socket)),
+        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            format!(
+                "the SSH agent did not accept a connection within {} ms",
+                budget.as_millis()
+            ),
+        )),
+        Err(e) => Err(e),
+    }
+}
+
+/// Sends one framed request and reads one framed reply, returning the reply
+/// body (type byte + payload). The connect and every read and write are each
+/// bounded by [`AGENT_IO_TIMEOUT`].
+fn round_trip(socket_path: &str, request: &[u8]) -> AgentResult<Vec<u8>> {
+    let mut stream = connect_bounded(socket_path, AGENT_IO_TIMEOUT)?;
+    stream.set_read_timeout(Some(AGENT_IO_TIMEOUT))?;
+    stream.set_write_timeout(Some(AGENT_IO_TIMEOUT))?;
+
+    stream.write_all(request)?;
     stream.flush()?;
 
     // Reply: uint32 length, then that many bytes (type + body).
@@ -84,8 +203,7 @@ pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>
     }
     let mut body = vec![0u8; reply_len as usize];
     stream.read_exact(&mut body)?;
-
-    parse_identities_answer(&body)
+    Ok(body)
 }
 
 /// Parses the body of an `SSH_AGENT_IDENTITIES_ANSWER` (type byte + payload).
@@ -93,6 +211,19 @@ pub(super) fn request_identities(socket_path: &str) -> AgentResult<Vec<AgentKey>
 /// Split from the I/O so it can be tested against captured bytes without a live
 /// agent.
 fn parse_identities_answer(body: &[u8]) -> AgentResult<Vec<AgentKey>> {
+    Ok(parse_identity_entries(body)?
+        .into_iter()
+        .map(|(blob, comment)| AgentKey {
+            fingerprint: super::keyfile::sha256_fingerprint(blob),
+            bits: 0,
+            key_type: super::keyfile::key_type_from_blob(blob),
+            comment: String::from_utf8_lossy(comment).into_owned(),
+        })
+        .collect())
+}
+
+/// The `(key blob, comment)` pairs of an `SSH_AGENT_IDENTITIES_ANSWER` body.
+fn parse_identity_entries(body: &[u8]) -> AgentResult<Vec<(&[u8], &[u8])>> {
     let mut reader = Reader::new(body);
 
     let msg_type = reader.u8()?;
@@ -111,19 +242,14 @@ fn parse_identities_answer(body: &[u8]) -> AgentResult<Vec<AgentKey>> {
         )));
     }
 
-    let mut keys = Vec::with_capacity(nkeys as usize);
+    let mut entries = Vec::with_capacity(nkeys as usize);
     for _ in 0..nkeys {
         let blob = reader.string()?;
         let comment = reader.string()?;
-        keys.push(AgentKey {
-            fingerprint: super::keyfile::sha256_fingerprint(blob),
-            bits: 0,
-            key_type: super::keyfile::key_type_from_blob(blob),
-            comment: String::from_utf8_lossy(comment).into_owned(),
-        });
+        entries.push((blob, comment));
     }
 
-    Ok(keys)
+    Ok(entries)
 }
 
 /// A bounds-checked cursor over the reply bytes.
@@ -259,6 +385,89 @@ mod tests {
             parse_identities_answer(&body),
             Err(AgentError::ParseError(_))
         ));
+    }
+
+    #[test]
+    fn remove_identity_request_frames_one_blob() {
+        let blob = ed25519_blob();
+        let request = remove_identity_request(&blob).unwrap();
+        let mut expected = Vec::new();
+        #[expect(clippy::cast_possible_truncation, reason = "test inputs are tiny")]
+        expected.extend_from_slice(&((blob.len() + 5) as u32).to_be_bytes());
+        expected.push(REMOVE_IDENTITY);
+        expected.extend(ssh_string(&blob));
+        assert_eq!(request, expected);
+    }
+
+    #[test]
+    fn status_reply_maps_success_and_failure() {
+        assert!(parse_status_reply(&[SUCCESS]).unwrap());
+        assert!(!parse_status_reply(&[FAILURE]).unwrap());
+        assert!(matches!(
+            parse_status_reply(&[IDENTITIES_ANSWER]),
+            Err(AgentError::ParseError(_))
+        ));
+        assert!(matches!(
+            parse_status_reply(&[]),
+            Err(AgentError::ParseError(_))
+        ));
+    }
+
+    /// A connect to an agent whose listen queue is full and that never
+    /// accepts is given up after the budget, as a timeout, so a caller on the
+    /// GTK thread or at shutdown is not parked on it. Linux only: elsewhere a
+    /// full queue refuses the connect at once.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_connect_to_an_agent_that_never_accepts_times_out() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("agent.sock");
+        // Backlog 0: one connection waits in the queue, the next finds it full.
+        let listener =
+            socket2::Socket::new(socket2::Domain::UNIX, socket2::Type::STREAM, None).unwrap();
+        listener
+            .bind(&socket2::SockAddr::unix(&path).unwrap())
+            .unwrap();
+        listener.listen(0).unwrap();
+
+        let budget = Duration::from_millis(100);
+        let mut queued = Vec::new();
+        let (err, elapsed) = loop {
+            let started = std::time::Instant::now();
+            match connect_bounded(path.to_str().unwrap(), budget) {
+                Ok(stream) => queued.push(stream),
+                Err(err) => break (err, started.elapsed()),
+            }
+            assert!(queued.len() < 64, "the listen queue never filled");
+        };
+
+        assert_eq!(err.kind(), std::io::ErrorKind::TimedOut, "{err}");
+        assert!(
+            elapsed >= budget / 2,
+            "gave up after {elapsed:?}: refused rather than waited"
+        );
+        assert!(
+            elapsed < Duration::from_secs(2),
+            "returned after {elapsed:?}, so the budget was not enforced"
+        );
+    }
+
+    /// The connect's own error keeps its kind: eviction tells a vanished
+    /// agent from a slow one by it.
+    #[test]
+    fn a_missing_socket_is_not_found_not_a_timeout() {
+        let err = connect_bounded("/nonexistent/rustconn-test/agent.sock", AGENT_IO_TIMEOUT)
+            .expect_err("there is no socket");
+        assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn a_listening_agent_is_connected_to() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("agent.sock");
+        let _listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+        // The listen queue accepts the connection before anyone calls accept.
+        assert!(connect_bounded(path.to_str().unwrap(), AGENT_IO_TIMEOUT).is_ok());
     }
 
     #[test]

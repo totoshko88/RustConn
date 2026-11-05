@@ -7,7 +7,7 @@
 //! [RUSTSEC-2026-0244](https://rustsec.org/advisories/RUSTSEC-2026-0244).
 //! `gettext-rs` 0.8 marks it `unsafe` for exactly that reason, and no other crate
 //! in this workspace may write `unsafe` at all. Hence this crate. The workspace
-//! lint is `deny` rather than `forbid` so that the three `-sys` crates can
+//! lint is `deny` rather than `forbid` so that the `-sys` crates can
 //! re-open it for themselves and still inherit the workspace's clippy set; see
 //! the `[lints]` note in `Cargo.toml`.
 //!

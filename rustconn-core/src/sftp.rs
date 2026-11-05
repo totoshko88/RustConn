@@ -295,8 +295,16 @@ pub fn resolve_remote_home(
     // bounds the TCP connect. ServerAliveInterval/CountMax bound a channel that
     // stalls *after* connect (3s × 2 missed keepalives ≈ 6s) so a dead link
     // mid-`pwd` cannot pin the blocking thread. `pwd` runs instantly otherwise.
+    // StrictHostKeyChecking=yes → a background probe never records a host key
+    // the user has not accepted, even when their ssh config says `accept-new`
+    // or `no`; an unknown key fails the probe like any other failure. The
+    // `-J` hops do not inherit `-o` and keep the user's own setting; this
+    // probe hands them no askpass, so a key they accept is one the user
+    // configured or answered for.
     cmd.arg("-o")
         .arg("BatchMode=yes")
+        .arg("-o")
+        .arg("StrictHostKeyChecking=yes")
         .arg("-o")
         .arg("ConnectTimeout=8")
         .arg("-o")
@@ -618,13 +626,21 @@ pub fn ensure_ssh_agent() -> Option<SshAgentInfo> {
     }
     cmd.arg("-s");
 
-    let output = match cmd
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .output()
-    {
-        Ok(o) => o,
+    // Bounded: this runs at startup, before the main window, so an
+    // `ssh-agent` that never exits must not hold the whole program.
+    let output = match crate::ssh_agent::run_agent_command(
+        cmd,
+        crate::ssh_agent::AGENT_COMMAND_TIMEOUT,
+        "ssh-agent -s",
+    ) {
+        Ok(Some(o)) => o,
+        Ok(None) => {
+            tracing::warn!(
+                timeout_s = crate::ssh_agent::AGENT_COMMAND_TIMEOUT.as_secs(),
+                "ssh-agent did not finish in time; killed it"
+            );
+            return None;
+        }
         Err(e) => {
             tracing::warn!(?e, "Failed to run ssh-agent");
             return None;
@@ -679,121 +695,99 @@ pub fn ensure_ssh_agent() -> Option<SshAgentInfo> {
     })
 }
 
-/// The SHA256 fingerprint of a key path's **public** half, read without a
-/// passphrase, or `None` when it cannot be determined cheaply.
-///
-/// Tries the key file itself first (an OpenSSH private key carries its public
-/// key in the clear, even when encrypted — A2), then a sibling `<path>.pub`.
-/// A `None` simply means the agent fast path is skipped and `ssh-add` is used,
-/// so this never blocks loading.
-fn fingerprint_for_key_path(key_path: &std::path::Path) -> Option<String> {
-    if let Ok(contents) = std::fs::read_to_string(key_path)
-        && let Ok(info) = crate::ssh_agent::inspect_key_file(&contents)
-        && let Some(pk) = info.public_key
-    {
-        return Some(pk.fingerprint);
-    }
-    // Fall back to a sibling .pub (present for keys generated the usual way,
-    // and the only source for a legacy PEM this crate does not parse).
-    let pub_path = {
-        let mut p = key_path.as_os_str().to_os_string();
-        p.push(".pub");
-        std::path::PathBuf::from(p)
-    };
-    let pub_line = std::fs::read_to_string(&pub_path).ok()?;
-    crate::ssh_agent::PublicKeyInfo::from_pub_line(pub_line.trim())
-        .ok()
-        .map(|pk| pk.fingerprint)
+/// The agent socket a child spawned through [`apply_agent_env`] talks to: the
+/// agent RustConn found or started at startup (`agent_info`), else the
+/// inherited `SSH_AUTH_SOCK` (`env_socket`). Empty values count as unset.
+fn agent_socket_from(agent_info: Option<&str>, env_socket: Option<String>) -> Option<String> {
+    agent_info
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .or_else(|| env_socket.filter(|s| !s.is_empty()))
 }
 
-/// Whether the running agent already holds the key at `key_path`.
-///
-/// Compares the key's public fingerprint (A2) against the agent's identities
-/// read over the native protocol (A1). A `false` on any uncertainty (no
-/// fingerprint, no agent, a query error) so the caller falls through to the
-/// normal `ssh-add` path — the fast path only ever *removes* a redundant
-/// spawn, never blocks a real one.
-fn agent_already_holds_key(key_path: &std::path::Path) -> bool {
-    let Some(fingerprint) = fingerprint_for_key_path(key_path) else {
-        return false;
-    };
-    let manager = crate::ssh_agent::SshAgentManager::from_env();
-    // Bounded, not `get_status()`: the native A1 path answers in under a
-    // millisecond, but if it cannot and the query falls back to `ssh-add -l`,
-    // a broken or launchd-throttled agent must not hang this call (some GUI
-    // callers run it on the main thread). A timeout error reads as "not held",
-    // so the caller falls through to the normal `ssh-add` add.
-    match manager.get_status_timeout(std::time::Duration::from_secs(3)) {
-        Ok(status) => status.keys.iter().any(|k| k.fingerprint == fingerprint),
-        Err(_) => false,
-    }
+/// The agent socket SFTP, mc and an SSH session without a per-connection
+/// agent socket use: the agent RustConn found or started at startup, else the
+/// inherited `SSH_AUTH_SOCK`. `None` when neither is set.
+#[must_use]
+pub fn default_agent_socket() -> Option<String> {
+    agent_socket_from(
+        AGENT_INFO.get().map(|info| info.socket_path.as_str()),
+        std::env::var("SSH_AUTH_SOCK").ok(),
+    )
 }
 
-/// Loads one SSH private key into the running ssh-agent, the single `ssh-add`
-/// path for the whole app (A3).
+/// Loads one SSH private key into the ssh-agent that SFTP and mc will use, the
+/// add path the GUI's launchers and the CLI share (A3).
 ///
-/// First checks whether the agent already holds the key (by public
-/// fingerprint, over the native protocol — no passphrase, no process) and
-/// returns `Ok(())` at once if so. Otherwise runs `ssh-add <key_path>` with no
-/// stdin, output discarded, host
-/// `SSH_ASKPASS` stripped (it may name a helper absent in the Flatpak sandbox)
-/// and the agent environment applied through [`apply_agent_env`]. This is the
-/// one place the spawn lives: the GUI's mc/file-manager launch paths and the
-/// multi-hop `-J` identity path used to each carry their own copy, drifting
-/// apart under change. They now call this and keep only their own result
-/// handling (a toast, a sidebar status, a log line).
+/// The agent is the one a child spawned through [`apply_agent_env`] reaches:
+/// the agent RustConn found or started at startup, else the inherited
+/// `SSH_AUTH_SOCK`. That socket is resolved once and used for the whole add,
+/// through [`crate::ssh_agent::SshAgentManager::add_own_key`]: asking the agent
+/// which keys it holds, the `ssh-add -t 43200`
+/// ([`crate::ssh_agent::OWN_KEY_LIFETIME`]) and recording the key when its own
+/// file carries its public blob, which the GUI removes again on exit, screen
+/// lock and suspend ([`crate::ssh_agent::evict_own_keys`]). The CLI removes it
+/// once a `--cli` or `--mc` session's child exits; for the detached file
+/// manager it launches, the lifetime alone bounds the key. A key the agent already
+/// holds is left as it is, because it may be the user's, and when that cannot
+/// be told the key is not added. The `ssh-add` has no stdin, no host
+/// `SSH_ASKPASS` (it may name a helper absent in the Flatpak sandbox) and
+/// `SSH_ASKPASS_REQUIRE=never`, so no passphrase prompt opens, and it is
+/// bounded to 30 s.
 ///
-/// The caller decides what a failure means, so this returns the agent's own
-/// stderr rather than a bool: a path that shows the user a message needs the
-/// text, and a path that only logs can ignore it.
+/// The caller decides what a failure means, so this returns the reason rather
+/// than a bool: a path that shows the user a message needs it, and a path
+/// that only logs can ignore it. The text is untranslated English; a GUI
+/// caller translates its own message.
 ///
 /// # Errors
 ///
-/// Returns the trimmed `ssh-add` stderr when the agent rejects the key, or a
-/// message when `ssh-add` could not be spawned at all. Does **not** error when
-/// no agent socket is set — `ssh-add` is still tried, because the socket may be
-/// at a non-standard path the environment does not advertise.
-pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), String> {
-    // A3 fast path: if the agent already holds this key, there is nothing to
-    // add and no process to spawn. The public fingerprint is read without a
-    // passphrase (A2), and the agent is queried over the native wire protocol
-    // (A1), so an already-loaded key costs one round trip and zero processes —
-    // the common case before an mc/SFTP launch on a key loaded at connect time.
-    if agent_already_holds_key(key_path) {
-        tracing::debug!(?key_path, "SSH key already in agent; skipping ssh-add");
-        return Ok(());
-    }
-
-    if !is_ssh_agent_available() {
+/// Returns [`IdentityLoadError::Unverified`] when the agent's answer cannot
+/// settle whether it already holds this key (the key was left out, but the
+/// agent may hold it). Returns [`IdentityLoadError::Failed`] with the trimmed
+/// `ssh-add` stderr when the agent rejects the key, or a message when no
+/// agent socket is known, the agent cannot be asked which keys it holds, or
+/// `ssh-add` could not be run or did not finish in time.
+pub fn ensure_identity_loaded(key_path: &std::path::Path) -> Result<(), IdentityLoadError> {
+    let Some(socket) = default_agent_socket() else {
         tracing::warn!(
-            "SSH_AUTH_SOCK not set or agent not running; ssh-add may still work \
-             if the agent socket is at a non-standard path"
+            ?key_path,
+            "no SSH agent socket is known; not adding the key"
         );
-    }
+        return Err(IdentityLoadError::Failed(
+            "no SSH agent is running (SSH_AUTH_SOCK is not set)".to_owned(),
+        ));
+    };
+    crate::ssh_agent::SshAgentManager::new(Some(socket))
+        .add_own_key(key_path)
+        .map_err(|e| {
+            tracing::warn!(?key_path, error = %e, "could not add the SSH key to the agent");
+            IdentityLoadError::from(e)
+        })
+}
 
-    tracing::info!(?key_path, "Adding SSH key to agent");
-    let mut cmd = std::process::Command::new("ssh-add");
-    cmd.arg(key_path)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::piped())
-        // Strip host SSH_ASKPASS — it may point to a program (e.g. ksshaskpass)
-        // that does not exist inside the Flatpak sandbox.
-        .env_remove("SSH_ASKPASS");
-    apply_agent_env(&mut cmd);
-    match cmd.output() {
-        Ok(output) if output.status.success() => {
-            tracing::info!(?key_path, "SSH key added to agent");
-            Ok(())
-        }
-        Ok(output) => {
-            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            tracing::warn!(?key_path, status = ?output.status, %stderr, "ssh-add failed");
-            Err(stderr)
-        }
-        Err(e) => {
-            tracing::error!(?e, "Failed to run ssh-add");
-            Err(format!("failed to run ssh-add: {e}"))
+/// Why [`ensure_identity_loaded`] did not put the key in the agent. The text
+/// is untranslated English.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum IdentityLoadError {
+    /// RustConn could not tell whether the agent already holds the key, so it
+    /// left the agent alone. The agent may hold it anyway: a launch that
+    /// needs the key can go ahead with a warning.
+    #[error("{0}")]
+    Unverified(String),
+    /// The key is not in the agent through RustConn: no agent, the agent
+    /// could not be asked, or `ssh-add` failed or did not finish in time.
+    #[error("{0}")]
+    Failed(String),
+}
+
+impl From<crate::ssh_agent::AgentError> for IdentityLoadError {
+    fn from(error: crate::ssh_agent::AgentError) -> Self {
+        use crate::ssh_agent::AgentError;
+        match error {
+            AgentError::KeyPresenceUnknown(message) => Self::Unverified(message),
+            AgentError::AddKeyFailed(message) => Self::Failed(message),
+            other => Self::Failed(other.to_string()),
         }
     }
 }
@@ -1201,6 +1195,25 @@ mod tests {
 
     // ── A3: ensure_key_in_agent invariants kept during ssh-add consolidation ──
 
+    /// "Cannot tell" stays its own outcome, so the mc launcher can warn and
+    /// go on instead of refusing.
+    #[test]
+    fn a_key_presence_rustconn_cannot_tell_is_unverified_not_failed() {
+        use crate::ssh_agent::AgentError;
+        assert_eq!(
+            IdentityLoadError::from(AgentError::KeyPresenceUnknown("why".to_owned())),
+            IdentityLoadError::Unverified("why".to_owned())
+        );
+        assert_eq!(
+            IdentityLoadError::from(AgentError::AddKeyFailed("bad key".to_owned())),
+            IdentityLoadError::Failed("bad key".to_owned())
+        );
+        assert!(matches!(
+            IdentityLoadError::from(AgentError::NotRunning),
+            IdentityLoadError::Failed(_)
+        ));
+    }
+
     #[test]
     fn ensure_key_in_agent_proceeds_when_no_key_is_configured() {
         // SHALL CONTINUE TO: a connection with no SSH key must not block the
@@ -1223,31 +1236,27 @@ mod tests {
         assert!(ensure_key_in_agent(&conn, &[]));
     }
 
+    /// The SFTP add asks, adds to and records against the agent mc and sftp
+    /// reach through `apply_agent_env`: the one RustConn started wins over
+    /// the inherited `SSH_AUTH_SOCK`, which may be unset or stale then.
     #[test]
-    fn fingerprint_is_read_from_a_sibling_pub_file() {
-        // The A3 fast path identifies a key by the fingerprint of its public
-        // half; a .pub next to the private key is the common source.
-        let dir = tempfile::tempdir().unwrap();
-        let key = dir.path().join("id_ed25519");
-        std::fs::write(&key, b"(private key body unused by the fingerprint path)").unwrap();
-        let pub_line = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnFst2q3Z6rJ0r5wqT3o8n5oQ9m9g2k0o7w8b6c1d2e me@host\n";
-        std::fs::write(key.with_extension("pub"), pub_line).unwrap();
-
-        let fp = fingerprint_for_key_path(&key).expect("fingerprint from .pub");
-        assert!(fp.starts_with("SHA256:"));
-        // Matches what the public-key parser computes for the same line.
-        let expected = crate::ssh_agent::PublicKeyInfo::from_pub_line(pub_line.trim())
-            .unwrap()
-            .fingerprint;
-        assert_eq!(fp, expected);
-    }
-
-    #[test]
-    fn fingerprint_is_none_for_a_missing_key_and_missing_pub() {
-        // No key file and no .pub: the fast path cannot identify the key, so it
-        // returns None and the caller falls through to ssh-add (never blocks).
-        let dir = tempfile::tempdir().unwrap();
-        let missing = dir.path().join("absent_key");
-        assert!(fingerprint_for_key_path(&missing).is_none());
+    fn the_sftp_add_uses_the_agent_rustconn_started_over_the_inherited_one() {
+        assert_eq!(
+            agent_socket_from(
+                Some("/run/user/1000/rustconn-ssh-agent.sock"),
+                Some("/tmp/ssh-stale/agent.1".to_owned())
+            ),
+            Some("/run/user/1000/rustconn-ssh-agent.sock".to_owned())
+        );
+        assert_eq!(
+            agent_socket_from(None, Some("/tmp/ssh-x/agent.1".to_owned())),
+            Some("/tmp/ssh-x/agent.1".to_owned())
+        );
+        assert_eq!(
+            agent_socket_from(Some(""), Some("/tmp/ssh-x/agent.1".to_owned())),
+            Some("/tmp/ssh-x/agent.1".to_owned())
+        );
+        assert_eq!(agent_socket_from(None, Some(String::new())), None);
+        assert_eq!(agent_socket_from(None, None), None);
     }
 }

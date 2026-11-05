@@ -95,7 +95,7 @@ adds GUI imports to `rustconn-core`/`rustconn-cli`, or `unsafe` outside a
 `rustconn-*-sys` crate). Still verify them yourself BEFORE writing — the hook is
 a safety net, not an excuse to skip thinking:
 - **Crate boundary**: `rustconn-core/` and `rustconn-cli/` must NOT contain `use gtk4`, `use adw`, `use vte4`, `gtk4::`, `adw::`, `vte4::`. Move GUI code to `rustconn/`. *(hook-enforced)*
-- **No unsafe**: never write `unsafe {`, `unsafe fn`, `unsafe impl`, `unsafe trait` — **except** in a `rustconn-*-sys` crate (`rustconn-pty-sys`, `rustconn-locale-sys`, `rustconn-env-sys`, `rustconn-dock-sys`; M-UNSAFE). New `unsafe` outside them is forbidden — it gets its own `-sys` crate instead. *(hook-enforced)*
+- **No unsafe**: never write `unsafe {`, `unsafe fn`, `unsafe impl`, `unsafe trait` — **except** in a `rustconn-*-sys` crate (`rustconn-pty-sys`, `rustconn-locale-sys`, `rustconn-env-sys`, `rustconn-dock-sys`, `rustconn-lock-sys`; M-UNSAFE). New `unsafe` outside them is forbidden — it gets its own `-sys` crate instead. *(hook-enforced)*
 
 After writing `.rs` files in `rustconn/src/`, verify (these stay mental — caught later by clippy, and for debug leftovers by the `session-report` Stop hook, not pre-write):
 - **i18n**: all user-facing strings (`.set_label()`, `.set_title()`, `.set_tooltip_text()`, `Button::with_label()`) wrapped in `i18n()` or `i18n_f()`. Ignore: tracing, CSS, icons, action names.
@@ -179,13 +179,15 @@ Apply this discipline to avoid them:
 - **One command per `executeBash` call.** Do not chain unrelated commands with
   `;`/`&&` into a single line that the shared shell may split incorrectly.
 
-## 17 Translation Languages
+## Translation Languages
 
-be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, zh_CN
+be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, vi, zh_CN
 
 This list said 16 and omitted `ka` (Georgian) until 2026-08-20, while
 `core-rules.md` and `AGENTS.md` both said 17 and included it. `ls po/*.po` is the
-authoritative count — check it rather than any of the three prose copies.
+authoritative count — check it rather than any of the three prose copies. The
+Settings language selector must offer every code in `po/LINGUAS`; a test in
+`rustconn/src/i18n.rs` fails when it does not.
 
 ## External Standards
 

@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.5** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.6** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -265,6 +265,13 @@ Set the auth method (or the key source) to **SSH Agent** and pick one of the key
 
 If the agent is not running when the session starts, or no longer holds the selected key, the connection still goes ahead with every agent key offered, and the reason is written to the log.
 
+**Keys RustConn adds to the agent itself:**
+Some steps need a key in the agent that you have not loaded: a multi-hop jump-host chain (`ProxyJump`, `-J`), where OpenSSH does not hand `-i` to the per-hop processes, and SFTP or Midnight Commander, which cannot take a key file. If the agent does not hold the key yet, RustConn adds it with a 12-hour lifetime (`ssh-add -t 43200`) and, once the agent shows it, remembers the key by the public key stored in the key file itself. An OpenSSH key file carries its public key even when encrypted; a legacy PEM or PKCS#8 key does not, so RustConn adds such a key only into an agent that holds no keys at all, does not remember it, and only its 12-hour lifetime removes it. If a certificate (`<key>-cert.pub`) sits beside the key, `ssh-add` loads it too, and RustConn remembers and removes it together with the key. For SFTP and mc this is the agent those tools use: the one RustConn started, if it had to start one, otherwise your session's agent. The automatic add asks for no passphrase and keeps none. It gives up after 30 seconds, and an encrypted key that needs a passphrase is not loaded this way: add it in **Settings → Secrets → SSH Agent** or with `ssh-add`. RustConn removes exactly the keys it remembered when you quit and, on Linux and macOS, when the screen locks or the system suspends or sleeps (the Flatpak and the Snap differ, see below); the next connection that needs a key adds it again.
+
+Keys you loaded before RustConn's add are left alone. A key the agent already holds is not added again, and neither is a key whose certificate (`<key>-cert.pub`) the agent holds without the key itself: `ssh-add` would load the certificate again and give it RustConn's 12-hour lifetime in place of the one you chose. When RustConn cannot tell whether the agent holds it (the agent does not answer, or the key is a legacy PEM or PKCS#8 file and the agent already holds any key; a `.pub` beside it may be stale, so RustConn does not trust it), it does not add the key and shows or logs why; add such a key yourself. Midnight Commander then shows a warning and opens anyway, since the agent may hold the key. A key you add in **Settings → Secrets → SSH Agent** comes off RustConn's list even if RustConn had added it earlier, so RustConn does not remove it later (for a key file without its own public key, RustConn stops removing any key it added to that agent), and RustConn never removes all keys from the agent. A removal RustConn had already sent to the agent just before your add (on exit, lock or suspend) can still take the key out; add it again then. The agent does not report who added a key, so a key RustConn added stays RustConn's until you add it through **Settings → Secrets → SSH Agent**; a key you load with `ssh-add` in a terminal after RustConn added it is still removed on lock, suspend or exit. The 12-hour lifetime is the limit when RustConn cannot clean up: after a crash, and for a key `rustconn-cli sftp` added for the file manager it starts (it exits right after). After `rustconn-cli sftp --cli` or `--mc`, the CLI removes the key it added when `sftp` or mc exits normally. Ctrl+C in the terminal also stops `rustconn-cli`, so after it the key stays in the agent until its 12-hour lifetime ends.
+
+Lock and suspend are detected over D-Bus: the screensaver's `ActiveChanged` signal (under the freedesktop or the GNOME `ScreenSaver` name) and login1 `PrepareForSleep`. RustConn holds a login1 delay lock so the keys are removed before the machine sleeps. A desktop that provides neither signal still gets the removal on exit. The Flatpak does not have access to these services by default, so there the keys are removed on exit and expire after 12 hours, but are not removed on screen lock or suspend; you can opt in with a `flatpak override`, see [Flatpak: removing RustConn's SSH keys on screen lock and suspend](INSTALL.md#optional-remove-rustconns-ssh-keys-on-screen-lock-and-suspend). In the Snap the screen lock is detected through the `desktop` interface, which is connected automatically, so the keys are removed on lock and exit; suspend is not detected there, and the Snap offers no interface you could connect for it. macOS has neither service; there RustConn watches the system's own notifications instead: the screen-lock notification (`com.apple.screenIsLocked`, also delivered while RustConn is in the background) and the will-sleep notification (`NSWorkspaceWillSleepNotification`). RustConn does not hold the sleep back for the removal, so it runs as the system goes to sleep; if it has not finished by then, it finishes when the system wakes. Turning the display off without locking the screen does not remove the keys.
+
 **Security Key / FIDO2 Authentication (SSH):**
 SSH connections support hardware security keys (YubiKey, SoloKey, etc.) via the `security-key` auth method. Requirements:
 - OpenSSH 8.2+ on both client and server
@@ -304,6 +311,26 @@ Some connections still have their password typed into the terminal, exactly as b
 | A **ProxyJump** or **ProxyCommand** set in your own `~/.ssh/config` | The bastion it starts would be asked for a password in the same form as the target, and RustConn will not risk sending one host's password to another |
 
 The last row is detected by asking `ssh -G` what your configuration resolves to, which costs a few milliseconds and touches the network not at all. A bastion configured **in RustConn** is handled and does not fall back — each hop gets its own password out of band.
+
+#### Unlocking an encrypted SSH key
+
+When a connection uses a key file protected by a passphrase, RustConn asks for the passphrase once, in its own **Unlock SSH Key** dialog, before `ssh` starts. The dialog appears when all of these hold:
+
+- the key is in the OpenSSH format (`-----BEGIN OPENSSH PRIVATE KEY-----`, what `ssh-keygen` writes by default) and is encrypted;
+- an SSH agent is running, and it holds neither the key nor the key's certificate (`<key>-cert.pub`);
+- that agent has not refused a key earlier in this session;
+- you have not cancelled the dialog for this key and agent earlier in this session.
+
+It covers a connect, a reconnect, the key of the first jump host, and an SFTP or Midnight Commander launch. With the right passphrase the key goes into the SSH agent with a 12-hour lifetime (`ssh-add -t 43200`), and later connects in the session find it there and do not ask. RustConn removes the key from the agent again when you quit, and on screen lock and suspend where those can be detected (in the Flatpak only after the opt-in described in [INSTALL.md](INSTALL.md)); the next connect then asks again.
+
+The passphrase is used for that one `ssh-add` and then forgotten. It is not saved, not put in any password vault and never read from one, so logging in with a key never depends on a vault. It reaches `ssh-add` through a file only your account can read, which is wiped and removed as soon as the add is done.
+
+- **Wrong passphrase:** the dialog stays open and says so. After three wrong attempts it closes, and the connect goes on without the key in the agent: `ssh` asks for the passphrase in the terminal, as it did before.
+- **Cancel:** the connect goes on exactly as before, with `ssh` asking in the terminal. RustConn remembers the Cancel for that key and agent until you quit, so later connects with the key do not open the dialog again and `ssh` asks in the terminal each time. To put the key in the agent after all, add it in **Settings → Secrets → SSH Agent**.
+- **An agent that does not accept added keys** (the 1Password agent, for one): RustConn shows a short notice, `ssh` asks in the terminal, and RustConn does not open the dialog for that agent again in this session.
+- **Legacy key formats** (`BEGIN RSA PRIVATE KEY`, PKCS#8): no dialog; nothing changes for them. The same holds when the agent does not answer.
+
+> **Agent Forwarding:** a connection with **Agent Forwarding** on lets the remote host use every key in your agent while you are connected, a key RustConn unlocked included. The connection editor shows a note when the option is on. Turn it on only for hosts you trust.
 
 ### Network Mode and Where a Jump Host Comes From
 
@@ -801,7 +828,7 @@ The SSH tab in the connection dialog contains session-level toggles that control
 
 | Option | SSH Flag | Description |
 |--------|----------|-------------|
-| Agent Forwarding | `-A` | Forward your local SSH agent to the remote host, allowing key-based authentication to further servers without copying keys |
+| Agent Forwarding | `-A` | Forward your local SSH agent to the remote host, allowing key-based authentication to further servers without copying keys. While connected, the remote host can use every key in the agent, including keys RustConn unlocked (see [Unlocking an encrypted SSH key](#unlocking-an-encrypted-ssh-key)) |
 | X11 Forwarding | `-X` | Forward X11 display to your local machine — run graphical X11 apps on the remote host and see them locally |
 | Compression | `-C` | Compress the SSH data stream — useful on slow or high-latency connections |
 | Connection Multiplexing | `ControlMaster=auto` | Reuse a single TCP connection for multiple SSH sessions to the same host. Subsequent connections open instantly without re-authenticating. RustConn adds `ControlPersist=60` so the master connection stays alive for 60 seconds after the last session closes. The shorter persist time (reduced from 10 minutes in 0.18.7) combined with proactive socket cleanup on network change prevents new connections from trying to multiplex through dead master sockets. When RustConn exits, all ControlMaster sockets are automatically closed to prevent stale sockets from lingering in the filesystem |
@@ -1445,6 +1472,16 @@ When you resize the RustConn window, the embedded RDP session automatically adju
 
 **Tip:** For Windows Server connections where you notice a brief reconnect on every resize, enable "Reconnect on Resize" to make the transition slightly faster by skipping the Display Control probe.
 
+**Server OS and resizing** (Connection Dialog → Protocol → Features → Server OS):
+
+| Server OS | Resize behavior |
+|-----------|-----------------|
+| Auto (default) | Sends the new layout over the Display Control Channel and waits up to 3 seconds for the server to apply it. If the desktop size has not changed by then (xrdp accepts the layout but keeps the old size), RustConn reconnects at the new size, and every later resize of that session reconnects straight away. |
+| Windows | Always uses the Display Control Channel and never falls back to a reconnect on a slow answer. |
+| Linux | Always reconnects to resize. |
+
+A slow Windows server on **Auto** that takes longer than 3 seconds to apply a layout is switched to reconnect-on-resize too, and stays switched until you close the tab: once the switch is made no layout is sent, so RustConn cannot see that the server applies them after all. Set **Server OS** to **Windows** for such a server to keep the seamless resize.
+
 #### Clipboard
 
 The embedded IronRDP client provides clipboard sync via the CLIPRDR channel. Text copied on the remote desktop is made available locally (Ctrl+V), and local clipboard changes are announced to the server. The Copy/Paste toolbar buttons remain available as manual fallback.
@@ -1798,7 +1835,7 @@ Browse remote files on SSH connections via your system file manager or Midnight 
 SFTP is always available for SSH connections — no checkbox or flag needed. The "Open SFTP" option only appears in the sidebar context menu for SSH connections (not RDP, VNC, SPICE, or Serial).
 
 **SSH Key Handling:**
-Before opening SFTP, RustConn automatically runs `ssh-add` with your configured SSH key. This is required because neither file managers nor mc can pass identity files directly — the key must be in the SSH agent.
+Before opening SFTP, RustConn automatically runs `ssh-add` with your configured SSH key, unless the agent already holds it. This is required because neither file managers nor mc can pass identity files directly — the key must be in the SSH agent. A key added this way has a 12-hour lifetime and is removed again on exit and, where RustConn can see them (the Flatpak needs an opt-in, the Snap sees no suspend), on screen lock and suspend (see *Keys RustConn adds to the agent itself* under [Full Connection Editor](#full-connection-editor-ctrlshiftn)), so a file manager left open after you quit RustConn loses access to it.
 
 **Open SFTP (File Manager):**
 - Right-click an SSH connection in sidebar → "Open SFTP"
@@ -3505,6 +3542,8 @@ Before 0.22.13 this was an on/off switch, and saving a connection in the editor 
 
 **Requirements:** A Linux host with `/proc` and a POSIX `df` (BusyBox `df`, as on OpenWrt and EdgeOS, is supported), or a MikroTik RouterOS device (detected automatically from its SSH console). No agent installation needed. Works with SSH connections. Other network appliances (Cisco IOS, Junos) are neither Linux nor RouterOS and are not supported — use a snippet or an SNMP monitor for those.
 
+**Host keys:** the monitoring connection trusts only a host key that is already in `known_hosts` (`StrictHostKeyChecking=yes`, on every jump host too), and it starts only once the session's terminal is connected, never while `ssh` is still asking whether to trust a new host. It therefore never records a key you have not accepted. When it finds no known key (for example, the session's own custom options point `ssh` at another `known_hosts` file), monitoring fails without asking and the failure goes to the log.
+
 ### Flatpak Components
 
 **Available only in Flatpak environment**
@@ -3706,7 +3745,7 @@ set -g allow-passthrough on     # let wrapped sequences through untouched
 - **System Keyring Requirements:** Requires `libsecret-tools` (`secret-tool` binary)
 - **Installed Password Managers** — Auto-detected managers with versions
 
-**SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option).
+**SSH Agent group:** Status (running/stopped with socket path), Loaded Keys (with remove option), Available Keys (keys in `~/.ssh/` with add option). A key added here has no lifetime and stays off RustConn's list of keys to remove, so RustConn does not remove it on exit, lock or suspend.
 
 ### Connection page
 

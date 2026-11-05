@@ -175,42 +175,78 @@ pub(super) fn cmd_sftp(
         tracing::warn!("Could not add SSH key to agent. You may need to run ssh-add manually.");
     }
 
-    if use_mc {
-        run_mc(connection, &connections, &groups, &network)?;
-    } else if use_cli {
-        let cmd =
-            rustconn_core::sftp::build_sftp_command(connection, &connections, &groups, &network)
-                .ok_or_else(|| CliError::Protocol("Failed to build SFTP command".to_string()))?;
-
-        println!("Connecting via sftp CLI to '{}'...", connection.name);
-
-        let mut proc = std::process::Command::new(&cmd[0]);
-        proc.args(&cmd[1..]);
-        rustconn_core::sftp::apply_agent_env(&mut proc);
-        let status = proc
-            .status()
-            .map_err(|e| CliError::Connection(format!("Failed to launch sftp: {e}")))?;
-
-        if !status.success() {
-            return Err(CliError::Connection(
-                "SFTP session ended with error".to_string(),
-            ));
-        }
-    } else {
-        #[cfg(feature = "client-launch")]
-        {
-            return open_in_file_manager(connection, &connections, &groups, &network);
-        }
-
-        #[cfg(not(feature = "client-launch"))]
-        {
-            return Err(CliError::Connection(
-                "SFTP file-browser launch is not compiled in this minimal CLI. \
-                 Use --cli or --mc, or build with the client-launch feature."
-                    .to_string(),
-            ));
-        }
+    if use_mc || use_cli {
+        let result = if use_mc {
+            run_mc(connection, &connections, &groups, &network)
+        } else {
+            run_sftp_cli(connection, &connections, &groups, &network)
+        };
+        // sftp and mc have exited, so the key added above for them leaves the
+        // agent now instead of staying for its whole lifetime. Only a key this
+        // command added is removed; one the agent already held is left alone.
+        //
+        // That before/after check is what keeps the GUI's keys safe: a key the
+        // GUI (or the user) loaded before this command ran is in the agent's
+        // "before" answer, so it is neither added nor recorded here. The other
+        // order is a known limit: each process keeps its own record and they
+        // do not talk, so when the GUI needs a key while this command is the
+        // one that added it, the GUI finds it in the agent and leaves it
+        // alone, and this eviction then takes it from the GUI's sessions too.
+        // The GUI's next connect or launch adds it again. Not worth IPC.
+        let removed = rustconn_core::ssh_agent::evict_own_keys();
+        tracing::debug!(
+            removed,
+            "removed the SSH keys this command added to the agent"
+        );
+        return result;
     }
 
-    Ok(())
+    // The file manager is detached and outlives this command, so the key stays
+    // in the agent for it, bounded by its lifetime.
+    #[cfg(feature = "client-launch")]
+    {
+        open_in_file_manager(connection, &connections, &groups, &network)
+    }
+
+    #[cfg(not(feature = "client-launch"))]
+    {
+        Err(CliError::Connection(
+            "SFTP file-browser launch is not compiled in this minimal CLI. \
+             Use --cli or --mc, or build with the client-launch feature."
+                .to_string(),
+        ))
+    }
+}
+
+/// Runs the `sftp` client against the connection and waits for it to exit.
+///
+/// # Errors
+///
+/// Returns [`CliError::Protocol`] if the command cannot be built and
+/// [`CliError::Connection`] if sftp cannot be launched or exits non-zero.
+fn run_sftp_cli(
+    connection: &rustconn_core::Connection,
+    connections: &[rustconn_core::Connection],
+    groups: &[rustconn_core::ConnectionGroup],
+    network: &rustconn_core::NetworkSettings,
+) -> Result<(), CliError> {
+    let cmd = rustconn_core::sftp::build_sftp_command(connection, connections, groups, network)
+        .ok_or_else(|| CliError::Protocol("Failed to build SFTP command".to_string()))?;
+
+    println!("Connecting via sftp CLI to '{}'...", connection.name);
+
+    let mut proc = std::process::Command::new(&cmd[0]);
+    proc.args(&cmd[1..]);
+    rustconn_core::sftp::apply_agent_env(&mut proc);
+    let status = proc
+        .status()
+        .map_err(|e| CliError::Connection(format!("Failed to launch sftp: {e}")))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(CliError::Connection(
+            "SFTP session ended with error".to_string(),
+        ))
+    }
 }

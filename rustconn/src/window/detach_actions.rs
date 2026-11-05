@@ -185,7 +185,7 @@ pub fn rename_open_sessions(notebook: &SharedNotebook, connection_id: Uuid, new_
 
 /// Shows a high-priority error toast inside a detached window.
 fn show_error_in_window(window: &DetachedSessionWindow, message: &str) {
-    let toast = adw::Toast::new(message);
+    let toast = crate::toast::plain_toast(message);
     toast.set_priority(adw::ToastPriority::High);
     window.toast_overlay().add_toast(toast);
 }

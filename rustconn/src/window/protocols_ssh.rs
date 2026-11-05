@@ -12,8 +12,8 @@ use uuid::Uuid;
 
 use super::MainWindow;
 use super::protocols::{
-    SharedNotebook, SharedSidebar, append_proxy_command_destination,
-    resolve_automation_for_connection, substitute_variables,
+    SharedNotebook, SharedSidebar, StatusClient, append_proxy_command_destination,
+    resolve_automation_for_connection, substitute_variables, when_established,
 };
 use crate::state::SharedAppState;
 use crate::utils::spawn_blocking_with_callback;
@@ -237,12 +237,18 @@ impl JumpAuthShape {
 /// The multi-hop `-J` path needs this: OpenSSH's `ProxyJump` does not pass the
 /// outer command's `-i <path>` to the ssh processes it spawns for each hop, so
 /// the only identity every hop can see is one the agent already holds. Adding
-/// it here (idempotently — `ssh-add` re-adding a loaded key is a no-op) makes a
+/// it here (idempotently — a key the agent already holds is not added again) makes a
 /// key-authenticated multi-hop chain work without the user pre-running
-/// `ssh-add`. Best-effort: a passphrase-protected key with no cached passphrase
-/// cannot be added non-interactively, so a failure is logged and the connection
-/// still proceeds (the agent may already hold it, or the user can add it).
-fn ensure_identity_in_agent(key_path: &std::path::Path) {
+/// `ssh-add`. Best-effort: a passphrase-protected key cannot be added
+/// non-interactively, so a failure is logged and the
+/// connection still proceeds (the agent may already hold it, or the user can add
+/// it). An encrypted key the user unlocked in RustConn's dialog before this
+/// connect is already in the agent and is left as it is.
+///
+/// `socket` is the agent the session's ssh uses (the connection's or group's
+/// own socket, else the one RustConn found or started, else the inherited
+/// `SSH_AUTH_SOCK`), so the key goes where the `-J` hops look for it.
+fn ensure_identity_in_agent(key_path: &std::path::Path, socket: Option<String>) {
     use rustconn_core::ssh_agent::SshAgentManager;
 
     // Times the ssh-agent identity phase and counts the agent operations it
@@ -253,19 +259,54 @@ fn ensure_identity_in_agent(key_path: &std::path::Path) {
     if !key_path.exists() {
         return;
     }
-    let manager = SshAgentManager::from_env();
+    let manager = SshAgentManager::new(socket);
     if manager.socket_path().is_none() {
         tracing::debug!("no ssh-agent socket; multi-hop -J relies on an existing agent identity");
         return;
     }
     // One add-key round trip against the agent — the call this phase exists for.
     perf.add_calls(1);
-    // `add_key` with no passphrase covers unencrypted keys and keys whose
-    // passphrase the agent/askpass can still resolve. Encrypted keys without a
-    // resolvable passphrase fail here and are left to the agent/user.
-    if let Err(e) = manager.add_key(key_path, None) {
-        tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
+    // No passphrase and no askpass: this covers keys ssh-add can load without
+    // asking; an encrypted key fails here (bounded, off any prompt) and is
+    // left to the agent/user. A key added here gets the 12 h lifetime and is
+    // removed again on exit, screen lock and suspend; a key the agent already
+    // holds, or may hold, is left alone.
+    match manager.add_own_key(key_path) {
+        Ok(()) => {}
+        // The agent holds keys and this key file (legacy PEM or PKCS#8) does
+        // not say which key it is, so it was not added. The jump host then
+        // sees only what the agent holds, and the connect may fail there:
+        // keep the reason in the default log, where that failure is read.
+        Err(e @ rustconn_core::ssh_agent::AgentError::KeyPresenceUnknown(_)) => {
+            tracing::warn!(
+                ?key_path,
+                error = %e,
+                "SSH key not added to the agent for multi-hop -J; the jump host may refuse \
+                 the connection. Add the key with ssh-add or in Settings → SSH Agent"
+            );
+        }
+        Err(e) => {
+            tracing::debug!(error = %e, "could not add identity to ssh-agent for multi-hop -J");
+        }
     }
+}
+
+/// The identity file ssh gets with `-i` for `conn`: the key path inherited
+/// through connection → group → parent group → root, with a stale portal path
+/// resolved to the Flatpak SSH dir. Shared by `build_ssh_command_args` (the
+/// target and its first jump hop) and the key-unlock check, so the key that is
+/// unlocked is the key ssh is given.
+pub(super) fn resolved_key_file(
+    conn: &rustconn_core::Connection,
+    groups: &[rustconn_core::ConnectionGroup],
+) -> Option<String> {
+    ssh_inheritance::resolve_ssh_key_path(conn, groups)
+        .and_then(|p| {
+            // Resolve stale portal paths: if the stored path doesn't exist,
+            // check the Flatpak SSH dir for a file with the same name.
+            rustconn_core::resolve_key_path(&p)
+        })
+        .map(|p| p.to_string_lossy().to_string())
 }
 
 /// Builds the SSH command pieces shared by initial connect and in-place
@@ -315,13 +356,7 @@ fn build_ssh_command_args(
     let _perf = rustconn_core::tracing::perf::PerfSpan::new("ssh.connect.args", "ssh");
 
     // Resolve key path via inheritance (connection → group → parent group → root)
-    let key = ssh_inheritance::resolve_ssh_key_path(conn, groups)
-        .and_then(|p| {
-            // Resolve stale portal paths: if the stored path doesn't exist,
-            // check the Flatpak SSH dir for a file with the same name.
-            rustconn_core::resolve_key_path(&p)
-        })
-        .map(|p| p.to_string_lossy().to_string());
+    let key = resolved_key_file(conn, groups);
 
     // When the user picked a specific key from the SSH agent, honour it.
     // `resolve_ssh_key_path` returns None for agent sources by design — it deals
@@ -567,12 +602,7 @@ fn build_ssh_command_args(
                             // Resolve the jump host's OWN identity file so it
                             // can be passed to ProxyCommand (issue #241: -J does
                             // NOT inherit -i from the outer ssh).
-                            first_hop_identity =
-                                rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(
-                                    jump_conn, &groups,
-                                )
-                                .and_then(|p| rustconn_core::resolve_key_path(&p))
-                                .map(|p| p.to_string_lossy().to_string());
+                            first_hop_identity = resolved_key_file(jump_conn, groups);
                             // Resolve the bastion's OWN password (issue #191).
                             // First try the in-memory cache (fast path).
                             first_hop_password = state_ref
@@ -947,13 +977,13 @@ fn build_ssh_command_args(
                 let askpass_refs: Vec<Option<&std::path::Path>> =
                     inner_askpass.iter().map(|opt| opt.as_deref()).collect();
 
-                // accept_new = false: keep the existing host-key posture (the
-                // bastions are expected to already be in known_hosts).
+                // The user's config decides the host-key posture of hops
+                // without a password (the bastions are expected to already be
+                // in known_hosts); a password hop gets accept-new (#203).
                 let inner = rustconn_core::ssh_tunnel::build_nested_proxy_command_with_askpass(
                     &inner_hops,
                     identity_key,
                     flatpak_known_hosts.as_deref(),
-                    false,
                     &askpass_refs,
                     1,
                     jump_hosts.len(),
@@ -988,7 +1018,12 @@ fn build_ssh_command_args(
             if multi_hop_identity_only
                 && let Some(ref key_path) = first_hop_identity.as_ref().or(key.as_ref())
             {
-                ensure_identity_in_agent(std::path::Path::new(key_path.as_str()));
+                ensure_identity_in_agent(
+                    std::path::Path::new(key_path.as_str()),
+                    ssh_inheritance::resolve_ssh_agent_socket(conn, groups)
+                        .filter(|s| !s.is_empty())
+                        .or_else(rustconn_core::sftp::default_agent_socket),
+                );
             }
             args.push("-J".to_string());
             args.push(rustconn_core::ssh_tunnel::proxy_jump_arg(&chain));
@@ -1285,11 +1320,68 @@ fn install_ssh_autofill_fallback(
 }
 
 /// Starts SSH and observes a session created after asynchronous setup.
+///
+/// When a key the connect passes is an encrypted OpenSSH key, the unlock
+/// check comes first (`key_unlock::unlock_then`), and the dialog when the
+/// agent lacks the key; the session is then created asynchronously and this
+/// returns `None`, as for the port check. The key sequence and the split-view
+/// registration follow the session through `observer`
+/// (`MainWindow::start_connection_observed`), so an asynchronous start keeps
+/// both. A connect with any other key starts as before.
 #[expect(
     clippy::too_many_arguments,
     reason = "SSH startup requires the shared UI owners, monitoring, connection data, logging policy, and observer"
 )]
 pub fn start_ssh_connection_observed(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    logging_enabled: bool,
+    observer: Option<super::types::SessionStartObserver>,
+) -> Option<Uuid> {
+    let targets = super::key_unlock::ssh_unlock_targets(state, conn);
+    if targets.is_empty() {
+        return start_ssh_connection_unlocked(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            connection_id,
+            conn,
+            logging_enabled,
+            observer,
+        );
+    }
+    let state = state.clone();
+    let notebook_rc = notebook.clone();
+    let sidebar = sidebar.clone();
+    let monitoring = Rc::clone(monitoring);
+    let conn = conn.clone();
+    super::key_unlock::unlock_then(notebook.widget(), targets, move || {
+        start_ssh_connection_unlocked(
+            &state,
+            &notebook_rc,
+            &sidebar,
+            &monitoring,
+            connection_id,
+            &conn,
+            logging_enabled,
+            observer,
+        );
+    });
+    None
+}
+
+/// [`start_ssh_connection_observed`] once any key unlock is done: the port
+/// check, then the session.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "SSH startup requires the shared UI owners, monitoring, connection data, logging policy, and observer"
+)]
+fn start_ssh_connection_unlocked(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     sidebar: &SharedSidebar,
@@ -1626,7 +1718,7 @@ fn start_ssh_connection_internal(
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH. Password-only targets use prompt-aware OpenSSH askpass;
     // mixed or custom authentication remains an interactive terminal prompt.
@@ -1692,47 +1784,21 @@ fn start_ssh_connection_internal(
         );
     }
 
-    // --- SSH status detection: mark sidebar "connected" once terminal output appears ---
-    // For jump host connections, also check terminal text for SSH failure patterns
-    // to avoid false positives (jump host connects but destination times out).
+    // --- SSH status detection: mark sidebar "connected" once ssh is established ---
+    // The verdict the in-place reconnect uses, counted from below the connect
+    // banner: the banner alone no longer turns the session green, and through
+    // a jump host only the final host's shell prompt does.
+    let status_client = StatusClient::Ssh {
+        jump_host: has_jump_host,
+    };
     {
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = notebook.clone();
-        let connection_id_str = connection_id.to_string();
-        let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-        let session_connected_clone = session_connected.clone();
-        let protocol_str = String::from("ssh");
-        let uses_jump_host = has_jump_host;
-
-        notebook.connect_contents_changed(session_id, move || {
-            if session_connected_clone.get() {
-                return;
-            }
-            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                return;
-            };
-            tracing::debug!(
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, status_client, move || {
+            sidebar.increment_session_count(&connection_id.to_string());
+            tracing::info!(
                 protocol = "ssh",
-                cursor_row = row,
-                uses_jump_host,
-                "SSH status detection: checking cursor row"
+                "Terminal connection detected as established"
             );
-            // Single shared verdict — see `ssh_connection_established`. For a
-            // jump host it requires more output and a failure-free buffer, so a
-            // bastion banner alone no longer latches the session green over a
-            // target that never came up.
-            let text = uses_jump_host
-                .then(|| notebook_clone.get_terminal_text(session_id))
-                .flatten();
-            if super::protocols::ssh_connection_established(row, uses_jump_host, text.as_deref()) {
-                sidebar_clone.increment_session_count(&connection_id_str);
-                session_connected_clone.set(true);
-                tracing::info!(
-                    protocol = %protocol_str,
-                    cursor_row = row,
-                    "Terminal connection detected as established"
-                );
-            }
         });
     }
 
@@ -1740,8 +1806,6 @@ fn start_ssh_connection_internal(
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name.clone();
-        let recording_started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let recording_started_clone = recording_started.clone();
         let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
             host: host.clone(),
             port,
@@ -1749,25 +1813,12 @@ fn start_ssh_connection_internal(
             identity_file: identity_file.clone(),
         });
 
-        notebook.connect_contents_changed(session_id, move || {
-            if recording_started_clone.get() {
-                return;
-            }
-            // Wait for connection to be established (cursor row > 2)
-            if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id)
-                && row > 2
-            {
-                recording_started_clone.set(true);
-                notebook_clone.start_recording(
-                    session_id,
-                    &recording_conn_name,
-                    recording_ssh_params.clone(),
-                );
-                tracing::info!(
-                    %session_id,
-                    "Auto-recording started after SSH connection established"
-                );
-            }
+        when_established(notebook, session_id, status_client, move || {
+            notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after SSH connection established"
+            );
         });
     }
 
@@ -1801,37 +1852,19 @@ fn start_ssh_connection_internal(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain.clone();
-            let mon_uses_jump_host = has_jump_host;
-            let monitoring_started = std::rc::Rc::new(std::cell::Cell::new(false));
-            let monitoring_started_clone = monitoring_started.clone();
 
-            notebook.connect_contents_changed(session_id, move || {
-                if monitoring_started_clone.get() {
-                    return;
-                }
-                let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                    return;
-                };
-                // Exactly the sidebar "connected" verdict — see
-                // `ssh_connection_established`. A jump chain can push the cursor
-                // past the direct threshold with a bastion banner or an SSH error
-                // even when the FINAL host never came up. Starting monitoring then
-                // opens the bar for a session that failed — and because the
-                // monitoring probe uses accept-new + its own ControlMaster, it can
-                // even reach the target and show live data for a session the user
-                // saw fail. The closure runs again on the next output, so a later
-                // successful prompt still starts it.
-                let text = mon_uses_jump_host
-                    .then(|| notebook_clone.get_terminal_text(session_id))
-                    .flatten();
-                if !super::protocols::ssh_connection_established(
-                    row,
-                    mon_uses_jump_host,
-                    text.as_deref(),
-                ) {
-                    return;
-                }
-                monitoring_started_clone.set(true);
+            // Exactly the sidebar "connected" verdict — see
+            // `ssh_output_established`. A jump chain can push the cursor
+            // past the direct threshold with a bastion banner or an SSH error
+            // even when the FINAL host never came up. Starting monitoring then
+            // opens the bar for a session that failed — and because the
+            // monitoring probe can open its own ControlMaster, it can even
+            // reach the target and show live data for a session the user saw
+            // fail. An unanswered host-key question is not established either
+            // (the probe itself only trusts keys already in known_hosts). The
+            // detector runs again on the next output, so a later successful
+            // prompt still starts it.
+            when_established(notebook, session_id, status_client, move || {
                 if let Some(container) = notebook_clone.get_session_container(session_id) {
                     monitoring_clone.start_monitoring(
                         session_id,
@@ -1841,7 +1874,7 @@ fn start_ssh_connection_internal(
                         mon_port,
                         mon_username.as_deref(),
                         identity_file_mon.as_deref(),
-                        cached_pw.clone(),
+                        cached_pw,
                         mon_jump_host.as_deref(),
                     );
                 }
@@ -1861,8 +1894,6 @@ pub fn reconnect_ssh_in_place(
     session_id: Uuid,
     connection_id: Uuid,
 ) -> bool {
-    use rustconn_core::protocol::{format_command_message, format_connection_message};
-
     // Prepare the existing tab for reconnect
     if !notebook.prepare_for_reconnect(session_id) {
         tracing::warn!(%session_id, "Tab no longer exists, cannot reconnect in-place");
@@ -1882,6 +1913,57 @@ pub fn reconnect_ssh_in_place(
             None => return false,
         }
     };
+
+    // An encrypted key the agent no longer holds (its lifetime ran out, or a
+    // lock or suspend removed it) is unlocked again before ssh restarts.
+    let targets = super::key_unlock::ssh_unlock_targets(state, &conn);
+    if targets.is_empty() {
+        reconnect_ssh_after_unlock(
+            state,
+            notebook,
+            sidebar,
+            monitoring,
+            session_id,
+            connection_id,
+            conn,
+        );
+        return true;
+    }
+    let state = state.clone();
+    let notebook_rc = notebook.clone();
+    let sidebar = sidebar.clone();
+    let monitoring = Rc::clone(monitoring);
+    super::key_unlock::unlock_then(notebook.widget(), targets, move || {
+        // The tab may have been closed while the dialog was open.
+        if notebook_rc.get_session_info(session_id).is_none() {
+            tracing::debug!(%session_id, "tab closed during the key unlock; not reconnecting");
+            return;
+        }
+        reconnect_ssh_after_unlock(
+            &state,
+            &notebook_rc,
+            &sidebar,
+            &monitoring,
+            session_id,
+            connection_id,
+            conn,
+        );
+    });
+    true
+}
+
+/// [`reconnect_ssh_in_place`] once any key unlock is done: restarts ssh in the
+/// prepared tab.
+fn reconnect_ssh_after_unlock(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    session_id: Uuid,
+    connection_id: Uuid,
+    conn: rustconn_core::Connection,
+) {
+    use rustconn_core::protocol::{format_command_message, format_connection_message};
 
     // Discard the previous connection's monitoring bar and collector so a
     // stale, dimmed bar (or a race with a collector that has not yet
@@ -2019,7 +2101,7 @@ pub fn reconnect_ssh_in_place(
     let conn_msg = format_connection_message("SSH", &host);
     let cmd_msg = format_command_message(&ssh_command);
     let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_output(session_id, &feedback);
+    notebook.display_connect_banner(session_id, &feedback);
 
     // Spawn SSH in the existing terminal
     {
@@ -2081,31 +2163,34 @@ pub fn reconnect_ssh_in_place(
         );
     }
 
-    // SSH status detection
+    // SSH status detection, counted from below the connect banner — the same
+    // detector as on the initial connect. It stands down when a later
+    // reconnect replaces this attempt, so the sidebar's session count is not
+    // raised twice.
+    let status_client = StatusClient::Ssh {
+        jump_host: has_jump_host,
+    };
     {
-        let sidebar_clone = sidebar.clone();
-        let notebook_clone = notebook.clone();
-        let connection_id_str = connection_id.to_string();
-        let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-        let session_connected_clone = session_connected.clone();
-        let uses_jump_host = has_jump_host;
-
-        notebook.connect_contents_changed(session_id, move || {
-            if session_connected_clone.get() {
-                return;
-            }
-            let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                return;
-            };
-            let text = uses_jump_host
-                .then(|| notebook_clone.get_terminal_text(session_id))
-                .flatten();
-            if super::protocols::ssh_connection_established(row, uses_jump_host, text.as_deref()) {
-                sidebar_clone.increment_session_count(&connection_id_str);
-                session_connected_clone.set(true);
-            }
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, status_client, move || {
+            sidebar.increment_session_count(&connection_id.to_string());
         });
     }
+
+    // Auto-recording, as on the initial connect: the initial connect's
+    // detector stood down when this reconnect replaced its process.
+    super::protocols::record_reconnect_when_established(
+        notebook,
+        session_id,
+        status_client,
+        &conn,
+        Some(crate::terminal::SshRecordingParams {
+            host: host.clone(),
+            port,
+            username: username.clone(),
+            identity_file: identity_file.clone(),
+        }),
+    );
 
     // Deferred monitoring start — resolved exactly as on the initial connect.
     if let Ok(state_ref) = state.try_borrow() {
@@ -2135,32 +2220,15 @@ pub fn reconnect_ssh_in_place(
             let mon_port = conn.port;
             let mon_username = conn.username.clone();
             let mon_jump_host = jump_host_chain;
-            let mon_uses_jump_host = has_jump_host;
-            let monitoring_started = std::rc::Rc::new(std::cell::Cell::new(false));
-            let monitoring_started_clone = monitoring_started.clone();
 
-            notebook.connect_contents_changed(session_id, move || {
-                if monitoring_started_clone.get() {
-                    return;
-                }
-                let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) else {
-                    return;
-                };
-                // See the initial-connect path and `ssh_connection_established`:
-                // don't open the monitor for a jump-chain session whose terminal
-                // has not really established — the accept-new probe could
-                // otherwise show live data for a session that never came up.
-                let text = mon_uses_jump_host
-                    .then(|| notebook_clone.get_terminal_text(session_id))
-                    .flatten();
-                if !super::protocols::ssh_connection_established(
-                    row,
-                    mon_uses_jump_host,
-                    text.as_deref(),
-                ) {
-                    return;
-                }
-                monitoring_started_clone.set(true);
+            // The sidebar verdict above: don't open the monitor for a session
+            // whose terminal has not really established — the probe, with its
+            // own ControlMaster, could otherwise show live data for a session
+            // that never came up.
+            // Like the sidebar detector it stands down when a later reconnect
+            // replaces this attempt, so a failed attempt's detector cannot
+            // start monitoring on the next attempt's output.
+            when_established(notebook, session_id, status_client, move || {
                 // Resolve through `get_session_container` first (tab-only).
                 // Only fall back to `session_content_box` when a bar existed
                 // before the reconnect reset it (#398) AND the session is
@@ -2189,7 +2257,7 @@ pub fn reconnect_ssh_in_place(
                         mon_port,
                         mon_username.as_deref(),
                         identity_file_mon.as_deref(),
-                        cached_pw.clone(),
+                        cached_pw,
                         mon_jump_host.as_deref(),
                     );
                 }
@@ -2203,8 +2271,6 @@ pub fn reconnect_ssh_in_place(
     {
         tracing::warn!(?e, "Failed to update last_connected");
     }
-
-    true
 }
 
 #[cfg(all(test, unix))]

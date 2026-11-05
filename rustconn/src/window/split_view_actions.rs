@@ -483,9 +483,9 @@ impl MainWindow {
                         let hint = crate::i18n::i18n(
                             "Tip: press Ctrl+Shift+B or use the Broadcast button to mirror keystrokes across split panels",
                         );
-                        toast_overlay
-                            .widget()
-                            .add_toast(adw::Toast::builder().title(&hint).timeout(6).build());
+                        let toast = crate::toast::plain_toast(&hint);
+                        toast.set_timeout(6);
+                        toast_overlay.widget().add_toast(toast);
                     }
                 }
             })

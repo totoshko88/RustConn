@@ -545,7 +545,6 @@ impl OnePasswordBackend {
         Ok(Some(Credentials {
             username,
             password: password.map(SecretString::from),
-            key_passphrase: None,
             domain: None,
         }))
     }

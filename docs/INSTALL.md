@@ -46,6 +46,53 @@ RustConn requests the following permissions for full functionality:
 | `--talk-name=org.keepassxc.KeePassXC.BrowserServer` | KeePassXC proxy |
 | `--talk-name=org.kde.StatusNotifierWatcher` | System tray support |
 
+### Optional: remove RustConn's SSH keys on screen lock and suspend
+
+When a jump-host (`-J`) connect, SFTP or Midnight Commander needs a key the SSH
+agent does not hold, RustConn adds it with a 12-hour lifetime and later removes
+exactly those keys again (see
+[Keys RustConn adds to the agent itself](USER_GUIDE.md#full-connection-editor-ctrlshiftn)).
+Native Linux packages remove them on exit, on screen lock and on suspend. The Flatpak
+does not get the D-Bus services that report a screen lock or a suspend, so
+without an opt-in its keys are removed when you quit RustConn and expire after
+12 hours, but stay in the agent while the screen is locked or the machine sleeps.
+
+To have them removed on screen lock and suspend as well, grant the three names
+once, for your user, and restart RustConn:
+
+```bash
+flatpak override --user --talk-name=org.freedesktop.ScreenSaver --talk-name=org.gnome.ScreenSaver --system-talk-name=org.freedesktop.login1 io.github.totoshko88.RustConn
+```
+
+| Permission | What RustConn uses it for |
+|------------|---------------------------|
+| `--talk-name=org.freedesktop.ScreenSaver` | Screen lock signal on KDE Plasma and other desktops |
+| `--talk-name=org.gnome.ScreenSaver` | Screen lock signal on GNOME (GNOME Shell sends it only under this name) |
+| `--system-talk-name=org.freedesktop.login1` | Suspend signal, and a short delay lock so the keys are removed before the machine sleeps |
+
+You can grant only the screen-lock names or only login1. These names let
+RustConn call the services as well as listen to them; login1 still asks polkit
+before anything that changes the system. Check what is set with
+`flatpak override --user --show io.github.totoshko88.RustConn`.
+
+To undo it, remove all your user overrides for RustConn (this also drops any
+other `flatpak override --user` you made for it, such as extra `--filesystem`
+access):
+
+```bash
+flatpak override --user --reset io.github.totoshko88.RustConn
+```
+
+or deny only these three names:
+
+```bash
+flatpak override --user --no-talk-name=org.freedesktop.ScreenSaver --no-talk-name=org.gnome.ScreenSaver --system-no-talk-name=org.freedesktop.login1 io.github.totoshko88.RustConn
+```
+
+Without the override nothing is logged above `info` and nothing else changes.
+The Snap cannot be given the suspend part this way; see
+[docs/SNAP.md](SNAP.md#screen-lock-and-suspend).
+
 ### Bundled Components
 
 The Flatpak includes all core protocol clients — no separate installation needed:
@@ -231,7 +278,7 @@ ln -sf $(brew --prefix)/opt/rustconn/RustConn.app /Applications/RustConn.app
 | `rustconn-cli` | CLI tool for scripting and automation |
 | `rustconn-app` | Convenience launcher (opens .app bundle) |
 | `RustConn.app` | macOS application bundle with icon and environment setup |
-| Locales | 17 languages (be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, zh_CN) |
+| Locales | Every catalogue in `po/LINGUAS` (be, cs, da, de, es, fr, it, ka, kk, nl, pl, pt, sk, sv, uk, uz, vi, zh_CN) |
 
 ### Optional: Password Manager CLIs
 

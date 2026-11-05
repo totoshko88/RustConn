@@ -9,7 +9,7 @@
 //! binaries — Debian's `libopenh264-8`, Fedora's `libopenh264`, and a local
 //! build from the Cisco *source* tarball are all built from source and rejected
 //! — so on a packaged install there is nowhere to point
-//! [`OPENH264_PATH_ENV`](super::gfx_handler) at.
+//! `OPENH264_PATH_ENV` at.
 //!
 //! Cisco pays the MPEG-LA H.264 patent royalties, but that coverage applies
 //! **only to the blobs an end user downloads on demand from Cisco's CDN**, not
@@ -33,7 +33,7 @@
 /// re-scans and finds a freshly downloaded blob — no app restart needed.
 ///
 /// Call this right after [`download_openh264`] succeeds. It is a thin, always-
-/// compiled front for `gfx_handler::invalidate_openh264_cache`: when the
+/// compiled front for `invalidate_openh264_cache`: when the
 /// `gfx-h264` feature is off there is no loader cache to clear, so it is a
 /// no-op, which lets the GUI call one coherent module regardless of features.
 pub fn invalidate_loader_cache() {
@@ -42,7 +42,7 @@ pub fn invalidate_loader_cache() {
 }
 
 /// Enable or disable use of the downloaded OpenH264 codec, an always-compiled
-/// front for `gfx_handler::set_openh264_enabled`.
+/// front for `set_openh264_enabled`.
 ///
 /// Called by the GUI from `ConnectionSettings::use_openh264` at startup and on
 /// the Media Codecs switch. A no-op when the `gfx-h264` feature is off (there

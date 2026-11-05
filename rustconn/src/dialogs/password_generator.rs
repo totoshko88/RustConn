@@ -393,7 +393,7 @@ pub fn show_password_generator_dialog(parent: Option<&impl IsA<gtk4::Widget>>) {
         if !text.is_empty() {
             let clipboard = gtk4::prelude::WidgetExt::display(&dialog_clone).clipboard();
             clipboard.set_text(&text);
-            let toast = adw::Toast::new(&i18n("Password copied (auto-clears in 30s)"));
+            let toast = crate::toast::plain_toast(&i18n("Password copied (auto-clears in 30s)"));
             toast_overlay_clone.add_toast(toast);
 
             // Auto-clear after 30s, but only if the clipboard still holds this

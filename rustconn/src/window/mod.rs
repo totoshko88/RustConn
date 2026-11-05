@@ -19,6 +19,7 @@ mod group_broadcast;
 mod groups;
 mod history_actions;
 mod key_setup;
+mod key_unlock;
 mod macro_dispatch;
 mod navigation_actions;
 mod network_monitor;
@@ -1122,9 +1123,9 @@ impl MainWindow {
         // Persistent banner for config files startup could not read, or found
         // written by a newer RustConn (GNOME HIG: a state that needs attention
         // belongs in a banner). Hidden until `show_config_file_notice` fills it.
-        let config_banner = adw::Banner::new("");
-        // The message carries a file path, which is not Pango markup.
-        config_banner.set_use_markup(false);
+        // Every banner here is a `plain_banner`: their text carries paths, names
+        // and error strings, which are not Pango markup.
+        let config_banner = crate::toast::plain_banner("");
         config_banner.set_button_label(Some(&crate::i18n::i18n("Dismiss")));
         config_banner.connect_button_clicked(|banner| {
             banner.set_revealed(false);
@@ -1135,7 +1136,7 @@ impl MainWindow {
         // that needs attention belongs in a banner, not a transient toast).
         // Hidden by default; shown via show_sync_error_banner(), hidden on
         // the next successful sync.
-        let sync_banner = adw::Banner::new("");
+        let sync_banner = crate::toast::plain_banner("");
         sync_banner.set_button_label(Some(&crate::i18n::i18n("Dismiss")));
         sync_banner.connect_button_clicked(|banner| {
             banner.set_revealed(false);
@@ -1148,7 +1149,7 @@ impl MainWindow {
         // Hidden by default; shown via check_secret_backend_available(). Its
         // action button opens Settings, where the user picks a working backend
         // in the Secrets section (#201).
-        let secret_banner = adw::Banner::new("");
+        let secret_banner = crate::toast::plain_banner("");
         secret_banner.set_button_label(Some(&crate::i18n::i18n("Open Settings")));
         secret_banner.connect_button_clicked(|banner| {
             // The banner lives inside the window that owns the `win.settings`
@@ -1164,7 +1165,7 @@ impl MainWindow {
         // BusyStack does: it sends a +1/-1 delta over an mpsc channel, and a
         // glib::timeout_add_local drain tracks the in-flight count and reveals
         // the banner whenever it is above zero. Informational — no button.
-        let touch_banner = adw::Banner::new(&crate::i18n::i18n(
+        let touch_banner = crate::toast::plain_banner(&crate::i18n::i18n(
             "Touch your hardware key to unlock the password database",
         ));
         toolbar_view.add_top_bar(&touch_banner);
@@ -1200,7 +1201,7 @@ impl MainWindow {
         // a group broadcast reaches tabs the user cannot see, so its active state
         // must be unmissable — a banner, not a transient toast. Its button turns
         // the broadcast off. Hidden until group broadcast is enabled.
-        let group_broadcast_banner = adw::Banner::new("");
+        let group_broadcast_banner = crate::toast::plain_banner("");
         group_broadcast_banner.set_button_label(Some(&crate::i18n::i18n("Stop")));
         group_broadcast_banner.add_css_class("accent");
         group_broadcast_banner.connect_button_clicked(|banner| {
@@ -2733,6 +2734,79 @@ impl MainWindow {
         true
     }
 
+    /// Wraps `observer` so a new session is shown in the tab view and, for a
+    /// terminal session, registered in the split view for drag-and-drop, once
+    /// it exists. `observer` itself runs first.
+    ///
+    /// New connections always open in a new tab, never in a split pane. VNC,
+    /// RDP and SPICE are shown in the tab directly and are not registered.
+    fn with_split_registration(
+        notebook: &SharedNotebook,
+        split_view: &SharedSplitView,
+        observer: Option<types::SessionStartObserver>,
+    ) -> types::SessionStartObserver {
+        let notebook = Rc::downgrade(notebook);
+        let split_view = Rc::downgrade(split_view);
+        types::SessionStartObserver::new(move |session_id| {
+            if let Some(observer) = observer {
+                observer.complete(session_id);
+            }
+            let (Some(notebook), Some(split_view)) = (notebook.upgrade(), split_view.upgrade())
+            else {
+                return;
+            };
+            let Some(info) = notebook.get_session_info(session_id) else {
+                return;
+            };
+            if !matches!(info.protocol.as_str(), "vnc" | "rdp" | "spice") {
+                // The display widget is resolved on demand via the content
+                // provider.
+                split_view.add_session(info);
+            }
+            split_view.widget().set_visible(false);
+            split_view.widget().set_vexpand(false);
+            notebook.widget().set_vexpand(true);
+            notebook.show_tab_view_content();
+        })
+    }
+
+    /// Wraps `observer` so the connection's key sequence is typed into the new
+    /// session once it exists, half a second later to let the terminal
+    /// initialise. `observer` itself runs first. Without a key sequence,
+    /// `observer` is returned unchanged.
+    fn with_key_sequence(
+        notebook: &SharedNotebook,
+        conn: &rustconn_core::Connection,
+        observer: Option<types::SessionStartObserver>,
+    ) -> Option<types::SessionStartObserver> {
+        let Some(seq) = conn.key_sequence.clone().filter(|seq| !seq.is_empty()) else {
+            return observer;
+        };
+        let notebook = Rc::downgrade(notebook);
+        let name = conn.name.clone();
+        Some(types::SessionStartObserver::new(move |session_id| {
+            if let Some(observer) = observer {
+                observer.complete(session_id);
+            }
+            let Some(notebook) = notebook.upgrade() else {
+                return;
+            };
+            // Terminal sessions only; an embedded viewer has nothing to type
+            // into.
+            if notebook.get_terminal(session_id).is_none() {
+                return;
+            }
+            tracing::info!(
+                connection = %name,
+                elements = seq.len(),
+                "Scheduling key sequence after connection"
+            );
+            glib::timeout_add_local_once(std::time::Duration::from_millis(500), move || {
+                notebook.execute_key_sequence(session_id, &seq);
+            });
+        }))
+    }
+
     /// Starts a connection with split view integration
     pub fn start_connection_with_split(
         state: &SharedAppState,
@@ -2785,13 +2859,18 @@ impl MainWindow {
             sidebar.update_connection_status(&connection_id.to_string(), "connecting");
         }
 
+        // The tab layout and the split-view registration happen when the
+        // session exists, so an asynchronous start (port check, key unlock)
+        // gets them too. A synchronous start completes the observer before
+        // `start_connection_observed` returns.
+        let observer = Self::with_split_registration(notebook, split_view, observer);
         let session_id = match Self::start_connection_observed(
             state,
             notebook,
             sidebar,
             monitoring,
             connection_id,
-            observer,
+            Some(observer),
         ) {
             types::ConnectionStartResult::Started(id) => id,
             types::ConnectionStartResult::Pending => {
@@ -2818,28 +2897,6 @@ impl MainWindow {
 
         // Get session info to check protocol
         if let Some(info) = notebook.get_session_info(session_id) {
-            // VNC, RDP, and SPICE sessions are displayed directly in notebook tab
-            if info.protocol == "vnc" || info.protocol == "rdp" || info.protocol == "spice" {
-                // Hide split view and expand notebook for VNC/RDP/SPICE
-                split_view.widget().set_visible(false);
-                split_view.widget().set_vexpand(false);
-                notebook.widget().set_vexpand(true);
-                notebook.show_tab_view_content();
-                return Some(session_id);
-            }
-
-            // For SSH: register session info for potential drag-and-drop
-            // Per spec: new connections ALWAYS open in a new tab, never in split pane
-            // The display widget is resolved on demand via the content provider.
-            split_view.add_session(info.clone());
-
-            // Per spec: new connections always show in TabView (as a new tab)
-            // Hide split view, show TabView content
-            split_view.widget().set_visible(false);
-            split_view.widget().set_vexpand(false);
-            notebook.widget().set_vexpand(true);
-            notebook.show_tab_view_content();
-
             // For Zero Trust, detect connection via terminal content changes
             // (SSH status detection is handled inside start_ssh_connection_internal)
             if info.protocol.starts_with("zerotrust") {
@@ -2851,34 +2908,22 @@ impl MainWindow {
                     sidebar.update_connection_status(&connection_id.to_string(), "connecting");
                 }
 
-                let sidebar_clone = sidebar.clone();
-                let notebook_clone = notebook.clone();
-                let connection_id_str = connection_id.to_string();
-                let session_connected = std::rc::Rc::new(std::cell::Cell::new(false));
-                let session_connected_clone = session_connected.clone();
-
-                notebook.connect_contents_changed(session_id, move || {
-                    if !session_connected_clone.get() {
-                        // Zero Trust: any output indicates success (threshold 0)
-                        if let Some(row) = notebook_clone.get_terminal_cursor_row(session_id) {
-                            tracing::debug!(
-                                protocol = "zerotrust",
-                                cursor_row = row,
-                                threshold = 0,
-                                "Zero Trust status detection: checking cursor row"
-                            );
-                            if row > 0 {
-                                sidebar_clone.increment_session_count(&connection_id_str);
-                                session_connected_clone.set(true);
-                                tracing::info!(
-                                    protocol = "zerotrust",
-                                    cursor_row = row,
-                                    "Terminal connection detected as established"
-                                );
-                            }
-                        }
-                    }
-                });
+                // The verdict an in-place reconnect uses, counted from below
+                // the connect banner, so the banner alone no longer turns the
+                // session green.
+                let sidebar = sidebar.clone();
+                protocols::when_established(
+                    notebook,
+                    session_id,
+                    protocols::StatusClient::Other,
+                    move || {
+                        sidebar.increment_session_count(&connection_id.to_string());
+                        tracing::info!(
+                            protocol = "zerotrust",
+                            "Terminal connection detected as established"
+                        );
+                    },
+                );
             }
         }
 
@@ -3267,6 +3312,10 @@ impl MainWindow {
             "ssh" | "vnc" | "spice" | "telnet" | "mosh"
         );
 
+        // The key sequence goes out when the session exists, which for an
+        // asynchronous start (port check, key unlock) is after this returns.
+        let observer = Self::with_key_sequence(notebook, &conn_clone, observer);
+
         let session_id = match protocol.as_str() {
             "ssh" => protocols::start_ssh_connection_observed(
                 state,
@@ -3368,26 +3417,10 @@ impl MainWindow {
             }
         };
 
+        // A synchronous start; an asynchronous one completes the observer
+        // itself. Only the first completion counts.
         if let (Some(session_id), Some(observer)) = (session_id, observer) {
             observer.complete(session_id);
-        }
-
-        // Execute key sequence after connection is established (terminal protocols only)
-        if let Some(sid) = session_id
-            && let Some(ref seq) = conn_clone.key_sequence
-            && !seq.is_empty()
-        {
-            tracing::info!(
-                connection = %conn_clone.name,
-                elements = seq.len(),
-                "Scheduling key sequence after connection"
-            );
-            // Delay key sequence to allow terminal to initialize
-            let notebook_clone = notebook.clone();
-            let seq_clone = seq.clone();
-            glib::timeout_add_local_once(std::time::Duration::from_millis(500), move || {
-                notebook_clone.execute_key_sequence(sid, &seq_clone);
-            });
         }
 
         let result = match session_id {

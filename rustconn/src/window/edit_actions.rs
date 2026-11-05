@@ -703,296 +703,20 @@ impl MainWindow {
             let Ok(conn_id) = Uuid::parse_str(&id_str) else {
                 return;
             };
-            let state_ref = state_clone.borrow();
-            let Some(conn) = state_ref.get_connection(conn_id) else {
-                return;
+            let targets = {
+                let state_ref = state_clone.borrow();
+                let Some(conn) = state_ref.get_connection(conn_id) else {
+                    return;
+                };
+                super::key_unlock::sftp_unlock_targets(conn, &state_ref.list_groups_owned())
             };
-            let use_mc = state_ref.settings().terminal.sftp_use_mc;
-
-            // Collect groups for SSH inheritance resolution, and connections so a
-            // jump host stored as a reference (`jump_host_id`) can be resolved.
-            let groups: Vec<rustconn_core::models::ConnectionGroup> = state_ref.list_groups_owned();
-            let connections: Vec<rustconn_core::Connection> = state_ref.list_connections_owned();
-            // The outermost bastion tier, for connections that inherit.
-            let network = state_ref.settings().network.clone();
-
-            // Ensure SSH key is in agent before SFTP (mc and
-            // file managers cannot pass identity files directly).
-            let key_path = rustconn_core::sftp::get_ssh_key_path(conn, &groups)
-                .and_then(|p| rustconn_core::resolve_key_path(&p));
-
-            // Check if password auth — mc FISH doesn't support it
-            let uses_password = matches!(
-                &conn.protocol_config,
-                rustconn_core::models::ProtocolConfig::Ssh(cfg)
-                | rustconn_core::models::ProtocolConfig::Sftp(cfg)
-                    if matches!(
-                        cfg.auth_method,
-                        rustconn_core::models::SshAuthMethod::Password
-                            | rustconn_core::models::SshAuthMethod::KeyboardInteractive
-                    )
-            );
-
-            if use_mc {
-                // Open mc in a local shell tab with SFTP panel
-                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
-                let conn_name = conn.name.clone();
-                let conn_for_ssh_env = conn.clone();
-                let terminal_settings = state_ref.settings().terminal.clone();
-                drop(state_ref);
-
-                let Some(mc_args) = mc_cmd else {
-                    toast_clone.show_warning(&crate::i18n::i18n(
-                        "SFTP is only available for SSH connections.",
-                    ));
-                    return;
-                };
-
-                tracing::info!(?mc_args, "Opening SFTP via mc");
-
-                // Warn about password auth — mc FISH can't prompt
-                if uses_password && key_path.is_none() {
-                    toast_clone.show_warning(&crate::i18n::i18n(
-                        "mc requires SSH key in agent. Password auth is not supported.",
-                    ));
-                }
-
-                // Add SSH key to agent if configured
-                if let Some(ref kp) = key_path {
-                    if !rustconn_core::sftp::is_ssh_agent_available() {
-                        toast_clone.show_warning(&crate::i18n::i18n(
-                            "SSH agent not running. Run 'eval $(ssh-agent)' and retry.",
-                        ));
-                    }
-                    tracing::info!(?kp, "Adding SSH key to agent for mc");
-                    if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp) {
-                        toast_clone.show_error(&format!(
-                            "{}: {}",
-                            crate::i18n::i18n("SSH key not available"),
-                            stderr
-                        ));
-                        return;
-                    }
-                }
-
-                // Check mc availability
-                if !rustconn_core::which::is_available("mc") {
-                    toast_clone.show_error(&crate::i18n::i18n(
-                        "Midnight Commander (mc) is not installed.",
-                    ));
-                    return;
-                }
-
-                toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP…"));
-
-                let tab_name = format!("mc: {conn_name}");
-                let session_id = notebook_clone.create_terminal_tab_with_settings(
-                    conn_id,
-                    &tab_name,
-                    "sftp",
-                    None,
-                    &terminal_settings,
-                    None,
-                    &[],
-                );
-
-                let downloads = rustconn_core::sftp::get_downloads_dir();
-
-                // Delay mc spawn slightly so GTK allocates the VTE widget's
-                // final size before mc reads terminal dimensions at startup.
-                let nb = notebook_clone.clone();
-                let mc_clone = mc_args.clone();
-                let dl = downloads.clone();
-                // mc's `sh://` URI carries only user, host and port; the jump
-                // host, identity file, HostKeyAlias and custom options reach the
-                // `ssh` it spawns through a generated ssh_config behind a PATH
-                // wrapper keyed on this session (issue #255).
-                let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                    session_id,
-                    &conn_for_ssh_env,
-                    &connections,
-                    &groups,
-                    &network,
-                )
-                .map(|env| env.path_env());
-                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                    let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
-                    let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                    nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
-                });
-
-                if let Some(info) = notebook_clone.get_session_info(session_id) {
-                    split_view_clone.add_session(info);
-                }
-                split_view_clone.widget().set_visible(false);
-                split_view_clone.widget().set_vexpand(false);
-                notebook_clone.widget().set_vexpand(true);
-                notebook_clone.show_tab_view_content();
-            } else {
-                // Open file manager with sftp:// URI. The home directory is
-                // resolved later off the main thread; base_uri (server root)
-                // is the fallback (issue #212).
-                let Some(base_uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn)
-                else {
-                    toast_clone.show_warning(&crate::i18n::i18n(
-                        "SFTP is only available for SSH connections.",
-                    ));
-                    drop(state_ref);
-                    return;
-                };
-                let conn_for_uri = conn.clone();
-                let groups_for_uri = groups.clone();
-                let connections_for_uri = connections.clone();
-                let network_for_uri = network.clone();
-                let has_jump_host = !rustconn_core::connection::resolve_jump_chain(
-                    conn,
-                    &connections,
-                    &groups,
-                    &network,
-                )
-                .is_empty();
-                drop(state_ref);
-
-                // Warn in Flatpak: external file managers cannot access
-                // the sandbox's SSH agent, so authentication will likely fail.
-                if rustconn_core::flatpak::is_flatpak() {
-                    tracing::warn!(
-                        "Flatpak: external file manager may not authenticate \
-                         (no access to sandbox SSH_AUTH_SOCK)"
-                    );
-                    toast_clone.show_warning(&crate::i18n::i18n(
-                        "External file managers cannot access SSH agent in Flatpak. \
-                         Enable \"SFTP via mc\" in Settings for reliable access.",
-                    ));
-                }
-
-                // The GVFS sftp backend spawns its own ssh with a fixed argument
-                // list and reads no configuration we can point it at, so a
-                // bastion cannot be applied on this path at all (issue #255).
-                // Instead of only warning, fall back to the mc path which does
-                // support jump hosts via a generated ssh_config wrapper.
-                if has_jump_host {
-                    tracing::info!(
-                        "Jump host configured — falling back to mc for SFTP \
-                         (the file manager's GVFS backend cannot route through a bastion)"
-                    );
-                    toast_clone.show_toast(&crate::i18n::i18n(
-                        "Jump host detected. Opening SFTP via mc instead of the file manager.",
-                    ));
-
-                    let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(&conn_for_uri);
-                    let conn_name = conn_for_uri.name.clone();
-                    let terminal_settings = state_clone
-                        .try_borrow()
-                        .ok()
-                        .map(|s| s.settings().terminal.clone())
-                        .unwrap_or_default();
-
-                    let Some(mc_args) = mc_cmd else {
-                        toast_clone.show_warning(&crate::i18n::i18n(
-                            "SFTP is only available for SSH connections.",
-                        ));
-                        return;
-                    };
-
-                    let tab_name = format!("mc: {conn_name}");
-                    let session_id = notebook_clone.create_terminal_tab_with_settings(
-                        conn_id,
-                        &tab_name,
-                        "sftp",
-                        None,
-                        &terminal_settings,
-                        None,
-                        &[],
-                    );
-
-                    let downloads = rustconn_core::sftp::get_downloads_dir();
-                    let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                        session_id,
-                        &conn_for_uri,
-                        &connections_for_uri,
-                        &groups_for_uri,
-                        &network_for_uri,
-                    )
-                    .map(|env| env.path_env());
-
-                    let nb = notebook_clone.clone();
-                    let mc_clone = mc_args.clone();
-                    let dl = downloads.clone();
-                    glib::timeout_add_local_once(
-                        std::time::Duration::from_millis(150),
-                        move || {
-                            let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
-                            let envv: Option<Vec<&str>> =
-                                mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                            nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
-                        },
-                    );
-
-                    if let Some(info) = notebook_clone.get_session_info(session_id) {
-                        split_view_clone.add_session(info);
-                    }
-                    split_view_clone.widget().set_visible(false);
-                    split_view_clone.widget().set_vexpand(false);
-                    notebook_clone.widget().set_vexpand(true);
-                    notebook_clone.show_tab_view_content();
-                    return;
-                }
-
-                tracing::info!(%base_uri, "Opening SFTP file browser");
-                toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP…"));
-
-                // Add SSH key to agent in background, then open URI
-                let toast_cb = toast_clone.clone();
-                let key_for_add = key_path.clone();
-
-                // ssh-add in background thread, then launch file
-                // manager as a direct subprocess (not via
-                // UriLauncher/D-Bus) so it inherits SSH_AUTH_SOCK.
-                crate::utils::spawn_blocking_with_callback(
-                    move || {
-                        // Add SSH key to agent if configured
-                        if let Some(ref kp) = key_for_add {
-                            if !rustconn_core::sftp::is_ssh_agent_available() {
-                                tracing::warn!(
-                                    "SSH agent not available; \
-                                     file manager may fail to authenticate"
-                                );
-                            }
-                            tracing::info!(?kp, "Adding SSH key to agent for SFTP");
-                            if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp) {
-                                tracing::warn!(
-                                    %stderr,
-                                    "ssh-add failed — file manager may not authenticate"
-                                );
-                            }
-                        }
-                        // Resolve the home-directory URI after the key is in
-                        // the agent, off the GTK main thread; fall back to the
-                        // server-root URI if resolution fails.
-                        let uri = rustconn_core::sftp::build_sftp_browser_uri(
-                            &conn_for_uri,
-                            &connections_for_uri,
-                            &groups_for_uri,
-                            &network_for_uri,
-                        )
-                        .unwrap_or(base_uri);
-                        (uri, rustconn_core::sftp::is_ssh_agent_available())
-                    },
-                    move |(uri, agent_ok): (String, bool)| {
-                        // Launch file manager as a direct subprocess
-                        // so it inherits SSH_AUTH_SOCK. UriLauncher
-                        // goes through D-Bus/portal which may not
-                        // pass our env to an already-running Dolphin.
-                        Self::sftp_launch_file_manager(&uri);
-                        if !agent_ok {
-                            toast_cb.show_warning(&crate::i18n::i18n(
-                                "SSH agent not running — file manager may not authenticate.",
-                            ));
-                        }
-                    },
-                );
-            }
+            let state = state_clone.clone();
+            let notebook = notebook_clone.clone();
+            let split_view = split_view_clone.clone();
+            let toast = toast_clone.clone();
+            super::key_unlock::unlock_then(notebook_clone.widget(), targets, move || {
+                Self::open_sftp_for_connection(&state, &notebook, &split_view, &toast, conn_id);
+            });
         });
         window.add_action(&sftp_action);
 
@@ -2157,12 +1881,354 @@ impl MainWindow {
         }
     }
 
+    /// The `open-sftp` action for the connection `conn_id`, once any key
+    /// unlock is done: opens mc in a local shell tab or the file manager.
+    fn open_sftp_for_connection(
+        state_clone: &SharedAppState,
+        notebook_clone: &SharedNotebook,
+        split_view_clone: &SharedSplitView,
+        toast_clone: &SharedToastOverlay,
+        conn_id: Uuid,
+    ) {
+        let state_ref = state_clone.borrow();
+        let Some(conn) = state_ref.get_connection(conn_id) else {
+            return;
+        };
+        let use_mc = state_ref.settings().terminal.sftp_use_mc;
+
+        // Collect groups for SSH inheritance resolution, and connections so a
+        // jump host stored as a reference (`jump_host_id`) can be resolved.
+        let groups: Vec<rustconn_core::models::ConnectionGroup> = state_ref.list_groups_owned();
+        let connections: Vec<rustconn_core::Connection> = state_ref.list_connections_owned();
+        // The outermost bastion tier, for connections that inherit.
+        let network = state_ref.settings().network.clone();
+
+        // Ensure SSH key is in agent before SFTP (mc and
+        // file managers cannot pass identity files directly).
+        let key_path = rustconn_core::sftp::get_ssh_key_path(conn, &groups)
+            .and_then(|p| rustconn_core::resolve_key_path(&p));
+
+        // Check if password auth — mc FISH doesn't support it
+        let uses_password = matches!(
+            &conn.protocol_config,
+            rustconn_core::models::ProtocolConfig::Ssh(cfg)
+            | rustconn_core::models::ProtocolConfig::Sftp(cfg)
+                if matches!(
+                    cfg.auth_method,
+                    rustconn_core::models::SshAuthMethod::Password
+                        | rustconn_core::models::SshAuthMethod::KeyboardInteractive
+                )
+        );
+
+        if use_mc {
+            // Open mc in a local shell tab with SFTP panel
+            let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
+            let conn_name = conn.name.clone();
+            let conn_for_ssh_env = conn.clone();
+            let terminal_settings = state_ref.settings().terminal.clone();
+            drop(state_ref);
+
+            let Some(mc_args) = mc_cmd else {
+                toast_clone.show_warning(&crate::i18n::i18n(
+                    "SFTP is only available for SSH connections.",
+                ));
+                return;
+            };
+
+            tracing::info!(?mc_args, "Opening SFTP via mc");
+
+            // Warn about password auth — mc FISH can't prompt
+            if uses_password && key_path.is_none() {
+                toast_clone.show_warning(&crate::i18n::i18n(
+                    "mc requires SSH key in agent. Password auth is not supported.",
+                ));
+            }
+
+            // Add SSH key to agent if configured
+            if let Some(ref kp) = key_path {
+                if !rustconn_core::sftp::is_ssh_agent_available() {
+                    toast_clone.show_warning(&crate::i18n::i18n(
+                        "SSH agent not running. Run 'eval $(ssh-agent)' and retry.",
+                    ));
+                }
+                tracing::info!(?kp, "Adding SSH key to agent for mc");
+                match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                    Ok(()) => {}
+                    // The agent may hold the key anyway (the user loaded
+                    // it); mc finds out when it logs in.
+                    Err(rustconn_core::IdentityLoadError::Unverified(detail)) => {
+                        tracing::warn!(?kp, %detail, "opening mc without adding the SSH key");
+                        toast_clone.show_warning(&crate::i18n::i18n(
+                            "Could not check whether the SSH agent holds the key. Opening mc anyway.",
+                        ));
+                    }
+                    Err(rustconn_core::IdentityLoadError::Failed(stderr)) => {
+                        toast_clone.show_error(&format!(
+                            "{}: {}",
+                            crate::i18n::i18n("SSH key not available"),
+                            stderr
+                        ));
+                        return;
+                    }
+                }
+            }
+
+            // Check mc availability
+            if !rustconn_core::which::is_available("mc") {
+                toast_clone.show_error(&crate::i18n::i18n(
+                    "Midnight Commander (mc) is not installed.",
+                ));
+                return;
+            }
+
+            toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP…"));
+
+            let tab_name = format!("mc: {conn_name}");
+            let session_id = notebook_clone.create_terminal_tab_with_settings(
+                conn_id,
+                &tab_name,
+                "sftp",
+                None,
+                &terminal_settings,
+                None,
+                &[],
+            );
+
+            let downloads = rustconn_core::sftp::get_downloads_dir();
+
+            // Delay mc spawn slightly so GTK allocates the VTE widget's
+            // final size before mc reads terminal dimensions at startup.
+            let nb = notebook_clone.clone();
+            let mc_clone = mc_args.clone();
+            let dl = downloads.clone();
+            // mc's `sh://` URI carries only user, host and port; the jump
+            // host, identity file, HostKeyAlias and custom options reach the
+            // `ssh` it spawns through a generated ssh_config behind a PATH
+            // wrapper keyed on this session (issue #255).
+            let mc_home_env = rustconn_core::prepare_mc_ssh_env(
+                session_id,
+                &conn_for_ssh_env,
+                &connections,
+                &groups,
+                &network,
+            )
+            .map(|env| env.path_env());
+            glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+                let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
+                let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
+                nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
+            });
+
+            if let Some(info) = notebook_clone.get_session_info(session_id) {
+                split_view_clone.add_session(info);
+            }
+            split_view_clone.widget().set_visible(false);
+            split_view_clone.widget().set_vexpand(false);
+            notebook_clone.widget().set_vexpand(true);
+            notebook_clone.show_tab_view_content();
+        } else {
+            // Open file manager with sftp:// URI. The home directory is
+            // resolved later off the main thread; base_uri (server root)
+            // is the fallback (issue #212).
+            let Some(base_uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
+                toast_clone.show_warning(&crate::i18n::i18n(
+                    "SFTP is only available for SSH connections.",
+                ));
+                drop(state_ref);
+                return;
+            };
+            let conn_for_uri = conn.clone();
+            let groups_for_uri = groups.clone();
+            let connections_for_uri = connections.clone();
+            let network_for_uri = network.clone();
+            let has_jump_host = !rustconn_core::connection::resolve_jump_chain(
+                conn,
+                &connections,
+                &groups,
+                &network,
+            )
+            .is_empty();
+            drop(state_ref);
+
+            // Warn in Flatpak: external file managers cannot access
+            // the sandbox's SSH agent, so authentication will likely fail.
+            if rustconn_core::flatpak::is_flatpak() {
+                tracing::warn!(
+                    "Flatpak: external file manager may not authenticate \
+                     (no access to sandbox SSH_AUTH_SOCK)"
+                );
+                toast_clone.show_warning(&crate::i18n::i18n(
+                    // xgettext keeps the spaces after the `\` (Rust drops
+                    // them), so this line keeps the column of the copy in
+                    // `handle_sftp_connect_internal`: one msgid for both.
+                    "External file managers cannot access SSH agent in Flatpak. \
+                         Enable \"SFTP via mc\" in Settings for reliable access.",
+                ));
+            }
+
+            // The GVFS sftp backend spawns its own ssh with a fixed argument
+            // list and reads no configuration we can point it at, so a
+            // bastion cannot be applied on this path at all (issue #255).
+            // Instead of only warning, fall back to the mc path which does
+            // support jump hosts via a generated ssh_config wrapper.
+            if has_jump_host {
+                tracing::info!(
+                    "Jump host configured — falling back to mc for SFTP \
+                     (the file manager's GVFS backend cannot route through a bastion)"
+                );
+                toast_clone.show_toast(&crate::i18n::i18n(
+                    "Jump host detected. Opening SFTP via mc instead of the file manager.",
+                ));
+
+                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(&conn_for_uri);
+                let conn_name = conn_for_uri.name.clone();
+                let terminal_settings = state_clone
+                    .try_borrow()
+                    .ok()
+                    .map(|s| s.settings().terminal.clone())
+                    .unwrap_or_default();
+
+                let Some(mc_args) = mc_cmd else {
+                    toast_clone.show_warning(&crate::i18n::i18n(
+                        "SFTP is only available for SSH connections.",
+                    ));
+                    return;
+                };
+
+                let tab_name = format!("mc: {conn_name}");
+                let session_id = notebook_clone.create_terminal_tab_with_settings(
+                    conn_id,
+                    &tab_name,
+                    "sftp",
+                    None,
+                    &terminal_settings,
+                    None,
+                    &[],
+                );
+
+                let downloads = rustconn_core::sftp::get_downloads_dir();
+                let mc_home_env = rustconn_core::prepare_mc_ssh_env(
+                    session_id,
+                    &conn_for_uri,
+                    &connections_for_uri,
+                    &groups_for_uri,
+                    &network_for_uri,
+                )
+                .map(|env| env.path_env());
+
+                let nb = notebook_clone.clone();
+                let mc_clone = mc_args.clone();
+                let dl = downloads.clone();
+                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+                    let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
+                    let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
+                    nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
+                });
+
+                if let Some(info) = notebook_clone.get_session_info(session_id) {
+                    split_view_clone.add_session(info);
+                }
+                split_view_clone.widget().set_visible(false);
+                split_view_clone.widget().set_vexpand(false);
+                notebook_clone.widget().set_vexpand(true);
+                notebook_clone.show_tab_view_content();
+                return;
+            }
+
+            tracing::info!(%base_uri, "Opening SFTP file browser");
+            toast_clone.show_toast(&crate::i18n::i18n("Opening SFTP…"));
+
+            // Add SSH key to agent in background, then open URI
+            let toast_cb = toast_clone.clone();
+            let key_for_add = key_path.clone();
+
+            // ssh-add in background thread, then launch file
+            // manager as a direct subprocess (not via
+            // UriLauncher/D-Bus) so it inherits SSH_AUTH_SOCK.
+            crate::utils::spawn_blocking_with_callback(
+                move || {
+                    // Add SSH key to agent if configured
+                    if let Some(ref kp) = key_for_add {
+                        if !rustconn_core::sftp::is_ssh_agent_available() {
+                            tracing::warn!(
+                                "SSH agent not available; \
+                                 file manager may fail to authenticate"
+                            );
+                        }
+                        tracing::info!(?kp, "Adding SSH key to agent for SFTP");
+                        if let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp) {
+                            tracing::warn!(
+                                %stderr,
+                                "ssh-add failed — file manager may not authenticate"
+                            );
+                        }
+                    }
+                    // Resolve the home-directory URI after the key is in
+                    // the agent, off the GTK main thread; fall back to the
+                    // server-root URI if resolution fails.
+                    let uri = rustconn_core::sftp::build_sftp_browser_uri(
+                        &conn_for_uri,
+                        &connections_for_uri,
+                        &groups_for_uri,
+                        &network_for_uri,
+                    )
+                    .unwrap_or(base_uri);
+                    (uri, rustconn_core::sftp::is_ssh_agent_available())
+                },
+                move |(uri, agent_ok): (String, bool)| {
+                    // Launch file manager as a direct subprocess
+                    // so it inherits SSH_AUTH_SOCK. UriLauncher
+                    // goes through D-Bus/portal which may not
+                    // pass our env to an already-running Dolphin.
+                    Self::sftp_launch_file_manager(&uri);
+                    if !agent_ok {
+                        toast_cb.show_warning(&crate::i18n::i18n(
+                            "SSH agent not running — file manager may not authenticate.",
+                        ));
+                    }
+                },
+            );
+        }
+    }
+
     /// Handles SFTP connection — opens file manager or mc
     ///
     /// Called when user clicks "Connect" on an SFTP-type connection.
     /// Reuses the same logic as the `open-sftp` sidebar action.
-    /// Performs SSH port check before opening the file manager or mc.
+    /// Performs SSH port check before opening the file manager or mc. An
+    /// encrypted key the agent does not hold is unlocked first in RustConn's
+    /// dialog (`key_unlock::unlock_then`).
     pub(crate) fn handle_sftp_connect(
+        state: &SharedAppState,
+        notebook: &SharedNotebook,
+        sidebar: Option<&SharedSidebar>,
+        split_view: Option<&SharedSplitView>,
+        connection_id: Uuid,
+    ) {
+        let targets = {
+            let state_ref = state.borrow();
+            let Some(conn) = state_ref.get_connection(connection_id) else {
+                return;
+            };
+            super::key_unlock::sftp_unlock_targets(conn, &state_ref.list_groups_owned())
+        };
+        let state_rc = state.clone();
+        let notebook_rc = notebook.clone();
+        let sidebar = sidebar.cloned();
+        let split_view = split_view.cloned();
+        super::key_unlock::unlock_then(notebook.widget(), targets, move || {
+            Self::handle_sftp_connect_checked(
+                &state_rc,
+                &notebook_rc,
+                sidebar.as_ref(),
+                split_view.as_ref(),
+                connection_id,
+            );
+        });
+    }
+
+    /// [`Self::handle_sftp_connect`] once any key unlock is done.
+    fn handle_sftp_connect_checked(
         state: &SharedAppState,
         notebook: &SharedNotebook,
         sidebar: Option<&SharedSidebar>,
@@ -2269,14 +2335,22 @@ impl MainWindow {
 
             tracing::info!(?mc_args, "SFTP connect: opening mc");
 
-            if let Some(ref kp) = key_path
-                && let Err(stderr) = rustconn_core::sftp::ensure_identity_loaded(kp)
-            {
-                tracing::warn!(?kp, %stderr, "ssh-add failed");
-                if let Some(sb) = sidebar {
-                    sb.update_connection_status(&connection_id.to_string(), "failed");
+            if let Some(ref kp) = key_path {
+                match rustconn_core::sftp::ensure_identity_loaded(kp) {
+                    Ok(()) => {}
+                    // The agent may hold the key anyway; mc finds out when it
+                    // logs in.
+                    Err(rustconn_core::IdentityLoadError::Unverified(detail)) => {
+                        tracing::warn!(?kp, %detail, "opening mc without adding the SSH key");
+                    }
+                    Err(rustconn_core::IdentityLoadError::Failed(stderr)) => {
+                        tracing::warn!(?kp, %stderr, "ssh-add failed");
+                        if let Some(sb) = sidebar {
+                            sb.update_connection_status(&connection_id.to_string(), "failed");
+                        }
+                        return;
+                    }
                 }
-                return;
             }
 
             // Update sidebar status for SFTP connection

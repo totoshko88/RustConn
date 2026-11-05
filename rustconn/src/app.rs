@@ -578,6 +578,13 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             rt.block_on(rustconn_core::close_all_control_sockets());
         }
 
+        // Take the SSH keys RustConn added to the agent back out (on every
+        // platform); keys the user added stay.
+        let removed = rustconn_core::ssh_agent::evict_own_keys();
+        if removed > 0 {
+            tracing::info!(removed, "removed the SSH keys RustConn added");
+        }
+
         if let Some(Err(e)) = try_with_state(&state_shutdown, |s| s.flush_persistence()) {
             tracing::error!(%e, "Failed to flush persistence on shutdown");
         }
@@ -585,6 +592,20 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Present window immediately — no waiting for secret backends
     window.present();
+
+    // On screen lock and suspend, remove the SSH keys RustConn added to the
+    // agent itself (never the user's). The handler runs off the GTK thread and
+    // touches no GTK object. Exit is the third trigger (`connect_shutdown`
+    // above).
+    rustconn_core::lock_events::subscribe(|event| {
+        let removed = rustconn_core::ssh_agent::evict_own_keys();
+        tracing::info!(?event, removed, "removed the SSH keys RustConn added");
+    });
+    // Linux/BSD: login1 and the ScreenSaver interface over D-Bus.
+    #[cfg(not(target_os = "macos"))]
+    rustconn_core::lock_events::start();
+    // macOS: NSWorkspace will-sleep and the screen-lock distributed notification.
+    observe_macos_lock_signals(app);
 
     // Debug helper: RUSTCONN_OPEN_SETTINGS=1 auto-opens the Settings dialog
     // shortly after startup, so dialog timing instrumentation can be captured
@@ -980,6 +1001,52 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             tracing::info!("Secret backends initialized after window presentation");
         }
     });
+}
+
+/// Feeds the macOS screen-lock and sleep notifications into `lock_events`.
+///
+/// The notifications arrive on the main run loop, which is the GTK main loop,
+/// so the handler only hands the event to `lock_events::notify`; the
+/// subscribers run on its dispatch thread. The observers stay registered until
+/// `shutdown`. Called on every platform so this bridge is compiled everywhere;
+/// off macOS `rustconn_lock_sys::observe` registers nothing and answers
+/// `Unsupported`, and the D-Bus listener is the source.
+fn observe_macos_lock_signals(app: &adw::Application) {
+    use rustconn_lock_sys::ObserveOutcome;
+
+    match rustconn_lock_sys::observe(|signal| {
+        rustconn_core::lock_events::notify(lock_event(signal));
+    }) {
+        ObserveOutcome::Observing(observers) => {
+            tracing::debug!("lock listener: observing macOS screen lock and sleep");
+            let observers = RefCell::new(Some(observers));
+            app.connect_shutdown(move |_| {
+                // Dropping the guard unregisters both observers.
+                observers.borrow_mut().take();
+            });
+        }
+        ObserveOutcome::Unsupported => {}
+        refused @ ObserveOutcome::OffMainThread => {
+            tracing::warn!(
+                reason = refused.describe(),
+                "lock listener: macOS screen lock and sleep are not observed"
+            );
+        }
+    }
+}
+
+/// The `lock_events` event a macOS lock signal stands for. Sleep maps onto
+/// `Suspending`, so every subscriber treats it as the login1 suspend.
+const fn lock_event(
+    signal: rustconn_lock_sys::LockSignal,
+) -> rustconn_core::lock_events::LockEvent {
+    use rustconn_core::lock_events::LockEvent;
+    use rustconn_lock_sys::LockSignal;
+
+    match signal {
+        LockSignal::ScreenLocked => LockEvent::ScreenLocked,
+        LockSignal::WillSleep => LockEvent::Suspending,
+    }
 }
 
 /// Attempts to create the macOS tray icon with retry logic.
@@ -2003,6 +2070,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         // names no individual. `\n`-separated so each is its own clickable row.
         .translator_credits(
             "Albano Battistella (Italian) https://github.com/albanobattistella\n\
+             dinhkarate (Vietnamese) https://github.com/dinhkarate\n\
              Ekaterine Papava (Georgian) · papava.e@gtu.ge https://github.com/EkaterinePapava\n\
              GaaChun (Simplified Chinese) https://github.com/GaaChun\n\
              Jürgen Hörmann (German) https://github.com/jhit\n\
@@ -2286,7 +2354,23 @@ pub fn install_layout_independent_accels(window: &adw::ApplicationWindow, app: &
 
 #[cfg(test)]
 mod tests {
-    use super::{TRAY_CONNECT_ACTION, TRAY_LOCAL_SHELL_ACTION, TRAY_QUICK_CONNECT_ACTION};
+    use super::{
+        TRAY_CONNECT_ACTION, TRAY_LOCAL_SHELL_ACTION, TRAY_QUICK_CONNECT_ACTION, lock_event,
+    };
+    use rustconn_core::lock_events::LockEvent;
+    use rustconn_lock_sys::LockSignal;
+
+    /// macOS sleep must reach the subscribers as the same event as a login1
+    /// suspend, and a macOS lock as a screensaver lock, or a subscriber matching
+    /// on the event would treat the two platforms differently.
+    #[test]
+    fn macos_lock_signals_map_onto_the_linux_events() {
+        assert_eq!(
+            lock_event(LockSignal::ScreenLocked),
+            LockEvent::ScreenLocked
+        );
+        assert_eq!(lock_event(LockSignal::WillSleep), LockEvent::Suspending);
+    }
 
     /// The tray activates these on the window's own `GActionGroup`, which resolves
     /// a name verbatim against its action map and knows nothing about groups. A

@@ -271,7 +271,7 @@ fn enclosing_preferences_dialog(widget: &impl IsA<gtk4::Widget>) -> Option<adw::
 
 /// Shows a toast on a preferences dialog.
 fn show_toast(dialog: &adw::PreferencesDialog, message: &str, timeout_secs: u32) {
-    let toast = adw::Toast::new(message);
+    let toast = crate::toast::plain_toast(message);
     toast.set_timeout(timeout_secs);
     dialog.add_toast(toast);
 }
@@ -511,7 +511,7 @@ pub fn backend_choices() -> Vec<BackendChoice> {
         // `display_name()` like the rows above. `po/update-pot.sh` runs xgettext,
         // which extracts by matching `i18n("…")` on a string literal: pass it an
         // expression and the string is silently dropped from the catalogue and
-        // ships untranslated in all 17 locales. The strings are asserted equal to
+        // ships untranslated in every locale. The strings are asserted equal to
         // `display_name()` in this module's tests so the two cannot drift.
         choice(
             &i18n("Encrypted file"),

@@ -342,7 +342,6 @@ impl ConnectionDialog {
                                                     &rustconn_core::models::Credentials {
                                                         username: non_empty(target.username),
                                                         password: Some(password),
-                                                        key_passphrase: None,
                                                         domain: non_empty(target.domain),
                                                     },
                                                 );
@@ -436,7 +435,6 @@ impl ConnectionDialog {
                                                     &rustconn_core::models::Credentials {
                                                         username: identity.username,
                                                         password: creds.password.clone(),
-                                                        key_passphrase: None,
                                                         domain: identity.domain,
                                                     },
                                                 );

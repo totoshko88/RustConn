@@ -1,0 +1,1269 @@
+//! The SSH keys RustConn put into an agent on its own, so it can take exactly
+//! those back out.
+//!
+//! When a connect or an SFTP/mc launch needs a key in the agent, RustConn asks
+//! the agent which identities it holds, runs `ssh-add -t 43200`
+//! ([`OWN_KEY_LIFETIME`]) only if the key is not among them, asks again, and
+//! records the key's public blob together with the agent socket all three went
+//! to ([`add_and_record`]). On exit, screen lock and suspend,
+//! [`evict_own_keys`] sends one `SSH_AGENTC_REMOVE_IDENTITY` per recorded blob
+//! to that same socket.
+//!
+//! Keys the user loaded before RustConn's add are never recorded. A key the
+//! agent already holds is not added again, because re-adding would replace its
+//! constraints. When the agent cannot say what it holds, or the key file does
+//! not carry its public key (a legacy PEM or PKCS#8 key) and the agent holds
+//! any key at all, nothing is added: a `.pub` beside such a key may be stale,
+//! so it is not trusted to tell.
+//!
+//! Only a blob read from the private key file itself is ever recorded (an
+//! OpenSSH key carries its public key in the clear), and only once the agent
+//! shows it after the add. The key's certificate (`<key>-cert.pub`, which
+//! `ssh-add` loads with it) is recorded with it when the agent shows it after
+//! the add and not before. A key whose file does not carry its public key goes
+//! only into an empty agent and is not recorded: the lifetime is its only
+//! expiry, so the record can never cover a key the user adds later. A key the
+//! user adds in Settings → SSH Agent is dropped from the record, because from
+//! then on it is theirs. The agent does not say who added a key, so a recorded
+//! key the user loads again with `ssh-add` in a terminal stays recorded and is
+//! removed. Nothing here removes all identities.
+//!
+//! The record is per process. The GUI and `rustconn-cli sftp` each keep their
+//! own and do not talk to each other: a key one of them loaded first is in the
+//! other's "before" answer, so the other neither adds nor records it. The
+//! reverse is a known limit: when the GUI needs a key that the CLI added, it
+//! finds the key in the agent and leaves it to the CLI, whose eviction on exit
+//! then takes it from the GUI's sessions too, until the GUI's next add.
+//!
+//! An encrypted key goes in the same way, with the passphrase the user gave
+//! in RustConn's unlock dialog
+//! ([`super::SshAgentManager::add_own_key_with_passphrase`]); that passphrase
+//! is used for that one add and not kept, here or anywhere else.
+
+use std::path::Path;
+use std::sync::{Mutex, PoisonError};
+use std::time::Duration;
+
+use super::keyfile::KeyFileBlobs;
+use super::{AgentError, AgentResult};
+
+/// How long a key RustConn adds on its own stays in the agent (`ssh-add -t`).
+///
+/// The bound for the cases RustConn cannot clean up itself: a crash, a kill, or
+/// a key it could not record.
+pub const OWN_KEY_LIFETIME: Duration = Duration::from_hours(12);
+
+/// One key RustConn added: where it went and what the agent knows it by.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct OwnKey {
+    socket_path: String,
+    /// The public-key blob. Public material, nothing secret.
+    blob: Vec<u8>,
+}
+
+/// What [`OwnKeys`] guards: the record, and the keys an eviction has taken out
+/// of it and is removing right now.
+#[derive(Debug, Default)]
+struct Record {
+    /// The keys RustConn added, in the order it added them.
+    keys: Vec<OwnKey>,
+    /// Keys taken out by a running [`OwnKeys::evict_with`], one entry per key
+    /// in flight. [`OwnKeys::forget`] drops matching entries here too, which
+    /// is how an eviction learns not to put a forgotten key back.
+    in_flight: Vec<OwnKey>,
+}
+
+impl Record {
+    fn push_unique(&mut self, key: OwnKey) {
+        if !self.keys.contains(&key) {
+            self.keys.push(key);
+        }
+    }
+
+    /// Ends `key`'s flight; `true` if it was still in flight, `false` if a
+    /// [`OwnKeys::forget`] dropped it meanwhile.
+    fn land(&mut self, key: &OwnKey) -> bool {
+        self.in_flight
+            .iter()
+            .position(|k| k == key)
+            .map(|i| self.in_flight.swap_remove(i))
+            .is_some()
+    }
+}
+
+/// The keys RustConn added, in the order it added them.
+///
+/// The process has one, behind [`add_and_record`], [`forget`] and
+/// [`evict_own_keys`]; tests build their own so they never share state.
+#[derive(Debug)]
+pub(crate) struct OwnKeys {
+    record: Mutex<Record>,
+}
+
+impl OwnKeys {
+    pub(crate) const fn new() -> Self {
+        Self {
+            record: Mutex::new(Record {
+                keys: Vec::new(),
+                in_flight: Vec::new(),
+            }),
+        }
+    }
+
+    fn lock(&self) -> std::sync::MutexGuard<'_, Record> {
+        // The data is two plain lists that no panic can leave half-written.
+        self.record.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Records that RustConn added `blob` to the agent at `socket_path`.
+    fn record(&self, socket_path: &str, blob: Vec<u8>) {
+        self.lock().push_unique(OwnKey {
+            socket_path: socket_path.to_owned(),
+            blob,
+        });
+    }
+
+    /// Runs `add` (the `ssh-add` of the key at `key_path` into the agent at
+    /// `socket_path`) unless the agent may already hold the key, and records
+    /// what the add put there when the key's own file names it.
+    ///
+    /// `blobs` is what the key's files say. A key the agent already holds is
+    /// left alone, and so is a key whose certificate the agent holds without
+    /// the plain key ([`KeyFileBlobs::held_in`]): `ssh-add` would load that
+    /// certificate again and replace its constraints with RustConn's lifetime.
+    /// A key whose file does not name it is added only into an agent that
+    /// holds nothing (a `.pub` beside it may be stale, so it is not trusted).
+    /// The key is recorded when the agent shows it after the add; its
+    /// certificate ([`KeyFileBlobs::cert_file`]) is recorded too when the
+    /// agent shows it after the add and did not before. A key without its own
+    /// blob is left to its lifetime. `key_path` only names the key in the log.
+    #[cfg(unix)]
+    pub(crate) fn add_and_record(
+        &self,
+        socket_path: &str,
+        key_path: &Path,
+        blobs: &KeyFileBlobs,
+        add: impl FnOnce() -> AgentResult<()>,
+    ) -> AgentResult<()> {
+        let before = super::wire::request_identity_blobs(socket_path).map_err(|e| {
+            tracing::warn!(?key_path, error = %e, "could not ask the SSH agent which keys it holds; not adding the key");
+            AgentError::AddKeyFailed(format!(
+                "could not ask the SSH agent which keys it holds, so the key was not added: {e}"
+            ))
+        })?;
+        match blobs.key_file.as_deref() {
+            Some(_) if blobs.held_in(&before) => {
+                tracing::debug!(
+                    ?key_path,
+                    "SSH key or its certificate already in the agent; not adding it"
+                );
+                return Ok(());
+            }
+            None if !before.is_empty() => {
+                tracing::warn!(
+                    ?key_path,
+                    "this SSH key file does not carry its public key, so whether the agent \
+                     already holds it cannot be told; not adding it"
+                );
+                return Err(AgentError::KeyPresenceUnknown(
+                    "the agent holds keys and this key file does not carry its public \
+                     key (a legacy PEM or PKCS#8 key), so RustConn did not add it"
+                        .to_owned(),
+                ));
+            }
+            _ => {}
+        }
+
+        add()?;
+
+        let Some(blob) = blobs.key_file.as_deref() else {
+            tracing::info!(
+                ?key_path,
+                "this SSH key file does not carry its public key (a legacy PEM or PKCS#8 key), \
+                 so RustConn does not record it; only its lifetime will remove it"
+            );
+            return Ok(());
+        };
+        match super::wire::request_identity_blobs(socket_path) {
+            Ok(after) if after.iter().any(|held| held == blob) => {
+                self.record(socket_path, blob.to_vec());
+                // `ssh-add` loads `<key>-cert.pub` too when it matches. A
+                // certificate the agent already held before is not ours.
+                if let Some(cert) = blobs.cert_file.as_deref()
+                    && !before.iter().any(|held| held == cert)
+                    && after.iter().any(|held| held == cert)
+                {
+                    self.record(socket_path, cert.to_vec());
+                }
+            }
+            Ok(_) => tracing::warn!(
+                ?key_path,
+                "the added SSH key did not appear under the public key its file names; \
+                 only its lifetime will remove it"
+            ),
+            Err(e) => tracing::warn!(
+                ?key_path,
+                error = %e,
+                "could not ask the SSH agent what the add put there; only its lifetime will remove the key"
+            ),
+        }
+        Ok(())
+    }
+
+    /// No agent socket protocol off Unix: whether the agent already holds the
+    /// key cannot be told, so nothing is added.
+    #[cfg(not(unix))]
+    pub(crate) fn add_and_record(
+        &self,
+        _socket_path: &str,
+        _key_path: &Path,
+        _blobs: &KeyFileBlobs,
+        _add: impl FnOnce() -> AgentResult<()>,
+    ) -> AgentResult<()> {
+        Err(AgentError::KeyPresenceUnknown(
+            "adding keys on RustConn's own needs a Unix agent socket".to_owned(),
+        ))
+    }
+
+    /// Stops tracking a key the user has just added at `socket_path`
+    /// themselves: from then on it is theirs.
+    ///
+    /// With the key file's own blob, only that key and its certificate are
+    /// dropped. Without it (a legacy PEM or PKCS#8 key) the user's key could
+    /// be any recorded one, as the same key can sit in two files, so every key
+    /// recorded for that socket is dropped; those then leave the agent when
+    /// their lifetime ends.
+    ///
+    /// A key an eviction is removing right now is dropped from its flight as
+    /// well, so a removal that fails does not put it back on the record.
+    pub(crate) fn forget(&self, socket_path: &str, blobs: &KeyFileBlobs) {
+        let forgotten = |k: &OwnKey| {
+            k.socket_path == socket_path
+                && match blobs.key_file.as_deref() {
+                    Some(blob) => {
+                        k.blob == blob || Some(k.blob.as_slice()) == blobs.cert_file.as_deref()
+                    }
+                    None => true,
+                }
+        };
+        let mut record = self.lock();
+        record.keys.retain(|k| !forgotten(k));
+        record.in_flight.retain(|k| !forgotten(k));
+    }
+
+    /// Removes every recorded key from its agent and clears the record.
+    ///
+    /// Returns how many the agents actually removed. A key the agent no longer
+    /// holds (its lifetime ran out, or the user removed it) is not an error. An
+    /// agent that is there but did not answer in time (or was interrupted) may
+    /// still hold the key: it stays recorded, so the next exit, lock or suspend
+    /// tries again, unless [`Self::forget`] dropped it while the removal was
+    /// under way. Any other error lasts (the socket is gone, refuses
+    /// connections or denies access, or the reply is malformed): the key
+    /// leaves the record with one warning, and its lifetime bounds it.
+    pub(crate) fn evict(&self) -> usize {
+        self.evict_with(remove_one)
+    }
+
+    /// [`Self::evict`] with the per-key removal passed in, so tests can stand
+    /// in for the agent.
+    fn evict_with(&self, remove: impl Fn(&OwnKey) -> AgentResult<bool>) -> usize {
+        // Taken out under the lock, removed outside it: each removal is a
+        // socket round trip of up to a few seconds. Meanwhile they stay
+        // visible as in flight, so a `forget` in between still reaches them.
+        let keys = {
+            let mut record = self.lock();
+            let keys = std::mem::take(&mut record.keys);
+            record.in_flight.extend(keys.iter().cloned());
+            keys
+        };
+        let mut removed = 0;
+        for key in keys {
+            let fingerprint = super::keyfile::sha256_fingerprint(&key.blob);
+            let outcome = remove(&key);
+            let retry = matches!(&outcome, Err(e) if agent_may_still_hold_key(e));
+            // Landed and put back under one lock, so no `forget` can slip in
+            // between the check and the restore.
+            let still_ours = {
+                let mut record = self.lock();
+                let still_ours = record.land(&key);
+                if retry && still_ours {
+                    record.push_unique(key);
+                }
+                still_ours
+            };
+            match outcome {
+                Ok(true) => {
+                    tracing::debug!(%fingerprint, "removed an SSH key RustConn added");
+                    removed += 1;
+                }
+                Ok(false) => tracing::debug!(
+                    %fingerprint,
+                    "the agent no longer held an SSH key RustConn added"
+                ),
+                Err(e) if retry && !still_ours => tracing::debug!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added, but the user has added it \
+                     since; not keeping it recorded"
+                ),
+                Err(e) if retry => tracing::warn!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added; keeping it recorded to retry"
+                ),
+                Err(e) => tracing::warn!(
+                    %fingerprint,
+                    error = %e,
+                    "could not remove an SSH key RustConn added, and retrying will not help; \
+                     no longer tracking it (its lifetime still bounds it)"
+                ),
+            }
+        }
+        removed
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.lock().keys.len()
+    }
+}
+
+/// Whether a failed removal is worth retrying at the next exit, lock or
+/// suspend.
+///
+/// Only a transient I/O error is: a timeout (the connect, a read or a write
+/// ran out; a socket read timeout surfaces as `WouldBlock`) or an interrupted
+/// call, from an agent that is there and slow and still holds the key. Every
+/// other error lasts: a socket that is gone or refuses connections took its
+/// keys with it, one the process may not open (`PermissionDenied`) will not
+/// open next time either, and a reply that does not parse came from an agent
+/// that answered. Retrying those would only repeat the warning at every lock.
+fn agent_may_still_hold_key(error: &AgentError) -> bool {
+    matches!(
+        error,
+        AgentError::Io(e) if matches!(
+            e.kind(),
+            std::io::ErrorKind::TimedOut
+                | std::io::ErrorKind::WouldBlock
+                | std::io::ErrorKind::Interrupted
+        )
+    )
+}
+
+/// Sends `SSH_AGENTC_REMOVE_IDENTITY` for one key; `Ok(true)` when it was
+/// removed, `Ok(false)` when the agent no longer held it.
+#[cfg(unix)]
+fn remove_one(key: &OwnKey) -> AgentResult<bool> {
+    super::wire::remove_identity(&key.socket_path, &key.blob)
+}
+
+/// No agent socket protocol off Unix; the lifetime is the only bound there.
+#[cfg(not(unix))]
+fn remove_one(_key: &OwnKey) -> AgentResult<bool> {
+    Ok(false)
+}
+
+/// The process-wide record.
+pub(super) static OWN_KEYS: OwnKeys = OwnKeys::new();
+
+/// Adds the key at `key_path` to the agent at `socket_path` through `add`, on
+/// the terms of [`OwnKeys::add_and_record`], and records what it added in the
+/// process-wide record.
+pub(crate) fn add_and_record(
+    socket_path: &str,
+    key_path: &Path,
+    add: impl FnOnce() -> AgentResult<()>,
+) -> AgentResult<()> {
+    let blobs = super::keyfile::key_file_blobs(key_path);
+    OWN_KEYS.add_and_record(socket_path, key_path, &blobs, add)
+}
+
+/// Stops tracking the key at `key_path` in the agent at `socket_path`, on the
+/// terms of [`OwnKeys::forget`].
+pub(crate) fn forget(socket_path: &str, key_path: &Path) {
+    OWN_KEYS.forget(socket_path, &super::keyfile::key_file_blobs(key_path));
+}
+
+/// Removes from their agents the SSH keys RustConn added on its own this run,
+/// and only those.
+///
+/// Call it on exit, screen lock and suspend. Each key costs one Unix-socket
+/// round trip bounded to a few seconds; no process is spawned. Keys the user
+/// added are left alone. Returns how many keys the agents removed.
+pub fn evict_own_keys() -> usize {
+    OWN_KEYS.evict()
+}
+
+#[cfg(test)]
+#[cfg(unix)]
+mod tests {
+    use std::cell::Cell;
+    use std::io::{Read as _, Write as _};
+    use std::os::unix::net::{UnixListener, UnixStream};
+    use std::sync::Arc;
+
+    use super::*;
+    use crate::lock_events::{LockEvent, Subscribers};
+
+    /// `SSH_AGENTC_REQUEST_IDENTITIES`.
+    const REQUEST_IDENTITIES: u8 = 11;
+    /// `SSH_AGENTC_REMOVE_ALL_IDENTITIES`, which RustConn must never send.
+    const REMOVE_ALL_IDENTITIES: u8 = 19;
+    /// A key path for log fields only; nothing reads it.
+    const KEY_PATH: &str = "/nonexistent/rustconn-test/id_ed25519";
+
+    /// What the fake agent holds and every message type it was sent.
+    #[derive(Default)]
+    struct AgentState {
+        keys: Vec<Vec<u8>>,
+        requests: Vec<u8>,
+    }
+
+    /// A minimal ssh-agent on a socket in a private temp dir. It understands
+    /// `REQUEST_IDENTITIES`, `REMOVE_IDENTITY` and `REMOVE_ALL_IDENTITIES`, and
+    /// answers anything else with `FAILURE`.
+    struct FakeAgent {
+        _dir: tempfile::TempDir,
+        socket: String,
+        state: Arc<Mutex<AgentState>>,
+    }
+
+    impl FakeAgent {
+        fn holding(keys: &[&[u8]]) -> Self {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("agent.sock");
+            let listener = UnixListener::bind(&path).unwrap();
+            let state = Arc::new(Mutex::new(AgentState {
+                keys: keys.iter().map(|k| k.to_vec()).collect(),
+                requests: Vec::new(),
+            }));
+            let served = Arc::clone(&state);
+            // Leaks one thread blocked in `accept` per test; it ends with the
+            // test process.
+            std::thread::spawn(move || {
+                for stream in listener.incoming() {
+                    let Ok(stream) = stream else { return };
+                    serve(stream, &served);
+                }
+            });
+            Self {
+                _dir: dir,
+                socket: path.to_string_lossy().into_owned(),
+                state,
+            }
+        }
+
+        fn keys(&self) -> Vec<Vec<u8>> {
+            self.state.lock().unwrap().keys.clone()
+        }
+
+        fn requests(&self) -> Vec<u8> {
+            self.state.lock().unwrap().requests.clone()
+        }
+
+        /// What `ssh-add` does to the agent: one more identity.
+        fn insert(&self, blob: &[u8]) {
+            self.state.lock().unwrap().keys.push(blob.to_vec());
+        }
+    }
+
+    fn ssh_string(out: &mut Vec<u8>, bytes: &[u8]) {
+        out.extend_from_slice(&u32::try_from(bytes.len()).unwrap().to_be_bytes());
+        out.extend_from_slice(bytes);
+    }
+
+    fn serve(mut stream: UnixStream, state: &Mutex<AgentState>) {
+        loop {
+            let mut len = [0u8; 4];
+            if stream.read_exact(&mut len).is_err() {
+                return;
+            }
+            let mut body = vec![0u8; u32::from_be_bytes(len) as usize];
+            stream.read_exact(&mut body).unwrap();
+            let reply = answer(&mut state.lock().unwrap(), &body);
+            let mut framed = u32::try_from(reply.len()).unwrap().to_be_bytes().to_vec();
+            framed.extend_from_slice(&reply);
+            stream.write_all(&framed).unwrap();
+        }
+    }
+
+    /// The fake agent's reply body (type byte + payload) to one request.
+    fn answer(state: &mut AgentState, body: &[u8]) -> Vec<u8> {
+        state.requests.push(body[0]);
+        let status = |ok: bool| vec![if ok { 6 } else { 5 }];
+        match body[0] {
+            REQUEST_IDENTITIES => {
+                let mut answer = vec![12];
+                let count = u32::try_from(state.keys.len()).unwrap();
+                answer.extend_from_slice(&count.to_be_bytes());
+                for key in &state.keys {
+                    ssh_string(&mut answer, key);
+                    ssh_string(&mut answer, b"");
+                }
+                answer
+            }
+            super::super::wire::REMOVE_IDENTITY => {
+                let blob = &body[5..];
+                let held = state.keys.iter().position(|k| k == blob);
+                status(held.map(|i| state.keys.remove(i)).is_some())
+            }
+            REMOVE_ALL_IDENTITIES => {
+                state.keys.clear();
+                status(true)
+            }
+            _ => status(false),
+        }
+    }
+
+    /// A distinct ed25519-shaped blob per `tag`.
+    fn blob(tag: u8) -> Vec<u8> {
+        let mut blob = Vec::new();
+        ssh_string(&mut blob, b"ssh-ed25519");
+        ssh_string(&mut blob, &[tag; 32]);
+        blob
+    }
+
+    /// What an OpenSSH private key file says: its own public blob.
+    fn from_key_file(blob: &[u8]) -> KeyFileBlobs {
+        KeyFileBlobs {
+            key_file: Some(blob.to_vec()),
+            cert_file: None,
+        }
+    }
+
+    /// What an OpenSSH key with a `-cert.pub` beside it says.
+    fn with_cert(blob: &[u8], cert: &[u8]) -> KeyFileBlobs {
+        KeyFileBlobs {
+            key_file: Some(blob.to_vec()),
+            cert_file: Some(cert.to_vec()),
+        }
+    }
+
+    /// What a legacy PEM or PKCS#8 key says: nothing it can be known by.
+    fn legacy() -> KeyFileBlobs {
+        KeyFileBlobs::default()
+    }
+
+    /// Adds `adds` to `agent` through `own`, as `ssh-add` would, with
+    /// `blobs` as what the key's files say. Returns the result and whether
+    /// the add ran at all.
+    fn add_via(
+        own: &OwnKeys,
+        agent: &FakeAgent,
+        blobs: &KeyFileBlobs,
+        adds: &[u8],
+    ) -> (AgentResult<()>, bool) {
+        let ran = Cell::new(false);
+        let result = own.add_and_record(&agent.socket, Path::new(KEY_PATH), blobs, || {
+            ran.set(true);
+            agent.insert(adds);
+            Ok(())
+        });
+        (result, ran.get())
+    }
+
+    #[test]
+    fn evict_removes_only_the_recorded_keys() {
+        let (ours, users) = (blob(1), blob(2));
+        let agent = FakeAgent::holding(&[&ours, &users]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, ours);
+
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![users], "the user's key stays");
+        assert_eq!(agent.requests(), vec![super::super::wire::REMOVE_IDENTITY]);
+        assert_eq!(own.len(), 0, "the record is cleared");
+        assert_eq!(own.evict(), 0, "a second eviction has nothing to do");
+    }
+
+    #[test]
+    fn a_forgotten_key_is_left_in_the_agent() {
+        let key = blob(3);
+        let agent = FakeAgent::holding(&[&key]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, key.clone());
+        // The user added the same key in Settings: it is theirs now.
+        own.forget(&agent.socket, &from_key_file(&key));
+
+        assert_eq!(own.evict(), 0);
+        assert_eq!(agent.keys(), vec![key]);
+        assert!(agent.requests().is_empty(), "nothing was sent to the agent");
+    }
+
+    /// The user adds a key whose file does not carry its public key. It could
+    /// be any recorded key (the same key can sit in two files), so nothing
+    /// recorded for that agent is evicted any more; another agent's record
+    /// stays.
+    #[test]
+    fn forgetting_without_the_key_files_blob_drops_that_agents_whole_record() {
+        let (first, second, elsewhere) = (blob(19), blob(20), blob(21));
+        let agent = FakeAgent::holding(&[&first, &second]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, first.clone());
+        own.record(&agent.socket, second.clone());
+        own.record("/nonexistent/rustconn-test/other.sock", elsewhere);
+
+        own.forget(&agent.socket, &legacy());
+        assert_eq!(own.len(), 1, "only the other agent's key is still recorded");
+
+        own.evict();
+        assert_eq!(agent.keys(), vec![first, second]);
+        assert!(
+            agent.requests().is_empty(),
+            "nothing was sent to this agent"
+        );
+    }
+
+    #[test]
+    fn recording_a_key_twice_keeps_one_entry() {
+        let own = OwnKeys::new();
+        own.record("/nonexistent/agent.sock", blob(4));
+        own.record("/nonexistent/agent.sock", blob(4));
+        own.record("/nonexistent/other.sock", blob(4));
+        assert_eq!(own.len(), 2, "one entry per (socket, key)");
+    }
+
+    #[test]
+    fn a_key_the_agent_no_longer_holds_is_not_an_error() {
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, blob(5));
+        assert_eq!(own.evict(), 0);
+        assert_eq!(own.len(), 0);
+    }
+
+    #[test]
+    fn an_unreachable_agent_clears_the_record() {
+        let own = OwnKeys::new();
+        own.record("/nonexistent/rustconn-test/agent.sock", blob(6));
+        assert_eq!(own.evict(), 0);
+        assert_eq!(own.len(), 0);
+    }
+
+    /// An agent that is there but did not answer in time (a read timeout is
+    /// `WouldBlock`, a connect timeout `TimedOut`) or was interrupted still
+    /// holds the key, so the record survives for the next exit, lock or
+    /// suspend. A lasting error (gone, refused, permission denied) drops it,
+    /// so it is not retried and warned about at every lock.
+    #[test]
+    fn a_transient_error_keeps_the_record_and_a_lasting_one_drops_it() {
+        use std::io::ErrorKind;
+
+        let own = OwnKeys::new();
+        let sockets = [
+            ("/ok.sock", None),
+            ("/would-block.sock", Some(ErrorKind::WouldBlock)),
+            ("/timed-out.sock", Some(ErrorKind::TimedOut)),
+            ("/interrupted.sock", Some(ErrorKind::Interrupted)),
+            ("/refused.sock", Some(ErrorKind::ConnectionRefused)),
+            ("/missing.sock", Some(ErrorKind::NotFound)),
+            ("/denied.sock", Some(ErrorKind::PermissionDenied)),
+        ];
+        for (i, (socket, _)) in (0u8..).zip(sockets) {
+            own.record(socket, blob(40 + i));
+        }
+
+        let remove = |key: &OwnKey| {
+            let kind = sockets
+                .iter()
+                .find(|(socket, _)| *socket == key.socket_path)
+                .and_then(|(_, kind)| *kind);
+            kind.map_or(Ok(true), |kind| {
+                Err(AgentError::Io(std::io::Error::from(kind)))
+            })
+        };
+        assert_eq!(own.evict_with(remove), 1);
+        let kept: Vec<String> = own
+            .lock()
+            .keys
+            .iter()
+            .map(|k| k.socket_path.clone())
+            .collect();
+        assert_eq!(
+            kept,
+            vec!["/would-block.sock", "/timed-out.sock", "/interrupted.sock"],
+            "only the transient failures are still recorded"
+        );
+
+        // The retry removes them once their agents answer.
+        assert_eq!(own.evict_with(|_| Ok(true)), 3);
+        assert_eq!(own.len(), 0);
+    }
+
+    /// The user adds a key in Settings while a slow eviction is removing it:
+    /// the removal times out, and the key must not be put back on the record,
+    /// or the next lock would take the user's key out of the agent. A key that
+    /// was not forgotten is still kept to retry.
+    #[test]
+    fn a_key_forgotten_during_a_slow_eviction_is_not_put_back() {
+        let (users_now, still_ours) = (blob(35), blob(36));
+        let own = OwnKeys::new();
+        own.record("/slow.sock", users_now.clone());
+        own.record("/slow.sock", still_ours.clone());
+
+        own.evict_with(|key| {
+            if key.blob == users_now {
+                // Settings → SSH Agent → Add, while this removal hangs.
+                own.forget("/slow.sock", &from_key_file(&users_now));
+            }
+            Err(AgentError::Io(std::io::Error::from(
+                std::io::ErrorKind::TimedOut,
+            )))
+        });
+
+        assert_eq!(
+            own.lock().keys,
+            vec![OwnKey {
+                socket_path: "/slow.sock".to_owned(),
+                blob: still_ours,
+            }],
+            "only the key nobody forgot is kept to retry"
+        );
+        assert!(own.lock().in_flight.is_empty(), "every flight landed");
+    }
+
+    /// The same race with a second thread, as it happens in the GUI: the
+    /// eviction runs on the lock-event task while the Settings add runs on
+    /// another thread.
+    #[test]
+    fn a_forget_from_another_thread_during_eviction_wins() {
+        let key = blob(37);
+        let own = Arc::new(OwnKeys::new());
+        own.record("/slow.sock", key.clone());
+        let (started_tx, started_rx) = std::sync::mpsc::channel();
+        let (forgot_tx, forgot_rx) = std::sync::mpsc::channel();
+
+        let evicting = Arc::clone(&own);
+        let evictor = std::thread::spawn(move || {
+            evicting.evict_with(|_| {
+                started_tx.send(()).unwrap();
+                forgot_rx.recv().unwrap();
+                Err(AgentError::Io(std::io::Error::from(
+                    std::io::ErrorKind::WouldBlock,
+                )))
+            })
+        });
+        started_rx.recv().unwrap();
+        own.forget("/slow.sock", &from_key_file(&key));
+        forgot_tx.send(()).unwrap();
+        evictor.join().unwrap();
+
+        assert_eq!(own.len(), 0, "the forgotten key is not put back");
+    }
+
+    #[test]
+    fn a_malformed_reply_does_not_keep_the_record() {
+        let own = OwnKeys::new();
+        own.record("/odd.sock", blob(26));
+        own.evict_with(|_| Err(AgentError::ParseError("not a status reply".to_owned())));
+        assert_eq!(own.len(), 0);
+    }
+
+    /// The wiring the GUI does: a lock-event handler that evicts. Lock and
+    /// suspend each remove the keys recorded since the last event and nothing
+    /// else, and nothing ever asks the agent to remove all identities.
+    #[test]
+    fn lock_and_suspend_remove_recorded_keys_and_never_all_keys() {
+        let (first, second, users) = (blob(7), blob(8), blob(9));
+        let agent = FakeAgent::holding(&[&first, &second, &users]);
+        let own = Arc::new(OwnKeys::new());
+        let subscribers = Subscribers::new();
+        let handler_keys = Arc::clone(&own);
+        subscribers.add(Arc::new(move |_event| {
+            handler_keys.evict();
+        }));
+
+        own.record(&agent.socket, first);
+        subscribers.dispatch(LockEvent::ScreenLocked);
+        assert_eq!(agent.keys(), vec![second.clone(), users.clone()]);
+
+        own.record(&agent.socket, second);
+        subscribers.dispatch(LockEvent::Suspending);
+        assert_eq!(agent.keys(), vec![users]);
+
+        let requests = agent.requests();
+        assert!(!requests.contains(&REMOVE_ALL_IDENTITIES));
+        assert_eq!(
+            requests,
+            vec![super::super::wire::REMOVE_IDENTITY; 2],
+            "one REMOVE_IDENTITY per recorded key"
+        );
+    }
+
+    /// The add path end to end against one agent: asked before, added to,
+    /// asked after, and on eviction only the added key leaves it.
+    #[test]
+    fn an_added_key_is_recorded_and_alone_evicted() {
+        let (ours, users) = (blob(10), blob(11));
+        let agent = FakeAgent::holding(&[&users]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &from_key_file(&ours), &ours);
+        assert!(result.is_ok());
+        assert!(ran, "a key the agent lacks is added");
+        assert_eq!(own.len(), 1);
+        assert_eq!(
+            agent.requests(),
+            vec![REQUEST_IDENTITIES, REQUEST_IDENTITIES],
+            "both queries went to the agent the add wrote to"
+        );
+
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![users]);
+    }
+
+    #[test]
+    fn a_key_the_agent_already_holds_is_neither_added_nor_recorded() {
+        let users = blob(12);
+        let agent = FakeAgent::holding(&[&users]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &from_key_file(&users), &users);
+        assert!(result.is_ok());
+        assert!(!ran, "re-adding would replace the user's constraints");
+        assert_eq!(own.len(), 0);
+        assert_eq!(own.evict(), 0);
+        assert_eq!(agent.keys(), vec![users]);
+    }
+
+    /// The user already loaded a legacy PEM key; the `.pub` beside its file is
+    /// stale and names some other key. Trusting the `.pub` would re-add the
+    /// user's key and replace its constraints with RustConn's lifetime, so
+    /// nothing is added and the outcome is "cannot tell".
+    #[test]
+    fn a_stale_pub_beside_a_key_the_user_loaded_does_not_re_add_it() {
+        let (users_real_key, named_by_stale_pub) = (blob(22), blob(26));
+        let dir = tempfile::tempdir().unwrap();
+        let key_path = dir.path().join("legacy_rsa");
+        std::fs::write(
+            &key_path,
+            "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
+        )
+        .unwrap();
+        let stale_pub = format!(
+            "ssh-ed25519 {} stale",
+            data_encoding::BASE64.encode(&named_by_stale_pub)
+        );
+        std::fs::write(dir.path().join("legacy_rsa.pub"), stale_pub).unwrap();
+        let agent = FakeAgent::holding(&[&users_real_key]);
+        let own = OwnKeys::new();
+
+        let ran = Cell::new(false);
+        let blobs = super::super::keyfile::key_file_blobs(&key_path);
+        let result = own.add_and_record(&agent.socket, &key_path, &blobs, || {
+            ran.set(true);
+            agent.insert(&users_real_key);
+            Ok(())
+        });
+
+        assert!(matches!(result, Err(AgentError::KeyPresenceUnknown(_))));
+        assert!(!ran.get(), "the user's key is not re-added");
+        assert_eq!(own.len(), 0);
+        assert_eq!(agent.keys(), vec![users_real_key]);
+        assert_eq!(agent.requests(), vec![REQUEST_IDENTITIES]);
+    }
+
+    /// `ssh-add` loads the key's certificate with it; both are recorded, so
+    /// eviction removes both and leaves the user's key.
+    #[test]
+    fn a_certificate_added_with_the_key_is_recorded_and_evicted() {
+        let (ours, our_cert, users) = (blob(27), blob(28), blob(29));
+        let agent = FakeAgent::holding(&[&users]);
+        let own = OwnKeys::new();
+
+        let result = own.add_and_record(
+            &agent.socket,
+            Path::new(KEY_PATH),
+            &with_cert(&ours, &our_cert),
+            || {
+                agent.insert(&ours);
+                agent.insert(&our_cert);
+                Ok(())
+            },
+        );
+        assert!(result.is_ok());
+        assert_eq!(own.len(), 2);
+        assert_eq!(own.evict(), 2);
+        assert_eq!(agent.keys(), vec![users]);
+    }
+
+    /// A certificate blob for another key, which the `-cert.pub` names and
+    /// the agent held before RustConn's add, was loaded by someone else: the
+    /// key is added (the certificate does not stand for it), and only the key
+    /// RustConn added is recorded.
+    #[test]
+    fn a_certificate_held_before_the_add_is_not_recorded() {
+        let (ours, users_cert) = (blob(30), blob(31));
+        let agent = FakeAgent::holding(&[&users_cert]);
+        let own = OwnKeys::new();
+
+        let result = own.add_and_record(
+            &agent.socket,
+            Path::new(KEY_PATH),
+            &with_cert(&ours, &users_cert),
+            || {
+                agent.insert(&ours);
+                Ok(())
+            },
+        );
+        assert!(result.is_ok());
+        assert_eq!(own.len(), 1);
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![users_cert]);
+    }
+
+    /// An OpenSSH certificate blob for `key` (PROTOCOL.certkeys): the
+    /// certificate type, a nonce, the key's public fields, then the rest.
+    fn cert_for(key: &[u8]) -> Vec<u8> {
+        let mut cert = Vec::new();
+        ssh_string(&mut cert, b"ssh-ed25519-cert-v01@openssh.com");
+        ssh_string(&mut cert, &[0xAB; 32]);
+        // The key blob without its leading type string.
+        let type_len =
+            4 + usize::try_from(u32::from_be_bytes(key[..4].try_into().unwrap())).unwrap();
+        cert.extend_from_slice(&key[type_len..]);
+        cert.extend_from_slice(&7u64.to_be_bytes());
+        cert
+    }
+
+    /// The agent holds the key's certificate but not the plain key (the
+    /// user loaded only the certificate, or removed the key and kept it).
+    /// `ssh-add` of the key file would load that certificate again and
+    /// replace its constraints with RustConn's 12-hour lifetime, so the key
+    /// is not added, like a key the agent already holds, and nothing is
+    /// recorded.
+    #[test]
+    fn a_held_certificate_for_the_key_stops_the_add() {
+        let ours = blob(35);
+        let users_cert = cert_for(&ours);
+        assert!(
+            super::super::keyfile::certifies(&users_cert, &ours),
+            "the fixture is a certificate for the key"
+        );
+        let agent = FakeAgent::holding(&[&users_cert]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &with_cert(&ours, &users_cert), &ours);
+        assert!(result.is_ok());
+        assert!(!ran, "the certificate's constraints are not replaced");
+        assert_eq!(own.len(), 0);
+        assert_eq!(agent.keys(), vec![users_cert]);
+    }
+
+    /// The user adds the key in Settings: its certificate is theirs too.
+    #[test]
+    fn forgetting_a_key_forgets_its_certificate() {
+        let (key, cert, other) = (blob(32), blob(33), blob(34));
+        let agent = FakeAgent::holding(&[&key, &cert, &other]);
+        let own = OwnKeys::new();
+        own.record(&agent.socket, key.clone());
+        own.record(&agent.socket, cert.clone());
+        own.record(&agent.socket, other);
+
+        own.forget(&agent.socket, &with_cert(&key, &cert));
+        assert_eq!(own.len(), 1, "only the unrelated key is still recorded");
+        assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![key, cert]);
+    }
+
+    /// Whether the agent holds a key whose file does not carry its public key
+    /// cannot be told; that is its own outcome, so a launcher can warn and go
+    /// on.
+    #[test]
+    fn an_unreadable_public_half_is_not_added_beside_other_keys() {
+        let users = blob(13);
+        let agent = FakeAgent::holding(&[&users]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &KeyFileBlobs::default(), &users);
+        assert!(matches!(result, Err(AgentError::KeyPresenceUnknown(_))));
+        assert!(!ran, "the key might be the user's, so it is not re-added");
+        assert_eq!(own.len(), 0);
+    }
+
+    /// A key whose public blob does not come from its own file goes into an
+    /// empty agent, but is not recorded: its lifetime is its only expiry.
+    #[test]
+    fn a_blobless_automatic_add_records_nothing() {
+        let ours = blob(14);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &KeyFileBlobs::default(), &ours);
+        assert!(result.is_ok());
+        assert!(ran, "an empty agent cannot hold the user's copy");
+        assert_eq!(own.len(), 0);
+        assert_eq!(own.evict(), 0);
+        assert_eq!(agent.keys(), vec![ours]);
+        assert!(
+            !agent
+                .requests()
+                .contains(&super::super::wire::REMOVE_IDENTITY)
+        );
+    }
+
+    /// The case the record must never cover: RustConn added a blob-less key
+    /// on its own, then the user added the same file in Settings. Lock,
+    /// suspend and exit leave the user's key in the agent.
+    #[test]
+    fn a_later_settings_add_of_a_blobless_key_leaves_nothing_to_evict() {
+        let key = blob(23);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &KeyFileBlobs::default(), &key);
+        assert!(result.is_ok() && ran);
+        // Settings → SSH Agent → Add key of the same file.
+        own.forget(&agent.socket, &KeyFileBlobs::default());
+
+        assert_eq!(own.evict(), 0);
+        assert_eq!(agent.keys(), vec![key]);
+        assert!(
+            !agent
+                .requests()
+                .contains(&super::super::wire::REMOVE_IDENTITY)
+        );
+    }
+
+    /// The key file's blob did not show up after the add: nothing else that
+    /// appeared is recorded in its place.
+    #[test]
+    fn a_key_file_blob_that_did_not_appear_records_nothing() {
+        let (named, loaded) = (blob(24), blob(25));
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &from_key_file(&named), &loaded);
+        assert!(result.is_ok() && ran);
+        assert_eq!(own.len(), 0);
+        assert_eq!(agent.keys(), vec![loaded]);
+    }
+
+    #[test]
+    fn an_unreachable_agent_is_not_added_to() {
+        let own = OwnKeys::new();
+        let ran = Cell::new(false);
+        let result = own.add_and_record(
+            "/nonexistent/rustconn-test/agent.sock",
+            Path::new(KEY_PATH),
+            &from_key_file(&blob(17)),
+            || {
+                ran.set(true);
+                Ok(())
+            },
+        );
+        assert!(matches!(result, Err(AgentError::AddKeyFailed(_))));
+        assert!(!ran.get());
+        assert_eq!(own.len(), 0);
+    }
+
+    #[test]
+    fn a_failed_add_records_nothing() {
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+        let result = own.add_and_record(
+            &agent.socket,
+            Path::new(KEY_PATH),
+            &from_key_file(&blob(18)),
+            || Err(AgentError::AddKeyFailed("bad key".to_owned())),
+        );
+        assert!(matches!(result, Err(AgentError::AddKeyFailed(_))));
+        assert_eq!(own.len(), 0);
+    }
+
+    /// An encrypted OpenSSH key file whose public section is `blob`.
+    fn encrypted_key_file(blob: &[u8]) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("id_encrypted");
+        std::fs::write(
+            &path,
+            crate::ssh_agent::openssh_key_fixture("aes256-ctr", blob),
+        )
+        .unwrap();
+        (dir, path)
+    }
+
+    /// The path a staged `ssh-add` command carries in its environment as
+    /// `name`.
+    fn env_path(cmd: &std::process::Command, name: &str) -> std::path::PathBuf {
+        cmd.get_envs()
+            .find(|(k, _)| *k == name)
+            .and_then(|(_, v)| v)
+            .map(std::path::PathBuf::from)
+            .unwrap()
+    }
+
+    /// What a finished `ssh-add` returns.
+    fn exited(code: i32, stderr: &str) -> std::process::Output {
+        use std::os::unix::process::ExitStatusExt as _;
+        std::process::Output {
+            status: std::process::ExitStatus::from_raw(code << 8),
+            stdout: Vec::new(),
+            stderr: stderr.as_bytes().to_vec(),
+        }
+    }
+
+    /// The dialog's add: the passphrase reaches `ssh-add` only through the
+    /// secret file, the key is recorded like any own key, both staged files
+    /// are gone afterwards, and nothing kept holds the passphrase. The next
+    /// connect finds the key in the agent and does not ask.
+    #[test]
+    fn a_passphrase_add_records_the_key_and_keeps_no_secret() {
+        const PASSPHRASE: &str = "correct horse 50";
+        let key = blob(50);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::AskPassphrase
+        );
+
+        let mut staged = Vec::new();
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from(PASSPHRASE),
+            |cmd| {
+                let secret = env_path(&cmd, crate::ssh_tunnel::TUNNEL_ASKPASS_ENV_VAR);
+                assert_eq!(std::fs::read_to_string(&secret).unwrap(), PASSPHRASE);
+                assert!(
+                    cmd.get_args().all(|a| a.to_string_lossy() != PASSPHRASE),
+                    "the passphrase is not an argument"
+                );
+                assert!(
+                    cmd.get_envs()
+                        .filter_map(|(_, v)| v)
+                        .all(|v| !v.to_string_lossy().contains(PASSPHRASE)),
+                    "the passphrase is not an environment value"
+                );
+                staged.extend([secret, env_path(&cmd, "SSH_ASKPASS")]);
+                agent.insert(&key);
+                Ok(exited(
+                    0,
+                    "Identity added: /k (u@h)\nLifetime set to 12:00:00\n",
+                ))
+            },
+        );
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(
+            own.lock().keys,
+            vec![OwnKey {
+                socket_path: agent.socket.clone(),
+                blob: key,
+            }]
+        );
+        assert_eq!(staged.len(), 2);
+        assert!(
+            staged.iter().all(|p| !p.exists()),
+            "the secret file and the helper are removed"
+        );
+        assert!(!format!("{own:?}").contains(PASSPHRASE));
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(crate::ssh_agent::SkipReason::AlreadyInAgent)
+        );
+    }
+
+    /// An encrypted key whose certificate (`<key>-cert.pub`) the agent holds
+    /// without the plain key gets no unlock dialog: unlocking would load the
+    /// certificate again and replace its constraints, and ssh can already
+    /// authenticate with it. A certificate for another key does not count.
+    #[test]
+    fn a_held_certificate_for_the_key_needs_no_unlock() {
+        let key = blob(52);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let cert = cert_for(&key);
+        let mut cert_path = key_path.clone().into_os_string();
+        cert_path.push("-cert.pub");
+        std::fs::write(
+            &cert_path,
+            format!(
+                "ssh-ed25519-cert-v01@openssh.com {} u@h\n",
+                data_encoding::BASE64.encode(&cert)
+            ),
+        )
+        .unwrap();
+
+        let agent = FakeAgent::holding(&[&cert]);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(crate::ssh_agent::SkipReason::AlreadyInAgent)
+        );
+        let other = FakeAgent::holding(&[&cert_for(&blob(53))]);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&other.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::AskPassphrase
+        );
+    }
+
+    /// An agent that refuses adds (1Password) is remembered for its socket,
+    /// so the dialog is not shown for it again; nothing is recorded.
+    #[test]
+    fn a_refused_passphrase_add_is_remembered_for_that_socket() {
+        let key = blob(51);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from("pw"),
+            |_| {
+                Ok(exited(
+                    1,
+                    "Could not add identity \"/k\": agent refused operation\n",
+                ))
+            },
+        );
+
+        assert!(
+            matches!(result, Err(AgentError::AddRefused(_))),
+            "{result:?}"
+        );
+        assert!(crate::ssh_agent::agent_refused_add(&agent.socket));
+        assert_eq!(own.len(), 0);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(
+                crate::ssh_agent::SkipReason::AgentRefusedBefore
+            )
+        );
+    }
+
+    #[test]
+    fn a_wrong_passphrase_is_reported_as_such() {
+        let key = blob(52);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let agent = FakeAgent::holding(&[]);
+        let own = OwnKeys::new();
+
+        let mut staged = Vec::new();
+        let result = super::super::add_own_key_with_passphrase_in(
+            &own,
+            &agent.socket,
+            &key_path,
+            &secrecy::SecretString::from("wrong"),
+            |cmd| {
+                staged.extend([
+                    env_path(&cmd, crate::ssh_tunnel::TUNNEL_ASKPASS_ENV_VAR),
+                    env_path(&cmd, "SSH_ASKPASS"),
+                ]);
+                Ok(exited(1, ""))
+            },
+        );
+
+        assert!(
+            matches!(result, Err(AgentError::WrongPassphrase)),
+            "{result:?}"
+        );
+        assert_eq!(own.len(), 0);
+        assert!(!crate::ssh_agent::agent_refused_add(&agent.socket));
+        assert!(staged.iter().all(|p| !p.exists()));
+    }
+}

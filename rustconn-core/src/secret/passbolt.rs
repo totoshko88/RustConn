@@ -474,7 +474,6 @@ impl PassboltBackend {
             password: detail
                 .password
                 .filter(|p| !ExposeSecret::expose_secret(p).is_empty()),
-            key_passphrase: None,
             domain: None,
         }))
     }

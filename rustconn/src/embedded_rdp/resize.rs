@@ -132,7 +132,7 @@ impl super::EmbeddedRdpWidget {
                 let force_reconnect = config
                     .borrow()
                     .as_ref()
-                    .is_some_and(|c| c.reconnect_on_resize);
+                    .is_some_and(super::types::RdpConfig::resize_needs_reconnect);
 
                 let source_id = glib::timeout_add_local_once(
                     std::time::Duration::from_millis(500),
@@ -397,7 +397,7 @@ impl super::EmbeddedRdpWidget {
         let force_reconnect = config
             .borrow()
             .as_ref()
-            .is_some_and(|c| c.reconnect_on_resize);
+            .is_some_and(super::types::RdpConfig::resize_needs_reconnect);
 
         if using_ironrdp && !force_reconnect {
             #[expect(

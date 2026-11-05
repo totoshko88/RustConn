@@ -30,6 +30,8 @@
 //! base64) and `ring` (already the project's SHA-256), so it builds on every
 //! platform — unlike `wire.rs`, which is `#[cfg(unix)]` for the agent socket.
 
+use zeroize::Zeroizing;
+
 use super::{AgentError, AgentResult};
 
 /// The OpenSSH private-key PEM armour.
@@ -162,15 +164,7 @@ impl PublicKeyInfo {
     /// Returns [`AgentError::ParseError`] when the line has no base64 field or
     /// the field is not valid base64.
     pub fn from_pub_line(line: &str) -> AgentResult<Self> {
-        let mut fields = line.split_whitespace();
-        let _algo = fields.next();
-        let b64 = fields.next().ok_or_else(|| {
-            AgentError::ParseError("public-key line has no base64 field".to_string())
-        })?;
-        let blob = data_encoding::BASE64
-            .decode(b64.as_bytes())
-            .map_err(|e| AgentError::ParseError(format!("public-key base64 is invalid: {e}")))?;
-        Ok(Self::from_blob(&blob))
+        Ok(Self::from_blob(&pub_line_blob(line)?))
     }
 
     /// Reads the public key from a **private** OpenSSH key file, without a
@@ -192,6 +186,83 @@ impl PublicKeyInfo {
     }
 }
 
+/// Decodes the blob of a `.pub` line (`algo base64blob [comment]`).
+fn pub_line_blob(line: &str) -> AgentResult<Vec<u8>> {
+    let mut fields = line.split_whitespace();
+    let _algo = fields.next();
+    let b64 = fields
+        .next()
+        .ok_or_else(|| AgentError::ParseError("public-key line has no base64 field".to_string()))?;
+    data_encoding::BASE64
+        .decode(b64.as_bytes())
+        .map_err(|e| AgentError::ParseError(format!("public-key base64 is invalid: {e}")))
+}
+
+/// What the files of a private key say its public-key blob is, read without a
+/// passphrase. Public material only.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(super) struct KeyFileBlobs {
+    /// From the private key file itself: an OpenSSH private key carries its
+    /// public key in the clear, even when encrypted, so this names the key
+    /// `ssh-add` loads from that file.
+    pub(super) key_file: Option<Vec<u8>>,
+    /// From a sibling `<path>-cert.pub`, the certificate `ssh-add` loads
+    /// together with the key when that file exists. Not checked against the
+    /// key here: `ssh-add` skips a certificate that does not match, so only a
+    /// certificate the agent shows after the add counts. A removal checks it
+    /// with [`certifies`] first.
+    pub(super) cert_file: Option<Vec<u8>>,
+}
+
+impl KeyFileBlobs {
+    /// Whether an agent holding the blobs `held` already holds the key these
+    /// files name: the key's own blob, or the certificate beside it when that
+    /// certificate is for this key ([`certifies`]).
+    ///
+    /// Either one counts, because `ssh-add` of the key file loads both and an
+    /// add replaces the constraints (the lifetime, a confirmation) of a copy
+    /// the agent already holds. `false` when the key file does not name the
+    /// key.
+    pub(super) fn held_in(&self, held: &[Vec<u8>]) -> bool {
+        let Some(key) = self.key_file.as_deref() else {
+            return false;
+        };
+        held.iter().any(|h| h == key)
+            || self
+                .cert_file
+                .as_deref()
+                .is_some_and(|cert| certifies(cert, key) && held.iter().any(|h| h == cert))
+    }
+}
+
+/// Reads [`KeyFileBlobs`] for the private key at `key_path`; a source that
+/// cannot be read is `None`.
+///
+/// A sibling `<path>.pub` is not read: it is not checked against the private
+/// key, and a stale one names some other key.
+pub(super) fn key_file_blobs(key_path: &std::path::Path) -> KeyFileBlobs {
+    // The private section of an unencrypted key is in this file in the clear,
+    // so the text is wiped when it drops.
+    let key_file = std::fs::read_to_string(key_path)
+        .ok()
+        .map(Zeroizing::new)
+        .filter(|contents| detect_format(contents) == KeyFormat::OpenSsh)
+        .and_then(|contents| {
+            decode_openssh_body(&contents)
+                .and_then(|b| openssh_public_blob(&b))
+                .ok()
+        });
+    let mut cert_path = key_path.as_os_str().to_os_string();
+    cert_path.push("-cert.pub");
+    let cert_file = std::fs::read_to_string(std::path::PathBuf::from(cert_path))
+        .ok()
+        .and_then(|line| pub_line_blob(line.trim()).ok());
+    KeyFileBlobs {
+        key_file,
+        cert_file,
+    }
+}
+
 /// The public-key line (`<type> <base64>`, no comment) of an OpenSSH private
 /// key, rebuilt from its public section without touching the (possibly
 /// encrypted) private section.
@@ -207,8 +278,51 @@ impl PublicKeyInfo {
 /// is missing or not valid UTF-8.
 pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
     let body = decode_openssh_body(contents)?;
-    let blob = openssh_public_blob(&body)?;
-    let (algo, _) = read_ssh_string(&blob, 0).ok_or_else(|| {
+    public_key_line(&openssh_public_blob(&body)?)
+}
+
+/// The blob of the public-key line in the file at `path` (a `.pub` file), or
+/// `None` when the file cannot be read or is not a public-key line.
+///
+/// Callers pass only a `.pub` path. The text is wiped on drop all the same,
+/// in case a private key is passed by mistake.
+pub(super) fn pub_file_blob(path: &std::path::Path) -> Option<Vec<u8>> {
+    let contents = Zeroizing::new(std::fs::read_to_string(path).ok()?);
+    pub_line_blob(contents.lines().next()?.trim()).ok()
+}
+
+/// Whether the OpenSSH certificate blob `cert` certifies the public key `key`.
+///
+/// A key blob is `string <type>` followed by the key's public fields. A
+/// certificate blob (PROTOCOL.certkeys) is `string <type>-cert-v01@openssh.com`
+/// (`@openssh.com` dropped from the key type first, as for `sk-` keys), then
+/// `string nonce`, then the same public fields in the same encoding, then the
+/// serial and the rest. Only the type and those fields are compared, the way
+/// `ssh-add -d` compares them before it removes a certificate.
+pub(super) fn certifies(cert: &[u8], key: &[u8]) -> bool {
+    let Some((key_type, fields_at)) = read_ssh_string(key, 0) else {
+        return false;
+    };
+    let Some((cert_type, nonce_at)) = read_ssh_string(cert, 0) else {
+        return false;
+    };
+    let Some((_nonce, cert_fields_at)) = read_ssh_string(cert, nonce_at) else {
+        return false;
+    };
+    let base = key_type.strip_suffix(b"@openssh.com").unwrap_or(key_type);
+    let expected_type = [base, b"-cert-v01@openssh.com"].concat();
+    let fields = &key[fields_at..];
+    !fields.is_empty() && cert_type == expected_type && cert[cert_fields_at..].starts_with(fields)
+}
+
+/// The public-key line (`<type> <base64>`, no comment) of a public-key blob.
+///
+/// # Errors
+///
+/// Returns [`AgentError::ParseError`] when the blob's key type is missing,
+/// empty or not valid UTF-8.
+pub(super) fn public_key_line(blob: &[u8]) -> AgentResult<String> {
+    let (algo, _) = read_ssh_string(blob, 0).ok_or_else(|| {
         AgentError::ParseError("OpenSSH public blob has no type string".to_string())
     })?;
     let algo = std::str::from_utf8(algo).map_err(|_| {
@@ -219,7 +333,7 @@ pub fn openssh_public_key_line(contents: &str) -> AgentResult<String> {
             "OpenSSH public blob type is empty".to_string(),
         ));
     }
-    Ok(format!("{algo} {}", data_encoding::BASE64.encode(&blob)))
+    Ok(format!("{algo} {}", data_encoding::BASE64.encode(blob)))
 }
 
 /// Inspects a key file's contents: format, encryption, and the public key when
@@ -280,7 +394,12 @@ fn detect_format(contents: &str) -> KeyFormat {
 }
 
 /// Base64-decodes the body between the OpenSSH armour lines.
-fn decode_openssh_body(contents: &str) -> AgentResult<Vec<u8>> {
+///
+/// The body holds the private section too, in the clear for an unencrypted
+/// key, so both the base64 text and the decoded bytes are wiped on drop. The
+/// text buffer is sized up front so it never reallocates and leaves an
+/// unwiped copy behind.
+fn decode_openssh_body(contents: &str) -> AgentResult<Zeroizing<Vec<u8>>> {
     let start = contents
         .find(OPENSSH_BEGIN)
         .ok_or_else(|| AgentError::ParseError("not an OpenSSH private key".to_string()))?;
@@ -288,12 +407,12 @@ fn decode_openssh_body(contents: &str) -> AgentResult<Vec<u8>> {
     let end = contents[after_begin..]
         .find(OPENSSH_END)
         .ok_or_else(|| AgentError::ParseError("OpenSSH key is missing its END line".to_string()))?;
-    let b64: String = contents[after_begin..after_begin + end]
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .collect();
+    let armoured = &contents[after_begin..after_begin + end];
+    let mut b64 = Zeroizing::new(String::with_capacity(armoured.len()));
+    b64.extend(armoured.chars().filter(|c| !c.is_whitespace()));
     let body = data_encoding::BASE64
         .decode(b64.as_bytes())
+        .map(Zeroizing::new)
         .map_err(|e| AgentError::ParseError(format!("OpenSSH key base64 is invalid: {e}")))?;
     if !body.starts_with(OPENSSH_MAGIC) {
         return Err(AgentError::ParseError(
@@ -398,6 +517,28 @@ pub(crate) fn openssh_key_fixture(ciphername: &str, pub_blob: &[u8]) -> String {
 
     let b64 = data_encoding::BASE64.encode(&body);
     format!("{OPENSSH_BEGIN}\n{b64}\n{OPENSSH_END}\n")
+}
+
+/// Test fixture: an OpenSSH certificate blob for the public key blob `key`,
+/// shaped as PROTOCOL.certkeys lays it out up to the public fields; the
+/// serial and everything after it are a dummy tail no reader here parses.
+#[cfg(test)]
+pub(crate) fn openssh_cert_fixture(key: &[u8]) -> Vec<u8> {
+    fn ssh_string(out: &mut Vec<u8>, bytes: &[u8]) {
+        out.extend_from_slice(&u32::try_from(bytes.len()).unwrap().to_be_bytes());
+        out.extend_from_slice(bytes);
+    }
+    let (key_type, fields_at) = read_ssh_string(key, 0).expect("a key blob with a type");
+    let mut cert = Vec::new();
+    ssh_string(
+        &mut cert,
+        &[key_type, b"-cert-v01@openssh.com".as_slice()].concat(),
+    );
+    ssh_string(&mut cert, &[0x5a; 32]); // nonce
+    cert.extend_from_slice(&key[fields_at..]);
+    cert.extend_from_slice(&7u64.to_be_bytes()); // serial
+    ssh_string(&mut cert, b"signature-and-the-rest-ignored");
+    cert
 }
 
 #[cfg(test)]
@@ -553,6 +694,94 @@ mod tests {
             openssh_public_key_line("not a key at all"),
             Err(AgentError::ParseError(_))
         ));
+    }
+
+    #[test]
+    fn public_blob_comes_from_an_encrypted_openssh_key_itself() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("id_ed25519");
+        std::fs::write(&key, make_openssh_key("aes256-ctr")).unwrap();
+        let blobs = key_file_blobs(&key);
+        let blob = blobs
+            .key_file
+            .clone()
+            .expect("blob read without a passphrase");
+        assert_eq!(key_type_from_blob(&blob), "ED25519");
+        assert_eq!(blobs.cert_file, None, "no certificate beside it");
+    }
+
+    /// A `.pub` beside a key is never read: it may be stale. Only the key
+    /// file and its `-cert.pub` count.
+    #[test]
+    fn a_pub_sibling_is_ignored_and_a_cert_sibling_is_read() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("legacy_rsa");
+        std::fs::write(
+            &key,
+            "-----BEGIN RSA PRIVATE KEY-----\nMII\n-----END RSA PRIVATE KEY-----\n",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("legacy_rsa.pub"), ED25519_PUB).unwrap();
+        assert_eq!(
+            key_file_blobs(&key),
+            KeyFileBlobs::default(),
+            "a legacy PEM has no public section, and the .pub is not read"
+        );
+
+        // The certificate line's shape is all that matters here: its base64
+        // field is what the agent lists the certificate by.
+        let cert_line = ED25519_PUB.replacen("ssh-ed25519", "ssh-ed25519-cert-v01@openssh.com", 1);
+        std::fs::write(dir.path().join("legacy_rsa-cert.pub"), &cert_line).unwrap();
+        let blobs = key_file_blobs(&key);
+        assert_eq!(blobs.key_file, None);
+        let cert = blobs.cert_file.expect("blob from the -cert.pub sibling");
+        assert_eq!(
+            sha256_fingerprint(&cert),
+            PublicKeyInfo::from_pub_line(ED25519_PUB)
+                .unwrap()
+                .fingerprint
+        );
+    }
+
+    /// A certificate counts only for the key it embeds: another key's
+    /// certificate, a plain key blob and a truncated blob do not.
+    #[test]
+    fn a_certificate_certifies_only_its_own_key() {
+        fn ed25519(tag: u8) -> Vec<u8> {
+            let mut blob = Vec::new();
+            blob.extend_from_slice(&11u32.to_be_bytes());
+            blob.extend_from_slice(b"ssh-ed25519");
+            blob.extend_from_slice(&32u32.to_be_bytes());
+            blob.extend_from_slice(&[tag; 32]);
+            blob
+        }
+        let (key, other) = (ed25519(1), ed25519(2));
+        let cert = openssh_cert_fixture(&key);
+
+        assert!(certifies(&cert, &key));
+        assert!(!certifies(&cert, &other), "another key's certificate");
+        assert!(!certifies(&openssh_cert_fixture(&other), &key));
+        assert!(
+            !certifies(&other, &key),
+            "a plain key blob is no certificate"
+        );
+        assert!(!certifies(&cert[..cert.len() / 3], &key), "truncated");
+        assert!(!certifies(&cert, &key[..15]), "a key blob with no fields");
+
+        // `sk-` key types drop their `@openssh.com` before the cert suffix.
+        let mut sk_key = Vec::new();
+        let sk_type = b"sk-ssh-ed25519@openssh.com";
+        sk_key.extend_from_slice(&u32::try_from(sk_type.len()).unwrap().to_be_bytes());
+        sk_key.extend_from_slice(sk_type);
+        sk_key.extend_from_slice(&key[15..]);
+        let mut sk_cert = Vec::new();
+        let sk_cert_type = b"sk-ssh-ed25519-cert-v01@openssh.com";
+        sk_cert.extend_from_slice(&u32::try_from(sk_cert_type.len()).unwrap().to_be_bytes());
+        sk_cert.extend_from_slice(sk_cert_type);
+        // The nonce, the fields and the tail of the ed25519 certificate, whose
+        // type string ("ssh-ed25519-cert-v01@openssh.com") is 4 + 32 bytes.
+        sk_cert.extend_from_slice(&cert[4 + 32..]);
+        assert!(certifies(&sk_cert, &sk_key));
     }
 
     #[test]

@@ -145,8 +145,12 @@ pub struct RdpConfig {
     /// Where the session audio is played. `Remote` forces FreeRDP fallback —
     /// IronRDP cannot signal `INFO_REMOTECONSOLEAUDIO` (issue #245).
     pub audio_mode: rustconn_core::models::RdpAudioMode,
-    /// What OS the server runs, for tailoring the toolbar (issue #366). `Linux`
-    /// hides the Windows-only admin tools and shell launchers.
+    /// What OS the server runs (issue #366). It tailors the toolbar — `Linux`
+    /// hides the Windows-only admin tools and shell launchers — and decides how
+    /// a resize reaches the server: `Windows` always uses Display Control,
+    /// `Linux` always reconnects, and `Auto` uses Display Control until the
+    /// server ignores a layout, then reconnects (see
+    /// [`Self::resize_needs_reconnect`]).
     pub server_os: rustconn_core::models::RdpServerOs,
     /// Additional FreeRDP arguments
     pub extra_args: Vec<String>,
@@ -210,6 +214,11 @@ pub struct RdpConfig {
     /// Force full reconnect on resize instead of Display Control Channel.
     /// Useful for legacy servers that don't support MS-RDPEDISP.
     pub reconnect_on_resize: bool,
+    /// Set at runtime, never saved: this server accepted a Display Control
+    /// monitor layout and did not apply it (xrdp on `Auto`). From then on the
+    /// session resizes by reconnecting, like a `Linux` server. Kept in the
+    /// runtime config so it outlives the reconnect that follows.
+    pub layout_resize_ignored: bool,
     /// Reconnect by itself when an established session's connection drops
     /// (`RdpConfig::auto_reconnect`). Read by the IronRDP path only.
     pub auto_reconnect: bool,
@@ -314,6 +323,7 @@ impl Default for RdpConfig {
             autotype_initial_delay_ms: 0,
             script_paste_via_clipboard: true,
             reconnect_on_resize: false,
+            layout_resize_ignored: false,
             auto_reconnect: true,
             dynamic_resolution: true,
             smart_sizing: false,
@@ -441,11 +451,72 @@ impl RdpConfig {
         self
     }
 
-    /// Sets what OS the server runs (tailors the toolbar; issue #366)
+    /// Sets what OS the server runs (tailors the toolbar and the resize path;
+    /// issue #366)
     #[must_use]
     pub const fn with_server_os(mut self, os: rustconn_core::models::RdpServerOs) -> Self {
         self.server_os = os;
         self
+    }
+
+    /// Whether a widget resize must go through a full reconnect rather than the
+    /// Display Control Channel (MS-RDPEDISP).
+    ///
+    /// True when the user forced it (`reconnect_on_resize`) or the server is a
+    /// Linux RDP server. A Linux server (xrdp with xorgxrdp) accepts the
+    /// MS-RDPEDISP monitor layout and resizes its RANDR screen, but — unlike
+    /// Windows — does not follow it with a Deactivation-Reactivation Sequence,
+    /// so the embedded client never rebuilds its framebuffer for the new size
+    /// and the desktop stays at the old resolution with black bars. A reconnect
+    /// starts a fresh session at the requested resolution, which is how a Linux
+    /// server reaches the new size reliably.
+    ///
+    /// Also true once an `Auto` server has ignored a layout
+    /// ([`Self::layout_resize_ignored`]): `Auto` cannot tell xrdp from Windows
+    /// up front, so the first resize tries Display Control and the session
+    /// client reports when nothing happened.
+    #[must_use]
+    pub fn resize_needs_reconnect(&self) -> bool {
+        self.reconnect_on_resize
+            || self.layout_resize_ignored
+            || matches!(self.server_os, rustconn_core::models::RdpServerOs::Linux)
+    }
+
+    /// Whether a layout the server ignored should fall back to a reconnect.
+    ///
+    /// `Windows` keeps the seamless path: Windows applies layouts, so a slow
+    /// answer is not a reason to tear the session down. `Auto` and `Linux`
+    /// reconnect (a `Linux` session sends no layouts, so only `Auto` gets here
+    /// in practice).
+    #[must_use]
+    pub fn falls_back_when_layout_ignored(&self) -> bool {
+        !matches!(self.server_os, rustconn_core::models::RdpServerOs::Windows)
+    }
+
+    /// The config to reconnect with after the session client reported
+    /// `DisplayControlUnavailable` for a `width` × `height` layout, or `None`
+    /// when the session keeps Display Control instead
+    /// ([`Self::falls_back_when_layout_ignored`]).
+    ///
+    /// An ignored layout also sets [`Self::layout_resize_ignored`]. The
+    /// reconnect reuses this runtime config, so the flag lasts for the rest of
+    /// the session: once it is set no layout is sent again, and nothing could
+    /// show that a later one would be applied.
+    #[must_use]
+    pub fn after_display_control_unavailable(
+        &self,
+        width: u16,
+        height: u16,
+        layout_ignored: bool,
+    ) -> Option<Self> {
+        if layout_ignored && !self.falls_back_when_layout_ignored() {
+            return None;
+        }
+        let mut next = self
+            .clone()
+            .with_resolution(u32::from(width), u32::from(height));
+        next.layout_resize_ignored |= layout_ignored;
+        Some(next)
     }
 
     /// Sets where the session audio is played
@@ -622,6 +693,110 @@ mod tests {
     fn test_rdp_config_default_polling() {
         let config = RdpConfig::new("test.example.com");
         assert_eq!(config.polling_interval_ms, 16); // Default ~60 FPS
+    }
+
+    #[test]
+    fn resize_needs_reconnect_follows_server_os_and_toggle() {
+        use rustconn_core::models::RdpServerOs;
+
+        // Default (Auto) with the toggle off uses the seamless MS-RDPEDISP path.
+        let base = RdpConfig::new("host");
+        assert!(!base.resize_needs_reconnect());
+
+        // Windows keeps the seamless path — Windows honours MS-RDPEDISP.
+        assert!(
+            !base
+                .clone()
+                .with_server_os(RdpServerOs::Windows)
+                .resize_needs_reconnect()
+        );
+
+        // Linux forces reconnect: xrdp resizes RANDR but sends no
+        // Deactivation-Reactivation, so the seamless path leaves black bars.
+        assert!(
+            base.clone()
+                .with_server_os(RdpServerOs::Linux)
+                .resize_needs_reconnect()
+        );
+
+        // The explicit user toggle still forces reconnect regardless of OS.
+        let mut forced = base.clone().with_server_os(RdpServerOs::Auto);
+        forced.reconnect_on_resize = true;
+        assert!(forced.resize_needs_reconnect());
+
+        // An Auto server that ignored a layout reconnects from then on.
+        let mut ignored = base.with_server_os(RdpServerOs::Auto);
+        ignored.layout_resize_ignored = true;
+        assert!(ignored.resize_needs_reconnect());
+    }
+
+    #[test]
+    fn only_windows_keeps_display_control_when_a_layout_is_ignored() {
+        use rustconn_core::models::RdpServerOs;
+
+        let base = RdpConfig::new("host");
+        assert!(base.falls_back_when_layout_ignored(), "Auto is the default");
+        assert!(
+            base.clone()
+                .with_server_os(RdpServerOs::Linux)
+                .falls_back_when_layout_ignored()
+        );
+        assert!(
+            !base
+                .with_server_os(RdpServerOs::Windows)
+                .falls_back_when_layout_ignored()
+        );
+    }
+
+    #[test]
+    fn an_ignored_layout_on_auto_reconnects_at_the_new_size_for_good() {
+        let auto = RdpConfig::new("host").with_resolution(1280, 800);
+        let next = auto
+            .after_display_control_unavailable(1600, 900, true)
+            .expect("Auto falls back to a reconnect");
+        assert_eq!((next.width, next.height), (1600, 900));
+        assert!(next.layout_resize_ignored);
+        assert!(next.resize_needs_reconnect());
+
+        // The reconnect and every later resize start from this runtime config
+        // (`reconnect`, `reconnect_with_resolution` and the resize handler
+        // clone it and change the resolution), so the session keeps resizing
+        // by reconnecting.
+        let after_reconnect = next.clone().with_resolution(1920, 1080);
+        assert!(after_reconnect.resize_needs_reconnect());
+
+        // A second report keeps the flag.
+        let again = after_reconnect
+            .after_display_control_unavailable(1024, 768, false)
+            .expect("an unavailable channel reconnects");
+        assert!(again.layout_resize_ignored);
+    }
+
+    #[test]
+    fn windows_keeps_display_control_when_a_layout_is_ignored() {
+        let windows =
+            RdpConfig::new("host").with_server_os(rustconn_core::models::RdpServerOs::Windows);
+        assert!(
+            windows
+                .after_display_control_unavailable(1600, 900, true)
+                .is_none()
+        );
+        assert!(!windows.resize_needs_reconnect());
+    }
+
+    #[test]
+    fn an_unavailable_channel_reconnects_without_marking_the_layout_ignored() {
+        use rustconn_core::models::RdpServerOs;
+
+        for os in [RdpServerOs::Auto, RdpServerOs::Windows] {
+            let next = RdpConfig::new("host")
+                .with_server_os(os)
+                .after_display_control_unavailable(1600, 900, false)
+                .expect("no Display Control channel always reconnects");
+            assert_eq!((next.width, next.height), (1600, 900));
+            assert!(!next.layout_resize_ignored, "{os:?}");
+            assert!(!next.resize_needs_reconnect(), "{os:?}");
+        }
     }
 
     #[test]

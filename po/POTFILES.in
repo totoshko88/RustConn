@@ -31,6 +31,7 @@ rustconn/src/window/copy_field_actions.rs
 rustconn/src/window/detach_actions.rs
 rustconn/src/window/edit_actions.rs
 rustconn/src/window/key_setup.rs
+rustconn/src/window/key_unlock.rs
 rustconn/src/window/edit_dialogs.rs
 rustconn/src/window/fullscreen_header.rs
 rustconn/src/window/edit_group.rs
@@ -97,6 +98,7 @@ rustconn/src/dialogs/keyboard.rs
 rustconn/src/dialogs/key_setup.rs
 rustconn/src/dialogs/kdbx_unlock.rs
 rustconn/src/dialogs/portable_unlock.rs
+rustconn/src/dialogs/key_unlock.rs
 rustconn/src/dialogs/portable_migration.rs
 rustconn/src/dialogs/portable_passphrase_change.rs
 rustconn/src/dialogs/credential_transfer.rs

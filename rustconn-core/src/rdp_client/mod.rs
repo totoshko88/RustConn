@@ -21,7 +21,7 @@
 //! dynamic virtual channel (`ironrdp-egfx`) for the GFX pipeline with
 //! H.264/AVC decoding via OpenH264 (loaded at runtime via `dlopen`).
 //! The pipeline auto-selects the best mode: GfxAvc444 > GfxH264 > Gfx >
-//! RemoteFX > Legacy. See [`gfx_handler`] and [`graphics`] for details.
+//! RemoteFX > Legacy. See the `gfx_handler` and `graphics` modules for details.
 //!
 //! # Feature Flag
 //!
@@ -97,7 +97,8 @@ pub use event::{
 pub use failure::{
     AUTO_RECONNECT_MAX_ATTEMPTS, AuthFailureKind, RdpFailureClass, auto_reconnect_delay,
     classify_auth_failure, classify_rdp_failure, is_authentication_failure,
-    is_license_exchange_failure, warrants_tls_only_fallback, warrants_tls_only_stall_fallback,
+    is_license_exchange_failure, split_error_cause, warrants_tls_only_fallback,
+    warrants_tls_only_stall_fallback,
 };
 pub use gateway::{
     GatewayAuthMethod, GatewayConfig, GatewayError, GatewayState, resolve_gateway_user,

@@ -957,7 +957,7 @@ impl SettingsDialog {
                     match result {
                         Ok(cleared) => {
                             tracing::info!(cleared, "Reset per-connection monitoring overrides");
-                            preferences.add_toast(adw::Toast::new(&i18n_f(
+                            preferences.add_toast(crate::toast::plain_toast(&i18n_f(
                                 "Connections reset to the global monitoring setting: {}",
                                 &[&cleared.to_string()],
                             )));

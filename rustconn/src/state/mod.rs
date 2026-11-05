@@ -1359,7 +1359,6 @@ impl AppState {
                             password: Some(secrecy::SecretString::from(
                                 password.as_str().to_owned(),
                             )),
-                            key_passphrase: None,
                             domain: None,
                         }
                     };
@@ -1455,7 +1454,6 @@ impl AppState {
                         Credentials {
                             username: None,
                             password: Some(password),
-                            key_passphrase: None,
                             domain: None,
                         }
                     };
@@ -1533,7 +1531,6 @@ impl AppState {
                                     Credentials {
                                         username: None,
                                         password: Some(password),
-                                        key_passphrase: None,
                                         domain: None,
                                     }
                                 };
@@ -1824,7 +1821,6 @@ impl AppState {
                                 Credentials {
                                     username: None,
                                     password: Some(password),
-                                    key_passphrase: None,
                                     domain: None,
                                 }
                             };
@@ -1866,7 +1862,6 @@ impl AppState {
                                             Credentials {
                                                 username: None,
                                                 password: Some(password),
-                                                key_passphrase: None,
                                                 domain: None,
                                             }
                                         };
@@ -2589,7 +2584,6 @@ mod cacheable_credentials_tests {
         Credentials {
             username: username.map(str::to_string),
             password: password.map(|p| SecretString::from(p.to_string())),
-            key_passphrase: None,
             domain: domain.map(str::to_string),
         }
     }

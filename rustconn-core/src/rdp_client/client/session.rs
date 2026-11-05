@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
 
 use ironrdp_connector::ConnectionResult;
 use ironrdp_connector::connection_activation::{
@@ -13,9 +14,11 @@ use ironrdp_tokio::{
     Framed, FramedRead, FramedWrite, single_sequence_step_read, split_tokio_framed,
 };
 
+use super::super::failure::error_chain;
 use super::super::{RdpClientCommand, RdpClientError, RdpClientEvent, RdpRect};
 use super::commands::process_command;
 use super::connection::UpgradedFramed;
+use super::resize_watch::ResizeWatch;
 
 /// Runs the active RDP session, processing framebuffer updates and input
 ///
@@ -95,7 +98,19 @@ pub(super) async fn run_active_session(
         None => (None, None),
     };
 
+    // The last monitor layout sent and not yet applied; see `resize_watch`.
+    let mut resize_watch: Option<ResizeWatch> = None;
+
     loop {
+        // Both a reactivation and a graphics reset replace `image`, so its size
+        // tells whether the server applied the layout, whichever path it took.
+        if let Some(watch) =
+            ResizeWatch::take_applied(&mut resize_watch, image_size(&image), Instant::now())
+        {
+            tracing::debug!(requested = ?watch.requested(), "Server applied the monitor layout");
+        }
+        let resize_deadline = resize_watch.map(|watch| watch.deadline());
+
         // Check shutdown signal
         if shutdown_signal.load(Ordering::SeqCst) {
             if let Ok(frames) = active_stage.graceful_shutdown() {
@@ -122,6 +137,26 @@ pub(super) async fn run_active_session(
                     {
                         sink(packet);
                     }
+                } else if let RdpClientCommand::SetDesktopSize { width, height, scale_percent } = cmd {
+                    // Sent here rather than in `process_command` so the layout
+                    // can be watched: a server that ignores it would otherwise
+                    // leave the old desktop size with black bars around it.
+                    // A layout that did not go out also clears an earlier watch.
+                    let sent = super::commands::send_desktop_size(
+                        &mut active_stage,
+                        &mut writer,
+                        &event_tx,
+                        width,
+                        height,
+                        scale_percent,
+                    )
+                    .await;
+                    resize_watch = ResizeWatch::after_send(
+                        sent,
+                        (width, height),
+                        image_size(&image),
+                        Instant::now(),
+                    );
                 } else if process_command(
                     cmd,
                     &mut active_stage,
@@ -185,14 +220,20 @@ pub(super) async fn run_active_session(
                                 );
                             }
                             Err(e) => {
-                                return Err(RdpClientError::ProtocolError(format!("Session error: {e}")));
+                                return Err(RdpClientError::ProtocolError(format!(
+                                    "Session error: {}",
+                                    error_chain(&e)
+                                )));
                             }
                         }
                     }
                     Err(e) => {
                         // The session was up, so this is the link dropping, not
                         // a connection failing to start; see `ConnectionLost`.
-                        return Err(RdpClientError::ServerDisconnected(format!("Read error: {e}")));
+                        return Err(RdpClientError::ServerDisconnected(format!(
+                            "Read error: {}",
+                            error_chain(&e)
+                        )));
                     }
                 }
             }
@@ -206,10 +247,33 @@ pub(super) async fn run_active_session(
             _ = clipboard_timeouts.tick() => {
                 super::commands::drive_clipboard_timeouts(&mut active_stage, &mut writer).await;
             }
+
+            // Branch 5: a monitor layout the server has not applied in time.
+            () = sleep_until_deadline(resize_deadline) => {
+                if let Some(event) =
+                    ResizeWatch::expire(&mut resize_watch, image_size(&image), Instant::now())
+                {
+                    let _ = event_tx.send(event);
+                }
+            }
         }
     }
 
     Ok(())
+}
+
+/// The session image's size, the desktop size the server last set.
+fn image_size(image: &DecodedImage) -> (u16, u16) {
+    (image.width(), image.height())
+}
+
+/// Sleeps until `deadline`, or forever when there is none, so the `select!`
+/// branch only fires while a layout is being watched.
+async fn sleep_until_deadline(deadline: Option<Instant>) {
+    match deadline {
+        Some(deadline) => tokio::time::sleep_until(tokio::time::Instant::from_std(deadline)).await,
+        None => std::future::pending().await,
+    }
 }
 
 /// Answers the shared-folder change notifications the directory watcher has
@@ -634,6 +698,47 @@ fn extract_region_data(image: &DecodedImage, rect: RdpRect) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// With no layout watched, the deadline branch of the session loop must
+    /// never fire.
+    #[tokio::test]
+    async fn no_resize_deadline_never_wakes_the_loop() {
+        let wait = tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            sleep_until_deadline(None),
+        );
+        assert!(wait.await.is_err());
+    }
+
+    /// A deadline that has passed wakes the deadline branch at once.
+    #[tokio::test]
+    async fn a_passed_resize_deadline_wakes_the_loop() {
+        let wait = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            sleep_until_deadline(Some(Instant::now())),
+        );
+        assert!(wait.await.is_ok());
+    }
+
+    /// Issue #407 reported only `[payload error] PDU error`; the reason the
+    /// channel gave sits in the source and has to reach the message.
+    #[test]
+    fn a_session_error_names_its_cause() {
+        use ironrdp_session::{SessionError, SessionErrorExt as _};
+
+        let error = SessionError::pdu(ironrdp_pdu::pdu_other_err!(
+            "dynamic drive removal is not supported by this RDPDR backend"
+        ));
+        let text = error_chain(&error);
+        assert!(
+            text.starts_with("[payload error] PDU error, caused by: "),
+            "{text}"
+        );
+        assert!(
+            text.contains("dynamic drive removal is not supported"),
+            "{text}"
+        );
+    }
 
     /// Builds a real MCS Send Data Indication frame for `channel_id`.
     ///

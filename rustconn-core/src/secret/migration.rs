@@ -276,7 +276,6 @@ mod tests {
             let creds = Credentials {
                 username: Some(format!("user-{name}")),
                 password: Some(SecretString::from(format!("pw-{name}"))),
-                key_passphrase: None,
                 domain: None,
             };
             let stored = super::super::encrypted_file::StoredCredentials::from_credentials(&creds);

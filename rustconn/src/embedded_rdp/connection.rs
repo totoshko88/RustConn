@@ -1422,6 +1422,7 @@ impl super::EmbeddedRdpWidget {
         let stale_label = self.reconnect_label.clone();
         let auto_reconnect_attempt = self.auto_reconnect_attempt.clone();
         let auto_reconnect_timer = self.auto_reconnect_timer.clone();
+        let refused_shared_folders = self.refused_shared_folders.clone();
         let drawing_area = self.drawing_area.clone();
         let toolbar = self.toolbar.clone();
         let on_state_changed = self.on_state_changed.clone();
@@ -1492,6 +1493,18 @@ impl super::EmbeddedRdpWidget {
             let snap_attempted = snap_attempted.clone();
             std::rc::Rc::new(move || {
                 if snap_attempted.get() {
+                    return;
+                }
+                // A server that resizes only by reconnecting (Linux, the
+                // toggle, or an Auto server that ignored a layout) would leave
+                // the snap's layout unapplied, and an ignored layout falls back
+                // to a reconnect: not worth it for a few pixels the viewer
+                // already scales away.
+                if config
+                    .borrow()
+                    .as_ref()
+                    .is_some_and(super::types::RdpConfig::resize_needs_reconnect)
+                {
                     return;
                 }
                 let server_w = *rdp_width_ref.borrow();
@@ -2305,13 +2318,18 @@ impl super::EmbeddedRdpWidget {
                                 let snap: &dyn Fn() = &*snap_to_settled;
                                 snap();
                             }
-                            RdpClientEvent::DisplayControlUnavailable { width, height } => {
+                            RdpClientEvent::DisplayControlUnavailable {
+                                width,
+                                height,
+                                layout_ignored,
+                            } => {
                                 super::polling_handlers::handle_display_control_unavailable(
                                     &config,
                                     &ironrdp_tx,
                                     &on_reconnect,
                                     width,
                                     height,
+                                    layout_ignored,
                                 );
                             }
                             RdpClientEvent::Rtt { rtt_ms } => {
@@ -2338,6 +2356,19 @@ impl super::EmbeddedRdpWidget {
                                 file_dnd_cb
                                     .borrow_mut()
                                     .disable("Server does not support file clipboard");
+                            }
+                            RdpClientEvent::SharedFolderRejected { name } => {
+                                // The core logged the refusal at warn; the session
+                                // continues, so this is a notice, not an error.
+                                // Once per tab: each reconnect announces again.
+                                let first_refusal =
+                                    refused_shared_folders.borrow_mut().insert(name.clone());
+                                if first_refusal {
+                                    crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                                        "The server refused the shared folder “{}”",
+                                        &[&name],
+                                    ));
+                                }
                             }
                             RdpClientEvent::GfxDecodeFailure {
                                 consecutive_failures,
@@ -3093,18 +3124,22 @@ Open Settings → Connection → Media Codecs to re-download it.",
             });
             return Self::auth_failure_message(&kind, kerberos, realm.as_deref());
         }
+        // Worded by the error's own text: a `tls` or `timed out` somewhere in
+        // a session error's cause chain says nothing about the connection.
+        let own = rustconn_core::rdp_client::split_error_cause(msg).0;
         // TLS errors
-        if msg.contains("TLS") || msg.contains("tls") {
+        if own.contains("TLS") || own.contains("tls") {
             return i18n("TLS connection failed. The server may not support this security level.");
         }
         // Connection refused / unreachable
-        if msg.contains("Connection refused") || msg.contains("connection refused") {
+        if own.contains("Connection refused") || own.contains("connection refused") {
             return i18n("Connection refused. Check host and port.");
         }
-        if msg.contains("timed out") || msg.contains("Timeout") {
+        if own.contains("timed out") || own.contains("Timeout") {
             return i18n("Connection timed out. Check that the host is reachable.");
         }
-        // Fallback: return original message (already formatted by EmbeddedClientError)
+        // Fallback: the original message (already formatted by
+        // EmbeddedClientError), cause chain included, for the history entry.
         msg.to_string()
     }
 

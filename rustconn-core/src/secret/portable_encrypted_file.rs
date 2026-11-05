@@ -1311,7 +1311,6 @@ mod tests {
         Credentials {
             username: Some("alice".to_string()),
             password: Some(SecretString::from("s3cr3t".to_owned())),
-            key_passphrase: None,
             domain: None,
         }
     }

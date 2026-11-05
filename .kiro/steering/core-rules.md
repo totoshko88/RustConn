@@ -10,7 +10,7 @@ the crate table, the `-sys` mechanics and the detail behind a few rules.
 Terminal rules: `shell-environment.md`. Philosophy and escape hatches:
 `project-rules.md` (manual). One source per rule.
 
-## Architecture (7 crates)
+## Architecture (8 crates)
 
 | Crate | Purpose | Restrictions |
 |-------|---------|-------------|
@@ -21,12 +21,14 @@ Terminal rules: `shell-environment.md`. Philosophy and escape hatches:
 | `rustconn-locale-sys` | Isolated FFI: startup `setlocale`, refused once *this program* spawns a thread of its own (baseline growth, Linux only), once a call arrives from another thread, or after sealing | Sanctioned `unsafe` (M-UNSAFE); `gettext-rs` only |
 | `rustconn-env-sys` | Isolated FFI: the startup `GSK_RENDERER` and `LANGUAGE` writes, guarded the same way | Sanctioned `unsafe` (M-UNSAFE); no dependencies |
 | `rustconn-dock-sys` | Isolated FFI: the macOS Dock tile image via `-[NSApplication setApplicationIconImage:]`, for launches with no `.app` behind them. Main-thread proof via `objc2::MainThreadMarker`; a violation is an outcome, not a panic — a wrong Dock tile is cosmetic | Sanctioned `unsafe` (M-UNSAFE); `objc2` + AppKit bindings, macOS-gated |
+| `rustconn-lock-sys` | Isolated FFI: macOS screen lock (`com.apple.screenIsLocked`, delivered immediately) and `NSWorkspaceWillSleepNotification`, reported as `LockSignal`; the GUI maps it into `rustconn-core::lock_events::notify`. Observers removed when the guard drops; main thread proved by `MainThreadMarker`, a violation is an outcome | Sanctioned `unsafe` (M-UNSAFE); `objc2` + AppKit bindings, macOS-gated |
 
 Every `-sys` crate is an **unconditional** workspace member and dependency, with
-`#[cfg]` inside where the platform differs — no CI job builds macOS, so a
-macOS-only crate would be `unsafe` nothing ever checks. `rustconn-dock-sys` is
-the one crate whose *dependencies* are target-gated, because `objc2-app-kit` does
-not compile off Apple; its API and guard are still built and tested everywhere.
+`#[cfg]` inside where the platform differs — only the `macos-sys` CI job builds
+macOS, so a macOS-only crate would be `unsafe` almost nothing checks.
+`rustconn-dock-sys` and `rustconn-lock-sys` are the crates whose *dependencies*
+are target-gated, because `objc2-app-kit` does not compile off Apple; their API
+and guards are still built and tested everywhere.
 Use that shape only when bindings genuinely cannot build elsewhere, and check the
 gated path with `cargo clippy -p <crate> --target aarch64-apple-darwin` (no SDK
 needed for check/clippy). New FFI gets its own `rustconn-*-sys` crate.

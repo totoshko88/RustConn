@@ -401,8 +401,12 @@ fn retrieve_remote_recording(remote: &RemoteRecordingInfo) -> bool {
             args.push("-o".to_string());
             args.push(format!("UserKnownHostsFile={}", kh.display()));
         }
+        // Runs in the background after the session the user connected (and
+        // accepted the host key) in: only a key already known is trusted, so
+        // this copy can never record one on its own. An unknown key fails it,
+        // which leaves the recording on the remote host.
         args.push("-o".to_string());
-        args.push("StrictHostKeyChecking=accept-new".to_string());
+        args.push("StrictHostKeyChecking=yes".to_string());
         args.push("-o".to_string());
         args.push("ConnectTimeout=5".to_string());
     };

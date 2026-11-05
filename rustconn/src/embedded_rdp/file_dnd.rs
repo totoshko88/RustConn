@@ -222,7 +222,7 @@ pub fn setup_rdp_file_drop_target<F>(
                     .to_string();
 
                 let toast =
-                    libadwaita::Toast::new(&i18n_f("File drag disabled: {}", &[&error_msg]));
+                    crate::toast::plain_toast(&i18n_f("File drag disabled: {}", &[&error_msg]));
                 toast.set_timeout(5);
 
                 // "Try Again" button resets the circuit breaker

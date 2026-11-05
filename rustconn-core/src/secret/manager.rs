@@ -839,7 +839,6 @@ impl CredentialUpdate {
             } else {
                 self.password.clone().or_else(|| existing.password.clone())
             },
-            key_passphrase: existing.key_passphrase.clone(),
             domain: self.domain.clone().or_else(|| existing.domain.clone()),
         }
     }
@@ -1235,7 +1234,6 @@ mod portable_tests {
                         &crate::models::Credentials {
                             username: Some("alice".to_owned()),
                             password: Some(secrecy::SecretString::from("s3cr3t".to_owned())),
-                            key_passphrase: None,
                             domain: None,
                         },
                     )

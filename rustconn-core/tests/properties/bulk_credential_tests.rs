@@ -166,18 +166,6 @@ proptest! {
         let result = update.apply(&existing);
         prop_assert_eq!(result.domain.as_deref(), Some(new_domain.as_str()));
     }
-
-    /// Property: apply preserves key_passphrase (never modified by update)
-    #[test]
-    fn apply_preserves_key_passphrase(_dummy in 0..1) {
-        use secrecy::SecretString;
-        let mut existing = Credentials::empty();
-        existing.key_passphrase = Some(SecretString::from("passphrase".to_string()));
-        let update = CredentialUpdate::new().with_username("newuser");
-        let result = update.apply(&existing);
-        prop_assert!(result.key_passphrase.is_some());
-        prop_assert_eq!(result.expose_key_passphrase(), Some("passphrase"));
-    }
 }
 
 #[test]

@@ -597,7 +597,9 @@ fn detect_pass(
                 ))
             } else {
                 Some((
-                    i18n("Not initialized (run 'pass init &lt;gpg-id&gt;')"),
+                    // Plain text: it reaches a GtkLabel via `set_text` and the
+                    // secret-backend banner, neither of which parses markup.
+                    i18n("Not initialized (run 'pass init <gpg-id>')"),
                     "warning",
                 ))
             }

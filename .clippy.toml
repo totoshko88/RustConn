@@ -5,3 +5,12 @@ too-many-arguments-threshold = 7
 type-complexity-threshold = 250
 # IronRDP-inspired: allow unwrap/expect in test code (inline #[cfg(test)] modules)
 allow-unwrap-in-tests = true
+# adw::Toast and adw::Banner parse their title as Pango markup by default, so a
+# name or path with `&` or `<` breaks them. The paths use the crate name
+# `libadwaita`; `adw` is only the local rename. Denied in rustconn's [lints].
+disallowed-methods = [
+    { path = "libadwaita::Toast::new", reason = "parses the title as markup; use toast::plain_toast" },
+    { path = "libadwaita::Toast::builder", reason = "parses the title as markup; use toast::plain_toast" },
+    { path = "libadwaita::Banner::new", reason = "parses the title as markup; use toast::plain_banner" },
+    { path = "libadwaita::Banner::builder", reason = "parses the title as markup; use toast::plain_banner" },
+]

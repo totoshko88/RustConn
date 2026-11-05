@@ -72,21 +72,14 @@ fn arb_ssh_connection_with_key() -> impl Strategy<Value = Connection> {
 }
 
 /// Generates credentials for SSH key authentication
-/// These credentials should only contain username and optionally key passphrase,
-/// but NEVER the actual private key content
+/// These credentials contain only a username, never the actual private key
+/// content (and no key passphrase: `Credentials` has no field for one)
 fn arb_ssh_key_credentials() -> impl Strategy<Value = Credentials> {
-    (
-        prop::option::of(arb_username()),
-        prop::option::of("[a-zA-Z0-9!@#$%^&*]{8,32}"), // Optional key passphrase
-    )
-        .prop_map(|(username, passphrase)| {
-            let mut creds = Credentials::empty();
-            creds.username = username;
-            if let Some(p) = passphrase {
-                creds.key_passphrase = Some(secrecy::SecretString::from(p));
-            }
-            creds
-        })
+    prop::option::of(arb_username()).prop_map(|username| {
+        let mut creds = Credentials::empty();
+        creds.username = username;
+        creds
+    })
 }
 
 /// Simulates what private key content might look like
@@ -155,19 +148,6 @@ proptest! {
             prop_assert!(
                 !looks_like_private_key(password),
                 "Credentials password should never contain private key content"
-            );
-        }
-
-        // Verify: Key passphrase is for unlocking the key, not the key itself
-        if let Some(passphrase) = credentials.expose_key_passphrase() {
-            prop_assert!(
-                !looks_like_private_key(passphrase),
-                "Credentials key_passphrase should be a passphrase, not private key content"
-            );
-            // Passphrases are typically short (< 100 chars)
-            prop_assert!(
-                passphrase.len() < 200,
-                "Key passphrase should be reasonably short, not key content"
             );
         }
     }

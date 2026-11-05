@@ -25,6 +25,7 @@ use super::{RdpClientCommand, RdpClientConfig, RdpClientError, RdpClientEvent};
 
 mod commands;
 mod connection;
+mod resize_watch;
 mod session;
 
 /// Sender for commands to the RDP client (thread-safe, works from sync and async code)

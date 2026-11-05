@@ -81,6 +81,21 @@ sudo snap connect rustconn:oci-credentials        # ~/.oci (read-only)
 sudo snap connect rustconn:kube-credentials       # ~/.kube (read-only)
 ```
 
+### Screen lock and suspend
+
+When a jump-host (`-J`) connect, SFTP or Midnight Commander needs a key the SSH
+agent does not hold, RustConn adds it with a 12-hour lifetime and later removes
+exactly those keys again. In the snap:
+
+- **Exit:** the keys are removed when you quit RustConn.
+- **Screen lock:** the keys are removed. The `desktop` interface, connected
+  automatically, lets RustConn receive the screensaver's `ActiveChanged` signal.
+- **Suspend:** not detected. The snap declares no interface that delivers
+  login1's `PrepareForSleep`, and a snap user can only connect interfaces the
+  snap declares, so there is no step that turns it on. The keys stay in the
+  agent while the machine sleeps.
+- **12-hour lifetime:** applies in every case, also after a crash.
+
 ## Bundled Components
 
 The snap includes all core protocol clients — no separate installation needed:

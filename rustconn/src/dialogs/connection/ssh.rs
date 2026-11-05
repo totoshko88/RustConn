@@ -811,6 +811,22 @@ fn create_session_group() -> (
             .build();
     session_group.add(&agent_forwarding_row);
 
+    // What forwarding means for keys in the agent, shown only while it is on.
+    let agent_forwarding_note = adw::ActionRow::builder()
+        .title(i18n(
+            "While connected, the remote host can use the keys in your SSH agent, including keys RustConn unlocked.",
+        ))
+        .title_lines(0)
+        .use_markup(false)
+        .activatable(false)
+        .build();
+    agent_forwarding_note.add_prefix(&gtk4::Image::from_icon_name("dialog-information-symbolic"));
+    agent_forwarding
+        .bind_property("active", &agent_forwarding_note, "visible")
+        .sync_create()
+        .build();
+    session_group.add(&agent_forwarding_note);
+
     // Waypipe (Wayland application forwarding)
     let (waypipe_row, waypipe) = CheckboxRowBuilder::new(i18n("Waypipe"))
         .subtitle(i18n("Wayland application forwarding via waypipe"))

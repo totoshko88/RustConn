@@ -19,7 +19,8 @@ two points before changing anything.
   not compile off Apple platforms — there is no cross-platform stand-in for AppKit
   the way `std::env::set_var` is one for `setenv`. The crate itself, its API and its
   precondition guard are built and tested everywhere. Do not generalise this shape
-  to a new `-sys` crate. The `macos-sys` CI job covers the four existing helpers,
+  to a new `-sys` crate unless its bindings cannot build off Apple either
+  (`rustconn-lock-sys` is the one other case). The `macos-sys` CI job covers the helpers,
   but every other job is Linux, so a macOS-gated *crate* would still be `unsafe`
   that only one job in the matrix ever compiles — and the crate-level guard, the
   API and the contract tests are what the other jobs are there to check.
