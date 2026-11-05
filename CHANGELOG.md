@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.24.7] - 2026-11-05
+## [0.24.7] - 2026-11-06
 
 ### Added
 - **The Kubernetes connection editor can pick a context from the kubeconfig** — the Context field keeps its free-text entry but gains a button that lists the contexts defined in the kubeconfig the connection names (or `$KUBECONFIG` / `~/.kube/config` when the field is empty), with the current-context marked. The list is read with `serde_yaml`, taking only the context names and `current-context` and ignoring every other kubeconfig field; a missing or unreadable file simply offers nothing to pick. (`rustconn-core/src/protocol/kubernetes.rs`, `rustconn-core/src/protocol/mod.rs`, `rustconn/src/dialogs/connection/kubernetes.rs`)

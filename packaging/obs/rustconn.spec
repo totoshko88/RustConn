@@ -392,7 +392,7 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
-* Thu Nov 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7-0
+* Fri Nov 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7-0
 - Version bump to 0.24.7
 - Added: kubeconfig context picker in the Kubernetes editor
 - Added: local crash log for Rust panics with an Open Log banner

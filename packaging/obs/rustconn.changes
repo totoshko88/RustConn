@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Thu Nov 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7
+Fri Nov 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7
 - Version bump to 0.24.7
 - Added: the Kubernetes editor can pick a context from the kubeconfig
 - Added: a Rust panic is recorded to a local crash log, and the next
