@@ -214,6 +214,27 @@ pub(super) struct KeyFileBlobs {
     pub(super) cert_file: Option<Vec<u8>>,
 }
 
+impl KeyFileBlobs {
+    /// Whether an agent holding the blobs `held` already holds the key these
+    /// files name: the key's own blob, or the certificate beside it when that
+    /// certificate is for this key ([`certifies`]).
+    ///
+    /// Either one counts, because `ssh-add` of the key file loads both and an
+    /// add replaces the constraints (the lifetime, a confirmation) of a copy
+    /// the agent already holds. `false` when the key file does not name the
+    /// key.
+    pub(super) fn held_in(&self, held: &[Vec<u8>]) -> bool {
+        let Some(key) = self.key_file.as_deref() else {
+            return false;
+        };
+        held.iter().any(|h| h == key)
+            || self
+                .cert_file
+                .as_deref()
+                .is_some_and(|cert| certifies(cert, key) && held.iter().any(|h| h == cert))
+    }
+}
+
 /// Reads [`KeyFileBlobs`] for the private key at `key_path`; a source that
 /// cannot be read is `None`.
 ///

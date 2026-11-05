@@ -27,7 +27,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use zeroize::Zeroizing;
 
-use super::keyfile::{KeyEncryption, inspect_key_file, key_file_blobs};
+use super::keyfile::{KeyEncryption, KeyFileBlobs, inspect_key_file, key_file_blobs};
 
 /// Whether the agent ssh will use already holds a key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -211,16 +211,22 @@ fn check(socket_path: Option<&str>, key_path: &Path) -> UnlockDecision {
         // No agent query for a key that needs no passphrase.
         return decide(encryption, AgentHolds::Unknown, false);
     }
-    let holds = key_file_blobs(key_path)
-        .key_file
-        .map_or(AgentHolds::Unknown, |blob| agent_holds(socket_path, &blob));
+    let blobs = key_file_blobs(key_path);
+    let holds = if blobs.key_file.is_some() {
+        agent_holds(socket_path, &blobs)
+    } else {
+        AgentHolds::Unknown
+    };
     decide(encryption, holds, agent_refused_add(socket_path))
 }
 
+/// Whether the agent holds the key, or the key's certificate without it
+/// ([`KeyFileBlobs::held_in`]): unlocking would add that certificate again
+/// and replace its constraints, and ssh can already use it.
 #[cfg(unix)]
-fn agent_holds(socket_path: &str, blob: &[u8]) -> AgentHolds {
+fn agent_holds(socket_path: &str, blobs: &KeyFileBlobs) -> AgentHolds {
     match super::wire::request_identity_blobs(socket_path) {
-        Ok(held) if held.iter().any(|h| h == blob) => AgentHolds::Yes,
+        Ok(held) if blobs.held_in(&held) => AgentHolds::Yes,
         Ok(_) => AgentHolds::No,
         Err(e) => {
             tracing::debug!(error = %e, "could not ask the SSH agent which keys it holds");
@@ -231,7 +237,7 @@ fn agent_holds(socket_path: &str, blob: &[u8]) -> AgentHolds {
 
 /// No agent socket protocol off Unix.
 #[cfg(not(unix))]
-fn agent_holds(_socket_path: &str, _blob: &[u8]) -> AgentHolds {
+fn agent_holds(_socket_path: &str, _blobs: &KeyFileBlobs) -> AgentHolds {
     AgentHolds::Unknown
 }
 

@@ -127,9 +127,11 @@ impl OwnKeys {
     /// `socket_path`) unless the agent may already hold the key, and records
     /// what the add put there when the key's own file names it.
     ///
-    /// `blobs` is what the key's files say. Only [`KeyFileBlobs::key_file`]
-    /// decides whether to add: a key the agent already holds is left alone,
-    /// and a key whose file does not name it is added only into an agent that
+    /// `blobs` is what the key's files say. A key the agent already holds is
+    /// left alone, and so is a key whose certificate the agent holds without
+    /// the plain key ([`KeyFileBlobs::held_in`]): `ssh-add` would load that
+    /// certificate again and replace its constraints with RustConn's lifetime.
+    /// A key whose file does not name it is added only into an agent that
     /// holds nothing (a `.pub` beside it may be stale, so it is not trusted).
     /// The key is recorded when the agent shows it after the add; its
     /// certificate ([`KeyFileBlobs::cert_file`]) is recorded too when the
@@ -150,8 +152,11 @@ impl OwnKeys {
             ))
         })?;
         match blobs.key_file.as_deref() {
-            Some(blob) if before.iter().any(|held| held == blob) => {
-                tracing::debug!(?key_path, "SSH key already in the agent; not adding it");
+            Some(_) if blobs.held_in(&before) => {
+                tracing::debug!(
+                    ?key_path,
+                    "SSH key or its certificate already in the agent; not adding it"
+                );
                 return Ok(());
             }
             None if !before.is_empty() => {
@@ -883,8 +888,10 @@ mod tests {
         assert_eq!(agent.keys(), vec![users]);
     }
 
-    /// A certificate the agent held before RustConn's add was loaded by
-    /// someone else; only the key RustConn added is recorded.
+    /// A certificate blob for another key, which the `-cert.pub` names and
+    /// the agent held before RustConn's add, was loaded by someone else: the
+    /// key is added (the certificate does not stand for it), and only the key
+    /// RustConn added is recorded.
     #[test]
     fn a_certificate_held_before_the_add_is_not_recorded() {
         let (ours, users_cert) = (blob(30), blob(31));
@@ -903,6 +910,44 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(own.len(), 1);
         assert_eq!(own.evict(), 1);
+        assert_eq!(agent.keys(), vec![users_cert]);
+    }
+
+    /// An OpenSSH certificate blob for `key` (PROTOCOL.certkeys): the
+    /// certificate type, a nonce, the key's public fields, then the rest.
+    fn cert_for(key: &[u8]) -> Vec<u8> {
+        let mut cert = Vec::new();
+        ssh_string(&mut cert, b"ssh-ed25519-cert-v01@openssh.com");
+        ssh_string(&mut cert, &[0xAB; 32]);
+        // The key blob without its leading type string.
+        let type_len =
+            4 + usize::try_from(u32::from_be_bytes(key[..4].try_into().unwrap())).unwrap();
+        cert.extend_from_slice(&key[type_len..]);
+        cert.extend_from_slice(&7u64.to_be_bytes());
+        cert
+    }
+
+    /// The agent holds the key's certificate but not the plain key (the
+    /// user loaded only the certificate, or removed the key and kept it).
+    /// `ssh-add` of the key file would load that certificate again and
+    /// replace its constraints with RustConn's 12-hour lifetime, so the key
+    /// is not added, like a key the agent already holds, and nothing is
+    /// recorded.
+    #[test]
+    fn a_held_certificate_for_the_key_stops_the_add() {
+        let ours = blob(35);
+        let users_cert = cert_for(&ours);
+        assert!(
+            super::super::keyfile::certifies(&users_cert, &ours),
+            "the fixture is a certificate for the key"
+        );
+        let agent = FakeAgent::holding(&[&users_cert]);
+        let own = OwnKeys::new();
+
+        let (result, ran) = add_via(&own, &agent, &with_cert(&ours, &users_cert), &ours);
+        assert!(result.is_ok());
+        assert!(!ran, "the certificate's constraints are not replaced");
+        assert_eq!(own.len(), 0);
         assert_eq!(agent.keys(), vec![users_cert]);
     }
 
@@ -1120,6 +1165,38 @@ mod tests {
         assert_eq!(
             crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
             crate::ssh_agent::UnlockDecision::Skip(crate::ssh_agent::SkipReason::AlreadyInAgent)
+        );
+    }
+
+    /// An encrypted key whose certificate (`<key>-cert.pub`) the agent holds
+    /// without the plain key gets no unlock dialog: unlocking would load the
+    /// certificate again and replace its constraints, and ssh can already
+    /// authenticate with it. A certificate for another key does not count.
+    #[test]
+    fn a_held_certificate_for_the_key_needs_no_unlock() {
+        let key = blob(52);
+        let (_dir, key_path) = encrypted_key_file(&key);
+        let cert = cert_for(&key);
+        let mut cert_path = key_path.clone().into_os_string();
+        cert_path.push("-cert.pub");
+        std::fs::write(
+            &cert_path,
+            format!(
+                "ssh-ed25519-cert-v01@openssh.com {} u@h\n",
+                data_encoding::BASE64.encode(&cert)
+            ),
+        )
+        .unwrap();
+
+        let agent = FakeAgent::holding(&[&cert]);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&agent.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::Skip(crate::ssh_agent::SkipReason::AlreadyInAgent)
+        );
+        let other = FakeAgent::holding(&[&cert_for(&blob(53))]);
+        assert_eq!(
+            crate::ssh_agent::check_key_unlock(Some(&other.socket), &key_path),
+            crate::ssh_agent::UnlockDecision::AskPassphrase
         );
     }
 
