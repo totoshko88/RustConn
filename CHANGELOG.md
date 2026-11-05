@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.7] - 2026-11-05
+
+### Fixed
+- **A minimal RDP server that rejects the external client now says which client to use (issue #409)** — against a screen-sharing server that implements only the rdpgfx/AVC (EGFX) capability set, such as KRDP, the external FreeRDP client advertises the full standard RDP capabilities in Demand Active and the server tears the session down during the capabilities exchange (`CAPABILITIES_EXCHANGE` / `STATE_RUN_FAILED`). That failure used to surface as a bare `RDP connection failed (exit status …)`. It now reports that the server only speaks the embedded client's protocol and tells the user to set the connection's Client Mode to Embedded, which negotiates only the EGFX caps and connects to the same server. (`rustconn/src/embedded_rdp/connection.rs`, `po/`)
+
 ## [0.24.6] - 2026-11-05
 
 ### Added
