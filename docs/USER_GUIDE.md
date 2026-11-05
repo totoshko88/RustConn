@@ -326,7 +326,7 @@ It covers a connect, a reconnect, the key of the first jump host, and an SFTP or
 The passphrase is used for that one `ssh-add` and then forgotten. It is not saved, not put in any password vault and never read from one, so logging in with a key never depends on a vault. It reaches `ssh-add` through a file only your account can read, which is wiped and removed as soon as the add is done.
 
 - **Wrong passphrase:** the dialog stays open and says so. After three wrong attempts it closes, and the connect goes on without the key in the agent: `ssh` asks for the passphrase in the terminal, as it did before.
-- **Cancel:** the connect goes on exactly as before, with `ssh` asking in the terminal. RustConn remembers the Cancel for that key and agent until you quit, so later connects with the key do not open the dialog again and `ssh` asks in the terminal each time. To put the key in the agent after all, add it in **Settings → SSH Agent**.
+- **Cancel:** the connect goes on exactly as before, with `ssh` asking in the terminal. RustConn remembers the Cancel for that key and agent until you quit, so later connects with the key do not open the dialog again and `ssh` asks in the terminal each time. To put the key in the agent after all, add it in **Settings → Secrets → SSH Agent**.
 - **An agent that does not accept added keys** (the 1Password agent, for one): RustConn shows a short notice, `ssh` asks in the terminal, and RustConn does not open the dialog for that agent again in this session.
 - **Legacy key formats** (`BEGIN RSA PRIVATE KEY`, PKCS#8): no dialog; nothing changes for them. The same holds when the agent does not answer.
 
