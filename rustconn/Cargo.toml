@@ -42,7 +42,7 @@ dirs = { workspace = true }
 # Requires libdbus-1-dev on Ubuntu/Debian or dbus-devel on Fedora
 ksni = { version = "0.3", features = ["blocking"], optional = true }
 # SVG rendering for tray icon (renders SVG to ARGB32 pixmap)
-resvg = { version = "0.48", optional = true }
+resvg = { version = "0.49", optional = true }
 # macOS tray icon via NSStatusItem (cross-platform crate, used only on macOS)
 #
 # `default-features = false` on both, and it is not a micro-optimisation. The
