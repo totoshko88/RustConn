@@ -1156,6 +1156,40 @@ pub(super) fn when_established(
     });
 }
 
+/// Starts a session recording once an in-place reconnect is established, for
+/// a connection with session recording on.
+///
+/// The recording detector a fresh connect arms stands down when a reconnect
+/// replaces its process (see [`when_established`]), so without this a session
+/// whose first attempt failed was never recorded. A session's recording stops
+/// when its process exits, so a reconnected session starts a new one; one
+/// that is somehow still running is left alone.
+pub(super) fn record_reconnect_when_established(
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    client: StatusClient,
+    conn: &rustconn_core::Connection,
+    ssh_params: Option<crate::terminal::SshRecordingParams>,
+) {
+    if !conn.session_recording_enabled {
+        return;
+    }
+    let notebook_clone = notebook.clone();
+    let conn_name = conn.name.clone();
+    when_established(notebook, session_id, client, move || {
+        if notebook_clone.is_recording(session_id) {
+            tracing::debug!(%session_id, "Recording still running after the reconnect");
+            return;
+        }
+        if notebook_clone.start_recording(session_id, &conn_name, ssh_params) {
+            tracing::info!(
+                %session_id,
+                "Auto-recording started after an in-place reconnect"
+            );
+        }
+    });
+}
+
 /// Delegates to [`rustconn_core::ssh_tunnel::append_proxy_command_destination`].
 pub(super) fn append_proxy_command_destination(proxy_parts: &mut Vec<String>, jump_host: &str) {
     rustconn_core::ssh_tunnel::append_proxy_command_destination(proxy_parts, jump_host);
@@ -2217,6 +2251,36 @@ pub fn reconnect_generic_vte_in_place(
     when_established(notebook, session_id, StatusClient::Other, move || {
         sidebar.increment_session_count(&connection_id.to_string());
     });
+
+    // Auto-recording for the protocols whose fresh connect records, with
+    // the same remote-copy parameters (Zero Trust sessions are not recorded).
+    let recording_ssh_params = match &conn.protocol_config {
+        rustconn_core::ProtocolConfig::Telnet(_) => Some(crate::terminal::SshRecordingParams {
+            host: conn.host.clone(),
+            port: conn.port,
+            username: conn.username.clone(),
+            identity_file: None,
+        }),
+        rustconn_core::ProtocolConfig::Mosh(cfg) => Some(crate::terminal::SshRecordingParams {
+            host: conn.host.clone(),
+            port: cfg.ssh_port.unwrap_or(22),
+            username: conn.username.clone(),
+            identity_file: None,
+        }),
+        _ => None,
+    };
+    if !matches!(
+        conn.protocol_config,
+        rustconn_core::ProtocolConfig::ZeroTrust(_)
+    ) {
+        record_reconnect_when_established(
+            notebook,
+            session_id,
+            StatusClient::Other,
+            &conn,
+            recording_ssh_params,
+        );
+    }
 
     true
 }

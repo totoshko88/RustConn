@@ -2177,6 +2177,21 @@ fn reconnect_ssh_after_unlock(
         });
     }
 
+    // Auto-recording, as on the initial connect: the initial connect's
+    // detector stood down when this reconnect replaced its process.
+    super::protocols::record_reconnect_when_established(
+        notebook,
+        session_id,
+        status_client,
+        &conn,
+        Some(crate::terminal::SshRecordingParams {
+            host: host.clone(),
+            port,
+            username: username.clone(),
+            identity_file: identity_file.clone(),
+        }),
+    );
+
     // Deferred monitoring start — resolved exactly as on the initial connect.
     if let Ok(state_ref) = state.try_borrow() {
         let session_settings = rustconn_core::monitoring::effective_monitoring(
