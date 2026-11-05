@@ -338,10 +338,11 @@ fn classify_client_output(joined: &str, status_str: &str) -> FreerdpFailure {
         // the same server. Tell the user which client to use (the UI calls it
         // the "Embedded" Client Mode) rather than leaving them with a bare
         // `exit status`. (issue #409)
+        // One literal on purpose: a `\`-continued string drops the next line's
+        // indent at compile time but xgettext keeps it, so the msgid would
+        // never match the runtime text and the translation would never load.
         FreerdpFailure::Error(i18n(
-            "The server rejected the external client during the capabilities exchange. \
-             This server (for example KRDP) only speaks the embedded client's protocol. \
-             Set the connection's Client Mode to Embedded and connect again.",
+            "The server rejected the external client during the capabilities exchange. This server (for example KRDP) only speaks the embedded client's protocol. Set the connection's Client Mode to Embedded and connect again.",
         ))
     } else if reports_changed_certificate(joined)
         || joined.contains("certificate not trusted")
