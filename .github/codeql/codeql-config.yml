@@ -1,0 +1,29 @@
+# CodeQL configuration for RustConn's advanced code-scanning setup.
+#
+# This replaces the repository's previous CodeQL *default setup* so the scan is
+# reviewable in-tree and its scope can be tuned here instead of in the GitHub UI.
+# The language set (actions, python, ruby, rust) and the `default` query suite
+# match what default setup ran, so the migration does not silently drop or widen
+# coverage.
+#
+# `paths-ignore` keeps whole non-product trees out of the scan. CodeQL matches
+# these at the file level, so only directories that contain *no shipped product
+# code* are listed — excluding a file that also holds production code would lose
+# real coverage. Inline `#[cfg(test)]` modules living inside product source files
+# are therefore NOT covered by this list; a genuine test-only false positive in
+# one of those is handled by dismissing that individual alert as "false positive"
+# (which persists across runs), not by excluding its file.
+name: RustConn CodeQL config
+
+paths-ignore:
+  # Rust integration tests and benchmarks: test harnesses only, never shipped.
+  - rustconn-core/tests
+  - rustconn-core/benches
+  # Build, packaging and developer tooling (Python/Ruby/shell helpers): not part
+  # of the application that ships to users.
+  - scripts
+  - packaging
+  # Generated/vendored assets and build output.
+  - target
+  - dist
+  - build-dir
