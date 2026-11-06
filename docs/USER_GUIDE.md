@@ -2989,6 +2989,31 @@ The script must output a JSON array to stdout:
 | `group` | None | Sub-group path within the dynamic folder — a `/`-separated path (e.g. `web-servers/production`) that nests the connection under auto-created sub-folders of the dynamic folder. Sub-folders are reused across refreshes rather than duplicated, and blank path segments are ignored |
 | `tags` | `[]` | Tags for filtering |
 | `description` | None | Connection description |
+| `protocol_config` | None | Full protocol configuration in the native RustConn shape (0.24.8+, issue [#410](https://github.com/totoshko88/RustConn/issues/410)). When present it is the base the connection is built from, so a script can set anything the connection editor can — an SSH `startup_command`, an `auth_method`, RDP display options, and so on — not just host/port/username. Its `type` tag (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`, `Mosh`) decides the protocol and the default port; the `protocol` string is then only used to warn on a mismatch |
+
+**Full `protocol_config` example** (0.24.8+) — an SSH connection that always drops into a tmux session and authenticates via the agent:
+
+```json
+[
+  {
+    "name": "Demo US West 1 Worker 01",
+    "description": "Worker node",
+    "protocol": "ssh",
+    "host": "demo-us-west-1-worker-01",
+    "port": 22,
+    "username": "adm_user",
+    "group": "demo",
+    "tags": ["tag:prod", "tag:us-west-1"],
+    "protocol_config": {
+      "type": "Ssh",
+      "startup_command": "tmux new-session -A -s my-session",
+      "auth_method": "agent"
+    }
+  }
+]
+```
+
+The `protocol_config` object is the same tagged shape RustConn writes to its own config file, so the field names match the connection editor's options exactly. Fields you omit take their protocol default. The connection stays **read-only** like any dynamic entry, so the configuration is re-applied on every refresh rather than lost when the folder regenerates.
 
 **Behavior:**
 - Generated connections are **read-only** — they cannot be edited or moved manually

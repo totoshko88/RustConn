@@ -108,6 +108,25 @@ pub struct DynamicConnectionEntry {
     /// Optional description
     #[serde(default)]
     pub description: Option<String>,
+
+    /// Full protocol-specific configuration, in the native RustConn
+    /// [`ProtocolConfig`] shape (issue
+    /// [#410](https://github.com/totoshko88/RustConn/issues/410)).
+    ///
+    /// When present it is the base configuration the generated connection is
+    /// built from, so a script can set anything the connection editor can — an
+    /// SSH `startup_command` (e.g. `tmux new-session -A -s my-session`), an
+    /// `auth_method`, RDP display options, and so on — instead of being limited
+    /// to host/port/username. The JSON is the same tagged shape the config file
+    /// uses, e.g. `{"type": "Ssh", "startup_command": "...", "auth_method":
+    /// "agent"}`.
+    ///
+    /// When absent (the default, and every entry written before this field
+    /// existed), the connection is built from the protocol defaults exactly as
+    /// before. When present, its tag decides the protocol; the `protocol`
+    /// string is then only used to warn on a mismatch.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protocol_config: Option<super::ProtocolConfig>,
 }
 
 impl DynamicConnectionEntry {
