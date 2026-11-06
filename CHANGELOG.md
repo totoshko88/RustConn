@@ -5,6 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.8] - 2026-11-07
+
+### Fixed
+- **Embedded RDP on macOS sent the wrong keys (issue #412)** — on the macOS GTK Quartz backend the GDK hardware keycode is an Apple virtual keycode (`NSEvent.keyCode`), not an evdev keycode, but the embedded (IronRDP) client ran it through the Linux evdev→AT scancode table. Every key landed on a neighbouring one: on a German layout `qwertz` arrived as `345687`, `123` as `90ß`, and Backspace as `#`, because e.g. Apple keycode 12 (`q`) is evdev 12 (`3`). A new `macos_keycode_to_scancode` table maps the stable Apple virtual keycode straight to the IBM PC AT (Set 1) scancode the RDP server expects — letters, digits, punctuation, modifiers (Command → Super/Win), the function row, the navigation cluster and the numeric keypad, with the `E0` prefix on extended keys. `send_ironrdp_key` now selects the evdev table on Linux/BSD and the Apple table on macOS at compile time; the external FreeRDP client, which was never affected, is unchanged. (`rustconn-core/src/rdp_client/input.rs`, `rustconn/src/embedded_rdp/input.rs`)
+
 ## [0.24.7] - 2026-11-06
 
 ### Added

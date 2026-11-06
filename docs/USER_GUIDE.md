@@ -3807,6 +3807,8 @@ When working in remote sessions with TUI applications (nvim, tmux, htop, mc), Ru
 
 A session in an external viewer window is not affected by RustConn's passthrough at all; external FreeRDP clients ask the desktop for these keys on their own.
 
+**macOS keyboard in the embedded RDP client (0.24.8+):** the embedded (IronRDP) client translates macOS keys by their physical position (the Apple virtual keycode), so a non-US Mac layout such as German QWERTZ reaches the Windows host correctly. Earlier builds mis-mapped these keys on macOS (typing `qwertz` produced `345687`); if you hit that on an older build, switch the connection's **Display → Client mode** to the external client as a workaround, or update to 0.24.8 or later. Command maps to the Windows/Super key.
+
 **Customization:** The list of shortcuts that remain active in passthrough mode can be configured in `config.toml` under `[keybindings] passthrough_exceptions`.
 
 **Persistence (0.20.3+):** The passthrough state is saved when the window closes and restored on the next start. If passthrough was active when you quit, it will be active again when you reopen RustConn — no need to toggle it every session. The setting is stored in `config.toml` under `[ui] keyboard_passthrough = true/false`.

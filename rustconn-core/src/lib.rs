@@ -256,6 +256,7 @@ pub use rdp_client::{
         is_printable_keyval,
         keycode_to_scancode,
         keyval_to_scancode,
+        macos_keycode_to_scancode,
         should_resize,
     },
     is_embedded_rdp_available, keyval_to_unicode,

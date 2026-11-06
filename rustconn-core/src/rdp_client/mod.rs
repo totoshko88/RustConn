@@ -130,4 +130,6 @@ pub const fn is_embedded_rdp_available() -> bool {
 }
 
 // Re-export key mapping functions for keyboard input handling
-pub use input::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};
+pub use input::{
+    keycode_to_scancode, keyval_to_scancode, keyval_to_unicode, macos_keycode_to_scancode,
+};
