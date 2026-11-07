@@ -107,7 +107,7 @@ pub use portable_encrypted_file::{
     prepare_portable_store, resolve_portable_store_path, store_portable_passphrase_in_keyring,
     verify_portable_passphrase,
 };
-pub use resolver::CredentialResolver;
+pub use resolver::{CredentialResolver, resolve_kdbx_path_override};
 pub use status::{KeePassStatus, parse_keepassxc_version};
 pub use store_key::{
     generate_store_key, generate_store_key_for_connection, generate_store_key_with_group,

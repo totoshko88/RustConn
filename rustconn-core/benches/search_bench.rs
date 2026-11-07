@@ -60,6 +60,7 @@ fn create_test_groups(count: usize) -> Vec<ConnectionGroup> {
             username: None,
             domain: None,
             password_source: None,
+            kdbx_path_override: None,
             description: None,
             icon: None,
             ssh_auth_method: None,

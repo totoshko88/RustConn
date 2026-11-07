@@ -1275,7 +1275,13 @@ impl AppState {
         let connection = &ctx.connection;
         let groups = &ctx.groups;
         let kdbx_enabled = ctx.kdbx_enabled;
-        let kdbx_path = ctx.kdbx_path;
+        // Per-connection / per-group KDBX override (issue #411): when the
+        // connection or an ancestor group names its own .kdbx file, read this
+        // connection's Vault credentials from that database instead of the
+        // global one. The password / key file / YubiKey slot still come from the
+        // global KeePass settings. `None` falls back to the global database.
+        let kdbx_path = rustconn_core::secret::resolve_kdbx_path_override(connection, groups)
+            .or(ctx.kdbx_path);
         let kdbx_password = ctx.kdbx_password;
         let kdbx_key_file = ctx.kdbx_key_file;
         let secret_settings = ctx.secret_settings;

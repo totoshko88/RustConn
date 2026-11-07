@@ -258,6 +258,9 @@ impl ConnectionTemplate {
             sort_order: 0,
             last_connected: None,
             password_source: self.password_source.clone(),
+            // A template does not carry a per-connection KDBX override; a new
+            // connection starts with none and inherits from its group chain.
+            kdbx_path_override: None,
             // Templates do not carry a network mode: a new connection starts as
             // `Inherit`, i.e. it picks up whatever its group and the global
             // settings provide.

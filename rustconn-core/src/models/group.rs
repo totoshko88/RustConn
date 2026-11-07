@@ -44,6 +44,18 @@ pub struct ConnectionGroup {
     /// Password source and config for inheritance
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password_source: Option<PasswordSource>,
+    /// Per-group KeePass (`.kdbx`) database override for inheritance by child
+    /// connections (LOCAL-ONLY, not synced — issue
+    /// [#411](https://github.com/totoshko88/RustConn/issues/411)).
+    ///
+    /// A connection with no `kdbx_path_override` of its own walks its group
+    /// chain and uses the nearest group that sets this, before falling back to
+    /// the global database in Settings → Secrets. Set it on a top-level
+    /// "Corporate" group and every connection beneath it reads from that
+    /// database. `None` (the default) means the group adds no override and
+    /// inheritance continues to its parent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kdbx_path_override: Option<PathBuf>,
     /// Optional description/notes for the group
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -149,6 +161,7 @@ impl ConnectionGroup {
             username: None,
             domain: None,
             password_source: None,
+            kdbx_path_override: None,
             description: None,
             icon: None,
             ssh_auth_method: None,
@@ -185,6 +198,7 @@ impl ConnectionGroup {
             username: None,
             domain: None,
             password_source: None,
+            kdbx_path_override: None,
             description: None,
             icon: None,
             ssh_auth_method: None,

@@ -15,6 +15,54 @@ use crate::config::{SecretBackendType, SecretSettings};
 use crate::error::SecretResult;
 use crate::models::{Connection, ConnectionGroup, Credentials, PasswordSource};
 
+/// Resolves the effective KeePass (`.kdbx`) database path for a connection
+/// (issue [#411](https://github.com/totoshko88/RustConn/issues/411)).
+///
+/// Resolution order:
+/// 1. the connection's own `kdbx_path_override`, if set;
+/// 2. otherwise the nearest ancestor group in the connection's group chain that
+///    sets `kdbx_path_override`, walking parent by parent;
+/// 3. otherwise `None`, meaning "use the global database from settings".
+///
+/// Group-chain traversal is cycle-safe: a malformed parent loop is broken by a
+/// visited-set guard, mirroring the `Inherit` credential walk.
+///
+/// This decides only *which file* to open. The database password, key file and
+/// YubiKey slot still come from the global KeePass settings, so an override
+/// database that shares the organisation's master password works; one that needs
+/// a different passphrase is deliberately out of scope for the per-connection
+/// override.
+#[must_use]
+pub fn resolve_kdbx_path_override(
+    connection: &Connection,
+    groups: &[ConnectionGroup],
+) -> Option<std::path::PathBuf> {
+    if let Some(path) = connection.kdbx_path_override.as_ref() {
+        return Some(path.clone());
+    }
+
+    let mut current_group_id = connection.group_id;
+    let mut visited = std::collections::HashSet::new();
+    while let Some(group_id) = current_group_id {
+        if !visited.insert(group_id) {
+            warn!(
+                group_id = %group_id,
+                connection_id = %connection.id,
+                "cycle detected in group hierarchy while resolving kdbx_path_override"
+            );
+            break;
+        }
+        let Some(group) = groups.iter().find(|g| g.id == group_id) else {
+            break;
+        };
+        if let Some(path) = group.kdbx_path_override.as_ref() {
+            return Some(path.clone());
+        }
+        current_group_id = group.parent_id;
+    }
+    None
+}
+
 /// Resolves credentials for a connection based on configuration
 ///
 /// The resolver implements a fallback chain that tries multiple credential
@@ -1438,6 +1486,7 @@ mod tests {
             sort_order: 0,
             last_connected: None,
             password_source: PasswordSource::None,
+            kdbx_path_override: None,
             network_mode: crate::models::NetworkMode::default(),
             domain: None,
             custom_properties: Vec::new(),
@@ -1614,5 +1663,93 @@ mod debug_tests {
             !rendered.contains("password"),
             "Debug must not render password field: {rendered}"
         );
+    }
+
+    // --- issue #411: per-connection / per-group KDBX path override ---
+
+    fn kdbx_test_connection() -> Connection {
+        Connection::new_ssh("srv".to_string(), "10.0.0.1".to_string(), 22)
+    }
+
+    #[test]
+    fn kdbx_override_none_when_nothing_set() {
+        let conn = kdbx_test_connection();
+        assert_eq!(resolve_kdbx_path_override(&conn, &[]), None);
+    }
+
+    #[test]
+    fn kdbx_override_on_connection_wins() {
+        let group = ConnectionGroup::new("Corp".to_string());
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(group.id);
+        conn.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/personal.kdbx"));
+        let mut group = group;
+        group.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+
+        assert_eq!(
+            resolve_kdbx_path_override(&conn, &[group]),
+            Some(std::path::PathBuf::from("/vaults/personal.kdbx")),
+            "the connection's own override beats its group's"
+        );
+    }
+
+    #[test]
+    fn kdbx_override_inherited_from_group() {
+        let mut group = ConnectionGroup::new("Corp".to_string());
+        group.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(group.id);
+
+        assert_eq!(
+            resolve_kdbx_path_override(&conn, &[group]),
+            Some(std::path::PathBuf::from("/vaults/corp.kdbx"))
+        );
+    }
+
+    #[test]
+    fn kdbx_override_walks_to_nearest_ancestor() {
+        // root sets corp.kdbx; child sets nothing; grandchild-less connection
+        // under `child` inherits root's override through the chain.
+        let mut root = ConnectionGroup::new("Corp".to_string());
+        root.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+        let child = ConnectionGroup::with_parent("Web".to_string(), root.id);
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(child.id);
+
+        assert_eq!(
+            resolve_kdbx_path_override(&conn, &[root, child]),
+            Some(std::path::PathBuf::from("/vaults/corp.kdbx"))
+        );
+    }
+
+    #[test]
+    fn kdbx_override_nearest_group_wins_over_farther() {
+        // child overrides root — the nearest ancestor with an override wins.
+        let mut root = ConnectionGroup::new("Corp".to_string());
+        root.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+        let mut child = ConnectionGroup::with_parent("Team".to_string(), root.id);
+        child.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/team.kdbx"));
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(child.id);
+
+        assert_eq!(
+            resolve_kdbx_path_override(&conn, &[root, child]),
+            Some(std::path::PathBuf::from("/vaults/team.kdbx"))
+        );
+    }
+
+    #[test]
+    fn kdbx_override_survives_a_group_cycle() {
+        // A malformed parent cycle must not loop forever; it just stops.
+        let mut a = ConnectionGroup::new("A".to_string());
+        let mut b = ConnectionGroup::with_parent("B".to_string(), a.id);
+        // Make a point back at b → a cycle a→b→a with no override anywhere.
+        a.parent_id = Some(b.id);
+        let a_id = a.id;
+        b.parent_id = Some(a_id);
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(a_id);
+
+        assert_eq!(resolve_kdbx_path_override(&conn, &[a, b]), None);
     }
 }

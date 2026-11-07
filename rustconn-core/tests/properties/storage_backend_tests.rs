@@ -78,6 +78,7 @@ fn create_test_connection(id: Uuid, name: &str, host: &str) -> Connection {
         sort_order: 0,
         last_connected: None,
         password_source: PasswordSource::None,
+        kdbx_path_override: None,
         network_mode: rustconn_core::models::NetworkMode::default(),
         domain: None,
         custom_properties: Vec::new(),
