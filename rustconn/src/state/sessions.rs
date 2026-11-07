@@ -6,25 +6,12 @@ use std::collections::HashMap;
 
 use rustconn_core::cluster::Cluster;
 use rustconn_core::models::{Connection, ConnectionHistoryEntry, ConnectionStatistics, Snippet};
-use rustconn_core::session::Session;
 use uuid::Uuid;
 
 use super::AppState;
 use crate::vault_ops::copy_vault_credential;
 
 impl AppState {
-    /// Terminates a session
-    pub fn terminate_session(&mut self, session_id: Uuid) -> Result<(), String> {
-        self.session_manager
-            .terminate_session(session_id)
-            .map_err(|e| format!("Failed to terminate session: {e}"))
-    }
-
-    /// Gets active sessions
-    pub fn active_sessions(&self) -> Vec<&Session> {
-        self.session_manager.active_sessions()
-    }
-
     // ========== Snippet Operations ==========
 
     /// Creates a new snippet

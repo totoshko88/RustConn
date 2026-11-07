@@ -189,12 +189,8 @@ pub fn show_sessions_manager(
                 true,
                 move |confirmed| {
                     if confirmed {
-                        // Terminate session in state manager
-                        if let Ok(mut state_mut) = state_inner.try_borrow_mut()
-                            && let Err(e) = state_mut.terminate_session(id)
-                        {
-                            tracing::warn!(?e, "Failed to terminate session");
-                        }
+                        // Closing the tab is what ends the session; the core
+                        // `SessionManager` never tracks GUI sessions.
 
                         // Decrement session count
                         if let Some(info) = notebook_inner.get_session_info(id) {
@@ -239,15 +235,12 @@ pub fn populate_sessions_list(
     session_ids.extend(notebook.detached_session_ids());
     let session_count = session_ids.len();
 
-    // Also get active sessions from state manager for additional info
-    let state_ref = state.borrow();
-    let active_sessions = state_ref.active_sessions();
-    let state_session_count = active_sessions.len();
-    drop(state_ref);
-
+    // One count. A second "tracked session(s)" figure came from the core
+    // `SessionManager`, which the GUI never registers a session in, so it read 0
+    // next to every real count.
     count_label.set_text(&crate::i18n::i18n_f(
-        "{} UI session(s), {} tracked session(s)",
-        &[&session_count.to_string(), &state_session_count.to_string()],
+        "{} active session(s)",
+        &[&session_count.to_string()],
     ));
 
     for session_id in session_ids {

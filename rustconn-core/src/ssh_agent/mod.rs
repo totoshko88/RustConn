@@ -1935,12 +1935,13 @@ mod native_path_tests {
             .arg(&pid_file);
 
         let started = std::time::Instant::now();
-        let output = run_agent_command(
-            cmd,
-            std::time::Duration::from_millis(500),
-            "test-agent-command",
-        )
-        .unwrap();
+        // 2 s, not 500 ms: the child must get as far as writing its pid before
+        // the budget kills it, and under the full parallel suite on macOS a
+        // `sh` start alone has taken longer than 500 ms — the pid file was then
+        // never written and the test failed on reading it, not on the budget.
+        let output =
+            run_agent_command(cmd, std::time::Duration::from_secs(2), "test-agent-command")
+                .unwrap();
         let elapsed = started.elapsed();
 
         assert!(output.is_none(), "a run past its budget has no output");

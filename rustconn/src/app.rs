@@ -509,7 +509,9 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
             {
                 Ok(tray) => {
                     let mut initial_cache = TrayStateCache::default();
-                    update_tray_state(&tray, &state_for_tray, &mut initial_cache);
+                    // No session can be open before the tray exists; the 2 s
+                    // sync in `setup_tray_handling` keeps the count current.
+                    update_tray_state(&tray, &state_for_tray, 0, &mut initial_cache);
                     tray.force_refresh();
                     *tray_mgr_for_init.borrow_mut() = Some(tray);
                     glib::ControlFlow::Break
@@ -1075,7 +1077,8 @@ fn try_create_macos_tray(state: SharedAppState, tray_manager: SharedTrayManager,
 
     if let Some(tray) = TrayManager::new() {
         let mut initial_cache = TrayStateCache::default();
-        update_tray_state(&tray, &state, &mut initial_cache);
+        // The 2 s sync in `setup_tray_handling` fills in the live count.
+        update_tray_state(&tray, &state, 0, &mut initial_cache);
         *tray_manager.borrow_mut() = Some(tray);
         if attempt > 0 {
             tracing::info!(attempt, "macOS tray icon created (after retry)");
@@ -1106,11 +1109,21 @@ fn try_create_macos_tray(state: SharedAppState, tray_manager: SharedTrayManager,
 /// Updates the tray icon state from the application state
 ///
 /// Only updates if state has actually changed to avoid unnecessary work.
-fn update_tray_state(tray: &TrayManager, state: &SharedAppState, last_state: &mut TrayStateCache) {
+///
+/// `session_count` is the live count from
+/// [`crate::window::open_session_count`] — tabs, detached windows and external
+/// viewers. It used to come from `AppState::active_sessions()`, whose
+/// `SessionManager` the GUI never registers a session in, so the tray always
+/// reported zero.
+fn update_tray_state(
+    tray: &TrayManager,
+    state: &SharedAppState,
+    session_count: usize,
+    last_state: &mut TrayStateCache,
+) {
     let state_ref = state.borrow();
 
     // Update active session count only if changed
-    let session_count = state_ref.active_sessions().len();
     #[expect(
         clippy::cast_possible_truncation,
         reason = "value range fits the target type by construction in this code path"
@@ -1415,6 +1428,7 @@ fn setup_tray_handling(
     let tray_for_state = tray_manager;
     let state_cache = std::rc::Rc::new(std::cell::RefCell::new(TrayStateCache::default()));
     let window_for_state = window.gtk_window().downgrade();
+    let notebook_for_state = window.notebook_rc();
 
     glib::timeout_add_local(std::time::Duration::from_secs(2), move || {
         let tray_ref = tray_for_state.borrow();
@@ -1428,7 +1442,15 @@ fn setup_tray_handling(
         };
         // Sync window visibility so tray menu shows correct Show/Hide label
         tray.set_window_visible(win.is_visible());
-        update_tray_state(tray, &state_clone, &mut state_cache.borrow_mut());
+        // Same count the quit confirmation uses, so the tray and the dialog
+        // never disagree about how many sessions are open.
+        let external = crate::window::external_session_registry().map_or(0, |r| r.active_count());
+        let open = crate::window::open_session_count(
+            notebook_for_state.session_count(),
+            notebook_for_state.detached_count(),
+            external,
+        );
+        update_tray_state(tray, &state_clone, open, &mut state_cache.borrow_mut());
         glib::ControlFlow::Continue
     });
 }
