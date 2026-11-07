@@ -865,6 +865,8 @@ pub fn show_new_group_dialog_with_parent(
                                 // Save to vault using configured backend
                                 crate::state::save_group_password_to_vault(
                                     &settings,
+                                    &groups,
+                                    grp.id,
                                     &group_path,
                                     &lookup_key,
                                     &username,

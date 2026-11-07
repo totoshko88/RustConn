@@ -2253,13 +2253,13 @@ msgstr "Випробуй команду скрипта"
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
 #: rustconn/src/window/edit_group.rs:567
 msgid "KeePass Database"
-msgstr "База відомостей KeePass"
+msgstr "База даних KeePass"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:391
 #: rustconn/src/window/edit_group.rs:563
 msgid ""
 "Leave empty to use the database of the enclosing group, or the global one."
-msgstr "Залиш порожнім, щоб використовувати базу відомостей батьківської групи або глобальну."
+msgstr "Залиш порожнім, щоб використовувати базу даних батьківської групи або глобальну."
 
 #: rustconn/src/dialogs/connection/general_tab.rs:396
 #: rustconn/src/dialogs/connection/general_tab.rs:401

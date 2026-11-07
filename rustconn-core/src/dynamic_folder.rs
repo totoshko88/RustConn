@@ -146,8 +146,11 @@ pub fn entry_to_connection(entry: &DynamicConnectionEntry, group_id: Uuid) -> Co
     );
 
     if let Some(ref cfg) = entry.protocol_config {
-        let declared = protocol_type_from_str(&entry.protocol);
-        if cfg.protocol_type() != declared && !entry.protocol.trim().is_empty() {
+        // Compared by name, not through `protocol_type_from_str`: that table only
+        // knows the protocols a plain entry can create, so a matching
+        // `"protocol": "sftp"` with `{"type": "Sftp"}` would warn spuriously.
+        let declared = entry.protocol.trim();
+        if !declared.is_empty() && !declared.eq_ignore_ascii_case(cfg.protocol_type().as_str()) {
             tracing::warn!(
                 entry = %entry.name,
                 protocol = %entry.protocol,
@@ -157,7 +160,9 @@ pub fn entry_to_connection(entry: &DynamicConnectionEntry, group_id: Uuid) -> Co
         }
     }
 
-    let port = entry.port.unwrap_or_else(|| default_port_for(protocol_type));
+    let port = entry
+        .port
+        .unwrap_or_else(|| default_port_for(protocol_type));
 
     // Build the base connection. With a protocol_config, start from that exact
     // configuration so the script's startup_command, auth_method, display
@@ -761,7 +766,10 @@ mod tests {
         assert_eq!(conn.port, 22, "SSH default port still applies");
         match &conn.protocol_config {
             crate::models::ProtocolConfig::Ssh(ssh) => {
-                assert_eq!(ssh.startup_command.as_deref(), Some("tmux new-session -A -s s"));
+                assert_eq!(
+                    ssh.startup_command.as_deref(),
+                    Some("tmux new-session -A -s s")
+                );
                 assert_eq!(ssh.auth_method, crate::models::SshAuthMethod::Agent);
             }
             other => panic!("expected Ssh config, got {other:?}"),

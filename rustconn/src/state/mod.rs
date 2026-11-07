@@ -1280,8 +1280,8 @@ impl AppState {
         // connection's Vault credentials from that database instead of the
         // global one. The password / key file / YubiKey slot still come from the
         // global KeePass settings. `None` falls back to the global database.
-        let kdbx_path = rustconn_core::secret::resolve_kdbx_path_override(connection, groups)
-            .or(ctx.kdbx_path);
+        let kdbx_path =
+            rustconn_core::secret::resolve_kdbx_path_override(connection, groups).or(ctx.kdbx_path);
         let kdbx_password = ctx.kdbx_password;
         let kdbx_key_file = ctx.kdbx_key_file;
         let secret_settings = ctx.secret_settings;

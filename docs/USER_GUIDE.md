@@ -2638,6 +2638,7 @@ Groups can store default credentials (Username, Password, Domain) that are inher
 1. Create a connection inside the group
 2. In **Authentication** tab, set **Password Source** to **Inherit from Group**
 3. Connection will use group's stored credentials
+4. Use **"Load from Group"** buttons to auto-fill Username and Domain from parent group
 
 #### A KeePass Database per Connection or Group (0.24.8+)
 
@@ -2651,8 +2652,10 @@ Things to know:
 - Only the **file** changes. The database password, key file and YubiKey slot still come from Settings → Secrets, so the databases you combine should share them. A database that needs its own passphrase is not supported yet.
 - The path is **local to this computer** and is never written to a Cloud Sync, Group Sync or Simple Sync file, so each device sets its own. A value synced from another device never overwrites yours.
 - Switching the Password Source away from **Vault** clears the connection's database path.
-- The setting applies when the KeePass backend is active; it has no effect for other backends.
-4. Use **"Load from Group"** buttons to auto-fill Username and Domain from parent group
+- The setting applies when the KeePass backend is active; with any other backend the **KeePass Database** rows are hidden and have no effect.
+- Passwords you save, load, test, copy or delete for a connection go to the database it resolves to, and a group's own password to the group's database.
+- Moving a connection (or a group) so that it resolves to a **different** database does not carry the stored password across files: the entry stays in the old database and you enter the password again. A rename or move within the same database still moves the entry.
+- A backend-to-backend credential transfer (Settings → Secrets) uses the global database only.
 
 **KeePass Hierarchy:**
 Group credentials are stored in KeePass with hierarchical paths:

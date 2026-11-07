@@ -598,6 +598,61 @@ pub mod highlight_fields {
     }
 }
 
+/// Adds a "Select KeePass Database" file-picker button to `row`, writing the
+/// chosen `.kdbx` path into the row (issue #411).
+///
+/// Shared by the connection editor and the group editor so both KeePass
+/// Database rows pick a file the same way.
+pub fn add_kdbx_browse_suffix(row: &adw::EntryRow) {
+    let button = Button::builder()
+        .icon_name("document-open-symbolic")
+        .tooltip_text(i18n("Select KeePass Database"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Select KeePass Database",
+    ))]);
+    row.add_suffix(&button);
+
+    let row = row.clone();
+    button.connect_clicked(move |button| {
+        let filter = gtk4::FileFilter::new();
+        filter.add_pattern("*.kdbx");
+        filter.set_name(Some(&i18n("KeePass Database (*.kdbx)")));
+        let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+        filters.append(&filter);
+        let dialog = gtk4::FileDialog::builder()
+            .title(i18n("Select KeePass Database"))
+            .modal(true)
+            .filters(&filters)
+            .default_filter(&filter)
+            .build();
+        let Some(window) = button
+            .root()
+            .and_then(|r| r.downcast::<gtk4::Window>().ok())
+        else {
+            tracing::warn!("KeePass database picker: button has no window root");
+            return;
+        };
+        let row = row.clone();
+        dialog.open(
+            Some(&window),
+            gtk4::gio::Cancellable::NONE,
+            move |result| match result {
+                Ok(file) => {
+                    if let Some(path) = file.path() {
+                        row.set_text(&path.to_string_lossy());
+                    } else {
+                        tracing::warn!("KeePass database picker: chosen file has no local path");
+                    }
+                }
+                Err(e) => tracing::debug!(error = %e, "KeePass database picker closed"),
+            },
+        );
+    });
+}
+
 /// Marker function for xgettext to discover dialog header button labels.
 /// These strings are used indirectly via `dialog_header()` and would otherwise
 /// be invisible to the POT extraction tool.

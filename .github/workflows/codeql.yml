@@ -25,10 +25,6 @@ permissions:
   contents: read
   security-events: write
 
-concurrency:
-  group: codeql-${{ github.ref }}-${{ matrix.language }}
-  cancel-in-progress: true
-
 env:
   # Keep in step with ci.yml / release.yml. The Rust extractor builds the crate,
   # so it needs the same toolchain the rest of CI pins.
@@ -39,6 +35,12 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-26.04
     timeout-minutes: 120
+    # Job-level, not workflow-level: a workflow-level `concurrency` may only use
+    # the github, inputs and vars contexts, and `matrix` there makes the whole
+    # workflow invalid. Per language so one language's run never cancels another.
+    concurrency:
+      group: codeql-${{ github.ref }}-${{ matrix.language }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -71,7 +73,7 @@ jobs:
         uses: ./.github/actions/install-deps
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -80,6 +82,6 @@ jobs:
           # setup ran, so the migration does not widen findings.
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}

@@ -1235,7 +1235,7 @@ pub fn start_vnc_with_password_dialog_observed(
     }
 
     // Get connection info for dialog
-    let (conn_name, lookup_key) = {
+    let (conn_name, lookup_key, conn_kdbx_path) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
             // Build hierarchical entry path using KeePassHierarchy
@@ -1247,8 +1247,11 @@ pub fn start_vnc_with_password_dialog_observed(
             // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
             let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
             let key = format!("{entry_name} (vnc)");
+            // The database this connection resolves to (issue #411).
+            let kdbx_path =
+                crate::vault_ops::kdbx_path_for_connection(state_ref.settings(), conn, &groups);
 
-            (conn.name.clone(), key)
+            (conn.name.clone(), key, kdbx_path)
         } else {
             return;
         }
@@ -1270,7 +1273,7 @@ pub fn start_vnc_with_password_dialog_observed(
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
-            && let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
+            && let Some(kdbx_path) = conn_kdbx_path
         {
             let db_password = settings.secrets.kdbx_password.clone();
             let key_file = settings.secrets.kdbx_key_file.clone();

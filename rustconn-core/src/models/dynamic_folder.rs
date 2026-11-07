@@ -110,7 +110,7 @@ pub struct DynamicConnectionEntry {
     pub description: Option<String>,
 
     /// Full protocol-specific configuration, in the native RustConn
-    /// [`ProtocolConfig`] shape (issue
+    /// [`ProtocolConfig`](super::ProtocolConfig) shape (issue
     /// [#410](https://github.com/totoshko88/RustConn/issues/410)).
     ///
     /// When present it is the base configuration the generated connection is

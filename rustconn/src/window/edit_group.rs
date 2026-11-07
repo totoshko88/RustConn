@@ -450,7 +450,11 @@ pub fn show_edit_group_dialog(
             backend_type,
             rustconn_core::config::SecretBackendType::KdbxFile
         ) {
-            let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
+            // The database the saved group resolves to (issue #411): where its
+            // credential was written.
+            let Some(kdbx_path) =
+                crate::vault_ops::kdbx_path_for_group(&settings, group_id_for_load, &groups)
+            else {
                 alert::show_validation_error(
                     &window_clone,
                     &i18n("KeePass database not configured"),
@@ -572,44 +576,22 @@ pub fn show_edit_group_dialog(
                 .map_or_else(String::new, |p| p.to_string_lossy().into_owned()),
         )
         .build();
-    let kdbx_browse_btn = Button::builder()
-        .icon_name("document-open-symbolic")
-        .tooltip_text(i18n("Select KeePass Database"))
-        .valign(gtk4::Align::Center)
-        .css_classes(["flat"])
-        .build();
-    kdbx_browse_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
-        "Select KeePass Database",
-    ))]);
-    kdbx_row.add_suffix(&kdbx_browse_btn);
-    {
-        let row = kdbx_row.clone();
-        kdbx_browse_btn.connect_clicked(move |button| {
-            let filter = gtk4::FileFilter::new();
-            filter.add_pattern("*.kdbx");
-            let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
-            filters.append(&filter);
-            let dialog = gtk4::FileDialog::builder()
-                .title(i18n("Select KeePass Database"))
-                .modal(true)
-                .filters(&filters)
-                .build();
-            if let Some(window) = button
-                .root()
-                .and_then(|r| r.downcast::<gtk4::Window>().ok())
-            {
-                let row = row.clone();
-                dialog.open(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
-                    if let Ok(file) = result
-                        && let Some(path) = file.path()
-                    {
-                        row.set_text(&path.to_string_lossy());
-                    }
-                });
-            }
-        });
-    }
+    crate::dialogs::widgets::add_kdbx_browse_suffix(&kdbx_row);
     kdbx_group.add(&kdbx_row);
+    // Only meaningful with the KeePass backend; hidden otherwise, like the
+    // connection editor's row. A hidden row keeps its saved value.
+    {
+        let state_ref = state.borrow();
+        let secrets = &state_ref.settings().secrets;
+        kdbx_group.set_visible(
+            secrets.kdbx_enabled
+                && matches!(
+                    secrets.preferred_backend,
+                    rustconn_core::config::SecretBackendType::KeePassXc
+                        | rustconn_core::config::SecretBackendType::KdbxFile
+                ),
+        );
+    }
     identity_content.append(&kdbx_group);
 
     // === SSH Settings Section (progressive disclosure per GNOME HIG) ===
@@ -1982,6 +1964,8 @@ pub fn show_edit_group_dialog(
                             // Save to vault using configured backend
                             crate::state::save_group_password_to_vault(
                                 &settings,
+                                &groups,
+                                g.id,
                                 &group_path,
                                 &lookup_key,
                                 &username,

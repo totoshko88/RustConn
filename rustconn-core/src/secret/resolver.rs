@@ -40,14 +40,27 @@ pub fn resolve_kdbx_path_override(
     if let Some(path) = connection.kdbx_path_override.as_ref() {
         return Some(path.clone());
     }
+    resolve_group_kdbx_path_override(connection.group_id, groups)
+}
 
-    let mut current_group_id = connection.group_id;
+/// Resolves the effective KeePass (`.kdbx`) database override for a group:
+/// the group's own `kdbx_path_override`, else the nearest ancestor's, else
+/// `None` (use the global database).
+///
+/// This is where a group's own Vault credential lives, and the part of
+/// [`resolve_kdbx_path_override`] a connection inherits. `None` for
+/// `group_id` (an ungrouped connection) resolves to `None`.
+#[must_use]
+pub fn resolve_group_kdbx_path_override(
+    group_id: Option<uuid::Uuid>,
+    groups: &[ConnectionGroup],
+) -> Option<std::path::PathBuf> {
+    let mut current_group_id = group_id;
     let mut visited = std::collections::HashSet::new();
     while let Some(group_id) = current_group_id {
         if !visited.insert(group_id) {
             warn!(
                 group_id = %group_id,
-                connection_id = %connection.id,
                 "cycle detected in group hierarchy while resolving kdbx_path_override"
             );
             break;
@@ -1751,5 +1764,47 @@ mod debug_tests {
         conn.group_id = Some(a_id);
 
         assert_eq!(resolve_kdbx_path_override(&conn, &[a, b]), None);
+    }
+
+    #[test]
+    fn group_kdbx_override_uses_own_then_ancestor() {
+        let mut root = ConnectionGroup::new("Corp".to_string());
+        root.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+        let child = ConnectionGroup::with_parent("Web".to_string(), root.id);
+        let mut team = ConnectionGroup::with_parent("Team".to_string(), root.id);
+        team.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/team.kdbx"));
+        let (child_id, team_id) = (child.id, team.id);
+        let groups = [root, child, team];
+
+        assert_eq!(
+            resolve_group_kdbx_path_override(Some(child_id), &groups),
+            Some(std::path::PathBuf::from("/vaults/corp.kdbx")),
+            "a group without its own override inherits its parent's"
+        );
+        assert_eq!(
+            resolve_group_kdbx_path_override(Some(team_id), &groups),
+            Some(std::path::PathBuf::from("/vaults/team.kdbx")),
+            "a group's own override wins"
+        );
+        assert_eq!(resolve_group_kdbx_path_override(None, &groups), None);
+    }
+
+    #[test]
+    fn connection_and_its_group_resolve_to_the_same_database() {
+        // The connection resolver and the group resolver must agree for a
+        // connection with no override of its own: a group credential and an
+        // Inherit connection under it read the same file.
+        let mut root = ConnectionGroup::new("Corp".to_string());
+        root.kdbx_path_override = Some(std::path::PathBuf::from("/vaults/corp.kdbx"));
+        let child = ConnectionGroup::with_parent("Web".to_string(), root.id);
+        let mut conn = kdbx_test_connection();
+        conn.group_id = Some(child.id);
+        let child_id = child.id;
+        let groups = [root, child];
+
+        assert_eq!(
+            resolve_kdbx_path_override(&conn, &groups),
+            resolve_group_kdbx_path_override(Some(child_id), &groups)
+        );
     }
 }

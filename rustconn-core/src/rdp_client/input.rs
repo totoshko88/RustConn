@@ -985,15 +985,15 @@ pub const fn macos_keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
 
         // Modifiers. macOS Command maps to the Windows/Super key, the usual
         // convention for an embedded RDP client on a Mac keyboard.
-        56 => Some(RdpScancode::standard(0x2A)),  // Shift (left)
-        60 => Some(RdpScancode::standard(0x36)),  // Shift (right)
-        59 => Some(RdpScancode::standard(0x1D)),  // Control (left)
-        62 => Some(RdpScancode::extended(0x1D)),  // Control (right)
-        58 => Some(RdpScancode::standard(0x38)),  // Option/Alt (left)
-        61 => Some(RdpScancode::extended(0x38)),  // Option/Alt (right, AltGr)
-        55 => Some(RdpScancode::extended(0x5B)),  // Command (left) → Super/Win
-        54 => Some(RdpScancode::extended(0x5C)),  // Command (right) → Super/Win
-        57 => Some(RdpScancode::standard(0x3A)),  // Caps Lock
+        56 => Some(RdpScancode::standard(0x2A)), // Shift (left)
+        60 => Some(RdpScancode::standard(0x36)), // Shift (right)
+        59 => Some(RdpScancode::standard(0x1D)), // Control (left)
+        62 => Some(RdpScancode::extended(0x1D)), // Control (right)
+        58 => Some(RdpScancode::standard(0x38)), // Option/Alt (left)
+        61 => Some(RdpScancode::extended(0x38)), // Option/Alt (right, AltGr)
+        55 => Some(RdpScancode::extended(0x5B)), // Command (left) → Super/Win
+        54 => Some(RdpScancode::extended(0x5C)), // Command (right) → Super/Win
+        57 => Some(RdpScancode::standard(0x3A)), // Caps Lock
         // kVK_Function (fn) has no PC equivalent and is intentionally unmapped.
 
         // Function keys (kVK_F1..F12)
@@ -1009,6 +1009,14 @@ pub const fn macos_keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
         109 => Some(RdpScancode::standard(0x44)), // F10
         103 => Some(RdpScancode::standard(0x57)), // F11
         111 => Some(RdpScancode::standard(0x58)), // F12
+        // F13..F19 on full-size Apple keyboards (Set 1 0x64..0x6A).
+        105 => Some(RdpScancode::standard(0x64)), // F13
+        107 => Some(RdpScancode::standard(0x65)), // F14
+        113 => Some(RdpScancode::standard(0x66)), // F15
+        106 => Some(RdpScancode::standard(0x67)), // F16
+        64 => Some(RdpScancode::standard(0x68)),  // F17
+        79 => Some(RdpScancode::standard(0x69)),  // F18
+        80 => Some(RdpScancode::standard(0x6A)),  // F19
 
         // Navigation cluster (extended E0 keys)
         115 => Some(RdpScancode::extended(0x47)), // Home
@@ -1020,25 +1028,29 @@ pub const fn macos_keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
         126 => Some(RdpScancode::extended(0x48)), // Up
         125 => Some(RdpScancode::extended(0x50)), // Down
         117 => Some(RdpScancode::extended(0x53)), // Forward Delete
+        // kVK_Help sits where Insert is on a PC keyboard (full-size Apple
+        // keyboards label it Help or fn).
+        114 => Some(RdpScancode::extended(0x52)), // Help → Insert
 
         // Numeric keypad (kVK_ANSI_Keypad*)
-        82 => Some(RdpScancode::standard(0x52)),  // KP 0
-        83 => Some(RdpScancode::standard(0x4F)),  // KP 1
-        84 => Some(RdpScancode::standard(0x50)),  // KP 2
-        85 => Some(RdpScancode::standard(0x51)),  // KP 3
-        86 => Some(RdpScancode::standard(0x4B)),  // KP 4
-        87 => Some(RdpScancode::standard(0x4C)),  // KP 5
-        88 => Some(RdpScancode::standard(0x4D)),  // KP 6
-        89 => Some(RdpScancode::standard(0x47)),  // KP 7
-        91 => Some(RdpScancode::standard(0x48)),  // KP 8
-        92 => Some(RdpScancode::standard(0x49)),  // KP 9
-        65 => Some(RdpScancode::standard(0x53)),  // KP Decimal
-        67 => Some(RdpScancode::standard(0x37)),  // KP Multiply
-        69 => Some(RdpScancode::standard(0x4E)),  // KP Plus
-        78 => Some(RdpScancode::standard(0x4A)),  // KP Minus
-        75 => Some(RdpScancode::extended(0x35)),  // KP Divide (extended)
-        76 => Some(RdpScancode::extended(0x1C)),  // KP Enter (extended)
-        71 => Some(RdpScancode::standard(0x45)),  // Clear → Num Lock
+        82 => Some(RdpScancode::standard(0x52)), // KP 0
+        83 => Some(RdpScancode::standard(0x4F)), // KP 1
+        84 => Some(RdpScancode::standard(0x50)), // KP 2
+        85 => Some(RdpScancode::standard(0x51)), // KP 3
+        86 => Some(RdpScancode::standard(0x4B)), // KP 4
+        87 => Some(RdpScancode::standard(0x4C)), // KP 5
+        88 => Some(RdpScancode::standard(0x4D)), // KP 6
+        89 => Some(RdpScancode::standard(0x47)), // KP 7
+        91 => Some(RdpScancode::standard(0x48)), // KP 8
+        92 => Some(RdpScancode::standard(0x49)), // KP 9
+        65 => Some(RdpScancode::standard(0x53)), // KP Decimal
+        67 => Some(RdpScancode::standard(0x37)), // KP Multiply
+        69 => Some(RdpScancode::standard(0x4E)), // KP Plus
+        78 => Some(RdpScancode::standard(0x4A)), // KP Minus
+        75 => Some(RdpScancode::extended(0x35)), // KP Divide (extended)
+        76 => Some(RdpScancode::extended(0x1C)), // KP Enter (extended)
+        71 => Some(RdpScancode::standard(0x45)), // Clear → Num Lock
+        81 => Some(RdpScancode::standard(0x59)), // KP Equals
 
         _ => None,
     }
@@ -1264,6 +1276,35 @@ mod keyboard_tests {
             macos_keycode_to_scancode(53),
             Some(RdpScancode::standard(0x01))
         ); // Escape
+    }
+
+    #[test]
+    fn macos_keycode_full_size_keyboard_extras() {
+        // Help sits on the PC Insert position and is an extended key.
+        assert_eq!(
+            macos_keycode_to_scancode(114),
+            Some(RdpScancode::extended(0x52))
+        );
+        // Keypad Equals and F13..F19.
+        assert_eq!(
+            macos_keycode_to_scancode(81),
+            Some(RdpScancode::standard(0x59))
+        );
+        for (apple, want) in [
+            (105u32, 0x64u16),
+            (107, 0x65),
+            (113, 0x66),
+            (106, 0x67),
+            (64, 0x68),
+            (79, 0x69),
+            (80, 0x6A),
+        ] {
+            assert_eq!(
+                macos_keycode_to_scancode(apple),
+                Some(RdpScancode::standard(want)),
+                "Apple keycode {apple}"
+            );
+        }
     }
 
     #[test]

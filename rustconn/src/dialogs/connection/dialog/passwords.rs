@@ -17,6 +17,24 @@ use super::ConnectionDialog;
 use crate::alert;
 use crate::i18n::{i18n, i18n_f};
 
+/// The `.kdbx` file the Load and Test buttons read (issue #411): what a connect
+/// will read once the dialog is saved — the dialog's own KeePass Database
+/// field, else the selected group's override chain, else the global database.
+fn dialog_kdbx_path(
+    override_entry: &adw::EntryRow,
+    group_id: Option<uuid::Uuid>,
+    groups: &[rustconn_core::models::ConnectionGroup],
+    global: Option<&std::path::PathBuf>,
+) -> Option<std::path::PathBuf> {
+    let text = override_entry.text();
+    let own = text.trim();
+    if !own.is_empty() {
+        return Some(std::path::PathBuf::from(own));
+    }
+    rustconn_core::secret::resolve_group_kdbx_path_override(group_id, groups)
+        .or_else(|| global.cloned())
+}
+
 impl ConnectionDialog {
     /// Updates password row visibility based on password source
     /// Shows for: Vault(1)
@@ -121,6 +139,26 @@ impl ConnectionDialog {
         let kdbx_password = kdbx_password.cloned();
         let state = self.state.clone();
         let editing_id = self.editing_id.clone();
+        let kdbx_override_entry = self.kdbx_override_entry.clone();
+
+        // The KeePass Database row (issue #411) means something only with the
+        // KeePass backend; with any other backend it stays hidden. Wired here
+        // because this is the one setup call every connection-dialog opener
+        // makes with the secret settings at hand.
+        let keepass_active = kdbx_enabled
+            && matches!(
+                secret_settings.preferred_backend,
+                rustconn_core::config::SecretBackendType::KeePassXc
+                    | rustconn_core::config::SecretBackendType::KdbxFile
+            );
+        if keepass_active {
+            self.password_row
+                .bind_property("visible", &self.kdbx_override_entry, "visible")
+                .sync_create()
+                .build();
+        } else {
+            self.kdbx_override_entry.set_visible(false);
+        }
 
         // Clone groups for use in closure
         let groups = Rc::new(groups);
@@ -274,7 +312,16 @@ impl ConnectionDialog {
                     let btn = btn.clone();
                     let state = state.clone();
                     let kdbx_enabled = kdbx_enabled;
-                    let kdbx_path = kdbx_path.clone();
+                    let selected_group_id = groups_data
+                        .borrow()
+                        .get(group_dropdown.selected() as usize)
+                        .and_then(|(id, _)| *id);
+                    let kdbx_path = dialog_kdbx_path(
+                        &kdbx_override_entry,
+                        selected_group_id,
+                        groups.as_slice(),
+                        kdbx_path.as_ref(),
+                    );
                     let kdbx_password = kdbx_password.clone();
                     let kdbx_key_file = kdbx_key_file.clone();
                     let kdbx_yubikey_slot = secret_settings.kdbx_yubikey_slot.clone();
@@ -504,6 +551,7 @@ impl ConnectionDialog {
         let groups_data = self.groups_data.clone();
         let window = self.dialog.clone();
         let kdbx_password = kdbx_password.cloned();
+        let kdbx_override_entry = self.kdbx_override_entry.clone();
         let groups = Rc::new(groups);
 
         self.vault_test_button.connect_clicked(move |btn| {
@@ -618,8 +666,17 @@ impl ConnectionDialog {
                         | rustconn_core::config::SecretBackendType::KdbxFile
                 )
             {
-                if let Some(ref kdbx_path) = kdbx_path {
-                    let kdbx_path = kdbx_path.clone();
+                let selected_group_id = groups_data
+                    .borrow()
+                    .get(group_dropdown.selected() as usize)
+                    .and_then(|(id, _)| *id);
+                let effective_kdbx_path = dialog_kdbx_path(
+                    &kdbx_override_entry,
+                    selected_group_id,
+                    groups.as_slice(),
+                    kdbx_path.as_ref(),
+                );
+                if let Some(kdbx_path) = effective_kdbx_path {
                     let db_password = kdbx_password.clone();
                     let key_file = kdbx_key_file.clone();
                     let yubikey_slot = secret_settings.kdbx_yubikey_slot.clone();
