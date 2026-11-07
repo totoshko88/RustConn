@@ -555,6 +555,63 @@ pub fn show_edit_group_dialog(
 
     identity_content.append(&credentials_group);
 
+    // === KeePass database override (issue #411) ===
+    // Deliberately outside the Default Credentials expander: a group can pick a
+    // database for its connections without also setting inherited credentials.
+    let kdbx_group = adw::PreferencesGroup::builder()
+        .description(i18n(
+            "Leave empty to use the database of the enclosing group, or the global one.",
+        ))
+        .build();
+    let kdbx_row = adw::EntryRow::builder()
+        .title(i18n("KeePass Database"))
+        .text(
+            group
+                .kdbx_path_override
+                .as_ref()
+                .map_or_else(String::new, |p| p.to_string_lossy().into_owned()),
+        )
+        .build();
+    let kdbx_browse_btn = Button::builder()
+        .icon_name("document-open-symbolic")
+        .tooltip_text(i18n("Select KeePass Database"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    kdbx_browse_btn.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Select KeePass Database",
+    ))]);
+    kdbx_row.add_suffix(&kdbx_browse_btn);
+    {
+        let row = kdbx_row.clone();
+        kdbx_browse_btn.connect_clicked(move |button| {
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.kdbx");
+            let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            let dialog = gtk4::FileDialog::builder()
+                .title(i18n("Select KeePass Database"))
+                .modal(true)
+                .filters(&filters)
+                .build();
+            if let Some(window) = button
+                .root()
+                .and_then(|r| r.downcast::<gtk4::Window>().ok())
+            {
+                let row = row.clone();
+                dialog.open(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        row.set_text(&path.to_string_lossy());
+                    }
+                });
+            }
+        });
+    }
+    kdbx_group.add(&kdbx_row);
+    identity_content.append(&kdbx_group);
+
     // === SSH Settings Section (progressive disclosure per GNOME HIG) ===
     let ssh_settings_group = adw::PreferencesGroup::new();
 
@@ -1581,6 +1638,7 @@ pub fn show_edit_group_dialog(
     let password_entry_clone = password_entry.clone();
     let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
+    let kdbx_row_clone = kdbx_row;
     let icon_row_clone = icon_row;
     let parent_row_clone = parent_row;
     let description_buffer = description_view.buffer();
@@ -1710,6 +1768,13 @@ pub fn show_edit_group_dialog(
                     updated.domain = None;
                     updated.password_source = None;
                 }
+
+                // KeePass database override (issue #411): independent of the
+                // credentials switch above. Empty clears it.
+                let kdbx_text = kdbx_row_clone.text();
+                let kdbx_text = kdbx_text.trim();
+                updated.kdbx_path_override =
+                    (!kdbx_text.is_empty()).then(|| std::path::PathBuf::from(kdbx_text));
 
                 // Update icon
                 let icon_text = icon_row_clone.text().trim().to_string();

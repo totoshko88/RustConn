@@ -2638,6 +2638,20 @@ Groups can store default credentials (Username, Password, Domain) that are inher
 1. Create a connection inside the group
 2. In **Authentication** tab, set **Password Source** to **Inherit from Group**
 3. Connection will use group's stored credentials
+
+#### A KeePass Database per Connection or Group (0.24.8+)
+
+With the KeePass backend, you can keep different connections in different `.kdbx` files — for example a personal database and a corporate one — instead of one global database (issue [#411](https://github.com/totoshko88/RustConn/issues/411)).
+
+- **For a group:** right-click a group → **Edit Group** → **Identity** → **KeePass Database**, then pick the file with the folder button. Every connection beneath the group, including those in sub-groups, reads its vault credentials from that file.
+- **For one connection:** in the connection dialog's **Basic** tab, set **Password Source** to **Vault**; a **KeePass Database** row appears. It wins over the group's setting.
+- **Resolution order:** the connection's own database, then the nearest group above it that names one, then the global database from Settings → Secrets. Leave the field empty to inherit.
+
+Things to know:
+- Only the **file** changes. The database password, key file and YubiKey slot still come from Settings → Secrets, so the databases you combine should share them. A database that needs its own passphrase is not supported yet.
+- The path is **local to this computer** and is never written to a Cloud Sync, Group Sync or Simple Sync file, so each device sets its own. A value synced from another device never overwrites yours.
+- Switching the Password Source away from **Vault** clears the connection's database path.
+- The setting applies when the KeePass backend is active; it has no effect for other backends.
 4. Use **"Load from Group"** buttons to auto-fill Username and Domain from parent group
 
 **KeePass Hierarchy:**

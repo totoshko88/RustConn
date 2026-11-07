@@ -254,6 +254,7 @@ impl ConnectionDialog {
         theme_cursor_button: &ColorDialogButton,
         connections_data: &Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
         script_command_entry: &Entry,
+        kdbx_override_entry: &adw::EntryRow,
         monitoring_combo: &adw::ComboRow,
         recording_toggle: &adw::SwitchRow,
         highlight_rules: &Rc<RefCell<Vec<HighlightRule>>>,
@@ -500,6 +501,7 @@ impl ConnectionDialog {
         let monitoring_config_seed = monitoring_config_seed.clone();
         let connections_data = connections_data.clone();
         let script_command_entry = script_command_entry.clone();
+        let kdbx_override_entry = kdbx_override_entry.clone();
         let monitoring_combo = monitoring_combo.clone();
         let recording_toggle = recording_toggle.clone();
         let highlight_rules = highlight_rules.clone();
@@ -752,6 +754,7 @@ impl ConnectionDialog {
                 editing_id: &editing_id,
                 web_config_seed: &web_config_seed,
                 script_command_entry: &script_command_entry,
+                kdbx_override_entry: &kdbx_override_entry,
                 monitoring_combo: &monitoring_combo,
                 monitoring_config_seed: &monitoring_config_seed,
                 recording_toggle: &recording_toggle,

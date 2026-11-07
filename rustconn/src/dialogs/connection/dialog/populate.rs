@@ -167,6 +167,14 @@ impl ConnectionDialog {
             self.script_command_entry.set_text(cmd);
         }
 
+        // Per-connection KeePass database override (issue #411)
+        self.kdbx_override_entry.set_text(
+            &conn
+                .kdbx_path_override
+                .as_ref()
+                .map_or_else(String::new, |p| p.to_string_lossy().into_owned()),
+        );
+
         // Network mode — connection-level, so it is set for every protocol
         // rather than inside the SSH branch below (issue #301).
         self.network_mode_row.set_selected(u32::from(

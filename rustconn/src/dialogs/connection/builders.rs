@@ -286,6 +286,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     // Script credential fields
     pub script_command_entry: &'a Entry,
+    // Per-connection KeePass database override (issue #411)
+    pub kdbx_override_entry: &'a adw::EntryRow,
     // Remote monitoring override field: Use global setting / Enabled / Disabled
     pub monitoring_combo: &'a adw::ComboRow,
     /// `MonitoringConfig` the dialog was populated from — carries the interval
@@ -604,6 +606,18 @@ impl ConnectionDialogData<'_> {
                 PasswordSource::Script(cmd)
             }
             _ => PasswordSource::Prompt, // 0 and any other value default to Prompt
+        };
+
+        // Per-connection KeePass database override (issue #411). Only kept for
+        // the Vault source, where the row is visible: a stale path left in the
+        // hidden entry after switching to Prompt/Variable must not be saved.
+        // Empty means inherit from the group chain, then the global database.
+        conn.kdbx_path_override = if self.password_source_dropdown.selected() == 1 {
+            let text = self.kdbx_override_entry.text();
+            let trimmed = text.trim();
+            (!trimmed.is_empty()).then(|| std::path::PathBuf::from(trimmed))
+        } else {
+            None
         };
 
         // Network mode — Inherit(0) / Direct(1). Set for every protocol, not

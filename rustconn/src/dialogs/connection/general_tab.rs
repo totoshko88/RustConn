@@ -69,6 +69,9 @@ pub(super) struct BasicTabWidgets {
     pub script_command_entry: Entry,
     pub script_test_button: Button,
     pub script_row: GtkBox,
+    /// Per-connection KeePass database override (issue #411). Empty means
+    /// "inherit from the group chain, then the global database".
+    pub kdbx_override_entry: adw::EntryRow,
 }
 
 /// Creates the basic/general tab with all core connection fields.
@@ -379,6 +382,58 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .sync_create()
         .build();
 
+    // KeePass database override row (issue #411), shown with the Vault source
+    // only. It reuses the password row's visibility so it appears exactly when
+    // a vault password is being configured.
+    let kdbx_override_entry = adw::EntryRow::builder()
+        .title(i18n("KeePass Database"))
+        .tooltip_text(i18n(
+            "Leave empty to use the database of the enclosing group, or the global one.",
+        ))
+        .build();
+    let kdbx_browse_button = Button::builder()
+        .icon_name("document-open-symbolic")
+        .tooltip_text(i18n("Select KeePass Database"))
+        .valign(gtk4::Align::Center)
+        .css_classes(["flat"])
+        .build();
+    kdbx_browse_button.update_property(&[gtk4::accessible::Property::Label(&i18n(
+        "Select KeePass Database",
+    ))]);
+    kdbx_override_entry.add_suffix(&kdbx_browse_button);
+    {
+        let entry = kdbx_override_entry.clone();
+        kdbx_browse_button.connect_clicked(move |button| {
+            let filter = gtk4::FileFilter::new();
+            filter.add_pattern("*.kdbx");
+            let filters = gtk4::gio::ListStore::new::<gtk4::FileFilter>();
+            filters.append(&filter);
+            let dialog = gtk4::FileDialog::builder()
+                .title(i18n("Select KeePass Database"))
+                .modal(true)
+                .filters(&filters)
+                .build();
+            if let Some(window) = button
+                .root()
+                .and_then(|r| r.downcast::<gtk4::Window>().ok())
+            {
+                let entry = entry.clone();
+                dialog.open(Some(&window), gtk4::gio::Cancellable::NONE, move |result| {
+                    if let Ok(file) = result
+                        && let Some(path) = file.path()
+                    {
+                        entry.set_text(&path.to_string_lossy());
+                    }
+                });
+            }
+        });
+    }
+    auth_group.add(&kdbx_override_entry);
+    password_row
+        .bind_property("visible", &kdbx_override_entry, "visible")
+        .sync_create()
+        .build();
+
     vbox.append(&auth_group);
 
     // === Organization Section ===
@@ -488,6 +543,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         script_command_entry,
         script_test_button,
         script_row,
+        kdbx_override_entry,
     }
 }
 
