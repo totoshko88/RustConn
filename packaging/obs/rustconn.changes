@@ -1,5 +1,5 @@
 -------------------------------------------------------------------
-Sat Nov 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8
+Sun Nov 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8
 - Version bump to 0.24.8
 - Added: Dynamic Folder scripts can set the full connection through a
   protocol_config object, e.g. an SSH startup_command (#410)

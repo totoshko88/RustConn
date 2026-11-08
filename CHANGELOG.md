@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.24.8] - 2026-11-07
+## [0.24.8] - 2026-11-08
 
 ### Added
 - **Dynamic Folder scripts can define the full connection, not just host/port/username (issue #410)** — a dynamic-folder entry now accepts an optional `protocol_config` object in the native RustConn shape, so a generated connection can carry anything the connection editor sets: an SSH `startup_command` (e.g. `tmux new-session -A -s my-session`), an `auth_method`, RDP display options, and so on. The object is the same tagged form the config file uses (`{"type": "Ssh", "startup_command": "…", "auth_method": "agent"}`); its `type` tag decides the protocol and default port, and the `protocol` string is then only used to warn on a mismatch. Entries without `protocol_config` behave exactly as before, so existing scripts are unaffected. Because the connection stays read-only, the configuration is re-applied on every refresh instead of being lost when the folder regenerates, which removes the need to hand-edit a generated connection only to have the edit discarded on the next refresh. (`rustconn-core/src/models/dynamic_folder.rs`, `rustconn-core/src/dynamic_folder.rs`, `docs/USER_GUIDE.md`)

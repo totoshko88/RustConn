@@ -392,7 +392,7 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
-* Sat Nov 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8-0
+* Sun Nov 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8-0
 - Version bump to 0.24.8
 - Added: Dynamic Folder protocol_config for the full connection (#410)
 - Added: KeePass database per connection or group (#411)

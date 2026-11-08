@@ -140,7 +140,7 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.24.8" date="2026-11-07">
+    <release version="0.24.8" date="2026-11-08">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.8</url>
       <description>
         <p>Version 0.24.8 - a KeePass database per connection, richer Dynamic Folders, and a macOS keyboard fix:</p>
