@@ -55,7 +55,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | **Workflow** | Smart folders, SSH port forwarding, visual SSH tunnel builder, workspace profiles (save/restore open sessions, including split layout and divider ratio), settings backup/restore, .rdp file association |
 | **Cloud Sync** | Synchronize connections via shared cloud directory (Google Drive, Syncthing, Nextcloud, Dropbox); group sync with Master/Import access model; simple sync with UUID-based merge |
 | **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import/export, snippets, groups, templates, clusters, WoL, shell completions; optional secret and client-launch commands behind features |
-| **Languages** | English, plus translations into Belarusian, Czech, Danish, German, Spanish, French, Italian, Georgian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Vietnamese and Simplified Chinese |
+| **Languages** | English, plus translations into Azerbaijani, Belarusian, Czech, Danish, German, Spanish, French, Italian, Georgian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Vietnamese and Simplified Chinese |
 
 ### Protocol support
 

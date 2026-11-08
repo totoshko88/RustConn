@@ -401,6 +401,7 @@ pub fn ni18n_f(singular: &str, plural: &str, n: u32, args: &[&str]) -> String {
 pub fn available_languages() -> Vec<(&'static str, &'static str)> {
     vec![
         ("system", "System"),
+        ("az", "Azərbaycanca"),
         ("be", "Беларуская"),
         ("cs", "Čeština"),
         ("da", "Dansk"),
@@ -437,6 +438,7 @@ pub fn available_languages() -> Vec<(&'static str, &'static str)> {
 /// existing configuration working.
 fn lang_to_locale(lang: &str) -> String {
     let full = match lang {
+        "az" => "az_AZ",
         "be" => "be_BY",
         "cs" => "cs_CZ",
         "da" => "da_DK",
