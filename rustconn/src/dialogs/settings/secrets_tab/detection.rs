@@ -321,6 +321,12 @@ fn run_detection(pass_store_dir: Option<&str>) -> SecretCliDetection {
         let system_keyring_availability = keyring_avail
             .join()
             .unwrap_or(rustconn_core::secret::BackendAvailability::ServiceUnavailable);
+        // macOS has no `secret-tool`: "System keyring" is the Keychain, reached
+        // through Security.framework. Gating the keyring choice on the binary
+        // reverted every such selection there and logged a false warning.
+        #[cfg(target_os = "macos")]
+        let secret_tool_available = secret_tool_available
+            || system_keyring_availability == rustconn_core::secret::BackendAvailability::Available;
 
         SecretCliDetection {
             keepassxc_version,

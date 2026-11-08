@@ -541,6 +541,23 @@ pub struct Connection {
     /// Source of password for this connection
     #[serde(default)]
     pub password_source: PasswordSource,
+    /// Per-connection KeePass (`.kdbx`) database override (LOCAL-ONLY, not
+    /// synced — issue
+    /// [#411](https://github.com/totoshko88/RustConn/issues/411)).
+    ///
+    /// When set and the KeePass backend is active, this connection's Vault
+    /// credentials are read from this `.kdbx` file instead of the global one in
+    /// Settings → Secrets, so different connections can live in different
+    /// databases (e.g. a personal vault and a corporate one). When `None` (the
+    /// default, and every connection written before this field existed), the
+    /// connection inherits the override from its group chain, then falls back to
+    /// the global database. The database's password / key file / YubiKey slot
+    /// are taken from the global KeePass settings — a database that needs a
+    /// *different* passphrase is out of scope here. A path to a file that is not
+    /// a readable `.kdbx` simply resolves nothing, exactly like a misconfigured
+    /// global database.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kdbx_path_override: Option<std::path::PathBuf>,
     /// Where this connection takes its bastion / proxy configuration from.
     ///
     /// `Inherit` (the default) walks the group chain and then the global
@@ -733,6 +750,7 @@ impl Connection {
             sort_order: 0,
             last_connected: None,
             password_source: PasswordSource::None,
+            kdbx_path_override: None,
             network_mode: NetworkMode::default(),
             domain: None,
             custom_properties: Vec::new(),

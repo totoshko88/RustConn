@@ -32,11 +32,22 @@ fn send_ironrdp_key(
     pressed: bool,
     ironrdp_tx: &Rc<RefCell<Option<tokio::sync::mpsc::UnboundedSender<RdpClientCommand>>>>,
 ) {
-    use rustconn_core::rdp_client::{keycode_to_scancode, keyval_to_scancode, keyval_to_unicode};
+    use rustconn_core::rdp_client::{keyval_to_scancode, keyval_to_unicode};
 
     let gdk_keyval = keyval.into_glib();
 
-    if let Some(scancode) = keycode_to_scancode(keycode) {
+    // The GDK hardware keycode is interpreted differently per platform. On
+    // Linux/BSD it is an evdev keycode the evdev→AT table understands; on the
+    // macOS Quartz backend it is an Apple virtual keycode (`NSEvent.keyCode`),
+    // which the evdev table would mis-map to a neighbouring key (issue #412).
+    // Pick the matching table at compile time so the first-choice scancode path
+    // is correct on every platform.
+    #[cfg(target_os = "macos")]
+    let keycode_scancode = rustconn_core::rdp_client::macos_keycode_to_scancode(keycode);
+    #[cfg(not(target_os = "macos"))]
+    let keycode_scancode = rustconn_core::rdp_client::keycode_to_scancode(keycode);
+
+    if let Some(scancode) = keycode_scancode {
         if let Some(ref tx) = *ironrdp_tx.borrow() {
             let _ = tx.send(RdpClientCommand::KeyEvent {
                 scancode: scancode.code,

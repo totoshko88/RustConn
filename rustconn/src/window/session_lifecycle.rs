@@ -858,34 +858,12 @@ impl MainWindow {
                 .get_session_info(session_id)
                 .and_then(|info| info.history_entry_id);
 
-            // Update session status in state manager. The session log itself is
-            // owned by the handlers in `setup_logging_handlers`, which flush it
-            // on the same signal.
-            if let Ok(mut state_mut) = state_clone.try_borrow_mut()
-                && let Err(e) = state_mut.terminate_session(session_id)
-            {
-                // "Session not found" here is the expected end of a race rather
-                // than a fault, and it arrives by two routes. At shutdown
-                // `shutdown_sessions_for_exit` signals this child itself and it is
-                // reaped before we ask the manager to terminate. On tab close
-                // the widget side tears the session down first — that is the
-                // `Killed VTE child process group on tab close` line — and this
-                // handler, reacting to the exit that caused, arrives second. Only
-                // the first route was recognised, so an ordinary tab close logged
-                // a warning about an outcome the code had just arranged.
-                //
-                // Both are identified by the session already being absent, not by
-                // matching the error text: it crosses this boundary as a formatted
-                // String, and classifying by prose is how the KeePassXC locale bug
-                // happened. Anything else still warns.
-                let already_gone = crate::app::is_shutting_down()
-                    || notebook_clone.get_session_info(session_id).is_none();
-                if already_gone {
-                    tracing::debug!(?e, %session_id, "Session already gone; nothing to terminate");
-                } else {
-                    tracing::warn!(?e, %session_id, "Failed to terminate session");
-                }
-            }
+            // No `AppState::terminate_session` here. Terminal sessions live in
+            // the notebook; nothing in the GUI registers them in the core
+            // `SessionManager`, so that call could only ever answer "Session not
+            // found" — logged as a warning whenever a connection failed while its
+            // tab stayed open. The session log is owned by the handlers in
+            // `setup_logging_handlers`, which flush it on the same signal.
 
             // Check if session still exists in notebook
             // If it doesn't, the tab was closed by user
@@ -896,7 +874,7 @@ impl MainWindow {
                         state_mut.record_connection_end(entry_id);
                     }
                 // Decrement session count - status changes only if no other sessions active
-                sidebar_clone.decrement_session_count(&connection_id_str, false);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, false);
                 return;
             }
 
@@ -907,7 +885,7 @@ impl MainWindow {
             // `connect_shutdown`, which runs from the `app.quit()` that follows
             // the teardown, so every guard asking the question got `false`.
             if crate::app::is_shutting_down() {
-                sidebar_clone.decrement_session_count(&connection_id_str, false);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, false);
                 return;
             }
 
@@ -972,7 +950,7 @@ impl MainWindow {
                         return;
                     }
                     nb.close_tab(session_id);
-                    sb.decrement_session_count(&cid, false);
+                    sb.decrement_session_count(&cid, session_id, false);
                 });
                 return;
             }
@@ -990,7 +968,7 @@ impl MainWindow {
             glib::idle_add_local_once(move || {
             // Guard: the tab may have been closed before this idle ran.
             if notebook_clone.get_session_info(session_id).is_none() {
-                sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
                 return;
             }
 
@@ -1091,7 +1069,7 @@ impl MainWindow {
                 // If retry is explicitly disabled, skip auto-reconnect
                 if !retry_config.enabled {
                     drop(state_ref);
-                    sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+                    sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
                     return;
                 }
 
@@ -1199,7 +1177,7 @@ impl MainWindow {
             }
 
             // Decrement session count - status changes only if no other sessions active
-            sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+            sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
             });
         });
     }

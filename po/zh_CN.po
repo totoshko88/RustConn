@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-05 22:28+0200\n"
+"POT-Creation-Date: 2026-11-08 02:07+0100\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2168 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2190 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "确定"
@@ -56,20 +56,20 @@ msgstr "确定"
 #: rustconn/src/terminal/tab_menu.rs:688 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
-#: rustconn/src/window/connection_dialogs.rs:942
-#: rustconn/src/window/edit_group.rs:1957
+#: rustconn/src/window/connection_dialogs.rs:944
 #: rustconn/src/window/edit_group.rs:2006
+#: rustconn/src/window/edit_group.rs:2055
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3557
-#: rustconn/src/window/mod.rs:3621 rustconn/src/window/mod.rs:4629
-#: rustconn/src/window/mod.rs:5677 rustconn/src/window/operations.rs:116
+#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3567
+#: rustconn/src/window/mod.rs:3631 rustconn/src/window/mod.rs:4639
+#: rustconn/src/window/mod.rs:5687 rustconn/src/window/operations.rs:116
 #: rustconn/src/window/operations.rs:487 rustconn/src/window/operations.rs:670
-#: rustconn/src/window/sessions.rs:339 rustconn/src/window/workspaces.rs:554
+#: rustconn/src/window/sessions.rs:335 rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "取消"
 
-#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:777
-#: rustconn/src/dialogs/connection/dialog/save.rs:790
+#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:780
+#: rustconn/src/dialogs/connection/dialog/save.rs:793
 msgid "Validation Error"
 msgstr "验证错误"
 
@@ -87,7 +87,7 @@ msgstr "不保存"
 #: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:609
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:664
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -97,17 +97,17 @@ msgstr "保存"
 msgid "Initialization Error"
 msgstr "初始化错误"
 
-#: rustconn/src/app.rs:862
+#: rustconn/src/app.rs:864
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr "未从密钥环加载 KeePass 密码 — 请在设置中重新输入"
 
-#: rustconn/src/app.rs:867 rustconn/src/dialogs/shortcuts.rs:178
+#: rustconn/src/app.rs:869 rustconn/src/dialogs/shortcuts.rs:178
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "设置"
 
-#: rustconn/src/app.rs:1697
+#: rustconn/src/app.rs:1719
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -116,13 +116,13 @@ msgstr ""
 "已选择 {}，但系统密钥环不可访问。请执行：sudo snap connect rustconn:password-"
 "manager-service — 或打开\"设置\"，然后打开\"密钥\"，选择其他后端。"
 
-#: rustconn/src/app.rs:1702
+#: rustconn/src/app.rs:1724
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
 msgstr "已选择 {}，但它还无法存储密码：{}。请打开“设置”，然后打开“机密”。"
 
-#: rustconn/src/app.rs:2013
+#: rustconn/src/app.rs:2035
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -131,31 +131,31 @@ msgstr ""
 "适用于 Linux 的现代化连接管理器，采用 GTK4/Wayland 原生界面。可通过单一应用程"
 "序管理 SSH、RDP、VNC、SPICE、Telnet、串口、Kubernetes 和零信任连接。"
 
-#: rustconn/src/app.rs:2091
+#: rustconn/src/app.rs:2113
 msgid "User Guide"
 msgstr "用户指南"
 
-#: rustconn/src/app.rs:2095
+#: rustconn/src/app.rs:2117
 msgid "Installation"
 msgstr "安装"
 
-#: rustconn/src/app.rs:2099
+#: rustconn/src/app.rs:2121
 msgid "Releases"
 msgstr "发布"
 
-#: rustconn/src/app.rs:2103
+#: rustconn/src/app.rs:2125
 msgid "Changelog"
 msgstr "更新日志"
 
-#: rustconn/src/app.rs:2113
+#: rustconn/src/app.rs:2135
 msgid "Special Thanks"
 msgstr "特别感谢"
 
-#: rustconn/src/app.rs:2128
+#: rustconn/src/app.rs:2150
 msgid "Made in Ukraine"
 msgstr "乌克兰制造"
 
-#: rustconn/src/app.rs:2129
+#: rustconn/src/app.rs:2151
 msgid "All contributors and supporters"
 msgstr "所有贡献者和支持者"
 
@@ -217,10 +217,10 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "“{}” 连接前需要以下信息。"
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:614
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:669
 #: rustconn/src/sidebar_ui.rs:396 rustconn/src/smart_folder_ui.rs:438
-#: rustconn/src/window/edit_dialogs.rs:777
-#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/mod.rs:5678
+#: rustconn/src/window/edit_dialogs.rs:785
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5688
 msgid "Connect"
 msgstr "连接"
 
@@ -232,9 +232,9 @@ msgstr "输入宏详细信息"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "命令宏“{}”在发送前需要以下内容。"
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:615
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:670
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
-#: rustconn/src/window/sessions.rs:341
+#: rustconn/src/window/sessions.rs:337
 msgid "Send"
 msgstr "发送"
 
@@ -257,7 +257,7 @@ msgstr "手动输入密码"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2490 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1153
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1157
 msgid "Open Settings"
 msgstr "打开设置"
 
@@ -275,7 +275,7 @@ msgstr "新建集群"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:610
+#: rustconn/src/dialogs/widgets.rs:665
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 msgid "Create"
@@ -287,7 +287,7 @@ msgstr "集群详情"
 
 #: rustconn/src/dialogs/cluster.rs:107
 #: rustconn/src/dialogs/connection/advanced_tab.rs:911
-#: rustconn/src/dialogs/connection/general_tab.rs:98
+#: rustconn/src/dialogs/connection/general_tab.rs:101
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
 #: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:2014
 #: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:193
@@ -715,7 +715,7 @@ msgstr "无高亮规则"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:633
 #: rustconn/src/dialogs/connection/automation_tab.rs:174
 #: rustconn/src/dialogs/settings/mod.rs:385
-#: rustconn/src/window/edit_group.rs:1265
+#: rustconn/src/window/edit_group.rs:1304
 msgid "Add Rule"
 msgstr "添加规则"
 
@@ -783,7 +783,7 @@ msgstr "使用全局设置"
 #: rustconn/src/dialogs/connection/advanced_tab.rs:822
 #: rustconn/src/dialogs/connection/dialog/rows.rs:450
 #: rustconn/src/dialogs/settings/ui_tab.rs:663
-#: rustconn/src/window/edit_group.rs:2288
+#: rustconn/src/window/edit_group.rs:2337
 msgid "Enabled"
 msgstr "已启用"
 
@@ -826,8 +826,8 @@ msgstr "启用规则"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:288
 #: rustconn/src/dialogs/connection/dialog/rows.rs:290
 #: rustconn/src/dialogs/settings/mod.rs:1995
-#: rustconn/src/window/edit_group.rs:2124
-#: rustconn/src/window/edit_group.rs:2126
+#: rustconn/src/window/edit_group.rs:2173
+#: rustconn/src/window/edit_group.rs:2175
 msgid "Delete rule"
 msgstr "删除规则"
 
@@ -837,17 +837,17 @@ msgid "Delete highlight rule"
 msgstr "删除高亮规则"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:103
-#: rustconn/src/window/edit_group.rs:1156
+#: rustconn/src/window/edit_group.rs:1195
 msgid "Expect Rules"
 msgstr "期望规则"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:104
-#: rustconn/src/window/edit_group.rs:1157
+#: rustconn/src/window/edit_group.rs:1196
 msgid "Auto-respond to terminal patterns (priority order)"
 msgstr "自动响应终端模式（按优先级）"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:115
-#: rustconn/src/window/edit_group.rs:1166
+#: rustconn/src/window/edit_group.rs:1205
 msgid ""
 "Responses support ${password}, ${username}, and ${VARIABLE_NAME} "
 "placeholders resolved at connection time"
@@ -855,22 +855,22 @@ msgstr ""
 "响应支持在连接时解析的 ${password}、${username} 和 ${VARIABLE_NAME} 占位符"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:128
-#: rustconn/src/window/edit_group.rs:1179
+#: rustconn/src/window/edit_group.rs:1218
 msgid "No expect rules"
 msgstr "无期望规则"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:139
-#: rustconn/src/window/edit_group.rs:1195
+#: rustconn/src/window/edit_group.rs:1234
 msgid "From Template"
 msgstr "从模板"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:140
-#: rustconn/src/window/edit_group.rs:1196
+#: rustconn/src/window/edit_group.rs:1235
 msgid "Add rules from a built-in template"
 msgstr "从内置模板添加规则"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:185
-#: rustconn/src/window/edit_group.rs:1430
+#: rustconn/src/window/edit_group.rs:1469
 msgid "Auto-run Scripts"
 msgstr "自动运行脚本"
 
@@ -880,13 +880,13 @@ msgid ""
 msgstr "此连接的会话启动后要运行的脚本库中的脚本"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:196
-#: rustconn/src/window/edit_group.rs:1440
+#: rustconn/src/window/edit_group.rs:1479
 msgid "No auto-run scripts"
 msgstr "没有自动运行脚本"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:202
-#: rustconn/src/window/edit_group.rs:1402
-#: rustconn/src/window/edit_group.rs:1445
+#: rustconn/src/window/edit_group.rs:1441
+#: rustconn/src/window/edit_group.rs:1484
 msgid "Add Script"
 msgstr "添加脚本"
 
@@ -909,7 +909,7 @@ msgid "Add Macro"
 msgstr "添加宏"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:246
-#: rustconn/src/window/edit_group.rs:1311
+#: rustconn/src/window/edit_group.rs:1350
 msgid "Pattern Tester"
 msgstr "模式测试器"
 
@@ -922,18 +922,18 @@ msgid "Test text against patterns"
 msgstr "用模式测试文本"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:257
-#: rustconn/src/window/edit_group.rs:1328
+#: rustconn/src/window/edit_group.rs:1367
 msgid "Test Input"
 msgstr "测试输入"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:262
-#: rustconn/src/window/edit_group.rs:1322
-#: rustconn/src/window/edit_group.rs:1343
+#: rustconn/src/window/edit_group.rs:1361
+#: rustconn/src/window/edit_group.rs:1382
 msgid "Enter text to test"
 msgstr "输入要测试的文本"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:268
-#: rustconn/src/window/edit_group.rs:1332
+#: rustconn/src/window/edit_group.rs:1371
 msgid "Result"
 msgstr "结果"
 
@@ -997,7 +997,7 @@ msgstr "例如：/path/to/script.sh 或 vpn-connect ${host}"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:440
 #: rustconn/src/dialogs/connection/automation_tab.rs:560
-#: rustconn/src/dialogs/connection/general_tab.rs:370
+#: rustconn/src/dialogs/connection/general_tab.rs:373
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:233
 #: rustconn/src/dialogs/settings/terminal_tab.rs:500
 #: rustconn/src/dialogs/snippet.rs:273 rustconn/src/dialogs/template.rs:1934
@@ -1061,7 +1061,7 @@ msgid "e.g., ChromaTerm for syntax highlighting"
 msgstr "例如用 ChromaTerm 做语法高亮"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:545
-#: rustconn/src/window/edit_group.rs:1958
+#: rustconn/src/window/edit_group.rs:2007
 msgid "Enable"
 msgstr "启用"
 
@@ -1084,53 +1084,53 @@ msgstr "传给命令的参数，以空格分隔"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:622
 #: rustconn/src/dialogs/connection/automation_tab.rs:624
-#: rustconn/src/window/edit_group.rs:2593
-#: rustconn/src/window/edit_group.rs:2597
+#: rustconn/src/window/edit_group.rs:2642
+#: rustconn/src/window/edit_group.rs:2646
 msgid "Delete script from the library"
 msgstr "从脚本库中删除脚本"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:630
 #: rustconn/src/dialogs/connection/automation_tab.rs:632
-#: rustconn/src/window/edit_group.rs:2604
-#: rustconn/src/window/edit_group.rs:2608
+#: rustconn/src/window/edit_group.rs:2653
+#: rustconn/src/window/edit_group.rs:2657
 msgid "Remove from this list"
 msgstr "从此列表中移除"
 
-#: rustconn/src/dialogs/connection/builders.rs:323
+#: rustconn/src/dialogs/connection/builders.rs:325
 msgid "Connection name is required"
 msgstr "需要连接名称"
 
-#: rustconn/src/dialogs/connection/builders.rs:337
+#: rustconn/src/dialogs/connection/builders.rs:339
 msgid "Host is required"
 msgstr "需要主机"
 
-#: rustconn/src/dialogs/connection/builders.rs:342
+#: rustconn/src/dialogs/connection/builders.rs:344
 msgid "Host cannot contain spaces"
 msgstr "主机不能包含空格"
 
-#: rustconn/src/dialogs/connection/builders.rs:352
+#: rustconn/src/dialogs/connection/builders.rs:354
 msgid "Port must be greater than 0"
 msgstr "端口必须大于 0"
 
-#: rustconn/src/dialogs/connection/builders.rs:360
+#: rustconn/src/dialogs/connection/builders.rs:362
 msgid "Device path is required for serial connections"
 msgstr "串行连接需要设备路径"
 
-#: rustconn/src/dialogs/connection/builders.rs:379
+#: rustconn/src/dialogs/connection/builders.rs:381
 msgid "SSH key path is required for public key authentication"
 msgstr "公钥认证需要 SSH 密钥路径"
 
-#: rustconn/src/dialogs/connection/builders.rs:391
+#: rustconn/src/dialogs/connection/builders.rs:393
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
 msgstr "密码来源为“无”但认证方式为密码。请将来源设置为提示或密码库。"
 
-#: rustconn/src/dialogs/connection/builders.rs:401
+#: rustconn/src/dialogs/connection/builders.rs:403
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "禁用 Busybox 模式时需要 Pod 名称"
 
-#: rustconn/src/dialogs/connection/builders.rs:413
+#: rustconn/src/dialogs/connection/builders.rs:415
 msgid ""
 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, "
 "udp://, http:// or https:// address."
@@ -1138,60 +1138,60 @@ msgstr ""
 "KDC 地址无效。请输入主机名、host:port，或 tcp://、udp://、http:// 或 "
 "https:// 地址。"
 
-#: rustconn/src/dialogs/connection/builders.rs:422
+#: rustconn/src/dialogs/connection/builders.rs:424
 msgid "MAC address is required when WOL is enabled"
 msgstr "启用 WOL 时需要 MAC 地址"
 
-#: rustconn/src/dialogs/connection/builders.rs:427
+#: rustconn/src/dialogs/connection/builders.rs:429
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr "MAC 地址格式无效。请使用 AA:BB:CC:DD:EE:FF 或 AA-BB-CC-DD-EE-FF"
 
-#: rustconn/src/dialogs/connection/builders.rs:445
+#: rustconn/src/dialogs/connection/builders.rs:447
 msgid "Browser command is required when Custom mode is selected"
 msgstr "选择自定义模式时需要浏览器命令"
 
-#: rustconn/src/dialogs/connection/builders.rs:466
+#: rustconn/src/dialogs/connection/builders.rs:468
 msgid "AWS SSM target instance ID is required"
 msgstr "AWS SSM 目标实例 ID 为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:471
+#: rustconn/src/dialogs/connection/builders.rs:473
 msgid "GCP instance name and zone are required"
 msgstr "GCP 实例名称和区域为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:480
+#: rustconn/src/dialogs/connection/builders.rs:482
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr "Azure Bastion 资源 ID、资源组和堡垒名称为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:486
+#: rustconn/src/dialogs/connection/builders.rs:488
 msgid "Azure VM name and resource group are required"
 msgstr "Azure 虚拟机名称和资源组为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:495
+#: rustconn/src/dialogs/connection/builders.rs:497
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr "OCI 堡垒 OCID、目标 OCID 和目标私有 IP 为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:501
+#: rustconn/src/dialogs/connection/builders.rs:503
 msgid "Cloudflare Access hostname is required"
 msgstr "Cloudflare Access 主机名为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:506
+#: rustconn/src/dialogs/connection/builders.rs:508
 msgid "Teleport host is required"
 msgstr "Teleport 主机为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:511
+#: rustconn/src/dialogs/connection/builders.rs:513
 msgid "Tailscale host is required"
 msgstr "Tailscale 主机为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:516
+#: rustconn/src/dialogs/connection/builders.rs:518
 msgid "Boundary target is required"
 msgstr "Boundary 目标为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:521
+#: rustconn/src/dialogs/connection/builders.rs:523
 msgid "Hoop.dev connection name is required"
 msgstr "Hoop.dev 连接名称为必填项"
 
-#: rustconn/src/dialogs/connection/builders.rs:527
+#: rustconn/src/dialogs/connection/builders.rs:529
 msgid "Command template is required for the Generic provider"
 msgstr "通用提供程序需要命令模板"
 
@@ -1250,27 +1250,27 @@ msgstr "由云同步管理"
 msgid "Edit Connection (Synced)"
 msgstr "编辑连接（已同步）"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:77
+#: rustconn/src/dialogs/connection/dialog/build.rs:78
 #: rustconn/src/dialogs/template.rs:183
 msgid "Basic"
 msgstr "基础"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:374
+#: rustconn/src/dialogs/connection/dialog/build.rs:375
 msgid "Data"
 msgstr "数据"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:384
+#: rustconn/src/dialogs/connection/dialog/build.rs:385
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "日志"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:394
-#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1080
-#: rustconn/src/window/edit_group.rs:1571
+#: rustconn/src/dialogs/connection/dialog/build.rs:395
+#: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1119
+#: rustconn/src/window/edit_group.rs:1610
 msgid "Automation"
 msgstr "自动化"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:438
+#: rustconn/src/dialogs/connection/dialog/build.rs:439
 #: rustconn/src/dialogs/connection/kubernetes.rs:141
 #: rustconn/src/dialogs/connection/rdp.rs:938
 #: rustconn/src/dialogs/connection/vnc.rs:318
@@ -1280,19 +1280,19 @@ msgstr "自动化"
 msgid "Advanced"
 msgstr "高级"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:454
+#: rustconn/src/dialogs/connection/dialog/build.rs:455
 msgid "No host set"
 msgstr "未设置主机"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:455
+#: rustconn/src/dialogs/connection/dialog/build.rs:456
 msgid "Enter the host address first, then detect its MAC."
 msgstr "请先输入主机地址，然后检测其 MAC。"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:473
+#: rustconn/src/dialogs/connection/dialog/build.rs:474
 msgid "MAC address may be temporary"
 msgstr "MAC 地址可能是临时的"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:475
+#: rustconn/src/dialogs/connection/dialog/build.rs:476
 msgid ""
 "This looks like a randomized (private) address, which changes periodically. "
 "Wake-on-LAN will stop working once it rotates — turn off the private address "
@@ -1301,11 +1301,11 @@ msgstr ""
 "这看起来像是会定期更换的随机（专用）地址。地址轮换后 Wake-on-LAN 将失效——请在"
 "目标设备上关闭此网络的专用地址，或稍后重新读取。"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:483
+#: rustconn/src/dialogs/connection/dialog/build.rs:484
 msgid "MAC address not found"
 msgstr "未找到 MAC 地址"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:485
+#: rustconn/src/dialogs/connection/dialog/build.rs:486
 msgid ""
 "The host is not in this computer's ARP cache. It must be powered on and on "
 "the same local network. For a host beyond a router, read its MAC over an SSH "
@@ -1314,50 +1314,50 @@ msgstr ""
 "该主机不在本机的 ARP 缓存中。它必须已开机并处于同一本地网络。对于路由器之外的"
 "主机，请改为通过 SSH 会话读取其 MAC。"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:846
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1196
+#: rustconn/src/dialogs/connection/dialog/build.rs:849
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1204
 #: rustconn/src/dialogs/connection/ssh.rs:687
 #: rustconn/src/dialogs/template.rs:699
 msgid "Jump host for tunneling (-J)"
 msgstr "隧道跳转主机 (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1178
+#: rustconn/src/dialogs/connection/dialog/build.rs:1181
 msgid "Username Loaded"
 msgstr "用户名已加载"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1179
+#: rustconn/src/dialogs/connection/dialog/build.rs:1182
 msgid "Username loaded from group"
 msgstr "用户名从组加载"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1185
+#: rustconn/src/dialogs/connection/dialog/build.rs:1188
 msgid "No Username"
 msgstr "无用户名"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1186
+#: rustconn/src/dialogs/connection/dialog/build.rs:1189
 msgid "Group has no username defined"
 msgstr "组未定义用户名"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1212
+#: rustconn/src/dialogs/connection/dialog/build.rs:1215
 msgid "Domain Loaded"
 msgstr "域已加载"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1213
+#: rustconn/src/dialogs/connection/dialog/build.rs:1216
 msgid "Domain loaded from group"
 msgstr "域从组加载"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1219
+#: rustconn/src/dialogs/connection/dialog/build.rs:1222
 msgid "No Domain"
 msgstr "无域"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1220
+#: rustconn/src/dialogs/connection/dialog/build.rs:1223
 msgid "Group has no domain defined"
 msgstr "组未定义域"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1248
+#: rustconn/src/dialogs/connection/dialog/build.rs:1251
 msgid "Zero Trust Connection Test"
 msgstr "零信任连接测试"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1249
+#: rustconn/src/dialogs/connection/dialog/build.rs:1252
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1372,86 +1372,86 @@ msgstr ""
 "2. 使用连接按钮启动连接\n"
 "3. 提供商 CLI 将处理身份验证"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1257
-#: rustconn/src/dialogs/connection/dialog/build.rs:1419
-#: rustconn/src/dialogs/connection/dialog/build.rs:1424
+#: rustconn/src/dialogs/connection/dialog/build.rs:1260
+#: rustconn/src/dialogs/connection/dialog/build.rs:1422
+#: rustconn/src/dialogs/connection/dialog/build.rs:1427
 msgid "Connection Test Failed"
 msgstr "连接测试失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1258
+#: rustconn/src/dialogs/connection/dialog/build.rs:1261
 msgid "Fill in the required fields (name and host)"
 msgstr "请填写必填字段（名称和主机）"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1300
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
+#: rustconn/src/dialogs/connection/dialog/build.rs:1303
+#: rustconn/src/dialogs/connection/dialog/build.rs:1473
 msgid "Testing…"
 msgstr "测试中…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1399
-#: rustconn/src/dialogs/connection/general_tab.rs:366
+#: rustconn/src/dialogs/connection/dialog/build.rs:1402
+#: rustconn/src/dialogs/connection/general_tab.rs:369
 msgid "Test"
 msgstr "测试"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1406
+#: rustconn/src/dialogs/connection/dialog/build.rs:1409
 msgid "Connection Test Successful"
 msgstr "连接测试成功"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1408
+#: rustconn/src/dialogs/connection/dialog/build.rs:1411
 msgid "Connection successful. Latency: {} ms"
 msgstr "连接成功。延迟：{} 毫秒"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1417
+#: rustconn/src/dialogs/connection/dialog/build.rs:1420
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
 msgstr "测试失败，但未返回具体错误。请检查主机地址和端口，然后重试。"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1425
+#: rustconn/src/dialogs/connection/dialog/build.rs:1428
 msgid "Test timed out"
 msgstr "测试超时"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1443
-#: rustconn/src/dialogs/connection/dialog/build.rs:1453
-#: rustconn/src/dialogs/connection/dialog/build.rs:1462
-#: rustconn/src/dialogs/connection/dialog/build.rs:1523
-#: rustconn/src/dialogs/connection/dialog/build.rs:1528
+#: rustconn/src/dialogs/connection/dialog/build.rs:1446
+#: rustconn/src/dialogs/connection/dialog/build.rs:1456
+#: rustconn/src/dialogs/connection/dialog/build.rs:1465
+#: rustconn/src/dialogs/connection/dialog/build.rs:1526
+#: rustconn/src/dialogs/connection/dialog/build.rs:1531
 msgid "Script Test Failed"
 msgstr "脚本测试失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1444
+#: rustconn/src/dialogs/connection/dialog/build.rs:1447
 msgid "Script command is empty"
 msgstr "脚本命令为空"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1454
+#: rustconn/src/dialogs/connection/dialog/build.rs:1457
 msgid "Script command is empty after parsing"
 msgstr "解析后脚本命令为空"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1463
+#: rustconn/src/dialogs/connection/dialog/build.rs:1466
 msgid "Failed to parse command"
 msgstr "解析命令失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1493
+#: rustconn/src/dialogs/connection/dialog/build.rs:1496
 msgid "Test Script"
 msgstr "测试脚本"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1500
+#: rustconn/src/dialogs/connection/dialog/build.rs:1503
 msgid "(empty output)"
 msgstr "（无输出）"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1506
+#: rustconn/src/dialogs/connection/dialog/build.rs:1509
 msgid "Script Test Successful"
 msgstr "脚本测试成功"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1507
+#: rustconn/src/dialogs/connection/dialog/build.rs:1510
 #: rustconn/src/dialogs/export.rs:322
 msgid "Output"
 msgstr "输出"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1514
+#: rustconn/src/dialogs/connection/dialog/build.rs:1517
 msgid "Command failed"
 msgstr "命令失败"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1529
+#: rustconn/src/dialogs/connection/dialog/build.rs:1532
 msgid "Script timed out after 30 seconds"
 msgstr "脚本在 30 秒后超时"
 
@@ -1470,11 +1470,11 @@ msgid "Test connection"
 msgstr "测试连接"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:207
-#: rustconn/src/dialogs/connection/general_tab.rs:138
+#: rustconn/src/dialogs/connection/general_tab.rs:141
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:194
 #: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1604
-#: rustconn/src/window/edit_dialogs.rs:826
+#: rustconn/src/window/edit_dialogs.rs:834
 msgid "Protocol"
 msgstr "协议"
 
@@ -1489,7 +1489,7 @@ msgid "https://example.com"
 msgstr "https://example.com"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:320
-#: rustconn/src/dialogs/connection/general_tab.rs:156
+#: rustconn/src/dialogs/connection/general_tab.rs:159
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:766
@@ -1497,81 +1497,81 @@ msgstr "https://example.com"
 #: rustconn/src/dialogs/export.rs:389 rustconn/src/dialogs/template.rs:549
 #: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1611
 #: rustconn/src/window/copy_field_actions.rs:79
-#: rustconn/src/window/edit_dialogs.rs:834
+#: rustconn/src/window/edit_dialogs.rs:842
 msgid "Host"
 msgstr "主机"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:323
-#: rustconn/src/dialogs/connection/general_tab.rs:150
+#: rustconn/src/dialogs/connection/general_tab.rs:153
 #: rustconn/src/dialogs/template.rs:1817
 msgid "hostname or IP"
 msgstr "主机名或 IP"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:146
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:474
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:184
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:521
 msgid "Cannot Load Password"
 msgstr "无法加载密码"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:147
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:535
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:185
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:583
 msgid "Enter a connection name or host first."
 msgstr "请先输入连接名称或主机。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:353
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:445
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:453
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:400
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:492
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:500
 msgid "Password Not Found"
 msgstr "密码未找到"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:354
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:446
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:454
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:401
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:493
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:501
 msgid "No password found in vault for this connection."
 msgstr "保险库中未找到此连接的密码。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:363
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:461
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:410
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:508
 msgid "Failed to Load Password"
 msgstr "加载密码失败"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:364
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:462
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:411
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:509
 msgid "Could not load password from vault."
 msgstr "无法从保险库加载密码。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:375
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:689
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:422
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:746
 msgid "Vault Not Configured"
 msgstr "保险库未配置"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:376
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:690
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:423
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:747
 msgid "Configure a secret backend in Settings → Secrets."
 msgstr "请在设置 → 密钥中配置密钥后端。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:475
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:522
 msgid "Password loading is only available for Vault source."
 msgstr "密码加载仅适用于保险库源。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:515
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:563
 msgid "Test Not Available"
 msgstr "测试不可用"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:516
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:564
 msgid "Credential test is only available when Password Source is set to Vault."
 msgstr "凭据测试仅在密码来源设置为密码库时可用。"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:534
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:582
 msgid "Cannot Test"
 msgstr "无法测试"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:653
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:720
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:710
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:777
 msgid "Credential Test Passed"
 msgstr "凭据测试通过"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:655
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:722
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:712
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:779
 msgid ""
 "Password found in vault.\n"
 "Lookup key: {}"
@@ -1579,15 +1579,15 @@ msgstr ""
 "在密码库中找到密码。\n"
 "查找密钥：{}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:663
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:674
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:729
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:740
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:751
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:720
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:731
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:786
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:797
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:808
 msgid "Credential Test Failed"
 msgstr "凭据测试失败"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:665
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:722
 msgid ""
 "No password found in vault.\n"
 "Lookup key: {}"
@@ -1595,7 +1595,7 @@ msgstr ""
 "在密码库中未找到密码。\n"
 "查找密钥：{}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:676
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:733
 msgid ""
 "Vault error. Check your KeePass configuration.\n"
 "Lookup key: {}"
@@ -1603,7 +1603,7 @@ msgstr ""
 "密码库错误。请检查您的 KeePass 配置。\n"
 "查找密钥：{}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:731
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:788
 msgid ""
 "Entry found but contains no password.\n"
 "Lookup key: {}"
@@ -1611,7 +1611,7 @@ msgstr ""
 "找到条目但不包含密码。\n"
 "查找密钥：{}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:742
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:799
 msgid ""
 "No entry found in vault.\n"
 "Lookup key: {}"
@@ -1619,7 +1619,7 @@ msgstr ""
 "在密码库中未找到条目。\n"
 "查找密钥：{}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:753
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:810
 msgid ""
 "Backend error. Check your vault configuration.\n"
 "Lookup key: {}"
@@ -1628,7 +1628,7 @@ msgstr ""
 "查找密钥：{}"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:45
-#: rustconn/src/window/edit_group.rs:734 rustconn/src/window/key_setup.rs:377
+#: rustconn/src/window/edit_group.rs:773 rustconn/src/window/key_setup.rs:377
 msgid "Select SSH Key"
 msgstr "选择 SSH 密钥"
 
@@ -1636,59 +1636,59 @@ msgstr "选择 SSH 密钥"
 msgid "Edit Connection"
 msgstr "编辑连接"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:433
-#: rustconn/src/dialogs/connection/general_tab.rs:400
+#: rustconn/src/dialogs/connection/dialog/populate.rs:441
+#: rustconn/src/dialogs/connection/general_tab.rs:417
 #: rustconn/src/dialogs/widgets.rs:61
 msgid "(Root)"
 msgstr "（根）"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1047
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1055
 #: rustconn/src/dialogs/connection/ssh.rs:680
-#: rustconn/src/window/edit_group.rs:825
+#: rustconn/src/window/edit_group.rs:864
 msgid "Connect via another SSH connection"
 msgstr "通过另一个 SSH 连接连接"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1157
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1228
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1165
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1236
 msgid "Inherited: {}"
 msgstr "已继承：{}"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1161
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1165
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1169
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1173
 msgid "Inherited from parent group"
 msgstr "从父组继承"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1170
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1178
 #: rustconn/src/dialogs/connection/ssh.rs:418
 msgid "Default tries ~/.ssh/id_rsa, id_ed25519, id_ecdsa automatically"
 msgstr "默认自动尝试 ~/.ssh/id_rsa、id_ed25519、id_ecdsa"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1236
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1253
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1244
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1261
 msgid "Direct — an inherited jump host is ignored"
 msgstr "直连 — 忽略继承的跳转主机"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1474
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1482
 #: rustconn/src/dialogs/connection/rdp.rs:781
 msgid "Tunnel RDP through an SSH connection"
 msgstr "通过 SSH 连接隧道传输 RDP"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1544
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1552
 #: rustconn/src/dialogs/connection/vnc.rs:352
 msgid "Tunnel VNC through an SSH connection"
 msgstr "通过 SSH 连接隧道传输 VNC"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1602
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1610
 #: rustconn/src/dialogs/connection/spice.rs:348
 msgid "Tunnel SPICE through an SSH connection"
 msgstr "通过 SSH 连接隧道传输 SPICE"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1851
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1859
 msgid ""
 "Set to this connection itself, which is ignored — pick another jump host"
 msgstr "设置为该连接本身，将被忽略——请选择其他跳板主机"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1854
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1862
 msgid ""
 "Saved jump host no longer exists and is skipped when connecting — pick "
 "another"
@@ -1747,52 +1747,52 @@ msgid "Protected value (masked)"
 msgstr "受保护值（掩码）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:275
-#: rustconn/src/window/edit_group.rs:2112
+#: rustconn/src/window/edit_group.rs:2161
 msgid "Move up (higher priority)"
 msgstr "上移（更高优先级）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:277
-#: rustconn/src/window/edit_group.rs:2114
+#: rustconn/src/window/edit_group.rs:2163
 msgid "Move rule up"
 msgstr "上移规则"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:281
-#: rustconn/src/window/edit_group.rs:2118
+#: rustconn/src/window/edit_group.rs:2167
 msgid "Move down (lower priority)"
 msgstr "下移（更低优先级）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:284
-#: rustconn/src/window/edit_group.rs:2120
+#: rustconn/src/window/edit_group.rs:2169
 msgid "Move rule down"
 msgstr "下移规则"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:299
-#: rustconn/src/window/edit_group.rs:2135
+#: rustconn/src/window/edit_group.rs:2184
 msgid "Pattern:"
 msgstr "模式："
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:305
-#: rustconn/src/window/edit_group.rs:2141
+#: rustconn/src/window/edit_group.rs:2190
 msgid "Regex pattern (e.g., password:\\s*$)"
 msgstr "正则表达式（例如：password:\\s*$）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:306
-#: rustconn/src/window/edit_group.rs:2142
+#: rustconn/src/window/edit_group.rs:2191
 msgid "Regular expression to match against terminal output"
 msgstr "用于匹配终端输出的正则表达式"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:315
-#: rustconn/src/window/edit_group.rs:2151
+#: rustconn/src/window/edit_group.rs:2200
 msgid "Response:"
 msgstr "响应："
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:321
-#: rustconn/src/window/edit_group.rs:2157
+#: rustconn/src/window/edit_group.rs:2206
 msgid "Text to send (e.g., ${password}\\n)"
 msgstr "要发送的文本（例如，${password}\\n）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
-#: rustconn/src/window/edit_group.rs:2159
+#: rustconn/src/window/edit_group.rs:2208
 msgid ""
 "Response to send when pattern matches. Use ${password}, ${username}, or $"
 "{VAR_NAME} for variables."
@@ -1800,78 +1800,78 @@ msgstr ""
 "模式匹配时发送的响应。使用 ${password}、${username} 或 ${VAR_NAME} 作为变量。"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:331
-#: rustconn/src/window/edit_group.rs:2167
+#: rustconn/src/window/edit_group.rs:2216
 msgid "Insert a variable placeholder"
 msgstr "插入变量占位符"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:334
-#: rustconn/src/window/edit_group.rs:2169
+#: rustconn/src/window/edit_group.rs:2218
 msgid "Insert variable"
 msgstr "插入变量"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:345
-#: rustconn/src/window/edit_group.rs:2181
+#: rustconn/src/window/edit_group.rs:2230
 msgid "Built-in"
 msgstr "内置"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:352
-#: rustconn/src/window/edit_group.rs:2188
+#: rustconn/src/window/edit_group.rs:2237
 msgid "Connection password"
 msgstr "连接密码"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:353
-#: rustconn/src/window/edit_group.rs:2189
+#: rustconn/src/window/edit_group.rs:2238
 msgid "Connection username"
 msgstr "连接用户名"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:354
-#: rustconn/src/window/edit_group.rs:2190
+#: rustconn/src/window/edit_group.rs:2239
 msgid "Connection host"
 msgstr "连接主机"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:355
-#: rustconn/src/window/edit_group.rs:2191
+#: rustconn/src/window/edit_group.rs:2240
 msgid "Connection port"
 msgstr "连接端口"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:383
 #: rustconn/src/dialogs/password_generator.rs:225
-#: rustconn/src/window/edit_group.rs:2221
+#: rustconn/src/window/edit_group.rs:2270
 msgid "Special"
 msgstr "特殊字符"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:393
-#: rustconn/src/window/edit_group.rs:2231
+#: rustconn/src/window/edit_group.rs:2280
 msgid "Newline (Enter key)"
 msgstr "换行（Enter 键）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:424
-#: rustconn/src/window/edit_group.rs:2262
+#: rustconn/src/window/edit_group.rs:2311
 msgid "Priority:"
 msgstr "优先级："
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:433
-#: rustconn/src/window/edit_group.rs:2271
+#: rustconn/src/window/edit_group.rs:2320
 msgid "Higher priority rules are checked first"
 msgstr "优先级更高的规则会先被检查"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:437
-#: rustconn/src/window/edit_group.rs:2275
+#: rustconn/src/window/edit_group.rs:2324
 msgid "Timeout:"
 msgstr "超时："
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:446
-#: rustconn/src/window/edit_group.rs:2284
+#: rustconn/src/window/edit_group.rs:2333
 msgid "Timeout in milliseconds (0 = no timeout)"
 msgstr "超时时间（毫秒）（0 = 无超时）"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:455
-#: rustconn/src/window/edit_group.rs:2292
+#: rustconn/src/window/edit_group.rs:2341
 msgid "One-shot"
 msgstr "一次性"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:457
-#: rustconn/src/window/edit_group.rs:2294
+#: rustconn/src/window/edit_group.rs:2343
 msgid "Fire only once, then remove the rule"
 msgstr "仅触发一次，然后删除规则"
 
@@ -1984,26 +1984,26 @@ msgstr "可选描述"
 msgid "(Inherited from global - override value below)"
 msgstr "（从全局继承 - 在下方覆盖值）"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:89
-#: rustconn/src/window/edit_group.rs:1527
+#: rustconn/src/dialogs/connection/general_tab.rs:92
+#: rustconn/src/window/edit_group.rs:1566
 msgid "Identity"
 msgstr "身份"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:93
+#: rustconn/src/dialogs/connection/general_tab.rs:96
 msgid "Connection name"
 msgstr "连接名称"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:104
+#: rustconn/src/dialogs/connection/general_tab.rs:107
 msgid "Emoji or icon name"
 msgstr "表情符号或图标名称"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:110
+#: rustconn/src/dialogs/connection/general_tab.rs:113
 #: rustconn/src/window/connection_dialogs.rs:422
 #: rustconn/src/window/edit_group.rs:122
 msgid "Enter an emoji (e.g. 🇺🇦) or GTK icon name (e.g. starred-symbolic)"
 msgstr "输入表情符号（例如 🇺🇦）或 GTK 图标名称（例如 starred-symbolic）"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:113
+#: rustconn/src/dialogs/connection/general_tab.rs:116
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:151
 #: rustconn/src/dialogs/smart_folder.rs:127
 #: rustconn/src/dialogs/template.rs:520
@@ -2012,17 +2012,17 @@ msgstr "输入表情符号（例如 🇺🇦）或 GTK 图标名称（例如 sta
 msgid "Icon"
 msgstr "图标"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:114
+#: rustconn/src/dialogs/connection/general_tab.rs:117
 msgid "Optional"
 msgstr "可选"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:125
+#: rustconn/src/dialogs/connection/general_tab.rs:128
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:207
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:622
 msgid "Zero Trust"
 msgstr "零信任"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:146
+#: rustconn/src/dialogs/connection/general_tab.rs:149
 #: rustconn/src/dialogs/connection/rdp.rs:767
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
@@ -2036,35 +2036,35 @@ msgstr "零信任"
 msgid "Connection"
 msgstr "连接"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:168
+#: rustconn/src/dialogs/connection/general_tab.rs:171
 msgid "SSH, Well-Known"
 msgstr "SSH，知名端口"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:175
+#: rustconn/src/dialogs/connection/general_tab.rs:178
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
 #: rustconn/src/dialogs/export.rs:395 rustconn/src/dialogs/template.rs:558
-#: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:845
+#: rustconn/src/dialogs/wol.rs:93 rustconn/src/window/edit_dialogs.rs:853
 msgid "Port"
 msgstr "端口"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:185
+#: rustconn/src/dialogs/connection/general_tab.rs:188
 msgid "Inherit from group or global"
 msgstr "从组或全局继承"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:186
+#: rustconn/src/dialogs/connection/general_tab.rs:189
 msgid "Direct"
 msgstr "直连"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:189
+#: rustconn/src/dialogs/connection/general_tab.rs:192
 msgid "Network Mode"
 msgstr "网络模式"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:191
+#: rustconn/src/dialogs/connection/general_tab.rs:194
 msgid "Direct ignores a jump host inherited from a group or globally"
 msgstr "直连会忽略从组或全局继承的跳转主机"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:213
+#: rustconn/src/dialogs/connection/general_tab.rs:216
 #: rustconn/src/dialogs/connection/ssh.rs:380
 #: rustconn/src/dialogs/connection/vnc.rs:307
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:85
@@ -2074,164 +2074,176 @@ msgstr "直连会忽略从组或全局继承的跳转主机"
 msgid "Authentication"
 msgstr "身份验证"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:220
-#: rustconn/src/dialogs/connection/general_tab.rs:240
+#: rustconn/src/dialogs/connection/general_tab.rs:223
+#: rustconn/src/dialogs/connection/general_tab.rs:243
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
 #: rustconn/src/window/connection_dialogs.rs:483
 #: rustconn/src/window/copy_field_actions.rs:82
-#: rustconn/src/window/edit_dialogs.rs:854
+#: rustconn/src/window/edit_dialogs.rs:862
 #: rustconn/src/window/edit_group.rs:241
 msgid "Username"
 msgstr "用户名"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:233
-#: rustconn/src/dialogs/connection/general_tab.rs:255
+#: rustconn/src/dialogs/connection/general_tab.rs:236
+#: rustconn/src/dialogs/connection/general_tab.rs:258
 msgid "Load from selected group"
 msgstr "从所选组加载"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:238
+#: rustconn/src/dialogs/connection/general_tab.rs:241
 msgid "Load username from selected group"
 msgstr "从选定组加载用户名"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:247
+#: rustconn/src/dialogs/connection/general_tab.rs:250
 msgid "Optional (e.g., WORKGROUP)"
 msgstr "可选（例如：WORKGROUP）"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:260
+#: rustconn/src/dialogs/connection/general_tab.rs:263
 msgid "Load domain from selected group"
 msgstr "从选定组加载域"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:263
+#: rustconn/src/dialogs/connection/general_tab.rs:266
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:129
 #: rustconn/src/dialogs/template.rs:569
 #: rustconn/src/window/connection_dialogs.rs:706
-#: rustconn/src/window/edit_group.rs:551
+#: rustconn/src/window/edit_group.rs:555
 msgid "Domain"
 msgstr "域"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:264
+#: rustconn/src/dialogs/connection/general_tab.rs:267
 msgid "Windows authentication"
 msgstr "Windows 身份验证"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:272
+#: rustconn/src/dialogs/connection/general_tab.rs:275
 #: rustconn/src/window/connection_dialogs.rs:488
 #: rustconn/src/window/edit_group.rs:248
 msgid "Prompt"
 msgstr "提示"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:273
+#: rustconn/src/dialogs/connection/general_tab.rs:276
 #: rustconn/src/window/connection_dialogs.rs:489
 #: rustconn/src/window/edit_group.rs:249
 msgid "Vault"
 msgstr "密钥库"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:274
-#: rustconn/src/dialogs/connection/general_tab.rs:345
+#: rustconn/src/dialogs/connection/general_tab.rs:277
+#: rustconn/src/dialogs/connection/general_tab.rs:348
 #: rustconn/src/window/connection_dialogs.rs:490
 #: rustconn/src/window/edit_group.rs:250 rustconn/src/window/edit_group.rs:319
 msgid "Variable"
 msgstr "变量"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:275
+#: rustconn/src/dialogs/connection/general_tab.rs:278
 #: rustconn/src/window/connection_dialogs.rs:491
 #: rustconn/src/window/edit_group.rs:251
 msgid "Inherit"
 msgstr "继承"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:276
+#: rustconn/src/dialogs/connection/general_tab.rs:279
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:439
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:276
 #: rustconn/src/window/connection_dialogs.rs:492
-#: rustconn/src/window/edit_group.rs:252 rustconn/src/window/edit_group.rs:668
+#: rustconn/src/window/edit_group.rs:252 rustconn/src/window/edit_group.rs:707
 msgid "None"
 msgstr "无"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:277
-#: rustconn/src/window/edit_group.rs:1008
+#: rustconn/src/dialogs/connection/general_tab.rs:280
+#: rustconn/src/window/edit_group.rs:1047
 msgid "Script"
 msgstr "脚本"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:287
+#: rustconn/src/dialogs/connection/general_tab.rs:290
 msgid "Password Source"
 msgstr "密码来源"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:294
+#: rustconn/src/dialogs/connection/general_tab.rs:297
 #: rustconn/src/dialogs/variable_setup.rs:73
 #: rustconn/src/window/connection_dialogs.rs:529
 #: rustconn/src/window/edit_group.rs:296
 msgid "Value"
 msgstr "值"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:301
-#: rustconn/src/dialogs/connection/general_tab.rs:305
+#: rustconn/src/dialogs/connection/general_tab.rs:304
+#: rustconn/src/dialogs/connection/general_tab.rs:308
 msgid "Load credentials from vault"
 msgstr "从密钥库加载凭据"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:309
-#: rustconn/src/dialogs/connection/general_tab.rs:313
+#: rustconn/src/dialogs/connection/general_tab.rs:312
+#: rustconn/src/dialogs/connection/general_tab.rs:316
 msgid "Test credential resolution"
 msgstr "测试凭据解析"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:335
-#: rustconn/src/dialogs/connection/general_tab.rs:340
+#: rustconn/src/dialogs/connection/general_tab.rs:338
+#: rustconn/src/dialogs/connection/general_tab.rs:343
 #: rustconn/src/window/edit_group.rs:310 rustconn/src/window/edit_group.rs:315
 msgid "Manage global variables"
 msgstr "管理全局变量"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:346
+#: rustconn/src/dialogs/connection/general_tab.rs:349
 #: rustconn/src/window/edit_group.rs:320
 msgid "Create secret variables in Tools → Variables"
 msgstr "在工具 → 变量中创建密钥变量"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:361
+#: rustconn/src/dialogs/connection/general_tab.rs:364
 msgid "e.g. vault kv get -field=password secret/myapp"
 msgstr "例如：vault kv get -field=password secret/myapp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:367
+#: rustconn/src/dialogs/connection/general_tab.rs:370
 msgid "Test the script command"
 msgstr "测试脚本命令"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:386
+#: rustconn/src/dialogs/connection/general_tab.rs:390
+#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
+#: rustconn/src/window/edit_group.rs:571
+msgid "KeePass Database"
+msgstr "KeePass 数据库"
+
+#: rustconn/src/dialogs/connection/general_tab.rs:392
+#: rustconn/src/window/edit_group.rs:567
+msgid ""
+"Leave empty to use the database of the enclosing group, or the global one."
+msgstr "留空则使用上级分组的数据库，或全局数据库。"
+
+#: rustconn/src/dialogs/connection/general_tab.rs:403
 msgid "Organization"
 msgstr "组织"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:390
+#: rustconn/src/dialogs/connection/general_tab.rs:407
 #: rustconn/src/dialogs/snippet.rs:216
 msgid "tag1, tag2, …"
 msgstr "标签1, 标签2, …"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:396
+#: rustconn/src/dialogs/connection/general_tab.rs:413
 #: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:214
 #: rustconn/src/dialogs/template.rs:573
 msgid "Tags"
 msgstr "标签"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:407
+#: rustconn/src/dialogs/connection/general_tab.rs:424
 #: rustconn/src/dialogs/export.rs:288 rustconn/src/dialogs/export.rs:413
 #: rustconn/src/window/batch_edit.rs:115
 msgid "Group"
 msgstr "组"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:428
+#: rustconn/src/dialogs/connection/general_tab.rs:445
 #: rustconn/src/dialogs/export.rs:425 rustconn/src/dialogs/snippet.rs:200
 #: rustconn/src/dialogs/template.rs:516
 #: rustconn/src/window/connection_dialogs.rs:713
-#: rustconn/src/window/edit_group.rs:1494
+#: rustconn/src/window/edit_group.rs:1533
 msgid "Description"
 msgstr "描述"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:523
+#: rustconn/src/dialogs/connection/general_tab.rs:541
 msgid "Well-Known"
 msgstr "知名端口"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:525
+#: rustconn/src/dialogs/connection/general_tab.rs:543
 msgid "Registered"
 msgstr "已注册"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:527
-#: rustconn/src/window/edit_group.rs:1562
+#: rustconn/src/dialogs/connection/general_tab.rs:545
+#: rustconn/src/window/edit_group.rs:1601
 msgid "Dynamic"
 msgstr "动态"
 
@@ -2605,7 +2617,7 @@ msgstr "打印机重定向"
 msgid "Share your local printer with the remote session"
 msgstr "与远程会话共享本地打印机"
 
-#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5651
+#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5661
 msgid "Microphone"
 msgstr "麦克风"
 
@@ -2613,7 +2625,7 @@ msgstr "麦克风"
 msgid "Send the local microphone to the remote session"
 msgstr "将本地麦克风发送到远程会话"
 
-#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5654
+#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5664
 msgid "Smart Cards"
 msgstr "智能卡"
 
@@ -2910,8 +2922,8 @@ msgstr "如果与连接用户名不同"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:66 rustconn/src/window/edit_dialogs.rs:801
-#: rustconn/src/window/edit_group.rs:774
+#: rustconn/src/dialogs/widgets.rs:66 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "（无）"
 
@@ -2922,7 +2934,7 @@ msgstr "（无）"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:147
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:102
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:90
-#: rustconn/src/window/edit_group.rs:824
+#: rustconn/src/window/edit_group.rs:863
 msgid "Jump Host"
 msgstr "跳转主机"
 
@@ -3486,21 +3498,21 @@ msgstr "每行一个正则表达式；留空表示使用内置模式"
 #: rustconn/src/dialogs/template.rs:631
 #: rustconn/src/window/connection_dialogs.rs:502
 #: rustconn/src/window/copy_field_actions.rs:83
-#: rustconn/src/window/edit_dialogs.rs:861
-#: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:669
-#: rustconn/src/window/edit_group.rs:692
+#: rustconn/src/window/edit_dialogs.rs:869
+#: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
+#: rustconn/src/window/edit_group.rs:731
 msgid "Password"
 msgstr "密码"
 
 #: rustconn/src/dialogs/connection/ssh.rs:386
-#: rustconn/src/dialogs/template.rs:632 rustconn/src/window/edit_group.rs:670
-#: rustconn/src/window/edit_group.rs:693
+#: rustconn/src/dialogs/template.rs:632 rustconn/src/window/edit_group.rs:709
+#: rustconn/src/window/edit_group.rs:732
 msgid "Public Key"
 msgstr "公钥"
 
 #: rustconn/src/dialogs/connection/ssh.rs:387
-#: rustconn/src/dialogs/template.rs:633 rustconn/src/window/edit_group.rs:672
-#: rustconn/src/window/edit_group.rs:695
+#: rustconn/src/dialogs/template.rs:633 rustconn/src/window/edit_group.rs:711
+#: rustconn/src/window/edit_group.rs:734
 msgid "Keyboard Interactive"
 msgstr "键盘交互"
 
@@ -3513,7 +3525,7 @@ msgstr "SSH 代理"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5657
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5667
 msgid "Security Key (FIDO2)"
 msgstr "安全密钥 (FIDO2)"
 
@@ -3541,8 +3553,8 @@ msgid "File"
 msgstr "文件"
 
 #: rustconn/src/dialogs/connection/ssh.rs:407
-#: rustconn/src/dialogs/template.rs:653 rustconn/src/window/edit_group.rs:671
-#: rustconn/src/window/edit_group.rs:694
+#: rustconn/src/dialogs/template.rs:653 rustconn/src/window/edit_group.rs:710
+#: rustconn/src/window/edit_group.rs:733
 msgid "Agent"
 msgstr "代理"
 
@@ -3769,7 +3781,7 @@ msgid "Key=Value, comma-separated (-o flags)"
 msgstr "键=值，逗号分隔 (-o 标志)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:887
-#: rustconn/src/window/edit_group.rs:853
+#: rustconn/src/window/edit_group.rs:892
 msgid "SSH Agent Socket"
 msgstr "SSH 代理套接字"
 
@@ -4532,7 +4544,7 @@ msgstr "便携文件口令"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:613
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:668
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4540,7 +4552,7 @@ msgstr "复制"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1265
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1269
 msgid "Stop"
 msgstr "停止"
 
@@ -4648,10 +4660,10 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:608 rustconn/src/sidebar_ui.rs:479
+#: rustconn/src/dialogs/widgets.rs:663 rustconn/src/sidebar_ui.rs:479
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4630
+#: rustconn/src/window/mod.rs:4640
 msgid "Close"
 msgstr "关闭"
 
@@ -4683,7 +4695,7 @@ msgid "Export Connections"
 msgstr "导出连接"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:611
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:666
 msgid "Export"
 msgstr "导出"
 
@@ -4974,7 +4986,7 @@ msgstr "导出完成"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:617
+#: rustconn/src/dialogs/widgets.rs:672
 msgid "Done"
 msgstr "完成"
 
@@ -5120,7 +5132,7 @@ msgid "All connection history entries will be permanently removed."
 msgstr "所有连接历史记录将被永久删除。"
 
 #: rustconn/src/dialogs/history.rs:200 rustconn/src/terminal/playback.rs:255
-#: rustconn/src/window/edit_group.rs:649 rustconn/src/window/edit_group.rs:1116
+#: rustconn/src/window/edit_group.rs:688 rustconn/src/window/edit_group.rs:1155
 msgid "Clear"
 msgstr "清除"
 
@@ -5154,8 +5166,8 @@ msgstr "导入连接"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:612
-#: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:904
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:667
+#: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:943
 msgid "Import"
 msgstr "导入"
 
@@ -5532,7 +5544,7 @@ msgid "RDP File"
 msgstr "RDP File"
 
 #: rustconn/src/dialogs/import/sources.rs:269
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:717
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:723
 msgid "Unknown"
 msgstr "未知"
 
@@ -5566,8 +5578,8 @@ msgstr "选择 RustConn 原生文件"
 
 #: rustconn/src/dialogs/import/sources.rs:678
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:38
-#: rustconn/src/window/edit_group.rs:906 rustconn/src/window/edit_group.rs:957
-#: rustconn/src/window/edit_group.rs:1546
+#: rustconn/src/window/edit_group.rs:945 rustconn/src/window/edit_group.rs:996
+#: rustconn/src/window/edit_group.rs:1585
 msgid "Cloud Sync"
 msgstr "云同步"
 
@@ -5580,7 +5592,7 @@ msgstr ""
 "将在导入模式下创建 '{}' 组。"
 
 #: rustconn/src/dialogs/import/sources.rs:704
-#: rustconn/src/window/connection_dialogs.rs:1033
+#: rustconn/src/window/connection_dialogs.rs:1035
 msgid "Import Failed"
 msgstr "导入失败"
 
@@ -6019,7 +6031,7 @@ msgid "No keys found. Choose a key file."
 msgstr "未找到密钥。请选择一个密钥文件。"
 
 #: rustconn/src/dialogs/key_setup.rs:546 rustconn/src/dialogs/key_setup.rs:548
-#: rustconn/src/window/edit_group.rs:714 rustconn/src/window/edit_group.rs:716
+#: rustconn/src/window/edit_group.rs:753 rustconn/src/window/edit_group.rs:755
 msgid "Select SSH key file"
 msgstr "选择 SSH 密钥文件"
 
@@ -6719,10 +6731,10 @@ msgstr "导入失败"
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:285 rustconn/src/toast.rs:110
 #: rustconn/src/toast.rs:370 rustconn/src/toast.rs:400
 #: rustconn/src/window/clusters.rs:599
-#: rustconn/src/window/connection_dialogs.rs:888
+#: rustconn/src/window/connection_dialogs.rs:890
 #: rustconn/src/window/edit_dialogs.rs:407
 #: rustconn/src/window/edit_dialogs.rs:511
-#: rustconn/src/window/edit_group.rs:1884
+#: rustconn/src/window/edit_group.rs:1931
 msgid "Error"
 msgstr "错误"
 
@@ -6765,8 +6777,8 @@ msgid "Run"
 msgstr "运行"
 
 #: rustconn/src/dialogs/script.rs:246 rustconn/src/dialogs/script.rs:248
-#: rustconn/src/window/edit_group.rs:2525
-#: rustconn/src/window/edit_group.rs:2528
+#: rustconn/src/window/edit_group.rs:2574
+#: rustconn/src/window/edit_group.rs:2577
 msgid "Delete script"
 msgstr "删除脚本"
 
@@ -7037,7 +7049,7 @@ msgid "Choose sync directory"
 msgstr "选择同步目录"
 
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:69
-#: rustconn/src/window/edit_group.rs:2025
+#: rustconn/src/window/edit_group.rs:2074
 msgid "Select Sync Directory"
 msgstr "选择同步目录"
 
@@ -7572,71 +7584,71 @@ msgstr "未找到数据库文件：{}"
 msgid "Enter the file's passphrase below"
 msgstr "在下方输入文件的密码短语"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:595
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:601
 msgid "Initialized at {}"
 msgstr "初始化于 {}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:602
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:608
 msgid "Not initialized (run 'pass init <gpg-id>')"
 msgstr "未初始化（运行 'pass init <gpg-id>'）"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:607
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:613
 msgid "Cannot determine store directory"
 msgstr "无法确定存储目录"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:713
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:719
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1283
 msgid "Unlocked"
 msgstr "已解锁"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:714
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:720
 msgid "Locked"
 msgstr "已锁定"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:715
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:721
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1296
 msgid "Not logged in"
 msgstr "未登录"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:716
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:722
 msgid "Status: {}"
 msgstr "状态：{}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:718
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:844
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:867
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:724
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:850
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:873
 msgid "Error checking status"
 msgstr "检查状态时出错"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:830
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:836
 msgid "Signed in: {}"
 msgstr "已登录：{}"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:832
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:838
 msgid "Signed in"
 msgstr "已登录"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:837
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:841
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:843
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:847
 msgid "Not signed in"
 msgstr "未登录"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:839
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:845
 msgid "Session expired"
 msgstr "会话已过期"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:856
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:3340
 msgid "Configured"
 msgstr "已配置"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:860
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:864
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:866
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:870
 #: rustconn/src/embedded_vnc/ui.rs:322
 msgid "Not configured"
 msgstr "未配置"
 
-#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:862
+#: rustconn/src/dialogs/settings/secrets_tab/detection.rs:868
 msgid "Authentication failed"
 msgstr "身份验证失败"
 
@@ -8192,10 +8204,6 @@ msgstr "正在检查密码短语……"
 msgid "Could not check the passphrase"
 msgstr "无法检查密码短语"
 
-#: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
-msgid "KeePass Database"
-msgstr "KeePass 数据库"
-
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2229
 msgid ""
 "Configure KDBX file integration (works with KeePassXC, GNOME Secrets, etc.)"
@@ -8283,10 +8291,13 @@ msgid "Token loaded from keyring"
 msgstr "令牌已从密钥环加载"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
+#: rustconn/src/dialogs/widgets.rs:609 rustconn/src/dialogs/widgets.rs:614
+#: rustconn/src/dialogs/widgets.rs:626
 msgid "Select KeePass Database"
 msgstr "选择 KeePass 数据库"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
+#: rustconn/src/dialogs/widgets.rs:622
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass 数据库 (*.kdbx)"
 
@@ -9253,7 +9264,7 @@ msgstr "新建组"
 
 #: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:573
 #: rustconn/src/sidebar_ui.rs:1295 rustconn/src/split_view/bridge.rs:1863
-#: rustconn/src/window/edit_dialogs.rs:770 rustconn/src/window/ui.rs:265
+#: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "快速连接"
 
@@ -9873,7 +9884,7 @@ msgid "All"
 msgstr "全部"
 
 #: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:946
-#: rustconn/src/window/edit_group.rs:1538
+#: rustconn/src/window/edit_group.rs:1577
 msgid "SSH"
 msgstr "SSH"
 
@@ -9905,7 +9916,7 @@ msgid "Edit"
 msgstr "编辑"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:616
+#: rustconn/src/dialogs/widgets.rs:671
 msgid "Use Template"
 msgstr "使用模板"
 
@@ -10466,19 +10477,19 @@ msgstr ""
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr "十六进制颜色，例如 #402020。留空则不设置背景。"
 
-#: rustconn/src/dialogs/widgets.rs:628
+#: rustconn/src/dialogs/widgets.rs:683
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:629
+#: rustconn/src/dialogs/widgets.rs:684
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "启用或禁用内嵌浏览器中的 JavaScript 执行"
 
-#: rustconn/src/dialogs/widgets.rs:630
+#: rustconn/src/dialogs/widgets.rs:685
 msgid "Navigation Toolbar"
 msgstr "导航工具栏"
 
-#: rustconn/src/dialogs/widgets.rs:632
+#: rustconn/src/dialogs/widgets.rs:687
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10486,11 +10497,11 @@ msgstr ""
 "关闭后将移除浮动工具栏及其展开箭头。后退、前进、重新加载和缩放的键盘快捷键仍"
 "然有效。"
 
-#: rustconn/src/dialogs/widgets.rs:634
+#: rustconn/src/dialogs/widgets.rs:689
 msgid "Private / Incognito Mode"
 msgstr "隐私/无痕模式"
 
-#: rustconn/src/dialogs/widgets.rs:635
+#: rustconn/src/dialogs/widgets.rs:690
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "在隐私浏览窗口中打开 URL（Firefox、Chrome、Brave）"
 
@@ -11676,15 +11687,15 @@ msgstr "按协议筛选"
 msgid "Filter by protocol (filters active)"
 msgstr "按协议筛选（筛选已启用）"
 
-#: rustconn/src/sidebar/mod.rs:1959
+#: rustconn/src/sidebar/mod.rs:1966
 msgid "Open Password Vault (Active)"
 msgstr "打开密码库（活动）"
 
-#: rustconn/src/sidebar/mod.rs:1964
+#: rustconn/src/sidebar/mod.rs:1971
 msgid "Password Vault Not Found"
 msgstr "未找到密码库"
 
-#: rustconn/src/sidebar/mod.rs:1967
+#: rustconn/src/sidebar/mod.rs:1974
 msgid "Password Vault Disabled"
 msgstr "密码库已禁用"
 
@@ -12414,7 +12425,7 @@ msgstr "撤销"
 msgid "Retry"
 msgstr "重试"
 
-#: rustconn/src/tray.rs:150
+#: rustconn/src/tray.rs:150 rustconn/src/window/sessions.rs:245
 msgid "{} active session(s)"
 msgstr "{} 个活动会话"
 
@@ -12452,7 +12463,7 @@ msgstr "{} 个活动会话"
 msgid "About RustConn"
 msgstr "关于 RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5634
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5644
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "密码短语无法打开便携文件"
 
@@ -12640,8 +12651,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "跳板主机不可用"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3558
-#: rustconn/src/window/mod.rs:3624 rustconn/src/window/rdp_vnc.rs:777
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3568
+#: rustconn/src/window/mod.rs:3634 rustconn/src/window/rdp_vnc.rs:781
 msgid "Connect Anyway"
 msgstr "仍然连接"
 
@@ -12768,14 +12779,14 @@ msgstr "保管库未配置"
 #: rustconn/src/window/connection_dialogs.rs:642
 #: rustconn/src/window/connection_dialogs.rs:681
 #: rustconn/src/window/connection_dialogs.rs:688
-#: rustconn/src/window/edit_group.rs:493 rustconn/src/window/edit_group.rs:530
-#: rustconn/src/window/edit_group.rs:537
+#: rustconn/src/window/edit_group.rs:497 rustconn/src/window/edit_group.rs:534
+#: rustconn/src/window/edit_group.rs:541
 msgid "No password found for this group"
 msgstr "此组未找到密码"
 
 #: rustconn/src/window/connection_dialogs.rs:648
 #: rustconn/src/window/connection_dialogs.rs:693
-#: rustconn/src/window/edit_group.rs:499 rustconn/src/window/edit_group.rs:542
+#: rustconn/src/window/edit_group.rs:503 rustconn/src/window/edit_group.rs:546
 msgid "Load Error"
 msgstr "加载错误"
 
@@ -12785,12 +12796,12 @@ msgid "Select Vault to load password"
 msgstr "选择保管库以加载密码"
 
 #: rustconn/src/window/connection_dialogs.rs:714
-#: rustconn/src/window/edit_group.rs:1495
+#: rustconn/src/window/edit_group.rs:1534
 msgid "Notes, contacts, project info"
 msgstr "备注、联系人、项目信息"
 
 #: rustconn/src/window/connection_dialogs.rs:754
-#: rustconn/src/window/edit_group.rs:1613
+#: rustconn/src/window/edit_group.rs:1653
 msgid "Group name cannot be empty"
 msgstr "组名称不能为空"
 
@@ -12798,11 +12809,11 @@ msgstr "组名称不能为空"
 msgid "Error Updating Group"
 msgstr "更新组错误"
 
-#: rustconn/src/window/connection_dialogs.rs:933
+#: rustconn/src/window/connection_dialogs.rs:935
 msgid "Import Duplicates?"
 msgstr "导入重复项？"
 
-#: rustconn/src/window/connection_dialogs.rs:935
+#: rustconn/src/window/connection_dialogs.rs:937
 msgid ""
 "{} of {} connections have the same name as existing ones. Imported copies "
 "are kept alongside the existing connections under a numbered name."
@@ -12810,35 +12821,35 @@ msgstr ""
 "{} 个连接（共 {} 个）与现有连接同名。导入的副本将以带编号的名称与现有连接一并"
 "保留。"
 
-#: rustconn/src/window/connection_dialogs.rs:943
+#: rustconn/src/window/connection_dialogs.rs:945
 msgid "Skip Duplicates"
 msgstr "跳过重复项"
 
-#: rustconn/src/window/connection_dialogs.rs:944
+#: rustconn/src/window/connection_dialogs.rs:946
 msgid "Import All"
 msgstr "全部导入"
 
-#: rustconn/src/window/connection_dialogs.rs:1019
+#: rustconn/src/window/connection_dialogs.rs:1021
 msgid "Imported {} connections and {} snippets to '{}' group"
 msgstr "已导入 {} 个连接和 {} 个代码片段到 '{}' 组"
 
-#: rustconn/src/window/connection_dialogs.rs:1024
+#: rustconn/src/window/connection_dialogs.rs:1026
 msgid "Imported {} connections to '{}' group"
 msgstr "已导入 {} 个连接到 '{}' 组"
 
-#: rustconn/src/window/connection_dialogs.rs:1057
+#: rustconn/src/window/connection_dialogs.rs:1059
 msgid "Storing {} imported credentials…"
 msgstr "正在保存 {} 个导入的凭据…"
 
-#: rustconn/src/window/connection_dialogs.rs:1068
+#: rustconn/src/window/connection_dialogs.rs:1070
 msgid "Stored {} imported credentials"
 msgstr "已保存 {} 个导入的凭据"
 
-#: rustconn/src/window/connection_dialogs.rs:1079
+#: rustconn/src/window/connection_dialogs.rs:1081
 msgid "Stored {} of {} imported credentials — check the secret backend"
 msgstr "已保存 {} 个导入的凭据（共 {} 个）— 请检查密钥后端"
 
-#: rustconn/src/window/connection_dialogs.rs:1089
+#: rustconn/src/window/connection_dialogs.rs:1091
 msgid "Could not store imported credentials in the secret backend"
 msgstr "无法将导入的凭据保存到密钥后端"
 
@@ -13154,7 +13165,7 @@ msgid "Name cannot be empty"
 msgstr "名称不能为空"
 
 #: rustconn/src/window/edit_dialogs.rs:386
-#: rustconn/src/window/edit_group.rs:1672
+#: rustconn/src/window/edit_group.rs:1712
 msgid "Group with name '{}' already exists"
 msgstr "名为 '{}' 的组已存在"
 
@@ -13162,15 +13173,15 @@ msgstr "名为 '{}' 的组已存在"
 msgid "Failed to rename vault entry: {}"
 msgstr "重命名保管库条目失败：{}"
 
-#: rustconn/src/window/edit_dialogs.rs:790
+#: rustconn/src/window/edit_dialogs.rs:798
 msgid "⚠ This connection will not be saved"
 msgstr "⚠ 此连接将不会被保存"
 
-#: rustconn/src/window/edit_dialogs.rs:812
+#: rustconn/src/window/edit_dialogs.rs:820
 msgid "Template"
 msgstr "模板"
 
-#: rustconn/src/window/edit_dialogs.rs:870
+#: rustconn/src/window/edit_dialogs.rs:878
 msgid "Recent"
 msgstr "最近"
 
@@ -13182,198 +13193,198 @@ msgstr "编辑组"
 msgid "Moving a group moves all its content"
 msgstr "移动组会移动其所有内容"
 
-#: rustconn/src/window/edit_group.rs:456
+#: rustconn/src/window/edit_group.rs:460
 msgid "KeePass database not configured"
 msgstr "KeePass 数据库未配置"
 
-#: rustconn/src/window/edit_group.rs:588
+#: rustconn/src/window/edit_group.rs:627
 msgid "SSH Settings"
 msgstr "SSH 设置"
 
-#: rustconn/src/window/edit_group.rs:589
+#: rustconn/src/window/edit_group.rs:628
 msgid "SSH settings inherited by connections in this group"
 msgstr "此组中的连接继承 SSH 设置"
 
-#: rustconn/src/window/edit_group.rs:641
+#: rustconn/src/window/edit_group.rs:680
 msgid "Clear SSH Settings?"
 msgstr "清除 SSH 设置？"
 
-#: rustconn/src/window/edit_group.rs:643
+#: rustconn/src/window/edit_group.rs:682
 msgid ""
 "Disabling will clear all SSH settings for this group. This cannot be undone."
 msgstr "禁用将清除此组的所有 SSH 设置。此操作无法撤销。"
 
-#: rustconn/src/window/edit_group.rs:648 rustconn/src/window/edit_group.rs:1115
+#: rustconn/src/window/edit_group.rs:687 rustconn/src/window/edit_group.rs:1154
 msgid "Keep"
 msgstr "保留"
 
-#: rustconn/src/window/edit_group.rs:673 rustconn/src/window/edit_group.rs:696
+#: rustconn/src/window/edit_group.rs:712 rustconn/src/window/edit_group.rs:735
 msgid "Security Key"
 msgstr "安全密钥"
 
-#: rustconn/src/window/edit_group.rs:676
+#: rustconn/src/window/edit_group.rs:715
 msgid "SSH Authentication Method"
 msgstr "SSH 认证方式"
 
-#: rustconn/src/window/edit_group.rs:698 rustconn/src/window/edit_group.rs:723
-#: rustconn/src/window/edit_group.rs:831 rustconn/src/window/edit_group.rs:844
-#: rustconn/src/window/edit_group.rs:860
+#: rustconn/src/window/edit_group.rs:737 rustconn/src/window/edit_group.rs:762
+#: rustconn/src/window/edit_group.rs:870 rustconn/src/window/edit_group.rs:883
+#: rustconn/src/window/edit_group.rs:899
 msgid "Inherited from a parent group: {}"
 msgstr "继承自上级分组：{}"
 
-#: rustconn/src/window/edit_group.rs:704
+#: rustconn/src/window/edit_group.rs:743
 msgid "SSH Key Path"
 msgstr "SSH 密钥路径"
 
-#: rustconn/src/window/edit_group.rs:830
+#: rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "（未知连接）"
 
-#: rustconn/src/window/edit_group.rs:838
+#: rustconn/src/window/edit_group.rs:877
 msgid "SSH Proxy Jump"
 msgstr "SSH Proxy Jump"
 
-#: rustconn/src/window/edit_group.rs:846
+#: rustconn/src/window/edit_group.rs:885
 msgid "Manual ProxyJump (-J) — used when Jump Host is (None)"
 msgstr "手动 ProxyJump (-J) — 当跳板主机为（无）时使用"
 
-#: rustconn/src/window/edit_group.rs:904
+#: rustconn/src/window/edit_group.rs:943
 msgid "Not synced"
 msgstr "未同步"
 
-#: rustconn/src/window/edit_group.rs:904
+#: rustconn/src/window/edit_group.rs:943
 msgid "Master"
 msgstr "主控"
 
-#: rustconn/src/window/edit_group.rs:973
+#: rustconn/src/window/edit_group.rs:1012
 msgid "Sync File"
 msgstr "同步文件"
 
-#: rustconn/src/window/edit_group.rs:981
+#: rustconn/src/window/edit_group.rs:1020
 msgid "Last Synced"
 msgstr "上次同步"
 
-#: rustconn/src/window/edit_group.rs:1000
+#: rustconn/src/window/edit_group.rs:1039
 msgid "Dynamic Folder"
 msgstr "动态文件夹"
 
-#: rustconn/src/window/edit_group.rs:1001
+#: rustconn/src/window/edit_group.rs:1040
 msgid "Generate connections from a script"
 msgstr "从脚本生成连接"
 
-#: rustconn/src/window/edit_group.rs:1016
+#: rustconn/src/window/edit_group.rs:1055
 msgid "Shell command executed via sh -c"
 msgstr "通过 sh -c 执行的 Shell 命令"
 
-#: rustconn/src/window/edit_group.rs:1020
+#: rustconn/src/window/edit_group.rs:1059
 msgid "Working Directory"
 msgstr "工作目录"
 
-#: rustconn/src/window/edit_group.rs:1032
+#: rustconn/src/window/edit_group.rs:1071
 msgid "Timeout (seconds)"
 msgstr "超时（秒）"
 
-#: rustconn/src/window/edit_group.rs:1048
+#: rustconn/src/window/edit_group.rs:1087
 msgid "Refresh Interval (seconds)"
 msgstr "刷新间隔（秒）"
 
-#: rustconn/src/window/edit_group.rs:1049
+#: rustconn/src/window/edit_group.rs:1088
 msgid "0 = manual only"
 msgstr "0 = 仅手动"
 
-#: rustconn/src/window/edit_group.rs:1082
+#: rustconn/src/window/edit_group.rs:1121
 msgid "Expect rules and post-login scripts inherited by connections"
 msgstr "连接继承的期望规则和登录后脚本"
 
-#: rustconn/src/window/edit_group.rs:1108
+#: rustconn/src/window/edit_group.rs:1147
 msgid "Clear Automation?"
 msgstr "清除自动化？"
 
-#: rustconn/src/window/edit_group.rs:1110
+#: rustconn/src/window/edit_group.rs:1149
 msgid ""
 "Disabling will clear all expect rules and post-login scripts for this group. "
 "This cannot be undone."
 msgstr "禁用将清除此组的所有期望规则和登录后脚本。此操作无法撤消。"
 
-#: rustconn/src/window/edit_group.rs:1277
+#: rustconn/src/window/edit_group.rs:1316
 msgid "Clear All"
 msgstr "全部清除"
 
-#: rustconn/src/window/edit_group.rs:1279
+#: rustconn/src/window/edit_group.rs:1318
 msgid "Remove all expect rules"
 msgstr "删除所有期望规则"
 
-#: rustconn/src/window/edit_group.rs:1312
+#: rustconn/src/window/edit_group.rs:1351
 msgid "Test text against your expect rules"
 msgstr "根据期望规则测试文本"
 
-#: rustconn/src/window/edit_group.rs:1319
+#: rustconn/src/window/edit_group.rs:1358
 msgid "Enter text to test against patterns"
 msgstr "输入文本以根据模式进行测试"
 
-#: rustconn/src/window/edit_group.rs:1356
+#: rustconn/src/window/edit_group.rs:1395
 msgid "Match: pattern '{}' → response '{}'"
 msgstr "匹配：模式 '{}' → 响应 '{}'"
 
-#: rustconn/src/window/edit_group.rs:1368
+#: rustconn/src/window/edit_group.rs:1407
 msgid "No match"
 msgstr "无匹配"
 
-#: rustconn/src/window/edit_group.rs:1383
+#: rustconn/src/window/edit_group.rs:1422
 msgid "Post-login Scripts"
 msgstr "登录后脚本"
 
-#: rustconn/src/window/edit_group.rs:1385
+#: rustconn/src/window/edit_group.rs:1424
 msgid "Commands executed after login (inherited by connections)"
 msgstr "登录后执行的命令（连接继承）"
 
-#: rustconn/src/window/edit_group.rs:1393
+#: rustconn/src/window/edit_group.rs:1432
 msgid "No post-login scripts"
 msgstr "无登录后脚本"
 
-#: rustconn/src/window/edit_group.rs:1432
+#: rustconn/src/window/edit_group.rs:1471
 msgid ""
 "Script library ids run after a connection in this group starts (inherited by "
 "connections)"
 msgstr "此组中的连接启动后运行的脚本库 ID（由连接继承）"
 
-#: rustconn/src/window/edit_group.rs:1646
+#: rustconn/src/window/edit_group.rs:1686
 msgid "Select a variable"
 msgstr "请选择一个变量"
 
-#: rustconn/src/window/edit_group.rs:1795
+#: rustconn/src/window/edit_group.rs:1842
 msgid "Dynamic Folder script cannot be empty"
 msgstr "动态文件夹脚本不能为空"
 
-#: rustconn/src/window/edit_group.rs:1952
+#: rustconn/src/window/edit_group.rs:2001
 msgid ""
 "This group will be exported to {}. Other team members with read access can "
 "import it."
 msgstr "此组将导出到 {}。具有读取权限的其他团队成员可以导入它。"
 
-#: rustconn/src/window/edit_group.rs:1956
+#: rustconn/src/window/edit_group.rs:2005
 msgid "Enable Cloud Sync?"
 msgstr "启用云同步？"
 
-#: rustconn/src/window/edit_group.rs:1990
+#: rustconn/src/window/edit_group.rs:2039
 msgid "Choose Directory"
 msgstr "选择目录"
 
-#: rustconn/src/window/edit_group.rs:1997
+#: rustconn/src/window/edit_group.rs:2046
 msgid "Set Up Cloud Sync"
 msgstr "设置云同步"
 
-#: rustconn/src/window/edit_group.rs:1999
+#: rustconn/src/window/edit_group.rs:2048
 msgid ""
 "Choose a directory synced with your cloud service (Google Drive, Nextcloud, "
 "Syncthing, etc.)"
 msgstr "选择与您的云服务同步的目录（Google Drive、Nextcloud、Syncthing 等）"
 
-#: rustconn/src/window/edit_group.rs:2514
+#: rustconn/src/window/edit_group.rs:2563
 msgid "Shell command (e.g., export TERM=xterm-256color)"
 msgstr "Shell 命令（例如，export TERM=xterm-256color）"
 
-#: rustconn/src/window/edit_group.rs:2515
+#: rustconn/src/window/edit_group.rs:2564
 msgid "Command to execute after login"
 msgstr "登录后执行的命令"
 
@@ -13573,53 +13584,53 @@ msgid ""
 "configured route."
 msgstr "现在连接“{}”将跳过该跳板主机，仅使用其配置路由的其余部分。"
 
-#: rustconn/src/window/mod.rs:1129 rustconn/src/window/mod.rs:1140
+#: rustconn/src/window/mod.rs:1133 rustconn/src/window/mod.rs:1144
 msgid "Dismiss"
 msgstr "忽略"
 
-#: rustconn/src/window/mod.rs:1172
+#: rustconn/src/window/mod.rs:1176
 msgid "Open Log"
 msgstr "打开日志"
 
-#: rustconn/src/window/mod.rs:1175
+#: rustconn/src/window/mod.rs:1179
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr "RustConn 上次运行时意外关闭。崩溃日志已保存在本地。"
 
-#: rustconn/src/window/mod.rs:1200
+#: rustconn/src/window/mod.rs:1204
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "无法打开崩溃日志。它保存在 {}"
 
-#: rustconn/src/window/mod.rs:1229
+#: rustconn/src/window/mod.rs:1233
 msgid "Touch your hardware key to unlock the password database"
 msgstr "轻触您的硬件密钥以解锁密码数据库"
 
-#: rustconn/src/window/mod.rs:2721
+#: rustconn/src/window/mod.rs:2731
 msgid "Already running in an external window"
 msgstr "已在外部窗口中运行"
 
-#: rustconn/src/window/mod.rs:2950
+#: rustconn/src/window/mod.rs:2960
 msgid "Connection to ‘{}’ failed"
 msgstr "连接到‘{}’失败"
 
-#: rustconn/src/window/mod.rs:3262 rustconn/src/window/mod.rs:3276
+#: rustconn/src/window/mod.rs:3272 rustconn/src/window/mod.rs:3286
 msgid "Pre-connect task failed: {}"
 msgstr "连接前任务失败：{}"
 
-#: rustconn/src/window/mod.rs:3310
+#: rustconn/src/window/mod.rs:3320
 msgid "Port knock failed: {}"
 msgstr "端口敲门失败：{}"
 
-#: rustconn/src/window/mod.rs:3359
+#: rustconn/src/window/mod.rs:3369
 msgid "SPA failed: {}"
 msgstr "SPA 失败：{}"
 
-#: rustconn/src/window/mod.rs:3543
+#: rustconn/src/window/mod.rs:3553
 msgid "{} (via {})"
 msgstr "{}（经由 {}）"
 
-#: rustconn/src/window/mod.rs:3549
+#: rustconn/src/window/mod.rs:3559
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -13642,35 +13653,35 @@ msgstr ""
 "\n"
 "如果这不是你所做的更改，请取消——连接可能会将已保存的凭据发送到另一台机器。"
 
-#: rustconn/src/window/mod.rs:3554
+#: rustconn/src/window/mod.rs:3564
 msgid "Routing changed for “{}”"
 msgstr "“{}”的路由已更改"
 
-#: rustconn/src/window/mod.rs:3618
+#: rustconn/src/window/mod.rs:3628
 msgid "Jump Host Unavailable for “{}”"
 msgstr "“{}”的跳板主机不可用"
 
-#: rustconn/src/window/mod.rs:3623
+#: rustconn/src/window/mod.rs:3633
 msgid "Connect Directly"
 msgstr "直接连接"
 
-#: rustconn/src/window/mod.rs:3712 rustconn/src/window/mod.rs:3887
+#: rustconn/src/window/mod.rs:3722 rustconn/src/window/mod.rs:3897
 msgid "Connection “{}” created"
 msgstr "连接“{}”已创建"
 
-#: rustconn/src/window/mod.rs:4144
+#: rustconn/src/window/mod.rs:4154
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4352
+#: rustconn/src/window/mod.rs:4362
 msgid "Settings saved"
 msgstr "设置已保存"
 
-#: rustconn/src/window/mod.rs:4389
+#: rustconn/src/window/mod.rs:4399
 msgid "Passphrase Not Saved on This Computer"
 msgstr "密码短语未保存在本机"
 
-#: rustconn/src/window/mod.rs:4391
+#: rustconn/src/window/mod.rs:4401
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -13680,11 +13691,11 @@ msgstr ""
 "无法为本地存储加密该密码短语，因此它只在本次会话中保留，重启后会再次询问。请"
 "改选“系统密钥环”，或检查 RustConn 是否可以写入其数据目录。"
 
-#: rustconn/src/window/mod.rs:4437
+#: rustconn/src/window/mod.rs:4447
 msgid "Credentials Not Saved to Keyring"
 msgstr "凭据未保存到密钥环"
 
-#: rustconn/src/window/mod.rs:4439
+#: rustconn/src/window/mod.rs:4449
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -13693,55 +13704,55 @@ msgstr ""
 "系统密钥环未接受该凭据，因此凭据仅在本次会话内保留，重启后将丢失。请确认密钥"
 "环服务正在运行且已解锁，然后重新保存设置。"
 
-#: rustconn/src/window/mod.rs:4623
+#: rustconn/src/window/mod.rs:4633
 msgid "Close RustConn?"
 msgstr "关闭 RustConn？"
 
-#: rustconn/src/window/mod.rs:4625
+#: rustconn/src/window/mod.rs:4635
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "有 {} 个会话标签页处于打开状态。活动连接将被断开。"
 
-#: rustconn/src/window/mod.rs:4662
+#: rustconn/src/window/mod.rs:4672
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr "无法读取设置，因此正在使用默认值。无法读取的文件已保留为 {}。"
 
-#: rustconn/src/window/mod.rs:4667
+#: rustconn/src/window/mod.rs:4677
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr "这些设置由较新版本的 RustConn（{}）保存。更改前会保留备份。"
 
-#: rustconn/src/window/mod.rs:4692
+#: rustconn/src/window/mod.rs:4702
 msgid "Cloud sync failed for '{}': {}"
 msgstr "'{}' 的云同步失败：{}"
 
-#: rustconn/src/window/mod.rs:4875
+#: rustconn/src/window/mod.rs:4885
 msgid "Startup connection not found"
 msgstr "未找到启动连接"
 
-#: rustconn/src/window/mod.rs:4948
+#: rustconn/src/window/mod.rs:4958
 msgid "Failed to open .rdp file"
 msgstr "打开 .rdp 文件失败"
 
-#: rustconn/src/window/mod.rs:4984
+#: rustconn/src/window/mod.rs:4994
 msgid "Failed to open .vv file"
 msgstr "打开 .vv 文件失败"
 
-#: rustconn/src/window/mod.rs:5021
+#: rustconn/src/window/mod.rs:5031
 msgid "Tunnel “{}” stopped: {}"
 msgstr "隧道“{}”已停止：{}"
 
-#: rustconn/src/window/mod.rs:5037
+#: rustconn/src/window/mod.rs:5047
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "已放弃重连隧道“{}”：{}"
 
-#: rustconn/src/window/mod.rs:5550
+#: rustconn/src/window/mod.rs:5560
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "成功导出 {} 个连接。{} 个已跳过。"
 
-#: rustconn/src/window/mod.rs:5636
+#: rustconn/src/window/mod.rs:5646
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -13750,11 +13761,11 @@ msgstr ""
 "你保存的密码短语无法解密便携凭据文件，因此其中的任何密码都无法读取。请打开“设"
 "置 ▸ 密钥”，输入创建该文件时所用的密码短语。"
 
-#: rustconn/src/window/mod.rs:5671
+#: rustconn/src/window/mod.rs:5681
 msgid "Share Local Devices?"
 msgstr "共享本地设备？"
 
-#: rustconn/src/window/mod.rs:5673
+#: rustconn/src/window/mod.rs:5683
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -13956,35 +13967,35 @@ msgstr "移动 {} 个项目失败："
 msgid "Could not launch external viewer ‘{}’: {}"
 msgstr "无法启动外部查看器 ‘{}’：{}"
 
-#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/rdp_vnc.rs:1572
+#: rustconn/src/window/protocols.rs:1582 rustconn/src/window/rdp_vnc.rs:1579
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "未找到 VNC 查看器。请安装 TigerVNC 或 Remmina。"
 
-#: rustconn/src/window/protocols.rs:1914
+#: rustconn/src/window/protocols.rs:1918
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "未找到 SPICE 查看器。请安装 virt-viewer。"
 
-#: rustconn/src/window/protocols.rs:2148 rustconn/src/window/protocols.rs:2658
+#: rustconn/src/window/protocols.rs:2152 rustconn/src/window/protocols.rs:2662
 msgid "Invalid variable: {}"
 msgstr "无效变量：{}"
 
-#: rustconn/src/window/protocols.rs:2578
+#: rustconn/src/window/protocols.rs:2582
 msgid "Invalid config: {}"
 msgstr "配置无效：{}"
 
-#: rustconn/src/window/protocols.rs:2764
+#: rustconn/src/window/protocols.rs:2768
 msgid "Install picocom for Serial connections"
 msgstr "安装 picocom 以支持串口连接"
 
-#: rustconn/src/window/protocols.rs:2940
+#: rustconn/src/window/protocols.rs:2944
 msgid "Install kubectl for Kubernetes connections"
 msgstr "安装 kubectl 以支持 Kubernetes 连接"
 
-#: rustconn/src/window/protocols.rs:2958
+#: rustconn/src/window/protocols.rs:2962
 msgid "Configure pod and container for Kubernetes"
 msgstr "为 Kubernetes 配置 pod 和容器"
 
-#: rustconn/src/window/protocols.rs:3188
+#: rustconn/src/window/protocols.rs:3192
 msgid "Install mosh for MOSH connections"
 msgstr "安装 mosh 以支持 MOSH 连接"
 
@@ -13992,11 +14003,11 @@ msgstr "安装 mosh 以支持 MOSH 连接"
 msgid "SSH tunnel failed: {}"
 msgstr "SSH 隧道失败：{}"
 
-#: rustconn/src/window/rdp_vnc.rs:773
+#: rustconn/src/window/rdp_vnc.rs:777
 msgid "Use Legacy RDP Security?"
 msgstr "使用旧版 RDP 安全协议？"
 
-#: rustconn/src/window/rdp_vnc.rs:775
+#: rustconn/src/window/rdp_vnc.rs:779
 msgid ""
 "This server only supports Standard RDP Security, which is weaker than TLS or "
 "Network Level Authentication. Continue with the external RDP client?"
@@ -14004,11 +14015,11 @@ msgstr ""
 "此服务器仅支持标准 RDP 安全协议，其安全性低于 TLS 或网络级别身份验证。是否继"
 "续使用外部 RDP 客户端？"
 
-#: rustconn/src/window/rdp_vnc.rs:806 rustconn/src/window/rdp_vnc.rs:1113
+#: rustconn/src/window/rdp_vnc.rs:810 rustconn/src/window/rdp_vnc.rs:1117
 msgid "Certificate changed"
 msgstr "证书已更改"
 
-#: rustconn/src/window/rdp_vnc.rs:808 rustconn/src/window/rdp_vnc.rs:1115
+#: rustconn/src/window/rdp_vnc.rs:812 rustconn/src/window/rdp_vnc.rs:1119
 msgid "Accept new certificate"
 msgstr "接受新证书"
 
@@ -14041,7 +14052,7 @@ msgstr "命令完成：{}"
 msgid "Command failed with status {}: {}"
 msgstr "命令失败，状态 {}：{}"
 
-#: rustconn/src/window/session_lifecycle.rs:1318
+#: rustconn/src/window/session_lifecycle.rs:1296
 msgid ""
 "Sign in again in the browser. The session reconnects when the login finishes."
 msgstr "请在浏览器中重新登录。登录完成后会话将自动重新连接。"
@@ -14102,27 +14113,23 @@ msgstr "终止会话？"
 msgid "Are you sure you want to terminate this session?"
 msgstr "您确定要终止此会话吗？"
 
-#: rustconn/src/window/sessions.rs:249
-msgid "{} UI session(s), {} tracked session(s)"
-msgstr "{} 个 UI 会话，{} 个跟踪会话"
-
-#: rustconn/src/window/sessions.rs:307
+#: rustconn/src/window/sessions.rs:303
 msgid "{} — in a separate window"
 msgstr "{} — 在单独窗口中"
 
-#: rustconn/src/window/sessions.rs:334
+#: rustconn/src/window/sessions.rs:330
 msgid "Send Text to Session"
 msgstr "向会话发送文本"
 
-#: rustconn/src/window/sessions.rs:354
+#: rustconn/src/window/sessions.rs:350
 msgid "Enter text to send to the session:"
 msgstr "输入要发送到会话的文本："
 
-#: rustconn/src/window/sessions.rs:360
+#: rustconn/src/window/sessions.rs:356
 msgid "Text to send…"
 msgstr "要发送的文本…"
 
-#: rustconn/src/window/sessions.rs:366
+#: rustconn/src/window/sessions.rs:362
 msgid "Append newline (press Enter)"
 msgstr "追加换行符（按 Enter）"
 
@@ -14479,6 +14486,9 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid "{} UI session(s), {} tracked session(s)"
+#~ msgstr "{} 个 UI 会话，{} 个跟踪会话"
 
 #~ msgid "Search connections, > commands, @ tags, # groups, % tabs"
 #~ msgstr "搜索连接，> 命令，@ 标签，# 分组，% 标签页"

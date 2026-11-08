@@ -384,7 +384,11 @@ pub fn detect_best_freerdp() -> Option<String> {
         probe_freerdp_candidate(binary, None)
     });
     if selection == FreeRdpSelection::NotInstalled {
-        tracing::warn!(
+        // `info`, not `warn`: merely opening the RDP editor probes here (for the
+        // RemoteApp row, which shows its own warning), and on macOS the embedded
+        // IronRDP client needs no FreeRDP at all. A launch that does need it
+        // reports the missing client to the user itself.
+        tracing::info!(
             protocol = "rdp",
             wayland = rustconn_core::protocol::is_wayland_session(),
             "No FreeRDP client found on PATH"

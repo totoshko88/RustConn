@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.7** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.8** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -2640,6 +2640,24 @@ Groups can store default credentials (Username, Password, Domain) that are inher
 3. Connection will use group's stored credentials
 4. Use **"Load from Group"** buttons to auto-fill Username and Domain from parent group
 
+#### A KeePass Database per Connection or Group (0.24.8+)
+
+With the KeePass backend, you can keep different connections in different `.kdbx` files — for example a personal database and a corporate one — instead of one global database (issue [#411](https://github.com/totoshko88/RustConn/issues/411)).
+
+- **For a group:** right-click a group → **Edit Group** → **Identity** → **KeePass Database**, then pick the file with the folder button. Every connection beneath the group, including those in sub-groups, reads its vault credentials from that file.
+- **For one connection:** in the connection dialog's **Basic** tab, set **Password Source** to **Vault**; a **KeePass Database** row appears. It wins over the group's setting.
+- **Resolution order:** the connection's own database, then the nearest group above it that names one, then the global database from Settings → Secrets. Leave the field empty to inherit.
+
+Things to know:
+- Only the **file** changes. The database password, key file and YubiKey slot still come from Settings → Secrets, so the databases you combine should share them. A database that needs its own passphrase is not supported yet.
+- The path is **local to this computer** and is never written to a Cloud Sync, Group Sync or Simple Sync file, so each device sets its own. A value synced from another device never overwrites yours.
+- Switching the Password Source away from **Vault** clears the connection's database path.
+- The setting applies when the KeePass backend is active; with any other backend the **KeePass Database** rows are hidden and have no effect.
+- Passwords you save, load, test, copy or delete for a connection go to the database it resolves to, and a group's own password to the group's database.
+- Moving a connection (or a group) so that it resolves to a **different** database does not carry the stored password across files: the entry stays in the old database and you enter the password again. A rename or move within the same database still moves the entry.
+- **From the command line:** `rustconn-cli add … --kdbx-path FILE`, `rustconn-cli update NAME --kdbx-path FILE` and `rustconn-cli group edit NAME --kdbx-path FILE` set the same field (an empty value clears it), and `rustconn-cli secret get/set/delete` use the database the connection resolves to. See [CLI Reference](CLI_REFERENCE.md).
+- A backend-to-backend credential transfer (Settings → Secrets) uses the global database only.
+
 **KeePass Hierarchy:**
 Group credentials are stored in KeePass with hierarchical paths:
 ```
@@ -2989,6 +3007,31 @@ The script must output a JSON array to stdout:
 | `group` | None | Sub-group path within the dynamic folder — a `/`-separated path (e.g. `web-servers/production`) that nests the connection under auto-created sub-folders of the dynamic folder. Sub-folders are reused across refreshes rather than duplicated, and blank path segments are ignored |
 | `tags` | `[]` | Tags for filtering |
 | `description` | None | Connection description |
+| `protocol_config` | None | Full protocol configuration in the native RustConn shape (0.24.8+, issue [#410](https://github.com/totoshko88/RustConn/issues/410)). When present it is the base the connection is built from, so a script can set anything the connection editor can — an SSH `startup_command`, an `auth_method`, RDP display options, and so on — not just host/port/username. Its `type` tag (`Ssh`, `Rdp`, `Vnc`, `Spice`, `Telnet`, `Mosh`) decides the protocol and the default port; the `protocol` string is then only used to warn on a mismatch |
+
+**Full `protocol_config` example** (0.24.8+) — an SSH connection that always drops into a tmux session and authenticates via the agent:
+
+```json
+[
+  {
+    "name": "Demo US West 1 Worker 01",
+    "description": "Worker node",
+    "protocol": "ssh",
+    "host": "demo-us-west-1-worker-01",
+    "port": 22,
+    "username": "adm_user",
+    "group": "demo",
+    "tags": ["tag:prod", "tag:us-west-1"],
+    "protocol_config": {
+      "type": "Ssh",
+      "startup_command": "tmux new-session -A -s my-session",
+      "auth_method": "agent"
+    }
+  }
+]
+```
+
+The `protocol_config` object is the same tagged shape RustConn writes to its own config file, so the field names match the connection editor's options exactly. Fields you omit take their protocol default. The connection stays **read-only** like any dynamic entry, so the configuration is re-applied on every refresh rather than lost when the folder regenerates.
 
 **Behavior:**
 - Generated connections are **read-only** — they cannot be edited or moved manually
@@ -3806,6 +3849,8 @@ When working in remote sessions with TUI applications (nvim, tmux, htop, mc), Ru
 - SSH and other terminal tabs are left alone on purpose, so Alt+Tab keeps switching windows there.
 
 A session in an external viewer window is not affected by RustConn's passthrough at all; external FreeRDP clients ask the desktop for these keys on their own.
+
+**macOS keyboard in the embedded RDP client (0.24.8+):** the embedded (IronRDP) client translates macOS keys by their physical position (the Apple virtual keycode), so a non-US Mac layout such as German QWERTZ reaches the Windows host correctly. Earlier builds mis-mapped these keys on macOS (typing `qwertz` produced `345687`); if you hit that on an older build, switch the connection's **Display → Client mode** to the external client as a workaround, or update to 0.24.8 or later. Command maps to the Windows/Super key.
 
 **Customization:** The list of shortcuts that remain active in passthrough mode can be configured in `config.toml` under `[keybindings] passthrough_exceptions`.
 

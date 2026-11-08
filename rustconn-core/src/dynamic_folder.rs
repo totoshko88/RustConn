@@ -137,35 +137,54 @@ fn parse_entries(
 pub fn entry_to_connection(entry: &DynamicConnectionEntry, group_id: Uuid) -> Connection {
     let id = stable_connection_id(group_id, entry);
 
-    let protocol_type = match entry.protocol.to_lowercase().as_str() {
-        "ssh" => ProtocolType::Ssh,
-        "rdp" => ProtocolType::Rdp,
-        "vnc" => ProtocolType::Vnc,
-        "spice" => ProtocolType::Spice,
-        "telnet" => ProtocolType::Telnet,
-        "mosh" => ProtocolType::Mosh,
-        _ => ProtocolType::Ssh,
-    };
+    // When the entry carries a full protocol_config its tag is authoritative
+    // for the protocol; the `protocol` string is only used to warn on a
+    // mismatch. Otherwise the protocol comes from the string as before.
+    let protocol_type = entry.protocol_config.as_ref().map_or_else(
+        || protocol_type_from_str(&entry.protocol),
+        super::models::ProtocolConfig::protocol_type,
+    );
 
-    let default_port = match protocol_type {
-        ProtocolType::Ssh | ProtocolType::Sftp | ProtocolType::Mosh => 22,
-        ProtocolType::Rdp => 3389,
-        ProtocolType::Vnc | ProtocolType::Spice => 5900,
-        ProtocolType::Telnet => 23,
-        _ => 22,
-    };
-    let port = entry.port.unwrap_or(default_port);
-
-    let mut conn = match protocol_type {
-        ProtocolType::Ssh => Connection::new_ssh(entry.name.clone(), entry.host.clone(), port),
-        ProtocolType::Rdp => Connection::new_rdp(entry.name.clone(), entry.host.clone(), port),
-        ProtocolType::Vnc => Connection::new_vnc(entry.name.clone(), entry.host.clone(), port),
-        ProtocolType::Spice => Connection::new_spice(entry.name.clone(), entry.host.clone(), port),
-        ProtocolType::Telnet => {
-            Connection::new_telnet(entry.name.clone(), entry.host.clone(), port)
+    if let Some(ref cfg) = entry.protocol_config {
+        // Compared by name, not through `protocol_type_from_str`: that table only
+        // knows the protocols a plain entry can create, so a matching
+        // `"protocol": "sftp"` with `{"type": "Sftp"}` would warn spuriously.
+        let declared = entry.protocol.trim();
+        if !declared.is_empty() && !declared.eq_ignore_ascii_case(cfg.protocol_type().as_str()) {
+            tracing::warn!(
+                entry = %entry.name,
+                protocol = %entry.protocol,
+                config_protocol = ?cfg.protocol_type(),
+                "dynamic entry's protocol string disagrees with protocol_config; using protocol_config"
+            );
         }
-        ProtocolType::Mosh => Connection::new_mosh(entry.name.clone(), entry.host.clone(), port),
-        _ => Connection::new_ssh(entry.name.clone(), entry.host.clone(), port),
+    }
+
+    let port = entry
+        .port
+        .unwrap_or_else(|| default_port_for(protocol_type));
+
+    // Build the base connection. With a protocol_config, start from that exact
+    // configuration so the script's startup_command, auth_method, display
+    // options etc. are preserved; otherwise use the protocol's default config.
+    let mut conn = if let Some(ref cfg) = entry.protocol_config {
+        Connection::new(entry.name.clone(), entry.host.clone(), port, cfg.clone())
+    } else {
+        match protocol_type {
+            ProtocolType::Ssh => Connection::new_ssh(entry.name.clone(), entry.host.clone(), port),
+            ProtocolType::Rdp => Connection::new_rdp(entry.name.clone(), entry.host.clone(), port),
+            ProtocolType::Vnc => Connection::new_vnc(entry.name.clone(), entry.host.clone(), port),
+            ProtocolType::Spice => {
+                Connection::new_spice(entry.name.clone(), entry.host.clone(), port)
+            }
+            ProtocolType::Telnet => {
+                Connection::new_telnet(entry.name.clone(), entry.host.clone(), port)
+            }
+            ProtocolType::Mosh => {
+                Connection::new_mosh(entry.name.clone(), entry.host.clone(), port)
+            }
+            _ => Connection::new_ssh(entry.name.clone(), entry.host.clone(), port),
+        }
     };
 
     conn.id = id;
@@ -176,6 +195,29 @@ pub fn entry_to_connection(entry: &DynamicConnectionEntry, group_id: Uuid) -> Co
     conn.is_dynamic = true;
 
     conn
+}
+
+/// Maps a protocol name string to a [`ProtocolType`], defaulting to SSH for an
+/// unknown or empty value (the same lenient default the entry schema uses).
+fn protocol_type_from_str(protocol: &str) -> ProtocolType {
+    match protocol.to_lowercase().as_str() {
+        "rdp" => ProtocolType::Rdp,
+        "vnc" => ProtocolType::Vnc,
+        "spice" => ProtocolType::Spice,
+        "telnet" => ProtocolType::Telnet,
+        "mosh" => ProtocolType::Mosh,
+        _ => ProtocolType::Ssh,
+    }
+}
+
+/// The default TCP port for a protocol when the entry does not name one.
+const fn default_port_for(protocol_type: ProtocolType) -> u16 {
+    match protocol_type {
+        ProtocolType::Rdp => 3389,
+        ProtocolType::Vnc | ProtocolType::Spice => 5900,
+        ProtocolType::Telnet => 23,
+        _ => 22,
+    }
 }
 
 /// Generates a stable UUID for a dynamic connection entry.
@@ -420,6 +462,7 @@ mod tests {
             group: None,
             tags: Vec::new(),
             description: None,
+            protocol_config: None,
         };
 
         let id1 = stable_connection_id(group_id, &entry);
@@ -439,6 +482,7 @@ mod tests {
             group: None,
             tags: Vec::new(),
             description: None,
+            protocol_config: None,
         };
         let entry2 = DynamicConnectionEntry {
             name: "web-02".to_string(),
@@ -449,6 +493,7 @@ mod tests {
             group: None,
             tags: Vec::new(),
             description: None,
+            protocol_config: None,
         };
 
         let id1 = stable_connection_id(group_id, &entry1);
@@ -466,6 +511,7 @@ mod tests {
             group: group.map(str::to_string),
             tags: Vec::new(),
             description: None,
+            protocol_config: None,
         }
     }
 
@@ -654,5 +700,114 @@ mod tests {
             stale.is_empty(),
             "a parent whose child still holds a connection stays"
         );
+    }
+
+    #[test]
+    fn parses_the_issue_410_full_schema_entry() {
+        // The exact shape issue #410 asks for: a connection defined with the
+        // native protocol_config, including an SSH startup_command and
+        // auth_method.
+        let json = r#"[
+            {
+                "name": "Demo US West 1 Worker 01",
+                "description": "Worker node",
+                "protocol": "ssh",
+                "host": "demo-us-west-1-worker-01",
+                "port": 22,
+                "username": "adm_user",
+                "group": "demo",
+                "tags": ["tag:prod", "tag:us-west-1"],
+                "protocol_config": {
+                    "type": "Ssh",
+                    "startup_command": "tmux new-session -A -s my-session",
+                    "auth_method": "agent"
+                }
+            }
+        ]"#;
+
+        let (entries, warnings) = parse_entries(json).unwrap();
+        assert!(warnings.is_empty(), "{warnings:?}");
+        assert_eq!(entries.len(), 1);
+        let entry = &entries[0];
+        let cfg = entry
+            .protocol_config
+            .as_ref()
+            .expect("protocol_config present");
+        match cfg {
+            crate::models::ProtocolConfig::Ssh(ssh) => {
+                assert_eq!(
+                    ssh.startup_command.as_deref(),
+                    Some("tmux new-session -A -s my-session")
+                );
+                assert_eq!(ssh.auth_method, crate::models::SshAuthMethod::Agent);
+            }
+            other => panic!("expected Ssh config, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn entry_to_connection_preserves_protocol_config() {
+        let json = r#"[
+            {
+                "name": "worker",
+                "host": "10.0.0.9",
+                "protocol": "ssh",
+                "protocol_config": {
+                    "type": "Ssh",
+                    "startup_command": "tmux new-session -A -s s",
+                    "auth_method": "agent"
+                }
+            }
+        ]"#;
+        let (entries, _) = parse_entries(json).unwrap();
+        let conn = entry_to_connection(&entries[0], Uuid::new_v4());
+
+        assert!(conn.is_dynamic);
+        assert_eq!(conn.port, 22, "SSH default port still applies");
+        match &conn.protocol_config {
+            crate::models::ProtocolConfig::Ssh(ssh) => {
+                assert_eq!(
+                    ssh.startup_command.as_deref(),
+                    Some("tmux new-session -A -s s")
+                );
+                assert_eq!(ssh.auth_method, crate::models::SshAuthMethod::Agent);
+            }
+            other => panic!("expected Ssh config, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn protocol_config_tag_overrides_the_protocol_string_and_port_default() {
+        // The protocol_config tag wins over the `protocol` string, and the
+        // protocol's default port is derived from it.
+        let json = r#"[
+            {
+                "name": "desk",
+                "host": "10.0.0.5",
+                "protocol": "ssh",
+                "protocol_config": { "type": "Rdp" }
+            }
+        ]"#;
+        let (entries, _) = parse_entries(json).unwrap();
+        let conn = entry_to_connection(&entries[0], Uuid::new_v4());
+
+        assert_eq!(
+            conn.protocol_config.protocol_type(),
+            crate::models::ProtocolType::Rdp
+        );
+        assert_eq!(conn.port, 3389, "RDP default port from the config tag");
+    }
+
+    #[test]
+    fn an_entry_without_protocol_config_is_unchanged() {
+        // Backward compatibility: no protocol_config behaves exactly as before.
+        let entry = entry_in("plain", "10.0.0.1", None);
+        assert!(entry.protocol_config.is_none());
+        let conn = entry_to_connection(&entry, Uuid::new_v4());
+        assert_eq!(
+            conn.protocol_config.protocol_type(),
+            crate::models::ProtocolType::Ssh
+        );
+        assert_eq!(conn.port, 22);
     }
 }

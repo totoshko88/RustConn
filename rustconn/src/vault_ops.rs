@@ -517,6 +517,34 @@ fn store_in_encrypted_file_blocking(
     .map(|_| ())
 }
 
+/// The `.kdbx` file a connection's Vault entry lives in (issue #411): the
+/// connection's own override, else the nearest group's, else the global
+/// database from Settings → Secrets.
+///
+/// Every KDBX read and write for one connection goes through this, so a
+/// password is written to the same file a connect reads it from.
+#[must_use]
+pub fn kdbx_path_for_connection(
+    settings: &rustconn_core::config::AppSettings,
+    conn: &rustconn_core::models::Connection,
+    groups: &[rustconn_core::models::ConnectionGroup],
+) -> Option<std::path::PathBuf> {
+    rustconn_core::secret::resolve_kdbx_path_override(conn, groups)
+        .or_else(|| settings.secrets.kdbx_path.clone())
+}
+
+/// The `.kdbx` file a group's own Vault credential lives in (issue #411): the
+/// group's override, else the nearest ancestor's, else the global database.
+#[must_use]
+pub fn kdbx_path_for_group(
+    settings: &rustconn_core::config::AppSettings,
+    group_id: uuid::Uuid,
+    groups: &[rustconn_core::models::ConnectionGroup],
+) -> Option<std::path::PathBuf> {
+    rustconn_core::secret::resolve_group_kdbx_path_override(Some(group_id), groups)
+        .or_else(|| settings.secrets.kdbx_path.clone())
+}
+
 /// Saves a connection password to the configured vault backend.
 ///
 /// Dispatches to KeePass (hierarchical) or generic backend (flat key)
@@ -557,8 +585,13 @@ pub fn save_password_to_vault(
                 | rustconn_core::config::SecretBackendType::KdbxFile
         )
     {
-        // KeePass backend — use hierarchical path
-        if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+        // KeePass backend — use hierarchical path, in the database the
+        // connection resolves to (its own, a group's, or the global one).
+        let kdbx_path = match conn {
+            Some(c) => kdbx_path_for_connection(settings, c, groups),
+            None => settings.secrets.kdbx_path.clone(),
+        };
+        if let Some(kdbx_path) = kdbx_path {
             // Which of the two KDBX rows the user picked, so a failure can name
             // it. The branch condition guarantees this is `KeePassXc` or
             // `KdbxFile`; it is read rather than hardcoded so the message follows
@@ -744,6 +777,8 @@ pub fn save_password_to_vault(
 /// via call-site `String`s.
 pub fn save_group_password_to_vault(
     settings: &rustconn_core::config::AppSettings,
+    groups: &[rustconn_core::models::ConnectionGroup],
+    group_id: uuid::Uuid,
     group_path: &str,
     lookup_key: &str,
     username: &str,
@@ -758,7 +793,9 @@ pub fn save_group_password_to_vault(
                 | rustconn_core::config::SecretBackendType::KdbxFile
         )
     {
-        if let Some(kdbx_path) = settings.secrets.kdbx_path.clone() {
+        // The group's own database, else an ancestor's, else the global one —
+        // the file an Inherit connection under this group reads (issue #411).
+        if let Some(kdbx_path) = kdbx_path_for_group(settings, group_id, groups) {
             // See the connection path: read rather than hardcoded so a failure
             // names the row the user actually picked.
             let kdbx_backend = settings.secrets.preferred_backend;
@@ -1027,10 +1064,26 @@ pub fn migrate_vault_credential_for_edit(
     crate::vault_miss_cache::forget(new_conn.id);
 
     if plan.is_keepass {
-        let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() else {
+        let old_db = kdbx_path_for_connection(settings, old_conn, old_groups);
+        let new_db = kdbx_path_for_connection(settings, new_conn, new_groups);
+        let Some(kdbx_path) = old_db.as_ref() else {
             return Ok(());
         };
         let old_key = plan.old_keys.first().map_or("", String::as_str);
+        if new_db.as_ref() != Some(kdbx_path) {
+            // ponytail: an edit that also moves the connection to another
+            // `.kdbx` (issue #411) leaves the entry where it was rather than
+            // copying it between databases; the user re-enters the password.
+            // Copy-then-delete across files if users ask for it.
+            tracing::warn!(
+                %old_key,
+                new_key = %plan.new_key,
+                old_db = %kdbx_path.display(),
+                new_db = ?new_db.as_ref().map(|p| p.display().to_string()),
+                "KeePass entry left in its old database: the edit changed which database the connection uses"
+            );
+            return Ok(());
+        }
         tracing::info!(%old_key, new_key = %plan.new_key, "Migrating KeePass entry after edit");
         let key_file = settings.secrets.kdbx_key_file.clone();
         return rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
@@ -1130,16 +1183,12 @@ pub fn migrate_vault_entries_on_group_change(
         );
 
     if is_keepass {
-        let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
-            return;
-        };
         migrate_keepass_entries_on_group_change(
             settings,
             old_groups,
             new_groups,
             connections,
             changed_group_id,
-            kdbx_path,
         );
         return;
     }
@@ -1202,7 +1251,9 @@ pub fn migrate_vault_entries_after_group_sync(
             settings.secrets.preferred_backend,
             SecretBackendType::KeePassXc | SecretBackendType::KdbxFile
         );
-    let mut group_renames: Vec<(String, String)> = Vec::new();
+    // (database, old_key, new_key): each group entry is renamed inside its own
+    // database (issue #411).
+    let mut group_renames: Vec<(std::path::PathBuf, String, String)> = Vec::new();
     if is_keepass {
         let mut affected: std::collections::HashSet<uuid::Uuid> = std::collections::HashSet::new();
         for gid in changed_group_ids {
@@ -1220,8 +1271,22 @@ pub fn migrate_vault_entries_after_group_sync(
             };
             let old_path = KeePassHierarchy::build_group_entry_path(old_group, &old_groups);
             let new_path = KeePassHierarchy::build_group_entry_path(new_group, &new_groups);
-            if old_path != new_path {
-                group_renames.push((old_path, new_path));
+            if old_path == new_path {
+                continue;
+            }
+            let old_db = kdbx_path_for_group(settings, new_group.id, &old_groups);
+            let new_db = kdbx_path_for_group(settings, new_group.id, &new_groups);
+            match old_db {
+                Some(db) if new_db.as_ref() == Some(&db) => {
+                    group_renames.push((db, old_path, new_path));
+                }
+                Some(db) => tracing::warn!(
+                    old_key = %old_path,
+                    new_key = %new_path,
+                    old_db = %db.display(),
+                    "Group Sync: KeePass group entry left in its old database"
+                ),
+                None => {}
             }
         }
     }
@@ -1245,21 +1310,19 @@ pub fn migrate_vault_entries_after_group_sync(
                     errors.push(format!("{}: {e}", new_conn.name));
                 }
             }
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
-                let key_file = settings.secrets.kdbx_key_file.clone();
-                for (old_key, new_key) in &group_renames {
-                    tracing::info!(%old_key, %new_key, "Migrating KeePass group entry after Group Sync");
-                    if let Err(e) = rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
-                        std::path::Path::new(kdbx_path),
-                        settings.secrets.kdbx_password.as_ref(),
-                        key_file.as_ref().map(std::path::Path::new),
-                        old_key,
-                        new_key,
-                        settings.secrets.kdbx_yubikey_slot.as_deref(),
-                        settings.secrets.kdbx_read_only,
-                    ) {
-                        errors.push(format!("{old_key} → {new_key}: {e}"));
-                    }
+            let key_file = settings.secrets.kdbx_key_file.clone();
+            for (kdbx_path, old_key, new_key) in &group_renames {
+                tracing::info!(%old_key, %new_key, "Migrating KeePass group entry after Group Sync");
+                if let Err(e) = rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
+                    kdbx_path,
+                    settings.secrets.kdbx_password.as_ref(),
+                    key_file.as_ref().map(std::path::Path::new),
+                    old_key,
+                    new_key,
+                    settings.secrets.kdbx_yubikey_slot.as_deref(),
+                    settings.secrets.kdbx_read_only,
+                ) {
+                    errors.push(format!("{old_key} → {new_key}: {e}"));
                 }
             }
             if errors.is_empty() {
@@ -1378,14 +1441,35 @@ fn migrate_keepass_entries_on_group_change(
     new_groups: &[rustconn_core::models::ConnectionGroup],
     connections: &[rustconn_core::models::Connection],
     changed_group_id: uuid::Uuid,
-    kdbx_path: std::path::PathBuf,
 ) {
     // Collect all group IDs in the subtree rooted at changed_group_id
     let affected_group_ids =
         rustconn_core::models::collect_descendant_group_ids(changed_group_id, new_groups);
 
-    // Build rename pairs: (old_key, new_key)
-    let mut rename_pairs: Vec<(String, String)> = Vec::new();
+    // Build rename jobs: (database, old_key, new_key). Each entry is renamed
+    // inside the database it lives in (issue #411); an entry whose database
+    // the move changed is left where it is — see `push_rename`.
+    let mut rename_pairs: Vec<(std::path::PathBuf, String, String)> = Vec::new();
+    let mut push_rename = |old_db: Option<std::path::PathBuf>,
+                           new_db: Option<std::path::PathBuf>,
+                           old_key: String,
+                           new_key: String| {
+        let Some(db) = old_db else {
+            return;
+        };
+        if new_db.as_ref() != Some(&db) {
+            // ponytail: same ceiling as `migrate_vault_credential_for_edit` —
+            // no copy between databases; the user re-enters the password.
+            tracing::warn!(
+                %old_key,
+                %new_key,
+                old_db = %db.display(),
+                "KeePass entry left in its old database: the group change moved it to another database"
+            );
+            return;
+        }
+        rename_pairs.push((db, old_key, new_key));
+    };
 
     // 1. Migrate group credentials
     for &gid in &affected_group_ids {
@@ -1399,7 +1483,12 @@ fn migrate_keepass_entries_on_group_change(
             let new_path =
                 rustconn_core::secret::KeePassHierarchy::build_group_entry_path(ng, new_groups);
             if old_path != new_path {
-                rename_pairs.push((old_path, new_path));
+                push_rename(
+                    kdbx_path_for_group(settings, gid, old_groups),
+                    kdbx_path_for_group(settings, gid, new_groups),
+                    old_path,
+                    new_path,
+                );
             }
         }
     }
@@ -1423,7 +1512,12 @@ fn migrate_keepass_entries_on_group_change(
             let protocol_str = conn.protocol_config.protocol_type().as_str().to_lowercase();
             let old_key = format!("{old_path} ({protocol_str})");
             let new_key = format!("{new_path} ({protocol_str})");
-            rename_pairs.push((old_key, new_key));
+            push_rename(
+                kdbx_path_for_connection(settings, conn, old_groups),
+                kdbx_path_for_connection(settings, conn, new_groups),
+                old_key,
+                new_key,
+            );
         }
     }
 
@@ -1438,11 +1532,10 @@ fn migrate_keepass_entries_on_group_change(
 
     crate::utils::spawn_blocking_with_callback(
         move || {
-            let kdbx = std::path::Path::new(&kdbx_path);
             let key = key_file.as_ref().map(std::path::Path::new);
             let mut errors = Vec::new();
 
-            for (old_key, new_key) in &rename_pairs {
+            for (kdbx, old_key, new_key) in &rename_pairs {
                 tracing::info!(%old_key, %new_key, "Migrating KeePass entry after group change");
                 if let Err(e) = rustconn_core::secret::KeePassStatus::rename_entry_in_kdbx(
                     kdbx,
@@ -1971,7 +2064,8 @@ pub fn delete_vault_credential(
 
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            if let Some(kdbx_path) = kdbx_path_for_connection(settings, connection, groups).as_ref()
+            {
                 // Built by the same helper the Trash guard compares with.
                 let full_entry_path = kdbx_connection_entry(groups, connection, &protocol_str);
                 let key_file = settings.secrets.kdbx_key_file.clone();
@@ -2150,7 +2244,16 @@ pub fn delete_group_vault_credential(
 
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            // From the group value itself, not only its id: the group may
+            // already be gone from `groups` when its credential is purged.
+            let kdbx_path = group
+                .kdbx_path_override
+                .clone()
+                .or_else(|| {
+                    rustconn_core::secret::resolve_group_kdbx_path_override(group.parent_id, groups)
+                })
+                .or_else(|| settings.secrets.kdbx_path.clone());
+            if let Some(kdbx_path) = kdbx_path.as_ref() {
                 let group_path =
                     rustconn_core::secret::KeePassHierarchy::build_group_entry_path(group, groups);
                 let key_file = settings.secrets.kdbx_key_file.clone();
@@ -2209,9 +2312,15 @@ pub fn copy_vault_credential(
 
     match backend_type {
         SecretBackendType::KdbxFile | SecretBackendType::KeePassXc => {
-            if let Some(kdbx_path) = settings.secrets.kdbx_path.as_ref() {
+            // Read from the database the original resolves to and write to the
+            // one the copy resolves to — they differ when the paste lands in a
+            // group with another KeePass database (issue #411).
+            let old_db = kdbx_path_for_connection(settings, old_conn, groups);
+            let new_db = kdbx_path_for_connection(settings, new_conn, groups);
+            if let (Some(kdbx_path), Some(new_kdbx_path)) = (old_db.as_ref(), new_db.as_ref()) {
                 let key_file = settings.secrets.kdbx_key_file.clone();
                 let kdbx = std::path::Path::new(kdbx_path);
+                let new_kdbx = std::path::Path::new(new_kdbx_path);
                 let key = key_file.as_ref().map(std::path::Path::new);
 
                 // Read from old entry
@@ -2244,7 +2353,7 @@ pub fn copy_vault_credential(
                     let username = new_conn.username.as_deref().unwrap_or("");
                     let url = format!("{}://{}", protocol_str, new_conn.host);
                     rustconn_core::secret::KeePassStatus::save_password_to_kdbx(
-                        kdbx,
+                        new_kdbx,
                         settings.secrets.kdbx_password.as_ref(),
                         key,
                         &new_entry_name,

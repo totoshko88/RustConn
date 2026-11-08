@@ -209,6 +209,9 @@ fn strip_local_only_connection_fields(connections: Vec<Connection>) -> Vec<Conne
             c.window_mode = crate::models::WindowMode::default();
             c.remember_window_position = false;
             c.skip_port_check = false;
+            // A .kdbx path is a local filesystem path that differs per device
+            // (issue #411); it must never travel in the shared file.
+            c.kdbx_path_override = None;
             // Web: zoom level is device-local (a 13" laptop and a 32" monitor
             // need different zoom). Reset to default so per-device preferences
             // do not propagate between machines.
@@ -237,6 +240,7 @@ fn strip_local_only_group_fields(groups: Vec<ConnectionGroup>) -> Vec<Connection
             g.ssh_key_path = None;
             g.ssh_jump_host_id = None;
             g.ssh_agent_socket = None;
+            g.kdbx_path_override = None;
             g.sync_mode = crate::sync::SyncMode::default();
             g.sync_file = None;
             g.last_synced_at = None;
@@ -286,6 +290,29 @@ mod tests {
     }
 
     #[test]
+    fn build_strips_the_device_local_kdbx_path_from_connections() {
+        // Issue #411: a .kdbx path names a file on this machine only.
+        let mut conn = Connection::new_ssh("srv".to_owned(), "10.0.0.1".to_owned(), 22);
+        conn.kdbx_path_override = Some(std::path::PathBuf::from("/home/me/personal.kdbx"));
+
+        let export = FullSyncExport::build(
+            "0.12.0".to_owned(),
+            Uuid::new_v4(),
+            "laptop".to_owned(),
+            vec![conn],
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            &[],
+            Vec::new(),
+        );
+
+        assert!(export.connections[0].kdbx_path_override.is_none());
+        assert_eq!(export.connections[0].name, "srv", "content is preserved");
+    }
+
+    #[test]
     fn build_strips_local_only_group_fields() {
         use crate::sync::SyncMode;
 
@@ -293,6 +320,7 @@ mod tests {
         let edited_at = group.updated_at;
         group.ssh_key_path = Some(std::path::PathBuf::from("/home/me/.ssh/id_ed25519"));
         group.ssh_jump_host_id = Some(Uuid::new_v4());
+        group.kdbx_path_override = Some(std::path::PathBuf::from("/home/me/corp.kdbx"));
         group.ssh_agent_socket = Some("/run/agent.sock".to_owned());
         group.sync_mode = SyncMode::Master;
         group.sync_file = Some("prod.rcn".to_owned());
@@ -315,6 +343,7 @@ mod tests {
         // Device-specific / Group-Sync fields are stripped.
         assert!(g.ssh_key_path.is_none());
         assert!(g.ssh_jump_host_id.is_none());
+        assert!(g.kdbx_path_override.is_none(), "kdbx path is device-local");
         assert!(g.ssh_agent_socket.is_none());
         assert_eq!(g.sync_mode, SyncMode::None);
         assert!(g.sync_file.is_none());

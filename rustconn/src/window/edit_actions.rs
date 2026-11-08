@@ -2403,7 +2403,7 @@ impl MainWindow {
             // Mark as connected and increment session count
             if let Some(sb) = sidebar {
                 sb.update_connection_status(&connection_id.to_string(), "connected");
-                sb.increment_session_count(&connection_id.to_string());
+                sb.increment_session_count(&connection_id.to_string(), session_id);
             }
 
             if let Some(sv) = split_view {
@@ -2517,7 +2517,7 @@ impl MainWindow {
 
                 if let Some(sb) = sidebar {
                     sb.update_connection_status(&connection_id.to_string(), "connected");
-                    sb.increment_session_count(&connection_id.to_string());
+                    sb.increment_session_count(&connection_id.to_string(), session_id);
                 }
                 if let Some(sv) = split_view {
                     if let Some(info) = notebook.get_session_info(session_id) {

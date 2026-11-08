@@ -65,6 +65,7 @@ impl ConnectionDialog {
         let username_load_button = basic.username_load_button.clone();
         let domain_load_button = basic.domain_load_button.clone();
         let script_command_entry = basic.script_command_entry.clone();
+        let kdbx_override_entry = basic.kdbx_override_entry.clone();
         let script_test_button = basic.script_test_button.clone();
         let script_row = basic.script_row.clone();
         // Wrap basic grid in ScrolledWindow for consistent styling
@@ -787,6 +788,7 @@ impl ConnectionDialog {
             &theme_cursor_button,
             &connections_data,
             &script_command_entry,
+            &kdbx_override_entry,
             &monitoring_combo,
             &recording_toggle,
             &highlight_rules,
@@ -831,6 +833,7 @@ impl ConnectionDialog {
             variable_dropdown,
             variable_row,
             script_command_entry,
+            kdbx_override_entry,
             script_test_button,
             script_row,
             group_dropdown,

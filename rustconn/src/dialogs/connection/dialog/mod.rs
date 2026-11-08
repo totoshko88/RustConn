@@ -122,6 +122,8 @@ pub struct ConnectionDialog {
     variable_row: GtkBox,
     // Script command entry (for Script password source)
     script_command_entry: Entry,
+    // Per-connection KeePass database override (issue #411)
+    kdbx_override_entry: adw::EntryRow,
     script_test_button: Button,
     script_row: GtkBox,
     // Group selection

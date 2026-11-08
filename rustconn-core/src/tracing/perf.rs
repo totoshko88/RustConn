@@ -65,7 +65,7 @@ impl PerfSpan {
     /// Starts a timed scope for `op` over `transport`.
     ///
     /// Both labels are fixed strings chosen at the call site — `"vault.store"`,
-    /// `"ssh.connect.resolve"`, `"bitwarden"`, `"ssh-agent"`. The clock starts
+    /// `"connect.resolve"`, `"bitwarden"`, `"ssh-agent"`. The clock starts
     /// now; the line is emitted on drop.
     #[must_use]
     pub fn new(op: &'static str, transport: &'static str) -> Self {
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn elapsed_is_readable_without_dropping() {
-        let span = PerfSpan::new("ssh.connect.resolve", "ssh");
+        let span = PerfSpan::new("connect.resolve", "credentials");
         // Does not panic and does not end the scope; the exact value is a clock
         // reading, so only its existence is asserted.
         let _ = span.elapsed_ms();

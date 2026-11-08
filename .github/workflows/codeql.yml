@@ -1,0 +1,87 @@
+name: CodeQL
+
+# Advanced CodeQL setup (replaces the repository's previous default setup).
+#
+# Why advanced setup: default setup is configured in the GitHub UI and cannot
+# read an in-repo config, so its scope could not be reviewed in a PR or tuned
+# alongside the code. This workflow pins the same language set and query suite
+# default setup used (actions, python, ruby, rust / `default`) and reads
+# .github/codeql/codeql-config.yml, so coverage is unchanged but now lives in
+# the tree. Disable default setup in Settings → Code security before this runs,
+# or GitHub refuses to accept advanced results while default setup is active.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, matching the cadence default setup ran on.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+# Least privilege: CodeQL needs to read the repo and write analysis results.
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  # Keep in step with ci.yml / release.yml. The Rust extractor builds the crate,
+  # so it needs the same toolchain the rest of CI pins.
+  RUST_TOOLCHAIN: '1.99.0'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    # Job-level, not workflow-level: a workflow-level `concurrency` may only use
+    # the github, inputs and vars contexts, and `matrix` there makes the whole
+    # workflow invalid. Per language so one language's run never cancels another.
+    concurrency:
+      group: codeql-${{ github.ref }}-${{ matrix.language }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: ruby
+            build-mode: none
+          - language: rust
+            build-mode: autobuild
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Rust is a compiled language: the extractor observes a real build, so the
+      # toolchain and GTK/WebKit system libraries must be present exactly as the
+      # ordinary build jobs have them. The other languages use build-mode none
+      # and skip this.
+      - name: Install Rust toolchain
+        if: matrix.language == 'rust'
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install system dependencies
+        if: matrix.language == 'rust'
+        uses: ./.github/actions/install-deps
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+          # No `queries:` override — this keeps the `default` query suite default
+          # setup ran, so the migration does not widen findings.
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

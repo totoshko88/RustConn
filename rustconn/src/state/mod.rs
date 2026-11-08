@@ -1198,8 +1198,8 @@ impl AppState {
         // `RUST_LOG=rustconn::perf=info`. Placed after the item declarations
         // above so it is the function's first statement (clippy
         // `items_after_statements`).
-        let _perf =
-            rustconn_core::tracing::perf::PerfSpan::new("ssh.connect.resolve", "credentials");
+        // Not `ssh.`: every protocol (RDP, VNC, SPICE, …) resolves through here.
+        let _perf = rustconn_core::tracing::perf::PerfSpan::new("connect.resolve", "credentials");
 
         // Captured before the context moves into the final attempt.
         let conn_username = ctx.connection.username.clone();
@@ -1275,7 +1275,13 @@ impl AppState {
         let connection = &ctx.connection;
         let groups = &ctx.groups;
         let kdbx_enabled = ctx.kdbx_enabled;
-        let kdbx_path = ctx.kdbx_path;
+        // Per-connection / per-group KDBX override (issue #411): when the
+        // connection or an ancestor group names its own .kdbx file, read this
+        // connection's Vault credentials from that database instead of the
+        // global one. The password / key file / YubiKey slot still come from the
+        // global KeePass settings. `None` falls back to the global database.
+        let kdbx_path =
+            rustconn_core::secret::resolve_kdbx_path_override(connection, groups).or(ctx.kdbx_path);
         let kdbx_password = ctx.kdbx_password;
         let kdbx_key_file = ctx.kdbx_key_file;
         let secret_settings = ctx.secret_settings;
@@ -1431,7 +1437,10 @@ impl AppState {
             let db_password = kdbx_password.as_ref();
             let key_file = kdbx_key_file.as_deref();
 
+            // The database is named so a per-connection or per-group override
+            // (#411) can be told apart from the global one in a debug log.
             tracing::debug!(
+                database = %kdbx_path.display(),
                 "[resolve_credentials_blocking] KeePass lookup: key='{}', has_password={}, has_key_file={}",
                 lookup_key,
                 db_password.is_some(),

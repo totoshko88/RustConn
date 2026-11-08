@@ -36,8 +36,14 @@ pub struct TreeState {
 pub struct SessionStatusInfo {
     /// Current status (connected, connecting, failed, disconnected)
     pub status: String,
-    /// Number of active sessions for this connection
-    pub active_count: usize,
+    /// The sessions open for this connection, by session id.
+    ///
+    /// A set, not a counter: one session ending is reported by several paths
+    /// (the close-tab action, the notebook's page-closed hook, the child-exit
+    /// handler, a protocol's Disconnected state), and with a counter each extra
+    /// report closed another session's slot — closing one of two tabs cleared
+    /// the connection's "connected" mark while the other was still open.
+    pub sessions: std::collections::HashSet<uuid::Uuid>,
 }
 
 /// Row decorations that have to survive a sidebar rebuild.

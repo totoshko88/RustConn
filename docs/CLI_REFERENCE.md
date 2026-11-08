@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.24.7** | Command-line interface for RustConn connection management
+**Version 0.24.8** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -154,6 +154,7 @@ Options:
 | `--baud-rate` | — | Serial baud rate (default: 115200) |
 | `--icon` | — | Custom icon (emoji or GTK icon name, e.g. `"🏢"`, `"starred-symbolic"`) |
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
+| `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
 | `--keep-alive-interval` | — | SSH keep-alive interval in seconds (`ServerAliveInterval`) |
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
@@ -469,6 +470,7 @@ All flags from `add` are available (except `--protocol`), plus:
 - `--new-name` to rename
 - `--add-tag` / `--remove-tag` for incremental tag editing
 - `--skip-port-check=false` to clear the flag
+- `--kdbx-path ""` to clear the connection's own KeePass database, so it inherits its group's or the global one again
 
 Four boolean flags accept an explicit value on `update` so they can be *cleared*, unlike on `add` where they only turn a feature on:
 - `--mptcp` — bare `--mptcp` (or `--mptcp true`) enables Multipath TCP; `--mptcp false` disables it
@@ -765,7 +767,7 @@ With no terminal on stdin and no `--force`, `snippet run --execute` exits with a
 | `group list` | List all groups (`--format`) |
 | `group show <name>` | Show group details, child groups, and connections (`--format`) |
 | `group create` | Create a group (`--name`, `--parent`, `--description`, `--icon`) |
-| `group edit <name>` | Edit group properties (`--new-name`, `--parent`, `--description`, `--icon`, `--ssh-key-path`, `--ssh-auth-method`, `--ssh-proxy-jump`, `--ssh-agent-socket`, `--add-expect-rule`, `--clear-expect-rules`, `--add-post-login-script`, `--clear-post-login-scripts`, `--username-prompt`, `--password-prompt`). Passing an empty value to `--ssh-proxy-jump` or `--ssh-agent-socket` clears the setting. |
+| `group edit <name>` | Edit group properties (`--new-name`, `--parent`, `--description`, `--icon`, `--ssh-key-path`, `--ssh-auth-method`, `--ssh-proxy-jump`, `--ssh-agent-socket`, `--kdbx-path`, `--add-expect-rule`, `--clear-expect-rules`, `--add-post-login-script`, `--clear-post-login-scripts`, `--username-prompt`, `--password-prompt`). Passing an empty value to `--ssh-proxy-jump` or `--ssh-agent-socket` clears the setting. |
 | `group delete <name>` | Delete a group |
 | `group add-connection` | Add connection to group (`-g group -c connection`) |
 | `group remove-connection` | Remove connection from group (`-g group -c connection`) |
@@ -886,6 +888,19 @@ rustconn-cli secret verify-keepass --database ~/vault.kdbx --yubikey 2       # Y
 > deliberately (`Prompt`, `Variable`, `Inherit`, `Script`) is left unchanged. So
 > `rustconn-cli add` followed by `secret set` produces a connection that resolves
 > its own credential, with no extra step.
+
+> **KeePass uses the connection's own database.** With the KeePass backend,
+> `secret get/set/delete` open the `.kdbx` the connection resolves to: its own
+> `--kdbx-path`, else the nearest group's (`group edit --kdbx-path`), else the
+> global database from Settings → Secrets — the order the GUI uses. The
+> database's password, key file and YubiKey slot are the global ones from
+> Settings. `secret get` and `secret set` print which file they used.
+>
+> ```bash
+> rustconn-cli add -n web -H web.example.com -u admin --kdbx-path ~/work.kdbx
+> echo "s3cret" | rustconn-cli secret set web --password-stdin   # stored in ~/work.kdbx
+> rustconn-cli group edit Production --kdbx-path ~/prod.kdbx     # inherited by the group's connections
+> ```
 
 > **`secret get` honours "Search from vault root".** When that option is on in
 > Settings → Secrets for the backend in use (KeePass, Bitwarden, 1Password,

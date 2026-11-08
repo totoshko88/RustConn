@@ -69,6 +69,9 @@ pub(super) struct BasicTabWidgets {
     pub script_command_entry: Entry,
     pub script_test_button: Button,
     pub script_row: GtkBox,
+    /// Per-connection KeePass database override (issue #411). Empty means
+    /// "inherit from the group chain, then the global database".
+    pub kdbx_override_entry: adw::EntryRow,
 }
 
 /// Creates the basic/general tab with all core connection fields.
@@ -379,6 +382,20 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .sync_create()
         .build();
 
+    // KeePass database override row (issue #411). Hidden until
+    // `connect_password_load_button_with_groups` knows the backend: with
+    // KeePass it follows the password row (Vault source only), with any other
+    // backend it stays hidden.
+    let kdbx_override_entry = adw::EntryRow::builder()
+        .title(i18n("KeePass Database"))
+        .tooltip_text(i18n(
+            "Leave empty to use the database of the enclosing group, or the global one.",
+        ))
+        .visible(false)
+        .build();
+    crate::dialogs::widgets::add_kdbx_browse_suffix(&kdbx_override_entry);
+    auth_group.add(&kdbx_override_entry);
+
     vbox.append(&auth_group);
 
     // === Organization Section ===
@@ -488,6 +505,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         script_command_entry,
         script_test_button,
         script_row,
+        kdbx_override_entry,
     }
 }
 

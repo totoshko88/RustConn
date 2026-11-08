@@ -1794,7 +1794,7 @@ fn start_ssh_connection_internal(
     {
         let sidebar = sidebar.clone();
         when_established(notebook, session_id, status_client, move || {
-            sidebar.increment_session_count(&connection_id.to_string());
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
             tracing::info!(
                 protocol = "ssh",
                 "Terminal connection detected as established"
@@ -2173,7 +2173,7 @@ fn reconnect_ssh_after_unlock(
     {
         let sidebar = sidebar.clone();
         when_established(notebook, session_id, status_client, move || {
-            sidebar.increment_session_count(&connection_id.to_string());
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
         });
     }
 

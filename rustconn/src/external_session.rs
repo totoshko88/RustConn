@@ -50,10 +50,16 @@ pub struct ExternalSessionCallbacks {
     /// Fired once when a session is registered: increment session count, show
     /// the external-viewer emblem (`record_connection_start` is done at the
     /// launch site and its entry id passed into `register`).
-    pub on_registered: Box<dyn Fn(Uuid /* connection_id */)>,
+    pub on_registered: Box<dyn Fn(Uuid /* session_id */, Uuid /* connection_id */)>,
     /// Fired exactly once when a session ends (viewer exit, Disconnect, or Stop
     /// tracking): decrement session count, clear the emblem, record history end.
-    pub on_ended: Box<dyn Fn(Uuid /* connection_id */, Option<Uuid> /* history_entry_id */)>,
+    pub on_ended: Box<
+        dyn Fn(
+            Uuid,         /* session_id */
+            Uuid,         /* connection_id */
+            Option<Uuid>, /* history_entry_id */
+        ),
+    >,
 }
 
 /// Lightweight registry of active external viewer sessions.
@@ -100,7 +106,7 @@ impl ExternalSessionRegistry {
         );
         // Fire the callback after the borrow is released (avoids BorrowMutError
         // if a callback re-enters the registry).
-        (self.callbacks.on_registered)(connection_id);
+        (self.callbacks.on_registered)(session_id, connection_id);
         self.ensure_timer();
     }
 
@@ -264,7 +270,11 @@ impl ExternalSessionRegistry {
         let removed = self.sessions.borrow_mut().remove(&session_id);
         match removed {
             Some(session) if !session.ended => {
-                (self.callbacks.on_ended)(session.connection_id, session.history_entry_id);
+                (self.callbacks.on_ended)(
+                    session_id,
+                    session.connection_id,
+                    session.history_entry_id,
+                );
                 true
             }
             _ => false,
@@ -391,12 +401,12 @@ mod tests {
 
         let on_registered = {
             let registered = Rc::clone(&registered);
-            Box::new(move |_conn: Uuid| registered.set(registered.get() + 1))
+            Box::new(move |_session: Uuid, _conn: Uuid| registered.set(registered.get() + 1))
         };
         let on_ended = {
             let ended = Rc::clone(&ended);
             let ended_connections = Rc::clone(&ended_connections);
-            Box::new(move |conn: Uuid, _entry: Option<Uuid>| {
+            Box::new(move |_session: Uuid, conn: Uuid, _entry: Option<Uuid>| {
                 ended.set(ended.get() + 1);
                 ended_connections.borrow_mut().push(conn);
             })

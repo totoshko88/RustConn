@@ -882,6 +882,180 @@ pub const fn keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
     }
 }
 
+/// Converts a macOS Apple virtual keycode to an RDP scancode.
+///
+/// On macOS the GTK Quartz backend reports the GDK *hardware keycode* as the
+/// Apple virtual keycode (`NSEvent.keyCode` / `kVK_*` from `HIToolbox/Events.h`),
+/// which is tied to the physical key position on an ANSI keyboard and does not
+/// change with the active layout. These values are **not** evdev+8 keycodes, so
+/// feeding them to [`keycode_to_scancode`] (an evdev→AT table) maps every key to
+/// the wrong scancode — e.g. Apple keycode 12 (`q`) is evdev 12 (`3`), and
+/// Apple 51 (`Backspace`) is evdev 51 (`#`). That is exactly the embedded-RDP
+/// mis-mapping reported in issue [#412](https://github.com/totoshko88/RustConn/issues/412).
+///
+/// This table maps the stable Apple virtual keycode directly to the IBM PC AT
+/// (Set 1) scancode the RDP server expects, mirroring the evdev table in
+/// [`keycode_to_scancode`] but keyed by Apple keycodes. The AT scancodes are the
+/// same physical-key scancodes used throughout this module; only the source
+/// keycode namespace differs. Extended keys (navigation, right-hand modifiers,
+/// numpad Enter/Divide) carry the `E0` prefix exactly as on the evdev side.
+///
+/// # Arguments
+///
+/// * `keycode` - Apple virtual keycode (`NSEvent.keyCode`), as GDK reports it on
+///   the macOS Quartz backend.
+///
+/// # Returns
+///
+/// An `Option<RdpScancode>` containing the scancode if the key is mappable, or
+/// `None` for a key with no AT scancode (the caller then falls back to the
+/// keyval and Unicode paths).
+#[must_use]
+#[expect(
+    clippy::too_many_lines,
+    reason = "long match/dispatch over the Apple virtual keycode table; splitting per key only relocates the boilerplate"
+)]
+pub const fn macos_keycode_to_scancode(keycode: u32) -> Option<RdpScancode> {
+    // Apple virtual keycodes (kVK_*) from <HIToolbox/Events.h>. Values are
+    // stable across macOS releases and independent of the keyboard layout.
+    match keycode {
+        // Letters (kVK_ANSI_*)
+        0 => Some(RdpScancode::standard(0x1E)),  // a
+        11 => Some(RdpScancode::standard(0x30)), // b
+        8 => Some(RdpScancode::standard(0x2E)),  // c
+        2 => Some(RdpScancode::standard(0x20)),  // d
+        14 => Some(RdpScancode::standard(0x12)), // e
+        3 => Some(RdpScancode::standard(0x21)),  // f
+        5 => Some(RdpScancode::standard(0x22)),  // g
+        4 => Some(RdpScancode::standard(0x23)),  // h
+        34 => Some(RdpScancode::standard(0x17)), // i
+        38 => Some(RdpScancode::standard(0x24)), // j
+        40 => Some(RdpScancode::standard(0x25)), // k
+        37 => Some(RdpScancode::standard(0x26)), // l
+        46 => Some(RdpScancode::standard(0x32)), // m
+        45 => Some(RdpScancode::standard(0x31)), // n
+        31 => Some(RdpScancode::standard(0x18)), // o
+        35 => Some(RdpScancode::standard(0x19)), // p
+        12 => Some(RdpScancode::standard(0x10)), // q
+        15 => Some(RdpScancode::standard(0x13)), // r
+        1 => Some(RdpScancode::standard(0x1F)),  // s
+        17 => Some(RdpScancode::standard(0x14)), // t
+        32 => Some(RdpScancode::standard(0x16)), // u
+        9 => Some(RdpScancode::standard(0x2F)),  // v
+        13 => Some(RdpScancode::standard(0x11)), // w
+        7 => Some(RdpScancode::standard(0x2D)),  // x
+        16 => Some(RdpScancode::standard(0x15)), // y
+        6 => Some(RdpScancode::standard(0x2C)),  // z
+
+        // Number row (kVK_ANSI_1..0). The physical-key scancode is the same on
+        // every layout; the character the server produces follows its own
+        // layout, which is correct — the German layout turns 0x10 into `q`.
+        18 => Some(RdpScancode::standard(0x02)), // 1
+        19 => Some(RdpScancode::standard(0x03)), // 2
+        20 => Some(RdpScancode::standard(0x04)), // 3
+        21 => Some(RdpScancode::standard(0x05)), // 4
+        23 => Some(RdpScancode::standard(0x06)), // 5
+        22 => Some(RdpScancode::standard(0x07)), // 6
+        26 => Some(RdpScancode::standard(0x08)), // 7
+        28 => Some(RdpScancode::standard(0x09)), // 8
+        25 => Some(RdpScancode::standard(0x0A)), // 9
+        29 => Some(RdpScancode::standard(0x0B)), // 0
+
+        // Punctuation and symbols (physical ANSI positions)
+        27 => Some(RdpScancode::standard(0x0C)), // minus
+        24 => Some(RdpScancode::standard(0x0D)), // equal
+        33 => Some(RdpScancode::standard(0x1A)), // bracketleft [
+        30 => Some(RdpScancode::standard(0x1B)), // bracketright ]
+        42 => Some(RdpScancode::standard(0x2B)), // backslash
+        41 => Some(RdpScancode::standard(0x27)), // semicolon
+        39 => Some(RdpScancode::standard(0x28)), // apostrophe / quote
+        50 => Some(RdpScancode::standard(0x29)), // grave `
+        43 => Some(RdpScancode::standard(0x33)), // comma
+        47 => Some(RdpScancode::standard(0x34)), // period
+        44 => Some(RdpScancode::standard(0x35)), // slash
+        // kVK_ISO_Section: the extra key on ISO keyboards left of Z.
+        10 => Some(RdpScancode::standard(0x56)), // less / greater (ISO)
+
+        // Whitespace / editing (kVK_Return, kVK_Tab, kVK_Space, kVK_Delete)
+        36 => Some(RdpScancode::standard(0x1C)), // Return
+        48 => Some(RdpScancode::standard(0x0F)), // Tab
+        49 => Some(RdpScancode::standard(0x39)), // Space
+        51 => Some(RdpScancode::standard(0x0E)), // Delete (Backspace)
+        53 => Some(RdpScancode::standard(0x01)), // Escape
+
+        // Modifiers. macOS Command maps to the Windows/Super key, the usual
+        // convention for an embedded RDP client on a Mac keyboard.
+        56 => Some(RdpScancode::standard(0x2A)), // Shift (left)
+        60 => Some(RdpScancode::standard(0x36)), // Shift (right)
+        59 => Some(RdpScancode::standard(0x1D)), // Control (left)
+        62 => Some(RdpScancode::extended(0x1D)), // Control (right)
+        58 => Some(RdpScancode::standard(0x38)), // Option/Alt (left)
+        61 => Some(RdpScancode::extended(0x38)), // Option/Alt (right, AltGr)
+        55 => Some(RdpScancode::extended(0x5B)), // Command (left) → Super/Win
+        54 => Some(RdpScancode::extended(0x5C)), // Command (right) → Super/Win
+        57 => Some(RdpScancode::standard(0x3A)), // Caps Lock
+        // kVK_Function (fn) has no PC equivalent and is intentionally unmapped.
+
+        // Function keys (kVK_F1..F12)
+        122 => Some(RdpScancode::standard(0x3B)), // F1
+        120 => Some(RdpScancode::standard(0x3C)), // F2
+        99 => Some(RdpScancode::standard(0x3D)),  // F3
+        118 => Some(RdpScancode::standard(0x3E)), // F4
+        96 => Some(RdpScancode::standard(0x3F)),  // F5
+        97 => Some(RdpScancode::standard(0x40)),  // F6
+        98 => Some(RdpScancode::standard(0x41)),  // F7
+        100 => Some(RdpScancode::standard(0x42)), // F8
+        101 => Some(RdpScancode::standard(0x43)), // F9
+        109 => Some(RdpScancode::standard(0x44)), // F10
+        103 => Some(RdpScancode::standard(0x57)), // F11
+        111 => Some(RdpScancode::standard(0x58)), // F12
+        // F13..F19 on full-size Apple keyboards (Set 1 0x64..0x6A).
+        105 => Some(RdpScancode::standard(0x64)), // F13
+        107 => Some(RdpScancode::standard(0x65)), // F14
+        113 => Some(RdpScancode::standard(0x66)), // F15
+        106 => Some(RdpScancode::standard(0x67)), // F16
+        64 => Some(RdpScancode::standard(0x68)),  // F17
+        79 => Some(RdpScancode::standard(0x69)),  // F18
+        80 => Some(RdpScancode::standard(0x6A)),  // F19
+
+        // Navigation cluster (extended E0 keys)
+        115 => Some(RdpScancode::extended(0x47)), // Home
+        119 => Some(RdpScancode::extended(0x4F)), // End
+        116 => Some(RdpScancode::extended(0x49)), // Page Up
+        121 => Some(RdpScancode::extended(0x51)), // Page Down
+        123 => Some(RdpScancode::extended(0x4B)), // Left
+        124 => Some(RdpScancode::extended(0x4D)), // Right
+        126 => Some(RdpScancode::extended(0x48)), // Up
+        125 => Some(RdpScancode::extended(0x50)), // Down
+        117 => Some(RdpScancode::extended(0x53)), // Forward Delete
+        // kVK_Help sits where Insert is on a PC keyboard (full-size Apple
+        // keyboards label it Help or fn).
+        114 => Some(RdpScancode::extended(0x52)), // Help → Insert
+
+        // Numeric keypad (kVK_ANSI_Keypad*)
+        82 => Some(RdpScancode::standard(0x52)), // KP 0
+        83 => Some(RdpScancode::standard(0x4F)), // KP 1
+        84 => Some(RdpScancode::standard(0x50)), // KP 2
+        85 => Some(RdpScancode::standard(0x51)), // KP 3
+        86 => Some(RdpScancode::standard(0x4B)), // KP 4
+        87 => Some(RdpScancode::standard(0x4C)), // KP 5
+        88 => Some(RdpScancode::standard(0x4D)), // KP 6
+        89 => Some(RdpScancode::standard(0x47)), // KP 7
+        91 => Some(RdpScancode::standard(0x48)), // KP 8
+        92 => Some(RdpScancode::standard(0x49)), // KP 9
+        65 => Some(RdpScancode::standard(0x53)), // KP Decimal
+        67 => Some(RdpScancode::standard(0x37)), // KP Multiply
+        69 => Some(RdpScancode::standard(0x4E)), // KP Plus
+        78 => Some(RdpScancode::standard(0x4A)), // KP Minus
+        75 => Some(RdpScancode::extended(0x35)), // KP Divide (extended)
+        76 => Some(RdpScancode::extended(0x1C)), // KP Enter (extended)
+        71 => Some(RdpScancode::standard(0x45)), // Clear → Num Lock
+        81 => Some(RdpScancode::standard(0x59)), // KP Equals
+
+        _ => None,
+    }
+}
+
 /// Scancode for Ctrl key in Ctrl+Alt+Del sequence
 pub const SCANCODE_CTRL: RdpScancode = RdpScancode::standard(0x1D);
 /// Scancode for Alt key in Ctrl+Alt+Del sequence
@@ -1013,6 +1187,131 @@ mod keyboard_tests {
         assert!(is_modifier_keyval(0xFFE9)); // Alt_L
         assert!(!is_modifier_keyval(0x61)); // 'a'
         assert!(!is_modifier_keyval(0xFFBE)); // F1
+    }
+
+    /// Issue #412: the exact keys the bug report lists must map to the AT
+    /// scancode of the physical key, so the German-layout server produces the
+    /// typed character instead of the character the evdev table produced.
+    ///
+    /// The report's symptom is that the Apple keycode was run through the evdev
+    /// table (`keycode_to_scancode`), which maps e.g. Apple 12 (`q`) to the
+    /// evdev-12 scancode 0x04 (`3`). The macOS table must instead map Apple 12
+    /// to 0x10, the physical `q` position.
+    #[test]
+    fn macos_keycodes_from_issue_412_map_to_the_right_scancode() {
+        // (Apple keycode, expected AT scancode) for the keys in the report.
+        let cases = [
+            (12u32, 0x10u16), // q
+            (13, 0x11),       // w
+            (14, 0x12),       // e
+            (15, 0x13),       // r
+            (16, 0x15),       // y (kVK_ANSI_Y, the physical Z position on QWERTZ)
+            (17, 0x14),       // t
+            (18, 0x02),       // 1
+            (19, 0x03),       // 2
+            (20, 0x04),       // 3
+            (51, 0x0E),       // Backspace
+        ];
+        for (apple, want) in cases {
+            let got = macos_keycode_to_scancode(apple)
+                .unwrap_or_else(|| panic!("Apple keycode {apple} should map"));
+            assert_eq!(
+                got,
+                RdpScancode::standard(want),
+                "Apple keycode {apple} should map to AT scancode {want:#04X}, not via evdev"
+            );
+            // And it must differ from the evdev interpretation that caused the bug.
+            assert_ne!(
+                Some(got),
+                keycode_to_scancode(apple),
+                "Apple keycode {apple} must NOT resolve to the evdev scancode"
+            );
+        }
+    }
+
+    #[test]
+    fn macos_keycode_letters_match_the_evdev_physical_positions() {
+        // The macOS table and the evdev table must agree on the *scancode* for
+        // the same physical key, even though they are keyed by different
+        // keycode namespaces. 'a' is AT 0x1E in both.
+        assert_eq!(
+            macos_keycode_to_scancode(0),
+            Some(RdpScancode::standard(0x1E))
+        ); // a
+        assert_eq!(
+            macos_keycode_to_scancode(6),
+            Some(RdpScancode::standard(0x2C))
+        ); // z
+    }
+
+    #[test]
+    fn macos_keycode_navigation_and_modifiers_are_extended() {
+        // Arrow keys, right-hand Control and Command carry the E0 prefix.
+        assert!(macos_keycode_to_scancode(123).unwrap().extended); // Left
+        assert!(macos_keycode_to_scancode(124).unwrap().extended); // Right
+        assert!(macos_keycode_to_scancode(126).unwrap().extended); // Up
+        assert!(macos_keycode_to_scancode(125).unwrap().extended); // Down
+        assert!(macos_keycode_to_scancode(62).unwrap().extended); // Right Control
+        assert!(macos_keycode_to_scancode(55).unwrap().extended); // Command (left) → Super
+        // Left-hand modifiers are not extended.
+        assert!(!macos_keycode_to_scancode(59).unwrap().extended); // Left Control
+        assert!(!macos_keycode_to_scancode(56).unwrap().extended); // Left Shift
+    }
+
+    #[test]
+    fn macos_keycode_return_tab_space_escape() {
+        assert_eq!(
+            macos_keycode_to_scancode(36),
+            Some(RdpScancode::standard(0x1C))
+        ); // Return
+        assert_eq!(
+            macos_keycode_to_scancode(48),
+            Some(RdpScancode::standard(0x0F))
+        ); // Tab
+        assert_eq!(
+            macos_keycode_to_scancode(49),
+            Some(RdpScancode::standard(0x39))
+        ); // Space
+        assert_eq!(
+            macos_keycode_to_scancode(53),
+            Some(RdpScancode::standard(0x01))
+        ); // Escape
+    }
+
+    #[test]
+    fn macos_keycode_full_size_keyboard_extras() {
+        // Help sits on the PC Insert position and is an extended key.
+        assert_eq!(
+            macos_keycode_to_scancode(114),
+            Some(RdpScancode::extended(0x52))
+        );
+        // Keypad Equals and F13..F19.
+        assert_eq!(
+            macos_keycode_to_scancode(81),
+            Some(RdpScancode::standard(0x59))
+        );
+        for (apple, want) in [
+            (105u32, 0x64u16),
+            (107, 0x65),
+            (113, 0x66),
+            (106, 0x67),
+            (64, 0x68),
+            (79, 0x69),
+            (80, 0x6A),
+        ] {
+            assert_eq!(
+                macos_keycode_to_scancode(apple),
+                Some(RdpScancode::standard(want)),
+                "Apple keycode {apple}"
+            );
+        }
+    }
+
+    #[test]
+    fn macos_keycode_unmapped_returns_none() {
+        // kVK_Function (fn, 63) and an out-of-range code have no AT scancode.
+        assert_eq!(macos_keycode_to_scancode(63), None);
+        assert_eq!(macos_keycode_to_scancode(9999), None);
     }
 }
 

@@ -666,7 +666,11 @@ fn start_embedded_rdp_session(
             if was_connected_clone.get() {
                 // Was connected before — show disconnected tab for reconnect
                 notebook_for_state.mark_tab_disconnected(session_id);
-                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+                sidebar_for_state.decrement_session_count(
+                    &connection_id.to_string(),
+                    session_id,
+                    false,
+                );
             }
             // Don't decrement/clear when never connected — the Error handler
             // already set "failed" status and closed the tab.
@@ -681,7 +685,7 @@ fn start_embedded_rdp_session(
         crate::embedded_rdp::RdpConnectionState::Connected => {
             was_connected_clone.set(true);
             notebook_for_state.mark_tab_connected(session_id);
-            sidebar_for_state.increment_session_count(&connection_id.to_string());
+            sidebar_for_state.increment_session_count(&connection_id.to_string(), session_id);
         }
         crate::embedded_rdp::RdpConnectionState::Error => {
             // Record connection failure in history
@@ -1235,7 +1239,7 @@ pub fn start_vnc_with_password_dialog_observed(
     }
 
     // Get connection info for dialog
-    let (conn_name, lookup_key) = {
+    let (conn_name, lookup_key, conn_kdbx_path) = {
         let state_ref = state.borrow();
         if let Some(conn) = state_ref.get_connection(connection_id) {
             // Build hierarchical entry path using KeePassHierarchy
@@ -1247,8 +1251,11 @@ pub fn start_vnc_with_password_dialog_observed(
             // Strip RustConn/ prefix since get_password_from_kdbx_with_key adds it back
             let entry_name = entry_path.strip_prefix("RustConn/").unwrap_or(&entry_path);
             let key = format!("{entry_name} (vnc)");
+            // The database this connection resolves to (issue #411).
+            let kdbx_path =
+                crate::vault_ops::kdbx_path_for_connection(state_ref.settings(), conn, &groups);
 
-            (conn.name.clone(), key)
+            (conn.name.clone(), key, kdbx_path)
         } else {
             return;
         }
@@ -1270,7 +1277,7 @@ pub fn start_vnc_with_password_dialog_observed(
                 rustconn_core::config::SecretBackendType::KeePassXc
                     | rustconn_core::config::SecretBackendType::KdbxFile
             )
-            && let Some(kdbx_path) = settings.secrets.kdbx_path.clone()
+            && let Some(kdbx_path) = conn_kdbx_path
         {
             let db_password = settings.secrets.kdbx_password.clone();
             let key_file = settings.secrets.kdbx_key_file.clone();
@@ -1640,7 +1647,11 @@ fn start_vnc_session_internal(
             if vnc_state == crate::session::SessionState::Disconnected {
                 notebook_for_state.stop_recording(session_id);
                 notebook_for_state.mark_tab_disconnected(session_id);
-                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+                sidebar_for_state.decrement_session_count(
+                    &connection_id.to_string(),
+                    session_id,
+                    false,
+                );
                 // Record connection end in history
                 if let Some(info) = notebook_for_state.get_session_info(session_id)
                     && let Some(entry_id) = info.history_entry_id
@@ -1650,7 +1661,7 @@ fn start_vnc_session_internal(
                 }
             } else if vnc_state == crate::session::SessionState::Connected {
                 notebook_for_state.mark_tab_connected(session_id);
-                sidebar_for_state.increment_session_count(&connection_id.to_string());
+                sidebar_for_state.increment_session_count(&connection_id.to_string(), session_id);
             }
         });
 

@@ -138,6 +138,8 @@ pub(super) struct UpdateParams<'a> {
     pub baud_rate: Option<u32>,
     pub icon: Option<&'a str>,
     pub ssh_agent_socket: Option<&'a str>,
+    /// Empty clears the override.
+    pub kdbx_path: Option<&'a str>,
     pub provider: Option<&'a str>,
     pub hoop_connection_name: Option<&'a str>,
     pub hoop_gateway_url: Option<&'a str>,
@@ -356,6 +358,14 @@ pub(super) fn cmd_update(
             if params.baud_rate.is_some() {
                 tracing::warn!("--baud-rate is only applicable to Serial connections");
             }
+        }
+    }
+
+    if let Some(value) = params.kdbx_path {
+        connection.kdbx_path_override = crate::util::kdbx_path_arg(value)?;
+        // The GUI keeps the override only for a Vault password source.
+        if connection.kdbx_path_override.is_some() {
+            connection.password_source = rustconn_core::models::PasswordSource::Vault;
         }
     }
 

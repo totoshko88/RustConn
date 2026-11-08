@@ -450,7 +450,11 @@ pub fn show_edit_group_dialog(
             backend_type,
             rustconn_core::config::SecretBackendType::KdbxFile
         ) {
-            let Some(kdbx_path) = settings.secrets.kdbx_path.clone() else {
+            // The database the saved group resolves to (issue #411): where its
+            // credential was written.
+            let Some(kdbx_path) =
+                crate::vault_ops::kdbx_path_for_group(&settings, group_id_for_load, &groups)
+            else {
                 alert::show_validation_error(
                     &window_clone,
                     &i18n("KeePass database not configured"),
@@ -554,6 +558,41 @@ pub fn show_edit_group_dialog(
     credentials_expander.add_row(&domain_row);
 
     identity_content.append(&credentials_group);
+
+    // === KeePass database override (issue #411) ===
+    // Deliberately outside the Default Credentials expander: a group can pick a
+    // database for its connections without also setting inherited credentials.
+    let kdbx_group = adw::PreferencesGroup::builder()
+        .description(i18n(
+            "Leave empty to use the database of the enclosing group, or the global one.",
+        ))
+        .build();
+    let kdbx_row = adw::EntryRow::builder()
+        .title(i18n("KeePass Database"))
+        .text(
+            group
+                .kdbx_path_override
+                .as_ref()
+                .map_or_else(String::new, |p| p.to_string_lossy().into_owned()),
+        )
+        .build();
+    crate::dialogs::widgets::add_kdbx_browse_suffix(&kdbx_row);
+    kdbx_group.add(&kdbx_row);
+    // Only meaningful with the KeePass backend; hidden otherwise, like the
+    // connection editor's row. A hidden row keeps its saved value.
+    {
+        let state_ref = state.borrow();
+        let secrets = &state_ref.settings().secrets;
+        kdbx_group.set_visible(
+            secrets.kdbx_enabled
+                && matches!(
+                    secrets.preferred_backend,
+                    rustconn_core::config::SecretBackendType::KeePassXc
+                        | rustconn_core::config::SecretBackendType::KdbxFile
+                ),
+        );
+    }
+    identity_content.append(&kdbx_group);
 
     // === SSH Settings Section (progressive disclosure per GNOME HIG) ===
     let ssh_settings_group = adw::PreferencesGroup::new();
@@ -1581,6 +1620,7 @@ pub fn show_edit_group_dialog(
     let password_entry_clone = password_entry.clone();
     let password_source_clone = password_source_dropdown.clone();
     let domain_row_clone = domain_row;
+    let kdbx_row_clone = kdbx_row;
     let icon_row_clone = icon_row;
     let parent_row_clone = parent_row;
     let description_buffer = description_view.buffer();
@@ -1710,6 +1750,13 @@ pub fn show_edit_group_dialog(
                     updated.domain = None;
                     updated.password_source = None;
                 }
+
+                // KeePass database override (issue #411): independent of the
+                // credentials switch above. Empty clears it.
+                let kdbx_text = kdbx_row_clone.text();
+                let kdbx_text = kdbx_text.trim();
+                updated.kdbx_path_override =
+                    (!kdbx_text.is_empty()).then(|| std::path::PathBuf::from(kdbx_text));
 
                 // Update icon
                 let icon_text = icon_row_clone.text().trim().to_string();
@@ -1917,6 +1964,8 @@ pub fn show_edit_group_dialog(
                             // Save to vault using configured backend
                             crate::state::save_group_password_to_vault(
                                 &settings,
+                                &groups,
+                                g.id,
                                 &group_path,
                                 &lookup_key,
                                 &username,

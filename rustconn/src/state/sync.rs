@@ -607,6 +607,7 @@ impl AppState {
                             merged.ssh_key_path = local.ssh_key_path.clone();
                             merged.ssh_jump_host_id = local.ssh_jump_host_id;
                             merged.ssh_agent_socket = local.ssh_agent_socket.clone();
+                            merged.kdbx_path_override = local.kdbx_path_override.clone();
                             merged.sync_mode = local.sync_mode;
                             merged.sync_file = local.sync_file.clone();
                             merged.last_synced_at = local.last_synced_at;
@@ -659,9 +660,15 @@ impl AppState {
                                 },
                             );
                         }
+                        // The remote copy has the device-local KeePass database
+                        // path stripped (issue #411); keep this device's own.
+                        let mut merged_conn = c.clone();
+                        if let Some(local) = self.connection_manager.get_connection(action.id) {
+                            merged_conn.kdbx_path_override = local.kdbx_path_override.clone();
+                        }
                         match self
                             .connection_manager
-                            .update_connection(action.id, c.clone())
+                            .update_connection(action.id, merged_conn)
                         {
                             Ok(()) => report.updated += 1,
                             Err(e) => {
