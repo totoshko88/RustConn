@@ -874,7 +874,7 @@ impl MainWindow {
                         state_mut.record_connection_end(entry_id);
                     }
                 // Decrement session count - status changes only if no other sessions active
-                sidebar_clone.decrement_session_count(&connection_id_str, false);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, false);
                 return;
             }
 
@@ -885,7 +885,7 @@ impl MainWindow {
             // `connect_shutdown`, which runs from the `app.quit()` that follows
             // the teardown, so every guard asking the question got `false`.
             if crate::app::is_shutting_down() {
-                sidebar_clone.decrement_session_count(&connection_id_str, false);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, false);
                 return;
             }
 
@@ -950,7 +950,7 @@ impl MainWindow {
                         return;
                     }
                     nb.close_tab(session_id);
-                    sb.decrement_session_count(&cid, false);
+                    sb.decrement_session_count(&cid, session_id, false);
                 });
                 return;
             }
@@ -968,7 +968,7 @@ impl MainWindow {
             glib::idle_add_local_once(move || {
             // Guard: the tab may have been closed before this idle ran.
             if notebook_clone.get_session_info(session_id).is_none() {
-                sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+                sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
                 return;
             }
 
@@ -1069,7 +1069,7 @@ impl MainWindow {
                 // If retry is explicitly disabled, skip auto-reconnect
                 if !retry_config.enabled {
                     drop(state_ref);
-                    sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+                    sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
                     return;
                 }
 
@@ -1177,7 +1177,7 @@ impl MainWindow {
             }
 
             // Decrement session count - status changes only if no other sessions active
-            sidebar_clone.decrement_session_count(&connection_id_str, is_failure);
+            sidebar_clone.decrement_session_count(&connection_id_str, session_id, is_failure);
             });
         });
     }

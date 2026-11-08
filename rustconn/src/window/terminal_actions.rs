@@ -178,7 +178,7 @@ impl MainWindow {
                 notebook_clone.close_tab(session_id);
                 // Decrement session count in sidebar if we have a connection ID
                 if let Some(conn_id) = connection_id {
-                    sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                    sidebar_clone.decrement_session_count(&conn_id.to_string(), session_id, false);
                 }
 
                 // After closing, the selected-page handler will take care of
@@ -246,7 +246,7 @@ impl MainWindow {
 
                 // Decrement session count in sidebar if we have a connection ID
                 if let Some(conn_id) = connection_id {
-                    sidebar_clone.decrement_session_count(&conn_id.to_string(), false);
+                    sidebar_clone.decrement_session_count(&conn_id.to_string(), session_id, false);
                 }
 
                 // Hide split view if no sessions remain in panes

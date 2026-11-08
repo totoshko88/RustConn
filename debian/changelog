@@ -1,3 +1,17 @@
+rustconn (0.24.8-1) unstable; urgency=medium
+  * Version bump to 0.24.8
+  * Added: Dynamic Folder scripts can set the full connection through a
+    protocol_config object, e.g. an SSH startup_command (#410)
+  * Added: a KeePass database per connection or group, used by every
+    KeePass read and write for that connection (#411)
+  * Fixed: embedded RDP on macOS sent the wrong keys; Apple keycodes are
+    now mapped to RDP scancodes directly (#412)
+  * Fixed: the tray shows the real number of open sessions, and a failed
+    connection no longer logs a false terminate warning
+  * Changed: code scanning moved to an in-repo CodeQL configuration
+  * Dependencies: arc-swap, cc, flate2, inout, libz-sys, lzma-rust2,
+    serde_spanned, smallvec, toml, toml_datetime, toml_edit, uuid, zip
+ -- Anton Isaiev <totoshko88@gmail.com>  Sat, 07 Nov 2026 22:00:00 +0200
 rustconn (0.24.7-1) unstable; urgency=medium
 
   * Version bump to 0.24.7

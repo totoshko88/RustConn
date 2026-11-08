@@ -615,7 +615,10 @@ fn cmd_secret_get(
                     kdbx_path.display(),
                     connection.name
                 ))),
-                Err(e) => Err(CliError::Secret(format!("KeePass error: {e}"))),
+                Err(e) => Err(CliError::Secret(format!(
+                    "KeePass error in '{}': {e}",
+                    kdbx_path.display()
+                ))),
             }
         }
         SecretBackendType::Bitwarden => {
@@ -899,7 +902,9 @@ pub(super) fn store_connection_credentials_in_backend(
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
                 settings.secrets.kdbx_read_only,
             )
-            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
+            .map_err(|e| {
+                CliError::Secret(format!("KeePass error in '{}': {e}", kdbx_path.display()))
+            })?;
 
             println!(
                 "Stored credentials for '{}' in KeePass database '{}' (user: {})",
@@ -1303,7 +1308,9 @@ fn cmd_secret_delete(
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
                 settings.secrets.kdbx_read_only,
             )
-            .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
+            .map_err(|e| {
+                CliError::Secret(format!("KeePass error in '{}': {e}", kdbx_path.display()))
+            })?;
 
             println!(
                 "Deleted credentials for '{}' from KeePass database '{}'",

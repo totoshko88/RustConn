@@ -766,7 +766,11 @@ impl MainWindow {
             // Drop the closed session from the broadcast set so a reused UUID
             // can never inherit its membership, and the wired set stays bounded.
             group_broadcast_for_close.forget(session_id);
-            sidebar_for_close.decrement_session_count(&connection_id.to_string(), false);
+            sidebar_for_close.decrement_session_count(
+                &connection_id.to_string(),
+                session_id,
+                false,
+            );
 
             // Read the setting into a local FIRST — no borrow held across the GTK
             // call (NFR3). At this point the closing session is STILL in the
@@ -1454,21 +1458,27 @@ impl MainWindow {
         // 2 s poll timer (inside the registry) reaps closed viewers.
         let external_sessions = {
             let sidebar_registered = sidebar.clone();
-            let on_registered: Box<dyn Fn(Uuid)> = Box::new(move |connection_id| {
-                // R2.1: show the green "connected" status via the session count.
-                sidebar_registered.increment_session_count(&connection_id.to_string());
-                // R2.2: show the `window-new-symbolic` emblem alongside the
-                // connected icon. `record_connection_start` (R3.1) is done at the
-                // launch site (task 6); its entry id is passed into `register`.
-                sidebar_registered.set_external_session(&connection_id.to_string(), true);
-            });
+            let on_registered: Box<dyn Fn(Uuid, Uuid)> =
+                Box::new(move |session_id, connection_id| {
+                    // R2.1: show the green "connected" status via the session count.
+                    sidebar_registered
+                        .increment_session_count(&connection_id.to_string(), session_id);
+                    // R2.2: show the `window-new-symbolic` emblem alongside the
+                    // connected icon. `record_connection_start` (R3.1) is done at the
+                    // launch site (task 6); its entry id is passed into `register`.
+                    sidebar_registered.set_external_session(&connection_id.to_string(), true);
+                });
 
             let sidebar_ended = sidebar.clone();
             let state_ended = state.clone();
-            let on_ended: Box<dyn Fn(Uuid, Option<Uuid>)> = Box::new(
-                move |connection_id, history_entry_id| {
+            let on_ended: Box<dyn Fn(Uuid, Uuid, Option<Uuid>)> = Box::new(
+                move |session_id, connection_id, history_entry_id| {
                     // R4.3/4.5: clear the connected state when the viewer exits.
-                    sidebar_ended.decrement_session_count(&connection_id.to_string(), false);
+                    sidebar_ended.decrement_session_count(
+                        &connection_id.to_string(),
+                        session_id,
+                        false,
+                    );
                     // R3.2/4.4: record the end exactly once; skip if there is no
                     // start entry and log a warning (R3.5). A failed borrow is
                     // logged and does not interrupt the session (R3.4).
@@ -2977,7 +2987,7 @@ impl MainWindow {
                     session_id,
                     protocols::StatusClient::Other,
                     move || {
-                        sidebar.increment_session_count(&connection_id.to_string());
+                        sidebar.increment_session_count(&connection_id.to_string(), session_id);
                         tracing::info!(
                             protocol = "zerotrust",
                             "Terminal connection detected as established"

@@ -652,7 +652,11 @@ fn start_quick_rdp(
         crate::embedded_rdp::RdpConnectionState::Disconnected => {
             notebook_for_state.stop_recording(session_id);
             notebook_for_state.mark_tab_disconnected(session_id);
-            sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+            sidebar_for_state.decrement_session_count(
+                &connection_id.to_string(),
+                session_id,
+                false,
+            );
         }
         crate::embedded_rdp::RdpConnectionState::Connected => {
             notebook_for_state.mark_tab_connected(session_id);
@@ -712,7 +716,11 @@ fn start_quick_vnc(
             if vnc_state == crate::session::SessionState::Disconnected {
                 notebook_for_state.stop_recording(session_id);
                 notebook_for_state.mark_tab_disconnected(session_id);
-                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+                sidebar_for_state.decrement_session_count(
+                    &connection_id.to_string(),
+                    session_id,
+                    false,
+                );
             } else if vnc_state == crate::session::SessionState::Connected {
                 notebook_for_state.mark_tab_connected(session_id);
             }

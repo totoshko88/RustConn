@@ -1198,8 +1198,8 @@ impl AppState {
         // `RUST_LOG=rustconn::perf=info`. Placed after the item declarations
         // above so it is the function's first statement (clippy
         // `items_after_statements`).
-        let _perf =
-            rustconn_core::tracing::perf::PerfSpan::new("ssh.connect.resolve", "credentials");
+        // Not `ssh.`: every protocol (RDP, VNC, SPICE, …) resolves through here.
+        let _perf = rustconn_core::tracing::perf::PerfSpan::new("connect.resolve", "credentials");
 
         // Captured before the context moves into the final attempt.
         let conn_username = ctx.connection.username.clone();
@@ -1437,7 +1437,10 @@ impl AppState {
             let db_password = kdbx_password.as_ref();
             let key_file = kdbx_key_file.as_deref();
 
+            // The database is named so a per-connection or per-group override
+            // (#411) can be told apart from the global one in a debug log.
             tracing::debug!(
+                database = %kdbx_path.display(),
                 "[resolve_credentials_blocking] KeePass lookup: key='{}', has_password={}, has_key_file={}",
                 lookup_key,
                 db_password.is_some(),

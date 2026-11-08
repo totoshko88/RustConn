@@ -1145,7 +1145,7 @@ impl ConnectionSidebar {
                     id.to_string(),
                     SessionStatusInfo {
                         status: status.to_string(),
-                        active_count: 0,
+                        sessions: std::collections::HashSet::new(),
                     },
                 );
             }
@@ -1155,19 +1155,22 @@ impl ConnectionSidebar {
         Self::update_item_status_recursive(self.store.upcast_ref::<gio::ListModel>(), id, status);
     }
 
-    /// Increments the session count for a connection and sets status to connected
+    /// Records `session` as open for connection `id` and sets status to connected
     ///
-    /// Call this when opening a new session for a connection.
-    pub fn increment_session_count(&self, id: &str) {
+    /// Call this when a session for the connection is established. Idempotent:
+    /// a second report for the same session (a reconnect in the same tab)
+    /// does not count it twice.
+    pub fn increment_session_count(&self, id: &str, session: Uuid) {
         let status = {
             let mut statuses = self.connection_statuses.borrow_mut();
             let info = statuses.entry(id.to_string()).or_default();
-            info.active_count += 1;
+            info.sessions.insert(session);
             info.status = "connected".to_string();
             tracing::debug!(
-                "[Sidebar] increment_session_count: id={}, count={}, status={}",
+                "[Sidebar] increment_session_count: id={}, session={}, count={}, status={}",
                 id,
-                info.active_count,
+                session,
+                info.sessions.len(),
                 info.status
             );
             info.status.clone()
@@ -1186,24 +1189,28 @@ impl ConnectionSidebar {
         }
     }
 
-    /// Decrements the session count for a connection
+    /// Records `session` of connection `id` as ended
     ///
-    /// Call this when closing a session. Status is cleared when the last
-    /// session is closed (active_count reaches 0).
+    /// Call this when a session closes or disconnects. Status is cleared (or
+    /// set to failed) once no session of the connection remains. Idempotent:
+    /// a session reported as ended twice is removed once, so a duplicate report
+    /// cannot end a different session of the same connection.
     ///
-    /// Returns the new status after decrement.
-    pub fn decrement_session_count(&self, id: &str, failed: bool) -> String {
+    /// Returns the new status.
+    pub fn decrement_session_count(&self, id: &str, session: Uuid, failed: bool) -> String {
         let status = {
             let mut statuses = self.connection_statuses.borrow_mut();
             if let Some(info) = statuses.get_mut(id) {
-                info.active_count = info.active_count.saturating_sub(1);
+                let removed = info.sessions.remove(&session);
                 tracing::debug!(
-                    "[Sidebar] decrement_session_count: id={}, new_count={}, failed={}",
+                    "[Sidebar] decrement_session_count: id={}, session={}, removed={}, remaining={}, failed={}",
                     id,
-                    info.active_count,
+                    session,
+                    removed,
+                    info.sessions.len(),
                     failed,
                 );
-                if info.active_count == 0 {
+                if info.sessions.is_empty() {
                     if failed {
                         // Mark as failed when last session exits with error
                         info.status = "failed".to_string();

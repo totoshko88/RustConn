@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.7
+Version:        0.24.8
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,14 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Sat Nov 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8-0
+- Version bump to 0.24.8
+- Added: Dynamic Folder protocol_config for the full connection (#410)
+- Added: KeePass database per connection or group (#411)
+- Fixed: embedded RDP on macOS maps Apple keycodes to scancodes (#412)
+- Fixed: tray shows the real open-session count
+- Changed: code scanning moved to an in-repo CodeQL configuration
+- Dependencies: 13 semver-compatible crate updates (zip 9.4.2, uuid 1.29.1)
 * Fri Nov 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.7-0
 - Version bump to 0.24.7
 - Added: kubeconfig context picker in the Kubernetes editor

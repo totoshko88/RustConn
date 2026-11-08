@@ -194,8 +194,11 @@ pub fn show_sessions_manager(
 
                         // Decrement session count
                         if let Some(info) = notebook_inner.get_session_info(id) {
-                            sidebar_inner
-                                .decrement_session_count(&info.connection_id.to_string(), false);
+                            sidebar_inner.decrement_session_count(
+                                &info.connection_id.to_string(),
+                                id,
+                                false,
+                            );
                         }
 
                         // Close the tab

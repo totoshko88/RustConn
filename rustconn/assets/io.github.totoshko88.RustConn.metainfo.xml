@@ -140,6 +140,18 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.8" date="2026-11-07">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.8</url>
+      <description>
+        <p>Version 0.24.8 - a KeePass database per connection, richer Dynamic Folders, and a macOS keyboard fix:</p>
+        <ul>
+          <li>With the KeePass backend, a connection or a group can use its own .kdbx file instead of the global one, so personal and corporate vaults can live side by side (#411).</li>
+          <li>Dynamic Folder scripts can define the full connection, for example an SSH startup command or an authentication method (#410).</li>
+          <li>The embedded RDP client on macOS now sends the right keys on non-US layouts such as German QWERTZ (#412).</li>
+          <li>The tray icon shows the real number of open sessions.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.7" date="2026-11-06">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.7</url>
       <description>

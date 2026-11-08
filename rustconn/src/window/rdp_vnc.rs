@@ -666,7 +666,11 @@ fn start_embedded_rdp_session(
             if was_connected_clone.get() {
                 // Was connected before — show disconnected tab for reconnect
                 notebook_for_state.mark_tab_disconnected(session_id);
-                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+                sidebar_for_state.decrement_session_count(
+                    &connection_id.to_string(),
+                    session_id,
+                    false,
+                );
             }
             // Don't decrement/clear when never connected — the Error handler
             // already set "failed" status and closed the tab.
@@ -681,7 +685,7 @@ fn start_embedded_rdp_session(
         crate::embedded_rdp::RdpConnectionState::Connected => {
             was_connected_clone.set(true);
             notebook_for_state.mark_tab_connected(session_id);
-            sidebar_for_state.increment_session_count(&connection_id.to_string());
+            sidebar_for_state.increment_session_count(&connection_id.to_string(), session_id);
         }
         crate::embedded_rdp::RdpConnectionState::Error => {
             // Record connection failure in history
@@ -1643,7 +1647,11 @@ fn start_vnc_session_internal(
             if vnc_state == crate::session::SessionState::Disconnected {
                 notebook_for_state.stop_recording(session_id);
                 notebook_for_state.mark_tab_disconnected(session_id);
-                sidebar_for_state.decrement_session_count(&connection_id.to_string(), false);
+                sidebar_for_state.decrement_session_count(
+                    &connection_id.to_string(),
+                    session_id,
+                    false,
+                );
                 // Record connection end in history
                 if let Some(info) = notebook_for_state.get_session_info(session_id)
                     && let Some(entry_id) = info.history_entry_id
@@ -1653,7 +1661,7 @@ fn start_vnc_session_internal(
                 }
             } else if vnc_state == crate::session::SessionState::Connected {
                 notebook_for_state.mark_tab_connected(session_id);
-                sidebar_for_state.increment_session_count(&connection_id.to_string());
+                sidebar_for_state.increment_session_count(&connection_id.to_string(), session_id);
             }
         });
 
