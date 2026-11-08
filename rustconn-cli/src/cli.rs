@@ -139,6 +139,12 @@ pub enum Commands {
         #[arg(long, value_name = "PATH")]
         ssh_agent_socket: Option<String>,
 
+        /// KeePass database (.kdbx) for this connection's password, instead of
+        /// its group's or the global one (local-only, never synced). With
+        /// --password-stdin the password is stored in this database
+        #[arg(long, value_name = "PATH")]
+        kdbx_path: Option<PathBuf>,
+
         /// Zero Trust provider (for zerotrust/zt protocol)
         #[arg(
             long,
@@ -693,6 +699,12 @@ pub enum Commands {
         /// Custom SSH agent socket path (overrides global and auto-detected socket)
         #[arg(long, value_name = "PATH")]
         ssh_agent_socket: Option<String>,
+
+        /// KeePass database (.kdbx) for this connection's password, instead of
+        /// its group's or the global one (local-only, never synced). An empty
+        /// string clears it, so the connection inherits again
+        #[arg(long, value_name = "PATH")]
+        kdbx_path: Option<String>,
 
         /// Zero Trust provider (for zerotrust/zt protocol)
         #[arg(
@@ -1676,6 +1688,12 @@ pub enum GroupCommands {
         /// SSH agent socket override for inheritance (local-only)
         #[arg(long)]
         ssh_agent_socket: Option<String>,
+
+        /// KeePass database (.kdbx) for the vault passwords of this group and
+        /// the connections under it that set none of their own (local-only,
+        /// never synced). An empty string clears it
+        #[arg(long, value_name = "PATH")]
+        kdbx_path: Option<String>,
 
         /// Add an expect rule (JSON: {"pattern":"...","response":"...","priority":0,"timeout_ms":0,"one_shot":true})
         /// Can be specified multiple times

@@ -123,6 +123,31 @@ pub fn parse_baud_rate(
     }
 }
 
+/// A `--kdbx-path` value made absolute against the current directory, so the
+/// stored override names the same file when the GUI reads it from elsewhere.
+///
+/// # Errors
+///
+/// Returns [`crate::error::CliError::Io`] when the current directory cannot be
+/// read.
+pub fn absolute_kdbx_path(path: &Path) -> Result<std::path::PathBuf, crate::error::CliError> {
+    Ok(std::path::absolute(path)?)
+}
+
+/// A clearable `--kdbx-path` value: an empty or blank string is `None`
+/// (inherit again), anything else is made absolute.
+///
+/// # Errors
+///
+/// As [`absolute_kdbx_path`].
+pub fn kdbx_path_arg(value: &str) -> Result<Option<std::path::PathBuf>, crate::error::CliError> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+    absolute_kdbx_path(Path::new(value)).map(Some)
+}
+
 /// Parse a key=value pair for variable substitution
 pub fn parse_key_val(s: &str) -> Result<(String, String), String> {
     let pos = s

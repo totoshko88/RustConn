@@ -54,6 +54,7 @@ pub(super) fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Re
             ssh_auth_method,
             ssh_proxy_jump,
             ssh_agent_socket,
+            kdbx_path,
             add_expect_rule,
             clear_expect_rules,
             add_post_login_script,
@@ -72,6 +73,7 @@ pub(super) fn cmd_group(config_path: Option<&Path>, subcmd: GroupCommands) -> Re
                 ssh_auth_method: ssh_auth_method.as_deref(),
                 ssh_proxy_jump: ssh_proxy_jump.as_deref(),
                 ssh_agent_socket: ssh_agent_socket.as_deref(),
+                kdbx_path: kdbx_path.as_deref(),
                 add_expect_rules: &add_expect_rule,
                 clear_expect_rules,
                 add_post_login_scripts: &add_post_login_script,
@@ -223,6 +225,7 @@ fn cmd_group_show(
                 "ssh_key_path": group.ssh_key_path.as_ref().map(|p| p.display().to_string()),
                 "ssh_proxy_jump": group.ssh_proxy_jump,
                 "ssh_agent_socket": group.ssh_agent_socket,
+                "kdbx_path": group.kdbx_path_override.as_ref().map(|p| p.display().to_string()),
                 "expect_rules_count": group.expect_rules.len(),
                 "post_login_scripts_count": group.post_login_scripts.len(),
                 "username_prompt": group.username_prompt,
@@ -292,6 +295,9 @@ fn cmd_group_show(
             }
             if let Some(ref agent_socket) = group.ssh_agent_socket {
                 println!("  SSH Agent Socket: {agent_socket}");
+            }
+            if let Some(ref kdbx) = group.kdbx_path_override {
+                println!("  KeePass Database: {}", kdbx.display());
             }
 
             // Automation fields
@@ -537,6 +543,8 @@ struct GroupEditFields<'a> {
     ssh_auth_method: Option<&'a str>,
     ssh_proxy_jump: Option<&'a str>,
     ssh_agent_socket: Option<&'a str>,
+    /// KeePass database override (issue #411); empty clears it.
+    kdbx_path: Option<&'a str>,
     add_expect_rules: &'a [String],
     clear_expect_rules: bool,
     add_post_login_scripts: &'a [String],
@@ -558,6 +566,7 @@ impl GroupEditFields<'_> {
             && self.ssh_auth_method.is_none()
             && self.ssh_proxy_jump.is_none()
             && self.ssh_agent_socket.is_none()
+            && self.kdbx_path.is_none()
             && self.add_expect_rules.is_empty()
             && !self.clear_expect_rules
             && self.add_post_login_scripts.is_empty()
@@ -581,7 +590,7 @@ fn cmd_group_edit(
         return Err(CliError::Group(
             "No fields to update. Use --new-name, --parent, --description, --icon, \
              --ssh-key-path, --ssh-auth-method, --ssh-proxy-jump, --ssh-agent-socket, \
-             --add-expect-rule, --clear-expect-rules, --add-post-login-script, \
+             --kdbx-path, --add-expect-rule, --clear-expect-rules, --add-post-login-script, \
              --clear-post-login-scripts, --username-prompt or --password-prompt"
                 .to_string(),
         ));
@@ -596,6 +605,7 @@ fn cmd_group_edit(
         ssh_auth_method,
         ssh_proxy_jump,
         ssh_agent_socket,
+        kdbx_path,
         add_expect_rules,
         clear_expect_rules,
         add_post_login_scripts,
@@ -671,6 +681,13 @@ fn cmd_group_edit(
             group.ssh_agent_socket = Some(socket.to_string());
             updated.push(format!("ssh_agent_socket = {socket}"));
         }
+    }
+    if let Some(value) = kdbx_path {
+        group.kdbx_path_override = crate::util::kdbx_path_arg(value)?;
+        updated.push(group.kdbx_path_override.as_ref().map_or_else(
+            || "kdbx_path cleared".to_string(),
+            |p| format!("kdbx_path = {}", p.display()),
+        ));
     }
 
     // Handle expect rules

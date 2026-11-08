@@ -2655,6 +2655,7 @@ Things to know:
 - The setting applies when the KeePass backend is active; with any other backend the **KeePass Database** rows are hidden and have no effect.
 - Passwords you save, load, test, copy or delete for a connection go to the database it resolves to, and a group's own password to the group's database.
 - Moving a connection (or a group) so that it resolves to a **different** database does not carry the stored password across files: the entry stays in the old database and you enter the password again. A rename or move within the same database still moves the entry.
+- **From the command line:** `rustconn-cli add … --kdbx-path FILE`, `rustconn-cli update NAME --kdbx-path FILE` and `rustconn-cli group edit NAME --kdbx-path FILE` set the same field (an empty value clears it), and `rustconn-cli secret get/set/delete` use the database the connection resolves to. See [CLI Reference](CLI_REFERENCE.md).
 - A backend-to-backend credential transfer (Settings → Secrets) uses the global database only.
 
 **KeePass Hierarchy:**

@@ -36,6 +36,7 @@ pub(super) struct AddParams<'a> {
     pub baud_rate: Option<u32>,
     pub icon: Option<&'a str>,
     pub ssh_agent_socket: Option<&'a str>,
+    pub kdbx_path: Option<&'a Path>,
     pub provider: Option<&'a str>,
     pub hoop_connection_name: Option<&'a str>,
     pub hoop_gateway_url: Option<&'a str>,
@@ -206,6 +207,12 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
 
     if let Some(icon) = params.icon {
         connection.icon = Some(icon.to_string());
+    }
+
+    if let Some(path) = params.kdbx_path {
+        connection.kdbx_path_override = Some(crate::util::absolute_kdbx_path(path)?);
+        // The GUI keeps the override only for a Vault password source.
+        connection.password_source = rustconn_core::models::PasswordSource::Vault;
     }
 
     // Apply SSH agent socket for SSH/SFTP connections
@@ -705,7 +712,7 @@ fn store_password_from_stdin(
         .map_err(|e| CliError::Config(format!("Failed to load settings: {e}")))?;
 
     let backend_type = crate::commands::secret::resolve_backend_type(None, &settings)?;
-    let (keys, keepass_key) =
+    let (keys, keepass) =
         crate::commands::secret::vault_keys_and_keepass_key(connection, &groups, backend_type);
 
     let line = {
@@ -726,7 +733,7 @@ fn store_password_from_stdin(
         &settings,
         backend_type,
         &keys,
-        &keepass_key,
+        &keepass,
         connection,
         &username_value,
         password_value,

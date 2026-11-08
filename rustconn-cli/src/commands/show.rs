@@ -78,6 +78,7 @@ fn print_json(
         "updated_at": connection.updated_at.to_rfc3339(),
         "last_connected": connection.last_connected.map(|t| t.to_rfc3339()),
         "password_source": format!("{:?}", connection.password_source),
+        "kdbx_path": connection.kdbx_path_override.as_ref().map(|p| p.display().to_string()),
         "domain": connection.domain,
         "window_mode": format!("{:?}", connection.window_mode),
         "skip_port_check": connection.skip_port_check,
@@ -410,6 +411,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
 
     if let Some(ref user) = connection.username {
         println!("  Username: {user}");
+    }
+    if let Some(ref kdbx) = connection.kdbx_path_override {
+        println!("  KeePass:  {}", kdbx.display());
     }
 
     if !connection.tags.is_empty() {

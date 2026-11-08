@@ -85,6 +85,59 @@ pub(super) struct VaultKeys {
     legacy: Vec<String>,
 }
 
+/// Where a connection's credential lives in KeePass: which entry, in which
+/// `.kdbx` file.
+///
+/// The file is the connection's own database override, else its nearest
+/// group's, else the global database from Settings → Secrets — the order the
+/// GUI resolves and saves in (issue #411). Until 0.24.8 this command always
+/// used the global database, so `secret set` on a connection with its own
+/// database wrote where no connect would look.
+#[cfg(feature = "secret-management")]
+pub(super) struct KeePassTarget {
+    /// Entry key without the `RustConn/` prefix: `{group path}/{name} ({protocol})`.
+    entry_key: String,
+    /// `None` means the global database.
+    database_override: Option<std::path::PathBuf>,
+}
+
+#[cfg(feature = "secret-management")]
+impl KeePassTarget {
+    fn new(
+        connection: &rustconn_core::models::Connection,
+        groups: &[rustconn_core::models::ConnectionGroup],
+    ) -> Self {
+        let base = rustconn_core::secret::KeePassHierarchy::build_entry_path(connection, groups);
+        let entry_key = format!(
+            "{} ({})",
+            base.strip_prefix("RustConn/").unwrap_or(&base),
+            connection.protocol.as_str().to_lowercase()
+        );
+        Self {
+            entry_key,
+            database_override: rustconn_core::secret::resolve_kdbx_path_override(
+                connection, groups,
+            ),
+        }
+    }
+
+    /// The `.kdbx` file to open.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CliError::Secret`] when neither the connection, its groups nor
+    /// the settings name a database.
+    fn database<'a>(
+        &'a self,
+        settings: &'a rustconn_core::config::AppSettings,
+    ) -> Result<&'a Path, CliError> {
+        self.database_override
+            .as_deref()
+            .or(settings.secrets.kdbx_path.as_deref())
+            .ok_or_else(|| CliError::Secret("KeePass database not configured".into()))
+    }
+}
+
 #[cfg(feature = "secret-management")]
 fn vault_keys(
     connection: &rustconn_core::models::Connection,
@@ -441,7 +494,7 @@ fn cmd_secret_get(
 ) -> Result<(), CliError> {
     use rustconn_core::config::SecretBackendType;
     use rustconn_core::models::Credentials;
-    use rustconn_core::secret::{KeePassHierarchy, KeePassStatus};
+    use rustconn_core::secret::KeePassStatus;
 
     let config_manager = create_config_manager(config_path)?;
 
@@ -454,14 +507,8 @@ fn cmd_secret_get(
         .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
 
     let connection = find_connection(&connections, connection_name)?;
-    let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
-    let keepass_key = format!(
-        "{} ({})",
-        keepass_base
-            .strip_prefix("RustConn/")
-            .unwrap_or(&keepass_base),
-        connection.protocol.as_str().to_lowercase()
-    );
+    let keepass = KeePassTarget::new(connection, &groups);
+    let keepass_key = keepass.entry_key.as_str();
 
     let settings = config_manager
         .load_settings()
@@ -513,9 +560,7 @@ fn cmd_secret_get(
                     "KeePass is not enabled in settings".into(),
                 ));
             }
-            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
-                return Err(CliError::Secret("KeePass database not configured".into()));
-            };
+            let kdbx_path = keepass.database(&settings)?;
 
             let key_file = settings
                 .secrets
@@ -524,10 +569,10 @@ fn cmd_secret_get(
                 .map(std::path::Path::new);
 
             let mut result = KeePassStatus::get_password_from_kdbx_with_key(
-                std::path::Path::new(kdbx_path),
+                kdbx_path,
                 settings.secrets.kdbx_password.as_ref(),
                 key_file,
-                &keepass_key,
+                keepass_key,
                 Some(connection.protocol.as_str()),
                 settings.secrets.kdbx_yubikey_slot.as_deref(),
             );
@@ -542,11 +587,11 @@ fn cmd_secret_get(
             // connect would find.
             if settings.secrets.kdbx_root_search && matches!(result, Ok(None)) {
                 result = KeePassStatus::get_password_from_kdbx_root(
-                    std::path::Path::new(kdbx_path),
+                    kdbx_path,
                     settings.secrets.kdbx_password.as_ref(),
                     key_file,
                     &[
-                        keepass_key.as_str(),
+                        keepass_key,
                         connection.host.as_str(),
                         connection.name.as_str(),
                     ],
@@ -562,10 +607,12 @@ fn cmd_secret_get(
                         connection.username.as_deref().unwrap_or("-")
                     );
                     println!("Password:   ******** (stored in KeePass)");
+                    println!("Database:   {}", kdbx_path.display());
                     Ok(())
                 }
                 Ok(None) => Err(CliError::Secret(format!(
-                    "No password found in KeePass for '{}'",
+                    "No password found in KeePass database '{}' for '{}'",
+                    kdbx_path.display(),
                     connection.name
                 ))),
                 Err(e) => Err(CliError::Secret(format!("KeePass error: {e}"))),
@@ -786,7 +833,7 @@ pub(super) fn store_connection_credentials_in_backend(
     settings: &rustconn_core::config::AppSettings,
     backend_type: rustconn_core::config::SecretBackendType,
     keys: &VaultKeys,
-    keepass_key: &str,
+    keepass: &KeePassTarget,
     connection: &rustconn_core::models::Connection,
     username_value: &str,
     password_value: secrecy::SecretString,
@@ -828,9 +875,7 @@ pub(super) fn store_connection_credentials_in_backend(
                     "KeePass is not enabled in settings".into(),
                 ));
             }
-            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
-                return Err(CliError::Secret("KeePass database not configured".into()));
-            };
+            let kdbx_path = keepass.database(settings)?;
 
             let key_file = settings
                 .secrets
@@ -839,10 +884,10 @@ pub(super) fn store_connection_credentials_in_backend(
                 .map(std::path::Path::new);
 
             KeePassStatus::save_password_to_kdbx(
-                std::path::Path::new(kdbx_path),
+                kdbx_path,
                 settings.secrets.kdbx_password.as_ref(),
                 key_file,
-                keepass_key,
+                &keepass.entry_key,
                 username_value,
                 &password_value,
                 Some(&format!(
@@ -857,8 +902,10 @@ pub(super) fn store_connection_credentials_in_backend(
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
             println!(
-                "Stored credentials for '{}' in KeePass (user: {})",
-                connection.name, username_value
+                "Stored credentials for '{}' in KeePass database '{}' (user: {})",
+                connection.name,
+                kdbx_path.display(),
+                username_value
             );
             Ok(())
         }
@@ -1031,24 +1078,18 @@ pub(super) fn promote_password_source_to_vault(
 }
 
 /// Resolves the vault key material (GUI primary + legacy keys, and the KeePass
-/// entry key) for a connection, so `add --password-stdin` stores under exactly
-/// the keys `secret set` and the GUI use.
+/// entry and database) for a connection, so `add --password-stdin` stores
+/// under exactly the keys `secret set` and the GUI use.
 #[cfg(feature = "secret-management")]
 pub(super) fn vault_keys_and_keepass_key(
     connection: &rustconn_core::models::Connection,
     groups: &[rustconn_core::models::ConnectionGroup],
     backend_type: rustconn_core::config::SecretBackendType,
-) -> (VaultKeys, String) {
-    use rustconn_core::secret::KeePassHierarchy;
-    let keepass_base = KeePassHierarchy::build_entry_path(connection, groups);
-    let keepass_key = format!(
-        "{} ({})",
-        keepass_base
-            .strip_prefix("RustConn/")
-            .unwrap_or(&keepass_base),
-        connection.protocol.as_str().to_lowercase()
-    );
-    (vault_keys(connection, groups, backend_type), keepass_key)
+) -> (VaultKeys, KeePassTarget) {
+    (
+        vault_keys(connection, groups, backend_type),
+        KeePassTarget::new(connection, groups),
+    )
 }
 
 /// Parses an optional backend name, defaulting to the preferred backend.
@@ -1076,7 +1117,6 @@ fn cmd_secret_set(
     password_stdin: bool,
     backend: Option<&str>,
 ) -> Result<(), CliError> {
-    use rustconn_core::secret::KeePassHierarchy;
     use zeroize::Zeroizing;
 
     if password_arg.is_some() {
@@ -1100,14 +1140,7 @@ fn cmd_secret_set(
         .map_err(|e| CliError::Config(format!("Failed to load groups: {e}")))?;
 
     let connection = find_connection(&connections, connection_name)?;
-    let keepass_base = KeePassHierarchy::build_entry_path(connection, &groups);
-    let keepass_key = format!(
-        "{} ({})",
-        keepass_base
-            .strip_prefix("RustConn/")
-            .unwrap_or(&keepass_base),
-        connection.protocol.as_str().to_lowercase()
-    );
+    let keepass = KeePassTarget::new(connection, &groups);
 
     let settings = config_manager
         .load_settings()
@@ -1165,7 +1198,7 @@ fn cmd_secret_set(
         &settings,
         backend_type,
         &keys,
-        &keepass_key,
+        &keepass,
         connection,
         &username_value,
         password_value,
@@ -1253,9 +1286,8 @@ fn cmd_secret_delete(
                     "KeePass is not enabled in settings".into(),
                 ));
             }
-            let Some(ref kdbx_path) = settings.secrets.kdbx_path else {
-                return Err(CliError::Secret("KeePass database not configured".into()));
-            };
+            let keepass = KeePassTarget::new(connection, &groups);
+            let kdbx_path = keepass.database(&settings)?;
 
             let key_file = settings
                 .secrets
@@ -1264,7 +1296,7 @@ fn cmd_secret_delete(
                 .map(std::path::Path::new);
 
             KeePassStatus::delete_entry_from_kdbx(
-                std::path::Path::new(kdbx_path),
+                kdbx_path,
                 settings.secrets.kdbx_password.as_ref(),
                 key_file,
                 &keepass_entry_path,
@@ -1273,7 +1305,11 @@ fn cmd_secret_delete(
             )
             .map_err(|e| CliError::Secret(format!("KeePass error: {e}")))?;
 
-            println!("Deleted credentials for '{}' from KeePass", connection.name);
+            println!(
+                "Deleted credentials for '{}' from KeePass database '{}'",
+                connection.name,
+                kdbx_path.display()
+            );
             Ok(())
         }
         SecretBackendType::Bitwarden => {
@@ -1663,5 +1699,66 @@ mod vault_key_tests {
         );
         assert_eq!(sharing.len(), 1);
         assert_eq!(sharing[0].id, twin.id);
+    }
+}
+
+#[cfg(all(test, feature = "secret-management"))]
+mod keepass_target_tests {
+    use std::path::{Path, PathBuf};
+
+    use rustconn_core::config::AppSettings;
+    use rustconn_core::models::{Connection, ConnectionGroup};
+
+    use super::KeePassTarget;
+
+    fn settings_with_global(path: Option<&str>) -> AppSettings {
+        let mut settings = AppSettings::default();
+        settings.secrets.kdbx_path = path.map(PathBuf::from);
+        settings
+    }
+
+    /// Issue #411: `secret set/get/delete` open the database the connection
+    /// resolves to — its own, then its group chain's — before the global one.
+    #[test]
+    fn the_connections_own_database_wins_then_the_groups_then_the_global() {
+        let mut parent = ConnectionGroup::new("Prod".to_string());
+        parent.kdbx_path_override = Some(PathBuf::from("/vaults/prod.kdbx"));
+        let child = ConnectionGroup::with_parent("Web".to_string(), parent.id);
+        let groups = vec![parent, child.clone()];
+        let settings = settings_with_global(Some("/vaults/global.kdbx"));
+
+        let mut conn = Connection::new_ssh("web1".to_string(), "10.0.0.1".to_string(), 22);
+        assert_eq!(
+            KeePassTarget::new(&conn, &groups)
+                .database(&settings)
+                .expect("global database"),
+            Path::new("/vaults/global.kdbx"),
+        );
+
+        conn.group_id = Some(child.id);
+        assert_eq!(
+            KeePassTarget::new(&conn, &groups)
+                .database(&settings)
+                .expect("inherited database"),
+            Path::new("/vaults/prod.kdbx"),
+        );
+
+        conn.kdbx_path_override = Some(PathBuf::from("/vaults/web1.kdbx"));
+        let target = KeePassTarget::new(&conn, &groups);
+        assert_eq!(
+            target.database(&settings).expect("own database"),
+            Path::new("/vaults/web1.kdbx"),
+        );
+        assert_eq!(target.entry_key, "Prod/Web/web1 (ssh)");
+    }
+
+    #[test]
+    fn no_database_anywhere_is_an_error() {
+        let conn = Connection::new_ssh("web1".to_string(), "10.0.0.1".to_string(), 22);
+        assert!(
+            KeePassTarget::new(&conn, &[])
+                .database(&settings_with_global(None))
+                .is_err()
+        );
     }
 }
