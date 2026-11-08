@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-08 02:07+0100\n"
-"PO-Revision-Date: 2026-11-08 18:10+0000\n"
+"PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
 "Language: az\n"
@@ -98,13 +98,14 @@ msgstr "İnisializasiya xətası"
 #: rustconn/src/app.rs:864
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
-"KeePass parolu açar dəstindən yüklənmədi — onu Parametrlərdə yenidən daxil edin"
+"KeePass parolu açar dəstindən yüklənmədi — onu Tənzimləmələrdə yenidən "
+"daxil edin"
 
 #: rustconn/src/app.rs:869 rustconn/src/dialogs/shortcuts.rs:178
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
-msgstr "Ayarlar"
+msgstr "Tənzimləmələr"
 
 #: rustconn/src/app.rs:1719
 msgid ""
@@ -113,7 +114,7 @@ msgid ""
 "to choose another backend."
 msgstr ""
 "{} seçilib, lakin sistem açar dəsti əlçatan deyil. İşə salın: sudo snap "
-"connect rustconn:password-manager-service — və ya Parametrləri, sonra "
+"connect rustconn:password-manager-service — və ya Tənzimləmələri, sonra "
 "Sirlər bölməsini açıb başqa backend seçin."
 
 #: rustconn/src/app.rs:1724
@@ -121,8 +122,8 @@ msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
 msgstr ""
-"{} seçilib, lakin hələ parolları saxlaya bilmir: {}. Parametrləri, sonra "
-"Sirlər bölməsini açın."
+"{} seçilib, lakin hələ parolları saxlaya bilmir: {}. Tənzimləmələri, "
+"sonra Sirlər bölməsini açın."
 
 #: rustconn/src/app.rs:2035
 msgid ""
@@ -257,7 +258,7 @@ msgid ""
 msgstr ""
 "Bu bağlantı parolunu {} içində saxlayır və o, hazırda əlçatan deyil — "
 "kilidli ola bilər, hesab daxil olmayıb və ya bu kompüterdə qurulmayıb. "
-"Vəziyyəti yoxlamaq üçün Parametrləri, sonra Sirlər bölməsini açın."
+"Vəziyyəti yoxlamaq üçün Tənzimləmələri, sonra Sirlər bölməsini açın."
 
 #: rustconn/src/dialogs/backend_missing.rs:55
 msgid "Enter Password Manually"
@@ -267,7 +268,7 @@ msgstr "Parolu əl ilə daxil edin"
 #: rustconn/src/embedded_rdp/connection.rs:2490 rustconn/src/vault_ops.rs:66
 #: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1157
 msgid "Open Settings"
-msgstr "Parametrləri aç"
+msgstr "Tənzimləmələri aç"
 
 #: rustconn/src/dialogs/cluster.rs:62 rustconn/src/dialogs/cluster.rs:562
 #: rustconn/src/dialogs/cluster.rs:563
@@ -380,7 +381,7 @@ msgid ""
 "split the resulting tabs and use the Broadcast toggle in the header bar."
 msgstr ""
 "Klastrlar bir neçə serveri birlikdə açır. Onlar arasında klaviatura "
-"girişini əks etdirmək üçün yaranan vərəqləri bölün və başlıq çubuğundakı "
+"girişini əks etdirmək üçün yaranan tabları bölün və başlıq çubuğundakı "
 "Yayım açarından istifadə edin."
 
 #: rustconn/src/dialogs/cluster.rs:676
@@ -442,7 +443,7 @@ msgstr "Əmr paneli"
 #: rustconn/src/dialogs/command_palette.rs:89
 msgid "Search connections, > commands, @ tags, # groups, % tabs, ! snippets"
 msgstr ""
-"Bağlantılarda axtar, > əmrlər, @ etiketlər, # qruplar, % vərəqlər, ! "
+"Bağlantılarda axtar, > əmrlər, @ etiketlər, # qruplar, % tablar, ! "
 "fraqmentlər"
 
 #: rustconn/src/dialogs/command_palette.rs:120
@@ -493,7 +494,7 @@ msgstr "Hazır ayar"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:106
 msgid "Quick color presets for environment identification"
-msgstr "Mühiti tanımaq üçün sürətli rəng hazır ayarları"
+msgstr "Mühiti tanımaq üçün sürətli rəng seçimləri"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:121
 #: rustconn/src/dialogs/connection/advanced_tab.rs:957
@@ -534,7 +535,7 @@ msgstr "Uzaqdan monitorinq"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:300
 msgid "Override global monitoring settings for this connection"
-msgstr "Bu bağlantı üçün qlobal monitorinq ayarlarını üstələ"
+msgstr "Bu bağlantı üçün qlobal monitorinq tənzimləmələrini üstələ"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:314
 msgid "Enable Monitoring"
@@ -695,7 +696,7 @@ msgstr "Hədəf portu"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:559
 msgid "UDP port for the SPA packet (default: 62201)"
-msgstr "SPA paketi üçün UDP portu (defolt: 62201)"
+msgstr "SPA paketi üçün UDP portu (standart: 62201)"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:565
 msgid "Source IP"
@@ -785,7 +786,7 @@ msgstr "UDP portu"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:736
 msgid "Default: 9"
-msgstr "Defolt: 9"
+msgstr "Standart: 9"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:756
 msgid "Wait Time (sec)"
@@ -1008,7 +1009,7 @@ msgstr "Giriş fasiləsi (saniyə)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:389
 msgid "How long to watch for the prompt; 0 = default (10 s)"
-msgstr "Promptun nə qədər izlənəcəyi; 0 = defolt (10 s)"
+msgstr "Promptun nə qədər izlənəcəyi; 0 = standart (10 s)"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:412
 msgid "Run command before connecting"
@@ -1158,8 +1159,8 @@ msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
 msgstr ""
-"Parol mənbəyi 'Yoxdur', lakin autentifikasiya üsulu Paroldur. Mənbəyi "
-"Prompt və ya Vault olaraq təyin edin."
+"Parol mənbəyi 'Heç biri', lakin autentifikasiya üsulu Paroldur. Mənbəyi "
+"Sor və ya Anbar olaraq təyin edin."
 
 #: rustconn/src/dialogs/connection/builders.rs:403
 msgid "Pod name is required when Busybox mode is disabled"
@@ -1315,7 +1316,7 @@ msgstr "Avtomatlaşdırma"
 #: rustconn/src/dialogs/template.rs:944 rustconn/src/dialogs/template.rs:1121
 #: rustconn/src/dialogs/template.rs:1459
 msgid "Advanced"
-msgstr "Ətraflı"
+msgstr "Qabaqcıl"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:455
 msgid "No host set"
@@ -1567,7 +1568,7 @@ msgstr "Parol tapılmadı"
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:493
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:501
 msgid "No password found in vault for this connection."
-msgstr "Bu bağlantı üçün vaultda parol tapılmadı."
+msgstr "Bu bağlantı üçün anbarda parol tapılmadı."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:410
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:508
@@ -1577,21 +1578,21 @@ msgstr "Parolu yükləmək mümkün olmadı"
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:411
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:509
 msgid "Could not load password from vault."
-msgstr "Vaultdan parolu yükləmək mümkün olmadı."
+msgstr "Anbardan parolu yükləmək mümkün olmadı."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:422
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:746
 msgid "Vault Not Configured"
-msgstr "Vault konfiqurasiya edilməyib"
+msgstr "Anbar konfiqurasiya edilməyib"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:423
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:747
 msgid "Configure a secret backend in Settings → Secrets."
-msgstr "Parametrlər → Sirlər bölməsində sirr backend-i konfiqurasiya edin."
+msgstr "Tənzimləmələr → Sirlər bölməsində sirr backend-i konfiqurasiya edin."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:522
 msgid "Password loading is only available for Vault source."
-msgstr "Parolun yüklənməsi yalnız Vault mənbəyi üçün mövcuddur."
+msgstr "Parolun yüklənməsi yalnız Anbar mənbəyi üçün mövcuddur."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:563
 msgid "Test Not Available"
@@ -1599,7 +1600,7 @@ msgstr "Sınaq mövcud deyil"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:564
 msgid "Credential test is only available when Password Source is set to Vault."
-msgstr "Etimadnamə sınağı yalnız Parol mənbəyi Vault olduqda mövcuddur."
+msgstr "Etimadnamə sınağı yalnız Parol mənbəyi Anbar olduqda mövcuddur."
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:582
 msgid "Cannot Test"
@@ -1616,7 +1617,7 @@ msgid ""
 "Password found in vault.\n"
 "Lookup key: {}"
 msgstr ""
-"Vaultda parol tapıldı.\nAxtarış açarı: {}"
+"Anbarda parol tapıldı.\nAxtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:720
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:731
@@ -1631,14 +1632,14 @@ msgid ""
 "No password found in vault.\n"
 "Lookup key: {}"
 msgstr ""
-"Vaultda parol tapılmadı.\nAxtarış açarı: {}"
+"Anbarda parol tapılmadı.\nAxtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:733
 msgid ""
 "Vault error. Check your KeePass configuration.\n"
 "Lookup key: {}"
 msgstr ""
-"Vault xətası. KeePass konfiqurasiyanızı yoxlayın.\nAxtarış açarı: {}"
+"Anbar xətası. KeePass konfiqurasiyanızı yoxlayın.\nAxtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:788
 msgid ""
@@ -1652,14 +1653,14 @@ msgid ""
 "No entry found in vault.\n"
 "Lookup key: {}"
 msgstr ""
-"Vaultda giriş tapılmadı.\nAxtarış açarı: {}"
+"Anbarda giriş tapılmadı.\nAxtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:810
 msgid ""
 "Backend error. Check your vault configuration.\n"
 "Lookup key: {}"
 msgstr ""
-"Backend xətası. Vault konfiqurasiyanızı yoxlayın.\nAxtarış açarı: {}"
+"Backend xətası. Anbar konfiqurasiyanızı yoxlayın.\nAxtarış açarı: {}"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:45
 #: rustconn/src/window/edit_group.rs:773 rustconn/src/window/key_setup.rs:377
@@ -1695,7 +1696,7 @@ msgstr "Valideyn qrupdan miras alınıb"
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1178
 #: rustconn/src/dialogs/connection/ssh.rs:418
 msgid "Default tries ~/.ssh/id_rsa, id_ed25519, id_ecdsa automatically"
-msgstr "Defolt olaraq ~/.ssh/id_rsa, id_ed25519, id_ecdsa avtomatik sınanır"
+msgstr "Standart olaraq ~/.ssh/id_rsa, id_ed25519, id_ecdsa avtomatik sınanır"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1244
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1261
@@ -1825,8 +1826,7 @@ msgstr "Cavab:"
 #: rustconn/src/dialogs/connection/dialog/rows.rs:321
 #: rustconn/src/window/edit_group.rs:2206
 msgid "Text to send (e.g., ${password}\\n)"
-msgstr ""
-"Göndəriləcək mətn (məs., ${password}\n)"
+msgstr "Göndəriləcək mətn (məs., ${password}\\n)"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:323
 #: rustconn/src/window/edit_group.rs:2208
@@ -2207,7 +2207,7 @@ msgstr "Dəyər"
 #: rustconn/src/dialogs/connection/general_tab.rs:304
 #: rustconn/src/dialogs/connection/general_tab.rs:308
 msgid "Load credentials from vault"
-msgstr "Etimadnamələri vaultdan yüklə"
+msgstr "Etimadnamələri anbardan yüklə"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:312
 #: rustconn/src/dialogs/connection/general_tab.rs:316
@@ -2305,7 +2305,7 @@ msgstr "Kubeconfig"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:55
 msgid "Path to kubeconfig file (default if empty)"
-msgstr "Kubeconfig faylının yolu (boş olduqda defolt)"
+msgstr "Kubeconfig faylının yolu (boş olduqda standart)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:60
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:186
@@ -2323,7 +2323,7 @@ msgstr "Ad sahəsi"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:73
 msgid "Target namespace (default if empty)"
-msgstr "Hədəf namespace (boş olduqda defolt)"
+msgstr "Hədəf namespace (boş olduqda standart)"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:196
@@ -2423,7 +2423,7 @@ msgstr "Sessiya çıxışını jurnal fayllarına yaz"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:79
 msgid "Log Settings"
-msgstr "Jurnal ayarları"
+msgstr "Jurnal tənzimləmələri"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:93
 msgid "Log Path"
@@ -2431,7 +2431,7 @@ msgstr "Jurnal yolu"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:97
 msgid "A relative path is kept in the log directory from Settings"
-msgstr "Nisbi yol Parametrlərdəki jurnal qovluğunda saxlanılır"
+msgstr "Nisbi yol Tənzimləmələrdəki jurnal qovluğunda saxlanılır"
 
 #: rustconn/src/dialogs/connection/logging_tab.rs:110
 msgid "Timestamp Format"
@@ -2513,7 +2513,7 @@ msgstr "Klient rejimi"
 #: rustconn/src/dialogs/connection/vnc.rs:80
 #: rustconn/src/dialogs/template.rs:829 rustconn/src/dialogs/template.rs:1028
 msgid "Embedded renders in tab, External opens separate window"
-msgstr "Daxili vərəqdə göstərilir, xarici ayrı pəncərə açır"
+msgstr "Daxili tabda göstərilir, xarici ayrı pəncərə açır"
 
 #: rustconn/src/dialogs/connection/rdp.rs:142
 #: rustconn/src/dialogs/connection/vnc.rs:123
@@ -2570,7 +2570,7 @@ msgstr "Piksel ilə en × hündürlük"
 #: rustconn/src/dialogs/connection/rdp.rs:238
 #: rustconn/src/dialogs/template.rs:867
 msgid "Negotiate (server default)"
-msgstr "Razılaşdır (server defoltu)"
+msgstr "Razılaşdır (server standartı)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:239
 #: rustconn/src/dialogs/template.rs:868
@@ -2972,7 +2972,7 @@ msgstr "Standart: 443"
 
 #: rustconn/src/dialogs/connection/rdp.rs:742
 msgid "Same as connection username"
-msgstr "Qoşulma istifadəçi adı ilə eyni"
+msgstr "Bağlantı istifadəçi adı ilə eyni"
 
 #: rustconn/src/dialogs/connection/rdp.rs:746
 msgid "Gateway Username"
@@ -2980,7 +2980,7 @@ msgstr "Şlüz istifadəçi adı"
 
 #: rustconn/src/dialogs/connection/rdp.rs:747
 msgid "If different from connection username"
-msgstr "Qoşulma istifadəçi adından fərqlidirsə"
+msgstr "Bağlantı istifadəçi adından fərqlidirsə"
 
 #: rustconn/src/dialogs/connection/rdp.rs:770
 #: rustconn/src/dialogs/connection/spice.rs:336
@@ -3016,7 +3016,7 @@ msgstr "Broker yönləndirmə dəyəri"
 #: rustconn/src/dialogs/connection/rdp.rs:795
 msgid "Connection broker routing value (loadbalanceinfo) from an .rdp file"
 msgstr ""
-".rdp faylından qoşulma brokerinin yönləndirmə dəyəri (loadbalanceinfo)"
+".rdp faylından bağlantı brokerinin yönləndirmə dəyəri (loadbalanceinfo)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:805
 #: rustconn/src/dialogs/connection/spice.rs:239
@@ -3367,7 +3367,7 @@ msgstr "TLS şifrələməsi"
 
 #: rustconn/src/dialogs/connection/spice.rs:73
 msgid "Encrypt connection with TLS"
-msgstr "Qoşulmanı TLS ilə şifrələ"
+msgstr "Bağlantını TLS ilə şifrələ"
 
 #: rustconn/src/dialogs/connection/spice.rs:83
 msgid "Path to CA certificate"
@@ -3453,7 +3453,7 @@ msgstr "SPICE proksisi"
 
 #: rustconn/src/dialogs/connection/spice.rs:207
 msgid "Proxy URL for tunnelled connections (e.g. Proxmox VE)"
-msgstr "Tunellənmiş qoşulmalar üçün proksi URL-i (məs. Proxmox VE)"
+msgstr "Tunellənmiş bağlantılar üçün proksi URL-i (məs. Proxmox VE)"
 
 #: rustconn/src/dialogs/connection/spice.rs:304
 msgid "Unix Socket"
@@ -3482,7 +3482,7 @@ msgstr "SPICE unix soketini seç"
 
 #: rustconn/src/dialogs/connection/ssh.rs:173
 msgid "MOSH Settings"
-msgstr "MOSH ayarları"
+msgstr "MOSH tənzimləmələri"
 
 #: rustconn/src/dialogs/connection/ssh.rs:174
 msgid "Configure UDP port range and prediction behavior."
@@ -3532,7 +3532,7 @@ msgstr "Yüksəldilmiş etimad məlumatları"
 msgid ""
 "Answer sudo, su and doas password prompts with this connection's password"
 msgstr ""
-"sudo, su və doas parol sorğularını bu qoşulmanın parolu ilə cavablandır"
+"sudo, su və doas parol sorğularını bu bağlantının parolu ilə cavablandır"
 
 #: rustconn/src/dialogs/connection/ssh.rs:218
 msgid "Inject Password at Escalation Prompts"
@@ -3699,7 +3699,7 @@ msgstr "Açar autentifikasiyasını quraşdır…"
 
 #: rustconn/src/dialogs/connection/ssh.rs:528
 msgid "Available after the connection is saved"
-msgstr "Qoşulma saxlandıqdan sonra əlçatan olur"
+msgstr "Bağlantı saxlandıqdan sonra əlçatan olur"
 
 #: rustconn/src/dialogs/connection/ssh.rs:686
 #: rustconn/src/dialogs/template.rs:698
@@ -3727,12 +3727,12 @@ msgstr "Digər açarların sınanmasının qarşısını alır (IdentitiesOnly)"
 #: rustconn/src/dialogs/connection/ssh.rs:709
 #: rustconn/src/dialogs/template.rs:713
 msgid "Connection Multiplexing"
-msgstr "Qoşulma multipleksləşdirilməsi"
+msgstr "Bağlantı multipleksləşdirilməsi"
 
 #: rustconn/src/dialogs/connection/ssh.rs:710
 #: rustconn/src/dialogs/template.rs:714
 msgid "Reuse connections (ControlMaster)"
-msgstr "Qoşulmaları təkrar istifadə et (ControlMaster)"
+msgstr "Bağlantıları təkrar istifadə et (ControlMaster)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:718
 msgid "Keep-Alive Interval"
@@ -3812,7 +3812,7 @@ msgstr "Sıxılma"
 
 #: rustconn/src/dialogs/connection/ssh.rs:844
 msgid "Enable compression for slow connections (-C)"
-msgstr "Yavaş qoşulmalar üçün sıxılmanı aktivləşdir (-C)"
+msgstr "Yavaş bağlantılar üçün sıxılmanı aktivləşdir (-C)"
 
 #: rustconn/src/dialogs/connection/ssh.rs:849
 msgid "Verbose"
@@ -3852,7 +3852,7 @@ msgstr "Başlanğıc əmri"
 #: rustconn/src/dialogs/connection/ssh.rs:873
 #: rustconn/src/dialogs/template.rs:741
 msgid "Execute after connection established"
-msgstr "Qoşulma qurulduqdan sonra icra et"
+msgstr "Bağlantı qurulduqdan sonra icra et"
 
 #: rustconn/src/dialogs/connection/ssh.rs:874
 #: rustconn/src/dialogs/template.rs:735
@@ -3875,7 +3875,8 @@ msgstr "SSH agent soketi"
 
 #: rustconn/src/dialogs/connection/ssh.rs:890
 msgid "Overrides global setting and auto-detected socket for this connection"
-msgstr "Bu qoşulma üçün qlobal ayarı və avtomatik aşkarlanan soketi üstələyir"
+msgstr ""
+"Bu bağlantı üçün qlobal ayarı və avtomatik aşkarlanan soketi üstələyir"
 
 #: rustconn/src/dialogs/connection/ssh.rs:917
 msgid "PKCS#11 Provider"
@@ -4013,7 +4014,7 @@ msgstr "Port yönləndirməsini sil"
 #: rustconn/src/dialogs/connection/telnet.rs:38
 msgid "⚠ Telnet transmits data in plain text. Use SSH for secure connections."
 msgstr ""
-"⚠ Telnet məlumatları açıq mətnlə ötürür. Təhlükəsiz qoşulmalar üçün SSH "
+"⚠ Telnet məlumatları açıq mətnlə ötürür. Təhlükəsiz bağlantılar üçün SSH "
 "istifadə edin."
 
 #: rustconn/src/dialogs/connection/vnc.rs:98
@@ -4080,7 +4081,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/connection/vnc.rs:308
 msgid "VNC uses the connection password for authentication"
-msgstr "VNC autentifikasiya üçün qoşulma parolundan istifadə edir"
+msgstr "VNC autentifikasiya üçün bağlantı parolundan istifadə edir"
 
 #: rustconn/src/dialogs/connection/vnc.rs:323
 msgid "Additional arguments for external client"
@@ -4120,11 +4121,11 @@ msgstr "Fərdi rejim üçün tələb olunur"
 
 #: rustconn/src/dialogs/connection/web.rs:81
 msgid "Embedded Browser Settings"
-msgstr "Daxili brauzer ayarları"
+msgstr "Daxili brauzer tənzimləmələri"
 
 #: rustconn/src/dialogs/connection/web.rs:82
 msgid "Settings applied when using the embedded browser"
-msgstr "Daxili brauzer istifadə edildikdə tətbiq olunan ayarlar"
+msgstr "Daxili brauzer istifadə edildikdə tətbiq olunan tənzimləmələr"
 
 #: rustconn/src/dialogs/connection/web.rs:91
 msgid "User Agent"
@@ -4139,7 +4140,7 @@ msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
 msgstr ""
-"Seçilmiş SSH qoşulması üzərindən SOCKS proksisi ilə bax (daxili və ya "
+"Seçilmiş SSH bağlantısı üzərindən SOCKS proksisi ilə bax (daxili və ya "
 "Chromium brauzeri)"
 
 #: rustconn/src/dialogs/connection/web.rs:130
@@ -4398,7 +4399,7 @@ msgstr "Hoop.dev zero-trust şlüzü vasitəsilə qoşul"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:782
 #: rustconn/src/dialogs/template.rs:1881
 msgid "Connection Name"
-msgstr "Qoşulma adı"
+msgstr "Bağlantı adı"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:479
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:784
@@ -4426,8 +4427,8 @@ msgid ""
 "tab; ${host}, ${port}, ${username} and ${name} come from the connection "
 "itself"
 msgstr ""
-"${id} kimi yer tutucular Data sekmesindəki yerli dəyişənlərdən götürülür; "
-"${host}, ${port}, ${username} və ${name} qoşulmanın özündən gəlir"
+"${id} kimi yer tutucular Data tabındakı yerli dəyişənlərdən götürülür; "
+"${host}, ${port}, ${username} və ${name} bağlantının özündən gəlir"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:68
 #: rustconn/src/dialogs/export.rs:780
@@ -4452,7 +4453,7 @@ msgstr "Görünüş"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:145
 msgid "Visual color scheme for this connection"
-msgstr "Bu qoşulma üçün vizual rəng sxemi"
+msgstr "Bu bağlantı üçün vizual rəng sxemi"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:152
 #: rustconn/src/dialogs/template.rs:521
@@ -4463,7 +4464,7 @@ msgstr "Emoji və ya ikon adı (istəyə bağlı)"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:409
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:202
 msgid "Advanced…"
-msgstr "Ətraflı…"
+msgstr "Qabaqcıl…"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:167
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:169
@@ -4472,7 +4473,7 @@ msgstr "Ətraflı…"
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:205
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:207
 msgid "Open full connection editor"
-msgstr "Tam qoşulma redaktorunu aç"
+msgstr "Tam bağlantı redaktorunu aç"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:178
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:180
@@ -4513,7 +4514,7 @@ msgstr "SSH tuneli vasitəsilə qoşul"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:158
 msgid "Serial Connection"
-msgstr "Serial qoşulma"
+msgstr "Serial bağlantı"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:187
 msgid "Leave empty for current context"
@@ -4531,7 +4532,7 @@ msgstr "Fərdi əmr"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:227
 msgid "Run any command for connection"
-msgstr "Qoşulma üçün istənilən əmri işlət"
+msgstr "Bağlantı üçün istənilən əmri işlət"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:256
 msgid "Web Bookmark"
@@ -4549,7 +4550,7 @@ msgstr "Şablonlar"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:437
 msgid "Connection Details"
-msgstr "Qoşulma təfərrüatları"
+msgstr "Bağlantı təfərrüatları"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:570
 msgid "Uses SSH for handshake, then switches to UDP"
@@ -4557,11 +4558,11 @@ msgstr "Əl sıxışması üçün SSH istifadə edir, sonra UDP-yə keçir"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:574
 msgid "File browser over SSH connection"
-msgstr "SSH qoşulması üzərindən fayl brauzeri"
+msgstr "SSH bağlantısı üzərindən fayl brauzeri"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:658
 msgid "{} Connection"
-msgstr "{} qoşulması"
+msgstr "{} bağlantısı"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:736
 msgid "Profile"
@@ -4604,7 +4605,7 @@ msgstr "Yeni bağlantı"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:846
 msgid "Duplicate Connection"
-msgstr "Qoşulmanı dublikatla"
+msgstr "Bağlantını dublikatla"
 
 #: rustconn/src/dialogs/credential_transfer.rs:77
 msgid "Copy Stored Passwords"
@@ -4615,7 +4616,7 @@ msgid ""
 "Copies the passwords of every connection, group and secret variable that "
 "uses the password store. The originals are left where they are."
 msgstr ""
-"Parol anbarından istifadə edən hər qoşulmanın, qrupun və gizli dəyişənin "
+"Parol anbarından istifadə edən hər bağlantının, qrupun və gizli dəyişənin "
 "parollarını köçürür. Originallar olduqları yerdə qalır."
 
 #: rustconn/src/dialogs/credential_transfer.rs:88
@@ -4679,7 +4680,7 @@ msgid ""
 "No connection, group or variable is set to use the password store, so there "
 "is nothing to copy."
 msgstr ""
-"Heç bir qoşulma, qrup və ya dəyişən parol anbarından istifadə etmək üçün "
+"Heç bir bağlantı, qrup və ya dəyişən parol anbarından istifadə etmək üçün "
 "təyin edilməyib, ona görə köçürüləcək heç nə yoxdur."
 
 #: rustconn/src/dialogs/credential_transfer.rs:279
@@ -4724,8 +4725,8 @@ msgid ""
 "There is no portable file at {}. Check the path in Settings, or wait for "
 "your cloud client to deliver it."
 msgstr ""
-"{} yerində portativ fayl yoxdur. Ayarlardakı yolu yoxlayın və ya bulud "
-"klientinizin onu çatdırmasını gözləyin."
+"{} yerində portativ fayl yoxdur. Tənzimləmələrdəki yolu yoxlayın və ya "
+"bulud klientinizin onu çatdırmasını gözləyin."
 
 #: rustconn/src/dialogs/credential_transfer.rs:604
 #: rustconn/src/dialogs/portable_passphrase_change.rs:227
@@ -4806,7 +4807,7 @@ msgstr "Bəzi parollar köçürülmədi"
 
 #: rustconn/src/dialogs/export.rs:94
 msgid "Export Connections"
-msgstr "Qoşulmaları ixrac et"
+msgstr "Bağlantıları ixrac et"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
 #: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:666
@@ -4816,7 +4817,7 @@ msgstr "İxrac"
 #: rustconn/src/dialogs/export.rs:188 rustconn/src/dialogs/export.rs:282
 #: rustconn/src/dialogs/export.rs:556
 msgid "All connections"
-msgstr "Bütün qoşulmalar"
+msgstr "Bütün bağlantılar"
 
 #: rustconn/src/dialogs/export.rs:245
 msgid "Export Format"
@@ -4824,7 +4825,7 @@ msgstr "İxrac formatı"
 
 #: rustconn/src/dialogs/export.rs:246
 msgid "Select the format to export your connections to"
-msgstr "Qoşulmalarınızı ixrac edəcəyiniz formatı seçin"
+msgstr "Bağlantılarınızı ixrac edəcəyiniz formatı seçin"
 
 #: rustconn/src/dialogs/export.rs:252 rustconn/src/dialogs/import/sources.rs:52
 msgid "RustConn Native (.rcn)"
@@ -4887,7 +4888,7 @@ msgstr "İxrac əhatəsi"
 
 #: rustconn/src/dialogs/export.rs:279
 msgid "Choose which connections to export"
-msgstr "Hansı qoşulmaların ixrac ediləcəyini seçin"
+msgstr "Hansı bağlantıların ixrac ediləcəyini seçin"
 
 #: rustconn/src/dialogs/export.rs:289
 msgid "Export all or a specific group"
@@ -4903,7 +4904,7 @@ msgid ""
 "connection).\n"
 "Other formats export to a single file."
 msgstr ""
-"Remmina, SecureCRT və RDP faylları qovluğa ixrac edir (hər qoşulma üçün "
+"Remmina, SecureCRT və RDP faylları qovluğa ixrac edir (hər bağlantı üçün "
 "bir fayl).\nDigər formatlar tək fayla ixrac edir."
 
 #: rustconn/src/dialogs/export.rs:311
@@ -4950,7 +4951,7 @@ msgstr "CSV seçimləri"
 
 #: rustconn/src/dialogs/export.rs:362
 msgid "Configure CSV export settings"
-msgstr "CSV ixrac ayarlarını konfiqurasiya edin"
+msgstr "CSV ixrac tənzimləmələrini konfiqurasiya edin"
 
 #: rustconn/src/dialogs/export.rs:368
 msgid "Comma"
@@ -4990,11 +4991,11 @@ msgstr "Təfərrüatlar"
 
 #: rustconn/src/dialogs/export.rs:742
 msgid "Successfully exported {} connection(s) to {} format."
-msgstr "{} qoşulma {} formatına uğurla ixrac edildi."
+msgstr "{} bağlantı {} formatına uğurla ixrac edildi."
 
 #: rustconn/src/dialogs/export.rs:754
 msgid "{} connection(s) were skipped (unsupported protocol)."
-msgstr "{} qoşulma keçildi (dəstəklənməyən protokol)."
+msgstr "{} bağlantı keçildi (dəstəklənməyən protokol)."
 
 #: rustconn/src/dialogs/export.rs:771
 msgid "Output files:"
@@ -5014,7 +5015,7 @@ msgstr "Xəbərdarlıqlar ({}):"
 
 #: rustconn/src/dialogs/export.rs:805
 msgid "No connections were exported."
-msgstr "Heç bir qoşulma ixrac edilmədi."
+msgstr "Heç bir bağlantı ixrac edilmədi."
 
 #: rustconn/src/dialogs/export.rs:842
 msgid "Select Export Directory"
@@ -5146,7 +5147,7 @@ msgid ""
 "Optional for external RDP/VNC/SPICE connections.              Embedded "
 "clients (IronRDP, vnc-rs) are preferred."
 msgstr ""
-"Xarici RDP/VNC/SPICE qoşulmaları üçün istəyə bağlı.              Daxili "
+"Xarici RDP/VNC/SPICE bağlantıları üçün istəyə bağlı.              Daxili "
 "klientlərə (IronRDP, vnc-rs) üstünlük verilir."
 
 #: rustconn/src/dialogs/flatpak_components.rs:171
@@ -5157,8 +5158,8 @@ msgstr "Zero Trust CLI-ları"
 msgid ""
 "Required for Zero Trust connections (AWS SSM, GCP IAP, Azure Bastion, etc.)"
 msgstr ""
-"Zero Trust qoşulmaları üçün tələb olunur (AWS SSM, GCP IAP, Azure Bastion "
-"və s.)"
+"Zero Trust bağlantıları üçün tələb olunur (AWS SSM, GCP IAP, Azure "
+"Bastion və s.)"
 
 #: rustconn/src/dialogs/flatpak_components.rs:182
 msgid "Password Manager CLIs"
@@ -5175,7 +5176,7 @@ msgstr "Konteyner orkestrləşdirməsi"
 
 #: rustconn/src/dialogs/flatpak_components.rs:194
 msgid "Required for Kubernetes pod shell connections"
-msgstr "Kubernetes pod shell qoşulmaları üçün tələb olunur"
+msgstr "Kubernetes pod shell bağlantıları üçün tələb olunur"
 
 #: rustconn/src/dialogs/flatpak_components.rs:272
 #: rustconn/src/dialogs/flatpak_components.rs:274
@@ -5221,7 +5222,7 @@ msgstr "Uğursuz"
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:158
 #: rustconn/src/sidebar_ui.rs:1155
 msgid "Connection History"
-msgstr "Qoşulma tarixçəsi"
+msgstr "Bağlantı tarixçəsi"
 
 #: rustconn/src/dialogs/history.rs:46
 msgid "Search history…"
@@ -5229,15 +5230,15 @@ msgstr "Tarixçədə axtar…"
 
 #: rustconn/src/dialogs/history.rs:53
 msgid "Filter history by name, host, or protocol"
-msgstr "Tarixçəni ad, host və ya protokol üzrə filtrlə"
+msgstr "Tarixçəni ad, host və ya protokol üzrə süz"
 
 #: rustconn/src/dialogs/history.rs:80
 msgid "No Connection History"
-msgstr "Qoşulma tarixçəsi yoxdur"
+msgstr "Bağlantı tarixçəsi yoxdur"
 
 #: rustconn/src/dialogs/history.rs:81
 msgid "Connections you open will appear here"
-msgstr "Açdığınız qoşulmalar burada görünəcək"
+msgstr "Açdığınız bağlantılar burada görünəcək"
 
 #: rustconn/src/dialogs/history.rs:97
 msgid "Clear History"
@@ -6134,7 +6135,7 @@ msgid ""
 "The server asks for a password, but this connection's options or proxy "
 "prevent RustConn from passing the stored one safely."
 msgstr ""
-"Server parol istəyir, lakin bu bağlantının parametrləri və ya proksisi "
+"Server parol istəyir, lakin bu bağlantının tənzimləmələri və ya proksisi "
 "RustConn-un saxlanılmış parolu təhlükəsiz ötürməsinə mane olur."
 
 #: rustconn/src/dialogs/key_setup.rs:445
@@ -6208,7 +6209,7 @@ msgstr "Açardan istifadə et"
 
 #: rustconn/src/dialogs/key_setup.rs:596
 msgid "Keep Current Settings"
-msgstr "Cari parametrləri saxla"
+msgstr "Cari tənzimləmələri saxla"
 
 #: rustconn/src/dialogs/key_setup.rs:609
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:1005
@@ -6388,7 +6389,7 @@ msgstr "Hər iki istiqamət"
 
 #: rustconn/src/dialogs/mod.rs:49
 msgid "Follow the app setting"
-msgstr "Tətbiq parametrinə uyğun"
+msgstr "Tətbiq tənzimləməsinə uyğun"
 
 #: rustconn/src/dialogs/mod.rs:50
 msgid "On this computer"
@@ -6745,7 +6746,7 @@ msgid ""
 "Save your settings so the copy of the passphrase kept on this computer is "
 "updated too. Until then this computer still remembers the old one."
 msgstr ""
-"Parametrlərinizi saxlayın ki, bu kompüterdə saxlanılan parol ifadəsi "
+"Tənzimləmələrinizi saxlayın ki, bu kompüterdə saxlanılan parol ifadəsi "
 "nüsxəsi də yenilənsin. O vaxta qədər bu kompüter hələ də köhnəsini "
 "xatırlayır."
 
@@ -6783,7 +6784,7 @@ msgstr "Yazılarda axtar…"
 
 #: rustconn/src/dialogs/recording.rs:113
 msgid "Filter recordings by name"
-msgstr "Yazıları ada görə filtrlə"
+msgstr "Yazıları ada görə süz"
 
 #: rustconn/src/dialogs/recording.rs:140
 msgid "No Recordings"
@@ -7104,7 +7105,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:140
 msgid "Could not save the hardware acceleration setting: {}"
-msgstr "Aparat sürətləndirmə parametri saxlanıla bilmədi: {}"
+msgstr "Aparat sürətləndirmə tənzimləməsi saxlanıla bilmədi: {}"
 
 #: rustconn/src/dialogs/settings/clients_tab.rs:208
 #: rustconn/src/dialogs/settings/secrets_tab/detection.rs:77
@@ -7437,11 +7438,11 @@ msgstr "Ehtiyat nüsxə və bərpa"
 
 #: rustconn/src/dialogs/settings/mod.rs:469
 msgid "Export or import all settings as a ZIP archive"
-msgstr "Bütün parametrləri ZIP arxivi kimi ixrac və ya idxal et"
+msgstr "Bütün tənzimləmələri ZIP arxivi kimi ixrac və ya idxal et"
 
 #: rustconn/src/dialogs/settings/mod.rs:473
 msgid "Backup Settings…"
-msgstr "Parametrlərin ehtiyat nüsxəsi…"
+msgstr "Tənzimləmələrin ehtiyat nüsxəsi…"
 
 #: rustconn/src/dialogs/settings/mod.rs:474
 msgid "Save all configuration files to a ZIP archive"
@@ -7449,7 +7450,7 @@ msgstr "Bütün konfiqurasiya fayllarını ZIP arxivinə saxla"
 
 #: rustconn/src/dialogs/settings/mod.rs:477
 msgid "Restore Settings…"
-msgstr "Parametrləri bərpa et…"
+msgstr "Tənzimləmələri bərpa et…"
 
 #: rustconn/src/dialogs/settings/mod.rs:479
 msgid "Load configuration from a ZIP archive (restart required)"
@@ -7484,13 +7485,13 @@ msgstr "Ehtiyat nüsxəni aç"
 
 #: rustconn/src/dialogs/settings/mod.rs:590
 msgid "Restore Settings?"
-msgstr "Parametrlər bərpa edilsin?"
+msgstr "Tənzimləmələr bərpa edilsin?"
 
 #: rustconn/src/dialogs/settings/mod.rs:592
 msgid ""
 "This will overwrite current settings. A restart is required to apply changes."
 msgstr ""
-"Bu, cari parametrləri üzərinə yazacaq. Dəyişikliklərin tətbiqi üçün "
+"Bu, cari tənzimləmələri üzərinə yazacaq. Dəyişikliklərin tətbiqi üçün "
 "yenidən başlatma tələb olunur."
 
 #: rustconn/src/dialogs/settings/mod.rs:596
@@ -7501,17 +7502,17 @@ msgstr "Bərpa et"
 #: rustconn/src/dialogs/settings/mod.rs:628
 msgid "Restored files but failed to reload settings. Please restart."
 msgstr ""
-"Fayllar bərpa edildi, lakin parametrlər yenidən yüklənə bilmədi. Zəhmət "
+"Fayllar bərpa edildi, lakin tənzimləmələr yenidən yüklənə bilmədi. Zəhmət "
 "olmasa yenidən başladın."
 
 #: rustconn/src/dialogs/settings/mod.rs:643
 msgid "Settings restored"
-msgstr "Parametrlər bərpa edildi"
+msgstr "Tənzimləmələr bərpa edildi"
 
 #: rustconn/src/dialogs/settings/mod.rs:645
 msgid "Restored {} files. Restart RustConn to apply the restored settings."
 msgstr ""
-"{} fayl bərpa edildi. Bərpa edilmiş parametrləri tətbiq etmək üçün "
+"{} fayl bərpa edildi. Bərpa edilmiş tənzimləmələri tətbiq etmək üçün "
 "RustConn-u yenidən başladın."
 
 #: rustconn/src/dialogs/settings/mod.rs:649
@@ -7550,7 +7551,7 @@ msgstr ""
 
 #: rustconn/src/dialogs/settings/mod.rs:961
 msgid "Connections reset to the global monitoring setting: {}"
-msgstr "Qlobal monitorinq parametrinə sıfırlanmış bağlantılar: {}"
+msgstr "Qlobal monitorinq tənzimləməsinə sıfırlanmış bağlantılar: {}"
 
 #: rustconn/src/dialogs/settings/mod.rs:969
 msgid "Could Not Reset Overrides"
@@ -7621,7 +7622,7 @@ msgid ""
 "connection settings)"
 msgstr ""
 "Bütün bağlantılar üçün qlobal açar (bağlantı üzrə: bağlantı "
-"parametrlərində Qabaqcıl nişanı)"
+"tənzimləmələrində Qabaqcıl tabı)"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:71
 msgid "Polling interval"
@@ -7686,7 +7687,7 @@ msgstr "Distributiv, nüvə versiyası, işləmə müddəti"
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:172
 msgid "Default settings for terminal activity and silence detection"
 msgstr ""
-"Terminal aktivliyi və səssizlik aşkarlanması üçün standart parametrlər"
+"Terminal aktivliyi və səssizlik aşkarlanması üçün standart tənzimləmələr"
 
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:180
 msgid "Default Mode"
@@ -9654,11 +9655,11 @@ msgstr "İstəyə bağlı emoji"
 
 #: rustconn/src/dialogs/smart_folder.rs:138
 msgid "Filters"
-msgstr "Filtrlər"
+msgstr "Süzgəclər"
 
 #: rustconn/src/dialogs/smart_folder.rs:139
 msgid "Connections must match ALL active filters"
-msgstr "Bağlantılar BÜTÜN aktiv filtrlərə uyğun olmalıdır"
+msgstr "Bağlantılar BÜTÜN aktiv süzgəclərə uyğun olmalıdır"
 
 #: rustconn/src/dialogs/smart_folder.rs:143
 #: rustconn/src/dialogs/smart_folder.rs:182
@@ -9668,7 +9669,7 @@ msgstr "İstənilən"
 
 #: rustconn/src/dialogs/smart_folder.rs:160
 msgid "Filter by Protocol"
-msgstr "Protokola görə filtr"
+msgstr "Protokola görə süzgəc"
 
 #: rustconn/src/dialogs/smart_folder.rs:167
 msgid "Host Pattern"
@@ -9680,7 +9681,7 @@ msgstr "*.example.com"
 
 #: rustconn/src/dialogs/smart_folder.rs:174
 msgid "Filter by Tags"
-msgstr "Teqlərə görə filtr"
+msgstr "Teqlərə görə süzgəc"
 
 #: rustconn/src/dialogs/smart_folder.rs:175
 msgid "Comma or semicolon separated"
@@ -9692,7 +9693,7 @@ msgstr "web, production"
 
 #: rustconn/src/dialogs/smart_folder.rs:183
 msgid "Filter by Group"
-msgstr "Qrupa görə filtr"
+msgstr "Qrupa görə süzgəc"
 
 #: rustconn/src/dialogs/snippet.rs:79 rustconn/src/window/snippets.rs:226
 #: rustconn/src/window/snippets.rs:227
@@ -10104,7 +10105,7 @@ msgstr "Hoop.dev gRPC server URL-i (istəyə bağlı)"
 
 #: rustconn/src/dialogs/template.rs:1935
 msgid "Custom SSH command with proxy settings"
-msgstr "Proxy ayarları ilə fərdi SSH əmri"
+msgstr "Proxy tənzimləmələri ilə fərdi SSH əmri"
 
 #: rustconn/src/dialogs/template.rs:2784
 msgid "Edit Template"
@@ -10147,8 +10148,8 @@ msgstr "Şablon yoxdur"
 msgid ""
 "Create a template to quickly set up new connections with predefined settings."
 msgstr ""
-"Əvvəlcədən təyin olunmuş ayarlarla yeni bağlantıları tez qurmaq üçün "
-"şablon yaradın."
+"Əvvəlcədən təyin olunmuş tənzimləmələrlə yeni bağlantıları tez qurmaq "
+"üçün şablon yaradın."
 
 #: rustconn/src/dialogs/template_manager.rs:110 rustconn/src/sidebar_ui.rs:366
 #: rustconn/src/sidebar_ui.rs:540 rustconn/src/smart_folder_ui.rs:404
@@ -10649,14 +10650,14 @@ msgstr "variable_name"
 #: rustconn/src/window/connection_dialogs.rs:508
 #: rustconn/src/window/edit_group.rs:275
 msgid "Password value"
-msgstr "Şifrə dəyəri"
+msgstr "Parol dəyəri"
 
 #: rustconn/src/dialogs/variables.rs:260 rustconn/src/dialogs/variables.rs:263
 #: rustconn/src/window/connection_dialogs.rs:522
 #: rustconn/src/window/connection_dialogs.rs:526
 #: rustconn/src/window/edit_group.rs:289 rustconn/src/window/edit_group.rs:293
 msgid "Load password from vault"
-msgstr "Şifrəni seyfdən yüklə"
+msgstr "Parolu anbardan yüklə"
 
 #: rustconn/src/dialogs/variables.rs:298
 msgid "KeePass entry:"
@@ -10672,12 +10673,12 @@ msgid ""
 "this                  existing entry instead of the default RustConn/"
 "rustconn/var/ path."
 msgstr ""
-"Fərdi KeePass qeyd yolu. Təyin olunarsa, şifrə standart "
+"Fərdi KeePass qeyd yolu. Təyin olunarsa, parol standart "
 "RustConn/rustconn/var/ yolu əvəzinə bu mövcud qeyddən oxunur."
 
 #: rustconn/src/dialogs/variables.rs:317
 msgid "Vault entry:"
-msgstr "Seyf qeydi:"
+msgstr "Anbar qeydi:"
 
 #: rustconn/src/dialogs/variables.rs:322
 msgid "e.g. AD Credentials (optional)"
@@ -10689,9 +10690,9 @@ msgid ""
 "this                  entry at connection time — no need to enter a password "
 "above.                  Nothing is written back to the vault."
 msgstr ""
-"Mövcud seyf qeydinin adı. Təyin olunarsa, şifrə qoşulma zamanı bu qeyddən "
-"alınır — yuxarıda şifrə daxil etməyə ehtiyac yoxdur. Seyfə heç nə geri "
-"yazılmır."
+"Mövcud anbar qeydinin adı. Təyin olunarsa, parol qoşulma zamanı bu "
+"qeyddən alınır — yuxarıda parol daxil etməyə ehtiyac yoxdur. Anbara heç "
+"nə geri yazılmır."
 
 #: rustconn/src/dialogs/variables.rs:372 rustconn/src/dialogs/variables.rs:648
 msgid "New variable"
@@ -10703,11 +10704,11 @@ msgstr "Sirri yükləmək mümkün olmadı"
 
 #: rustconn/src/dialogs/variables.rs:507
 msgid "Failed to load secret. Check secret backend in Settings."
-msgstr "Sirri yükləmək alınmadı. Ayarlarda sirr arxa planını yoxlayın."
+msgstr "Sirri yükləmək alınmadı. Tənzimləmələrdə sirr backend-ini yoxlayın."
 
 #: rustconn/src/dialogs/variables.rs:605
 msgid "Fetched from vault at connect time"
-msgstr "Qoşulma zamanı seyfdən alınır"
+msgstr "Qoşulma zamanı anbardan alınır"
 
 #: rustconn/src/dialogs/widgets.rs:530
 msgid "Underline colour (#RRGGBB)"
@@ -10725,7 +10726,7 @@ msgid ""
 msgstr ""
 "Hexadecimal rəng, məsələn #00AAFF, uyğunluğun altında xətt kimi çəkilir. "
 "Heç biri üçün boş buraxın. Mətnin özünün rəngini dəyişmək üçün bağlantıya "
-"ChromaTerm kimi Çıxış Filtri verin."
+"ChromaTerm kimi Çıxış süzgəci verin."
 
 #: rustconn/src/dialogs/widgets.rs:550
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
@@ -10880,7 +10881,7 @@ msgstr "Uzaq nəzarəti (kömək) aç/bağla"
 
 #: rustconn/src/embedded.rs:204
 msgid "This tab will close automatically when the session ends"
-msgstr "Sessiya bitəndə bu nişan avtomatik bağlanacaq"
+msgstr "Sessiya bitəndə bu tab avtomatik bağlanacaq"
 
 #: rustconn/src/embedded.rs:208
 msgid "Session running in separate window"
@@ -10928,16 +10929,16 @@ msgid ""
 "security layer to RDP in connection settings."
 msgstr ""
 "TLS razılaşması alınmadı. Köhnə server üçün (məs. Windows 2008 R2) "
-"bağlantı ayarlarında təhlükəsizlik qatını RDP-yə təyin edin."
+"bağlantı tənzimləmələrində təhlükəsizlik qatını RDP-yə təyin edin."
 
 #: rustconn/src/embedded.rs:664
 msgid ""
 "TLS certificate verification failed. Enable 'Accept Certificate' in "
 "connection settings, or set the security layer to RDP for a legacy server."
 msgstr ""
-"TLS sertifikat yoxlaması alınmadı. Bağlantı ayarlarında 'Sertifikatı "
-"qəbul et' seçimini aktivləşdirin və ya köhnə server üçün təhlükəsizlik "
-"qatını RDP-yə təyin edin."
+"TLS sertifikat yoxlaması alınmadı. Bağlantı tənzimləmələrində "
+"'Sertifikatı qəbul et' seçimini aktivləşdirin və ya köhnə server üçün "
+"təhlükəsizlik qatını RDP-yə təyin edin."
 
 #: rustconn/src/embedded_rdp/autotype.rs:56
 #: rustconn/src/embedded_rdp/clipboard.rs:32
@@ -10982,7 +10983,7 @@ msgstr ""
 
 #: rustconn/src/embedded_rdp/autotype.rs:202
 msgid "Hide text (password mode)"
-msgstr "Mətni gizlət (şifrə rejimi)"
+msgstr "Mətni gizlət (parol rejimi)"
 
 #: rustconn/src/embedded_rdp/autotype.rs:238
 msgid "No text to type"
@@ -11025,7 +11026,7 @@ msgstr "Son bağlantıdan bəri server sertifikatı dəyişdi."
 
 #: rustconn/src/embedded_rdp/connection.rs:290
 msgid "Authentication failed: invalid username or password."
-msgstr "Autentifikasiya alınmadı: yanlış istifadəçi adı və ya şifrə."
+msgstr "Autentifikasiya alınmadı: yanlış istifadəçi adı və ya parol."
 
 #: rustconn/src/embedded_rdp/connection.rs:293
 msgid ""
@@ -11043,8 +11044,7 @@ msgstr "Hesab serverdə deaktiv edilib."
 
 #: rustconn/src/embedded_rdp/connection.rs:305
 msgid "Password expired. Change the password on the server and try again."
-msgstr ""
-"Şifrənin müddəti bitib. Serverdə şifrəni dəyişin və yenidən cəhd edin."
+msgstr "Parolun müddəti bitib. Serverdə parolu dəyişin və yenidən cəhd edin."
 
 #: rustconn/src/embedded_rdp/connection.rs:321
 msgid ""
@@ -11052,7 +11052,7 @@ msgid ""
 "or password is likely incorrect — check your credentials and try again."
 msgstr ""
 "Bu server Şəbəkə Səviyyəsində Autentifikasiya tələb edir. İstifadəçi adı "
-"və ya şifrə çox güman ki, yanlışdır — məlumatlarınızı yoxlayın və yenidən "
+"və ya parol çox güman ki, yanlışdır — məlumatlarınızı yoxlayın və yenidən "
 "cəhd edin."
 
 #: rustconn/src/embedded_rdp/connection.rs:328
@@ -11157,7 +11157,7 @@ msgid ""
 "Connection → Media Codecs to download it."
 msgstr ""
 "H.264 söndürülüb — quraşdırılmış OpenH264 Cisco buraxılışı deyil. Onu "
-"yükləmək üçün Ayarlar → Bağlantı → Media Kodekləri bölməsini açın."
+"yükləmək üçün Tənzimləmələr → Bağlantı → Media Kodekləri bölməsini açın."
 
 #: rustconn/src/embedded_rdp/connection.rs:2471
 msgid ""
@@ -11165,7 +11165,7 @@ msgid ""
 "Media Codecs to download it."
 msgstr ""
 "H.264 söndürülüb — OpenH264 kodeki quraşdırılmayıb. Onu yükləmək üçün "
-"Ayarlar → Bağlantı → Media Kodekləri bölməsini açın."
+"Tənzimləmələr → Bağlantı → Media Kodekləri bölməsini açın."
 
 #: rustconn/src/embedded_rdp/connection.rs:2475
 msgid ""
@@ -11173,7 +11173,7 @@ msgid ""
 "Connection → Media Codecs to re-download it."
 msgstr ""
 "H.264 söndürülüb — OpenH264 kodeki yüklənə bilmədi. Onu yenidən yükləmək "
-"üçün Ayarlar → Bağlantı → Media Kodekləri bölməsini açın."
+"üçün Tənzimləmələr → Bağlantı → Media Kodekləri bölməsini açın."
 
 #: rustconn/src/embedded_rdp/connection.rs:2685
 msgid "Connection lost. Reconnecting (attempt {} of {})…"
@@ -11227,7 +11227,7 @@ msgid ""
 "instead be the server's NLA regression with FreeRDP 3.32 — update KRdp to "
 "6.7.90 or newer, or set ExtSecurity=0 on the server (FreeRDP issue #13567)."
 msgstr ""
-"Autentifikasiya alınmadı: yanlış istifadəçi adı və ya şifrə. Əgər "
+"Autentifikasiya alınmadı: yanlış istifadəçi adı və ya parol. Əgər "
 "məlumatlar doğrudursa və server Linux RDP hostudursa (KDE KRdp, xrdp), "
 "bu, əvəzində serverin FreeRDP 3.32 ilə NLA reqressiyası ola bilər — "
 "KRdp-ni 6.7.90 və ya daha yenisinə yeniləyin və ya serverdə ExtSecurity=0 "
@@ -11239,7 +11239,7 @@ msgid ""
 "use NTLM: turn on Kerberos Authentication in the connection's RDP settings."
 msgstr ""
 "Hesab məhdudiyyətləri bu girişi rədd etdi. Protected Users üzvləri NTLM "
-"istifadə edə bilməz: bağlantının RDP ayarlarında Kerberos "
+"istifadə edə bilməz: bağlantının RDP tənzimləmələrində Kerberos "
 "Autentifikasiyasını aktivləşdirin."
 
 #: rustconn/src/embedded_rdp/connection.rs:3201
@@ -11248,7 +11248,7 @@ msgstr "Autentifikasiya alınmadı: hesab məhdudiyyətləri bu girişə mane ol
 
 #: rustconn/src/embedded_rdp/connection.rs:3204
 msgid "Authentication failed: password must be changed before first login."
-msgstr "Autentifikasiya alınmadı: ilk girişdən əvvəl şifrə dəyişdirilməlidir."
+msgstr "Autentifikasiya alınmadı: ilk girişdən əvvəl parol dəyişdirilməlidir."
 
 #: rustconn/src/embedded_rdp/connection.rs:3206
 msgid "Authentication failed: account is disabled."
@@ -11260,7 +11260,7 @@ msgstr "Autentifikasiya alınmadı: hesab bloklanıb."
 
 #: rustconn/src/embedded_rdp/connection.rs:3208
 msgid "Authentication failed: password has expired."
-msgstr "Autentifikasiya alınmadı: şifrənin müddəti bitib."
+msgstr "Autentifikasiya alınmadı: parolun müddəti bitib."
 
 #: rustconn/src/embedded_rdp/connection.rs:3209
 msgid "Authentication failed: account has expired."
@@ -11282,8 +11282,8 @@ msgid ""
 "No Kerberos KDC was found for the {} realm. Enter a KDC Address in the "
 "connection's RDP settings or add the realm to /etc/krb5.conf."
 msgstr ""
-"{} realm-i üçün Kerberos KDC tapılmadı. Bağlantının RDP ayarlarında KDC "
-"Ünvanı daxil edin və ya realmi /etc/krb5.conf faylına əlavə edin."
+"{} realm-i üçün Kerberos KDC tapılmadı. Bağlantının RDP tənzimləmələrində "
+"KDC Ünvanı daxil edin və ya realmi /etc/krb5.conf faylına əlavə edin."
 
 #: rustconn/src/embedded_rdp/connection.rs:3222
 #: rustconn/src/embedded_rdp/connection.rs:3262
@@ -11299,8 +11299,8 @@ msgid ""
 "Could not reach the Kerberos KDC. Enter a domain controller's name or IP "
 "address as the KDC Address in the connection's RDP settings."
 msgstr ""
-"Kerberos KDC-yə çatmaq mümkün olmadı. Bağlantının RDP ayarlarında KDC "
-"Ünvanı olaraq domen nəzarətçisinin adını və ya IP ünvanını daxil edin."
+"Kerberos KDC-yə çatmaq mümkün olmadı. Bağlantının RDP tənzimləmələrində "
+"KDC Ünvanı olaraq domen nəzarətçisinin adını və ya IP ünvanını daxil edin."
 
 #: rustconn/src/embedded_rdp/connection.rs:3229
 msgid ""
@@ -11320,7 +11320,7 @@ msgstr ""
 
 #: rustconn/src/embedded_rdp/connection.rs:3234
 msgid "NLA authentication failed. Check username and password."
-msgstr "NLA autentifikasiyası alınmadı. İstifadəçi adını və şifrəni yoxlayın."
+msgstr "NLA autentifikasiyası alınmadı. İstifadəçi adını və parolu yoxlayın."
 
 #: rustconn/src/embedded_rdp/connection.rs:3256
 msgid ""
@@ -11989,19 +11989,19 @@ msgstr "Protokola görə süz"
 
 #: rustconn/src/sidebar/mod.rs:1035
 msgid "Filter by protocol (filters active)"
-msgstr "Protokola görə süz (filtrlər aktivdir)"
+msgstr "Protokola görə süz (süzgəclər aktivdir)"
 
 #: rustconn/src/sidebar/mod.rs:1966
 msgid "Open Password Vault (Active)"
-msgstr "Şifrə seyfini aç (aktiv)"
+msgstr "Parol anbarını aç (aktiv)"
 
 #: rustconn/src/sidebar/mod.rs:1971
 msgid "Password Vault Not Found"
-msgstr "Şifrə seyfi tapılmadı"
+msgstr "Parol anbarı tapılmadı"
 
 #: rustconn/src/sidebar/mod.rs:1974
 msgid "Password Vault Disabled"
-msgstr "Şifrə seyfi deaktivdir"
+msgstr "Parol anbarı deaktivdir"
 
 #: rustconn/src/sidebar/search.rs:21
 msgid "Search Syntax"
@@ -12224,11 +12224,11 @@ msgstr "Bağlantıları son istifadəyə görə çeşidlə"
 
 #: rustconn/src/sidebar_ui.rs:1202
 msgid "Open password vault"
-msgstr "Şifrə seyfini aç"
+msgstr "Parol anbarını aç"
 
 #: rustconn/src/sidebar_ui.rs:1206
 msgid "Open password vault for credential management"
-msgstr "Məlumat idarəetməsi üçün şifrə seyfini aç"
+msgstr "Məlumat idarəetməsi üçün parol anbarını aç"
 
 #: rustconn/src/sidebar_ui.rs:1212
 msgid "Toggle smart folders"
@@ -12288,7 +12288,7 @@ msgstr "Ağıllı qovluq yoxdur"
 
 #: rustconn/src/split_view/adapter.rs:48
 msgid "Drag to move this session to another panel or tab"
-msgstr "Bu sessiyanı başqa panelə və ya nişana köçürmək üçün sürükləyin"
+msgstr "Bu sessiyanı başqa panelə və ya taba köçürmək üçün sürükləyin"
 
 #: rustconn/src/split_view/adapter.rs:1031
 #: rustconn/src/split_view/adapter.rs:1033
@@ -12297,7 +12297,7 @@ msgstr "Panel əməliyyatlarını göstər"
 
 #: rustconn/src/split_view/adapter.rs:1122
 msgid "Remove this session from the split and show it in its own tab"
-msgstr "Bu sessiyanı bölünmüş görünüşdən çıxar və öz nişanında göstər"
+msgstr "Bu sessiyanı bölünmüş görünüşdən çıxar və öz tabında göstər"
 
 #: rustconn/src/split_view/adapter.rs:1142
 msgid "Move this session out of the split into its own window"
@@ -12484,7 +12484,7 @@ msgstr "Xoş gəldiniz"
 
 #: rustconn/src/terminal/mod.rs:1114
 msgid "Output filter '{}' is not installed; session output is not filtered"
-msgstr "Çıxış filtri '{}' quraşdırılmayıb; sessiya çıxışı filtrlənmir"
+msgstr "Çıxış süzgəci '{}' quraşdırılmayıb; sessiya çıxışı süzgəcdən keçirilmir"
 
 #: rustconn/src/terminal/mod.rs:1464
 msgid "Command not found: {}"
@@ -12773,7 +12773,7 @@ msgstr "RustConn haqqında"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5644
 msgid "Passphrase Does Not Open the Portable File"
-msgstr "Şifrə ifadəsi portativ faylı açmır"
+msgstr "Parol ifadəsi portativ faylı açmır"
 
 #: rustconn/src/vault_ops.rs:52
 msgid ""
@@ -12781,9 +12781,9 @@ msgid ""
 "portable credential file. Open Settings, then Secrets, and enter the "
 "passphrase the file was created with."
 msgstr ""
-"Şifrə saxlanılmadı. İstifadə olunan şifrə ifadəsi portativ kimlik faylını "
-"deşifrə etmir. Parametrləri, sonra Secrets bölməsini açın və faylın "
-"yaradıldığı şifrə ifadəsini daxil edin."
+"Parol saxlanılmadı. İstifadə olunan parol ifadəsi portativ kimlik faylını "
+"deşifrə etmir. Tənzimləmələri, sonra Sirlər bölməsini açın və faylın "
+"yaradıldığı parol ifadəsini daxil edin."
 
 #: rustconn/src/vault_ops.rs:57
 msgid "Portable File Is Locked"
@@ -12795,17 +12795,17 @@ msgid ""
 "unlocked in this session. Open Settings, then Secrets, and enter its "
 "passphrase."
 msgstr ""
-"Şifrə saxlanılmadı, çünki portativ kimlik faylı bu sessiyada açılmayıb. "
-"Parametrləri, sonra Secrets bölməsini açın və onun şifrə ifadəsini daxil "
+"Parol saxlanılmadı, çünki portativ kimlik faylı bu sessiyada açılmayıb. "
+"Tənzimləmələri, sonra Sirlər bölməsini açın və onun parol ifadəsini daxil "
 "edin."
 
 #: rustconn/src/vault_ops.rs:114
 msgid "Password saved to {}."
-msgstr "Şifrə {} ünvanına saxlanıldı."
+msgstr "Parol {} ünvanına saxlanıldı."
 
 #: rustconn/src/vault_ops.rs:273
 msgid "{} did not accept this password"
-msgstr "{} bu şifrəni qəbul etmədi"
+msgstr "{} bu parolu qəbul etmədi"
 
 #: rustconn/src/vault_ops.rs:285
 msgid ""
@@ -12814,16 +12814,16 @@ msgid ""
 "choose another backend."
 msgstr ""
 "Sistem açar qovluğuna giriş yoxdur. İcra edin: sudo snap connect "
-"rustconn:password-manager-service — və ya Parametrləri, sonra Secrets "
-"bölməsini açıb başqa arxa plan seçin."
+"rustconn:password-manager-service — və ya Tənzimləmələri, sonra Sirlər "
+"bölməsini açıb başqa backend seçin."
 
 #: rustconn/src/vault_ops.rs:289
 msgid ""
 "No system keyring is responding. Open Settings, then Secrets, and choose "
 "another backend such as Encrypted file or KeePassXC."
 msgstr ""
-"Heç bir sistem açar qovluğu cavab vermir. Parametrləri, sonra Secrets "
-"bölməsini açın və Şifrələnmiş fayl və ya KeePassXC kimi başqa arxa plan "
+"Heç bir sistem açar qovluğu cavab vermir. Tənzimləmələri, sonra Sirlər "
+"bölməsini açın və Şifrələnmiş fayl və ya KeePassXC kimi başqa backend "
 "seçin."
 
 #: rustconn/src/vault_ops.rs:294
@@ -12831,8 +12831,8 @@ msgid ""
 "Fix {} and save again, or choose a different backend in Settings, then "
 "Secrets."
 msgstr ""
-"{} düzəldin və yenidən saxlayın, ya da Parametrlər → Secrets bölməsində "
-"başqa arxa plan seçin."
+"{} düzəldin və yenidən saxlayın, ya da Tənzimləmələr → Sirlər bölməsində "
+"başqa backend seçin."
 
 #: rustconn/src/vault_ops.rs:301
 msgid ""
@@ -12850,7 +12850,7 @@ msgid ""
 "\n"
 "{}"
 msgstr ""
-"{}\n\nŞifrə saxlanılmadı. {}\n\n{}"
+"{}\n\nParol saxlanılmadı. {}\n\n{}"
 
 #: rustconn/src/vault_ops.rs:309
 msgid ""
@@ -12858,7 +12858,7 @@ msgid ""
 "\n"
 "The password has not been saved. {}"
 msgstr ""
-"{}\n\nŞifrə saxlanılmadı. {}"
+"{}\n\nParol saxlanılmadı. {}"
 
 #: rustconn/src/vault_ops.rs:318
 msgid "Save to This Computer"
@@ -13079,12 +13079,12 @@ msgstr "Bu qrupdakı bağlantıların miras aldığı kimlik məlumatları"
 #: rustconn/src/window/connection_dialogs.rs:514
 #: rustconn/src/window/edit_group.rs:281
 msgid "Show/hide password"
-msgstr "Şifrəni göstər/gizlət"
+msgstr "Parolu göstər/gizlət"
 
 #: rustconn/src/window/connection_dialogs.rs:518
 #: rustconn/src/window/edit_group.rs:285
 msgid "Toggle password visibility"
-msgstr "Şifrənin görünməsini dəyiş"
+msgstr "Parolun görünməsini dəyiş"
 
 #: rustconn/src/window/connection_dialogs.rs:572
 msgid "Enter group name first"
@@ -13092,7 +13092,7 @@ msgstr "Əvvəlcə qrup adını daxil edin"
 
 #: rustconn/src/window/connection_dialogs.rs:600
 msgid "Vault not configured"
-msgstr "Vault konfiqurasiya edilməyib"
+msgstr "Anbar konfiqurasiya edilməyib"
 
 #: rustconn/src/window/connection_dialogs.rs:642
 #: rustconn/src/window/connection_dialogs.rs:681
@@ -13100,7 +13100,7 @@ msgstr "Vault konfiqurasiya edilməyib"
 #: rustconn/src/window/edit_group.rs:497 rustconn/src/window/edit_group.rs:534
 #: rustconn/src/window/edit_group.rs:541
 msgid "No password found for this group"
-msgstr "Bu qrup üçün şifrə tapılmadı"
+msgstr "Bu qrup üçün parol tapılmadı"
 
 #: rustconn/src/window/connection_dialogs.rs:648
 #: rustconn/src/window/connection_dialogs.rs:693
@@ -13111,7 +13111,7 @@ msgstr "Yükləmə xətası"
 #: rustconn/src/window/connection_dialogs.rs:702
 #: rustconn/src/window/edit_group.rs:442
 msgid "Select Vault to load password"
-msgstr "Şifrəni yükləmək üçün Vault seçin"
+msgstr "Parolu yükləmək üçün Anbar seçin"
 
 #: rustconn/src/window/connection_dialogs.rs:714
 #: rustconn/src/window/edit_group.rs:1534
@@ -13166,12 +13166,12 @@ msgstr "{} idxal edilmiş kimlik məlumatı saxlanıldı"
 #: rustconn/src/window/connection_dialogs.rs:1081
 msgid "Stored {} of {} imported credentials — check the secret backend"
 msgstr ""
-"{} / {} idxal edilmiş kimlik məlumatı saxlanıldı — sirr arxa planını "
+"{} / {} idxal edilmiş kimlik məlumatı saxlanıldı — sirr backend-ini "
 "yoxlayın"
 
 #: rustconn/src/window/connection_dialogs.rs:1091
 msgid "Could not store imported credentials in the secret backend"
-msgstr "İdxal edilmiş kimlik məlumatları sirr arxa planında saxlanıla bilmədi"
+msgstr "İdxal edilmiş kimlik məlumatları sirr backend-ində saxlanıla bilmədi"
 
 #: rustconn/src/window/copy_field_actions.rs:80
 msgid "Port ({})"
@@ -13191,28 +13191,28 @@ msgstr "İstifadəçi adı kopyalandı"
 
 #: rustconn/src/window/copy_field_actions.rs:287
 msgid "Cached password is empty"
-msgstr "Keşlənmiş şifrə boşdur"
+msgstr "Keşlənmiş parol boşdur"
 
 #: rustconn/src/window/copy_field_actions.rs:318
 msgid "Password is empty"
-msgstr "Şifrə boşdur"
+msgstr "Parol boşdur"
 
 #: rustconn/src/window/copy_field_actions.rs:319
 #: rustconn/src/window/copy_field_actions.rs:321
 msgid "No password configured for this connection"
-msgstr "Bu bağlantı üçün şifrə konfiqurasiya edilməyib"
+msgstr "Bu bağlantı üçün parol konfiqurasiya edilməyib"
 
 #: rustconn/src/window/copy_field_actions.rs:324
 msgid "Could not retrieve password from secret backend"
-msgstr "Şifrə sirr arxa planından alına bilmədi"
+msgstr "Parol sirr backend-indən alına bilmədi"
 
 #: rustconn/src/window/credentials.rs:441
 msgid "Failed to save variable to vault: {}"
-msgstr "Dəyişən vault-a saxlana bilmədi: {}"
+msgstr "Dəyişən anbara saxlana bilmədi: {}"
 
 #: rustconn/src/window/credentials.rs:565
 msgid "Vault entry not found for '{}'. You will be prompted for a password."
-msgstr "Vault qeydi '{}' üçün tapılmadı. Sizdən şifrə tələb olunacaq."
+msgstr "Anbar qeydi '{}' üçün tapılmadı. Sizdən parol tələb olunacaq."
 
 #: rustconn/src/window/credentials.rs:1021
 #: rustconn/src/window/credentials.rs:1257
@@ -13331,7 +13331,7 @@ msgid ""
 msgstr ""
 "Tuneldən keçirilən brauzer əmri ‘{}’ Chromium əsaslı deyil və tuneldən "
 "keçirilə bilməz; əvəzinə daxili brauzer açılır. Xarici brauzer istifadə "
-"etmək üçün Parametrlərdə chromium/chrome/brave/vivaldi/edge əmri təyin "
+"etmək üçün Tənzimləmələrdə chromium/chrome/brave/vivaldi/edge əmri təyin "
 "edin."
 
 #: rustconn/src/window/edit_actions.rs:1279
@@ -13342,7 +13342,7 @@ msgid ""
 msgstr ""
 "Tuneldən keçirilən brauzer əmri ‘{}’ Chromium əsaslı brauzer deyil. "
 "Yalnız Chromium ailəsinin brauzerləri tuneldən keçirilə bilər; "
-"Parametrlərdə chromium/chrome/brave/vivaldi/edge əmri təyin edin."
+"Tənzimləmələrdə chromium/chrome/brave/vivaldi/edge əmri təyin edin."
 
 #: rustconn/src/window/edit_actions.rs:1285
 msgid ""
@@ -13351,7 +13351,7 @@ msgid ""
 "detect a browser."
 msgstr ""
 "Tuneldən keçirilən brauzer əmri ‘{}’ PATH-də tapılmadı; əvəzinə daxili "
-"brauzer açılır. Parametrlərdə əmri yoxlayın və ya brauzerin avtomatik "
+"brauzer açılır. Tənzimləmələrdə əmri yoxlayın və ya brauzerin avtomatik "
 "aşkarlanması üçün onu təmizləyin."
 
 #: rustconn/src/window/edit_actions.rs:1289
@@ -13359,7 +13359,7 @@ msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
 msgstr ""
-"Tuneldən keçirilən brauzer əmri ‘{}’ PATH-də tapılmadı. Parametrlərdə "
+"Tuneldən keçirilən brauzer əmri ‘{}’ PATH-də tapılmadı. Tənzimləmələrdə "
 "əmri yoxlayın və ya brauzerin avtomatik aşkarlanması üçün onu təmizləyin."
 
 #: rustconn/src/window/edit_actions.rs:1295
@@ -13433,7 +13433,7 @@ msgstr "SFTP yalnız SSH bağlantıları üçün mövcuddur."
 #: rustconn/src/window/edit_actions.rs:1943
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr ""
-"mc agentdə SSH açarı tələb edir. Şifrə ilə autentifikasiya dəstəklənmir."
+"mc agentdə SSH açarı tələb edir. Parol ilə autentifikasiya dəstəklənmir."
 
 #: rustconn/src/window/edit_actions.rs:1951
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
@@ -13466,8 +13466,8 @@ msgid ""
 "reliable access."
 msgstr ""
 "Xarici fayl menecerləri Flatpak-da SSH agentə çıxış əldə edə "
-"bilmir.                          Etibarlı giriş üçün Parametrlərdə \"SFTP "
-"via mc\" funksiyasını aktivləşdirin."
+"bilmir.                          Etibarlı giriş üçün Tənzimləmələrdə "
+"\"SFTP via mc\" funksiyasını aktivləşdirin."
 
 #: rustconn/src/window/edit_actions.rs:2080
 #: rustconn/src/window/edit_actions.rs:2466
@@ -13484,7 +13484,7 @@ msgstr "SSH agent işləmir — fayl meneceri autentifikasiya edə bilməz."
 
 #: rustconn/src/window/edit_dialogs.rs:277
 msgid "Failed to update vault entry: {}"
-msgstr "Vault qeydi yenilənə bilmədi: {}"
+msgstr "Anbar qeydi yenilənə bilmədi: {}"
 
 #: rustconn/src/window/edit_dialogs.rs:294
 msgid "Error Updating Connection"
@@ -13509,7 +13509,7 @@ msgstr "'{}' adlı qrup artıq mövcuddur"
 
 #: rustconn/src/window/edit_dialogs.rs:484
 msgid "Failed to rename vault entry: {}"
-msgstr "Vault qeydinin adı dəyişdirilə bilmədi: {}"
+msgstr "Anbar qeydinin adı dəyişdirilə bilmədi: {}"
 
 #: rustconn/src/window/edit_dialogs.rs:798
 msgid "⚠ This connection will not be saved"
@@ -13537,21 +13537,21 @@ msgstr "KeePass verilənlər bazası konfiqurasiya edilməyib"
 
 #: rustconn/src/window/edit_group.rs:627
 msgid "SSH Settings"
-msgstr "SSH parametrləri"
+msgstr "SSH tənzimləmələri"
 
 #: rustconn/src/window/edit_group.rs:628
 msgid "SSH settings inherited by connections in this group"
-msgstr "Bu qrupdakı bağlantıların miras aldığı SSH parametrləri"
+msgstr "Bu qrupdakı bağlantıların miras aldığı SSH tənzimləmələri"
 
 #: rustconn/src/window/edit_group.rs:680
 msgid "Clear SSH Settings?"
-msgstr "SSH parametrləri təmizlənsin?"
+msgstr "SSH tənzimləmələri təmizlənsin?"
 
 #: rustconn/src/window/edit_group.rs:682
 msgid ""
 "Disabling will clear all SSH settings for this group. This cannot be undone."
 msgstr ""
-"Söndürmə bu qrup üçün bütün SSH parametrlərini təmizləyəcək. Bu geri "
+"Söndürmə bu qrup üçün bütün SSH tənzimləmələrini təmizləyəcək. Bu geri "
 "qaytarıla bilməz."
 
 #: rustconn/src/window/edit_group.rs:687 rustconn/src/window/edit_group.rs:1154
@@ -13796,13 +13796,13 @@ msgid ""
 "The secret for variable “{}” could not be saved to the vault and was not "
 "stored. Re-enter it and check your secret backend in Settings."
 msgstr ""
-"“{}” dəyişəninin sirri vault-a saxlana bilmədi və yadda saxlanılmadı. "
-"Yenidən daxil edin və Parametrlərdə sirr arxa planını yoxlayın."
+"“{}” dəyişəninin sirri anbara saxlana bilmədi və yadda saxlanılmadı. "
+"Yenidən daxil edin və Tənzimləmələrdə sirr backend-ini yoxlayın."
 
 #: rustconn/src/window/history_actions.rs:107
 msgid "Failed to save secret to vault. Check secret backend in Settings."
 msgstr ""
-"Sirr vault-a saxlana bilmədi. Parametrlərdə sirr arxa planını yoxlayın."
+"Sirr anbara saxlana bilmədi. Tənzimləmələrdə sirr backend-ini yoxlayın."
 
 #: rustconn/src/window/history_actions.rs:167
 msgid "Variables Not Saved"
@@ -13846,11 +13846,11 @@ msgstr "bağlantı SSH bağlantısı deyil"
 
 #: rustconn/src/window/key_setup.rs:925
 msgid "Restored the previous sign-in settings for '{}'"
-msgstr "'{}' üçün əvvəlki giriş parametrləri bərpa edildi"
+msgstr "'{}' üçün əvvəlki giriş tənzimləmələri bərpa edildi"
 
 #: rustconn/src/window/key_setup.rs:932
 msgid "The previous sign-in settings could not be restored."
-msgstr "Əvvəlki giriş parametrləri bərpa edilə bilmədi."
+msgstr "Əvvəlki giriş tənzimləmələri bərpa edilə bilmədi."
 
 #: rustconn/src/window/key_setup.rs:976
 msgid ""
@@ -13878,7 +13878,7 @@ msgstr "SSH agent açarı rədd etdi, ona görə əlavə edilmədi."
 
 #: rustconn/src/window/key_unlock.rs:233
 msgid "Too many incorrect passphrases. The key was not added to the SSH agent."
-msgstr "Çox sayda yanlış şifrə ifadəsi. Açar SSH agentə əlavə edilmədi."
+msgstr "Çox sayda yanlış parol ifadəsi. Açar SSH agentə əlavə edilmədi."
 
 #: rustconn/src/window/key_unlock.rs:238
 msgid "Could not add the SSH key to the agent: {}"
@@ -13893,8 +13893,8 @@ msgid ""
 "No password is available for this connection yet. Connect with a saved or "
 "entered password first."
 msgstr ""
-"Bu bağlantı üçün hələ şifrə yoxdur. Əvvəlcə saxlanmış və ya daxil edilmiş "
-"şifrə ilə qoşulun."
+"Bu bağlantı üçün hələ parol yoxdur. Əvvəlcə saxlanmış və ya daxil edilmiş "
+"parol ilə qoşulun."
 
 #: rustconn/src/window/macro_dispatch.rs:387
 msgid "Undefined variables: {}"
@@ -13923,11 +13923,11 @@ msgstr "“{}” özünü jump host kimi istifadə etmək üçün təyin edilib.
 
 #: rustconn/src/window/mod.rs:421
 msgid "The setting is inherited from the group “{}”."
-msgstr "Parametr “{}” qrupundan miras alınıb."
+msgstr "Tənzimləmə “{}” qrupundan miras alınıb."
 
 #: rustconn/src/window/mod.rs:426
 msgid "The setting is the Global Jump Host in Settings."
-msgstr "Parametr Parametrlərdəki Qlobal Jump Host-dur."
+msgstr "Tənzimləmə Tənzimləmələrdəki Qlobal Jump Host-dur."
 
 #: rustconn/src/window/mod.rs:431
 msgid ""
@@ -13964,7 +13964,7 @@ msgstr "Crash jurnalı açıla bilmədi. O, {} ünvanında saxlanılır"
 
 #: rustconn/src/window/mod.rs:1233
 msgid "Touch your hardware key to unlock the password database"
-msgstr "Şifrə verilənlər bazasını açmaq üçün aparat açarınıza toxunun"
+msgstr "Parol verilənlər bazasını açmaq üçün aparat açarınıza toxunun"
 
 #: rustconn/src/window/mod.rs:2731
 msgid "Already running in an external window"
@@ -14030,11 +14030,11 @@ msgstr "RustConn - {}"
 
 #: rustconn/src/window/mod.rs:4362
 msgid "Settings saved"
-msgstr "Parametrlər saxlanıldı"
+msgstr "Tənzimləmələr saxlanıldı"
 
 #: rustconn/src/window/mod.rs:4399
 msgid "Passphrase Not Saved on This Computer"
-msgstr "Şifrə ifadəsi bu kompüterdə saxlanılmadı"
+msgstr "Parol ifadəsi bu kompüterdə saxlanılmadı"
 
 #: rustconn/src/window/mod.rs:4401
 msgid ""
@@ -14043,7 +14043,7 @@ msgid ""
 "\"System keyring\" instead, or check that RustConn can write to its data "
 "directory."
 msgstr ""
-"Şifrə ifadəsi lokal saxlama üçün şifrələnə bilmədi, ona görə yalnız bu "
+"Parol ifadəsi lokal saxlama üçün şifrələnə bilmədi, ona görə yalnız bu "
 "sessiya üçün saxlanılır və yenidən başlatdıqdan sonra təkrar soruşulacaq. "
 "Əvəzinə \"System keyring\" seçin və ya RustConn-un öz məlumat qovluğuna "
 "yaza bildiyini yoxlayın."
@@ -14061,7 +14061,7 @@ msgstr ""
 "Sistem açar qovluğu kimlik məlumatlarını qəbul etmədi, ona görə onlar "
 "yalnız bu sessiya üçün saxlanılır və yenidən başlatmadan sonra itəcək. "
 "Açar qovluğu xidmətinizin işlədiyini və kilidinin açıq olduğunu yoxlayın, "
-"sonra parametrləri yenidən saxlayın."
+"sonra tənzimləmələri yenidən saxlayın."
 
 #: rustconn/src/window/mod.rs:4633
 msgid "Close RustConn?"
@@ -14076,7 +14076,7 @@ msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
 msgstr ""
-"Parametrlər oxuna bilmədi, ona görə standartlar istifadə olunur. "
+"Tənzimləmələr oxuna bilmədi, ona görə standartlar istifadə olunur. "
 "Oxunmayan fayl {} kimi saxlanıldı."
 
 #: rustconn/src/window/mod.rs:4677
@@ -14084,7 +14084,7 @@ msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
 msgstr ""
-"Bu parametrlər daha yeni RustConn ({}) tərəfindən saxlanılıb. "
+"Bu tənzimləmələr daha yeni RustConn ({}) tərəfindən saxlanılıb. "
 "Dəyişdirilməzdən əvvəl ehtiyat nüsxə saxlanılır."
 
 #: rustconn/src/window/mod.rs:4702
@@ -14121,9 +14121,9 @@ msgid ""
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
 "the passphrase the file was created with."
 msgstr ""
-"Saxladığınız şifrə ifadəsi portativ kimlik faylını deşifrə etmir, ona "
-"görə içindəki şifrələrin heç biri oxuna bilmir. Parametrlər ▸ Secrets "
-"bölməsini açın və faylın yaradıldığı şifrə ifadəsini daxil edin."
+"Saxladığınız parol ifadəsi portativ kimlik faylını deşifrə etmir, ona "
+"görə içindəki parolların heç biri oxuna bilmir. Tənzimləmələr ▸ Sirlər "
+"bölməsini açın və faylın yaradıldığı parol ifadəsini daxil edin."
 
 #: rustconn/src/window/mod.rs:5681
 msgid "Share Local Devices?"
@@ -14673,7 +14673,7 @@ msgstr "Menyu (F10)"
 
 #: rustconn/src/window/ui.rs:97
 msgid "Settings (Ctrl+,)"
-msgstr "Parametrlər (Ctrl+,)"
+msgstr "Tənzimləmələr (Ctrl+,)"
 
 #: rustconn/src/window/ui.rs:106
 msgid "Split Down (Ctrl+Shift+H)"
@@ -14757,7 +14757,7 @@ msgstr "Skriptlər…"
 
 #: rustconn/src/window/ui.rs:290
 msgid "Password Generator…"
-msgstr "Şifrə generatoru…"
+msgstr "Parol generatoru…"
 
 #: rustconn/src/window/ui.rs:293
 msgid "Wake On LAN…"
@@ -14809,7 +14809,7 @@ msgstr "Bağlantını yapışdır"
 
 #: rustconn/src/window/ui.rs:326
 msgid "Settings…"
-msgstr "Parametrlər…"
+msgstr "Tənzimləmələr…"
 
 #: rustconn/src/window/ui.rs:332
 msgid "Components…"
