@@ -1,3 +1,16 @@
+rustconn (0.24.9-1) unstable; urgency=medium
+
+  * Version bump to 0.24.9
+  * Added: Azerbaijani translation (PR #414, contributed by Naim Shafiev)
+  * Fixed: the CodeQL scan runs again (Rust build mode none, actions and
+    rust only)
+  * Changed: Bitwarden's Keep the CLI running process stops when the screen
+    locks or the computer suspends; the next lookup restarts it
+  * Dependencies: resvg 0.48→0.49, crypto-bigint, notify, uuid, zip;
+    taiki-e/install-action v2.88.1 in CI
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 09 Nov 2026 02:48:01 +0200
+
 rustconn (0.24.8-1) unstable; urgency=medium
   * Version bump to 0.24.8
   * Added: Dynamic Folder scripts can set the full connection through a

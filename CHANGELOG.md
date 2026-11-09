@@ -5,7 +5,7 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.24.9] - Unreleased
+## [0.24.9] - 2026-11-09
 
 ### Added
 - **Azerbaijani (az) added — [PR #414](https://github.com/totoshko88/RustConn/pull/414), contributed by Naim Shafiev** — a full catalogue of this release's strings, with terminology aligned to the GNOME and Firefox Azerbaijani translations. Azerbaijani can be chosen in Settings → Interface → Language (it maps to the `az_AZ.UTF-8` locale), and the translator is credited in the About dialog. (`po/az.po`, `po/LINGUAS`, `rustconn/src/i18n.rs`, `rustconn/src/app.rs`, `README.md`, `docs/INSTALL.md`)
