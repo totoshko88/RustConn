@@ -5,15 +5,19 @@ use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
+use rustconn_core::config::AppSettings;
 use rustconn_core::config::NetworkSettings;
 use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gateways, use_gateway};
 use rustconn_core::connection::resolve_proxy_jump_value;
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
-use rustconn_core::models::{Connection, ConnectionGroup, ProtocolConfig};
+use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
     self, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost, ScriptOutcome,
 };
+use rustconn_core::secret::{CredentialResolver, SecretManager};
 use rustconn_core::ssh_key_setup::{DeployCredentials, SshTarget};
+use rustconn_core::ssh_tunnel::{askpass_disabled_proxy_prefix, target_password_askpass_allowed};
+use secrecy::{ExposeSecret, SecretString};
 
 use super::group::find_group;
 use crate::error::CliError;
@@ -95,10 +99,21 @@ pub(super) fn cmd_run_script(
     }
 
     let timeout_secs = settings.connection.port_check_timeout_secs;
+    let passwords = host_passwords(&targets.hosts, &groups, &settings)?;
     let hosts: Vec<ScriptHost> = targets
         .hosts
         .iter()
-        .filter_map(|c| script_host(c, &connections, &groups, &settings.network, timeout_secs))
+        .zip(passwords)
+        .filter_map(|(c, password)| {
+            script_host(
+                c,
+                &connections,
+                &groups,
+                &settings.network,
+                timeout_secs,
+                password,
+            )
+        })
         .collect();
     let total = hosts.len();
     let names: Vec<String> = hosts.iter().map(|h| h.name.clone()).collect();
@@ -173,17 +188,119 @@ fn outcome_text(outcome: ScriptOutcome) -> String {
     }
 }
 
-/// Builds the launch of one host: its options, key and jump hosts.
+/// The password of each host: saved ones from the configured secret backend,
+/// and one typed answer shared by the hosts set to ask at connect.
 ///
-/// ponytail: key and agent login only, so a password host fails with ssh's own
-/// "Permission denied"; resolve secrets here as `rustconn-cli secret` does if
-/// that is needed. The GUI handles passwords.
+/// A password that cannot be read is reported and left out, so that host tries
+/// its keys and fails on its own instead of stopping the whole run.
+fn host_passwords(
+    hosts: &[&Connection],
+    groups: &[ConnectionGroup],
+    settings: &AppSettings,
+) -> Result<Vec<Option<SecretString>>, CliError> {
+    let typed = typed_password(hosts);
+    // Building the secret manager reaches for the backends and warns about the
+    // missing ones, which a run on keys alone has no reason to hear about.
+    let needs_backend = hosts.iter().any(|c| {
+        !matches!(
+            c.password_source,
+            PasswordSource::None | PasswordSource::Prompt
+        )
+    });
+    if !needs_backend {
+        return Ok(hosts
+            .iter()
+            .map(|c| (c.password_source == PasswordSource::Prompt).then(|| typed.clone())?)
+            .collect());
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| CliError::Secret(format!("Runtime error: {e}")))?;
+    let resolver = CredentialResolver::new(
+        Arc::new(SecretManager::build_from_settings(&settings.secrets)),
+        settings.secrets.clone(),
+    );
+    Ok(hosts
+        .iter()
+        .map(|connection| match connection.password_source {
+            PasswordSource::None => None,
+            PasswordSource::Prompt => typed.clone(),
+            _ => match runtime.block_on(resolver.resolve_with_hierarchy(connection, groups)) {
+                Ok(credentials) => credentials
+                    .and_then(|c| c.password)
+                    .filter(|p| !p.expose_secret().is_empty()),
+                Err(error) => {
+                    eprintln!(
+                        "[{}] could not read the saved password: {error}",
+                        connection.name
+                    );
+                    None
+                }
+            },
+        })
+        .collect())
+}
+
+/// Asks once for the hosts set to ask at connect. With no terminal to ask on,
+/// they fall back to their keys.
+fn typed_password(hosts: &[&Connection]) -> Option<SecretString> {
+    use std::io::IsTerminal;
+
+    let names: Vec<&str> = hosts
+        .iter()
+        .filter(|c| c.password_source == PasswordSource::Prompt)
+        .map(|c| c.name.as_str())
+        .collect();
+    if names.is_empty() || !std::io::stdin().is_terminal() {
+        return None;
+    }
+    eprint!("Password for {}: ", names.join(", "));
+    rpassword::read_password()
+        .ok()
+        .filter(|password| !password.is_empty())
+        .map(SecretString::from)
+}
+
+/// A `ProxyCommand` reaching the last hop of `chain` with askpass switched off.
+///
+/// Under `-J` each bastion's `ssh` inherits the askpass environment and would be
+/// handed the target's password, so a password host goes through this instead.
+/// `None` when the chain holds anything a shell could interpret.
+fn bastion_proxy_command(chain: &str) -> Option<String> {
+    let is_safe = |c: char| c.is_ascii_alphanumeric() || ".-_:@,[]".contains(c);
+    if !chain.chars().all(is_safe) {
+        return None;
+    }
+    let hops: Vec<&str> = chain.split(',').collect();
+    let (last, earlier) = hops.split_last()?;
+    if last.is_empty() || hops.iter().any(|hop| hop.starts_with('-')) {
+        return None;
+    }
+    let mut parts = askpass_disabled_proxy_prefix(hops.len());
+    parts.extend(["ssh", "-o", "ConnectTimeout=15"].map(String::from));
+    if !earlier.is_empty() {
+        parts.push("-J".to_string());
+        parts.push(earlier.join(","));
+    }
+    parts.extend(["-W".to_string(), "%h:%p".to_string()]);
+    // A plain destination cannot carry a port; the URI form can.
+    parts.push(format!("ssh://{last}"));
+    Some(parts.join(" "))
+}
+
+/// Builds the launch of one host: its options, key, jump hosts and password.
+///
+/// ponytail: a bastion's own password is not supplied, so bastions use keys or
+/// the agent here; the GUI's per-hop askpass wiring lives in `rustconn` and would
+/// have to move to core to be shared.
 fn script_host(
     connection: &Connection,
     connections: &[Connection],
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
     probe_timeout_secs: u32,
+    password: Option<SecretString>,
 ) -> Option<ScriptHost> {
     let probes = gateway_probes_by(
         connection,
@@ -199,6 +316,7 @@ fn script_host(
         return None;
     };
 
+    let mut password = password.filter(|_| target_password_askpass_allowed(config, false));
     let mut session_args = config.build_command_args();
     if !session_args.iter().any(|arg| arg == "-i")
         && let Some(key) = resolve_ssh_key_path(&routed, groups)
@@ -213,8 +331,23 @@ fn script_host(
         session_args.drain(position..(position + 2).min(session_args.len()));
     }
     if let Some(jump) = resolve_proxy_jump_value(&routed, connections, groups, network) {
-        session_args.push("-J".to_string());
-        session_args.push(jump);
+        match password.is_some().then(|| bastion_proxy_command(&jump)) {
+            Some(Some(command)) => {
+                session_args.push("-o".to_string());
+                session_args.push(format!("ProxyCommand={command}"));
+            }
+            unusable => {
+                if unusable.is_some() {
+                    eprintln!(
+                        "[{}] not sending the password: unexpected jump host address",
+                        routed.name
+                    );
+                    password = None;
+                }
+                session_args.push("-J".to_string());
+                session_args.push(jump);
+            }
+        }
     }
 
     Some(ScriptHost {
@@ -225,6 +358,39 @@ fn script_host(
             routed.username.clone(),
             session_args,
         ),
-        credentials: DeployCredentials::default(),
+        credentials: DeployCredentials {
+            password,
+            jump_host_passwords: Vec::new(),
+        },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bastion_proxy_command;
+
+    #[test]
+    fn a_single_hop_goes_straight_to_the_bastion() {
+        let command = bastion_proxy_command("alice@jump:2222").unwrap();
+        assert!(command.starts_with("env "), "{command}");
+        assert!(command.contains("SSH_ASKPASS= "), "{command}");
+        assert!(
+            command.ends_with("ssh -o ConnectTimeout=15 -W %h:%p ssh://alice@jump:2222"),
+            "{command}"
+        );
+    }
+
+    #[test]
+    fn earlier_hops_are_chained_with_jump() {
+        let command = bastion_proxy_command("a,b,c").unwrap();
+        assert!(command.ends_with("-J a,b -W %h:%p ssh://c"), "{command}");
+    }
+
+    #[test]
+    fn anything_a_shell_could_interpret_is_refused() {
+        assert!(bastion_proxy_command("jump;reboot").is_none());
+        assert!(bastion_proxy_command("$(reboot)").is_none());
+        assert!(bastion_proxy_command("-oProxyCommand=x").is_none());
+        assert!(bastion_proxy_command("").is_none());
+    }
 }
