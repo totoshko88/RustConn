@@ -38,6 +38,10 @@ pub struct WebOptionsWidgets {
     pub tunnel_dropdown: gtk4::DropDown,
     /// Address of an existing SOCKS5 proxy to browse through (empty = none).
     pub socks_proxy_row: adw::EntryRow,
+    /// Username for a proxy that requires a login (empty = none).
+    pub socks_user_row: adw::EntryRow,
+    /// Name of the secret global variable holding that login's password.
+    pub socks_password_var_row: adw::EntryRow,
 }
 
 /// Creates the Web bookmark options panel using libadwaita components.
@@ -118,6 +122,14 @@ pub fn create_web_options() -> WebOptionsWidgets {
         .title(i18n("SOCKS5 Proxy (host:port)"))
         .build();
     embedded_group.add(&socks_proxy_row);
+    let socks_user_row = adw::EntryRow::builder()
+        .title(i18n("SOCKS5 Username (only if the proxy needs a login)"))
+        .build();
+    embedded_group.add(&socks_user_row);
+    let socks_password_var_row = adw::EntryRow::builder()
+        .title(i18n("Secret Variable Holding the SOCKS5 Password"))
+        .build();
+    embedded_group.add(&socks_password_var_row);
 
     // Floating navigation toolbar (issue #260). Positive here, stored as
     // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
@@ -176,6 +188,8 @@ pub fn create_web_options() -> WebOptionsWidgets {
         floating_toolbar_switch,
         tunnel_dropdown,
         socks_proxy_row,
+        socks_user_row,
+        socks_password_var_row,
     }
 }
 

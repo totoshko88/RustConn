@@ -340,6 +340,9 @@ fn print_json(
             if let Some(proxy) = &config.socks_proxy {
                 map.insert("socks_proxy".to_string(), serde_json::json!(proxy));
             }
+            if let Some(user) = &config.socks_proxy_username {
+                map.insert("socks_proxy_username".to_string(), serde_json::json!(user));
+            }
         }
         ProtocolConfig::WinRm(config) => {
             map.insert(
@@ -630,6 +633,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             }
             if let Some(proxy) = &config.socks_proxy {
                 println!("  SOCKS Proxy:  {proxy}");
+            }
+            if let Some(user) = &config.socks_proxy_username {
+                println!("  SOCKS User:   {user}");
             }
         }
         ProtocolConfig::WinRm(ref config) => {

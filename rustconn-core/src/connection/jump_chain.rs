@@ -103,6 +103,7 @@ pub(super) fn jump_host_id_of(conn: &Connection) -> Option<Uuid> {
         ProtocolConfig::Rdp(c) => c.jump_host_id,
         ProtocolConfig::Vnc(c) => c.jump_host_id,
         ProtocolConfig::Spice(c) => c.jump_host_id,
+        ProtocolConfig::WinRm(c) => c.jump_host_id,
         _ => None,
     }
 }
@@ -263,8 +264,8 @@ pub enum BastionFallback {
 
 /// Returns `true` when `connection`'s launch path routes through a jump host.
 ///
-/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC and SPICE reach a bastion
-/// through an SSH tunnel. SPICE over a local Unix socket connects locally and
+/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC, SPICE and WinRM reach a
+/// bastion through an SSH tunnel. SPICE over a local Unix socket connects locally and
 /// ignores the jump host. Every other protocol (Telnet, Serial, Kubernetes,
 /// MOSH, Zero Trust, Web, …) never consults one — an inherited group or global
 /// jump host means nothing to it, so a dangling one must not be reported.
@@ -274,7 +275,8 @@ pub fn routes_through_jump_host(connection: &Connection) -> bool {
         ProtocolConfig::Ssh(_)
         | ProtocolConfig::Sftp(_)
         | ProtocolConfig::Rdp(_)
-        | ProtocolConfig::Vnc(_) => true,
+        | ProtocolConfig::Vnc(_)
+        | ProtocolConfig::WinRm(_) => true,
         ProtocolConfig::Spice(c) => c.unix_socket_path.is_none(),
         _ => false,
     }

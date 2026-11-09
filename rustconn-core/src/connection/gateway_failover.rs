@@ -181,6 +181,7 @@ pub fn use_gateway(connection: &mut Connection, gateway_id: Uuid) {
         ProtocolConfig::Rdp(c) => c.jump_host_id = Some(gateway_id),
         ProtocolConfig::Vnc(c) => c.jump_host_id = Some(gateway_id),
         ProtocolConfig::Spice(c) => c.jump_host_id = Some(gateway_id),
+        ProtocolConfig::WinRm(c) => c.jump_host_id = Some(gateway_id),
         _ => {}
     }
 }

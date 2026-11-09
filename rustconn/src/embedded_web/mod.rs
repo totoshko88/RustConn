@@ -116,6 +116,12 @@ pub struct EmbeddedWebWidget {
         reason = "field owns the tunnel process; dropping it kills the ssh -D proxy"
     )]
     socks_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
+    /// Relay logging in to a SOCKS proxy for this session, if it needs one.
+    #[expect(
+        dead_code,
+        reason = "field owns the relay; dropping it stops the relay"
+    )]
+    socks_relay: Option<rustconn_core::socks_relay::SocksRelay>,
 }
 
 /// Validates that a URL has a supported scheme for the embedded web browser.
@@ -281,6 +287,7 @@ impl EmbeddedWebWidget {
         config: &WebConfig,
         credentials: Option<(String, SecretString)>,
         socks_tunnel: Option<rustconn_core::ssh_tunnel::SshTunnel>,
+        socks_relay: Option<rustconn_core::socks_relay::SocksRelay>,
     ) -> Result<Self, EmbeddedError> {
         // Validate URL before proceeding
         validate_url(url)?;
@@ -485,6 +492,7 @@ impl EmbeddedWebWidget {
             zoom_persist_timer: Rc::new(RefCell::new(None)),
             on_zoom_changed: Rc::new(RefCell::new(None)),
             socks_tunnel,
+            socks_relay,
         };
 
         // Connect Reload button in the reconnect banner

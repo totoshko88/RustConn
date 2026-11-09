@@ -399,7 +399,8 @@ A WinRM connection opens a PowerShell session on a Windows machine in a terminal
 - Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
 - Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
 - A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p` and `-H`. With no saved password, type it in the terminal.
-- Jump hosts are not used for WinRM connections; the machine must be directly reachable.
+- A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
+- To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
 
 ### Automatic Login (Telnet & Serial)
 
@@ -2170,7 +2171,11 @@ Disable JavaScript execution for specific connections in the connection dialog's
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
 
 **SOCKS5 Proxy:**
-If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy**. Every request from the browser then goes through it. RustConn does not start or log in to the proxy, so a proxy that needs a username and password cannot be used, and this setting cannot be combined with **Tunnel Through SSH**. It works with the embedded browser and with a Custom Chromium-based browser (which opens with a separate, temporary profile). The system browser and Firefox can't be told to use a proxy for one launch, so with those the page is **not opened** rather than loaded directly.
+If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy**. Every request from the browser then goes through it, and this setting cannot be combined with **Tunnel Through SSH**.
+
+If the proxy needs a login, fill in **SOCKS5 Username** and name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
+
+The embedded browser, Chromium-based browsers and Firefox all work; external ones open with a separate, temporary profile. With the System browser mode, RustConn opens an installed browser that can use the proxy instead of your default if it can't. If none is found the page is **not opened** rather than loaded directly.
 
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
@@ -3385,11 +3390,12 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 
 ### Run Local Script
 
-Runs a bash script from this computer on several SSH hosts and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
 
 - The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
-- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. If any host is set to ask for its password at connect, the dialog has one password field, used for all of those hosts.
+- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. Hosts set to ask for a password at connect get a field each; leave one empty to reuse the field above it.
+- WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
 - A host whose key is not yet known is refused. Connect to it once normally and accept the key.
 - **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
 - **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.

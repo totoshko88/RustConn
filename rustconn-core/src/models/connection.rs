@@ -1343,6 +1343,7 @@ impl Connection {
             }
             ProtocolConfig::Rdp(c) => c.jump_host_id.is_some() || c.gateway.is_some(),
             ProtocolConfig::Vnc(c) => c.jump_host_id.is_some(),
+            ProtocolConfig::WinRm(c) => c.jump_host_id.is_some(),
             ProtocolConfig::Spice(c) => c.jump_host_id.is_some() || c.proxy.is_some(),
             ProtocolConfig::ZeroTrust(_) | ProtocolConfig::Web(_) => true,
             _ => false,

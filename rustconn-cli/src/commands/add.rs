@@ -143,8 +143,12 @@ pub(super) struct AddParams<'a> {
     pub zoom_level: Option<f64>,
     pub tunnel_via: Option<&'a str>,
     pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
     // WinRM
     pub winrm_ssl: bool,
+    pub winrm_accept_invalid_certs: bool,
 }
 
 /// Add connection command handler
@@ -671,14 +675,36 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         );
     }
 
-    if params.winrm_ssl {
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        cfg.socks_proxy_username = params.socks_proxy_user.map(str::to_string);
+        cfg.socks_proxy_password_variable = params.socks_proxy_password_var.map(str::to_string);
+        if let Some(browser) = params.browser {
+            cfg.browser = Some(browser.to_string());
+        }
+    }
+
+    if params.winrm_ssl || params.winrm_accept_invalid_certs {
         let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
         else {
             return Err(CliError::Config(
-                "--winrm-ssl is only valid for WinRM connections".into(),
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
             ));
         };
-        cfg.use_ssl = true;
+        cfg.use_ssl = params.winrm_ssl;
+        cfg.accept_invalid_certs = params.winrm_accept_invalid_certs;
     }
 
     ConfigManager::validate_connection(&connection)
@@ -1313,6 +1339,9 @@ pub(super) fn apply_jump_host_id(
             cfg.jump_host_id = Some(jump_id);
         }
         rustconn_core::models::ProtocolConfig::Spice(ref mut cfg) => {
+            cfg.jump_host_id = Some(jump_id);
+        }
+        rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) => {
             cfg.jump_host_id = Some(jump_id);
         }
         _ => {

@@ -1,10 +1,12 @@
-//! "Run Local Script…": runs a local bash script on the selected SSH hosts.
+//! "Run Local Script…": runs a local script on the selected hosts, bash over SSH
+//! or PowerShell over WinRM.
 //!
 //! The ssh arguments, jump hosts and passwords come from
 //! [`build_key_setup_launch`], i.e. from the same code a live session uses; the
 //! run itself is [`rustconn_core::remote_script`].
 
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -17,12 +19,16 @@ use libadwaita as adw;
 use rustconn_core::models::PasswordSource;
 use rustconn_core::remote_script::{
     self, DEFAULT_PARALLEL, DEFAULT_TIMEOUT, MAX_PARALLEL, RunOptions, ScriptEvent,
-    ScriptEventSink, ScriptFileError, ScriptHost, ScriptOutcome,
+    ScriptEventSink, ScriptFileError, ScriptHost, ScriptKind, ScriptOutcome, ScriptTransport,
+    WinRmTarget,
 };
 use secrecy::SecretString;
 use uuid::Uuid;
 
-use super::protocols::{resolve_globals_with_ask, start_gateway_probe_quiet, substitute_variables};
+use super::protocols::{
+    resolve_globals_with_ask, ssh_tunnel_params_via_jump, start_gateway_probe_quiet,
+    substitute_variables,
+};
 use super::protocols_ssh::build_key_setup_launch;
 use super::types::SharedSidebar;
 use crate::i18n::{i18n, i18n_f};
@@ -52,8 +58,8 @@ struct RunView {
     output: RefCell<Vec<String>>,
     selected: Cell<usize>,
     cancel: Arc<AtomicBool>,
-    /// The answer for hosts set to ask at connect, until the run has started.
-    typed_password: RefCell<Option<SecretString>>,
+    /// The answers of hosts set to ask at connect, until the run has started.
+    typed_passwords: RefCell<HashMap<Uuid, SecretString>>,
     succeeded: Cell<usize>,
     failed: Cell<usize>,
     finished: Cell<usize>,
@@ -103,34 +109,52 @@ pub(super) fn open_dialog(
     let connections = state_ref.list_connections_owned();
     let groups = state_ref.list_groups_owned();
     drop(state_ref);
-    let targets = remote_script::script_targets(&selected, &connections, &groups);
-    if targets.hosts.is_empty() {
+    let bash = remote_script::script_targets(&selected, &connections, &groups, ScriptKind::Bash);
+    let powershell =
+        remote_script::script_targets(&selected, &connections, &groups, ScriptKind::PowerShell);
+    if bash.hosts.is_empty() && powershell.hosts.is_empty() {
         crate::toast::show_toast_on_window(
             window.upcast_ref::<gtk4::Window>(),
-            &i18n("No SSH connections are selected"),
+            &i18n("No SSH or WinRM connections are selected"),
             crate::toast::ToastType::Warning,
         );
         return;
     }
-    let host_ids: Vec<Uuid> = targets.hosts.iter().map(|c| c.id).collect();
-    let host_names: Vec<String> = targets.hosts.iter().map(|c| c.name.clone()).collect();
-    let asks_at_connect = targets
-        .hosts
-        .iter()
-        .any(|c| c.password_source == PasswordSource::Prompt);
+    let plan = |targets: &remote_script::ScriptTargets<'_>| -> (Vec<Uuid>, Vec<String>) {
+        (
+            targets.hosts.iter().map(|c| c.id).collect(),
+            targets.hosts.iter().map(|c| c.name.clone()).collect(),
+        )
+    };
+    let bash_plan = plan(&bash);
+    let powershell_plan = plan(&powershell);
 
+    let all_names: Vec<String> = bash_plan
+        .1
+        .iter()
+        .chain(&powershell_plan.1)
+        .cloned()
+        .collect();
+    let left_out = bash.skipped.saturating_sub(powershell.hosts.len());
     let hosts_row = adw::ActionRow::builder()
         .title(i18n("Hosts"))
-        .subtitle(host_names.join(", "))
+        .subtitle(all_names.join(", "))
         .subtitle_lines(3)
         .use_markup(false)
         .build();
-    if targets.skipped > 0 {
+    if left_out > 0 {
         hosts_row.set_title(&i18n_f(
-            "Hosts (not using SSH, left out: {})",
-            &[&targets.skipped.to_string()],
+            "Hosts (not using SSH or WinRM, left out: {})",
+            &[&left_out.to_string()],
         ));
     }
+    let asking_hosts: Vec<(Uuid, String)> = bash
+        .hosts
+        .iter()
+        .chain(&powershell.hosts)
+        .filter(|c| c.password_source == PasswordSource::Prompt)
+        .map(|c| (c.id, c.name.clone()))
+        .collect();
     let path_row = adw::EntryRow::builder().title(i18n("Script File")).build();
     let browse_label = i18n("Choose File");
     let browse = gtk4::Button::builder()
@@ -150,20 +174,28 @@ pub(super) fn open_dialog(
 
     let group = adw::PreferencesGroup::builder()
         .description(i18n(
-            "Runs with bash on each host as its login user. Nothing is saved on the hosts. A host you have never connected to is refused until its key is known.",
+            "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host you have never connected to is refused until its key is known.",
         ))
         .build();
     group.add(&hosts_row);
     group.add(&path_row);
     group.add(&parallel_row);
     group.add(&timeout_row);
-    // ponytail: one answer for every host that asks, which suits a fleet sharing
-    // an account; make it one row per host if hosts differ in practice.
-    let password_row = adw::PasswordEntryRow::builder()
-        .title(i18n("Password for Hosts That Ask at Connect"))
-        .visible(asks_at_connect)
+    let passwords_group = adw::PreferencesGroup::builder()
+        .title(i18n("Passwords"))
+        .description(i18n(
+            "For hosts set to ask at connect. Leave a field empty to reuse the one above it.",
+        ))
+        .visible(!asking_hosts.is_empty())
         .build();
-    group.add(&password_row);
+    let password_rows: Vec<(Uuid, adw::PasswordEntryRow)> = asking_hosts
+        .iter()
+        .map(|(id, name)| {
+            let row = adw::PasswordEntryRow::builder().title(name).build();
+            passwords_group.add(&row);
+            (*id, row)
+        })
+        .collect();
     let error_label = gtk4::Label::builder()
         .wrap(true)
         .xalign(0.0)
@@ -176,6 +208,7 @@ pub(super) fn open_dialog(
     setup.set_margin_start(12);
     setup.set_margin_end(12);
     setup.append(&group);
+    setup.append(&passwords_group);
     setup.append(&error_label);
 
     let list = gtk4::ListBox::builder()
@@ -205,7 +238,11 @@ pub(super) fn open_dialog(
         .build();
 
     let stack = gtk4::Stack::new();
-    stack.add_named(&setup, Some("setup"));
+    let setup_scroller = gtk4::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk4::PolicyType::Never)
+        .child(&setup)
+        .build();
+    stack.add_named(&setup_scroller, Some("setup"));
     stack.add_named(&results, Some("results"));
 
     let title = adw::WindowTitle::new(&i18n("Run Local Script"), "");
@@ -243,7 +280,7 @@ pub(super) fn open_dialog(
         output: RefCell::default(),
         selected: Cell::new(0),
         cancel: Arc::new(AtomicBool::new(false)),
-        typed_password: RefCell::default(),
+        typed_passwords: RefCell::default(),
         succeeded: Cell::new(0),
         failed: Cell::new(0),
         finished: Cell::new(0),
@@ -303,9 +340,29 @@ pub(super) fn open_dialog(
                 }
             };
             error_label.set_visible(false);
-            let typed = password_row.text();
-            *view.typed_password.borrow_mut() =
-                (!typed.is_empty()).then(|| SecretString::from(typed.to_string()));
+            let (host_ids, host_names) = match ScriptKind::of_path(&path) {
+                ScriptKind::Bash => &bash_plan,
+                ScriptKind::PowerShell => &powershell_plan,
+            };
+            if host_ids.is_empty() {
+                error_label.set_text(&i18n(
+                    "None of the selected hosts can run this type of script",
+                ));
+                error_label.set_visible(true);
+                return;
+            }
+            let mut typed = view.typed_passwords.borrow_mut();
+            typed.clear();
+            let mut previous: Option<SecretString> = None;
+            for (id, row) in &password_rows {
+                if !row.text().is_empty() {
+                    previous = Some(SecretString::from(row.text().to_string()));
+                }
+                if let Some(password) = &previous {
+                    typed.insert(*id, password.clone());
+                }
+            }
+            drop(typed);
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
@@ -520,22 +577,52 @@ fn build_hosts(
             .try_borrow_mut()
             .ok()
             .and_then(|mut s| s.ensure_connection_password(id))
-            .or_else(|| {
-                (connection.password_source == PasswordSource::Prompt)
-                    .then(|| view.typed_password.borrow().clone())
-                    .flatten()
-            });
-        let groups = state.borrow().list_groups_owned();
-        let launch_info =
-            build_key_setup_launch(&connection, &state, &groups, password, Some(declares_proxy));
+            .or_else(|| view.typed_passwords.borrow().get(&id).cloned());
+        let transport = if connection.protocol == rustconn_core::models::ProtocolType::WinRm {
+            winrm_transport(&state, &connection, password)
+        } else {
+            let groups = state.borrow().list_groups_owned();
+            let launch_info = build_key_setup_launch(
+                &connection,
+                &state,
+                &groups,
+                password,
+                Some(declares_proxy),
+            );
+            Some(ScriptTransport::Ssh {
+                target: launch_info.target,
+                credentials: launch_info.credentials,
+            })
+        };
+        let Some(transport) = transport else {
+            record_outcome(&view, row, ScriptOutcome::NotStarted);
+            return glib::ControlFlow::Continue;
+        };
         hosts.push(ScriptHost {
             name: connection.name,
-            target: launch_info.target,
-            credentials: launch_info.credentials,
+            transport,
         });
         row_of_host.push(row);
         glib::ControlFlow::Continue
     });
+}
+
+/// How a WinRM host is reached: its address after variables, and any tunnel.
+fn winrm_transport(
+    state: &SharedAppState,
+    connection: &rustconn_core::Connection,
+    password: Option<SecretString>,
+) -> Option<ScriptTransport> {
+    let globals = resolve_globals_with_ask(state, connection.id);
+    let mut resolved = connection.clone();
+    resolved.host = substitute_variables(&connection.host, &globals);
+    resolved.username = connection
+        .username
+        .as_ref()
+        .map(|user| substitute_variables(user, &globals));
+    let tunnel =
+        ssh_tunnel_params_via_jump(state, connection, resolved.host.clone(), resolved.port);
+    WinRmTarget::for_connection(&resolved, password, tunnel).map(ScriptTransport::WinRm)
 }
 
 /// Runs the hosts on a worker thread and copies progress to the window.
@@ -546,7 +633,7 @@ fn start_workers(
     script: Vec<u8>,
     options: RunOptions,
 ) {
-    view.typed_password.borrow_mut().take();
+    view.typed_passwords.borrow_mut().clear();
     if hosts.is_empty() {
         finish(view);
         return;

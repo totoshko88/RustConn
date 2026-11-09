@@ -207,6 +207,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub telnet_backspace_dropdown: &'a DropDown,
     pub telnet_delete_dropdown: &'a DropDown,
     pub winrm_ssl_switch: &'a adw::SwitchRow,
+    pub winrm_accept_certs_switch: &'a adw::SwitchRow,
+    pub winrm_jump_host_dropdown: &'a DropDown,
     pub winrm_custom_args_entry: &'a Entry,
     // Serial fields
     pub serial_device_entry: &'a Entry,
@@ -239,6 +241,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub web_floating_toolbar_switch: &'a adw::SwitchRow,
     pub web_tunnel_dropdown: &'a gtk4::DropDown,
     pub web_socks_proxy_row: &'a adw::EntryRow,
+    pub web_socks_user_row: &'a adw::EntryRow,
+    pub web_socks_password_var_row: &'a adw::EntryRow,
     pub web_connections_data: &'a Rc<RefCell<Vec<(Option<uuid::Uuid>, String)>>>,
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
@@ -446,13 +450,22 @@ impl ConnectionDialogData<'_> {
             let socks_proxy = self.web_socks_proxy_row.text();
             if !socks_proxy.trim().is_empty() {
                 if rustconn_core::protocol::normalize_socks_proxy(&socks_proxy).is_err() {
-                    return Err(i18n("Enter the SOCKS5 proxy as host:port, without a login"));
+                    return Err(i18n(
+                        "Enter the SOCKS5 proxy as host:port, with any login in its own fields",
+                    ));
                 }
                 if self.web_tunnel_dropdown.selected() != 0 {
                     return Err(i18n(
                         "Choose either an SSH tunnel or a SOCKS proxy, not both",
                     ));
                 }
+            }
+            let has_user = !self.web_socks_user_row.text().trim().is_empty();
+            let has_variable = !self.web_socks_password_var_row.text().trim().is_empty();
+            if has_user != has_variable || (has_user && socks_proxy.trim().is_empty()) {
+                return Err(i18n(
+                    "A SOCKS5 login needs a proxy, a username and a password variable",
+                ));
             }
             let mode = browser_mode_from_combo_index(self.web_browser_mode_combo.selected());
             if mode == rustconn_core::models::WebBrowserMode::Custom {
@@ -1211,6 +1224,12 @@ impl ConnectionDialogData<'_> {
         rustconn_core::models::WinRmConfig {
             use_ssl: self.winrm_ssl_switch.is_active(),
             custom_args: Self::parse_args(&self.winrm_custom_args_entry.text()),
+            accept_invalid_certs: self.winrm_accept_certs_switch.is_active(),
+            jump_host_id: self
+                .vnc_connections_data
+                .borrow()
+                .get(self.winrm_jump_host_dropdown.selected() as usize)
+                .and_then(|(id, _)| *id),
         }
     }
 
@@ -1401,6 +1420,12 @@ impl ConnectionDialogData<'_> {
             conns.get(idx).and_then(|(id, _)| *id)
         };
 
+        let trimmed = |row: &adw::EntryRow| {
+            let text = row.text();
+            (!text.trim().is_empty()).then(|| text.trim().to_string())
+        };
+        let socks_proxy_username = trimmed(self.web_socks_user_row);
+        let socks_proxy_password_variable = trimmed(self.web_socks_password_var_row);
         let socks_proxy =
             rustconn_core::protocol::normalize_socks_proxy(&self.web_socks_proxy_row.text()).ok();
 
@@ -1413,6 +1438,8 @@ impl ConnectionDialogData<'_> {
             hide_floating_toolbar: !self.web_floating_toolbar_switch.is_active(),
             tunnel_via,
             socks_proxy,
+            socks_proxy_username,
+            socks_proxy_password_variable,
             ..self.web_config_seed.borrow().clone().unwrap_or_default()
         }
     }

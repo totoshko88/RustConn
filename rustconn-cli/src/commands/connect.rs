@@ -104,6 +104,21 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         connection.name, connection.protocol, connection.host, connection.port
     );
 
+    if matches!(
+        connection.protocol_config,
+        rustconn_core::models::ProtocolConfig::WinRm(_)
+    ) {
+        let settings = config_manager.load_settings().unwrap_or_default();
+        if super::run_script::connect_winrm_through_tunnel(
+            connection,
+            &connections,
+            &groups,
+            &settings,
+        )? {
+            return Ok(());
+        }
+    }
+
     execute_connection_command(&command)
 }
 
@@ -173,11 +188,15 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
     {
         return ConnectionCommand {
             program: "echo".to_string(),
-            args: vec![
-                "This Web connection uses a SOCKS proxy, which needs \
-                 --browser-mode custom with a Chromium-based browser."
-                    .to_string(),
-            ],
+            args: vec![if config.socks_proxy_username.is_some() {
+                "This Web connection's SOCKS proxy needs a login, which only the GUI \
+                     can relay."
+                    .to_string()
+            } else {
+                "No browser that can use this SOCKS proxy was found. Install Chromium or \
+                     Firefox, or set one with --browser and --browser-mode custom."
+                    .to_string()
+            }],
         };
     }
 

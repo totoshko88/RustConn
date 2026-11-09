@@ -174,6 +174,7 @@ fn own_jump_host_id(connection: &Connection) -> Option<Uuid> {
         ProtocolConfig::Rdp(c) => c.jump_host_id,
         ProtocolConfig::Vnc(c) => c.jump_host_id,
         ProtocolConfig::Spice(c) => c.jump_host_id,
+        ProtocolConfig::WinRm(c) => c.jump_host_id,
         _ => None,
     }
 }

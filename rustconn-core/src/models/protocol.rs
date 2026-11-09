@@ -313,6 +313,14 @@ pub struct WinRmConfig {
     /// Custom command-line arguments for the client
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub custom_args: Vec<String>,
+    /// SSH connection to reach the host through, by an SSH tunnel
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jump_host_id: Option<uuid::Uuid>,
+    /// Accept a self-signed or mismatched HTTPS certificate when running scripts.
+    /// Interactive sessions do not verify it at all: `evil-winrm` has no option
+    /// to do so.
+    #[serde(default)]
+    pub accept_invalid_certs: bool,
 }
 
 /// MOSH prediction mode
@@ -4591,6 +4599,14 @@ pub struct WebConfig {
     /// mutually exclusive.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub socks_proxy: Option<String>,
+    /// Username for a [`Self::socks_proxy`] that requires a login. Browsers
+    /// cannot log in to one, so RustConn relays through
+    /// [`crate::socks_relay::SocksRelay`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy_username: Option<String>,
+    /// Name of the secret global variable holding that login's password.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy_password_variable: Option<String>,
 }
 
 // Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
@@ -4610,6 +4626,8 @@ impl Default for WebConfig {
             hide_floating_toolbar: false,
             tunnel_via: None,
             socks_proxy: None,
+            socks_proxy_username: None,
+            socks_proxy_password_variable: None,
         }
     }
 }
@@ -4646,6 +4664,10 @@ impl<'de> Deserialize<'de> for WebConfig {
             tunnel_via: Option<uuid::Uuid>,
             #[serde(default)]
             socks_proxy: Option<String>,
+            #[serde(default)]
+            socks_proxy_username: Option<String>,
+            #[serde(default)]
+            socks_proxy_password_variable: Option<String>,
         }
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
@@ -4670,6 +4692,8 @@ impl<'de> Deserialize<'de> for WebConfig {
             hide_floating_toolbar: raw.hide_floating_toolbar,
             tunnel_via: raw.tunnel_via,
             socks_proxy: raw.socks_proxy,
+            socks_proxy_username: raw.socks_proxy_username,
+            socks_proxy_password_variable: raw.socks_proxy_password_variable,
         })
     }
 }

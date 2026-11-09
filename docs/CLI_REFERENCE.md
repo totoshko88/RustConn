@@ -235,7 +235,11 @@ Options:
 | `--private-mode` | — | Open in private/incognito mode (custom browser) |
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
 | `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it with an empty value. A browser that cannot use it is not opened |
+| `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
+| `--socks-proxy-password-var` | — | Secret global variable holding that login's password |
+| `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
 | `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
+| `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -551,7 +555,7 @@ rustconn-cli duplicate "web01" --range 'web[02-10]' --host-range '10.0.0.[2-10]'
 
 The width of the first number sets the zero padding. `--host-range` is optional when the source's host contains its name (`host01.example.com` becomes `host02.example.com`), and otherwise required. It must cover the same count as `--range`. A range can create up to 256 connections, and names that already exist are skipped. Unlike the GUI, the CLI does not copy a password stored in a vault to the new connections.
 
-### run-script — Run a local bash script on SSH connections
+### run-script — Run a local script on SSH or WinRM connections
 
 ```bash
 rustconn-cli run-script ./check.sh --on web1 --on web2       # Named connections
@@ -567,7 +571,7 @@ rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
 | `--timeout` | 600 | Time limit per host, in seconds |
 | `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
 
-Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`). Connections set to ask at connect share one password, typed once; with no terminal they use their keys. A bastion's own password is not supplied here, so bastions need a key or the agent.
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. A `.ps1` file runs in PowerShell on WinRM connections (needs the `pywinrm` Python library); any other file runs with bash on SSH connections. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`), for the hosts and their jump hosts. Connections set to ask at connect are each asked once; an empty answer reuses the previous one. With no terminal they use their keys.
 
 ### test — Test connectivity
 
