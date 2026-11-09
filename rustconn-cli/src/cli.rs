@@ -1245,8 +1245,17 @@ pub enum Commands {
         name: String,
 
         /// New name for the duplicated connection
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "range")]
         new_name: Option<String>,
+
+        /// Create one copy per number, e.g. 'host[02-10]'. Quote it for the shell
+        #[arg(long, value_name = "PATTERN")]
+        range: Option<String>,
+
+        /// Host range for --range, e.g. '10.0.0.[2-10]'. Optional when the
+        /// source's host contains its name
+        #[arg(long, value_name = "PATTERN", requires = "range")]
+        host_range: Option<String>,
     },
 
     /// Open SFTP session for an SSH connection

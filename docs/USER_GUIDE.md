@@ -679,6 +679,7 @@ Temporary connection without saving:
 | Edit | Ctrl+E or right-click → Edit |
 | Rename | F2 or right-click → Rename |
 | Duplicate | Ctrl+D or right-click → Duplicate |
+| Duplicate as a numbered range | Right-click → Duplicate as Range… — `host[02-10]` creates `host02` … `host10`, and `host[2-10]` creates `host2` … `host10`. *Host Pattern* fills in by itself when the host contains the connection's name; otherwise enter one such as `10.0.0.[2-10]`. Up to 256 at a time; names that already exist are skipped |
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |

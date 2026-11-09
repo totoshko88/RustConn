@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Fallback jump hosts** — a connection or a group can list saved jump hosts to try in order when its Jump Host is unreachable, for SSH, SFTP, RDP, VNC and SPICE. Each new connection or reconnect checks for a reachable SSH server, and uses the primary again as soon as it answers. If none answers, the first is tried and the normal error is shown; a connection never falls back to going direct. Set in the connection and group editors, or with `--fallback-jump-host` in `rustconn-cli add` and `update`.
+- **Duplicate a connection into a numbered range** — right-click → *Duplicate as Range…*, or `rustconn-cli duplicate --range`, turns `host01` into `host02` … `host10` with the pattern `host[02-10]`, and `host1` into `host2` … `host10` with `host[2-10]`. The host follows the name when it contains it, or takes its own range such as `10.0.0.[2-10]`. Existing names are skipped, and the GUI copies a saved vault password to each new connection.
 
 ### Fixed
 - **The "Routing changed" warning now notices jump hosts chosen from the picker** — it compared free-text ProxyJump values only, so re-pointing a connection's saved Jump Host went unseen. Connections that use one will show the warning once after updating, because their route is now recorded for the first time.

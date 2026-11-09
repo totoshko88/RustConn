@@ -597,7 +597,20 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::SmartFolder(subcmd) => smart_folder::cmd_smart_folder(config_path, subcmd),
         Commands::DynamicFolder(subcmd) => dynamic_folder::cmd_dynamic_folder(config_path, subcmd),
         Commands::Recording(subcmd) => recording::cmd_recording(subcmd),
-        Commands::Duplicate { name, new_name } => {
+        Commands::Duplicate {
+            name,
+            new_name,
+            range,
+            host_range,
+        } => {
+            if let Some(range) = range {
+                return duplicate::cmd_duplicate_range(
+                    config_path,
+                    &name,
+                    &range,
+                    host_range.as_deref(),
+                );
+            }
             duplicate::cmd_duplicate(config_path, &name, new_name.as_deref())
         }
         Commands::Sftp { name, cli, mc } => sftp::cmd_sftp(config_path, &name, cli, mc),

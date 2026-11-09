@@ -18,6 +18,7 @@ pub mod automation_inheritance;
 pub mod copy_field;
 mod dial;
 pub mod gateway_failover;
+pub mod host_range;
 mod interning;
 pub mod jump_chain;
 pub mod keepalive;
