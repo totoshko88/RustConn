@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Bitwarden's "Keep the CLI running" process now stops when the screen locks or the computer suspends** — with the switch on, one `bw serve` process holds the unlocked vault in its memory, and until now it stayed running while the user was away. It is now stopped on the same screen-lock and suspend signals that remove RustConn's SSH keys from the agent, on Linux and macOS. Nothing asks for the master password afterwards: the session key stays in RustConn, as it does with the switch off, so the next vault operation starts a fresh `bw serve` and only that first operation is slower. A process busy with an operation at that moment is stopped as soon as the operation finishes, so a lookup in flight is never cut off, and the stop never delays the lock or the suspend. In the Flatpak this needs the same opt-in `flatpak override` as the SSH key removal; in the Snap a screen lock is seen and a suspend is not. (`rustconn-core/src/secret/bitwarden.rs`, `rustconn-core/src/secret/bitwarden_serve.rs`, `rustconn-core/src/lock_events/mod.rs`, `rustconn/src/app.rs`, `docs/BITWARDEN_SETUP.md`, `docs/INSTALL.md`)
 
+### Dependencies
+- **resvg 0.48 → 0.49** — the SVG renderer for the tray icon (supersedes Dependabot PR #404). The calls RustConn makes (`usvg::Tree::from_data`, `resvg::render`) are unchanged in this release. (`rustconn/Cargo.toml`)
+- **CI — taiki-e/install-action v2.87.25 → v2.88.1** (Dependabot PR #403), pinned by commit SHA as before, in every CI and release job that installs a Rust tool. (`.github/workflows/ci.yml`, `.github/workflows/release.yml`)
+- **Updated** (semver-compatible): crypto-bigint 0.7.10→0.7.11, notify 8.2.1→8.2.2, usvg 0.48.1→0.49.0 (with resvg), uuid 1.29.1→1.29.2, zip 9.4.2→9.5.0. `cargo deny check advisories` is clean; `cargo-sources.json` regenerated for the Flatpak/Flathub manifests.
+
 ## [0.24.8] - 2026-11-08
 
 ### Added
