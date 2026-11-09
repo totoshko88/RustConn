@@ -6,9 +6,11 @@ name: CodeQL
 # read an in-repo config, so its scope could not be reviewed in a PR or tuned
 # alongside the code. This workflow scans actions and rust, the only languages
 # with product code left after the config's paths-ignore, and reads
-# .github/codeql/codeql-config.yml, so coverage is unchanged but now lives in
-# the tree. Disable default setup in Settings → Code security before this runs,
-# or GitHub refuses to accept advanced results while default setup is active.
+# .github/codeql/codeql-config.yml, so the scan's scope lives in the tree.
+# Default setup must be disabled in Settings → Code security: while it is
+# active, GitHub rejects every SARIF upload from this workflow ("CodeQL analyses
+# from advanced configurations cannot be processed when the default setup is
+# enabled") and each job fails even though its analysis completed.
 
 on:
   push:
@@ -26,8 +28,9 @@ permissions:
   security-events: write
 
 env:
-  # Keep in step with ci.yml / release.yml. The Rust extractor builds the crate,
-  # so it needs the same toolchain the rest of CI pins.
+  # Keep in step with ci.yml / release.yml. The Rust extractor (build mode
+  # `none`) still runs build scripts and proc macros, so it needs the same
+  # toolchain the rest of CI pins.
   RUST_TOOLCHAIN: '1.99.0'
 
 jobs:
@@ -63,6 +66,8 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
+      # The -sys crates' build scripts probe GTK/libadwaita/VTE with pkg-config,
+      # so the system libraries must be present for those scripts to succeed.
       - name: Install system dependencies
         if: matrix.language == 'rust'
         uses: ./.github/actions/install-deps
