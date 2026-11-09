@@ -57,6 +57,11 @@ does not get the D-Bus services that report a screen lock or a suspend, so
 without an opt-in its keys are removed when you quit RustConn and expire after
 12 hours, but stay in the agent while the screen is locked or the machine sleeps.
 
+The same signals also stop Bitwarden's **Keep the CLI running** process (see
+[BITWARDEN_SETUP.md](BITWARDEN_SETUP.md#keep-the-cli-running-optional-faster)),
+so without the opt-in that process keeps the unlocked vault in memory while the
+screen is locked.
+
 To have them removed on screen lock and suspend as well, grant the three names
 once, for your user, and restart RustConn:
 

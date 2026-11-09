@@ -233,6 +233,7 @@ What you can rely on either way:
 
 - **A lookup never fails for want of it.** If the installed CLI is too old to provide `bw serve`, or the process stops answering, RustConn falls back to spawning `bw` per call on its own, and the lookup goes through at the old speed.
 - **The vault does not outlive the session.** Locking the vault or logging out shuts the `bw serve` process down, taking the unlocked vault in its memory with it.
+- **The vault is not kept running while you are away.** When the screen locks or the computer suspends, RustConn stops the `bw serve` process as well. Nothing asks for the master password afterwards: RustConn keeps the session key, just as it does with the switch off, and the next lookup starts a fresh `bw serve`, so only that first lookup is slower. A process busy with a lookup at that moment is stopped as soon as the lookup finishes. This uses the same screen-lock and suspend signals as the SSH key cleanup: the Flatpak sees them only after the opt-in in [INSTALL.md](INSTALL.md#optional-remove-rustconns-ssh-keys-on-screen-lock-and-suspend), and the Snap sees a screen lock but not a suspend.
 - **Secrets stay off the command line.** When the CLI is kept running, the master password and the items being saved travel in the request body sent to `bw serve`, not as command-line arguments, so they do not show up in a process listing.
 
 ## Step 5: Store connection passwords

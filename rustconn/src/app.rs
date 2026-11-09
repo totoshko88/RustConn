@@ -608,6 +608,14 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         let removed = rustconn_core::ssh_agent::evict_own_keys();
         tracing::info!(?event, removed, "removed the SSH keys RustConn added");
     });
+    // The persistent Bitwarden CLI ("Keep the CLI running") holds the unlocked
+    // vault in its memory; stop it too. Never blocks: a child busy with a vault
+    // op is stopped by that op. The next vault op restarts it, still unlocked.
+    rustconn_core::lock_events::subscribe(|event| {
+        if rustconn_core::secret::stop_serve_on_lock() {
+            tracing::info!(?event, "stopped the persistent Bitwarden CLI");
+        }
+    });
     // Linux/BSD: login1 and the ScreenSaver interface over D-Bus.
     #[cfg(not(target_os = "macos"))]
     rustconn_core::lock_events::start();
