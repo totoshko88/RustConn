@@ -229,7 +229,9 @@ pub fn load_ssh_agent_settings(
     });
 
     // Poll the channel from the main thread; GTK widgets stay here.
-    glib::idle_add_local(move || match rx.try_recv() {
+    // 50 ms timeout instead of `idle_add_local`: an idle source never sleeps, so
+    // it would spin the main loop at full speed until the agent answers.
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || match rx.try_recv() {
         Ok(status) => {
             if let Some(ref socket_path) = socket_path_clone {
                 socket_label.set_text(socket_path);

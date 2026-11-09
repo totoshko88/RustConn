@@ -224,6 +224,20 @@ RUST_LOG=info \
 ./target/debug/rustconn
 ```
 
+To build and run in one step with `cargo run`, pass the macOS feature set. The default features pull in WebKit (`javascriptcoregtk-6.0`), which Homebrew does not provide, so a bare `cargo run -p rustconn` fails in `javascriptcore6-sys` with "Package 'javascriptcoregtk-6.0' not found":
+
+```bash
+BREW_PREFIX="$(brew --prefix)"
+PKG_CONFIG_PATH="$BREW_PREFIX/lib/pkgconfig:$BREW_PREFIX/share/pkgconfig" \
+XDG_DATA_DIRS="$HOME/.local/share:$BREW_PREFIX/share:/usr/local/share:/usr/share" \
+GSETTINGS_SCHEMA_DIR="$(brew --prefix glib)/share/glib-2.0/schemas" \
+RUST_LOG=debug \
+cargo run -p rustconn --no-default-features \
+  --features "tray-macos,system-keyring,vnc-embedded,rdp-embedded,gfx-h264,rdp-audio,rd-gateway,adw-1-8"
+```
+
+Drop `adw-1-8` if the installed libadwaita is older than 1.8 (`brew info libadwaita`). Arguments for the app go after a trailing `--`.
+
 For realistic runtime and Dock behavior, use the bundle:
 
 ```bash

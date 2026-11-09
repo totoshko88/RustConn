@@ -434,9 +434,12 @@ mod tray_macos_impl {
 
     use super::*;
 
-    /// Embedded SVG icon data (same as Linux tray)
-    const ICON_SVG: &[u8] =
-        include_bytes!("../assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg");
+    /// Monochrome glyph for the menu bar. Only its alpha channel matters: the
+    /// icon is registered as an NSImage template, so macOS tints it to match
+    /// the menu bar (dark/light/inactive) like every native status item.
+    const ICON_SVG: &[u8] = include_bytes!(
+        "../assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn-tray-macos.svg"
+    );
 
     /// Render SVG to RGBA pixmap for tray-icon crate
     fn render_svg_to_rgba(size: u32) -> Option<Vec<u8>> {
@@ -500,15 +503,12 @@ mod tray_macos_impl {
             let menu = Self::build_menu(&state);
 
             // Create tray icon (must be on main thread)
-            // The icon is left non-template so the full-colour icon shows in the
-            // menu bar. Template mode draws the image as a monochrome mask, which
-            // would render our full-colour SVG invisible — so we rely on the
-            // builder's non-template default rather than opting in with
-            // `with_icon_templated` (tray-icon 0.26 renamed the old
-            // `with_icon_as_template(false)` to that opt-in form; the default is
-            // already what we want).
+            // Template image: AppKit draws only the alpha channel and tints it
+            // for the current menu bar, so the glyph follows the macOS style
+            // (black on light, white on dark). That requires a monochrome
+            // source — a full-colour icon would render as a solid blob.
             let tray_icon = match TrayIconBuilder::new()
-                .with_icon(icon)
+                .with_icon_templated(icon)
                 .with_tooltip("RustConn")
                 .with_menu(Box::new(menu))
                 .build()

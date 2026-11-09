@@ -1,3 +1,18 @@
+rustconn (0.24.10-1) unstable; urgency=medium
+
+  * Version bump to 0.24.10
+  * Fixed: macOS menu-bar icon is a monochrome template that follows the
+    menu bar style; the Dock tile is grey in the Clear and Tinted styles
+  * Fixed: Settings no longer widens and clips once client detection ends
+  * Fixed: a CLI wrapper whose target is gone is reported as not found
+  * Changed: Compact interface is off by default on macOS
+  * Improved: Settings polls client detection every 50 ms instead of
+    spinning the main loop; dev builds optimise dependencies
+  * Dependencies: arc-swap, itoa, notify-types, syn; RUSTSEC-2023-0071
+    rationale updated (rsa 0.10.0 exists, pinned out by ironrdp)
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Mon, 09 Nov 2026 23:36:25 +0100
+
 rustconn (0.24.9-1) unstable; urgency=medium
 
   * Version bump to 0.24.9

@@ -3,15 +3,16 @@
 #
 # Accepted transitive advisory:
 # - RUSTSEC-2023-0071: rsa 0.10.0-rc.18 Marvin Attack (timing sidechannel,
-#   medium 5.9). No fixed upgrade is published. Reached only through
-#   ironrdp 0.17.0 -> ironrdp-connector 0.10.0 -> {picky, sspi 0.21.3} -> rsa.
+#   medium 5.9). rsa 0.10.0 (2026-11-08) is the patched release, but it is
+#   out of reach: ironrdp-connector 0.12.0 (latest) pins picky =7.0.0-rc.26,
+#   and picky, sspi 0.23 and winscard 0.4 pin rsa =0.10.0-rc.18.
 #   RustConn is a local desktop client: it does not host an RSA decryption
 #   oracle and does not perform attacker-triggerable repeated private-key
 #   operations, so the timing sidechannel is not exploitable in this context.
-#   Upgrade path: sspi/picky drop the rsa dependency, or rsa ships a stable
-#   release with the constant-time fix.
-#   Last reviewed: 2026-07-29
-#   Next review: when ironrdp, sspi, or picky publishes a new major version.
+#   Upgrade path: picky/sspi/winscard move to rsa 0.10.0 and
+#   ironrdp-connector follows; then drop this ignore.
+#   Last reviewed: 2026-11-09
+#   Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to
 # be listed here. It was dropped when the advisory was resolved (issue #267)

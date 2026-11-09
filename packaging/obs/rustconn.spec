@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.9
+Version:        0.24.10
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,13 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.10-0
+- Version bump to 0.24.10
+- Fixed: macOS menu-bar icon follows the menu bar style; grey Dock tile
+- Fixed: Settings no longer widens and clips after client detection
+- Fixed: a dead CLI wrapper is reported as not found
+- Changed: Compact interface off by default on macOS
+- Dependencies: arc-swap, itoa, notify-types, syn
 * Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.9-0
 - Version bump to 0.24.9
 - Added: Azerbaijani translation (PR #414, Naim Shafiev)

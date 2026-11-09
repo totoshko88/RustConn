@@ -318,6 +318,58 @@ pub fn macos_bundle_resources_dir() -> Option<std::path::PathBuf> {
 const DOCK_ICON_PNG: &[u8] =
     include_bytes!("../assets/icons/hicolor/256x256/apps/io.github.totoshko88.RustConn.png");
 
+/// Grey Dock tiles for the macOS 26 "Clear" and "Tinted" icon styles, which turn
+/// every other app's icon monochrome. Rendered from the tray glyph.
+#[cfg(target_os = "macos")]
+const DOCK_ICON_MONO_DARK_PNG: &[u8] =
+    include_bytes!("../assets/icons/macos-dock/RustConn-dock-mono-dark.png");
+#[cfg(target_os = "macos")]
+const DOCK_ICON_MONO_LIGHT_PNG: &[u8] =
+    include_bytes!("../assets/icons/macos-dock/RustConn-dock-mono-light.png");
+
+/// Reads a global macOS preference as a string; `None` when it is unset.
+///
+/// ponytail: spawns `defaults` once at startup instead of binding
+/// `NSUserDefaults` in `rustconn-dock-sys`; fine for two reads at launch, bind it
+/// there if more preferences are needed or the style should follow live changes.
+#[cfg(target_os = "macos")]
+fn macos_global_default(key: &str) -> Option<String> {
+    let output = std::process::Command::new("/usr/bin/defaults")
+        .args(["read", "-g", key])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+/// Picks the Dock tile that matches the user's icon style.
+///
+/// With the Clear or Tinted style (`AppleIconAppearanceTheme`, macOS 26) the
+/// system draws icons monochrome, but a tile set at runtime bypasses that, so
+/// the full-colour icon would stand out. In those styles use the grey tile, dark
+/// or light following the theme (`...Automatic` follows the system appearance).
+#[cfg(target_os = "macos")]
+fn dock_icon_png() -> &'static [u8] {
+    let theme = macos_global_default("AppleIconAppearanceTheme").unwrap_or_default();
+    if !theme.starts_with("Clear") && !theme.starts_with("Tinted") {
+        return DOCK_ICON_PNG;
+    }
+    let dark = if theme.ends_with("Dark") {
+        true
+    } else if theme.ends_with("Light") {
+        false
+    } else {
+        macos_global_default("AppleInterfaceStyle").is_some_and(|s| s == "Dark")
+    };
+    if dark {
+        DOCK_ICON_MONO_DARK_PNG
+    } else {
+        DOCK_ICON_MONO_LIGHT_PNG
+    }
+}
+
 /// Gives the Dock tile RustConn's icon when no bundle can supply one.
 ///
 /// macOS reads the Dock icon from the launched bundle's `Info.plist`, so a
@@ -347,7 +399,7 @@ pub fn apply_macos_dock_icon() {
         return;
     }
 
-    let outcome = rustconn_dock_sys::set_dock_icon_png(DOCK_ICON_PNG);
+    let outcome = rustconn_dock_sys::set_dock_icon_png(dock_icon_png());
     if outcome.is_applied() {
         tracing::debug!("Set the Dock tile icon programmatically (running without a .app bundle)");
     } else {
