@@ -608,6 +608,14 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         let removed = rustconn_core::ssh_agent::evict_own_keys();
         tracing::info!(?event, removed, "removed the SSH keys RustConn added");
     });
+    // The persistent Bitwarden CLI ("Keep the CLI running") holds the unlocked
+    // vault in its memory; stop it too. Never blocks: a child busy with a vault
+    // op is stopped by that op. The next vault op restarts it, still unlocked.
+    rustconn_core::lock_events::subscribe(|event| {
+        if rustconn_core::secret::stop_serve_on_lock() {
+            tracing::info!(?event, "stopped the persistent Bitwarden CLI");
+        }
+    });
     // Linux/BSD: login1 and the ScreenSaver interface over D-Bus.
     #[cfg(not(target_os = "macos"))]
     rustconn_core::lock_events::start();
@@ -2102,6 +2110,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
              GaaChun (Simplified Chinese) https://github.com/GaaChun\n\
              Jürgen Hörmann (German) https://github.com/jhit\n\
              Mykola Zubkov (Ukrainian) <zubkov139@ukr.net>\n\
+             Naim Shafiev (Azerbaijani) · shafiev@gmail.com https://github.com/shafiev\n\
              p-bo (Czech) https://github.com/p-bo",
         )
         .debug_info(&debug_info)

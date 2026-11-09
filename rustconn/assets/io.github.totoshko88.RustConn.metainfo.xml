@@ -140,6 +140,17 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.9" date="2026-11-09">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.9</url>
+      <description>
+        <p>Version 0.24.9 - an Azerbaijani translation and a safer persistent Bitwarden CLI:</p>
+        <ul>
+          <li>RustConn is now available in Azerbaijani, contributed by Naim Shafiev (#414).</li>
+          <li>With Keep the CLI running on, the Bitwarden CLI process that holds the unlocked vault is stopped when the screen locks or the computer suspends, and the next lookup starts it again without asking for the master password.</li>
+          <li>Updated dependencies.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.8" date="2026-11-08">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.8</url>
       <description>

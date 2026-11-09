@@ -215,14 +215,89 @@ pub async fn shutdown_serve() {
     let mut guard = BW_SERVE.lock().await;
     guard.disabled = false;
     BW_SERVE_STALE.store(false, std::sync::atomic::Ordering::Relaxed);
+    // This stops the child itself, which is all a pending lock-event stop asks.
+    BW_SERVE_STOP_PENDING.store(false, std::sync::atomic::Ordering::SeqCst);
     if let Some(process) = guard.process.take() {
         process.shutdown().await;
+    }
+}
+
+/// Set by [`stop_serve_on_lock`] when a vault op held the serve child at that
+/// moment; the op stops the child as soon as it has finished.
+#[cfg(feature = "bitwarden-serve")]
+static BW_SERVE_STOP_PENDING: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Stops the persistent `bw serve` child on screen lock or suspend.
+///
+/// The decrypted vault then does not stay in a long-lived process's memory
+/// while the user is away. Meant for a [`crate::lock_events`] handler.
+///
+/// Only the child goes. The session key stays in this process, as it does with
+/// the spawn-per-call transport, so the next vault op starts a fresh child that
+/// comes up unlocked and nothing asks for the master password again. A child
+/// busy with a vault op at this moment is stopped by that op once it returns.
+///
+/// Never blocks and needs no runtime. Returns whether a child was stopped now.
+#[cfg(feature = "bitwarden-serve")]
+#[must_use]
+pub fn stop_serve_on_lock() -> bool {
+    stop_serve_now_or_after_op(&BW_SERVE, &BW_SERVE_STOP_PENDING)
+}
+
+/// [`stop_serve_on_lock`] with the serve slot and the pending flag passed in, so
+/// tests do not share the process-wide child.
+///
+/// The flag is raised *before* the `try_lock`: an op that holds the slot reads
+/// the flag only after releasing it ([`finish_pending_serve_stop`]), so either
+/// the `try_lock` here succeeds or that op sees the flag. No interleaving leaves
+/// the child running.
+#[cfg(feature = "bitwarden-serve")]
+fn stop_serve_now_or_after_op(
+    serve: &tokio::sync::Mutex<ServeManager>,
+    pending: &std::sync::atomic::AtomicBool,
+) -> bool {
+    pending.store(true, std::sync::atomic::Ordering::SeqCst);
+    let Ok(mut manager) = serve.try_lock() else {
+        return false;
+    };
+    pending.store(false, std::sync::atomic::Ordering::SeqCst);
+    manager
+        .process
+        .take()
+        .map(super::bitwarden_serve::ServeProcess::kill)
+        .is_some()
+}
+
+/// Stops the serve child if a lock event found it busy. Called by every serve op
+/// after it has released the slot.
+#[cfg(feature = "bitwarden-serve")]
+async fn finish_pending_serve_stop(
+    serve: &tokio::sync::Mutex<ServeManager>,
+    pending: &std::sync::atomic::AtomicBool,
+) -> bool {
+    if !pending.swap(false, std::sync::atomic::Ordering::SeqCst) {
+        return false;
+    }
+    let stopped = serve.lock().await.process.take();
+    match stopped {
+        Some(process) => {
+            process.shutdown().await;
+            true
+        }
+        None => false,
     }
 }
 
 /// No-op stand-ins so call sites do not need `#[cfg]` around every use.
 #[cfg(not(feature = "bitwarden-serve"))]
 pub fn set_serve_preferred(_preferred: bool) {}
+/// Nothing to stop without the feature.
+#[cfg(not(feature = "bitwarden-serve"))]
+#[must_use]
+pub const fn stop_serve_on_lock() -> bool {
+    false
+}
 /// Always false without the feature.
 #[cfg(not(feature = "bitwarden-serve"))]
 #[must_use]
@@ -915,7 +990,27 @@ impl BitwardenBackend {
             return None;
         }
 
-        let mut manager = BW_SERVE.lock().await;
+        let result = {
+            let mut manager = BW_SERVE.lock().await;
+            self.try_serve_locked(&mut manager, args, input, verb).await
+        };
+        // The slot is released: stop the child if a screen lock or suspend found
+        // it busy with this op (see `stop_serve_on_lock`).
+        if finish_pending_serve_stop(&BW_SERVE, &BW_SERVE_STOP_PENDING).await {
+            tracing::info!(%verb, "Bitwarden serve: stopped after the op, on screen lock or suspend");
+        }
+        result
+    }
+
+    /// The body of [`Self::try_serve`], run while it holds the serve slot.
+    #[cfg(feature = "bitwarden-serve")]
+    async fn try_serve_locked(
+        &self,
+        manager: &mut ServeManager,
+        args: &[&str],
+        input: Option<&[u8]>,
+        verb: &str,
+    ) -> Option<SecretResult<String>> {
         if manager.disabled {
             return None;
         }
@@ -3096,6 +3191,89 @@ Invalid master password.";
 
         // Leave the globals clean for sibling tests sharing the lock.
         set_global_session(None);
+    }
+}
+
+/// Stopping the serve child on screen lock or suspend, against a local slot so
+/// the process-wide child is never touched.
+#[cfg(all(test, feature = "bitwarden-serve"))]
+mod serve_lock_tests {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    use super::{ServeManager, finish_pending_serve_stop, stop_serve_now_or_after_op};
+    use crate::secret::bitwarden_serve::ServeProcess;
+
+    /// A slot holding a long-lived stand-in child, killed when the test drops it.
+    fn running_slot() -> tokio::sync::Mutex<ServeManager> {
+        let mut command = tokio::process::Command::new("sleep");
+        command.arg("30").kill_on_drop(true);
+        let child = command.spawn().expect("spawn sleep");
+        let mut manager = ServeManager::new();
+        manager.process = Some(ServeProcess::from_child(child));
+        tokio::sync::Mutex::new(manager)
+    }
+
+    #[tokio::test]
+    async fn an_idle_child_is_stopped_at_once() {
+        let slot = running_slot();
+        let pending = AtomicBool::new(false);
+
+        assert!(stop_serve_now_or_after_op(&slot, &pending));
+        assert!(slot.lock().await.process.is_none());
+        assert!(
+            !pending.load(Ordering::SeqCst),
+            "nothing left for an op to do"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_busy_child_is_stopped_by_the_op_once_it_releases_the_slot() {
+        let slot = running_slot();
+        let pending = AtomicBool::new(false);
+
+        // A vault op holds the slot when the screen locks.
+        let held = slot.lock().await;
+        assert!(!stop_serve_now_or_after_op(&slot, &pending));
+        assert!(
+            held.process.is_some(),
+            "the op's child is not pulled from under it"
+        );
+        drop(held);
+
+        // The op releases the slot and finishes the stop.
+        assert!(finish_pending_serve_stop(&slot, &pending).await);
+        assert!(slot.lock().await.process.is_none());
+        assert!(!pending.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn an_op_without_a_pending_stop_leaves_the_child_running() {
+        let slot = running_slot();
+        let pending = AtomicBool::new(false);
+
+        assert!(!finish_pending_serve_stop(&slot, &pending).await);
+        assert!(slot.lock().await.process.is_some());
+    }
+
+    #[tokio::test]
+    async fn no_child_means_nothing_stopped_and_nothing_pending() {
+        let slot = tokio::sync::Mutex::new(ServeManager::new());
+        let pending = AtomicBool::new(false);
+
+        assert!(!stop_serve_now_or_after_op(&slot, &pending));
+        assert!(!pending.load(Ordering::SeqCst));
+    }
+
+    /// A lock event must keep the fallback latch: a session that fell back to
+    /// spawns because the CLI cannot serve should not retry serve after a lock.
+    #[tokio::test]
+    async fn the_fallback_latch_survives_a_lock_event() {
+        let slot = running_slot();
+        slot.lock().await.disabled = true;
+        let pending = AtomicBool::new(false);
+
+        assert!(stop_serve_now_or_after_op(&slot, &pending));
+        assert!(slot.lock().await.disabled);
     }
 }
 

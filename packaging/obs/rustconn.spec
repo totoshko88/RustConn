@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.8
+Version:        0.24.9
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -392,6 +392,12 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.9-0
+- Version bump to 0.24.9
+- Added: Azerbaijani translation (PR #414, Naim Shafiev)
+- Fixed: CodeQL scan runs again (Rust build mode none)
+- Changed: Bitwarden's kept-running CLI stops on screen lock and suspend
+- Dependencies: resvg 0.49, crypto-bigint, notify, uuid, zip
 * Sun Nov 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.8-0
 - Version bump to 0.24.8
 - Added: Dynamic Folder protocol_config for the full connection (#410)

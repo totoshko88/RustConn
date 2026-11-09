@@ -3,9 +3,11 @@
 //!
 //! One listener, several consumers. A consumer calls [`subscribe`] once with a
 //! handler; the listener calls every handler, in subscription order, for each
-//! [`LockEvent`]. Today the SSH agent cleanup subscribes (it removes the keys
-//! RustConn added, see [`crate::ssh_agent::evict_own_keys`]); other state that
-//! should not outlive a locked screen can subscribe the same way.
+//! [`LockEvent`]. Today the GUI subscribes the SSH agent cleanup (it removes the
+//! keys RustConn added, see [`crate::ssh_agent::evict_own_keys`]) and the
+//! persistent Bitwarden CLI stop (see [`crate::secret::stop_serve_on_lock`]);
+//! other state that should not outlive a locked screen can subscribe the same
+//! way.
 //!
 //! The subscriber list is plain Rust and always built. There are two sources of
 //! events:

@@ -355,6 +355,20 @@ impl ServeProcess {
         let _ = self.child.start_kill();
         let _ = self.child.wait().await;
     }
+
+    /// Kills the serve child without waiting for it to exit, for a caller that
+    /// must not block and may have no runtime (a lock-event handler). Like any
+    /// `kill_on_drop` child, the exit status is reaped later by tokio.
+    pub fn kill(mut self) {
+        let _ = self.child.start_kill();
+    }
+
+    /// A `ServeProcess` around an arbitrary child, for tests of the code that
+    /// owns one; the port is never used.
+    #[cfg(test)]
+    pub(super) const fn from_child(child: Child) -> Self {
+        Self { child, port: 0 }
+    }
 }
 
 /// Reserves an ephemeral loopback port by binding and immediately freeing it.

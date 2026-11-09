@@ -4,11 +4,13 @@ name: CodeQL
 #
 # Why advanced setup: default setup is configured in the GitHub UI and cannot
 # read an in-repo config, so its scope could not be reviewed in a PR or tuned
-# alongside the code. This workflow pins the same language set and query suite
-# default setup used (actions, python, ruby, rust / `default`) and reads
-# .github/codeql/codeql-config.yml, so coverage is unchanged but now lives in
-# the tree. Disable default setup in Settings → Code security before this runs,
-# or GitHub refuses to accept advanced results while default setup is active.
+# alongside the code. This workflow scans actions and rust, the only languages
+# with product code left after the config's paths-ignore, and reads
+# .github/codeql/codeql-config.yml, so the scan's scope lives in the tree.
+# Default setup must be disabled in Settings → Code security: while it is
+# active, GitHub rejects every SARIF upload from this workflow ("CodeQL analyses
+# from advanced configurations cannot be processed when the default setup is
+# enabled") and each job fails even though its analysis completed.
 
 on:
   push:
@@ -26,8 +28,9 @@ permissions:
   security-events: write
 
 env:
-  # Keep in step with ci.yml / release.yml. The Rust extractor builds the crate,
-  # so it needs the same toolchain the rest of CI pins.
+  # Keep in step with ci.yml / release.yml. The Rust extractor (build mode
+  # `none`) still runs build scripts and proc macros, so it needs the same
+  # toolchain the rest of CI pins.
   RUST_TOOLCHAIN: '1.99.0'
 
 jobs:
@@ -47,27 +50,24 @@ jobs:
         include:
           - language: actions
             build-mode: none
-          - language: python
-            build-mode: none
-          - language: ruby
-            build-mode: none
           - language: rust
-            build-mode: autobuild
+            build-mode: none
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # Rust is a compiled language: the extractor observes a real build, so the
-      # toolchain and GTK/WebKit system libraries must be present exactly as the
-      # ordinary build jobs have them. The other languages use build-mode none
-      # and skip this.
+      # Rust is a compiled language and CodeQL only supports its `none` build
+      # mode (rust-analyzer reads the sources and runs build scripts without a
+      # full build). The toolchain is still needed for rustup and cargo.
       - name: Install Rust toolchain
         if: matrix.language == 'rust'
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
 
+      # The -sys crates' build scripts probe GTK/libadwaita/VTE with pkg-config,
+      # so the system libraries must be present for those scripts to succeed.
       - name: Install system dependencies
         if: matrix.language == 'rust'
         uses: ./.github/actions/install-deps
