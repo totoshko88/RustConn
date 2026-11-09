@@ -151,6 +151,7 @@ pub struct ConnectionDialog {
     /// connection-level and applies to RDP, VNC and SPICE as well, and the
     /// protocol stack only ever shows one page.
     network_mode_row: adw::ComboRow,
+    fallback_jump_hosts: crate::dialogs::widgets::FallbackJumpHostsEditor,
     ssh_jump_host_dropdown: DropDown,
     /// Row around `ssh_jump_host_dropdown`, so its subtitle can warn when the
     /// stored `jump_host_id` points at a deleted connection (issue #345).

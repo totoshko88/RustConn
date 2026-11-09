@@ -67,6 +67,7 @@ fn create_test_groups(count: usize) -> Vec<ConnectionGroup> {
             ssh_key_path: None,
             ssh_proxy_jump: None,
             ssh_jump_host_id: None,
+            ssh_fallback_jump_host_ids: Vec::new(),
             ssh_agent_socket: None,
             sync_mode: SyncMode::None,
             dynamic_folder: None,

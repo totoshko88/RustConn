@@ -3138,6 +3138,42 @@ impl MainWindow {
             }
         }
 
+        // Jump host failover: the choice is made off the main thread, so a
+        // connection with fallbacks comes back through here once it is known.
+        // Ahead of Wake-on-LAN and the pre-connect task, which must run once.
+        drop(state_ref);
+        let retry = {
+            let state = state.clone();
+            let notebook = notebook.clone();
+            let sidebar = sidebar.clone();
+            let monitoring = Rc::clone(monitoring);
+            let observer = observer.clone();
+            move || {
+                let result = Self::start_connection_inner(
+                    &state,
+                    &notebook,
+                    &sidebar,
+                    &monitoring,
+                    connection_id,
+                    observer,
+                    false,
+                );
+                if matches!(result, types::ConnectionStartResult::Failed) {
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                        "Connection failed",
+                    ));
+                }
+            }
+        };
+        if protocols::start_gateway_probe(state, connection_id, retry) {
+            return types::ConnectionStartResult::Pending;
+        }
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(connection_id) else {
+            return types::ConnectionStartResult::Failed;
+        };
+
         // Auto-WoL: send magic packet before connecting if configured
         // Fire-and-forget on background thread to avoid blocking GTK
         if let Some(wol_config) = conn.get_wol_config() {

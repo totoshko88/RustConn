@@ -52,6 +52,195 @@ pub fn dialog_pack_action(header: &adw::HeaderBar, button: &impl IsA<gtk4::Widge
     header.pack_start(button);
 }
 
+/// Editor for an ordered list of fallback jump hosts.
+///
+/// Shared by the connection and group editors, which store the same list.
+#[derive(Clone)]
+pub struct FallbackJumpHostsEditor {
+    inner: std::rc::Rc<FallbackJumpHostsInner>,
+}
+
+struct FallbackJumpHostsInner {
+    expander: adw::ExpanderRow,
+    add_row: adw::ActionRow,
+    add_dropdown: DropDown,
+    add_button: Button,
+    /// Every saved connection that can act as a gateway, as `(id, label)`.
+    options: std::cell::RefCell<Vec<(uuid::Uuid, String)>>,
+    /// The connection being edited, which cannot be its own gateway.
+    owner: std::cell::Cell<Option<uuid::Uuid>>,
+    selected: std::cell::RefCell<Vec<uuid::Uuid>>,
+    /// What each entry of `add_dropdown` adds, parallel to its model.
+    addable: std::cell::RefCell<Vec<uuid::Uuid>>,
+    rows: std::cell::RefCell<Vec<adw::ActionRow>>,
+}
+
+impl FallbackJumpHostsEditor {
+    /// Creates an empty editor.
+    #[must_use]
+    pub fn new() -> Self {
+        let expander = adw::ExpanderRow::builder()
+            .title(i18n("Fallback Jump Hosts"))
+            .subtitle(i18n("Tried in order when the Jump Host is unreachable"))
+            .build();
+
+        let add_dropdown = DropDown::builder().valign(gtk4::Align::Center).build();
+        enable_string_search(&add_dropdown);
+        add_dropdown.set_size_request(200, -1);
+        let add_label = i18n("Add Fallback Jump Host");
+        let add_button = Button::builder()
+            .icon_name("list-add-symbolic")
+            .tooltip_text(&add_label)
+            .valign(gtk4::Align::Center)
+            .css_classes(["flat"])
+            .build();
+        add_button.update_property(&[gtk4::accessible::Property::Label(&add_label)]);
+        let add_row = adw::ActionRow::builder().title(&add_label).build();
+        add_row.add_suffix(&add_dropdown);
+        add_row.add_suffix(&add_button);
+
+        let editor = Self {
+            inner: std::rc::Rc::new(FallbackJumpHostsInner {
+                expander,
+                add_row,
+                add_dropdown,
+                add_button,
+                options: std::cell::RefCell::default(),
+                owner: std::cell::Cell::default(),
+                selected: std::cell::RefCell::default(),
+                addable: std::cell::RefCell::default(),
+                rows: std::cell::RefCell::default(),
+            }),
+        };
+        let weak = std::rc::Rc::downgrade(&editor.inner);
+        editor.inner.add_button.connect_clicked(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            let index = inner.add_dropdown.selected() as usize;
+            let chosen = inner.addable.borrow().get(index).copied();
+            if let Some(id) = chosen {
+                inner.selected.borrow_mut().push(id);
+                FallbackJumpHostsInner::rebuild(&inner);
+            }
+        });
+        FallbackJumpHostsInner::rebuild(&editor.inner);
+        editor
+    }
+
+    /// The row to place in a preferences group or another expander.
+    #[must_use]
+    pub fn widget(&self) -> &adw::ExpanderRow {
+        &self.inner.expander
+    }
+
+    /// Sets the connections that can be picked, as `(id, label)`.
+    pub fn set_options(&self, options: Vec<(uuid::Uuid, String)>) {
+        *self.inner.options.borrow_mut() = options;
+        FallbackJumpHostsInner::rebuild(&self.inner);
+    }
+
+    /// Loads the stored list; `owner` is the connection being edited, if any.
+    pub fn set_value(&self, owner: Option<uuid::Uuid>, selected: &[uuid::Uuid]) {
+        self.inner.owner.set(owner);
+        *self.inner.selected.borrow_mut() = selected.to_vec();
+        FallbackJumpHostsInner::rebuild(&self.inner);
+    }
+
+    /// Returns the list in failover order.
+    #[must_use]
+    pub fn value(&self) -> Vec<uuid::Uuid> {
+        self.inner.selected.borrow().clone()
+    }
+}
+
+impl Default for FallbackJumpHostsEditor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FallbackJumpHostsInner {
+    fn label_of(&self, id: uuid::Uuid) -> String {
+        self.options
+            .borrow()
+            .iter()
+            .find(|(option, _)| *option == id)
+            .map_or_else(|| i18n("(unknown connection)"), |(_, label)| label.clone())
+    }
+
+    fn rebuild(this: &std::rc::Rc<Self>) {
+        for row in this.rows.borrow_mut().drain(..) {
+            this.expander.remove(&row);
+        }
+        this.expander.remove(&this.add_row);
+
+        let selected = this.selected.borrow().clone();
+        for (index, id) in selected.iter().enumerate() {
+            let row = adw::ActionRow::builder()
+                .title(this.label_of(*id))
+                .use_markup(false)
+                .build();
+            let up = Self::row_button(this, "go-up-symbolic", &i18n("Move Up"), index, -1);
+            up.set_sensitive(index > 0);
+            let down = Self::row_button(this, "go-down-symbolic", &i18n("Move Down"), index, 1);
+            down.set_sensitive(index + 1 < selected.len());
+            let remove = Self::row_button(this, "list-remove-symbolic", &i18n("Remove"), index, 0);
+            row.add_suffix(&up);
+            row.add_suffix(&down);
+            row.add_suffix(&remove);
+            this.expander.add_row(&row);
+            this.rows.borrow_mut().push(row);
+        }
+
+        let addable: Vec<(uuid::Uuid, String)> = this
+            .options
+            .borrow()
+            .iter()
+            .filter(|(id, _)| !selected.contains(id) && this.owner.get() != Some(*id))
+            .cloned()
+            .collect();
+        let labels: Vec<&str> = addable.iter().map(|(_, label)| label.as_str()).collect();
+        this.add_dropdown.set_model(Some(&StringList::new(&labels)));
+        this.add_row.set_sensitive(!addable.is_empty());
+        *this.addable.borrow_mut() = addable.into_iter().map(|(id, _)| id).collect();
+        this.expander.add_row(&this.add_row);
+    }
+
+    /// Builds a button that moves entry `index` by `offset`, or removes it when
+    /// `offset` is zero.
+    fn row_button(
+        this: &std::rc::Rc<Self>,
+        icon: &str,
+        label: &str,
+        index: usize,
+        offset: isize,
+    ) -> Button {
+        let button = Button::builder()
+            .icon_name(icon)
+            .tooltip_text(label)
+            .valign(gtk4::Align::Center)
+            .css_classes(["flat"])
+            .build();
+        button.update_property(&[gtk4::accessible::Property::Label(label)]);
+        let weak = std::rc::Rc::downgrade(this);
+        button.connect_clicked(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            {
+                let mut selected = inner.selected.borrow_mut();
+                if offset == 0 {
+                    selected.remove(index);
+                } else if let Some(other) = index.checked_add_signed(offset)
+                    && other < selected.len()
+                {
+                    selected.swap(index, other);
+                }
+            }
+            // Later than this click: rebuilding removes the button being clicked.
+            gtk4::glib::idle_add_local_once(move || Self::rebuild(&inner));
+        });
+        button
+    }
+}
+
 /// Common label strings used across dialogs
 pub mod labels {
     use crate::i18n::i18n;

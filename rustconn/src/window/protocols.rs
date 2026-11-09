@@ -1277,11 +1277,80 @@ pub fn resolve_first_hop_id(
     conn: &rustconn_core::Connection,
 ) -> Option<uuid::Uuid> {
     let groups = state_ref.list_groups_owned();
-    rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_id(
-        conn,
-        &groups,
-        &state_ref.settings().network,
-    )
+    // Failover's answer for this launch wins over the configured primary.
+    state_ref.chosen_gateway(conn, &groups).or_else(|| {
+        rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_id(
+            conn,
+            &groups,
+            &state_ref.settings().network,
+        )
+    })
+}
+
+/// Chooses the jump host for a launch of `connection_id` that has fallbacks.
+///
+/// Returns `false` when the launch can go ahead now. Returns `true` when probing
+/// has started in the background: the caller must stop, and `retry` runs once
+/// the choice is recorded, on the main thread, and restarts the launch.
+pub(super) fn start_gateway_probe(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    retry: impl FnOnce() + 'static,
+) -> bool {
+    use rustconn_core::connection::gateway_failover::{GatewayOutcome, probe_gateways};
+
+    let Ok(state_ref) = state.try_borrow() else {
+        return false;
+    };
+    if state_ref.gateway_choice_is_fresh(connection_id) {
+        return false;
+    }
+    let Some(conn) = state_ref.get_connection(connection_id) else {
+        return false;
+    };
+    let mut probes = state_ref.gateway_probes(conn);
+    if probes.is_empty() {
+        state_ref.clear_gateway_choice(connection_id);
+        return false;
+    }
+    let timeout = state_ref.settings().connection.port_check_timeout_secs;
+    drop(state_ref);
+
+    let globals = resolve_globals_with_ask(state, connection_id);
+    for (host, _) in probes.iter_mut().filter_map(|p| p.entry_point.as_mut()) {
+        *host = substitute_variables(host, &globals);
+    }
+
+    let state = state.clone();
+    crate::utils::spawn_blocking_with_callback(
+        move || probe_gateways(&probes, timeout),
+        move |selection| {
+            if let Some(selection) = selection {
+                state
+                    .borrow()
+                    .set_gateway_choice(connection_id, selection.gateway_id);
+                match selection.outcome {
+                    GatewayOutcome::Primary => {}
+                    GatewayOutcome::FailedOver => {
+                        tracing::info!(gateway = %selection.gateway_name, "Failing over to a fallback jump host");
+                        crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                            "Jump host unreachable, connecting through ‘{}’",
+                            &[&selection.gateway_name],
+                        ));
+                    }
+                    GatewayOutcome::NoneReachable => {
+                        tracing::warn!(gateway = %selection.gateway_name, "No jump host responded to the probe");
+                        crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                            "No jump host responded, trying ‘{}’",
+                            &[&selection.gateway_name],
+                        ));
+                    }
+                }
+            }
+            retry();
+        },
+    );
+    true
 }
 
 pub fn resolve_jump_chain_for_tunnel(

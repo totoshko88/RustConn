@@ -349,6 +349,18 @@ A connection can reach its target through a bastion without naming one itself. T
 
 The *ProxyJump* field's subtitle names the bastion a connection has inherited — a group's or the global one, whether it was typed as `user@host` or picked from the dropdown — so a connection routed through one is not silently doing so. It follows *Network Mode* as you change it, and says so when *Direct* is ignoring an inherited bastion.
 
+#### Fallback Jump Hosts
+
+A connection or a group can list **Fallback Jump Hosts** behind its *Jump Host* (connection: Edit connection → **General** → *Connection*; group: Edit group → **SSH Settings**). This works for SSH, SFTP, RDP, VNC and SPICE.
+
+Before each new connection or reconnect, RustConn checks the gateways in order and uses the first one that accepts a TCP connection and identifies itself as an SSH server within the *port check timeout*. A toast names the fallback when one is used, and the next connection tries the primary again.
+
+- If no gateway answers, RustConn tries the first one and shows the normal SSH error. It never falls back to connecting directly.
+- Only reachability is checked. A gateway that answers but rejects your login, or that cannot reach the target, does not trigger a fallback.
+- Fallbacks belong to the *Jump Host* at the same level: a connection with its own *Jump Host* does not pick up its group's fallbacks. The global tier has no fallback list.
+- A gateway behind a free-text *ProxyJump* cannot be checked and is treated as available. Free-text *ProxyJump* values and custom *ProxyCommand* routes have no failover.
+- `rustconn-cli connect` does not use saved jump hosts, so it has no failover; `rustconn-cli sftp --mc` and `--cli` do.
+
 Three notes on scope:
 
 - The **global** tier exists because a group cannot stand in for "everything". There is no single implicit root group — a top-level group is just a group with no parent, and there can be many — and an ungrouped connection has no chain to walk, so nothing set on a group can reach it.

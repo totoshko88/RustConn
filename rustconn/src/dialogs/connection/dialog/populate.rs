@@ -181,6 +181,8 @@ impl ConnectionDialog {
             conn.network_mode == rustconn_core::models::NetworkMode::Direct,
         ));
         self.update_inherited_proxy_subtitle(conn);
+        self.fallback_jump_hosts
+            .set_value(Some(conn.id), &conn.fallback_jump_host_ids);
 
         // Protocol and protocol-specific fields
         match &conn.protocol_config {
@@ -514,6 +516,12 @@ impl ConnectionDialog {
         }
 
         *self.connections_data.borrow_mut() = connections_data.clone();
+        self.fallback_jump_hosts.set_options(
+            connections_data
+                .iter()
+                .filter_map(|(id, label)| id.map(|id| (id, label.clone())))
+                .collect(),
+        );
 
         let display_strings: Vec<&str> = connections_data
             .iter()

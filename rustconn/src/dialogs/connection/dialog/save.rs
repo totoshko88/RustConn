@@ -61,6 +61,7 @@ impl ConnectionDialog {
         ssh_agent_key_dropdown: &DropDown,
         ssh_agent_keys: &Rc<RefCell<Vec<rustconn_core::ssh_agent::AgentKey>>>,
         network_mode_row: &adw::ComboRow,
+        fallback_jump_hosts: &crate::dialogs::widgets::FallbackJumpHostsEditor,
         ssh_jump_host_dropdown: &DropDown,
         ssh_proxy_entry: &Entry,
         ssh_proxy_command_entry: &Entry,
@@ -297,6 +298,7 @@ impl ConnectionDialog {
         let ssh_agent_key_dropdown = ssh_agent_key_dropdown.clone();
         let ssh_agent_keys = ssh_agent_keys.clone();
         let network_mode_row = network_mode_row.clone();
+        let fallback_jump_hosts = fallback_jump_hosts.clone();
         let ssh_jump_host_dropdown = ssh_jump_host_dropdown.clone();
         let ssh_proxy_entry = ssh_proxy_entry.clone();
         let ssh_proxy_command_entry = ssh_proxy_command_entry.clone();
@@ -550,6 +552,7 @@ impl ConnectionDialog {
                 ssh_agent_key_dropdown: &ssh_agent_key_dropdown,
                 ssh_agent_keys: &ssh_agent_keys,
                 network_mode_row: &network_mode_row,
+                fallback_jump_hosts: &fallback_jump_hosts,
                 ssh_jump_host_dropdown: &ssh_jump_host_dropdown,
                 ssh_proxy_entry: &ssh_proxy_entry,
                 ssh_proxy_command_entry: &ssh_proxy_command_entry,

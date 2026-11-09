@@ -156,6 +156,7 @@ Options:
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
 | `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
+| `--fallback-jump-host` | — | Saved SSH connection to try when the jump host is unreachable. Repeat in failover order. Needs a jump host on the connection; `update` replaces the list, and `--clear-fallback-jump-hosts` removes it |
 | `--keep-alive-interval` | — | SSH keep-alive interval in seconds (`ServerAliveInterval`) |
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
 | `--ssh-verbose` | — | Enable SSH verbose/debug output (`-v` flag) |

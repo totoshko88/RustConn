@@ -282,6 +282,7 @@ pub(super) struct ConnectionDialogData<'a> {
     /// Connection-level, so it is on the Basic tab rather than the SSH page —
     /// see `general_tab::BasicTabWidgets::network_mode_row` (issue #301).
     pub network_mode_row: &'a adw::ComboRow,
+    pub fallback_jump_hosts: &'a crate::dialogs::widgets::FallbackJumpHostsEditor,
     pub ssh_jump_host_dropdown: &'a DropDown,
     pub connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     // Script credential fields
@@ -628,6 +629,7 @@ impl ConnectionDialogData<'_> {
         } else {
             rustconn_core::models::NetworkMode::Inherit
         };
+        conn.fallback_jump_host_ids = self.fallback_jump_hosts.value();
 
         // Set local variables
         conn.local_variables = self.local_variables.clone();

@@ -78,6 +78,10 @@ pub struct ConnectionGroup {
     /// Takes precedence over `ssh_proxy_jump` text field. (LOCAL-ONLY, not synced)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ssh_jump_host_id: Option<Uuid>,
+    /// Saved jump hosts to try, in order, when `ssh_jump_host_id` is
+    /// unreachable. Inherited together with it. (LOCAL-ONLY, not synced)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ssh_fallback_jump_host_ids: Vec<Uuid>,
     /// SSH agent socket override for inheritance (LOCAL-ONLY)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ssh_agent_socket: Option<String>,
@@ -168,6 +172,7 @@ impl ConnectionGroup {
             ssh_key_path: None,
             ssh_proxy_jump: None,
             ssh_jump_host_id: None,
+            ssh_fallback_jump_host_ids: Vec::new(),
             ssh_agent_socket: None,
             sync_mode: SyncMode::None,
             dynamic_folder: None,
@@ -205,6 +210,7 @@ impl ConnectionGroup {
             ssh_key_path: None,
             ssh_proxy_jump: None,
             ssh_jump_host_id: None,
+            ssh_fallback_jump_host_ids: Vec::new(),
             ssh_agent_socket: None,
             sync_mode: SyncMode::None,
             dynamic_folder: None,

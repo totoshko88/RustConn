@@ -5,6 +5,14 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Fallback jump hosts** — a connection or a group can list saved jump hosts to try in order when its Jump Host is unreachable, for SSH, SFTP, RDP, VNC and SPICE. Each new connection or reconnect checks for a reachable SSH server, and uses the primary again as soon as it answers. If none answers, the first is tried and the normal error is shown; a connection never falls back to going direct. Set in the connection and group editors, or with `--fallback-jump-host` in `rustconn-cli add` and `update`.
+
+### Fixed
+- **The "Routing changed" warning now notices jump hosts chosen from the picker** — it compared free-text ProxyJump values only, so re-pointing a connection's saved Jump Host went unseen. Connections that use one will show the warning once after updating, because their route is now recorded for the first time.
+
 ## [0.24.10] - 2026-11-09
 ### Fixed
 - **macOS: the menu-bar icon follows the system style** — the tray icon was a full-colour image that clashed with the other status items. It is now a monochrome template glyph, so macOS tints it for a light or dark menu bar like any native item. (`rustconn/src/tray.rs`, `rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn-tray-macos.svg`)

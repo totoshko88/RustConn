@@ -265,6 +265,7 @@ impl ConnectionTemplate {
             // `Inherit`, i.e. it picks up whatever its group and the global
             // settings provide.
             network_mode: super::NetworkMode::default(),
+            fallback_jump_host_ids: Vec::new(),
             domain: self.domain.clone(),
             custom_properties: self.custom_properties.clone(),
             pre_connect_task: self.pre_connect_task.clone(),

@@ -1501,6 +1501,7 @@ mod tests {
             password_source: PasswordSource::None,
             kdbx_path_override: None,
             network_mode: crate::models::NetworkMode::default(),
+            fallback_jump_host_ids: Vec::new(),
             domain: None,
             custom_properties: Vec::new(),
             pre_connect_task: None,

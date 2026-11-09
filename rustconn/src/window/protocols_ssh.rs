@@ -1894,6 +1894,51 @@ pub fn reconnect_ssh_in_place(
     session_id: Uuid,
     connection_id: Uuid,
 ) -> bool {
+    // The gateway this session used may be the reason it dropped.
+    if let Ok(state_ref) = state.try_borrow() {
+        state_ref.expire_gateway_choice(connection_id);
+    }
+    let retry = {
+        let state = state.clone();
+        let notebook = notebook.clone();
+        let sidebar = sidebar.clone();
+        let monitoring = Rc::clone(monitoring);
+        move || {
+            if !reconnect_ssh_prepared(
+                &state,
+                &notebook,
+                &sidebar,
+                &monitoring,
+                session_id,
+                connection_id,
+            ) {
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+            }
+        }
+    };
+    if super::protocols::start_gateway_probe(state, connection_id, retry) {
+        sidebar.update_connection_status(&connection_id.to_string(), "connecting");
+        return true;
+    }
+    reconnect_ssh_prepared(
+        state,
+        notebook,
+        sidebar,
+        monitoring,
+        session_id,
+        connection_id,
+    )
+}
+
+/// [`reconnect_ssh_in_place`] once the jump host has been chosen.
+fn reconnect_ssh_prepared(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    monitoring: &super::types::SharedMonitoring,
+    session_id: Uuid,
+    connection_id: Uuid,
+) -> bool {
     // Prepare the existing tab for reconnect
     if !notebook.prepare_for_reconnect(session_id) {
         tracing::warn!(%session_id, "Tab no longer exists, cannot reconnect in-place");
