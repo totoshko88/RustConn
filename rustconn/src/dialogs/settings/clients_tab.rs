@@ -175,29 +175,31 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     // Poll the channel from the main thread; GTK widgets stay here.
     // 50 ms timeout instead of `idle_add_local`: an idle source never sleeps, so
     // it would spin the main loop at full speed until detection finishes.
-    glib::timeout_add_local(std::time::Duration::from_millis(50), move || match rx.try_recv() {
-        Ok((core_clients, zerotrust_clients, k8s_clients)) => {
-            if core_clients.len() >= 5 {
-                update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
-                update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
-                update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
-                update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
-                update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
-            }
-
-            for (i, client) in zerotrust_clients.iter().enumerate() {
-                if i < zerotrust_rows_clone.len() {
-                    update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+        match rx.try_recv() {
+            Ok((core_clients, zerotrust_clients, k8s_clients)) => {
+                if core_clients.len() >= 5 {
+                    update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
+                    update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
+                    update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
+                    update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
+                    update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
                 }
-            }
 
-            if let Some(kubectl_info) = k8s_clients.first() {
-                update_client_row(&k8s_group_clone, &kubectl_row_clone, kubectl_info);
+                for (i, client) in zerotrust_clients.iter().enumerate() {
+                    if i < zerotrust_rows_clone.len() {
+                        update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+                    }
+                }
+
+                if let Some(kubectl_info) = k8s_clients.first() {
+                    update_client_row(&k8s_group_clone, &kubectl_row_clone, kubectl_info);
+                }
+                glib::ControlFlow::Break
             }
-            glib::ControlFlow::Break
+            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
         }
-        Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-        Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
     });
 
     page
