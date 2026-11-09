@@ -10,6 +10,7 @@ Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.10
   spinning the main loop; dev builds optimise dependencies
 - Dependencies: arc-swap, itoa, notify-types, syn; RUSTSEC-2023-0071
   rationale updated (rsa 0.10.0 exists, pinned out by ironrdp)
+- Flatpak: picocom source moved to its maintained GitLab home
 -------------------------------------------------------------------
 Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.9
 - Version bump to 0.24.9

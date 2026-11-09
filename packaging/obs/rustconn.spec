@@ -399,6 +399,7 @@ done
 - Fixed: a dead CLI wrapper is reported as not found
 - Changed: Compact interface off by default on macOS
 - Dependencies: arc-swap, itoa, notify-types, syn
+- Flatpak: picocom source moved to GitLab
 * Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.9-0
 - Version bump to 0.24.9
 - Added: Azerbaijani translation (PR #414, Naim Shafiev)

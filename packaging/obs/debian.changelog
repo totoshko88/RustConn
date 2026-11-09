@@ -10,6 +10,7 @@ rustconn (0.24.10-1) unstable; urgency=medium
     spinning the main loop; dev builds optimise dependencies
   * Dependencies: arc-swap, itoa, notify-types, syn; RUSTSEC-2023-0071
     rationale updated (rsa 0.10.0 exists, pinned out by ironrdp)
+  * Flatpak: picocom source moved to its maintained GitLab home
 
  -- Anton Isaiev <totoshko88@gmail.com>  Mon, 09 Nov 2026 23:36:25 +0100
 
