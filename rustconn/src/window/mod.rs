@@ -28,6 +28,7 @@ mod prompt_autofill;
 pub(crate) mod protocols;
 mod protocols_ssh;
 mod rdp_vnc;
+mod remote_script;
 mod resume_monitor;
 mod session_lifecycle;
 pub mod session_restore;

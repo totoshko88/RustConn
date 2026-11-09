@@ -19,6 +19,7 @@ mod monitor;
 mod move_cmd;
 mod pin;
 mod recording;
+mod run_script;
 #[cfg(any(feature = "secret-management", feature = "keepass-verify"))]
 mod secret;
 mod sftp;
@@ -597,6 +598,24 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::SmartFolder(subcmd) => smart_folder::cmd_smart_folder(config_path, subcmd),
         Commands::DynamicFolder(subcmd) => dynamic_folder::cmd_dynamic_folder(config_path, subcmd),
         Commands::Recording(subcmd) => recording::cmd_recording(subcmd),
+        Commands::RunScript {
+            script,
+            connections,
+            groups,
+            parallel,
+            timeout,
+            yes,
+        } => run_script::cmd_run_script(
+            config_path,
+            &run_script::RunScriptParams {
+                script: &script,
+                connections: &connections,
+                groups: &groups,
+                parallel,
+                timeout_secs: timeout,
+                assume_yes: yes,
+            },
+        ),
         Commands::Duplicate {
             name,
             new_name,

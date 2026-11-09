@@ -73,6 +73,7 @@ pub mod performance;
 pub mod proc;
 pub mod progress;
 pub mod protocol;
+pub mod remote_script;
 pub mod runtime_dir;
 pub mod script;
 pub mod search;

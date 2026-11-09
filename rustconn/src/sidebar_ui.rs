@@ -351,6 +351,10 @@ pub fn show_context_menu_for_item(
             &i18n("Connect All"),
             "connect-all-in-group",
         ));
+        items.push(ContextMenuItem::action(
+            &i18n("Run Local Script…"),
+            "run-local-script",
+        ));
         // § Organisation
         items.push(ContextMenuItem::Separator);
         items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
@@ -502,6 +506,10 @@ pub fn show_context_menu_for_item(
             "show-connection-log",
         ));
         if is_ssh {
+            items.push(ContextMenuItem::action(
+                &i18n("Run Local Script…"),
+                "run-local-script",
+            ));
             items.push(ContextMenuItem::action(&i18n("Open SFTP"), "open-sftp"));
         }
         if offers_key_setup {

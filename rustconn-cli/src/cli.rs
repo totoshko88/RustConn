@@ -1207,6 +1207,33 @@ pub enum Commands {
     #[command(subcommand, about = "Manage connection templates")]
     Template(TemplateCommands),
 
+    /// Run a local bash script on SSH connections
+    #[command(about = "Run a local bash script on SSH connections")]
+    RunScript {
+        /// Path to the local bash script
+        script: std::path::PathBuf,
+
+        /// Connection name or UUID to run on (repeatable)
+        #[arg(long = "on", value_name = "NAME|UUID")]
+        connections: Vec<String>,
+
+        /// Group name or UUID to run on, including subgroups (repeatable)
+        #[arg(long = "group", value_name = "NAME|UUID")]
+        groups: Vec<String>,
+
+        /// Hosts to run on at once (1-64)
+        #[arg(long, default_value_t = 8)]
+        parallel: usize,
+
+        /// Time limit per host, in seconds
+        #[arg(long, default_value_t = 600)]
+        timeout: u64,
+
+        /// Do not ask for confirmation
+        #[arg(short, long)]
+        yes: bool,
+    },
+
     /// Manage connection clusters
     #[command(subcommand, about = "Manage connection clusters")]
     Cluster(ClusterCommands),
