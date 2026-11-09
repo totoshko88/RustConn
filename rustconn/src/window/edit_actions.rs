@@ -1890,10 +1890,30 @@ impl MainWindow {
         toast_clone: &SharedToastOverlay,
         conn_id: Uuid,
     ) {
+        let retry = {
+            let state = state_clone.clone();
+            let notebook = notebook_clone.clone();
+            let split_view = split_view_clone.clone();
+            let toast = toast_clone.clone();
+            move || {
+                Self::open_sftp_for_connection(&state, &notebook, &split_view, &toast, conn_id);
+            }
+        };
+        if super::protocols::start_gateway_probe(state_clone, conn_id, retry) {
+            return;
+        }
+
         let state_ref = state_clone.borrow();
-        let Some(conn) = state_ref.get_connection(conn_id) else {
+        let Some(stored_conn) = state_ref.get_connection(conn_id) else {
             return;
         };
+        // The SFTP builders resolve the route from the connection they are given.
+        let mut launch_conn = stored_conn.clone();
+        if let Some(gateway) = state_ref.chosen_gateway(stored_conn, &state_ref.list_groups_owned())
+        {
+            rustconn_core::connection::gateway_failover::use_gateway(&mut launch_conn, gateway);
+        }
+        let conn = &launch_conn;
         let use_mc = state_ref.settings().terminal.sftp_use_mc;
 
         // Collect groups for SSH inheritance resolution, and connections so a
@@ -2310,9 +2330,16 @@ impl MainWindow {
         connection_id: Uuid,
     ) {
         let state_ref = state.borrow();
-        let Some(conn) = state_ref.get_connection(connection_id) else {
+        let Some(stored_conn) = state_ref.get_connection(connection_id) else {
             return;
         };
+        // The SFTP builders resolve the route from the connection they are given.
+        let mut launch_conn = stored_conn.clone();
+        if let Some(gateway) = state_ref.chosen_gateway(stored_conn, &state_ref.list_groups_owned())
+        {
+            rustconn_core::connection::gateway_failover::use_gateway(&mut launch_conn, gateway);
+        }
+        let conn = &launch_conn;
         let use_mc = state_ref.settings().terminal.sftp_use_mc;
         let groups: Vec<rustconn_core::models::ConnectionGroup> = state_ref.list_groups_owned();
         // Needed to resolve a jump host stored as a connection reference.

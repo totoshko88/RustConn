@@ -7,7 +7,7 @@ use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
     apply_jump_host_id, apply_ssh_wave2_fields, parse_auth_method, parse_resolution,
-    parse_shared_folder, parse_spice_image_compression,
+    parse_shared_folder, parse_spice_image_compression, resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -159,6 +159,8 @@ pub(super) struct UpdateParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
+    pub clear_fallback_jump_hosts: bool,
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -289,6 +291,13 @@ pub(super) fn cmd_update(
             .position(|c| c.id == conn_id)
             .ok_or_else(|| CliError::Config("Connection disappeared during lookup".to_string()))?
     };
+
+    // Resolve fallback jump hosts for the same reason as --jump-host below.
+    let resolved_fallbacks = resolve_fallback_jump_hosts(
+        &connections,
+        params.fallback_jump_hosts,
+        connections[index].id,
+    )?;
 
     // Resolve --jump-host early (before mutable borrow of connection)
     let resolved_jump_id = if let Some(jump_host_ref) = params.jump_host {
@@ -641,6 +650,11 @@ pub(super) fn cmd_update(
             ));
         }
         apply_jump_host_id(connection, jump_id)?;
+    }
+    if params.clear_fallback_jump_hosts {
+        connection.fallback_jump_host_ids.clear();
+    } else if !resolved_fallbacks.is_empty() {
+        connection.fallback_jump_host_ids = resolved_fallbacks;
     }
 
     // Apply RDP-specific fields (gateway, RemoteApp, resolution, etc.)

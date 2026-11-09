@@ -90,6 +90,17 @@ fn print_json(
     let Some(map) = obj.as_object_mut() else {
         return Err(CliError::Config("Failed to build JSON object".to_string()));
     };
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        map.insert(
+            "fallback_jump_hosts".to_string(),
+            serde_json::Value::from(names),
+        );
+    }
 
     match &connection.protocol_config {
         ProtocolConfig::Ssh(config) => {
@@ -418,6 +429,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
 
     if !connection.tags.is_empty() {
         println!("  Tags:     {}", connection.tags.join(", "));
+    }
+
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        println!("  Fallback Jump Hosts: {}", names.join(", "));
     }
 
     if let Some(last) = connection.last_connected {

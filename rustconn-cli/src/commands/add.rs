@@ -56,6 +56,7 @@ pub(super) struct AddParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -630,6 +631,14 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         let jump_id = jump_conn.id;
         apply_jump_host_id(&mut connection, jump_id)?;
     }
+
+    if !params.fallback_jump_hosts.is_empty() && params.jump_host.is_none() {
+        return Err(CliError::Config(
+            "--fallback-jump-host requires --jump-host".into(),
+        ));
+    }
+    connection.fallback_jump_host_ids =
+        resolve_fallback_jump_hosts(&connections, params.fallback_jump_hosts, connection.id)?;
 
     // Resolve --tunnel-via to a UUID (Web connections only): browse through the
     // referenced SSH connection's host via an auto-raised dynamic SOCKS proxy.
@@ -1226,6 +1235,26 @@ fn create_zerotrust_connection(name: &str, params: &AddParams<'_>) -> Result<Con
              oci_bastion, cloudflare_access, teleport, tailscale_ssh, boundary, hoop_dev, generic"
         ))),
     }
+}
+
+/// Resolves `--fallback-jump-host` values to connection ids, in the given order.
+pub(super) fn resolve_fallback_jump_hosts(
+    connections: &[Connection],
+    references: &[String],
+    own_id: uuid::Uuid,
+) -> Result<Vec<uuid::Uuid>, CliError> {
+    references
+        .iter()
+        .map(|reference| {
+            let id = find_connection(connections, reference)?.id;
+            if id == own_id {
+                return Err(CliError::Config(
+                    "A connection cannot use itself as a jump host".into(),
+                ));
+            }
+            Ok(id)
+        })
+        .collect()
 }
 
 /// Set `jump_host_id` on a connection's protocol config.

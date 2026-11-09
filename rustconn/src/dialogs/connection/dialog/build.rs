@@ -46,6 +46,7 @@ impl ConnectionDialog {
         let port_spin = basic.port_spin.clone();
         let port_row = basic.port_row.clone();
         let network_mode_row = basic.network_mode_row.clone();
+        let fallback_jump_hosts = basic.fallback_jump_hosts.clone();
         let username_entry = basic.username_entry.clone();
         let username_row = basic.username_row.clone();
         let domain_entry = basic.domain_entry.clone();
@@ -595,6 +596,7 @@ impl ConnectionDialog {
             &ssh_agent_key_dropdown,
             &ssh_agent_keys,
             &network_mode_row,
+            &fallback_jump_hosts,
             &ssh_jump_host_dropdown,
             &ssh_proxy_entry,
             &ssh_proxy_command_entry,
@@ -858,6 +860,7 @@ impl ConnectionDialog {
             ssh_agent_keys,
             pending_agent_selection,
             network_mode_row,
+            fallback_jump_hosts,
             ssh_jump_host_dropdown,
             ssh_jump_host_row,
             ssh_proxy_entry,

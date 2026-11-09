@@ -228,6 +228,11 @@ pub enum Commands {
         #[arg(long, value_name = "NAME|UUID")]
         jump_host: Option<String>,
 
+        /// Saved SSH connection to try if the jump host is unreachable.
+        /// Repeat in failover order; requires --jump-host
+        #[arg(long, value_name = "NAME|UUID")]
+        fallback_jump_host: Vec<String>,
+
         /// SSH keep-alive interval in seconds (ServerAliveInterval)
         #[arg(long, value_name = "SECONDS")]
         keep_alive_interval: Option<u32>,
@@ -786,6 +791,15 @@ pub enum Commands {
         /// (sets jump_host_id for SSH/RDP/VNC/SPICE/SFTP connections)
         #[arg(long, value_name = "NAME|UUID")]
         jump_host: Option<String>,
+
+        /// Saved SSH connection to try if the jump host is unreachable.
+        /// Repeat in failover order; replaces the existing list
+        #[arg(long, value_name = "NAME|UUID")]
+        fallback_jump_host: Vec<String>,
+
+        /// Remove every fallback jump host
+        #[arg(long, conflicts_with = "fallback_jump_host")]
+        clear_fallback_jump_hosts: bool,
 
         /// SSH keep-alive interval in seconds (ServerAliveInterval)
         #[arg(long, value_name = "SECONDS")]

@@ -606,6 +606,8 @@ impl AppState {
                             merged.sort_order = local.sort_order;
                             merged.ssh_key_path = local.ssh_key_path.clone();
                             merged.ssh_jump_host_id = local.ssh_jump_host_id;
+                            merged.ssh_fallback_jump_host_ids =
+                                local.ssh_fallback_jump_host_ids.clone();
                             merged.ssh_agent_socket = local.ssh_agent_socket.clone();
                             merged.kdbx_path_override = local.kdbx_path_override.clone();
                             merged.sync_mode = local.sync_mode;
