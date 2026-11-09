@@ -2842,6 +2842,7 @@ impl TemplateDialog {
             ProtocolConfig::Kubernetes(_) => {} // No Kubernetes-specific template config
             ProtocolConfig::Mosh(_) => {}       // No MOSH-specific template config yet
             ProtocolConfig::Web(_) => {}        // No Web-specific template config
+            ProtocolConfig::WinRm(_) => {}      // No WinRM-specific template config
         }
     }
 

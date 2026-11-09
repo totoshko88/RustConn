@@ -5,7 +5,8 @@ use std::sync::Arc;
 
 use super::{
     KubernetesProtocol, MoshProtocol, Protocol, RdpProtocol, SerialProtocol, SftpProtocol,
-    SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, WebProtocol, ZeroTrustProtocol,
+    SpiceProtocol, SshProtocol, TelnetProtocol, VncProtocol, WebProtocol, WinRmProtocol,
+    ZeroTrustProtocol,
 };
 use crate::models::ProtocolType;
 
@@ -35,6 +36,7 @@ impl ProtocolRegistry {
         let mosh = Arc::new(MoshProtocol::new());
         let web = Arc::new(WebProtocol::new());
         let zerotrust = Arc::new(ZeroTrustProtocol::new());
+        let winrm = Arc::new(WinRmProtocol::new());
 
         protocols.insert(ssh.protocol_id(), ssh);
         protocols.insert(rdp.protocol_id(), rdp);
@@ -47,6 +49,7 @@ impl ProtocolRegistry {
         protocols.insert(mosh.protocol_id(), mosh);
         protocols.insert(web.protocol_id(), web);
         protocols.insert(zerotrust.protocol_id(), zerotrust);
+        protocols.insert(winrm.protocol_id(), winrm);
 
         Self { protocols }
     }
@@ -89,6 +92,7 @@ impl ProtocolRegistry {
             ProtocolType::Kubernetes => "kubernetes",
             ProtocolType::Mosh => "mosh",
             ProtocolType::Web => "web",
+            ProtocolType::WinRm => "winrm",
         };
         self.protocols.get(id).cloned()
     }

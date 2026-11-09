@@ -2689,7 +2689,7 @@ mod cacheable_credentials_tests {
         }
     }
 
-    const ALL_PROTOCOLS: [ProtocolType; 11] = [
+    const ALL_PROTOCOLS: [ProtocolType; 12] = [
         ProtocolType::Ssh,
         ProtocolType::Rdp,
         ProtocolType::Vnc,
@@ -2701,6 +2701,7 @@ mod cacheable_credentials_tests {
         ProtocolType::Kubernetes,
         ProtocolType::Mosh,
         ProtocolType::Web,
+        ProtocolType::WinRm,
     ];
 
     /// A full answer is cached for every protocol, domain included.

@@ -36,6 +36,8 @@ pub struct WebOptionsWidgets {
     /// Populated with SSH connections after construction, like the jump-host
     /// dropdowns; only meaningful in the embedded browser.
     pub tunnel_dropdown: gtk4::DropDown,
+    /// Address of an existing SOCKS5 proxy to browse through (empty = none).
+    pub socks_proxy_row: adw::EntryRow,
 }
 
 /// Creates the Web bookmark options panel using libadwaita components.
@@ -111,6 +113,12 @@ pub fn create_web_options() -> WebOptionsWidgets {
     tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
     embedded_group.add(&tunnel_row);
 
+    // An existing proxy, for when nothing has to be raised over SSH.
+    let socks_proxy_row = adw::EntryRow::builder()
+        .title(i18n("SOCKS5 Proxy (host:port)"))
+        .build();
+    embedded_group.add(&socks_proxy_row);
+
     // Floating navigation toolbar (issue #260). Positive here, stored as
     // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
     // desktops, most of what this toolbar offers has a keyboard route, which is
@@ -167,6 +175,7 @@ pub fn create_web_options() -> WebOptionsWidgets {
         user_agent_row,
         floating_toolbar_switch,
         tunnel_dropdown,
+        socks_proxy_row,
     }
 }
 

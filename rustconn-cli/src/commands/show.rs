@@ -337,6 +337,15 @@ fn print_json(
                     serde_json::json!(config.zoom_level),
                 );
             }
+            if let Some(proxy) = &config.socks_proxy {
+                map.insert("socks_proxy".to_string(), serde_json::json!(proxy));
+            }
+        }
+        ProtocolConfig::WinRm(config) => {
+            map.insert(
+                "use_ssl".to_string(),
+                serde_json::Value::Bool(config.use_ssl),
+            );
         }
         _ => {}
     }
@@ -619,6 +628,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             if (config.zoom_level - 1.0).abs() > f64::EPSILON {
                 println!("  Zoom Level:   {:.0}%", config.zoom_level * 100.0);
             }
+            if let Some(proxy) = &config.socks_proxy {
+                println!("  SOCKS Proxy:  {proxy}");
+            }
+        }
+        ProtocolConfig::WinRm(ref config) => {
+            println!(
+                "  HTTPS:        {}",
+                if config.use_ssl { "yes" } else { "no" }
+            );
         }
         _ => {}
     }

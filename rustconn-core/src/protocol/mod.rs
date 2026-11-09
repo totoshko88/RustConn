@@ -21,6 +21,7 @@ mod ssh;
 mod telnet;
 mod vnc;
 mod web;
+mod winrm;
 mod zerotrust;
 
 pub use cli::{format_command_message, format_connection_message};
@@ -63,7 +64,8 @@ pub use spice::SpiceProtocol;
 pub use ssh::SshProtocol;
 pub use telnet::TelnetProtocol;
 pub use vnc::VncProtocol;
-pub use web::WebProtocol;
+pub use web::{WebProtocol, normalize_socks_proxy};
+pub use winrm::{WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmProtocol};
 pub use zerotrust::ZeroTrustProtocol;
 
 pub use crate::error::ProtocolResult;

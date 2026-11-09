@@ -76,6 +76,12 @@ impl TestConnection {
             ProtocolType::Mosh => {
                 Connection::new_mosh(self.name.clone(), self.host.clone(), self.port)
             }
+            ProtocolType::WinRm => Connection::new(
+                self.name.clone(),
+                self.host.clone(),
+                self.port,
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default()),
+            ),
             ProtocolType::Web => Connection::new(
                 self.name.clone(),
                 "https://example.com".to_string(),
@@ -640,6 +646,12 @@ fn create_test_connection_for_add(
         ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), port),
         ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
         ProtocolType::Mosh => Connection::new_mosh(name.to_string(), host.to_string(), port),
+        ProtocolType::WinRm => Connection::new(
+            name.to_string(),
+            host.to_string(),
+            port,
+            ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default()),
+        ),
         ProtocolType::Web => Connection::new(
             name.to_string(),
             "https://example.com".to_string(),

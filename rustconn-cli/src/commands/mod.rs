@@ -176,6 +176,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             private_mode,
             zoom_level,
             tunnel_via,
+            socks_proxy,
+            winrm_ssl,
         } => {
             // Bulk add from a file (or stdin) short-circuits the single-connection
             // flag assembly: --from-file conflicts with --name/--host at the clap
@@ -302,6 +304,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                     private_mode,
                     zoom_level,
                     tunnel_via: tunnel_via.as_deref(),
+                    socks_proxy: socks_proxy.as_deref(),
+                    winrm_ssl,
                 },
             )
         }
@@ -453,6 +457,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             web_toolbar,
             private_mode,
             zoom_level,
+            socks_proxy,
+            winrm_ssl,
             postpend_command,
             postpend_arg,
             postpend_enabled,
@@ -575,6 +581,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 web_toolbar,
                 private_mode,
                 zoom_level,
+                socks_proxy: socks_proxy.as_deref(),
+                winrm_ssl,
                 postpend_command: postpend_command.as_deref(),
                 postpend_arg: &postpend_arg,
                 postpend_enabled,

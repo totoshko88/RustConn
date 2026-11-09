@@ -46,6 +46,7 @@ impl KdbxEntry {
             crate::models::ProtocolConfig::Kubernetes(_) => "Kubernetes",
             crate::models::ProtocolConfig::Mosh(_) => "MOSH",
             crate::models::ProtocolConfig::Web(_) => "Web",
+            crate::models::ProtocolConfig::WinRm(_) => "WinRM",
         };
 
         let url = format!(

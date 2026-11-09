@@ -37,8 +37,8 @@ pub use protocol::{
     SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl, SerialParity, SerialStopBits,
     SharedFolder, SpiceConfig, SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource,
     TailscaleSshConfig, TeleportConfig, TelnetConfig, VncClientMode, VncConfig, VncPerformanceMode,
-    WebBrowserMode, WebConfig, ZeroTrustConfig, ZeroTrustProvider, ZeroTrustProviderConfig,
-    build_remote_app_freerdp_args,
+    WebBrowserMode, WebConfig, WinRmConfig, ZeroTrustConfig, ZeroTrustProvider,
+    ZeroTrustProviderConfig, build_remote_app_freerdp_args,
 };
 pub use smart_folder::SmartFolder;
 pub use snippet::{ScriptDelivery, Snippet, SnippetTarget, SnippetVariable};

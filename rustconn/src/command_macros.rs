@@ -231,6 +231,7 @@ mod tests {
         for p in [
             ProtocolType::Ssh,
             ProtocolType::Telnet,
+            ProtocolType::WinRm,
             ProtocolType::Serial,
             ProtocolType::Kubernetes,
             ProtocolType::Mosh,

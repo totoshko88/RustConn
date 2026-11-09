@@ -144,8 +144,8 @@ Options:
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
 | `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
-| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23) |
-| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
+| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
+| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
 | `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
 | `--key` | `-k` | Path to SSH private key file |
@@ -234,6 +234,8 @@ Options:
 | `--web-toolbar` | — | Floating navigation toolbar in the embedded browser: `true` (default) or `false`; bare `--web-toolbar` = `false`. Off removes the toolbar and its reveal arrow; the keyboard routes (Alt+←/→, Ctrl+R, Ctrl+L, Ctrl+±/0) keep working |
 | `--private-mode` | — | Open in private/incognito mode (custom browser) |
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
+| `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it with an empty value. A browser that cannot use it is not opened |
+| `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -256,6 +258,9 @@ rustconn-cli add -n "VM" -H 10.0.0.1 -P spice
 
 # Telnet
 rustconn-cli add -n "Switch" -H 10.0.0.1 -P telnet
+
+# WinRM (needs the evil-winrm client)
+rustconn-cli add -n "Windows" -H 10.0.0.5 -P winrm -u alice --domain CORP
 
 # Serial
 rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600
@@ -562,7 +567,7 @@ rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
 | `--timeout` | 600 | Time limit per host, in seconds |
 | `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
 
-Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. Only key and agent login work here; a connection that needs a saved password fails with SSH's "Permission denied", so use the GUI for those. See [Run Local Script](USER_GUIDE.md#run-local-script) for how the script runs.
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`). Connections set to ask at connect share one password, typed once; with no terminal they use their keys. A bastion's own password is not supplied here, so bastions need a key or the agent.
 
 ### test — Test connectivity
 

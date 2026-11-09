@@ -50,6 +50,7 @@ fn arb_web_config() -> impl Strategy<Value = WebConfig> {
                     accept_invalid_certs: false,
                     hide_floating_toolbar,
                     tunnel_via: None,
+                    socks_proxy: None,
                 }
             },
         )

@@ -168,6 +168,19 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         };
     }
 
+    if let rustconn_core::models::ProtocolConfig::Web(config) = &connection.protocol_config
+        && config.socks_proxy.is_some()
+    {
+        return ConnectionCommand {
+            program: "echo".to_string(),
+            args: vec![
+                "This Web connection uses a SOCKS proxy, which needs \
+                 --browser-mode custom with a Chromium-based browser."
+                    .to_string(),
+            ],
+        };
+    }
+
     // Fallback for protocols without build_command
     ConnectionCommand {
         program: "echo".to_string(),

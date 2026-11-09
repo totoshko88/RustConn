@@ -900,6 +900,7 @@ impl MainWindow {
             | ProtocolType::Spice
             | ProtocolType::ZeroTrust
             | ProtocolType::Telnet
+            | ProtocolType::WinRm
             | ProtocolType::Serial
             | ProtocolType::Kubernetes
             | ProtocolType::Mosh => {

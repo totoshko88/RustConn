@@ -206,6 +206,8 @@ pub(super) struct ConnectionDialogData<'a> {
     pub telnet_custom_args_entry: &'a Entry,
     pub telnet_backspace_dropdown: &'a DropDown,
     pub telnet_delete_dropdown: &'a DropDown,
+    pub winrm_ssl_switch: &'a adw::SwitchRow,
+    pub winrm_custom_args_entry: &'a Entry,
     // Serial fields
     pub serial_device_entry: &'a Entry,
     pub serial_baud_dropdown: &'a DropDown,
@@ -236,6 +238,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub web_user_agent_row: &'a adw::EntryRow,
     pub web_floating_toolbar_switch: &'a adw::SwitchRow,
     pub web_tunnel_dropdown: &'a gtk4::DropDown,
+    pub web_socks_proxy_row: &'a adw::EntryRow,
     pub web_connections_data: &'a Rc<RefCell<Vec<(Option<uuid::Uuid>, String)>>>,
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
@@ -440,6 +443,17 @@ impl ConnectionDialogData<'_> {
         // Web (10): Custom browser mode requires a non-empty browser command
         if protocol_idx == 10 {
             use crate::dialogs::connection::web::browser_mode_from_combo_index;
+            let socks_proxy = self.web_socks_proxy_row.text();
+            if !socks_proxy.trim().is_empty() {
+                if rustconn_core::protocol::normalize_socks_proxy(&socks_proxy).is_err() {
+                    return Err(i18n("Enter the SOCKS5 proxy as host:port, without a login"));
+                }
+                if self.web_tunnel_dropdown.selected() != 0 {
+                    return Err(i18n(
+                        "Choose either an SSH tunnel or a SOCKS proxy, not both",
+                    ));
+                }
+            }
             let mode = browser_mode_from_combo_index(self.web_browser_mode_combo.selected());
             if mode == rustconn_core::models::WebBrowserMode::Custom {
                 let browser_text = self.web_browser_entry.text();
@@ -1038,6 +1052,7 @@ impl ConnectionDialogData<'_> {
             8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             9 => Some(ProtocolConfig::Mosh(self.build_mosh_config())),
             10 => Some(ProtocolConfig::Web(self.build_web_config())),
+            11 => Some(ProtocolConfig::WinRm(self.build_winrm_config())),
             _ => None,
         }
     }
@@ -1189,6 +1204,13 @@ impl ConnectionDialogData<'_> {
             provider,
             provider_config,
             custom_args,
+        }
+    }
+
+    fn build_winrm_config(&self) -> rustconn_core::models::WinRmConfig {
+        rustconn_core::models::WinRmConfig {
+            use_ssl: self.winrm_ssl_switch.is_active(),
+            custom_args: Self::parse_args(&self.winrm_custom_args_entry.text()),
         }
     }
 
@@ -1379,6 +1401,9 @@ impl ConnectionDialogData<'_> {
             conns.get(idx).and_then(|(id, _)| *id)
         };
 
+        let socks_proxy =
+            rustconn_core::protocol::normalize_socks_proxy(&self.web_socks_proxy_row.text()).ok();
+
         rustconn_core::models::WebConfig {
             browser,
             private_mode: self.web_private_mode_switch.is_active(),
@@ -1387,6 +1412,7 @@ impl ConnectionDialogData<'_> {
             user_agent,
             hide_floating_toolbar: !self.web_floating_toolbar_switch.is_active(),
             tunnel_via,
+            socks_proxy,
             ..self.web_config_seed.borrow().clone().unwrap_or_default()
         }
     }
