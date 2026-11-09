@@ -2102,6 +2102,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
              GaaChun (Simplified Chinese) https://github.com/GaaChun\n\
              Jürgen Hörmann (German) https://github.com/jhit\n\
              Mykola Zubkov (Ukrainian) <zubkov139@ukr.net>\n\
+             Naim Shafiev (Azerbaijani) · shafiev@gmail.com https://github.com/shafiev\n\
              p-bo (Czech) https://github.com/p-bo",
         )
         .debug_info(&debug_info)
