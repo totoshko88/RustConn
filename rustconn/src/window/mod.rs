@@ -965,6 +965,7 @@ impl MainWindow {
                 let is_vte_protocol = protocol.as_deref().is_some_and(|p| {
                     p == "ssh"
                         || p == "telnet"
+                        || p == "winrm"
                         || p == "serial"
                         || p == "kubernetes"
                         || p == "mosh"
@@ -3416,7 +3417,7 @@ impl MainWindow {
         // *may* be pending so we can distinguish Pending from Failed below.
         let may_be_pending = matches!(
             protocol.as_str(),
-            "ssh" | "vnc" | "spice" | "telnet" | "mosh"
+            "ssh" | "vnc" | "spice" | "telnet" | "winrm" | "mosh"
         );
 
         // The key sequence goes out when the session exists, which for an
@@ -3458,7 +3459,7 @@ impl MainWindow {
                 connection_id,
                 &conn_clone,
             ),
-            "telnet" => protocols::start_telnet_connection_observed(
+            "telnet" | "winrm" => protocols::start_telnet_connection_observed(
                 state,
                 notebook,
                 sidebar,

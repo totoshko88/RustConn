@@ -1116,6 +1116,12 @@ mod tests {
             ProtocolType::Sftp => Connection::new_sftp(name.to_string(), host.to_string(), 22),
             ProtocolType::Kubernetes => Connection::new_kubernetes(name.to_string()),
             ProtocolType::Mosh => Connection::new_mosh(name.to_string(), host.to_string(), 22),
+            ProtocolType::WinRm => Connection::new(
+                name.to_string(),
+                host.to_string(),
+                5985,
+                ProtocolConfig::WinRm(crate::models::WinRmConfig::default()),
+            ),
             ProtocolType::Web => {
                 let mut c = Connection::new_ssh(name.to_string(), host.to_string(), 443);
                 c.protocol = ProtocolType::Web;

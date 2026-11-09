@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 12:19+0200\n"
+"POT-Creation-Date: 2026-11-09 12:54+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -59,18 +59,18 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2023
 #: rustconn/src/window/edit_group.rs:2072
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3604
-#: rustconn/src/window/mod.rs:3668 rustconn/src/window/mod.rs:4676
-#: rustconn/src/window/mod.rs:5724 rustconn/src/window/operations.rs:117
+#: rustconn/src/window/key_setup.rs:1009 rustconn/src/window/mod.rs:3605
+#: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
+#: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:734
 #: rustconn/src/window/operations.rs:917
-#: rustconn/src/window/remote_script.rs:337 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:356 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Avbryt"
 
-#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:783
-#: rustconn/src/dialogs/connection/dialog/save.rs:796
+#: rustconn/src/alert.rs:72 rustconn/src/dialogs/connection/dialog/save.rs:792
+#: rustconn/src/dialogs/connection/dialog/save.rs:805
 msgid "Validation Error"
 msgstr "Valideringsfel"
 
@@ -84,8 +84,8 @@ msgstr "Spara inte"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:177
 #: rustconn/src/dialogs/script.rs:167
 #: rustconn/src/dialogs/settings/terminal_tab.rs:883
-#: rustconn/src/dialogs/smart_folder.rs:82
-#: rustconn/src/dialogs/smart_folder.rs:83 rustconn/src/dialogs/snippet.rs:420
+#: rustconn/src/dialogs/smart_folder.rs:83
+#: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
 #: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:853
@@ -231,7 +231,7 @@ msgstr "”{}” behöver följande innan anslutning kan ske."
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:858
 #: rustconn/src/sidebar_ui.rs:400 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5725
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
 msgid "Connect"
 msgstr "Anslut"
 
@@ -270,7 +270,7 @@ msgstr "Ange lösenord manuellt"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2490 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1158
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1159
 msgid "Open Settings"
 msgstr "Öppna inställningar"
 
@@ -283,8 +283,8 @@ msgstr "Nytt kluster"
 #: rustconn/src/dialogs/connection/dialog/construction.rs:143
 #: rustconn/src/dialogs/connection/dialog/construction.rs:144
 #: rustconn/src/dialogs/settings/terminal_tab.rs:824
-#: rustconn/src/dialogs/smart_folder.rs:87
-#: rustconn/src/dialogs/smart_folder.rs:88 rustconn/src/dialogs/snippet.rs:87
+#: rustconn/src/dialogs/smart_folder.rs:88
+#: rustconn/src/dialogs/smart_folder.rs:89 rustconn/src/dialogs/snippet.rs:87
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
@@ -304,7 +304,7 @@ msgstr "Klusterdetaljer"
 #: rustconn/src/dialogs/connection/general_tab.rs:103
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:104
 #: rustconn/src/dialogs/export.rs:383 rustconn/src/dialogs/settings/mod.rs:2014
-#: rustconn/src/dialogs/smart_folder.rs:121 rustconn/src/dialogs/snippet.rs:193
+#: rustconn/src/dialogs/smart_folder.rs:122 rustconn/src/dialogs/snippet.rs:193
 #: rustconn/src/dialogs/template.rs:512
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:78
 #: rustconn/src/window/connection_dialogs.rs:413
@@ -389,7 +389,7 @@ msgstr ""
 "mellan dem, dela flikarna och använd Broadcast-knappen i rubrikfältet."
 
 #: rustconn/src/dialogs/cluster.rs:676
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:277
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:284
 msgid "{} connection"
 msgid_plural "{} connections"
 msgstr[0] "{} anslutning"
@@ -568,7 +568,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Upptäck terminalaktivitet eller tystnad"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:347
-#: rustconn/src/dialogs/connection/web.rs:194
+#: rustconn/src/dialogs/connection/web.rs:203
 msgid "Mode"
 msgstr "Läge"
 
@@ -1026,7 +1026,7 @@ msgstr "t.ex. /sökväg/till/skript.sh eller vpn-connect ${host}"
 
 #: rustconn/src/dialogs/connection/automation_tab.rs:440
 #: rustconn/src/dialogs/connection/automation_tab.rs:560
-#: rustconn/src/dialogs/connection/general_tab.rs:378
+#: rustconn/src/dialogs/connection/general_tab.rs:379
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:233
 #: rustconn/src/dialogs/settings/terminal_tab.rs:500
 #: rustconn/src/dialogs/snippet.rs:273 rustconn/src/dialogs/template.rs:1934
@@ -1131,31 +1131,31 @@ msgstr "Ta bort skript från biblioteket"
 msgid "Remove from this list"
 msgstr "Ta bort från den här listan"
 
-#: rustconn/src/dialogs/connection/builders.rs:326
+#: rustconn/src/dialogs/connection/builders.rs:329
 msgid "Connection name is required"
 msgstr "Anslutningsnamn krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:340
+#: rustconn/src/dialogs/connection/builders.rs:343
 msgid "Host is required"
 msgstr "Värd krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:345
+#: rustconn/src/dialogs/connection/builders.rs:348
 msgid "Host cannot contain spaces"
 msgstr "Värd kan inte innehålla mellanslag"
 
-#: rustconn/src/dialogs/connection/builders.rs:355
+#: rustconn/src/dialogs/connection/builders.rs:358
 msgid "Port must be greater than 0"
 msgstr "Port måste vara större än 0"
 
-#: rustconn/src/dialogs/connection/builders.rs:363
+#: rustconn/src/dialogs/connection/builders.rs:366
 msgid "Device path is required for serial connections"
 msgstr "Enhetssökväg krävs för seriella anslutningar"
 
-#: rustconn/src/dialogs/connection/builders.rs:382
+#: rustconn/src/dialogs/connection/builders.rs:385
 msgid "SSH key path is required for public key authentication"
 msgstr "SSH-nyckelökväg krävs för autentisering med publik nyckel"
 
-#: rustconn/src/dialogs/connection/builders.rs:394
+#: rustconn/src/dialogs/connection/builders.rs:397
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
@@ -1163,11 +1163,11 @@ msgstr ""
 "Lösenordskälla är 'None' men autentiseringsmetod är lösenord. Ställ in källa "
 "till Prompt eller Vault."
 
-#: rustconn/src/dialogs/connection/builders.rs:404
+#: rustconn/src/dialogs/connection/builders.rs:407
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "Pod-namn krävs när Busybox-läge är inaktiverat"
 
-#: rustconn/src/dialogs/connection/builders.rs:416
+#: rustconn/src/dialogs/connection/builders.rs:419
 msgid ""
 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, "
 "udp://, http:// or https:// address."
@@ -1175,61 +1175,69 @@ msgstr ""
 "KDC-adressen är ogiltig. Ange ett värdnamn, host:port eller en tcp://-, "
 "udp://-, http://- eller https://-adress."
 
-#: rustconn/src/dialogs/connection/builders.rs:425
+#: rustconn/src/dialogs/connection/builders.rs:428
 msgid "MAC address is required when WOL is enabled"
 msgstr "MAC-adress krävs när WOL är aktiverat"
 
-#: rustconn/src/dialogs/connection/builders.rs:430
+#: rustconn/src/dialogs/connection/builders.rs:433
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr ""
 "Ogiltigt MAC-adressformat. Använd AA:BB:CC:DD:EE:FF eller AA-BB-CC-DD-EE-FF"
 
-#: rustconn/src/dialogs/connection/builders.rs:448
+#: rustconn/src/dialogs/connection/builders.rs:449
+msgid "Enter the SOCKS5 proxy as host:port, without a login"
+msgstr "Ange SOCKS5-proxyn som värd:port, utan inloggningsuppgifter"
+
+#: rustconn/src/dialogs/connection/builders.rs:453
+msgid "Choose either an SSH tunnel or a SOCKS proxy, not both"
+msgstr "Välj antingen en SSH-tunnel eller en SOCKS-proxy, inte båda"
+
+#: rustconn/src/dialogs/connection/builders.rs:462
 msgid "Browser command is required when Custom mode is selected"
 msgstr "Webbläsarkommando krävs när anpassat läge är valt"
 
-#: rustconn/src/dialogs/connection/builders.rs:469
+#: rustconn/src/dialogs/connection/builders.rs:483
 msgid "AWS SSM target instance ID is required"
 msgstr "AWS SSM målinstans-ID krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:474
+#: rustconn/src/dialogs/connection/builders.rs:488
 msgid "GCP instance name and zone are required"
 msgstr "GCP-instansnamn och zon krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:483
+#: rustconn/src/dialogs/connection/builders.rs:497
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr "Azure Bastion resurs-ID, resursgrupp och bastionsnamn krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:489
+#: rustconn/src/dialogs/connection/builders.rs:503
 msgid "Azure VM name and resource group are required"
 msgstr "Azure VM-namn och resursgrupp krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:498
+#: rustconn/src/dialogs/connection/builders.rs:512
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr "OCI bastion-OCID, mål-OCID och målets privata IP krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:504
+#: rustconn/src/dialogs/connection/builders.rs:518
 msgid "Cloudflare Access hostname is required"
 msgstr "Cloudflare Access-värdnamn krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:509
+#: rustconn/src/dialogs/connection/builders.rs:523
 msgid "Teleport host is required"
 msgstr "Teleport-värd krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:514
+#: rustconn/src/dialogs/connection/builders.rs:528
 msgid "Tailscale host is required"
 msgstr "Tailscale-värd krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:519
+#: rustconn/src/dialogs/connection/builders.rs:533
 msgid "Boundary target is required"
 msgstr "Boundary-mål krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:524
+#: rustconn/src/dialogs/connection/builders.rs:538
 msgid "Hoop.dev connection name is required"
 msgstr "Hoop.dev-anslutningsnamn krävs"
 
-#: rustconn/src/dialogs/connection/builders.rs:530
+#: rustconn/src/dialogs/connection/builders.rs:544
 msgid "Command template is required for the Generic provider"
 msgstr "Kommandomall krävs för den generiska leverantören"
 
@@ -1293,22 +1301,22 @@ msgstr "Redigera anslutning (synkroniserad)"
 msgid "Basic"
 msgstr "Grundläggande"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:376
+#: rustconn/src/dialogs/connection/dialog/build.rs:382
 msgid "Data"
 msgstr "Data"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:386
+#: rustconn/src/dialogs/connection/dialog/build.rs:392
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "Loggning"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:396
+#: rustconn/src/dialogs/connection/dialog/build.rs:402
 #: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1129
 #: rustconn/src/window/edit_group.rs:1620
 msgid "Automation"
 msgstr "Automatisering"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:440
+#: rustconn/src/dialogs/connection/dialog/build.rs:446
 #: rustconn/src/dialogs/connection/kubernetes.rs:141
 #: rustconn/src/dialogs/connection/rdp.rs:938
 #: rustconn/src/dialogs/connection/vnc.rs:318
@@ -1318,19 +1326,19 @@ msgstr "Automatisering"
 msgid "Advanced"
 msgstr "Avancerat"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:456
+#: rustconn/src/dialogs/connection/dialog/build.rs:462
 msgid "No host set"
 msgstr "Ingen värd angiven"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:457
+#: rustconn/src/dialogs/connection/dialog/build.rs:463
 msgid "Enter the host address first, then detect its MAC."
 msgstr "Ange värdadressen först och identifiera sedan dess MAC."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:475
+#: rustconn/src/dialogs/connection/dialog/build.rs:481
 msgid "MAC address may be temporary"
 msgstr "MAC-adressen kan vara tillfällig"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:477
+#: rustconn/src/dialogs/connection/dialog/build.rs:483
 msgid ""
 "This looks like a randomized (private) address, which changes periodically. "
 "Wake-on-LAN will stop working once it rotates — turn off the private address "
@@ -1340,11 +1348,11 @@ msgstr ""
 "on-LAN slutar fungera när den byts — stäng av den privata adressen för detta "
 "nätverk på målenheten, eller läs av den igen senare."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:485
+#: rustconn/src/dialogs/connection/dialog/build.rs:491
 msgid "MAC address not found"
 msgstr "MAC-adressen hittades inte"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:487
+#: rustconn/src/dialogs/connection/dialog/build.rs:493
 msgid ""
 "The host is not in this computer's ARP cache. It must be powered on and on "
 "the same local network. For a host beyond a router, read its MAC over an SSH "
@@ -1354,50 +1362,50 @@ msgstr ""
 "samma lokala nätverk. För en värd bortom en router läser du dess MAC via en "
 "SSH-session i stället."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:851
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1212
+#: rustconn/src/dialogs/connection/dialog/build.rs:860
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1219
 #: rustconn/src/dialogs/connection/ssh.rs:687
 #: rustconn/src/dialogs/template.rs:699
 msgid "Jump host for tunneling (-J)"
 msgstr "Hoppvärd för tunnling (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1184
+#: rustconn/src/dialogs/connection/dialog/build.rs:1196
 msgid "Username Loaded"
 msgstr "Användarnamn laddat"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1185
+#: rustconn/src/dialogs/connection/dialog/build.rs:1197
 msgid "Username loaded from group"
 msgstr "Användarnamn laddat från grupp"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1191
+#: rustconn/src/dialogs/connection/dialog/build.rs:1203
 msgid "No Username"
 msgstr "Inget användarnamn"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1192
+#: rustconn/src/dialogs/connection/dialog/build.rs:1204
 msgid "Group has no username defined"
 msgstr "Gruppen har inget användarnamn definierat"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1218
+#: rustconn/src/dialogs/connection/dialog/build.rs:1230
 msgid "Domain Loaded"
 msgstr "Domän laddad"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1219
+#: rustconn/src/dialogs/connection/dialog/build.rs:1231
 msgid "Domain loaded from group"
 msgstr "Domän laddad från grupp"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1225
+#: rustconn/src/dialogs/connection/dialog/build.rs:1237
 msgid "No Domain"
 msgstr "Ingen domän"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1226
+#: rustconn/src/dialogs/connection/dialog/build.rs:1238
 msgid "Group has no domain defined"
 msgstr "Gruppen har ingen domän definierad"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1254
+#: rustconn/src/dialogs/connection/dialog/build.rs:1266
 msgid "Zero Trust Connection Test"
 msgstr "Zero Trust-anslutningstest"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1255
+#: rustconn/src/dialogs/connection/dialog/build.rs:1267
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1413,35 +1421,35 @@ msgstr ""
 "2. Använd knappen Anslut\n"
 "3. Leverantörens CLI hanterar autentiseringen"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1263
-#: rustconn/src/dialogs/connection/dialog/build.rs:1425
-#: rustconn/src/dialogs/connection/dialog/build.rs:1430
+#: rustconn/src/dialogs/connection/dialog/build.rs:1275
+#: rustconn/src/dialogs/connection/dialog/build.rs:1442
+#: rustconn/src/dialogs/connection/dialog/build.rs:1447
 msgid "Connection Test Failed"
 msgstr "Anslutningstest misslyckades"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1264
+#: rustconn/src/dialogs/connection/dialog/build.rs:1276
 msgid "Fill in the required fields (name and host)"
 msgstr "Fyll i obligatoriska fält (namn och värd)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1306
-#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1318
+#: rustconn/src/dialogs/connection/dialog/build.rs:1493
 msgid "Testing…"
 msgstr "Testar…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1405
-#: rustconn/src/dialogs/connection/general_tab.rs:374
+#: rustconn/src/dialogs/connection/dialog/build.rs:1422
+#: rustconn/src/dialogs/connection/general_tab.rs:375
 msgid "Test"
 msgstr "Test"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1412
+#: rustconn/src/dialogs/connection/dialog/build.rs:1429
 msgid "Connection Test Successful"
 msgstr "Anslutningstest lyckades"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1414
+#: rustconn/src/dialogs/connection/dialog/build.rs:1431
 msgid "Connection successful. Latency: {} ms"
 msgstr "Anslutningen lyckades. Latens: {} ms"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1423
+#: rustconn/src/dialogs/connection/dialog/build.rs:1440
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1449,52 +1457,52 @@ msgstr ""
 "Testet misslyckades utan något specifikt fel. Kontrollera värdadressen och "
 "porten och försök igen."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1431
+#: rustconn/src/dialogs/connection/dialog/build.rs:1448
 msgid "Test timed out"
 msgstr "Test-timeout"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1449
-#: rustconn/src/dialogs/connection/dialog/build.rs:1459
-#: rustconn/src/dialogs/connection/dialog/build.rs:1468
-#: rustconn/src/dialogs/connection/dialog/build.rs:1529
-#: rustconn/src/dialogs/connection/dialog/build.rs:1534
+#: rustconn/src/dialogs/connection/dialog/build.rs:1466
+#: rustconn/src/dialogs/connection/dialog/build.rs:1476
+#: rustconn/src/dialogs/connection/dialog/build.rs:1485
+#: rustconn/src/dialogs/connection/dialog/build.rs:1546
+#: rustconn/src/dialogs/connection/dialog/build.rs:1551
 msgid "Script Test Failed"
 msgstr "Skripttest misslyckades"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1450
+#: rustconn/src/dialogs/connection/dialog/build.rs:1467
 msgid "Script command is empty"
 msgstr "Skriptkommandot är tomt"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1460
+#: rustconn/src/dialogs/connection/dialog/build.rs:1477
 msgid "Script command is empty after parsing"
 msgstr "Skriptkommandot är tomt efter tolkning"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1469
+#: rustconn/src/dialogs/connection/dialog/build.rs:1486
 msgid "Failed to parse command"
 msgstr "Kunde inte tolka kommandot"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1499
+#: rustconn/src/dialogs/connection/dialog/build.rs:1516
 msgid "Test Script"
 msgstr "Testa skript"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1506
+#: rustconn/src/dialogs/connection/dialog/build.rs:1523
 msgid "(empty output)"
 msgstr "(tom utdata)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1512
+#: rustconn/src/dialogs/connection/dialog/build.rs:1529
 msgid "Script Test Successful"
 msgstr "Skripttest lyckades"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1513
+#: rustconn/src/dialogs/connection/dialog/build.rs:1530
 #: rustconn/src/dialogs/export.rs:322
 msgid "Output"
 msgstr "Utdata"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1520
+#: rustconn/src/dialogs/connection/dialog/build.rs:1537
 msgid "Command failed"
 msgstr "Kommandot misslyckades"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1535
+#: rustconn/src/dialogs/connection/dialog/build.rs:1552
 msgid "Script timed out after 30 seconds"
 msgstr "Skriptet överskred tidsgränsen på 30 sekunder"
 
@@ -1513,7 +1521,7 @@ msgid "Test connection"
 msgstr "Testa anslutning"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:207
-#: rustconn/src/dialogs/connection/general_tab.rs:143
+#: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:194
 #: rustconn/src/dialogs/template.rs:532 rustconn/src/split_view/bridge.rs:1604
@@ -1521,22 +1529,22 @@ msgstr "Testa anslutning"
 msgid "Protocol"
 msgstr "Protokoll"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:315
+#: rustconn/src/dialogs/connection/dialog/construction.rs:316
 #: rustconn/src/dialogs/connection/dialog/rows.rs:74
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:261
 msgid "URL"
 msgstr "URL"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:318
+#: rustconn/src/dialogs/connection/dialog/construction.rs:319
 msgid "https://example.com"
 msgstr "https://example.com"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:320
-#: rustconn/src/dialogs/connection/general_tab.rs:161
+#: rustconn/src/dialogs/connection/dialog/construction.rs:321
+#: rustconn/src/dialogs/connection/general_tab.rs:162
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:766
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:772
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:778
 #: rustconn/src/dialogs/export.rs:389 rustconn/src/dialogs/template.rs:549
 #: rustconn/src/dialogs/template.rs:1785 rustconn/src/split_view/bridge.rs:1611
 #: rustconn/src/window/copy_field_actions.rs:79
@@ -1544,79 +1552,79 @@ msgstr "https://example.com"
 msgid "Host"
 msgstr "Värd"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:323
-#: rustconn/src/dialogs/connection/general_tab.rs:155
+#: rustconn/src/dialogs/connection/dialog/construction.rs:324
+#: rustconn/src/dialogs/connection/general_tab.rs:156
 #: rustconn/src/dialogs/template.rs:1817
 msgid "hostname or IP"
 msgstr "värdnamn eller IP"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:184
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:521
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:522
 msgid "Cannot Load Password"
 msgstr "Kan inte ladda lösenord"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:185
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:583
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:584
 msgid "Enter a connection name or host first."
 msgstr "Ange ett anslutningsnamn eller värd först."
-
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:400
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:492
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:500
-msgid "Password Not Found"
-msgstr "Lösenord hittades inte"
 
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:401
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:493
 #: rustconn/src/dialogs/connection/dialog/passwords.rs:501
+msgid "Password Not Found"
+msgstr "Lösenord hittades inte"
+
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:402
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:494
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:502
 msgid "No password found in vault for this connection."
 msgstr "Inget lösenord hittades i valvet för denna anslutning."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:410
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:508
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:411
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:509
 msgid "Failed to Load Password"
 msgstr "Kunde inte ladda lösenord"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:411
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:509
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:412
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:510
 msgid "Could not load password from vault."
 msgstr "Kunde inte ladda lösenord från valvet."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:422
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:746
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:423
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:748
 msgid "Vault Not Configured"
 msgstr "Valv inte konfigurerat"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:423
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:747
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:424
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:749
 msgid "Configure a secret backend in Settings → Secrets."
 msgstr "Konfigurera en hemlighets-backend i Inställningar → Hemligheter."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:522
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:523
 msgid "Password loading is only available for Vault source."
 msgstr "Lösenordsladdning är bara tillgänglig för Valv-källa."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:563
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:564
 msgid "Test Not Available"
 msgstr "Test ej tillgängligt"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:564
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:565
 msgid "Credential test is only available when Password Source is set to Vault."
 msgstr ""
 "Autentiseringstest är bara tillgängligt när lösenordskällan är inställd på "
 "Vault."
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:582
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:583
 msgid "Cannot Test"
 msgstr "Kan inte testa"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:710
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:777
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:712
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:779
 msgid "Credential Test Passed"
 msgstr "Autentiseringstest godkänt"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:712
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:779
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:714
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:781
 msgid ""
 "Password found in vault.\n"
 "Lookup key: {}"
@@ -1624,15 +1632,15 @@ msgstr ""
 "Lösenord hittat i valvet.\n"
 "Söknyckel: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:720
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:731
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:786
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:797
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:808
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:722
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:733
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:788
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:799
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:810
 msgid "Credential Test Failed"
 msgstr "Autentiseringstest misslyckat"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:722
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:724
 msgid ""
 "No password found in vault.\n"
 "Lookup key: {}"
@@ -1640,7 +1648,7 @@ msgstr ""
 "Inget lösenord hittat i valvet.\n"
 "Söknyckel: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:733
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:735
 msgid ""
 "Vault error. Check your KeePass configuration.\n"
 "Lookup key: {}"
@@ -1648,7 +1656,7 @@ msgstr ""
 "Valvfel. Kontrollera din KeePass-konfiguration.\n"
 "Söknyckel: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:788
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:790
 msgid ""
 "Entry found but contains no password.\n"
 "Lookup key: {}"
@@ -1656,7 +1664,7 @@ msgstr ""
 "Post hittad men innehåller inget lösenord.\n"
 "Söknyckel: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:799
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:801
 msgid ""
 "No entry found in vault.\n"
 "Lookup key: {}"
@@ -1664,7 +1672,7 @@ msgstr ""
 "Ingen post hittad i valvet.\n"
 "Söknyckel: {}"
 
-#: rustconn/src/dialogs/connection/dialog/passwords.rs:810
+#: rustconn/src/dialogs/connection/dialog/passwords.rs:812
 msgid ""
 "Backend error. Check your vault configuration.\n"
 "Lookup key: {}"
@@ -1681,61 +1689,61 @@ msgstr "Välj SSH-nyckel"
 msgid "Edit Connection"
 msgstr "Redigera anslutning"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:443
-#: rustconn/src/dialogs/connection/general_tab.rs:422
+#: rustconn/src/dialogs/connection/dialog/populate.rs:450
+#: rustconn/src/dialogs/connection/general_tab.rs:423
 #: rustconn/src/dialogs/widgets.rs:250
 msgid "(Root)"
 msgstr "(Rot)"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1063
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1070
 #: rustconn/src/dialogs/connection/ssh.rs:680
 #: rustconn/src/window/edit_group.rs:864
 msgid "Connect via another SSH connection"
 msgstr "Anslutning via en annan SSH-anslutning"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1173
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1244
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1180
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1251
 msgid "Inherited: {}"
 msgstr "Ärvd: {}"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1177
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1181
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1184
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1188
 msgid "Inherited from parent group"
 msgstr "Ärvd från överordnad grupp"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1186
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1193
 #: rustconn/src/dialogs/connection/ssh.rs:418
 msgid "Default tries ~/.ssh/id_rsa, id_ed25519, id_ecdsa automatically"
 msgstr "Standard provar ~/.ssh/id_rsa, id_ed25519, id_ecdsa automatiskt"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1252
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1269
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1259
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1276
 msgid "Direct — an inherited jump host is ignored"
 msgstr "Direkt — en ärvd mellanvärd ignoreras"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1490
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1497
 #: rustconn/src/dialogs/connection/rdp.rs:781
 msgid "Tunnel RDP through an SSH connection"
 msgstr "Tunnla RDP genom en SSH-anslutning"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1560
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1567
 #: rustconn/src/dialogs/connection/vnc.rs:352
 msgid "Tunnel VNC through an SSH connection"
 msgstr "Tunnla VNC genom en SSH-anslutning"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1618
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1625
 #: rustconn/src/dialogs/connection/spice.rs:348
 msgid "Tunnel SPICE through an SSH connection"
 msgstr "Tunnla SPICE genom en SSH-anslutning"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1867
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1876
 msgid ""
 "Set to this connection itself, which is ignored — pick another jump host"
 msgstr ""
 "Inställt på den här anslutningen själv, vilket ignoreras — välj en annan "
 "hopvärd"
 
-#: rustconn/src/dialogs/connection/dialog/populate.rs:1870
+#: rustconn/src/dialogs/connection/dialog/populate.rs:1879
 msgid ""
 "Saved jump host no longer exists and is skipped when connecting — pick "
 "another"
@@ -2058,7 +2066,7 @@ msgstr "Ange en emoji (t.ex. 🇺🇦) eller GTK-ikonnamn (t.ex. starred-symboli
 
 #: rustconn/src/dialogs/connection/general_tab.rs:118
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:151
-#: rustconn/src/dialogs/smart_folder.rs:127
+#: rustconn/src/dialogs/smart_folder.rs:128
 #: rustconn/src/dialogs/template.rs:520
 #: rustconn/src/window/connection_dialogs.rs:418
 #: rustconn/src/window/edit_group.rs:118
@@ -2071,16 +2079,17 @@ msgstr "Valfritt"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:130
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:207
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:622
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:628
 msgid "Zero Trust"
 msgstr "Zero Trust"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:151
+#: rustconn/src/dialogs/connection/general_tab.rs:152
 #: rustconn/src/dialogs/connection/rdp.rs:767
 #: rustconn/src/dialogs/connection/spice.rs:299
 #: rustconn/src/dialogs/connection/ssh.rs:659
 #: rustconn/src/dialogs/connection/telnet.rs:36
 #: rustconn/src/dialogs/connection/vnc.rs:338
+#: rustconn/src/dialogs/connection/winrm.rs:22
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:101
 #: rustconn/src/dialogs/settings/mod.rs:438
 #: rustconn/src/dialogs/template.rs:687
@@ -2089,11 +2098,11 @@ msgstr "Zero Trust"
 msgid "Connection"
 msgstr "Anslutning"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:173
+#: rustconn/src/dialogs/connection/general_tab.rs:174
 msgid "SSH, Well-Known"
 msgstr "SSH, kända portar"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:180
+#: rustconn/src/dialogs/connection/general_tab.rs:181
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:113
 #: rustconn/src/dialogs/export.rs:395 rustconn/src/dialogs/template.rs:558
@@ -2101,34 +2110,34 @@ msgstr "SSH, kända portar"
 msgid "Port"
 msgstr "Port"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:190
+#: rustconn/src/dialogs/connection/general_tab.rs:191
 msgid "Inherit from group or global"
 msgstr "Ärv från grupp eller globalt"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:191
+#: rustconn/src/dialogs/connection/general_tab.rs:192
 msgid "Direct"
 msgstr "Direkt"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:194
+#: rustconn/src/dialogs/connection/general_tab.rs:195
 msgid "Network Mode"
 msgstr "Nätverksläge"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:196
+#: rustconn/src/dialogs/connection/general_tab.rs:197
 msgid "Direct ignores a jump host inherited from a group or globally"
 msgstr "Direkt ignorerar en mellanvärd som ärvts från en grupp eller globalt"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:221
+#: rustconn/src/dialogs/connection/general_tab.rs:222
 #: rustconn/src/dialogs/connection/ssh.rs:380
 #: rustconn/src/dialogs/connection/vnc.rs:307
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:85
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:388
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:390
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2287
 #: rustconn/src/dialogs/template.rs:626
 msgid "Authentication"
 msgstr "Autentisering"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:228
-#: rustconn/src/dialogs/connection/general_tab.rs:248
+#: rustconn/src/dialogs/connection/general_tab.rs:229
+#: rustconn/src/dialogs/connection/general_tab.rs:249
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
@@ -2139,24 +2148,24 @@ msgstr "Autentisering"
 msgid "Username"
 msgstr "Användarnamn"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:241
-#: rustconn/src/dialogs/connection/general_tab.rs:263
+#: rustconn/src/dialogs/connection/general_tab.rs:242
+#: rustconn/src/dialogs/connection/general_tab.rs:264
 msgid "Load from selected group"
 msgstr "Ladda från vald grupp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:246
+#: rustconn/src/dialogs/connection/general_tab.rs:247
 msgid "Load username from selected group"
 msgstr "Ladda användarnamn från vald grupp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:255
+#: rustconn/src/dialogs/connection/general_tab.rs:256
 msgid "Optional (e.g., WORKGROUP)"
 msgstr "Valfritt (t.ex. WORKGROUP)"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:268
+#: rustconn/src/dialogs/connection/general_tab.rs:269
 msgid "Load domain from selected group"
 msgstr "Ladda domän från vald grupp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:271
+#: rustconn/src/dialogs/connection/general_tab.rs:272
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:129
 #: rustconn/src/dialogs/template.rs:569
 #: rustconn/src/window/connection_dialogs.rs:706
@@ -2164,36 +2173,36 @@ msgstr "Ladda domän från vald grupp"
 msgid "Domain"
 msgstr "Domän"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:272
+#: rustconn/src/dialogs/connection/general_tab.rs:273
 msgid "Windows authentication"
 msgstr "Windows-autentisering"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:280
+#: rustconn/src/dialogs/connection/general_tab.rs:281
 #: rustconn/src/window/connection_dialogs.rs:488
 #: rustconn/src/window/edit_group.rs:248
 msgid "Prompt"
 msgstr "Fråga"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:281
+#: rustconn/src/dialogs/connection/general_tab.rs:282
 #: rustconn/src/window/connection_dialogs.rs:489
 #: rustconn/src/window/edit_group.rs:249
 msgid "Vault"
 msgstr "Valv"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:282
-#: rustconn/src/dialogs/connection/general_tab.rs:353
+#: rustconn/src/dialogs/connection/general_tab.rs:283
+#: rustconn/src/dialogs/connection/general_tab.rs:354
 #: rustconn/src/window/connection_dialogs.rs:490
 #: rustconn/src/window/edit_group.rs:250 rustconn/src/window/edit_group.rs:319
 msgid "Variable"
 msgstr "Variabel"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:283
+#: rustconn/src/dialogs/connection/general_tab.rs:284
 #: rustconn/src/window/connection_dialogs.rs:491
 #: rustconn/src/window/edit_group.rs:251
 msgid "Inherit"
 msgstr "Ärv"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:284
+#: rustconn/src/dialogs/connection/general_tab.rs:285
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:439
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:276
 #: rustconn/src/window/connection_dialogs.rs:492
@@ -2201,58 +2210,58 @@ msgstr "Ärv"
 msgid "None"
 msgstr "Ingen"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:285
+#: rustconn/src/dialogs/connection/general_tab.rs:286
 #: rustconn/src/window/edit_group.rs:1057
 msgid "Script"
 msgstr "Skript"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:295
+#: rustconn/src/dialogs/connection/general_tab.rs:296
 msgid "Password Source"
 msgstr "Lösenordskälla"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:302
+#: rustconn/src/dialogs/connection/general_tab.rs:303
 #: rustconn/src/dialogs/variable_setup.rs:73
 #: rustconn/src/window/connection_dialogs.rs:529
 #: rustconn/src/window/edit_group.rs:296
 msgid "Value"
 msgstr "Värde"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:309
-#: rustconn/src/dialogs/connection/general_tab.rs:313
+#: rustconn/src/dialogs/connection/general_tab.rs:310
+#: rustconn/src/dialogs/connection/general_tab.rs:314
 msgid "Load credentials from vault"
 msgstr "Läs in inloggningsuppgifter från valvet"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:317
-#: rustconn/src/dialogs/connection/general_tab.rs:321
+#: rustconn/src/dialogs/connection/general_tab.rs:318
+#: rustconn/src/dialogs/connection/general_tab.rs:322
 msgid "Test credential resolution"
 msgstr "Testa autentiseringupplösning"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:343
-#: rustconn/src/dialogs/connection/general_tab.rs:348
+#: rustconn/src/dialogs/connection/general_tab.rs:344
+#: rustconn/src/dialogs/connection/general_tab.rs:349
 #: rustconn/src/window/edit_group.rs:310 rustconn/src/window/edit_group.rs:315
 msgid "Manage global variables"
 msgstr "Hantera globala variabler"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:354
+#: rustconn/src/dialogs/connection/general_tab.rs:355
 #: rustconn/src/window/edit_group.rs:320
 msgid "Create secret variables in Tools → Variables"
 msgstr "Skapa hemliga variabler i Verktyg → Variabler"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:369
+#: rustconn/src/dialogs/connection/general_tab.rs:370
 msgid "e.g. vault kv get -field=password secret/myapp"
 msgstr "t.ex. vault kv get -field=password secret/myapp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:375
+#: rustconn/src/dialogs/connection/general_tab.rs:376
 msgid "Test the script command"
 msgstr "Testa skriptkommandot"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:395
+#: rustconn/src/dialogs/connection/general_tab.rs:396
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
 #: rustconn/src/window/edit_group.rs:571
 msgid "KeePass Database"
 msgstr "KeePass-databas"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:397
+#: rustconn/src/dialogs/connection/general_tab.rs:398
 #: rustconn/src/window/edit_group.rs:567
 msgid ""
 "Leave empty to use the database of the enclosing group, or the global one."
@@ -2260,28 +2269,28 @@ msgstr ""
 "Lämna tomt för att använda den överordnade gruppens databas eller den "
 "globala."
 
-#: rustconn/src/dialogs/connection/general_tab.rs:408
+#: rustconn/src/dialogs/connection/general_tab.rs:409
 msgid "Organization"
 msgstr "Organisation"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:412
+#: rustconn/src/dialogs/connection/general_tab.rs:413
 #: rustconn/src/dialogs/snippet.rs:216
 msgid "tag1, tag2, …"
 msgstr "tag1, tag2, …"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:418
+#: rustconn/src/dialogs/connection/general_tab.rs:419
 #: rustconn/src/dialogs/export.rs:419 rustconn/src/dialogs/snippet.rs:214
 #: rustconn/src/dialogs/template.rs:573
 msgid "Tags"
 msgstr "Taggar"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:429
+#: rustconn/src/dialogs/connection/general_tab.rs:430
 #: rustconn/src/dialogs/export.rs:288 rustconn/src/dialogs/export.rs:413
 #: rustconn/src/window/batch_edit.rs:115
 msgid "Group"
 msgstr "Grupp"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:450
+#: rustconn/src/dialogs/connection/general_tab.rs:451
 #: rustconn/src/dialogs/export.rs:425 rustconn/src/dialogs/snippet.rs:200
 #: rustconn/src/dialogs/template.rs:516
 #: rustconn/src/window/connection_dialogs.rs:713
@@ -2289,22 +2298,22 @@ msgstr "Grupp"
 msgid "Description"
 msgstr "Beskrivning"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:547
+#: rustconn/src/dialogs/connection/general_tab.rs:548
 msgid "Well-Known"
 msgstr "Välkänd"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:549
+#: rustconn/src/dialogs/connection/general_tab.rs:550
 msgid "Registered"
 msgstr "Registrerad"
 
-#: rustconn/src/dialogs/connection/general_tab.rs:551
+#: rustconn/src/dialogs/connection/general_tab.rs:552
 #: rustconn/src/window/edit_group.rs:1611
 msgid "Dynamic"
 msgstr "Dynamisk"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:50
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:182
-#: rustconn/src/sidebar/mod.rs:953
+#: rustconn/src/sidebar/mod.rs:954
 msgid "Kubernetes"
 msgstr "Kubernetes"
 
@@ -2394,6 +2403,7 @@ msgstr "Containeravbildning för tillfällig pod"
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
+#: rustconn/src/dialogs/connection/winrm.rs:36
 #: rustconn/src/dialogs/connection/zerotrust.rs:199
 #: rustconn/src/dialogs/template.rs:954 rustconn/src/dialogs/template.rs:1131
 #: rustconn/src/dialogs/template.rs:1469
@@ -2677,7 +2687,7 @@ msgstr "Skrivaromdirigering"
 msgid "Share your local printer with the remote session"
 msgstr "Dela din lokala skrivare med fjärrsessionen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5698
+#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5699
 msgid "Microphone"
 msgstr "Mikrofon"
 
@@ -2685,7 +2695,7 @@ msgstr "Mikrofon"
 msgid "Send the local microphone to the remote session"
 msgstr "Skicka den lokala mikrofonen till fjärrsessionen"
 
-#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5701
+#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5702
 msgid "Smart Cards"
 msgstr "Smartkort"
 
@@ -2996,7 +3006,7 @@ msgstr "Om det skiljer sig från anslutningens användarnamn"
 #: rustconn/src/dialogs/connection/ssh.rs:668
 #: rustconn/src/dialogs/connection/vnc.rs:341
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:137
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:693
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:699
 #: rustconn/src/dialogs/settings/network_tab.rs:61
 #: rustconn/src/dialogs/settings/network_tab.rs:64
 #: rustconn/src/dialogs/settings/network_tab.rs:122
@@ -3252,6 +3262,7 @@ msgstr "Layout skickat till RDP-server (Auto använder systeminställning)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:992
 #: rustconn/src/dialogs/connection/telnet.rs:43
+#: rustconn/src/dialogs/connection/winrm.rs:37
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
@@ -3583,7 +3594,7 @@ msgstr "Ett reguljärt uttryck per rad; tomt betyder de inbyggda mönstren"
 
 #: rustconn/src/dialogs/connection/ssh.rs:385
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:107
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:335
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:337
 #: rustconn/src/dialogs/template.rs:631
 #: rustconn/src/window/connection_dialogs.rs:502
 #: rustconn/src/window/copy_field_actions.rs:83
@@ -3606,15 +3617,15 @@ msgid "Keyboard Interactive"
 msgstr "Tangentbord interaktiv"
 
 #: rustconn/src/dialogs/connection/ssh.rs:388
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:337
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:339
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:31
 #: rustconn/src/dialogs/template.rs:634
 msgid "SSH Agent"
 msgstr "SSH-agent"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5704
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5705
 msgid "Security Key (FIDO2)"
 msgstr "Säkerhetsnyckel (FIDO2)"
 
@@ -3673,7 +3684,7 @@ msgstr "Bläddra efter SSH-nyckelfil"
 
 #: rustconn/src/dialogs/connection/ssh.rs:440
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:124
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:336
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:338
 #: rustconn/src/dialogs/key_setup.rs:515 rustconn/src/dialogs/key_setup.rs:539
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2358
 #: rustconn/src/dialogs/template.rs:677
@@ -4102,52 +4113,52 @@ msgstr "Ytterligare argument för extern klient"
 msgid "Extra command-line options for vncviewer"
 msgstr "Extra kommandoradsalternativ för vncviewer"
 
-#: rustconn/src/dialogs/connection/web.rs:52
+#: rustconn/src/dialogs/connection/web.rs:54
 msgid "Browser Mode"
 msgstr "Webbläsarläge"
 
-#: rustconn/src/dialogs/connection/web.rs:53
+#: rustconn/src/dialogs/connection/web.rs:55
 msgid "Choose how the URL is opened"
 msgstr "Välj hur URL:en öppnas"
 
-#: rustconn/src/dialogs/connection/web.rs:63
+#: rustconn/src/dialogs/connection/web.rs:65
 msgid "Custom Browser"
 msgstr "Anpassad webbläsare"
 
-#: rustconn/src/dialogs/connection/web.rs:65
+#: rustconn/src/dialogs/connection/web.rs:67
 msgid "Specify a browser command when Custom mode is selected."
 msgstr "Ange ett webbläsarkommando när anpassat läge är valt."
 
-#: rustconn/src/dialogs/connection/web.rs:69
+#: rustconn/src/dialogs/connection/web.rs:71
 msgid "Browser Command"
 msgstr "Webbläsarkommando"
 
-#: rustconn/src/dialogs/connection/web.rs:71
+#: rustconn/src/dialogs/connection/web.rs:73
 msgid "Command or path to browser binary (e.g. firefox, chromium)"
 msgstr ""
 "Kommando eller sökväg till webbläsarens binärfil (t.ex. firefox, chromium)"
 
-#: rustconn/src/dialogs/connection/web.rs:73
+#: rustconn/src/dialogs/connection/web.rs:75
 msgid "Required for Custom mode"
 msgstr "Krävs för anpassat läge"
 
-#: rustconn/src/dialogs/connection/web.rs:81
+#: rustconn/src/dialogs/connection/web.rs:83
 msgid "Embedded Browser Settings"
 msgstr "Inställningar för inbäddad webbläsare"
 
-#: rustconn/src/dialogs/connection/web.rs:82
+#: rustconn/src/dialogs/connection/web.rs:84
 msgid "Settings applied when using the embedded browser"
 msgstr "Inställningar som tillämpas när den inbäddade webbläsaren används"
 
-#: rustconn/src/dialogs/connection/web.rs:91
+#: rustconn/src/dialogs/connection/web.rs:93
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:105
+#: rustconn/src/dialogs/connection/web.rs:107
 msgid "Tunnel Through SSH"
 msgstr "Tunnel via SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:107
+#: rustconn/src/dialogs/connection/web.rs:109
 msgid ""
 "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
 "Chromium browser)"
@@ -4155,15 +4166,34 @@ msgstr ""
 "Surfa via en SOCKS-proxy över den valda SSH-anslutningen (inbäddad eller "
 "Chromium-webbläsare)"
 
-#: rustconn/src/dialogs/connection/web.rs:130
+#: rustconn/src/dialogs/connection/web.rs:118
+msgid "SOCKS5 Proxy (host:port)"
+msgstr "SOCKS5-proxy (värd:port)"
+
+#: rustconn/src/dialogs/connection/web.rs:138
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:58
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "Allmänt"
 
-#: rustconn/src/dialogs/connection/web.rs:195
+#: rustconn/src/dialogs/connection/web.rs:204
 msgid "How the URL is opened"
 msgstr "Hur URL:en öppnas"
+
+#: rustconn/src/dialogs/connection/winrm.rs:24
+msgid ""
+"Opens a PowerShell session using the evil-winrm client, which must be "
+"installed. Your password is answered at its prompt and never appears on a "
+"command line."
+msgstr "Öppnar en PowerShell-session med klienten evil-winrm, som måste vara installerad. Ditt lösenord anges vid dess prompt och visas aldrig på en kommandorad."
+
+#: rustconn/src/dialogs/connection/winrm.rs:28
+msgid "Use HTTPS"
+msgstr "Använd HTTPS"
+
+#: rustconn/src/dialogs/connection/winrm.rs:30
+msgid "Encrypts the connection. WinRM over HTTPS usually listens on port 5986"
+msgstr "Krypterar anslutningen. WinRM över HTTPS lyssnar vanligtvis på port 5986"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:78
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:226
@@ -4266,7 +4296,7 @@ msgid "AWS Profile"
 msgstr "AWS-profil"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:261
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:734
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:740
 #: rustconn/src/dialogs/template.rs:1553
 msgid "Region"
 msgstr "Region"
@@ -4280,13 +4310,13 @@ msgid "Instance Name"
 msgstr "Instansnamn"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:282
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:742
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:748
 #: rustconn/src/dialogs/template.rs:1589
 msgid "Zone"
 msgstr "Zon"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:285
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:744
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:750
 #: rustconn/src/dialogs/template.rs:1601
 msgid "Project"
 msgstr "Projekt"
@@ -4302,14 +4332,14 @@ msgstr "Målresurs-ID"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:307
 #: rustconn/src/dialogs/connection/zerotrust.rs:331
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:750
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:758
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:764
 #: rustconn/src/dialogs/template.rs:1637 rustconn/src/dialogs/template.rs:1685
 msgid "Resource Group"
 msgstr "Resursgrupp"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:311
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:752
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:758
 #: rustconn/src/dialogs/template.rs:1649
 msgid "Bastion Name"
 msgstr "Bastion-namn"
@@ -4319,7 +4349,7 @@ msgid "Connect via Azure AD authentication"
 msgstr "Anslutning via Azure AD-autentisering"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:327
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:762
 #: rustconn/src/dialogs/template.rs:1673
 msgid "VM Name"
 msgstr "VM-namn"
@@ -4360,7 +4390,7 @@ msgid "Connect via Cloudflare Zero Trust"
 msgstr "Anslutning via Cloudflare Zero Trust"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:400
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:762
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:768
 #: rustconn/src/dialogs/template.rs:1761 rustconn/src/monitoring.rs:357
 msgid "Hostname"
 msgstr "Värdnamn"
@@ -4374,7 +4404,7 @@ msgid "Node Name"
 msgstr "Nodnamn"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:419
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:768
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:774
 #: rustconn/src/dialogs/template.rs:1797
 msgid "Cluster"
 msgstr "Kluster"
@@ -4393,8 +4423,8 @@ msgid "Connect via Boundary proxy"
 msgstr "Anslutning via Boundary-proxy"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:453
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:732
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:776
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:738
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:782
 #: rustconn/src/dialogs/template.rs:1845
 msgid "Target ID"
 msgstr "Mål-ID"
@@ -4408,13 +4438,13 @@ msgid "Connect via Hoop.dev zero-trust gateway"
 msgstr "Anslut via Hoop.dev zero-trust-gateway"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:475
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:782
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:788
 #: rustconn/src/dialogs/template.rs:1881
 msgid "Connection Name"
 msgstr "Anslutningsnamn"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:479
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:784
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:790
 #: rustconn/src/dialogs/template.rs:1893
 msgid "Gateway URL"
 msgstr "Gateway-URL"
@@ -4449,7 +4479,7 @@ msgid "Summary"
 msgstr "Sammanfattning"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:113
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:356
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:358
 msgid "No file selected"
 msgstr "Ingen fil vald"
 
@@ -4474,7 +4504,7 @@ msgstr "Emoji eller ikonnamn (valfritt)"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:164
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:409
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:202
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:209
 msgid "Advanced…"
 msgstr "Avancerat…"
 
@@ -4482,8 +4512,8 @@ msgstr "Avancerat…"
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:169
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:412
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:414
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:205
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:207
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:212
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:214
 msgid "Open full connection editor"
 msgstr "Öppna fullständig anslutningsredigerare"
 
@@ -4503,7 +4533,7 @@ msgid "Save and connect immediately"
 msgstr "Spara och anslut direkt"
 
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:205
-#: rustconn/src/dialogs/connection_wizard/auth_page.rs:390
+#: rustconn/src/dialogs/connection_wizard/auth_page.rs:392
 msgid "Finish"
 msgstr "Slutför"
 
@@ -4537,8 +4567,8 @@ msgid "Leave empty for first container"
 msgstr "Lämna tomt för första container"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:212
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:673
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:687
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:679
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:693
 msgid "Custom Command"
 msgstr "Anpassat kommando"
 
@@ -4572,50 +4602,50 @@ msgstr "Använder SSH för handskakning, byter sedan till UDP"
 msgid "File browser over SSH connection"
 msgstr "Filbläddrare via SSH-anslutning"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:658
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:664
 msgid "{} Connection"
 msgstr "{}-anslutning"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:736
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:742
 msgid "Profile"
 msgstr "Profil"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:740
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:746
 #: rustconn/src/dialogs/template.rs:1577
 msgid "Instance"
 msgstr "Instans"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:748
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:754
 msgid "Resource ID"
 msgstr "Resurs-ID"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:778
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:784
 #: rustconn/src/window/copy_field_actions.rs:81
 msgid "Address"
 msgstr "Adress"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1000
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1006
 msgid "More…"
 msgstr "Mer…"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1013
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1014
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1019
 msgid "Browse all predefined templates"
 msgstr "Bläddra bland alla fördefinierade mallar"
 
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1064
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:1070
 msgid "Your Templates"
 msgstr "Dina mallar"
 
-#: rustconn/src/dialogs/connection_wizard/mod.rs:453
-#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:224
+#: rustconn/src/dialogs/connection_wizard/mod.rs:456
+#: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:549
 #: rustconn/src/sidebar_ui.rs:586 rustconn/src/sidebar_ui.rs:1284
 #: rustconn/src/split_view/bridge.rs:1856 rustconn/src/window/ui.rs:257
 msgid "New Connection"
 msgstr "Ny anslutning"
 
-#: rustconn/src/dialogs/connection_wizard/mod.rs:846
+#: rustconn/src/dialogs/connection_wizard/mod.rs:852
 msgid "Duplicate Connection"
 msgstr "Duplicera anslutning"
 
@@ -4665,8 +4695,8 @@ msgstr "Kopiera"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1270
-#: rustconn/src/window/remote_script.rs:202
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
+#: rustconn/src/window/remote_script.rs:217
 msgid "Stop"
 msgstr "Stoppa"
 
@@ -4786,7 +4816,7 @@ msgstr "Kopiering stoppad"
 #: rustconn/src/dialogs/widgets.rs:852 rustconn/src/sidebar_ui.rs:487
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4677
+#: rustconn/src/window/mod.rs:4678
 msgid "Close"
 msgstr "Stäng"
 
@@ -6944,8 +6974,8 @@ msgid "Select or create a script."
 msgstr "Välj eller skapa ett skript."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:198
-#: rustconn/src/window/remote_script.rs:338 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:213
+#: rustconn/src/window/remote_script.rs:357 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Kör"
 
@@ -8634,7 +8664,7 @@ msgid "Not available"
 msgstr "Inte tillgänglig"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:247
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:562
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:587
 msgid "Running"
 msgstr "Körs"
 
@@ -9650,67 +9680,67 @@ msgstr "Växla gruppsändning"
 msgid "Search shortcuts…"
 msgstr "Sök genvägar…"
 
-#: rustconn/src/dialogs/smart_folder.rs:65
+#: rustconn/src/dialogs/smart_folder.rs:66
 msgid "Edit Smart Folder"
 msgstr "Redigera smart mapp"
 
-#: rustconn/src/dialogs/smart_folder.rs:67 rustconn/src/sidebar_ui.rs:588
+#: rustconn/src/dialogs/smart_folder.rs:68 rustconn/src/sidebar_ui.rs:588
 #: rustconn/src/smart_folder_ui.rs:69
 msgid "New Smart Folder"
 msgstr "Ny smart mapp"
 
-#: rustconn/src/dialogs/smart_folder.rs:118
+#: rustconn/src/dialogs/smart_folder.rs:119
 msgid "Smart Folder"
 msgstr "Smart mapp"
 
-#: rustconn/src/dialogs/smart_folder.rs:122
+#: rustconn/src/dialogs/smart_folder.rs:123
 msgid "Prod SSH Servers"
 msgstr "SSH-servrar för produktion"
 
-#: rustconn/src/dialogs/smart_folder.rs:129
+#: rustconn/src/dialogs/smart_folder.rs:130
 msgid "Optional emoji"
 msgstr "Valfri emoji"
 
-#: rustconn/src/dialogs/smart_folder.rs:138
+#: rustconn/src/dialogs/smart_folder.rs:139
 msgid "Filters"
 msgstr "Filter"
 
-#: rustconn/src/dialogs/smart_folder.rs:139
+#: rustconn/src/dialogs/smart_folder.rs:140
 msgid "Connections must match ALL active filters"
 msgstr "Anslutningar måste matcha ALLA aktiva filter"
 
-#: rustconn/src/dialogs/smart_folder.rs:143
-#: rustconn/src/dialogs/smart_folder.rs:182
-#: rustconn/src/dialogs/smart_folder.rs:252 rustconn/src/dialogs/snippet.rs:225
+#: rustconn/src/dialogs/smart_folder.rs:144
+#: rustconn/src/dialogs/smart_folder.rs:184
+#: rustconn/src/dialogs/smart_folder.rs:254 rustconn/src/dialogs/snippet.rs:225
 msgid "Any"
 msgstr "Valfri"
 
-#: rustconn/src/dialogs/smart_folder.rs:160
+#: rustconn/src/dialogs/smart_folder.rs:162
 msgid "Filter by Protocol"
 msgstr "Filtrera efter protokoll"
 
-#: rustconn/src/dialogs/smart_folder.rs:167
+#: rustconn/src/dialogs/smart_folder.rs:169
 #: rustconn/src/window/operations.rs:388
 msgid "Host Pattern"
 msgstr "Värdmönster"
 
-#: rustconn/src/dialogs/smart_folder.rs:168
+#: rustconn/src/dialogs/smart_folder.rs:170
 msgid "*.example.com"
 msgstr "*.example.com"
 
-#: rustconn/src/dialogs/smart_folder.rs:174
+#: rustconn/src/dialogs/smart_folder.rs:176
 msgid "Filter by Tags"
 msgstr "Filtrera efter taggar"
 
-#: rustconn/src/dialogs/smart_folder.rs:175
+#: rustconn/src/dialogs/smart_folder.rs:177
 msgid "Comma or semicolon separated"
 msgstr "Komma- eller semikolonseparerade"
 
-#: rustconn/src/dialogs/smart_folder.rs:176
+#: rustconn/src/dialogs/smart_folder.rs:178
 msgid "web, production"
 msgstr "webb, produktion"
 
-#: rustconn/src/dialogs/smart_folder.rs:183
+#: rustconn/src/dialogs/smart_folder.rs:185
 msgid "Filter by Group"
 msgstr "Filtrera efter grupp"
 
@@ -10190,23 +10220,23 @@ msgstr "Ta bort mall?"
 msgid "This template will be permanently removed."
 msgstr "Denna mall kommer att tas bort permanent."
 
-#: rustconn/src/dialogs/template_manager.rs:399
-#: rustconn/src/window/templates.rs:331
+#: rustconn/src/dialogs/template_manager.rs:402
+#: rustconn/src/window/templates.rs:334
 msgid "SSH Templates"
 msgstr "SSH-mallar"
 
-#: rustconn/src/dialogs/template_manager.rs:406
-#: rustconn/src/window/templates.rs:339
+#: rustconn/src/dialogs/template_manager.rs:409
+#: rustconn/src/window/templates.rs:342
 msgid "RDP Templates"
 msgstr "RDP-mallar"
 
-#: rustconn/src/dialogs/template_manager.rs:413
-#: rustconn/src/window/templates.rs:347
+#: rustconn/src/dialogs/template_manager.rs:416
+#: rustconn/src/window/templates.rs:350
 msgid "VNC Templates"
 msgstr "VNC-mallar"
 
-#: rustconn/src/dialogs/template_manager.rs:420
-#: rustconn/src/window/templates.rs:355
+#: rustconn/src/dialogs/template_manager.rs:423
+#: rustconn/src/window/templates.rs:358
 msgid "SPICE Templates"
 msgstr "SPICE-mallar"
 
@@ -11259,7 +11289,7 @@ msgid "Connection refused. Check host and port."
 msgstr "Anslutning nekad. Kontrollera värd och port."
 
 #: rustconn/src/embedded_rdp/connection.rs:3172
-#: rustconn/src/embedded_web/mod.rs:640
+#: rustconn/src/embedded_web/mod.rs:645
 msgid "Connection timed out. Check that the host is reachable."
 msgstr "Anslutningen tog för lång tid. Kontrollera att värden är nåbar."
 
@@ -11639,8 +11669,8 @@ msgid "RDP session running in external window"
 msgstr "RDP-session körs i externt fönster"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:803 rustconn/src/window/mod.rs:3165
-#: rustconn/src/window/remote_script.rs:75
+#: rustconn/src/sidebar/view.rs:803 rustconn/src/window/mod.rs:3166
+#: rustconn/src/window/remote_script.rs:79
 msgid "Connection failed"
 msgstr "Anslutning misslyckades"
 
@@ -11670,8 +11700,8 @@ msgstr ""
 msgid "Using external viewer (unsupported encryption)"
 msgstr "Använder extern visare (kryptering stöds inte)"
 
-#: rustconn/src/embedded_vnc/ui.rs:337 rustconn/src/embedded_web/mod.rs:361
-#: rustconn/src/embedded_web/mod.rs:583 rustconn/src/session/vnc.rs:99
+#: rustconn/src/embedded_vnc/ui.rs:337 rustconn/src/embedded_web/mod.rs:366
+#: rustconn/src/embedded_web/mod.rs:588 rustconn/src/session/vnc.rs:99
 #: rustconn/src/session/vnc.rs:174 rustconn/src/session/vnc.rs:421
 msgid "Disconnected"
 msgstr "Frånkopplad"
@@ -11685,25 +11715,25 @@ msgstr "Session körs i externt fönster"
 msgid "Connection error"
 msgstr "Anslutningsfel"
 
-#: rustconn/src/embedded_web/mod.rs:367
+#: rustconn/src/embedded_web/mod.rs:372
 #: rustconn/src/embedded_web/navigation.rs:98
 #: rustconn/src/embedded_web/navigation.rs:99
 msgid "Reload"
 msgstr "Läs in igen"
 
-#: rustconn/src/embedded_web/mod.rs:520
+#: rustconn/src/embedded_web/mod.rs:525
 msgid "No credentials configured for this connection"
 msgstr "Inga inloggningsuppgifter konfigurerade för denna anslutning"
 
-#: rustconn/src/embedded_web/mod.rs:874
+#: rustconn/src/embedded_web/mod.rs:879
 msgid "TLS certificate accepted (self-signed or untrusted)"
 msgstr "TLS-certifikat godkänt (självsignerat eller ej betrott)"
 
-#: rustconn/src/embedded_web/mod.rs:978
+#: rustconn/src/embedded_web/mod.rs:983
 msgid "Downloaded: {}"
 msgstr "Nedladdat: {}"
 
-#: rustconn/src/embedded_web/mod.rs:1005
+#: rustconn/src/embedded_web/mod.rs:1010
 msgid "No login form fields found on this page"
 msgstr "Inga inloggningsfält hittades på denna sida"
 
@@ -12016,39 +12046,39 @@ msgstr "Anslutningslista"
 msgid "Telnet"
 msgstr "Telnet"
 
-#: rustconn/src/sidebar/mod.rs:951
+#: rustconn/src/sidebar/mod.rs:952
 msgid "Serial"
 msgstr "Seriell"
 
-#: rustconn/src/sidebar/mod.rs:952
+#: rustconn/src/sidebar/mod.rs:953
 msgid "ZeroTrust"
 msgstr "ZeroTrust"
 
-#: rustconn/src/sidebar/mod.rs:954
+#: rustconn/src/sidebar/mod.rs:955
 msgid "Web"
 msgstr "Webb"
 
-#: rustconn/src/sidebar/mod.rs:971
+#: rustconn/src/sidebar/mod.rs:972
 msgid "Filter by {} protocol"
 msgstr "Filtrera efter {}-protokoll"
 
-#: rustconn/src/sidebar/mod.rs:1020 rustconn/src/sidebar/mod.rs:1038
+#: rustconn/src/sidebar/mod.rs:1021 rustconn/src/sidebar/mod.rs:1039
 msgid "Filter by protocol"
 msgstr "Filtrera efter protokoll"
 
-#: rustconn/src/sidebar/mod.rs:1035
+#: rustconn/src/sidebar/mod.rs:1036
 msgid "Filter by protocol (filters active)"
 msgstr "Filtrera efter protokoll (filter aktiva)"
 
-#: rustconn/src/sidebar/mod.rs:1966
+#: rustconn/src/sidebar/mod.rs:1967
 msgid "Open Password Vault (Active)"
 msgstr "Öppna lösenordsvalv (aktivt)"
 
-#: rustconn/src/sidebar/mod.rs:1971
+#: rustconn/src/sidebar/mod.rs:1972
 msgid "Password Vault Not Found"
 msgstr "Lösenordsvalv hittades inte"
 
-#: rustconn/src/sidebar/mod.rs:1974
+#: rustconn/src/sidebar/mod.rs:1975
 msgid "Password Vault Disabled"
 msgstr "Lösenordsvalv inaktiverat"
 
@@ -12830,7 +12860,7 @@ msgstr "{} aktiv(a) session(er)"
 msgid "About RustConn"
 msgstr "Om RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5681
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5682
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Lösenfrasen öppnar inte den portabla filen"
 
@@ -13032,8 +13062,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Hopvärd otillgänglig"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3605
-#: rustconn/src/window/mod.rs:3671 rustconn/src/window/rdp_vnc.rs:781
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3606
+#: rustconn/src/window/mod.rs:3672 rustconn/src/window/rdp_vnc.rs:781
 msgid "Connect Anyway"
 msgstr "Anslut ändå"
 
@@ -13101,13 +13131,13 @@ msgid "Refreshed '{}': {} connections generated"
 msgstr "'{}' uppdaterad: {} anslutningar genererade"
 
 #: rustconn/src/window/connection_dialogs.rs:136
-#: rustconn/src/window/templates.rs:429
+#: rustconn/src/window/templates.rs:432
 msgid "New Connection from Template"
 msgstr "Ny anslutning från mall"
 
 #: rustconn/src/window/connection_dialogs.rs:204
 #: rustconn/src/window/connection_dialogs.rs:349
-#: rustconn/src/window/templates.rs:481
+#: rustconn/src/window/templates.rs:484
 msgid "Error Creating Connection"
 msgstr "Fel vid skapande av anslutning"
 
@@ -13280,9 +13310,9 @@ msgstr ""
 "Valvpost hittades inte för '{}'. Du kommer att uppmanas att ange ett "
 "lösenord."
 
-#: rustconn/src/window/credentials.rs:1049
-#: rustconn/src/window/credentials.rs:1285
-#: rustconn/src/window/edit_actions.rs:2340
+#: rustconn/src/window/credentials.rs:1050
+#: rustconn/src/window/credentials.rs:1286
+#: rustconn/src/window/edit_actions.rs:2356
 msgid "Connection failed. Host unreachable."
 msgstr "Anslutning misslyckades. Värd onåbar."
 
@@ -13466,12 +13496,18 @@ msgid "Could not open the page: {}"
 msgstr "Det gick inte att öppna sidan: {}"
 
 #: rustconn/src/window/edit_actions.rs:1671
-#: rustconn/src/window/edit_actions.rs:1785
-#: rustconn/src/window/edit_actions.rs:1813
+#: rustconn/src/window/edit_actions.rs:1794
+#: rustconn/src/window/edit_actions.rs:1829
 msgid "Failed to open URL: {}"
 msgstr "Kunde inte öppna URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1731
+#: rustconn/src/window/edit_actions.rs:1735
+msgid ""
+"This browser can't use a SOCKS proxy from the command line, so the page was "
+"not opened. Use a Chromium-based browser or the embedded browser."
+msgstr "Den här webbläsaren kan inte använda en SOCKS-proxy från kommandoraden, så sidan öppnades inte. Använd en Chromium-baserad webbläsare eller den inbäddade webbläsaren."
+
+#: rustconn/src/window/edit_actions.rs:1740
 msgid ""
 "This browser can't be tunnelled from the command line. Use a Chromium-based "
 "browser or the embedded browser for SSH tunnelling."
@@ -13479,12 +13515,18 @@ msgstr ""
 "Denna webbläsare kan inte tunnlas från kommandoraden. Använd en Chromium-"
 "baserad webbläsare eller den inbäddade webbläsaren för SSH-tunnling."
 
-#: rustconn/src/window/edit_actions.rs:1774
-#: rustconn/src/window/edit_actions.rs:1827
+#: rustconn/src/window/edit_actions.rs:1783
+#: rustconn/src/window/edit_actions.rs:1843
 msgid "Opened in browser"
 msgstr "Öppnad i webbläsare"
 
-#: rustconn/src/window/edit_actions.rs:1800
+#: rustconn/src/window/edit_actions.rs:1810
+msgid ""
+"The system browser can't use a SOCKS proxy, so the page was not opened. Use "
+"the embedded browser or a Custom Chromium-based browser."
+msgstr "Systemets webbläsare kan inte använda en SOCKS-proxy, så sidan öppnades inte. Använd den inbäddade webbläsaren eller en anpassad Chromium-baserad webbläsare."
+
+#: rustconn/src/window/edit_actions.rs:1816
 msgid ""
 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system "
 "browser opens without the tunnel."
@@ -13492,38 +13534,38 @@ msgstr ""
 "SSH-tunnling kräver den inbäddade eller en anpassad (Chromium) webbläsare; "
 "systemets webbläsare öppnas utan tunneln."
 
-#: rustconn/src/window/edit_actions.rs:1981
-#: rustconn/src/window/edit_actions.rs:2083
-#: rustconn/src/window/edit_actions.rs:2141
+#: rustconn/src/window/edit_actions.rs:1997
+#: rustconn/src/window/edit_actions.rs:2099
+#: rustconn/src/window/edit_actions.rs:2157
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP är bara tillgängligt för SSH-anslutningar."
 
-#: rustconn/src/window/edit_actions.rs:1991
+#: rustconn/src/window/edit_actions.rs:2007
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr "mc kräver en SSH-nyckel i agenten. Lösenordsautentisering stöds inte."
 
-#: rustconn/src/window/edit_actions.rs:1999
+#: rustconn/src/window/edit_actions.rs:2015
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "SSH-agenten körs inte. Kör ”eval $(ssh-agent)” och försök igen."
 
-#: rustconn/src/window/edit_actions.rs:2010
+#: rustconn/src/window/edit_actions.rs:2026
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr "Kunde inte kontrollera om SSH-agenten har nyckeln. Öppnar mc ändå."
 
-#: rustconn/src/window/edit_actions.rs:2016
+#: rustconn/src/window/edit_actions.rs:2032
 msgid "SSH key not available"
 msgstr "SSH-nyckel inte tillgänglig"
 
-#: rustconn/src/window/edit_actions.rs:2027
+#: rustconn/src/window/edit_actions.rs:2043
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) är inte installerad."
 
-#: rustconn/src/window/edit_actions.rs:2032
+#: rustconn/src/window/edit_actions.rs:2048
 msgid "Opening mc SFTP…"
 msgstr "Öppnar mc SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2112
-#: rustconn/src/window/edit_actions.rs:2503
+#: rustconn/src/window/edit_actions.rs:2128
+#: rustconn/src/window/edit_actions.rs:2519
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13533,16 +13575,16 @@ msgstr ""
 "Flatpak.                          Aktivera \"SFTP via mc\" i Inställningar "
 "för tillförlitlig åtkomst."
 
-#: rustconn/src/window/edit_actions.rs:2128
-#: rustconn/src/window/edit_actions.rs:2521
+#: rustconn/src/window/edit_actions.rs:2144
+#: rustconn/src/window/edit_actions.rs:2537
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr "Mellanvärd upptäckt. SFTP öppnas via mc i stället för filhanteraren."
 
-#: rustconn/src/window/edit_actions.rs:2187
+#: rustconn/src/window/edit_actions.rs:2203
 msgid "Opening SFTP…"
 msgstr "Öppnar SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2234
+#: rustconn/src/window/edit_actions.rs:2250
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "SSH-agenten körs inte — filhanteraren kanske inte kan autentisera."
 
@@ -14006,15 +14048,15 @@ msgstr ""
 "Anslutning till ”{}” hoppar nu över den hopvärden och använder bara resten "
 "av dess konfigurerade rutt."
 
-#: rustconn/src/window/mod.rs:1134 rustconn/src/window/mod.rs:1145
+#: rustconn/src/window/mod.rs:1135 rustconn/src/window/mod.rs:1146
 msgid "Dismiss"
 msgstr "Avfärda"
 
-#: rustconn/src/window/mod.rs:1177
+#: rustconn/src/window/mod.rs:1178
 msgid "Open Log"
 msgstr "Öppna logg"
 
-#: rustconn/src/window/mod.rs:1180
+#: rustconn/src/window/mod.rs:1181
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
@@ -14022,39 +14064,39 @@ msgstr ""
 "RustConn avslutades oväntat förra gången det kördes. En kraschlogg sparades "
 "lokalt."
 
-#: rustconn/src/window/mod.rs:1205
+#: rustconn/src/window/mod.rs:1206
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Kunde inte öppna kraschloggen. Den finns i {}"
 
-#: rustconn/src/window/mod.rs:1234
+#: rustconn/src/window/mod.rs:1235
 msgid "Touch your hardware key to unlock the password database"
 msgstr "Rör vid din maskinvarunyckel för att låsa upp lösenordsdatabasen"
 
-#: rustconn/src/window/mod.rs:2732
+#: rustconn/src/window/mod.rs:2733
 msgid "Already running in an external window"
 msgstr "Körs redan i ett externt fönster"
 
-#: rustconn/src/window/mod.rs:2961
+#: rustconn/src/window/mod.rs:2962
 msgid "Connection to ‘{}’ failed"
 msgstr "Anslutning till ‘{}’ misslyckades"
 
-#: rustconn/src/window/mod.rs:3309 rustconn/src/window/mod.rs:3323
+#: rustconn/src/window/mod.rs:3310 rustconn/src/window/mod.rs:3324
 msgid "Pre-connect task failed: {}"
 msgstr "Uppgift före anslutning misslyckades: {}"
 
-#: rustconn/src/window/mod.rs:3357
+#: rustconn/src/window/mod.rs:3358
 msgid "Port knock failed: {}"
 msgstr "Port knock misslyckades: {}"
 
-#: rustconn/src/window/mod.rs:3406
+#: rustconn/src/window/mod.rs:3407
 msgid "SPA failed: {}"
 msgstr "SPA misslyckades: {}"
 
-#: rustconn/src/window/mod.rs:3590
+#: rustconn/src/window/mod.rs:3591
 msgid "{} (via {})"
 msgstr "{} (via {})"
 
-#: rustconn/src/window/mod.rs:3596
+#: rustconn/src/window/mod.rs:3597
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14078,35 +14120,35 @@ msgstr ""
 "Om du inte gjorde denna ändring, avbryt — en anslutning kan skicka sparade "
 "autentiseringsuppgifter till en annan maskin."
 
-#: rustconn/src/window/mod.rs:3601
+#: rustconn/src/window/mod.rs:3602
 msgid "Routing changed for “{}”"
 msgstr "Vägen har ändrats för ”{}”"
 
-#: rustconn/src/window/mod.rs:3665
+#: rustconn/src/window/mod.rs:3666
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Hopvärd otillgänglig för ”{}”"
 
-#: rustconn/src/window/mod.rs:3670
+#: rustconn/src/window/mod.rs:3671
 msgid "Connect Directly"
 msgstr "Anslut direkt"
 
-#: rustconn/src/window/mod.rs:3759 rustconn/src/window/mod.rs:3934
+#: rustconn/src/window/mod.rs:3760 rustconn/src/window/mod.rs:3935
 msgid "Connection “{}” created"
 msgstr "Anslutning “{}” skapad"
 
-#: rustconn/src/window/mod.rs:4191
+#: rustconn/src/window/mod.rs:4192
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4399
+#: rustconn/src/window/mod.rs:4400
 msgid "Settings saved"
 msgstr "Inställningar sparade"
 
-#: rustconn/src/window/mod.rs:4436
+#: rustconn/src/window/mod.rs:4437
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Lösenfrasen sparades inte på den här datorn"
 
-#: rustconn/src/window/mod.rs:4438
+#: rustconn/src/window/mod.rs:4439
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14118,11 +14160,11 @@ msgstr ""
 "nyckelring” i stället, eller kontrollera att RustConn kan skriva till sin "
 "datakatalog."
 
-#: rustconn/src/window/mod.rs:4484
+#: rustconn/src/window/mod.rs:4485
 msgid "Credentials Not Saved to Keyring"
 msgstr "Autentiseringsuppgifterna sparades inte i nyckelringen"
 
-#: rustconn/src/window/mod.rs:4486
+#: rustconn/src/window/mod.rs:4487
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14132,16 +14174,16 @@ msgstr ""
 "för den här sessionen och försvinner efter en omstart. Kontrollera att "
 "nyckelringstjänsten körs och är upplåst och spara sedan inställningarna igen."
 
-#: rustconn/src/window/mod.rs:4670
+#: rustconn/src/window/mod.rs:4671
 msgid "Close RustConn?"
 msgstr "Stäng RustConn?"
 
-#: rustconn/src/window/mod.rs:4672
+#: rustconn/src/window/mod.rs:4673
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr ""
 "{} sessionsflik(ar) är öppna. Aktiva anslutningar kommer att kopplas från."
 
-#: rustconn/src/window/mod.rs:4709
+#: rustconn/src/window/mod.rs:4710
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14149,7 +14191,7 @@ msgstr ""
 "Det gick inte att läsa inställningarna, så standardvärden används. Den "
 "oläsbara filen behölls som {}."
 
-#: rustconn/src/window/mod.rs:4714
+#: rustconn/src/window/mod.rs:4715
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14157,35 +14199,35 @@ msgstr ""
 "De här inställningarna sparades av en nyare RustConn ({}). En säkerhetskopia "
 "behålls innan de ändras."
 
-#: rustconn/src/window/mod.rs:4739
+#: rustconn/src/window/mod.rs:4740
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Molnsynkronisering misslyckades för '{}': {}"
 
-#: rustconn/src/window/mod.rs:4922
+#: rustconn/src/window/mod.rs:4923
 msgid "Startup connection not found"
 msgstr "Uppstartsanslutning hittades inte"
 
-#: rustconn/src/window/mod.rs:4995
+#: rustconn/src/window/mod.rs:4996
 msgid "Failed to open .rdp file"
 msgstr "Kunde inte öppna .rdp-fil"
 
-#: rustconn/src/window/mod.rs:5031
+#: rustconn/src/window/mod.rs:5032
 msgid "Failed to open .vv file"
 msgstr "Kunde inte öppna .vv-fil"
 
-#: rustconn/src/window/mod.rs:5068
+#: rustconn/src/window/mod.rs:5069
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Tunneln “{}” stoppades: {}"
 
-#: rustconn/src/window/mod.rs:5084
+#: rustconn/src/window/mod.rs:5085
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Gav upp att återansluta tunneln “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5597
+#: rustconn/src/window/mod.rs:5598
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Exporterade {} anslutning(ar). {} hoppades över."
 
-#: rustconn/src/window/mod.rs:5683
+#: rustconn/src/window/mod.rs:5684
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14195,11 +14237,11 @@ msgstr ""
 "inga av lösenorden i den kan läsas. Öppna Inställningar ▸ Hemligheter och "
 "ange den lösenfras filen skapades med."
 
-#: rustconn/src/window/mod.rs:5718
+#: rustconn/src/window/mod.rs:5719
 msgid "Share Local Devices?"
 msgstr "Dela lokala enheter?"
 
-#: rustconn/src/window/mod.rs:5720
+#: rustconn/src/window/mod.rs:5721
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -14475,27 +14517,31 @@ msgstr "Ingen VNC-visare hittades. Installera TigerVNC eller Remmina."
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Ingen SPICE-visare hittades. Installera virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2751
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2845
 msgid "Invalid variable: {}"
 msgstr "Ogiltig variabel: {}"
 
-#: rustconn/src/window/protocols.rs:2671
+#: rustconn/src/window/protocols.rs:2506
+msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
+msgstr "evil-winrm är inte installerat. Installera det med: gem install evil-winrm"
+
+#: rustconn/src/window/protocols.rs:2765
 msgid "Invalid config: {}"
 msgstr "Ogiltig konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:2857
+#: rustconn/src/window/protocols.rs:2951
 msgid "Install picocom for Serial connections"
 msgstr "Installera picocom för seriella anslutningar"
 
-#: rustconn/src/window/protocols.rs:3033
+#: rustconn/src/window/protocols.rs:3127
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installera kubectl för Kubernetes-anslutningar"
 
-#: rustconn/src/window/protocols.rs:3051
+#: rustconn/src/window/protocols.rs:3145
 msgid "Configure pod and container for Kubernetes"
 msgstr "Konfigurera pod och container för Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3281
+#: rustconn/src/window/protocols.rs:3375
 msgid "Install mosh for MOSH connections"
 msgstr "Installera mosh för MOSH-anslutningar"
 
@@ -14524,112 +14570,121 @@ msgstr "Certifikatet har ändrats"
 msgid "Accept new certificate"
 msgstr "Godkänn nytt certifikat"
 
-#: rustconn/src/window/remote_script.rs:60
+#: rustconn/src/window/remote_script.rs:64
 msgid "The script could not be read"
 msgstr "Skriptet kunde inte läsas"
 
-#: rustconn/src/window/remote_script.rs:61
+#: rustconn/src/window/remote_script.rs:65
 msgid "Choose a script file, not a folder"
 msgstr "Välj en skriptfil, inte en mapp"
 
-#: rustconn/src/window/remote_script.rs:62
+#: rustconn/src/window/remote_script.rs:66
 msgid "The script is empty"
 msgstr "Skriptet är tomt"
 
-#: rustconn/src/window/remote_script.rs:63
+#: rustconn/src/window/remote_script.rs:67
 msgid "The script is larger than 1 MiB"
 msgstr "Skriptet är större än 1 MiB"
 
-#: rustconn/src/window/remote_script.rs:64
+#: rustconn/src/window/remote_script.rs:68
 msgid "This is a binary file, not a script"
 msgstr "Detta är en binärfil, inte ett skript"
 
-#: rustconn/src/window/remote_script.rs:70
+#: rustconn/src/window/remote_script.rs:74
 msgid "Succeeded"
 msgstr "Lyckades"
 
-#: rustconn/src/window/remote_script.rs:72
+#: rustconn/src/window/remote_script.rs:76
 msgid "Failed with exit code {}"
 msgstr "Misslyckades med slutkod {}"
 
-#: rustconn/src/window/remote_script.rs:74
+#: rustconn/src/window/remote_script.rs:78
 msgid "Stopped by a signal"
 msgstr "Stoppad av en signal"
 
-#: rustconn/src/window/remote_script.rs:76
+#: rustconn/src/window/remote_script.rs:80
 msgid "Timed out"
 msgstr "Tiden gick ut"
 
-#: rustconn/src/window/remote_script.rs:77
-#: rustconn/src/window/remote_script.rs:475
+#: rustconn/src/window/remote_script.rs:81
+#: rustconn/src/window/remote_script.rs:494
 msgid "Cancelled"
 msgstr "Avbruten"
 
-#: rustconn/src/window/remote_script.rs:78
+#: rustconn/src/window/remote_script.rs:82
 msgid "Could not start"
 msgstr "Kunde inte starta"
 
-#: rustconn/src/window/remote_script.rs:106
+#: rustconn/src/window/remote_script.rs:110
 msgid "No SSH connections are selected"
 msgstr "Inga SSH-anslutningar är valda"
 
-#: rustconn/src/window/remote_script.rs:115
+#: rustconn/src/window/remote_script.rs:123
 msgid "Hosts"
 msgstr "Värdar"
 
-#: rustconn/src/window/remote_script.rs:122
+#: rustconn/src/window/remote_script.rs:130
 msgid "Hosts (not using SSH, left out: {})"
 msgstr "Värdar (utan SSH, utelämnade: {})"
 
-#: rustconn/src/window/remote_script.rs:126
+#: rustconn/src/window/remote_script.rs:134
 msgid "Script File"
 msgstr "Skriptfil"
 
-#: rustconn/src/window/remote_script.rs:127
+#: rustconn/src/window/remote_script.rs:135
 msgid "Choose File"
 msgstr "Välj fil"
 
-#: rustconn/src/window/remote_script.rs:137
+#: rustconn/src/window/remote_script.rs:145
 msgid "Hosts at Once"
 msgstr "Värdar samtidigt"
 
-#: rustconn/src/window/remote_script.rs:140
+#: rustconn/src/window/remote_script.rs:148
 msgid "Time Limit per Host (minutes)"
 msgstr "Tidsgräns per värd (minuter)"
 
-#: rustconn/src/window/remote_script.rs:145
+#: rustconn/src/window/remote_script.rs:153
 msgid ""
 "Runs with bash on each host as its login user. Nothing is saved on the "
 "hosts. A host you have never connected to is refused until its key is known."
-msgstr "Körs med bash på varje värd som inloggningsanvändaren. Inget sparas på värdarna. En värd du aldrig har anslutit till nekas tills dess nyckel är känd."
+msgstr ""
+"Körs med bash på varje värd som inloggningsanvändaren. Inget sparas på "
+"värdarna. En värd du aldrig har anslutit till nekas tills dess nyckel är "
+"känd."
 
-#: rustconn/src/window/remote_script.rs:196
+#: rustconn/src/window/remote_script.rs:163
+msgid "Password for Hosts That Ask at Connect"
+msgstr "Lösenord för värdar som frågar vid anslutning"
+
+#: rustconn/src/window/remote_script.rs:211
 msgid "Run Local Script"
 msgstr "Kör lokalt skript"
 
-#: rustconn/src/window/remote_script.rs:258
+#: rustconn/src/window/remote_script.rs:274
 msgid "Choose Script"
 msgstr "Välj skript"
 
-#: rustconn/src/window/remote_script.rs:331
+#: rustconn/src/window/remote_script.rs:350
 msgid "Run ‘{}’?"
 msgstr "Kör ”{}”?"
 
-#: rustconn/src/window/remote_script.rs:333
+#: rustconn/src/window/remote_script.rs:352
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
-msgstr "Det körs på dessa värdar som deras inloggningsanvändare, och ändringarna kan inte ångras: {}"
+msgstr ""
+"Det körs på dessa värdar som deras inloggningsanvändare, och ändringarna kan "
+"inte ångras: {}"
 
-#: rustconn/src/window/remote_script.rs:367
+#: rustconn/src/window/remote_script.rs:386
 msgid "Waiting"
 msgstr "Väntar"
 
-#: rustconn/src/window/remote_script.rs:567
+#: rustconn/src/window/remote_script.rs:592
 msgid "[further output dropped]"
 msgstr "[ytterligare utdata kasserades]"
 
-#: rustconn/src/window/remote_script.rs:609
+#: rustconn/src/window/remote_script.rs:634
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Lyckades: {}, lyckades inte: {}"
 
@@ -14882,15 +14937,15 @@ msgstr "Fel vid sparande av mall"
 msgid "Are you sure you want to delete this template?"
 msgstr "Är du säker på att du vill ta bort denna mall?"
 
-#: rustconn/src/window/templates.rs:306
+#: rustconn/src/window/templates.rs:309
 msgid "Host: {}"
 msgstr "Värd: {}"
 
-#: rustconn/src/window/templates.rs:308
+#: rustconn/src/window/templates.rs:311
 msgid "Port: {}"
 msgstr "Port: {}"
 
-#: rustconn/src/window/templates.rs:310
+#: rustconn/src/window/templates.rs:313
 msgid "User: {}"
 msgstr "Användare: {}"
 

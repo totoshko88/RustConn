@@ -96,7 +96,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### First Connection
 
 1. Press **Ctrl+N** or click **+** in header bar — the **Connection Wizard** opens
-2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Zero Trust, Web)
+2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, WinRM, Serial, Kubernetes, Zero Trust, Web)
 3. Enter host and connection details
 4. Configure authentication (password, SSH key, or SSH Agent) and terminal theme
 5. Click **Save & Connect**
@@ -206,7 +206,7 @@ The Connection Wizard provides a streamlined 3-step flow for creating connection
 Protocols are displayed in a grouped FlowBox layout that wraps adaptively on narrow windows:
 - **Secure Shell:** SSH, MOSH, SFTP
 - **Remote Desktop:** RDP, VNC, SPICE
-- **Terminal:** Telnet, Serial, Custom Command
+- **Terminal:** Telnet, WinRM, Serial, Custom Command
 - **Other:** Kubernetes, Zero Trust, Web
 
 **Step 2 — Connection Details:**
@@ -391,6 +391,15 @@ For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
+
+### WinRM (Windows PowerShell)
+
+A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package); it is not available inside the Flatpak sandbox.
+
+- Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
+- Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
+- A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p` and `-H`. With no saved password, type it in the terminal.
+- Jump hosts are not used for WinRM connections; the machine must be directly reachable.
 
 ### Automatic Login (Telnet & Serial)
 
@@ -789,6 +798,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, backspace/delete key behavior, custom arguments |
 | Telnet | Custom arguments, backspace key behavior, delete key behavior |
+| WinRM | Use HTTPS, custom arguments |
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
@@ -2159,6 +2169,9 @@ Disable JavaScript execution for specific connections in the connection dialog's
 **Accept Invalid TLS Certificates:**
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
 
+**SOCKS5 Proxy:**
+If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy**. Every request from the browser then goes through it. RustConn does not start or log in to the proxy, so a proxy that needs a username and password cannot be used, and this setting cannot be combined with **Tunnel Through SSH**. It works with the embedded browser and with a Custom Chromium-based browser (which opens with a separate, temporary profile). The system browser and Firefox can't be told to use a proxy for one launch, so with those the page is **not opened** rather than loaded directly.
+
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
 dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
@@ -3376,10 +3389,10 @@ Runs a bash script from this computer on several SSH hosts and shows a result fo
 
 - The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
-- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. A password that is only asked for at connect time is not available.
+- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. If any host is set to ask for its password at connect, the dialog has one password field, used for all of those hosts.
 - A host whose key is not yet known is refused. Connect to it once normally and accept the key.
-- **Connection failed** means SSH exited with status 255. That is usually a connection or login problem, though a script that itself exits with 255 reports the same; the output shows which.
-- **Stop** and the time limit end the local connection, but a command already running on the host may continue until it finishes.
+- **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
+- **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
 - Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
 
 ### Broadcast Input

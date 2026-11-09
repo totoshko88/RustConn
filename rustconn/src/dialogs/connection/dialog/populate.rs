@@ -212,6 +212,13 @@ impl ConnectionDialog {
                 self.protocol_stack.set_visible_child_name("zerotrust");
                 self.set_zerotrust_config(zt);
             }
+            ProtocolConfig::WinRm(winrm_config) => {
+                self.protocol_dropdown.set_selected(11); // WinRM
+                self.protocol_stack.set_visible_child_name("winrm");
+                self.winrm_ssl_switch.set_active(winrm_config.use_ssl);
+                self.winrm_custom_args_entry
+                    .set_text(&winrm_config.custom_args.join(" "));
+            }
             ProtocolConfig::Telnet(telnet_config) => {
                 self.protocol_dropdown.set_selected(5); // Telnet
                 self.protocol_stack.set_visible_child_name("telnet");
@@ -1835,6 +1842,8 @@ impl ConnectionDialog {
         } else {
             self.web_tunnel_dropdown.set_selected(0);
         }
+        self.web_socks_proxy_row
+            .set_text(web.socks_proxy.as_deref().unwrap_or_default());
     }
 }
 

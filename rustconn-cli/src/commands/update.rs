@@ -247,6 +247,9 @@ pub(super) struct UpdateParams<'a> {
     pub web_toolbar: Option<bool>,
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
+    pub socks_proxy: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: Option<bool>,
     // Output filter (postpend command) — terminal protocols
     pub postpend_command: Option<&'a str>,
     pub postpend_arg: &'a [String],
@@ -836,6 +839,33 @@ pub(super) fn cmd_update(
                  --accept-invalid-certs, --private-mode, --zoom-level) are only applicable to Web connections"
             );
         }
+    }
+
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        cfg.socks_proxy = if proxy.trim().is_empty() {
+            None
+        } else {
+            Some(
+                rustconn_core::protocol::normalize_socks_proxy(proxy)
+                    .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+            )
+        };
+    }
+
+    if let Some(use_ssl) = params.winrm_ssl {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl is only valid for WinRM connections".into(),
+            ));
+        };
+        cfg.use_ssl = use_ssl;
     }
 
     if let Some(icon) = params.icon {

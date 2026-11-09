@@ -1715,8 +1715,11 @@ impl MainWindow {
                 // settings from its profile, which a one-shot launch cannot set
                 // safely, so we surface that rather than pretend it worked.
                 let mut tunnelled_isolated = false;
-                if let Some(ref tunnel) = socks_tunnel {
-                    let port = tunnel.local_port();
+                let proxy_uri = socks_tunnel
+                    .as_ref()
+                    .map(|tunnel| format!("socks5://127.0.0.1:{}", tunnel.local_port()))
+                    .or_else(|| web_config.socks_proxy.clone());
+                if let Some(proxy_uri) = proxy_uri {
                     if is_chromium {
                         // A throwaway `--user-data-dir` forces a separate instance:
                         // a running Chrome would otherwise take over the launch and
@@ -1724,8 +1727,14 @@ impl MainWindow {
                         cmd.arg(Self::chromium_isolated_profile_arg());
                         cmd.arg("--no-first-run");
                         cmd.arg("--no-default-browser-check");
-                        cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
+                        cmd.arg(format!("--proxy-server={proxy_uri}"));
                         tunnelled_isolated = true;
+                    } else if web_config.socks_proxy.is_some() {
+                        sidebar_cb.update_connection_status(&connection_id.to_string(), "failed");
+                        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                            "This browser can't use a SOCKS proxy from the command line, so the page was not opened. Use a Chromium-based browser or the embedded browser.",
+                        ));
+                        return;
                     } else {
                         crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
                             "This browser can't be tunnelled from the command line. Use a Chromium-based browser or the embedded browser for SSH tunnelling.",
@@ -1795,6 +1804,13 @@ impl MainWindow {
         // A tunnel cannot be applied here — the portal picks the browser and
         // RustConn cannot pass it a proxy flag — so say so instead of silently
         // ignoring the setting.
+        if web_config.socks_proxy.is_some() {
+            sidebar.update_connection_status(&connection_id.to_string(), "failed");
+            crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                "The system browser can't use a SOCKS proxy, so the page was not opened. Use the embedded browser or a Custom Chromium-based browser.",
+            ));
+            return;
+        }
         if web_config.tunnel_via.is_some() {
             crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
                 "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system browser opens without the tunnel.",

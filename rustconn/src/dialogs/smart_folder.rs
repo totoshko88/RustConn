@@ -34,6 +34,7 @@ const PROTOCOL_VARIANTS: &[ProtocolType] = &[
     ProtocolType::Kubernetes,
     ProtocolType::Mosh,
     ProtocolType::Web,
+    ProtocolType::WinRm,
 ];
 
 /// Dialog for creating or editing a Smart Folder.
@@ -154,6 +155,7 @@ impl SmartFolderDialog {
                 ProtocolType::Kubernetes => "Kubernetes",
                 ProtocolType::Mosh => "MOSH",
                 ProtocolType::Web => "Web",
+                ProtocolType::WinRm => "WinRM",
             }))
             .collect();
 

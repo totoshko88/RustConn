@@ -2270,6 +2270,20 @@ pub fn reconnect_generic_vte_in_place(
                 telnet_config.delete_sends,
             );
         }
+        rustconn_core::ProtocolConfig::WinRm(_) => {
+            let globals = resolve_globals_with_ask(state, connection_id);
+            if !launch_winrm(
+                state,
+                notebook,
+                sidebar,
+                session_id,
+                connection_id,
+                &conn,
+                &globals,
+            ) {
+                return false;
+            }
+        }
         rustconn_core::ProtocolConfig::Serial(_) => {
             let serial = SerialProtocol::new();
             let Some(command) = serial.build_command(&conn) else {
@@ -2466,7 +2480,68 @@ pub fn start_telnet_connection_observed(
     }
 }
 
-/// Internal function to start Telnet connection (after port check).
+/// Spawns `evil-winrm` in an open terminal tab and answers its password prompt.
+///
+/// The password goes through the prompt, never `-p`, so it stays out of the
+/// process list. Returns `false` when the session could not start.
+fn launch_winrm(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    session_id: Uuid,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    global_variables: &[Variable],
+) -> bool {
+    use rustconn_core::protocol::{
+        Protocol, WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmProtocol, format_command_message,
+        format_connection_message,
+    };
+
+    if !rustconn_core::which::is_available(WINRM_CLIENT) {
+        notebook.display_connect_banner(
+            session_id,
+            &format!(
+                "{}\r\n",
+                i18n("evil-winrm is not installed. Install it with: gem install evil-winrm")
+            ),
+        );
+        sidebar.update_connection_status(&connection_id.to_string(), "failed");
+        return false;
+    }
+
+    let mut resolved = conn.clone();
+    resolved.host = substitute_variables(&conn.host, global_variables);
+    resolved.username = conn
+        .username
+        .as_ref()
+        .map(|user| substitute_variables(user, global_variables));
+    let Some(command) = WinRmProtocol::new().build_command(&resolved) else {
+        tracing::warn!(%session_id, "Failed to build WinRM command");
+        return false;
+    };
+
+    let conn_msg = format_connection_message("WinRM", &resolved.host);
+    let cmd_msg = format_command_message(&command.join(" "));
+    notebook.display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+    let argv: Vec<&str> = command.iter().map(String::as_str).collect();
+    notebook.spawn_command(session_id, &argv, None, None, None);
+
+    prompt_autofill::install_login_autofill(
+        notebook,
+        session_id,
+        prompt_autofill::LoginAutofill {
+            username: None,
+            password: cached_connection_password(state, connection_id),
+            matcher: rustconn_core::LoginPromptMatcher::new(None, Some(WINRM_PASSWORD_PROMPT)),
+            protocol: "winrm",
+            deadline_secs: None,
+        },
+    );
+    true
+}
+
+/// Internal function to start Telnet or WinRM connection (after port check).
 ///
 /// Creates a terminal tab and spawns the telnet process.
 fn start_telnet_connection_internal(
@@ -2500,11 +2575,11 @@ fn start_telnet_connection_internal(
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
 
-    // Create terminal tab for Telnet
+    // Create terminal tab for Telnet or WinRM
     let session_id = notebook.create_terminal_tab_with_settings(
         connection_id,
         &conn.name,
-        "telnet",
+        conn.protocol_config.protocol_type().as_str(),
         Some(&resolved_automation),
         &terminal_settings,
         conn.theme_override.as_ref(),
@@ -2541,22 +2616,6 @@ fn start_telnet_connection_internal(
 
     let host = substitute_variables(&conn.host, &global_variables);
 
-    // Get custom args and keyboard settings from TelnetConfig
-    let (extra_args, backspace_sends, delete_sends) =
-        if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config {
-            (
-                config.custom_args.clone(),
-                config.backspace_sends,
-                config.delete_sends,
-            )
-        } else {
-            (
-                Vec::new(),
-                rustconn_core::models::BackspaceSends::Automatic,
-                rustconn_core::models::DeleteSends::Automatic,
-            )
-        };
-
     // Update last_connected timestamp
     if let Ok(mut state_mut) = state.try_borrow_mut()
         && let Err(e) = state_mut.update_last_connected(connection_id)
@@ -2572,54 +2631,89 @@ fn start_telnet_connection_internal(
     // Wire up child exited callback
     MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
 
-    // Build telnet command string for display
-    let mut cmd_parts = vec!["telnet".to_string()];
-    cmd_parts.extend(extra_args.clone());
-    cmd_parts.push(host.clone());
-    cmd_parts.push(port.to_string());
-    let telnet_command = cmd_parts.join(" ");
-
-    // Display CLI output feedback
-    let conn_msg = format_connection_message("Telnet", &host);
-    let cmd_msg = format_command_message(&telnet_command);
-    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_connect_banner(session_id, &feedback);
-
-    // Spawn telnet
-    let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
-    notebook.spawn_telnet(
-        session_id,
-        &host,
-        port,
-        &extra_refs,
-        backspace_sends,
-        delete_sends,
-    );
-
-    // --- Automatic login (issue #254) ---
-    // Telnet has no authentication protocol: the device prints its own prompts
-    // and expects the account name and the password to be typed. Network gear
-    // words those prompts inconsistently (`>>User name:`, `Username:`,
-    // `login:`), so the expected text can be overridden per connection or per
-    // group; unset falls back to the built-in matchers.
-    prompt_autofill::install_login_autofill(
-        notebook,
-        session_id,
-        login_autofill_for(
+    if matches!(
+        conn.protocol_config,
+        rustconn_core::ProtocolConfig::WinRm(_)
+    ) {
+        launch_winrm(
             state,
+            notebook,
+            sidebar,
+            session_id,
             connection_id,
             conn,
-            &resolved_automation,
             &global_variables,
-            "telnet",
-        ),
-    );
+        );
+    } else {
+        // Get custom args and keyboard settings from TelnetConfig
+        let (extra_args, backspace_sends, delete_sends) =
+            if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config {
+                (
+                    config.custom_args.clone(),
+                    config.backspace_sends,
+                    config.delete_sends,
+                )
+            } else {
+                (
+                    Vec::new(),
+                    rustconn_core::models::BackspaceSends::Automatic,
+                    rustconn_core::models::DeleteSends::Automatic,
+                )
+            };
+
+        // Build telnet command string for display
+        let mut cmd_parts = vec!["telnet".to_string()];
+        cmd_parts.extend(extra_args.clone());
+        cmd_parts.push(host.clone());
+        cmd_parts.push(port.to_string());
+        let telnet_command = cmd_parts.join(" ");
+
+        // Display CLI output feedback
+        let conn_msg = format_connection_message("Telnet", &host);
+        let cmd_msg = format_command_message(&telnet_command);
+        let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+        notebook.display_connect_banner(session_id, &feedback);
+
+        // Spawn telnet
+        let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
+        notebook.spawn_telnet(
+            session_id,
+            &host,
+            port,
+            &extra_refs,
+            backspace_sends,
+            delete_sends,
+        );
+
+        // --- Automatic login (issue #254) ---
+        // Telnet has no authentication protocol: the device prints its own prompts
+        // and expects the account name and the password to be typed. Network gear
+        // words those prompts inconsistently (`>>User name:`, `Username:`,
+        // `login:`), so the expected text can be overridden per connection or per
+        // group; unset falls back to the built-in matchers.
+        prompt_autofill::install_login_autofill(
+            notebook,
+            session_id,
+            login_autofill_for(
+                state,
+                connection_id,
+                conn,
+                &resolved_automation,
+                &global_variables,
+                "telnet",
+            ),
+        );
+    }
 
     // --- Auto-recording for Telnet ---
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name.clone();
-        let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
+        let recording_ssh_params = matches!(
+            conn.protocol_config,
+            rustconn_core::ProtocolConfig::Telnet(_)
+        )
+        .then(|| crate::terminal::SshRecordingParams {
             host: host.clone(),
             port,
             username: conn.username.clone(),
@@ -2630,7 +2724,7 @@ fn start_telnet_connection_internal(
             notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
             tracing::info!(
                 %session_id,
-                "Auto-recording started after Telnet connection"
+                "Auto-recording started after Telnet or WinRM connection"
             );
         });
     }

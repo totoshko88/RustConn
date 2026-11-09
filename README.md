@@ -66,6 +66,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | VNC | vnc-rs / vncviewer fallback | Embedded + external |
 | SPICE | remote-viewer / virt-viewer | External |
 | Telnet | VTE terminal | Embedded |
+| WinRM | VTE terminal, external `evil-winrm` | Embedded |
 | Serial | picocom via VTE | External (bundled in Flatpak) |
 | Kubernetes | kubectl exec via VTE | External |
 | MOSH | mosh via VTE | External |

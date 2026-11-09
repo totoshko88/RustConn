@@ -75,6 +75,9 @@ impl RemminaExporter {
             ProtocolType::Web => {
                 return Err(ExportError::UnsupportedProtocol("Web".to_string()));
             }
+            ProtocolType::WinRm => {
+                return Err(ExportError::UnsupportedProtocol("WinRM".to_string()));
+            }
         }
 
         Ok(output)

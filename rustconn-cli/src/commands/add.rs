@@ -142,6 +142,9 @@ pub(super) struct AddParams<'a> {
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
     pub tunnel_via: Option<&'a str>,
+    pub socks_proxy: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: bool,
 }
 
 /// Add connection command handler
@@ -655,6 +658,29 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         }
     }
 
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        cfg.socks_proxy = Some(
+            rustconn_core::protocol::normalize_socks_proxy(proxy)
+                .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+        );
+    }
+
+    if params.winrm_ssl {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl is only valid for WinRM connections".into(),
+            ));
+        };
+        cfg.use_ssl = true;
+    }
+
     ConfigManager::validate_connection(&connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;
 
@@ -994,6 +1020,14 @@ fn create_connection(
             ));
         }
         ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), port),
+        ProtocolType::WinRm => Connection::new(
+            name.to_string(),
+            host.to_string(),
+            port,
+            rustconn_core::models::ProtocolConfig::WinRm(
+                rustconn_core::models::WinRmConfig::default(),
+            ),
+        ),
         ProtocolType::Serial => Connection::new_serial(name.to_string(), host.to_string()),
         ProtocolType::Sftp => {
             let mut conn = Connection::new_sftp(name.to_string(), host.to_string(), port);

@@ -158,7 +158,7 @@ pub fn validate_url(url: &str) -> Result<(), EmbeddedError> {
 pub fn create_network_session(
     uuid: &Uuid,
     accept_invalid_certs: bool,
-    socks_port: Option<u16>,
+    socks_proxy: Option<&str>,
 ) -> webkit6::NetworkSession {
     let uuid_str = uuid.to_string();
 
@@ -174,14 +174,13 @@ pub fn create_network_session(
         .join("webkit")
         .join(&uuid_str);
 
-    // Points the session at a local SOCKS5 proxy (the SSH tunnel's port) when
-    // one is configured, so every request the WebView makes exits through the
-    // SSH host. Applied to every session variant, including the ephemeral
+    // Points the session at a SOCKS5 proxy (the SSH tunnel's port or a proxy the
+    // user named) when one is configured, so every request the WebView makes
+    // exits through it. Applied to every session variant, including the ephemeral
     // fallbacks below, so a directory failure never silently drops the tunnel.
     let apply_proxy = |session: &webkit6::NetworkSession| {
-        if let Some(port) = socks_port {
-            let proxy_uri = format!("socks5://127.0.0.1:{port}");
-            let settings = webkit6::NetworkProxySettings::new(Some(&proxy_uri), &[]);
+        if let Some(proxy_uri) = socks_proxy {
+            let settings = webkit6::NetworkProxySettings::new(Some(proxy_uri), &[]);
             session.set_proxy_settings(webkit6::NetworkProxyMode::Custom, Some(&settings));
         }
     };
@@ -290,11 +289,17 @@ impl EmbeddedWebWidget {
         // wired into the network session so every request exits via SSH. The
         // tunnel handle is kept on the widget so the `ssh -N -D` process lives
         // exactly as long as this browsing session.
-        let socks_port = socks_tunnel.as_ref().map(|t| t.local_port());
+        let socks_proxy = socks_tunnel
+            .as_ref()
+            .map(|t| format!("socks5://127.0.0.1:{}", t.local_port()))
+            .or_else(|| config.socks_proxy.clone());
 
         // Create persistent network session for this connection
-        let network_session =
-            create_network_session(&connection_uuid, config.accept_invalid_certs, socks_port);
+        let network_session = create_network_session(
+            &connection_uuid,
+            config.accept_invalid_certs,
+            socks_proxy.as_deref(),
+        );
 
         // Create WebView with the network session
         let web_view = webkit6::WebView::builder()

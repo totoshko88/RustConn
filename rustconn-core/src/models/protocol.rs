@@ -31,6 +31,8 @@ pub enum ProtocolType {
     Mosh,
     /// Web bookmark (opens URL in default browser)
     Web,
+    /// Windows Remote Management shell (external `evil-winrm` client)
+    WinRm,
 }
 
 impl ProtocolType {
@@ -51,6 +53,7 @@ impl ProtocolType {
             Self::Kubernetes => "kubernetes",
             Self::Mosh => "mosh",
             Self::Web => "web",
+            Self::WinRm => "winrm",
         }
     }
 
@@ -67,6 +70,7 @@ impl ProtocolType {
             Self::Kubernetes => 0,
             Self::Mosh => 22,
             Self::Web => 443,
+            Self::WinRm => 5985,
         }
     }
 }
@@ -85,6 +89,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Kubernetes => write!(f, "Kubernetes"),
             Self::Mosh => write!(f, "MOSH"),
             Self::Web => write!(f, "Web"),
+            Self::WinRm => write!(f, "WinRM"),
         }
     }
 }
@@ -115,6 +120,8 @@ pub enum ProtocolConfig {
     Mosh(MoshConfig),
     /// Web bookmark configuration (opens URL in default browser)
     Web(WebConfig),
+    /// WinRM shell configuration
+    WinRm(WinRmConfig),
 }
 
 impl ProtocolConfig {
@@ -133,6 +140,7 @@ impl ProtocolConfig {
             Self::Kubernetes(_) => ProtocolType::Kubernetes,
             Self::Mosh(_) => ProtocolType::Mosh,
             Self::Web(_) => ProtocolType::Web,
+            Self::WinRm(_) => ProtocolType::WinRm,
         }
     }
 
@@ -291,6 +299,20 @@ pub struct TelnetConfig {
     /// What the Delete key sends
     #[serde(default)]
     pub delete_sends: DeleteSends,
+}
+
+/// WinRM protocol configuration
+///
+/// Sessions run the external `evil-winrm` client in a VTE terminal. The password
+/// is never part of its command line, see [`crate::protocol::WinRmProtocol`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WinRmConfig {
+    /// Connect over HTTPS, usually port 5986, instead of HTTP on 5985
+    #[serde(default)]
+    pub use_ssl: bool,
+    /// Custom command-line arguments for the client
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_args: Vec<String>,
 }
 
 /// MOSH prediction mode
@@ -4563,6 +4585,12 @@ pub struct WebConfig {
     /// `None` means a direct connection.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tunnel_via: Option<uuid::Uuid>,
+    /// An existing SOCKS5 proxy to browse through, as `socks5://host:port`
+    /// (see [`crate::protocol::normalize_socks_proxy`]). Unlike [`Self::tunnel_via`]
+    /// nothing is started: the proxy must already be running. The two are
+    /// mutually exclusive.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy: Option<String>,
 }
 
 // Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
@@ -4581,6 +4609,7 @@ impl Default for WebConfig {
             accept_invalid_certs: false,
             hide_floating_toolbar: false,
             tunnel_via: None,
+            socks_proxy: None,
         }
     }
 }
@@ -4615,6 +4644,8 @@ impl<'de> Deserialize<'de> for WebConfig {
             hide_floating_toolbar: bool,
             #[serde(default)]
             tunnel_via: Option<uuid::Uuid>,
+            #[serde(default)]
+            socks_proxy: Option<String>,
         }
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
@@ -4638,6 +4669,7 @@ impl<'de> Deserialize<'de> for WebConfig {
             accept_invalid_certs: raw.accept_invalid_certs,
             hide_floating_toolbar: raw.hide_floating_toolbar,
             tunnel_via: raw.tunnel_via,
+            socks_proxy: raw.socks_proxy,
         })
     }
 }

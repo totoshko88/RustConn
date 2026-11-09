@@ -35,6 +35,83 @@ impl WebProtocol {
             )),
         }
     }
+
+    /// The command for a browser that must use `proxy`, or `None` when none can.
+    ///
+    /// Only the Chromium family takes a proxy on its command line, and it needs a
+    /// profile of its own: a running instance would otherwise take over the launch
+    /// and load the page directly, which is the leak a proxy setting exists to
+    /// prevent. A system or Firefox launch therefore builds nothing at all.
+    fn proxied_browser_command(
+        connection: &Connection,
+        config: &WebConfig,
+        proxy: &str,
+    ) -> Option<Vec<String>> {
+        let browser = config.browser.as_deref()?.trim();
+        let name = browser.to_lowercase();
+        let chromium = ["chrom", "brave", "vivaldi", "edge", "opera"]
+            .iter()
+            .any(|family| name.contains(family));
+        if config.browser_mode != crate::models::WebBrowserMode::Custom || !chromium {
+            return None;
+        }
+        let proxy = normalize_socks_proxy(proxy).ok()?;
+        let profile = std::env::temp_dir().join(format!("rustconn-socks-{}", connection.id));
+        Some(vec![
+            browser.to_string(),
+            format!("--user-data-dir={}", profile.display()),
+            "--no-first-run".to_string(),
+            "--no-default-browser-check".to_string(),
+            format!("--proxy-server={proxy}"),
+            connection.host.clone(),
+        ])
+    }
+}
+
+/// Checks a SOCKS proxy address and returns it as `socks5://host:port`.
+///
+/// Accepts `host:port`, `socks5://host:port` and `socks5h://host:port`; an IPv6
+/// host goes in brackets. The value ends up on a browser's command line, so only
+/// characters a host name can hold pass. Credentials are refused because neither
+/// WebKitGTK's proxy URI nor Chromium's `--proxy-server` can use them safely.
+///
+/// # Errors
+///
+/// Returns [`ProtocolError::InvalidConfig`] when the address is not a usable
+/// SOCKS5 endpoint.
+pub fn normalize_socks_proxy(input: &str) -> ProtocolResult<String> {
+    let invalid = |reason: &str| Err(ProtocolError::InvalidConfig(reason.to_string()));
+    let input = input.trim();
+    let lower = input.to_lowercase();
+    let address = if lower.starts_with("socks5://") {
+        &input["socks5://".len()..]
+    } else if lower.starts_with("socks5h://") {
+        &input["socks5h://".len()..]
+    } else if input.contains("://") {
+        return invalid("Only SOCKS5 proxies are supported");
+    } else {
+        input
+    };
+    if address.contains('@') {
+        return invalid("SOCKS proxy logins are not supported");
+    }
+    if !address
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || ".-_:[]".contains(c))
+    {
+        return invalid("The SOCKS proxy address holds invalid characters");
+    }
+    let Some((host, port)) = address.rsplit_once(':') else {
+        return invalid("The SOCKS proxy must be given as host:port");
+    };
+    let bare_ipv6 = host.contains(':') && !(host.starts_with('[') && host.ends_with(']'));
+    if host.is_empty() || host.starts_with('-') || bare_ipv6 {
+        return invalid("The SOCKS proxy host is not valid");
+    }
+    if !port.parse::<u16>().is_ok_and(|p| p != 0) {
+        return invalid("The SOCKS proxy port must be between 1 and 65535");
+    }
+    Ok(format!("socks5://{address}"))
 }
 
 impl Default for WebProtocol {
@@ -57,7 +134,16 @@ impl Protocol for WebProtocol {
     }
 
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()> {
-        let _web_config = Self::get_web_config(connection)?;
+        let web_config = Self::get_web_config(connection)?;
+
+        if let Some(proxy) = &web_config.socks_proxy {
+            normalize_socks_proxy(proxy)?;
+            if web_config.tunnel_via.is_some() {
+                return Err(ProtocolError::InvalidConfig(
+                    "Choose either an SSH tunnel or a SOCKS proxy, not both".to_string(),
+                ));
+            }
+        }
 
         // Validate URL is not empty
         if connection.host.is_empty() {
@@ -111,6 +197,10 @@ impl Protocol for WebProtocol {
         use crate::models::WebBrowserMode;
 
         let web_config = Self::get_web_config(connection).ok()?;
+
+        if let Some(proxy) = &web_config.socks_proxy {
+            return Self::proxied_browser_command(connection, web_config, proxy);
+        }
 
         match web_config.browser_mode {
             // Embedded mode: the session manager creates the widget directly, so
@@ -187,6 +277,83 @@ mod tests {
             ..WebConfig::default()
         });
         conn
+    }
+
+    #[test]
+    fn socks_addresses_are_normalized() {
+        for (input, expected) in [
+            ("proxy.lan:1080", "socks5://proxy.lan:1080"),
+            (" socks5://127.0.0.1:9050 ", "socks5://127.0.0.1:9050"),
+            ("SOCKS5h://proxy:1", "socks5://proxy:1"),
+            ("[::1]:1080", "socks5://[::1]:1080"),
+        ] {
+            assert_eq!(normalize_socks_proxy(input).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn bad_socks_addresses_are_refused() {
+        for input in [
+            "",
+            "proxy",
+            "proxy:0",
+            "proxy:70000",
+            ":1080",
+            "::1:1080",
+            "http://proxy:80",
+            "socks4://proxy:1080",
+            "user:secret@proxy:1080",
+            "proxy:1080 --disable-web-security",
+            "-x:1080",
+        ] {
+            assert!(normalize_socks_proxy(input).is_err(), "{input}");
+        }
+    }
+
+    fn proxied(mode: WebBrowserMode, browser: Option<&str>) -> Connection {
+        let mut conn = web_connection(mode);
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.browser = browser.map(String::from);
+            config.socks_proxy = Some("socks5://proxy:1080".to_string());
+        }
+        conn
+    }
+
+    #[test]
+    fn a_chromium_browser_is_given_the_proxy_and_its_own_profile() {
+        let conn = proxied(WebBrowserMode::Custom, Some("google-chrome"));
+        let cmd = WebProtocol::new().build_command(&conn).unwrap();
+        assert!(
+            cmd.iter()
+                .any(|a| a == "--proxy-server=socks5://proxy:1080")
+        );
+        assert!(cmd.iter().any(|a| a.starts_with("--user-data-dir=")));
+        assert_eq!(cmd.last().map(String::as_str), Some("https://example.com"));
+    }
+
+    #[test]
+    fn a_browser_that_cannot_use_the_proxy_is_not_launched() {
+        let handler = WebProtocol::new();
+        assert!(
+            handler
+                .build_command(&proxied(WebBrowserMode::System, None))
+                .is_none()
+        );
+        assert!(
+            handler
+                .build_command(&proxied(WebBrowserMode::Custom, Some("firefox")))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn a_tunnel_and_a_proxy_cannot_be_combined() {
+        let mut conn = proxied(WebBrowserMode::Embedded, None);
+        assert!(WebProtocol::new().validate_connection(&conn).is_ok());
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.tunnel_via = Some(uuid::Uuid::new_v4());
+        }
+        assert!(WebProtocol::new().validate_connection(&conn).is_err());
     }
 
     #[test]

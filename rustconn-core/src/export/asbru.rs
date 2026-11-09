@@ -163,6 +163,7 @@ impl AsbruExporter {
             ProtocolType::Kubernetes => "kubernetes",
             ProtocolType::Mosh => "mosh",
             ProtocolType::Web => "web",
+            ProtocolType::WinRm => "winrm",
         };
         lines.push(format!("  method: \"{method}\""));
 
@@ -211,6 +212,7 @@ impl AsbruExporter {
             ProtocolConfig::Vnc(_)
             | ProtocolConfig::Spice(_)
             | ProtocolConfig::Telnet(_)
+            | ProtocolConfig::WinRm(_)
             | ProtocolConfig::ZeroTrust(_)
             | ProtocolConfig::Serial(_)
             | ProtocolConfig::Kubernetes(_)

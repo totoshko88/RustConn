@@ -86,7 +86,7 @@ pub enum Commands {
         #[arg(short, long)]
         port: Option<u16>,
 
-        /// Protocol type (ssh, rdp, vnc, spice, sftp, telnet, serial,
+        /// Protocol type (ssh, rdp, vnc, spice, sftp, telnet, winrm, serial,
         /// mosh, kubernetes/k8s, zerotrust/zt, web)
         #[arg(short = 'P', long, default_value = "ssh")]
         protocol: String,
@@ -578,6 +578,15 @@ pub enum Commands {
         /// auto-raised dynamic SOCKS proxy (existing SSH connection name or UUID)
         #[arg(long, value_name = "NAME|UUID")]
         tunnel_via: Option<String>,
+
+        /// Browse this Web connection through an existing SOCKS5 proxy (host:port).
+        /// A browser that cannot use it is not opened
+        #[arg(long, value_name = "HOST:PORT", conflicts_with = "tunnel_via")]
+        socks_proxy: Option<String>,
+
+        /// Connect over HTTPS (WinRM connections, usually port 5986)
+        #[arg(long)]
+        winrm_ssl: bool,
     },
 
     /// Export connections to external format
@@ -1148,6 +1157,15 @@ pub enum Commands {
         /// Zoom level for the embedded browser (0.3–3.0, default: 1.0)
         #[arg(long, value_name = "FLOAT")]
         zoom_level: Option<f64>,
+
+        /// Existing SOCKS5 proxy for a Web connection (host:port); an empty value
+        /// removes it
+        #[arg(long, value_name = "HOST:PORT")]
+        socks_proxy: Option<String>,
+
+        /// Use HTTPS for a WinRM connection
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        winrm_ssl: Option<bool>,
 
         /// Output filter: pipe terminal output through this command
         /// (e.g. chromaterm, ccze). Pass an empty string to remove the filter.

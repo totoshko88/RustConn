@@ -134,6 +134,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         "Kubernetes".to_string(),
         "MOSH".to_string(),
         "Web".to_string(),
+        "WinRM".to_string(),
     ];
     let protocol_strs: Vec<&str> = protocol_items.iter().map(String::as_str).collect();
     let protocol_list = StringList::new(&protocol_strs);

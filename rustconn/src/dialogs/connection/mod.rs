@@ -33,6 +33,7 @@ mod telnet;
 mod vnc;
 mod web;
 pub mod widgets;
+mod winrm;
 mod zerotrust;
 
 // Re-export types from parent module for use in submodules
