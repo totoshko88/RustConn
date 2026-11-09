@@ -791,7 +791,7 @@ fn parse_ssh_auth_method(value: &str) -> Result<SshAuthMethod, CliError> {
 }
 
 /// Find a group by name or ID
-fn find_group<'a>(
+pub(super) fn find_group<'a>(
     groups: &'a [ConnectionGroup],
     name_or_id: &str,
 ) -> Result<&'a ConnectionGroup, CliError> {

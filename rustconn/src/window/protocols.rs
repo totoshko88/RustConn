@@ -1297,6 +1297,25 @@ pub(super) fn start_gateway_probe(
     connection_id: Uuid,
     retry: impl FnOnce() + 'static,
 ) -> bool {
+    probe_gateway(state, connection_id, true, retry)
+}
+
+/// [`start_gateway_probe`] without the failover toasts, for bulk operations that
+/// report per host and would otherwise raise one toast per host.
+pub(super) fn start_gateway_probe_quiet(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    retry: impl FnOnce() + 'static,
+) -> bool {
+    probe_gateway(state, connection_id, false, retry)
+}
+
+fn probe_gateway(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    announce: bool,
+    retry: impl FnOnce() + 'static,
+) -> bool {
     use rustconn_core::connection::gateway_failover::{GatewayOutcome, probe_gateways};
 
     let Ok(state_ref) = state.try_borrow() else {
@@ -1330,6 +1349,7 @@ pub(super) fn start_gateway_probe(
                     .borrow()
                     .set_gateway_choice(connection_id, selection.gateway_id);
                 match selection.outcome {
+                    _ if !announce => {}
                     GatewayOutcome::Primary => {}
                     GatewayOutcome::FailedOver => {
                         tracing::info!(gateway = %selection.gateway_name, "Failing over to a fallback jump host");

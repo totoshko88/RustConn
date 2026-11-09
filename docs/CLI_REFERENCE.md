@@ -546,6 +546,24 @@ rustconn-cli duplicate "web01" --range 'web[02-10]' --host-range '10.0.0.[2-10]'
 
 The width of the first number sets the zero padding. `--host-range` is optional when the source's host contains its name (`host01.example.com` becomes `host02.example.com`), and otherwise required. It must cover the same count as `--range`. A range can create up to 256 connections, and names that already exist are skipped. Unlike the GUI, the CLI does not copy a password stored in a vault to the new connections.
 
+### run-script — Run a local bash script on SSH connections
+
+```bash
+rustconn-cli run-script ./check.sh --on web1 --on web2       # Named connections
+rustconn-cli run-script ./check.sh --group Production --yes  # A group and its subgroups
+rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--on` | — | Connection name or UUID (repeatable) |
+| `--group` | — | Group name or UUID, including subgroups (repeatable) |
+| `--parallel` | 8 | Hosts at once (1–64) |
+| `--timeout` | 600 | Time limit per host, in seconds |
+| `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
+
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. Only key and agent login work here; a connection that needs a saved password fails with SSH's "Permission denied", so use the GUI for those. See [Run Local Script](USER_GUIDE.md#run-local-script) for how the script runs.
+
 ### test — Test connectivity
 
 ```bash

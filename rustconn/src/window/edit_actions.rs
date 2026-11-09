@@ -199,6 +199,18 @@ impl MainWindow {
         });
         window.add_action(&duplicate_action);
 
+        // Run a local bash script on the selected SSH hosts
+        let run_script_action = gio::SimpleAction::new("run-local-script", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        run_script_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::remote_script::open_dialog(&win, &state_clone, &sidebar_clone);
+            }
+        });
+        window.add_action(&run_script_action);
+
         // Duplicate as a numbered range of connections
         let duplicate_range_action = gio::SimpleAction::new("duplicate-as-range", None);
         let window_weak = window.downgrade();

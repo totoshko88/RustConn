@@ -3370,6 +3370,18 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 - SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
 - The keys never appear in the config file — only vault references are stored.
 
+### Run Local Script
+
+Runs a bash script from this computer on several SSH hosts and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+
+- The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
+- It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
+- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. A password that is only asked for at connect time is not available.
+- A host whose key is not yet known is refused. Connect to it once normally and accept the key.
+- **Connection failed** means SSH exited with status 255. That is usually a connection or login problem, though a script that itself exits with 255 reports the same; the output shows which.
+- **Stop** and the time limit end the local connection, but a command already running on the host may continue until it finishes.
+- Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
+
 ### Broadcast Input
 
 Type once and have the keystrokes reach several terminals at the same time.
