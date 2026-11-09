@@ -5,6 +5,24 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.10] - 2026-11-09
+### Fixed
+- **macOS: the menu-bar icon follows the system style** — the tray icon was a full-colour image that clashed with the other status items. It is now a monochrome template glyph, so macOS tints it for a light or dark menu bar like any native item. (`rustconn/src/tray.rs`, `rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn-tray-macos.svg`)
+- **macOS: Settings no longer shifts and clips a few seconds after opening** — once client detection finished, the Clients page replaced its rows with full install paths and unbounded version strings, which made the dialog wider than its 600 px content width and cut off every page. The path is now one ellipsised line (full text in a tooltip) and the version label is ellipsised too. (`rustconn/src/dialogs/settings/clients_tab.rs`)
+- **macOS: the Dock icon is grey in the Clear and Tinted icon styles** — when RustConn runs without a `.app` bundle, its Dock tile is set at runtime, which bypasses the system's monochrome icon styles, so it stayed full-colour next to every other app. The tile now reads `AppleIconAppearanceTheme` and, for Clear or Tinted, uses a grey tile (dark or light to match). Inside a bundle the `.icns` is still left to macOS. (`rustconn/src/main.rs`, `rustconn/assets/icons/macos-dock/`)
+- **A broken CLI wrapper is no longer shown as installed with an error for a version** — Settings → Connection showed Tailscale CLI with a ✓ and `/usr/local/bin/tailscale: line 2: …: No such file or directory` in the version column when the wrapper outlived a removed Tailscale.app. A command that exits 126/127 (the shell's "cannot execute" / "not found") now yields no version and is reported as not found. Applies to every Zero Trust CLI on that page. (`rustconn/src/dialogs/settings/clients_tab.rs`)
+### Changed
+- **macOS: Compact interface is off by default** — it was switched on for new macOS installs to compensate for scaling problems that are now fixed. A fresh install gets the standard chrome, as on Linux. Existing users keep whatever is saved in their settings; the switch is still in Settings → Interface, the primary menu and `Ctrl+Shift+D`. (`rustconn-core/src/config/settings.rs`)
+### Improved
+- **Settings no longer spins the main loop while it detects clients** — the Clients and SSH Agent pages polled their background result through an idle source, which never sleeps, so the interface ran flat out for the few seconds detection took each time Settings opened. They now poll every 50 ms, as the Secrets page already did. (`rustconn/src/dialogs/settings/clients_tab.rs`, `rustconn/src/dialogs/settings/ssh_agent_tab.rs`)
+- **Development builds optimise third-party dependencies** — `cargo run` compiled GTK, VTE and IronRDP at opt-level 0, which made tab overview, redraws and scrolling feel slower than a release build. Dependencies are now built at opt-level 2 in the dev profile; the workspace crates are unchanged. (`Cargo.toml`)
+### Documentation
+- **macOS: running with `cargo run`** — `docs/MACOS_BUILD.md` now shows the full `cargo run` command with the macOS feature set and explains why the default features fail on `javascriptcoregtk-6.0`. (`docs/MACOS_BUILD.md`)
+### Dependencies
+- **Updated** (semver-compatible): arc-swap 1.9.4→1.9.5, itoa 1.0.18→1.0.19, notify-types 2.2.0→2.3.0, syn 3.0.9→3.0.10. `cargo deny check advisories` is clean; CLI downloads, FreeRDP 3.33.0, cJSON 1.7.19, GNOME runtime 51 and Snap core26 are current.
+- **RUSTSEC-2023-0071 (rsa Marvin Attack) — a fix now exists but is still out of reach** — rsa 0.10.0 (2026-11-08) is the patched release, with constant-time arithmetic. RustConn cannot take it yet: `ironrdp-connector` 0.12.0, the latest, pins `picky =7.0.0-rc.26`, and picky, sspi and winscard pin `rsa =0.10.0-rc.18`; the same pins hold sspi 0.23.1, winscard 0.4.1, picky rc.29 and pkcs1 0.8.0 back. The acceptance rationale in `deny.toml` and `.cargo/audit.toml` is updated to say so; it is not exploitable in a local client that exposes no RSA decryption oracle.
+- **zbus 6 / oo7 0.7 deferred** — both are breaking releases (zbus 6 removes the blocking API and renames `Value` to `Variant`), and the Linux tray's `ksni` 0.3.7 is still on zbus 5, so moving now would build two zbus versions. Planned for when ksni follows.
+
 ## [0.24.9] - 2026-11-09
 
 ### Added

@@ -1162,7 +1162,9 @@ pub struct UiSettings {
     /// split panel margins, playback toolbar, button padding) so more space is
     /// available for the active session content. Especially useful on small
     /// laptop screens (≤14"), macOS, and KDE Plasma where the default Adwaita
-    /// chrome looks taller than native Qt/AppKit apps.
+    /// chrome looks taller than native Qt/AppKit apps. Off by default on every
+    /// platform, macOS included: the scaling problems that once made it the
+    /// macOS default are fixed.
     #[serde(default)]
     pub compact_ui: bool,
     /// Automatically enable compact interface when the window is small.
@@ -1416,7 +1418,7 @@ impl Default for UiSettings {
             color_tabs_by_protocol: false,
             show_protocol_filters: false,
             show_smart_folders: false,
-            compact_ui: cfg!(target_os = "macos"),
+            compact_ui: false,
             compact_auto: false,
             sidebar_row_margin: default_sidebar_row_margin(),
             sidebar_font_size: SidebarFontSize::default(),

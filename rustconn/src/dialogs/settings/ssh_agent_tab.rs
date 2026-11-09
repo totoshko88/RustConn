@@ -229,73 +229,77 @@ pub fn load_ssh_agent_settings(
     });
 
     // Poll the channel from the main thread; GTK widgets stay here.
-    glib::idle_add_local(move || match rx.try_recv() {
-        Ok(status) => {
-            if let Some(ref socket_path) = socket_path_clone {
-                socket_label.set_text(socket_path);
-            } else {
-                socket_label.set_text(&i18n("Not available"));
-            }
-
-            // Clear loading row
-            while let Some(child) = keys_list.first_child() {
-                keys_list.remove(&child);
-            }
-
-            if let Ok(agent_status) = status {
-                let status_text = if agent_status.running {
-                    i18n("Running")
+    // 50 ms timeout instead of `idle_add_local`: an idle source never sleeps, so
+    // it would spin the main loop at full speed until the agent answers.
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+        match rx.try_recv() {
+            Ok(status) => {
+                if let Some(ref socket_path) = socket_path_clone {
+                    socket_label.set_text(socket_path);
                 } else {
-                    i18n("Not running")
-                };
-                status_label.set_text(&status_text);
-                status_label.remove_css_class("error");
-                status_label.remove_css_class("dim-label");
+                    socket_label.set_text(&i18n("Not available"));
+                }
 
-                if agent_status.running {
-                    status_label.add_css_class("success");
+                // Clear loading row
+                while let Some(child) = keys_list.first_child() {
+                    keys_list.remove(&child);
+                }
 
-                    if agent_status.keys.is_empty() {
+                if let Ok(agent_status) = status {
+                    let status_text = if agent_status.running {
+                        i18n("Running")
+                    } else {
+                        i18n("Not running")
+                    };
+                    status_label.set_text(&status_text);
+                    status_label.remove_css_class("error");
+                    status_label.remove_css_class("dim-label");
+
+                    if agent_status.running {
+                        status_label.add_css_class("success");
+
+                        if agent_status.keys.is_empty() {
+                            let empty_row = adw::ActionRow::builder()
+                                .title(i18n("No keys loaded"))
+                                .subtitle(i18n("Add keys using ssh-add or the button above"))
+                                .build();
+                            keys_list.append(&empty_row);
+                        } else {
+                            for key in &agent_status.keys {
+                                let key_row = create_loaded_key_row(
+                                    key,
+                                    &manager,
+                                    &keys_list,
+                                    &status_label,
+                                    &socket_label,
+                                );
+                                keys_list.append(&key_row);
+                            }
+                        }
+                    } else {
+                        status_label.add_css_class("dim-label");
                         let empty_row = adw::ActionRow::builder()
-                            .title(i18n("No keys loaded"))
-                            .subtitle(i18n("Add keys using ssh-add or the button above"))
+                            .title(i18n("Agent not running"))
+                            .subtitle(i18n("Start the agent to manage keys"))
                             .build();
                         keys_list.append(&empty_row);
-                    } else {
-                        for key in &agent_status.keys {
-                            let key_row = create_loaded_key_row(
-                                key,
-                                &manager,
-                                &keys_list,
-                                &status_label,
-                                &socket_label,
-                            );
-                            keys_list.append(&key_row);
-                        }
                     }
                 } else {
-                    status_label.add_css_class("dim-label");
+                    status_label.set_text(&i18n("Error"));
+                    status_label.remove_css_class("dim-label");
+                    status_label.add_css_class("error");
+
                     let empty_row = adw::ActionRow::builder()
                         .title(i18n("Agent not running"))
                         .subtitle(i18n("Start the agent to manage keys"))
                         .build();
                     keys_list.append(&empty_row);
                 }
-            } else {
-                status_label.set_text(&i18n("Error"));
-                status_label.remove_css_class("dim-label");
-                status_label.add_css_class("error");
-
-                let empty_row = adw::ActionRow::builder()
-                    .title(i18n("Agent not running"))
-                    .subtitle(i18n("Start the agent to manage keys"))
-                    .build();
-                keys_list.append(&empty_row);
+                glib::ControlFlow::Break
             }
-            glib::ControlFlow::Break
+            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
         }
-        Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-        Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
     });
 }
 

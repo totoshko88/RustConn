@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.24.9"
+version = "0.24.10"
 edition = "2024"
 authors = ["Anton Isaiev <totoshko88@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -273,6 +273,19 @@ opt-level = 3
 # The actual hot spot: argon2's KDF rounds in the credential round-trip tests.
 [profile.test.package.argon2]
 opt-level = 3
+
+# Optimise third-party dependencies in plain `cargo run`/`cargo build`.
+#
+# GTK/libadwaita bindings, VTE, IronRDP, the image and crypto crates all sit on
+# the paths a user feels — tab overview thumbnails, scrolling, redraws, RDP/VNC
+# frames — and at opt-level 0 they are many times slower than in a release
+# build, which made a debug run a poor stand-in for how the app behaves. The
+# workspace crates themselves stay at opt-level 0, so incremental rebuilds of
+# our own code are as fast as before; only the one-time dependency build is
+# longer. The more specific `[profile.test.package.*]` entries above still win
+# for the test-only crates.
+[profile.dev.package."*"]
+opt-level = 2
 
 # There is deliberately no `[profile.release]` with `strip`.
 #

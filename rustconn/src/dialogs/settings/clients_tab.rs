@@ -173,29 +173,33 @@ pub fn create_clients_page() -> adw::PreferencesPage {
     });
 
     // Poll the channel from the main thread; GTK widgets stay here.
-    glib::idle_add_local(move || match rx.try_recv() {
-        Ok((core_clients, zerotrust_clients, k8s_clients)) => {
-            if core_clients.len() >= 5 {
-                update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
-                update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
-                update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
-                update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
-                update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
-            }
-
-            for (i, client) in zerotrust_clients.iter().enumerate() {
-                if i < zerotrust_rows_clone.len() {
-                    update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+    // 50 ms timeout instead of `idle_add_local`: an idle source never sleeps, so
+    // it would spin the main loop at full speed until detection finishes.
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+        match rx.try_recv() {
+            Ok((core_clients, zerotrust_clients, k8s_clients)) => {
+                if core_clients.len() >= 5 {
+                    update_client_row(&core_group_clone, &ssh_row_clone, &core_clients[0]);
+                    update_client_row(&core_group_clone, &rdp_row_clone, &core_clients[1]);
+                    update_client_row(&core_group_clone, &vnc_row_clone, &core_clients[2]);
+                    update_client_row(&core_group_clone, &spice_row_clone, &core_clients[3]);
+                    update_client_row(&core_group_clone, &waypipe_row_clone, &core_clients[4]);
                 }
-            }
 
-            if let Some(kubectl_info) = k8s_clients.first() {
-                update_client_row(&k8s_group_clone, &kubectl_row_clone, kubectl_info);
+                for (i, client) in zerotrust_clients.iter().enumerate() {
+                    if i < zerotrust_rows_clone.len() {
+                        update_client_row(&zerotrust_group_clone, &zerotrust_rows_clone[i], client);
+                    }
+                }
+
+                if let Some(kubectl_info) = k8s_clients.first() {
+                    update_client_row(&k8s_group_clone, &kubectl_row_clone, kubectl_info);
+                }
+                glib::ControlFlow::Break
             }
-            glib::ControlFlow::Break
+            Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
         }
-        Err(std::sync::mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-        Err(std::sync::mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
     });
 
     page
@@ -463,10 +467,16 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     row.set_subtitle(&subtitle);
 
     // Create new row with proper styling (easier than modifying existing)
+    // The subtitle is a full install path (`/opt/homebrew/Cellar/…`) once
+    // detection lands, a few seconds after the dialog opens. Left unlimited it
+    // widens the whole preferences dialog past its content width and clips every
+    // page, so keep it to one ellipsised line and put the full text in a tooltip.
     let new_row = adw::ActionRow::builder()
         .title(i18n(&client.title))
         .subtitle(&subtitle)
+        .subtitle_lines(1)
         .build();
+    new_row.set_tooltip_text(Some(&subtitle));
 
     // Status indicator. The glyph and its colour are the visual cue; the
     // accessible label and tooltip carry the same meaning as words, because a
@@ -498,11 +508,16 @@ fn update_client_row(group: &adw::PreferencesGroup, row: &adw::ActionRow, client
     // Version label
     if client.installed {
         if let Some(ref v) = client.version {
+            // Suffix labels never shrink, so an unbounded version string
+            // (some CLIs print a whole banner) would force the dialog wider.
             let version_label = Label::builder()
                 .label(v)
                 .valign(gtk4::Align::Center)
                 .css_classes(["dim-label"])
+                .ellipsize(gtk4::pango::EllipsizeMode::End)
+                .max_width_chars(24)
                 .build();
+            version_label.set_tooltip_text(Some(v));
             new_row.add_suffix(&version_label);
         }
     } else if client.has_embedded {
@@ -739,11 +754,20 @@ fn detect_zerotrust_clients() -> Vec<ClientInfo> {
             .iter()
             .map(|(title, command, version_arg, install_hint)| {
                 s.spawn(move || {
-                    let command_path = find_command(command);
-                    let installed = command_path.is_some();
+                    let mut command_path = find_command(command);
                     let version = command_path
                         .as_ref()
                         .and_then(|p| get_version_with_env(p, version_arg, command));
+                    // No version may just mean unparseable output; only then pay
+                    // for a second run to tell that apart from a dead wrapper.
+                    if version.is_none()
+                        && command_path
+                            .as_ref()
+                            .is_some_and(|p| !is_runnable(p, version_arg))
+                    {
+                        command_path = None;
+                    }
+                    let installed = command_path.is_some();
                     let path_str = command_path.as_ref().map(|p| p.display().to_string());
 
                     ClientInfo {
@@ -979,6 +1003,14 @@ fn get_version_with_env(
 
     let output = child.wait_with_output().ok()?;
 
+    // 126/127 is the shell saying the command could not be run at all — a
+    // wrapper script whose target is gone (`/usr/local/bin/tailscale` left
+    // behind after Tailscale.app was removed). Its stderr is an error message,
+    // not a version string, so it must not be shown as one.
+    if is_unrunnable_exit(output.status.code()) {
+        return None;
+    }
+
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
@@ -1000,6 +1032,42 @@ fn get_version_with_env(
 
     parse_version_output(cmd_name, &version_str)
         .or_else(|| read_installed_version_file(command_name))
+}
+
+/// Whether an exit code is the shell's "cannot execute" (126) or "not found" (127).
+const fn is_unrunnable_exit(code: Option<i32>) -> bool {
+    matches!(code, Some(126 | 127))
+}
+
+/// Runs a found CLI once to check it can actually execute.
+///
+/// A path on disk is not proof of a working install: a wrapper script can
+/// outlive the program it launches. Used to mark such a client "Not found"
+/// instead of installed with an error message for a version.
+fn is_runnable(command_path: &std::path::Path, version_arg: &str) -> bool {
+    let Ok(mut child) = std::process::Command::new(command_path)
+        .arg(version_arg)
+        .env("PATH", rustconn_core::cli_download::get_extended_path())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    else {
+        return false;
+    };
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return !is_unrunnable_exit(status.code()),
+            // Still running means it started; a slow CLI is not a broken one.
+            Ok(None) if start.elapsed() >= VERSION_CHECK_TIMEOUT => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return true;
+            }
+            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(50)),
+            Err(_) => return false,
+        }
+    }
 }
 
 /// Reads the `.version` file written during CLI installation as a fallback
@@ -1190,5 +1258,39 @@ fn parse_version_output(command: &str, output: &str) -> Option<String> {
             .lines()
             .find(|line| !line.trim().is_empty())
             .map(|s| s.trim().to_string()),
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    /// Writes an executable shell script into a fresh temp dir.
+    fn script(body: &str) -> (tempfile::TempDir, std::path::PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tool");
+        std::fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        (dir, path)
+    }
+
+    /// A wrapper whose target is gone (the Tailscale.app case) has no version
+    /// and is not runnable, so it is reported as not found.
+    #[test]
+    fn a_wrapper_whose_target_is_gone_is_not_installed() {
+        let (_dir, path) = script("/nonexistent/Tailscale \"$@\"");
+        assert_eq!(get_version_with_env(&path, "--version", "tailscale"), None);
+        assert!(!is_runnable(&path, "--version"));
+    }
+
+    #[test]
+    fn a_working_cli_reports_its_version() {
+        let (_dir, path) = script("echo 1.90.0");
+        assert_eq!(
+            get_version_with_env(&path, "--version", "tailscale").as_deref(),
+            Some("1.90.0")
+        );
+        assert!(is_runnable(&path, "--version"));
     }
 }

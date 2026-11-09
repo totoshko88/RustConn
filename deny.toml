@@ -15,14 +15,17 @@ targets = [
 unmaintained = "workspace"
 yanked = "warn"
 # Transitive dependency advisories with no available fix:
-# - RUSTSEC-2023-0071: rsa 0.10.0-rc.18 Marvin Attack (medium 5.9) — no patched
-#   version published. Reached only via ironrdp 0.17.0 -> ironrdp-connector
-#   0.10.0 -> {picky 7.0.0-rc.25, sspi 0.21.3} -> rsa. Not exploitable in our
+# - RUSTSEC-2023-0071: rsa 0.10.0-rc.18 Marvin Attack (medium 5.9). The fix
+#   exists — rsa 0.10.0 (2026-11-08, constant-time crypto-bigint) is listed as
+#   patched — but we cannot take it: ironrdp-connector 0.12.0 (latest) pins
+#   picky =7.0.0-rc.26, and picky, sspi 0.23 and winscard 0.4 all pin
+#   rsa =0.10.0-rc.18 (picky rc.29 still does). Not exploitable in our
 #   local-client context: no RSA decryption oracle is exposed.
-#   Upgrade path: sspi/picky drop the rsa dependency or rsa ships 0.10 stable.
+#   Upgrade path: picky/sspi/winscard move to rsa 0.10.0 and ironrdp-connector
+#   follows; then drop this ignore.
 #   Mirrored in .cargo/audit.toml so cargo-audit and cargo-deny agree.
-# Last reviewed: 2026-09-29
-# Next review: when ironrdp, sspi, or picky releases a new major version.
+# Last reviewed: 2026-11-09
+# Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to
 # be ignored here. It was removed from this list when the advisory was actually
