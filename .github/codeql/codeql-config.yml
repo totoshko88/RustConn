@@ -2,9 +2,9 @@
 #
 # This replaces the repository's previous CodeQL *default setup* so the scan is
 # reviewable in-tree and its scope can be tuned here instead of in the GitHub UI.
-# The language set (actions, python, ruby, rust) and the `default` query suite
-# match what default setup ran, so the migration does not silently drop or widen
-# coverage.
+# The language set is actions and rust: the Python and Ruby files all live under
+# the paths-ignore trees below, so those jobs found no code to analyse. The
+# `default` query suite keeps the findings set default setup ran.
 #
 # `paths-ignore` keeps whole non-product trees out of the scan. CodeQL matches
 # these at the file level, so only directories that contain *no shipped product
