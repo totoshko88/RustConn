@@ -14,10 +14,12 @@ use std::time::Duration;
 use adw::prelude::*;
 use gtk4::glib;
 use libadwaita as adw;
+use rustconn_core::models::PasswordSource;
 use rustconn_core::remote_script::{
     self, DEFAULT_PARALLEL, DEFAULT_TIMEOUT, MAX_PARALLEL, RunOptions, ScriptEvent,
     ScriptEventSink, ScriptFileError, ScriptHost, ScriptOutcome,
 };
+use secrecy::SecretString;
 use uuid::Uuid;
 
 use super::protocols::{resolve_globals_with_ask, start_gateway_probe_quiet, substitute_variables};
@@ -50,6 +52,8 @@ struct RunView {
     output: RefCell<Vec<String>>,
     selected: Cell<usize>,
     cancel: Arc<AtomicBool>,
+    /// The answer for hosts set to ask at connect, until the run has started.
+    typed_password: RefCell<Option<SecretString>>,
     succeeded: Cell<usize>,
     failed: Cell<usize>,
     finished: Cell<usize>,
@@ -110,6 +114,10 @@ pub(super) fn open_dialog(
     }
     let host_ids: Vec<Uuid> = targets.hosts.iter().map(|c| c.id).collect();
     let host_names: Vec<String> = targets.hosts.iter().map(|c| c.name.clone()).collect();
+    let asks_at_connect = targets
+        .hosts
+        .iter()
+        .any(|c| c.password_source == PasswordSource::Prompt);
 
     let hosts_row = adw::ActionRow::builder()
         .title(i18n("Hosts"))
@@ -149,6 +157,13 @@ pub(super) fn open_dialog(
     group.add(&path_row);
     group.add(&parallel_row);
     group.add(&timeout_row);
+    // ponytail: one answer for every host that asks, which suits a fleet sharing
+    // an account; make it one row per host if hosts differ in practice.
+    let password_row = adw::PasswordEntryRow::builder()
+        .title(i18n("Password for Hosts That Ask at Connect"))
+        .visible(asks_at_connect)
+        .build();
+    group.add(&password_row);
     let error_label = gtk4::Label::builder()
         .wrap(true)
         .xalign(0.0)
@@ -228,6 +243,7 @@ pub(super) fn open_dialog(
         output: RefCell::default(),
         selected: Cell::new(0),
         cancel: Arc::new(AtomicBool::new(false)),
+        typed_password: RefCell::default(),
         succeeded: Cell::new(0),
         failed: Cell::new(0),
         finished: Cell::new(0),
@@ -287,6 +303,9 @@ pub(super) fn open_dialog(
                 }
             };
             error_label.set_visible(false);
+            let typed = password_row.text();
+            *view.typed_password.borrow_mut() =
+                (!typed.is_empty()).then(|| SecretString::from(typed.to_string()));
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
@@ -500,7 +519,12 @@ fn build_hosts(
         let password = state
             .try_borrow_mut()
             .ok()
-            .and_then(|mut s| s.ensure_connection_password(id));
+            .and_then(|mut s| s.ensure_connection_password(id))
+            .or_else(|| {
+                (connection.password_source == PasswordSource::Prompt)
+                    .then(|| view.typed_password.borrow().clone())
+                    .flatten()
+            });
         let groups = state.borrow().list_groups_owned();
         let launch_info =
             build_key_setup_launch(&connection, &state, &groups, password, Some(declares_proxy));
@@ -522,6 +546,7 @@ fn start_workers(
     script: Vec<u8>,
     options: RunOptions,
 ) {
+    view.typed_password.borrow_mut().take();
     if hosts.is_empty() {
         finish(view);
         return;

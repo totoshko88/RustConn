@@ -1,7 +1,8 @@
 //! Runs a local bash script on many SSH hosts.
 //!
 //! The script travels over stdin and nothing is written to the server. It is
-//! read whole before any of it runs, see [`REMOTE_COMMAND`]. Each host goes
+//! read whole before any of it runs, and stdin stays open for the whole run so
+//! that losing the connection stops the script, see [`REMOTE_COMMAND`]. Each host goes
 //! through the same control channel as SSH key setup
 //! ([`crate::ssh_key_setup::remote_command_args`]): strict host key checking, no
 //! forwarding, no tty, and passwords through the askpass helper only.
@@ -21,14 +22,28 @@ use uuid::Uuid;
 use crate::models::{Connection, ConnectionGroup, ProtocolType};
 use crate::ssh_key_setup::{self, DeployCredentials, SecretFiles, SshTarget};
 
-/// The remote command that receives the script on stdin.
+/// The remote command that receives the script on stdin, ended by a NUL byte.
 ///
 /// Reading everything first means commands inside the script see an empty stdin
 /// instead of eating the rest of the script, as they do under `bash -s`. The
 /// `bash -n` pass is what makes a syntax error stop the script before its first
 /// line runs; `eval` alone would execute the lines ahead of the error. `eval` is
 /// a builtin, so the script size is not limited by `ARG_MAX`.
-pub const REMOTE_COMMAND: &str = r#"bash -c 's=$(cat); bash -n <<<"$s" && eval "$s"'"#;
+///
+/// There is no tty, so sshd sends no hangup when the connection ends and the
+/// script would carry on. The sender therefore holds stdin open until the run is
+/// over: the script runs as its own process group (`set -m`) and a watcher waiting
+/// on stdin signals that group when it reaches end of file, TERM first and KILL
+/// two seconds later. Once past the `read` the watcher ignores TERM, or the
+/// exiting shell would cancel the KILL still owed to a script that survived TERM.
+/// A status of 255 also prints [`SCRIPT_EXIT_255_MARKER`], see there.
+pub const REMOTE_COMMAND: &str = r#"bash -c 'exec 3<&0; IFS= read -r -d "" s || exit 125; bash -n <<<"$s" || exit 2; set -m; eval "$s" </dev/null 3<&- & p=$!; set +m; { read -r _ <&3; trap "" TERM; kill -TERM -- -$p; sleep 2; kill -KILL -- -$p; } >/dev/null 2>&1 & w=$!; wait $p; c=$?; kill $w 2>/dev/null; [ $c -ne 255 ] || printf "\036rustconn-script-exit-255\n" >&2; exit $c'"#;
+
+/// The stderr line [`REMOTE_COMMAND`] prints when the script exits with 255.
+///
+/// `ssh` uses 255 for its own failures, so the status alone cannot tell a script
+/// that chose it from a connection that failed.
+const SCRIPT_EXIT_255_MARKER: &[u8] = b"\x1erustconn-script-exit-255";
 
 /// Largest script accepted. A script is text; a bigger file is a wrong pick.
 pub const MAX_SCRIPT_BYTES: u64 = 1024 * 1024;
@@ -189,8 +204,8 @@ pub enum ScriptOutcome {
         /// The exit status.
         code: Option<i32>,
     },
-    /// `ssh` exited with 255: it could not connect or log in, the connection
-    /// dropped, or the script itself exited with 255.
+    /// `ssh` exited with 255 on its own account: it could not connect or log in,
+    /// or the connection dropped.
     ConnectionFailed,
     /// The host exceeded its time limit.
     TimedOut,
@@ -355,17 +370,23 @@ fn run_host(
         Err(error) => return not_started(index, error, on_event),
     };
 
+    let (_release_stdin, hold_stdin) = mpsc::channel::<()>();
     if let Some(mut pipe) = child.stdin.take() {
         let script = Arc::clone(script);
         // A thread of its own: `ssh` may fill its output pipes before it has
         // read the whole script. A write error means `ssh` exited, which the
-        // exit status reports.
+        // exit status reports. The pipe stays open until this function returns,
+        // because its end of file is what stops the script (see REMOTE_COMMAND).
         std::thread::spawn(move || {
-            let _ = pipe.write_all(&script);
+            if pipe.write_all(&script).is_ok() && pipe.write_all(&[0]).is_ok() {
+                let _ = pipe.flush();
+                let _ = hold_stdin.recv();
+            }
         });
     }
 
     let budget = Arc::new(AtomicUsize::new(0));
+    let exited_255 = Arc::new(AtomicBool::new(false));
     let (done_tx, done_rx) = mpsc::channel();
     let mut pumps = 0;
     if let Some(pipe) = child.stdout.take() {
@@ -375,6 +396,7 @@ fn run_host(
             OutputStream::Stdout,
             index,
             &budget,
+            &exited_255,
             on_event,
             &done_tx,
         );
@@ -386,6 +408,7 @@ fn run_host(
             OutputStream::Stderr,
             index,
             &budget,
+            &exited_255,
             on_event,
             &done_tx,
         );
@@ -400,6 +423,9 @@ fn run_host(
         if done_rx.recv_timeout(left).is_err() {
             break;
         }
+    }
+    if outcome == ScriptOutcome::ConnectionFailed && exited_255.load(Ordering::Relaxed) {
+        return ScriptOutcome::ScriptFailed { code: Some(255) };
     }
     outcome
 }
@@ -445,10 +471,12 @@ fn spawn_pump(
     stream: OutputStream,
     host: usize,
     budget: &Arc<AtomicUsize>,
+    exited_255: &Arc<AtomicBool>,
     on_event: &ScriptEventSink,
     done: &mpsc::Sender<()>,
 ) {
     let budget = Arc::clone(budget);
+    let exited_255 = Arc::clone(exited_255);
     let on_event = Arc::clone(on_event);
     let done = done.clone();
     std::thread::spawn(move || {
@@ -464,6 +492,12 @@ fn spawn_pump(
                 Ok(0) | Err(_) => break,
                 Ok(count) => count,
             };
+            if stream == OutputStream::Stderr
+                && line.strip_suffix(b"\n").unwrap_or(&line) == SCRIPT_EXIT_255_MARKER
+            {
+                exited_255.store(true, Ordering::Relaxed);
+                continue;
+            }
             let used = budget.fetch_add(count, Ordering::Relaxed) + count;
             if used <= MAX_OUTPUT_BYTES_PER_HOST {
                 on_event(ScriptEvent::Output {
@@ -508,17 +542,20 @@ mod tests {
         let (_, path) = STUB.get_or_init(|| {
             let dir = tempfile::tempdir().unwrap();
             let path = dir.path().join("ssh");
-            let body = r#"#!/bin/sh
+            let body = r#"#!/bin/bash
 for last in "$@"; do dest="$prev"; prev="$last"; done
 case "$dest" in
-  echo-script) cat ;;
-  both) cat >/dev/null; echo out; echo err >&2 ;;
-  fail) cat >/dev/null; exit 3 ;;
   down) echo "ssh: connect failed" >&2; exit 255 ;;
-  slow) cat >/dev/null; sleep 30 ;;
-  escape) cat >/dev/null; printf 'a\033]0;x\007b\n' ;;
-  flood) cat >/dev/null; yes aaaaaaaaaaaaaaaa | head -c 5000000 ;;
-  *) cat >/dev/null ;;
+esac
+IFS= read -r -d "" script
+case "$dest" in
+  echo-script) printf %s "$script" ;;
+  both) echo out; echo err >&2 ;;
+  fail) exit 3 ;;
+  script255) printf '\036rustconn-script-exit-255\n' >&2; exit 255 ;;
+  slow) sleep 30 ;;
+  escape) printf 'a\033]0;x\007b\n' ;;
+  flood) yes aaaaaaaaaaaaaaaa | head -c 5000000 ;;
 esac
 "#;
             std::fs::write(&path, body).unwrap();
@@ -620,6 +657,16 @@ esac
     }
 
     #[test]
+    fn a_script_exiting_with_255_is_not_a_connection_failure() {
+        let events = run(&[host("script255")], &RunOptions::default(), "x");
+        assert_eq!(
+            outcome(&events, 0),
+            ScriptOutcome::ScriptFailed { code: Some(255) }
+        );
+        assert!(lines(&events, 0).is_empty(), "the marker stays hidden");
+    }
+
+    #[test]
     fn a_host_over_its_time_limit_is_stopped() {
         let options = RunOptions {
             timeout: Duration::from_millis(100),
@@ -668,8 +715,9 @@ esac
         assert_eq!(outcome(&events, 0), ScriptOutcome::Succeeded);
     }
 
-    /// Runs [`REMOTE_COMMAND`] the way a remote login shell would.
-    fn remote(script: &str) -> Option<std::process::Output> {
+    /// Starts [`REMOTE_COMMAND`] the way a remote login shell would, with the
+    /// script sent and stdin still open, as during a run.
+    fn start_remote(script: &str) -> Option<(Child, std::process::ChildStdin)> {
         crate::which::find_in_path("bash")?;
         let mut child = Command::new("sh")
             .arg("-c")
@@ -679,8 +727,17 @@ esac
             .stderr(Stdio::piped())
             .spawn()
             .ok()?;
-        child.stdin.take()?.write_all(script.as_bytes()).ok()?;
-        child.wait_with_output().ok()
+        let mut stdin = child.stdin.take()?;
+        stdin.write_all(script.as_bytes()).ok()?;
+        stdin.write_all(&[0]).ok()?;
+        Some((child, stdin))
+    }
+
+    fn remote(script: &str) -> Option<std::process::Output> {
+        let (child, stdin) = start_remote(script)?;
+        let output = child.wait_with_output().ok();
+        drop(stdin);
+        output
     }
 
     #[test]
@@ -707,6 +764,59 @@ esac
         };
         assert_eq!(output.stdout, b"");
         assert_ne!(output.status.code(), Some(0));
+    }
+
+    #[test]
+    fn the_remote_command_marks_a_status_of_255() {
+        let Some(output) = remote("exit 255\n") else {
+            return;
+        };
+        assert_eq!(output.status.code(), Some(255));
+        assert_eq!(
+            output.stderr.strip_suffix(b"\n"),
+            Some(SCRIPT_EXIT_255_MARKER)
+        );
+    }
+
+    #[test]
+    fn a_script_of_the_largest_size_runs() {
+        let filler = "#".repeat(usize::try_from(MAX_SCRIPT_BYTES).unwrap() - 32);
+        let Some(output) = remote(&format!("{filler}\necho big\n")) else {
+            return;
+        };
+        assert_eq!(output.stdout, b"big\n");
+    }
+
+    /// Closing stdin is what a dropped connection does to the remote command.
+    fn assert_stopped_on_end_of_input(preamble: &str) {
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("still-ran");
+        let script = format!(
+            "{preamble}\necho started\nsleep 3\ntouch '{}'\n",
+            marker.display()
+        );
+        let Some((mut child, stdin)) = start_remote(&script) else {
+            return;
+        };
+        let mut started = String::new();
+        BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut started)
+            .unwrap();
+        assert_eq!(started, "started\n");
+        drop(stdin);
+        let _ = child.wait();
+        std::thread::sleep(Duration::from_secs(4));
+        assert!(!marker.exists(), "the script kept running");
+    }
+
+    #[test]
+    fn losing_the_connection_stops_the_script() {
+        assert_stopped_on_end_of_input("");
+    }
+
+    #[test]
+    fn a_script_ignoring_term_is_still_stopped() {
+        assert_stopped_on_end_of_input("trap '' TERM");
     }
 
     #[test]
