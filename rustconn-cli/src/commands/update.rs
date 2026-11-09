@@ -248,8 +248,12 @@ pub(super) struct UpdateParams<'a> {
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
     pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
     // WinRM
     pub winrm_ssl: Option<bool>,
+    pub winrm_accept_invalid_certs: Option<bool>,
     // Output filter (postpend command) — terminal protocols
     pub postpend_command: Option<&'a str>,
     pub postpend_arg: &'a [String],
@@ -858,14 +862,45 @@ pub(super) fn cmd_update(
         };
     }
 
-    if let Some(use_ssl) = params.winrm_ssl {
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        let value = |text: &str| (!text.trim().is_empty()).then(|| text.trim().to_string());
+        if let Some(user) = params.socks_proxy_user {
+            cfg.socks_proxy_username = value(user);
+        }
+        if let Some(variable) = params.socks_proxy_password_var {
+            cfg.socks_proxy_password_variable = value(variable);
+        }
+        if let Some(browser) = params.browser {
+            cfg.browser = value(browser);
+        }
+    }
+
+    if params.winrm_ssl.is_some() || params.winrm_accept_invalid_certs.is_some() {
         let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
         else {
             return Err(CliError::Config(
-                "--winrm-ssl is only valid for WinRM connections".into(),
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
             ));
         };
-        cfg.use_ssl = use_ssl;
+        if let Some(use_ssl) = params.winrm_ssl {
+            cfg.use_ssl = use_ssl;
+        }
+        if let Some(accept) = params.winrm_accept_invalid_certs {
+            cfg.accept_invalid_certs = accept;
+        }
     }
 
     if let Some(icon) = params.icon {

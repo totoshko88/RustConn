@@ -323,6 +323,8 @@ pub struct ConnectionDialog {
     telnet_backspace_dropdown: DropDown,
     telnet_delete_dropdown: DropDown,
     winrm_ssl_switch: adw::SwitchRow,
+    winrm_accept_certs_switch: adw::SwitchRow,
+    winrm_jump_host_dropdown: DropDown,
     winrm_custom_args_entry: Entry,
     // MOSH fields (embedded in SSH tab, visible only when MOSH protocol selected)
     mosh_port_range_entry: Entry,
@@ -354,6 +356,8 @@ pub struct ConnectionDialog {
     web_user_agent_row: adw::EntryRow,
     web_tunnel_dropdown: DropDown,
     web_socks_proxy_row: adw::EntryRow,
+    web_socks_user_row: adw::EntryRow,
+    web_socks_password_var_row: adw::EntryRow,
     web_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     web_floating_toolbar_switch: adw::SwitchRow,
     // Variables fields

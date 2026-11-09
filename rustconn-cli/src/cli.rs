@@ -584,9 +584,25 @@ pub enum Commands {
         #[arg(long, value_name = "HOST:PORT", conflicts_with = "tunnel_via")]
         socks_proxy: Option<String>,
 
+        /// Username for a SOCKS5 proxy that requires a login
+        #[arg(long, value_name = "NAME", requires = "socks_proxy")]
+        socks_proxy_user: Option<String>,
+
+        /// Secret global variable holding that login's password
+        #[arg(long, value_name = "VARIABLE", requires = "socks_proxy_user")]
+        socks_proxy_password_var: Option<String>,
+
+        /// Browser command for a Web connection in custom mode
+        #[arg(long, value_name = "COMMAND")]
+        browser: Option<String>,
+
         /// Connect over HTTPS (WinRM connections, usually port 5986)
         #[arg(long)]
         winrm_ssl: bool,
+
+        /// Accept a self-signed HTTPS certificate when running scripts over WinRM
+        #[arg(long)]
+        winrm_accept_invalid_certs: bool,
     },
 
     /// Export connections to external format
@@ -1163,9 +1179,26 @@ pub enum Commands {
         #[arg(long, value_name = "HOST:PORT")]
         socks_proxy: Option<String>,
 
+        /// Username for a SOCKS5 proxy login; an empty value removes the login
+        #[arg(long, value_name = "NAME")]
+        socks_proxy_user: Option<String>,
+
+        /// Secret global variable holding the SOCKS5 proxy password
+        #[arg(long, value_name = "VARIABLE")]
+        socks_proxy_password_var: Option<String>,
+
+        /// Browser command for a Web connection in custom mode; an empty value
+        /// removes it
+        #[arg(long, value_name = "COMMAND")]
+        browser: Option<String>,
+
         /// Use HTTPS for a WinRM connection
         #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
         winrm_ssl: Option<bool>,
+
+        /// Accept a self-signed HTTPS certificate when running scripts over WinRM
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        winrm_accept_invalid_certs: Option<bool>,
 
         /// Output filter: pipe terminal output through this command
         /// (e.g. chromaterm, ccze). Pass an empty string to remove the filter.
@@ -1225,8 +1258,8 @@ pub enum Commands {
     #[command(subcommand, about = "Manage connection templates")]
     Template(TemplateCommands),
 
-    /// Run a local bash script on SSH connections
-    #[command(about = "Run a local bash script on SSH connections")]
+    /// Run a local script: bash on SSH connections, PowerShell (.ps1) on WinRM ones
+    #[command(about = "Run a local script on SSH or WinRM connections")]
     RunScript {
         /// Path to the local bash script
         script: std::path::PathBuf,

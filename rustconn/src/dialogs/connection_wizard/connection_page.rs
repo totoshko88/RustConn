@@ -597,7 +597,9 @@ impl ConnectionPage {
                 self.connection_group.set_visible(true);
                 self.username_row.set_visible(true);
                 self.domain_row.set_visible(true);
+                self.jump_host_row.set_visible(true);
                 self.port_row.set_value(5985.0);
+                self.populate_jump_hosts();
             }
             ProtocolType::Serial => {
                 self.connection_group.set_visible(true);

@@ -295,8 +295,13 @@ impl ConnectionDialog {
         protocol_stack.add_named(&telnet_box, Some("telnet"));
 
         // WinRM options
-        let (winrm_box, winrm_ssl_switch, winrm_custom_args_entry) =
-            crate::dialogs::connection::winrm::create_winrm_options();
+        let (
+            winrm_box,
+            winrm_ssl_switch,
+            winrm_accept_certs_switch,
+            winrm_jump_host_dropdown,
+            winrm_custom_args_entry,
+        ) = crate::dialogs::connection::winrm::create_winrm_options();
         protocol_stack.add_named(&winrm_box, Some("winrm"));
 
         // Serial options
@@ -338,6 +343,8 @@ impl ConnectionDialog {
         let web_floating_toolbar_switch = web_options.floating_toolbar_switch;
         let web_tunnel_dropdown = web_options.tunnel_dropdown;
         let web_socks_proxy_row = web_options.socks_proxy_row;
+        let web_socks_user_row = web_options.socks_user_row;
+        let web_socks_password_var_row = web_options.socks_password_var_row;
 
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
@@ -739,6 +746,8 @@ impl ConnectionDialog {
             &telnet_backspace_dropdown,
             &telnet_delete_dropdown,
             &winrm_ssl_switch,
+            &winrm_accept_certs_switch,
+            &winrm_jump_host_dropdown,
             &winrm_custom_args_entry,
             &serial_device_entry,
             &serial_baud_dropdown,
@@ -767,6 +776,8 @@ impl ConnectionDialog {
             &web_floating_toolbar_switch,
             &web_tunnel_dropdown,
             &web_socks_proxy_row,
+            &web_socks_user_row,
+            &web_socks_password_var_row,
             &web_connections_data,
             &variables_rows,
             &logging_tab_struct,
@@ -1017,6 +1028,8 @@ impl ConnectionDialog {
             telnet_backspace_dropdown,
             telnet_delete_dropdown,
             winrm_ssl_switch,
+            winrm_accept_certs_switch,
+            winrm_jump_host_dropdown,
             winrm_custom_args_entry,
             serial_device_entry,
             serial_baud_dropdown,
@@ -1042,6 +1055,8 @@ impl ConnectionDialog {
             web_floating_toolbar_switch,
             web_tunnel_dropdown,
             web_socks_proxy_row,
+            web_socks_user_row,
+            web_socks_password_var_row,
             web_connections_data,
             mosh_port_range_entry,
             mosh_predict_dropdown,

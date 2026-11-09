@@ -85,6 +85,7 @@ pub mod shell_escape;
 pub mod smart_folder;
 pub mod snap;
 pub mod snippet;
+pub mod socks_relay;
 pub mod split;
 pub mod ssh_agent;
 pub mod ssh_askpass;

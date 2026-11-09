@@ -2493,10 +2493,7 @@ fn launch_winrm(
     conn: &rustconn_core::Connection,
     global_variables: &[Variable],
 ) -> bool {
-    use rustconn_core::protocol::{
-        Protocol, WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmProtocol, format_command_message,
-        format_connection_message,
-    };
+    use rustconn_core::protocol::WINRM_CLIENT;
 
     if !rustconn_core::which::is_available(WINRM_CLIENT) {
         notebook.display_connect_banner(
@@ -2516,7 +2513,64 @@ fn launch_winrm(
         .username
         .as_ref()
         .map(|user| substitute_variables(user, global_variables));
-    let Some(command) = WinRmProtocol::new().build_command(&resolved) else {
+
+    let Some(params) = ssh_tunnel_params_via_jump(state, conn, resolved.host.clone(), conn.port)
+    else {
+        return spawn_winrm(state, notebook, session_id, connection_id, &resolved);
+    };
+
+    // Raised off the GTK thread so a dead jump host cannot freeze the window.
+    let state = state.clone();
+    let notebook = notebook.clone();
+    let sidebar = sidebar.clone();
+    spawn_blocking_with_callback(
+        move || {
+            let mut tunnel = rustconn_core::ssh_tunnel::create_tunnel(&params)?;
+            rustconn_core::ssh_tunnel::wait_for_tunnel_ready(
+                &mut tunnel,
+                50,
+                std::time::Duration::from_millis(200),
+            )?;
+            Ok::<_, rustconn_core::ssh_tunnel::SshTunnelError>(tunnel)
+        },
+        move |result| match result {
+            Ok(tunnel) => {
+                resolved.host = "127.0.0.1".to_string();
+                resolved.port = tunnel.local_port();
+                // The tunnel closes with the tab.
+                notebook.store_ssh_tunnel(session_id, tunnel);
+                spawn_winrm(&state, &notebook, session_id, connection_id, &resolved);
+            }
+            Err(error) => {
+                tracing::error!(%error, "SSH tunnel for WinRM failed");
+                notebook.display_connect_banner(
+                    session_id,
+                    &format!(
+                        "{}\r\n",
+                        i18n_f("Could not open the SSH tunnel: {}", &[&error.to_string()])
+                    ),
+                );
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+            }
+        },
+    );
+    true
+}
+
+/// Starts the client against `resolved`, which already has its final address.
+fn spawn_winrm(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    connection_id: Uuid,
+    resolved: &rustconn_core::Connection,
+) -> bool {
+    use rustconn_core::protocol::{
+        Protocol, WINRM_PASSWORD_PROMPT, WinRmProtocol, format_command_message,
+        format_connection_message,
+    };
+
+    let Some(command) = WinRmProtocol::new().build_command(resolved) else {
         tracing::warn!(%session_id, "Failed to build WinRM command");
         return false;
     };
@@ -2539,6 +2593,43 @@ fn launch_winrm(
         },
     );
     true
+}
+
+/// The SSH tunnel that reaches `host:port` through `conn`'s jump host, if any.
+pub(super) fn ssh_tunnel_params_via_jump(
+    state: &SharedAppState,
+    conn: &rustconn_core::Connection,
+    host: String,
+    port: u16,
+) -> Option<rustconn_core::ssh_tunnel::SshTunnelParams> {
+    let state_ref = state.try_borrow().ok()?;
+    let jump_id = resolve_first_hop_id(&state_ref, conn)?;
+    let jump_conn = state_ref.get_connection(jump_id)?;
+    let jump_host = jump_conn.username.as_ref().map_or_else(
+        || jump_conn.host.clone(),
+        |user| format!("{user}@{}", jump_conn.host),
+    );
+    let jump_port = jump_conn.port;
+    let groups = state_ref.list_groups_owned();
+    let identity_file = ssh_inheritance::resolve_ssh_key_path(jump_conn, &groups)
+        .and_then(|path| rustconn_core::resolve_key_path(&path))
+        .map(|path| path.to_string_lossy().to_string());
+    let extra_args = resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+    drop(state_ref);
+    let password = state
+        .try_borrow_mut()
+        .ok()
+        .and_then(|mut s| s.ensure_connection_password(jump_id));
+    Some(rustconn_core::ssh_tunnel::SshTunnelParams {
+        jump_host,
+        jump_port,
+        remote_host: host,
+        remote_port: port,
+        identity_file,
+        password,
+        extra_args,
+        launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
+    })
 }
 
 /// Internal function to start Telnet or WinRM connection (after port check).

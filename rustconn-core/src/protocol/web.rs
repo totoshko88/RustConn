@@ -38,34 +38,156 @@ impl WebProtocol {
 
     /// The command for a browser that must use `proxy`, or `None` when none can.
     ///
-    /// Only the Chromium family takes a proxy on its command line, and it needs a
-    /// profile of its own: a running instance would otherwise take over the launch
-    /// and load the page directly, which is the leak a proxy setting exists to
-    /// prevent. A system or Firefox launch therefore builds nothing at all.
+    /// A proxy with a login is left out: it needs a relay that stays alive beside
+    /// the browser, which a launcher that replaces its own process cannot offer.
     fn proxied_browser_command(
         connection: &Connection,
         config: &WebConfig,
         proxy: &str,
     ) -> Option<Vec<String>> {
-        let browser = config.browser.as_deref()?.trim();
-        let name = browser.to_lowercase();
-        let chromium = ["chrom", "brave", "vivaldi", "edge", "opera"]
-            .iter()
-            .any(|family| name.contains(family));
-        if config.browser_mode != crate::models::WebBrowserMode::Custom || !chromium {
+        use crate::models::WebBrowserMode;
+
+        if config.socks_proxy_username.is_some() {
             return None;
         }
-        let proxy = normalize_socks_proxy(proxy).ok()?;
-        let profile = std::env::temp_dir().join(format!("rustconn-socks-{}", connection.id));
-        Some(vec![
-            browser.to_string(),
-            format!("--user-data-dir={}", profile.display()),
+        let browser = match config.browser_mode {
+            WebBrowserMode::Custom => config.browser.as_deref()?.trim().to_string(),
+            WebBrowserMode::Embedded if cfg!(feature = "web-embedded") => return None,
+            _ => first_installed_proxy_browser()?,
+        };
+        let args = proxied_browser_args(&browser, proxy, &connection.host).ok()?;
+        let mut cmd = vec![browser];
+        cmd.extend(args);
+        Some(cmd)
+    }
+}
+
+/// Browsers that can be pointed at a proxy for one launch, most capable first.
+const PROXY_BROWSERS: &[&str] = &[
+    "chromium",
+    "chromium-browser",
+    "google-chrome",
+    "google-chrome-stable",
+    "brave-browser",
+    "vivaldi",
+    "vivaldi-stable",
+    "microsoft-edge",
+    "microsoft-edge-stable",
+    "firefox",
+];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum BrowserFamily {
+    Chromium,
+    Firefox,
+}
+
+fn browser_family(browser: &str) -> Option<BrowserFamily> {
+    let name = browser.to_lowercase();
+    if ["chrom", "brave", "vivaldi", "edge", "opera"]
+        .iter()
+        .any(|family| name.contains(family))
+    {
+        Some(BrowserFamily::Chromium)
+    } else if ["firefox", "librewolf"]
+        .iter()
+        .any(|family| name.contains(family))
+    {
+        Some(BrowserFamily::Firefox)
+    } else {
+        None
+    }
+}
+
+/// Whether `browser` can be pointed at a proxy for one launch.
+#[must_use]
+pub fn can_use_socks_proxy(browser: &str) -> bool {
+    browser_family(browser).is_some()
+}
+
+/// The first installed browser that can use a proxy for one launch.
+#[must_use]
+pub fn first_installed_proxy_browser() -> Option<String> {
+    PROXY_BROWSERS
+        .iter()
+        .find(|browser| crate::which::is_available(browser))
+        .map(|browser| (*browser).to_string())
+}
+
+/// A new owner-only profile directory, on tmpfs where the session has one.
+fn new_proxy_profile() -> std::io::Result<std::path::PathBuf> {
+    use std::os::unix::fs::DirBuilderExt;
+
+    let base = std::env::var_os("XDG_RUNTIME_DIR")
+        .filter(|dir| !dir.is_empty())
+        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+    let dir = base.join(format!("rustconn-proxy-browser-{}", uuid::Uuid::new_v4()));
+    std::fs::DirBuilder::new().mode(0o700).create(&dir)?;
+    Ok(dir)
+}
+
+/// Firefox reads a proxy only from its profile. `socks_remote_dns` keeps name
+/// lookups inside the proxy, and the last two preferences stop localhost and
+/// first-run pages from going around it.
+fn firefox_preferences(host: &str, port: &str) -> String {
+    format!(
+        "user_pref(\"network.proxy.type\", 1);\n\
+         user_pref(\"network.proxy.socks\", \"{host}\");\n\
+         user_pref(\"network.proxy.socks_port\", {port});\n\
+         user_pref(\"network.proxy.socks_version\", 5);\n\
+         user_pref(\"network.proxy.socks_remote_dns\", true);\n\
+         user_pref(\"network.proxy.no_proxies_on\", \"\");\n\
+         user_pref(\"network.proxy.allow_hijacking_localhost\", true);\n\
+         user_pref(\"browser.shell.checkDefaultBrowser\", false);\n\
+         user_pref(\"browser.aboutwelcome.enabled\", false);\n\
+         user_pref(\"datareporting.policy.dataSubmissionEnabled\", false);\n"
+    )
+}
+
+/// The arguments that make `browser` load `url` through `proxy` and nothing else.
+///
+/// Each launch gets a profile of its own: a running instance would otherwise take
+/// over and load the page directly, which is the leak a proxy setting exists to
+/// prevent.
+///
+/// # Errors
+///
+/// Returns [`ProtocolError::InvalidConfig`] when `browser` cannot use a proxy for
+/// one launch, `proxy` is not valid, or the profile cannot be written.
+pub fn proxied_browser_args(browser: &str, proxy: &str, url: &str) -> ProtocolResult<Vec<String>> {
+    let family = browser_family(browser).ok_or_else(|| {
+        ProtocolError::InvalidConfig(format!("{browser} cannot use a SOCKS proxy"))
+    })?;
+    let proxy = normalize_socks_proxy(proxy)?;
+    let unwritable =
+        |e: std::io::Error| ProtocolError::InvalidConfig(format!("browser profile: {e}"));
+    let profile = new_proxy_profile().map_err(unwritable)?;
+    let profile_arg = profile.to_string_lossy().into_owned();
+    Ok(match family {
+        BrowserFamily::Chromium => vec![
+            format!("--user-data-dir={profile_arg}"),
             "--no-first-run".to_string(),
             "--no-default-browser-check".to_string(),
             format!("--proxy-server={proxy}"),
-            connection.host.clone(),
-        ])
-    }
+            url.to_string(),
+        ],
+        BrowserFamily::Firefox => {
+            let (host, port) = proxy
+                .trim_start_matches("socks5://")
+                .rsplit_once(':')
+                .ok_or_else(|| ProtocolError::InvalidConfig("SOCKS proxy address".to_string()))?;
+            let host = host.trim_matches(['[', ']']);
+            std::fs::write(profile.join("user.js"), firefox_preferences(host, port))
+                .map_err(unwritable)?;
+            vec![
+                "--no-remote".to_string(),
+                "--new-instance".to_string(),
+                "--profile".to_string(),
+                profile_arg,
+                url.to_string(),
+            ]
+        }
+    })
 }
 
 /// Checks a SOCKS proxy address and returns it as `socks5://host:port`.
@@ -143,6 +265,14 @@ impl Protocol for WebProtocol {
                     "Choose either an SSH tunnel or a SOCKS proxy, not both".to_string(),
                 ));
             }
+        }
+        if web_config.socks_proxy_username.is_some()
+            && (web_config.socks_proxy.is_none()
+                || web_config.socks_proxy_password_variable.is_none())
+        {
+            return Err(ProtocolError::InvalidConfig(
+                "A SOCKS proxy login needs a proxy and a password variable".to_string(),
+            ));
         }
 
         // Validate URL is not empty
@@ -332,18 +462,55 @@ mod tests {
     }
 
     #[test]
+    fn firefox_gets_the_proxy_through_a_profile_of_its_own() {
+        let conn = proxied(WebBrowserMode::Custom, Some("firefox"));
+        let cmd = WebProtocol::new().build_command(&conn).unwrap();
+        assert!(cmd.iter().any(|a| a == "--no-remote"));
+        let at = cmd.iter().position(|a| a == "--profile").unwrap();
+        let profile = std::path::Path::new(&cmd[at + 1]);
+        let prefs = std::fs::read_to_string(profile.join("user.js")).unwrap();
+        assert!(
+            prefs.contains(r#""network.proxy.socks", "proxy""#),
+            "{prefs}"
+        );
+        assert!(
+            prefs.contains(r#""network.proxy.socks_port", 1080"#),
+            "{prefs}"
+        );
+        assert!(
+            prefs.contains(r#""network.proxy.socks_remote_dns", true"#),
+            "{prefs}"
+        );
+        std::fs::remove_dir_all(profile).unwrap();
+    }
+
+    #[test]
     fn a_browser_that_cannot_use_the_proxy_is_not_launched() {
-        let handler = WebProtocol::new();
-        assert!(
-            handler
-                .build_command(&proxied(WebBrowserMode::System, None))
-                .is_none()
-        );
-        assert!(
-            handler
-                .build_command(&proxied(WebBrowserMode::Custom, Some("firefox")))
-                .is_none()
-        );
+        let conn = proxied(WebBrowserMode::Custom, Some("lynx"));
+        assert!(WebProtocol::new().build_command(&conn).is_none());
+        assert!(!can_use_socks_proxy("lynx"));
+    }
+
+    #[test]
+    fn a_proxy_with_a_login_is_not_launched_without_a_relay() {
+        let mut conn = proxied(WebBrowserMode::Custom, Some("google-chrome"));
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.socks_proxy_username = Some("alice".to_string());
+        }
+        assert!(WebProtocol::new().build_command(&conn).is_none());
+    }
+
+    #[test]
+    fn a_login_needs_a_password_variable() {
+        let mut conn = proxied(WebBrowserMode::Embedded, None);
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.socks_proxy_username = Some("alice".to_string());
+        }
+        assert!(WebProtocol::new().validate_connection(&conn).is_err());
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.socks_proxy_password_variable = Some("proxy_pw".to_string());
+        }
+        assert!(WebProtocol::new().validate_connection(&conn).is_ok());
     }
 
     #[test]

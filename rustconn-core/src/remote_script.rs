@@ -1,4 +1,4 @@
-//! Runs a local bash script on many SSH hosts.
+//! Runs a local script on many hosts: bash over SSH, PowerShell over WinRM.
 //!
 //! The script travels over stdin and nothing is written to the server. It is
 //! read whole before any of it runs, and stdin stays open for the whole run so
@@ -9,7 +9,7 @@
 
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -19,8 +19,12 @@ use std::time::{Duration, Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolType};
+use secrecy::{ExposeSecret, SecretString};
+use zeroize::Zeroizing;
+
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
 use crate::ssh_key_setup::{self, DeployCredentials, SecretFiles, SshTarget};
+use crate::ssh_tunnel::{self, SshTunnel, SshTunnelParams};
 
 /// The remote command that receives the script on stdin, ended by a NUL byte.
 ///
@@ -44,6 +48,121 @@ pub const REMOTE_COMMAND: &str = r#"bash -c 'exec 3<&0; IFS= read -r -d "" s || 
 /// `ssh` uses 255 for its own failures, so the status alone cannot tell a script
 /// that chose it from a connection that failed.
 const SCRIPT_EXIT_255_MARKER: &[u8] = b"\x1erustconn-script-exit-255";
+
+/// Runs a PowerShell script over WinRM with the `pywinrm` library.
+///
+/// `evil-winrm` has no way to run one script and report its exit status, so
+/// script runs need a client that does. The first stdin line is a JSON header
+/// holding the password; then comes the script and a NUL. As with SSH, stdin stays
+/// open for the whole run: at end of file the helper closes the remote shell,
+/// which ends the script on the host.
+///
+/// The script is sent base64-encoded because a WinRM console reads stdin in the
+/// OEM code page, and in chunks because a WinRM message is limited in size.
+/// Every stream is merged and printed by the bootstrap, because under
+/// `-EncodedCommand` PowerShell otherwise writes them to stderr as CLIXML, whatever
+/// `-OutputFormat` says. It has to be a script block: `Invoke-Expression` loses the
+/// error stream when redirected. `Out-String` renders objects before the final
+/// `exit`, which would discard a table still waiting in the default formatter. A
+/// script fails if its last output was an error, as `$?` would report.
+///
+/// ponytail: NTLM only; add Kerberos through `transport` if domains need it.
+/// ponytail: a table still being formatted when the script calls `exit N` is lost,
+/// because `exit` ends the process; `| Out-String` in the script avoids it.
+const WINRM_HELPER: &str = r#"
+import base64, json, os, sys, threading
+def fail(message):
+    sys.stderr.write(message + "\n")
+    sys.stderr.flush()
+    sys.exit(255)
+try:
+    from winrm.protocol import Protocol
+    from winrm.exceptions import WinRMOperationTimeoutError as Idle
+except ImportError:
+    fail("pywinrm is not installed on this computer. Install python3-winrm, or: pip install pywinrm")
+BOOT = r'''
+$ProgressPreference='SilentlyContinue'
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding($false) } catch {}
+$__rc_s = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::In.ReadToEnd()))
+$__rc_t = $null; $__rc_e = $null
+[void][Management.Automation.Language.Parser]::ParseInput($__rc_s, [ref]$__rc_t, [ref]$__rc_e)
+if ($__rc_e.Count) { foreach ($__rc_x in $__rc_e) { [Console]::Error.WriteLine($__rc_x.ToString()) }; exit 2 }
+$global:LASTEXITCODE = 0
+$__rc_f = $false
+try {
+    & ([ScriptBlock]::Create($__rc_s)) *>&1 | ForEach-Object {
+        $__rc_f = $_ -is [Management.Automation.ErrorRecord]
+        if ($__rc_f) { [Console]::Error.WriteLine($_.ToString()) }
+        elseif ($_ -is [Management.Automation.WarningRecord]) { [Console]::Error.WriteLine("WARNING: " + $_.Message) }
+        elseif ($_ -is [Management.Automation.InformationRecord]) { [Console]::Out.WriteLine($_.ToString()) }
+        elseif ($_ -is [Management.Automation.VerboseRecord] -or $_ -is [Management.Automation.DebugRecord]) { [Console]::Error.WriteLine($_.Message) }
+        else { $_ }
+    } | Out-String -Stream -Width 160 | ForEach-Object { [Console]::Out.WriteLine($_) }
+} catch { [Console]::Error.WriteLine($_.ToString()); exit 1 }
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+if ($__rc_f) { exit 1 }
+exit 0
+'''
+stream = sys.stdin.buffer
+header = json.loads(stream.readline())
+script = bytearray()
+while True:
+    byte = stream.read(1)
+    if not byte:
+        sys.exit(125)
+    if byte == b"\0":
+        break
+    script += byte
+stop = threading.Event()
+def watch():
+    while os.read(0, 4096):
+        pass
+    stop.set()
+threading.Thread(target=watch, daemon=True).start()
+try:
+    client = Protocol(endpoint=header["endpoint"], transport="ntlm", username=header["username"],
+                      password=header["password"], server_cert_validation=header["certificates"],
+                      read_timeout_sec=15, operation_timeout_sec=10)
+    del header
+    shell = client.open_shell()
+    command = client.run_command(shell, "powershell", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+        "-OutputFormat", "Text", "-EncodedCommand", base64.b64encode(BOOT.encode("utf-16-le")).decode()])
+    data = base64.b64encode(bytes(script)).decode()
+    size = 65536
+    for start in range(0, len(data), size):
+        if stop.is_set():
+            break
+        client.send_command_input(shell, command, data[start:start + size], end=start + size >= len(data))
+    done = False
+    code = 0
+    while not done and not stop.is_set():
+        try:
+            out, err, code, done = client.get_command_output_raw(shell, command)
+        except Idle:
+            continue
+        sys.stdout.buffer.write(out)
+        sys.stdout.buffer.flush()
+        sys.stderr.buffer.write(err)
+        sys.stderr.buffer.flush()
+    if stop.is_set():
+        client.close_shell(shell)
+        sys.exit(130)
+    client.cleanup_command(shell, command)
+    client.close_shell(shell)
+except Exception as error:
+    fail("WinRM failed: %s" % error)
+if code == 255:
+    sys.stderr.write("\x1erustconn-script-exit-255\n")
+elif not 0 <= code <= 255:
+    sys.stderr.write("exit code %d\n" % code)
+    code = 1
+sys.stderr.flush()
+sys.exit(code)
+"#;
+
+/// How long the WinRM helper gets to close the remote shell when stopped: one
+/// operation timeout, plus the close itself.
+const WINRM_STOP_GRACE: Duration = Duration::from_secs(25);
 
 /// Largest script accepted. A script is text; a bigger file is a wrong pick.
 pub const MAX_SCRIPT_BYTES: u64 = 1024 * 1024;
@@ -113,16 +232,47 @@ pub fn load_script(path: &Path) -> Result<Vec<u8>, ScriptFileError> {
     Ok(script)
 }
 
+/// Which kind of script a file is, which decides the hosts it can run on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScriptKind {
+    /// A bash script, for SSH hosts.
+    Bash,
+    /// A PowerShell script (`.ps1`), for WinRM hosts.
+    PowerShell,
+}
+
+impl ScriptKind {
+    /// Tells the kind from a file name.
+    #[must_use]
+    pub fn of_path(path: &Path) -> Self {
+        let powershell = path
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("ps1"));
+        if powershell {
+            Self::PowerShell
+        } else {
+            Self::Bash
+        }
+    }
+
+    const fn protocol(self) -> ProtocolType {
+        match self {
+            Self::Bash => ProtocolType::Ssh,
+            Self::PowerShell => ProtocolType::WinRm,
+        }
+    }
+}
+
 /// The connections a selection resolves to.
 #[derive(Debug, Default)]
 pub struct ScriptTargets<'a> {
-    /// SSH connections, sorted by name.
+    /// Connections the script can run on, sorted by name.
     pub hosts: Vec<&'a Connection>,
-    /// Selected connections left out because they do not use SSH.
+    /// Selected connections left out because they use another protocol.
     pub skipped: usize,
 }
 
-/// Resolves selected connection and group ids to the SSH hosts to run on.
+/// Resolves selected connection and group ids to the hosts a `kind` script runs on.
 ///
 /// A group stands for every connection in it and in its subgroups.
 #[must_use]
@@ -130,6 +280,7 @@ pub fn script_targets<'a>(
     selected: &[Uuid],
     connections: &'a [Connection],
     groups: &[ConnectionGroup],
+    kind: ScriptKind,
 ) -> ScriptTargets<'a> {
     let mut group_ids: HashSet<Uuid> = selected
         .iter()
@@ -152,7 +303,7 @@ pub fn script_targets<'a>(
         if !chosen {
             continue;
         }
-        if connection.protocol == ProtocolType::Ssh {
+        if connection.protocol == kind.protocol() {
             targets.hosts.push(connection);
         } else {
             targets.skipped += 1;
@@ -167,10 +318,64 @@ pub fn script_targets<'a>(
 pub struct ScriptHost {
     /// The display name, for reporting.
     pub name: String,
-    /// Where to connect, with the connection's own `ssh` arguments.
-    pub target: SshTarget,
-    /// Passwords for the host and its jump hosts. Empty for key or agent login.
-    pub credentials: DeployCredentials,
+    /// How to reach it.
+    pub transport: ScriptTransport,
+}
+
+/// How a script reaches a host.
+#[derive(Debug)]
+pub enum ScriptTransport {
+    /// Bash over SSH.
+    Ssh {
+        /// Where to connect, with the connection's own `ssh` arguments.
+        target: SshTarget,
+        /// Passwords for the host and its jump hosts. Empty for key or agent login.
+        credentials: DeployCredentials,
+    },
+    /// PowerShell over WinRM.
+    WinRm(WinRmTarget),
+}
+
+/// A WinRM host to run a script on.
+#[derive(Debug)]
+pub struct WinRmTarget {
+    /// Host name or address.
+    pub host: String,
+    /// WinRM port.
+    pub port: u16,
+    /// The account, `DOMAIN\\user` for a domain account.
+    pub account: String,
+    /// The account password.
+    pub password: Option<SecretString>,
+    /// Use HTTPS.
+    pub use_ssl: bool,
+    /// Accept a self-signed or mismatched certificate.
+    pub accept_invalid_certs: bool,
+    /// An SSH tunnel to reach the host through.
+    pub tunnel: Option<SshTunnelParams>,
+}
+
+impl WinRmTarget {
+    /// Builds the target of a WinRM `connection`, `None` for any other protocol.
+    #[must_use]
+    pub fn for_connection(
+        connection: &Connection,
+        password: Option<SecretString>,
+        tunnel: Option<SshTunnelParams>,
+    ) -> Option<Self> {
+        let ProtocolConfig::WinRm(config) = &connection.protocol_config else {
+            return None;
+        };
+        Some(Self {
+            host: connection.host.clone(),
+            port: connection.port,
+            account: crate::protocol::winrm_account_name(connection).unwrap_or_default(),
+            password,
+            use_ssl: config.use_ssl,
+            accept_invalid_certs: config.accept_invalid_certs,
+            tunnel,
+        })
+    }
 }
 
 /// How a run behaves.
@@ -267,25 +472,21 @@ pub fn run_script(
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) {
-    let Some(program) = crate::which::find_in_path("ssh") else {
-        for host in 0..hosts.len() {
-            on_event(ScriptEvent::Output {
-                host,
-                stream: OutputStream::Stderr,
-                line: "ssh was not found".to_string(),
-            });
-            on_event(ScriptEvent::Finished {
-                host,
-                outcome: ScriptOutcome::NotStarted,
-            });
-        }
-        return;
+    let programs = Programs {
+        ssh: crate::which::find_in_path("ssh"),
+        python: crate::which::find_in_path("python3"),
     };
-    run_script_with(&program, script, hosts, options, on_event);
+    run_script_with(&programs, script, hosts, options, on_event);
+}
+
+/// The local programs a run can use.
+struct Programs {
+    ssh: Option<PathBuf>,
+    python: Option<PathBuf>,
 }
 
 fn run_script_with(
-    program: &Path,
+    programs: &Programs,
     script: &Arc<Vec<u8>>,
     hosts: &[ScriptHost],
     options: &RunOptions,
@@ -305,7 +506,7 @@ fn run_script_with(
                         ScriptOutcome::Cancelled
                     } else {
                         on_event(ScriptEvent::Started { host: index });
-                        run_host(program, script, index, host, options, on_event)
+                        run_host(programs, script, index, host, options, on_event)
                     };
                     on_event(ScriptEvent::Finished {
                         host: index,
@@ -330,37 +531,131 @@ fn not_started(
     ScriptOutcome::NotStarted
 }
 
+/// One host's client process, ready to start.
+struct Launch {
+    program: PathBuf,
+    args: Vec<String>,
+    env: Vec<(String, String)>,
+    /// Written to stdin ahead of the script.
+    preamble: Zeroizing<Vec<u8>>,
+    /// How long the client gets to clean up after stdin closes.
+    stop_grace: Duration,
+    /// Held to the end of the run: dropping it removes the secret files.
+    _files: SecretFiles,
+    /// Held to the end of the run: dropping it closes the tunnel.
+    _tunnel: Option<SshTunnel>,
+}
+
+fn ssh_launch(
+    programs: &Programs,
+    target: &SshTarget,
+    credentials: &DeployCredentials,
+) -> Result<Launch, String> {
+    let program = programs.ssh.clone().ok_or("ssh was not found")?;
+    let args =
+        ssh_key_setup::remote_command_args(target, credentials.password.is_some(), REMOTE_COMMAND)
+            .map_err(|error| error.to_string())?;
+    let mut files = SecretFiles::default();
+    let mut env = ssh_key_setup::stage_password_env(
+        &credentials.jump_host_passwords,
+        credentials.password.as_ref(),
+        &mut files,
+    )
+    .map_err(|error| error.to_string())?;
+    ssh_key_setup::ensure_askpass_display(&mut env);
+    Ok(Launch {
+        program,
+        args,
+        env,
+        preamble: Zeroizing::default(),
+        stop_grace: Duration::ZERO,
+        _files: files,
+        _tunnel: None,
+    })
+}
+
+/// The first stdin line of [`WINRM_HELPER`].
+#[derive(serde::Serialize)]
+struct WinRmHeader<'a> {
+    endpoint: &'a str,
+    username: &'a str,
+    password: &'a str,
+    certificates: &'a str,
+}
+
+fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, String> {
+    let program = programs.python.clone().ok_or("python3 was not found")?;
+    let password = target
+        .password
+        .as_ref()
+        .ok_or("WinRM needs a password; none is saved for this host")?;
+
+    let tunnel = target
+        .tunnel
+        .as_ref()
+        .map(|params| {
+            let mut tunnel = ssh_tunnel::create_tunnel(params).map_err(|e| e.to_string())?;
+            ssh_tunnel::wait_for_tunnel_ready(&mut tunnel, 50, Duration::from_millis(200))
+                .map_err(|e| e.to_string())?;
+            Ok::<_, String>(tunnel)
+        })
+        .transpose()?;
+    let (host, port) = tunnel.as_ref().map_or_else(
+        || (target.host.clone(), target.port),
+        |tunnel| ("127.0.0.1".to_string(), tunnel.local_port()),
+    );
+    let scheme = if target.use_ssl { "https" } else { "http" };
+    let host = if host.contains(':') {
+        format!("[{host}]")
+    } else {
+        host
+    };
+    let header = WinRmHeader {
+        endpoint: &format!("{scheme}://{host}:{port}/wsman"),
+        username: &target.account,
+        password: password.expose_secret(),
+        certificates: if target.accept_invalid_certs {
+            "ignore"
+        } else {
+            "validate"
+        },
+    };
+    let mut preamble = Zeroizing::new(serde_json::to_vec(&header).map_err(|e| e.to_string())?);
+    preamble.push(b'\n');
+    Ok(Launch {
+        program,
+        args: vec!["-c".to_string(), WINRM_HELPER.to_string()],
+        env: Vec::new(),
+        preamble,
+        stop_grace: WINRM_STOP_GRACE,
+        _files: SecretFiles::default(),
+        _tunnel: tunnel,
+    })
+}
+
 fn run_host(
-    program: &Path,
+    programs: &Programs,
     script: &Arc<Vec<u8>>,
     index: usize,
     host: &ScriptHost,
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) -> ScriptOutcome {
-    let args = match ssh_key_setup::remote_command_args(
-        &host.target,
-        host.credentials.password.is_some(),
-        REMOTE_COMMAND,
-    ) {
-        Ok(args) => args,
+    let launched = match &host.transport {
+        ScriptTransport::Ssh {
+            target,
+            credentials,
+        } => ssh_launch(programs, target, credentials),
+        ScriptTransport::WinRm(target) => winrm_launch(programs, target),
+    };
+    let mut launch = match launched {
+        Ok(launch) => launch,
         Err(error) => return not_started(index, error, on_event),
     };
-    // Held to the end of this function: dropping it removes the secret files.
-    let mut files = SecretFiles::default();
-    let mut env = match ssh_key_setup::stage_password_env(
-        &host.credentials.jump_host_passwords,
-        host.credentials.password.as_ref(),
-        &mut files,
-    ) {
-        Ok(env) => env,
-        Err(error) => return not_started(index, error, on_event),
-    };
-    ssh_key_setup::ensure_askpass_display(&mut env);
 
-    let mut child = match Command::new(program)
-        .args(&args)
-        .envs(env)
+    let mut child = match Command::new(&launch.program)
+        .args(&launch.args)
+        .envs(std::mem::take(&mut launch.env))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -370,7 +665,8 @@ fn run_host(
         Err(error) => return not_started(index, error, on_event),
     };
 
-    let (_release_stdin, hold_stdin) = mpsc::channel::<()>();
+    let (release_stdin, hold_stdin) = mpsc::channel::<()>();
+    let preamble = std::mem::take(&mut launch.preamble);
     if let Some(mut pipe) = child.stdin.take() {
         let script = Arc::clone(script);
         // A thread of its own: `ssh` may fill its output pipes before it has
@@ -378,7 +674,11 @@ fn run_host(
         // exit status reports. The pipe stays open until this function returns,
         // because its end of file is what stops the script (see REMOTE_COMMAND).
         std::thread::spawn(move || {
-            if pipe.write_all(&script).is_ok() && pipe.write_all(&[0]).is_ok() {
+            let sent = pipe.write_all(&preamble).is_ok()
+                && pipe.write_all(&script).is_ok()
+                && pipe.write_all(&[0]).is_ok();
+            drop(preamble);
+            if sent {
                 let _ = pipe.flush();
                 let _ = hold_stdin.recv();
             }
@@ -415,7 +715,7 @@ fn run_host(
     }
     drop(done_tx);
 
-    let outcome = wait_for(&mut child, options);
+    let outcome = wait_for(&mut child, options, release_stdin, launch.stop_grace);
 
     let deadline = Instant::now() + OUTPUT_DRAIN;
     for _ in 0..pumps {
@@ -431,7 +731,12 @@ fn run_host(
 }
 
 /// Waits for `child`, stopping it on timeout or cancellation.
-fn wait_for(child: &mut Child, options: &RunOptions) -> ScriptOutcome {
+fn wait_for(
+    child: &mut Child,
+    options: &RunOptions,
+    release_stdin: mpsc::Sender<()>,
+    stop_grace: Duration,
+) -> ScriptOutcome {
     let started = Instant::now();
     loop {
         match child.try_wait() {
@@ -444,24 +749,33 @@ fn wait_for(child: &mut Child, options: &RunOptions) -> ScriptOutcome {
             }
             Ok(None) => {}
             Err(error) => {
-                tracing::warn!(%error, "could not wait for ssh");
-                stop(child);
+                tracing::warn!(%error, "could not wait for the client");
+                stop(child, release_stdin, stop_grace);
                 return ScriptOutcome::NotStarted;
             }
         }
         if options.cancel.load(Ordering::Relaxed) {
-            stop(child);
+            stop(child, release_stdin, stop_grace);
             return ScriptOutcome::Cancelled;
         }
         if started.elapsed() >= options.timeout {
-            stop(child);
+            stop(child, release_stdin, stop_grace);
             return ScriptOutcome::TimedOut;
         }
         std::thread::sleep(POLL_INTERVAL);
     }
 }
 
-fn stop(child: &mut Child) {
+/// Closes the client's stdin, gives it `grace` to clean up, then kills it.
+fn stop(child: &mut Child, release_stdin: mpsc::Sender<()>, grace: Duration) {
+    drop(release_stdin);
+    let deadline = Instant::now() + grace;
+    while Instant::now() < deadline {
+        if matches!(child.try_wait(), Ok(Some(_))) {
+            return;
+        }
+        std::thread::sleep(POLL_INTERVAL);
+    }
     let _ = child.kill();
     let _ = child.wait();
 }
@@ -528,7 +842,6 @@ fn clean_line(raw: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use std::os::unix::fs::PermissionsExt;
-    use std::path::PathBuf;
     use std::sync::{Mutex, OnceLock};
 
     use super::*;
@@ -577,17 +890,194 @@ esac
         path
     }
 
+    /// `python3` running against a stand-in `winrm` module. The script's text
+    /// picks the behaviour; `None` when this machine has no Python.
+    fn python_stub() -> Option<&'static Path> {
+        static STUB: OnceLock<Option<(tempfile::TempDir, PathBuf)>> = OnceLock::new();
+        let made = STUB.get_or_init(|| {
+            let python = crate::which::find_in_path("python3")?;
+            let dir = tempfile::tempdir().ok()?;
+            let module = dir.path().join("winrm");
+            std::fs::create_dir(&module).ok()?;
+            std::fs::write(module.join("__init__.py"), "").ok()?;
+            std::fs::write(
+                module.join("exceptions.py"),
+                "class WinRMOperationTimeoutError(Exception):\n    pass\n",
+            )
+            .ok()?;
+            std::fs::write(
+                module.join("protocol.py"),
+                r#"
+import base64, time
+from winrm.exceptions import WinRMOperationTimeoutError
+class Protocol:
+    def __init__(self, endpoint, transport, username, password, server_cert_validation, read_timeout_sec, operation_timeout_sec):
+        if password != "s3cret":
+            raise Exception("401 unauthorized")
+        self.info = "%s %s %s" % (endpoint, username, server_cert_validation)
+        self.data = ""
+        self.closed_file = None
+    def open_shell(self):
+        return "shell"
+    def run_command(self, shell, command, args):
+        self.command = command
+        return "cmd"
+    def send_command_input(self, shell, cmd, text, end=False):
+        self.data += text
+    def get_command_output_raw(self, shell, cmd):
+        script = base64.b64decode(self.data).decode()
+        if script.startswith("slow:"):
+            self.closed_file = script[5:].strip()
+            time.sleep(0.05)
+            raise WinRMOperationTimeoutError()
+        code = int(script[5:]) if script.startswith("exit:") else 0
+        return (("%s|%s|%s\n" % (self.command, self.info, script)).encode(), b"", code, True)
+    def cleanup_command(self, shell, cmd):
+        pass
+    def close_shell(self, shell):
+        if self.closed_file:
+            open(self.closed_file, "w").close()
+"#,
+            )
+            .ok()?;
+            let path = dir.path().join("python3");
+            std::fs::write(
+                &path,
+                format!(
+                    "#!/bin/sh\nPYTHONPATH='{}' exec '{}' \"$@\"\n",
+                    dir.path().display(),
+                    python.display()
+                ),
+            )
+            .ok()?;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).ok()?;
+            for _ in 0..200 {
+                if Command::new(&path).arg("-c").arg("pass").status().is_ok() {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Some((dir, path))
+        });
+        made.as_ref().map(|(_, path)| path.as_path())
+    }
+
+    fn windows(password: &str) -> ScriptHost {
+        ScriptHost {
+            name: "win".to_string(),
+            transport: ScriptTransport::WinRm(WinRmTarget {
+                host: "win.lan".to_string(),
+                port: 5985,
+                account: "CORP\\alice".to_string(),
+                password: Some(SecretString::from(password.to_string())),
+                use_ssl: false,
+                accept_invalid_certs: false,
+                tunnel: None,
+            }),
+        }
+    }
+
+    #[test]
+    fn a_powershell_script_runs_over_winrm() {
+        if python_stub().is_none() {
+            return;
+        }
+        let events = run(&[windows("s3cret")], &RunOptions::default(), "Get-Date");
+        assert_eq!(
+            lines(&events, 0),
+            ["powershell|http://win.lan:5985/wsman CORP\\alice validate|Get-Date"]
+        );
+        assert_eq!(outcome(&events, 0), ScriptOutcome::Succeeded);
+    }
+
+    #[test]
+    fn a_powershell_exit_code_is_reported() {
+        if python_stub().is_none() {
+            return;
+        }
+        let events = run(&[windows("s3cret")], &RunOptions::default(), "exit:7");
+        assert_eq!(
+            outcome(&events, 0),
+            ScriptOutcome::ScriptFailed { code: Some(7) }
+        );
+        let events = run(&[windows("s3cret")], &RunOptions::default(), "exit:255");
+        assert_eq!(
+            outcome(&events, 0),
+            ScriptOutcome::ScriptFailed { code: Some(255) }
+        );
+    }
+
+    #[test]
+    fn a_rejected_winrm_login_is_a_connection_failure() {
+        if python_stub().is_none() {
+            return;
+        }
+        let events = run(&[windows("wrong")], &RunOptions::default(), "x");
+        assert_eq!(outcome(&events, 0), ScriptOutcome::ConnectionFailed);
+        let text = lines(&events, 0).join(" ");
+        assert!(text.contains("401"), "{text}");
+        assert!(
+            !text.contains("wrong"),
+            "the password stays out of the output"
+        );
+    }
+
+    #[test]
+    fn a_winrm_host_with_no_password_is_not_started() {
+        let mut host = windows("x");
+        if let ScriptTransport::WinRm(target) = &mut host.transport {
+            target.password = None;
+        }
+        let events = run(&[host], &RunOptions::default(), "x");
+        assert_eq!(outcome(&events, 0), ScriptOutcome::NotStarted);
+    }
+
+    #[test]
+    fn stopping_a_winrm_run_closes_the_remote_shell() {
+        if python_stub().is_none() {
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("closed");
+        let options = RunOptions {
+            timeout: Duration::from_millis(400),
+            ..RunOptions::default()
+        };
+        let script = format!("slow:{}", marker.display());
+        let events = run(&[windows("s3cret")], &options, &script);
+        assert_eq!(outcome(&events, 0), ScriptOutcome::TimedOut);
+        assert!(marker.exists(), "the shell must be closed before giving up");
+    }
+
+    #[test]
+    fn debug_output_of_a_winrm_target_holds_no_password() {
+        let host = windows("hunter2");
+        assert!(!format!("{host:?}").contains("hunter2"));
+    }
+
+    #[test]
+    fn the_file_extension_picks_the_script_kind() {
+        assert_eq!(
+            ScriptKind::of_path(Path::new("a.PS1")),
+            ScriptKind::PowerShell
+        );
+        assert_eq!(ScriptKind::of_path(Path::new("a.sh")), ScriptKind::Bash);
+        assert_eq!(ScriptKind::of_path(Path::new("a")), ScriptKind::Bash);
+    }
+
     fn host(dest: &str) -> ScriptHost {
         ScriptHost {
             name: dest.to_string(),
-            target: SshTarget {
-                host: dest.to_string(),
-                port: 22,
-                username: None,
-                session_args: Vec::new(),
-                known_hosts_file: None,
+            transport: ScriptTransport::Ssh {
+                target: SshTarget {
+                    host: dest.to_string(),
+                    port: 22,
+                    username: None,
+                    session_args: Vec::new(),
+                    known_hosts_file: None,
+                },
+                credentials: DeployCredentials::default(),
             },
-            credentials: DeployCredentials::default(),
         }
     }
 
@@ -595,8 +1085,12 @@ esac
         let events = Arc::new(Mutex::new(Vec::new()));
         let collected = Arc::clone(&events);
         let sink: ScriptEventSink = Arc::new(move |e| collected.lock().unwrap().push(e));
+        let programs = Programs {
+            ssh: Some(stub().to_path_buf()),
+            python: python_stub().map(Path::to_path_buf),
+        };
         run_script_with(
-            stub(),
+            &programs,
             &Arc::new(script.as_bytes().to_vec()),
             hosts,
             options,
@@ -861,7 +1355,7 @@ esac
 
         let connections = [b, a, other, telnet];
         let groups = [parent.clone(), child];
-        let targets = script_targets(&[parent.id], &connections, &groups);
+        let targets = script_targets(&[parent.id], &connections, &groups, ScriptKind::Bash);
         let names: Vec<&str> = targets.hosts.iter().map(|c| c.name.as_str()).collect();
         assert_eq!(names, ["a", "b"]);
         assert_eq!(targets.skipped, 1);
@@ -872,6 +1366,9 @@ esac
         let conn = Connection::new_ssh("a".to_string(), "a".to_string(), 22);
         let id = conn.id;
         let connections = [conn];
-        assert_eq!(script_targets(&[id], &connections, &[]).hosts.len(), 1);
+        let targets = script_targets(&[id], &connections, &[], ScriptKind::Bash);
+        assert_eq!(targets.hosts.len(), 1);
+        let targets = script_targets(&[id], &connections, &[], ScriptKind::PowerShell);
+        assert_eq!((targets.hosts.len(), targets.skipped), (0, 1));
     }
 }

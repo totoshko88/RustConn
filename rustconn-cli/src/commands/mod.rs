@@ -177,7 +177,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             zoom_level,
             tunnel_via,
             socks_proxy,
+            socks_proxy_user,
+            socks_proxy_password_var,
+            browser,
             winrm_ssl,
+            winrm_accept_invalid_certs,
         } => {
             // Bulk add from a file (or stdin) short-circuits the single-connection
             // flag assembly: --from-file conflicts with --name/--host at the clap
@@ -305,7 +309,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                     zoom_level,
                     tunnel_via: tunnel_via.as_deref(),
                     socks_proxy: socks_proxy.as_deref(),
+                    socks_proxy_user: socks_proxy_user.as_deref(),
+                    socks_proxy_password_var: socks_proxy_password_var.as_deref(),
+                    browser: browser.as_deref(),
                     winrm_ssl,
+                    winrm_accept_invalid_certs,
                 },
             )
         }
@@ -458,7 +466,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             private_mode,
             zoom_level,
             socks_proxy,
+            socks_proxy_user,
+            socks_proxy_password_var,
+            browser,
             winrm_ssl,
+            winrm_accept_invalid_certs,
             postpend_command,
             postpend_arg,
             postpend_enabled,
@@ -582,7 +594,11 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 private_mode,
                 zoom_level,
                 socks_proxy: socks_proxy.as_deref(),
+                socks_proxy_user: socks_proxy_user.as_deref(),
+                socks_proxy_password_var: socks_proxy_password_var.as_deref(),
+                browser: browser.as_deref(),
                 winrm_ssl,
+                winrm_accept_invalid_certs,
                 postpend_command: postpend_command.as_deref(),
                 postpend_arg: &postpend_arg,
                 postpend_enabled,

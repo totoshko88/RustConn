@@ -323,6 +323,7 @@ pub fn show_context_menu_for_item(
     conn_id: &str,
     is_group: bool,
     is_ssh: bool,
+    can_run_script: bool,
     offers_key_setup: bool,
     can_tunnel_browser: bool,
     is_connected: bool,
@@ -505,11 +506,13 @@ pub fn show_context_menu_for_item(
             &i18n("Session Log…"),
             "show-connection-log",
         ));
-        if is_ssh {
+        if can_run_script {
             items.push(ContextMenuItem::action(
                 &i18n("Run Local Script…"),
                 "run-local-script",
             ));
+        }
+        if is_ssh {
             items.push(ContextMenuItem::action(&i18n("Open SFTP"), "open-sftp"));
         }
         if offers_key_setup {

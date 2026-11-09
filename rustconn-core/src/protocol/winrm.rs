@@ -43,7 +43,7 @@ fn is_secret_option(arg: &str) -> bool {
 
 /// The account name the client logs in with: `DOMAIN\\user` when a domain is set
 /// and the name does not already carry one.
-fn account_name(connection: &Connection) -> Option<String> {
+pub(crate) fn account_name(connection: &Connection) -> Option<String> {
     let user = connection.username.as_deref()?.trim();
     if user.is_empty() {
         return None;
@@ -215,6 +215,7 @@ mod tests {
         let config = ProtocolConfig::WinRm(WinRmConfig {
             use_ssl: true,
             custom_args: vec!["-n".to_string()],
+            ..WinRmConfig::default()
         });
         let text = serde_json::to_string(&config).unwrap();
         assert_eq!(
