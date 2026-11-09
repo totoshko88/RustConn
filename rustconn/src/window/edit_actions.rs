@@ -199,6 +199,22 @@ impl MainWindow {
         });
         window.add_action(&duplicate_action);
 
+        // Duplicate as a numbered range of connections
+        let duplicate_range_action = gio::SimpleAction::new("duplicate-as-range", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        duplicate_range_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::operations::duplicate_selected_as_range(
+                    win.upcast_ref(),
+                    &state_clone,
+                    &sidebar_clone,
+                );
+            }
+        });
+        window.add_action(&duplicate_range_action);
+
         // Duplicate via Wizard action — opens wizard pre-filled with existing connection data
         let duplicate_wizard_action = gio::SimpleAction::new("duplicate-via-wizard", None);
         let window_weak = window.downgrade();

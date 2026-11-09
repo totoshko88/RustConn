@@ -9,6 +9,7 @@ use adw::prelude::*;
 use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
+use rustconn_core::connection::host_range::{self, HostRangeError};
 use uuid::Uuid;
 
 use super::MainWindow;
@@ -318,6 +319,252 @@ pub fn duplicate_selected_connection(
                 );
             }
         }
+    }
+}
+
+/// Plans a range duplicate of `source` against the current connection list.
+fn plan_range(
+    state: &SharedAppState,
+    source: &rustconn_core::Connection,
+    name_pattern: &str,
+    host_pattern: &str,
+) -> Result<host_range::RangePlan, HostRangeError> {
+    let state_ref = state.borrow();
+    host_range::plan_range_duplicates(source, name_pattern, host_pattern, |name| {
+        state_ref.connection_exists_by_name(name)
+    })
+}
+
+/// Describes a range error for the dialog; core's text is untranslated.
+fn range_error_text(error: &HostRangeError) -> String {
+    match error {
+        HostRangeError::InvalidPattern => i18n("Use one number range, such as host[02-10]"),
+        HostRangeError::Reversed { .. } => i18n("The range must run from low to high"),
+        HostRangeError::TooLarge { max } => i18n_f(
+            "A range can create at most this many connections: {}",
+            &[&max.to_string()],
+        ),
+        HostRangeError::SizeMismatch { .. } => {
+            i18n("The name and host ranges must be the same size")
+        }
+        HostRangeError::InvalidConnection { name, .. } => {
+            i18n_f("‘{}’ would not be a valid connection", &[name])
+        }
+    }
+}
+
+/// Asks for a name and host range and duplicates the selected connection into
+/// one connection per number.
+pub fn duplicate_selected_as_range(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+) {
+    let Some(item) = sidebar.get_selected_item() else {
+        return;
+    };
+    if item.is_group() {
+        return;
+    }
+    let Ok(id) = Uuid::parse_str(&item.id()) else {
+        return;
+    };
+    let Some(source) = state
+        .try_borrow()
+        .ok()
+        .and_then(|s| s.get_connection(id).cloned())
+    else {
+        return;
+    };
+
+    let dialog = adw::AlertDialog::new(
+        Some(&i18n_f("Duplicate ‘{}’ as a Range", &[&source.name])),
+        Some(&i18n(
+            "Creates one copy per number. A leading zero in the first number keeps the numbers padded.",
+        )),
+    );
+    let rows = adw::PreferencesGroup::new();
+    let name_row = adw::EntryRow::builder().title(i18n("Name Pattern")).build();
+    let host_row = adw::EntryRow::builder().title(i18n("Host Pattern")).build();
+    rows.add(&name_row);
+    rows.add(&host_row);
+    let preview = gtk4::Label::builder()
+        .wrap(true)
+        .xalign(0.0)
+        .margin_top(12)
+        .build();
+    let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    content.append(&rows);
+    content.append(&preview);
+    dialog.set_extra_child(Some(&content));
+
+    dialog.add_response("cancel", &i18n("Cancel"));
+    dialog.add_response("create", &i18n("Create"));
+    dialog.set_response_appearance("create", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("create"));
+    dialog.set_close_response("cancel");
+
+    let refresh: Rc<dyn Fn()> = Rc::new({
+        let dialog = dialog.clone();
+        let state = state.clone();
+        let source = source.clone();
+        let name_row = name_row.clone();
+        let host_row = host_row.clone();
+        let preview = preview.clone();
+        move || {
+            let plan = plan_range(&state, &source, &name_row.text(), &host_row.text());
+            let ready = plan.as_ref().is_ok_and(|p| !p.created.is_empty());
+            dialog.set_response_enabled("create", ready);
+            preview.set_css_classes(if plan.is_err() {
+                &["error"]
+            } else {
+                &["dim-label"]
+            });
+            preview.set_text(&match &plan {
+                Err(error) => range_error_text(error),
+                Ok(plan) => match (plan.created.first(), plan.created.last()) {
+                    (Some(first), Some(last)) => {
+                        let summary = i18n_f(
+                            "Connections to create: {} (‘{}’ to ‘{}’)",
+                            &[&plan.created.len().to_string(), &first.name, &last.name],
+                        );
+                        if plan.skipped.is_empty() {
+                            summary
+                        } else {
+                            let skipped = i18n_f(
+                                "Already exist, will be skipped: {}",
+                                &[&plan.skipped.len().to_string()],
+                            );
+                            format!("{summary}\n{skipped}")
+                        }
+                    }
+                    _ => i18n("All of these names already exist"),
+                },
+            });
+        }
+    });
+
+    // The host pattern tracks the name until the user types their own.
+    let last_derived = Rc::new(std::cell::RefCell::new(String::new()));
+    name_row.connect_changed({
+        let source = source.clone();
+        let host_row = host_row.clone();
+        let refresh = Rc::clone(&refresh);
+        move |row| {
+            let derived = host_range::derive_host_pattern(&source, &row.text()).unwrap_or_default();
+            let untouched = host_row.text() == last_derived.borrow().as_str();
+            if untouched {
+                *last_derived.borrow_mut() = derived.clone();
+                host_row.set_text(&derived);
+            }
+            refresh();
+        }
+    });
+    host_row.connect_changed({
+        let refresh = Rc::clone(&refresh);
+        move |_| refresh()
+    });
+    name_row.set_text(&host_range::suggest_name_pattern(&source.name).unwrap_or_default());
+    refresh();
+
+    let state = state.clone();
+    let sidebar = sidebar.clone();
+    let parent = window.clone();
+    dialog.connect_response(None, move |_, response| {
+        if response == "create" {
+            create_range_duplicates(
+                &parent,
+                &state,
+                &sidebar,
+                &source,
+                &name_row.text(),
+                &host_row.text(),
+            );
+        }
+    });
+    dialog.present(Some(window));
+}
+
+/// Stores the copies a range describes, then carries over the saved password.
+fn create_range_duplicates(
+    window: &gtk4::Window,
+    state: &SharedAppState,
+    sidebar: &SharedSidebar,
+    source: &rustconn_core::Connection,
+    name_pattern: &str,
+    host_pattern: &str,
+) {
+    let plan = match plan_range(state, source, name_pattern, host_pattern) {
+        Ok(plan) => plan,
+        Err(error) => {
+            crate::toast::show_toast_on_window(
+                window,
+                &range_error_text(&error),
+                crate::toast::ToastType::Error,
+            );
+            return;
+        }
+    };
+
+    let Ok(mut state_mut) = state.try_borrow_mut() else {
+        return;
+    };
+    let mut created = Vec::with_capacity(plan.created.len());
+    for copy in plan.created {
+        match state_mut
+            .connection_manager()
+            .create_connection_from(copy.clone())
+        {
+            Ok(_) => created.push(copy),
+            Err(e) => tracing::error!(name = %copy.name, "Failed to create range duplicate: {e}"),
+        }
+    }
+    let settings = state_mut.settings().clone();
+    let groups = state_mut.list_groups_owned();
+    drop(state_mut);
+
+    let message = if plan.skipped.is_empty() {
+        i18n_f("Connections created: {}", &[&created.len().to_string()])
+    } else {
+        i18n_f(
+            "Connections created: {}, already existed: {}",
+            &[&created.len().to_string(), &plan.skipped.len().to_string()],
+        )
+    };
+    let toast_type = if created.is_empty() {
+        crate::toast::ToastType::Error
+    } else {
+        crate::toast::ToastType::Success
+    };
+    {
+        let state = state.clone();
+        let sidebar = sidebar.clone();
+        let window = window.clone();
+        glib::idle_add_local_once(move || {
+            MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
+            crate::toast::show_toast_on_window(&window, &message, toast_type);
+        });
+    }
+
+    // The same credential copy a single duplicate makes, one thread for all.
+    if source.password_source == rustconn_core::models::PasswordSource::Vault {
+        let source = source.clone();
+        crate::utils::spawn_blocking_with_callback(
+            move || {
+                created
+                    .iter()
+                    .filter_map(|copy| {
+                        crate::vault_ops::copy_vault_credential(&settings, &groups, &source, copy)
+                            .err()
+                    })
+                    .collect::<Vec<String>>()
+            },
+            |errors| {
+                for error in errors {
+                    tracing::warn!(%error, "Failed to copy vault credential on range duplicate");
+                }
+            },
+        );
     }
 }
 

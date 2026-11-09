@@ -536,6 +536,16 @@ rustconn-cli duplicate "My Server" --new-name "Staging"     # Custom name
 
 The duplicate gets a new UUID, fresh timestamps, and no `last_connected` value.
 
+To create several copies at once, give a number range. Quote it so the shell leaves the brackets alone:
+
+```bash
+rustconn-cli duplicate "host01" --range 'host[02-10]'                                # host02 … host10
+rustconn-cli duplicate "host1" --range 'host[2-10]'                                  # host2 … host10
+rustconn-cli duplicate "web01" --range 'web[02-10]' --host-range '10.0.0.[2-10]'     # explicit addresses
+```
+
+The width of the first number sets the zero padding. `--host-range` is optional when the source's host contains its name (`host01.example.com` becomes `host02.example.com`), and otherwise required. It must cover the same count as `--range`. A range can create up to 256 connections, and names that already exist are skipped. Unlike the GUI, the CLI does not copy a password stored in a vault to the new connections.
+
 ### test — Test connectivity
 
 ```bash
