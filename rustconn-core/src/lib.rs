@@ -73,6 +73,7 @@ pub mod performance;
 pub mod proc;
 pub mod progress;
 pub mod protocol;
+pub mod remote_script;
 pub mod runtime_dir;
 pub mod script;
 pub mod search;
@@ -84,6 +85,7 @@ pub mod shell_escape;
 pub mod smart_folder;
 pub mod snap;
 pub mod snippet;
+pub mod socks_relay;
 pub mod split;
 pub mod ssh_agent;
 pub mod ssh_askpass;
@@ -193,8 +195,8 @@ pub use models::{
     Resolution, ScaleOverride, SerialBaudRate, SerialConfig, SerialDataBits, SerialFlowControl,
     SerialParity, SerialStopBits, Snippet, SnippetTarget, SnippetVariable, SpiceConfig,
     SpiceImageCompression, SshAuthMethod, SshConfig, SshKeySource, StandaloneTunnel, TelnetConfig,
-    TemplateError, TunnelStatus, VncConfig, WindowGeometry, WindowMode, WorkspaceEntry,
-    WorkspaceProfile, WorkspaceSplitLayout, collect_descendant_group_ids,
+    TemplateError, TunnelStatus, VncConfig, WinRmConfig, WindowGeometry, WindowMode,
+    WorkspaceEntry, WorkspaceProfile, WorkspaceSplitLayout, collect_descendant_group_ids,
     group_templates_by_protocol,
 };
 pub use monitoring::{
@@ -218,11 +220,11 @@ pub use protocol::{
     ClientDetectionResult, ClientInfo, CloudProvider, FreeRdpConfig, KubernetesProtocol,
     MoshProtocol, PROTOCOL_TAB_CSS_CLASSES, Protocol, ProtocolCapabilities, ProtocolRegistry,
     ProviderIconCache, RdpProtocol, SerialProtocol, SftpProtocol, SpiceProtocol, SshProtocol,
-    TelnetProtocol, VncProtocol, build_freerdp_args, detect_aws_cli, detect_azure_cli,
-    detect_boundary, detect_cloudflared, detect_gcloud_cli, detect_hoop, detect_kubectl,
-    detect_mosh, detect_oci_cli, detect_picocom, detect_provider, detect_rdp_client,
-    detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client, detect_vnc_client,
-    extract_geometry_from_args, get_protocol_color_rgb, get_protocol_icon,
+    TelnetProtocol, VncProtocol, WinRmProtocol, build_freerdp_args, detect_aws_cli,
+    detect_azure_cli, detect_boundary, detect_cloudflared, detect_gcloud_cli, detect_hoop,
+    detect_kubectl, detect_mosh, detect_oci_cli, detect_picocom, detect_provider,
+    detect_rdp_client, detect_ssh_client, detect_tailscale, detect_teleport, detect_telnet_client,
+    detect_vnc_client, extract_geometry_from_args, get_protocol_color_rgb, get_protocol_icon,
     get_protocol_icon_by_name, get_protocol_tab_css_class, get_zero_trust_provider_icon,
     has_decorations_flag,
 };

@@ -1251,10 +1251,31 @@ fn classify_verify_ignores_jump_host_markers_before_the_accept_line() {
 
 // ---- E. processes and secrets ----------------------------------------------
 
+/// First argument that makes a stub exit at once, for the readiness check.
+const STUB_PROBE: &str = "__rustconn_stub_probe__";
+
 fn write_stub(dir: &Path, name: &str, body: &str) -> PathBuf {
     let path = dir.join(name);
-    fs::write(&path, format!("#!/bin/sh\n{body}")).unwrap();
+    fs::write(
+        &path,
+        format!("#!/bin/sh\n[ \"$1\" = {STUB_PROBE} ] && exit 0\n{body}"),
+    )
+    .unwrap();
     set_mode(&path, 0o755);
+    // A test on another thread forking while this file was open for writing
+    // keeps it open in the child until that child execs, and exec fails with
+    // ETXTBSY until then. Wait it out here, where it cannot look like the
+    // behaviour under test.
+    for _ in 0..500 {
+        let started = std::process::Command::new(&path)
+            .arg(STUB_PROBE)
+            .stdin(std::process::Stdio::null())
+            .status();
+        if !matches!(&started, Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
     path
 }
 

@@ -36,6 +36,7 @@ fn create_test_connection(name: &str, host: &str) -> Connection {
         password_source: PasswordSource::None,
         kdbx_path_override: None,
         network_mode: rustconn_core::models::NetworkMode::default(),
+        fallback_jump_host_ids: Vec::new(),
         domain: None,
         custom_properties: Vec::new(),
         pre_connect_task: None,

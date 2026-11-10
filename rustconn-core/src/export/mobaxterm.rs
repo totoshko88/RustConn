@@ -583,6 +583,7 @@ impl MobaXtermExporter {
             ProtocolType::Kubernetes => {
                 Err(ExportError::UnsupportedProtocol("Kubernetes".to_string()))
             }
+            ProtocolType::WinRm => Err(ExportError::UnsupportedProtocol("WinRM".to_string())),
         }
     }
 }

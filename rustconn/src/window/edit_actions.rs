@@ -199,6 +199,34 @@ impl MainWindow {
         });
         window.add_action(&duplicate_action);
 
+        // Run a local bash script on the selected SSH hosts
+        let run_script_action = gio::SimpleAction::new("run-local-script", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        run_script_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::remote_script::open_dialog(&win, &state_clone, &sidebar_clone);
+            }
+        });
+        window.add_action(&run_script_action);
+
+        // Duplicate as a numbered range of connections
+        let duplicate_range_action = gio::SimpleAction::new("duplicate-as-range", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        duplicate_range_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::operations::duplicate_selected_as_range(
+                    win.upcast_ref(),
+                    &state_clone,
+                    &sidebar_clone,
+                );
+            }
+        });
+        window.add_action(&duplicate_range_action);
+
         // Duplicate via Wizard action — opens wizard pre-filled with existing connection data
         let duplicate_wizard_action = gio::SimpleAction::new("duplicate-via-wizard", None);
         let window_weak = window.downgrade();
@@ -933,6 +961,43 @@ impl MainWindow {
         Self::raise_socks_tunnel_async(state, jump_id, move |result| on_ready(result.map(Some)));
     }
 
+    /// Starts the relay for a proxy that needs a login, and points `web_config`
+    /// at it. `Ok(None)` for every other connection.
+    fn start_web_socks_relay(
+        state: &SharedAppState,
+        connection_id: Uuid,
+        web_config: &mut rustconn_core::models::WebConfig,
+    ) -> Result<Option<rustconn_core::socks_relay::SocksRelay>, String> {
+        let (Some(username), Some(proxy)) = (
+            web_config.socks_proxy_username.as_deref(),
+            web_config.socks_proxy.as_deref(),
+        ) else {
+            return Ok(None);
+        };
+        let variable = web_config
+            .socks_proxy_password_variable
+            .as_deref()
+            .unwrap_or_default();
+        let globals = super::protocols::resolve_globals_with_ask(state, connection_id);
+        let Some(password) = globals
+            .iter()
+            .rev()
+            .find(|v| v.name == variable && !v.value.is_empty())
+            .map(|v| secrecy::SecretString::from(v.value.clone()))
+        else {
+            return Err(crate::i18n::i18n_f(
+                "The SOCKS proxy password variable ‘{}’ has no value",
+                &[variable],
+            ));
+        };
+        let relay = rustconn_core::socks_relay::SocksRelay::start(proxy, username, password)
+            .map_err(|e| {
+                crate::i18n::i18n_f("Could not start the SOCKS relay: {}", &[&e.to_string()])
+            })?;
+        web_config.socks_proxy = Some(relay.proxy_uri());
+        Ok(Some(relay))
+    }
+
     /// Normalises the configured tunnel-browser start URL into something both
     /// the embedded WebKit view and an external browser accept.
     ///
@@ -956,29 +1021,6 @@ impl MainWindow {
         }
     }
 
-    /// Picks a Chromium-family browser binary that accepts `--proxy-server`.
-    ///
-    /// Honours `$BROWSER` first when it names a known Chromium binary, then
-    /// Builds a `--user-data-dir=<unique temp path>` argument for a proxied
-    /// Chromium launch.
-    ///
-    /// `--proxy-server` only takes effect when Chromium starts a *new* process;
-    /// a bare `chromium --proxy-server=… URL` while a browser is already running
-    /// just forwards the URL to the existing (un-proxied) instance. A throwaway
-    /// profile directory guarantees a separate instance. The directory lives
-    /// under the runtime dir (or the system temp dir) and is left for the OS to
-    /// reap on reboot; the browser is detached and outlives RustConn, so we do
-    /// not delete it ourselves.
-    fn chromium_isolated_profile_arg() -> std::ffi::OsString {
-        let base = std::env::var_os("XDG_RUNTIME_DIR")
-            .filter(|dir| !dir.is_empty())
-            .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
-        let dir = base.join(format!("rustconn-tunnel-browser-{}", uuid::Uuid::new_v4()));
-        let mut arg = std::ffi::OsString::from("--user-data-dir=");
-        arg.push(dir);
-        arg
-    }
-
     /// True if `name` looks like a Chromium-family binary — the only kind that
     /// takes `--proxy-server` on the command line.
     fn is_chromium_browser(name: &str) -> bool {
@@ -1000,6 +1042,7 @@ impl MainWindow {
         let command = command.trim();
         if command.is_empty() {
             return Self::find_chromium_browser()
+                .or_else(rustconn_core::protocol::first_installed_proxy_browser)
                 .map(|bin| (bin, Vec::new()))
                 .ok_or(TunnelBrowserError::NoneFound);
         }
@@ -1008,7 +1051,7 @@ impl MainWindow {
         let bin = parts.next().unwrap_or(command).to_string();
         let extra: Vec<String> = parts.map(str::to_string).collect();
 
-        if !Self::is_chromium_browser(&bin) {
+        if !rustconn_core::protocol::can_use_socks_proxy(&bin) {
             return Err(TunnelBrowserError::NotChromium(bin));
         }
         let available = if bin.contains('/') {
@@ -1272,7 +1315,7 @@ impl MainWindow {
                 Ok((browser, extra_args)) => TunnelBrowserPath::External(browser, extra_args),
                 Err(TunnelBrowserError::NotChromium(bin)) => external_unusable(
                     crate::i18n::i18n_f(
-                        "The tunnelled browser command ‘{}’ is not Chromium-based and can't be tunnelled; opening the embedded browser instead. Set a chromium/chrome/brave/vivaldi/edge command in Settings to use an external browser.",
+                        "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded browser instead. Set a Chromium-based browser or Firefox in Settings to use an external browser.",
                         &[&bin],
                     ),
                     &crate::i18n::i18n_f(
@@ -1387,16 +1430,25 @@ impl MainWindow {
         for arg in &extra_args {
             cmd.arg(arg);
         }
-        // A running Chrome/Chromium would otherwise hand the URL to the existing
-        // process and ignore `--proxy-server` (it only applies at process
-        // start), so the page would load un-tunnelled. A throwaway
-        // `--user-data-dir` forces a separate instance that honours the proxy;
-        // it is already a clean profile, so no `--incognito` is needed.
-        cmd.arg(Self::chromium_isolated_profile_arg());
-        cmd.arg("--no-first-run");
-        cmd.arg("--no-default-browser-check");
-        cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
-        cmd.arg(start_url);
+        // A profile of its own forces a separate instance: a running browser
+        // would otherwise take the URL and load it un-tunnelled.
+        match rustconn_core::protocol::proxied_browser_args(
+            &browser,
+            &format!("socks5://127.0.0.1:{port}"),
+            start_url,
+        ) {
+            Ok(args) => {
+                cmd.args(args);
+            }
+            Err(e) => {
+                crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+                    "Failed to open browser: {}",
+                    &[&e.to_string()],
+                ));
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                return;
+            }
+        }
 
         match cmd.spawn() {
             Ok(child) => {
@@ -1450,7 +1502,7 @@ impl MainWindow {
             browser_mode: rustconn_core::models::WebBrowserMode::Embedded,
             ..Default::default()
         };
-        match EmbeddedWebWidget::new(connection_id, start_url, &cfg, None, Some(tunnel)) {
+        match EmbeddedWebWidget::new(connection_id, start_url, &cfg, None, Some(tunnel), None) {
             Ok(widget) => {
                 let widget = Rc::new(widget);
                 let session_id = uuid::Uuid::new_v4();
@@ -1482,7 +1534,7 @@ impl MainWindow {
         connection_id: Uuid,
         observer: Option<types::SessionStartObserver>,
     ) {
-        let (url, web_config, conn_name) = {
+        let (url, mut web_config, conn_name) = {
             let Ok(state_ref) = state.try_borrow() else {
                 return;
             };
@@ -1510,6 +1562,17 @@ impl MainWindow {
             sidebar.update_connection_status(&connection_id.to_string(), "");
             return;
         }
+
+        // A proxy with a login goes through a local relay; from here on the
+        // browser sees only the relay's address.
+        let socks_relay = match Self::start_web_socks_relay(state, connection_id, &mut web_config) {
+            Ok(relay) => relay,
+            Err(message) => {
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                crate::toast::show_error_toast_on_active_window(&message);
+                return;
+            }
+        };
 
         // Silence unused-variable warnings when web-embedded feature is disabled.
         // These are used in the #[cfg(feature = "web-embedded")] block below.
@@ -1583,6 +1646,7 @@ impl MainWindow {
                     &web_config,
                     credentials,
                     socks_tunnel,
+                    socks_relay,
                 ) {
                     Ok(widget) => {
                         let widget = Rc::new(widget);
@@ -1650,9 +1714,19 @@ impl MainWindow {
         }
 
         // Custom mode: launch user-specified browser as a subprocess
-        if web_config.browser_mode == rustconn_core::models::WebBrowserMode::Custom
-            && let Some(browser) = web_config.browser.clone()
-        {
+        let proxied = web_config.tunnel_via.is_some() || web_config.socks_proxy.is_some();
+        let external_browser =
+            if web_config.browser_mode == rustconn_core::models::WebBrowserMode::Custom {
+                web_config.browser.clone()
+            } else if proxied {
+                // The portal picks the system browser and cannot be told about a
+                // proxy, so a proxied page goes to a browser that can be.
+                Self::find_chromium_browser()
+                    .or_else(rustconn_core::protocol::first_installed_proxy_browser)
+            } else {
+                None
+            };
+        if let Some(browser) = external_browser {
             // Raise the SOCKS tunnel first, if configured, off the GTK thread so
             // a dead jump host cannot freeze the window; the browser is launched
             // in the callback once the tunnel is up. A failure aborts the launch
@@ -1682,42 +1756,43 @@ impl MainWindow {
                     || browser_lower.contains("edge")
                     || browser_lower.contains("opera");
 
-                // Route the browser through the tunnel's SOCKS proxy. Only the
-                // Chromium family takes a `--proxy-server` flag; Firefox reads proxy
-                // settings from its profile, which a one-shot launch cannot set
-                // safely, so we surface that rather than pretend it worked.
-                let mut tunnelled_isolated = false;
-                if let Some(ref tunnel) = socks_tunnel {
-                    let port = tunnel.local_port();
-                    if is_chromium {
-                        // A throwaway `--user-data-dir` forces a separate instance:
-                        // a running Chrome would otherwise take over the launch and
-                        // ignore `--proxy-server`, loading the page un-tunnelled.
-                        cmd.arg(Self::chromium_isolated_profile_arg());
-                        cmd.arg("--no-first-run");
-                        cmd.arg("--no-default-browser-check");
-                        cmd.arg(format!("--proxy-server=socks5://127.0.0.1:{port}"));
-                        tunnelled_isolated = true;
-                    } else {
+                // Route the browser through the proxy. A browser that cannot be
+                // pointed at one is not opened, so the page never loads directly.
+                let proxy_uri = socks_tunnel
+                    .as_ref()
+                    .map(|tunnel| format!("socks5://127.0.0.1:{}", tunnel.local_port()))
+                    .or_else(|| web_config.socks_proxy.clone());
+                let tunnelled_isolated = if let Some(proxy_uri) = proxy_uri {
+                    let Ok(args) =
+                        rustconn_core::protocol::proxied_browser_args(&browser, &proxy_uri, &url)
+                    else {
+                        sidebar_cb.update_connection_status(&connection_id.to_string(), "failed");
                         crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
-                            "This browser can't be tunnelled from the command line. Use a Chromium-based browser or the embedded browser for SSH tunnelling.",
+                            "This browser can't use a proxy, so the page was not opened. Use a Chromium-based browser, Firefox or the embedded browser.",
                         ));
-                    }
-                }
+                        return;
+                    };
+                    cmd.args(args);
+                    true
+                } else {
+                    false
+                };
 
                 // Add private mode flag for known browsers. A Chromium instance
                 // already launched into its own throwaway profile above is clean,
                 // and `--incognito` there would rejoin the running process, so skip
                 // it in that case.
                 if web_config.private_mode {
-                    if browser_lower.contains("firefox") {
+                    if browser_lower.contains("firefox") && !tunnelled_isolated {
                         cmd.arg("--private-window");
                     } else if is_chromium && !tunnelled_isolated {
                         cmd.arg("--incognito");
                     }
                 }
 
-                cmd.arg(&url);
+                if !tunnelled_isolated {
+                    cmd.arg(&url);
+                }
 
                 match cmd.spawn() {
                     Ok(child) => {
@@ -1730,6 +1805,9 @@ impl MainWindow {
                         // is handed over so the registry reaps it — its exit is when
                         // the tunnel could be dropped, though today that waits for exit
                         // of RustConn (documented tradeoff, as for RDP/VNC viewers).
+                        if let Some(relay) = socks_relay {
+                            relay.detach();
+                        }
                         if let Some(tunnel) = socks_tunnel {
                             let session_id = uuid::Uuid::new_v4();
                             notebook_cb.store_ssh_tunnel(session_id, tunnel);
@@ -1764,13 +1842,13 @@ impl MainWindow {
         }
 
         // System mode (default): use gtk4::UriLauncher for portal-aware URL opening.
-        // A tunnel cannot be applied here — the portal picks the browser and
-        // RustConn cannot pass it a proxy flag — so say so instead of silently
-        // ignoring the setting.
-        if web_config.tunnel_via.is_some() {
+        // Reaching this with a proxy means no browser that can use one was found.
+        if proxied {
+            sidebar.update_connection_status(&connection_id.to_string(), "failed");
             crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
-                "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the system browser opens without the tunnel.",
+                "No browser that can use a proxy was found, so the page was not opened. Install Chromium or Firefox, or use the embedded browser.",
             ));
+            return;
         }
         let launcher = gtk4::UriLauncher::new(&url);
         let sidebar_clone = sidebar.clone();
@@ -1890,10 +1968,30 @@ impl MainWindow {
         toast_clone: &SharedToastOverlay,
         conn_id: Uuid,
     ) {
+        let retry = {
+            let state = state_clone.clone();
+            let notebook = notebook_clone.clone();
+            let split_view = split_view_clone.clone();
+            let toast = toast_clone.clone();
+            move || {
+                Self::open_sftp_for_connection(&state, &notebook, &split_view, &toast, conn_id);
+            }
+        };
+        if super::protocols::start_gateway_probe(state_clone, conn_id, retry) {
+            return;
+        }
+
         let state_ref = state_clone.borrow();
-        let Some(conn) = state_ref.get_connection(conn_id) else {
+        let Some(stored_conn) = state_ref.get_connection(conn_id) else {
             return;
         };
+        // The SFTP builders resolve the route from the connection they are given.
+        let mut launch_conn = stored_conn.clone();
+        if let Some(gateway) = state_ref.chosen_gateway(stored_conn, &state_ref.list_groups_owned())
+        {
+            rustconn_core::connection::gateway_failover::use_gateway(&mut launch_conn, gateway);
+        }
+        let conn = &launch_conn;
         let use_mc = state_ref.settings().terminal.sftp_use_mc;
 
         // Collect groups for SSH inheritance resolution, and connections so a
@@ -2310,9 +2408,16 @@ impl MainWindow {
         connection_id: Uuid,
     ) {
         let state_ref = state.borrow();
-        let Some(conn) = state_ref.get_connection(connection_id) else {
+        let Some(stored_conn) = state_ref.get_connection(connection_id) else {
             return;
         };
+        // The SFTP builders resolve the route from the connection they are given.
+        let mut launch_conn = stored_conn.clone();
+        if let Some(gateway) = state_ref.chosen_gateway(stored_conn, &state_ref.list_groups_owned())
+        {
+            rustconn_core::connection::gateway_failover::use_gateway(&mut launch_conn, gateway);
+        }
+        let conn = &launch_conn;
         let use_mc = state_ref.settings().terminal.sftp_use_mc;
         let groups: Vec<rustconn_core::models::ConnectionGroup> = state_ref.list_groups_owned();
         // Needed to resolve a jump host stored as a connection reference.

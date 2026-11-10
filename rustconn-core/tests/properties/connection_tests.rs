@@ -2493,6 +2493,9 @@ proptest! {
                 ProtocolType::Mosh => ProtocolConfig::Mosh(
                     rustconn_core::MoshConfig::default(),
                 ),
+                ProtocolType::WinRm => {
+                    ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+                }
                 ProtocolType::Web => ProtocolConfig::Web(
                     rustconn_core::models::WebConfig::default(),
                 ),
@@ -2566,6 +2569,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2632,6 +2638,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2684,6 +2693,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2743,6 +2755,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),

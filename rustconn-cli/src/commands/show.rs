@@ -90,6 +90,17 @@ fn print_json(
     let Some(map) = obj.as_object_mut() else {
         return Err(CliError::Config("Failed to build JSON object".to_string()));
     };
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        map.insert(
+            "fallback_jump_hosts".to_string(),
+            serde_json::Value::from(names),
+        );
+    }
 
     match &connection.protocol_config {
         ProtocolConfig::Ssh(config) => {
@@ -326,6 +337,18 @@ fn print_json(
                     serde_json::json!(config.zoom_level),
                 );
             }
+            if let Some(proxy) = &config.socks_proxy {
+                map.insert("socks_proxy".to_string(), serde_json::json!(proxy));
+            }
+            if let Some(user) = &config.socks_proxy_username {
+                map.insert("socks_proxy_username".to_string(), serde_json::json!(user));
+            }
+        }
+        ProtocolConfig::WinRm(config) => {
+            map.insert(
+                "use_ssl".to_string(),
+                serde_json::Value::Bool(config.use_ssl),
+            );
         }
         _ => {}
     }
@@ -418,6 +441,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
 
     if !connection.tags.is_empty() {
         println!("  Tags:     {}", connection.tags.join(", "));
+    }
+
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        println!("  Fallback Jump Hosts: {}", names.join(", "));
     }
 
     if let Some(last) = connection.last_connected {
@@ -599,6 +631,18 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             if (config.zoom_level - 1.0).abs() > f64::EPSILON {
                 println!("  Zoom Level:   {:.0}%", config.zoom_level * 100.0);
             }
+            if let Some(proxy) = &config.socks_proxy {
+                println!("  SOCKS Proxy:  {proxy}");
+            }
+            if let Some(user) = &config.socks_proxy_username {
+                println!("  SOCKS User:   {user}");
+            }
+        }
+        ProtocolConfig::WinRm(ref config) => {
+            println!(
+                "  HTTPS:        {}",
+                if config.use_ssl { "yes" } else { "no" }
+            );
         }
         _ => {}
     }

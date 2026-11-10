@@ -945,6 +945,7 @@ impl RdmImporter {
             password_source,
             kdbx_path_override: None,
             network_mode: crate::models::NetworkMode::default(),
+            fallback_jump_host_ids: Vec::new(),
             domain,
             custom_properties: Vec::new(),
             pre_connect_task: None,

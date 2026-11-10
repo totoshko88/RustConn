@@ -338,6 +338,7 @@ fn parse_protocol(s: &str) -> Option<ProtocolType> {
         "kubernetes" | "k8s" => Some(ProtocolType::Kubernetes),
         "mosh" => Some(ProtocolType::Mosh),
         "web" | "http" | "https" => Some(ProtocolType::Web),
+        "winrm" => Some(ProtocolType::WinRm),
         _ => None,
     }
 }
@@ -356,6 +357,7 @@ fn default_protocol_config(pt: ProtocolType) -> ProtocolConfig {
         ProtocolType::Kubernetes => ProtocolConfig::Kubernetes(KubernetesConfig::default()),
         ProtocolType::Mosh => ProtocolConfig::Mosh(crate::models::MoshConfig::default()),
         ProtocolType::Web => ProtocolConfig::Web(crate::models::WebConfig::default()),
+        ProtocolType::WinRm => ProtocolConfig::WinRm(crate::models::WinRmConfig::default()),
     }
 }
 

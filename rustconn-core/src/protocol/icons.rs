@@ -126,6 +126,7 @@ pub const fn get_protocol_icon(protocol: ProtocolType) -> &'static str {
         ProtocolType::Kubernetes => "system-run-symbolic",
         ProtocolType::Mosh => "utilities-terminal-symbolic",
         ProtocolType::Web => "web-browser-symbolic",
+        ProtocolType::WinRm => "utilities-terminal-symbolic",
     }
 }
 

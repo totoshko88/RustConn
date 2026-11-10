@@ -267,7 +267,7 @@ impl ConnectionDialog {
 
     /// Maps a protocol dropdown index to its protocol id.
     pub(super) fn protocol_id_at(selected: u32) -> Option<&'static str> {
-        const PROTOCOLS: [&str; 11] = [
+        const PROTOCOLS: [&str; 12] = [
             "ssh",
             "rdp",
             "vnc",
@@ -279,6 +279,7 @@ impl ConnectionDialog {
             "kubernetes",
             "mosh",
             "web",
+            "winrm",
         ];
         PROTOCOLS.get(selected as usize).copied()
     }
@@ -337,7 +338,7 @@ impl ConnectionDialog {
         let uses_password = custom_command
             || matches!(
                 protocol_id,
-                "ssh" | "sftp" | "rdp" | "vnc" | "spice" | "web" | "telnet"
+                "ssh" | "sftp" | "rdp" | "vnc" | "spice" | "web" | "telnet" | "winrm"
             );
         fields.pw_source_row.set_visible(uses_password);
         // The inline password row belongs to the Vault source. Recomputed rather
@@ -350,9 +351,11 @@ impl ConnectionDialog {
                 && fields.password_source_dropdown.selected() == PASSWORD_SOURCE_VAULT_INDEX,
         );
 
-        // Domain only relevant for RDP (GEN-2)
+        // Domain only relevant for RDP (GEN-2) and WinRM
         let is_rdp = protocol_id == "rdp";
-        fields.domain_row.set_visible(is_rdp);
+        fields
+            .domain_row
+            .set_visible(is_rdp || protocol_id == "winrm");
 
         // MOSH settings group visible only when MOSH is selected
         fields
@@ -376,6 +379,7 @@ impl ConnectionDialog {
             "vnc" | "spice" => 5900.0,
             "zerotrust" | "serial" | "kubernetes" => 0.0,
             "telnet" => 23.0,
+            "winrm" => 5985.0,
             _ => 22.0, // ssh, sftp, mosh
         }
     }
@@ -387,6 +391,7 @@ impl ConnectionDialog {
             || (port - 23.0).abs() < EPSILON
             || (port - 3389.0).abs() < EPSILON
             || (port - 5900.0).abs() < EPSILON
+            || (port - 5985.0).abs() < EPSILON
             || port.abs() < EPSILON
     }
 }

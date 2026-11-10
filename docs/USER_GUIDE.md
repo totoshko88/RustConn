@@ -96,7 +96,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### First Connection
 
 1. Press **Ctrl+N** or click **+** in header bar — the **Connection Wizard** opens
-2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Zero Trust, Web)
+2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, WinRM, Serial, Kubernetes, Zero Trust, Web)
 3. Enter host and connection details
 4. Configure authentication (password, SSH key, or SSH Agent) and terminal theme
 5. Click **Save & Connect**
@@ -206,7 +206,7 @@ The Connection Wizard provides a streamlined 3-step flow for creating connection
 Protocols are displayed in a grouped FlowBox layout that wraps adaptively on narrow windows:
 - **Secure Shell:** SSH, MOSH, SFTP
 - **Remote Desktop:** RDP, VNC, SPICE
-- **Terminal:** Telnet, Serial, Custom Command
+- **Terminal:** Telnet, WinRM, Serial, Custom Command
 - **Other:** Kubernetes, Zero Trust, Web
 
 **Step 2 — Connection Details:**
@@ -349,6 +349,18 @@ A connection can reach its target through a bastion without naming one itself. T
 
 The *ProxyJump* field's subtitle names the bastion a connection has inherited — a group's or the global one, whether it was typed as `user@host` or picked from the dropdown — so a connection routed through one is not silently doing so. It follows *Network Mode* as you change it, and says so when *Direct* is ignoring an inherited bastion.
 
+#### Fallback Jump Hosts
+
+A connection or a group can list **Fallback Jump Hosts** behind its *Jump Host* (connection: Edit connection → **General** → *Connection*; group: Edit group → **SSH Settings**). This works for SSH, SFTP, RDP, VNC and SPICE.
+
+Before each new connection or reconnect, RustConn checks the gateways in order and uses the first one that accepts a TCP connection and identifies itself as an SSH server within the *port check timeout*. A toast names the fallback when one is used, and the next connection tries the primary again.
+
+- If no gateway answers, RustConn tries the first one and shows the normal SSH error. It never falls back to connecting directly.
+- Only reachability is checked. A gateway that answers but rejects your login, or that cannot reach the target, does not trigger a fallback.
+- Fallbacks belong to the *Jump Host* at the same level: a connection with its own *Jump Host* does not pick up its group's fallbacks. The global tier has no fallback list.
+- A gateway behind a free-text *ProxyJump* cannot be checked and is treated as available. Free-text *ProxyJump* values and custom *ProxyCommand* routes have no failover.
+- `rustconn-cli connect` does not use saved jump hosts, so it has no failover; `rustconn-cli sftp --mc` and `--cli` do.
+
 Three notes on scope:
 
 - The **global** tier exists because a group cannot stand in for "everything". There is no single implicit root group — a top-level group is just a group with no parent, and there can be many — and an ungrouped connection has no chain to walk, so nothing set on a group can reach it.
@@ -379,6 +391,16 @@ For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
+
+### WinRM (Windows PowerShell)
+
+A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package); it is not available inside the Flatpak sandbox.
+
+- Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
+- Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
+- A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p` and `-H`. With no saved password, type it in the terminal.
+- A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
+- To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
 
 ### Automatic Login (Telnet & Serial)
 
@@ -667,6 +689,7 @@ Temporary connection without saving:
 | Edit | Ctrl+E or right-click → Edit |
 | Rename | F2 or right-click → Rename |
 | Duplicate | Ctrl+D or right-click → Duplicate |
+| Duplicate as a numbered range | Right-click → Duplicate as Range… — `host[02-10]` creates `host02` … `host10`, and `host[2-10]` creates `host2` … `host10`. *Host Pattern* fills in by itself when the host contains the connection's name; otherwise enter one such as `10.0.0.[2-10]`. Up to 256 at a time; names that already exist are skipped |
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
@@ -776,6 +799,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, backspace/delete key behavior, custom arguments |
 | Telnet | Custom arguments, backspace key behavior, delete key behavior |
+| WinRM | Use HTTPS, custom arguments |
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
@@ -2146,6 +2170,13 @@ Disable JavaScript execution for specific connections in the connection dialog's
 **Accept Invalid TLS Certificates:**
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
 
+**SOCKS5 Proxy:**
+If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy**. Every request from the browser then goes through it, and this setting cannot be combined with **Tunnel Through SSH**.
+
+If the proxy needs a login, fill in **SOCKS5 Username** and name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
+
+The embedded browser, Chromium-based browsers and Firefox all work; external ones open with a separate, temporary profile. With the System browser mode, RustConn opens an installed browser that can use the proxy instead of your default if it can't. If none is found the page is **not opened** rather than loaded directly.
+
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
 dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
@@ -3356,6 +3387,19 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 - Before connecting, RustConn builds the SPA payload, encrypts it with AES-256-CBC (OpenSSL-compatible `Salted__` / EVP_BytesToKey key derivation), appends an HMAC-SHA256 digest, and sends it as one UDP datagram. A fresh random salt and timestamp make every packet unique.
 - SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
 - The keys never appear in the config file — only vault references are stored.
+
+### Run Local Script
+
+Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+
+- The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
+- It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
+- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. Hosts set to ask for a password at connect get a field each; leave one empty to reuse the field above it.
+- WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
+- A host whose key is not yet known is refused. Connect to it once normally and accept the key.
+- **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
+- **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
+- Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
 
 ### Broadcast Input
 

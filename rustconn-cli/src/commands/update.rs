@@ -7,7 +7,7 @@ use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
     apply_jump_host_id, apply_ssh_wave2_fields, parse_auth_method, parse_resolution,
-    parse_shared_folder, parse_spice_image_compression,
+    parse_shared_folder, parse_spice_image_compression, resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -159,6 +159,8 @@ pub(super) struct UpdateParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
+    pub clear_fallback_jump_hosts: bool,
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -245,6 +247,13 @@ pub(super) struct UpdateParams<'a> {
     pub web_toolbar: Option<bool>,
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
+    pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: Option<bool>,
+    pub winrm_accept_invalid_certs: Option<bool>,
     // Output filter (postpend command) — terminal protocols
     pub postpend_command: Option<&'a str>,
     pub postpend_arg: &'a [String],
@@ -289,6 +298,13 @@ pub(super) fn cmd_update(
             .position(|c| c.id == conn_id)
             .ok_or_else(|| CliError::Config("Connection disappeared during lookup".to_string()))?
     };
+
+    // Resolve fallback jump hosts for the same reason as --jump-host below.
+    let resolved_fallbacks = resolve_fallback_jump_hosts(
+        &connections,
+        params.fallback_jump_hosts,
+        connections[index].id,
+    )?;
 
     // Resolve --jump-host early (before mutable borrow of connection)
     let resolved_jump_id = if let Some(jump_host_ref) = params.jump_host {
@@ -642,6 +658,11 @@ pub(super) fn cmd_update(
         }
         apply_jump_host_id(connection, jump_id)?;
     }
+    if params.clear_fallback_jump_hosts {
+        connection.fallback_jump_host_ids.clear();
+    } else if !resolved_fallbacks.is_empty() {
+        connection.fallback_jump_host_ids = resolved_fallbacks;
+    }
 
     // Apply RDP-specific fields (gateway, RemoteApp, resolution, etc.)
     if params.gateway.is_some()
@@ -821,6 +842,64 @@ pub(super) fn cmd_update(
                 "Web-specific options (--browser-mode, --javascript, --user-agent, \
                  --accept-invalid-certs, --private-mode, --zoom-level) are only applicable to Web connections"
             );
+        }
+    }
+
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        cfg.socks_proxy = if proxy.trim().is_empty() {
+            None
+        } else {
+            Some(
+                rustconn_core::protocol::normalize_socks_proxy(proxy)
+                    .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+            )
+        };
+    }
+
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        let value = |text: &str| (!text.trim().is_empty()).then(|| text.trim().to_string());
+        if let Some(user) = params.socks_proxy_user {
+            cfg.socks_proxy_username = value(user);
+        }
+        if let Some(variable) = params.socks_proxy_password_var {
+            cfg.socks_proxy_password_variable = value(variable);
+        }
+        if let Some(browser) = params.browser {
+            cfg.browser = value(browser);
+        }
+    }
+
+    if params.winrm_ssl.is_some() || params.winrm_accept_invalid_certs.is_some() {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
+            ));
+        };
+        if let Some(use_ssl) = params.winrm_ssl {
+            cfg.use_ssl = use_ssl;
+        }
+        if let Some(accept) = params.winrm_accept_invalid_certs {
+            cfg.accept_invalid_certs = accept;
         }
     }
 

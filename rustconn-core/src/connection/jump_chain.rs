@@ -31,7 +31,7 @@ use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
 /// Matches the limit the GUI resolvers use. A chain this long is a
 /// configuration mistake, not a topology anyone maintains deliberately, and the
 /// cap is a second line of defence behind the visited-set cycle check.
-const MAX_HOPS: usize = 10;
+pub(super) const MAX_HOPS: usize = 10;
 
 /// A resolved jump-host chain.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -85,7 +85,7 @@ impl JumpChain {
 /// Formats a connection as an OpenSSH hop spec: `[user@]host[:port]`.
 ///
 /// The port is omitted when it is 22, matching what the GUI resolvers emit.
-fn hop_spec(conn: &Connection) -> String {
+pub(super) fn hop_spec(conn: &Connection) -> String {
     let mut spec = conn.host.clone();
     if let Some(user) = &conn.username {
         spec = format!("{user}@{spec}");
@@ -97,18 +97,19 @@ fn hop_spec(conn: &Connection) -> String {
 }
 
 /// Returns the `jump_host_id` of an SSH-family connection.
-fn jump_host_id_of(conn: &Connection) -> Option<Uuid> {
+pub(super) fn jump_host_id_of(conn: &Connection) -> Option<Uuid> {
     match &conn.protocol_config {
         ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
         ProtocolConfig::Rdp(c) => c.jump_host_id,
         ProtocolConfig::Vnc(c) => c.jump_host_id,
         ProtocolConfig::Spice(c) => c.jump_host_id,
+        ProtocolConfig::WinRm(c) => c.jump_host_id,
         _ => None,
     }
 }
 
 /// Returns the free-text `proxy_jump` of an SSH-family connection.
-fn proxy_jump_of(conn: &Connection) -> Option<&str> {
+pub(super) fn proxy_jump_of(conn: &Connection) -> Option<&str> {
     match &conn.protocol_config {
         ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.proxy_jump.as_deref(),
         _ => None,
@@ -263,8 +264,8 @@ pub enum BastionFallback {
 
 /// Returns `true` when `connection`'s launch path routes through a jump host.
 ///
-/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC and SPICE reach a bastion
-/// through an SSH tunnel. SPICE over a local Unix socket connects locally and
+/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC, SPICE and WinRM reach a
+/// bastion through an SSH tunnel. SPICE over a local Unix socket connects locally and
 /// ignores the jump host. Every other protocol (Telnet, Serial, Kubernetes,
 /// MOSH, Zero Trust, Web, …) never consults one — an inherited group or global
 /// jump host means nothing to it, so a dangling one must not be reported.
@@ -274,7 +275,8 @@ pub fn routes_through_jump_host(connection: &Connection) -> bool {
         ProtocolConfig::Ssh(_)
         | ProtocolConfig::Sftp(_)
         | ProtocolConfig::Rdp(_)
-        | ProtocolConfig::Vnc(_) => true,
+        | ProtocolConfig::Vnc(_)
+        | ProtocolConfig::WinRm(_) => true,
         ProtocolConfig::Spice(c) => c.unix_socket_path.is_none(),
         _ => false,
     }
@@ -420,6 +422,18 @@ pub fn find_dangling_bastions_by<'a>(
     let mut dangling = Vec::new();
 
     if !routes_through_jump_host(connection) {
+        return dangling;
+    }
+
+    // A missing primary with a live fallback is not a skipped hop: failover
+    // routes through the fallback, so there is no direct connection to warn of.
+    let candidates = crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates(
+        connection, groups, network,
+    );
+    if let [primary, fallbacks @ ..] = candidates.as_slice()
+        && lookup(*primary).is_none()
+        && fallbacks.iter().any(|id| lookup(*id).is_some())
+    {
         return dangling;
     }
 

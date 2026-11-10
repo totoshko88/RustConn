@@ -122,6 +122,13 @@ impl ProtocolPage {
                     is_custom_command: false,
                 },
                 ProtocolDef {
+                    protocol: ProtocolType::WinRm,
+                    label: "WinRM",
+                    subtitle: "Windows PowerShell",
+                    icon: "utilities-terminal-symbolic",
+                    is_custom_command: false,
+                },
+                ProtocolDef {
                     protocol: ProtocolType::Serial,
                     label: "Serial",
                     subtitle: "Console port",

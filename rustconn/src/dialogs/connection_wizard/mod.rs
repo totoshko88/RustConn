@@ -200,6 +200,9 @@ impl PartialConnection {
             ProtocolConfig::Web(_) => {
                 partial.url = Some(conn.host.clone());
             }
+            ProtocolConfig::WinRm(cfg) => {
+                partial.jump_host_id = cfg.jump_host_id;
+            }
             ProtocolConfig::Telnet(_) => {}
         }
 
@@ -317,6 +320,10 @@ impl PartialConnection {
             ProtocolType::Telnet => {
                 ProtocolConfig::Telnet(rustconn_core::models::TelnetConfig::default())
             }
+            ProtocolType::WinRm => ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig {
+                jump_host_id: self.jump_host_id,
+                ..Default::default()
+            }),
             ProtocolType::Serial => {
                 let mut cfg = rustconn_core::models::SerialConfig {
                     device: self.serial_device.clone().unwrap_or_default(),
@@ -742,6 +749,10 @@ impl ConnectionWizard {
             ProtocolType::Telnet => {
                 ProtocolConfig::Telnet(rustconn_core::models::TelnetConfig::default())
             }
+            ProtocolType::WinRm => ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig {
+                jump_host_id: partial.jump_host_id,
+                ..Default::default()
+            }),
             ProtocolType::Serial => {
                 let mut cfg = rustconn_core::models::SerialConfig::default();
                 if let Some(ref device) = partial.serial_device {

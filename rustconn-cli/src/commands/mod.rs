@@ -19,6 +19,7 @@ mod monitor;
 mod move_cmd;
 mod pin;
 mod recording;
+mod run_script;
 #[cfg(any(feature = "secret-management", feature = "keepass-verify"))]
 mod secret;
 mod sftp;
@@ -95,6 +96,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             boundary_addr,
             custom_command,
             jump_host,
+            fallback_jump_host,
             keep_alive_interval,
             keep_alive_count,
             ssh_verbose,
@@ -174,6 +176,12 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             private_mode,
             zoom_level,
             tunnel_via,
+            socks_proxy,
+            socks_proxy_user,
+            socks_proxy_password_var,
+            browser,
+            winrm_ssl,
+            winrm_accept_invalid_certs,
         } => {
             // Bulk add from a file (or stdin) short-circuits the single-connection
             // flag assembly: --from-file conflicts with --name/--host at the clap
@@ -220,6 +228,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                     boundary_addr: boundary_addr.as_deref(),
                     custom_command: custom_command.as_deref(),
                     jump_host: jump_host.as_deref(),
+                    fallback_jump_hosts: &fallback_jump_host,
                     keep_alive_interval,
                     keep_alive_count,
                     ssh_verbose,
@@ -299,6 +308,12 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                     private_mode,
                     zoom_level,
                     tunnel_via: tunnel_via.as_deref(),
+                    socks_proxy: socks_proxy.as_deref(),
+                    socks_proxy_user: socks_proxy_user.as_deref(),
+                    socks_proxy_password_var: socks_proxy_password_var.as_deref(),
+                    browser: browser.as_deref(),
+                    winrm_ssl,
+                    winrm_accept_invalid_certs,
                 },
             )
         }
@@ -368,6 +383,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             boundary_addr,
             custom_command,
             jump_host,
+            fallback_jump_host,
+            clear_fallback_jump_hosts,
             keep_alive_interval,
             keep_alive_count,
             ssh_verbose,
@@ -448,6 +465,12 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
             web_toolbar,
             private_mode,
             zoom_level,
+            socks_proxy,
+            socks_proxy_user,
+            socks_proxy_password_var,
+            browser,
+            winrm_ssl,
+            winrm_accept_invalid_certs,
             postpend_command,
             postpend_arg,
             postpend_enabled,
@@ -488,6 +511,8 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 boundary_addr: boundary_addr.as_deref(),
                 custom_command: custom_command.as_deref(),
                 jump_host: jump_host.as_deref(),
+                fallback_jump_hosts: &fallback_jump_host,
+                clear_fallback_jump_hosts,
                 keep_alive_interval,
                 keep_alive_count,
                 ssh_verbose,
@@ -568,6 +593,12 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 web_toolbar,
                 private_mode,
                 zoom_level,
+                socks_proxy: socks_proxy.as_deref(),
+                socks_proxy_user: socks_proxy_user.as_deref(),
+                socks_proxy_password_var: socks_proxy_password_var.as_deref(),
+                browser: browser.as_deref(),
+                winrm_ssl,
+                winrm_accept_invalid_certs,
                 postpend_command: postpend_command.as_deref(),
                 postpend_arg: &postpend_arg,
                 postpend_enabled,
@@ -591,7 +622,38 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
         Commands::SmartFolder(subcmd) => smart_folder::cmd_smart_folder(config_path, subcmd),
         Commands::DynamicFolder(subcmd) => dynamic_folder::cmd_dynamic_folder(config_path, subcmd),
         Commands::Recording(subcmd) => recording::cmd_recording(subcmd),
-        Commands::Duplicate { name, new_name } => {
+        Commands::RunScript {
+            script,
+            connections,
+            groups,
+            parallel,
+            timeout,
+            yes,
+        } => run_script::cmd_run_script(
+            config_path,
+            &run_script::RunScriptParams {
+                script: &script,
+                connections: &connections,
+                groups: &groups,
+                parallel,
+                timeout_secs: timeout,
+                assume_yes: yes,
+            },
+        ),
+        Commands::Duplicate {
+            name,
+            new_name,
+            range,
+            host_range,
+        } => {
+            if let Some(range) = range {
+                return duplicate::cmd_duplicate_range(
+                    config_path,
+                    &name,
+                    &range,
+                    host_range.as_deref(),
+                );
+            }
             duplicate::cmd_duplicate(config_path, &name, new_name.as_deref())
         }
         Commands::Sftp { name, cli, mc } => sftp::cmd_sftp(config_path, &name, cli, mc),

@@ -181,6 +181,8 @@ impl ConnectionDialog {
             conn.network_mode == rustconn_core::models::NetworkMode::Direct,
         ));
         self.update_inherited_proxy_subtitle(conn);
+        self.fallback_jump_hosts
+            .set_value(Some(conn.id), &conn.fallback_jump_host_ids);
 
         // Protocol and protocol-specific fields
         match &conn.protocol_config {
@@ -209,6 +211,23 @@ impl ConnectionDialog {
                 self.protocol_dropdown.set_selected(4); // Zero Trust
                 self.protocol_stack.set_visible_child_name("zerotrust");
                 self.set_zerotrust_config(zt);
+            }
+            ProtocolConfig::WinRm(winrm_config) => {
+                self.protocol_dropdown.set_selected(11); // WinRM
+                self.protocol_stack.set_visible_child_name("winrm");
+                self.winrm_ssl_switch.set_active(winrm_config.use_ssl);
+                self.winrm_accept_certs_switch
+                    .set_active(winrm_config.accept_invalid_certs);
+                select_jump_host(
+                    &self.winrm_jump_host_dropdown,
+                    None,
+                    &self.vnc_connections_data.borrow(),
+                    winrm_config.jump_host_id,
+                    *self.editing_id.borrow(),
+                    &i18n("Tunnel WinRM through an SSH connection"),
+                );
+                self.winrm_custom_args_entry
+                    .set_text(&winrm_config.custom_args.join(" "));
             }
             ProtocolConfig::Telnet(telnet_config) => {
                 self.protocol_dropdown.set_selected(5); // Telnet
@@ -514,6 +533,12 @@ impl ConnectionDialog {
         }
 
         *self.connections_data.borrow_mut() = connections_data.clone();
+        self.fallback_jump_hosts.set_options(
+            connections_data
+                .iter()
+                .filter_map(|(id, label)| id.map(|id| (id, label.clone())))
+                .collect(),
+        );
 
         let display_strings: Vec<&str> = connections_data
             .iter()
@@ -530,6 +555,8 @@ impl ConnectionDialog {
         *self.vnc_connections_data.borrow_mut() = connections_data.clone();
         let vnc_model = StringList::new(&display_strings);
         self.vnc_jump_host_dropdown.set_model(Some(&vnc_model));
+        let winrm_model = StringList::new(&display_strings);
+        self.winrm_jump_host_dropdown.set_model(Some(&winrm_model));
 
         *self.spice_connections_data.borrow_mut() = connections_data.clone();
         let spice_model = StringList::new(&display_strings);
@@ -1827,6 +1854,15 @@ impl ConnectionDialog {
         } else {
             self.web_tunnel_dropdown.set_selected(0);
         }
+        self.web_socks_proxy_row
+            .set_text(web.socks_proxy.as_deref().unwrap_or_default());
+        self.web_socks_user_row
+            .set_text(web.socks_proxy_username.as_deref().unwrap_or_default());
+        self.web_socks_password_var_row.set_text(
+            web.socks_proxy_password_variable
+                .as_deref()
+                .unwrap_or_default(),
+        );
     }
 }
 

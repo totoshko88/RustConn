@@ -565,6 +565,11 @@ pub struct Connection {
     /// or `jump_host_id` set on the connection itself outranks both.
     #[serde(default)]
     pub network_mode: NetworkMode,
+    /// Saved jump hosts to try, in order, when this connection's own Jump Host
+    /// is unreachable. Ignored unless the connection has its own primary; see
+    /// [`crate::connection::gateway_failover`].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fallback_jump_host_ids: Vec<Uuid>,
     /// Domain for RDP/Windows authentication
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub domain: Option<String>,
@@ -752,6 +757,7 @@ impl Connection {
             password_source: PasswordSource::None,
             kdbx_path_override: None,
             network_mode: NetworkMode::default(),
+            fallback_jump_host_ids: Vec::new(),
             domain: None,
             custom_properties: Vec::new(),
             pre_connect_task: None,
@@ -1337,6 +1343,7 @@ impl Connection {
             }
             ProtocolConfig::Rdp(c) => c.jump_host_id.is_some() || c.gateway.is_some(),
             ProtocolConfig::Vnc(c) => c.jump_host_id.is_some(),
+            ProtocolConfig::WinRm(c) => c.jump_host_id.is_some(),
             ProtocolConfig::Spice(c) => c.jump_host_id.is_some() || c.proxy.is_some(),
             ProtocolConfig::ZeroTrust(_) | ProtocolConfig::Web(_) => true,
             _ => false,

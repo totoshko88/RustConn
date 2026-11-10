@@ -302,6 +302,7 @@ impl AuthPage {
                 | ProtocolType::Rdp
                 | ProtocolType::Vnc
                 | ProtocolType::Spice
+                | ProtocolType::WinRm
         );
 
         let is_vte = matches!(
@@ -310,6 +311,7 @@ impl AuthPage {
                 | ProtocolType::Mosh
                 | ProtocolType::Sftp
                 | ProtocolType::Telnet
+                | ProtocolType::WinRm
                 | ProtocolType::Serial
                 | ProtocolType::Kubernetes
                 | ProtocolType::ZeroTrust

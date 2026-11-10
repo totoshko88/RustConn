@@ -28,6 +28,7 @@ mod prompt_autofill;
 pub(crate) mod protocols;
 mod protocols_ssh;
 mod rdp_vnc;
+mod remote_script;
 mod resume_monitor;
 mod session_lifecycle;
 pub mod session_restore;
@@ -964,6 +965,7 @@ impl MainWindow {
                 let is_vte_protocol = protocol.as_deref().is_some_and(|p| {
                     p == "ssh"
                         || p == "telnet"
+                        || p == "winrm"
                         || p == "serial"
                         || p == "kubernetes"
                         || p == "mosh"
@@ -3138,6 +3140,42 @@ impl MainWindow {
             }
         }
 
+        // Jump host failover: the choice is made off the main thread, so a
+        // connection with fallbacks comes back through here once it is known.
+        // Ahead of Wake-on-LAN and the pre-connect task, which must run once.
+        drop(state_ref);
+        let retry = {
+            let state = state.clone();
+            let notebook = notebook.clone();
+            let sidebar = sidebar.clone();
+            let monitoring = Rc::clone(monitoring);
+            let observer = observer.clone();
+            move || {
+                let result = Self::start_connection_inner(
+                    &state,
+                    &notebook,
+                    &sidebar,
+                    &monitoring,
+                    connection_id,
+                    observer,
+                    false,
+                );
+                if matches!(result, types::ConnectionStartResult::Failed) {
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                        "Connection failed",
+                    ));
+                }
+            }
+        };
+        if protocols::start_gateway_probe(state, connection_id, retry) {
+            return types::ConnectionStartResult::Pending;
+        }
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(connection_id) else {
+            return types::ConnectionStartResult::Failed;
+        };
+
         // Auto-WoL: send magic packet before connecting if configured
         // Fire-and-forget on background thread to avoid blocking GTK
         if let Some(wol_config) = conn.get_wol_config() {
@@ -3379,7 +3417,7 @@ impl MainWindow {
         // *may* be pending so we can distinguish Pending from Failed below.
         let may_be_pending = matches!(
             protocol.as_str(),
-            "ssh" | "vnc" | "spice" | "telnet" | "mosh"
+            "ssh" | "vnc" | "spice" | "telnet" | "winrm" | "mosh"
         );
 
         // The key sequence goes out when the session exists, which for an
@@ -3421,7 +3459,7 @@ impl MainWindow {
                 connection_id,
                 &conn_clone,
             ),
-            "telnet" => protocols::start_telnet_connection_observed(
+            "telnet" | "winrm" => protocols::start_telnet_connection_observed(
                 state,
                 notebook,
                 sidebar,

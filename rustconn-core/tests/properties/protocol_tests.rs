@@ -518,6 +518,7 @@ proptest! {
             ProtocolConfig::Kubernetes(_) => 0u16,
             ProtocolConfig::Mosh(_) => 22u16,
             ProtocolConfig::Web(_) => 0u16,
+            ProtocolConfig::WinRm(_) => 5985u16,
         };
 
         prop_assert_eq!(

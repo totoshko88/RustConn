@@ -144,8 +144,8 @@ Options:
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
 | `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
-| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23) |
-| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
+| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
+| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
 | `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
 | `--key` | `-k` | Path to SSH private key file |
@@ -156,6 +156,7 @@ Options:
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
 | `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
+| `--fallback-jump-host` | — | Saved SSH connection to try when the jump host is unreachable. Repeat in failover order. Needs a jump host on the connection; `update` replaces the list, and `--clear-fallback-jump-hosts` removes it |
 | `--keep-alive-interval` | — | SSH keep-alive interval in seconds (`ServerAliveInterval`) |
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
 | `--ssh-verbose` | — | Enable SSH verbose/debug output (`-v` flag) |
@@ -233,6 +234,12 @@ Options:
 | `--web-toolbar` | — | Floating navigation toolbar in the embedded browser: `true` (default) or `false`; bare `--web-toolbar` = `false`. Off removes the toolbar and its reveal arrow; the keyboard routes (Alt+←/→, Ctrl+R, Ctrl+L, Ctrl+±/0) keep working |
 | `--private-mode` | — | Open in private/incognito mode (custom browser) |
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
+| `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it with an empty value. A browser that cannot use it is not opened |
+| `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
+| `--socks-proxy-password-var` | — | Secret global variable holding that login's password |
+| `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
+| `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
+| `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -255,6 +262,9 @@ rustconn-cli add -n "VM" -H 10.0.0.1 -P spice
 
 # Telnet
 rustconn-cli add -n "Switch" -H 10.0.0.1 -P telnet
+
+# WinRM (needs the evil-winrm client)
+rustconn-cli add -n "Windows" -H 10.0.0.5 -P winrm -u alice --domain CORP
 
 # Serial
 rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600
@@ -534,6 +544,34 @@ rustconn-cli duplicate "My Server" --new-name "Staging"     # Custom name
 ```
 
 The duplicate gets a new UUID, fresh timestamps, and no `last_connected` value.
+
+To create several copies at once, give a number range. Quote it so the shell leaves the brackets alone:
+
+```bash
+rustconn-cli duplicate "host01" --range 'host[02-10]'                                # host02 … host10
+rustconn-cli duplicate "host1" --range 'host[2-10]'                                  # host2 … host10
+rustconn-cli duplicate "web01" --range 'web[02-10]' --host-range '10.0.0.[2-10]'     # explicit addresses
+```
+
+The width of the first number sets the zero padding. `--host-range` is optional when the source's host contains its name (`host01.example.com` becomes `host02.example.com`), and otherwise required. It must cover the same count as `--range`. A range can create up to 256 connections, and names that already exist are skipped. Unlike the GUI, the CLI does not copy a password stored in a vault to the new connections.
+
+### run-script — Run a local script on SSH or WinRM connections
+
+```bash
+rustconn-cli run-script ./check.sh --on web1 --on web2       # Named connections
+rustconn-cli run-script ./check.sh --group Production --yes  # A group and its subgroups
+rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--on` | — | Connection name or UUID (repeatable) |
+| `--group` | — | Group name or UUID, including subgroups (repeatable) |
+| `--parallel` | 8 | Hosts at once (1–64) |
+| `--timeout` | 600 | Time limit per host, in seconds |
+| `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
+
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. A `.ps1` file runs in PowerShell on WinRM connections (needs the `pywinrm` Python library); any other file runs with bash on SSH connections. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`), for the hosts and their jump hosts. Connections set to ask at connect are each asked once; an empty answer reuses the previous one. With no terminal they use their keys.
 
 ### test — Test connectivity
 

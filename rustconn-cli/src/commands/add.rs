@@ -56,6 +56,7 @@ pub(super) struct AddParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -141,6 +142,13 @@ pub(super) struct AddParams<'a> {
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
     pub tunnel_via: Option<&'a str>,
+    pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: bool,
+    pub winrm_accept_invalid_certs: bool,
 }
 
 /// Add connection command handler
@@ -631,6 +639,14 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         apply_jump_host_id(&mut connection, jump_id)?;
     }
 
+    if !params.fallback_jump_hosts.is_empty() && params.jump_host.is_none() {
+        return Err(CliError::Config(
+            "--fallback-jump-host requires --jump-host".into(),
+        ));
+    }
+    connection.fallback_jump_host_ids =
+        resolve_fallback_jump_hosts(&connections, params.fallback_jump_hosts, connection.id)?;
+
     // Resolve --tunnel-via to a UUID (Web connections only): browse through the
     // referenced SSH connection's host via an auto-raised dynamic SOCKS proxy.
     if let Some(tunnel_ref) = params.tunnel_via {
@@ -644,6 +660,51 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
                 "--tunnel-via is only valid for Web connections".into(),
             ));
         }
+    }
+
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        cfg.socks_proxy = Some(
+            rustconn_core::protocol::normalize_socks_proxy(proxy)
+                .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+        );
+    }
+
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        cfg.socks_proxy_username = params.socks_proxy_user.map(str::to_string);
+        cfg.socks_proxy_password_variable = params.socks_proxy_password_var.map(str::to_string);
+        if let Some(browser) = params.browser {
+            cfg.browser = Some(browser.to_string());
+        }
+    }
+
+    if params.winrm_ssl || params.winrm_accept_invalid_certs {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
+            ));
+        };
+        cfg.use_ssl = params.winrm_ssl;
+        cfg.accept_invalid_certs = params.winrm_accept_invalid_certs;
     }
 
     ConfigManager::validate_connection(&connection)
@@ -985,6 +1046,14 @@ fn create_connection(
             ));
         }
         ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), port),
+        ProtocolType::WinRm => Connection::new(
+            name.to_string(),
+            host.to_string(),
+            port,
+            rustconn_core::models::ProtocolConfig::WinRm(
+                rustconn_core::models::WinRmConfig::default(),
+            ),
+        ),
         ProtocolType::Serial => Connection::new_serial(name.to_string(), host.to_string()),
         ProtocolType::Sftp => {
             let mut conn = Connection::new_sftp(name.to_string(), host.to_string(), port);
@@ -1228,6 +1297,26 @@ fn create_zerotrust_connection(name: &str, params: &AddParams<'_>) -> Result<Con
     }
 }
 
+/// Resolves `--fallback-jump-host` values to connection ids, in the given order.
+pub(super) fn resolve_fallback_jump_hosts(
+    connections: &[Connection],
+    references: &[String],
+    own_id: uuid::Uuid,
+) -> Result<Vec<uuid::Uuid>, CliError> {
+    references
+        .iter()
+        .map(|reference| {
+            let id = find_connection(connections, reference)?.id;
+            if id == own_id {
+                return Err(CliError::Config(
+                    "A connection cannot use itself as a jump host".into(),
+                ));
+            }
+            Ok(id)
+        })
+        .collect()
+}
+
 /// Set `jump_host_id` on a connection's protocol config.
 ///
 /// Supported protocols: SSH, SFTP, RDP, VNC, SPICE.
@@ -1250,6 +1339,9 @@ pub(super) fn apply_jump_host_id(
             cfg.jump_host_id = Some(jump_id);
         }
         rustconn_core::models::ProtocolConfig::Spice(ref mut cfg) => {
+            cfg.jump_host_id = Some(jump_id);
+        }
+        rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) => {
             cfg.jump_host_id = Some(jump_id);
         }
         _ => {

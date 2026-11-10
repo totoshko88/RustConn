@@ -174,6 +174,7 @@ pub fn show_context_menu_for_connection_item(
         &conn_id,
         is_group,
         is_ssh,
+        protocol == "ssh" || protocol == "winrm",
         offers_key_setup,
         can_tunnel_browser,
         is_connected,

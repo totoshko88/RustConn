@@ -72,6 +72,14 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Sftp => Connection::new_sftp(name, host, 22),
                 ProtocolType::Kubernetes => Connection::new_kubernetes(name),
                 ProtocolType::Mosh => Connection::new_mosh(name, host, 22),
+                ProtocolType::WinRm => Connection::new(
+                    name,
+                    host,
+                    5985,
+                    rustconn_core::ProtocolConfig::WinRm(
+                        rustconn_core::models::WinRmConfig::default(),
+                    ),
+                ),
                 ProtocolType::Web => Connection::new(
                     name,
                     "https://example.com".to_string(),

@@ -872,6 +872,16 @@ pub fn show_edit_group_dialog(
     ssh_jump_host_row.add_suffix(&ssh_jump_host_dropdown);
     ssh_expander.add_row(&ssh_jump_host_row);
 
+    let ssh_fallback_jump_hosts = crate::dialogs::widgets::FallbackJumpHostsEditor::new();
+    ssh_fallback_jump_hosts.set_options(
+        jump_host_data
+            .iter()
+            .filter_map(|(id, label)| id.map(|id| (id, label.clone())))
+            .collect(),
+    );
+    ssh_fallback_jump_hosts.set_value(None, &group.ssh_fallback_jump_host_ids);
+    ssh_expander.add_row(ssh_fallback_jump_hosts.widget());
+
     // SSH Proxy Jump text field (manual entry, fallback when no saved connection)
     let ssh_proxy_jump_row = adw::EntryRow::builder()
         .title(i18n("SSH Proxy Jump"))
@@ -1804,6 +1814,12 @@ pub fn show_edit_group_dialog(
                     } else {
                         None
                     };
+                    // Fallbacks only apply behind a primary of the same tier.
+                    updated.ssh_fallback_jump_host_ids = if updated.ssh_jump_host_id.is_some() {
+                        ssh_fallback_jump_hosts.value()
+                    } else {
+                        Vec::new()
+                    };
 
                     let agent_socket_text = ssh_agent_socket_row_clone.text().trim().to_string();
                     updated.ssh_agent_socket = if agent_socket_text.is_empty() {
@@ -1816,6 +1832,7 @@ pub fn show_edit_group_dialog(
                     updated.ssh_key_path = None;
                     updated.ssh_proxy_jump = None;
                     updated.ssh_jump_host_id = None;
+                    updated.ssh_fallback_jump_host_ids = Vec::new();
                     updated.ssh_agent_socket = None;
                 }
 
