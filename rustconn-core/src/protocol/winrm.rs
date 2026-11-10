@@ -138,6 +138,20 @@ fn secret_option(arg: &str) -> Option<SecretOption> {
     })
 }
 
+/// The secret option in `arg` as the user typed it, for an error message:
+/// `--` and the long name without what follows `=`, or a dash and the matched
+/// short letter. Never holds a value attached to the option.
+fn secret_option_name(arg: &str) -> Option<String> {
+    secret_option(arg)?;
+    if let Some(long) = arg.strip_prefix("--") {
+        let name = long.split_once('=').map_or(long, |(name, _)| name);
+        return Some(format!("--{name}"));
+    }
+    let cluster = arg.strip_prefix('-')?;
+    let letter = cluster.chars().find(|c| SECRET_SHORT_OPTIONS.contains(c))?;
+    Some(format!("-{letter}"))
+}
+
 /// The account name the client logs in with: `DOMAIN\\user` when a domain is set
 /// and the name does not already carry one.
 pub(crate) fn account_name(connection: &Connection) -> Option<String> {
@@ -176,14 +190,14 @@ impl Protocol for WinRmProtocol {
             return Err(ProtocolError::InvalidConfig("Port cannot be 0".to_string()));
         }
         if let ProtocolConfig::WinRm(config) = &connection.protocol_config
-            && config
+            && let Some(name) = config
                 .custom_args
                 .iter()
-                .any(|arg| secret_option(arg).is_some())
+                .find_map(|arg| secret_option_name(arg))
         {
-            return Err(ProtocolError::InvalidConfig(
-                "Custom arguments cannot hold a password or hash".to_string(),
-            ));
+            return Err(ProtocolError::InvalidConfig(format!(
+                "Custom arguments cannot hold a password or hash ({name})"
+            )));
         }
         Ok(())
     }
@@ -352,6 +366,30 @@ mod tests {
         ] {
             assert_eq!(secret_option(arg), None, "{arg}");
         }
+    }
+
+    #[test]
+    fn the_refusal_names_the_option_without_its_value() {
+        for (arg, name) in [
+            ("-phunter2", "-p"),
+            ("--pass=hunter2", "--pass"),
+            ("--HA", "--HA"),
+            ("-nH", "-H"),
+            ("-uHank", "-H"),
+        ] {
+            let conn = connection(WinRmConfig {
+                custom_args: vec!["-n".to_string(), arg.to_string()],
+                ..WinRmConfig::default()
+            });
+            let message = WinRmProtocol::new()
+                .validate_connection(&conn)
+                .unwrap_err()
+                .to_string();
+            assert!(message.contains(&format!("({name})")), "{arg}: {message}");
+            assert!(!message.contains("hunter2"), "{arg}: {message}");
+        }
+        assert_eq!(secret_option_name("-n"), None);
+        assert_eq!(secret_option_name("--port=1"), None);
     }
 
     #[test]
