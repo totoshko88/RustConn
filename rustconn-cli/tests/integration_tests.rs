@@ -592,7 +592,10 @@ fn show_prints_the_winrm_jump_host_and_options() {
     let value: serde_json::Value = serde_json::from_str(&json_text).expect("show prints JSON");
     assert_eq!(value["jump_host"], "bastion");
     assert_eq!(value["accept_invalid_certs"], true);
-    assert_eq!(value["custom_args"], serde_json::json!(["-n", "--spn", "HTTP"]));
+    assert_eq!(
+        value["custom_args"],
+        serde_json::json!(["-n", "--spn", "HTTP"])
+    );
     assert!(!json_text.contains("hunter2"), "{json_text}");
 
     let table = run_cli(&["show", "win1", "--format", "table"], Some(config_dir));
