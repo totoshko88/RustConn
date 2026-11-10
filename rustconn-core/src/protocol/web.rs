@@ -365,8 +365,8 @@ pub fn proxied_browser_args(
 /// # Errors
 ///
 /// Returns [`ProtocolError::InvalidConfig`] for an unusable proxy address, a
-/// proxy together with an SSH tunnel, or a login without a proxy or a password
-/// variable.
+/// proxy together with an SSH tunnel, or a login (a username or a password
+/// variable) that lacks the proxy, the username or the password variable.
 pub fn validate_socks_settings(config: &WebConfig) -> ProtocolResult<()> {
     if let Some(proxy) = &config.socks_proxy {
         normalize_socks_proxy(proxy)?;
@@ -376,11 +376,11 @@ pub fn validate_socks_settings(config: &WebConfig) -> ProtocolResult<()> {
             ));
         }
     }
-    if config.socks_proxy_username.is_some()
-        && (config.socks_proxy.is_none() || config.socks_proxy_password_variable.is_none())
-    {
+    let has_user = config.socks_proxy_username.is_some();
+    let has_variable = config.socks_proxy_password_variable.is_some();
+    if (has_user || has_variable) && !(config.socks_proxy.is_some() && has_user && has_variable) {
         return Err(ProtocolError::InvalidConfig(
-            "A SOCKS proxy login needs a proxy and a password variable".to_string(),
+            "A SOCKS proxy login needs a proxy, a username and a password variable".to_string(),
         ));
     }
     Ok(())
@@ -858,6 +858,24 @@ mod tests {
             config.socks_proxy_password_variable = Some("proxy_pw".to_string());
         }
         assert!(WebProtocol::new().validate_connection(&conn).is_ok());
+    }
+
+    #[test]
+    fn a_password_variable_without_a_username_is_refused() {
+        let mut config = WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".to_string()),
+            socks_proxy_password_variable: Some("proxy_pw".to_string()),
+            ..WebConfig::default()
+        };
+        let error = validate_socks_settings(&config).unwrap_err();
+        assert!(error.to_string().contains("a username"), "{error}");
+
+        config.socks_proxy = None;
+        assert!(validate_socks_settings(&config).is_err());
+
+        config.socks_proxy = Some("socks5://proxy:1080".to_string());
+        config.socks_proxy_username = Some("alice".to_string());
+        assert!(validate_socks_settings(&config).is_ok());
     }
 
     #[test]
