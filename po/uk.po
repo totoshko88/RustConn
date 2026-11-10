@@ -1757,7 +1757,7 @@ msgstr "Тунелюй SPICE через SSH-з'єднок"
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1895
 msgid ""
 "Set to this connection itself, which is ignored — pick another jump host"
-msgstr "Вказано саме цей з'єднок, що ігнорується — обери інший проміжний вузол"
+msgstr "Вказано саме цей з'єднок, що ігнорується — обери інший проміжний гост"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1898
 msgid ""
@@ -13106,13 +13106,13 @@ msgid_plural ""
 "{} cluster members have a jump host that no longer exists or points to "
 "itself: {}."
 msgstr[0] ""
-"{} учасник кластера має проміжний вузол, який більше не існує або вказує на "
+"{} учасник кластера має проміжний гост, який більше не існує або вказує на "
 "себе: {}."
 msgstr[1] ""
-"{} учасники кластера мають проміжний вузол, який більше не існує або вказує "
+"{} учасники кластера мають проміжний гост, який більше не існує або вказує "
 "на себе: {}."
 msgstr[2] ""
-"{} учасників кластера мають проміжний вузол, який більше не існує або вказує "
+"{} учасників кластера мають проміжний гост, який більше не існує або вказує "
 "на себе: {}."
 
 #: rustconn/src/window/clusters.rs:451
@@ -13120,7 +13120,7 @@ msgid ""
 "Connecting now skips those jump hosts, so these members may reach their "
 "servers directly. Open a member on its own to see the details."
 msgstr ""
-"Під'єднання зараз пропускає ці проміжні вузли, тож ці учасники можуть "
+"З'єднування зараз пропускає ці проміжні гости, тож ці учасники можуть "
 "досягати своїх серверів напряму. Відкрий учасника окремо, щоб побачити "
 "деталі."
 
@@ -14083,11 +14083,11 @@ msgstr "«{}» не надіслано. {}"
 
 #: rustconn/src/window/mod.rs:406
 msgid "The jump host set for “{}” no longer exists."
-msgstr "Проміжний вузол, заданий для «{}», більше не існує."
+msgstr "Проміжний гост, заданий для «{}», більше не існує."
 
 #: rustconn/src/window/mod.rs:410
 msgid "“{}” is set to use itself as its jump host."
-msgstr "«{}» налаштовано використовувати себе як проміжний вузол."
+msgstr "«{}» налаштовано використовувати себе як проміжний гост."
 
 #: rustconn/src/window/mod.rs:422
 msgid "The setting is inherited from the group “{}”."
@@ -14095,20 +14095,20 @@ msgstr "Налаштування успадковано від групи «{}»
 
 #: rustconn/src/window/mod.rs:427
 msgid "The setting is the Global Jump Host in Settings."
-msgstr "Це глобальний проміжний вузол в Уставах."
+msgstr "Це глобальний проміжний гост в Уставах."
 
 #: rustconn/src/window/mod.rs:432
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr ""
-"Під'єднання до «{}» тепер досягає сервера напряму, без проміжного вузла."
+"З'єднування з «{}» тепер досягає сервера напряму, без проміжного госта."
 
 #: rustconn/src/window/mod.rs:436
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
 msgstr ""
-"Під'єднання до «{}» тепер пропускає цей проміжний вузол і використовує лише "
+"З'єднування з «{}» тепер пропускає цей проміжний гост і використовує лише "
 "решту налаштованого маршруту."
 
 #: rustconn/src/window/mod.rs:1135 rustconn/src/window/mod.rs:1146
