@@ -190,6 +190,30 @@ impl Refocus {
     }
 }
 
+/// Applies `action` to entry `id` wherever it is now, and returns the
+/// position it had before, or `None` when it is no longer in the list.
+///
+/// A move at the top or bottom leaves the list as it is.
+fn apply_row_action(
+    selected: &mut Vec<uuid::Uuid>,
+    id: uuid::Uuid,
+    action: RowAction,
+) -> Option<usize> {
+    let index = selected.iter().position(|entry| *entry == id)?;
+    let other = match action {
+        RowAction::Up => index.checked_sub(1),
+        RowAction::Down => Some(index + 1).filter(|other| *other < selected.len()),
+        RowAction::Remove => {
+            selected.remove(index);
+            return Some(index);
+        }
+    };
+    if let Some(other) = other {
+        selected.swap(index, other);
+    }
+    Some(index)
+}
+
 impl FallbackJumpHostsEditor {
     /// Creates an empty editor.
     #[must_use]
@@ -306,7 +330,7 @@ impl FallbackJumpHostsInner {
                 "go-up-symbolic",
                 &i18n("Move Up"),
                 &i18n_f("Move {} up", &[&label]),
-                index,
+                *id,
                 RowAction::Up,
             );
             up.set_sensitive(index > 0);
@@ -315,7 +339,7 @@ impl FallbackJumpHostsInner {
                 "go-down-symbolic",
                 &i18n("Move Down"),
                 &i18n_f("Move {} down", &[&label]),
-                index,
+                *id,
                 RowAction::Down,
             );
             down.set_sensitive(index + 1 < selected.len());
@@ -324,7 +348,7 @@ impl FallbackJumpHostsInner {
                 "list-remove-symbolic",
                 &i18n("Remove"),
                 &i18n_f("Remove {}", &[&label]),
-                index,
+                *id,
                 RowAction::Remove,
             );
             row.add_suffix(&up);
@@ -365,13 +389,13 @@ impl FallbackJumpHostsInner {
         }
     }
 
-    /// Builds a button that applies `action` to entry `index`.
+    /// Builds a button that applies `action` to entry `id`.
     fn row_button(
         this: &std::rc::Rc<Self>,
         icon: &str,
         tooltip: &str,
         accessible_label: &str,
-        index: usize,
+        id: uuid::Uuid,
         action: RowAction,
     ) -> Button {
         let button = Button::builder()
@@ -384,24 +408,10 @@ impl FallbackJumpHostsInner {
         let weak = std::rc::Rc::downgrade(this);
         button.connect_clicked(move |_| {
             let Some(inner) = weak.upgrade() else { return };
-            {
-                let mut selected = inner.selected.borrow_mut();
-                // The bounds checks matter: a second click can land before the
-                // idle rebuild, on a button whose index is now stale.
-                let other = match action {
-                    RowAction::Up => index.checked_sub(1),
-                    RowAction::Down => index.checked_add(1),
-                    RowAction::Remove => None,
-                };
-                if action == RowAction::Remove && index < selected.len() {
-                    selected.remove(index);
-                } else if let Some(other) = other
-                    && index < selected.len()
-                    && other < selected.len()
-                {
-                    selected.swap(index, other);
-                }
-            }
+            // A second click can land before the idle rebuild. The button
+            // names its entry, not a position, so it still acts on that entry.
+            let applied = apply_row_action(&mut inner.selected.borrow_mut(), id, action);
+            let Some(index) = applied else { return };
             // Later than this click: rebuilding removes the button being clicked.
             let refocus = Refocus::Row { index, action };
             gtk4::glib::idle_add_local_once(move || Self::rebuild(&inner, refocus));
@@ -1139,5 +1149,40 @@ mod tests {
             row(5, RowAction::Remove).target(2, true),
             button(1, RowAction::Remove)
         );
+    }
+
+    fn ids(count: u128) -> Vec<uuid::Uuid> {
+        (1..=count).map(uuid::Uuid::from_u128).collect()
+    }
+
+    #[test]
+    fn two_quick_moves_move_the_same_entry_twice() {
+        let [a, b, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        // Both clicks land on c's Move Up before the list redraws.
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Up), Some(2));
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Up), Some(1));
+        assert_eq!(selected, vec![c, a, b]);
+    }
+
+    #[test]
+    fn a_second_remove_click_does_not_remove_the_neighbour() {
+        let [a, b, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        assert_eq!(
+            apply_row_action(&mut selected, b, RowAction::Remove),
+            Some(1)
+        );
+        assert_eq!(apply_row_action(&mut selected, b, RowAction::Remove), None);
+        assert_eq!(selected, vec![a, c]);
+    }
+
+    #[test]
+    fn a_move_at_the_edge_changes_nothing() {
+        let [a, _, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        assert_eq!(apply_row_action(&mut selected, a, RowAction::Up), Some(0));
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Down), Some(2));
+        assert_eq!(selected, ids(3));
     }
 }
