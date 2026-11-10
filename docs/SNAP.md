@@ -244,6 +244,7 @@ those connections could not be made.
 | `tailscale` | Tailscale |
 | `boundary` | HashiCorp Boundary |
 | `kubectl` | Kubernetes |
+| `pywinrm` | Run Local Script `.ps1` files on WinRM hosts |
 | `bw` | Bitwarden CLI |
 | `op` | 1Password CLI |
 | `passbolt` | Passbolt CLI |
@@ -362,6 +363,7 @@ snap connections rustconn
 | Waypipe | Bundled | Bundled | Host CLI |
 | Embedded web browser | Yes, but no WebKit sandbox (snap confinement only) | Yes, WebKit sandbox (`flatpak-spawn --sandbox`) | Yes, WebKit sandbox (bubblewrap) |
 | Kubernetes | Components kubectl | Components kubectl (flatpak-spawn) | Host kubectl |
+| WinRM | Not available, use SSH; Components pywinrm for Run Local Script | Host `evil-winrm` (flatpak-spawn); Components pywinrm | Host `evil-winrm` and `python3-winrm` |
 | Zero Trust | Components CLIs | Components CLIs (flatpak-spawn) | Host CLIs |
 | Password CLIs | Components CLIs | Components CLIs (flatpak-spawn) | Host CLIs |
 | CLI downloads | Components dialog | Components dialog | — |

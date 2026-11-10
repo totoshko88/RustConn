@@ -394,7 +394,7 @@ For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically
 
 ### WinRM (Windows PowerShell)
 
-A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package); it is not available inside the Flatpak sandbox.
+A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package). The Flatpak does not bundle it: install it on the host and RustConn runs it there. The Snap cannot run it at all. See [WinRM or SSH for Windows](#winrm-or-ssh-for-windows).
 
 - Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
 - Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
@@ -402,6 +402,20 @@ A WinRM connection opens a PowerShell session on a Windows machine in a terminal
 - A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
 - To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
 - RustConn 0.24.10 and older cannot read a configuration, a Simple Sync file or a Group Sync `.rcn` file that holds a WinRM connection: the whole file fails to load. Update every device that shares the configuration or syncs it before adding one.
+
+#### WinRM or SSH for Windows
+
+Windows 10 (build 1809) and later, and Windows Server 2019 and later, ship OpenSSH Server as an optional feature ([install it](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse); Windows Server 2025 has it installed). An ordinary RustConn **SSH** connection to such a machine, with PowerShell set as the server's default shell (the `DefaultShell` value under `HKLM:\SOFTWARE\OpenSSH`, see [OpenSSH Server configuration](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh-server-configuration)), is the preferred route: it needs no extra client and works in every package.
+
+Use WinRM for older Windows versions, or where SSH is not enabled. [Run Local Script](#run-local-script) runs a `.ps1` file only over WinRM: over SSH it runs the script with `bash`.
+
+Where each WinRM client comes from:
+
+| Package | Interactive session (`evil-winrm`) | Run Local Script `.ps1` (`pywinrm`) |
+|---------|-------------------------------------|-------------------------------------|
+| Native (.deb, .rpm, AppImage, source) | `gem install evil-winrm` or your distribution's package | `python3-winrm` from your distribution, or `pip install pywinrm` |
+| Flatpak | Installed on the host (`gem install evil-winrm` or the distribution's package); RustConn runs it through `flatpak-spawn --host` | Menu → **Components** → *Remote Scripts* → pywinrm |
+| Snap | Not available; use SSH, or the Flatpak or a native package | Menu → **Components** → *Remote Scripts* → pywinrm |
 
 ### Automatic Login (Telnet & Serial)
 
@@ -3398,7 +3412,7 @@ Runs a script from this computer on several hosts: a `.ps1` file in PowerShell o
 - The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
 - Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. Hosts set to ask for a password at connect get a field each, and a host whose field is empty gets no password. With several such hosts, **Use One Password for All Hosts** replaces the fields with one that every one of them uses.
-- WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
+- WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`; in Flatpak and Snap install `pywinrm` from [Components](#flatpak-components)) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
 - A host whose key is not yet known is refused. Connect to it once normally and accept the key. A run never accepts a jump host's new key either: a jump host RustConn routes itself, as it does whenever the jump host gets a password, and the jump host of a WinRM tunnel must already be known. A jump host reached through a plain `ProxyJump` follows your ssh configuration.
 - **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
 - **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
@@ -3658,6 +3672,8 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 **Zero Trust CLIs:** AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, HashiCorp Boundary, Hoop.dev
 
 **Password Manager CLIs:** Bitwarden CLI, 1Password CLI
+
+**Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
 **Protocol Clients:** TigerVNC Viewer
 
