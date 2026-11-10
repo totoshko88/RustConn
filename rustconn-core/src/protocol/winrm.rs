@@ -14,8 +14,21 @@ pub const WINRM_CLIENT: &str = "evil-winrm";
 /// The text the client prints when it asks for the password.
 pub const WINRM_PASSWORD_PROMPT: &str = "Enter Password:";
 
-/// Options that would put a secret on the client's command line.
-const SECRET_OPTIONS: &[&str] = &["-p", "--password", "-H", "--hash"];
+/// Long options that would put a secret on the client's command line, without
+/// their leading `--`.
+const SECRET_LONG_OPTIONS: &[&str] = &["password", "hash"];
+
+/// Short options that would put a secret on the client's command line.
+const SECRET_SHORT_OPTIONS: &[char] = &['p', 'H'];
+
+/// Where a custom argument that sets a secret option keeps its value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SecretOption {
+    /// The value is part of the same argument: `-phunter2`, `--password=x`.
+    Attached,
+    /// The value is the next argument: `-p x`, `-np x`, `--pass x`.
+    NextArgument,
+}
 
 /// WinRM protocol handler
 #[derive(Debug)]
@@ -35,10 +48,38 @@ impl Default for WinRmProtocol {
     }
 }
 
-fn is_secret_option(arg: &str) -> bool {
-    SECRET_OPTIONS
-        .iter()
-        .any(|option| arg == *option || arg.starts_with(&format!("{option}=")))
+/// Recognizes every form in which evil-winrm's Ruby `OptionParser` takes
+/// `-p`/`--password` or `-H`/`--hash`: the exact name, a value after `=`, a
+/// prefix of the long name in any case (`--pass`, `--HA`), a short option with
+/// its value attached (`-phunter2`) and a short option inside a cluster (`-np`).
+///
+/// It errs towards refusing. A short cluster counts when it holds `p` or `H`
+/// anywhere, even where an earlier option would take the rest as its value, and
+/// an ambiguous prefix such as `--p` counts too.
+fn secret_option(arg: &str) -> Option<SecretOption> {
+    if let Some(long) = arg.strip_prefix("--") {
+        let (name, attached) = long
+            .split_once('=')
+            .map_or((long, false), |(n, _)| (n, true));
+        let name = name.to_ascii_lowercase();
+        let secret = !name.is_empty()
+            && SECRET_LONG_OPTIONS
+                .iter()
+                .any(|option| option.starts_with(name.as_str()));
+        return secret.then_some(if attached {
+            SecretOption::Attached
+        } else {
+            SecretOption::NextArgument
+        });
+    }
+    let cluster = arg.strip_prefix('-')?;
+    let at = cluster.find(SECRET_SHORT_OPTIONS)?;
+    // Both letters are ASCII, so `at + 1` is the next character's offset.
+    Some(if at + 1 == cluster.len() {
+        SecretOption::NextArgument
+    } else {
+        SecretOption::Attached
+    })
 }
 
 /// The account name the client logs in with: `DOMAIN\\user` when a domain is set
@@ -79,7 +120,10 @@ impl Protocol for WinRmProtocol {
             return Err(ProtocolError::InvalidConfig("Port cannot be 0".to_string()));
         }
         if let ProtocolConfig::WinRm(config) = &connection.protocol_config
-            && config.custom_args.iter().any(|arg| is_secret_option(arg))
+            && config
+                .custom_args
+                .iter()
+                .any(|arg| secret_option(arg).is_some())
         {
             return Err(ProtocolError::InvalidConfig(
                 "Custom arguments cannot hold a password or hash".to_string(),
@@ -112,13 +156,15 @@ impl Protocol for WinRmProtocol {
         }
         let mut args = config.custom_args.iter();
         while let Some(arg) = args.next() {
-            if is_secret_option(arg) {
-                tracing::warn!("Skipping a WinRM custom argument that holds a secret");
-                if !arg.contains('=') {
-                    args.next();
+            match secret_option(arg) {
+                Some(form) => {
+                    tracing::warn!("Skipping a WinRM custom argument that holds a secret");
+                    if form == SecretOption::NextArgument {
+                        args.next();
+                    }
                 }
-            } else if !arg.contains(['\0', '\n']) {
-                cmd.push(arg.clone());
+                None if !arg.contains(['\0', '\n']) => cmd.push(arg.clone()),
+                None => {}
             }
         }
         Some(cmd)
@@ -189,6 +235,83 @@ mod tests {
         assert!(!cmd.iter().any(|a| a == "x"));
         assert!(cmd.iter().any(|a| a == "-n"), "other options are kept");
         assert!(WinRmProtocol::new().validate_connection(&conn).is_err());
+    }
+
+    #[test]
+    fn abbreviated_attached_and_clustered_secret_options_are_recognized() {
+        for arg in [
+            "-p",
+            "-H",
+            "--password",
+            "--hash",
+            "--pass",
+            "--pa",
+            "--ha",
+            "--HASH",
+            "-np",
+            "-nH",
+            "--p",
+        ] {
+            assert_eq!(
+                secret_option(arg),
+                Some(SecretOption::NextArgument),
+                "{arg}"
+            );
+        }
+        for arg in ["-phunter2", "-Habc", "-nphunter2", "--pass=x", "--Hash=abc"] {
+            assert_eq!(secret_option(arg), Some(SecretOption::Attached), "{arg}");
+        }
+        for arg in [
+            "-n",
+            "-N",
+            "-S",
+            "-P",
+            "-l",
+            "--port",
+            "--help",
+            "--no-colors",
+            "--",
+            "-",
+            "plain",
+        ] {
+            assert_eq!(secret_option(arg), None, "{arg}");
+        }
+    }
+
+    #[test]
+    fn abbreviated_and_attached_secrets_never_reach_the_command_line() {
+        let conn = connection(WinRmConfig {
+            custom_args: [
+                "-phunter2",
+                "--pass",
+                "s3cret",
+                "-np",
+                "t0ken",
+                "--HA=abc",
+                "-N",
+                "--no-colors",
+            ]
+            .map(String::from)
+            .to_vec(),
+            ..WinRmConfig::default()
+        });
+        let cmd = WinRmProtocol::new().build_command(&conn).unwrap();
+        for secret in ["hunter2", "s3cret", "t0ken", "abc"] {
+            assert!(!cmd.iter().any(|a| a.contains(secret)), "{secret}");
+        }
+        assert!(cmd.iter().any(|a| a == "-N"), "other options are kept");
+        assert!(cmd.iter().any(|a| a == "--no-colors"));
+        assert!(WinRmProtocol::new().validate_connection(&conn).is_err());
+        for arg in ["-phunter2", "--pass", "-np", "--HA=abc"] {
+            let single = connection(WinRmConfig {
+                custom_args: vec![arg.to_string()],
+                ..WinRmConfig::default()
+            });
+            assert!(
+                WinRmProtocol::new().validate_connection(&single).is_err(),
+                "{arg}"
+            );
+        }
     }
 
     #[test]

@@ -398,7 +398,7 @@ A WinRM connection opens a PowerShell session on a Windows machine in a terminal
 
 - Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
 - Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
-- A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p` and `-H`. With no saved password, type it in the terminal.
+- A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p`, `-H`, `--password` and `--hash` in every form the client accepts: abbreviated (`--pass`), with the value attached (`-pSECRET`, `--hash=…`) or inside a group of short options (`-np`). With no saved password, type it in the terminal.
 - A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
 - To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
 
