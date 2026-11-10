@@ -510,45 +510,52 @@ fn create_range_duplicates(
         return;
     };
     let mut created = Vec::with_capacity(plan.created.len());
+    let mut failed = Vec::new();
     for copy in plan.created {
         match state_mut
             .connection_manager()
             .create_connection_from(copy.clone())
         {
             Ok(_) => created.push(copy),
-            Err(e) => tracing::error!(name = %copy.name, "Failed to create range duplicate: {e}"),
+            Err(e) => {
+                tracing::error!(name = %copy.name, "Failed to create range duplicate: {e}");
+                failed.push(copy.name);
+            }
         }
     }
     let settings = state_mut.settings().clone();
     let groups = state_mut.list_groups_owned();
     drop(state_mut);
 
-    let message = if plan.skipped.is_empty() {
-        i18n_f("Connections created: {}", &[&created.len().to_string()])
-    } else {
-        i18n_f(
-            "Connections created: {}, already existed: {}",
-            &[&created.len().to_string(), &plan.skipped.len().to_string()],
-        )
-    };
-    let toast_type = if created.is_empty() {
-        crate::toast::ToastType::Error
-    } else {
-        crate::toast::ToastType::Success
-    };
+    let message = range_result_text(created.len(), &failed, plan.skipped.len());
     {
         let state = state.clone();
         let sidebar = sidebar.clone();
         let window = window.clone();
         glib::idle_add_local_once(move || {
             MainWindow::reload_sidebar_preserving_state(&state, &sidebar);
-            crate::toast::show_toast_on_window(&window, &message, toast_type);
+            // A copy that was never stored is an unfinished action the user
+            // has to redo, so it gets a dialog rather than a passing toast.
+            if failed.is_empty() {
+                crate::toast::show_toast_on_window(
+                    &window,
+                    &message,
+                    crate::toast::ToastType::Success,
+                );
+            } else {
+                alert::show_error(
+                    &window,
+                    &i18n("Some Connections Were Not Created"),
+                    &message,
+                );
+            }
         });
     }
 
     // The same credential copy a single duplicate makes, one thread for all.
     if source.password_source == rustconn_core::models::PasswordSource::Vault {
         let source = source.clone();
+        let window = window.clone();
         crate::utils::spawn_blocking_with_callback(
             move || {
                 created
@@ -559,13 +566,51 @@ fn create_range_duplicates(
                     })
                     .collect::<Vec<String>>()
             },
-            |errors| {
-                for error in errors {
+            move |errors| {
+                for error in &errors {
                     tracing::warn!(%error, "Failed to copy vault credential on range duplicate");
+                }
+                if !errors.is_empty() {
+                    crate::toast::show_toast_on_window(
+                        &window,
+                        &i18n_f(
+                            "The saved password was not copied to {} of the new connections",
+                            &[&errors.len().to_string()],
+                        ),
+                        crate::toast::ToastType::Warning,
+                    );
                 }
             },
         );
     }
+}
+
+/// Describes what a range duplicate stored, skipped and failed to store.
+fn range_result_text(created: usize, failed: &[String], skipped: usize) -> String {
+    let created = created.to_string();
+    if failed.is_empty() {
+        return if skipped == 0 {
+            i18n_f("Connections created: {}", &[&created])
+        } else {
+            i18n_f(
+                "Connections created: {}, already existed: {}",
+                &[&created, &skipped.to_string()],
+            )
+        };
+    }
+    let counts = if skipped == 0 {
+        i18n_f(
+            "Connections created: {}, failed: {}",
+            &[&created, &failed.len().to_string()],
+        )
+    } else {
+        i18n_f(
+            "Connections created: {}, failed: {}, already existed: {}",
+            &[&created, &failed.len().to_string(), &skipped.to_string()],
+        )
+    };
+    let names = i18n_f("Not created: {}", &[&failed.join(", ")]);
+    format!("{counts}\n{names}")
 }
 
 /// Toggles pin state of the selected connection
@@ -1110,4 +1155,31 @@ fn is_descendant_of_group(
         current_id = state.get_group(parent_id).and_then(|g| g.parent_id);
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::range_result_text;
+
+    #[test]
+    fn range_result_counts_only_stored_copies() {
+        assert_eq!(range_result_text(3, &[], 0), "Connections created: 3");
+        assert_eq!(
+            range_result_text(3, &[], 2),
+            "Connections created: 3, already existed: 2"
+        );
+    }
+
+    #[test]
+    fn range_result_names_every_failed_copy() {
+        let failed = ["web03".to_owned(), "web05".to_owned()];
+        assert_eq!(
+            range_result_text(1, &failed, 0),
+            "Connections created: 1, failed: 2\nNot created: web03, web05"
+        );
+        assert_eq!(
+            range_result_text(0, &failed, 4),
+            "Connections created: 0, failed: 2, already existed: 4\nNot created: web03, web05"
+        );
+    }
 }

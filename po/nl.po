@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 18:31+0200\n"
+"POT-Creation-Date: 2026-11-10 18:59+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -62,8 +62,8 @@ msgstr "OK"
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3605
 #: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:734
-#: rustconn/src/window/operations.rs:917
+#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
+#: rustconn/src/window/operations.rs:962
 #: rustconn/src/window/remote_script.rs:476 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -88,7 +88,7 @@ msgstr "Niet opslaan"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1004
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1011
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -229,7 +229,7 @@ msgstr ""
 "‘{}’ heeft het volgende nodig voordat er verbinding kan worden gemaakt."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1009
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1016
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
@@ -246,7 +246,7 @@ msgstr ""
 "De opdrachtmacro ‘{}’ heeft het volgende nodig voordat deze kan worden "
 "verzonden."
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1010
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1017
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -283,15 +283,15 @@ msgid "New Cluster"
 msgstr "Nieuw cluster"
 
 #: rustconn/src/dialogs/cluster.rs:70 rustconn/src/dialogs/cluster.rs:71
+#: rustconn/src/dialogs/connection/dialog/construction.rs:205
 #: rustconn/src/dialogs/connection/dialog/construction.rs:206
-#: rustconn/src/dialogs/connection/dialog/construction.rs:207
 #: rustconn/src/dialogs/settings/terminal_tab.rs:824
 #: rustconn/src/dialogs/smart_folder.rs:88
 #: rustconn/src/dialogs/smart_folder.rs:89 rustconn/src/dialogs/snippet.rs:87
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:1005
+#: rustconn/src/dialogs/widgets.rs:1012
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 #: rustconn/src/window/operations.rs:402
@@ -1138,31 +1138,31 @@ msgstr "Script uit de bibliotheek verwijderen"
 msgid "Remove from this list"
 msgstr "Uit deze lijst halen"
 
-#: rustconn/src/dialogs/connection/builders.rs:333
+#: rustconn/src/dialogs/connection/builders.rs:341
 msgid "Connection name is required"
 msgstr "Verbindingsnaam is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:347
+#: rustconn/src/dialogs/connection/builders.rs:355
 msgid "Host is required"
 msgstr "Host is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:352
+#: rustconn/src/dialogs/connection/builders.rs:360
 msgid "Host cannot contain spaces"
 msgstr "Host mag geen spaties bevatten"
 
-#: rustconn/src/dialogs/connection/builders.rs:362
+#: rustconn/src/dialogs/connection/builders.rs:370
 msgid "Port must be greater than 0"
 msgstr "Poort moet groter zijn dan 0"
 
-#: rustconn/src/dialogs/connection/builders.rs:370
+#: rustconn/src/dialogs/connection/builders.rs:378
 msgid "Device path is required for serial connections"
 msgstr "Apparaatpad is vereist voor seriële verbindingen"
 
-#: rustconn/src/dialogs/connection/builders.rs:389
+#: rustconn/src/dialogs/connection/builders.rs:397
 msgid "SSH key path is required for public key authentication"
 msgstr "SSH-sleutelpad is verplicht voor publieke-sleutelauthenticatie"
 
-#: rustconn/src/dialogs/connection/builders.rs:401
+#: rustconn/src/dialogs/connection/builders.rs:409
 msgid ""
 "Password source is 'None' but auth method is Password. Set source to Prompt "
 "or Vault."
@@ -1170,11 +1170,11 @@ msgstr ""
 "Wachtwoordbron is 'Geen' maar authenticatiemethode is Wachtwoord. Stel bron "
 "in op Prompt of Kluis."
 
-#: rustconn/src/dialogs/connection/builders.rs:411
+#: rustconn/src/dialogs/connection/builders.rs:419
 msgid "Pod name is required when Busybox mode is disabled"
 msgstr "Podnaam is verplicht wanneer Busybox-modus is uitgeschakeld"
 
-#: rustconn/src/dialogs/connection/builders.rs:423
+#: rustconn/src/dialogs/connection/builders.rs:431
 msgid ""
 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, "
 "udp://, http:// or https:// address."
@@ -1182,76 +1182,76 @@ msgstr ""
 "Het KDC-adres is ongeldig. Voer een hostnaam, host:port of een tcp://-, "
 "udp://-, http://- of https://-adres in."
 
-#: rustconn/src/dialogs/connection/builders.rs:432
+#: rustconn/src/dialogs/connection/builders.rs:440
 msgid "MAC address is required when WOL is enabled"
 msgstr "MAC-adres is verplicht wanneer WOL is ingeschakeld"
 
-#: rustconn/src/dialogs/connection/builders.rs:437
+#: rustconn/src/dialogs/connection/builders.rs:445
 msgid "Invalid MAC address format. Use AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF"
 msgstr ""
 "Ongeldig MAC-adresformaat. Gebruik AA:BB:CC:DD:EE:FF of AA-BB-CC-DD-EE-FF"
 
-#: rustconn/src/dialogs/connection/builders.rs:454
+#: rustconn/src/dialogs/connection/builders.rs:462
 msgid "Enter the SOCKS5 proxy as host:port, with any login in its own fields"
 msgstr ""
 "Voer de SOCKS5-proxy in als host:poort en inloggegevens in hun eigen velden"
 
-#: rustconn/src/dialogs/connection/builders.rs:459
+#: rustconn/src/dialogs/connection/builders.rs:467
 msgid "Choose either an SSH tunnel or a SOCKS proxy, not both"
 msgstr "Kies een SSH-tunnel of een SOCKS-proxy, niet allebei"
 
-#: rustconn/src/dialogs/connection/builders.rs:467
+#: rustconn/src/dialogs/connection/builders.rs:475
 msgid "A SOCKS5 login needs a proxy, a username and a password variable"
 msgstr ""
 "Een SOCKS5-aanmelding vereist een proxy, een gebruikersnaam en een "
 "wachtwoordvariabele"
 
-#: rustconn/src/dialogs/connection/builders.rs:475
+#: rustconn/src/dialogs/connection/builders.rs:483
 msgid "Browser command is required when Custom mode is selected"
 msgstr "Browsercommando is vereist wanneer de modus Aangepast is geselecteerd"
 
-#: rustconn/src/dialogs/connection/builders.rs:496
+#: rustconn/src/dialogs/connection/builders.rs:504
 msgid "AWS SSM target instance ID is required"
 msgstr "AWS SSM-doelinstantie-ID is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:501
+#: rustconn/src/dialogs/connection/builders.rs:509
 msgid "GCP instance name and zone are required"
 msgstr "GCP-instantienaam en zone zijn vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:510
+#: rustconn/src/dialogs/connection/builders.rs:518
 msgid ""
 "Azure Bastion resource ID, resource group, and bastion name are required"
 msgstr "Azure Bastion resource-ID, resourcegroep en bastionnaam zijn vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:516
+#: rustconn/src/dialogs/connection/builders.rs:524
 msgid "Azure VM name and resource group are required"
 msgstr "Azure-VM-naam en resourcegroep zijn vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:525
+#: rustconn/src/dialogs/connection/builders.rs:533
 msgid "OCI bastion OCID, target OCID, and target private IP are required"
 msgstr "OCI bastion-OCID, doel-OCID en privé-IP van het doel zijn vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:531
+#: rustconn/src/dialogs/connection/builders.rs:539
 msgid "Cloudflare Access hostname is required"
 msgstr "Cloudflare Access-hostnaam is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:536
+#: rustconn/src/dialogs/connection/builders.rs:544
 msgid "Teleport host is required"
 msgstr "Teleport-host is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:541
+#: rustconn/src/dialogs/connection/builders.rs:549
 msgid "Tailscale host is required"
 msgstr "Tailscale-host is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:546
+#: rustconn/src/dialogs/connection/builders.rs:554
 msgid "Boundary target is required"
 msgstr "Boundary-doel is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:551
+#: rustconn/src/dialogs/connection/builders.rs:559
 msgid "Hoop.dev connection name is required"
 msgstr "Hoop.dev-verbindingsnaam is vereist"
 
-#: rustconn/src/dialogs/connection/builders.rs:557
+#: rustconn/src/dialogs/connection/builders.rs:565
 msgid "Command template is required for the Generic provider"
 msgstr "Opdrachtsjabloon is vereist voor de generieke provider"
 
@@ -1315,22 +1315,22 @@ msgstr "Verbinding bewerken (gesynchroniseerd)"
 msgid "Basic"
 msgstr "Basis"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:397
+#: rustconn/src/dialogs/connection/dialog/build.rs:399
 msgid "Data"
 msgstr "Gegevens"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:407
+#: rustconn/src/dialogs/connection/dialog/build.rs:409
 #: rustconn/src/dialogs/settings/logging_tab.rs:27
 msgid "Logging"
 msgstr "Logboek"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:417
+#: rustconn/src/dialogs/connection/dialog/build.rs:419
 #: rustconn/src/i18n_markers.rs:33 rustconn/src/window/edit_group.rs:1143
 #: rustconn/src/window/edit_group.rs:1634
 msgid "Automation"
 msgstr "Automatisering"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:461
+#: rustconn/src/dialogs/connection/dialog/build.rs:463
 #: rustconn/src/dialogs/connection/kubernetes.rs:141
 #: rustconn/src/dialogs/connection/rdp.rs:938
 #: rustconn/src/dialogs/connection/vnc.rs:318
@@ -1340,19 +1340,19 @@ msgstr "Automatisering"
 msgid "Advanced"
 msgstr "Geavanceerd"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:477
+#: rustconn/src/dialogs/connection/dialog/build.rs:479
 msgid "No host set"
 msgstr "Geen host ingesteld"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:478
+#: rustconn/src/dialogs/connection/dialog/build.rs:480
 msgid "Enter the host address first, then detect its MAC."
 msgstr "Voer eerst het hostadres in en detecteer daarna het MAC-adres."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:496
+#: rustconn/src/dialogs/connection/dialog/build.rs:498
 msgid "MAC address may be temporary"
 msgstr "MAC-adres is mogelijk tijdelijk"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:498
+#: rustconn/src/dialogs/connection/dialog/build.rs:500
 msgid ""
 "This looks like a randomized (private) address, which changes periodically. "
 "Wake-on-LAN will stop working once it rotates — turn off the private address "
@@ -1362,11 +1362,11 @@ msgstr ""
 "LAN werkt niet meer zodra het roteert — schakel het privéadres voor dit "
 "netwerk uit op het doelapparaat, of lees het later opnieuw uit."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:506
+#: rustconn/src/dialogs/connection/dialog/build.rs:508
 msgid "MAC address not found"
 msgstr "MAC-adres niet gevonden"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:508
+#: rustconn/src/dialogs/connection/dialog/build.rs:510
 msgid ""
 "The host is not in this computer's ARP cache. It must be powered on and on "
 "the same local network. For a host beyond a router, read its MAC over an SSH "
@@ -1376,50 +1376,50 @@ msgstr ""
 "zijn en op hetzelfde lokale netwerk staan. Lees voor een host achter een "
 "router het MAC-adres via een SSH-sessie."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:879
+#: rustconn/src/dialogs/connection/dialog/build.rs:881
 #: rustconn/src/dialogs/connection/dialog/populate.rs:1231
 #: rustconn/src/dialogs/connection/ssh.rs:687
 #: rustconn/src/dialogs/template.rs:699
 msgid "Jump host for tunneling (-J)"
 msgstr "Springhost voor tunneling (-J)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1219
+#: rustconn/src/dialogs/connection/dialog/build.rs:1221
 msgid "Username Loaded"
 msgstr "Gebruikersnaam geladen"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1220
+#: rustconn/src/dialogs/connection/dialog/build.rs:1222
 msgid "Username loaded from group"
 msgstr "Gebruikersnaam geladen uit groep"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1226
+#: rustconn/src/dialogs/connection/dialog/build.rs:1228
 msgid "No Username"
 msgstr "Geen gebruikersnaam"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1227
+#: rustconn/src/dialogs/connection/dialog/build.rs:1229
 msgid "Group has no username defined"
 msgstr "Groep heeft geen gebruikersnaam gedefinieerd"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1253
+#: rustconn/src/dialogs/connection/dialog/build.rs:1255
 msgid "Domain Loaded"
 msgstr "Domein geladen"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1254
+#: rustconn/src/dialogs/connection/dialog/build.rs:1256
 msgid "Domain loaded from group"
 msgstr "Domein geladen uit groep"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1260
+#: rustconn/src/dialogs/connection/dialog/build.rs:1262
 msgid "No Domain"
 msgstr "Geen domein"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1261
+#: rustconn/src/dialogs/connection/dialog/build.rs:1263
 msgid "Group has no domain defined"
 msgstr "Groep heeft geen domein gedefinieerd"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1289
+#: rustconn/src/dialogs/connection/dialog/build.rs:1291
 msgid "Zero Trust Connection Test"
 msgstr "Zero Trust-verbindingstest"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1290
+#: rustconn/src/dialogs/connection/dialog/build.rs:1292
 msgid ""
 "Zero Trust connections require provider-specific authentication.\n"
 "\n"
@@ -1435,35 +1435,35 @@ msgstr ""
 "2. Gebruik de knop Verbinden\n"
 "3. De provider-CLI handelt de authenticatie af"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1298
-#: rustconn/src/dialogs/connection/dialog/build.rs:1465
-#: rustconn/src/dialogs/connection/dialog/build.rs:1470
+#: rustconn/src/dialogs/connection/dialog/build.rs:1300
+#: rustconn/src/dialogs/connection/dialog/build.rs:1467
+#: rustconn/src/dialogs/connection/dialog/build.rs:1472
 msgid "Connection Test Failed"
 msgstr "Verbindingstest mislukt"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1299
+#: rustconn/src/dialogs/connection/dialog/build.rs:1301
 msgid "Fill in the required fields (name and host)"
 msgstr "Vul de verplichte velden in (naam en host)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1341
-#: rustconn/src/dialogs/connection/dialog/build.rs:1516
+#: rustconn/src/dialogs/connection/dialog/build.rs:1343
+#: rustconn/src/dialogs/connection/dialog/build.rs:1518
 msgid "Testing…"
 msgstr "Testen…"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1445
+#: rustconn/src/dialogs/connection/dialog/build.rs:1447
 #: rustconn/src/dialogs/connection/general_tab.rs:375
 msgid "Test"
 msgstr "Test"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1452
+#: rustconn/src/dialogs/connection/dialog/build.rs:1454
 msgid "Connection Test Successful"
 msgstr "Verbindingstest geslaagd"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1454
+#: rustconn/src/dialogs/connection/dialog/build.rs:1456
 msgid "Connection successful. Latency: {} ms"
 msgstr "Verbinding geslaagd. Latentie: {} ms"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1463
+#: rustconn/src/dialogs/connection/dialog/build.rs:1465
 msgid ""
 "The test failed without a specific error. Check the host address and port, "
 "then try again."
@@ -1471,70 +1471,70 @@ msgstr ""
 "De test is mislukt zonder een specifieke fout. Controleer het hostadres en "
 "de poort en probeer het opnieuw."
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1471
+#: rustconn/src/dialogs/connection/dialog/build.rs:1473
 msgid "Test timed out"
 msgstr "Test-timeout"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1489
-#: rustconn/src/dialogs/connection/dialog/build.rs:1499
-#: rustconn/src/dialogs/connection/dialog/build.rs:1508
-#: rustconn/src/dialogs/connection/dialog/build.rs:1569
-#: rustconn/src/dialogs/connection/dialog/build.rs:1574
+#: rustconn/src/dialogs/connection/dialog/build.rs:1491
+#: rustconn/src/dialogs/connection/dialog/build.rs:1501
+#: rustconn/src/dialogs/connection/dialog/build.rs:1510
+#: rustconn/src/dialogs/connection/dialog/build.rs:1571
+#: rustconn/src/dialogs/connection/dialog/build.rs:1576
 msgid "Script Test Failed"
 msgstr "Scripttest mislukt"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1490
+#: rustconn/src/dialogs/connection/dialog/build.rs:1492
 msgid "Script command is empty"
 msgstr "Scriptopdracht is leeg"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1500
+#: rustconn/src/dialogs/connection/dialog/build.rs:1502
 msgid "Script command is empty after parsing"
 msgstr "Scriptopdracht is leeg na verwerking"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1509
+#: rustconn/src/dialogs/connection/dialog/build.rs:1511
 msgid "Failed to parse command"
 msgstr "Kan opdracht niet verwerken"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1539
+#: rustconn/src/dialogs/connection/dialog/build.rs:1541
 msgid "Test Script"
 msgstr "Script testen"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1546
+#: rustconn/src/dialogs/connection/dialog/build.rs:1548
 msgid "(empty output)"
 msgstr "(lege uitvoer)"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1552
+#: rustconn/src/dialogs/connection/dialog/build.rs:1554
 msgid "Script Test Successful"
 msgstr "Scripttest geslaagd"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1553
+#: rustconn/src/dialogs/connection/dialog/build.rs:1555
 #: rustconn/src/dialogs/export.rs:322
 msgid "Output"
 msgstr "Uitvoer"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1560
+#: rustconn/src/dialogs/connection/dialog/build.rs:1562
 msgid "Command failed"
 msgstr "Opdracht mislukt"
 
-#: rustconn/src/dialogs/connection/dialog/build.rs:1575
+#: rustconn/src/dialogs/connection/dialog/build.rs:1577
 msgid "Script timed out after 30 seconds"
 msgstr "Script-timeout na 30 seconden"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:192
+#: rustconn/src/dialogs/connection/dialog/construction.rs:191
 #: rustconn/src/dialogs/shortcuts.rs:165
 #: rustconn/src/window/connection_dialogs.rs:297
 msgid "New Connection (Advanced)"
 msgstr "Nieuwe verbinding (geavanceerd)"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:203
+#: rustconn/src/dialogs/connection/dialog/construction.rs:202
 msgid "Test Connection"
 msgstr "Verbinding testen"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:204
+#: rustconn/src/dialogs/connection/dialog/construction.rs:203
 msgid "Test connection"
 msgstr "Verbinding testen"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:270
+#: rustconn/src/dialogs/connection/dialog/construction.rs:269
 #: rustconn/src/dialogs/connection/general_tab.rs:144
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:72
 #: rustconn/src/dialogs/export.rs:401 rustconn/src/dialogs/template.rs:194
@@ -1543,17 +1543,17 @@ msgstr "Verbinding testen"
 msgid "Protocol"
 msgstr "Protocol"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:402
+#: rustconn/src/dialogs/connection/dialog/construction.rs:427
 #: rustconn/src/dialogs/connection/dialog/rows.rs:74
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:261
 msgid "URL"
 msgstr "URL"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:405
+#: rustconn/src/dialogs/connection/dialog/construction.rs:430
 msgid "https://example.com"
 msgstr "https://example.com"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:407
+#: rustconn/src/dialogs/connection/dialog/construction.rs:432
 #: rustconn/src/dialogs/connection/general_tab.rs:162
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:75
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:108
@@ -1566,7 +1566,7 @@ msgstr "https://example.com"
 msgid "Host"
 msgstr "Host"
 
-#: rustconn/src/dialogs/connection/dialog/construction.rs:410
+#: rustconn/src/dialogs/connection/dialog/construction.rs:435
 #: rustconn/src/dialogs/connection/general_tab.rs:156
 #: rustconn/src/dialogs/template.rs:1817
 msgid "hostname or IP"
@@ -1710,7 +1710,7 @@ msgstr "WinRM tunnelen via een SSH-verbinding"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
-#: rustconn/src/dialogs/widgets.rs:401
+#: rustconn/src/dialogs/widgets.rs:408
 msgid "(Root)"
 msgstr "(Hoofdmap)"
 
@@ -3045,7 +3045,7 @@ msgstr "Indien afwijkend van verbindingsgebruikersnaam"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:406 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/dialogs/widgets.rs:413 rustconn/src/window/edit_dialogs.rs:809
 #: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "(Geen)"
@@ -3099,7 +3099,7 @@ msgstr "Toevoegen"
 #: rustconn/src/dialogs/flatpak_components.rs:361
 #: rustconn/src/dialogs/flatpak_components.rs:501
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
-#: rustconn/src/dialogs/widgets.rs:309
+#: rustconn/src/dialogs/widgets.rs:316
 msgid "Remove"
 msgstr "Verwijderen"
 
@@ -3737,7 +3737,7 @@ msgid "Path to private key file"
 msgstr "Pad naar privésleutelbestand"
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:411
+#: rustconn/src/dialogs/widgets.rs:418
 msgid "(No keys loaded)"
 msgstr "(Geen sleutels geladen)"
 
@@ -4756,7 +4756,7 @@ msgstr "Wachtwoordzin van het portable bestand"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1008
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1015
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4884,7 +4884,7 @@ msgstr "Kopiëren gestopt"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1003 rustconn/src/sidebar_ui.rs:488
+#: rustconn/src/dialogs/widgets.rs:1010 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
@@ -4921,7 +4921,7 @@ msgid "Export Connections"
 msgstr "Verbindingen exporteren"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1006
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1013
 msgid "Export"
 msgstr "Exporteren"
 
@@ -5213,7 +5213,7 @@ msgstr "Export voltooid"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:1012
+#: rustconn/src/dialogs/widgets.rs:1019
 msgid "Done"
 msgstr "Gereed"
 
@@ -5398,7 +5398,7 @@ msgstr "Verbindingen importeren"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1007
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1014
 #: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "Importeren"
@@ -8661,13 +8661,13 @@ msgid "Token loaded from keyring"
 msgstr "Token geladen uit sleutelhanger"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
-#: rustconn/src/dialogs/widgets.rs:949 rustconn/src/dialogs/widgets.rs:954
-#: rustconn/src/dialogs/widgets.rs:966
+#: rustconn/src/dialogs/widgets.rs:956 rustconn/src/dialogs/widgets.rs:961
+#: rustconn/src/dialogs/widgets.rs:973
 msgid "Select KeePass Database"
 msgstr "KeePass-database selecteren"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
-#: rustconn/src/dialogs/widgets.rs:962
+#: rustconn/src/dialogs/widgets.rs:969
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass-database (*.kdbx)"
 
@@ -10329,7 +10329,7 @@ msgid "Edit"
 msgstr "Bewerken"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:1011
+#: rustconn/src/dialogs/widgets.rs:1018
 msgid "Use Template"
 msgstr "Sjabloon gebruiken"
 
@@ -10886,39 +10886,39 @@ msgstr "Kan geheim niet laden. Controleer de geheime backend in Instellingen."
 msgid "Fetched from vault at connect time"
 msgstr "Opgehaald uit de kluis bij verbinden"
 
-#: rustconn/src/dialogs/widgets.rs:191
+#: rustconn/src/dialogs/widgets.rs:198
 msgid "Fallback Jump Hosts"
 msgstr "Reserve-jumphosts"
 
-#: rustconn/src/dialogs/widgets.rs:192
+#: rustconn/src/dialogs/widgets.rs:199
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr "Worden op volgorde geprobeerd als de jumphost onbereikbaar is"
 
-#: rustconn/src/dialogs/widgets.rs:198
+#: rustconn/src/dialogs/widgets.rs:205
 msgid "Add Fallback Jump Host"
 msgstr "Reserve-jumphost toevoegen"
 
-#: rustconn/src/dialogs/widgets.rs:275 rustconn/src/window/edit_group.rs:869
+#: rustconn/src/dialogs/widgets.rs:282 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "(onbekende verbinding)"
 
-#: rustconn/src/dialogs/widgets.rs:293
+#: rustconn/src/dialogs/widgets.rs:300
 msgid "Move Up"
 msgstr "Omhoog"
 
-#: rustconn/src/dialogs/widgets.rs:301
+#: rustconn/src/dialogs/widgets.rs:308
 msgid "Move Down"
 msgstr "Omlaag"
 
-#: rustconn/src/dialogs/widgets.rs:870
+#: rustconn/src/dialogs/widgets.rs:877
 msgid "Underline colour (#RRGGBB)"
 msgstr "Onderstrepingskleur (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:876
+#: rustconn/src/dialogs/widgets.rs:883
 msgid "Background colour (#RRGGBB)"
 msgstr "Achtergrondkleur (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:883
+#: rustconn/src/dialogs/widgets.rs:890
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10928,24 +10928,24 @@ msgstr ""
 "onderstreept. Laat leeg voor geen onderstreping. Geef de verbinding een "
 "uitvoerfilter zoals ChromaTerm om de tekst zelf te kleuren."
 
-#: rustconn/src/dialogs/widgets.rs:890
+#: rustconn/src/dialogs/widgets.rs:897
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr ""
 "Hexadecimale kleur, bijvoorbeeld #402020. Laat leeg voor geen achtergrond."
 
-#: rustconn/src/dialogs/widgets.rs:1023
+#: rustconn/src/dialogs/widgets.rs:1030
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:1024
+#: rustconn/src/dialogs/widgets.rs:1031
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "JavaScript-uitvoering in de ingebedde browser in- of uitschakelen"
 
-#: rustconn/src/dialogs/widgets.rs:1025
+#: rustconn/src/dialogs/widgets.rs:1032
 msgid "Navigation Toolbar"
 msgstr "Navigatiebalk"
 
-#: rustconn/src/dialogs/widgets.rs:1027
+#: rustconn/src/dialogs/widgets.rs:1034
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10953,11 +10953,11 @@ msgstr ""
 "Schakel uit om de zwevende werkbalk en de bijbehorende pijl te verwijderen. "
 "Sneltoetsen voor terug, vooruit, herladen en zoomen blijven werken."
 
-#: rustconn/src/dialogs/widgets.rs:1029
+#: rustconn/src/dialogs/widgets.rs:1036
 msgid "Private / Incognito Mode"
 msgstr "Privé-/incognitomodus"
 
-#: rustconn/src/dialogs/widgets.rs:1030
+#: rustconn/src/dialogs/widgets.rs:1037
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "URL openen in een privévenster (Firefox, Chrome, Brave)"
 
@@ -13113,7 +13113,7 @@ msgstr "Alleen aangevinkte velden worden op de selectie toegepast"
 msgid "Apply group change"
 msgstr "Groepswijziging toepassen"
 
-#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:997
+#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1042
 msgid "(No Group)"
 msgstr "(Geen groep)"
 
@@ -14025,7 +14025,7 @@ msgstr ""
 "gefocuste tabblad"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:904 rustconn/src/window/operations.rs:919
+#: rustconn/src/window/operations.rs:949 rustconn/src/window/operations.rs:964
 msgid "Move"
 msgstr "Verplaatsen"
 
@@ -14033,7 +14033,7 @@ msgstr "Verplaatsen"
 msgid "Move '{}' to:"
 msgstr "'{}' verplaatsen naar:"
 
-#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:999
+#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1044
 msgid "(Root Level)"
 msgstr "(Hoofdniveau)"
 
@@ -14477,7 +14477,7 @@ msgstr "Groep «{}» verwijderen?"
 msgid "Keep Connections"
 msgstr "Verbindingen behouden"
 
-#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:735
+#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:780
 msgid "Delete All"
 msgstr "Alles verwijderen"
 
@@ -14549,115 +14549,137 @@ msgstr "Bestaan al, worden overgeslagen: {}"
 msgid "All of these names already exist"
 msgstr "Al deze namen bestaan al"
 
-#: rustconn/src/window/operations.rs:527
+#: rustconn/src/window/operations.rs:548
+msgid "Some Connections Were Not Created"
+msgstr "Sommige verbindingen zijn niet gemaakt"
+
+#: rustconn/src/window/operations.rs:577
+msgid "The saved password was not copied to {} of the new connections"
+msgstr ""
+"Het opgeslagen wachtwoord is niet gekopieerd naar {} van de nieuwe "
+"verbindingen"
+
+#: rustconn/src/window/operations.rs:593
 msgid "Connections created: {}"
 msgstr "Gemaakte verbindingen: {}"
 
-#: rustconn/src/window/operations.rs:530
+#: rustconn/src/window/operations.rs:596
 msgid "Connections created: {}, already existed: {}"
 msgstr "Gemaakte verbindingen: {}, bestonden al: {}"
 
-#: rustconn/src/window/operations.rs:635
+#: rustconn/src/window/operations.rs:603
+msgid "Connections created: {}, failed: {}"
+msgstr "Gemaakte verbindingen: {}, mislukt: {}"
+
+#: rustconn/src/window/operations.rs:608
+msgid "Connections created: {}, failed: {}, already existed: {}"
+msgstr "Gemaakte verbindingen: {}, mislukt: {}, bestonden al: {}"
+
+#: rustconn/src/window/operations.rs:612
+msgid "Not created: {}"
+msgstr "Niet gemaakt: {}"
+
+#: rustconn/src/window/operations.rs:680
 msgid "Connection copied to clipboard"
 msgstr "Verbinding gekopieerd naar klembord"
 
-#: rustconn/src/window/operations.rs:643
+#: rustconn/src/window/operations.rs:688
 msgid "Failed to copy connection"
 msgstr "Kan verbinding niet kopiëren"
 
-#: rustconn/src/window/operations.rs:662
+#: rustconn/src/window/operations.rs:707
 msgid "Nothing to paste - copy a connection first"
 msgstr "Niets om te plakken - kopieer eerst een verbinding"
 
-#: rustconn/src/window/operations.rs:680
+#: rustconn/src/window/operations.rs:725
 msgid "Connection pasted"
 msgstr "Verbinding geplakt"
 
-#: rustconn/src/window/operations.rs:689
+#: rustconn/src/window/operations.rs:734
 msgid "Failed to paste connection"
 msgstr "Kan verbinding niet plakken"
 
-#: rustconn/src/window/operations.rs:709
+#: rustconn/src/window/operations.rs:754
 msgid "• {} (connection)"
 msgstr "• {} (verbinding)"
 
-#: rustconn/src/window/operations.rs:712
+#: rustconn/src/window/operations.rs:757
 msgid "• {} (group)"
 msgstr "• {} (groep)"
 
-#: rustconn/src/window/operations.rs:728
+#: rustconn/src/window/operations.rs:773
 msgid "Are you sure you want to delete {}?"
 msgstr "Weet u zeker dat u {} wilt verwijderen?"
 
-#: rustconn/src/window/operations.rs:730
+#: rustconn/src/window/operations.rs:775
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "Verbindingen in verwijderde groepen worden ongegroepeerd."
 
-#: rustconn/src/window/operations.rs:733
+#: rustconn/src/window/operations.rs:778
 msgid "Delete Selected Items?"
 msgstr "Geselecteerde items verwijderen?"
 
-#: rustconn/src/window/operations.rs:794
+#: rustconn/src/window/operations.rs:839
 msgid "Successfully deleted {} item(s)."
 msgstr "{} item(s) succesvol verwijderd."
 
-#: rustconn/src/window/operations.rs:802
+#: rustconn/src/window/operations.rs:847
 msgid "Deletion Partially Complete"
 msgstr "Verwijdering gedeeltelijk voltooid"
 
-#: rustconn/src/window/operations.rs:805
+#: rustconn/src/window/operations.rs:850
 msgid "Deleted {} item(s)."
 msgstr "{} item(s) verwijderd."
 
-#: rustconn/src/window/operations.rs:807
+#: rustconn/src/window/operations.rs:852
 msgid "Failed to delete {} item(s):"
 msgstr "Kan {} item(s) niet verwijderen:"
 
-#: rustconn/src/window/operations.rs:828 rustconn/src/window/operations.rs:874
+#: rustconn/src/window/operations.rs:873 rustconn/src/window/operations.rs:919
 msgid "No Selection"
 msgstr "Geen selectie"
 
-#: rustconn/src/window/operations.rs:829
+#: rustconn/src/window/operations.rs:874
 msgid "Select one or more items to delete."
 msgstr "Selecteer een of meer items om te verwijderen."
 
-#: rustconn/src/window/operations.rs:841
+#: rustconn/src/window/operations.rs:886
 msgid "{} connection(s)"
 msgstr "{} verbinding(en)"
 
-#: rustconn/src/window/operations.rs:842
+#: rustconn/src/window/operations.rs:887
 msgid "{} group(s)"
 msgstr "{} groep(en)"
 
-#: rustconn/src/window/operations.rs:844
+#: rustconn/src/window/operations.rs:889
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} verbinding(en) en {} groep(en)"
 
-#: rustconn/src/window/operations.rs:875
+#: rustconn/src/window/operations.rs:920
 msgid "Please select one or more items to move."
 msgstr "Selecteer een of meer items om te verplaatsen."
 
-#: rustconn/src/window/operations.rs:933
+#: rustconn/src/window/operations.rs:978
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "Selecteer bestemming voor {} verbinding(en) en {} groep(en):"
 
-#: rustconn/src/window/operations.rs:941
+#: rustconn/src/window/operations.rs:986
 msgid "Select a group for {} connection(s):"
 msgstr "Selecteer een groep voor {} verbinding(en):"
 
-#: rustconn/src/window/operations.rs:946
+#: rustconn/src/window/operations.rs:991
 msgid "Select parent for {} group(s):"
 msgstr "Selecteer bovenliggende voor {} groep(en):"
 
-#: rustconn/src/window/operations.rs:1081
+#: rustconn/src/window/operations.rs:1126
 msgid "Move Partially Complete"
 msgstr "Verplaatsing gedeeltelijk voltooid"
 
-#: rustconn/src/window/operations.rs:1084
+#: rustconn/src/window/operations.rs:1129
 msgid "Moved {} item(s)."
 msgstr "{} item(s) verplaatst."
 
-#: rustconn/src/window/operations.rs:1086
+#: rustconn/src/window/operations.rs:1131
 msgid "Failed to move {} item(s):"
 msgstr "Kan {} item(s) niet verplaatsen:"
 
@@ -14826,7 +14848,9 @@ msgstr "Wachtwoorden"
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
-msgstr "Voor hosts die erom vragen bij het verbinden. Een host met een leeg veld krijgt geen wachtwoord."
+msgstr ""
+"Voor hosts die erom vragen bij het verbinden. Een host met een leeg veld "
+"krijgt geen wachtwoord."
 
 #: rustconn/src/window/remote_script.rs:217
 msgid "Use One Password for All Hosts"
