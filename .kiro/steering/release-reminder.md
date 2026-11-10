@@ -35,6 +35,6 @@ When the workspace version in `Cargo.toml` is being bumped:
 
 ## Important
 
-- Version-number propagation to packaging files (flatpak/flathub tags, dsc files, AppImage, docs, spec `Version:` field) is `scripts/bump-version.sh X.Y.Z --write` — see the **`release-version.md`** steering file (manual), which is the full checklist this file only summarises.
+- Version-number propagation to packaging files (flatpak/flathub tags, dsc files, AppImage, docs, spec `Version:` field) is `scripts/bump-version.sh X.Y.Z --write`, which writes the Flathub manifest too and is therefore the maintainer's command; an agent runs the dry run (`packaging/AGENTS.md`, "Flathub is maintainer-only") — see the **`release-version.md`** steering file (manual), which is the full checklist this file only summarises.
 - YOU must handle all changelog/release-notes files manually — no hook or script creates changelog entries.
 - For full release process details read `release.md` in the **`rustconn`** power (`kiro_powers` → readSteering), and `release-version.md` here. There is no `rustconn-dev` power; the installed one is `rustconn`.

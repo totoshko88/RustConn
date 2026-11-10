@@ -34,8 +34,9 @@ That covers, and you should not re-derive any of it by hand:
    - Bundled pinned sources with `x-checker-data` (FreeRDP `freerdp-X.Y.Z.tar.xz`,
      cJSON): compare against upstream latest and report the drift **with the new
      `sha256`**, because a version bump without it fails the build.
-   - Confirm `packaging/flathub/*.yml` is in sync with the local manifest. They
-     drift independently.
+   - Compare `packaging/flathub/*.yml` with the local manifest. They drift
+     independently; report a drift as a maintainer task and do not edit the
+     Flathub copy (`packaging/AGENTS.md`, "Flathub is maintainer-only").
 2. **Snap** — read `snap/snapcraft.yaml`: `base` (core26) and the `gnome` extension
    (gnome-core26 platform, mesa-2604 GPU). The snap moved to core26 once Snapcraft
    9.2 added core26 support to the extension (issue #174); it still trails the
