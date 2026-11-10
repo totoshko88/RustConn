@@ -1121,8 +1121,9 @@ pub fn ssh_g_output_declares_proxy(output: &str) -> bool {
 /// prompts, which is the documented fallback.
 ///
 /// Cost is a single short-lived `ssh -G`, measured at ~4 ms against OpenSSH 10.2 — it performs no
-/// network I/O. Returns `true` on any failure to run or parse, because "cannot tell" must not
-/// enable automatic delivery.
+/// network I/O. A `Match exec` in the config can still run anything, so the check gives up after
+/// [`SSH_G_TIMEOUT`]. Returns `true` on any failure to run, finish or parse, because "cannot tell"
+/// must not enable automatic delivery.
 #[must_use]
 pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) -> bool {
     let mut command = std::process::Command::new("ssh");
@@ -1130,13 +1131,42 @@ pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) 
     if let Some(user) = username.map(str::trim).filter(|user| !user.is_empty()) {
         command.arg("-l").arg(user);
     }
+    command.arg(host);
+    declares_proxy_within(command, SSH_G_TIMEOUT, host)
+}
+
+/// How long [`ssh_config_declares_proxy`] waits for `ssh -G`.
+///
+/// `ssh -G` itself takes milliseconds; only a `Match exec` command in the user's config can make
+/// it slow, and a connect or a script run must not hang on that.
+const SSH_G_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Runs `command` (an `ssh -G` invocation) for at most `budget` and reads its answer.
+///
+/// The output of `ssh -G` is a few KiB, well under the pipe buffer that
+/// [`crate::proc::wait_bounded`] requires.
+fn declares_proxy_within(
+    mut command: std::process::Command,
+    budget: std::time::Duration,
+    host: &str,
+) -> bool {
     command
-        .arg(host)
         .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null());
 
-    match command.output() {
-        Ok(output) if output.status.success() => {
+    let waited = command
+        .spawn()
+        .and_then(|child| crate::proc::wait_bounded(child, budget, "ssh -G proxy check"));
+    match waited {
+        Ok(crate::proc::Waited::TimedOut) => {
+            tracing::warn!(
+                host,
+                "ssh -G did not finish in time; assuming a proxy route and leaving automatic password delivery off"
+            );
+            true
+        }
+        Ok(crate::proc::Waited::Exited(output)) if output.status.success() => {
             let declares = ssh_g_output_declares_proxy(&String::from_utf8_lossy(&output.stdout));
             if declares {
                 tracing::debug!(
@@ -1146,7 +1176,7 @@ pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) 
             }
             declares
         }
-        Ok(output) => {
+        Ok(crate::proc::Waited::Exited(output)) => {
             tracing::warn!(
                 host,
                 status = ?output.status.code(),
@@ -2200,6 +2230,34 @@ mod proxy_detection_tests {
         // Prefix matching would fire on this; the parser compares the whole first field.
         assert!(!ssh_g_output_declares_proxy(
             "proxyusepdisc no\nproxyjumpsomething value\n"
+        ));
+    }
+
+    #[test]
+    fn a_hung_proxy_check_counts_as_a_proxy() {
+        // A `Match exec` that never returns must not stall the caller, and "cannot tell" keeps
+        // the password back.
+        let mut command = std::process::Command::new("sh");
+        command.arg("-c").arg("sleep 30");
+        let started = std::time::Instant::now();
+        assert!(super::declares_proxy_within(
+            command,
+            std::time::Duration::from_millis(200),
+            "target.example.com"
+        ));
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    #[test]
+    fn a_finished_proxy_check_is_parsed() {
+        let mut command = std::process::Command::new("sh");
+        command
+            .arg("-c")
+            .arg("printf 'proxyjump none\\nproxycommand none\\n'");
+        assert!(!super::declares_proxy_within(
+            command,
+            std::time::Duration::from_secs(5),
+            "target.example.com"
         ));
     }
 
