@@ -392,6 +392,8 @@ pub fn compute_group_path(group_id: Uuid, groups: &[ConnectionGroup]) -> String 
 ///   `is_secret`.
 /// - For non-secret variables with a non-empty value, includes `default_value`.
 /// - For secret variables, `default_value` is always `None`.
+/// - A SOCKS proxy password variable is always exported as secret with no
+///   `default_value`, even when the local variable is plain.
 /// - If the variable is not found in `existing_variables`, creates a template
 ///   with `is_secret = true` and no description (safe default).
 #[must_use]
@@ -414,11 +416,17 @@ pub fn collect_variable_templates(
 
         // 2. A Web connection's SOCKS proxy password lives in a variable too;
         //    without its template the other device cannot open the page.
+        //    It is a password whatever the local flag says, so its value
+        //    never goes into the sync file.
         if let ProtocolConfig::Web(ref web) = conn.protocol_config
             && let Some(ref name) = web.socks_proxy_password_variable
             && seen.insert(name.clone())
         {
-            templates.push(build_template(name, existing_variables));
+            templates.push(VariableTemplate {
+                is_secret: true,
+                default_value: None,
+                ..build_template(name, existing_variables)
+            });
         }
 
         // 3. Scan string fields for ${var_name} patterns
@@ -1459,6 +1467,30 @@ mod tests {
         assert_eq!(
             templates[0].default_value, None,
             "a secret value never syncs"
+        );
+        assert_eq!(templates[0].description, Some("Proxy".to_owned()));
+    }
+
+    #[test]
+    fn collect_templates_never_exports_plain_socks_proxy_password() {
+        let mut conn = Connection::new_ssh("web".to_owned(), "https://intranet".to_owned(), 443);
+        conn.protocol = crate::models::ProtocolType::Web;
+        conn.protocol_config = ProtocolConfig::Web(crate::models::WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".to_owned()),
+            socks_proxy_username: Some("alice".to_owned()),
+            socks_proxy_password_variable: Some("proxy_pw".to_owned()),
+            ..crate::models::WebConfig::default()
+        });
+
+        let vars = vec![Variable::new("proxy_pw", "hunter2").with_description("Proxy")];
+
+        let templates = collect_variable_templates(&[conn], &vars);
+        assert_eq!(templates.len(), 1);
+        assert_eq!(templates[0].name, "proxy_pw");
+        assert!(templates[0].is_secret, "a proxy password syncs as secret");
+        assert_eq!(
+            templates[0].default_value, None,
+            "a plain variable's proxy password never syncs"
         );
         assert_eq!(templates[0].description, Some("Proxy".to_owned()));
     }
