@@ -109,7 +109,10 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
         has_askpass: askpass_script.is_some(),
         any_hop_has_password,
         target_askpass_allowed: request.target_askpass_allowed,
-        known_only: request.hop_host_keys == HopHostKeys::KnownOnly,
+        // A hop that is not plain, such as a free-text `b1,b2` chain or a
+        // value from someone else's synced group, keeps `-J`, which OpenSSH
+        // parses itself, rather than going unquoted into a shell command.
+        known_only: request.hop_host_keys == HopHostKeys::KnownOnly && hops_are_plain(hops),
     };
 
     if !auth_shape.needs_explicit_proxy_command() {
@@ -131,6 +134,29 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
         askpass_script.as_deref(),
         auth_shape.needs_proxy_for_auth(),
     ))
+}
+
+/// A character a shell passes through unchanged inside a `ProxyCommand`.
+fn is_plain(c: char) -> bool {
+    c.is_ascii_alphanumeric() || ".-_:@[]".contains(c)
+}
+
+/// Whether every hop is a plain `[user@]host[:port]` that is safe to put into
+/// a `ProxyCommand`, which ssh runs through a shell.
+#[must_use]
+pub fn hops_are_plain(hops: &[String]) -> bool {
+    !hops.is_empty()
+        && hops
+            .iter()
+            .all(|hop| !hop.is_empty() && !hop.starts_with('-') && hop.chars().all(is_plain))
+}
+
+/// `path` when a shell would pass it through a `ProxyCommand` unchanged.
+#[must_use]
+pub fn plain_path(path: &str) -> Option<&str> {
+    path.chars()
+        .all(|c| is_plain(c) || c == '/')
+        .then_some(path)
 }
 
 /// Builds the explicit `ProxyCommand` route to `first_hop`, nesting the deeper
@@ -363,7 +389,8 @@ struct JumpAuthShape {
     has_askpass: bool,
     any_hop_has_password: bool,
     target_askpass_allowed: bool,
-    /// Every hop must already be in `known_hosts` ([`HopHostKeys::KnownOnly`]).
+    /// Every hop must already be in `known_hosts` ([`HopHostKeys::KnownOnly`])
+    /// and every hop passes [`hops_are_plain`].
     known_only: bool,
 }
 
@@ -392,7 +419,8 @@ impl JumpAuthShape {
     /// all force the explicit `ProxyCommand` that passes them to the first hop.
     /// So does [`HopHostKeys::KnownOnly`]: only a `ProxyCommand` hop can be
     /// given `StrictHostKeyChecking=yes`, and a script run must never stop at a
-    /// host-key question nobody is there to answer.
+    /// host-key question nobody is there to answer. Hops that are not plain
+    /// keep `-J` (see [`Self::known_only`]).
     ///
     /// The one exception is [`Self::is_multi_hop_identity_only`], which `-J` +
     /// agent serves better than a nested `ProxyCommand` that cannot carry a
@@ -614,6 +642,40 @@ mod tests {
             command.contains("-i /k/target -o IdentitiesOnly=yes"),
             "{command}"
         );
+    }
+
+    #[test]
+    fn known_only_keeps_proxy_jump_for_a_hop_a_shell_could_interpret() {
+        // `b1,b2` is a free-text chain that only `-J` understands; `;` would
+        // reach /bin/sh through a ProxyCommand.
+        for hop in ["b1.example,b2.example", "bastion;reboot"] {
+            let chain = hops(&[hop]);
+            let passwords = [None];
+            let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+            req.target_identity = Some("/k/target");
+            let route = jump_route(&req);
+            assert!(
+                matches!(route, Some(JumpRoute::ProxyJump { .. })),
+                "{hop}: {route:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn anything_a_shell_could_interpret_is_not_plain() {
+        for hop in ["jump;reboot", "$(reboot)", "-oProxyCommand=x", "b1,b2", ""] {
+            assert!(!hops_are_plain(&[hop.to_string()]), "{hop}");
+        }
+        assert!(!hops_are_plain(&[]), "no hops is not a route");
+        assert!(hops_are_plain(&[
+            "alice@jump:2222".to_string(),
+            "[2001:db8::1]".to_string()
+        ]));
+        assert_eq!(
+            plain_path("/home/a/.ssh/id_ed25519"),
+            Some("/home/a/.ssh/id_ed25519")
+        );
+        assert_eq!(plain_path("/home/a/my key"), None);
     }
 
     #[test]

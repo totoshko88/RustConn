@@ -10,7 +10,9 @@ use rustconn_core::config::{AppSettings, NetworkSettings};
 use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gateways, use_gateway};
 use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
-use rustconn_core::jump_route::{JumpRoute, JumpRouteRequest, jump_route};
+use rustconn_core::jump_route::{
+    JumpRoute, JumpRouteRequest, hops_are_plain, jump_route, plain_path,
+};
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
     self, LaunchError, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost,
@@ -416,27 +418,6 @@ fn within<T>(
     runtime.block_on(async { tokio::time::timeout(limit, lookup).await.ok() })
 }
 
-/// A character a shell passes through unchanged inside a `ProxyCommand`.
-fn is_plain(c: char) -> bool {
-    c.is_ascii_alphanumeric() || ".-_:@[]".contains(c)
-}
-
-/// Whether every hop is a plain `[user@]host[:port]` that is safe to put into
-/// a `ProxyCommand`, which ssh runs through a shell.
-fn hops_are_plain(hops: &[String]) -> bool {
-    !hops.is_empty()
-        && hops
-            .iter()
-            .all(|hop| !hop.is_empty() && !hop.starts_with('-') && hop.chars().all(is_plain))
-}
-
-/// `path` when a shell would pass it through a `ProxyCommand` unchanged.
-fn plain_path(path: &str) -> Option<&str> {
-    path.chars()
-        .all(|c| is_plain(c) || c == '/')
-        .then_some(path)
-}
-
 /// Picks the reachable jump host for `connection`, on a copy of it.
 fn route(
     connection: &Connection,
@@ -777,7 +758,7 @@ mod tests {
     use rustconn_core::models::{Connection, ProtocolConfig, SshKeySource};
     use secrecy::{ExposeSecret, SecretString};
 
-    use super::{hops_are_plain, plain_jump_route, plain_path, withhold_from_config_proxy, within};
+    use super::{plain_jump_route, withhold_from_config_proxy, within};
 
     fn target() -> Connection {
         let mut connection = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 2222);
@@ -939,23 +920,6 @@ mod tests {
         ] {
             assert!(super::announces_outcome(outcome, true), "{outcome:?}");
         }
-    }
-
-    #[test]
-    fn anything_a_shell_could_interpret_is_refused() {
-        for hop in ["jump;reboot", "$(reboot)", "-oProxyCommand=x", ""] {
-            assert!(!hops_are_plain(&[hop.to_string()]), "{hop}");
-        }
-        assert!(!hops_are_plain(&[]), "no hops is not a route");
-        assert!(hops_are_plain(&[
-            "alice@jump:2222".to_string(),
-            "[2001:db8::1]".to_string()
-        ]));
-        assert_eq!(
-            plain_path("/home/a/.ssh/id_ed25519"),
-            Some("/home/a/.ssh/id_ed25519")
-        );
-        assert_eq!(plain_path("/home/a/my key"), None);
     }
 
     fn bastion(host: &str, pkcs11: Option<&str>, key: Option<&std::path::Path>) -> Connection {
