@@ -349,6 +349,24 @@ fn print_json(
                 "use_ssl".to_string(),
                 serde_json::Value::Bool(config.use_ssl),
             );
+            if config.accept_invalid_certs {
+                map.insert(
+                    "accept_invalid_certs".to_string(),
+                    serde_json::Value::Bool(true),
+                );
+            }
+            if let Some(jump_id) = config.jump_host_id {
+                map.insert(
+                    "jump_host".to_string(),
+                    serde_json::Value::String(resolve_jump(jump_id)),
+                );
+            }
+            if !config.custom_args.is_empty() {
+                map.insert(
+                    "custom_args".to_string(),
+                    serde_json::json!(config.custom_args),
+                );
+            }
         }
         _ => {}
     }
@@ -643,6 +661,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
                 "  HTTPS:        {}",
                 if config.use_ssl { "yes" } else { "no" }
             );
+            if config.accept_invalid_certs {
+                println!("  Accept Invalid Certs: yes");
+            }
+            if let Some(jump_id) = config.jump_host_id {
+                println!("  Jump Host: {}", resolve_jump(jump_id));
+            }
+            if !config.custom_args.is_empty() {
+                println!("  Custom Args: {}", config.custom_args.join(" "));
+            }
         }
         _ => {}
     }

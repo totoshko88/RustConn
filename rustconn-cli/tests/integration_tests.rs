@@ -530,6 +530,54 @@ fn load_only_rdp(config_dir: &std::path::Path) -> rustconn_core::models::RdpConf
 }
 
 #[test]
+fn show_prints_the_winrm_jump_host_and_options() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let bastion = run_cli(
+        &[
+            "add",
+            "--name",
+            "bastion",
+            "--protocol",
+            "ssh",
+            "--host",
+            "bastion.example.com",
+        ],
+        Some(config_dir),
+    );
+    assert!(bastion.status.success(), "{}", stderr_str(&bastion));
+    let win = run_cli(
+        &[
+            "add",
+            "--name",
+            "win1",
+            "--protocol",
+            "winrm",
+            "--host",
+            "win1.example.com",
+            "--jump-host",
+            "bastion",
+            "--winrm-accept-invalid-certs",
+        ],
+        Some(config_dir),
+    );
+    assert!(win.status.success(), "{}", stderr_str(&win));
+
+    let json = run_cli(&["show", "win1", "--format", "json"], Some(config_dir));
+    assert!(json.status.success(), "{}", stderr_str(&json));
+    let value: serde_json::Value =
+        serde_json::from_str(&stdout_str(&json)).expect("show prints JSON");
+    assert_eq!(value["jump_host"], "bastion");
+    assert_eq!(value["accept_invalid_certs"], true);
+
+    let table = run_cli(&["show", "win1", "--format", "table"], Some(config_dir));
+    let text = stdout_str(&table);
+    assert!(text.contains("Jump Host: bastion"), "{text}");
+    assert!(text.contains("Accept Invalid Certs: yes"), "{text}");
+}
+
+#[test]
 fn add_kerberos_stores_and_normalizes_the_kdc_address() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let config_dir = temp_dir.path();
