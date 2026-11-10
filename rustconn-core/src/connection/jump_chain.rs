@@ -384,6 +384,9 @@ fn classify_first_bastion_origin(
 /// ([`routes_through_jump_host`]) has nothing to report, even when a group or
 /// the global settings name a bastion that is gone.
 ///
+/// A missing primary is reported even when a fallback jump host is still
+/// there; a caller that fails over checks [`failover_covers_missing_primary`].
+///
 /// A connection naming *itself* in its own Jump Host field is reported as
 /// [`DanglingReason::SelfReference`]. The same id arriving through inheritance
 /// is not: that is a bastion living in the group it serves, and going direct is
@@ -407,6 +410,31 @@ pub fn find_dangling_bastions(
     )
 }
 
+/// Whether gateway failover covers a missing primary jump host: the primary
+/// [`resolve_ssh_jump_host_candidates`](crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates)
+/// returns is gone and one of its fallbacks still exists.
+///
+/// [`find_dangling_bastions`] reports such a primary all the same, because a
+/// path that does not fail over (`rustconn-cli connect`) really does skip it.
+/// A caller that fails over, as the GUI connect path does, checks this first
+/// and leaves out the warning, since the fallback carries the session.
+#[must_use]
+pub fn failover_covers_missing_primary<'a>(
+    connection: &Connection,
+    lookup: impl Fn(Uuid) -> Option<&'a Connection>,
+    groups: &[ConnectionGroup],
+    network: &NetworkSettings,
+) -> bool {
+    let candidates = crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates(
+        connection, groups, network,
+    );
+    matches!(
+        candidates.as_slice(),
+        [primary, fallbacks @ ..]
+            if lookup(*primary).is_none() && fallbacks.iter().any(|id| lookup(*id).is_some())
+    )
+}
+
 /// [`find_dangling_bastions`] with a connection lookup instead of a slice.
 ///
 /// For callers that keep connections in a map: pass the map's `get`, and
@@ -422,18 +450,6 @@ pub fn find_dangling_bastions_by<'a>(
     let mut dangling = Vec::new();
 
     if !routes_through_jump_host(connection) {
-        return dangling;
-    }
-
-    // A missing primary with a live fallback is not a skipped hop: failover
-    // routes through the fallback, so there is no direct connection to warn of.
-    let candidates = crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates(
-        connection, groups, network,
-    );
-    if let [primary, fallbacks @ ..] = candidates.as_slice()
-        && lookup(*primary).is_none()
-        && fallbacks.iter().any(|id| lookup(*id).is_some())
-    {
         return dangling;
     }
 

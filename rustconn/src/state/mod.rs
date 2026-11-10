@@ -995,7 +995,8 @@ impl AppState {
     #[must_use]
     pub fn skipped_bastions(&self, connection_ids: &[Uuid]) -> Vec<(Uuid, SkippedBastion)> {
         use rustconn_core::connection::jump_chain::{
-            bastion_fallback, find_dangling_bastions_by, routes_through_jump_host,
+            bastion_fallback, failover_covers_missing_primary, find_dangling_bastions_by,
+            routes_through_jump_host,
         };
 
         let candidates: Vec<&Connection> = connection_ids
@@ -1013,6 +1014,16 @@ impl AppState {
         candidates
             .into_iter()
             .filter_map(|conn| {
+                // The GUI fails over, so a gone primary with a live fallback
+                // is not a skipped hop: the session goes through the fallback.
+                if failover_covers_missing_primary(
+                    conn,
+                    |id| self.get_connection(id),
+                    &groups,
+                    network,
+                ) {
+                    return None;
+                }
                 let dangling =
                     find_dangling_bastions_by(conn, |id| self.get_connection(id), &groups, network);
                 let fallback = bastion_fallback(conn, &dangling, &groups, network);

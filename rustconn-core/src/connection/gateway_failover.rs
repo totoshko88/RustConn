@@ -509,15 +509,46 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_primary_with_a_live_fallback_is_not_reported_as_dangling() {
+    fn a_missing_primary_with_a_live_fallback_is_covered_by_failover() {
+        use crate::connection::jump_chain::{
+            failover_covers_missing_primary, find_dangling_bastions,
+        };
+
         let (a, b) = (ssh("a"), ssh("b"));
         let target = target_with(&[&a, &b]);
-        let dangling = crate::connection::jump_chain::find_dangling_bastions(
+        let network = NetworkSettings::default();
+        let live = std::slice::from_ref(&b);
+        // A path without failover still skips the primary, so it is reported.
+        let dangling = find_dangling_bastions(&target, live, &[], &network);
+        assert_eq!(dangling.len(), 1);
+        assert_eq!(dangling[0].referenced_id, a.id);
+        // A path that fails over goes through `b` instead.
+        assert!(failover_covers_missing_primary(
             &target,
-            std::slice::from_ref(&b),
+            find_in(live),
             &[],
-            &NetworkSettings::default(),
-        );
-        assert!(dangling.is_empty());
+            &network
+        ));
+    }
+
+    fn find_in<'a>(list: &'a [Connection]) -> impl Fn(Uuid) -> Option<&'a Connection> {
+        move |id| list.iter().find(|c| c.id == id)
+    }
+
+    #[test]
+    fn failover_does_not_cover_a_live_primary_or_dead_fallbacks() {
+        use crate::connection::jump_chain::failover_covers_missing_primary;
+
+        let (a, b) = (ssh("a"), ssh("b"));
+        let target = target_with(&[&a, &b]);
+        let network = NetworkSettings::default();
+        for live in [vec![a.clone(), b], Vec::new(), vec![a]] {
+            assert!(!failover_covers_missing_primary(
+                &target,
+                find_in(&live),
+                &[],
+                &network
+            ));
+        }
     }
 }
