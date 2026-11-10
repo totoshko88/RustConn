@@ -102,8 +102,11 @@ pub(super) fn cmd_run_script(
         );
     }
 
-    if !params.assume_yes {
-        let names: Vec<&str> = targets.hosts.iter().map(|c| c.name.as_str()).collect();
+    // Resolved before the prompt, so it lists only the hosts that will run.
+    let (runnable, left_out) = leave_out_ask_hosts(&targets.hosts, &settings.global_variables);
+
+    if !params.assume_yes && !runnable.is_empty() {
+        let names: Vec<&str> = runnable.iter().map(|c| c.name.as_str()).collect();
         eprintln!("Hosts: {}", names.join(", "));
         let prompt = format!(
             "Run '{}' on {} host(s)?",
@@ -123,12 +126,11 @@ pub(super) fn cmd_run_script(
 
     let timeout_secs = settings.connection.port_check_timeout_secs;
     let mut passwords = Passwords::new(&settings, &groups, params.same_password);
-    let hosts: Vec<RemoteHost> = targets
-        .hosts
+    let hosts: Vec<RemoteHost> = runnable
         .iter()
         .filter_map(|c| {
             script_host(
-                &resolve_or_leave_out(c, &settings.global_variables)?,
+                c,
                 &connections,
                 &groups,
                 &settings.network,
@@ -137,7 +139,9 @@ pub(super) fn cmd_run_script(
             )
         })
         .collect();
-    let total = hosts.len();
+    // A host left out did not succeed, so it counts in the total and the
+    // exit status.
+    let total = hosts.len() + left_out;
     let names: Vec<String> = hosts.iter().map(|h| h.name.clone()).collect();
 
     let (sender, receiver) = std::sync::mpsc::channel();
@@ -229,6 +233,17 @@ fn resolve_or_leave_out(connection: &Connection, globals: &[Variable]) -> Option
             );
         })
         .ok()
+}
+
+/// The hosts with global variables filled in, and how many were left out by
+/// [`resolve_or_leave_out`].
+fn leave_out_ask_hosts(hosts: &[&Connection], globals: &[Variable]) -> (Vec<Connection>, usize) {
+    let runnable: Vec<Connection> = hosts
+        .iter()
+        .filter_map(|c| resolve_or_leave_out(c, globals))
+        .collect();
+    let left_out = hosts.len() - runnable.len();
+    (runnable, left_out)
 }
 
 fn substitute_global(manager: &VariableManager, text: &str) -> String {
@@ -882,6 +897,25 @@ mod tests {
             super::with_global_variables(&connection, &globals).map(|c| c.host),
             Err("region".to_string())
         );
+    }
+
+    #[test]
+    fn a_host_left_out_counts_as_not_succeeded() {
+        use rustconn_core::variables::Variable;
+
+        let mut asking = target();
+        asking.name = "asking".to_string();
+        asking.host = "${region}.lan".to_string();
+        let plain = target();
+        let globals = [Variable::new("region", "@ask:Region|eu|us")];
+        let (runnable, left_out) = super::leave_out_ask_hosts(&[&asking, &plain], &globals);
+        assert_eq!(
+            runnable.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            ["web"]
+        );
+        assert_eq!(left_out, 1);
+        // The one host that ran succeeded; the run still fails.
+        assert!(super::run_result(runnable.len(), runnable.len() + left_out, true).is_err());
     }
 
     fn runtime() -> tokio::runtime::Runtime {
