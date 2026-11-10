@@ -18,9 +18,9 @@ use gtk4::glib;
 use libadwaita as adw;
 use rustconn_core::models::PasswordSource;
 use rustconn_core::remote_script::{
-    self, DEFAULT_PARALLEL, DEFAULT_TIMEOUT, LaunchError, MAX_PARALLEL, RunOptions, ScriptEvent,
-    ScriptEventSink, ScriptFileError, ScriptHost, ScriptKind, ScriptOutcome, ScriptTransport,
-    WinRmTarget,
+    self, DEFAULT_HOST_TIMEOUT, DEFAULT_PARALLEL, LaunchError, MAX_PARALLEL, RemoteHost,
+    RunOptions, ScriptEvent, ScriptEventSink, ScriptFileError, ScriptKind, ScriptOutcome,
+    ScriptTransport, WinRmTarget,
 };
 use secrecy::{ExposeSecret, SecretString};
 use uuid::Uuid;
@@ -168,7 +168,10 @@ fn script_error_text(error: &ScriptFileError) -> String {
         ScriptFileError::Unreadable(_) => i18n("The script could not be read"),
         ScriptFileError::NotAFile => i18n("Choose a script file, not a folder"),
         ScriptFileError::Empty => i18n("The script is empty"),
-        ScriptFileError::TooLarge { .. } => i18n("The script is larger than 1 MiB"),
+        ScriptFileError::TooLarge { max } => i18n_f(
+            "The script is larger than {}",
+            &[glib::format_size_full(*max, glib::FormatSizeFlags::IEC_UNITS).as_str()],
+        ),
         ScriptFileError::Binary => i18n("This is a binary file, not a script"),
     }
 }
@@ -291,7 +294,7 @@ pub(super) fn open_dialog(
     parallel_row.set_value(DEFAULT_PARALLEL as f64);
     let timeout_row = adw::SpinRow::with_range(1.0, 1440.0, 1.0);
     timeout_row.set_title(&i18n("Time Limit per Host (minutes)"));
-    timeout_row.set_value((DEFAULT_TIMEOUT.as_secs() / 60) as f64);
+    timeout_row.set_value((DEFAULT_HOST_TIMEOUT.as_secs() / 60) as f64);
 
     let group = adw::PreferencesGroup::builder()
         .description(i18n(
@@ -803,7 +806,7 @@ fn build_hosts(
             record_outcome(&view, row, ScriptOutcome::NotStarted);
             return glib::ControlFlow::Continue;
         };
-        hosts.push(ScriptHost {
+        hosts.push(RemoteHost {
             name: connection.name,
             transport,
         });
@@ -833,7 +836,7 @@ fn winrm_transport(
 /// Runs the hosts on a worker thread and copies progress to the window.
 fn start_workers(
     view: &Rc<RunView>,
-    hosts: Vec<ScriptHost>,
+    hosts: Vec<RemoteHost>,
     row_of_host: Vec<usize>,
     script: Vec<u8>,
     options: RunOptions,

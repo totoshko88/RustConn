@@ -1261,7 +1261,7 @@ pub enum Commands {
     /// Run a local script: bash on SSH connections, PowerShell (.ps1) on WinRM ones
     #[command(about = "Run a local script on SSH or WinRM connections")]
     RunScript {
-        /// Path to the local bash script
+        /// Path to the local script: bash for SSH connections, a .ps1 file for WinRM ones
         script: std::path::PathBuf,
 
         /// Connection name or UUID to run on (repeatable)
@@ -1273,11 +1273,11 @@ pub enum Commands {
         groups: Vec<String>,
 
         /// Hosts to run on at once (1-64)
-        #[arg(long, default_value_t = 8)]
+        #[arg(long, default_value_t = rustconn_core::remote_script::DEFAULT_PARALLEL)]
         parallel: usize,
 
         /// Time limit per host, in seconds
-        #[arg(long, default_value_t = 600)]
+        #[arg(long, default_value_t = rustconn_core::remote_script::DEFAULT_HOST_TIMEOUT.as_secs())]
         timeout: u64,
 
         /// Do not ask for confirmation

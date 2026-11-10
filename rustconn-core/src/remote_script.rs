@@ -179,7 +179,7 @@ pub const DEFAULT_PARALLEL: usize = 8;
 /// Upper bound on hosts running at once.
 pub const MAX_PARALLEL: usize = 64;
 /// Time allowed per host unless the caller chooses.
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_mins(10);
+pub const DEFAULT_HOST_TIMEOUT: Duration = Duration::from_mins(10);
 
 /// Longest output line delivered in one piece.
 const MAX_LINE_BYTES: u64 = 64 * 1024;
@@ -312,7 +312,7 @@ pub fn script_targets<'a>(
 
 /// One host to run the script on.
 #[derive(Debug)]
-pub struct ScriptHost {
+pub struct RemoteHost {
     /// The display name, for reporting.
     pub name: String,
     /// How to reach it.
@@ -406,7 +406,7 @@ impl Default for RunOptions {
     fn default() -> Self {
         Self {
             parallel: DEFAULT_PARALLEL,
-            timeout: DEFAULT_TIMEOUT,
+            timeout: DEFAULT_HOST_TIMEOUT,
             cancel: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -543,7 +543,7 @@ pub type ScriptEventSink = Arc<dyn Fn(ScriptEvent) + Send + Sync>;
 /// Blocks, so keep it off the GTK main thread.
 pub fn run_script(
     script: &Arc<Vec<u8>>,
-    hosts: &[ScriptHost],
+    hosts: &[RemoteHost],
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) {
@@ -621,7 +621,7 @@ fn probe_winrm(python: PathBuf) -> Result<PathBuf, LaunchError> {
 fn run_script_with(
     programs: &Programs,
     script: &Arc<Vec<u8>>,
-    hosts: &[ScriptHost],
+    hosts: &[RemoteHost],
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) {
@@ -795,7 +795,7 @@ fn run_host(
     programs: &Programs,
     script: &Arc<Vec<u8>>,
     index: usize,
-    host: &ScriptHost,
+    host: &RemoteHost,
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) -> ScriptOutcome {
@@ -1115,8 +1115,8 @@ class Protocol:
         made.as_ref().map(|(_, path)| path.as_path())
     }
 
-    fn windows(password: &str) -> ScriptHost {
-        ScriptHost {
+    fn windows(password: &str) -> RemoteHost {
+        RemoteHost {
             name: "win".to_string(),
             transport: ScriptTransport::WinRm(WinRmTarget {
                 host: "win.lan".to_string(),
@@ -1250,8 +1250,8 @@ class Protocol:
         assert_eq!(ScriptKind::of_path(Path::new("a")), ScriptKind::Bash);
     }
 
-    fn host(dest: &str) -> ScriptHost {
-        ScriptHost {
+    fn host(dest: &str) -> RemoteHost {
+        RemoteHost {
             name: dest.to_string(),
             transport: ScriptTransport::Ssh {
                 target: SshTarget {
@@ -1266,7 +1266,7 @@ class Protocol:
         }
     }
 
-    fn run(hosts: &[ScriptHost], options: &RunOptions, script: &str) -> Vec<ScriptEvent> {
+    fn run(hosts: &[RemoteHost], options: &RunOptions, script: &str) -> Vec<ScriptEvent> {
         let events = Arc::new(Mutex::new(Vec::new()));
         let collected = Arc::clone(&events);
         let sink: ScriptEventSink = Arc::new(move |e| collected.lock().unwrap().push(e));
@@ -1391,6 +1391,15 @@ class Protocol:
             ),
             "{events:?}"
         );
+    }
+
+    /// The marker is written out in shell and in Python; all three spellings
+    /// must give the bytes the reader looks for.
+    #[test]
+    fn the_exit_255_marker_is_spelt_the_same_everywhere() {
+        assert_eq!(SCRIPT_EXIT_255_MARKER, b"\x1erustconn-script-exit-255");
+        assert!(REMOTE_COMMAND.contains(r"\036rustconn-script-exit-255\n"));
+        assert!(WINRM_HELPER.contains(r#""\x1erustconn-script-exit-255\n""#));
     }
 
     #[test]

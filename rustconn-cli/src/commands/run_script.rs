@@ -15,7 +15,7 @@ use rustconn_core::jump_route::{
 };
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
-    self, LaunchError, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost,
+    self, LaunchError, OutputStream, RemoteHost, RunOptions, ScriptEvent, ScriptEventSink,
     ScriptKind, ScriptOutcome, ScriptTransport, WinRmTarget,
 };
 use rustconn_core::secret::{CredentialResolver, SecretManager};
@@ -123,7 +123,7 @@ pub(super) fn cmd_run_script(
 
     let timeout_secs = settings.connection.port_check_timeout_secs;
     let mut passwords = Passwords::new(&settings, &groups, params.same_password);
-    let hosts: Vec<ScriptHost> = targets
+    let hosts: Vec<RemoteHost> = targets
         .hosts
         .iter()
         .filter_map(|c| {
@@ -592,12 +592,12 @@ fn script_host(
     network: &NetworkSettings,
     probe_timeout_secs: u32,
     passwords: &mut Passwords<'_>,
-) -> Option<ScriptHost> {
+) -> Option<RemoteHost> {
     let routed = route(connection, connections, groups, network, probe_timeout_secs);
     if matches!(routed.protocol_config, ProtocolConfig::WinRm(_)) {
         let tunnel = winrm_tunnel(&routed, connections, groups, network, passwords);
         let password = passwords.of_target(connection);
-        return Some(ScriptHost {
+        return Some(RemoteHost {
             name: routed.name.clone(),
             transport: ScriptTransport::WinRm(WinRmTarget::for_connection(
                 &routed, password, tunnel,
@@ -689,7 +689,7 @@ fn ssh_script_host(
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
     passwords: &mut Passwords<'_>,
-) -> Option<ScriptHost> {
+) -> Option<RemoteHost> {
     let ProtocolConfig::Ssh(config) = &routed.protocol_config else {
         return None;
     };
@@ -765,7 +765,7 @@ fn ssh_script_host(
         }
     }
 
-    Some(ScriptHost {
+    Some(RemoteHost {
         name: routed.name.clone(),
         transport: ScriptTransport::Ssh {
             target: SshTarget::new(

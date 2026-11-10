@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 23:29+0200\n"
+"POT-Creation-Date: 2026-11-10 23:34+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -65,7 +65,7 @@ msgstr "确定"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:581 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "取消"
@@ -4072,7 +4072,10 @@ msgid ""
 "an existing one, not both. Enter an existing proxy's address as host:port. "
 "If it needs a login, enter a username and the secret variable that holds the "
 "password."
-msgstr "通过 SOCKS5 代理浏览：可以是 RustConn 通过 SSH 连接打开的代理，也可以是现有代理，但不能同时使用。按 主机:端口 格式输入现有代理的地址。如果需要登录，请输入用户名以及保存密码的机密变量。"
+msgstr ""
+"通过 SOCKS5 代理浏览：可以是 RustConn 通过 SSH 连接打开的代理，也可以是现有代"
+"理，但不能同时使用。按 主机:端口 格式输入现有代理的地址。如果需要登录，请输入"
+"用户名以及保存密码的机密变量。"
 
 #: rustconn/src/dialogs/connection/web.rs:137
 msgid "Tunnel Through SSH"
@@ -4623,7 +4626,7 @@ msgstr "复制"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:386
+#: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "停止"
 
@@ -6851,8 +6854,8 @@ msgid "Select or create a script."
 msgstr "请选择或创建一个脚本。"
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:382
-#: rustconn/src/window/remote_script.rs:582 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:399
+#: rustconn/src/window/remote_script.rs:617 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "运行"
 
@@ -8482,7 +8485,7 @@ msgid "Not available"
 msgstr "不可用"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:845
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:882
 msgid "Running"
 msgstr "运行中"
 
@@ -11411,7 +11414,7 @@ msgstr "RDP 会话正在外部窗口中运行"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:192
+#: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "连接失败"
 
@@ -14327,80 +14330,80 @@ msgstr "无法准备 WinRM 请求：{}"
 msgid "{} could not be started: {}"
 msgstr "无法启动 {}：{}"
 
-#: rustconn/src/window/remote_script.rs:154
+#: rustconn/src/window/remote_script.rs:168
 msgid "The script could not be read"
 msgstr "无法读取脚本"
 
-#: rustconn/src/window/remote_script.rs:155
+#: rustconn/src/window/remote_script.rs:169
 msgid "Choose a script file, not a folder"
 msgstr "请选择脚本文件，而不是文件夹"
 
-#: rustconn/src/window/remote_script.rs:156
+#: rustconn/src/window/remote_script.rs:170
 msgid "The script is empty"
 msgstr "脚本为空"
 
-#: rustconn/src/window/remote_script.rs:157
-msgid "The script is larger than 1 MiB"
-msgstr "脚本大于 1 MiB"
+#: rustconn/src/window/remote_script.rs:172
+msgid "The script is larger than {}"
+msgstr "脚本大于 {}"
 
-#: rustconn/src/window/remote_script.rs:158
+#: rustconn/src/window/remote_script.rs:175
 msgid "This is a binary file, not a script"
 msgstr "这是二进制文件，不是脚本"
 
-#: rustconn/src/window/remote_script.rs:187
+#: rustconn/src/window/remote_script.rs:204
 msgid "Succeeded"
 msgstr "成功"
 
-#: rustconn/src/window/remote_script.rs:189
+#: rustconn/src/window/remote_script.rs:206
 msgid "Failed with exit code {}"
 msgstr "失败，退出代码 {}"
 
-#: rustconn/src/window/remote_script.rs:191
+#: rustconn/src/window/remote_script.rs:208
 msgid "Stopped by a signal"
 msgstr "被信号终止"
 
-#: rustconn/src/window/remote_script.rs:193
+#: rustconn/src/window/remote_script.rs:210
 msgid "Timed out"
 msgstr "已超时"
 
-#: rustconn/src/window/remote_script.rs:194
-#: rustconn/src/window/remote_script.rs:717
+#: rustconn/src/window/remote_script.rs:211
+#: rustconn/src/window/remote_script.rs:754
 msgid "Cancelled"
 msgstr "已取消"
 
-#: rustconn/src/window/remote_script.rs:195
+#: rustconn/src/window/remote_script.rs:212
 msgid "Could not start"
 msgstr "无法启动"
 
-#: rustconn/src/window/remote_script.rs:225
+#: rustconn/src/window/remote_script.rs:242
 msgid "No SSH or WinRM connections are selected"
 msgstr "未选择任何 SSH 或 WinRM 连接"
 
-#: rustconn/src/window/remote_script.rs:247
+#: rustconn/src/window/remote_script.rs:264
 msgid "Hosts"
 msgstr "主机"
 
-#: rustconn/src/window/remote_script.rs:254
+#: rustconn/src/window/remote_script.rs:271
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "主机（未使用 SSH 或 WinRM，已排除：{}）"
 
-#: rustconn/src/window/remote_script.rs:265
+#: rustconn/src/window/remote_script.rs:282
 msgid "Script File"
 msgstr "脚本文件"
 
-#: rustconn/src/window/remote_script.rs:266
+#: rustconn/src/window/remote_script.rs:283
 msgid "Choose File"
 msgstr "选择文件"
 
-#: rustconn/src/window/remote_script.rs:276
+#: rustconn/src/window/remote_script.rs:293
 msgid "Hosts at Once"
 msgstr "同时运行的主机数"
 
-#: rustconn/src/window/remote_script.rs:279
+#: rustconn/src/window/remote_script.rs:296
 msgid "Time Limit per Host (minutes)"
 msgstr "每台主机的时间限制（分钟）"
 
-#: rustconn/src/window/remote_script.rs:284
+#: rustconn/src/window/remote_script.rs:301
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14410,83 +14413,83 @@ msgstr ""
 "机上用 bash 运行。主机上不保存任何内容。从未连接过的 SSH 主机在其密钥已知之前"
 "会被拒绝。"
 
-#: rustconn/src/window/remote_script.rs:292
+#: rustconn/src/window/remote_script.rs:309
 msgid "Passwords"
 msgstr "密码"
 
-#: rustconn/src/window/remote_script.rs:294
+#: rustconn/src/window/remote_script.rs:311
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
 msgstr "用于连接时询问密码的主机。字段留空的主机不会收到密码。"
 
-#: rustconn/src/window/remote_script.rs:301
+#: rustconn/src/window/remote_script.rs:318
 msgid "Use One Password for All Hosts"
 msgstr "所有主机使用同一密码"
 
-#: rustconn/src/window/remote_script.rs:306
+#: rustconn/src/window/remote_script.rs:323
 msgid "Password for All Hosts"
 msgstr "所有主机的密码"
 
-#: rustconn/src/window/remote_script.rs:359
+#: rustconn/src/window/remote_script.rs:376
 msgid "Script Output"
 msgstr "脚本输出"
 
-#: rustconn/src/window/remote_script.rs:380
-#: rustconn/src/window/remote_script.rs:398
+#: rustconn/src/window/remote_script.rs:397
+#: rustconn/src/window/remote_script.rs:415
 msgid "Run Local Script"
 msgstr "运行本地脚本"
 
-#: rustconn/src/window/remote_script.rs:451
+#: rustconn/src/window/remote_script.rs:480
 msgid "Output of {}"
 msgstr "{} 的输出"
 
-#: rustconn/src/window/remote_script.rs:462
+#: rustconn/src/window/remote_script.rs:491
 msgid "Choose Script"
 msgstr "选择脚本"
 
-#: rustconn/src/window/remote_script.rs:500
+#: rustconn/src/window/remote_script.rs:534
 msgid "None of the selected hosts can run this type of script"
 msgstr "所选主机都无法运行此类型的脚本"
 
-#: rustconn/src/window/remote_script.rs:575
+#: rustconn/src/window/remote_script.rs:610
 msgid "Run ‘{}’?"
 msgstr "运行“{}”？"
 
-#: rustconn/src/window/remote_script.rs:577
+#: rustconn/src/window/remote_script.rs:612
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
 msgstr "将以登录用户身份在这些主机上运行，其更改无法撤销：{}"
 
-#: rustconn/src/window/remote_script.rs:850
+#: rustconn/src/window/remote_script.rs:887
 msgid "[further output dropped]"
 msgstr "[后续输出已丢弃]"
 
-#: rustconn/src/window/remote_script.rs:891
+#: rustconn/src/window/remote_script.rs:928
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "成功：{}，未成功：{}"
 
-#: rustconn/src/window/remote_script.rs:911
+#: rustconn/src/window/remote_script.rs:948
 msgid "Stop the Script?"
 msgstr "要停止脚本吗？"
 
-#: rustconn/src/window/remote_script.rs:913
+#: rustconn/src/window/remote_script.rs:950
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
 msgstr ""
 "脚本将在所有仍在运行它的主机上停止，窗口随之关闭。它已做出的更改会保留。"
 
-#: rustconn/src/window/remote_script.rs:916
+#: rustconn/src/window/remote_script.rs:953
 msgid "Keep Running"
 msgstr "继续运行"
 
-#: rustconn/src/window/remote_script.rs:917
+#: rustconn/src/window/remote_script.rs:954
 msgid "Stop and Close"
 msgstr "停止并关闭"
 
-#: rustconn/src/window/remote_script.rs:954
+#: rustconn/src/window/remote_script.rs:993
 msgid "Script finished. {}"
 msgstr "脚本已结束。{}"
 
