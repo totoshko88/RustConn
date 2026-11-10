@@ -363,6 +363,7 @@ pub(super) fn open_dialog(
                 }
             }
             drop(typed);
+            let entries = password_rows.iter().map(|(_, row)| row.clone()).collect();
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
@@ -383,6 +384,7 @@ pub(super) fn open_dialog(
                 &path,
                 script,
                 options,
+                entries,
             );
         }
     });
@@ -391,6 +393,15 @@ pub(super) fn open_dialog(
 }
 
 /// Running code on many machines at once deserves one explicit question.
+///
+/// The typed passwords are already in `view.typed_passwords`. Once the run is
+/// confirmed `password_rows` are emptied, so the setup page, which stays alive
+/// behind the results, no longer holds them; a cancelled question keeps them for
+/// the next try.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one call site; each argument is a distinct piece of the run"
+)]
 fn confirm_and_start(
     view: &Rc<RunView>,
     state: &SharedAppState,
@@ -399,6 +410,7 @@ fn confirm_and_start(
     path: &std::path::Path,
     script: Vec<u8>,
     options: RunOptions,
+    password_rows: Vec<adw::PasswordEntryRow>,
 ) {
     let file_name = path
         .file_name()
@@ -424,6 +436,9 @@ fn confirm_and_start(
         if response == "run"
             && let Some((ids, names, script, options)) = start.take()
         {
+            for row in &password_rows {
+                row.set_text("");
+            }
             begin_run(&view, &state, ids, &names, script, options);
         }
     });
