@@ -382,9 +382,10 @@ pub fn compute_group_path(group_id: Uuid, groups: &[ConnectionGroup]) -> String 
 /// Collects variable templates from connections that reference variables.
 ///
 /// Scans each connection's `password_source` for [`PasswordSource::Variable`]
-/// references and also scans string fields (`host`, `username`, `description`)
-/// for `${var_name}` patterns. Returns a deduplicated list of
-/// [`VariableTemplate`] entries.
+/// references, takes a Web connection's `socks_proxy_password_variable`, and
+/// also scans string fields (`host`, `username`, `description`) for
+/// `${var_name}` patterns. Returns a deduplicated list of [`VariableTemplate`]
+/// entries.
 ///
 /// For each unique variable name found:
 /// - Looks up the variable in `existing_variables` to get description and
@@ -411,7 +412,16 @@ pub fn collect_variable_templates(
             templates.push(build_template(name, existing_variables));
         }
 
-        // 2. Scan string fields for ${var_name} patterns
+        // 2. A Web connection's SOCKS proxy password lives in a variable too;
+        //    without its template the other device cannot open the page.
+        if let ProtocolConfig::Web(ref web) = conn.protocol_config
+            && let Some(ref name) = web.socks_proxy_password_variable
+            && seen.insert(name.clone())
+        {
+            templates.push(build_template(name, existing_variables));
+        }
+
+        // 3. Scan string fields for ${var_name} patterns
         for field in variable_bearing_fields(conn) {
             for caps in VARIABLE_REGEX.captures_iter(field) {
                 if let Some(m) = caps.get(1) {
@@ -1427,6 +1437,30 @@ mod tests {
         assert_eq!(templates[0].description, Some("Web deploy key".to_owned()));
         assert!(templates[0].is_secret);
         assert_eq!(templates[0].default_value, None);
+    }
+
+    #[test]
+    fn collect_templates_from_socks_proxy_password_variable() {
+        let mut conn = Connection::new_ssh("web".to_owned(), "https://intranet".to_owned(), 443);
+        conn.protocol = crate::models::ProtocolType::Web;
+        conn.protocol_config = ProtocolConfig::Web(crate::models::WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".to_owned()),
+            socks_proxy_username: Some("alice".to_owned()),
+            socks_proxy_password_variable: Some("proxy_pw".to_owned()),
+            ..crate::models::WebConfig::default()
+        });
+
+        let vars = vec![Variable::new_secret("proxy_pw", "hunter2").with_description("Proxy")];
+
+        let templates = collect_variable_templates(&[conn], &vars);
+        assert_eq!(templates.len(), 1);
+        assert_eq!(templates[0].name, "proxy_pw");
+        assert!(templates[0].is_secret);
+        assert_eq!(
+            templates[0].default_value, None,
+            "a secret value never syncs"
+        );
+        assert_eq!(templates[0].description, Some("Proxy".to_owned()));
     }
 
     #[test]
