@@ -23,6 +23,7 @@ use rustconn_core::ssh_tunnel::{
     askpass_proxy_prefix, build_nested_proxy_command_with_askpass, proxy_jump_arg,
     shell_single_quote, ssh_config_declares_proxy, target_password_askpass_allowed,
 };
+use rustconn_core::variables::{Variable, VariableManager, VariableScope};
 use secrecy::{ExposeSecret, SecretString};
 use uuid::Uuid;
 
@@ -120,7 +121,7 @@ pub(super) fn cmd_run_script(
         .iter()
         .filter_map(|c| {
             script_host(
-                c,
+                &with_global_variables(c, &settings.global_variables),
                 &connections,
                 &groups,
                 &settings.network,
@@ -158,6 +159,39 @@ pub(super) fn cmd_run_script(
             total - succeeded
         )))
     }
+}
+
+/// The connection with global variables substituted into its host and user
+/// name, as the GUI runner does.
+///
+/// The semantics are the GUI's `substitute_for_command`: a reference nothing
+/// defines becomes empty, and a value holding a shell metacharacter leaves the
+/// text unchanged. A secret variable is not read from the vault here, so one
+/// whose value is not in the configuration file counts as undefined.
+fn with_global_variables(connection: &Connection, globals: &[Variable]) -> Connection {
+    let mut connection = connection.clone();
+    let has_reference = |text: &str| text.contains("${");
+    if !has_reference(&connection.host)
+        && !connection.username.as_deref().is_some_and(has_reference)
+    {
+        return connection;
+    }
+    let mut manager = VariableManager::new();
+    for variable in globals {
+        manager.set_global(variable.clone());
+    }
+    connection.host = substitute_global(&manager, &connection.host);
+    connection.username = connection
+        .username
+        .as_deref()
+        .map(|user| substitute_global(&manager, user));
+    connection
+}
+
+fn substitute_global(manager: &VariableManager, text: &str) -> String {
+    manager
+        .substitute_for_command(text, VariableScope::Global)
+        .unwrap_or_else(|_| text.to_string())
 }
 
 /// Prints progress until every host has finished; returns how many succeeded.
@@ -710,6 +744,38 @@ mod tests {
         assert!(withhold_from_config_proxy(&target(), secret(), false, probe).is_some());
         assert!(withhold_from_config_proxy(&target(), None, true, probe).is_none());
         assert!(!asked.get(), "ssh -G must only run to protect a password");
+    }
+
+    #[test]
+    fn global_variables_are_substituted_in_host_and_user() {
+        use rustconn_core::variables::Variable;
+
+        let mut connection = target();
+        connection.host = "${site}.example.com".to_string();
+        connection.username = Some("${login}".to_string());
+        let globals = [
+            Variable::new("site", "web01"),
+            Variable::new("login", "bob"),
+        ];
+        let resolved = super::with_global_variables(&connection, &globals);
+        assert_eq!(resolved.host, "web01.example.com");
+        assert_eq!(resolved.username.as_deref(), Some("bob"));
+        assert_eq!(resolved.id, connection.id, "passwords are found by id");
+    }
+
+    #[test]
+    fn plain_hosts_and_unsafe_values_are_left_alone() {
+        use rustconn_core::variables::Variable;
+
+        let plain = super::with_global_variables(&target(), &[Variable::new("site", "x")]);
+        assert_eq!(plain.host, "web.lan");
+        assert_eq!(plain.username.as_deref(), Some("alice"));
+
+        let mut connection = target();
+        connection.host = "${site}".to_string();
+        let resolved =
+            super::with_global_variables(&connection, &[Variable::new("site", "a;reboot")]);
+        assert_eq!(resolved.host, "${site}");
     }
 
     fn runtime() -> tokio::runtime::Runtime {
