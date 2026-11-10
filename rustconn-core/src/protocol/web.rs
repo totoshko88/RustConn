@@ -335,6 +335,34 @@ pub fn proxied_browser_args(
     Ok((args, profile))
 }
 
+/// Checks a Web connection's SOCKS proxy settings: the part of
+/// [`WebProtocol::validate_connection`] that does not concern the URL, for
+/// callers that store the settings without the rest of that check.
+///
+/// # Errors
+///
+/// Returns [`ProtocolError::InvalidConfig`] for an unusable proxy address, a
+/// proxy together with an SSH tunnel, or a login without a proxy or a password
+/// variable.
+pub fn validate_socks_settings(config: &WebConfig) -> ProtocolResult<()> {
+    if let Some(proxy) = &config.socks_proxy {
+        normalize_socks_proxy(proxy)?;
+        if config.tunnel_via.is_some() {
+            return Err(ProtocolError::InvalidConfig(
+                "Choose either an SSH tunnel or a SOCKS proxy, not both".to_string(),
+            ));
+        }
+    }
+    if config.socks_proxy_username.is_some()
+        && (config.socks_proxy.is_none() || config.socks_proxy_password_variable.is_none())
+    {
+        return Err(ProtocolError::InvalidConfig(
+            "A SOCKS proxy login needs a proxy and a password variable".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Why a Web connection's SOCKS password variable cannot be used.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum SocksPasswordVariableError {
@@ -438,22 +466,7 @@ impl Protocol for WebProtocol {
     fn validate_connection(&self, connection: &Connection) -> ProtocolResult<()> {
         let web_config = Self::get_web_config(connection)?;
 
-        if let Some(proxy) = &web_config.socks_proxy {
-            normalize_socks_proxy(proxy)?;
-            if web_config.tunnel_via.is_some() {
-                return Err(ProtocolError::InvalidConfig(
-                    "Choose either an SSH tunnel or a SOCKS proxy, not both".to_string(),
-                ));
-            }
-        }
-        if web_config.socks_proxy_username.is_some()
-            && (web_config.socks_proxy.is_none()
-                || web_config.socks_proxy_password_variable.is_none())
-        {
-            return Err(ProtocolError::InvalidConfig(
-                "A SOCKS proxy login needs a proxy and a password variable".to_string(),
-            ));
-        }
+        validate_socks_settings(web_config)?;
 
         // Validate URL is not empty
         if connection.host.is_empty() {

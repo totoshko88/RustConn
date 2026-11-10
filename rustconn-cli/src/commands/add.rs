@@ -710,6 +710,7 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         cfg.accept_invalid_certs = params.winrm_accept_invalid_certs;
     }
 
+    check_web_socks_settings(&connection)?;
     ConfigManager::validate_connection(&connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;
 
@@ -746,6 +747,21 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
     );
 
     Ok(())
+}
+
+/// Refuses the SOCKS proxy settings of a Web connection that the GUI editor
+/// would refuse: a proxy together with `--tunnel-via`, or a login without a
+/// proxy or a password variable. `ConfigManager::validate_connection` does not
+/// run the protocol's own checks, so without this they were saved and failed
+/// only at connect.
+pub(super) fn check_web_socks_settings(connection: &Connection) -> Result<(), CliError> {
+    match &connection.protocol_config {
+        rustconn_core::models::ProtocolConfig::Web(cfg) => {
+            rustconn_core::protocol::validate_socks_settings(cfg)
+                .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))
+        }
+        _ => Ok(()),
+    }
 }
 
 /// Refuses a Web connection's SOCKS password variable unless it names a secret
@@ -1913,6 +1929,43 @@ mod socks_password_variable_tests {
         assert!(plain.contains("not secret"), "{plain}");
         assert!(!plain.contains("hunter2"), "{plain}");
         assert!(check_socks_password_variable(&manager, &web_with_variable("absent")).is_err());
+    }
+
+    #[test]
+    fn socks_settings_the_gui_refuses_are_refused() {
+        use super::check_web_socks_settings;
+
+        let mut conn = web_with_variable("proxy_pw");
+        assert!(check_web_socks_settings(&conn).is_ok());
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.tunnel_via = Some(uuid::Uuid::new_v4());
+        assert!(check_web_socks_settings(&conn).is_err(), "tunnel and proxy");
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.tunnel_via = None;
+        cfg.socks_proxy_password_variable = None;
+        assert!(
+            check_web_socks_settings(&conn).is_err(),
+            "login without a variable"
+        );
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.socks_proxy_password_variable = Some("proxy_pw".into());
+        cfg.socks_proxy = None;
+        assert!(
+            check_web_socks_settings(&conn).is_err(),
+            "login without a proxy"
+        );
+
+        let ssh = Connection::new_ssh("ssh".into(), "host".into(), 22);
+        assert!(check_web_socks_settings(&ssh).is_ok());
     }
 }
 

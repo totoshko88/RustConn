@@ -234,7 +234,7 @@ Options:
 | `--web-toolbar` | — | Floating navigation toolbar in the embedded browser: `true` (default) or `false`; bare `--web-toolbar` = `false`. Off removes the toolbar and its reveal arrow; the keyboard routes (Alt+←/→, Ctrl+R, Ctrl+L, Ctrl+±/0) keep working |
 | `--private-mode` | — | Open in private/incognito mode (custom browser) |
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
-| `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it with an empty value. A browser that cannot use it is not opened |
+| `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it, and its login, with an empty value. Not together with `--tunnel-via`. A browser that cannot use it is not opened |
 | `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
 | `--socks-proxy-password-var` | — | Secret global variable holding that login's password |
 | `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |

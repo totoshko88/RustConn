@@ -6,9 +6,9 @@ use rustconn_core::config::ConfigManager;
 use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
-    apply_jump_host_id, apply_ssh_wave2_fields, check_socks_password_variable, parse_auth_method,
-    parse_resolution, parse_shared_folder, parse_spice_image_compression,
-    resolve_fallback_jump_hosts,
+    apply_jump_host_id, apply_ssh_wave2_fields, check_socks_password_variable,
+    check_web_socks_settings, parse_auth_method, parse_resolution, parse_shared_folder,
+    parse_spice_image_compression, resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -853,14 +853,7 @@ pub(super) fn cmd_update(
                 "--socks-proxy is only valid for Web connections".into(),
             ));
         };
-        cfg.socks_proxy = if proxy.trim().is_empty() {
-            None
-        } else {
-            Some(
-                rustconn_core::protocol::normalize_socks_proxy(proxy)
-                    .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
-            )
-        };
+        apply_socks_proxy_update(cfg, proxy)?;
     }
 
     if params.socks_proxy_user.is_some()
@@ -1003,6 +996,7 @@ pub(super) fn cmd_update(
         None
     };
 
+    check_web_socks_settings(connection)?;
     ConfigManager::validate_connection(connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;
 
@@ -1042,6 +1036,25 @@ pub(super) fn cmd_update(
         group_feedback.as_deref().unwrap_or("")
     );
 
+    Ok(())
+}
+
+/// Applies `--socks-proxy`: a new address, or an empty value that removes the
+/// proxy together with its login, which means nothing without it.
+fn apply_socks_proxy_update(
+    cfg: &mut rustconn_core::models::WebConfig,
+    proxy: &str,
+) -> Result<(), CliError> {
+    if proxy.trim().is_empty() {
+        cfg.socks_proxy = None;
+        cfg.socks_proxy_username = None;
+        cfg.socks_proxy_password_variable = None;
+    } else {
+        cfg.socks_proxy = Some(
+            rustconn_core::protocol::normalize_socks_proxy(proxy)
+                .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+        );
+    }
     Ok(())
 }
 
@@ -1339,4 +1352,38 @@ fn apply_serial_wave2_fields_update(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod socks_proxy_update_tests {
+    use super::apply_socks_proxy_update;
+    use rustconn_core::models::WebConfig;
+
+    fn with_login() -> WebConfig {
+        WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".into()),
+            socks_proxy_username: Some("alice".into()),
+            socks_proxy_password_variable: Some("proxy_pw".into()),
+            ..WebConfig::default()
+        }
+    }
+
+    #[test]
+    fn an_empty_proxy_removes_its_login_too() {
+        let mut cfg = with_login();
+        apply_socks_proxy_update(&mut cfg, " ").unwrap();
+        assert_eq!(cfg.socks_proxy, None);
+        assert_eq!(cfg.socks_proxy_username, None);
+        assert_eq!(cfg.socks_proxy_password_variable, None);
+        assert!(rustconn_core::protocol::validate_socks_settings(&cfg).is_ok());
+    }
+
+    #[test]
+    fn a_new_proxy_keeps_the_login() {
+        let mut cfg = with_login();
+        apply_socks_proxy_update(&mut cfg, "other:9050").unwrap();
+        assert_eq!(cfg.socks_proxy.as_deref(), Some("socks5://other:9050"));
+        assert_eq!(cfg.socks_proxy_username.as_deref(), Some("alice"));
+        assert!(apply_socks_proxy_update(&mut cfg, "bad").is_err());
+    }
 }
