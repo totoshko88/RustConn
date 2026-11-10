@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:10+0200\n"
+"POT-Creation-Date: 2026-11-10 21:15+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Spanish\n"
@@ -64,7 +64,7 @@ msgstr "OK"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:539 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:545 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Cancelar"
@@ -4768,7 +4768,7 @@ msgstr "Copiar"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:345
+#: rustconn/src/window/remote_script.rs:351
 msgid "Stop"
 msgstr "Detener"
 
@@ -7081,8 +7081,8 @@ msgid "Select or create a script."
 msgstr "Seleccione o cree un script."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:341
-#: rustconn/src/window/remote_script.rs:540 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:347
+#: rustconn/src/window/remote_script.rs:546 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Ejecutar"
 
@@ -8784,7 +8784,7 @@ msgid "Not available"
 msgstr "No disponible"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:804
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:810
 msgid "Running"
 msgstr "En ejecución"
 
@@ -11840,7 +11840,7 @@ msgstr "Sesión RDP en ventana externa"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:151
+#: rustconn/src/window/remote_script.rs:157
 msgid "Connection failed"
 msgstr "Conexión fallida"
 
@@ -14804,105 +14804,121 @@ msgstr ""
 "ejecutar scripts en hosts WinRM."
 
 #: rustconn/src/window/remote_script.rs:90
+msgid ""
+"The pywinrm library is not installed. Install pywinrm in Menu → Components "
+"to run scripts on WinRM hosts."
+msgstr ""
+"La biblioteca pywinrm no está instalada. Instala pywinrm en Menú → "
+"Componentes para ejecutar scripts en hosts WinRM."
+
+#: rustconn/src/window/remote_script.rs:93
+msgid ""
+"The pywinrm library is not installed. Install python3-winrm from your "
+"distribution, or run: pip install pywinrm"
+msgstr ""
+"La biblioteca pywinrm no está instalada. Instala python3-winrm desde tu "
+"distribución o ejecuta: pip install pywinrm"
+
+#: rustconn/src/window/remote_script.rs:96
 msgid "WinRM needs a password, and none is saved or entered for this host"
 msgstr ""
 "WinRM necesita una contraseña y no hay ninguna guardada ni introducida para "
 "este host"
 
-#: rustconn/src/window/remote_script.rs:93
+#: rustconn/src/window/remote_script.rs:99
 msgid "This host cannot be reached with ssh: {}"
 msgstr "No se puede llegar a este host con ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:96
+#: rustconn/src/window/remote_script.rs:102
 msgid "The password could not be handed to ssh: {}"
 msgstr "No se pudo pasar la contraseña a ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:99
+#: rustconn/src/window/remote_script.rs:105
 msgid "The SSH tunnel through the jump host could not be opened: {}"
 msgstr "No se pudo abrir el túnel SSH a través del host de salto: {}"
 
-#: rustconn/src/window/remote_script.rs:103
+#: rustconn/src/window/remote_script.rs:109
 msgid "The WinRM request could not be prepared: {}"
 msgstr "No se pudo preparar la solicitud de WinRM: {}"
 
-#: rustconn/src/window/remote_script.rs:106
+#: rustconn/src/window/remote_script.rs:112
 msgid "{} could not be started: {}"
 msgstr "No se pudo iniciar {}: {}"
 
-#: rustconn/src/window/remote_script.rs:113
+#: rustconn/src/window/remote_script.rs:119
 msgid "The script could not be read"
 msgstr "No se pudo leer el script"
 
-#: rustconn/src/window/remote_script.rs:114
+#: rustconn/src/window/remote_script.rs:120
 msgid "Choose a script file, not a folder"
 msgstr "Elija un archivo de script, no una carpeta"
 
-#: rustconn/src/window/remote_script.rs:115
+#: rustconn/src/window/remote_script.rs:121
 msgid "The script is empty"
 msgstr "El script está vacío"
 
-#: rustconn/src/window/remote_script.rs:116
+#: rustconn/src/window/remote_script.rs:122
 msgid "The script is larger than 1 MiB"
 msgstr "El script supera 1 MiB"
 
-#: rustconn/src/window/remote_script.rs:117
+#: rustconn/src/window/remote_script.rs:123
 msgid "This is a binary file, not a script"
 msgstr "Esto es un archivo binario, no un script"
 
-#: rustconn/src/window/remote_script.rs:146
+#: rustconn/src/window/remote_script.rs:152
 msgid "Succeeded"
 msgstr "Correcto"
 
-#: rustconn/src/window/remote_script.rs:148
+#: rustconn/src/window/remote_script.rs:154
 msgid "Failed with exit code {}"
 msgstr "Falló con el código de salida {}"
 
-#: rustconn/src/window/remote_script.rs:150
+#: rustconn/src/window/remote_script.rs:156
 msgid "Stopped by a signal"
 msgstr "Detenido por una señal"
 
-#: rustconn/src/window/remote_script.rs:152
+#: rustconn/src/window/remote_script.rs:158
 msgid "Timed out"
 msgstr "Tiempo agotado"
 
-#: rustconn/src/window/remote_script.rs:153
-#: rustconn/src/window/remote_script.rs:678
+#: rustconn/src/window/remote_script.rs:159
+#: rustconn/src/window/remote_script.rs:684
 msgid "Cancelled"
 msgstr "Cancelado"
 
-#: rustconn/src/window/remote_script.rs:154
+#: rustconn/src/window/remote_script.rs:160
 msgid "Could not start"
 msgstr "No se pudo iniciar"
 
-#: rustconn/src/window/remote_script.rs:184
+#: rustconn/src/window/remote_script.rs:190
 msgid "No SSH or WinRM connections are selected"
 msgstr "No hay conexiones SSH o WinRM seleccionadas"
 
-#: rustconn/src/window/remote_script.rs:206
+#: rustconn/src/window/remote_script.rs:212
 msgid "Hosts"
 msgstr "Hosts"
 
-#: rustconn/src/window/remote_script.rs:213
+#: rustconn/src/window/remote_script.rs:219
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "Equipos (sin SSH ni WinRM, omitidos: {})"
 
-#: rustconn/src/window/remote_script.rs:224
+#: rustconn/src/window/remote_script.rs:230
 msgid "Script File"
 msgstr "Archivo de script"
 
-#: rustconn/src/window/remote_script.rs:225
+#: rustconn/src/window/remote_script.rs:231
 msgid "Choose File"
 msgstr "Elegir archivo"
 
-#: rustconn/src/window/remote_script.rs:235
+#: rustconn/src/window/remote_script.rs:241
 msgid "Hosts at Once"
 msgstr "Hosts a la vez"
 
-#: rustconn/src/window/remote_script.rs:238
+#: rustconn/src/window/remote_script.rs:244
 msgid "Time Limit per Host (minutes)"
 msgstr "Límite de tiempo por host (minutos)"
 
-#: rustconn/src/window/remote_script.rs:243
+#: rustconn/src/window/remote_script.rs:249
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14913,11 +14929,11 @@ msgstr ""
 "sesión. No se guarda nada en los equipos. Un equipo SSH al que nunca se ha "
 "conectado se rechaza hasta que se conozca su clave."
 
-#: rustconn/src/window/remote_script.rs:251
+#: rustconn/src/window/remote_script.rs:257
 msgid "Passwords"
 msgstr "Contraseñas"
 
-#: rustconn/src/window/remote_script.rs:253
+#: rustconn/src/window/remote_script.rs:259
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
@@ -14925,41 +14941,41 @@ msgstr ""
 "Para los equipos que la piden al conectar. Un equipo con el campo vacío no "
 "recibe contraseña."
 
-#: rustconn/src/window/remote_script.rs:260
+#: rustconn/src/window/remote_script.rs:266
 msgid "Use One Password for All Hosts"
 msgstr "Usar una contraseña para todos los equipos"
 
-#: rustconn/src/window/remote_script.rs:265
+#: rustconn/src/window/remote_script.rs:271
 msgid "Password for All Hosts"
 msgstr "Contraseña para todos los equipos"
 
-#: rustconn/src/window/remote_script.rs:318
+#: rustconn/src/window/remote_script.rs:324
 msgid "Script Output"
 msgstr "Salida del script"
 
-#: rustconn/src/window/remote_script.rs:339
-#: rustconn/src/window/remote_script.rs:357
+#: rustconn/src/window/remote_script.rs:345
+#: rustconn/src/window/remote_script.rs:363
 msgid "Run Local Script"
 msgstr "Ejecutar script local"
 
-#: rustconn/src/window/remote_script.rs:410
+#: rustconn/src/window/remote_script.rs:416
 msgid "Output of {}"
 msgstr "Salida de {}"
 
-#: rustconn/src/window/remote_script.rs:421
+#: rustconn/src/window/remote_script.rs:427
 msgid "Choose Script"
 msgstr "Elegir script"
 
-#: rustconn/src/window/remote_script.rs:459
+#: rustconn/src/window/remote_script.rs:465
 msgid "None of the selected hosts can run this type of script"
 msgstr ""
 "Ninguno de los equipos seleccionados puede ejecutar este tipo de script"
 
-#: rustconn/src/window/remote_script.rs:533
+#: rustconn/src/window/remote_script.rs:539
 msgid "Run ‘{}’?"
 msgstr "¿Ejecutar «{}»?"
 
-#: rustconn/src/window/remote_script.rs:535
+#: rustconn/src/window/remote_script.rs:541
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14967,23 +14983,23 @@ msgstr ""
 "Se ejecutará en estos hosts con sus usuarios de inicio de sesión y sus "
 "cambios no se pueden deshacer: {}"
 
-#: rustconn/src/window/remote_script.rs:574
+#: rustconn/src/window/remote_script.rs:580
 msgid "Waiting"
 msgstr "En espera"
 
-#: rustconn/src/window/remote_script.rs:809
+#: rustconn/src/window/remote_script.rs:815
 msgid "[further output dropped]"
 msgstr "[resto de la salida descartado]"
 
-#: rustconn/src/window/remote_script.rs:850
+#: rustconn/src/window/remote_script.rs:856
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Correctos: {}, no correctos: {}"
 
-#: rustconn/src/window/remote_script.rs:865
+#: rustconn/src/window/remote_script.rs:871
 msgid "Stop the Script?"
 msgstr "¿Detener el script?"
 
-#: rustconn/src/window/remote_script.rs:867
+#: rustconn/src/window/remote_script.rs:873
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
@@ -14991,15 +15007,15 @@ msgstr ""
 "El script se detiene en todos los hosts donde aún se ejecuta y la ventana se "
 "cierra. Los cambios que ya haya hecho se mantienen."
 
-#: rustconn/src/window/remote_script.rs:870
+#: rustconn/src/window/remote_script.rs:876
 msgid "Keep Running"
 msgstr "Seguir ejecutando"
 
-#: rustconn/src/window/remote_script.rs:871
+#: rustconn/src/window/remote_script.rs:877
 msgid "Stop and Close"
 msgstr "Detener y cerrar"
 
-#: rustconn/src/window/remote_script.rs:904
+#: rustconn/src/window/remote_script.rs:910
 msgid "Script finished. {}"
 msgstr "El script ha terminado. {}"
 

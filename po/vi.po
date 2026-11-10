@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:10+0200\n"
+"POT-Creation-Date: 2026-11-10 21:15+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -64,7 +64,7 @@ msgstr "OK"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:539 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:545 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Hủy"
@@ -4721,7 +4721,7 @@ msgstr "Sao chép"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:345
+#: rustconn/src/window/remote_script.rs:351
 msgid "Stop"
 msgstr "Dừng"
 
@@ -7005,8 +7005,8 @@ msgid "Select or create a script."
 msgstr "Chọn hoặc tạo một tập lệnh."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:341
-#: rustconn/src/window/remote_script.rs:540 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:347
+#: rustconn/src/window/remote_script.rs:546 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Chạy"
 
@@ -8687,7 +8687,7 @@ msgid "Not available"
 msgstr "Không khả dụng"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:804
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:810
 msgid "Running"
 msgstr "Đang chạy"
 
@@ -11687,7 +11687,7 @@ msgstr "Phiên RDP đang chạy trong cửa sổ bên ngoài"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:151
+#: rustconn/src/window/remote_script.rs:157
 msgid "Connection failed"
 msgstr "Kết nối thất bại"
 
@@ -14612,104 +14612,120 @@ msgstr ""
 "script trên máy chủ WinRM."
 
 #: rustconn/src/window/remote_script.rs:90
+msgid ""
+"The pywinrm library is not installed. Install pywinrm in Menu → Components "
+"to run scripts on WinRM hosts."
+msgstr ""
+"Chưa cài thư viện pywinrm. Hãy cài pywinrm trong Menu → Thành phần để chạy "
+"script trên máy chủ WinRM."
+
+#: rustconn/src/window/remote_script.rs:93
+msgid ""
+"The pywinrm library is not installed. Install python3-winrm from your "
+"distribution, or run: pip install pywinrm"
+msgstr ""
+"Chưa cài thư viện pywinrm. Hãy cài python3-winrm từ bản phân phối của bạn, "
+"hoặc chạy: pip install pywinrm"
+
+#: rustconn/src/window/remote_script.rs:96
 msgid "WinRM needs a password, and none is saved or entered for this host"
 msgstr ""
 "WinRM cần mật khẩu, nhưng máy chủ này chưa có mật khẩu được lưu hoặc nhập"
 
-#: rustconn/src/window/remote_script.rs:93
+#: rustconn/src/window/remote_script.rs:99
 msgid "This host cannot be reached with ssh: {}"
 msgstr "Không thể kết nối tới máy chủ này bằng ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:96
+#: rustconn/src/window/remote_script.rs:102
 msgid "The password could not be handed to ssh: {}"
 msgstr "Không thể chuyển mật khẩu cho ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:99
+#: rustconn/src/window/remote_script.rs:105
 msgid "The SSH tunnel through the jump host could not be opened: {}"
 msgstr "Không thể mở đường hầm SSH qua máy chủ trung gian: {}"
 
-#: rustconn/src/window/remote_script.rs:103
+#: rustconn/src/window/remote_script.rs:109
 msgid "The WinRM request could not be prepared: {}"
 msgstr "Không thể chuẩn bị yêu cầu WinRM: {}"
 
-#: rustconn/src/window/remote_script.rs:106
+#: rustconn/src/window/remote_script.rs:112
 msgid "{} could not be started: {}"
 msgstr "Không thể khởi động {}: {}"
 
-#: rustconn/src/window/remote_script.rs:113
+#: rustconn/src/window/remote_script.rs:119
 msgid "The script could not be read"
 msgstr "Không thể đọc script"
 
-#: rustconn/src/window/remote_script.rs:114
+#: rustconn/src/window/remote_script.rs:120
 msgid "Choose a script file, not a folder"
 msgstr "Hãy chọn tệp script, không phải thư mục"
 
-#: rustconn/src/window/remote_script.rs:115
+#: rustconn/src/window/remote_script.rs:121
 msgid "The script is empty"
 msgstr "Script trống"
 
-#: rustconn/src/window/remote_script.rs:116
+#: rustconn/src/window/remote_script.rs:122
 msgid "The script is larger than 1 MiB"
 msgstr "Script lớn hơn 1 MiB"
 
-#: rustconn/src/window/remote_script.rs:117
+#: rustconn/src/window/remote_script.rs:123
 msgid "This is a binary file, not a script"
 msgstr "Đây là tệp nhị phân, không phải script"
 
-#: rustconn/src/window/remote_script.rs:146
+#: rustconn/src/window/remote_script.rs:152
 msgid "Succeeded"
 msgstr "Thành công"
 
-#: rustconn/src/window/remote_script.rs:148
+#: rustconn/src/window/remote_script.rs:154
 msgid "Failed with exit code {}"
 msgstr "Thất bại với mã thoát {}"
 
-#: rustconn/src/window/remote_script.rs:150
+#: rustconn/src/window/remote_script.rs:156
 msgid "Stopped by a signal"
 msgstr "Bị dừng bởi tín hiệu"
 
-#: rustconn/src/window/remote_script.rs:152
+#: rustconn/src/window/remote_script.rs:158
 msgid "Timed out"
 msgstr "Hết thời gian"
 
-#: rustconn/src/window/remote_script.rs:153
-#: rustconn/src/window/remote_script.rs:678
+#: rustconn/src/window/remote_script.rs:159
+#: rustconn/src/window/remote_script.rs:684
 msgid "Cancelled"
 msgstr "Đã hủy"
 
-#: rustconn/src/window/remote_script.rs:154
+#: rustconn/src/window/remote_script.rs:160
 msgid "Could not start"
 msgstr "Không thể khởi chạy"
 
-#: rustconn/src/window/remote_script.rs:184
+#: rustconn/src/window/remote_script.rs:190
 msgid "No SSH or WinRM connections are selected"
 msgstr "Chưa chọn kết nối SSH hoặc WinRM nào"
 
-#: rustconn/src/window/remote_script.rs:206
+#: rustconn/src/window/remote_script.rs:212
 msgid "Hosts"
 msgstr "Máy chủ"
 
-#: rustconn/src/window/remote_script.rs:213
+#: rustconn/src/window/remote_script.rs:219
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "Máy chủ (không dùng SSH hoặc WinRM, bị bỏ qua: {})"
 
-#: rustconn/src/window/remote_script.rs:224
+#: rustconn/src/window/remote_script.rs:230
 msgid "Script File"
 msgstr "Tệp script"
 
-#: rustconn/src/window/remote_script.rs:225
+#: rustconn/src/window/remote_script.rs:231
 msgid "Choose File"
 msgstr "Chọn tệp"
 
-#: rustconn/src/window/remote_script.rs:235
+#: rustconn/src/window/remote_script.rs:241
 msgid "Hosts at Once"
 msgstr "Số máy chủ cùng lúc"
 
-#: rustconn/src/window/remote_script.rs:238
+#: rustconn/src/window/remote_script.rs:244
 msgid "Time Limit per Host (minutes)"
 msgstr "Giới hạn thời gian mỗi máy chủ (phút)"
 
-#: rustconn/src/window/remote_script.rs:243
+#: rustconn/src/window/remote_script.rs:249
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14720,11 +14736,11 @@ msgstr ""
 "trên máy chủ. Máy chủ SSH bạn chưa từng kết nối sẽ bị từ chối cho đến khi "
 "biết khóa của nó."
 
-#: rustconn/src/window/remote_script.rs:251
+#: rustconn/src/window/remote_script.rs:257
 msgid "Passwords"
 msgstr "Mật khẩu"
 
-#: rustconn/src/window/remote_script.rs:253
+#: rustconn/src/window/remote_script.rs:259
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
@@ -14732,40 +14748,40 @@ msgstr ""
 "Dành cho các máy chủ hỏi khi kết nối. Máy chủ có trường để trống sẽ không "
 "nhận mật khẩu."
 
-#: rustconn/src/window/remote_script.rs:260
+#: rustconn/src/window/remote_script.rs:266
 msgid "Use One Password for All Hosts"
 msgstr "Dùng một mật khẩu cho tất cả máy chủ"
 
-#: rustconn/src/window/remote_script.rs:265
+#: rustconn/src/window/remote_script.rs:271
 msgid "Password for All Hosts"
 msgstr "Mật khẩu cho tất cả máy chủ"
 
-#: rustconn/src/window/remote_script.rs:318
+#: rustconn/src/window/remote_script.rs:324
 msgid "Script Output"
 msgstr "Đầu ra của script"
 
-#: rustconn/src/window/remote_script.rs:339
-#: rustconn/src/window/remote_script.rs:357
+#: rustconn/src/window/remote_script.rs:345
+#: rustconn/src/window/remote_script.rs:363
 msgid "Run Local Script"
 msgstr "Chạy script cục bộ"
 
-#: rustconn/src/window/remote_script.rs:410
+#: rustconn/src/window/remote_script.rs:416
 msgid "Output of {}"
 msgstr "Đầu ra của {}"
 
-#: rustconn/src/window/remote_script.rs:421
+#: rustconn/src/window/remote_script.rs:427
 msgid "Choose Script"
 msgstr "Chọn script"
 
-#: rustconn/src/window/remote_script.rs:459
+#: rustconn/src/window/remote_script.rs:465
 msgid "None of the selected hosts can run this type of script"
 msgstr "Không máy chủ nào được chọn có thể chạy loại tập lệnh này"
 
-#: rustconn/src/window/remote_script.rs:533
+#: rustconn/src/window/remote_script.rs:539
 msgid "Run ‘{}’?"
 msgstr "Chạy ‘{}’?"
 
-#: rustconn/src/window/remote_script.rs:535
+#: rustconn/src/window/remote_script.rs:541
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14773,23 +14789,23 @@ msgstr ""
 "Script sẽ chạy trên các máy chủ này bằng người dùng đăng nhập và không thể "
 "hoàn tác thay đổi: {}"
 
-#: rustconn/src/window/remote_script.rs:574
+#: rustconn/src/window/remote_script.rs:580
 msgid "Waiting"
 msgstr "Đang chờ"
 
-#: rustconn/src/window/remote_script.rs:809
+#: rustconn/src/window/remote_script.rs:815
 msgid "[further output dropped]"
 msgstr "[phần đầu ra còn lại đã bị bỏ]"
 
-#: rustconn/src/window/remote_script.rs:850
+#: rustconn/src/window/remote_script.rs:856
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Thành công: {}, không thành công: {}"
 
-#: rustconn/src/window/remote_script.rs:865
+#: rustconn/src/window/remote_script.rs:871
 msgid "Stop the Script?"
 msgstr "Dừng script?"
 
-#: rustconn/src/window/remote_script.rs:867
+#: rustconn/src/window/remote_script.rs:873
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
@@ -14797,15 +14813,15 @@ msgstr ""
 "Script sẽ dừng trên mọi máy chủ vẫn đang chạy nó và cửa sổ sẽ đóng. Các thay "
 "đổi nó đã thực hiện vẫn được giữ nguyên."
 
-#: rustconn/src/window/remote_script.rs:870
+#: rustconn/src/window/remote_script.rs:876
 msgid "Keep Running"
 msgstr "Tiếp tục chạy"
 
-#: rustconn/src/window/remote_script.rs:871
+#: rustconn/src/window/remote_script.rs:877
 msgid "Stop and Close"
 msgstr "Dừng và đóng"
 
-#: rustconn/src/window/remote_script.rs:904
+#: rustconn/src/window/remote_script.rs:910
 msgid "Script finished. {}"
 msgstr "Script đã kết thúc. {}"
 

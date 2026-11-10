@@ -86,6 +86,12 @@ fn launch_error_text(error: &LaunchError) -> String {
         LaunchError::PythonNotFound => i18n(
             "python3 was not found. Install Python 3 with the pywinrm library to run scripts on WinRM hosts.",
         ),
+        LaunchError::PyWinRmNotInstalled if rustconn_core::is_sandboxed() => i18n(
+            "The pywinrm library is not installed. Install pywinrm in Menu → Components to run scripts on WinRM hosts.",
+        ),
+        LaunchError::PyWinRmNotInstalled => i18n(
+            "The pywinrm library is not installed. Install python3-winrm from your distribution, or run: pip install pywinrm",
+        ),
         LaunchError::NoWinRmPassword => {
             i18n("WinRM needs a password, and none is saved or entered for this host")
         }

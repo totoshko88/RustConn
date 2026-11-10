@@ -452,6 +452,10 @@ pub enum LaunchError {
     /// `python3` is not on `PATH`.
     #[error("python3 was not found")]
     PythonNotFound,
+    /// The Python found cannot import `winrm`: outside a sandbox `python3`
+    /// lacks the library, inside one the `pywinrm` component is not installed.
+    #[error("the pywinrm library is not installed")]
+    PyWinRmNotInstalled,
     /// A WinRM host has no password; the helper cannot log in without one.
     #[error("WinRM needs a password; none is saved for this host")]
     NoWinRmPassword,
@@ -549,9 +553,17 @@ pub fn run_script(
     options: &RunOptions,
     on_event: &ScriptEventSink,
 ) {
+    let has_winrm = hosts
+        .iter()
+        .any(|h| matches!(h.transport, ScriptTransport::WinRm(_)));
     let programs = Programs {
         ssh: crate::which::find_in_path("ssh"),
-        python: crate::which::find_in_path("python3"),
+        // Never read without a WinRM host, so an SSH-only run starts no probe.
+        python: if has_winrm {
+            winrm_python()
+        } else {
+            Err(LaunchError::PythonNotFound)
+        },
     };
     run_script_with(&programs, script, hosts, options, on_event);
 }
@@ -559,7 +571,57 @@ pub fn run_script(
 /// The local programs a run can use.
 struct Programs {
     ssh: Option<PathBuf>,
-    python: Option<PathBuf>,
+    /// A Python that can import `winrm`, or why there is none.
+    python: Result<PathBuf, LaunchError>,
+}
+
+/// The Python that runs [`WINRM_HELPER`].
+///
+/// Inside a sandbox it is the `pywinrm` component's wrapper, a `python3` that
+/// sees the component's site-packages; outside one it is `python3` from `PATH`.
+fn winrm_python() -> Result<PathBuf, LaunchError> {
+    let python = if crate::is_sandboxed() {
+        crate::cli_download::get_component(crate::cli_download::PYWINRM_COMPONENT)
+            .and_then(crate::cli_download::DownloadableComponent::find_installed_binary)
+            .ok_or(LaunchError::PyWinRmNotInstalled)?
+    } else {
+        crate::which::find_in_path("python3").ok_or(LaunchError::PythonNotFound)?
+    };
+    probe_winrm(python)
+}
+
+/// How long `python -c "import winrm"` may take.
+const WINRM_PROBE_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Refuses `python` when it cleanly fails to import `winrm`, so a missing
+/// library is named before the run instead of as each host's ImportError.
+///
+/// A probe that cannot be spawned, polled or finished in time passes: the
+/// real launch then reports what is wrong.
+fn probe_winrm(python: PathBuf) -> Result<PathBuf, LaunchError> {
+    let child = Command::new(&python)
+        .args(["-c", "import winrm"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+    let child = match child {
+        Ok(child) => child,
+        Err(error) => {
+            tracing::debug!(%error, "the pywinrm probe could not start");
+            return Ok(python);
+        }
+    };
+    match crate::proc::wait_bounded(child, WINRM_PROBE_TIMEOUT, "pywinrm probe") {
+        Ok(crate::proc::Waited::Exited(output)) if !output.status.success() => {
+            Err(LaunchError::PyWinRmNotInstalled)
+        }
+        Ok(_) => Ok(python),
+        Err(error) => {
+            tracing::debug!(%error, "the pywinrm probe could not be polled");
+            Ok(python)
+        }
+    }
 }
 
 fn run_script_with(
@@ -684,7 +746,7 @@ fn winrm_preamble(header: &WinRmHeader<'_>) -> Result<Zeroizing<Vec<u8>>, Launch
 }
 
 fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, LaunchError> {
-    let program = programs.python.clone().ok_or(LaunchError::PythonNotFound)?;
+    let program = programs.python.clone()?;
     let password = target
         .password
         .as_ref()
@@ -1148,6 +1210,31 @@ class Protocol:
     }
 
     #[test]
+    fn the_winrm_probe_accepts_a_python_with_winrm() {
+        let Some(python) = python_stub() else {
+            return;
+        };
+        assert_eq!(probe_winrm(python.to_path_buf()), Ok(python.to_path_buf()));
+    }
+
+    #[test]
+    fn the_winrm_probe_refuses_a_python_without_winrm() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("python3");
+        std::fs::write(&path, "#!/bin/sh\nexit 1\n").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        // Another test forking while the file was open for writing makes the
+        // first exec fail with ETXTBSY, which the probe would let pass.
+        for _ in 0..200 {
+            if Command::new(&path).stdin(Stdio::null()).status().is_ok() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert_eq!(probe_winrm(path), Err(LaunchError::PyWinRmNotInstalled));
+    }
+
+    #[test]
     fn stopping_a_winrm_run_closes_the_remote_shell() {
         if python_stub().is_none() {
             return;
@@ -1202,7 +1289,9 @@ class Protocol:
         let sink: ScriptEventSink = Arc::new(move |e| collected.lock().unwrap().push(e));
         let programs = Programs {
             ssh: Some(stub().to_path_buf()),
-            python: python_stub().map(Path::to_path_buf),
+            python: python_stub()
+                .map(Path::to_path_buf)
+                .ok_or(LaunchError::PythonNotFound),
         };
         run_script_with(
             &programs,

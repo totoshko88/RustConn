@@ -12,8 +12,8 @@ use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
-    self, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost, ScriptKind,
-    ScriptOutcome, ScriptTransport, WinRmTarget,
+    self, LaunchError, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost,
+    ScriptKind, ScriptOutcome, ScriptTransport, WinRmTarget,
 };
 use rustconn_core::secret::{CredentialResolver, SecretManager};
 use rustconn_core::ssh_askpass::{self, AskpassSlot};
@@ -228,6 +228,9 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
             }
             ScriptEvent::NotStarted { host, reason } => {
                 eprintln!("[{}] {reason}", names[host]);
+                if reason == LaunchError::PyWinRmNotInstalled {
+                    eprintln!("[{}] {}", names[host], pywinrm_hint());
+                }
             }
             ScriptEvent::Finished { host, outcome } => {
                 finished += 1;
@@ -241,6 +244,15 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
         }
     }
     succeeded
+}
+
+/// Where to get `pywinrm` for this package.
+fn pywinrm_hint() -> &'static str {
+    if rustconn_core::is_sandboxed() {
+        "install pywinrm from Components in the RustConn window"
+    } else {
+        "install python3-winrm, or run: pip install pywinrm"
+    }
 }
 
 /// Whether a host's outcome is printed: always, except a success under
