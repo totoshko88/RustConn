@@ -134,8 +134,8 @@ pub use cache::{CacheRef, Cached, DEFAULT_CACHE_TTL_SECS, LoadCacheObject};
 pub use cli_download::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
     DOWNLOADABLE_COMPONENTS, DownloadCancellation, DownloadProgress, DownloadableComponent,
-    InstallMethod, get_arch, get_available_components, get_cli_install_dir, get_component,
-    get_components_by_category, get_installation_status, get_pinned_versions,
+    InstallMethod, PYWINRM_COMPONENT, get_arch, get_available_components, get_cli_install_dir,
+    get_component, get_components_by_category, get_installation_status, get_pinned_versions,
     get_user_friendly_error, install_component, uninstall_component,
 };
 pub use cluster::{

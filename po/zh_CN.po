@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:18+0200\n"
+"POT-Creation-Date: 2026-11-10 21:10+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -28,7 +28,7 @@ msgstr "确定"
 #: rustconn/src/dialogs/ask_prompt.rs:141 rustconn/src/dialogs/cluster.rs:807
 #: rustconn/src/dialogs/credential_transfer.rs:144
 #: rustconn/src/dialogs/credential_transfer.rs:457
-#: rustconn/src/dialogs/flatpak_components.rs:299
+#: rustconn/src/dialogs/flatpak_components.rs:310
 #: rustconn/src/dialogs/history.rs:199 rustconn/src/dialogs/kdbx_unlock.rs:112
 #: rustconn/src/dialogs/key_setup.rs:625 rustconn/src/dialogs/key_unlock.rs:70
 #: rustconn/src/dialogs/portable_migration.rs:58
@@ -2995,9 +2995,9 @@ msgstr "添加"
 #: rustconn/src/dialogs/connection/rdp.rs:832
 #: rustconn/src/dialogs/connection/spice.rs:266
 #: rustconn/src/dialogs/flatpak_components.rs:117
-#: rustconn/src/dialogs/flatpak_components.rs:325
-#: rustconn/src/dialogs/flatpak_components.rs:361
-#: rustconn/src/dialogs/flatpak_components.rs:501
+#: rustconn/src/dialogs/flatpak_components.rs:336
+#: rustconn/src/dialogs/flatpak_components.rs:372
+#: rustconn/src/dialogs/flatpak_components.rs:512
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
 #: rustconn/src/dialogs/widgets.rs:325
 msgid "Remove"
@@ -5129,42 +5129,50 @@ msgstr "容器编排"
 msgid "Required for Kubernetes pod shell connections"
 msgstr "Kubernetes pod shell 连接所需"
 
-#: rustconn/src/dialogs/flatpak_components.rs:272
-#: rustconn/src/dialogs/flatpak_components.rs:274
-#: rustconn/src/dialogs/flatpak_components.rs:489
-#: rustconn/src/dialogs/flatpak_components.rs:491
+#: rustconn/src/dialogs/flatpak_components.rs:204
+msgid "Remote Scripts"
+msgstr "远程脚本"
+
+#: rustconn/src/dialogs/flatpak_components.rs:205
+msgid "Required to run PowerShell scripts on WinRM hosts with Run Local Script"
+msgstr "使用“运行本地脚本”在 WinRM 主机上运行 PowerShell 脚本时需要"
+
+#: rustconn/src/dialogs/flatpak_components.rs:283
+#: rustconn/src/dialogs/flatpak_components.rs:285
+#: rustconn/src/dialogs/flatpak_components.rs:500
+#: rustconn/src/dialogs/flatpak_components.rs:502
 #: rustconn/src/dialogs/settings/clients_tab.rs:489
 #: rustconn/src/dialogs/settings/clients_tab.rs:494
 msgid "Installed"
 msgstr "已安装"
 
-#: rustconn/src/dialogs/flatpak_components.rs:305
+#: rustconn/src/dialogs/flatpak_components.rs:316
 msgid "Cancel component operation"
 msgstr "取消组件操作"
 
-#: rustconn/src/dialogs/flatpak_components.rs:312
+#: rustconn/src/dialogs/flatpak_components.rs:323
 msgid "Update"
 msgstr "更新"
 
-#: rustconn/src/dialogs/flatpak_components.rs:318
+#: rustconn/src/dialogs/flatpak_components.rs:329
 msgid "Update component"
 msgstr "更新组件"
 
-#: rustconn/src/dialogs/flatpak_components.rs:328
-#: rustconn/src/dialogs/flatpak_components.rs:509 rustconn/src/toast.rs:376
+#: rustconn/src/dialogs/flatpak_components.rs:339
+#: rustconn/src/dialogs/flatpak_components.rs:520 rustconn/src/toast.rs:376
 msgid "Install"
 msgstr "安装"
 
-#: rustconn/src/dialogs/flatpak_components.rs:331
+#: rustconn/src/dialogs/flatpak_components.rs:342
 #: rustconn/src/dialogs/password_generator.rs:381
 msgid "N/A"
 msgstr "不可用"
 
-#: rustconn/src/dialogs/flatpak_components.rs:333
+#: rustconn/src/dialogs/flatpak_components.rs:344
 msgid "Not available for download"
 msgstr "无法下载"
 
-#: rustconn/src/dialogs/flatpak_components.rs:522
+#: rustconn/src/dialogs/flatpak_components.rs:533
 #: rustconn/src/dialogs/statistics.rs:170
 #: rustconn/src/dialogs/statistics.rs:270
 msgid "Failed"

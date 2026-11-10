@@ -257,7 +257,31 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         pinned_version: None,
         works_in_sandbox: true,
     },
+    // Libraries for Run Local Script
+    DownloadableComponent {
+        id: PYWINRM_COMPONENT,
+        name: "pywinrm",
+        description: "For PowerShell scripts on WinRM hosts",
+        category: ComponentCategory::ScriptRunner,
+        install_method: InstallMethod::Pip,
+        download_url: None,
+        aarch64_url: None,
+        checksum: ChecksumPolicy::None,
+        pip_package: Some("pywinrm"),
+        size_hint: "~10 MB",
+        // A python3 that can import winrm; the wrapper lands in `python/bin`.
+        binary_name: "rustconn-winrm-python",
+        // Not `python/bin`: uninstalling removes the whole subdir, which would
+        // take the `az` and `oci` wrappers with it.
+        install_subdir: "pywinrm",
+        pinned_version: None,
+        works_in_sandbox: true,
+    },
 ];
+
+/// The id of the `pywinrm` component, which Run Local Script needs for `.ps1`
+/// scripts on WinRM hosts inside a sandbox.
+pub const PYWINRM_COMPONENT: &str = "pywinrm";
 
 /// Get component by ID
 #[must_use]
