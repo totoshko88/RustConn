@@ -109,6 +109,7 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
         has_askpass: askpass_script.is_some(),
         any_hop_has_password,
         target_askpass_allowed: request.target_askpass_allowed,
+        known_only: request.hop_host_keys == HopHostKeys::KnownOnly,
     };
 
     if !auth_shape.needs_explicit_proxy_command() {
@@ -348,6 +349,8 @@ struct JumpAuthShape {
     has_askpass: bool,
     any_hop_has_password: bool,
     target_askpass_allowed: bool,
+    /// Every hop must already be in `known_hosts` ([`HopHostKeys::KnownOnly`]).
+    known_only: bool,
 }
 
 impl JumpAuthShape {
@@ -373,9 +376,14 @@ impl JumpAuthShape {
     /// `-J` spawns child ssh processes that do not inherit `-o`/`-i`, so Flatpak
     /// known-hosts, a PKCS#11 token, a first-hop identity, or any password hop
     /// all force the explicit `ProxyCommand` that passes them to the first hop.
+    /// So does [`HopHostKeys::KnownOnly`]: only a `ProxyCommand` hop can be
+    /// given `StrictHostKeyChecking=yes`, and a script run must never stop at a
+    /// host-key question nobody is there to answer.
+    ///
     /// The one exception is [`Self::is_multi_hop_identity_only`], which `-J` +
     /// agent serves better than a nested `ProxyCommand` that cannot carry a
-    /// local key past the first hop.
+    /// local key past the first hop. Such a chain follows the user's ssh
+    /// configuration even under `KnownOnly`.
     fn needs_explicit_proxy_command(&self) -> bool {
         !self.is_multi_hop_identity_only()
             && (self.has_flatpak_known_hosts
@@ -383,7 +391,8 @@ impl JumpAuthShape {
                 || self.has_identity
                 || self.has_askpass
                 || self.any_hop_has_password
-                || self.target_askpass_allowed)
+                || self.target_askpass_allowed
+                || self.known_only)
     }
 }
 
@@ -401,6 +410,7 @@ mod tests {
             has_askpass: false,
             any_hop_has_password: false,
             target_askpass_allowed: false,
+            known_only: false,
         }
     }
 
@@ -531,6 +541,52 @@ mod tests {
         );
         assert!(!command.contains("accept-new"), "{command}");
         assert_eq!(passwords.len(), 2);
+    }
+
+    #[test]
+    fn known_only_routes_a_key_only_hop_through_proxy_command() {
+        let chain = hops(&["bastion.example"]);
+        let passwords = [None];
+        let Some(JumpRoute::ProxyCommand { command, passwords }) =
+            jump_route(&request(&chain, &passwords, HopHostKeys::KnownOnly))
+        else {
+            panic!("a script-run hop needs a ProxyCommand to refuse unknown keys");
+        };
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
+        assert!(command.ends_with("bastion.example"), "{command}");
+        assert!(passwords.is_empty());
+    }
+
+    #[test]
+    fn user_config_keeps_proxy_jump_for_a_plain_hop() {
+        let chain = hops(&["bastion.example"]);
+        let passwords = [None];
+        let Some(JumpRoute::ProxyJump {
+            value,
+            identity_for_agent,
+        }) = jump_route(&request(&chain, &passwords, HopHostKeys::UserConfig))
+        else {
+            panic!("a session's plain hop keeps -J");
+        };
+        assert_eq!(value, "bastion.example");
+        assert_eq!(identity_for_agent, None);
+    }
+
+    #[test]
+    fn known_only_multi_hop_identity_only_stays_on_proxy_jump() {
+        // A nested ProxyCommand cannot carry the local key past the first hop,
+        // so this chain keeps -J with the key in the agent.
+        let chain = hops(&["b1.example", "b2.example"]);
+        let passwords = [None, None];
+        let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+        req.first_hop_identity = Some("/k/bastion");
+        let Some(JumpRoute::ProxyJump {
+            identity_for_agent, ..
+        }) = jump_route(&req)
+        else {
+            panic!("a multi-hop key-only chain uses -J");
+        };
+        assert_eq!(identity_for_agent.as_deref(), Some("/k/bastion"));
     }
 
     #[test]

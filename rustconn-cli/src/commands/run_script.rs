@@ -621,9 +621,10 @@ fn withhold_from_config_proxy(
 }
 
 /// The route through `chain`, whose hops are plain, built the way the GUI
-/// builds it. Nobody watches a run, so every `ProxyCommand` hop refuses a host
-/// key the user has not accepted. A key path or PKCS#11 provider a shell could
-/// interpret is left out of the `ProxyCommand`.
+/// builds it. Nobody watches a run, so the route is a `ProxyCommand` whose hops
+/// refuse a host key the user has not accepted; only a chain of several hops
+/// that log in with a key alone goes through `-J`. A key path or PKCS#11
+/// provider a shell could interpret is left out of the `ProxyCommand`.
 fn plain_jump_route(
     chain: &JumpChain,
     hop_passwords: &[Option<SecretString>],
@@ -1040,12 +1041,16 @@ mod tests {
         let session_args = ["-i".to_string(), "/k/target key".to_string()];
         let connections = std::slice::from_ref(&hop);
 
-        // With nothing usable left, the hop is reached through `-J`.
+        // With nothing usable left, the hop still gets a ProxyCommand, so it
+        // refuses an unknown host key; no refused path goes into it.
         let route = plain_jump_route(&chain, &[None], connections, &[], &session_args, false);
-        assert!(
-            matches!(route, Some(JumpRoute::ProxyJump { .. })),
-            "{route:?}"
-        );
+        let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
+            panic!("a script-run hop needs a ProxyCommand: {route:?}");
+        };
+        for refused in ["my key", "target key", "pkcs11", " -i "] {
+            assert!(!command.contains(refused), "{refused}: {command}");
+        }
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
 
         // A password still needs a ProxyCommand, without the refused paths.
         let route = plain_jump_route(&chain, &[secret()], connections, &[], &session_args, false);
