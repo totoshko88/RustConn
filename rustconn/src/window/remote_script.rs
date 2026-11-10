@@ -18,7 +18,7 @@ use gtk4::glib;
 use libadwaita as adw;
 use rustconn_core::models::PasswordSource;
 use rustconn_core::remote_script::{
-    self, DEFAULT_PARALLEL, DEFAULT_TIMEOUT, MAX_PARALLEL, RunOptions, ScriptEvent,
+    self, DEFAULT_PARALLEL, DEFAULT_TIMEOUT, LaunchError, MAX_PARALLEL, RunOptions, ScriptEvent,
     ScriptEventSink, ScriptFileError, ScriptHost, ScriptKind, ScriptOutcome, ScriptTransport,
     WinRmTarget,
 };
@@ -75,6 +75,37 @@ struct RunView {
     /// Set when the user asked to close a running window: it closes once
     /// every host has stopped.
     close_when_done: Cell<bool>,
+}
+
+/// Says why a host was not started; core's text is untranslated.
+fn launch_error_text(error: &LaunchError) -> String {
+    match error {
+        LaunchError::SshNotFound => {
+            i18n("ssh was not found. Install OpenSSH to run scripts on SSH hosts.")
+        }
+        LaunchError::PythonNotFound => i18n(
+            "python3 was not found. Install Python 3 with the pywinrm library to run scripts on WinRM hosts.",
+        ),
+        LaunchError::NoWinRmPassword => {
+            i18n("WinRM needs a password, and none is saved or entered for this host")
+        }
+        LaunchError::InvalidTarget { detail } => {
+            i18n_f("This host cannot be reached with ssh: {}", &[detail])
+        }
+        LaunchError::PasswordNotStaged { detail } => {
+            i18n_f("The password could not be handed to ssh: {}", &[detail])
+        }
+        LaunchError::TunnelFailed { detail } => i18n_f(
+            "The SSH tunnel through the jump host could not be opened: {}",
+            &[detail],
+        ),
+        LaunchError::RequestNotEncoded { detail } => {
+            i18n_f("The WinRM request could not be prepared: {}", &[detail])
+        }
+        LaunchError::SpawnFailed { program, detail } => {
+            i18n_f("{} could not be started: {}", &[program, detail])
+        }
+    }
 }
 
 fn script_error_text(error: &ScriptFileError) -> String {
@@ -776,6 +807,9 @@ fn apply_event(view: &Rc<RunView>, event: ScriptEvent, row_of_host: &[usize]) {
         ScriptEvent::Output { host, line, .. } => append_output(view, row_of_host[host], &line),
         ScriptEvent::OutputTruncated { host } => {
             append_output(view, row_of_host[host], &i18n("[further output dropped]"));
+        }
+        ScriptEvent::NotStarted { host, reason } => {
+            append_output(view, row_of_host[host], &launch_error_text(&reason));
         }
         ScriptEvent::Finished { host, outcome } => {
             record_outcome(view, row_of_host[host], outcome);

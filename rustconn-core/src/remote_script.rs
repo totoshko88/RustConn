@@ -435,8 +435,58 @@ pub enum ScriptOutcome {
     TimedOut,
     /// The run was cancelled.
     Cancelled,
-    /// `ssh` could not be started for this host. An output line says why.
+    /// The client could not be started for this host. A
+    /// [`ScriptEvent::NotStarted`] says why, unless waiting for it failed.
     NotStarted,
+}
+
+/// Why a host's client could not be started.
+///
+/// Typed so the GUI can translate the reason; the `detail` fields carry the
+/// untranslated text of the underlying error, which never holds a secret.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum LaunchError {
+    /// `ssh` is not on `PATH`.
+    #[error("ssh was not found")]
+    SshNotFound,
+    /// `python3` is not on `PATH`.
+    #[error("python3 was not found")]
+    PythonNotFound,
+    /// A WinRM host has no password; the helper cannot log in without one.
+    #[error("WinRM needs a password; none is saved for this host")]
+    NoWinRmPassword,
+    /// The host's `ssh` arguments were refused.
+    #[error("the host cannot be reached with ssh: {detail}")]
+    InvalidTarget {
+        /// Why, untranslated.
+        detail: String,
+    },
+    /// The askpass files for the passwords could not be written.
+    #[error("the password could not be handed to ssh: {detail}")]
+    PasswordNotStaged {
+        /// Why, untranslated.
+        detail: String,
+    },
+    /// The SSH tunnel to a WinRM host's jump host did not come up.
+    #[error("the SSH tunnel could not be opened: {detail}")]
+    TunnelFailed {
+        /// Why, untranslated.
+        detail: String,
+    },
+    /// The WinRM helper's request could not be encoded.
+    #[error("the WinRM request could not be prepared: {detail}")]
+    RequestNotEncoded {
+        /// Why, untranslated.
+        detail: String,
+    },
+    /// The client process could not be spawned.
+    #[error("{program} could not be started: {detail}")]
+    SpawnFailed {
+        /// The program's path.
+        program: String,
+        /// Why, untranslated.
+        detail: String,
+    },
 }
 
 /// Which pipe an output line came from.
@@ -469,6 +519,14 @@ pub enum ScriptEvent {
     OutputTruncated {
         /// The host.
         host: usize,
+    },
+    /// The host's client could not be started. A
+    /// [`ScriptEvent::Finished`] with [`ScriptOutcome::NotStarted`] follows.
+    NotStarted {
+        /// The host.
+        host: usize,
+        /// Why.
+        reason: LaunchError,
     },
     /// The host has finished.
     Finished {
@@ -537,16 +595,8 @@ fn run_script_with(
     });
 }
 
-fn not_started(
-    host: usize,
-    reason: impl std::fmt::Display,
-    on_event: &ScriptEventSink,
-) -> ScriptOutcome {
-    on_event(ScriptEvent::Output {
-        host,
-        stream: OutputStream::Stderr,
-        line: reason.to_string(),
-    });
+fn not_started(host: usize, reason: LaunchError, on_event: &ScriptEventSink) -> ScriptOutcome {
+    on_event(ScriptEvent::NotStarted { host, reason });
     ScriptOutcome::NotStarted
 }
 
@@ -569,18 +619,22 @@ fn ssh_launch(
     programs: &Programs,
     target: &SshTarget,
     credentials: &DeployCredentials,
-) -> Result<Launch, String> {
-    let program = programs.ssh.clone().ok_or("ssh was not found")?;
+) -> Result<Launch, LaunchError> {
+    let program = programs.ssh.clone().ok_or(LaunchError::SshNotFound)?;
     let args =
         ssh_key_setup::remote_command_args(target, credentials.password.is_some(), REMOTE_COMMAND)
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| LaunchError::InvalidTarget {
+                detail: error.to_string(),
+            })?;
     let mut files = SecretFiles::default();
     let mut env = ssh_key_setup::stage_password_env(
         &credentials.jump_host_passwords,
         credentials.password.as_ref(),
         &mut files,
     )
-    .map_err(|error| error.to_string())?;
+    .map_err(|error| LaunchError::PasswordNotStaged {
+        detail: error.to_string(),
+    })?;
     ssh_key_setup::ensure_askpass_display(&mut env);
     Ok(Launch {
         program,
@@ -620,28 +674,33 @@ fn winrm_preamble_capacity(header: &WinRmHeader<'_>) -> usize {
 /// `serde_json::to_vec` grows from a small start, so each step would leave a
 /// copy of the password behind. Reserving the worst case first keeps the only
 /// copy in the `Zeroizing` buffer.
-fn winrm_preamble(header: &WinRmHeader<'_>) -> Result<Zeroizing<Vec<u8>>, String> {
+fn winrm_preamble(header: &WinRmHeader<'_>) -> Result<Zeroizing<Vec<u8>>, LaunchError> {
     let mut preamble = Zeroizing::new(Vec::with_capacity(winrm_preamble_capacity(header)));
-    serde_json::to_writer(&mut *preamble, header).map_err(|e| e.to_string())?;
+    serde_json::to_writer(&mut *preamble, header).map_err(|e| LaunchError::RequestNotEncoded {
+        detail: e.to_string(),
+    })?;
     preamble.push(b'\n');
     Ok(preamble)
 }
 
-fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, String> {
-    let program = programs.python.clone().ok_or("python3 was not found")?;
+fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, LaunchError> {
+    let program = programs.python.clone().ok_or(LaunchError::PythonNotFound)?;
     let password = target
         .password
         .as_ref()
-        .ok_or("WinRM needs a password; none is saved for this host")?;
+        .ok_or(LaunchError::NoWinRmPassword)?;
 
+    let tunnel_failed = |e: ssh_tunnel::SshTunnelError| LaunchError::TunnelFailed {
+        detail: e.to_string(),
+    };
     let tunnel = target
         .tunnel
         .as_ref()
         .map(|params| {
-            let mut tunnel = ssh_tunnel::create_tunnel(params).map_err(|e| e.to_string())?;
+            let mut tunnel = ssh_tunnel::create_tunnel(params).map_err(tunnel_failed)?;
             ssh_tunnel::wait_for_tunnel_ready(&mut tunnel, 50, Duration::from_millis(200))
-                .map_err(|e| e.to_string())?;
-            Ok::<_, String>(tunnel)
+                .map_err(tunnel_failed)?;
+            Ok::<_, LaunchError>(tunnel)
         })
         .transpose()?;
     let (host, port) = tunnel.as_ref().map_or_else(
@@ -705,7 +764,13 @@ fn run_host(
         .spawn()
     {
         Ok(child) => child,
-        Err(error) => return not_started(index, error, on_event),
+        Err(error) => {
+            let reason = LaunchError::SpawnFailed {
+                program: launch.program.display().to_string(),
+                detail: error.to_string(),
+            };
+            return not_started(index, reason, on_event);
+        }
     };
 
     let (release_stdin, hold_stdin) = mpsc::channel::<()>();
@@ -1073,6 +1138,13 @@ class Protocol:
         }
         let events = run(&[host], &RunOptions::default(), "x");
         assert_eq!(outcome(&events, 0), ScriptOutcome::NotStarted);
+        // Without python3 that is found first.
+        let expected = if python_stub().is_some() {
+            LaunchError::NoWinRmPassword
+        } else {
+            LaunchError::PythonNotFound
+        };
+        assert_eq!(not_started_reason(&events, 0), Some(expected));
     }
 
     #[test]
@@ -1150,6 +1222,13 @@ class Protocol:
                 _ => None,
             })
             .expect("every host finishes")
+    }
+
+    fn not_started_reason(events: &[ScriptEvent], host: usize) -> Option<LaunchError> {
+        events.iter().find_map(|e| match e {
+            ScriptEvent::NotStarted { host: h, reason } if *h == host => Some(reason.clone()),
+            _ => None,
+        })
     }
 
     fn lines(events: &[ScriptEvent], host: usize) -> Vec<String> {
@@ -1233,6 +1312,13 @@ class Protocol:
     fn an_invalid_target_is_not_started() {
         let events = run(&[host("-oProxyCommand=evil")], &RunOptions::default(), "x");
         assert_eq!(outcome(&events, 0), ScriptOutcome::NotStarted);
+        assert!(
+            matches!(
+                not_started_reason(&events, 0),
+                Some(LaunchError::InvalidTarget { .. })
+            ),
+            "{events:?}"
+        );
     }
 
     #[test]

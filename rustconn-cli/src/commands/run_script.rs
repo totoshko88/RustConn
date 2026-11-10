@@ -226,6 +226,9 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool)
             ScriptEvent::OutputTruncated { host } => {
                 eprintln!("[{}] further output dropped", names[host]);
             }
+            ScriptEvent::NotStarted { host, reason } => {
+                eprintln!("[{}] {reason}", names[host]);
+            }
             ScriptEvent::Finished { host, outcome } => {
                 finished += 1;
                 if outcome == ScriptOutcome::Succeeded {

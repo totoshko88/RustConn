@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:10+0200\n"
+"POT-Creation-Date: 2026-11-10 19:15+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -65,7 +65,7 @@ msgstr "დიახ"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:536 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "გაუქმება"
@@ -4761,7 +4761,7 @@ msgstr "კოპირება"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:314
+#: rustconn/src/window/remote_script.rs:342
 msgid "Stop"
 msgstr "შეჩერება"
 
@@ -7046,8 +7046,8 @@ msgid "Select or create a script."
 msgstr "აირჩიეთ ან შექმენით სკრიპტი."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:310
-#: rustconn/src/window/remote_script.rs:509 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:338
+#: rustconn/src/window/remote_script.rs:537 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "გაშვება"
 
@@ -8737,7 +8737,7 @@ msgid "Not available"
 msgstr "ხელმისაწვდომი არაა"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:773
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:801
 msgid "Running"
 msgstr "გაშვებულია"
 
@@ -11757,7 +11757,7 @@ msgstr "RDP სესია გაშვებულია გარე ფა�
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:120
+#: rustconn/src/window/remote_script.rs:148
 msgid "Connection failed"
 msgstr "დაკავშირების შეცდომა"
 
@@ -14692,80 +14692,119 @@ msgstr "სერტიფიკატი შეიცვალა"
 msgid "Accept new certificate"
 msgstr "ახალი სერტიფიკატის მღება"
 
-#: rustconn/src/window/remote_script.rs:82
+#: rustconn/src/window/remote_script.rs:83
+msgid "ssh was not found. Install OpenSSH to run scripts on SSH hosts."
+msgstr ""
+"ssh ვერ მოიძებნა. SSH ჰოსტებზე სკრიპტების გასაშვებად დააინსტალირეთ OpenSSH."
+
+#: rustconn/src/window/remote_script.rs:85
+msgid ""
+"python3 was not found. Install Python 3 with the pywinrm library to run "
+"scripts on WinRM hosts."
+msgstr ""
+"python3 ვერ მოიძებნა. WinRM ჰოსტებზე სკრიპტების გასაშვებად დააინსტალირეთ "
+"Python 3 ბიბლიოთეკით pywinrm."
+
+#: rustconn/src/window/remote_script.rs:88
+msgid "WinRM needs a password, and none is saved or entered for this host"
+msgstr ""
+"WinRM-ს პაროლი სჭირდება, ამ ჰოსტისთვის კი პაროლი არც შენახულა და არც "
+"შეყვანილა"
+
+#: rustconn/src/window/remote_script.rs:91
+msgid "This host cannot be reached with ssh: {}"
+msgstr "ამ ჰოსტთან ssh-ით დაკავშირება შეუძლებელია: {}"
+
+#: rustconn/src/window/remote_script.rs:94
+msgid "The password could not be handed to ssh: {}"
+msgstr "პაროლის ssh-ისთვის გადაცემა ვერ მოხერხდა: {}"
+
+#: rustconn/src/window/remote_script.rs:97
+msgid "The SSH tunnel through the jump host could not be opened: {}"
+msgstr "შუალედური ჰოსტის გავლით SSH გვირაბის გახსნა ვერ მოხერხდა: {}"
+
+#: rustconn/src/window/remote_script.rs:100
+msgid "The WinRM request could not be prepared: {}"
+msgstr "WinRM მოთხოვნის მომზადება ვერ მოხერხდა: {}"
+
+#: rustconn/src/window/remote_script.rs:103
+msgid "{} could not be started: {}"
+msgstr "{} ვერ გაეშვა: {}"
+
+#: rustconn/src/window/remote_script.rs:110
 msgid "The script could not be read"
 msgstr "სკრიპტის წაკითხვა ვერ მოხერხდა"
 
-#: rustconn/src/window/remote_script.rs:83
+#: rustconn/src/window/remote_script.rs:111
 msgid "Choose a script file, not a folder"
 msgstr "აირჩიეთ სკრიპტის ფაილი და არა საქაღალდე"
 
-#: rustconn/src/window/remote_script.rs:84
+#: rustconn/src/window/remote_script.rs:112
 msgid "The script is empty"
 msgstr "სკრიპტი ცარიელია"
 
-#: rustconn/src/window/remote_script.rs:85
+#: rustconn/src/window/remote_script.rs:113
 msgid "The script is larger than 1 MiB"
 msgstr "სკრიპტი 1 MiB-ზე დიდია"
 
-#: rustconn/src/window/remote_script.rs:86
+#: rustconn/src/window/remote_script.rs:114
 msgid "This is a binary file, not a script"
 msgstr "ეს ორობითი ფაილია და არა სკრიპტი"
 
-#: rustconn/src/window/remote_script.rs:115
+#: rustconn/src/window/remote_script.rs:143
 msgid "Succeeded"
 msgstr "წარმატებული"
 
-#: rustconn/src/window/remote_script.rs:117
+#: rustconn/src/window/remote_script.rs:145
 msgid "Failed with exit code {}"
 msgstr "ვერ შესრულდა, გამოსვლის კოდი: {}"
 
-#: rustconn/src/window/remote_script.rs:119
+#: rustconn/src/window/remote_script.rs:147
 msgid "Stopped by a signal"
 msgstr "შეჩერდა სიგნალით"
 
-#: rustconn/src/window/remote_script.rs:121
+#: rustconn/src/window/remote_script.rs:149
 msgid "Timed out"
 msgstr "დრო ამოიწურა"
 
-#: rustconn/src/window/remote_script.rs:122
-#: rustconn/src/window/remote_script.rs:647
+#: rustconn/src/window/remote_script.rs:150
+#: rustconn/src/window/remote_script.rs:675
 msgid "Cancelled"
 msgstr "გაუქმდა"
 
-#: rustconn/src/window/remote_script.rs:123
+#: rustconn/src/window/remote_script.rs:151
 msgid "Could not start"
 msgstr "გაშვება ვერ მოხერხდა"
 
-#: rustconn/src/window/remote_script.rs:153
+#: rustconn/src/window/remote_script.rs:181
 msgid "No SSH or WinRM connections are selected"
 msgstr "SSH ან WinRM კავშირი არჩეული არ არის"
 
-#: rustconn/src/window/remote_script.rs:175
+#: rustconn/src/window/remote_script.rs:203
 msgid "Hosts"
 msgstr "ჰოსტები"
 
-#: rustconn/src/window/remote_script.rs:182
+#: rustconn/src/window/remote_script.rs:210
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "ჰოსტები (SSH ან WinRM-ის გარეშე, გამოტოვებული: {})"
 
-#: rustconn/src/window/remote_script.rs:193
+#: rustconn/src/window/remote_script.rs:221
 msgid "Script File"
 msgstr "სკრიპტის ფაილი"
 
-#: rustconn/src/window/remote_script.rs:194
+#: rustconn/src/window/remote_script.rs:222
 msgid "Choose File"
 msgstr "ფაილის არჩევა"
 
-#: rustconn/src/window/remote_script.rs:204
+#: rustconn/src/window/remote_script.rs:232
 msgid "Hosts at Once"
 msgstr "ჰოსტები ერთდროულად"
 
-#: rustconn/src/window/remote_script.rs:207
+#: rustconn/src/window/remote_script.rs:235
 msgid "Time Limit per Host (minutes)"
 msgstr "დროის ლიმიტი ჰოსტზე (წუთი)"
 
-#: rustconn/src/window/remote_script.rs:212
+#: rustconn/src/window/remote_script.rs:240
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14776,11 +14815,11 @@ msgstr ""
 "SSH ჰოსტი, რომელსაც არასდროს დაკავშირებიხართ, უარყოფილია, სანამ მისი "
 "გასაღები ცნობილი არ გახდება."
 
-#: rustconn/src/window/remote_script.rs:220
+#: rustconn/src/window/remote_script.rs:248
 msgid "Passwords"
 msgstr "პაროლები"
 
-#: rustconn/src/window/remote_script.rs:222
+#: rustconn/src/window/remote_script.rs:250
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
@@ -14788,40 +14827,40 @@ msgstr ""
 "ჰოსტებისთვის, რომლებიც დაკავშირებისას ითხოვენ პაროლს. ჰოსტი ცარიელი ველით "
 "პაროლს არ იღებს."
 
-#: rustconn/src/window/remote_script.rs:229
+#: rustconn/src/window/remote_script.rs:257
 msgid "Use One Password for All Hosts"
 msgstr "ერთი პაროლის გამოყენება ყველა ჰოსტისთვის"
 
-#: rustconn/src/window/remote_script.rs:234
+#: rustconn/src/window/remote_script.rs:262
 msgid "Password for All Hosts"
 msgstr "პაროლი ყველა ჰოსტისთვის"
 
-#: rustconn/src/window/remote_script.rs:287
+#: rustconn/src/window/remote_script.rs:315
 msgid "Script Output"
 msgstr "სკრიპტის გამოტანა"
 
-#: rustconn/src/window/remote_script.rs:308
-#: rustconn/src/window/remote_script.rs:326
+#: rustconn/src/window/remote_script.rs:336
+#: rustconn/src/window/remote_script.rs:354
 msgid "Run Local Script"
 msgstr "ლოკალური სკრიპტის გაშვება"
 
-#: rustconn/src/window/remote_script.rs:379
+#: rustconn/src/window/remote_script.rs:407
 msgid "Output of {}"
 msgstr "{} — გამოტანა"
 
-#: rustconn/src/window/remote_script.rs:390
+#: rustconn/src/window/remote_script.rs:418
 msgid "Choose Script"
 msgstr "სკრიპტის არჩევა"
 
-#: rustconn/src/window/remote_script.rs:428
+#: rustconn/src/window/remote_script.rs:456
 msgid "None of the selected hosts can run this type of script"
 msgstr "არჩეულ ჰოსტებს შორის ვერცერთი ვერ გაუშვებს ამ ტიპის სკრიპტს"
 
-#: rustconn/src/window/remote_script.rs:502
+#: rustconn/src/window/remote_script.rs:530
 msgid "Run ‘{}’?"
 msgstr "გაეშვას „{}“?"
 
-#: rustconn/src/window/remote_script.rs:504
+#: rustconn/src/window/remote_script.rs:532
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14829,23 +14868,23 @@ msgstr ""
 "გაეშვება ამ ჰოსტებზე მათი შესვლის მომხმარებლებით და ცვლილებების გაუქმება "
 "შეუძლებელია: {}"
 
-#: rustconn/src/window/remote_script.rs:543
+#: rustconn/src/window/remote_script.rs:571
 msgid "Waiting"
 msgstr "ელოდება"
 
-#: rustconn/src/window/remote_script.rs:778
+#: rustconn/src/window/remote_script.rs:806
 msgid "[further output dropped]"
 msgstr "[შემდგომი გამოტანა გაუქმდა]"
 
-#: rustconn/src/window/remote_script.rs:816
+#: rustconn/src/window/remote_script.rs:847
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "წარმატებული: {}, წარუმატებელი: {}"
 
-#: rustconn/src/window/remote_script.rs:831
+#: rustconn/src/window/remote_script.rs:862
 msgid "Stop the Script?"
 msgstr "შევაჩეროთ სკრიპტი?"
 
-#: rustconn/src/window/remote_script.rs:833
+#: rustconn/src/window/remote_script.rs:864
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
@@ -14853,15 +14892,15 @@ msgstr ""
 "სკრიპტი შეჩერდება ყველა ჰოსტზე, სადაც ის ჯერ კიდევ მუშაობს, და ფანჯარა "
 "დაიხურება. უკვე შეტანილი ცვლილებები დარჩება."
 
-#: rustconn/src/window/remote_script.rs:836
+#: rustconn/src/window/remote_script.rs:867
 msgid "Keep Running"
 msgstr "გაგრძელება"
 
-#: rustconn/src/window/remote_script.rs:837
+#: rustconn/src/window/remote_script.rs:868
 msgid "Stop and Close"
 msgstr "შეჩერება და დახურვა"
 
-#: rustconn/src/window/remote_script.rs:870
+#: rustconn/src/window/remote_script.rs:901
 msgid "Script finished. {}"
 msgstr "სკრიპტი დასრულდა. {}"
 

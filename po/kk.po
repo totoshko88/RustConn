@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:10+0200\n"
+"POT-Creation-Date: 2026-11-10 19:15+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -64,7 +64,7 @@ msgstr "OK"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:536 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Болдырмау"
@@ -4745,7 +4745,7 @@ msgstr "Көшіру"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:314
+#: rustconn/src/window/remote_script.rs:342
 msgid "Stop"
 msgstr "Тоқтату"
 
@@ -7024,8 +7024,8 @@ msgid "Select or create a script."
 msgstr "Скриптті таңдаңыз немесе жасаңыз."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:310
-#: rustconn/src/window/remote_script.rs:509 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:338
+#: rustconn/src/window/remote_script.rs:537 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Орындау"
 
@@ -8710,7 +8710,7 @@ msgid "Not available"
 msgstr "Қолжетімсіз"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:773
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:801
 msgid "Running"
 msgstr "Жұмыс істеуде"
 
@@ -11733,7 +11733,7 @@ msgstr "RDP сеансы сыртқы терезеде жұмыс істеуде
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:120
+#: rustconn/src/window/remote_script.rs:148
 msgid "Connection failed"
 msgstr "Қосылу сәтсіз"
 
@@ -14648,80 +14648,119 @@ msgstr "Сертификат өзгерді"
 msgid "Accept new certificate"
 msgstr "Жаңа сертификатты қабылдау"
 
-#: rustconn/src/window/remote_script.rs:82
+#: rustconn/src/window/remote_script.rs:83
+msgid "ssh was not found. Install OpenSSH to run scripts on SSH hosts."
+msgstr ""
+"ssh табылмады. SSH хосттарында скрипттерді орындау үшін OpenSSH орнатыңыз."
+
+#: rustconn/src/window/remote_script.rs:85
+msgid ""
+"python3 was not found. Install Python 3 with the pywinrm library to run "
+"scripts on WinRM hosts."
+msgstr ""
+"python3 табылмады. WinRM хосттарында скрипттерді орындау үшін pywinrm "
+"кітапханасы бар Python 3 орнатыңыз."
+
+#: rustconn/src/window/remote_script.rs:88
+msgid "WinRM needs a password, and none is saved or entered for this host"
+msgstr ""
+"WinRM құпия сөзді қажет етеді, ал бұл хост үшін ол сақталмаған және "
+"енгізілмеген"
+
+#: rustconn/src/window/remote_script.rs:91
+msgid "This host cannot be reached with ssh: {}"
+msgstr "Бұл хостқа ssh арқылы қосылу мүмкін емес: {}"
+
+#: rustconn/src/window/remote_script.rs:94
+msgid "The password could not be handed to ssh: {}"
+msgstr "Құпия сөзді ssh-қа беру мүмкін болмады: {}"
+
+#: rustconn/src/window/remote_script.rs:97
+msgid "The SSH tunnel through the jump host could not be opened: {}"
+msgstr "Аралық хост арқылы SSH туннелін ашу мүмкін болмады: {}"
+
+#: rustconn/src/window/remote_script.rs:100
+msgid "The WinRM request could not be prepared: {}"
+msgstr "WinRM сұрауын дайындау мүмкін болмады: {}"
+
+#: rustconn/src/window/remote_script.rs:103
+msgid "{} could not be started: {}"
+msgstr "{} іске қосылмады: {}"
+
+#: rustconn/src/window/remote_script.rs:110
 msgid "The script could not be read"
 msgstr "Сценарийді оқу мүмкін болмады"
 
-#: rustconn/src/window/remote_script.rs:83
+#: rustconn/src/window/remote_script.rs:111
 msgid "Choose a script file, not a folder"
 msgstr "Бумаға емес, сценарий файлын таңдаңыз"
 
-#: rustconn/src/window/remote_script.rs:84
+#: rustconn/src/window/remote_script.rs:112
 msgid "The script is empty"
 msgstr "Сценарий бос"
 
-#: rustconn/src/window/remote_script.rs:85
+#: rustconn/src/window/remote_script.rs:113
 msgid "The script is larger than 1 MiB"
 msgstr "Сценарий 1 МиБ-тан үлкен"
 
-#: rustconn/src/window/remote_script.rs:86
+#: rustconn/src/window/remote_script.rs:114
 msgid "This is a binary file, not a script"
 msgstr "Бұл сценарий емес, бинарлы файл"
 
-#: rustconn/src/window/remote_script.rs:115
+#: rustconn/src/window/remote_script.rs:143
 msgid "Succeeded"
 msgstr "Сәтті"
 
-#: rustconn/src/window/remote_script.rs:117
+#: rustconn/src/window/remote_script.rs:145
 msgid "Failed with exit code {}"
 msgstr "Шығу кодымен сәтсіз аяқталды: {}"
 
-#: rustconn/src/window/remote_script.rs:119
+#: rustconn/src/window/remote_script.rs:147
 msgid "Stopped by a signal"
 msgstr "Сигналмен тоқтатылды"
 
-#: rustconn/src/window/remote_script.rs:121
+#: rustconn/src/window/remote_script.rs:149
 msgid "Timed out"
 msgstr "Уақыт бітті"
 
-#: rustconn/src/window/remote_script.rs:122
-#: rustconn/src/window/remote_script.rs:647
+#: rustconn/src/window/remote_script.rs:150
+#: rustconn/src/window/remote_script.rs:675
 msgid "Cancelled"
 msgstr "Бас тартылды"
 
-#: rustconn/src/window/remote_script.rs:123
+#: rustconn/src/window/remote_script.rs:151
 msgid "Could not start"
 msgstr "Іске қосу мүмкін болмады"
 
-#: rustconn/src/window/remote_script.rs:153
+#: rustconn/src/window/remote_script.rs:181
 msgid "No SSH or WinRM connections are selected"
 msgstr "SSH немесе WinRM байланыстары таңдалмаған"
 
-#: rustconn/src/window/remote_script.rs:175
+#: rustconn/src/window/remote_script.rs:203
 msgid "Hosts"
 msgstr "Хосттар"
 
-#: rustconn/src/window/remote_script.rs:182
+#: rustconn/src/window/remote_script.rs:210
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "Хосттар (SSH немесе WinRM пайдаланбайды, өткізілді: {})"
 
-#: rustconn/src/window/remote_script.rs:193
+#: rustconn/src/window/remote_script.rs:221
 msgid "Script File"
 msgstr "Сценарий файлы"
 
-#: rustconn/src/window/remote_script.rs:194
+#: rustconn/src/window/remote_script.rs:222
 msgid "Choose File"
 msgstr "Файлды таңдау"
 
-#: rustconn/src/window/remote_script.rs:204
+#: rustconn/src/window/remote_script.rs:232
 msgid "Hosts at Once"
 msgstr "Бір уақыттағы хосттар"
 
-#: rustconn/src/window/remote_script.rs:207
+#: rustconn/src/window/remote_script.rs:235
 msgid "Time Limit per Host (minutes)"
 msgstr "Хостқа уақыт шегі (минут)"
 
-#: rustconn/src/window/remote_script.rs:212
+#: rustconn/src/window/remote_script.rs:240
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14732,51 +14771,51 @@ msgstr ""
 "ештеңе сақталмайды. Сіз ешқашан қосылмаған SSH хосты оның кілті белгілі "
 "болғанша қабылданбайды."
 
-#: rustconn/src/window/remote_script.rs:220
+#: rustconn/src/window/remote_script.rs:248
 msgid "Passwords"
 msgstr "Құпия сөздер"
 
-#: rustconn/src/window/remote_script.rs:222
+#: rustconn/src/window/remote_script.rs:250
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
 msgstr ""
 "Қосылу кезінде сұрайтын хосттар үшін. Өрісі бос хост құпия сөз алмайды."
 
-#: rustconn/src/window/remote_script.rs:229
+#: rustconn/src/window/remote_script.rs:257
 msgid "Use One Password for All Hosts"
 msgstr "Барлық хосттар үшін бір құпия сөзді пайдалану"
 
-#: rustconn/src/window/remote_script.rs:234
+#: rustconn/src/window/remote_script.rs:262
 msgid "Password for All Hosts"
 msgstr "Барлық хосттарға арналған құпия сөз"
 
-#: rustconn/src/window/remote_script.rs:287
+#: rustconn/src/window/remote_script.rs:315
 msgid "Script Output"
 msgstr "Сценарий шығысы"
 
-#: rustconn/src/window/remote_script.rs:308
-#: rustconn/src/window/remote_script.rs:326
+#: rustconn/src/window/remote_script.rs:336
+#: rustconn/src/window/remote_script.rs:354
 msgid "Run Local Script"
 msgstr "Жергілікті сценарийді орындау"
 
-#: rustconn/src/window/remote_script.rs:379
+#: rustconn/src/window/remote_script.rs:407
 msgid "Output of {}"
 msgstr "{} шығысы"
 
-#: rustconn/src/window/remote_script.rs:390
+#: rustconn/src/window/remote_script.rs:418
 msgid "Choose Script"
 msgstr "Сценарийді таңдау"
 
-#: rustconn/src/window/remote_script.rs:428
+#: rustconn/src/window/remote_script.rs:456
 msgid "None of the selected hosts can run this type of script"
 msgstr "Таңдалған хосттардың ешқайсысы мұндай скрипт түрін орындай алмайды"
 
-#: rustconn/src/window/remote_script.rs:502
+#: rustconn/src/window/remote_script.rs:530
 msgid "Run ‘{}’?"
 msgstr "«{}» орындалсын ба?"
 
-#: rustconn/src/window/remote_script.rs:504
+#: rustconn/src/window/remote_script.rs:532
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14784,23 +14823,23 @@ msgstr ""
 "Осы хосттарда кіру пайдаланушылары атынан орындалады және өзгерістерін "
 "қайтару мүмкін емес: {}"
 
-#: rustconn/src/window/remote_script.rs:543
+#: rustconn/src/window/remote_script.rs:571
 msgid "Waiting"
 msgstr "Күтуде"
 
-#: rustconn/src/window/remote_script.rs:778
+#: rustconn/src/window/remote_script.rs:806
 msgid "[further output dropped]"
 msgstr "[қалған шығыс алынып тасталды]"
 
-#: rustconn/src/window/remote_script.rs:816
+#: rustconn/src/window/remote_script.rs:847
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Сәтті: {}, сәтсіз: {}"
 
-#: rustconn/src/window/remote_script.rs:831
+#: rustconn/src/window/remote_script.rs:862
 msgid "Stop the Script?"
 msgstr "Сценарийді тоқтату керек пе?"
 
-#: rustconn/src/window/remote_script.rs:833
+#: rustconn/src/window/remote_script.rs:864
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
@@ -14808,15 +14847,15 @@ msgstr ""
 "Сценарий әлі орындалып жатқан барлық хосттарда тоқтатылады, ал терезе "
 "жабылады. Ол енгізіп үлгерген өзгерістер сақталады."
 
-#: rustconn/src/window/remote_script.rs:836
+#: rustconn/src/window/remote_script.rs:867
 msgid "Keep Running"
 msgstr "Орындауды жалғастыру"
 
-#: rustconn/src/window/remote_script.rs:837
+#: rustconn/src/window/remote_script.rs:868
 msgid "Stop and Close"
 msgstr "Тоқтату және жабу"
 
-#: rustconn/src/window/remote_script.rs:870
+#: rustconn/src/window/remote_script.rs:901
 msgid "Script finished. {}"
 msgstr "Сценарий аяқталды. {}"
 
