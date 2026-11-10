@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 18:59+0200\n"
+"POT-Creation-Date: 2026-11-10 19:02+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -63,7 +63,7 @@ msgstr "OK"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
 #: rustconn/src/window/operations.rs:962
-#: rustconn/src/window/remote_script.rs:476 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:494 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Ləğv et"
@@ -4726,7 +4726,7 @@ msgstr "Kopyala"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:301
+#: rustconn/src/window/remote_script.rs:311
 msgid "Stop"
 msgstr "Dayandır"
 
@@ -7011,8 +7011,8 @@ msgid "Select or create a script."
 msgstr "Skript seçin və ya yaradın."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:297
-#: rustconn/src/window/remote_script.rs:477 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:307
+#: rustconn/src/window/remote_script.rs:495 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "İşə sal"
 
@@ -8691,7 +8691,7 @@ msgid "Not available"
 msgstr "Mövcud deyil"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:743
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:759
 msgid "Running"
 msgstr "İşləyir"
 
@@ -11690,7 +11690,7 @@ msgstr "RDP sessiyası xarici pəncərədə işləyir"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:108
+#: rustconn/src/window/remote_script.rs:117
 msgid "Connection failed"
 msgstr "Bağlantı alınmadı"
 
@@ -14601,80 +14601,80 @@ msgstr "Sertifikat dəyişdi"
 msgid "Accept new certificate"
 msgstr "Yeni sertifikatı qəbul et"
 
-#: rustconn/src/window/remote_script.rs:70
+#: rustconn/src/window/remote_script.rs:79
 msgid "The script could not be read"
 msgstr "Skript oxuna bilmədi"
 
-#: rustconn/src/window/remote_script.rs:71
+#: rustconn/src/window/remote_script.rs:80
 msgid "Choose a script file, not a folder"
 msgstr "Qovluq deyil, skript faylı seçin"
 
-#: rustconn/src/window/remote_script.rs:72
+#: rustconn/src/window/remote_script.rs:81
 msgid "The script is empty"
 msgstr "Skript boşdur"
 
-#: rustconn/src/window/remote_script.rs:73
+#: rustconn/src/window/remote_script.rs:82
 msgid "The script is larger than 1 MiB"
 msgstr "Skript 1 MiB-dan böyükdür"
 
-#: rustconn/src/window/remote_script.rs:74
+#: rustconn/src/window/remote_script.rs:83
 msgid "This is a binary file, not a script"
 msgstr "Bu skript deyil, binar fayldır"
 
-#: rustconn/src/window/remote_script.rs:103
+#: rustconn/src/window/remote_script.rs:112
 msgid "Succeeded"
 msgstr "Uğurlu"
 
-#: rustconn/src/window/remote_script.rs:105
+#: rustconn/src/window/remote_script.rs:114
 msgid "Failed with exit code {}"
 msgstr "Çıxış kodu ilə uğursuz oldu: {}"
 
-#: rustconn/src/window/remote_script.rs:107
+#: rustconn/src/window/remote_script.rs:116
 msgid "Stopped by a signal"
 msgstr "Siqnalla dayandırıldı"
 
-#: rustconn/src/window/remote_script.rs:109
+#: rustconn/src/window/remote_script.rs:118
 msgid "Timed out"
 msgstr "Vaxt bitdi"
 
-#: rustconn/src/window/remote_script.rs:110
-#: rustconn/src/window/remote_script.rs:617
+#: rustconn/src/window/remote_script.rs:119
+#: rustconn/src/window/remote_script.rs:633
 msgid "Cancelled"
 msgstr "Ləğv edildi"
 
-#: rustconn/src/window/remote_script.rs:111
+#: rustconn/src/window/remote_script.rs:120
 msgid "Could not start"
 msgstr "Başladıla bilmədi"
 
-#: rustconn/src/window/remote_script.rs:141
+#: rustconn/src/window/remote_script.rs:150
 msgid "No SSH or WinRM connections are selected"
 msgstr "Heç bir SSH və ya WinRM bağlantısı seçilməyib"
 
-#: rustconn/src/window/remote_script.rs:163
+#: rustconn/src/window/remote_script.rs:172
 msgid "Hosts"
 msgstr "Hostlar"
 
-#: rustconn/src/window/remote_script.rs:170
+#: rustconn/src/window/remote_script.rs:179
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "Hostlar (SSH və ya WinRM istifadə etməyən, kənarda qalan: {})"
 
-#: rustconn/src/window/remote_script.rs:181
+#: rustconn/src/window/remote_script.rs:190
 msgid "Script File"
 msgstr "Skript faylı"
 
-#: rustconn/src/window/remote_script.rs:182
+#: rustconn/src/window/remote_script.rs:191
 msgid "Choose File"
 msgstr "Fayl seç"
 
-#: rustconn/src/window/remote_script.rs:192
+#: rustconn/src/window/remote_script.rs:201
 msgid "Hosts at Once"
 msgstr "Eyni anda hostlar"
 
-#: rustconn/src/window/remote_script.rs:195
+#: rustconn/src/window/remote_script.rs:204
 msgid "Time Limit per Host (minutes)"
 msgstr "Host üçün vaxt limiti (dəqiqə)"
 
-#: rustconn/src/window/remote_script.rs:200
+#: rustconn/src/window/remote_script.rs:209
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14685,42 +14685,51 @@ msgstr ""
 "saxlanmır. Heç vaxt qoşulmadığınız SSH hostu açarı məlum olana qədər rədd "
 "edilir."
 
-#: rustconn/src/window/remote_script.rs:208
+#: rustconn/src/window/remote_script.rs:217
 msgid "Passwords"
 msgstr "Parollar"
 
-#: rustconn/src/window/remote_script.rs:210
+#: rustconn/src/window/remote_script.rs:219
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
 msgstr ""
 "Qoşulma zamanı soruşan hostlar üçün. Sahəsi boş qalan host parol almır."
 
-#: rustconn/src/window/remote_script.rs:217
+#: rustconn/src/window/remote_script.rs:226
 msgid "Use One Password for All Hosts"
 msgstr "Bütün hostlar üçün bir parol istifadə et"
 
-#: rustconn/src/window/remote_script.rs:222
+#: rustconn/src/window/remote_script.rs:231
 msgid "Password for All Hosts"
 msgstr "Bütün hostlar üçün parol"
 
-#: rustconn/src/window/remote_script.rs:295
+#: rustconn/src/window/remote_script.rs:284
+msgid "Script Output"
+msgstr "Skript çıxışı"
+
+#: rustconn/src/window/remote_script.rs:305
+#: rustconn/src/window/remote_script.rs:323
 msgid "Run Local Script"
 msgstr "Lokal skripti işlət"
 
-#: rustconn/src/window/remote_script.rs:358
+#: rustconn/src/window/remote_script.rs:365
+msgid "Output of {}"
+msgstr "{} çıxışı"
+
+#: rustconn/src/window/remote_script.rs:376
 msgid "Choose Script"
 msgstr "Skript seç"
 
-#: rustconn/src/window/remote_script.rs:396
+#: rustconn/src/window/remote_script.rs:414
 msgid "None of the selected hosts can run this type of script"
 msgstr "Seçilmiş hostların heç biri bu növ skripti işlədə bilmir"
 
-#: rustconn/src/window/remote_script.rs:470
+#: rustconn/src/window/remote_script.rs:488
 msgid "Run ‘{}’?"
 msgstr "‘{}’ işlədilsin?"
 
-#: rustconn/src/window/remote_script.rs:472
+#: rustconn/src/window/remote_script.rs:490
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14728,17 +14737,21 @@ msgstr ""
 "Bu hostlarda giriş istifadəçiləri adından işləyəcək və dəyişiklikləri geri "
 "qaytarıla bilməz: {}"
 
-#: rustconn/src/window/remote_script.rs:509
+#: rustconn/src/window/remote_script.rs:529
 msgid "Waiting"
 msgstr "Gözləyir"
 
-#: rustconn/src/window/remote_script.rs:748
+#: rustconn/src/window/remote_script.rs:764
 msgid "[further output dropped]"
 msgstr "[sonrakı çıxış atıldı]"
 
-#: rustconn/src/window/remote_script.rs:790
+#: rustconn/src/window/remote_script.rs:802
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Uğurlu: {}, uğursuz: {}"
+
+#: rustconn/src/window/remote_script.rs:820
+msgid "Script finished. {}"
+msgstr "Skript başa çatdı. {}"
 
 #: rustconn/src/window/resume_monitor.rs:111
 msgid "Computer resumed from sleep — checking remote sessions"

@@ -41,8 +41,17 @@ const EVENT_POLL: Duration = Duration::from_millis(50);
 const EVENTS_PER_POLL: usize = 500;
 
 /// One line of the host list.
+///
+/// The status is the row's subtitle, which a screen reader reads with the
+/// host's name; a suffix label is not part of what the row announces.
 struct HostRow {
-    status: gtk4::Label,
+    row: adw::ActionRow,
+}
+
+impl HostRow {
+    fn set_status(&self, text: &str) {
+        self.row.set_subtitle(text);
+    }
 }
 
 /// The window of one run.
@@ -272,6 +281,7 @@ pub(super) fn open_dialog(
         .top_margin(8)
         .bottom_margin(8)
         .build();
+    output_view.update_property(&[gtk4::accessible::Property::Label(&i18n("Script Output"))]);
     let results = gtk4::Paned::builder()
         .orientation(gtk4::Orientation::Horizontal)
         .position(280)
@@ -310,6 +320,7 @@ pub(super) fn open_dialog(
     toolbar.add_top_bar(&header);
     toolbar.set_content(Some(&stack));
     let dialog = adw::Dialog::builder()
+        .title(i18n("Run Local Script"))
         .content_width(820)
         .content_height(540)
         .child(&toolbar)
@@ -348,6 +359,13 @@ pub(super) fn open_dialog(
             view.selected.set(index);
             let text = view.output.borrow().get(index).cloned().unwrap_or_default();
             view.output_view.buffer().set_text(&text);
+            if let Some(host_row) = view.rows.borrow().get(index) {
+                view.output_view
+                    .update_property(&[gtk4::accessible::Property::Label(&i18n_f(
+                        "Output of {}",
+                        &[&host_row.row.title()],
+                    ))]);
+            }
         }
     });
     browse.connect_clicked({
@@ -506,15 +524,13 @@ fn begin_run(
     options: RunOptions,
 ) {
     for name in host_names {
-        let status = gtk4::Label::builder().label(i18n("Waiting")).build();
-        status.add_css_class("dim-label");
         let row = adw::ActionRow::builder()
             .title(name)
+            .subtitle(i18n("Waiting"))
             .use_markup(false)
             .build();
-        row.add_suffix(&status);
         view.list.append(&row);
-        view.rows.borrow_mut().push(HostRow { status });
+        view.rows.borrow_mut().push(HostRow { row });
         view.output.borrow_mut().push(String::new());
     }
     view.list.select_row(view.list.row_at_index(0).as_ref());
@@ -614,7 +630,7 @@ fn build_hosts(
     glib::idle_add_local(move || {
         if view.cancel.load(Ordering::Relaxed) {
             for row in view.rows.borrow().iter() {
-                row.status.set_text(&i18n("Cancelled"));
+                row.set_status(&i18n("Cancelled"));
             }
             finish(&view);
             return glib::ControlFlow::Break;
@@ -740,7 +756,7 @@ fn apply_event(view: &Rc<RunView>, event: ScriptEvent, row_of_host: &[usize]) {
     match event {
         ScriptEvent::Started { host } => {
             if let Some(row) = view.rows.borrow().get(row_of_host[host]) {
-                row.status.set_text(&i18n("Running"));
+                row.set_status(&i18n("Running"));
             }
         }
         ScriptEvent::Output { host, line, .. } => append_output(view, row_of_host[host], &line),
@@ -776,29 +792,34 @@ fn record_outcome(view: &Rc<RunView>, row: usize, outcome: ScriptOutcome) {
         view.failed.set(view.failed.get() + 1);
     }
     if let Some(host_row) = view.rows.borrow().get(row) {
-        host_row.status.set_text(&outcome_text(outcome));
-        host_row.status.remove_css_class("dim-label");
-        host_row
-            .status
-            .add_css_class(if succeeded { "success" } else { "error" });
+        host_row.set_status(&outcome_text(outcome));
     }
     show_progress(view);
 }
 
-fn show_progress(view: &RunView) {
-    view.title.set_subtitle(&i18n_f(
+fn progress_text(view: &RunView) -> String {
+    i18n_f(
         "Succeeded: {}, not succeeded: {}",
         &[
             &view.succeeded.get().to_string(),
             &view.failed.get().to_string(),
         ],
-    ));
+    )
+}
+
+fn show_progress(view: &RunView) {
+    view.title.set_subtitle(&progress_text(view));
 }
 
 fn finish(view: &RunView) {
     show_progress(view);
     view.stop_button.set_visible(false);
     view.dialog.set_can_close(true);
+    // The header subtitle changes silently; say once that the run is over.
+    view.list.announce(
+        &i18n_f("Script finished. {}", &[&progress_text(view)]),
+        gtk4::AccessibleAnnouncementPriority::Medium,
+    );
 }
 
 #[cfg(test)]
