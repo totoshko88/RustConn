@@ -1365,8 +1365,6 @@ fn apply_fallback_jump_hosts(
     clear: bool,
     resolved: Vec<uuid::Uuid>,
 ) -> Result<(), CliError> {
-    use rustconn_core::connection::ssh_inheritance::own_jump_host_id;
-
     if clear {
         connection.fallback_jump_host_ids.clear();
         return Ok(());
@@ -1374,7 +1372,7 @@ fn apply_fallback_jump_hosts(
     if resolved.is_empty() {
         return Ok(());
     }
-    if own_jump_host_id(connection).is_none() {
+    if connection.jump_host_id().is_none() {
         return Err(CliError::Config(
             "--fallback-jump-host requires a Jump Host on the connection; set one with --jump-host"
                 .into(),

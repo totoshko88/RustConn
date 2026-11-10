@@ -109,7 +109,7 @@ enum FailoverPage {
 impl FailoverPage {
     /// The page whose Jump Host is the connection's own for `protocol_id`, or
     /// `None` when the protocol never fails over (the same set as
-    /// `rustconn_core::connection::ssh_inheritance::own_jump_host_id`).
+    /// `rustconn_core::models::Connection::jump_host_id`).
     fn of(protocol_id: &str) -> Option<Self> {
         match protocol_id {
             "ssh" | "sftp" => Some(Self::Ssh),

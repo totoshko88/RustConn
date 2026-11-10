@@ -16,9 +16,7 @@ use std::collections::HashSet;
 
 use uuid::Uuid;
 
-use super::jump_chain::{
-    MAX_HOPS, hop_spec, jump_host_id_of, proxy_jump_of, routes_through_jump_host,
-};
+use super::jump_chain::{MAX_HOPS, hop_spec, proxy_jump_of, routes_through_jump_host};
 use super::port_check::check_ssh_banner;
 use super::ssh_inheritance::resolve_ssh_jump_host_candidates;
 use crate::config::NetworkSettings;
@@ -89,7 +87,8 @@ fn entry_point<'a>(
         if proxy_jump_of(current).is_some_and(|p| !p.trim().is_empty()) {
             return None;
         }
-        let Some(next) = jump_host_id_of(current)
+        let Some(next) = current
+            .jump_host_id()
             .filter(|id| visited.insert(*id))
             .and_then(lookup)
         else {
@@ -176,14 +175,7 @@ pub fn probe_gateways(probes: &[GatewayProbe], timeout_secs: u32) -> Option<Gate
 /// Call on a launch's private clone: the stored connection must keep its
 /// configured primary. Protocols without a jump host are left alone.
 pub fn use_gateway(connection: &mut Connection, gateway_id: Uuid) {
-    match &mut connection.protocol_config {
-        ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id = Some(gateway_id),
-        ProtocolConfig::Rdp(c) => c.jump_host_id = Some(gateway_id),
-        ProtocolConfig::Vnc(c) => c.jump_host_id = Some(gateway_id),
-        ProtocolConfig::Spice(c) => c.jump_host_id = Some(gateway_id),
-        ProtocolConfig::WinRm(c) => c.jump_host_id = Some(gateway_id),
-        _ => {}
-    }
+    connection.set_jump_host_id(gateway_id);
 }
 
 /// Describes every configured gateway route, for detecting a re-pointed
@@ -229,7 +221,7 @@ fn describe_gateway_chain<'a>(
             break;
         };
         hops.push(hop_spec(hop));
-        current = jump_host_id_of(hop);
+        current = hop.jump_host_id();
     }
     hops.join(" > ")
 }

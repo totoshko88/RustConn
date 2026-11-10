@@ -735,6 +735,35 @@ impl Connection {
         !key_configured
     }
 
+    /// Returns the connection's own Jump Host, for any protocol that has one.
+    ///
+    /// Its `fallback_jump_host_ids` are used only together with this one; with
+    /// none, the jump host and its fallbacks come from the group chain.
+    #[must_use]
+    pub fn jump_host_id(&self) -> Option<Uuid> {
+        match &self.protocol_config {
+            ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
+            ProtocolConfig::Rdp(c) => c.jump_host_id,
+            ProtocolConfig::Vnc(c) => c.jump_host_id,
+            ProtocolConfig::Spice(c) => c.jump_host_id,
+            ProtocolConfig::WinRm(c) => c.jump_host_id,
+            _ => None,
+        }
+    }
+
+    /// Sets the connection's own Jump Host. Does nothing for a protocol
+    /// without one.
+    pub fn set_jump_host_id(&mut self, id: Uuid) {
+        match &mut self.protocol_config {
+            ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id = Some(id),
+            ProtocolConfig::Rdp(c) => c.jump_host_id = Some(id),
+            ProtocolConfig::Vnc(c) => c.jump_host_id = Some(id),
+            ProtocolConfig::Spice(c) => c.jump_host_id = Some(id),
+            ProtocolConfig::WinRm(c) => c.jump_host_id = Some(id),
+            _ => {}
+        }
+    }
+
     /// Creates a new connection with the given parameters
     #[must_use]
     pub fn new(name: String, host: String, port: u16, protocol_config: ProtocolConfig) -> Self {
@@ -1419,6 +1448,35 @@ mod tests {
 
     fn create_test_connection() -> Connection {
         Connection::new_ssh("Test Server".to_string(), "example.com".to_string(), 22)
+    }
+
+    #[test]
+    fn jump_host_accessors_cover_every_protocol_with_a_jump_host() {
+        let host = || "h.example.com".to_string();
+        let winrm = Connection::new(
+            "winrm".to_string(),
+            host(),
+            5985,
+            ProtocolConfig::WinRm(super::super::protocol::WinRmConfig::default()),
+        );
+        let with_jump = [
+            Connection::new_ssh("ssh".to_string(), host(), 22),
+            Connection::new_sftp("sftp".to_string(), host(), 22),
+            Connection::new_rdp("rdp".to_string(), host(), 3389),
+            Connection::new_vnc("vnc".to_string(), host(), 5900),
+            Connection::new_spice("spice".to_string(), host(), 5900),
+            winrm,
+        ];
+        for mut conn in with_jump {
+            assert_eq!(conn.jump_host_id(), None, "{}", conn.name);
+            let id = Uuid::new_v4();
+            conn.set_jump_host_id(id);
+            assert_eq!(conn.jump_host_id(), Some(id), "{}", conn.name);
+        }
+
+        let mut telnet = Connection::new_telnet("telnet".to_string(), host(), 23);
+        telnet.set_jump_host_id(Uuid::new_v4());
+        assert_eq!(telnet.jump_host_id(), None);
     }
 
     /// A duplicate of a favorite must not be a favorite itself.

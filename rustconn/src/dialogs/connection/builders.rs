@@ -666,12 +666,11 @@ impl ConnectionDialogData<'_> {
         };
         // Fallbacks are used only behind the connection's own Jump Host, as
         // the editor's visibility shows; a hidden list is not kept.
-        conn.fallback_jump_host_ids =
-            if rustconn_core::connection::ssh_inheritance::own_jump_host_id(&conn).is_some() {
-                self.fallback_jump_hosts.value()
-            } else {
-                Vec::new()
-            };
+        conn.fallback_jump_host_ids = if conn.jump_host_id().is_some() {
+            self.fallback_jump_hosts.value()
+        } else {
+            Vec::new()
+        };
 
         // Set local variables
         conn.local_variables = self.local_variables.clone();

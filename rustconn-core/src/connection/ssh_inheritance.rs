@@ -167,22 +167,6 @@ fn own_proxy_jump(connection: &Connection) -> Option<String> {
     }
 }
 
-/// Returns the connection's own `jump_host_id`, for any protocol that has one.
-///
-/// Its `fallback_jump_host_ids` are used only together with this one; with
-/// none, the jump host and its fallbacks come from the group chain.
-#[must_use]
-pub fn own_jump_host_id(connection: &Connection) -> Option<Uuid> {
-    match &connection.protocol_config {
-        ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
-        ProtocolConfig::Rdp(c) => c.jump_host_id,
-        ProtocolConfig::Vnc(c) => c.jump_host_id,
-        ProtocolConfig::Spice(c) => c.jump_host_id,
-        ProtocolConfig::WinRm(c) => c.jump_host_id,
-        _ => None,
-    }
-}
-
 /// Resolves the free-text `ProxyJump` for a connection.
 ///
 /// Order: the connection's own `proxy_jump`, then the group chain's
@@ -222,7 +206,7 @@ pub fn resolve_ssh_jump_host_id(
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
 ) -> Option<Uuid> {
-    if let Some(own) = own_jump_host_id(connection) {
+    if let Some(own) = connection.jump_host_id() {
         return Some(own);
     }
     if connection.network_mode == NetworkMode::Direct {
@@ -248,7 +232,7 @@ pub fn resolve_ssh_jump_host_candidates(
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
 ) -> Vec<Uuid> {
-    let tier = if let Some(own) = own_jump_host_id(connection) {
+    let tier = if let Some(own) = connection.jump_host_id() {
         Some((own, connection.fallback_jump_host_ids.clone()))
     } else if connection.network_mode == NetworkMode::Direct {
         None

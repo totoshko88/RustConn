@@ -96,18 +96,6 @@ pub(super) fn hop_spec(conn: &Connection) -> String {
     spec
 }
 
-/// Returns the `jump_host_id` of an SSH-family connection.
-pub(super) fn jump_host_id_of(conn: &Connection) -> Option<Uuid> {
-    match &conn.protocol_config {
-        ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
-        ProtocolConfig::Rdp(c) => c.jump_host_id,
-        ProtocolConfig::Vnc(c) => c.jump_host_id,
-        ProtocolConfig::Spice(c) => c.jump_host_id,
-        ProtocolConfig::WinRm(c) => c.jump_host_id,
-        _ => None,
-    }
-}
-
 /// Returns the free-text `proxy_jump` of an SSH-family connection.
 pub(super) fn proxy_jump_of(conn: &Connection) -> Option<&str> {
     match &conn.protocol_config {
@@ -185,7 +173,7 @@ pub fn resolve_jump_chain(
             chain.hop_ids.insert(insert_at, None);
         }
 
-        current = jump_host_id_of(hop);
+        current = hop.jump_host_id();
     }
 
     chain
@@ -332,7 +320,7 @@ fn classify_first_bastion_origin(
 ) -> Option<(Uuid, BastionRefOrigin)> {
     use crate::models::NetworkMode;
 
-    if let Some(id) = jump_host_id_of(connection) {
+    if let Some(id) = connection.jump_host_id() {
         return Some((id, BastionRefOrigin::Connection));
     }
     if connection.network_mode == NetworkMode::Direct {
@@ -502,7 +490,7 @@ pub fn find_dangling_bastions_by<'a>(
         // The hop resolved; follow its own `jump_host_id` outward. Deeper hops
         // are always own-field references (a bastion's bastion), so the origin
         // is Connection and the source is this hop.
-        let Some(next_id) = jump_host_id_of(hop) else {
+        let Some(next_id) = hop.jump_host_id() else {
             break;
         };
         source_id = hop.id;
