@@ -43,16 +43,51 @@ const EVENTS_PER_POLL: usize = 500;
 /// One line of the host list.
 ///
 /// The status is the row's subtitle, which a screen reader reads with the
-/// host's name; a suffix label is not part of what the row announces.
+/// host's name; a suffix label is not part of what the row announces. The
+/// icon repeats it as a shape, so a screen reader skips it.
 struct HostRow {
     row: adw::ActionRow,
+    icon: gtk4::Image,
 }
 
 impl HostRow {
-    fn set_status(&self, text: &str) {
+    fn new(name: &str) -> Self {
+        let icon = gtk4::Image::builder()
+            .accessible_role(gtk4::AccessibleRole::Presentation)
+            .visible(false)
+            .build();
+        let row = adw::ActionRow::builder()
+            .title(name)
+            .subtitle(i18n("Waiting"))
+            .use_markup(false)
+            .build();
+        row.add_prefix(&icon);
+        Self { row, icon }
+    }
+
+    /// Sets the status text and its icon; `None` hides the icon.
+    fn set_status(&self, text: &str, icon: Option<&str>) {
         self.row.set_subtitle(text);
+        self.icon.set_icon_name(icon);
+        self.icon.set_visible(icon.is_some());
     }
 }
+
+/// The icon of a finished host: a check for success, a warning for a run that
+/// was stopped and an error for everything else, so a failed host stands out
+/// without relying on colour.
+fn outcome_icon(outcome: ScriptOutcome) -> &'static str {
+    match outcome {
+        ScriptOutcome::Succeeded => "object-select-symbolic",
+        ScriptOutcome::TimedOut | ScriptOutcome::Cancelled => "dialog-warning-symbolic",
+        ScriptOutcome::ScriptFailed { .. }
+        | ScriptOutcome::ConnectionFailed
+        | ScriptOutcome::NotStarted => "dialog-error-symbolic",
+    }
+}
+
+/// The icon of a host whose script is running.
+const RUNNING_ICON: &str = "content-loading-symbolic";
 
 /// The window of one run.
 struct RunView {
@@ -576,13 +611,9 @@ fn begin_run(
     options: RunOptions,
 ) {
     for name in host_names {
-        let row = adw::ActionRow::builder()
-            .title(name)
-            .subtitle(i18n("Waiting"))
-            .use_markup(false)
-            .build();
-        view.list.append(&row);
-        view.rows.borrow_mut().push(HostRow { row });
+        let host_row = HostRow::new(name);
+        view.list.append(&host_row.row);
+        view.rows.borrow_mut().push(host_row);
         view.output.borrow_mut().push(String::new());
     }
     view.list.select_row(view.list.row_at_index(0).as_ref());
@@ -682,7 +713,10 @@ fn build_hosts(
     glib::idle_add_local(move || {
         if view.cancel.load(Ordering::Relaxed) {
             for row in view.rows.borrow().iter() {
-                row.set_status(&i18n("Cancelled"));
+                row.set_status(
+                    &i18n("Cancelled"),
+                    Some(outcome_icon(ScriptOutcome::Cancelled)),
+                );
             }
             finish(&view);
             return glib::ControlFlow::Break;
@@ -808,7 +842,7 @@ fn apply_event(view: &Rc<RunView>, event: ScriptEvent, row_of_host: &[usize]) {
     match event {
         ScriptEvent::Started { host } => {
             if let Some(row) = view.rows.borrow().get(row_of_host[host]) {
-                row.set_status(&i18n("Running"));
+                row.set_status(&i18n("Running"), Some(RUNNING_ICON));
             }
         }
         ScriptEvent::Output { host, line, .. } => append_output(view, row_of_host[host], &line),
@@ -847,7 +881,7 @@ fn record_outcome(view: &Rc<RunView>, row: usize, outcome: ScriptOutcome) {
         view.failed.set(view.failed.get() + 1);
     }
     if let Some(host_row) = view.rows.borrow().get(row) {
-        host_row.set_status(&outcome_text(outcome));
+        host_row.set_status(&outcome_text(outcome), Some(outcome_icon(outcome)));
     }
     show_progress(view);
 }
@@ -868,6 +902,11 @@ fn show_progress(view: &RunView) {
 
 /// Asks whether to stop a run the user tried to close.
 fn confirm_stop(view: &Rc<RunView>) {
+    // Stop was already pressed: the answer is known, close once it has stopped.
+    if view.cancel.load(Ordering::Relaxed) {
+        stop_and_close(view);
+        return;
+    }
     let alert = adw::AlertDialog::new(
         Some(&i18n("Stop the Script?")),
         Some(&i18n(
@@ -882,20 +921,24 @@ fn confirm_stop(view: &Rc<RunView>) {
     alert.connect_response(None, {
         let view = Rc::clone(view);
         move |_, response| {
-            if response != "stop" {
-                return;
-            }
-            view.cancel.store(true, Ordering::Relaxed);
-            view.stop_button.set_sensitive(false);
-            // The run may have ended while the question was open.
-            if view.dialog.can_close() {
-                view.dialog.close();
-            } else {
-                view.close_when_done.set(true);
+            if response == "stop" {
+                stop_and_close(&view);
             }
         }
     });
     alert.present(Some(&view.dialog));
+}
+
+/// Stops the run and closes the window, at once if the run has already ended.
+fn stop_and_close(view: &RunView) {
+    view.cancel.store(true, Ordering::Relaxed);
+    view.stop_button.set_sensitive(false);
+    // The run may have ended while the question was open.
+    if view.dialog.can_close() {
+        view.dialog.close();
+    } else {
+        view.close_when_done.set(true);
+    }
 }
 
 fn finish(view: &RunView) {
@@ -944,5 +987,33 @@ mod tests {
         assert_eq!(typed[&b].expose_secret(), "shared");
         let none = typed_passwords([(a, secret("ignored"))].into_iter(), Some(secret("")));
         assert!(none.is_empty(), "an empty shared field sends nothing");
+    }
+
+    #[test]
+    fn every_outcome_has_an_icon_and_failures_differ_from_success() {
+        use rustconn_core::remote_script::ScriptOutcome;
+
+        let success = super::outcome_icon(ScriptOutcome::Succeeded);
+        for outcome in [
+            ScriptOutcome::ScriptFailed { code: Some(1) },
+            ScriptOutcome::ScriptFailed { code: None },
+            ScriptOutcome::ConnectionFailed,
+            ScriptOutcome::TimedOut,
+            ScriptOutcome::Cancelled,
+            ScriptOutcome::NotStarted,
+        ] {
+            let icon = super::outcome_icon(outcome);
+            assert!(icon.ends_with("-symbolic"), "{outcome:?}: {icon}");
+            assert_ne!(icon, success, "{outcome:?}");
+            assert_ne!(icon, super::RUNNING_ICON, "{outcome:?}");
+        }
+        assert_eq!(
+            super::outcome_icon(ScriptOutcome::ConnectionFailed),
+            "dialog-error-symbolic"
+        );
+        assert_eq!(
+            super::outcome_icon(ScriptOutcome::TimedOut),
+            "dialog-warning-symbolic"
+        );
     }
 }
