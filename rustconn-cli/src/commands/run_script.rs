@@ -10,18 +10,17 @@ use rustconn_core::config::{AppSettings, NetworkSettings};
 use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gateways, use_gateway};
 use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
+use rustconn_core::jump_route::{JumpRoute, JumpRouteRequest, jump_route};
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
     self, LaunchError, OutputStream, RunOptions, ScriptEvent, ScriptEventSink, ScriptHost,
     ScriptKind, ScriptOutcome, ScriptTransport, WinRmTarget,
 };
 use rustconn_core::secret::{CredentialResolver, SecretManager};
-use rustconn_core::ssh_askpass::{self, AskpassSlot};
 use rustconn_core::ssh_key_setup::{DeployCredentials, SshTarget};
 use rustconn_core::ssh_tunnel::{
-    HopHostKeys, SshTunnelParams, append_proxy_command_destination, askpass_disabled_proxy_prefix,
-    askpass_proxy_prefix, build_nested_proxy_command_with_askpass, proxy_hop_host_key_option,
-    proxy_jump_arg, shell_single_quote, ssh_config_declares_proxy, target_password_askpass_allowed,
+    HopHostKeys, SshTunnelParams, proxy_jump_arg, ssh_config_declares_proxy,
+    target_password_askpass_allowed,
 };
 use rustconn_core::variables::{Variable, VariableManager, VariableScope};
 use secrecy::{ExposeSecret, SecretString};
@@ -417,57 +416,25 @@ fn within<T>(
     runtime.block_on(async { tokio::time::timeout(limit, lookup).await.ok() })
 }
 
-/// A `ProxyCommand` that reaches `hops[0]` through the rest of `hops`, each with
-/// its own askpass helper or with askpass switched off.
-///
-/// Under `-J` each bastion's `ssh` inherits the askpass environment and would be
-/// handed the target's password, so a run with any password goes through this
-/// instead. Every hop gets `StrictHostKeyChecking=yes`. A run with no password
-/// keeps `-J`, whose hops take no `-o` and follow the user's ssh configuration,
-/// as in `rustconn_core::sftp`. `None` when a hop holds anything a shell could
-/// interpret.
-fn bastion_proxy_command(
-    hops: &[&str],
-    helpers: &[Option<&Path>],
-    first_hop_key: Option<&str>,
-) -> Option<String> {
-    let is_safe = |c: char| c.is_ascii_alphanumeric() || ".-_:@[]".contains(c);
-    if hops.is_empty()
-        || hops
+/// A character a shell passes through unchanged inside a `ProxyCommand`.
+fn is_plain(c: char) -> bool {
+    c.is_ascii_alphanumeric() || ".-_:@[]".contains(c)
+}
+
+/// Whether every hop is a plain `[user@]host[:port]` that is safe to put into
+/// a `ProxyCommand`, which ssh runs through a shell.
+fn hops_are_plain(hops: &[String]) -> bool {
+    !hops.is_empty()
+        && hops
             .iter()
-            .any(|hop| hop.is_empty() || hop.starts_with('-') || !hop.chars().all(is_safe))
-    {
-        return None;
-    }
-    let mut parts = match helpers.first().copied().flatten() {
-        Some(helper) => askpass_proxy_prefix(helper, 0, hops.len()),
-        None => askpass_disabled_proxy_prefix(hops.len()),
-    };
-    parts.extend(["ssh", "-W", "%h:%p", "-o", "ConnectTimeout=15"].map(String::from));
-    // Nobody watches a run, so no hop may accept a key the user has not:
-    // an unknown one fails before any password is sent, without the
-    // host-key question a helper would answer with the password (#203).
-    if let Some(option) = proxy_hop_host_key_option(HopHostKeys::KnownOnly, true) {
-        parts.extend(["-o".to_string(), option.to_string()]);
-    }
-    if let Some(key) = first_hop_key.filter(|key| key.chars().all(|c| is_safe(c) || c == '/')) {
-        parts.extend(["-i".to_string(), key.to_string()]);
-    }
-    if hops.len() > 1 {
-        let inner = build_nested_proxy_command_with_askpass(
-            &hops[1..],
-            None,
-            None,
-            HopHostKeys::KnownOnly,
-            &helpers[1..],
-            1,
-            hops.len(),
-        );
-        parts.push("-o".to_string());
-        parts.push(format!("ProxyCommand={}", shell_single_quote(&inner)));
-    }
-    append_proxy_command_destination(&mut parts, hops[0]);
-    Some(parts.join(" "))
+            .all(|hop| !hop.is_empty() && !hop.starts_with('-') && hop.chars().all(is_plain))
+}
+
+/// `path` when a shell would pass it through a `ProxyCommand` unchanged.
+fn plain_path(path: &str) -> Option<&str> {
+    path.chars()
+        .all(|c| is_plain(c) || c == '/')
+        .then_some(path)
 }
 
 /// Picks the reachable jump host for `connection`, on a copy of it.
@@ -626,35 +593,6 @@ fn script_host(
     ssh_script_host(&routed, connections, groups, network, passwords)
 }
 
-/// Askpass helpers and passwords for the hops of `chain`; slots stay aligned.
-fn hop_askpass(
-    chain: &JumpChain,
-    connections: &[Connection],
-    passwords: &mut Passwords<'_>,
-) -> (
-    Vec<Option<std::path::PathBuf>>,
-    Vec<(AskpassSlot, SecretString)>,
-) {
-    let mut helpers = Vec::with_capacity(chain.hops.len());
-    let mut secrets = Vec::new();
-    for (index, id) in chain.hop_ids.iter().enumerate() {
-        let password = id
-            .and_then(|id| connections.iter().find(|c| c.id == id))
-            .and_then(|hop| passwords.of(hop));
-        let slot = AskpassSlot::JumpHost(index);
-        // No helper, no exposure: the hop then has to use a key or the agent.
-        let helper = password
-            .is_some()
-            .then(|| ssh_askpass::helper_script(slot).ok())
-            .flatten();
-        if let (Some(password), Some(_)) = (password, &helper) {
-            secrets.push((slot, password));
-        }
-        helpers.push(helper);
-    }
-    (helpers, secrets)
-}
-
 /// Drops the target's password when OpenSSH's own config routes the host
 /// through a proxy, as the GUI runner does.
 ///
@@ -680,6 +618,53 @@ fn withhold_from_config_proxy(
         return None;
     }
     Some(password)
+}
+
+/// The route through `chain`, whose hops are plain, built the way the GUI
+/// builds it. Nobody watches a run, so every `ProxyCommand` hop refuses a host
+/// key the user has not accepted. A key path or PKCS#11 provider a shell could
+/// interpret is left out of the `ProxyCommand`.
+fn plain_jump_route(
+    chain: &JumpChain,
+    hop_passwords: &[Option<SecretString>],
+    connections: &[Connection],
+    groups: &[ConnectionGroup],
+    session_args: &[String],
+    target_askpass_allowed: bool,
+) -> Option<JumpRoute> {
+    let first_hop = chain
+        .hop_ids
+        .first()
+        .copied()
+        .flatten()
+        .and_then(|id| connections.iter().find(|c| c.id == id));
+    let first_hop_identity = first_hop
+        .and_then(|hop| resolve_ssh_key_path(hop, groups))
+        .and_then(|path| rustconn_core::resolve_key_path(&path))
+        .map(|path| path.to_string_lossy().into_owned());
+    let first_hop_pkcs11 = first_hop.and_then(|hop| match &hop.protocol_config {
+        ProtocolConfig::Ssh(c) => c.pkcs11_provider.clone(),
+        _ => None,
+    });
+    let target_identity = session_args
+        .iter()
+        .position(|arg| arg == "-i")
+        .and_then(|position| session_args.get(position + 1));
+    jump_route(&JumpRouteRequest {
+        hops: &chain.hops,
+        hop_passwords,
+        first_hop_identity: first_hop_identity.as_deref().and_then(plain_path),
+        target_identity: target_identity.map(String::as_str).and_then(plain_path),
+        deeper_hop_identity: None,
+        first_hop_pkcs11: first_hop_pkcs11
+            .as_deref()
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+            .and_then(plain_path),
+        known_hosts: None,
+        hop_host_keys: HopHostKeys::KnownOnly,
+        target_askpass_allowed,
+    })
 }
 
 /// Builds the launch of an SSH host: its options, key, jump hosts and passwords.
@@ -718,39 +703,50 @@ fn ssh_script_host(
         chain.hops.is_empty(),
         ssh_config_declares_proxy,
     );
-    let (helpers, mut jump_host_passwords) = hop_askpass(&chain, connections, passwords);
+    let mut jump_host_passwords = Vec::new();
     if !chain.hops.is_empty() {
-        let plain_jump = chain.proxy_jump_value();
-        if password.is_some() || !jump_host_passwords.is_empty() {
-            let hops: Vec<&str> = chain.hops.iter().map(String::as_str).collect();
-            let helper_refs: Vec<Option<&Path>> = helpers.iter().map(|h| h.as_deref()).collect();
-            let first_hop_key = chain
-                .hop_ids
-                .first()
-                .copied()
-                .flatten()
-                .and_then(|id| connections.iter().find(|c| c.id == id))
-                .and_then(|hop| resolve_ssh_key_path(hop, groups))
-                .and_then(|path| rustconn_core::resolve_key_path(&path))
-                .map(|path| path.to_string_lossy().into_owned());
-            if let Some(command) =
-                bastion_proxy_command(&hops, &helper_refs, first_hop_key.as_deref())
-            {
-                session_args.push("-o".to_string());
-                session_args.push(format!("ProxyCommand={command}"));
-            } else {
+        let find = |id: Option<Uuid>| id.and_then(|id| connections.iter().find(|c| c.id == id));
+        let hop_passwords: Vec<Option<SecretString>> = chain
+            .hop_ids
+            .iter()
+            .map(|id| find(*id).and_then(|hop| passwords.of(hop)))
+            .collect();
+        if hops_are_plain(&chain.hops) {
+            let route = plain_jump_route(
+                &chain,
+                &hop_passwords,
+                connections,
+                groups,
+                &session_args,
+                password.is_some(),
+            );
+            match route {
+                Some(JumpRoute::ProxyCommand {
+                    command,
+                    passwords: hop_secrets,
+                }) => {
+                    session_args.push("-o".to_string());
+                    session_args.push(format!("ProxyCommand={command}"));
+                    jump_host_passwords = hop_secrets;
+                }
+                // The CLI loads no key into the agent, so `identity_for_agent`
+                // is left to the user's own agent.
+                Some(JumpRoute::ProxyJump { value, .. }) => {
+                    session_args.push("-J".to_string());
+                    session_args.push(value);
+                }
+                None => {}
+            }
+        } else {
+            if password.is_some() || hop_passwords.iter().any(Option::is_some) {
                 eprintln!(
                     "[{}] not sending passwords: unexpected jump host address",
                     routed.name
                 );
                 password = None;
-                jump_host_passwords.clear();
-                session_args.push("-J".to_string());
-                session_args.extend(plain_jump);
             }
-        } else {
             session_args.push("-J".to_string());
-            session_args.extend(plain_jump);
+            session_args.extend(chain.proxy_jump_value());
         }
     }
 
@@ -774,12 +770,11 @@ fn ssh_script_host(
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
-    use std::path::Path;
 
     use rustconn_core::models::Connection;
     use secrecy::{ExposeSecret, SecretString};
 
-    use super::{bastion_proxy_command, withhold_from_config_proxy, within};
+    use super::{hops_are_plain, plain_path, withhold_from_config_proxy, within};
 
     fn target() -> Connection {
         let mut connection = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 2222);
@@ -944,51 +939,19 @@ mod tests {
     }
 
     #[test]
-    fn a_single_hop_goes_straight_to_the_bastion() {
-        let command = bastion_proxy_command(&["alice@jump:2222"], &[None], None).unwrap();
-        assert!(command.starts_with("env "), "{command}");
-        assert!(command.contains("SSH_ASKPASS= "), "{command}");
-        assert!(command.contains("-W %h:%p"), "{command}");
-        assert!(command.contains("alice@jump"), "{command}");
-        assert!(command.contains("2222"), "{command}");
-    }
-
-    #[test]
-    fn a_hop_with_a_password_gets_its_helper() {
-        let helper = Path::new("/run/helper.sh");
-        let command = bastion_proxy_command(&["jump"], &[Some(helper)], None).unwrap();
-        assert!(command.contains("SSH_ASKPASS=/run/helper.sh"), "{command}");
-        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
-        assert!(!command.contains("accept-new"), "{command}");
-    }
-
-    #[test]
-    fn deeper_hops_are_nested() {
-        let command = bastion_proxy_command(&["near", "far"], &[None, None], None).unwrap();
-        assert!(command.contains("ProxyCommand="), "{command}");
-        assert!(command.contains("far"), "{command}");
-        assert!(command.trim_end().ends_with("near"), "{command}");
-    }
-
-    #[test]
-    fn every_hop_needs_a_known_host_key() {
-        let helper = Path::new("/run/helper-1.sh");
-        let command = bastion_proxy_command(&["near", "far"], &[None, Some(helper)], None).unwrap();
-        assert_eq!(
-            command.matches("StrictHostKeyChecking=yes").count(),
-            2,
-            "{command}"
-        );
-        assert!(!command.contains("accept-new"), "{command}");
-    }
-
-    #[test]
     fn anything_a_shell_could_interpret_is_refused() {
         for hop in ["jump;reboot", "$(reboot)", "-oProxyCommand=x", ""] {
-            assert!(
-                bastion_proxy_command(&[hop], &[None], None).is_none(),
-                "{hop}"
-            );
+            assert!(!hops_are_plain(&[hop.to_string()]), "{hop}");
         }
+        assert!(!hops_are_plain(&[]), "no hops is not a route");
+        assert!(hops_are_plain(&[
+            "alice@jump:2222".to_string(),
+            "[2001:db8::1]".to_string()
+        ]));
+        assert_eq!(
+            plain_path("/home/a/.ssh/id_ed25519"),
+            Some("/home/a/.ssh/id_ed25519")
+        );
+        assert_eq!(plain_path("/home/a/my key"), None);
     }
 }
