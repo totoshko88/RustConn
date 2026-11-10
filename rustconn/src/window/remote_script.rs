@@ -149,6 +149,20 @@ fn launch_error_text(error: &LaunchError) -> String {
     }
 }
 
+/// Shows `error` under the setup form and marks the script field, or clears
+/// both with `None`. Every setup error is about the chosen file. The label
+/// appears silently, so the error is also read out.
+fn show_setup_error(label: &gtk4::Label, path_row: &adw::EntryRow, error: Option<&str>) {
+    crate::dialogs::widgets::set_invalid(path_row, error.is_some());
+    label.set_visible(error.is_some());
+    if let Some(text) = error {
+        label.set_text(text);
+        path_row
+            .upcast_ref::<gtk4::Widget>()
+            .announce(text, gtk4::AccessibleAnnouncementPriority::High);
+    }
+}
+
 fn script_error_text(error: &ScriptFileError) -> String {
     match error {
         ScriptFileError::Unreadable(_) => i18n("The script could not be read"),
@@ -400,6 +414,18 @@ pub(super) fn open_dialog(
         .content_height(540)
         .child(&toolbar)
         .build();
+    // On a narrow window the output goes below the host list.
+    let breakpoint = adw::Breakpoint::new(adw::BreakpointCondition::new_length(
+        adw::BreakpointConditionLengthType::MaxWidth,
+        500.0,
+        adw::LengthUnit::Sp,
+    ));
+    breakpoint.add_setter(
+        &results,
+        "orientation",
+        Some(&gtk4::Orientation::Vertical.to_value()),
+    );
+    dialog.add_breakpoint(breakpoint);
 
     let view = Rc::new(RunView {
         dialog: dialog.clone(),
@@ -477,6 +503,10 @@ pub(super) fn open_dialog(
             );
         }
     });
+    path_row.connect_changed({
+        let error_label = error_label.clone();
+        move |row| show_setup_error(&error_label, row, None)
+    });
     run_button.connect_clicked({
         let view = Rc::clone(&view);
         let state = state.clone();
@@ -485,23 +515,25 @@ pub(super) fn open_dialog(
             let script = match remote_script::load_script(&path) {
                 Ok(script) => script,
                 Err(error) => {
-                    error_label.set_text(&script_error_text(&error));
-                    error_label.set_visible(true);
+                    show_setup_error(&error_label, &path_row, Some(&script_error_text(&error)));
                     return;
                 }
             };
-            error_label.set_visible(false);
             let (host_ids, host_names) = match ScriptKind::of_path(&path) {
                 ScriptKind::Bash => &bash_plan,
                 ScriptKind::PowerShell => &powershell_plan,
             };
             if host_ids.is_empty() {
-                error_label.set_text(&i18n(
-                    "None of the selected hosts can run this type of script",
-                ));
-                error_label.set_visible(true);
+                show_setup_error(
+                    &error_label,
+                    &path_row,
+                    Some(&i18n(
+                        "None of the selected hosts can run this type of script",
+                    )),
+                );
                 return;
             }
+            show_setup_error(&error_label, &path_row, None);
             // Each field's text goes straight into a `SecretString`, with no named
             // copy left to drop unzeroed. The GTK entry buffer itself cannot be
             // zeroed from Rust (secrets-guide.md); the fields are emptied once the
@@ -620,6 +652,8 @@ fn begin_run(
     view.stack.set_visible_child_name("results");
     view.run_button.set_visible(false);
     view.stop_button.set_visible(true);
+    // Run had focus and is gone; Stop is what the keyboard needs next.
+    view.stop_button.grab_focus();
     view.dialog.set_can_close(false);
 
     let outstanding = Rc::new(Cell::new(host_ids.len()));
@@ -949,6 +983,8 @@ fn finish(view: &RunView) {
         view.dialog.close();
         return;
     }
+    // Stop had focus and is gone; the results are what is left to read.
+    view.list.grab_focus();
     // The header subtitle changes silently; say once that the run is over.
     view.list.announce(
         &i18n_f("Script finished. {}", &[&progress_text(view)]),
