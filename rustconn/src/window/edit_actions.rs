@@ -1050,10 +1050,8 @@ impl MainWindow {
     /// True if `name` looks like a Chromium-family binary — the only kind that
     /// takes `--proxy-server` on the command line.
     fn is_chromium_browser(name: &str) -> bool {
-        let lower = name.to_lowercase();
-        ["chrom", "brave", "vivaldi", "edge"]
-            .iter()
-            .any(|marker| lower.contains(marker))
+        rustconn_core::protocol::browser_family(name)
+            == Some(rustconn_core::protocol::BrowserFamily::Chromium)
     }
 
     /// Resolves the external tunnel browser: the configured command when set,
@@ -1149,18 +1147,6 @@ impl MainWindow {
     /// found — Firefox and the portal browser cannot take a command-line SOCKS
     /// proxy, so there is nothing to launch through the tunnel.
     fn find_chromium_browser() -> Option<String> {
-        const CANDIDATES: &[&str] = &[
-            "chromium",
-            "chromium-browser",
-            "google-chrome",
-            "google-chrome-stable",
-            "brave-browser",
-            "vivaldi",
-            "vivaldi-stable",
-            "microsoft-edge",
-            "microsoft-edge-stable",
-        ];
-
         // Respect the user's system default browser first, when it is Chromium.
         if let Some(bin) = Self::system_default_chromium_browser() {
             return Some(bin);
@@ -1176,7 +1162,7 @@ impl MainWindow {
             }
         }
 
-        // The CANDIDATES above are Linux binary names resolved on PATH. On macOS
+        // The candidates below are Linux binary names resolved on PATH. On macOS
         // a Chromium-family browser is an `.app` bundle under /Applications, not
         // a binary on PATH — a GUI app's PATH does not even list it — so the
         // list never matches and detection silently fails. Probe the bundles
@@ -1187,10 +1173,9 @@ impl MainWindow {
             return Some(path);
         }
 
-        CANDIDATES
-            .iter()
+        rustconn_core::protocol::chromium_proxy_browsers()
             .find(|bin| rustconn_core::which::is_available(bin))
-            .map(|bin| (*bin).to_string())
+            .map(str::to_string)
     }
 
     /// Locates a Chromium-family browser installed as a macOS `.app` bundle.
@@ -1778,12 +1763,7 @@ impl MainWindow {
                 };
 
                 let mut cmd = std::process::Command::new(&browser);
-                let browser_lower = browser.to_lowercase();
-                let is_chromium = browser_lower.contains("chrom")
-                    || browser_lower.contains("brave")
-                    || browser_lower.contains("vivaldi")
-                    || browser_lower.contains("edge")
-                    || browser_lower.contains("opera");
+                let family = rustconn_core::protocol::browser_family(&browser);
 
                 // Route the browser through the proxy. A browser that cannot be
                 // pointed at one is not opened, so the page never loads directly.
@@ -1817,9 +1797,10 @@ impl MainWindow {
                 // throwaway profile is clean, where `--incognito` would rejoin the
                 // running process.
                 if web_config.private_mode {
-                    if browser_lower.contains("firefox") && !tunnelled_isolated {
+                    use rustconn_core::protocol::BrowserFamily;
+                    if family == Some(BrowserFamily::Firefox) && !tunnelled_isolated {
                         cmd.arg("--private-window");
-                    } else if is_chromium && !tunnelled_isolated {
+                    } else if family == Some(BrowserFamily::Chromium) && !tunnelled_isolated {
                         cmd.arg("--incognito");
                     }
                 }

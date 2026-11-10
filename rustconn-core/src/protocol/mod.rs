@@ -65,9 +65,10 @@ pub use ssh::SshProtocol;
 pub use telnet::TelnetProtocol;
 pub use vnc::VncProtocol;
 pub use web::{
-    BrowserProfile, SocksPasswordVariableError, WebProtocol, can_use_socks_proxy,
-    first_installed_proxy_browser, normalize_socks_proxy, proxied_browser_args,
-    remove_stale_browser_profiles, socks_password_variable, validate_socks_settings,
+    BrowserFamily, BrowserProfile, SocksPasswordVariableError, WebProtocol, browser_family,
+    can_use_socks_proxy, chromium_proxy_browsers, first_installed_proxy_browser,
+    normalize_socks_proxy, proxied_browser_args, remove_stale_browser_profiles,
+    socks_password_variable, validate_socks_settings,
 };
 pub(crate) use winrm::account_name as winrm_account_name;
 pub use winrm::{

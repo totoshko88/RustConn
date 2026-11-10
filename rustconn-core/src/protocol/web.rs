@@ -83,13 +83,18 @@ const PROXY_BROWSERS: &[&str] = &[
     "firefox",
 ];
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum BrowserFamily {
+/// How a browser takes a proxy for one launch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BrowserFamily {
+    /// Chromium and its derivatives: `--proxy-server`.
     Chromium,
+    /// Firefox and its derivatives: a profile with proxy preferences.
     Firefox,
 }
 
-fn browser_family(browser: &str) -> Option<BrowserFamily> {
+/// The family of `browser`, a binary name or path, judged by its name.
+#[must_use]
+pub fn browser_family(browser: &str) -> Option<BrowserFamily> {
     let name = browser.to_lowercase();
     if ["chrom", "brave", "vivaldi", "edge", "opera"]
         .iter()
@@ -110,6 +115,15 @@ fn browser_family(browser: &str) -> Option<BrowserFamily> {
 #[must_use]
 pub fn can_use_socks_proxy(browser: &str) -> bool {
     browser_family(browser).is_some()
+}
+
+/// The Chromium-family names among the proxy-capable browsers, most capable
+/// first.
+pub fn chromium_proxy_browsers() -> impl Iterator<Item = &'static str> {
+    PROXY_BROWSERS
+        .iter()
+        .copied()
+        .filter(|browser| browser_family(browser) == Some(BrowserFamily::Chromium))
 }
 
 /// The first installed browser that can use a proxy for one launch.
@@ -600,6 +614,44 @@ mod tests {
             ..WebConfig::default()
         });
         conn
+    }
+
+    #[test]
+    fn the_chromium_candidates_are_the_proxy_browsers_without_firefox() {
+        let chromium: Vec<&str> = chromium_proxy_browsers().collect();
+        assert_eq!(
+            chromium,
+            [
+                "chromium",
+                "chromium-browser",
+                "google-chrome",
+                "google-chrome-stable",
+                "brave-browser",
+                "vivaldi",
+                "vivaldi-stable",
+                "microsoft-edge",
+                "microsoft-edge-stable",
+            ]
+        );
+    }
+
+    #[test]
+    fn browser_family_names_the_same_browsers_the_gui_did() {
+        for chromium in ["chromium", "brave", "vivaldi", "microsoft-edge", "opera"] {
+            assert_eq!(
+                browser_family(chromium),
+                Some(BrowserFamily::Chromium),
+                "{chromium}"
+            );
+        }
+        for firefox in ["firefox", "/usr/bin/librewolf"] {
+            assert_eq!(
+                browser_family(firefox),
+                Some(BrowserFamily::Firefox),
+                "{firefox}"
+            );
+        }
+        assert_eq!(browser_family("epiphany"), None);
     }
 
     #[test]
