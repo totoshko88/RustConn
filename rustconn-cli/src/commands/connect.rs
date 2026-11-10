@@ -108,15 +108,36 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         connection.protocol_config,
         rustconn_core::models::ProtocolConfig::WinRm(_)
     ) {
+        let client = rustconn_core::protocol::locate_winrm_client().ok_or_else(|| {
+            CliError::Config(
+                "Required program 'evil-winrm' not found. Install it with: gem install evil-winrm"
+                    .to_string(),
+            )
+        })?;
         let settings = config_manager.load_settings().unwrap_or_default();
         if super::run_script::connect_winrm_through_tunnel(
             connection,
             &connections,
             &groups,
             &settings,
+            &client,
         )? {
             return Ok(());
         }
+        let launch = client.command(
+            std::iter::once(command.program)
+                .chain(command.args)
+                .collect(),
+        );
+        let Some((program, args)) = launch.split_first() else {
+            return Err(CliError::Connection(
+                "Could not build the WinRM command".to_string(),
+            ));
+        };
+        return execute_connection_command(&ConnectionCommand {
+            program: program.clone(),
+            args: args.to_vec(),
+        });
     }
 
     execute_connection_command(&command)

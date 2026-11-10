@@ -70,7 +70,9 @@ pub use web::{
     remove_stale_browser_profiles, socks_password_variable, validate_socks_settings,
 };
 pub(crate) use winrm::account_name as winrm_account_name;
-pub use winrm::{WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmProtocol};
+pub use winrm::{
+    WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmClient, WinRmProtocol, locate_winrm_client,
+};
 pub use zerotrust::ZeroTrustProtocol;
 
 pub use crate::error::ProtocolResult;

@@ -2493,9 +2493,7 @@ fn launch_winrm(
     conn: &rustconn_core::Connection,
     global_variables: &[Variable],
 ) -> bool {
-    use rustconn_core::protocol::WINRM_CLIENT;
-
-    if !rustconn_core::which::is_available(WINRM_CLIENT) {
+    let Some(client) = rustconn_core::protocol::locate_winrm_client() else {
         notebook.display_connect_banner(
             session_id,
             &format!(
@@ -2505,7 +2503,7 @@ fn launch_winrm(
         );
         sidebar.update_connection_status(&connection_id.to_string(), "failed");
         return false;
-    }
+    };
 
     let mut resolved = conn.clone();
     resolved.host = substitute_variables(&conn.host, global_variables);
@@ -2516,7 +2514,14 @@ fn launch_winrm(
 
     let Some(params) = ssh_tunnel_params_via_jump(state, conn, resolved.host.clone(), conn.port)
     else {
-        return spawn_winrm(state, notebook, session_id, connection_id, &resolved);
+        return spawn_winrm(
+            state,
+            notebook,
+            session_id,
+            connection_id,
+            &resolved,
+            &client,
+        );
     };
 
     // Raised off the GTK thread so a dead jump host cannot freeze the window.
@@ -2539,7 +2544,16 @@ fn launch_winrm(
                 resolved.port = tunnel.local_port();
                 // The tunnel closes with the tab.
                 notebook.store_ssh_tunnel(session_id, tunnel);
-                spawn_winrm(&state, &notebook, session_id, connection_id, &resolved);
+                // A host client reaches the tunnel's 127.0.0.1 port because the
+                // Flatpak shares the host's network namespace (`--share=network`).
+                spawn_winrm(
+                    &state,
+                    &notebook,
+                    session_id,
+                    connection_id,
+                    &resolved,
+                    &client,
+                );
             }
             Err(error) => {
                 tracing::error!(%error, "SSH tunnel for WinRM failed");
@@ -2564,6 +2578,7 @@ fn spawn_winrm(
     session_id: Uuid,
     connection_id: Uuid,
     resolved: &rustconn_core::Connection,
+    client: &rustconn_core::protocol::WinRmClient,
 ) -> bool {
     use rustconn_core::protocol::{
         Protocol, WINRM_PASSWORD_PROMPT, WinRmProtocol, format_command_message,
@@ -2574,6 +2589,7 @@ fn spawn_winrm(
         tracing::warn!(%session_id, "Failed to build WinRM command");
         return false;
     };
+    let command = client.command(command);
 
     let conn_msg = format_connection_message("WinRM", &resolved.host);
     let cmd_msg = format_command_message(&command.join(" "));

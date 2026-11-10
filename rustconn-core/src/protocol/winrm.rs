@@ -4,12 +4,68 @@
 //! `-p`, where every local process could read it, or at its own prompt when `-p`
 //! is absent; RustConn always uses the prompt.
 
+use std::path::PathBuf;
+
 use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
 use crate::models::{Connection, ProtocolConfig};
 
 /// The external client program.
 pub const WINRM_CLIENT: &str = "evil-winrm";
+
+/// Where the WinRM client was found.
+///
+/// The Flatpak runtime has no Ruby, so the client usually lives on the host.
+/// Either way the password never travels with the launch: it is typed at the
+/// client's prompt in the terminal's PTY, which `flatpak-spawn` hands to the
+/// host process, and is not passed in argv or the environment.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WinRmClient {
+    /// On this environment's `PATH`.
+    Local(PathBuf),
+    /// On the Flatpak host, started through `flatpak-spawn --host`.
+    Host(PathBuf),
+}
+
+/// Finds the WinRM client: on `PATH` first, then, in Flatpak, on the host.
+///
+/// The host probe is bounded to two seconds and is skipped outside Flatpak.
+#[must_use]
+pub fn locate_winrm_client() -> Option<WinRmClient> {
+    crate::which::find_in_path(WINRM_CLIENT)
+        .map(WinRmClient::Local)
+        .or_else(|| crate::which::find_on_host(WINRM_CLIENT).map(WinRmClient::Host))
+}
+
+impl WinRmClient {
+    /// The argv that runs `built`, a [`WinRmProtocol::build_command`] result
+    /// whose first element is [`WINRM_CLIENT`], with this client.
+    ///
+    /// For a host client only `TERM` is passed, because the host process does
+    /// not inherit the sandbox's environment and the client needs a terminal
+    /// type; nothing else, and no secret, goes on the `flatpak-spawn` line.
+    #[must_use]
+    pub fn command(&self, built: Vec<String>) -> Vec<String> {
+        let rest = built.into_iter().skip(1);
+        match self {
+            Self::Local(path) => std::iter::once(path.to_string_lossy().into_owned())
+                .chain(rest)
+                .collect(),
+            Self::Host(path) => [
+                "flatpak-spawn",
+                "--host",
+                "--watch-bus",
+                "--env=TERM=xterm-256color",
+                "--",
+            ]
+            .into_iter()
+            .map(str::to_string)
+            .chain(std::iter::once(path.to_string_lossy().into_owned()))
+            .chain(rest)
+            .collect(),
+        }
+    }
+}
 
 /// The text the client prints when it asks for the password.
 pub const WINRM_PASSWORD_PROMPT: &str = "Enter Password:";
@@ -312,6 +368,59 @@ mod tests {
                 "{arg}"
             );
         }
+    }
+
+    fn built() -> Vec<String> {
+        WinRmProtocol::new()
+            .build_command(&connection(WinRmConfig::default()))
+            .unwrap()
+    }
+
+    #[test]
+    fn a_local_client_runs_by_its_path() {
+        let client = WinRmClient::Local(PathBuf::from("/usr/bin/evil-winrm"));
+        assert_eq!(
+            client.command(built()),
+            [
+                "/usr/bin/evil-winrm",
+                "-i",
+                "win.lan",
+                "-P",
+                "5985",
+                "-u",
+                "alice"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_host_client_runs_through_flatpak_spawn() {
+        let client = WinRmClient::Host(PathBuf::from("/home/a/.gem/bin/evil-winrm"));
+        let argv = client.command(built());
+        assert_eq!(
+            argv,
+            [
+                "flatpak-spawn",
+                "--host",
+                "--watch-bus",
+                "--env=TERM=xterm-256color",
+                "--",
+                "/home/a/.gem/bin/evil-winrm",
+                "-i",
+                "win.lan",
+                "-P",
+                "5985",
+                "-u",
+                "alice"
+            ]
+        );
+        assert!(!argv.iter().any(|a| a == "-p"), "no password option");
+        assert!(
+            argv.iter()
+                .filter(|a| a.starts_with("--env="))
+                .all(|a| a == "--env=TERM=xterm-256color"),
+            "only TERM is passed to the host"
+        );
     }
 
     #[test]

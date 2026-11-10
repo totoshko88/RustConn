@@ -554,6 +554,7 @@ pub(super) fn connect_winrm_through_tunnel(
     connections: &[Connection],
     groups: &[ConnectionGroup],
     settings: &AppSettings,
+    client: &rustconn_core::protocol::WinRmClient,
 ) -> Result<bool, CliError> {
     use rustconn_core::protocol::{Protocol, WINRM_CLIENT, WinRmProtocol};
     use rustconn_core::ssh_tunnel;
@@ -575,11 +576,6 @@ pub(super) fn connect_winrm_through_tunnel(
     ) else {
         return Ok(false);
     };
-    if !rustconn_core::which::is_available(WINRM_CLIENT) {
-        return Err(CliError::Config(format!(
-            "Required program '{WINRM_CLIENT}' not found. Install it with: gem install evil-winrm"
-        )));
-    }
     let tunnel_error = |e: ssh_tunnel::SshTunnelError| CliError::Connection(e.to_string());
     let mut tunnel = ssh_tunnel::create_tunnel(&params).map_err(tunnel_error)?;
     ssh_tunnel::wait_for_tunnel_ready(&mut tunnel, 50, Duration::from_millis(200))
@@ -590,7 +586,10 @@ pub(super) fn connect_winrm_through_tunnel(
     local.port = tunnel.local_port();
     let command = WinRmProtocol::new()
         .build_command(&local)
+        .map(|built| client.command(built))
         .ok_or_else(|| CliError::Connection("Could not build the WinRM command".to_string()))?;
+    // A host client reaches the tunnel's 127.0.0.1 port because the Flatpak
+    // shares the host's network namespace (`--share=network`).
     let status = std::process::Command::new(&command[0])
         .args(&command[1..])
         .status()
