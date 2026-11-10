@@ -353,6 +353,35 @@ fn range_error_text(error: &HostRangeError) -> String {
     }
 }
 
+/// Which of the range dialog's rows to mark invalid, as `(name, host)`.
+///
+/// The error does not say which pattern it came from: a name pattern that does
+/// not parse is the name's fault, and anything else (a host pattern that does
+/// not parse, ranges of different sizes, an invalid host) is shown on the host.
+fn invalid_range_rows(name_pattern: &str, failed: bool) -> (bool, bool) {
+    if !failed {
+        return (false, false);
+    }
+    let name_invalid = host_range::HostRange::parse(name_pattern).is_err();
+    (name_invalid, !name_invalid)
+}
+
+/// Shows a row as invalid, to the eye and to a screen reader.
+fn mark_invalid(row: &adw::EntryRow, invalid: bool) {
+    if invalid {
+        row.add_css_class("error");
+    } else {
+        row.remove_css_class("error");
+    }
+    // These bindings give adw rows no `IsA<Accessible>`; the widget has it.
+    let widget = row.upcast_ref::<gtk4::Widget>();
+    widget.update_state(&[gtk4::accessible::State::Invalid(if invalid {
+        gtk4::AccessibleInvalidState::True
+    } else {
+        gtk4::AccessibleInvalidState::False
+    })]);
+}
+
 /// Asks for a name and host range and duplicates the selected connection into
 /// one connection per number.
 pub fn duplicate_selected_as_range(
@@ -384,8 +413,15 @@ pub fn duplicate_selected_as_range(
         )),
     );
     let rows = adw::PreferencesGroup::new();
-    let name_row = adw::EntryRow::builder().title(i18n("Name Pattern")).build();
-    let host_row = adw::EntryRow::builder().title(i18n("Host Pattern")).build();
+    // Enter in either row answers "Create" when it is enabled.
+    let name_row = adw::EntryRow::builder()
+        .title(i18n("Name Pattern"))
+        .activates_default(true)
+        .build();
+    let host_row = adw::EntryRow::builder()
+        .title(i18n("Host Pattern"))
+        .activates_default(true)
+        .build();
     rows.add(&name_row);
     rows.add(&host_row);
     let preview = gtk4::Label::builder()
@@ -393,6 +429,12 @@ pub fn duplicate_selected_as_range(
         .xalign(0.0)
         .margin_top(12)
         .build();
+    // The preview is the only place an error or the result is spelled out.
+    for row in [&name_row, &host_row] {
+        row.upcast_ref::<gtk4::Widget>().update_relation(&[
+            gtk4::accessible::Relation::DescribedBy(&[preview.upcast_ref()]),
+        ]);
+    }
     let content = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
     content.append(&rows);
     content.append(&preview);
@@ -415,6 +457,9 @@ pub fn duplicate_selected_as_range(
             let plan = plan_range(&state, &source, &name_row.text(), &host_row.text());
             let ready = plan.as_ref().is_ok_and(|p| !p.created.is_empty());
             dialog.set_response_enabled("create", ready);
+            let (name_invalid, host_invalid) = invalid_range_rows(&name_row.text(), plan.is_err());
+            mark_invalid(&name_row, name_invalid);
+            mark_invalid(&host_row, host_invalid);
             preview.set_css_classes(if plan.is_err() {
                 &["error"]
             } else {
@@ -1159,7 +1204,16 @@ fn is_descendant_of_group(
 
 #[cfg(test)]
 mod tests {
-    use super::range_result_text;
+    use super::{invalid_range_rows, range_result_text};
+
+    #[test]
+    fn invalid_range_rows_blames_the_pattern_that_fails() {
+        assert_eq!(invalid_range_rows("web[01-03]", false), (false, false));
+        assert_eq!(invalid_range_rows("web", true), (true, false));
+        assert_eq!(invalid_range_rows("web[03-01]", true), (true, false));
+        // The name parses, so a failure is the host pattern's or the pair's.
+        assert_eq!(invalid_range_rows("web[01-03]", true), (false, true));
+    }
 
     #[test]
     fn range_result_counts_only_stored_copies() {
