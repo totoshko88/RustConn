@@ -100,6 +100,12 @@ prodction = "prodction"
 # spell checker quiet and cost the test its point.
 cliente = "cliente"
 
+# Surname of Konstantinos Patronas, who contributed PR #420; the 0.24.11
+# CHANGELOG entries credit him by name. typos reads it as a misspelling of
+# "patrons". Allowed as a word rather than through extend-ignore-re on the
+# credit line, so a real typo elsewhere on that line is still caught.
+patronas = "patronas"
+
 [default.extend-identifiers]
 # Field name in the vnc-rs crate's event struct. The source already flags it
 # (`bottons: buttons, // Note: typo in vnc-rs library`); it is upstream's
