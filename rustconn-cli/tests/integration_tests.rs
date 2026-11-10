@@ -564,17 +564,44 @@ fn show_prints_the_winrm_jump_host_and_options() {
     );
     assert!(win.status.success(), "{}", stderr_str(&win));
 
+    // A secret option can reach the stored arguments only by editing the
+    // configuration by hand; the client never gets it, so `show` must not print it.
+    {
+        use rustconn_core::config::ConfigManager;
+        use rustconn_core::models::ProtocolConfig;
+        let manager = ConfigManager::with_config_dir(config_dir.to_path_buf());
+        let mut connections = manager.load_connections().expect("load connections");
+        let win1 = connections
+            .iter_mut()
+            .find(|c| c.name == "win1")
+            .expect("win1 was added");
+        let ProtocolConfig::WinRm(config) = &mut win1.protocol_config else {
+            panic!("win1 is a WinRM connection");
+        };
+        config.custom_args = ["-n", "-p", "hunter2", "--spn", "HTTP"]
+            .map(String::from)
+            .to_vec();
+        manager
+            .save_connections(&connections)
+            .expect("save connections");
+    }
+
     let json = run_cli(&["show", "win1", "--format", "json"], Some(config_dir));
     assert!(json.status.success(), "{}", stderr_str(&json));
-    let value: serde_json::Value =
-        serde_json::from_str(&stdout_str(&json)).expect("show prints JSON");
+    let json_text = stdout_str(&json);
+    let value: serde_json::Value = serde_json::from_str(&json_text).expect("show prints JSON");
     assert_eq!(value["jump_host"], "bastion");
     assert_eq!(value["accept_invalid_certs"], true);
+    assert_eq!(value["custom_args"], serde_json::json!(["-n", "--spn", "HTTP"]));
+    assert!(!json_text.contains("hunter2"), "{json_text}");
 
     let table = run_cli(&["show", "win1", "--format", "table"], Some(config_dir));
     let text = stdout_str(&table);
     assert!(text.contains("Jump Host: bastion"), "{text}");
-    assert!(text.contains("Accept Invalid Certs: yes"), "{text}");
+    assert!(text.contains("Accept Invalid TLS: yes"), "{text}");
+    assert!(text.contains("Custom Args: -n --spn HTTP"), "{text}");
+    assert!(!text.contains("hunter2"), "{text}");
+    assert!(!text.contains(" -p "), "{text}");
 }
 
 #[test]

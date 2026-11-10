@@ -361,11 +361,11 @@ fn print_json(
                     serde_json::Value::String(resolve_jump(jump_id)),
                 );
             }
-            if !config.custom_args.is_empty() {
-                map.insert(
-                    "custom_args".to_string(),
-                    serde_json::json!(config.custom_args),
-                );
+            // What the client is given: a secret option a hand-edited config
+            // may hold is dropped at launch, so it is not printed either.
+            let custom_args = rustconn_core::protocol::launch_custom_args(config);
+            if !custom_args.is_empty() {
+                map.insert("custom_args".to_string(), serde_json::json!(custom_args));
             }
         }
         _ => {}
@@ -662,13 +662,14 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
                 if config.use_ssl { "yes" } else { "no" }
             );
             if config.accept_invalid_certs {
-                println!("  Accept Invalid Certs: yes");
+                println!("  Accept Invalid TLS: yes");
             }
             if let Some(jump_id) = config.jump_host_id {
                 println!("  Jump Host: {}", resolve_jump(jump_id));
             }
-            if !config.custom_args.is_empty() {
-                println!("  Custom Args: {}", config.custom_args.join(" "));
+            let custom_args = rustconn_core::protocol::launch_custom_args(config);
+            if !custom_args.is_empty() {
+                println!("  Custom Args: {}", custom_args.join(" "));
             }
         }
         _ => {}

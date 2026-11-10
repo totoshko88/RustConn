@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use super::{Protocol, ProtocolCapabilities, ProtocolResult};
 use crate::error::ProtocolError;
-use crate::models::{Connection, ProtocolConfig};
+use crate::models::{Connection, ProtocolConfig, WinRmConfig};
 
 /// The external client program.
 pub const WINRM_CLIENT: &str = "evil-winrm";
@@ -210,27 +210,36 @@ impl Protocol for WinRmProtocol {
         if config.use_ssl {
             cmd.push("-S".to_string());
         }
-        let mut args = config.custom_args.iter();
-        while let Some(arg) = args.next() {
-            match secret_option(arg) {
-                Some(form) => {
-                    tracing::warn!("Skipping a WinRM custom argument that holds a secret");
-                    if form == SecretOption::NextArgument {
-                        args.next();
-                    }
-                }
-                None if !arg.contains(['\0', '\n']) => cmd.push(arg.clone()),
-                None => {}
-            }
-        }
+        cmd.extend(launch_custom_args(config));
         Some(cmd)
     }
+}
+
+/// The custom arguments the client is given: `config.custom_args` without a
+/// password or hash option (and its value) and without an argument holding a
+/// NUL or a newline.
+#[must_use]
+pub fn launch_custom_args(config: &WinRmConfig) -> Vec<String> {
+    let mut kept = Vec::new();
+    let mut args = config.custom_args.iter();
+    while let Some(arg) = args.next() {
+        match secret_option(arg) {
+            Some(form) => {
+                tracing::warn!("Skipping a WinRM custom argument that holds a secret");
+                if form == SecretOption::NextArgument {
+                    args.next();
+                }
+            }
+            None if !arg.contains(['\0', '\n']) => kept.push(arg.clone()),
+            None => {}
+        }
+    }
+    kept
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::WinRmConfig;
 
     fn connection(config: WinRmConfig) -> Connection {
         let mut conn = Connection::new(
@@ -291,6 +300,17 @@ mod tests {
         assert!(!cmd.iter().any(|a| a == "x"));
         assert!(cmd.iter().any(|a| a == "-n"), "other options are kept");
         assert!(WinRmProtocol::new().validate_connection(&conn).is_err());
+    }
+
+    #[test]
+    fn launch_custom_args_drops_secret_options() {
+        let config = WinRmConfig {
+            custom_args: ["-n", "-p", "hunter2", "-Habc", "--spn", "HTTP", "bad\narg"]
+                .map(String::from)
+                .to_vec(),
+            ..WinRmConfig::default()
+        };
+        assert_eq!(launch_custom_args(&config), ["-n", "--spn", "HTTP"]);
     }
 
     #[test]
