@@ -40,6 +40,10 @@ impl WebProtocol {
     ///
     /// A proxy with a login is left out: it needs a relay that stays alive beside
     /// the browser, which a launcher that replaces its own process cannot offer.
+    ///
+    /// The same holds for the profile: `rustconn-cli connect` replaces itself with
+    /// the browser, so nothing is left to delete the profile when it exits. It is
+    /// kept, and the sweep at the start of this call removes such leftovers.
     fn proxied_browser_command(
         connection: &Connection,
         config: &WebConfig,
@@ -55,8 +59,10 @@ impl WebProtocol {
             WebBrowserMode::Embedded if cfg!(feature = "web-embedded") => return None,
             _ => first_installed_proxy_browser()?,
         };
-        let args =
+        remove_stale_browser_profiles();
+        let (args, profile) =
             proxied_browser_args(&browser, proxy, &connection.host, config.private_mode).ok()?;
+        profile.keep();
         let mut cmd = vec![browser];
         cmd.extend(args);
         Some(cmd)
@@ -115,16 +121,123 @@ pub fn first_installed_proxy_browser() -> Option<String> {
         .map(|browser| (*browser).to_string())
 }
 
-/// A new owner-only profile directory, on tmpfs where the session has one.
-fn new_proxy_profile() -> std::io::Result<std::path::PathBuf> {
+/// A browser profile directory that is deleted when this value drops.
+///
+/// The owner keeps it for as long as the browser runs: the profile holds the
+/// session's cookies, history and cache, which must not outlive it.
+#[derive(Debug)]
+pub struct BrowserProfile {
+    /// Empty once [`Self::keep`] has handed the directory over.
+    dir: std::path::PathBuf,
+}
+
+impl BrowserProfile {
+    /// The profile directory.
+    #[must_use]
+    pub fn path(&self) -> &std::path::Path {
+        &self.dir
+    }
+
+    /// Leaves the directory on disk, for a browser nothing will wait for.
+    /// [`remove_stale_browser_profiles`] deletes it later.
+    pub fn keep(mut self) {
+        self.dir = std::path::PathBuf::new();
+    }
+}
+
+impl Drop for BrowserProfile {
+    fn drop(&mut self) {
+        if self.dir.as_os_str().is_empty() {
+            return;
+        }
+        if let Err(e) = std::fs::remove_dir_all(&self.dir) {
+            tracing::debug!(
+                profile = %self.dir.display(),
+                error = %e,
+                "Could not remove the browser profile; a later sweep will"
+            );
+        }
+    }
+}
+
+/// Where proxied browser profiles live: tmpfs where the session has one.
+fn browser_profile_base() -> std::path::PathBuf {
+    std::env::var_os("XDG_RUNTIME_DIR")
+        .filter(|dir| !dir.is_empty())
+        .map_or_else(std::env::temp_dir, std::path::PathBuf::from)
+}
+
+/// A new owner-only profile directory under [`browser_profile_base`].
+fn new_proxy_profile() -> std::io::Result<BrowserProfile> {
     use std::os::unix::fs::DirBuilderExt;
 
-    let base = std::env::var_os("XDG_RUNTIME_DIR")
-        .filter(|dir| !dir.is_empty())
-        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
-    let dir = base.join(format!("rustconn-proxy-browser-{}", uuid::Uuid::new_v4()));
+    let dir =
+        browser_profile_base().join(format!("rustconn-proxy-browser-{}", uuid::Uuid::new_v4()));
     std::fs::DirBuilder::new().mode(0o700).create(&dir)?;
-    Ok(dir)
+    Ok(BrowserProfile { dir })
+}
+
+/// How old an unused browser profile must be before a sweep deletes it.
+///
+/// Long enough for any browser left open within a login session, as for the mc
+/// wrapper directories.
+const STALE_PROFILE_AFTER: std::time::Duration = std::time::Duration::from_hours(12);
+
+/// Deletes `rustconn-*-browser-*` profiles left behind by a crash, a killed
+/// RustConn or `rustconn-cli connect`.
+///
+/// Covers the `rustconn-proxy-browser-*` profiles and the
+/// `rustconn-tunnel-browser-*` ones from 0.24.10 and older. A profile is
+/// deleted once it is [`STALE_PROFILE_AFTER`] old and no browser holds its lock.
+pub fn remove_stale_browser_profiles() {
+    prune_browser_profiles(&browser_profile_base(), std::time::SystemTime::now());
+}
+
+// ponytail: a profile counts as in use only while its browser's lock symlink
+// (Chromium `SingletonLock`, Firefox `lock` on Linux) exists. A killed browser
+// leaves the lock behind, so its profile stays until logout empties
+// XDG_RUNTIME_DIR; macOS Firefox locks `.parentlock` with flock and is guarded by
+// the age alone. Read the lock's PID if leftovers ever matter.
+fn prune_browser_profiles(base: &std::path::Path, now: std::time::SystemTime) {
+    let Ok(entries) = std::fs::read_dir(base) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        if !(name.starts_with("rustconn-") && name.contains("-browser-")) {
+            continue;
+        }
+        let path = entry.path();
+        // `symlink_metadata`: a planted symlink must not lead the sweep elsewhere.
+        let Ok(meta) = std::fs::symlink_metadata(&path) else {
+            continue;
+        };
+        let stale = meta.is_dir()
+            && meta
+                .modified()
+                .ok()
+                .and_then(|modified| now.duration_since(modified).ok())
+                .is_some_and(|age| age > STALE_PROFILE_AFTER);
+        let locked = || {
+            ["SingletonLock", "lock"]
+                .iter()
+                .any(|lock| std::fs::symlink_metadata(path.join(lock)).is_ok())
+        };
+        if !stale || locked() {
+            continue;
+        }
+        match std::fs::remove_dir_all(&path) {
+            Ok(()) => tracing::debug!(profile = %path.display(), "Removed a stale browser profile"),
+            Err(e) => tracing::debug!(
+                profile = %path.display(),
+                error = %e,
+                "Could not remove a stale browser profile"
+            ),
+        }
+    }
 }
 
 /// Firefox reads a proxy only from its profile. `socks_remote_dns` keeps name
@@ -155,6 +268,9 @@ fn firefox_preferences(host: &str, port: &str) -> String {
 /// separate `--no-remote` instance, so history and cookies stay out of the
 /// profile. Chromium gets no `--incognito`: its profile is already a fresh one.
 ///
+/// The returned [`BrowserProfile`] deletes the profile when it drops, so the
+/// caller keeps it until the browser exits.
+///
 /// # Errors
 ///
 /// Returns [`ProtocolError::InvalidConfig`] when `browser` cannot use a proxy for
@@ -164,7 +280,7 @@ pub fn proxied_browser_args(
     proxy: &str,
     url: &str,
     private_mode: bool,
-) -> ProtocolResult<Vec<String>> {
+) -> ProtocolResult<(Vec<String>, BrowserProfile)> {
     let family = browser_family(browser).ok_or_else(|| {
         ProtocolError::InvalidConfig(format!("{browser} cannot use a SOCKS proxy"))
     })?;
@@ -172,8 +288,8 @@ pub fn proxied_browser_args(
     let unwritable =
         |e: std::io::Error| ProtocolError::InvalidConfig(format!("browser profile: {e}"));
     let profile = new_proxy_profile().map_err(unwritable)?;
-    let profile_arg = profile.to_string_lossy().into_owned();
-    Ok(match family {
+    let profile_arg = profile.path().to_string_lossy().into_owned();
+    let args = match family {
         BrowserFamily::Chromium => vec![
             format!("--user-data-dir={profile_arg}"),
             "--no-first-run".to_string(),
@@ -187,8 +303,11 @@ pub fn proxied_browser_args(
                 .rsplit_once(':')
                 .ok_or_else(|| ProtocolError::InvalidConfig("SOCKS proxy address".to_string()))?;
             let host = host.trim_matches(['[', ']']);
-            std::fs::write(profile.join("user.js"), firefox_preferences(host, port))
-                .map_err(unwritable)?;
+            std::fs::write(
+                profile.path().join("user.js"),
+                firefox_preferences(host, port),
+            )
+            .map_err(unwritable)?;
             let mut args = vec![
                 "--no-remote".to_string(),
                 "--new-instance".to_string(),
@@ -201,7 +320,8 @@ pub fn proxied_browser_args(
             args.push(url.to_string());
             args
         }
-    })
+    };
+    Ok((args, profile))
 }
 
 /// Checks a SOCKS proxy address and returns it as `socks5://host:port`.
@@ -524,6 +644,57 @@ mod tests {
             Some("https://example.com")
         );
         std::fs::remove_dir_all(profile_of(&private)).unwrap();
+    }
+
+    #[test]
+    fn a_dropped_profile_is_deleted_and_a_kept_one_is_not() {
+        let (_, dropped) =
+            proxied_browser_args("firefox", "proxy:1080", "https://example.com", false).unwrap();
+        let dropped_dir = dropped.path().to_path_buf();
+        assert!(dropped_dir.join("user.js").is_file());
+        drop(dropped);
+        assert!(!dropped_dir.exists());
+
+        let (_, kept) =
+            proxied_browser_args("chromium", "proxy:1080", "https://example.com", false).unwrap();
+        let kept_dir = kept.path().to_path_buf();
+        kept.keep();
+        assert!(kept_dir.is_dir());
+        std::fs::remove_dir_all(kept_dir).unwrap();
+    }
+
+    #[test]
+    fn the_sweep_removes_only_stale_unlocked_browser_profiles() {
+        let base = tempfile::tempdir().unwrap();
+        let make = |name: &str| {
+            let dir = base.path().join(name);
+            std::fs::create_dir(&dir).unwrap();
+            std::fs::write(dir.join("Local State"), "{}").unwrap();
+            dir
+        };
+        let proxy = make("rustconn-proxy-browser-1");
+        let tunnel = make("rustconn-tunnel-browser-2");
+        let chromium_running = make("rustconn-proxy-browser-3");
+        std::os::unix::fs::symlink("host-4242", chromium_running.join("SingletonLock")).unwrap();
+        let firefox_running = make("rustconn-proxy-browser-4");
+        std::os::unix::fs::symlink("127.0.0.1:+4243", firefox_running.join("lock")).unwrap();
+        let unrelated = make("rustconn-mc-ssh");
+        let not_a_dir = base.path().join("rustconn-proxy-browser-file");
+        std::fs::write(&not_a_dir, "").unwrap();
+
+        prune_browser_profiles(base.path(), std::time::SystemTime::now());
+        for dir in [&proxy, &tunnel, &chromium_running, &firefox_running] {
+            assert!(dir.exists(), "a fresh profile is kept: {}", dir.display());
+        }
+
+        let later = std::time::SystemTime::now() + STALE_PROFILE_AFTER * 2;
+        prune_browser_profiles(base.path(), later);
+        assert!(!proxy.exists());
+        assert!(!tunnel.exists(), "0.24.10 tunnel profiles are swept too");
+        assert!(chromium_running.exists(), "a locked profile is in use");
+        assert!(firefox_running.exists(), "a locked profile is in use");
+        assert!(unrelated.exists());
+        assert!(not_a_dir.exists());
     }
 
     #[test]

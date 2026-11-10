@@ -419,6 +419,10 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Prune stale agent key files left behind by a previous crash or kill.
     rustconn_core::ssh_agent::prune_stale_agent_keys();
 
+    // Remove proxied browser profiles a crash, a kill or `rustconn-cli connect`
+    // left behind. Deleting a large profile takes a moment, so off the main thread.
+    std::thread::spawn(rustconn_core::protocol::remove_stale_browser_profiles);
+
     // Apply saved color scheme from settings
     apply_saved_color_scheme(&state);
 

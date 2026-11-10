@@ -998,6 +998,24 @@ impl MainWindow {
         Ok(Some(relay))
     }
 
+    /// Registers a tunnelled external browser as an external session that keeps
+    /// `held` (its profile) until the browser exits. Without a registry the
+    /// browser is not tracked, and `held` still waits for it to exit.
+    fn track_proxied_browser(
+        session_id: Uuid,
+        connection_id: Uuid,
+        child: std::process::Child,
+        held: impl std::any::Any,
+    ) {
+        match super::external_session_registry() {
+            Some(registry) => {
+                registry.register(session_id, connection_id, Some(child), None);
+                registry.hold(session_id, held);
+            }
+            None => crate::external_session::drop_when_exits(child, held),
+        }
+    }
+
     /// Normalises the configured tunnel-browser start URL into something both
     /// the embedded WebKit view and an external browser accept.
     ///
@@ -1434,14 +1452,15 @@ impl MainWindow {
         // would otherwise take the URL and load it un-tunnelled. An SSH
         // connection has no private-mode setting; the fresh profile is the
         // isolation here.
-        match rustconn_core::protocol::proxied_browser_args(
+        let profile = match rustconn_core::protocol::proxied_browser_args(
             &browser,
             &format!("socks5://127.0.0.1:{port}"),
             start_url,
             false,
         ) {
-            Ok(args) => {
+            Ok((args, profile)) => {
                 cmd.args(args);
+                profile
             }
             Err(e) => {
                 crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
@@ -1451,17 +1470,16 @@ impl MainWindow {
                 sidebar.update_connection_status(&connection_id.to_string(), "failed");
                 return;
             }
-        }
+        };
 
         match cmd.spawn() {
             Ok(child) => {
                 // Keep the tunnel alive behind the detached browser (reclaimed at
-                // app exit), the same way the Custom web-browser path does.
+                // app exit), the same way the Custom web-browser path does. The
+                // profile goes when the browser exits.
                 let session_id = uuid::Uuid::new_v4();
                 notebook.store_ssh_tunnel(session_id, tunnel);
-                if let Some(registry) = super::external_session_registry() {
-                    registry.register(session_id, connection_id, Some(child), None);
-                }
+                Self::track_proxied_browser(session_id, connection_id, child, profile);
                 sidebar.update_connection_status(&connection_id.to_string(), "");
                 crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
                     "Opened a tunnelled browser",
@@ -1765,8 +1783,8 @@ impl MainWindow {
                     .as_ref()
                     .map(|tunnel| format!("socks5://127.0.0.1:{}", tunnel.local_port()))
                     .or_else(|| web_config.socks_proxy.clone());
-                let tunnelled_isolated = if let Some(proxy_uri) = proxy_uri {
-                    let Ok(args) = rustconn_core::protocol::proxied_browser_args(
+                let proxy_profile = if let Some(proxy_uri) = proxy_uri {
+                    let Ok((args, profile)) = rustconn_core::protocol::proxied_browser_args(
                         &browser,
                         &proxy_uri,
                         &url,
@@ -1779,10 +1797,11 @@ impl MainWindow {
                         return;
                     };
                     cmd.args(args);
-                    true
+                    Some(profile)
                 } else {
-                    false
+                    None
                 };
+                let tunnelled_isolated = proxy_profile.is_some();
 
                 // Add private mode flag for known browsers. A proxied launch got
                 // its flag from `proxied_browser_args` above: Firefox keeps
@@ -1812,15 +1831,23 @@ impl MainWindow {
                         // is handed over so the registry reaps it — its exit is when
                         // the tunnel could be dropped, though today that waits for exit
                         // of RustConn (documented tradeoff, as for RDP/VNC viewers).
+                        // The browser profile goes as soon as the browser exits.
                         if let Some(relay) = socks_relay {
                             relay.detach();
                         }
                         if let Some(tunnel) = socks_tunnel {
                             let session_id = uuid::Uuid::new_v4();
                             notebook_cb.store_ssh_tunnel(session_id, tunnel);
-                            if let Some(registry) = super::external_session_registry() {
-                                registry.register(session_id, connection_id, Some(child), None);
-                            }
+                            Self::track_proxied_browser(
+                                session_id,
+                                connection_id,
+                                child,
+                                proxy_profile,
+                            );
+                        } else if let Some(profile) = proxy_profile {
+                            // A SOCKS proxy without a tunnel is not an external
+                            // session; only the profile waits for the browser.
+                            crate::external_session::drop_when_exits(child, profile);
                         }
                         if let Some(app) = gtk4::gio::Application::default()
                             && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()

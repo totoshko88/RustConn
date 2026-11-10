@@ -65,8 +65,8 @@ pub use ssh::SshProtocol;
 pub use telnet::TelnetProtocol;
 pub use vnc::VncProtocol;
 pub use web::{
-    WebProtocol, can_use_socks_proxy, first_installed_proxy_browser, normalize_socks_proxy,
-    proxied_browser_args,
+    BrowserProfile, WebProtocol, can_use_socks_proxy, first_installed_proxy_browser,
+    normalize_socks_proxy, proxied_browser_args, remove_stale_browser_profiles,
 };
 pub(crate) use winrm::account_name as winrm_account_name;
 pub use winrm::{WINRM_CLIENT, WINRM_PASSWORD_PROMPT, WinRmProtocol};
