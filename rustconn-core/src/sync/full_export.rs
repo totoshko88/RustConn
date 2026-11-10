@@ -226,7 +226,8 @@ fn strip_local_only_connection_fields(connections: Vec<Connection>) -> Vec<Conne
 /// Strips local-only and sync-bookkeeping fields from groups before export.
 ///
 /// Clears UI/order state (`expanded`, `sort_order`), device-specific SSH
-/// fields (`ssh_key_path`, `ssh_jump_host_id`, `ssh_agent_socket`), and
+/// fields (`ssh_key_path`, `ssh_jump_host_id`, `ssh_fallback_jump_host_ids`,
+/// `ssh_agent_socket`), and
 /// Group-Sync bookkeeping (`sync_mode`, `sync_file`, `last_synced_at`) to their
 /// defaults. The importing device preserves its own copies of these fields, so
 /// they must never travel in the shared file. `updated_at` is left intact — it
@@ -239,6 +240,7 @@ fn strip_local_only_group_fields(groups: Vec<ConnectionGroup>) -> Vec<Connection
             g.sort_order = 0;
             g.ssh_key_path = None;
             g.ssh_jump_host_id = None;
+            g.ssh_fallback_jump_host_ids = Vec::new();
             g.ssh_agent_socket = None;
             g.kdbx_path_override = None;
             g.sync_mode = crate::sync::SyncMode::default();
@@ -320,6 +322,7 @@ mod tests {
         let edited_at = group.updated_at;
         group.ssh_key_path = Some(std::path::PathBuf::from("/home/me/.ssh/id_ed25519"));
         group.ssh_jump_host_id = Some(Uuid::new_v4());
+        group.ssh_fallback_jump_host_ids = vec![Uuid::new_v4(), Uuid::new_v4()];
         group.kdbx_path_override = Some(std::path::PathBuf::from("/home/me/corp.kdbx"));
         group.ssh_agent_socket = Some("/run/agent.sock".to_owned());
         group.sync_mode = SyncMode::Master;
@@ -343,6 +346,10 @@ mod tests {
         // Device-specific / Group-Sync fields are stripped.
         assert!(g.ssh_key_path.is_none());
         assert!(g.ssh_jump_host_id.is_none());
+        assert!(
+            g.ssh_fallback_jump_host_ids.is_empty(),
+            "fallbacks travel with the jump host they back up"
+        );
         assert!(g.kdbx_path_override.is_none(), "kdbx path is device-local");
         assert!(g.ssh_agent_socket.is_none());
         assert_eq!(g.sync_mode, SyncMode::None);
