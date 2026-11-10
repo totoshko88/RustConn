@@ -27,12 +27,15 @@ use uuid::Uuid;
 /// Drops `held` once `child` exits, for a process no registry entry watches.
 ///
 /// GLib reaps the child and runs the drop on the main loop. If the child's PID
-/// cannot be watched, `held` is leaked instead of dropped under a running
-/// process; a browser profile among it is then left to
-/// [`rustconn_core::protocol::remove_stale_browser_profiles`].
-pub fn drop_when_exits(child: Child, held: impl Any) {
+/// cannot be watched, the child is killed and reaped and `held` is dropped at
+/// once, so a SOCKS relay among it stops and zeroes its password and a browser
+/// profile is removed. That branch is unreachable on Linux and macOS, where
+/// `pid_t` is `i32`; it fails closed rather than leaking.
+pub fn drop_when_exits(mut child: Child, held: impl Any) {
     let Ok(pid) = i32::try_from(child.id()) else {
-        std::mem::forget(held);
+        let _ = child.kill();
+        let _ = child.wait();
+        drop(held);
         return;
     };
     // GLib's watch waits on the PID; the `Child` handle has nothing left to do.
