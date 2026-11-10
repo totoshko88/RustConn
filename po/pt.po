@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Portuguese\n"
@@ -13570,7 +13570,7 @@ msgstr "Não foi possível iniciar o retransmissor SOCKS: {}"
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Não foi possível abrir o túnel SSH: {}"
 
@@ -14701,31 +14701,47 @@ msgstr "Nenhum visualizador VNC encontrado. Instale o TigerVNC ou o Remmina."
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Nenhum visualizador SPICE encontrado. Instale o virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr "Variável inválida: {}"
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+"O evil-winrm não foi encontrado neste computador. Instale-o fora do Flatpak, "
+"a partir da sua distribuição ou com: gem install evil-winrm"
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+"O evil-winrm não pode ser executado dentro do Snap. Ligue-se ao Windows por "
+"SSH, ou use o Flatpak ou um pacote do RustConn da distribuição"
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr "O evil-winrm não está instalado. Instale-o com: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr "Configuração inválida: {}"
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr "Instale o picocom para conexões série"
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Instale kubectl para conexões Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr "Configure pod e contêiner para Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr "Instale o mosh para ligações MOSH"
 

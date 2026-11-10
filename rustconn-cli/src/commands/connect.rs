@@ -108,12 +108,8 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         connection.protocol_config,
         rustconn_core::models::ProtocolConfig::WinRm(_)
     ) {
-        let client = rustconn_core::protocol::locate_winrm_client().ok_or_else(|| {
-            CliError::Config(
-                "Required program 'evil-winrm' not found. Install it with: gem install evil-winrm"
-                    .to_string(),
-            )
-        })?;
+        let client = rustconn_core::protocol::locate_winrm_client()
+            .ok_or_else(|| CliError::Config(winrm_client_missing().to_string()))?;
         let settings = config_manager.load_settings().unwrap_or_default();
         if super::run_script::connect_winrm_through_tunnel(
             connection,
@@ -141,6 +137,19 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
     }
 
     execute_connection_command(&command)
+}
+
+/// Says where to get `evil-winrm` for this package.
+fn winrm_client_missing() -> &'static str {
+    if rustconn_core::flatpak::is_flatpak() {
+        "Required program 'evil-winrm' not found on this computer. Install it outside the \
+         Flatpak, from your distribution or with: gem install evil-winrm"
+    } else if rustconn_core::snap::is_snap() {
+        "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, or use \
+         the Flatpak or a distribution package of RustConn"
+    } else {
+        "Required program 'evil-winrm' not found. Install it with: gem install evil-winrm"
+    }
 }
 
 /// Renders the stderr warning for one unusable bastion reference.

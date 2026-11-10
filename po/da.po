@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Danish\n"
@@ -13488,7 +13488,7 @@ msgstr "Kunne ikke starte SOCKS-relæet: {}"
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Kunne ikke åbne SSH-tunnelen: {}"
 
@@ -14601,32 +14601,48 @@ msgstr "Ingen VNC-fremviser fundet. Installer TigerVNC eller Remmina."
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Ingen SPICE-fremviser fundet. Installer virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr "Ugyldig variabel: {}"
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+"evil-winrm blev ikke fundet på denne computer. Installer det uden for "
+"Flatpak, fra din distribution eller med: gem install evil-winrm"
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+"evil-winrm kan ikke køre i Snap'en. Forbind til Windows over SSH i stedet, "
+"eller brug Flatpak'en eller en distributionspakke af RustConn"
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm er ikke installeret. Installer det med: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr "Ugyldig konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr "Installér picocom til serielle forbindelser"
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installér kubectl til Kubernetes-forbindelser"
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr "Konfigurér pod og container til Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr "Installér mosh til MOSH-forbindelser"
 

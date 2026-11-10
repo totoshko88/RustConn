@@ -2494,13 +2494,18 @@ fn launch_winrm(
     global_variables: &[Variable],
 ) -> bool {
     let Some(client) = rustconn_core::protocol::locate_winrm_client() else {
-        notebook.display_connect_banner(
-            session_id,
-            &format!(
-                "{}\r\n",
-                i18n("evil-winrm is not installed. Install it with: gem install evil-winrm")
-            ),
-        );
+        let hint = if rustconn_core::flatpak::is_flatpak() {
+            i18n(
+                "evil-winrm was not found on this computer. Install it outside the Flatpak, from your distribution or with: gem install evil-winrm",
+            )
+        } else if rustconn_core::snap::is_snap() {
+            i18n(
+                "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, or use the Flatpak or a distribution package of RustConn",
+            )
+        } else {
+            i18n("evil-winrm is not installed. Install it with: gem install evil-winrm")
+        };
+        notebook.display_connect_banner(session_id, &format!("{hint}\r\n"));
         sidebar.update_connection_status(&connection_id.to_string(), "failed");
         return false;
     };

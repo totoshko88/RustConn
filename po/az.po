@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -13473,7 +13473,7 @@ msgstr "SOCKS relesi başladıla bilmədi: {}"
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH tuneli açıla bilmədi: {}"
 
@@ -14582,32 +14582,49 @@ msgstr "VNC görüntüləyicisi tapılmadı. TigerVNC və ya Remmina quraşdır�
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "SPICE görüntüləyicisi tapılmadı. virt-viewer quraşdırın."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr "Yanlış dəyişən: {}"
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+"evil-winrm bu kompüterdə tapılmadı. Onu Flatpak-dan kənarda, paylamanızdan "
+"və ya bu əmrlə quraşdırın: gem install evil-winrm"
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+"evil-winrm Snap daxilində işləyə bilməz. Bunun əvəzinə Windows-a SSH ilə "
+"qoşulun və ya RustConn-un Flatpak versiyasından ya da paylama paketindən "
+"istifadə edin"
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm quraşdırılmayıb. Onu bu əmrlə quraşdırın: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr "Yanlış konfiqurasiya: {}"
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr "Serial bağlantıları üçün picocom quraşdırın"
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Kubernetes bağlantıları üçün kubectl quraşdırın"
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr "Kubernetes üçün pod və konteyner konfiqurasiya edin"
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr "MOSH bağlantıları üçün mosh quraşdırın"
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -13529,7 +13529,7 @@ msgstr "SOCKS რელეს გაშვება ვერ მოხერხ
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Could not open the SSH tunnel: {}"
 
@@ -14652,32 +14652,48 @@ msgstr "VNC დამთვალიერებელი აღმოჩენ�
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "SPICE დამთვალიერებელი აღმოჩენილი არაა. დააყენეთ virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr "არასწორი ცვლადი: {}"
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+"evil-winrm ამ კომპიუტერზე ვერ მოიძებნა. დააინსტალირეთ ის Flatpak-ის გარეთ, "
+"თქვენი დისტრიბუტივიდან ან ბრძანებით: gem install evil-winrm"
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+"evil-winrm ვერ გაეშვება Snap-ის შიგნით. ამის ნაცვლად Windows-ს SSH-ით "
+"დაუკავშირდით, ან გამოიყენეთ RustConn-ის Flatpak ან დისტრიბუტივის პაკეტი"
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm დაყენებული არ არის. დააყენეთ ბრძანებით: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr "არასწორი კონფიგურაცია: {}"
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr "სერიული კავშირებისთვის დააყენეთ picocom"
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr "დააყენეთ kubectl Kubernetes-ის კავშირებისთვის"
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr "პოდის და კონტეინერის მორგება Kubernetes-ისთვის"
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr "დააყენეთ mosh MOSH-ის კავშირებისთვის"
 

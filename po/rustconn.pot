@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.10\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12870,7 +12870,7 @@ msgstr ""
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr ""
 
@@ -13894,31 +13894,43 @@ msgstr ""
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr ""
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr ""
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr ""
 

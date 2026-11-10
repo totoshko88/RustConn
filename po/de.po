@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 21:15+0200\n"
+"POT-Creation-Date: 2026-11-10 21:26+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -13655,7 +13655,7 @@ msgstr "SOCKS-Relay konnte nicht gestartet werden: {}"
 #: rustconn/src/window/edit_actions.rs:1405
 #: rustconn/src/window/edit_actions.rs:1664
 #: rustconn/src/window/edit_actions.rs:1773
-#: rustconn/src/window/protocols.rs:2550
+#: rustconn/src/window/protocols.rs:2569
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH-Tunnel konnte nicht geöffnet werden: {}"
 
@@ -14799,33 +14799,51 @@ msgstr "Kein VNC-Viewer gefunden. Installieren Sie TigerVNC oder Remmina."
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Kein SPICE-Viewer gefunden. Installieren Sie virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2936
+#: rustconn/src/window/protocols.rs:2241 rustconn/src/window/protocols.rs:2957
 msgid "Invalid variable: {}"
 msgstr "Ungültige Variable: {}"
 
+#: rustconn/src/window/protocols.rs:2499
+msgid ""
+"evil-winrm was not found on this computer. Install it outside the Flatpak, "
+"from your distribution or with: gem install evil-winrm"
+msgstr ""
+"evil-winrm wurde auf diesem Rechner nicht gefunden. Installieren Sie es "
+"außerhalb des Flatpaks, aus Ihrer Distribution oder mit: gem install evil-"
+"winrm"
+
 #: rustconn/src/window/protocols.rs:2503
+msgid ""
+"evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
+"or use the Flatpak or a distribution package of RustConn"
+msgstr ""
+"evil-winrm kann nicht im Snap laufen. Verbinden Sie sich stattdessen über "
+"SSH mit Windows, oder verwenden Sie das Flatpak oder ein Distributionspaket "
+"von RustConn"
+
+#: rustconn/src/window/protocols.rs:2506
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm ist nicht installiert. Installieren Sie es mit: gem install evil-"
 "winrm"
 
-#: rustconn/src/window/protocols.rs:2856
+#: rustconn/src/window/protocols.rs:2877
 msgid "Invalid config: {}"
 msgstr "Ungültige Konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:3042
+#: rustconn/src/window/protocols.rs:3063
 msgid "Install picocom for Serial connections"
 msgstr "Installieren Sie picocom für serielle Verbindungen"
 
-#: rustconn/src/window/protocols.rs:3218
+#: rustconn/src/window/protocols.rs:3239
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installieren Sie kubectl für Kubernetes-Verbindungen"
 
-#: rustconn/src/window/protocols.rs:3236
+#: rustconn/src/window/protocols.rs:3257
 msgid "Configure pod and container for Kubernetes"
 msgstr "Pod und Container für Kubernetes konfigurieren"
 
-#: rustconn/src/window/protocols.rs:3466
+#: rustconn/src/window/protocols.rs:3487
 msgid "Install mosh for MOSH connections"
 msgstr "Installieren Sie mosh für MOSH-Verbindungen"
 
