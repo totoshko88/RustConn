@@ -32,7 +32,10 @@ use crate::ssh_tunnel::{self, SshTunnel, SshTunnelParams};
 /// instead of eating the rest of the script, as they do under `bash -s`. The
 /// `bash -n` pass is what makes a syntax error stop the script before its first
 /// line runs; `eval` alone would execute the lines ahead of the error. `eval` is
-/// a builtin, so the script size is not limited by `ARG_MAX`.
+/// a builtin, so the script size is not limited by `ARG_MAX`. The check reads the
+/// script through a pipe from the `printf` builtin, never a here-string: bash
+/// before 5.1 writes every here-string to a temporary file on the host, and later
+/// versions do so above 64 KiB.
 ///
 /// There is no tty, so sshd sends no hangup when the connection ends and the
 /// script would carry on. The sender therefore holds stdin open until the run is
@@ -41,7 +44,7 @@ use crate::ssh_tunnel::{self, SshTunnel, SshTunnelParams};
 /// two seconds later. Once past the `read` the watcher ignores TERM, or the
 /// exiting shell would cancel the KILL still owed to a script that survived TERM.
 /// A status of 255 also prints [`SCRIPT_EXIT_255_MARKER`], see there.
-pub const REMOTE_COMMAND: &str = r#"bash -c 'exec 3<&0; IFS= read -r -d "" s || exit 125; bash -n <<<"$s" || exit 2; set -m; eval "$s" </dev/null 3<&- & p=$!; set +m; { read -r _ <&3; trap "" TERM; kill -TERM -- -$p; sleep 2; kill -KILL -- -$p; } >/dev/null 2>&1 & w=$!; wait $p; c=$?; kill $w 2>/dev/null; [ $c -ne 255 ] || printf "\036rustconn-script-exit-255\n" >&2; exit $c'"#;
+pub const REMOTE_COMMAND: &str = r#"bash -c 'exec 3<&0; IFS= read -r -d "" s || exit 125; printf %s "$s" | bash -n || exit 2; set -m; eval "$s" </dev/null 3<&- & p=$!; set +m; { read -r _ <&3; trap "" TERM; kill -TERM -- -$p; sleep 2; kill -KILL -- -$p; } >/dev/null 2>&1 & w=$!; wait $p; c=$?; kill $w 2>/dev/null; [ $c -ne 255 ] || printf "\036rustconn-script-exit-255\n" >&2; exit $c'"#;
 
 /// The stderr line [`REMOTE_COMMAND`] prints when the script exits with 255.
 ///
@@ -1249,6 +1252,12 @@ class Protocol:
             return;
         };
         assert_eq!(output.stdout, b"after\n");
+    }
+
+    #[test]
+    fn the_remote_command_needs_no_temporary_file() {
+        // A here-document or here-string can land in a file on the host.
+        assert!(!REMOTE_COMMAND.contains("<<"));
     }
 
     #[test]
