@@ -39,6 +39,10 @@ pub(super) struct RunScriptParams<'a> {
     pub parallel: usize,
     pub timeout_secs: u64,
     pub assume_yes: bool,
+    /// `--quiet`: leave out the progress lines (hosts left out, hosts that
+    /// succeeded, the summary). The script's output, hosts that did not
+    /// succeed, warnings and prompts still appear.
+    pub quiet: bool,
 }
 
 /// Runs a local script on the named connections and groups.
@@ -88,7 +92,7 @@ pub(super) fn cmd_run_script(
             "The selection holds no {protocol} connections"
         )));
     }
-    if targets.skipped > 0 {
+    if targets.skipped > 0 && !params.quiet {
         eprintln!(
             "Leaving out {} non-{protocol} connection(s).",
             targets.skipped
@@ -147,10 +151,17 @@ pub(super) fn cmd_run_script(
         remote_script::run_script(&script, &hosts, &options, &sink);
     });
 
-    let succeeded = print_events(&receiver, &names);
+    let succeeded = print_events(&receiver, &names, params.quiet);
     let _ = worker.join();
+    run_result(succeeded, total, params.quiet)
+}
 
-    eprintln!("Succeeded on {succeeded} of {total} host(s).");
+/// Prints the closing count (not under `--quiet`) and turns it into the
+/// command's result.
+fn run_result(succeeded: usize, total: usize, quiet: bool) -> Result<(), CliError> {
+    if !quiet {
+        eprintln!("Succeeded on {succeeded} of {total} host(s).");
+    }
     if succeeded == total {
         Ok(())
     } else {
@@ -195,7 +206,8 @@ fn substitute_global(manager: &VariableManager, text: &str) -> String {
 }
 
 /// Prints progress until every host has finished; returns how many succeeded.
-fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String]) -> usize {
+/// With `quiet` a host that succeeded is not announced.
+fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String], quiet: bool) -> usize {
     let total = names.len();
     let mut succeeded = 0;
     let mut finished = 0;
@@ -217,11 +229,19 @@ fn print_events(receiver: &Receiver<ScriptEvent>, names: &[String]) -> usize {
                 if outcome == ScriptOutcome::Succeeded {
                     succeeded += 1;
                 }
-                eprintln!("[{}] {}", names[host], outcome_text(outcome));
+                if announces_outcome(outcome, quiet) {
+                    eprintln!("[{}] {}", names[host], outcome_text(outcome));
+                }
             }
         }
     }
     succeeded
+}
+
+/// Whether a host's outcome is printed: always, except a success under
+/// `--quiet`, which is progress rather than an error.
+fn announces_outcome(outcome: ScriptOutcome, quiet: bool) -> bool {
+    !quiet || outcome != ScriptOutcome::Succeeded
 }
 
 fn outcome_text(outcome: ScriptOutcome) -> String {
@@ -811,6 +831,22 @@ mod tests {
             std::future::ready(7),
         );
         assert_eq!(result, Some(7));
+    }
+
+    #[test]
+    fn quiet_hides_only_successes() {
+        use rustconn_core::remote_script::ScriptOutcome;
+
+        assert!(super::announces_outcome(ScriptOutcome::Succeeded, false));
+        assert!(!super::announces_outcome(ScriptOutcome::Succeeded, true));
+        for outcome in [
+            ScriptOutcome::ScriptFailed { code: Some(1) },
+            ScriptOutcome::ConnectionFailed,
+            ScriptOutcome::TimedOut,
+            ScriptOutcome::NotStarted,
+        ] {
+            assert!(super::announces_outcome(outcome, true), "{outcome:?}");
+        }
     }
 
     #[test]

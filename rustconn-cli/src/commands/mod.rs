@@ -46,7 +46,11 @@ use crate::error::CliError;
     reason = "main command dispatcher matches every CLI subcommand; \
               splitting branches would only move boilerplate elsewhere"
 )]
-pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), CliError> {
+pub fn dispatch(
+    config_path: Option<&Path>,
+    command: Commands,
+    quiet: bool,
+) -> Result<(), CliError> {
     match command {
         Commands::List {
             format,
@@ -638,6 +642,7 @@ pub fn dispatch(config_path: Option<&Path>, command: Commands) -> Result<(), Cli
                 parallel,
                 timeout_secs: timeout,
                 assume_yes: yes,
+                quiet,
             },
         ),
         Commands::Duplicate {
