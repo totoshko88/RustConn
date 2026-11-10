@@ -1253,9 +1253,29 @@ pub enum HopHostKeys {
     /// see [`build_nested_proxy_command_with_askpass`]).
     UserConfig,
     /// `StrictHostKeyChecking=yes`: a hop whose key is unknown fails, with no
-    /// question and nothing written to `known_hosts`. For background probes,
-    /// which must never accept a key the user has not accepted.
+    /// question and nothing written to `known_hosts`, even when it answers
+    /// through an askpass helper. For background probes and script runs, which
+    /// must never accept a key the user has not accepted.
     KnownOnly,
+}
+
+/// The `StrictHostKeyChecking` option RustConn passes to a proxy hop's `ssh`,
+/// if any.
+///
+/// [`HopHostKeys::KnownOnly`] always gives `yes`. [`HopHostKeys::UserConfig`]
+/// gives `accept-new` only to a hop that answers through a forced askpass
+/// helper (issue #203, see [`build_nested_proxy_command_with_askpass`]) and
+/// otherwise leaves the user's ssh configuration in charge.
+#[must_use]
+pub const fn proxy_hop_host_key_option(
+    host_keys: HopHostKeys,
+    uses_askpass: bool,
+) -> Option<&'static str> {
+    match host_keys {
+        HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
+        HopHostKeys::UserConfig if uses_askpass => Some("StrictHostKeyChecking=accept-new"),
+        HopHostKeys::UserConfig => None,
+    }
 }
 
 /// Builds a (possibly nested) SSH `ProxyCommand` value that reaches `hops[0]`
@@ -1309,13 +1329,15 @@ pub fn build_nested_proxy_command(
 /// original chain. The helper opens and unlinks that file before returning its
 /// contents, so no password value enters the SSH process environment.
 ///
-/// The other hops leave `StrictHostKeyChecking` to the user's ssh
-/// configuration ([`HopHostKeys::UserConfig`]). Any hop that gets an askpass
-/// helper is forced to `StrictHostKeyChecking=accept-new`, because a
-/// forced-askpass hop with an unknown host key would otherwise feed its
-/// password into the host-key confirmation prompt and loop (issue #203). That
-/// chain belongs to a connect the user started, and a *changed* key is still
-/// refused.
+/// With [`HopHostKeys::UserConfig`] the hops leave `StrictHostKeyChecking` to
+/// the user's ssh configuration, except that any hop that gets an askpass
+/// helper is forced to `StrictHostKeyChecking=accept-new`: a forced-askpass hop
+/// with an unknown host key would otherwise feed its password into the
+/// host-key confirmation prompt and loop (issue #203). That chain belongs to a
+/// connect the user started, and a *changed* key is still refused. With
+/// [`HopHostKeys::KnownOnly`] every hop gets `StrictHostKeyChecking=yes`, which
+/// asks no question either, so an unknown key fails before any password is
+/// sent.
 ///
 /// # Panics
 /// Panics in debug builds if `hops` is empty.
@@ -1324,6 +1346,7 @@ pub fn build_nested_proxy_command_with_askpass(
     hops: &[&str],
     identity_file: Option<&str>,
     known_hosts: Option<&std::path::Path>,
+    host_keys: HopHostKeys,
     askpass_scripts: &[Option<&std::path::Path>],
     hop_index_offset: usize,
     total_hop_count: usize,
@@ -1332,7 +1355,7 @@ pub fn build_nested_proxy_command_with_askpass(
         hops,
         identity_file,
         known_hosts,
-        HopHostKeys::UserConfig,
+        host_keys,
         askpass_scripts,
         true,
         (hop_index_offset, total_hop_count),
@@ -1367,14 +1390,7 @@ fn build_nested_proxy_command_inner(
     // rejecting a CHANGED one, so MITM protection is preserved. `KnownOnly`
     // asks no question either, so it needs no such exception.
     let this_hop_uses_askpass = matches!(askpass_scripts.first(), Some(Some(_)));
-    let strict_host_key_checking = match host_keys {
-        HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
-        HopHostKeys::UserConfig if this_hop_uses_askpass => {
-            Some("StrictHostKeyChecking=accept-new")
-        }
-        HopHostKeys::UserConfig => None,
-    };
-    if let Some(option) = strict_host_key_checking {
+    if let Some(option) = proxy_hop_host_key_option(host_keys, this_hop_uses_askpass) {
         parts.push("-o".to_string());
         parts.push(option.to_string());
     }
@@ -1968,7 +1984,15 @@ mod tests {
 
     #[test]
     fn test_nested_askpass_empty_scripts_isolates_every_hop() {
-        let cmd = build_nested_proxy_command_with_askpass(&["near", "far"], None, None, &[], 0, 2);
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            HopHostKeys::UserConfig,
+            &[],
+            0,
+            2,
+        );
         assert_eq!(
             cmd,
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
@@ -1987,6 +2011,7 @@ mod tests {
             &["near", "far"],
             None,
             None,
+            HopHostKeys::UserConfig,
             &[Some(script), None],
             0,
             2,
@@ -2014,6 +2039,7 @@ mod tests {
             &["near", "far"],
             None,
             None,
+            HopHostKeys::UserConfig,
             &[None, Some(inner)],
             0,
             2,
@@ -2027,6 +2053,51 @@ mod tests {
              -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass-1.sh \
              SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=accept-new far' near"
+        );
+    }
+
+    #[test]
+    fn test_nested_askpass_known_only_never_accepts_a_new_key() {
+        // A script run hands passwords to bastions without anyone watching, so
+        // every hop, with a helper or without, must refuse an unknown key.
+        let outer = std::path::Path::new("/run/user/1000/rustconn-jh-askpass.sh");
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            HopHostKeys::KnownOnly,
+            &[Some(outer), None],
+            0,
+            2,
+        );
+        assert_eq!(
+            cmd,
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
+             SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh \
+             SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=yes \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             SSH_ASKPASS_REQUIRE= ssh -W %h:%p -o StrictHostKeyChecking=yes far' near"
+        );
+        assert!(!cmd.contains("accept-new"), "{cmd}");
+    }
+
+    #[test]
+    fn test_proxy_hop_host_key_option() {
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::KnownOnly, true),
+            Some("StrictHostKeyChecking=yes")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::KnownOnly, false),
+            Some("StrictHostKeyChecking=yes")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::UserConfig, true),
+            Some("StrictHostKeyChecking=accept-new")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::UserConfig, false),
+            None
         );
     }
 

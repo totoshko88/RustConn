@@ -360,6 +360,12 @@ pub struct WinRmTarget {
 
 impl WinRmTarget {
     /// Builds the target of a WinRM `connection`, `None` for any other protocol.
+    ///
+    /// The tunnel's jump host must already be in `known_hosts`: its `ssh` is
+    /// given `StrictHostKeyChecking=yes` ahead of the caller's arguments, so a
+    /// run never accepts a new key or sends a password to an unknown one. Jump
+    /// hosts beyond it, reached through `-J`, follow the user's ssh
+    /// configuration, as in [`crate::sftp`].
     #[must_use]
     pub fn for_connection(
         connection: &Connection,
@@ -376,9 +382,19 @@ impl WinRmTarget {
             password,
             use_ssl: config.use_ssl,
             accept_invalid_certs: config.accept_invalid_certs,
-            tunnel,
+            tunnel: tunnel.map(require_known_host_key),
         })
     }
+}
+
+/// Puts `StrictHostKeyChecking=yes` first in a tunnel's arguments. OpenSSH
+/// keeps the first value of an option, so the caller's arguments cannot relax it.
+fn require_known_host_key(mut tunnel: SshTunnelParams) -> SshTunnelParams {
+    tunnel.extra_args.splice(
+        0..0,
+        ["-o".to_string(), "StrictHostKeyChecking=yes".to_string()],
+    );
+    tunnel
 }
 
 /// How a run behaves.
@@ -1422,5 +1438,35 @@ class Protocol:
         assert_eq!(targets.hosts.len(), 1);
         let targets = script_targets(&[id], &connections, &[], ScriptKind::PowerShell);
         assert_eq!((targets.hosts.len(), targets.skipped), (0, 1));
+    }
+
+    #[test]
+    fn a_winrm_tunnel_requires_a_known_jump_host_key() {
+        let connection = Connection::new(
+            "win".to_string(),
+            "win.lan".to_string(),
+            5985,
+            ProtocolConfig::WinRm(crate::models::WinRmConfig::default()),
+        );
+        let tunnel = SshTunnelParams {
+            jump_host: "jump".to_string(),
+            jump_port: 22,
+            remote_host: "win.lan".to_string(),
+            remote_port: 5985,
+            identity_file: None,
+            password: None,
+            extra_args: vec!["-o".to_string(), "StrictHostKeyChecking=no".to_string()],
+            launcher: ssh_tunnel::TunnelLauncher::OpenSsh,
+        };
+        let target = WinRmTarget::for_connection(&connection, None, Some(tunnel)).unwrap();
+        assert_eq!(
+            target.tunnel.unwrap().extra_args,
+            [
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                "StrictHostKeyChecking=no"
+            ]
+        );
     }
 }

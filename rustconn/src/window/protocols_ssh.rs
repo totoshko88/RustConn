@@ -338,6 +338,10 @@ fn build_ssh_command_args(
     // used as-is; `None` means it was not precomputed (the reconnect path, or
     // port check disabled) and this falls back to spawning `ssh -G` here.
     precomputed_declares_proxy: Option<bool>,
+    // What the hops of a RustConn-built `ProxyCommand` do with an unknown host
+    // key. Sessions pass `UserConfig`; a script run passes `KnownOnly`. A plain
+    // `-J` route takes no `-o` and always follows the user's ssh config.
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> (
     Option<String>,
     Vec<String>,
@@ -890,13 +894,17 @@ fn build_ssh_command_args(
             proxy_parts.push("ConnectTimeout=15".to_string());
 
             // First hop reached via forced askpass (its own password, no TTY)
-            // must accept a first-seen host key non-interactively: otherwise the
-            // "yes/no/[fingerprint]" prompt is routed to the askpass helper,
-            // which answers with the PASSWORD and loops until the bastion drops
-            // the connection ("Connection closed by UNKNOWN port 65535", #203).
-            if askpass_script.is_some() {
+            // must not raise the "yes/no/[fingerprint]" prompt: it is routed to
+            // the askpass helper, which answers with the PASSWORD and loops
+            // until the bastion drops the connection ("Connection closed by
+            // UNKNOWN port 65535", #203). A session accepts a first-seen key
+            // (`accept-new`); a script run refuses it (`yes`).
+            if let Some(option) = rustconn_core::ssh_tunnel::proxy_hop_host_key_option(
+                hop_host_keys,
+                askpass_script.is_some(),
+            ) {
                 proxy_parts.push("-o".to_string());
-                proxy_parts.push("StrictHostKeyChecking=accept-new".to_string());
+                proxy_parts.push(option.to_string());
             }
 
             // Pass identity file to jump host if we have one.
@@ -977,13 +985,15 @@ fn build_ssh_command_args(
                 let askpass_refs: Vec<Option<&std::path::Path>> =
                     inner_askpass.iter().map(|opt| opt.as_deref()).collect();
 
-                // The user's config decides the host-key posture of hops
-                // without a password (the bastions are expected to already be
-                // in known_hosts); a password hop gets accept-new (#203).
+                // For a session the user's config decides the host-key
+                // posture of hops without a password (the bastions are
+                // expected to already be in known_hosts) and a password hop
+                // gets accept-new (#203); a script run gives every hop `yes`.
                 let inner = rustconn_core::ssh_tunnel::build_nested_proxy_command_with_askpass(
                     &inner_hops,
                     identity_key,
                     flatpak_known_hosts.as_deref(),
+                    hop_host_keys,
                     &askpass_refs,
                     1,
                     jump_hosts.len(),
@@ -1104,6 +1114,9 @@ fn key_setup_session_args(identity: Option<&str>, extra_args: Vec<String>) -> Ve
 /// reaches the result only if the connect gate lets it; otherwise
 /// `password_gated_off` says why a stored password was left out.
 /// `declares_proxy` is `ssh -G`'s answer, run off the main thread by the caller.
+/// `hop_host_keys` is what the hops of a generated `ProxyCommand` do with an
+/// unknown host key: key setup behaves like a session (`UserConfig`), a script
+/// run refuses one (`KnownOnly`).
 ///
 // ponytail: the bastion vault fallback inside `build_ssh_command_args` is
 // synchronous, as it is for a connect; and the `ssh.connect.args` perf span
@@ -1114,6 +1127,7 @@ pub(super) fn build_key_setup_launch(
     groups: &[rustconn_core::ConnectionGroup],
     password: Option<SecretString>,
     declares_proxy: Option<bool>,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> KeySetupLaunch {
     let global_variables = super::protocols::resolve_globals_with_ask(state, conn.id);
     let host = substitute_variables(&conn.host, &global_variables);
@@ -1130,6 +1144,7 @@ pub(super) fn build_key_setup_launch(
             groups,
             password.is_some(),
             declares_proxy,
+            hop_host_keys,
         );
 
     assemble_key_setup_launch(
@@ -1666,6 +1681,7 @@ fn start_ssh_connection_internal(
         &groups,
         cached_password.is_some(),
         precomputed_declares_proxy,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
     );
 
     // Extract MPTCP flag from SSH config
@@ -2105,6 +2121,7 @@ fn reconnect_ssh_after_unlock(
         // `ssh -G` is spawned synchronously here (P3 only backgrounds the
         // initial connect, which has the port-check phase to ride along).
         None,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
     );
 
     // Extract MPTCP flag from SSH config

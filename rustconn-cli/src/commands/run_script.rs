@@ -19,9 +19,9 @@ use rustconn_core::secret::{CredentialResolver, SecretManager};
 use rustconn_core::ssh_askpass::{self, AskpassSlot};
 use rustconn_core::ssh_key_setup::{DeployCredentials, SshTarget};
 use rustconn_core::ssh_tunnel::{
-    SshTunnelParams, append_proxy_command_destination, askpass_disabled_proxy_prefix,
-    askpass_proxy_prefix, build_nested_proxy_command_with_askpass, proxy_jump_arg,
-    shell_single_quote, ssh_config_declares_proxy, target_password_askpass_allowed,
+    HopHostKeys, SshTunnelParams, append_proxy_command_destination, askpass_disabled_proxy_prefix,
+    askpass_proxy_prefix, build_nested_proxy_command_with_askpass, proxy_hop_host_key_option,
+    proxy_jump_arg, shell_single_quote, ssh_config_declares_proxy, target_password_askpass_allowed,
 };
 use rustconn_core::variables::{Variable, VariableManager, VariableScope};
 use secrecy::{ExposeSecret, SecretString};
@@ -347,7 +347,10 @@ fn within<T>(
 ///
 /// Under `-J` each bastion's `ssh` inherits the askpass environment and would be
 /// handed the target's password, so a run with any password goes through this
-/// instead. `None` when a hop holds anything a shell could interpret.
+/// instead. Every hop gets `StrictHostKeyChecking=yes`. A run with no password
+/// keeps `-J`, whose hops take no `-o` and follow the user's ssh configuration,
+/// as in `rustconn_core::sftp`. `None` when a hop holds anything a shell could
+/// interpret.
 fn bastion_proxy_command(
     hops: &[&str],
     helpers: &[Option<&Path>],
@@ -366,9 +369,11 @@ fn bastion_proxy_command(
         None => askpass_disabled_proxy_prefix(hops.len()),
     };
     parts.extend(["ssh", "-W", "%h:%p", "-o", "ConnectTimeout=15"].map(String::from));
-    if helpers.first().copied().flatten().is_some() {
-        // A first-seen key would otherwise be answered with the password (#203).
-        parts.extend(["-o", "StrictHostKeyChecking=accept-new"].map(String::from));
+    // Nobody watches a run, so no hop may accept a key the user has not:
+    // an unknown one fails before any password is sent, without the
+    // host-key question a helper would answer with the password (#203).
+    if let Some(option) = proxy_hop_host_key_option(HopHostKeys::KnownOnly, true) {
+        parts.extend(["-o".to_string(), option.to_string()]);
     }
     if let Some(key) = first_hop_key.filter(|key| key.chars().all(|c| is_safe(c) || c == '/')) {
         parts.extend(["-i".to_string(), key.to_string()]);
@@ -378,6 +383,7 @@ fn bastion_proxy_command(
             &hops[1..],
             None,
             None,
+            HopHostKeys::KnownOnly,
             &helpers[1..],
             1,
             hops.len(),
@@ -822,10 +828,8 @@ mod tests {
         let helper = Path::new("/run/helper.sh");
         let command = bastion_proxy_command(&["jump"], &[Some(helper)], None).unwrap();
         assert!(command.contains("SSH_ASKPASS=/run/helper.sh"), "{command}");
-        assert!(
-            command.contains("StrictHostKeyChecking=accept-new"),
-            "{command}"
-        );
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
+        assert!(!command.contains("accept-new"), "{command}");
     }
 
     #[test]
@@ -834,6 +838,18 @@ mod tests {
         assert!(command.contains("ProxyCommand="), "{command}");
         assert!(command.contains("far"), "{command}");
         assert!(command.trim_end().ends_with("near"), "{command}");
+    }
+
+    #[test]
+    fn every_hop_needs_a_known_host_key() {
+        let helper = Path::new("/run/helper-1.sh");
+        let command = bastion_proxy_command(&["near", "far"], &[None, Some(helper)], None).unwrap();
+        assert_eq!(
+            command.matches("StrictHostKeyChecking=yes").count(),
+            2,
+            "{command}"
+        );
+        assert!(!command.contains("accept-new"), "{command}");
     }
 
     #[test]

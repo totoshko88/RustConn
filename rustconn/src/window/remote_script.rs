@@ -603,6 +603,9 @@ fn build_hosts(
                 &groups,
                 password,
                 Some(declares_proxy),
+                // Nobody watches a run: a bastion in a generated ProxyCommand
+                // must already be known, never accepted on first sight.
+                rustconn_core::ssh_tunnel::HopHostKeys::KnownOnly,
             );
             Some(ScriptTransport::Ssh {
                 target: launch_info.target,

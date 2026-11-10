@@ -676,6 +676,7 @@ fn on_prepared(
         &groups,
         password,
         prepared.declares_proxy,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
     );
     c.failure_context.set(FailureContext {
         password_sent: launch.password_sent,
