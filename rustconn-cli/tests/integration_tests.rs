@@ -608,6 +608,52 @@ fn show_prints_the_winrm_jump_host_and_options() {
 }
 
 #[test]
+fn show_prints_the_socks_login_of_a_web_connection() {
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    ConfigManager::with_config_dir(config_dir.to_path_buf())
+        .save_variables(&[Variable::new_secret("proxy_pw", "hunter2")])
+        .expect("save variables");
+
+    let web = run_cli(
+        &[
+            "add",
+            "--name",
+            "intranet",
+            "--protocol",
+            "web",
+            "--host",
+            "https://example.com",
+            "--socks-proxy",
+            "127.0.0.1:1080",
+            "--socks-proxy-user",
+            "alice",
+            "--socks-proxy-password-var",
+            "proxy_pw",
+        ],
+        Some(config_dir),
+    );
+    assert!(web.status.success(), "{}", stderr_str(&web));
+
+    let json = run_cli(&["show", "intranet", "--format", "json"], Some(config_dir));
+    assert!(json.status.success(), "{}", stderr_str(&json));
+    let json_text = stdout_str(&json);
+    let value: serde_json::Value = serde_json::from_str(&json_text).expect("show prints JSON");
+    assert_eq!(value["socks_proxy_username"], "alice");
+    assert_eq!(value["socks_proxy_password_variable"], "proxy_pw");
+    assert!(!json_text.contains("hunter2"), "{json_text}");
+
+    let table = run_cli(&["show", "intranet", "--format", "table"], Some(config_dir));
+    let text = stdout_str(&table);
+    assert!(text.contains("SOCKS User:   alice"), "{text}");
+    assert!(text.contains("SOCKS Password Var: proxy_pw"), "{text}");
+    assert!(!text.contains("hunter2"), "{text}");
+}
+
+#[test]
 fn add_kerberos_stores_and_normalizes_the_kdc_address() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let config_dir = temp_dir.path();

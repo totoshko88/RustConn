@@ -343,6 +343,13 @@ fn print_json(
             if let Some(user) = &config.socks_proxy_username {
                 map.insert("socks_proxy_username".to_string(), serde_json::json!(user));
             }
+            // The variable's name, not its value.
+            if let Some(variable) = &config.socks_proxy_password_variable {
+                map.insert(
+                    "socks_proxy_password_variable".to_string(),
+                    serde_json::json!(variable),
+                );
+            }
         }
         ProtocolConfig::WinRm(config) => {
             map.insert(
@@ -654,6 +661,9 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             }
             if let Some(user) = &config.socks_proxy_username {
                 println!("  SOCKS User:   {user}");
+            }
+            if let Some(variable) = &config.socks_proxy_password_variable {
+                println!("  SOCKS Password Var: {variable}");
             }
         }
         ProtocolConfig::WinRm(ref config) => {
