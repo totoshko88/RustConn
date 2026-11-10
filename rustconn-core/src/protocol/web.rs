@@ -324,6 +324,41 @@ pub fn proxied_browser_args(
     Ok((args, profile))
 }
 
+/// Why a Web connection's SOCKS password variable cannot be used.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum SocksPasswordVariableError {
+    /// No variable has this name.
+    #[error("no global variable is named '{0}'")]
+    Missing(String),
+    /// The variable is not marked secret, so its value is kept in plain text
+    /// in the configuration file instead of the secret backend.
+    #[error("the variable '{0}' is not secret")]
+    NotSecret(String),
+}
+
+/// The variable holding a SOCKS proxy password: the last one named `name`, as
+/// substitution picks it, and only when it is marked secret.
+///
+/// # Errors
+///
+/// Returns [`SocksPasswordVariableError`] when no variable is named `name` or
+/// the one that is is not secret.
+pub fn socks_password_variable<'a>(
+    variables: &'a [crate::variables::Variable],
+    name: &str,
+) -> Result<&'a crate::variables::Variable, SocksPasswordVariableError> {
+    let variable = variables
+        .iter()
+        .rev()
+        .find(|v| v.name == name)
+        .ok_or_else(|| SocksPasswordVariableError::Missing(name.to_string()))?;
+    if variable.is_secret {
+        Ok(variable)
+    } else {
+        Err(SocksPasswordVariableError::NotSecret(name.to_string()))
+    }
+}
+
 /// Checks a SOCKS proxy address and returns it as `socks5://host:port`.
 ///
 /// Accepts `host:port`, `socks5://host:port` and `socks5h://host:port`; an IPv6
@@ -724,6 +759,39 @@ mod tests {
             config.socks_proxy_password_variable = Some("proxy_pw".to_string());
         }
         assert!(WebProtocol::new().validate_connection(&conn).is_ok());
+    }
+
+    #[test]
+    fn the_socks_password_must_come_from_a_secret_variable() {
+        use crate::variables::Variable;
+
+        let variables = [
+            Variable::new("plain_pw", "hunter2"),
+            Variable::new_secret("proxy_pw", "old"),
+            Variable::new_secret("proxy_pw", "shadowing"),
+        ];
+        let found = socks_password_variable(&variables, "proxy_pw").unwrap();
+        assert_eq!(
+            found.value, "shadowing",
+            "the last one wins, as in substitution"
+        );
+        assert_eq!(
+            socks_password_variable(&variables, "plain_pw"),
+            Err(SocksPasswordVariableError::NotSecret(
+                "plain_pw".to_string()
+            ))
+        );
+        assert_eq!(
+            socks_password_variable(&variables, "absent"),
+            Err(SocksPasswordVariableError::Missing("absent".to_string()))
+        );
+        // A secret value never lands in the error text.
+        let shadowed = [
+            Variable::new_secret("plain_pw", "s3cret"),
+            Variable::new("plain_pw", "x"),
+        ];
+        let error = socks_password_variable(&shadowed, "plain_pw").unwrap_err();
+        assert!(!error.to_string().contains("s3cret"));
     }
 
     #[test]

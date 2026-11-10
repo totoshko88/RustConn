@@ -6,8 +6,9 @@ use rustconn_core::config::ConfigManager;
 use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
-    apply_jump_host_id, apply_ssh_wave2_fields, parse_auth_method, parse_resolution,
-    parse_shared_folder, parse_spice_image_compression, resolve_fallback_jump_hosts,
+    apply_jump_host_id, apply_ssh_wave2_fields, check_socks_password_variable, parse_auth_method,
+    parse_resolution, parse_shared_folder, parse_spice_image_compression,
+    resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -884,6 +885,9 @@ pub(super) fn cmd_update(
         if let Some(browser) = params.browser {
             cfg.browser = value(browser);
         }
+    }
+    if params.socks_proxy_password_var.is_some() {
+        check_socks_password_variable(&config_manager, connection)?;
     }
 
     if params.winrm_ssl.is_some() || params.winrm_accept_invalid_certs.is_some() {

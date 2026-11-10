@@ -693,6 +693,9 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
             cfg.browser = Some(browser.to_string());
         }
     }
+    if params.socks_proxy_password_var.is_some() {
+        check_socks_password_variable(&config_manager, &connection)?;
+    }
 
     if params.winrm_ssl || params.winrm_accept_invalid_certs {
         let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
@@ -743,6 +746,32 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
     );
 
     Ok(())
+}
+
+/// Refuses a Web connection's SOCKS password variable unless it names a secret
+/// global variable: a plain one keeps the proxy password in the configuration
+/// file as plain text.
+pub(super) fn check_socks_password_variable(
+    config_manager: &ConfigManager,
+    connection: &Connection,
+) -> Result<(), CliError> {
+    let rustconn_core::models::ProtocolConfig::Web(cfg) = &connection.protocol_config else {
+        return Ok(());
+    };
+    let Some(name) = cfg.socks_proxy_password_variable.as_deref() else {
+        return Ok(());
+    };
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+    rustconn_core::protocol::socks_password_variable(&variables, name)
+        .map(|_| ())
+        .map_err(|e| {
+            CliError::Config(format!(
+                "--socks-proxy-password-var: {e}; it must name a secret global variable \
+                 ('var list' shows them)"
+            ))
+        })
 }
 
 /// Reads a password from stdin (one line) and stores it in the configured
@@ -1845,6 +1874,46 @@ pub(super) fn apply_serial_wave2_fields(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod socks_password_variable_tests {
+    use super::check_socks_password_variable;
+    use rustconn_core::Variable;
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType, WebConfig};
+
+    fn web_with_variable(variable: &str) -> Connection {
+        let mut conn = Connection::new_ssh("web".into(), "https://example.com".into(), 443);
+        conn.protocol = ProtocolType::Web;
+        conn.protocol_config = ProtocolConfig::Web(WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".into()),
+            socks_proxy_username: Some("alice".into()),
+            socks_proxy_password_variable: Some(variable.into()),
+            ..WebConfig::default()
+        });
+        conn
+    }
+
+    #[test]
+    fn only_a_secret_global_variable_holds_the_socks_password() {
+        let dir = tempfile::tempdir().unwrap();
+        let manager = ConfigManager::with_config_dir(dir.path().to_path_buf());
+        manager
+            .save_variables(&[
+                Variable::new("plain_pw", "hunter2"),
+                Variable::new_secret("proxy_pw", ""),
+            ])
+            .unwrap();
+
+        assert!(check_socks_password_variable(&manager, &web_with_variable("proxy_pw")).is_ok());
+        let plain = check_socks_password_variable(&manager, &web_with_variable("plain_pw"))
+            .unwrap_err()
+            .to_string();
+        assert!(plain.contains("not secret"), "{plain}");
+        assert!(!plain.contains("hunter2"), "{plain}");
+        assert!(check_socks_password_variable(&manager, &web_with_variable("absent")).is_err());
+    }
 }
 
 #[cfg(test)]

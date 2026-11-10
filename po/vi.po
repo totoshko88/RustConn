@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 10:40+0200\n"
+"POT-Creation-Date: 2026-11-10 15:29+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2199 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2203 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -88,7 +88,7 @@ msgstr "Không lưu"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:853
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1004
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -98,18 +98,18 @@ msgstr "Lưu"
 msgid "Initialization Error"
 msgstr "Lỗi khởi tạo"
 
-#: rustconn/src/app.rs:872
+#: rustconn/src/app.rs:876
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Chưa tải được mật khẩu KeePass từ chùm khóa — hãy nhập lại trong Cài đặt"
 
-#: rustconn/src/app.rs:877 rustconn/src/dialogs/shortcuts.rs:178
+#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:178
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Cài đặt"
 
-#: rustconn/src/app.rs:1727
+#: rustconn/src/app.rs:1731
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -119,14 +119,14 @@ msgstr ""
 "snap connect rustconn:password-manager-service — hoặc mở Cài đặt, rồi Bí "
 "mật, để chọn trình lưu trữ khác."
 
-#: rustconn/src/app.rs:1732
+#: rustconn/src/app.rs:1736
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
 msgstr ""
 "Đã chọn {}, nhưng nó chưa thể lưu mật khẩu: {}. Hãy mở Cài đặt, rồi Bí mật."
 
-#: rustconn/src/app.rs:2043
+#: rustconn/src/app.rs:2047
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -136,31 +136,31 @@ msgstr ""
 "Quản lý các kết nối SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes và Zero "
 "Trust từ một ứng dụng duy nhất."
 
-#: rustconn/src/app.rs:2122
+#: rustconn/src/app.rs:2126
 msgid "User Guide"
 msgstr "Hướng dẫn sử dụng"
 
-#: rustconn/src/app.rs:2126
+#: rustconn/src/app.rs:2130
 msgid "Installation"
 msgstr "Hướng dẫn cài đặt"
 
-#: rustconn/src/app.rs:2130
+#: rustconn/src/app.rs:2134
 msgid "Releases"
 msgstr "Các bản phát hành"
 
-#: rustconn/src/app.rs:2134
+#: rustconn/src/app.rs:2138
 msgid "Changelog"
 msgstr "Nhật ký thay đổi"
 
-#: rustconn/src/app.rs:2144
+#: rustconn/src/app.rs:2148
 msgid "Special Thanks"
 msgstr "Lời cảm ơn đặc biệt"
 
-#: rustconn/src/app.rs:2159
+#: rustconn/src/app.rs:2163
 msgid "Made in Ukraine"
 msgstr "Sản xuất tại Ukraina"
 
-#: rustconn/src/app.rs:2160
+#: rustconn/src/app.rs:2164
 msgid "All contributors and supporters"
 msgstr "Tất cả những người đóng góp và ủng hộ"
 
@@ -226,7 +226,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "‘{}’ cần những thông tin sau trước khi có thể kết nối."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:858
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1009
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
@@ -241,7 +241,7 @@ msgstr "Nhập thông tin macro"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "Macro lệnh ‘{}’ cần những thông tin sau trước khi có thể gửi."
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:859
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1010
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -285,7 +285,7 @@ msgstr "Cụm mới"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:854
+#: rustconn/src/dialogs/widgets.rs:1005
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 #: rustconn/src/window/operations.rs:402
@@ -1693,7 +1693,7 @@ msgstr "Tạo đường hầm WinRM qua kết nối SSH"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
-#: rustconn/src/dialogs/widgets.rs:250
+#: rustconn/src/dialogs/widgets.rs:401
 msgid "(Root)"
 msgstr "(Gốc)"
 
@@ -3012,7 +3012,7 @@ msgstr "Nếu khác với tên người dùng của kết nối"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:255 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/dialogs/widgets.rs:406 rustconn/src/window/edit_dialogs.rs:809
 #: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "(Không có)"
@@ -3064,7 +3064,7 @@ msgstr "Thêm"
 #: rustconn/src/dialogs/flatpak_components.rs:361
 #: rustconn/src/dialogs/flatpak_components.rs:501
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
-#: rustconn/src/dialogs/widgets.rs:186
+#: rustconn/src/dialogs/widgets.rs:309
 msgid "Remove"
 msgstr "Gỡ bỏ"
 
@@ -3696,7 +3696,7 @@ msgid "Path to private key file"
 msgstr "Đường dẫn tới tệp khóa riêng"
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:260
+#: rustconn/src/dialogs/widgets.rs:411
 msgid "(No keys loaded)"
 msgstr "(Chưa tải khóa nào)"
 
@@ -4707,7 +4707,7 @@ msgstr "Cụm mật khẩu của tệp di động"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:857
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1008
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4832,7 +4832,7 @@ msgstr "Đã dừng sao chép"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:852 rustconn/src/sidebar_ui.rs:488
+#: rustconn/src/dialogs/widgets.rs:1003 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
@@ -4869,7 +4869,7 @@ msgid "Export Connections"
 msgstr "Xuất kết nối"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:855
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1006
 msgid "Export"
 msgstr "Xuất"
 
@@ -5160,7 +5160,7 @@ msgstr "Xuất hoàn tất"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:861
+#: rustconn/src/dialogs/widgets.rs:1012
 msgid "Done"
 msgstr "Xong"
 
@@ -5344,7 +5344,7 @@ msgstr "Nhập kết nối"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:856
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1007
 #: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:953
 msgid "Import"
 msgstr "Nhập"
@@ -8562,13 +8562,13 @@ msgid "Token loaded from keyring"
 msgstr "Đã tải token từ chùm khóa"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
-#: rustconn/src/dialogs/widgets.rs:798 rustconn/src/dialogs/widgets.rs:803
-#: rustconn/src/dialogs/widgets.rs:815
+#: rustconn/src/dialogs/widgets.rs:949 rustconn/src/dialogs/widgets.rs:954
+#: rustconn/src/dialogs/widgets.rs:966
 msgid "Select KeePass Database"
 msgstr "Chọn cơ sở dữ liệu KeePass"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
-#: rustconn/src/dialogs/widgets.rs:811
+#: rustconn/src/dialogs/widgets.rs:962
 msgid "KeePass Database (*.kdbx)"
 msgstr "Cơ sở dữ liệu KeePass (*.kdbx)"
 
@@ -10212,7 +10212,7 @@ msgid "Edit"
 msgstr "Sửa"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:860
+#: rustconn/src/dialogs/widgets.rs:1011
 msgid "Use Template"
 msgstr "Dùng mẫu"
 
@@ -10763,39 +10763,39 @@ msgstr "Tải bí mật thất bại. Hãy kiểm tra trình lưu trữ bí mậ
 msgid "Fetched from vault at connect time"
 msgstr "Được lấy từ kho bí mật khi kết nối"
 
-#: rustconn/src/dialogs/widgets.rs:83
+#: rustconn/src/dialogs/widgets.rs:191
 msgid "Fallback Jump Hosts"
 msgstr "Máy chủ trung gian dự phòng"
 
-#: rustconn/src/dialogs/widgets.rs:84
+#: rustconn/src/dialogs/widgets.rs:192
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr "Được thử theo thứ tự khi máy chủ trung gian không truy cập được"
 
-#: rustconn/src/dialogs/widgets.rs:90
+#: rustconn/src/dialogs/widgets.rs:198
 msgid "Add Fallback Jump Host"
 msgstr "Thêm máy chủ trung gian dự phòng"
 
-#: rustconn/src/dialogs/widgets.rs:167 rustconn/src/window/edit_group.rs:869
+#: rustconn/src/dialogs/widgets.rs:275 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "(kết nối không xác định)"
 
-#: rustconn/src/dialogs/widgets.rs:182
+#: rustconn/src/dialogs/widgets.rs:293
 msgid "Move Up"
 msgstr "Chuyển lên"
 
-#: rustconn/src/dialogs/widgets.rs:184
+#: rustconn/src/dialogs/widgets.rs:301
 msgid "Move Down"
 msgstr "Chuyển xuống"
 
-#: rustconn/src/dialogs/widgets.rs:719
+#: rustconn/src/dialogs/widgets.rs:870
 msgid "Underline colour (#RRGGBB)"
 msgstr "Màu gạch chân (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:725
+#: rustconn/src/dialogs/widgets.rs:876
 msgid "Background colour (#RRGGBB)"
 msgstr "Màu nền (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:732
+#: rustconn/src/dialogs/widgets.rs:883
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10805,23 +10805,23 @@ msgstr ""
 "khớp. Để trống nếu không cần. Để đổi màu chính văn bản, hãy đặt cho kết nối "
 "một Bộ lọc đầu ra như ChromaTerm."
 
-#: rustconn/src/dialogs/widgets.rs:739
+#: rustconn/src/dialogs/widgets.rs:890
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr "Màu dạng thập lục phân như #402020. Để trống nếu không cần màu nền."
 
-#: rustconn/src/dialogs/widgets.rs:872
+#: rustconn/src/dialogs/widgets.rs:1023
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:873
+#: rustconn/src/dialogs/widgets.rs:1024
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "Bật hoặc tắt việc thực thi JavaScript trong trình duyệt nhúng"
 
-#: rustconn/src/dialogs/widgets.rs:874
+#: rustconn/src/dialogs/widgets.rs:1025
 msgid "Navigation Toolbar"
 msgstr "Thanh công cụ điều hướng"
 
-#: rustconn/src/dialogs/widgets.rs:876
+#: rustconn/src/dialogs/widgets.rs:1027
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10829,11 +10829,11 @@ msgstr ""
 "Tắt để gỡ bỏ thanh công cụ nổi và mũi tên hiện thanh. Các phím tắt quay lại, "
 "tiến tới, tải lại và thu phóng vẫn hoạt động."
 
-#: rustconn/src/dialogs/widgets.rs:878
+#: rustconn/src/dialogs/widgets.rs:1029
 msgid "Private / Incognito Mode"
 msgstr "Chế độ riêng tư / ẩn danh"
 
-#: rustconn/src/dialogs/widgets.rs:879
+#: rustconn/src/dialogs/widgets.rs:1030
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Mở URL trong cửa sổ duyệt web riêng tư (Firefox, Chrome, Brave)"
 
@@ -13289,7 +13289,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2390
+#: rustconn/src/window/edit_actions.rs:2434
 msgid "Connection failed. Host unreachable."
 msgstr "Kết nối thất bại. Không thể truy cập máy chủ."
 
@@ -13381,28 +13381,34 @@ msgstr "ứng dụng đang bận"
 msgid "the SSH connection it tunnels through is gone"
 msgstr "kết nối SSH mà nó đi qua không còn nữa"
 
-#: rustconn/src/window/edit_actions.rs:989
+#: rustconn/src/window/edit_actions.rs:990
+msgid ""
+"The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
+"Mark it as secret in Global Variables."
+msgstr "Biến mật khẩu proxy SOCKS ‘{}’ không phải là bí mật nên đã không được dùng. Hãy đánh dấu biến này là bí mật trong Biến toàn cục."
+
+#: rustconn/src/window/edit_actions.rs:996
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "Biến mật khẩu proxy SOCKS ‘{}’ không có giá trị"
 
-#: rustconn/src/window/edit_actions.rs:995
+#: rustconn/src/window/edit_actions.rs:1003
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Không thể khởi động bộ chuyển tiếp SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1245
-#: rustconn/src/window/edit_actions.rs:1379
-#: rustconn/src/window/edit_actions.rs:1635
-#: rustconn/src/window/edit_actions.rs:1744
+#: rustconn/src/window/edit_actions.rs:1271
+#: rustconn/src/window/edit_actions.rs:1405
+#: rustconn/src/window/edit_actions.rs:1664
+#: rustconn/src/window/edit_actions.rs:1773
 #: rustconn/src/window/protocols.rs:2550
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Không thể mở đường hầm SSH: {}"
 
-#: rustconn/src/window/edit_actions.rs:1258
-#: rustconn/src/window/edit_actions.rs:1358
+#: rustconn/src/window/edit_actions.rs:1284
+#: rustconn/src/window/edit_actions.rs:1384
 msgid "Starting the tunnel…"
 msgstr "Đang khởi chạy đường hầm…"
 
-#: rustconn/src/window/edit_actions.rs:1318
+#: rustconn/src/window/edit_actions.rs:1344
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13412,7 +13418,7 @@ msgstr ""
 "sẽ được mở thay thế. Hãy đặt trình duyệt dựa trên Chromium hoặc Firefox "
 "trong Cài đặt để dùng trình duyệt ngoài."
 
-#: rustconn/src/window/edit_actions.rs:1322
+#: rustconn/src/window/edit_actions.rs:1348
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13422,7 +13428,7 @@ msgstr ""
 "Chromium. Chỉ các trình duyệt họ Chromium mới có thể đi qua proxy của đường "
 "hầm; hãy đặt lệnh chromium/chrome/brave/vivaldi/edge trong Cài đặt."
 
-#: rustconn/src/window/edit_actions.rs:1328
+#: rustconn/src/window/edit_actions.rs:1354
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13432,7 +13438,7 @@ msgstr ""
 "duyệt nhúng thay thế. Hãy kiểm tra lệnh trong Cài đặt, hoặc xóa nó để tự "
 "động phát hiện trình duyệt."
 
-#: rustconn/src/window/edit_actions.rs:1332
+#: rustconn/src/window/edit_actions.rs:1358
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13440,7 +13446,7 @@ msgstr ""
 "Không tìm thấy lệnh trình duyệt qua đường hầm ‘{}’ trong PATH. Hãy kiểm tra "
 "lệnh trong Cài đặt, hoặc xóa nó để tự động phát hiện trình duyệt."
 
-#: rustconn/src/window/edit_actions.rs:1338
+#: rustconn/src/window/edit_actions.rs:1364
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13449,7 +13455,7 @@ msgstr ""
 "thế. Hãy cài đặt một trình duyệt dựa trên Chromium để dùng trình duyệt bên "
 "ngoài qua đường hầm."
 
-#: rustconn/src/window/edit_actions.rs:1341
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13458,32 +13464,32 @@ msgstr ""
 "dựa trên Chromium, hoặc dùng bản dựng có trình duyệt nhúng, để mở trình "
 "duyệt qua đường hầm."
 
-#: rustconn/src/window/edit_actions.rs:1445
-#: rustconn/src/window/edit_actions.rs:1469
-#: rustconn/src/window/edit_actions.rs:1522
+#: rustconn/src/window/edit_actions.rs:1475
+#: rustconn/src/window/edit_actions.rs:1498
+#: rustconn/src/window/edit_actions.rs:1551
 msgid "Failed to open browser: {}"
 msgstr "Mở trình duyệt thất bại: {}"
 
-#: rustconn/src/window/edit_actions.rs:1464
+#: rustconn/src/window/edit_actions.rs:1493
 msgid "Opened a tunnelled browser"
 msgstr "Đã mở trình duyệt qua đường hầm"
 
-#: rustconn/src/window/edit_actions.rs:1499
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "{} (tunnel)"
 msgstr "{} (đường hầm)"
 
-#: rustconn/src/window/edit_actions.rs:1513
-#: rustconn/src/window/edit_actions.rs:1675
+#: rustconn/src/window/edit_actions.rs:1542
+#: rustconn/src/window/edit_actions.rs:1704
 msgid "Could not open the page: {}"
 msgstr "Không thể mở trang: {}"
 
-#: rustconn/src/window/edit_actions.rs:1707
-#: rustconn/src/window/edit_actions.rs:1835
-#: rustconn/src/window/edit_actions.rs:1863
+#: rustconn/src/window/edit_actions.rs:1736
+#: rustconn/src/window/edit_actions.rs:1879
+#: rustconn/src/window/edit_actions.rs:1907
 msgid "Failed to open URL: {}"
 msgstr "Mở URL thất bại: {}"
 
-#: rustconn/src/window/edit_actions.rs:1771
+#: rustconn/src/window/edit_actions.rs:1803
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13491,12 +13497,12 @@ msgstr ""
 "Trình duyệt này không thể dùng proxy nên trang chưa được mở. Hãy dùng trình "
 "duyệt dựa trên Chromium, Firefox hoặc trình duyệt nhúng."
 
-#: rustconn/src/window/edit_actions.rs:1824
-#: rustconn/src/window/edit_actions.rs:1877
+#: rustconn/src/window/edit_actions.rs:1868
+#: rustconn/src/window/edit_actions.rs:1921
 msgid "Opened in browser"
 msgstr "Đã mở trong trình duyệt"
 
-#: rustconn/src/window/edit_actions.rs:1849
+#: rustconn/src/window/edit_actions.rs:1893
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13504,38 +13510,38 @@ msgstr ""
 "Không tìm thấy trình duyệt có thể dùng proxy nên trang chưa được mở. Hãy cài "
 "Chromium hoặc Firefox, hoặc dùng trình duyệt nhúng."
 
-#: rustconn/src/window/edit_actions.rs:2031
-#: rustconn/src/window/edit_actions.rs:2133
-#: rustconn/src/window/edit_actions.rs:2191
+#: rustconn/src/window/edit_actions.rs:2075
+#: rustconn/src/window/edit_actions.rs:2177
+#: rustconn/src/window/edit_actions.rs:2235
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP chỉ khả dụng cho kết nối SSH."
 
-#: rustconn/src/window/edit_actions.rs:2041
+#: rustconn/src/window/edit_actions.rs:2085
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr "mc cần khóa SSH trong agent. Không hỗ trợ xác thực bằng mật khẩu."
 
-#: rustconn/src/window/edit_actions.rs:2049
+#: rustconn/src/window/edit_actions.rs:2093
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "SSH agent không chạy. Hãy chạy 'eval $(ssh-agent)' rồi thử lại."
 
-#: rustconn/src/window/edit_actions.rs:2060
+#: rustconn/src/window/edit_actions.rs:2104
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr "Không thể kiểm tra SSH agent có giữ khóa hay không. Vẫn mở mc."
 
-#: rustconn/src/window/edit_actions.rs:2066
+#: rustconn/src/window/edit_actions.rs:2110
 msgid "SSH key not available"
 msgstr "Không có khóa SSH"
 
-#: rustconn/src/window/edit_actions.rs:2077
+#: rustconn/src/window/edit_actions.rs:2121
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) chưa được cài đặt."
 
-#: rustconn/src/window/edit_actions.rs:2082
+#: rustconn/src/window/edit_actions.rs:2126
 msgid "Opening mc SFTP…"
 msgstr "Đang mở SFTP bằng mc…"
 
-#: rustconn/src/window/edit_actions.rs:2162
-#: rustconn/src/window/edit_actions.rs:2553
+#: rustconn/src/window/edit_actions.rs:2206
+#: rustconn/src/window/edit_actions.rs:2597
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13544,17 +13550,17 @@ msgstr ""
 "Trình quản lý tệp bên ngoài không thể truy cập SSH agent trong Flatpak. Hãy "
 "bật “SFTP qua mc” trong Cài đặt để truy cập ổn định."
 
-#: rustconn/src/window/edit_actions.rs:2178
-#: rustconn/src/window/edit_actions.rs:2571
+#: rustconn/src/window/edit_actions.rs:2222
+#: rustconn/src/window/edit_actions.rs:2615
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Phát hiện máy chủ trung gian. Đang mở SFTP qua mc thay vì trình quản lý tệp."
 
-#: rustconn/src/window/edit_actions.rs:2237
+#: rustconn/src/window/edit_actions.rs:2281
 msgid "Opening SFTP…"
 msgstr "Đang mở SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2284
+#: rustconn/src/window/edit_actions.rs:2328
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "SSH agent không chạy — trình quản lý tệp có thể không xác thực được."
 

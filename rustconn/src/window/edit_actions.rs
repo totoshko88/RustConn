@@ -979,16 +979,24 @@ impl MainWindow {
             .as_deref()
             .unwrap_or_default();
         let globals = super::protocols::resolve_globals_with_ask(state, connection_id);
-        let Some(password) = globals
-            .iter()
-            .rev()
-            .find(|v| v.name == variable && !v.value.is_empty())
-            .map(|v| secrecy::SecretString::from(v.value.clone()))
-        else {
-            return Err(crate::i18n::i18n_f(
-                "The SOCKS proxy password variable ‘{}’ has no value",
-                &[variable],
-            ));
+        // Only a secret variable: a plain one keeps the proxy password in the
+        // configuration file as plain text.
+        let password = match rustconn_core::protocol::socks_password_variable(&globals, variable) {
+            Ok(found) if !found.value.is_empty() => {
+                secrecy::SecretString::from(found.value.clone())
+            }
+            Err(rustconn_core::protocol::SocksPasswordVariableError::NotSecret(_)) => {
+                return Err(crate::i18n::i18n_f(
+                    "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. Mark it as secret in Global Variables.",
+                    &[variable],
+                ));
+            }
+            _ => {
+                return Err(crate::i18n::i18n_f(
+                    "The SOCKS proxy password variable ‘{}’ has no value",
+                    &[variable],
+                ));
+            }
         };
         let relay = rustconn_core::socks_relay::SocksRelay::start(proxy, username, password)
             .map_err(|e| {

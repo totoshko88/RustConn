@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 10:40+0200\n"
+"POT-Creation-Date: 2026-11-10 15:29+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2199 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2203 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -85,7 +85,7 @@ msgstr "Neukládat"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:853
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1004
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -95,18 +95,18 @@ msgstr "Uložit"
 msgid "Initialization Error"
 msgstr "Chyba inicializace"
 
-#: rustconn/src/app.rs:872
+#: rustconn/src/app.rs:876
 msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Heslo KeePass nebylo načteno z klíčenky — zadejte jej znovu v Nastavení"
 
-#: rustconn/src/app.rs:877 rustconn/src/dialogs/shortcuts.rs:178
+#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:178
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2030
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
 msgstr "Nastavení"
 
-#: rustconn/src/app.rs:1727
+#: rustconn/src/app.rs:1731
 msgid ""
 "{} is selected, but the system keyring is not accessible. Run: sudo snap "
 "connect rustconn:password-manager-service — or open Settings, then Secrets, "
@@ -116,7 +116,7 @@ msgstr ""
 "connect rustconn:password-manager-service — nebo otevřete Nastavení a poté "
 "Tajemství a zvolte jiný backend."
 
-#: rustconn/src/app.rs:1732
+#: rustconn/src/app.rs:1736
 msgid ""
 "{} is selected, but it cannot store passwords yet: {}. Open Settings, then "
 "Secrets."
@@ -124,7 +124,7 @@ msgstr ""
 "{} je vybrán, ale zatím neumí ukládat hesla: {}. Otevřete Nastavení a poté "
 "Tajemství."
 
-#: rustconn/src/app.rs:2043
+#: rustconn/src/app.rs:2047
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -135,31 +135,31 @@ msgstr ""
 "připojení, dále ta přes sériový port, do Kubernetes a přes Zero Trust – toto "
 "vše z jediné aplikace."
 
-#: rustconn/src/app.rs:2122
+#: rustconn/src/app.rs:2126
 msgid "User Guide"
 msgstr "Uživatelská příručka"
 
-#: rustconn/src/app.rs:2126
+#: rustconn/src/app.rs:2130
 msgid "Installation"
 msgstr "Instalace"
 
-#: rustconn/src/app.rs:2130
+#: rustconn/src/app.rs:2134
 msgid "Releases"
 msgstr "Vydání"
 
-#: rustconn/src/app.rs:2134
+#: rustconn/src/app.rs:2138
 msgid "Changelog"
 msgstr "Seznam změn"
 
-#: rustconn/src/app.rs:2144
+#: rustconn/src/app.rs:2148
 msgid "Special Thanks"
 msgstr "Zvláštní poděkování"
 
-#: rustconn/src/app.rs:2159
+#: rustconn/src/app.rs:2163
 msgid "Made in Ukraine"
 msgstr "Vytvořeno na Ukrajině"
 
-#: rustconn/src/app.rs:2160
+#: rustconn/src/app.rs:2164
 msgid "All contributors and supporters"
 msgstr "Všem přispěvatelům a podporovatelům"
 
@@ -225,7 +225,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "„{}“ před připojením vyžaduje následující."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:858
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1009
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
@@ -240,7 +240,7 @@ msgstr "Zadejte podrobnosti makra"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "Příkazové makro „{}“ před odesláním potřebuje následující."
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:859
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1010
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -284,7 +284,7 @@ msgstr "Nový cluster"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:854
+#: rustconn/src/dialogs/widgets.rs:1005
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 #: rustconn/src/window/operations.rs:402
@@ -1697,7 +1697,7 @@ msgstr "Tunelovat WinRM přes připojení SSH"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
-#: rustconn/src/dialogs/widgets.rs:250
+#: rustconn/src/dialogs/widgets.rs:401
 msgid "(Root)"
 msgstr "(Kořen)"
 
@@ -3019,7 +3019,7 @@ msgstr "Pokud se liší od uživatelského jména připojení"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:255 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/dialogs/widgets.rs:406 rustconn/src/window/edit_dialogs.rs:809
 #: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "(Žádný)"
@@ -3073,7 +3073,7 @@ msgstr "Přidat"
 #: rustconn/src/dialogs/flatpak_components.rs:361
 #: rustconn/src/dialogs/flatpak_components.rs:501
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
-#: rustconn/src/dialogs/widgets.rs:186
+#: rustconn/src/dialogs/widgets.rs:309
 msgid "Remove"
 msgstr "Odebrat"
 
@@ -3704,7 +3704,7 @@ msgid "Path to private key file"
 msgstr "Cesta k souboru soukromého klíče"
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:260
+#: rustconn/src/dialogs/widgets.rs:411
 msgid "(No keys loaded)"
 msgstr "(Žádné klíče načteny)"
 
@@ -4720,7 +4720,7 @@ msgstr "Přístupová fráze přenosného souboru"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:857
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1008
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4846,7 +4846,7 @@ msgstr "Kopírování zastaveno"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:852 rustconn/src/sidebar_ui.rs:488
+#: rustconn/src/dialogs/widgets.rs:1003 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
@@ -4881,7 +4881,7 @@ msgid "Export Connections"
 msgstr "Exportovat připojení"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:855
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1006
 msgid "Export"
 msgstr "Export"
 
@@ -5173,7 +5173,7 @@ msgstr "Export dokončen"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:861
+#: rustconn/src/dialogs/widgets.rs:1012
 msgid "Done"
 msgstr "Hotovo"
 
@@ -5358,7 +5358,7 @@ msgstr "Naimportovat připojení"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:856
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1007
 #: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:953
 msgid "Import"
 msgstr "Importovat"
@@ -8581,13 +8581,13 @@ msgid "Token loaded from keyring"
 msgstr "Token načten z klíčenky"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
-#: rustconn/src/dialogs/widgets.rs:798 rustconn/src/dialogs/widgets.rs:803
-#: rustconn/src/dialogs/widgets.rs:815
+#: rustconn/src/dialogs/widgets.rs:949 rustconn/src/dialogs/widgets.rs:954
+#: rustconn/src/dialogs/widgets.rs:966
 msgid "Select KeePass Database"
 msgstr "Vybrat databázi KeePass"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
-#: rustconn/src/dialogs/widgets.rs:811
+#: rustconn/src/dialogs/widgets.rs:962
 msgid "KeePass Database (*.kdbx)"
 msgstr "Databáze KeePass (*.kdbx)"
 
@@ -10238,7 +10238,7 @@ msgid "Edit"
 msgstr "Upravit"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:860
+#: rustconn/src/dialogs/widgets.rs:1011
 msgid "Use Template"
 msgstr "Použít šablonu"
 
@@ -10789,39 +10789,39 @@ msgstr "Nepodařilo se načíst tajemství. Zkontrolujte backend v Nastavení."
 msgid "Fetched from vault at connect time"
 msgstr "Načteno z trezoru při připojení"
 
-#: rustconn/src/dialogs/widgets.rs:83
+#: rustconn/src/dialogs/widgets.rs:191
 msgid "Fallback Jump Hosts"
 msgstr "Záložní přestupní hostitelé"
 
-#: rustconn/src/dialogs/widgets.rs:84
+#: rustconn/src/dialogs/widgets.rs:192
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr "Zkoušejí se postupně, když je přestupní hostitel nedostupný"
 
-#: rustconn/src/dialogs/widgets.rs:90
+#: rustconn/src/dialogs/widgets.rs:198
 msgid "Add Fallback Jump Host"
 msgstr "Přidat záložního přestupního hostitele"
 
-#: rustconn/src/dialogs/widgets.rs:167 rustconn/src/window/edit_group.rs:869
+#: rustconn/src/dialogs/widgets.rs:275 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "(neznámé připojení)"
 
-#: rustconn/src/dialogs/widgets.rs:182
+#: rustconn/src/dialogs/widgets.rs:293
 msgid "Move Up"
 msgstr "Přesunout nahoru"
 
-#: rustconn/src/dialogs/widgets.rs:184
+#: rustconn/src/dialogs/widgets.rs:301
 msgid "Move Down"
 msgstr "Přesunout dolů"
 
-#: rustconn/src/dialogs/widgets.rs:719
+#: rustconn/src/dialogs/widgets.rs:870
 msgid "Underline colour (#RRGGBB)"
 msgstr "Barva podtržení (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:725
+#: rustconn/src/dialogs/widgets.rs:876
 msgid "Background colour (#RRGGBB)"
 msgstr "Barva pozadí (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:732
+#: rustconn/src/dialogs/widgets.rs:883
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10831,24 +10831,24 @@ msgstr ""
 "prázdné, pokud nemá být podtržena. Chcete-li změnit barvu samotného textu, "
 "nastavte pro připojení filtr výstupu, například ChromaTerm."
 
-#: rustconn/src/dialogs/widgets.rs:739
+#: rustconn/src/dialogs/widgets.rs:890
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr ""
 "Šestnáctková barva, například #402020. Ponechte prázdné pro žádné pozadí."
 
-#: rustconn/src/dialogs/widgets.rs:872
+#: rustconn/src/dialogs/widgets.rs:1023
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:873
+#: rustconn/src/dialogs/widgets.rs:1024
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "Povolit nebo zakázat spouštění JavaScriptu ve vestavěném prohlížeči"
 
-#: rustconn/src/dialogs/widgets.rs:874
+#: rustconn/src/dialogs/widgets.rs:1025
 msgid "Navigation Toolbar"
 msgstr "Navigační panel"
 
-#: rustconn/src/dialogs/widgets.rs:876
+#: rustconn/src/dialogs/widgets.rs:1027
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10856,11 +10856,11 @@ msgstr ""
 "Vypnutím odeberete plovoucí panel nástrojů i jeho rozbalovací šipku. "
 "Klávesové zkratky pro zpět, vpřed, obnovení a přiblížení fungují dál."
 
-#: rustconn/src/dialogs/widgets.rs:878
+#: rustconn/src/dialogs/widgets.rs:1029
 msgid "Private / Incognito Mode"
 msgstr "Soukromý / anonymní režim"
 
-#: rustconn/src/dialogs/widgets.rs:879
+#: rustconn/src/dialogs/widgets.rs:1030
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Otevřít URL v okně soukromého prohlížení (Firefox, Chrome, Brave)"
 
@@ -13335,7 +13335,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2390
+#: rustconn/src/window/edit_actions.rs:2434
 msgid "Connection failed. Host unreachable."
 msgstr "Připojení selhalo. Hostitel nedostupný."
 
@@ -13431,28 +13431,34 @@ msgstr "aplikace je zaneprázdněna"
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH připojení, přes které tuneluje, již neexistuje"
 
-#: rustconn/src/window/edit_actions.rs:989
+#: rustconn/src/window/edit_actions.rs:990
+msgid ""
+"The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
+"Mark it as secret in Global Variables."
+msgstr "Proměnná s heslem proxy SOCKS ‘{}’ není tajná, proto nebyla použita. Označte ji jako tajnou v Globálních proměnných."
+
+#: rustconn/src/window/edit_actions.rs:996
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "Proměnná s heslem proxy SOCKS ‘{}’ nemá hodnotu"
 
-#: rustconn/src/window/edit_actions.rs:995
+#: rustconn/src/window/edit_actions.rs:1003
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Nepodařilo se spustit předávání SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1245
-#: rustconn/src/window/edit_actions.rs:1379
-#: rustconn/src/window/edit_actions.rs:1635
-#: rustconn/src/window/edit_actions.rs:1744
+#: rustconn/src/window/edit_actions.rs:1271
+#: rustconn/src/window/edit_actions.rs:1405
+#: rustconn/src/window/edit_actions.rs:1664
+#: rustconn/src/window/edit_actions.rs:1773
 #: rustconn/src/window/protocols.rs:2550
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Nepodařilo se otevřít SSH tunel: {}"
 
-#: rustconn/src/window/edit_actions.rs:1258
-#: rustconn/src/window/edit_actions.rs:1358
+#: rustconn/src/window/edit_actions.rs:1284
+#: rustconn/src/window/edit_actions.rs:1384
 msgid "Starting the tunnel…"
 msgstr "Spouští se tunel…"
 
-#: rustconn/src/window/edit_actions.rs:1318
+#: rustconn/src/window/edit_actions.rs:1344
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13462,7 +13468,7 @@ msgstr ""
 "otevře vestavěný prohlížeč. Chcete-li externí prohlížeč, nastavte v "
 "Nastavení prohlížeč založený na Chromiu nebo Firefox."
 
-#: rustconn/src/window/edit_actions.rs:1322
+#: rustconn/src/window/edit_actions.rs:1348
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13472,7 +13478,7 @@ msgstr ""
 "tunel lze proxovat pouze prohlížeče z rodiny Chromium; nastavte v "
 "předvolbách příkaz chromium/chrome/brave/vivaldi/edge."
 
-#: rustconn/src/window/edit_actions.rs:1328
+#: rustconn/src/window/edit_actions.rs:1354
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13482,7 +13488,7 @@ msgstr ""
 "prohlížeč. Zkontrolujte příkaz v předvolbách nebo jej vymažte pro "
 "automatické zjištění prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1332
+#: rustconn/src/window/edit_actions.rs:1358
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13490,7 +13496,7 @@ msgstr ""
 "Příkaz tunelovaného prohlížeče ‘{}’ nebyl nalezen v PATH. Zkontrolujte "
 "příkaz v předvolbách nebo jej vymažte pro automatické zjištění prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1338
+#: rustconn/src/window/edit_actions.rs:1364
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13498,7 +13504,7 @@ msgstr ""
 "Nenalezen žádný prohlížeč na bázi Chromium; otevírám vestavěný prohlížeč. "
 "Nainstalujte prohlížeč na bázi Chromium, abyste mohli tunelovat externí."
 
-#: rustconn/src/window/edit_actions.rs:1341
+#: rustconn/src/window/edit_actions.rs:1367
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13507,32 +13513,32 @@ msgstr ""
 "Chromium nebo použijte sestavení s vestavěným prohlížečem k otevření "
 "tunelovaného prohlížeče."
 
-#: rustconn/src/window/edit_actions.rs:1445
-#: rustconn/src/window/edit_actions.rs:1469
-#: rustconn/src/window/edit_actions.rs:1522
+#: rustconn/src/window/edit_actions.rs:1475
+#: rustconn/src/window/edit_actions.rs:1498
+#: rustconn/src/window/edit_actions.rs:1551
 msgid "Failed to open browser: {}"
 msgstr "Nepodařilo se otevřít prohlížeč: {}"
 
-#: rustconn/src/window/edit_actions.rs:1464
+#: rustconn/src/window/edit_actions.rs:1493
 msgid "Opened a tunnelled browser"
 msgstr "Tunelovaný prohlížeč otevřen"
 
-#: rustconn/src/window/edit_actions.rs:1499
+#: rustconn/src/window/edit_actions.rs:1528
 msgid "{} (tunnel)"
 msgstr "{} (tunel)"
 
-#: rustconn/src/window/edit_actions.rs:1513
-#: rustconn/src/window/edit_actions.rs:1675
+#: rustconn/src/window/edit_actions.rs:1542
+#: rustconn/src/window/edit_actions.rs:1704
 msgid "Could not open the page: {}"
 msgstr "Stránku se nepodařilo otevřít: {}"
 
-#: rustconn/src/window/edit_actions.rs:1707
-#: rustconn/src/window/edit_actions.rs:1835
-#: rustconn/src/window/edit_actions.rs:1863
+#: rustconn/src/window/edit_actions.rs:1736
+#: rustconn/src/window/edit_actions.rs:1879
+#: rustconn/src/window/edit_actions.rs:1907
 msgid "Failed to open URL: {}"
 msgstr "Nepodařilo se otevřít URL: {}"
 
-#: rustconn/src/window/edit_actions.rs:1771
+#: rustconn/src/window/edit_actions.rs:1803
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13540,12 +13546,12 @@ msgstr ""
 "Tento prohlížeč nemůže použít proxy, proto stránka nebyla otevřena. Použijte "
 "prohlížeč založený na Chromiu, Firefox nebo vestavěný prohlížeč."
 
-#: rustconn/src/window/edit_actions.rs:1824
-#: rustconn/src/window/edit_actions.rs:1877
+#: rustconn/src/window/edit_actions.rs:1868
+#: rustconn/src/window/edit_actions.rs:1921
 msgid "Opened in browser"
 msgstr "Otevřeno v prohlížeči"
 
-#: rustconn/src/window/edit_actions.rs:1849
+#: rustconn/src/window/edit_actions.rs:1893
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13553,38 +13559,38 @@ msgstr ""
 "Nebyl nalezen prohlížeč schopný použít proxy, proto stránka nebyla otevřena. "
 "Nainstalujte Chromium nebo Firefox, nebo použijte vestavěný prohlížeč."
 
-#: rustconn/src/window/edit_actions.rs:2031
-#: rustconn/src/window/edit_actions.rs:2133
-#: rustconn/src/window/edit_actions.rs:2191
+#: rustconn/src/window/edit_actions.rs:2075
+#: rustconn/src/window/edit_actions.rs:2177
+#: rustconn/src/window/edit_actions.rs:2235
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP je dostupné pouze pro SSH připojení."
 
-#: rustconn/src/window/edit_actions.rs:2041
+#: rustconn/src/window/edit_actions.rs:2085
 msgid "mc requires SSH key in agent. Password auth is not supported."
 msgstr "mc vyžaduje SSH klíč v agentovi. Ověření heslem není podporováno."
 
-#: rustconn/src/window/edit_actions.rs:2049
+#: rustconn/src/window/edit_actions.rs:2093
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "Agent SSH neběží. Spusťte „eval $(ssh-agent)“ a zkuste to znovu."
 
-#: rustconn/src/window/edit_actions.rs:2060
+#: rustconn/src/window/edit_actions.rs:2104
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr "Nelze ověřit, zda agent SSH obsahuje klíč. mc se přesto otevře."
 
-#: rustconn/src/window/edit_actions.rs:2066
+#: rustconn/src/window/edit_actions.rs:2110
 msgid "SSH key not available"
 msgstr "SSH klíč není dostupný"
 
-#: rustconn/src/window/edit_actions.rs:2077
+#: rustconn/src/window/edit_actions.rs:2121
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) není nainstalován."
 
-#: rustconn/src/window/edit_actions.rs:2082
+#: rustconn/src/window/edit_actions.rs:2126
 msgid "Opening mc SFTP…"
 msgstr "Otevírání mc SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2162
-#: rustconn/src/window/edit_actions.rs:2553
+#: rustconn/src/window/edit_actions.rs:2206
+#: rustconn/src/window/edit_actions.rs:2597
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13593,17 +13599,17 @@ msgstr ""
 "Externí správci souborů nemají přístup k SSH agentovi ve Flatpaku. Pro "
 "spolehlivý přístup povolte \"SFTP přes mc\" v Nastavení."
 
-#: rustconn/src/window/edit_actions.rs:2178
-#: rustconn/src/window/edit_actions.rs:2571
+#: rustconn/src/window/edit_actions.rs:2222
+#: rustconn/src/window/edit_actions.rs:2615
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Zjištěn přestupní hostitel. SFTP se otevírá přes mc místo správce souborů."
 
-#: rustconn/src/window/edit_actions.rs:2237
+#: rustconn/src/window/edit_actions.rs:2281
 msgid "Opening SFTP…"
 msgstr "Otevírání SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2284
+#: rustconn/src/window/edit_actions.rs:2328
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr "Agent SSH neběží — správce souborů se nemusí ověřit."
 
