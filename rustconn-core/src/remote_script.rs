@@ -22,7 +22,10 @@ use uuid::Uuid;
 use secrecy::{ExposeSecret, SecretString};
 use zeroize::Zeroizing;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, ProtocolType};
+use crate::models::{
+    Connection, ConnectionGroup, ProtocolConfig, ProtocolType, collect_descendant_group_ids,
+};
+use crate::proc::{self, Polled};
 use crate::ssh_key_setup::{self, DeployCredentials, SecretFiles, SshTarget};
 use crate::ssh_tunnel::{self, SshTunnel, SshTunnelParams};
 
@@ -180,8 +183,6 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_mins(10);
 
 /// Longest output line delivered in one piece.
 const MAX_LINE_BYTES: u64 = 64 * 1024;
-/// How often a running child is checked for exit, timeout and cancellation.
-const POLL_INTERVAL: Duration = Duration::from_millis(20);
 /// How long to wait for output after `ssh` exits. A `ProxyCommand` child can
 /// outlive it and hold the pipe open, so this must not wait for end of file.
 const OUTPUT_DRAIN: Duration = Duration::from_secs(2);
@@ -285,19 +286,12 @@ pub fn script_targets<'a>(
     groups: &[ConnectionGroup],
     kind: ScriptKind,
 ) -> ScriptTargets<'a> {
-    let mut group_ids: HashSet<Uuid> = selected
+    let group_ids: HashSet<Uuid> = selected
         .iter()
         .copied()
         .filter(|id| groups.iter().any(|g| g.id == *id))
+        .flat_map(|id| collect_descendant_group_ids(id, groups))
         .collect();
-    let mut pending: Vec<Uuid> = group_ids.iter().copied().collect();
-    while let Some(current) = pending.pop() {
-        for group in groups.iter().filter(|g| g.parent_id == Some(current)) {
-            if group_ids.insert(group.id) {
-                pending.push(group.id);
-            }
-        }
-    }
 
     let mut targets = ScriptTargets::default();
     for connection in connections {
@@ -907,47 +901,35 @@ fn wait_for(
     release_stdin: mpsc::Sender<()>,
     stop_grace: Duration,
 ) -> ScriptOutcome {
-    let started = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                return match status.code() {
-                    Some(0) => ScriptOutcome::Succeeded,
-                    Some(255) => ScriptOutcome::ConnectionFailed,
-                    code => ScriptOutcome::ScriptFailed { code },
-                };
-            }
-            Ok(None) => {}
-            Err(error) => {
-                tracing::warn!(%error, "could not wait for the client");
-                stop(child, release_stdin, stop_grace);
-                return ScriptOutcome::NotStarted;
-            }
+    let outcome = match proc::poll_until(child, options.timeout, &options.cancel) {
+        Ok(Polled::Exited(status)) => {
+            return match status.code() {
+                Some(0) => ScriptOutcome::Succeeded,
+                Some(255) => ScriptOutcome::ConnectionFailed,
+                code => ScriptOutcome::ScriptFailed { code },
+            };
         }
-        if options.cancel.load(Ordering::Relaxed) {
-            stop(child, release_stdin, stop_grace);
-            return ScriptOutcome::Cancelled;
+        Ok(Polled::Cancelled) => ScriptOutcome::Cancelled,
+        Ok(Polled::OutOfTime) => ScriptOutcome::TimedOut,
+        Err(error) => {
+            tracing::warn!(%error, "could not wait for the client");
+            ScriptOutcome::NotStarted
         }
-        if started.elapsed() >= options.timeout {
-            stop(child, release_stdin, stop_grace);
-            return ScriptOutcome::TimedOut;
-        }
-        std::thread::sleep(POLL_INTERVAL);
-    }
+    };
+    stop(child, release_stdin, stop_grace);
+    outcome
 }
 
 /// Closes the client's stdin, gives it `grace` to clean up, then kills it.
 fn stop(child: &mut Child, release_stdin: mpsc::Sender<()>, grace: Duration) {
     drop(release_stdin);
-    let deadline = Instant::now() + grace;
-    while Instant::now() < deadline {
-        if matches!(child.try_wait(), Ok(Some(_))) {
-            return;
-        }
-        std::thread::sleep(POLL_INTERVAL);
+    if !matches!(
+        proc::poll_until(child, grace, &AtomicBool::new(false)),
+        Ok(Polled::Exited(_))
+    ) {
+        let _ = child.kill();
+        let _ = child.wait();
     }
-    let _ = child.kill();
-    let _ = child.wait();
 }
 
 fn spawn_pump(
@@ -1000,10 +982,10 @@ fn spawn_pump(
 /// Makes remote output safe to display: a hostile server must not be able to
 /// send terminal escape sequences to the CLI's terminal.
 ///
-/// ponytail: drops the ESC byte but leaves the text of a sequence, so colored
-/// output shows stray `[31m`; parse CSI sequences if that proves annoying.
+/// Whole escape sequences go first, then every control character that is left
+/// except tab, so a lone ESC never survives either.
 fn clean_line(raw: &[u8]) -> String {
-    String::from_utf8_lossy(raw)
+    crate::session::strip_ansi_escapes(&String::from_utf8_lossy(raw))
         .chars()
         .filter(|c| *c == '\t' || !c.is_control())
         .collect()
@@ -1038,6 +1020,7 @@ case "$dest" in
   script255) printf '\036rustconn-script-exit-255\n' >&2; exit 255 ;;
   slow) sleep 30 ;;
   escape) printf 'a\033]0;x\007b\n' ;;
+  color) printf 'a\033[31mb\n' ;;
   flood) yes aaaaaaaaaaaaaaaa | head -c 5000000 ;;
 esac
 "#;
@@ -1413,7 +1396,9 @@ class Protocol:
     #[test]
     fn terminal_escapes_are_removed_from_output() {
         let events = run(&[host("escape")], &RunOptions::default(), "x");
-        assert_eq!(lines(&events, 0), ["a]0;xb"]);
+        assert_eq!(lines(&events, 0), ["ab"]);
+        let events = run(&[host("color")], &RunOptions::default(), "x");
+        assert_eq!(lines(&events, 0), ["ab"]);
     }
 
     #[test]
