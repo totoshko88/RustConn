@@ -55,7 +55,8 @@ impl WebProtocol {
             WebBrowserMode::Embedded if cfg!(feature = "web-embedded") => return None,
             _ => first_installed_proxy_browser()?,
         };
-        let args = proxied_browser_args(&browser, proxy, &connection.host).ok()?;
+        let args =
+            proxied_browser_args(&browser, proxy, &connection.host, config.private_mode).ok()?;
         let mut cmd = vec![browser];
         cmd.extend(args);
         Some(cmd)
@@ -150,11 +151,20 @@ fn firefox_preferences(host: &str, port: &str) -> String {
 /// over and load the page directly, which is the leak a proxy setting exists to
 /// prevent.
 ///
+/// `private_mode` opens Firefox with `--private-window`, which works inside the
+/// separate `--no-remote` instance, so history and cookies stay out of the
+/// profile. Chromium gets no `--incognito`: its profile is already a fresh one.
+///
 /// # Errors
 ///
 /// Returns [`ProtocolError::InvalidConfig`] when `browser` cannot use a proxy for
 /// one launch, `proxy` is not valid, or the profile cannot be written.
-pub fn proxied_browser_args(browser: &str, proxy: &str, url: &str) -> ProtocolResult<Vec<String>> {
+pub fn proxied_browser_args(
+    browser: &str,
+    proxy: &str,
+    url: &str,
+    private_mode: bool,
+) -> ProtocolResult<Vec<String>> {
     let family = browser_family(browser).ok_or_else(|| {
         ProtocolError::InvalidConfig(format!("{browser} cannot use a SOCKS proxy"))
     })?;
@@ -179,13 +189,17 @@ pub fn proxied_browser_args(browser: &str, proxy: &str, url: &str) -> ProtocolRe
             let host = host.trim_matches(['[', ']']);
             std::fs::write(profile.join("user.js"), firefox_preferences(host, port))
                 .map_err(unwritable)?;
-            vec![
+            let mut args = vec![
                 "--no-remote".to_string(),
                 "--new-instance".to_string(),
                 "--profile".to_string(),
                 profile_arg,
-                url.to_string(),
-            ]
+            ];
+            if private_mode {
+                args.push("--private-window".to_string());
+            }
+            args.push(url.to_string());
+            args
         }
     })
 }
@@ -482,6 +496,34 @@ mod tests {
             "{prefs}"
         );
         std::fs::remove_dir_all(profile).unwrap();
+    }
+
+    #[test]
+    fn private_mode_keeps_firefox_private_behind_the_proxy() {
+        let mut conn = proxied(WebBrowserMode::Custom, Some("firefox"));
+        let profile_of = |cmd: &[String]| {
+            let at = cmd.iter().position(|a| a == "--profile").unwrap();
+            std::path::PathBuf::from(&cmd[at + 1])
+        };
+
+        let public = WebProtocol::new().build_command(&conn).unwrap();
+        assert!(
+            !public.iter().any(|a| a == "--private-window"),
+            "{public:?}"
+        );
+        std::fs::remove_dir_all(profile_of(&public)).unwrap();
+
+        if let ProtocolConfig::Web(config) = &mut conn.protocol_config {
+            config.private_mode = true;
+        }
+        let private = WebProtocol::new().build_command(&conn).unwrap();
+        let flag = private.iter().position(|a| a == "--private-window");
+        assert_eq!(flag, Some(private.len() - 2), "{private:?}");
+        assert_eq!(
+            private.last().map(String::as_str),
+            Some("https://example.com")
+        );
+        std::fs::remove_dir_all(profile_of(&private)).unwrap();
     }
 
     #[test]

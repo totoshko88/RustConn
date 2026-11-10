@@ -1431,11 +1431,14 @@ impl MainWindow {
             cmd.arg(arg);
         }
         // A profile of its own forces a separate instance: a running browser
-        // would otherwise take the URL and load it un-tunnelled.
+        // would otherwise take the URL and load it un-tunnelled. An SSH
+        // connection has no private-mode setting; the fresh profile is the
+        // isolation here.
         match rustconn_core::protocol::proxied_browser_args(
             &browser,
             &format!("socks5://127.0.0.1:{port}"),
             start_url,
+            false,
         ) {
             Ok(args) => {
                 cmd.args(args);
@@ -1763,9 +1766,12 @@ impl MainWindow {
                     .map(|tunnel| format!("socks5://127.0.0.1:{}", tunnel.local_port()))
                     .or_else(|| web_config.socks_proxy.clone());
                 let tunnelled_isolated = if let Some(proxy_uri) = proxy_uri {
-                    let Ok(args) =
-                        rustconn_core::protocol::proxied_browser_args(&browser, &proxy_uri, &url)
-                    else {
+                    let Ok(args) = rustconn_core::protocol::proxied_browser_args(
+                        &browser,
+                        &proxy_uri,
+                        &url,
+                        web_config.private_mode,
+                    ) else {
                         sidebar_cb.update_connection_status(&connection_id.to_string(), "failed");
                         crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
                             "This browser can't use a proxy, so the page was not opened. Use a Chromium-based browser, Firefox or the embedded browser.",
@@ -1778,10 +1784,11 @@ impl MainWindow {
                     false
                 };
 
-                // Add private mode flag for known browsers. A Chromium instance
-                // already launched into its own throwaway profile above is clean,
-                // and `--incognito` there would rejoin the running process, so skip
-                // it in that case.
+                // Add private mode flag for known browsers. A proxied launch got
+                // its flag from `proxied_browser_args` above: Firefox keeps
+                // `--private-window`, and a Chromium instance in its own
+                // throwaway profile is clean, where `--incognito` would rejoin the
+                // running process.
                 if web_config.private_mode {
                     if browser_lower.contains("firefox") && !tunnelled_isolated {
                         cmd.arg("--private-window");
