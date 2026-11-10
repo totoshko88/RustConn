@@ -659,11 +659,11 @@ pub(super) fn cmd_update(
         }
         apply_jump_host_id(connection, jump_id)?;
     }
-    if params.clear_fallback_jump_hosts {
-        connection.fallback_jump_host_ids.clear();
-    } else if !resolved_fallbacks.is_empty() {
-        connection.fallback_jump_host_ids = resolved_fallbacks;
-    }
+    apply_fallback_jump_hosts(
+        connection,
+        params.clear_fallback_jump_hosts,
+        resolved_fallbacks,
+    )?;
 
     // Apply RDP-specific fields (gateway, RemoteApp, resolution, etc.)
     if params.gateway.is_some()
@@ -1352,6 +1352,76 @@ fn apply_serial_wave2_fields_update(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+/// Applies `--fallback-jump-host` or `--clear-fallback-jump-hosts`, after any
+/// `--jump-host`.
+///
+/// As in `add`, a new list needs a Jump Host of the connection's own: fallbacks
+/// only stand in for it, and without one the jump host and its fallbacks come
+/// from the group, so a list saved here would never be used.
+fn apply_fallback_jump_hosts(
+    connection: &mut rustconn_core::models::Connection,
+    clear: bool,
+    resolved: Vec<uuid::Uuid>,
+) -> Result<(), CliError> {
+    use rustconn_core::connection::ssh_inheritance::own_jump_host_id;
+
+    if clear {
+        connection.fallback_jump_host_ids.clear();
+        return Ok(());
+    }
+    if resolved.is_empty() {
+        return Ok(());
+    }
+    if own_jump_host_id(connection).is_none() {
+        return Err(CliError::Config(
+            "--fallback-jump-host requires a Jump Host on the connection; set one with --jump-host"
+                .into(),
+        ));
+    }
+    connection.fallback_jump_host_ids = resolved;
+    Ok(())
+}
+
+#[cfg(test)]
+mod fallback_jump_host_update_tests {
+    use super::apply_fallback_jump_hosts;
+    use rustconn_core::models::{Connection, ProtocolConfig};
+    use uuid::Uuid;
+
+    fn with_jump_host(jump: Option<Uuid>) -> Connection {
+        let mut connection = Connection::new_ssh("web".into(), "web.lan".into(), 22);
+        if let ProtocolConfig::Ssh(cfg) = &mut connection.protocol_config {
+            cfg.jump_host_id = jump;
+        }
+        connection
+    }
+
+    #[test]
+    fn fallbacks_without_a_jump_host_are_refused() {
+        let mut connection = with_jump_host(None);
+        assert!(apply_fallback_jump_hosts(&mut connection, false, vec![Uuid::new_v4()]).is_err());
+        assert!(connection.fallback_jump_host_ids.is_empty());
+    }
+
+    #[test]
+    fn fallbacks_with_a_jump_host_are_saved() {
+        let mut connection = with_jump_host(Some(Uuid::new_v4()));
+        let fallback = Uuid::new_v4();
+        apply_fallback_jump_hosts(&mut connection, false, vec![fallback]).unwrap();
+        assert_eq!(connection.fallback_jump_host_ids, [fallback]);
+    }
+
+    #[test]
+    fn clearing_or_leaving_the_list_needs_no_jump_host() {
+        let mut connection = with_jump_host(None);
+        connection.fallback_jump_host_ids = vec![Uuid::new_v4()];
+        apply_fallback_jump_hosts(&mut connection, false, Vec::new()).unwrap();
+        assert_eq!(connection.fallback_jump_host_ids.len(), 1);
+        apply_fallback_jump_hosts(&mut connection, true, Vec::new()).unwrap();
+        assert!(connection.fallback_jump_host_ids.is_empty());
+    }
 }
 
 #[cfg(test)]

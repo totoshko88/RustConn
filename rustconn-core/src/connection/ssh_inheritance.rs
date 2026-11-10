@@ -168,7 +168,11 @@ fn own_proxy_jump(connection: &Connection) -> Option<String> {
 }
 
 /// Returns the connection's own `jump_host_id`, for any protocol that has one.
-fn own_jump_host_id(connection: &Connection) -> Option<Uuid> {
+///
+/// Its `fallback_jump_host_ids` are used only together with this one; with
+/// none, the jump host and its fallbacks come from the group chain.
+#[must_use]
+pub fn own_jump_host_id(connection: &Connection) -> Option<Uuid> {
     match &connection.protocol_config {
         ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
         ProtocolConfig::Rdp(c) => c.jump_host_id,
