@@ -98,6 +98,31 @@ pub fn create_web_options() -> WebOptionsWidgets {
     user_agent_row.set_show_apply_button(false);
     embedded_group.add(&user_agent_row);
 
+    // Floating navigation toolbar (issue #260). Positive here, stored as
+    // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
+    // desktops, most of what this toolbar offers has a keyboard route, which is
+    // what the subtitle says.
+    let floating_toolbar_switch = SwitchRowBuilder::new("Navigation Toolbar")
+        .subtitle(
+            "Turn off to remove the floating toolbar and its reveal arrow. Keyboard shortcuts for back, forward, reload and zoom still work.",
+        )
+        .active(true)
+        .build();
+    embedded_group.add(&floating_toolbar_switch);
+
+    content.append(&embedded_group);
+
+    // === SOCKS5 Proxy Group ===
+    // Both SOCKS5 routes: one raised over SSH, or an existing proxy. Its own
+    // group: both apply to external browsers too, and the instructions live in
+    // the description, where they wrap, rather than in the row titles.
+    let socks_group = adw::PreferencesGroup::builder()
+        .title(i18n("SOCKS5 Proxy"))
+        .description(i18n(
+            "Browse through a SOCKS5 proxy: one RustConn opens over an SSH connection, or an existing one, not both. Enter an existing proxy's address as host:port. If it needs a login, enter a username and the secret variable that holds the password.",
+        ))
+        .build();
+
     // Browse through an SSH host (dynamic SOCKS tunnel). Model is filled with
     // SSH connections after construction (see populate.rs); "(None)" is a direct
     // connection. Wrapped in an ActionRow so it reads like the other rows.
@@ -116,32 +141,8 @@ pub fn create_web_options() -> WebOptionsWidgets {
         .build();
     tunnel_row.add_suffix(&tunnel_dropdown);
     tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
-    embedded_group.add(&tunnel_row);
+    socks_group.add(&tunnel_row);
 
-    // Floating navigation toolbar (issue #260). Positive here, stored as
-    // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
-    // desktops, most of what this toolbar offers has a keyboard route, which is
-    // what the subtitle says.
-    let floating_toolbar_switch = SwitchRowBuilder::new("Navigation Toolbar")
-        .subtitle(
-            "Turn off to remove the floating toolbar and its reveal arrow. Keyboard shortcuts for back, forward, reload and zoom still work.",
-        )
-        .active(true)
-        .build();
-    embedded_group.add(&floating_toolbar_switch);
-
-    content.append(&embedded_group);
-
-    // === SOCKS5 Proxy Group ===
-    // An existing proxy, for when nothing has to be raised over SSH. Its own
-    // group: it applies to external browsers too, and the instructions live in
-    // the description, where they wrap, rather than in the row titles.
-    let socks_group = adw::PreferencesGroup::builder()
-        .title(i18n("SOCKS5 Proxy"))
-        .description(i18n(
-            "An existing proxy, used instead of Tunnel Through SSH. Enter its address as host:port. If it needs a login, enter a username and the secret variable that holds the password.",
-        ))
-        .build();
     let socks_proxy_row = adw::EntryRow::builder().title(i18n("Address")).build();
     socks_group.add(&socks_proxy_row);
     let socks_user_row = adw::EntryRow::builder().title(i18n("Username")).build();
