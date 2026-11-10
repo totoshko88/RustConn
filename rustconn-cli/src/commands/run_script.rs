@@ -273,19 +273,39 @@ impl<'a> Passwords<'a> {
             self.backend = Some((runtime, resolver));
         }
         let (runtime, resolver) = self.backend.as_ref()?;
-        match runtime.block_on(resolver.resolve_with_hierarchy(connection, self.groups)) {
-            Ok(credentials) => credentials
+        let lookup = resolver.resolve_with_hierarchy(connection, self.groups);
+        match within(runtime, CREDENTIAL_LOOKUP_TIMEOUT, lookup) {
+            Some(Ok(credentials)) => credentials
                 .and_then(|c| c.password)
                 .filter(|p| !p.expose_secret().is_empty()),
-            Err(error) => {
+            Some(Err(error)) => {
                 eprintln!(
                     "[{}] could not read the saved password: {error}",
                     connection.name
                 );
                 None
             }
+            None => {
+                eprintln!(
+                    "[{}] could not read the saved password: timed out",
+                    connection.name
+                );
+                None
+            }
         }
     }
+}
+
+/// How long one saved-password lookup may take, as in the GUI.
+const CREDENTIAL_LOOKUP_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Runs `lookup` on `runtime` for at most `limit`; `None` when it took longer.
+fn within<T>(
+    runtime: &tokio::runtime::Runtime,
+    limit: Duration,
+    lookup: impl Future<Output = T>,
+) -> Option<T> {
+    runtime.block_on(async { tokio::time::timeout(limit, lookup).await.ok() })
 }
 
 /// A `ProxyCommand` that reaches `hops[0]` through the rest of `hops`, each with
@@ -645,7 +665,7 @@ mod tests {
     use rustconn_core::models::Connection;
     use secrecy::{ExposeSecret, SecretString};
 
-    use super::{bastion_proxy_command, withhold_from_config_proxy};
+    use super::{bastion_proxy_command, withhold_from_config_proxy, within};
 
     fn target() -> Connection {
         let mut connection = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 2222);
@@ -690,6 +710,35 @@ mod tests {
         assert!(withhold_from_config_proxy(&target(), secret(), false, probe).is_some());
         assert!(withhold_from_config_proxy(&target(), None, true, probe).is_none());
         assert!(!asked.get(), "ssh -G must only run to protect a password");
+    }
+
+    fn runtime() -> tokio::runtime::Runtime {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+    }
+
+    #[test]
+    fn a_lookup_that_never_answers_is_given_up() {
+        let started = std::time::Instant::now();
+        let result = within(
+            &runtime(),
+            std::time::Duration::from_millis(50),
+            std::future::pending::<()>(),
+        );
+        assert!(result.is_none());
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    #[test]
+    fn a_lookup_that_answers_in_time_is_kept() {
+        let result = within(
+            &runtime(),
+            std::time::Duration::from_secs(5),
+            std::future::ready(7),
+        );
+        assert_eq!(result, Some(7));
     }
 
     #[test]
