@@ -881,6 +881,20 @@ pub fn show_edit_group_dialog(
     );
     ssh_fallback_jump_hosts.set_value(None, &group.ssh_fallback_jump_host_ids);
     ssh_expander.add_row(ssh_fallback_jump_hosts.widget());
+    // Fallbacks apply only behind this group's own Jump Host, which is also
+    // all that saving keeps; index 0 is "(None)".
+    let names_jump_host = |selected: u32| selected != 0 && selected != gtk4::INVALID_LIST_POSITION;
+    ssh_fallback_jump_hosts
+        .widget()
+        .set_visible(names_jump_host(ssh_jump_host_dropdown.selected()));
+    ssh_jump_host_dropdown.connect_selected_notify({
+        let editor = ssh_fallback_jump_hosts.clone();
+        move |dropdown| {
+            editor
+                .widget()
+                .set_visible(names_jump_host(dropdown.selected()));
+        }
+    });
 
     // SSH Proxy Jump text field (manual entry, fallback when no saved connection)
     let ssh_proxy_jump_row = adw::EntryRow::builder()

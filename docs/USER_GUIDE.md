@@ -351,7 +351,7 @@ The *ProxyJump* field's subtitle names the bastion a connection has inherited �
 
 #### Fallback Jump Hosts
 
-A connection or a group can list **Fallback Jump Hosts** behind its *Jump Host* (connection: Edit connection → **General** → *Connection*; group: Edit group → **SSH Settings**). This works for SSH, SFTP, RDP, VNC and SPICE.
+A connection or a group can list **Fallback Jump Hosts** behind its *Jump Host* (connection: Edit connection → **General** → *Connection*; group: Edit group → **SSH Settings**). This works for SSH, SFTP, RDP, VNC, SPICE and WinRM. The list appears once a *Jump Host* is picked on that connection or group, and only for those protocols; removing the *Jump Host* hides it, and saving then drops it.
 
 Before each new connection or reconnect, RustConn checks the gateways in order and uses the first one that accepts a TCP connection and identifies itself as an SSH server within the *port check timeout*. A toast names the fallback when one is used, and the next connection tries the primary again.
 

@@ -74,6 +74,69 @@ pub(super) struct GeneralFields {
     /// MOSH share this page but key setup builds on the arguments of a live
     /// SSH session (mirrors `sidebar_ui::offers_key_setup`).
     pub ssh_key_setup_row: adw::ActionRow,
+    /// Fallback Jump Hosts, shown only where failover applies.
+    pub fallback_jump_hosts: crate::dialogs::widgets::FallbackJumpHostsEditor,
+    /// The Jump Host dropdown of each protocol page that fails over.
+    pub jump_host_dropdowns: JumpHostDropdowns,
+}
+
+/// The Jump Host dropdowns of the protocol pages whose connections fail over
+/// to fallback jump hosts. Index 0 of each is "(None)".
+#[derive(Clone)]
+pub(super) struct JumpHostDropdowns {
+    pub ssh: DropDown,
+    pub rdp: DropDown,
+    pub vnc: DropDown,
+    pub spice: DropDown,
+    pub winrm: DropDown,
+}
+
+/// A protocol page with a Jump Host dropdown that failover reads.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FailoverPage {
+    Ssh,
+    Rdp,
+    Vnc,
+    Spice,
+    WinRm,
+}
+
+impl FailoverPage {
+    /// The page whose Jump Host is the connection's own for `protocol_id`, or
+    /// `None` when the protocol never fails over (the same set as
+    /// `rustconn_core::connection::ssh_inheritance::own_jump_host_id`).
+    fn of(protocol_id: &str) -> Option<Self> {
+        match protocol_id {
+            "ssh" | "sftp" => Some(Self::Ssh),
+            "rdp" => Some(Self::Rdp),
+            "vnc" => Some(Self::Vnc),
+            "spice" => Some(Self::Spice),
+            "winrm" => Some(Self::WinRm),
+            _ => None,
+        }
+    }
+}
+
+impl JumpHostDropdowns {
+    fn on(&self, page: FailoverPage) -> &DropDown {
+        match page {
+            FailoverPage::Ssh => &self.ssh,
+            FailoverPage::Rdp => &self.rdp,
+            FailoverPage::Vnc => &self.vnc,
+            FailoverPage::Spice => &self.spice,
+            FailoverPage::WinRm => &self.winrm,
+        }
+    }
+
+    fn all(&self) -> [&DropDown; 5] {
+        [&self.ssh, &self.rdp, &self.vnc, &self.spice, &self.winrm]
+    }
+}
+
+/// Whether a Jump Host dropdown position names a saved connection rather than
+/// "(None)" or no selection.
+const fn names_jump_host(selected: u32) -> bool {
+    selected != 0 && selected != gtk4::INVALID_LIST_POSITION
 }
 
 impl ConnectionDialog {
@@ -263,6 +326,29 @@ impl ConnectionDialog {
                 is_custom_command_provider(zt_dropdown),
             );
         });
+
+        // Picking or clearing a Jump Host decides whether fallbacks apply.
+        for jump_host_dropdown in fields.jump_host_dropdowns.all() {
+            let fields = fields.clone();
+            let protocol = dropdown.clone();
+            jump_host_dropdown.connect_selected_notify(move |_| {
+                if let Some(protocol_id) = Self::protocol_id_at(protocol.selected()) {
+                    Self::apply_fallback_jump_hosts_visibility(&fields, protocol_id);
+                }
+            });
+        }
+        if let Some(protocol_id) = Self::protocol_id_at(dropdown.selected()) {
+            Self::apply_fallback_jump_hosts_visibility(fields, protocol_id);
+        }
+    }
+
+    /// Shows Fallback Jump Hosts only where they are used: a protocol that
+    /// fails over, with a Jump Host of the connection's own. Inherited jump
+    /// hosts fail over to their group's list, never to this one.
+    fn apply_fallback_jump_hosts_visibility(fields: &GeneralFields, protocol_id: &str) {
+        let visible = FailoverPage::of(protocol_id)
+            .is_some_and(|page| names_jump_host(fields.jump_host_dropdowns.on(page).selected()));
+        fields.fallback_jump_hosts.widget().set_visible(visible);
     }
 
     /// Maps a protocol dropdown index to its protocol id.
@@ -370,6 +456,7 @@ impl ConnectionDialog {
         // arguments, which key setup builds on (same test as
         // `sidebar_ui::offers_key_setup`).
         fields.ssh_key_setup_row.set_visible(protocol_id == "ssh");
+        Self::apply_fallback_jump_hosts_visibility(fields, protocol_id);
     }
 
     /// Returns the default port for a protocol
@@ -393,5 +480,34 @@ impl ConnectionDialog {
             || (port - 5900.0).abs() < EPSILON
             || (port - 5985.0).abs() < EPSILON
             || port.abs() < EPSILON
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{FailoverPage, names_jump_host};
+
+    #[test]
+    fn only_tunnelled_protocols_have_a_failover_page() {
+        for (protocol, page) in [
+            ("ssh", FailoverPage::Ssh),
+            ("sftp", FailoverPage::Ssh),
+            ("rdp", FailoverPage::Rdp),
+            ("vnc", FailoverPage::Vnc),
+            ("spice", FailoverPage::Spice),
+            ("winrm", FailoverPage::WinRm),
+        ] {
+            assert_eq!(FailoverPage::of(protocol), Some(page), "{protocol}");
+        }
+        for protocol in ["telnet", "serial", "kubernetes", "web", "mosh", "zerotrust"] {
+            assert_eq!(FailoverPage::of(protocol), None, "{protocol}");
+        }
+    }
+
+    #[test]
+    fn none_and_no_selection_name_no_jump_host() {
+        assert!(!names_jump_host(0));
+        assert!(!names_jump_host(gtk4::INVALID_LIST_POSITION));
+        assert!(names_jump_host(1));
     }
 }

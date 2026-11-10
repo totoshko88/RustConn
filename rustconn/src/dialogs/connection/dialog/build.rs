@@ -369,6 +369,14 @@ impl ConnectionDialog {
             // Not kept on the dialog: only the protocol dropdown ever touches it.
             ssh_keyboard_group,
             ssh_key_setup_row: ssh_key_setup_row.clone(),
+            fallback_jump_hosts: fallback_jump_hosts.clone(),
+            jump_host_dropdowns: super::construction::JumpHostDropdowns {
+                ssh: ssh_jump_host_dropdown.clone(),
+                rdp: rdp_jump_host_dropdown.clone(),
+                vnc: vnc_jump_host_dropdown.clone(),
+                spice: spice_jump_host_dropdown.clone(),
+                winrm: winrm_jump_host_dropdown.clone(),
+            },
         };
         Self::connect_protocol_dropdown(
             &protocol_dropdown,
