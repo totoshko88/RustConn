@@ -164,6 +164,15 @@ impl Drop for BrowserProfile {
         if self.dir.as_os_str().is_empty() {
             return;
         }
+        // ponytail: the removal runs where the value drops, which in the GUI is
+        // the GTK main thread. On Linux the profile is on tmpfs and that is quick,
+        // but a large Chromium cache on disk ($TMPDIR on macOS) can pause the
+        // window for a moment when a browser exits. Upgrade path: hand the path to
+        // a worker thread, as the startup sweep in `rustconn/src/app.rs` does. Not
+        // now: a thread cut short at quit would break the promise that a profile
+        // is deleted when RustConn quits, and
+        // `a_dropped_profile_is_deleted_and_a_kept_one_is_not` relies on the
+        // removal being done when `drop` returns.
         if let Err(e) = std::fs::remove_dir_all(&self.dir) {
             tracing::debug!(
                 profile = %self.dir.display(),
