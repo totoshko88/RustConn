@@ -1283,6 +1283,10 @@ pub enum Commands {
         /// Do not ask for confirmation
         #[arg(short, long)]
         yes: bool,
+
+        /// Ask once and use that password for every host set to ask at connect
+        #[arg(long)]
+        same_password: bool,
     },
 
     /// Manage connection clusters

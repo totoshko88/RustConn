@@ -633,6 +633,7 @@ pub fn dispatch(
             parallel,
             timeout,
             yes,
+            same_password,
         } => run_script::cmd_run_script(
             config_path,
             &run_script::RunScriptParams {
@@ -643,6 +644,7 @@ pub fn dispatch(
                 timeout_secs: timeout,
                 assume_yes: yes,
                 quiet,
+                same_password,
             },
         ),
         Commands::Duplicate {

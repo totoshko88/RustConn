@@ -75,6 +75,29 @@ fn script_error_text(error: &ScriptFileError) -> String {
     }
 }
 
+/// The typed password of each host set to ask at connect.
+///
+/// With `shared` (the "Use One Password for All Hosts" switch on) every host
+/// gets that one; otherwise each host gets its own field. An empty field gives
+/// that host no password, never the one typed for another host.
+fn typed_passwords<'a>(
+    fields: impl Iterator<Item = (Uuid, &'a str)>,
+    shared: Option<&str>,
+) -> HashMap<Uuid, SecretString> {
+    let password = |text: &str| (!text.is_empty()).then(|| SecretString::from(text.to_string()));
+    match shared {
+        Some(text) => {
+            let Some(shared) = password(text) else {
+                return HashMap::new();
+            };
+            fields.map(|(id, _)| (id, shared.clone())).collect()
+        }
+        None => fields
+            .filter_map(|(id, text)| password(text).map(|p| (id, p)))
+            .collect(),
+    }
+}
+
 fn outcome_text(outcome: ScriptOutcome) -> String {
     match outcome {
         ScriptOutcome::Succeeded => i18n("Succeeded"),
@@ -184,10 +207,22 @@ pub(super) fn open_dialog(
     let passwords_group = adw::PreferencesGroup::builder()
         .title(i18n("Passwords"))
         .description(i18n(
-            "For hosts set to ask at connect. Leave a field empty to reuse the one above it.",
+            "For hosts set to ask at connect. A host whose field is empty gets no password.",
         ))
         .visible(!asking_hosts.is_empty())
         .build();
+    // One answer for every host only when asked for: an empty field used to
+    // reuse the one above it, which sent a password to hosts nobody typed it for.
+    let same_password_row = adw::SwitchRow::builder()
+        .title(i18n("Use One Password for All Hosts"))
+        .visible(asking_hosts.len() > 1)
+        .build();
+    passwords_group.add(&same_password_row);
+    let shared_password_row = adw::PasswordEntryRow::builder()
+        .title(i18n("Password for All Hosts"))
+        .visible(false)
+        .build();
+    passwords_group.add(&shared_password_row);
     let password_rows: Vec<(Uuid, adw::PasswordEntryRow)> = asking_hosts
         .iter()
         .map(|(id, name)| {
@@ -196,6 +231,18 @@ pub(super) fn open_dialog(
             (*id, row)
         })
         .collect();
+    same_password_row.connect_active_notify({
+        let shared_password_row = shared_password_row.clone();
+        let host_rows: Vec<adw::PasswordEntryRow> =
+            password_rows.iter().map(|(_, row)| row.clone()).collect();
+        move |switch| {
+            let one = switch.is_active();
+            shared_password_row.set_visible(one);
+            for row in &host_rows {
+                row.set_visible(!one);
+            }
+        }
+    });
     let error_label = gtk4::Label::builder()
         .wrap(true)
         .xalign(0.0)
@@ -351,19 +398,23 @@ pub(super) fn open_dialog(
                 error_label.set_visible(true);
                 return;
             }
-            let mut typed = view.typed_passwords.borrow_mut();
-            typed.clear();
-            let mut previous: Option<SecretString> = None;
-            for (id, row) in &password_rows {
-                if !row.text().is_empty() {
-                    previous = Some(SecretString::from(row.text().to_string()));
-                }
-                if let Some(password) = &previous {
-                    typed.insert(*id, password.clone());
-                }
-            }
-            drop(typed);
-            let entries = password_rows.iter().map(|(_, row)| row.clone()).collect();
+            let shared = same_password_row
+                .is_active()
+                .then(|| shared_password_row.text());
+            let fields: Vec<(Uuid, glib::GString)> = password_rows
+                .iter()
+                .map(|(id, row)| (*id, row.text()))
+                .collect();
+            *view.typed_passwords.borrow_mut() = typed_passwords(
+                fields.iter().map(|(id, text)| (*id, text.as_str())),
+                shared.as_deref(),
+            );
+            drop(fields);
+            let entries = password_rows
+                .iter()
+                .map(|(_, row)| row.clone())
+                .chain(std::iter::once(shared_password_row.clone()))
+                .collect();
             #[expect(
                 clippy::cast_possible_truncation,
                 clippy::cast_sign_loss,
@@ -748,4 +799,31 @@ fn finish(view: &RunView) {
     show_progress(view);
     view.stop_button.set_visible(false);
     view.dialog.set_can_close(true);
+}
+
+#[cfg(test)]
+mod tests {
+    use secrecy::ExposeSecret;
+    use uuid::Uuid;
+
+    use super::typed_passwords;
+
+    #[test]
+    fn an_empty_field_gives_no_password() {
+        let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+        let typed = typed_passwords([(a, "first"), (b, "")].into_iter(), None);
+        assert_eq!(typed.len(), 1);
+        assert_eq!(typed[&a].expose_secret(), "first");
+        assert!(!typed.contains_key(&b), "b must not reuse a's password");
+    }
+
+    #[test]
+    fn one_password_goes_to_every_host() {
+        let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+        let typed = typed_passwords([(a, "ignored"), (b, "")].into_iter(), Some("shared"));
+        assert_eq!(typed[&a].expose_secret(), "shared");
+        assert_eq!(typed[&b].expose_secret(), "shared");
+        let none = typed_passwords([(a, "ignored")].into_iter(), Some(""));
+        assert!(none.is_empty(), "an empty shared field sends nothing");
+    }
 }

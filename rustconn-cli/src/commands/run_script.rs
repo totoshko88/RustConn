@@ -43,6 +43,8 @@ pub(super) struct RunScriptParams<'a> {
     /// succeeded, the summary). The script's output, hosts that did not
     /// succeed, warnings and prompts still appear.
     pub quiet: bool,
+    /// `--same-password`: one typed answer for every host set to ask.
+    pub same_password: bool,
 }
 
 /// Runs a local script on the named connections and groups.
@@ -119,7 +121,7 @@ pub(super) fn cmd_run_script(
     }
 
     let timeout_secs = settings.connection.port_check_timeout_secs;
-    let mut passwords = Passwords::new(&settings, &groups);
+    let mut passwords = Passwords::new(&settings, &groups, params.same_password);
     let hosts: Vec<ScriptHost> = targets
         .hosts
         .iter()
@@ -265,27 +267,44 @@ struct Passwords<'a> {
     /// missing ones, which a run on keys alone has no reason to hear about.
     backend: Option<(tokio::runtime::Runtime, CredentialResolver)>,
     known: HashMap<Uuid, Option<SecretString>>,
-    last_typed: Option<SecretString>,
+    /// `--same-password`: the first answer is used for every host set to ask.
+    same_password: bool,
+    /// Whether that answer has been given; `shared` is `None` when it was empty.
+    shared_asked: bool,
+    shared: Option<SecretString>,
 }
 
 impl<'a> Passwords<'a> {
-    fn new(settings: &'a AppSettings, groups: &'a [ConnectionGroup]) -> Self {
+    fn new(settings: &'a AppSettings, groups: &'a [ConnectionGroup], same_password: bool) -> Self {
         Self {
             settings,
             groups,
             backend: None,
             known: HashMap::new(),
-            last_typed: None,
+            same_password,
+            shared_asked: false,
+            shared: None,
         }
     }
 
+    /// The password of a jump host. It is always asked for on its own, never
+    /// given the `--same-password` answer meant for the hosts the script runs on.
     fn of(&mut self, connection: &Connection) -> Option<SecretString> {
+        self.lookup(connection, false)
+    }
+
+    /// The password of a host the script runs on.
+    fn of_target(&mut self, connection: &Connection) -> Option<SecretString> {
+        self.lookup(connection, true)
+    }
+
+    fn lookup(&mut self, connection: &Connection, target: bool) -> Option<SecretString> {
         if let Some(known) = self.known.get(&connection.id) {
             return known.clone();
         }
         let password = match connection.password_source {
             PasswordSource::None => None,
-            PasswordSource::Prompt => self.typed(&connection.name),
+            PasswordSource::Prompt => self.typed(&connection.name, target),
             _ => self.saved(connection),
         };
         self.known.insert(connection.id, password.clone());
@@ -293,24 +312,45 @@ impl<'a> Passwords<'a> {
     }
 
     /// Asks on the terminal. With none to ask on, the connection uses its keys.
-    fn typed(&mut self, name: &str) -> Option<SecretString> {
+    fn typed(&mut self, name: &str, target: bool) -> Option<SecretString> {
         use std::io::IsTerminal;
 
         if !std::io::stdin().is_terminal() {
             return None;
         }
-        if self.last_typed.is_some() {
-            eprint!("Password for {name} (empty reuses the previous one): ");
+        self.typed_with(name, target, |prompt| {
+            eprint!("{prompt}");
+            rpassword::read_password().ok()
+        })
+    }
+
+    /// Asks through `ask`, which shows the prompt and returns the answer. An
+    /// empty answer gives no password: the host then uses its keys. Only with
+    /// `--same-password` is an answer reused, and then for every `target`;
+    /// a jump host is always asked on its own.
+    fn typed_with(
+        &mut self,
+        name: &str,
+        target: bool,
+        ask: impl FnOnce(&str) -> Option<String>,
+    ) -> Option<SecretString> {
+        let shares = self.same_password && target;
+        if shares && self.shared_asked {
+            return self.shared.clone();
+        }
+        let prompt = if shares {
+            "Password for every host set to ask at connect: ".to_string()
         } else {
-            eprint!("Password for {name}: ");
-        }
-        if let Some(password) = rpassword::read_password()
-            .ok()
+            format!("Password for {name}: ")
+        };
+        let password = ask(&prompt)
             .filter(|password| !password.is_empty())
-        {
-            self.last_typed = Some(SecretString::from(password));
+            .map(SecretString::from);
+        if shares {
+            self.shared_asked = true;
+            self.shared.clone_from(&password);
         }
-        self.last_typed.clone()
+        password
     }
 
     /// A password that cannot be read is reported and left out, so that host
@@ -510,7 +550,7 @@ pub(super) fn connect_winrm_through_tunnel(
         &settings.network,
         settings.connection.port_check_timeout_secs,
     );
-    let mut passwords = Passwords::new(settings, groups);
+    let mut passwords = Passwords::new(settings, groups, false);
     let Some(params) = winrm_tunnel(
         &routed,
         connections,
@@ -561,7 +601,7 @@ fn script_host(
     let routed = route(connection, connections, groups, network, probe_timeout_secs);
     if matches!(routed.protocol_config, ProtocolConfig::WinRm(_)) {
         let tunnel = winrm_tunnel(&routed, connections, groups, network, passwords);
-        let password = passwords.of(connection);
+        let password = passwords.of_target(connection);
         return Some(ScriptHost {
             name: routed.name.clone(),
             transport: ScriptTransport::WinRm(WinRmTarget::for_connection(
@@ -641,7 +681,7 @@ fn ssh_script_host(
     };
 
     let mut password = passwords
-        .of(routed)
+        .of_target(routed)
         .filter(|_| target_password_askpass_allowed(config, false));
     let mut session_args = config.build_command_args();
     if !session_args.iter().any(|arg| arg == "-i")
@@ -831,6 +871,46 @@ mod tests {
             std::future::ready(7),
         );
         assert_eq!(result, Some(7));
+    }
+
+    #[test]
+    fn an_empty_answer_is_not_the_previous_password() {
+        let settings = rustconn_core::config::AppSettings::default();
+        let mut passwords = super::Passwords::new(&settings, &[], false);
+        let first = passwords.typed_with("a", true, |prompt| {
+            assert_eq!(prompt, "Password for a: ");
+            Some("hunter2".to_string())
+        });
+        assert_eq!(first.unwrap().expose_secret(), "hunter2");
+        let second = passwords.typed_with("b", true, |prompt| {
+            assert_eq!(prompt, "Password for b: ");
+            Some(String::new())
+        });
+        assert!(second.is_none(), "b must not get a's password");
+    }
+
+    #[test]
+    fn same_password_asks_once_for_targets_only() {
+        let settings = rustconn_core::config::AppSettings::default();
+        let mut passwords = super::Passwords::new(&settings, &[], true);
+        let asked = Cell::new(0);
+        let ask = |answer: &'static str| {
+            let asked = &asked;
+            move |_: &str| {
+                asked.set(asked.get() + 1);
+                Some(answer.to_string())
+            }
+        };
+        let a = passwords.typed_with("a", true, ask("shared"));
+        let b = passwords.typed_with("b", true, ask("unused"));
+        assert_eq!(a.unwrap().expose_secret(), "shared");
+        assert_eq!(b.unwrap().expose_secret(), "shared");
+        assert_eq!(asked.get(), 1);
+        let jump = passwords.typed_with("jump", false, |prompt| {
+            assert_eq!(prompt, "Password for jump: ");
+            Some("bastion".to_string())
+        });
+        assert_eq!(jump.unwrap().expose_secret(), "bastion");
     }
 
     #[test]
