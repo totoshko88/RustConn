@@ -332,8 +332,12 @@ impl<'a> Passwords<'a> {
         }
     }
 
-    /// The password of a jump host. It is always asked for on its own, never
-    /// given the `--same-password` answer meant for the hosts the script runs on.
+    /// The password of a jump host.
+    ///
+    /// An answer belongs to the connection, so a host that is both a target and
+    /// another target's jump host uses its first answer in both roles, which may
+    /// be the `--same-password` one. A jump host that is not itself a target is
+    /// asked on its own.
     fn of(&mut self, connection: &Connection) -> Option<SecretString> {
         self.lookup(connection, false)
     }
