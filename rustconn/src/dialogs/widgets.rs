@@ -52,6 +52,13 @@ pub fn dialog_pack_action(header: &adw::HeaderBar, button: &impl IsA<gtk4::Widge
     header.pack_start(button);
 }
 
+/// Whether a Jump Host dropdown position names a saved connection rather than
+/// "(None)" (index 0 of every Jump Host dropdown) or no selection.
+#[must_use]
+pub const fn names_jump_host(selected: u32) -> bool {
+    selected != 0 && selected != gtk4::INVALID_LIST_POSITION
+}
+
 /// Editor for an ordered list of fallback jump hosts.
 ///
 /// Shared by the connection and group editors, which store the same list.

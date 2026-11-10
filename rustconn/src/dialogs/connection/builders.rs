@@ -48,6 +48,14 @@ fn non_empty_text(entry: &Entry) -> Option<String> {
     if text.is_empty() { None } else { Some(text) }
 }
 
+/// The Unix socket a SPICE connection saves from the editor's switch and path
+/// entry: `None` unless the switch is on and the path is not blank. A socket
+/// connection saves no Jump Host, so the fallback editor reads this too.
+pub(super) fn spice_unix_socket_path(switch_on: bool, path_text: &str) -> Option<PathBuf> {
+    let path = path_text.trim();
+    (switch_on && !path.is_empty()).then(|| PathBuf::from(path))
+}
+
 pub(super) struct ConnectionDialogData<'a> {
     pub name_entry: &'a Entry,
     pub icon_entry: &'a Entry,
@@ -1934,16 +1942,10 @@ impl ConnectionDialogData<'_> {
             _ => Some(SpiceImageCompression::Auto), // 0 and any other value default to Auto
         };
 
-        let unix_socket_path = if self.spice_unix_socket_check.is_active() {
-            let text = self.spice_socket_path_entry.text();
-            if text.trim().is_empty() {
-                None
-            } else {
-                Some(PathBuf::from(text.trim().to_string()))
-            }
-        } else {
-            None
-        };
+        let unix_socket_path = spice_unix_socket_path(
+            self.spice_unix_socket_check.is_active(),
+            &self.spice_socket_path_entry.text(),
+        );
 
         SpiceConfig {
             tls_enabled: self.spice_tls_check.is_active(),
@@ -2023,4 +2025,21 @@ impl ConnectionDialogData<'_> {
 /// Returns the default SSH public key path (~/.ssh/id_rsa.pub)
 fn default_ssh_pub_key_path() -> PathBuf {
     dirs::home_dir().unwrap_or_default().join(".ssh/id_rsa.pub")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::spice_unix_socket_path;
+
+    #[test]
+    fn spice_socket_needs_the_switch_and_a_path() {
+        assert_eq!(
+            spice_unix_socket_path(true, " /run/vm.sock "),
+            Some(PathBuf::from("/run/vm.sock"))
+        );
+        assert_eq!(spice_unix_socket_path(true, "  "), None);
+        assert_eq!(spice_unix_socket_path(false, "/run/vm.sock"), None);
+    }
 }

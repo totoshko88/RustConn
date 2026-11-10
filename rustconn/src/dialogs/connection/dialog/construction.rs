@@ -15,7 +15,8 @@ use gtk4::{
 use libadwaita as adw;
 
 use super::ConnectionDialog;
-use crate::dialogs::widgets::dialog_pack_action;
+use crate::dialogs::connection::builders::spice_unix_socket_path;
+use crate::dialogs::widgets::{dialog_pack_action, names_jump_host};
 use crate::i18n::i18n;
 
 /// Index of the Custom Command entry in the Zero Trust provider dropdown.
@@ -78,6 +79,10 @@ pub(super) struct GeneralFields {
     pub fallback_jump_hosts: crate::dialogs::widgets::FallbackJumpHostsEditor,
     /// The Jump Host dropdown of each protocol page that fails over.
     pub jump_host_dropdowns: JumpHostDropdowns,
+    /// SPICE "Unix Socket" switch: a socket connection saves no Jump Host.
+    pub spice_unix_socket_check: adw::SwitchRow,
+    /// SPICE socket path, read with the switch as saving reads it.
+    pub spice_socket_path_entry: Entry,
 }
 
 /// The Jump Host dropdowns of the protocol pages whose connections fail over
@@ -131,12 +136,6 @@ impl JumpHostDropdowns {
     fn all(&self) -> [&DropDown; 5] {
         [&self.ssh, &self.rdp, &self.vnc, &self.spice, &self.winrm]
     }
-}
-
-/// Whether a Jump Host dropdown position names a saved connection rather than
-/// "(None)" or no selection.
-const fn names_jump_host(selected: u32) -> bool {
-    selected != 0 && selected != gtk4::INVALID_LIST_POSITION
 }
 
 impl ConnectionDialog {
@@ -337,6 +336,24 @@ impl ConnectionDialog {
                 }
             });
         }
+        // So does SPICE's Unix socket mode, which saves no Jump Host.
+        let refresh_for_socket = || {
+            let fields = fields.clone();
+            let protocol = dropdown.clone();
+            move || {
+                if let Some(protocol_id) = Self::protocol_id_at(protocol.selected()) {
+                    Self::apply_fallback_jump_hosts_visibility(&fields, protocol_id);
+                }
+            }
+        };
+        let refresh = refresh_for_socket();
+        fields
+            .spice_unix_socket_check
+            .connect_active_notify(move |_| refresh());
+        let refresh = refresh_for_socket();
+        fields
+            .spice_socket_path_entry
+            .connect_changed(move |_| refresh());
         if let Some(protocol_id) = Self::protocol_id_at(dropdown.selected()) {
             Self::apply_fallback_jump_hosts_visibility(fields, protocol_id);
         }
@@ -344,10 +361,18 @@ impl ConnectionDialog {
 
     /// Shows Fallback Jump Hosts only where they are used: a protocol that
     /// fails over, with a Jump Host of the connection's own. Inherited jump
-    /// hosts fail over to their group's list, never to this one.
+    /// hosts fail over to their group's list, never to this one. SPICE over
+    /// a Unix socket saves no Jump Host (`build_spice_config`), so none there.
     fn apply_fallback_jump_hosts_visibility(fields: &GeneralFields, protocol_id: &str) {
-        let visible = FailoverPage::of(protocol_id)
-            .is_some_and(|page| names_jump_host(fields.jump_host_dropdowns.on(page).selected()));
+        let visible = FailoverPage::of(protocol_id).is_some_and(|page| {
+            names_jump_host(fields.jump_host_dropdowns.on(page).selected())
+                && !(page == FailoverPage::Spice
+                    && spice_unix_socket_path(
+                        fields.spice_unix_socket_check.is_active(),
+                        &fields.spice_socket_path_entry.text(),
+                    )
+                    .is_some())
+        });
         fields.fallback_jump_hosts.widget().set_visible(visible);
     }
 

@@ -882,8 +882,8 @@ pub fn show_edit_group_dialog(
     ssh_fallback_jump_hosts.set_value(None, &group.ssh_fallback_jump_host_ids);
     ssh_expander.add_row(ssh_fallback_jump_hosts.widget());
     // Fallbacks apply only behind this group's own Jump Host, which is also
-    // all that saving keeps; index 0 is "(None)".
-    let names_jump_host = |selected: u32| selected != 0 && selected != gtk4::INVALID_LIST_POSITION;
+    // all that saving keeps.
+    let names_jump_host = crate::dialogs::widgets::names_jump_host;
     ssh_fallback_jump_hosts
         .widget()
         .set_visible(names_jump_host(ssh_jump_host_dropdown.selected()));

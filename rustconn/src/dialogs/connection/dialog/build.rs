@@ -377,6 +377,8 @@ impl ConnectionDialog {
                 spice: spice_jump_host_dropdown.clone(),
                 winrm: winrm_jump_host_dropdown.clone(),
             },
+            spice_unix_socket_check: spice_unix_socket_check.clone(),
+            spice_socket_path_entry: spice_socket_path_entry.clone(),
         };
         Self::connect_protocol_dropdown(
             &protocol_dropdown,
