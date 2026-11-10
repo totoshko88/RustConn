@@ -586,6 +586,31 @@ struct WinRmHeader<'a> {
     certificates: &'a str,
 }
 
+/// The most bytes [`winrm_preamble`] can write for `header`.
+///
+/// JSON escapes a byte into at most six (`\u001f`), and the keys, quotes and
+/// punctuation fit in the fixed part.
+fn winrm_preamble_capacity(header: &WinRmHeader<'_>) -> usize {
+    let fields = header.endpoint.len()
+        + header.username.len()
+        + header.password.len()
+        + header.certificates.len();
+    fields * 6 + 128
+}
+
+/// The JSON header line holding the password, in one buffer that never grows.
+///
+/// A `Vec` that reallocates frees its old storage without zeroing it, and
+/// `serde_json::to_vec` grows from a small start, so each step would leave a
+/// copy of the password behind. Reserving the worst case first keeps the only
+/// copy in the `Zeroizing` buffer.
+fn winrm_preamble(header: &WinRmHeader<'_>) -> Result<Zeroizing<Vec<u8>>, String> {
+    let mut preamble = Zeroizing::new(Vec::with_capacity(winrm_preamble_capacity(header)));
+    serde_json::to_writer(&mut *preamble, header).map_err(|e| e.to_string())?;
+    preamble.push(b'\n');
+    Ok(preamble)
+}
+
 fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, String> {
     let program = programs.python.clone().ok_or("python3 was not found")?;
     let password = target
@@ -623,8 +648,7 @@ fn winrm_launch(programs: &Programs, target: &WinRmTarget) -> Result<Launch, Str
             "validate"
         },
     };
-    let mut preamble = Zeroizing::new(serde_json::to_vec(&header).map_err(|e| e.to_string())?);
-    preamble.push(b'\n');
+    let preamble = winrm_preamble(&header)?;
     Ok(Launch {
         program,
         args: vec!["-c".to_string(), WINRM_HELPER.to_string()],
@@ -1252,6 +1276,25 @@ class Protocol:
             return;
         };
         assert_eq!(output.stdout, b"after\n");
+    }
+
+    #[test]
+    fn the_winrm_preamble_never_reallocates() {
+        // Control characters are the worst case for JSON escaping.
+        let worst = "\u{1}".repeat(300);
+        for password in ["hunter2", "quo\"te\\back", "пароль", worst.as_str()] {
+            let header = WinRmHeader {
+                endpoint: "https://[fe80::1]:5986/wsman",
+                username: "CORP\\alice",
+                password,
+                certificates: "validate",
+            };
+            let preamble = winrm_preamble(&header).unwrap();
+            assert_eq!(preamble.capacity(), winrm_preamble_capacity(&header));
+            assert_eq!(preamble.last(), Some(&b'\n'));
+            let parsed: serde_json::Value = serde_json::from_slice(&preamble).unwrap();
+            assert_eq!(parsed["password"], password);
+        }
     }
 
     #[test]
