@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:06+0200\n"
+"POT-Creation-Date: 2026-11-10 19:10+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -62,8 +62,8 @@ msgstr "OK"
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3605
 #: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
-#: rustconn/src/window/operations.rs:962
+#: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
+#: rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -291,7 +291,7 @@ msgstr "Nuovo cluster"
 #: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
-#: rustconn/src/window/operations.rs:402
+#: rustconn/src/window/operations.rs:444
 msgid "Create"
 msgstr "Crea"
 
@@ -569,7 +569,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Rileva attività o silenzio nell'output del terminale"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:347
-#: rustconn/src/dialogs/connection/web.rs:217
+#: rustconn/src/dialogs/connection/web.rs:224
 msgid "Mode"
 msgstr "Modalità"
 
@@ -2166,6 +2166,7 @@ msgstr "Autenticazione"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:229
 #: rustconn/src/dialogs/connection/general_tab.rs:249
+#: rustconn/src/dialogs/connection/web.rs:147
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
@@ -4203,37 +4204,45 @@ msgstr "Impostazioni applicate quando si usa il browser integrato"
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:111
+#: rustconn/src/dialogs/connection/web.rs:112
 msgid "Tunnel Through SSH"
 msgstr "Tunnel tramite SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:113
+#: rustconn/src/dialogs/connection/web.rs:114
+msgid "Browse via a SOCKS proxy over the chosen SSH connection"
+msgstr "Naviga tramite un proxy SOCKS sulla connessione SSH scelta"
+
+#: rustconn/src/dialogs/connection/web.rs:140
+msgid "SOCKS5 Proxy"
+msgstr "Proxy SOCKS5"
+
+#: rustconn/src/dialogs/connection/web.rs:142
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-"Chromium browser)"
+"An existing proxy, used instead of Tunnel Through SSH. Enter its address as "
+"host:port. If it needs a login, enter a username and the secret variable "
+"that holds the password."
 msgstr ""
-"Naviga tramite un proxy SOCKS sulla connessione SSH scelta (browser "
-"integrato o Chromium)"
+"Un proxy esistente, usato al posto del tunnel tramite SSH. Inserisci il suo "
+"indirizzo come host:porta. Se richiede un accesso, inserisci un nome utente "
+"e la variabile segreta che contiene la password."
 
-#: rustconn/src/dialogs/connection/web.rs:122
-msgid "SOCKS5 Proxy (host:port)"
-msgstr "Proxy SOCKS5 (host:porta)"
-
-#: rustconn/src/dialogs/connection/web.rs:126
-msgid "SOCKS5 Username (only if the proxy needs a login)"
-msgstr "Nome utente SOCKS5 (solo se il proxy richiede l'accesso)"
-
-#: rustconn/src/dialogs/connection/web.rs:130
-msgid "Secret Variable Holding the SOCKS5 Password"
-msgstr "Variabile segreta con la password SOCKS5"
+#: rustconn/src/dialogs/connection/web.rs:145
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
+#: rustconn/src/window/copy_field_actions.rs:81
+msgid "Address"
+msgstr "Indirizzo"
 
 #: rustconn/src/dialogs/connection/web.rs:150
+msgid "Password Variable"
+msgstr "Variabile della password"
+
+#: rustconn/src/dialogs/connection/web.rs:157
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:58
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "Generale"
 
-#: rustconn/src/dialogs/connection/web.rs:218
+#: rustconn/src/dialogs/connection/web.rs:225
 msgid "How the URL is opened"
 msgstr "Come viene aperto l'URL"
 
@@ -4691,11 +4700,6 @@ msgstr "Istanza"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
 msgid "Resource ID"
 msgstr "ID risorsa"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
-#: rustconn/src/window/copy_field_actions.rs:81
-msgid "Address"
-msgstr "Indirizzo"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
 msgid "More…"
@@ -9830,7 +9834,7 @@ msgid "Filter by Protocol"
 msgstr "Filtra per protocollo"
 
 #: rustconn/src/dialogs/smart_folder.rs:169
-#: rustconn/src/window/operations.rs:388
+#: rustconn/src/window/operations.rs:422
 msgid "Host Pattern"
 msgstr "Pattern host"
 
@@ -13117,7 +13121,7 @@ msgstr "Solo i campi selezionati vengono applicati alla selezione"
 msgid "Apply group change"
 msgstr "Applica modifica gruppo"
 
-#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1042
+#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1087
 msgid "(No Group)"
 msgstr "(Nessun gruppo)"
 
@@ -14021,7 +14025,7 @@ msgstr ""
 "Trasmissione di gruppo disabilitata — i tasti vanno solo alla scheda attiva"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:949 rustconn/src/window/operations.rs:964
+#: rustconn/src/window/operations.rs:994 rustconn/src/window/operations.rs:1009
 msgid "Move"
 msgstr "Sposta"
 
@@ -14029,7 +14033,7 @@ msgstr "Sposta"
 msgid "Move '{}' to:"
 msgstr "Sposta '{}' in:"
 
-#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1044
+#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1089
 msgid "(Root Level)"
 msgstr "(Livello radice)"
 
@@ -14472,7 +14476,7 @@ msgstr "Eliminare il gruppo «{}»?"
 msgid "Keep Connections"
 msgstr "Mantieni connessioni"
 
-#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:780
+#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:825
 msgid "Delete All"
 msgstr "Elimina tutto"
 
@@ -14516,11 +14520,11 @@ msgstr "Gli intervalli di nomi e host devono avere la stessa dimensione"
 msgid "‘{}’ would not be a valid connection"
 msgstr "«{}» non sarebbe una connessione valida"
 
-#: rustconn/src/window/operations.rs:381
+#: rustconn/src/window/operations.rs:410
 msgid "Duplicate ‘{}’ as a Range"
 msgstr "Duplica «{}» come intervallo"
 
-#: rustconn/src/window/operations.rs:383
+#: rustconn/src/window/operations.rs:412
 msgid ""
 "Creates one copy per number. A leading zero in the first number keeps the "
 "numbers padded."
@@ -14528,151 +14532,151 @@ msgstr ""
 "Crea una copia per ogni numero. Uno zero iniziale nel primo numero mantiene "
 "il riempimento con zeri."
 
-#: rustconn/src/window/operations.rs:387
+#: rustconn/src/window/operations.rs:418
 msgid "Name Pattern"
 msgstr "Modello del nome"
 
-#: rustconn/src/window/operations.rs:428
+#: rustconn/src/window/operations.rs:473
 msgid "Connections to create: {} (‘{}’ to ‘{}’)"
 msgstr "Connessioni da creare: {} (da «{}» a «{}»)"
 
-#: rustconn/src/window/operations.rs:435
+#: rustconn/src/window/operations.rs:480
 msgid "Already exist, will be skipped: {}"
 msgstr "Esistono già, saranno ignorati: {}"
 
-#: rustconn/src/window/operations.rs:441
+#: rustconn/src/window/operations.rs:486
 msgid "All of these names already exist"
 msgstr "Tutti questi nomi esistono già"
 
-#: rustconn/src/window/operations.rs:548
+#: rustconn/src/window/operations.rs:593
 msgid "Some Connections Were Not Created"
 msgstr "Alcune connessioni non sono state create"
 
-#: rustconn/src/window/operations.rs:577
+#: rustconn/src/window/operations.rs:622
 msgid "The saved password was not copied to {} of the new connections"
 msgstr "La password salvata non è stata copiata in {} delle nuove connessioni"
 
-#: rustconn/src/window/operations.rs:593
+#: rustconn/src/window/operations.rs:638
 msgid "Connections created: {}"
 msgstr "Connessioni create: {}"
 
-#: rustconn/src/window/operations.rs:596
+#: rustconn/src/window/operations.rs:641
 msgid "Connections created: {}, already existed: {}"
 msgstr "Connessioni create: {}, già esistenti: {}"
 
-#: rustconn/src/window/operations.rs:603
+#: rustconn/src/window/operations.rs:648
 msgid "Connections created: {}, failed: {}"
 msgstr "Connessioni create: {}, non riuscite: {}"
 
-#: rustconn/src/window/operations.rs:608
+#: rustconn/src/window/operations.rs:653
 msgid "Connections created: {}, failed: {}, already existed: {}"
 msgstr "Connessioni create: {}, non riuscite: {}, già esistenti: {}"
 
-#: rustconn/src/window/operations.rs:612
+#: rustconn/src/window/operations.rs:657
 msgid "Not created: {}"
 msgstr "Non create: {}"
 
-#: rustconn/src/window/operations.rs:680
+#: rustconn/src/window/operations.rs:725
 msgid "Connection copied to clipboard"
 msgstr "Connessione copiata negli appunti"
 
-#: rustconn/src/window/operations.rs:688
+#: rustconn/src/window/operations.rs:733
 msgid "Failed to copy connection"
 msgstr "Copia della connessione non riuscita"
 
-#: rustconn/src/window/operations.rs:707
+#: rustconn/src/window/operations.rs:752
 msgid "Nothing to paste - copy a connection first"
 msgstr "Niente da incollare - copia prima una connessione"
 
-#: rustconn/src/window/operations.rs:725
+#: rustconn/src/window/operations.rs:770
 msgid "Connection pasted"
 msgstr "Connessione incollata"
 
-#: rustconn/src/window/operations.rs:734
+#: rustconn/src/window/operations.rs:779
 msgid "Failed to paste connection"
 msgstr "Incollaggio della connessione non riuscito"
 
-#: rustconn/src/window/operations.rs:754
+#: rustconn/src/window/operations.rs:799
 msgid "• {} (connection)"
 msgstr "• {} (connessione)"
 
-#: rustconn/src/window/operations.rs:757
+#: rustconn/src/window/operations.rs:802
 msgid "• {} (group)"
 msgstr "• {} (gruppo)"
 
-#: rustconn/src/window/operations.rs:773
+#: rustconn/src/window/operations.rs:818
 msgid "Are you sure you want to delete {}?"
 msgstr "Sei sicuro di voler eliminare {}?"
 
-#: rustconn/src/window/operations.rs:775
+#: rustconn/src/window/operations.rs:820
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "Le connessioni nei gruppi eliminati diventeranno senza gruppo."
 
-#: rustconn/src/window/operations.rs:778
+#: rustconn/src/window/operations.rs:823
 msgid "Delete Selected Items?"
 msgstr "Eliminare gli elementi selezionati?"
 
-#: rustconn/src/window/operations.rs:839
+#: rustconn/src/window/operations.rs:884
 msgid "Successfully deleted {} item(s)."
 msgstr "Eliminati con successo {} elemento/i."
 
-#: rustconn/src/window/operations.rs:847
+#: rustconn/src/window/operations.rs:892
 msgid "Deletion Partially Complete"
 msgstr "Eliminazione parzialmente completata"
 
-#: rustconn/src/window/operations.rs:850
+#: rustconn/src/window/operations.rs:895
 msgid "Deleted {} item(s)."
 msgstr "Eliminati {} elemento/i."
 
-#: rustconn/src/window/operations.rs:852
+#: rustconn/src/window/operations.rs:897
 msgid "Failed to delete {} item(s):"
 msgstr "Eliminazione di {} elemento/i non riuscita:"
 
-#: rustconn/src/window/operations.rs:873 rustconn/src/window/operations.rs:919
+#: rustconn/src/window/operations.rs:918 rustconn/src/window/operations.rs:964
 msgid "No Selection"
 msgstr "Nessuna selezione"
 
-#: rustconn/src/window/operations.rs:874
+#: rustconn/src/window/operations.rs:919
 msgid "Select one or more items to delete."
 msgstr "Seleziona uno o più elementi da eliminare."
 
-#: rustconn/src/window/operations.rs:886
+#: rustconn/src/window/operations.rs:931
 msgid "{} connection(s)"
 msgstr "{} connessione/i"
 
-#: rustconn/src/window/operations.rs:887
+#: rustconn/src/window/operations.rs:932
 msgid "{} group(s)"
 msgstr "{} gruppo/i"
 
-#: rustconn/src/window/operations.rs:889
+#: rustconn/src/window/operations.rs:934
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} connessione/i e {} gruppo/i"
 
-#: rustconn/src/window/operations.rs:920
+#: rustconn/src/window/operations.rs:965
 msgid "Please select one or more items to move."
 msgstr "Seleziona uno o più elementi da spostare."
 
-#: rustconn/src/window/operations.rs:978
+#: rustconn/src/window/operations.rs:1023
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "Seleziona destinazione per {} connessione/i e {} gruppo/i:"
 
-#: rustconn/src/window/operations.rs:986
+#: rustconn/src/window/operations.rs:1031
 msgid "Select a group for {} connection(s):"
 msgstr "Seleziona un gruppo per {} connessione/i:"
 
-#: rustconn/src/window/operations.rs:991
+#: rustconn/src/window/operations.rs:1036
 msgid "Select parent for {} group(s):"
 msgstr "Seleziona genitore per {} gruppo/i:"
 
-#: rustconn/src/window/operations.rs:1126
+#: rustconn/src/window/operations.rs:1171
 msgid "Move Partially Complete"
 msgstr "Spostamento parzialmente completato"
 
-#: rustconn/src/window/operations.rs:1129
+#: rustconn/src/window/operations.rs:1174
 msgid "Moved {} item(s)."
 msgstr "Spostati {} elemento/i."
 
-#: rustconn/src/window/operations.rs:1131
+#: rustconn/src/window/operations.rs:1176
 msgid "Failed to move {} item(s):"
 msgstr "Spostamento di {} elemento/i non riuscito:"
 
@@ -15400,6 +15404,22 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kubernetes;k8s;seriale;sftp;"
+
+#~ msgid ""
+#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+#~ "Chromium browser)"
+#~ msgstr ""
+#~ "Naviga tramite un proxy SOCKS sulla connessione SSH scelta (browser "
+#~ "integrato o Chromium)"
+
+#~ msgid "SOCKS5 Proxy (host:port)"
+#~ msgstr "Proxy SOCKS5 (host:porta)"
+
+#~ msgid "SOCKS5 Username (only if the proxy needs a login)"
+#~ msgstr "Nome utente SOCKS5 (solo se il proxy richiede l'accesso)"
+
+#~ msgid "Secret Variable Holding the SOCKS5 Password"
+#~ msgstr "Variabile segreta con la password SOCKS5"
 
 #~ msgid ""
 #~ "For hosts set to ask at connect. Leave a field empty to reuse the one "

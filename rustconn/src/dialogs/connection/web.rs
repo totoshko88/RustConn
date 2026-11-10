@@ -107,29 +107,16 @@ pub fn create_web_options() -> WebOptionsWidgets {
     tunnel_dropdown.set_hexpand(false);
     // Type-to-search: a long connection list is impractical to scroll (user feedback).
     crate::dialogs::widgets::enable_string_search(&tunnel_dropdown);
+    // The tunnel works in the embedded browser, Chromium and Firefox alike.
     let tunnel_row = adw::ActionRow::builder()
         .title(i18n("Tunnel Through SSH"))
         .subtitle(i18n(
-            "Browse via a SOCKS proxy over the chosen SSH connection (embedded or Chromium browser)",
+            "Browse via a SOCKS proxy over the chosen SSH connection",
         ))
         .build();
     tunnel_row.add_suffix(&tunnel_dropdown);
     tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
     embedded_group.add(&tunnel_row);
-
-    // An existing proxy, for when nothing has to be raised over SSH.
-    let socks_proxy_row = adw::EntryRow::builder()
-        .title(i18n("SOCKS5 Proxy (host:port)"))
-        .build();
-    embedded_group.add(&socks_proxy_row);
-    let socks_user_row = adw::EntryRow::builder()
-        .title(i18n("SOCKS5 Username (only if the proxy needs a login)"))
-        .build();
-    embedded_group.add(&socks_user_row);
-    let socks_password_var_row = adw::EntryRow::builder()
-        .title(i18n("Secret Variable Holding the SOCKS5 Password"))
-        .build();
-    embedded_group.add(&socks_password_var_row);
 
     // Floating navigation toolbar (issue #260). Positive here, stored as
     // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
@@ -144,6 +131,26 @@ pub fn create_web_options() -> WebOptionsWidgets {
     embedded_group.add(&floating_toolbar_switch);
 
     content.append(&embedded_group);
+
+    // === SOCKS5 Proxy Group ===
+    // An existing proxy, for when nothing has to be raised over SSH. Its own
+    // group: it applies to external browsers too, and the instructions live in
+    // the description, where they wrap, rather than in the row titles.
+    let socks_group = adw::PreferencesGroup::builder()
+        .title(i18n("SOCKS5 Proxy"))
+        .description(i18n(
+            "An existing proxy, used instead of Tunnel Through SSH. Enter its address as host:port. If it needs a login, enter a username and the secret variable that holds the password.",
+        ))
+        .build();
+    let socks_proxy_row = adw::EntryRow::builder().title(i18n("Address")).build();
+    socks_group.add(&socks_proxy_row);
+    let socks_user_row = adw::EntryRow::builder().title(i18n("Username")).build();
+    socks_group.add(&socks_user_row);
+    let socks_password_var_row = adw::EntryRow::builder()
+        .title(i18n("Password Variable"))
+        .build();
+    socks_group.add(&socks_password_var_row);
+    content.append(&socks_group);
 
     // === General Settings Group ===
     let general_group = adw::PreferencesGroup::builder()

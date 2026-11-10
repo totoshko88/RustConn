@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:06+0200\n"
+"POT-Creation-Date: 2026-11-10 19:10+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -62,8 +62,8 @@ msgstr "OK"
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3605
 #: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
-#: rustconn/src/window/operations.rs:962
+#: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
+#: rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -289,7 +289,7 @@ msgstr "Жаңа кластер"
 #: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
-#: rustconn/src/window/operations.rs:402
+#: rustconn/src/window/operations.rs:444
 msgid "Create"
 msgstr "Жасау"
 
@@ -566,7 +566,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Терминал шығысының белсенділігін немесе тыныштығын анықтау"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:347
-#: rustconn/src/dialogs/connection/web.rs:217
+#: rustconn/src/dialogs/connection/web.rs:224
 msgid "Mode"
 msgstr "Режим"
 
@@ -2150,6 +2150,7 @@ msgstr "Аутентификация"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:229
 #: rustconn/src/dialogs/connection/general_tab.rs:249
+#: rustconn/src/dialogs/connection/web.rs:147
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
@@ -4176,37 +4177,45 @@ msgstr "Ендірілген браузерді пайдаланғанда қо�
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:111
+#: rustconn/src/dialogs/connection/web.rs:112
 msgid "Tunnel Through SSH"
 msgstr "SSH арқылы тунель"
 
-#: rustconn/src/dialogs/connection/web.rs:113
+#: rustconn/src/dialogs/connection/web.rs:114
+msgid "Browse via a SOCKS proxy over the chosen SSH connection"
+msgstr "Таңдалған SSH қосылымы арқылы SOCKS проксимен шолу"
+
+#: rustconn/src/dialogs/connection/web.rs:140
+msgid "SOCKS5 Proxy"
+msgstr "SOCKS5 прокси"
+
+#: rustconn/src/dialogs/connection/web.rs:142
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-"Chromium browser)"
+"An existing proxy, used instead of Tunnel Through SSH. Enter its address as "
+"host:port. If it needs a login, enter a username and the secret variable "
+"that holds the password."
 msgstr ""
-"Таңдалған SSH қосылымы арқылы SOCKS проксимен шолу (кіріктірілген немесе "
-"Chromium браузер)"
+"SSH туннелінің орнына қолданылатын бар прокси. Оның мекенжайын хост:порт "
+"түрінде енгізіңіз. Кіруді талап етсе, пайдаланушы атын және құпия сөз "
+"сақталған құпия айнымалыны енгізіңіз."
 
-#: rustconn/src/dialogs/connection/web.rs:122
-msgid "SOCKS5 Proxy (host:port)"
-msgstr "SOCKS5 проксиі (хост:порт)"
-
-#: rustconn/src/dialogs/connection/web.rs:126
-msgid "SOCKS5 Username (only if the proxy needs a login)"
-msgstr "SOCKS5 пайдаланушы аты (тек прокси кіруді талап етсе)"
-
-#: rustconn/src/dialogs/connection/web.rs:130
-msgid "Secret Variable Holding the SOCKS5 Password"
-msgstr "SOCKS5 құпия сөзі сақталған құпия айнымалы"
+#: rustconn/src/dialogs/connection/web.rs:145
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
+#: rustconn/src/window/copy_field_actions.rs:81
+msgid "Address"
+msgstr "Мекенжай"
 
 #: rustconn/src/dialogs/connection/web.rs:150
+msgid "Password Variable"
+msgstr "Құпия сөз айнымалысы"
+
+#: rustconn/src/dialogs/connection/web.rs:157
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:58
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "Жалпы"
 
-#: rustconn/src/dialogs/connection/web.rs:218
+#: rustconn/src/dialogs/connection/web.rs:225
 msgid "How the URL is opened"
 msgstr "URL қалай ашылады"
 
@@ -4663,11 +4672,6 @@ msgstr "Инстанс"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
 msgid "Resource ID"
 msgstr "Ресурс ID"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
-#: rustconn/src/window/copy_field_actions.rs:81
-msgid "Address"
-msgstr "Мекенжай"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
 msgid "More…"
@@ -9762,7 +9766,7 @@ msgid "Filter by Protocol"
 msgstr "Хаттама бойынша сүзу"
 
 #: rustconn/src/dialogs/smart_folder.rs:169
-#: rustconn/src/window/operations.rs:388
+#: rustconn/src/window/operations.rs:422
 msgid "Host Pattern"
 msgstr "Хост үлгісі"
 
@@ -13036,7 +13040,7 @@ msgstr "Тек белгіленген өрістер таңдауға қолда
 msgid "Apply group change"
 msgstr "Топ өзгерісін қолдану"
 
-#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1042
+#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1087
 msgid "(No Group)"
 msgstr "(Топ жоқ)"
 
@@ -13927,7 +13931,7 @@ msgid "Group broadcast disabled — keystrokes go to the focused tab only"
 msgstr "Топтық тарату өшірілді — пернелер тек фокустелген қойындыға барады"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:949 rustconn/src/window/operations.rs:964
+#: rustconn/src/window/operations.rs:994 rustconn/src/window/operations.rs:1009
 msgid "Move"
 msgstr "Жылжыту"
 
@@ -13935,7 +13939,7 @@ msgstr "Жылжыту"
 msgid "Move '{}' to:"
 msgstr "'{}' жылжыту:"
 
-#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1044
+#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1089
 msgid "(Root Level)"
 msgstr "(Түбір деңгей)"
 
@@ -14366,7 +14370,7 @@ msgstr "«{}» тобын жою керек пе?"
 msgid "Keep Connections"
 msgstr "Қосылымдарды сақтау"
 
-#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:780
+#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:825
 msgid "Delete All"
 msgstr "Барлығын жою"
 
@@ -14410,11 +14414,11 @@ msgstr "Атаулар мен хосттар ауқымдарының өлшем
 msgid "‘{}’ would not be a valid connection"
 msgstr "«{}» жарамды байланыс болмайды"
 
-#: rustconn/src/window/operations.rs:381
+#: rustconn/src/window/operations.rs:410
 msgid "Duplicate ‘{}’ as a Range"
 msgstr "«{}» ауқым ретінде көшіру"
 
-#: rustconn/src/window/operations.rs:383
+#: rustconn/src/window/operations.rs:412
 msgid ""
 "Creates one copy per number. A leading zero in the first number keeps the "
 "numbers padded."
@@ -14422,151 +14426,151 @@ msgstr ""
 "Әр санға бір көшірме жасайды. Бірінші сандағы алдыңғы нөл сандардың нөлмен "
 "толтырылуын сақтайды."
 
-#: rustconn/src/window/operations.rs:387
+#: rustconn/src/window/operations.rs:418
 msgid "Name Pattern"
 msgstr "Атау үлгісі"
 
-#: rustconn/src/window/operations.rs:428
+#: rustconn/src/window/operations.rs:473
 msgid "Connections to create: {} (‘{}’ to ‘{}’)"
 msgstr "Жасалатын байланыстар: {} («{}» – «{}»)"
 
-#: rustconn/src/window/operations.rs:435
+#: rustconn/src/window/operations.rs:480
 msgid "Already exist, will be skipped: {}"
 msgstr "Бұрыннан бар, өткізіліп жіберіледі: {}"
 
-#: rustconn/src/window/operations.rs:441
+#: rustconn/src/window/operations.rs:486
 msgid "All of these names already exist"
 msgstr "Бұл атаулардың барлығы бұрыннан бар"
 
-#: rustconn/src/window/operations.rs:548
+#: rustconn/src/window/operations.rs:593
 msgid "Some Connections Were Not Created"
 msgstr "Кейбір байланыстар жасалмады"
 
-#: rustconn/src/window/operations.rs:577
+#: rustconn/src/window/operations.rs:622
 msgid "The saved password was not copied to {} of the new connections"
 msgstr "Сақталған құпия сөз {} жаңа байланысқа көшірілмеді"
 
-#: rustconn/src/window/operations.rs:593
+#: rustconn/src/window/operations.rs:638
 msgid "Connections created: {}"
 msgstr "Жасалған байланыстар: {}"
 
-#: rustconn/src/window/operations.rs:596
+#: rustconn/src/window/operations.rs:641
 msgid "Connections created: {}, already existed: {}"
 msgstr "Жасалған байланыстар: {}, бұрыннан бар: {}"
 
-#: rustconn/src/window/operations.rs:603
+#: rustconn/src/window/operations.rs:648
 msgid "Connections created: {}, failed: {}"
 msgstr "Жасалған байланыстар: {}, сәтсіз: {}"
 
-#: rustconn/src/window/operations.rs:608
+#: rustconn/src/window/operations.rs:653
 msgid "Connections created: {}, failed: {}, already existed: {}"
 msgstr "Жасалған байланыстар: {}, сәтсіз: {}, бұрыннан бар: {}"
 
-#: rustconn/src/window/operations.rs:612
+#: rustconn/src/window/operations.rs:657
 msgid "Not created: {}"
 msgstr "Жасалмады: {}"
 
-#: rustconn/src/window/operations.rs:680
+#: rustconn/src/window/operations.rs:725
 msgid "Connection copied to clipboard"
 msgstr "Қосылым алмасу буферіне көшірілді"
 
-#: rustconn/src/window/operations.rs:688
+#: rustconn/src/window/operations.rs:733
 msgid "Failed to copy connection"
 msgstr "Қосылымды көшіру сәтсіз"
 
-#: rustconn/src/window/operations.rs:707
+#: rustconn/src/window/operations.rs:752
 msgid "Nothing to paste - copy a connection first"
 msgstr "Қоятын ештеңе жоқ - алдымен қосылымды көшіріңіз"
 
-#: rustconn/src/window/operations.rs:725
+#: rustconn/src/window/operations.rs:770
 msgid "Connection pasted"
 msgstr "Қосылым қойылды"
 
-#: rustconn/src/window/operations.rs:734
+#: rustconn/src/window/operations.rs:779
 msgid "Failed to paste connection"
 msgstr "Қосылымды қою сәтсіз"
 
-#: rustconn/src/window/operations.rs:754
+#: rustconn/src/window/operations.rs:799
 msgid "• {} (connection)"
 msgstr "• {} (қосылым)"
 
-#: rustconn/src/window/operations.rs:757
+#: rustconn/src/window/operations.rs:802
 msgid "• {} (group)"
 msgstr "• {} (топ)"
 
-#: rustconn/src/window/operations.rs:773
+#: rustconn/src/window/operations.rs:818
 msgid "Are you sure you want to delete {}?"
 msgstr "{} жоюға сенімдісіз бе?"
 
-#: rustconn/src/window/operations.rs:775
+#: rustconn/src/window/operations.rs:820
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "Жойылған топтардағы қосылымдар топсыз болады."
 
-#: rustconn/src/window/operations.rs:778
+#: rustconn/src/window/operations.rs:823
 msgid "Delete Selected Items?"
 msgstr "Таңдалған элементтерді жою?"
 
-#: rustconn/src/window/operations.rs:839
+#: rustconn/src/window/operations.rs:884
 msgid "Successfully deleted {} item(s)."
 msgstr "{} элемент сәтті жойылды."
 
-#: rustconn/src/window/operations.rs:847
+#: rustconn/src/window/operations.rs:892
 msgid "Deletion Partially Complete"
 msgstr "Жою ішінара аяқталды"
 
-#: rustconn/src/window/operations.rs:850
+#: rustconn/src/window/operations.rs:895
 msgid "Deleted {} item(s)."
 msgstr "{} элемент жойылды."
 
-#: rustconn/src/window/operations.rs:852
+#: rustconn/src/window/operations.rs:897
 msgid "Failed to delete {} item(s):"
 msgstr "{} элементті жою сәтсіз:"
 
-#: rustconn/src/window/operations.rs:873 rustconn/src/window/operations.rs:919
+#: rustconn/src/window/operations.rs:918 rustconn/src/window/operations.rs:964
 msgid "No Selection"
 msgstr "Таңдау жоқ"
 
-#: rustconn/src/window/operations.rs:874
+#: rustconn/src/window/operations.rs:919
 msgid "Select one or more items to delete."
 msgstr "Жою үшін бір немесе бірнеше элементті таңдаңыз."
 
-#: rustconn/src/window/operations.rs:886
+#: rustconn/src/window/operations.rs:931
 msgid "{} connection(s)"
 msgstr "{} қосылым"
 
-#: rustconn/src/window/operations.rs:887
+#: rustconn/src/window/operations.rs:932
 msgid "{} group(s)"
 msgstr "{} топ"
 
-#: rustconn/src/window/operations.rs:889
+#: rustconn/src/window/operations.rs:934
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} қосылым және {} топ"
 
-#: rustconn/src/window/operations.rs:920
+#: rustconn/src/window/operations.rs:965
 msgid "Please select one or more items to move."
 msgstr "Жылжыту үшін бір немесе бірнеше элементті таңдаңыз."
 
-#: rustconn/src/window/operations.rs:978
+#: rustconn/src/window/operations.rs:1023
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "{} қосылым және {} топ үшін тағайындау орнын таңдаңыз:"
 
-#: rustconn/src/window/operations.rs:986
+#: rustconn/src/window/operations.rs:1031
 msgid "Select a group for {} connection(s):"
 msgstr "{} қосылым үшін топты таңдаңыз:"
 
-#: rustconn/src/window/operations.rs:991
+#: rustconn/src/window/operations.rs:1036
 msgid "Select parent for {} group(s):"
 msgstr "{} топ үшін ата-ананы таңдаңыз:"
 
-#: rustconn/src/window/operations.rs:1126
+#: rustconn/src/window/operations.rs:1171
 msgid "Move Partially Complete"
 msgstr "Жылжыту ішінара аяқталды"
 
-#: rustconn/src/window/operations.rs:1129
+#: rustconn/src/window/operations.rs:1174
 msgid "Moved {} item(s)."
 msgstr "{} элемент жылжытылды."
 
-#: rustconn/src/window/operations.rs:1131
+#: rustconn/src/window/operations.rs:1176
 msgid "Failed to move {} item(s):"
 msgstr "{} элементті жылжыту сәтсіз:"
 
@@ -15288,6 +15292,22 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid ""
+#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+#~ "Chromium browser)"
+#~ msgstr ""
+#~ "Таңдалған SSH қосылымы арқылы SOCKS проксимен шолу (кіріктірілген немесе "
+#~ "Chromium браузер)"
+
+#~ msgid "SOCKS5 Proxy (host:port)"
+#~ msgstr "SOCKS5 проксиі (хост:порт)"
+
+#~ msgid "SOCKS5 Username (only if the proxy needs a login)"
+#~ msgstr "SOCKS5 пайдаланушы аты (тек прокси кіруді талап етсе)"
+
+#~ msgid "Secret Variable Holding the SOCKS5 Password"
+#~ msgstr "SOCKS5 құпия сөзі сақталған құпия айнымалы"
 
 #~ msgid ""
 #~ "For hosts set to ask at connect. Leave a field empty to reuse the one "

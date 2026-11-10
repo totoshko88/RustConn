@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:06+0200\n"
+"POT-Creation-Date: 2026-11-10 19:10+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -62,8 +62,8 @@ msgstr "OK"
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3605
 #: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
-#: rustconn/src/window/operations.rs:962
+#: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
+#: rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -288,7 +288,7 @@ msgstr "Cụm mới"
 #: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
-#: rustconn/src/window/operations.rs:402
+#: rustconn/src/window/operations.rs:444
 msgid "Create"
 msgstr "Tạo"
 
@@ -561,7 +561,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "Phát hiện hoạt động hoặc im lặng trong đầu ra terminal"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:347
-#: rustconn/src/dialogs/connection/web.rs:217
+#: rustconn/src/dialogs/connection/web.rs:224
 msgid "Mode"
 msgstr "Chế độ"
 
@@ -2141,6 +2141,7 @@ msgstr "Xác thực"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:229
 #: rustconn/src/dialogs/connection/general_tab.rs:249
+#: rustconn/src/dialogs/connection/web.rs:147
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
@@ -4152,37 +4153,45 @@ msgstr "Các cài đặt áp dụng khi dùng trình duyệt nhúng"
 msgid "User Agent"
 msgstr "User Agent"
 
-#: rustconn/src/dialogs/connection/web.rs:111
+#: rustconn/src/dialogs/connection/web.rs:112
 msgid "Tunnel Through SSH"
 msgstr "Đi qua đường hầm SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:113
+#: rustconn/src/dialogs/connection/web.rs:114
+msgid "Browse via a SOCKS proxy over the chosen SSH connection"
+msgstr "Duyệt web qua proxy SOCKS trên kết nối SSH đã chọn"
+
+#: rustconn/src/dialogs/connection/web.rs:140
+msgid "SOCKS5 Proxy"
+msgstr "Proxy SOCKS5"
+
+#: rustconn/src/dialogs/connection/web.rs:142
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-"Chromium browser)"
+"An existing proxy, used instead of Tunnel Through SSH. Enter its address as "
+"host:port. If it needs a login, enter a username and the secret variable "
+"that holds the password."
 msgstr ""
-"Duyệt web qua proxy SOCKS trên kết nối SSH đã chọn (trình duyệt nhúng hoặc "
-"Chromium)"
+"Một proxy có sẵn, dùng thay cho đường hầm qua SSH. Nhập địa chỉ của nó dưới "
+"dạng máy chủ:cổng. Nếu cần đăng nhập, hãy nhập tên người dùng và biến bí mật "
+"chứa mật khẩu."
 
-#: rustconn/src/dialogs/connection/web.rs:122
-msgid "SOCKS5 Proxy (host:port)"
-msgstr "Proxy SOCKS5 (máy chủ:cổng)"
-
-#: rustconn/src/dialogs/connection/web.rs:126
-msgid "SOCKS5 Username (only if the proxy needs a login)"
-msgstr "Tên người dùng SOCKS5 (chỉ khi proxy yêu cầu đăng nhập)"
-
-#: rustconn/src/dialogs/connection/web.rs:130
-msgid "Secret Variable Holding the SOCKS5 Password"
-msgstr "Biến bí mật chứa mật khẩu SOCKS5"
+#: rustconn/src/dialogs/connection/web.rs:145
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
+#: rustconn/src/window/copy_field_actions.rs:81
+msgid "Address"
+msgstr "Địa chỉ"
 
 #: rustconn/src/dialogs/connection/web.rs:150
+msgid "Password Variable"
+msgstr "Biến mật khẩu"
+
+#: rustconn/src/dialogs/connection/web.rs:157
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:58
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "Chung"
 
-#: rustconn/src/dialogs/connection/web.rs:218
+#: rustconn/src/dialogs/connection/web.rs:225
 msgid "How the URL is opened"
 msgstr "Cách mở URL"
 
@@ -4639,11 +4648,6 @@ msgstr "Máy ảo"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
 msgid "Resource ID"
 msgstr "ID tài nguyên"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
-#: rustconn/src/window/copy_field_actions.rs:81
-msgid "Address"
-msgstr "Địa chỉ"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
 msgid "More…"
@@ -9728,7 +9732,7 @@ msgid "Filter by Protocol"
 msgstr "Lọc theo giao thức"
 
 #: rustconn/src/dialogs/smart_folder.rs:169
-#: rustconn/src/window/operations.rs:388
+#: rustconn/src/window/operations.rs:422
 msgid "Host Pattern"
 msgstr "Mẫu máy chủ"
 
@@ -12976,7 +12980,7 @@ msgstr "Chỉ các trường được đánh dấu mới được áp dụng cho
 msgid "Apply group change"
 msgstr "Áp dụng thay đổi nhóm"
 
-#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1042
+#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1087
 msgid "(No Group)"
 msgstr "(Không có nhóm)"
 
@@ -13865,7 +13869,7 @@ msgstr ""
 "Đã tắt phát đồng loạt theo nhóm — thao tác gõ phím chỉ tới thẻ đang được chọn"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:949 rustconn/src/window/operations.rs:964
+#: rustconn/src/window/operations.rs:994 rustconn/src/window/operations.rs:1009
 msgid "Move"
 msgstr "Di chuyển"
 
@@ -13873,7 +13877,7 @@ msgstr "Di chuyển"
 msgid "Move '{}' to:"
 msgstr "Di chuyển “{}” tới:"
 
-#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1044
+#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1089
 msgid "(Root Level)"
 msgstr "(Cấp gốc)"
 
@@ -14306,7 +14310,7 @@ msgstr "Xóa nhóm “{}”?"
 msgid "Keep Connections"
 msgstr "Giữ lại kết nối"
 
-#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:780
+#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:825
 msgid "Delete All"
 msgstr "Xóa tất cả"
 
@@ -14350,162 +14354,162 @@ msgstr "Dải tên và dải máy chủ phải có cùng kích thước"
 msgid "‘{}’ would not be a valid connection"
 msgstr "‘{}’ sẽ không phải là kết nối hợp lệ"
 
-#: rustconn/src/window/operations.rs:381
+#: rustconn/src/window/operations.rs:410
 msgid "Duplicate ‘{}’ as a Range"
 msgstr "Nhân bản ‘{}’ theo dải"
 
-#: rustconn/src/window/operations.rs:383
+#: rustconn/src/window/operations.rs:412
 msgid ""
 "Creates one copy per number. A leading zero in the first number keeps the "
 "numbers padded."
 msgstr ""
 "Tạo một bản sao cho mỗi số. Số 0 ở đầu số thứ nhất giúp giữ phần đệm số 0."
 
-#: rustconn/src/window/operations.rs:387
+#: rustconn/src/window/operations.rs:418
 msgid "Name Pattern"
 msgstr "Mẫu tên"
 
-#: rustconn/src/window/operations.rs:428
+#: rustconn/src/window/operations.rs:473
 msgid "Connections to create: {} (‘{}’ to ‘{}’)"
 msgstr "Số kết nối sẽ tạo: {} (từ ‘{}’ đến ‘{}’)"
 
-#: rustconn/src/window/operations.rs:435
+#: rustconn/src/window/operations.rs:480
 msgid "Already exist, will be skipped: {}"
 msgstr "Đã tồn tại, sẽ bỏ qua: {}"
 
-#: rustconn/src/window/operations.rs:441
+#: rustconn/src/window/operations.rs:486
 msgid "All of these names already exist"
 msgstr "Tất cả các tên này đã tồn tại"
 
-#: rustconn/src/window/operations.rs:548
+#: rustconn/src/window/operations.rs:593
 msgid "Some Connections Were Not Created"
 msgstr "Một số kết nối chưa được tạo"
 
-#: rustconn/src/window/operations.rs:577
+#: rustconn/src/window/operations.rs:622
 msgid "The saved password was not copied to {} of the new connections"
 msgstr "Mật khẩu đã lưu chưa được sao chép sang {} kết nối mới"
 
-#: rustconn/src/window/operations.rs:593
+#: rustconn/src/window/operations.rs:638
 msgid "Connections created: {}"
 msgstr "Số kết nối đã tạo: {}"
 
-#: rustconn/src/window/operations.rs:596
+#: rustconn/src/window/operations.rs:641
 msgid "Connections created: {}, already existed: {}"
 msgstr "Số kết nối đã tạo: {}, đã tồn tại: {}"
 
-#: rustconn/src/window/operations.rs:603
+#: rustconn/src/window/operations.rs:648
 msgid "Connections created: {}, failed: {}"
 msgstr "Số kết nối đã tạo: {}, thất bại: {}"
 
-#: rustconn/src/window/operations.rs:608
+#: rustconn/src/window/operations.rs:653
 msgid "Connections created: {}, failed: {}, already existed: {}"
 msgstr "Số kết nối đã tạo: {}, thất bại: {}, đã tồn tại: {}"
 
-#: rustconn/src/window/operations.rs:612
+#: rustconn/src/window/operations.rs:657
 msgid "Not created: {}"
 msgstr "Chưa tạo: {}"
 
-#: rustconn/src/window/operations.rs:680
+#: rustconn/src/window/operations.rs:725
 msgid "Connection copied to clipboard"
 msgstr "Đã sao chép kết nối vào bộ nhớ tạm"
 
-#: rustconn/src/window/operations.rs:688
+#: rustconn/src/window/operations.rs:733
 msgid "Failed to copy connection"
 msgstr "Sao chép kết nối thất bại"
 
-#: rustconn/src/window/operations.rs:707
+#: rustconn/src/window/operations.rs:752
 msgid "Nothing to paste - copy a connection first"
 msgstr "Không có gì để dán - hãy sao chép một kết nối trước"
 
-#: rustconn/src/window/operations.rs:725
+#: rustconn/src/window/operations.rs:770
 msgid "Connection pasted"
 msgstr "Đã dán kết nối"
 
-#: rustconn/src/window/operations.rs:734
+#: rustconn/src/window/operations.rs:779
 msgid "Failed to paste connection"
 msgstr "Dán kết nối thất bại"
 
-#: rustconn/src/window/operations.rs:754
+#: rustconn/src/window/operations.rs:799
 msgid "• {} (connection)"
 msgstr "• {} (kết nối)"
 
-#: rustconn/src/window/operations.rs:757
+#: rustconn/src/window/operations.rs:802
 msgid "• {} (group)"
 msgstr "• {} (nhóm)"
 
-#: rustconn/src/window/operations.rs:773
+#: rustconn/src/window/operations.rs:818
 msgid "Are you sure you want to delete {}?"
 msgstr "Bạn có chắc muốn xóa {}?"
 
-#: rustconn/src/window/operations.rs:775
+#: rustconn/src/window/operations.rs:820
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "Các kết nối trong nhóm bị xóa sẽ không còn thuộc nhóm nào."
 
-#: rustconn/src/window/operations.rs:778
+#: rustconn/src/window/operations.rs:823
 msgid "Delete Selected Items?"
 msgstr "Xóa các mục đã chọn?"
 
-#: rustconn/src/window/operations.rs:839
+#: rustconn/src/window/operations.rs:884
 msgid "Successfully deleted {} item(s)."
 msgstr "Đã xóa thành công {} mục."
 
-#: rustconn/src/window/operations.rs:847
+#: rustconn/src/window/operations.rs:892
 msgid "Deletion Partially Complete"
 msgstr "Chỉ xóa được một phần"
 
-#: rustconn/src/window/operations.rs:850
+#: rustconn/src/window/operations.rs:895
 msgid "Deleted {} item(s)."
 msgstr "Đã xóa {} mục."
 
-#: rustconn/src/window/operations.rs:852
+#: rustconn/src/window/operations.rs:897
 msgid "Failed to delete {} item(s):"
 msgstr "Không thể xóa {} mục:"
 
-#: rustconn/src/window/operations.rs:873 rustconn/src/window/operations.rs:919
+#: rustconn/src/window/operations.rs:918 rustconn/src/window/operations.rs:964
 msgid "No Selection"
 msgstr "Chưa chọn mục nào"
 
-#: rustconn/src/window/operations.rs:874
+#: rustconn/src/window/operations.rs:919
 msgid "Select one or more items to delete."
 msgstr "Hãy chọn một hoặc nhiều mục để xóa."
 
-#: rustconn/src/window/operations.rs:886
+#: rustconn/src/window/operations.rs:931
 msgid "{} connection(s)"
 msgstr "{} kết nối"
 
-#: rustconn/src/window/operations.rs:887
+#: rustconn/src/window/operations.rs:932
 msgid "{} group(s)"
 msgstr "{} nhóm"
 
-#: rustconn/src/window/operations.rs:889
+#: rustconn/src/window/operations.rs:934
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} kết nối và {} nhóm"
 
-#: rustconn/src/window/operations.rs:920
+#: rustconn/src/window/operations.rs:965
 msgid "Please select one or more items to move."
 msgstr "Vui lòng chọn một hoặc nhiều mục để di chuyển."
 
-#: rustconn/src/window/operations.rs:978
+#: rustconn/src/window/operations.rs:1023
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "Chọn đích cho {} kết nối và {} nhóm:"
 
-#: rustconn/src/window/operations.rs:986
+#: rustconn/src/window/operations.rs:1031
 msgid "Select a group for {} connection(s):"
 msgstr "Chọn nhóm cho {} kết nối:"
 
-#: rustconn/src/window/operations.rs:991
+#: rustconn/src/window/operations.rs:1036
 msgid "Select parent for {} group(s):"
 msgstr "Chọn nhóm cha cho {} nhóm:"
 
-#: rustconn/src/window/operations.rs:1126
+#: rustconn/src/window/operations.rs:1171
 msgid "Move Partially Complete"
 msgstr "Chỉ di chuyển được một phần"
 
-#: rustconn/src/window/operations.rs:1129
+#: rustconn/src/window/operations.rs:1174
 msgid "Moved {} item(s)."
 msgstr "Đã di chuyển {} mục."
 
-#: rustconn/src/window/operations.rs:1131
+#: rustconn/src/window/operations.rs:1176
 msgid "Failed to move {} item(s):"
 msgstr "Không thể di chuyển {} mục:"
 
@@ -15227,6 +15231,22 @@ msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubern
 msgstr ""
 "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;kết "
 "nối;terminal;remote;từ xa;kubernetes;k8s;serial;sftp;"
+
+#~ msgid ""
+#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+#~ "Chromium browser)"
+#~ msgstr ""
+#~ "Duyệt web qua proxy SOCKS trên kết nối SSH đã chọn (trình duyệt nhúng "
+#~ "hoặc Chromium)"
+
+#~ msgid "SOCKS5 Proxy (host:port)"
+#~ msgstr "Proxy SOCKS5 (máy chủ:cổng)"
+
+#~ msgid "SOCKS5 Username (only if the proxy needs a login)"
+#~ msgstr "Tên người dùng SOCKS5 (chỉ khi proxy yêu cầu đăng nhập)"
+
+#~ msgid "Secret Variable Holding the SOCKS5 Password"
+#~ msgstr "Biến bí mật chứa mật khẩu SOCKS5"
 
 #~ msgid ""
 #~ "For hosts set to ask at connect. Leave a field empty to reuse the one "

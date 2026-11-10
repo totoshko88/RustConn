@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:06+0200\n"
+"POT-Creation-Date: 2026-11-10 19:10+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -63,8 +63,8 @@ msgstr "დიახ"
 #: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3605
 #: rustconn/src/window/mod.rs:3669 rustconn/src/window/mod.rs:4677
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:401 rustconn/src/window/operations.rs:779
-#: rustconn/src/window/operations.rs:962
+#: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
+#: rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:508 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -291,7 +291,7 @@ msgstr "ახალი კლასტერი"
 #: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
-#: rustconn/src/window/operations.rs:402
+#: rustconn/src/window/operations.rs:444
 msgid "Create"
 msgstr "შექმნა"
 
@@ -570,7 +570,7 @@ msgid "Detect terminal output activity or silence"
 msgstr "ტერმინალის გამოტანის აქტივობის, ან სიჩუმის დადგენა"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:347
-#: rustconn/src/dialogs/connection/web.rs:217
+#: rustconn/src/dialogs/connection/web.rs:224
 msgid "Mode"
 msgstr "რეჟიმი"
 
@@ -2162,6 +2162,7 @@ msgstr "ავთენტიკაცია"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:229
 #: rustconn/src/dialogs/connection/general_tab.rs:249
+#: rustconn/src/dialogs/connection/web.rs:147
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:121
 #: rustconn/src/dialogs/export.rs:407 rustconn/src/dialogs/template.rs:565
 #: rustconn/src/split_view/bridge.rs:1619
@@ -4192,37 +4193,45 @@ msgstr "პარამეტრები გამოიყენება ჩ�
 msgid "User Agent"
 msgstr "მომხმარებლის აგენტი"
 
-#: rustconn/src/dialogs/connection/web.rs:111
+#: rustconn/src/dialogs/connection/web.rs:112
 msgid "Tunnel Through SSH"
 msgstr "Tunnel Through SSH"
 
-#: rustconn/src/dialogs/connection/web.rs:113
+#: rustconn/src/dialogs/connection/web.rs:114
+msgid "Browse via a SOCKS proxy over the chosen SSH connection"
+msgstr "დათვალიერება SOCKS პროქსით არჩეული SSH კავშირის გავლით"
+
+#: rustconn/src/dialogs/connection/web.rs:140
+msgid "SOCKS5 Proxy"
+msgstr "SOCKS5 პროქსი"
+
+#: rustconn/src/dialogs/connection/web.rs:142
 msgid ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-"Chromium browser)"
+"An existing proxy, used instead of Tunnel Through SSH. Enter its address as "
+"host:port. If it needs a login, enter a username and the secret variable "
+"that holds the password."
 msgstr ""
-"Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-"Chromium browser)"
+"არსებული პროქსი, რომელიც SSH გვირაბის ნაცვლად გამოიყენება. შეიყვანეთ მისი "
+"მისამართი ფორმატით ჰოსტი:პორტი. თუ შესვლას მოითხოვს, შეიყვანეთ მომხმარებლის "
+"სახელი და საიდუმლო ცვლადი, რომელიც პაროლს ინახავს."
 
-#: rustconn/src/dialogs/connection/web.rs:122
-msgid "SOCKS5 Proxy (host:port)"
-msgstr "SOCKS5 პროქსი (ჰოსტი:პორტი)"
-
-#: rustconn/src/dialogs/connection/web.rs:126
-msgid "SOCKS5 Username (only if the proxy needs a login)"
-msgstr "SOCKS5 მომხმარებლის სახელი (მხოლოდ თუ პროქსი ავტორიზაციას ითხოვს)"
-
-#: rustconn/src/dialogs/connection/web.rs:130
-msgid "Secret Variable Holding the SOCKS5 Password"
-msgstr "საიდუმლო ცვლადი SOCKS5 პაროლით"
+#: rustconn/src/dialogs/connection/web.rs:145
+#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
+#: rustconn/src/window/copy_field_actions.rs:81
+msgid "Address"
+msgstr "მისამართი"
 
 #: rustconn/src/dialogs/connection/web.rs:150
+msgid "Password Variable"
+msgstr "პაროლის ცვლადი"
+
+#: rustconn/src/dialogs/connection/web.rs:157
 #: rustconn/src/dialogs/settings/monitoring_tab.rs:58
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:71
 msgid "General"
 msgstr "ზოგადი"
 
-#: rustconn/src/dialogs/connection/web.rs:218
+#: rustconn/src/dialogs/connection/web.rs:225
 msgid "How the URL is opened"
 msgstr "როგორ იხსნება URL"
 
@@ -4679,11 +4688,6 @@ msgstr "გაშვებული ასლი"
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:756
 msgid "Resource ID"
 msgstr "რესურსის ID"
-
-#: rustconn/src/dialogs/connection_wizard/connection_page.rs:786
-#: rustconn/src/window/copy_field_actions.rs:81
-msgid "Address"
-msgstr "მისამართი"
 
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:1008
 msgid "More…"
@@ -9792,7 +9796,7 @@ msgid "Filter by Protocol"
 msgstr "გაფილტვრა პროტოკოლით"
 
 #: rustconn/src/dialogs/smart_folder.rs:169
-#: rustconn/src/window/operations.rs:388
+#: rustconn/src/window/operations.rs:422
 msgid "Host Pattern"
 msgstr "ჰოსტის ნიმუში"
 
@@ -13059,7 +13063,7 @@ msgstr "შერჩევაზე გამოიყენება მხო�
 msgid "Apply group change"
 msgstr "ჯგუფის ცვლილების გადატარება"
 
-#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1042
+#: rustconn/src/window/batch_edit.rs:90 rustconn/src/window/operations.rs:1087
 msgid "(No Group)"
 msgstr "(ჯგუფის გარეშე)"
 
@@ -13967,7 +13971,7 @@ msgstr ""
 "ჯგუფური მაუწყებლობა გამორთულია — კლავიშები მხოლოდ ფოკუსირებულ ჩანართზე მიდის"
 
 #: rustconn/src/window/groups.rs:56 rustconn/src/window/groups.rs:62
-#: rustconn/src/window/operations.rs:949 rustconn/src/window/operations.rs:964
+#: rustconn/src/window/operations.rs:994 rustconn/src/window/operations.rs:1009
 msgid "Move"
 msgstr "გადატანა"
 
@@ -13975,7 +13979,7 @@ msgstr "გადატანა"
 msgid "Move '{}' to:"
 msgstr "'{}'-ის გადატანა:"
 
-#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1044
+#: rustconn/src/window/groups.rs:112 rustconn/src/window/operations.rs:1089
 msgid "(Root Level)"
 msgstr "(ძირითადი დონე)"
 
@@ -14410,7 +14414,7 @@ msgstr "წაიშალოს ჯგუფი '{}'?"
 msgid "Keep Connections"
 msgstr "კავშირების შენარჩულება"
 
-#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:780
+#: rustconn/src/window/operations.rs:119 rustconn/src/window/operations.rs:825
 msgid "Delete All"
 msgstr "ყველას წაშლა"
 
@@ -14454,11 +14458,11 @@ msgstr "სახელებისა და ჰოსტების დია
 msgid "‘{}’ would not be a valid connection"
 msgstr "„{}“ სწორი კავშირი არ იქნება"
 
-#: rustconn/src/window/operations.rs:381
+#: rustconn/src/window/operations.rs:410
 msgid "Duplicate ‘{}’ as a Range"
 msgstr "„{}“-ის დიაპაზონად დუბლირება"
 
-#: rustconn/src/window/operations.rs:383
+#: rustconn/src/window/operations.rs:412
 msgid ""
 "Creates one copy per number. A leading zero in the first number keeps the "
 "numbers padded."
@@ -14466,151 +14470,151 @@ msgstr ""
 "თითო რიცხვზე ქმნის ერთ ასლს. პირველ რიცხვში საწყისი ნული ინარჩუნებს "
 "რიცხვების ნულებით შევსებას."
 
-#: rustconn/src/window/operations.rs:387
+#: rustconn/src/window/operations.rs:418
 msgid "Name Pattern"
 msgstr "სახელის შაბლონი"
 
-#: rustconn/src/window/operations.rs:428
+#: rustconn/src/window/operations.rs:473
 msgid "Connections to create: {} (‘{}’ to ‘{}’)"
 msgstr "შესაქმნელი კავშირები: {} („{}“-დან „{}“-მდე)"
 
-#: rustconn/src/window/operations.rs:435
+#: rustconn/src/window/operations.rs:480
 msgid "Already exist, will be skipped: {}"
 msgstr "უკვე არსებობს, გამოტოვებული იქნება: {}"
 
-#: rustconn/src/window/operations.rs:441
+#: rustconn/src/window/operations.rs:486
 msgid "All of these names already exist"
 msgstr "ყველა ეს სახელი უკვე არსებობს"
 
-#: rustconn/src/window/operations.rs:548
+#: rustconn/src/window/operations.rs:593
 msgid "Some Connections Were Not Created"
 msgstr "ზოგიერთი კავშირი ვერ შეიქმნა"
 
-#: rustconn/src/window/operations.rs:577
+#: rustconn/src/window/operations.rs:622
 msgid "The saved password was not copied to {} of the new connections"
 msgstr "შენახული პაროლი ვერ დაკოპირდა ახალ კავშირებში: {}"
 
-#: rustconn/src/window/operations.rs:593
+#: rustconn/src/window/operations.rs:638
 msgid "Connections created: {}"
 msgstr "შექმნილი კავშირები: {}"
 
-#: rustconn/src/window/operations.rs:596
+#: rustconn/src/window/operations.rs:641
 msgid "Connections created: {}, already existed: {}"
 msgstr "შექმნილი კავშირები: {}, უკვე არსებობდა: {}"
 
-#: rustconn/src/window/operations.rs:603
+#: rustconn/src/window/operations.rs:648
 msgid "Connections created: {}, failed: {}"
 msgstr "შექმნილი კავშირები: {}, ვერ შეიქმნა: {}"
 
-#: rustconn/src/window/operations.rs:608
+#: rustconn/src/window/operations.rs:653
 msgid "Connections created: {}, failed: {}, already existed: {}"
 msgstr "შექმნილი კავშირები: {}, ვერ შეიქმნა: {}, უკვე არსებობდა: {}"
 
-#: rustconn/src/window/operations.rs:612
+#: rustconn/src/window/operations.rs:657
 msgid "Not created: {}"
 msgstr "არ შეიქმნა: {}"
 
-#: rustconn/src/window/operations.rs:680
+#: rustconn/src/window/operations.rs:725
 msgid "Connection copied to clipboard"
 msgstr "კავშირი დაკოპირდა ბუფერში"
 
-#: rustconn/src/window/operations.rs:688
+#: rustconn/src/window/operations.rs:733
 msgid "Failed to copy connection"
 msgstr "კავშირის კოპირების შეცდომა"
 
-#: rustconn/src/window/operations.rs:707
+#: rustconn/src/window/operations.rs:752
 msgid "Nothing to paste - copy a connection first"
 msgstr "ჩასასმელი არაფერია - ჯერ დააკოპირეთ კავშირი"
 
-#: rustconn/src/window/operations.rs:725
+#: rustconn/src/window/operations.rs:770
 msgid "Connection pasted"
 msgstr "კავშირი ჩასმულია"
 
-#: rustconn/src/window/operations.rs:734
+#: rustconn/src/window/operations.rs:779
 msgid "Failed to paste connection"
 msgstr "კავშირის ჩასმის შეცდომა"
 
-#: rustconn/src/window/operations.rs:754
+#: rustconn/src/window/operations.rs:799
 msgid "• {} (connection)"
 msgstr "• {} (კავშირი)"
 
-#: rustconn/src/window/operations.rs:757
+#: rustconn/src/window/operations.rs:802
 msgid "• {} (group)"
 msgstr "• {} (ჯგუფი)"
 
-#: rustconn/src/window/operations.rs:773
+#: rustconn/src/window/operations.rs:818
 msgid "Are you sure you want to delete {}?"
 msgstr "მართლა გნებავთ, წაშალოთ {}?"
 
-#: rustconn/src/window/operations.rs:775
+#: rustconn/src/window/operations.rs:820
 msgid "Connections in deleted groups will become ungrouped."
 msgstr "კავშირები წაშლილ ჯგუფებში განჯგუფდებიან."
 
-#: rustconn/src/window/operations.rs:778
+#: rustconn/src/window/operations.rs:823
 msgid "Delete Selected Items?"
 msgstr "წაიშალოს მონიშნული ელემენტები?"
 
-#: rustconn/src/window/operations.rs:839
+#: rustconn/src/window/operations.rs:884
 msgid "Successfully deleted {} item(s)."
 msgstr "წარმატებით წაიშალა {} ელემენტი."
 
-#: rustconn/src/window/operations.rs:847
+#: rustconn/src/window/operations.rs:892
 msgid "Deletion Partially Complete"
 msgstr "წაშლა ნაწილობრივ დასრულდა"
 
-#: rustconn/src/window/operations.rs:850
+#: rustconn/src/window/operations.rs:895
 msgid "Deleted {} item(s)."
 msgstr "წაიშალა {} ელემენტი."
 
-#: rustconn/src/window/operations.rs:852
+#: rustconn/src/window/operations.rs:897
 msgid "Failed to delete {} item(s):"
 msgstr "{} ელემენტის წაშლის შეცდომა:"
 
-#: rustconn/src/window/operations.rs:873 rustconn/src/window/operations.rs:919
+#: rustconn/src/window/operations.rs:918 rustconn/src/window/operations.rs:964
 msgid "No Selection"
 msgstr "მონიშნულის გარეშე"
 
-#: rustconn/src/window/operations.rs:874
+#: rustconn/src/window/operations.rs:919
 msgid "Select one or more items to delete."
 msgstr "აირჩიეთ ერთი, ან მეტი წასაშლელი ელემენტი."
 
-#: rustconn/src/window/operations.rs:886
+#: rustconn/src/window/operations.rs:931
 msgid "{} connection(s)"
 msgstr "{} კავშირი"
 
-#: rustconn/src/window/operations.rs:887
+#: rustconn/src/window/operations.rs:932
 msgid "{} group(s)"
 msgstr "{} ჯგუფი"
 
-#: rustconn/src/window/operations.rs:889
+#: rustconn/src/window/operations.rs:934
 msgid "{} connection(s) and {} group(s)"
 msgstr "{} კავშირი და {} ჯგუფი"
 
-#: rustconn/src/window/operations.rs:920
+#: rustconn/src/window/operations.rs:965
 msgid "Please select one or more items to move."
 msgstr "აირჩიეთ ერთი, ან მეტი გადასატანი ელემენტი."
 
-#: rustconn/src/window/operations.rs:978
+#: rustconn/src/window/operations.rs:1023
 msgid "Select destination for {} connection(s) and {} group(s):"
 msgstr "აირჩიეთ სამიზნე {} კავშირისთვის და {} ჯგუფისთვის:"
 
-#: rustconn/src/window/operations.rs:986
+#: rustconn/src/window/operations.rs:1031
 msgid "Select a group for {} connection(s):"
 msgstr "აირჩიეთ ჯგუფი {} კავშირისთვის:"
 
-#: rustconn/src/window/operations.rs:991
+#: rustconn/src/window/operations.rs:1036
 msgid "Select parent for {} group(s):"
 msgstr "აირჩიეთ მშობელი {} ჯგუფისთვის:"
 
-#: rustconn/src/window/operations.rs:1126
+#: rustconn/src/window/operations.rs:1171
 msgid "Move Partially Complete"
 msgstr "გადატანა ნაწილობრივ დასრულდა"
 
-#: rustconn/src/window/operations.rs:1129
+#: rustconn/src/window/operations.rs:1174
 msgid "Moved {} item(s)."
 msgstr "გადატანილია {} ელემენტი."
 
-#: rustconn/src/window/operations.rs:1131
+#: rustconn/src/window/operations.rs:1176
 msgid "Failed to move {} item(s):"
 msgstr "{} ელემენტის გადატანა ჩავარდა:"
 
@@ -15336,6 +15340,22 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
+
+#~ msgid ""
+#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+#~ "Chromium browser)"
+#~ msgstr ""
+#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
+#~ "Chromium browser)"
+
+#~ msgid "SOCKS5 Proxy (host:port)"
+#~ msgstr "SOCKS5 პროქსი (ჰოსტი:პორტი)"
+
+#~ msgid "SOCKS5 Username (only if the proxy needs a login)"
+#~ msgstr "SOCKS5 მომხმარებლის სახელი (მხოლოდ თუ პროქსი ავტორიზაციას ითხოვს)"
+
+#~ msgid "Secret Variable Holding the SOCKS5 Password"
+#~ msgstr "საიდუმლო ცვლადი SOCKS5 პაროლით"
 
 #~ msgid ""
 #~ "For hosts set to ask at connect. Leave a field empty to reuse the one "

@@ -2172,9 +2172,9 @@ Disable JavaScript execution for specific connections in the connection dialog's
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
 
 **SOCKS5 Proxy:**
-If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy**. Every request from the browser then goes through it, and this setting cannot be combined with **Tunnel Through SSH**.
+If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy → Address**. Every request from the browser then goes through it, and this setting cannot be combined with **Tunnel Through SSH**.
 
-If the proxy needs a login, fill in **SOCKS5 Username** and name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
+If the proxy needs a login, fill in **Username** and, in **Password Variable**, name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
 
 The embedded browser, Chromium-based browsers and Firefox all work; external ones open with a separate, temporary profile. With the System browser mode, RustConn opens an installed browser that can use the proxy instead of your default if it can't. If none is found the page is **not opened** rather than loaded directly.
 
