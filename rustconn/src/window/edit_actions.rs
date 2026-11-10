@@ -1831,10 +1831,9 @@ impl MainWindow {
                         // is handed over so the registry reaps it — its exit is when
                         // the tunnel could be dropped, though today that waits for exit
                         // of RustConn (documented tradeoff, as for RDP/VNC viewers).
-                        // The browser profile goes as soon as the browser exits.
-                        if let Some(relay) = socks_relay {
-                            relay.detach();
-                        }
+                        // The browser profile, and the relay of a proxy with a
+                        // login, go as soon as the browser exits: the relay accepts
+                        // any local client and holds the proxy password.
                         if let Some(tunnel) = socks_tunnel {
                             let session_id = uuid::Uuid::new_v4();
                             notebook_cb.store_ssh_tunnel(session_id, tunnel);
@@ -1844,10 +1843,13 @@ impl MainWindow {
                                 child,
                                 proxy_profile,
                             );
-                        } else if let Some(profile) = proxy_profile {
+                        } else if proxy_profile.is_some() || socks_relay.is_some() {
                             // A SOCKS proxy without a tunnel is not an external
-                            // session; only the profile waits for the browser.
-                            crate::external_session::drop_when_exits(child, profile);
+                            // session; what it needs just waits for the browser.
+                            crate::external_session::drop_when_exits(
+                                child,
+                                (proxy_profile, socks_relay),
+                            );
                         }
                         if let Some(app) = gtk4::gio::Application::default()
                             && let Some(gtk_app) = app.downcast_ref::<gtk4::Application>()

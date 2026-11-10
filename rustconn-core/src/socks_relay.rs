@@ -106,12 +106,6 @@ impl SocksRelay {
     pub fn proxy_uri(&self) -> String {
         format!("socks5://127.0.0.1:{}", self.local_port)
     }
-
-    /// Leaves the relay running until this process exits, for a browser that
-    /// outlives every owner the relay could have.
-    pub fn detach(self) {
-        std::mem::forget(self);
-    }
 }
 
 impl Drop for SocksRelay {
