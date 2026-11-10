@@ -404,6 +404,7 @@ pub fn collect_variable_templates(
     use crate::variables::VARIABLE_REGEX;
 
     let mut seen = HashSet::new();
+    let mut socks_names = HashSet::new();
     let mut templates = Vec::new();
 
     for conn in connections {
@@ -417,16 +418,15 @@ pub fn collect_variable_templates(
         // 2. A Web connection's SOCKS proxy password lives in a variable too;
         //    without its template the other device cannot open the page.
         //    It is a password whatever the local flag says, so its value
-        //    never goes into the sync file.
+        //    never goes into the sync file; that is applied after the loop,
+        //    since an earlier connection may have used the name as text.
         if let ProtocolConfig::Web(ref web) = conn.protocol_config
             && let Some(ref name) = web.socks_proxy_password_variable
-            && seen.insert(name.clone())
         {
-            templates.push(VariableTemplate {
-                is_secret: true,
-                default_value: None,
-                ..build_template(name, existing_variables)
-            });
+            socks_names.insert(name.clone());
+            if seen.insert(name.clone()) {
+                templates.push(build_template(name, existing_variables));
+            }
         }
 
         // 3. Scan string fields for ${var_name} patterns
@@ -439,6 +439,13 @@ pub fn collect_variable_templates(
                     }
                 }
             }
+        }
+    }
+
+    for template in &mut templates {
+        if socks_names.contains(&template.name) {
+            template.is_secret = true;
+            template.default_value = None;
         }
     }
 
@@ -460,8 +467,11 @@ fn variable_bearing_fields(conn: &Connection) -> Vec<&str> {
 
 /// Builds a [`VariableTemplate`] for the given variable name by looking it up
 /// in `existing_variables`.
+///
+/// With several variables of that name the last one is used, as substitution
+/// and [`crate::protocol::socks_password_variable`] use it.
 fn build_template(name: &str, existing_variables: &[Variable]) -> VariableTemplate {
-    if let Some(var) = existing_variables.iter().find(|v| v.name == name) {
+    if let Some(var) = existing_variables.iter().rev().find(|v| v.name == name) {
         let default_value = if var.is_secret || var.value.is_empty() {
             None
         } else {
@@ -1493,6 +1503,46 @@ mod tests {
             "a plain variable's proxy password never syncs"
         );
         assert_eq!(templates[0].description, Some("Proxy".to_owned()));
+    }
+
+    #[test]
+    fn a_socks_variable_used_earlier_as_text_is_still_exported_as_secret() {
+        let mut earlier = Connection::new_ssh("ssh".to_owned(), "${proxy_pw}".to_owned(), 22);
+        earlier.username = Some("deploy".to_owned());
+        let mut web = Connection::new_ssh("web".to_owned(), "https://intranet".to_owned(), 443);
+        web.protocol = crate::models::ProtocolType::Web;
+        web.protocol_config = ProtocolConfig::Web(crate::models::WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".to_owned()),
+            socks_proxy_username: Some("alice".to_owned()),
+            socks_proxy_password_variable: Some("proxy_pw".to_owned()),
+            ..crate::models::WebConfig::default()
+        });
+
+        let vars = vec![Variable::new("proxy_pw", "x")];
+
+        let templates = collect_variable_templates(&[earlier, web], &vars);
+        assert_eq!(templates.len(), 1);
+        assert_eq!(templates[0].name, "proxy_pw");
+        assert!(templates[0].is_secret, "a proxy password syncs as secret");
+        assert_eq!(templates[0].default_value, None);
+    }
+
+    #[test]
+    fn the_last_definition_of_a_variable_wins() {
+        let mut conn = Connection::new_ssh("ssh".to_owned(), "${db_host}".to_owned(), 22);
+        conn.username = Some("deploy".to_owned());
+
+        let vars = vec![
+            Variable::new("db_host", "old.example.com"),
+            Variable::new("db_host", "new.example.com"),
+        ];
+
+        let templates = collect_variable_templates(&[conn], &vars);
+        assert_eq!(templates.len(), 1);
+        assert_eq!(
+            templates[0].default_value,
+            Some("new.example.com".to_owned())
+        );
     }
 
     #[test]
