@@ -1764,8 +1764,8 @@ msgid ""
 "Saved jump host no longer exists and is skipped when connecting — pick "
 "another"
 msgstr ""
-"Збережений проміжний вузол більше не існує й пропускається при під'єднанні — "
-"обери інший"
+"Збережений проміжний гост більше не існує й пропускається під час "
+"з'єднування — обери інший"
 
 #: rustconn/src/dialogs/connection/dialog/rows.rs:49
 #: rustconn/src/dialogs/connection/dialog/rows.rs:580
@@ -13114,7 +13114,7 @@ msgstr ""
 
 #: rustconn/src/window/clusters.rs:455
 msgid "Jump Host Unavailable"
-msgstr "Проміжний вузол недоступний"
+msgstr "Проміжний гост недоступний"
 
 #: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3606
 #: rustconn/src/window/mod.rs:3672 rustconn/src/window/rdp_vnc.rs:781
@@ -14177,11 +14177,11 @@ msgstr "Змінився маршрут для «{}»"
 
 #: rustconn/src/window/mod.rs:3666
 msgid "Jump Host Unavailable for “{}”"
-msgstr "Проміжний вузол недоступний для «{}»"
+msgstr "Проміжний гост недоступний для «{}»"
 
 #: rustconn/src/window/mod.rs:3671
 msgid "Connect Directly"
-msgstr "Під'єднатися напряму"
+msgstr "З'єднайся напряму"
 
 #: rustconn/src/window/mod.rs:3760 rustconn/src/window/mod.rs:3935
 msgid "Connection “{}” created"
