@@ -128,7 +128,7 @@ pub(super) fn cmd_run_script(
         .iter()
         .filter_map(|c| {
             script_host(
-                &with_global_variables(c, &settings.global_variables),
+                &resolve_or_leave_out(c, &settings.global_variables)?,
                 &connections,
                 &groups,
                 &settings.network,
@@ -182,24 +182,53 @@ fn run_result(succeeded: usize, total: usize, quiet: bool) -> Result<(), CliErro
 /// defines becomes empty, and a value holding a shell metacharacter leaves the
 /// text unchanged. A secret variable is not read from the vault here, so one
 /// whose value is not in the configuration file counts as undefined.
-fn with_global_variables(connection: &Connection, globals: &[Variable]) -> Connection {
+///
+/// A variable set to ask at connect (`@ask:`) cannot be answered here, so it
+/// gives `Err` with that variable's name and the host is left out.
+fn with_global_variables(
+    connection: &Connection,
+    globals: &[Variable],
+) -> Result<Connection, String> {
     let mut connection = connection.clone();
     let has_reference = |text: &str| text.contains("${");
     if !has_reference(&connection.host)
         && !connection.username.as_deref().is_some_and(has_reference)
     {
-        return connection;
+        return Ok(connection);
     }
     let mut manager = VariableManager::new();
     for variable in globals {
         manager.set_global(variable.clone());
+    }
+    let texts = std::iter::once(connection.host.as_str()).chain(connection.username.as_deref());
+    for text in texts {
+        // A malformed reference is left to substitution, as before.
+        if let Ok(requests) = manager.collect_ask_requests(text, VariableScope::Global)
+            && let Some((name, _)) = requests.into_iter().next()
+        {
+            return Err(name);
+        }
     }
     connection.host = substitute_global(&manager, &connection.host);
     connection.username = connection
         .username
         .as_deref()
         .map(|user| substitute_global(&manager, user));
-    connection
+    Ok(connection)
+}
+
+/// [`with_global_variables`], or `None` with a warning when the host has to be
+/// left out. The warning is printed under `--quiet` too.
+fn resolve_or_leave_out(connection: &Connection, globals: &[Variable]) -> Option<Connection> {
+    with_global_variables(connection, globals)
+        .map_err(|variable| {
+            eprintln!(
+                "[{}] left out: ${{{variable}}} asks for its value at connect, \
+                 which run-script cannot do",
+                connection.name
+            );
+        })
+        .ok()
 }
 
 fn substitute_global(manager: &VariableManager, text: &str) -> String {
@@ -816,7 +845,7 @@ mod tests {
             Variable::new("site", "web01"),
             Variable::new("login", "bob"),
         ];
-        let resolved = super::with_global_variables(&connection, &globals);
+        let resolved = super::with_global_variables(&connection, &globals).unwrap();
         assert_eq!(resolved.host, "web01.example.com");
         assert_eq!(resolved.username.as_deref(), Some("bob"));
         assert_eq!(resolved.id, connection.id, "passwords are found by id");
@@ -826,15 +855,29 @@ mod tests {
     fn plain_hosts_and_unsafe_values_are_left_alone() {
         use rustconn_core::variables::Variable;
 
-        let plain = super::with_global_variables(&target(), &[Variable::new("site", "x")]);
+        let plain = super::with_global_variables(&target(), &[Variable::new("site", "x")]).unwrap();
         assert_eq!(plain.host, "web.lan");
         assert_eq!(plain.username.as_deref(), Some("alice"));
 
         let mut connection = target();
         connection.host = "${site}".to_string();
         let resolved =
-            super::with_global_variables(&connection, &[Variable::new("site", "a;reboot")]);
+            super::with_global_variables(&connection, &[Variable::new("site", "a;reboot")])
+                .unwrap();
         assert_eq!(resolved.host, "${site}");
+    }
+
+    #[test]
+    fn an_ask_variable_leaves_the_host_out() {
+        use rustconn_core::variables::Variable;
+
+        let mut connection = target();
+        connection.host = "${region}.lan".to_string();
+        let globals = [Variable::new("region", "@ask:Region|eu|us")];
+        assert_eq!(
+            super::with_global_variables(&connection, &globals).map(|c| c.host),
+            Err("region".to_string())
+        );
     }
 
     fn runtime() -> tokio::runtime::Runtime {
