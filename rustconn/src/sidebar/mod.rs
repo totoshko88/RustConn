@@ -948,7 +948,7 @@ impl ConnectionSidebar {
             ("VNC", i18n("VNC")),
             ("SPICE", i18n("SPICE")),
             ("Telnet", i18n("Telnet")),
-            ("WinRM", "WinRM".to_string()),
+            ("WinRM", i18n("WinRM")),
             ("Serial", i18n("Serial")),
             ("ZeroTrust", i18n("ZeroTrust")),
             ("Kubernetes", i18n("Kubernetes")),

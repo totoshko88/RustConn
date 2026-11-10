@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:15+0200\n"
+"POT-Creation-Date: 2026-11-10 19:18+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: p-bo <https://github.com/p-bo>\n"
 "Language-Team: Czech\n"
@@ -61,7 +61,7 @@ msgstr "OK"
 #: rustconn/src/window/mod.rs:5725 rustconn/src/window/operations.rs:117
 #: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
 #: rustconn/src/window/operations.rs:1007
-#: rustconn/src/window/remote_script.rs:536 rustconn/src/window/sessions.rs:335
+#: rustconn/src/window/remote_script.rs:539 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
 msgstr "Zrušit"
@@ -4734,7 +4734,7 @@ msgstr "Zkopírovat"
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
 #: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1271
-#: rustconn/src/window/remote_script.rs:342
+#: rustconn/src/window/remote_script.rs:345
 msgid "Stop"
 msgstr "Zastavit"
 
@@ -7011,8 +7011,8 @@ msgid "Select or create a script."
 msgstr "Vyberte nebo vytvořte skript."
 
 #: rustconn/src/dialogs/script.rs:162 rustconn/src/embedded_rdp/mod.rs:1378
-#: rustconn/src/window/remote_script.rs:338
-#: rustconn/src/window/remote_script.rs:537 rustconn/src/window/snippets.rs:113
+#: rustconn/src/window/remote_script.rs:341
+#: rustconn/src/window/remote_script.rs:540 rustconn/src/window/snippets.rs:113
 msgid "Run"
 msgstr "Spustit"
 
@@ -8697,7 +8697,7 @@ msgid "Not available"
 msgstr "Nedostupné"
 
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:250
-#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:801
+#: rustconn/src/dialogs/tunnel.rs:415 rustconn/src/window/remote_script.rs:804
 msgid "Running"
 msgstr "Běží"
 
@@ -11711,7 +11711,7 @@ msgstr "Relace RDP běží v externím okně"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
 #: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3166
-#: rustconn/src/window/remote_script.rs:148
+#: rustconn/src/window/remote_script.rs:151
 msgid "Connection failed"
 msgstr "Připojení selhalo"
 
@@ -12086,6 +12086,10 @@ msgstr "Seznam připojení"
 #: rustconn/src/sidebar/mod.rs:950
 msgid "Telnet"
 msgstr "Telnet"
+
+#: rustconn/src/sidebar/mod.rs:951
+msgid "WinRM"
+msgstr "WinRM"
 
 #: rustconn/src/sidebar/mod.rs:952
 msgid "Serial"
@@ -14634,13 +14638,13 @@ msgstr "Certifikát se změnil"
 msgid "Accept new certificate"
 msgstr "Přijmout nový certifikát"
 
-#: rustconn/src/window/remote_script.rs:83
+#: rustconn/src/window/remote_script.rs:84
 msgid "ssh was not found. Install OpenSSH to run scripts on SSH hosts."
 msgstr ""
 "ssh nebyl nalezen. Nainstalujte OpenSSH, abyste mohli spouštět skripty na "
 "hostitelích SSH."
 
-#: rustconn/src/window/remote_script.rs:85
+#: rustconn/src/window/remote_script.rs:87
 msgid ""
 "python3 was not found. Install Python 3 with the pywinrm library to run "
 "scripts on WinRM hosts."
@@ -14648,105 +14652,105 @@ msgstr ""
 "python3 nebyl nalezen. Nainstalujte Python 3 s knihovnou pywinrm, abyste "
 "mohli spouštět skripty na hostitelích WinRM."
 
-#: rustconn/src/window/remote_script.rs:88
+#: rustconn/src/window/remote_script.rs:90
 msgid "WinRM needs a password, and none is saved or entered for this host"
 msgstr ""
 "WinRM vyžaduje heslo a pro tohoto hostitele žádné není uložené ani zadané"
 
-#: rustconn/src/window/remote_script.rs:91
+#: rustconn/src/window/remote_script.rs:93
 msgid "This host cannot be reached with ssh: {}"
 msgstr "K tomuto hostiteli se nelze připojit přes ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:94
+#: rustconn/src/window/remote_script.rs:96
 msgid "The password could not be handed to ssh: {}"
 msgstr "Heslo se nepodařilo předat ssh: {}"
 
-#: rustconn/src/window/remote_script.rs:97
+#: rustconn/src/window/remote_script.rs:99
 msgid "The SSH tunnel through the jump host could not be opened: {}"
 msgstr "Tunel SSH přes přestupního hostitele se nepodařilo otevřít: {}"
 
-#: rustconn/src/window/remote_script.rs:100
+#: rustconn/src/window/remote_script.rs:103
 msgid "The WinRM request could not be prepared: {}"
 msgstr "Požadavek WinRM se nepodařilo připravit: {}"
 
-#: rustconn/src/window/remote_script.rs:103
+#: rustconn/src/window/remote_script.rs:106
 msgid "{} could not be started: {}"
 msgstr "{} se nepodařilo spustit: {}"
 
-#: rustconn/src/window/remote_script.rs:110
+#: rustconn/src/window/remote_script.rs:113
 msgid "The script could not be read"
 msgstr "Skript nelze přečíst"
 
-#: rustconn/src/window/remote_script.rs:111
+#: rustconn/src/window/remote_script.rs:114
 msgid "Choose a script file, not a folder"
 msgstr "Vyberte soubor skriptu, ne složku"
 
-#: rustconn/src/window/remote_script.rs:112
+#: rustconn/src/window/remote_script.rs:115
 msgid "The script is empty"
 msgstr "Skript je prázdný"
 
-#: rustconn/src/window/remote_script.rs:113
+#: rustconn/src/window/remote_script.rs:116
 msgid "The script is larger than 1 MiB"
 msgstr "Skript je větší než 1 MiB"
 
-#: rustconn/src/window/remote_script.rs:114
+#: rustconn/src/window/remote_script.rs:117
 msgid "This is a binary file, not a script"
 msgstr "Toto je binární soubor, ne skript"
 
-#: rustconn/src/window/remote_script.rs:143
+#: rustconn/src/window/remote_script.rs:146
 msgid "Succeeded"
 msgstr "Úspěšné"
 
-#: rustconn/src/window/remote_script.rs:145
+#: rustconn/src/window/remote_script.rs:148
 msgid "Failed with exit code {}"
 msgstr "Selhalo s návratovým kódem {}"
 
-#: rustconn/src/window/remote_script.rs:147
+#: rustconn/src/window/remote_script.rs:150
 msgid "Stopped by a signal"
 msgstr "Zastaveno signálem"
 
-#: rustconn/src/window/remote_script.rs:149
+#: rustconn/src/window/remote_script.rs:152
 msgid "Timed out"
 msgstr "Vypršel čas"
 
-#: rustconn/src/window/remote_script.rs:150
-#: rustconn/src/window/remote_script.rs:675
+#: rustconn/src/window/remote_script.rs:153
+#: rustconn/src/window/remote_script.rs:678
 msgid "Cancelled"
 msgstr "Zrušeno"
 
-#: rustconn/src/window/remote_script.rs:151
+#: rustconn/src/window/remote_script.rs:154
 msgid "Could not start"
 msgstr "Nelze spustit"
 
-#: rustconn/src/window/remote_script.rs:181
+#: rustconn/src/window/remote_script.rs:184
 msgid "No SSH or WinRM connections are selected"
 msgstr "Není vybráno žádné připojení SSH ani WinRM"
 
-#: rustconn/src/window/remote_script.rs:203
+#: rustconn/src/window/remote_script.rs:206
 msgid "Hosts"
 msgstr "Hostitelé"
 
-#: rustconn/src/window/remote_script.rs:210
+#: rustconn/src/window/remote_script.rs:213
 msgid "Hosts (not using SSH or WinRM, left out: {})"
 msgstr "Hostitelé (bez SSH nebo WinRM, vynecháno: {})"
 
-#: rustconn/src/window/remote_script.rs:221
+#: rustconn/src/window/remote_script.rs:224
 msgid "Script File"
 msgstr "Soubor skriptu"
 
-#: rustconn/src/window/remote_script.rs:222
+#: rustconn/src/window/remote_script.rs:225
 msgid "Choose File"
 msgstr "Vybrat soubor"
 
-#: rustconn/src/window/remote_script.rs:232
+#: rustconn/src/window/remote_script.rs:235
 msgid "Hosts at Once"
 msgstr "Hostitelů najednou"
 
-#: rustconn/src/window/remote_script.rs:235
+#: rustconn/src/window/remote_script.rs:238
 msgid "Time Limit per Host (minutes)"
 msgstr "Časový limit na hostitele (minuty)"
 
-#: rustconn/src/window/remote_script.rs:240
+#: rustconn/src/window/remote_script.rs:243
 msgid ""
 "A .ps1 file runs in PowerShell on WinRM hosts; any other file runs with bash "
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
@@ -14757,11 +14761,11 @@ msgstr ""
 "nic neukládá. Hostitel SSH, ke kterému jste se nikdy nepřipojili, je "
 "odmítnut, dokud není znám jeho klíč."
 
-#: rustconn/src/window/remote_script.rs:248
+#: rustconn/src/window/remote_script.rs:251
 msgid "Passwords"
 msgstr "Hesla"
 
-#: rustconn/src/window/remote_script.rs:250
+#: rustconn/src/window/remote_script.rs:253
 msgid ""
 "For hosts set to ask at connect. A host whose field is empty gets no "
 "password."
@@ -14769,40 +14773,40 @@ msgstr ""
 "Pro hostitele, kteří se ptají při připojení. Hostitel s prázdným polem "
 "nedostane žádné heslo."
 
-#: rustconn/src/window/remote_script.rs:257
+#: rustconn/src/window/remote_script.rs:260
 msgid "Use One Password for All Hosts"
 msgstr "Použít jedno heslo pro všechny hostitele"
 
-#: rustconn/src/window/remote_script.rs:262
+#: rustconn/src/window/remote_script.rs:265
 msgid "Password for All Hosts"
 msgstr "Heslo pro všechny hostitele"
 
-#: rustconn/src/window/remote_script.rs:315
+#: rustconn/src/window/remote_script.rs:318
 msgid "Script Output"
 msgstr "Výstup skriptu"
 
-#: rustconn/src/window/remote_script.rs:336
-#: rustconn/src/window/remote_script.rs:354
+#: rustconn/src/window/remote_script.rs:339
+#: rustconn/src/window/remote_script.rs:357
 msgid "Run Local Script"
 msgstr "Spustit místní skript"
 
-#: rustconn/src/window/remote_script.rs:407
+#: rustconn/src/window/remote_script.rs:410
 msgid "Output of {}"
 msgstr "Výstup z {}"
 
-#: rustconn/src/window/remote_script.rs:418
+#: rustconn/src/window/remote_script.rs:421
 msgid "Choose Script"
 msgstr "Vybrat skript"
 
-#: rustconn/src/window/remote_script.rs:456
+#: rustconn/src/window/remote_script.rs:459
 msgid "None of the selected hosts can run this type of script"
 msgstr "Žádný z vybraných hostitelů nemůže spustit tento typ skriptu"
 
-#: rustconn/src/window/remote_script.rs:530
+#: rustconn/src/window/remote_script.rs:533
 msgid "Run ‘{}’?"
 msgstr "Spustit „{}“?"
 
-#: rustconn/src/window/remote_script.rs:532
+#: rustconn/src/window/remote_script.rs:535
 msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
@@ -14810,23 +14814,23 @@ msgstr ""
 "Spustí se na těchto hostitelích pod přihlašovacími uživateli a jeho změny "
 "nelze vrátit: {}"
 
-#: rustconn/src/window/remote_script.rs:571
+#: rustconn/src/window/remote_script.rs:574
 msgid "Waiting"
 msgstr "Čeká"
 
-#: rustconn/src/window/remote_script.rs:806
+#: rustconn/src/window/remote_script.rs:809
 msgid "[further output dropped]"
 msgstr "[další výstup zahozen]"
 
-#: rustconn/src/window/remote_script.rs:847
+#: rustconn/src/window/remote_script.rs:850
 msgid "Succeeded: {}, not succeeded: {}"
 msgstr "Úspěšné: {}, neúspěšné: {}"
 
-#: rustconn/src/window/remote_script.rs:862
+#: rustconn/src/window/remote_script.rs:865
 msgid "Stop the Script?"
 msgstr "Zastavit skript?"
 
-#: rustconn/src/window/remote_script.rs:864
+#: rustconn/src/window/remote_script.rs:867
 msgid ""
 "It is stopped on every host still running it, and the window closes. Changes "
 "it has already made stay in place."
@@ -14834,15 +14838,15 @@ msgstr ""
 "Skript se zastaví na všech hostitelích, kde ještě běží, a okno se zavře. "
 "Změny, které už provedl, zůstanou."
 
-#: rustconn/src/window/remote_script.rs:867
+#: rustconn/src/window/remote_script.rs:870
 msgid "Keep Running"
 msgstr "Nechat běžet"
 
-#: rustconn/src/window/remote_script.rs:868
+#: rustconn/src/window/remote_script.rs:871
 msgid "Stop and Close"
 msgstr "Zastavit a zavřít"
 
-#: rustconn/src/window/remote_script.rs:901
+#: rustconn/src/window/remote_script.rs:904
 msgid "Script finished. {}"
 msgstr "Skript skončil. {}"
 
