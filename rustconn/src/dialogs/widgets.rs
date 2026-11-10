@@ -9,7 +9,7 @@ use gtk4::prelude::*;
 use gtk4::{Button, CheckButton, DropDown, Entry, SpinButton, StringList};
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Creates a standard dialog header bar following GNOME HIG.
 ///
@@ -202,6 +202,9 @@ impl FallbackJumpHostsEditor {
         let add_dropdown = DropDown::builder().valign(gtk4::Align::Center).build();
         enable_string_search(&add_dropdown);
         add_dropdown.set_size_request(200, -1);
+        add_dropdown.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Fallback Jump Host to Add",
+        ))]);
         let add_label = i18n("Add Fallback Jump Host");
         let add_button = Button::builder()
             .icon_name("list-add-symbolic")
@@ -290,14 +293,19 @@ impl FallbackJumpHostsInner {
 
         let selected = this.selected.borrow().clone();
         for (index, id) in selected.iter().enumerate() {
+            let label = this.label_of(*id);
             let row = adw::ActionRow::builder()
-                .title(this.label_of(*id))
+                .title(&label)
                 .use_markup(false)
                 .build();
+            // The tooltip sits next to the host's name; a screen reader that
+            // lands on the button hears only the accessible label, so it
+            // names the host.
             let up = Self::row_button(
                 this,
                 "go-up-symbolic",
                 &i18n("Move Up"),
+                &i18n_f("Move {} up", &[&label]),
                 index,
                 RowAction::Up,
             );
@@ -306,6 +314,7 @@ impl FallbackJumpHostsInner {
                 this,
                 "go-down-symbolic",
                 &i18n("Move Down"),
+                &i18n_f("Move {} down", &[&label]),
                 index,
                 RowAction::Down,
             );
@@ -314,6 +323,7 @@ impl FallbackJumpHostsInner {
                 this,
                 "list-remove-symbolic",
                 &i18n("Remove"),
+                &i18n_f("Remove {}", &[&label]),
                 index,
                 RowAction::Remove,
             );
@@ -359,17 +369,18 @@ impl FallbackJumpHostsInner {
     fn row_button(
         this: &std::rc::Rc<Self>,
         icon: &str,
-        label: &str,
+        tooltip: &str,
+        accessible_label: &str,
         index: usize,
         action: RowAction,
     ) -> Button {
         let button = Button::builder()
             .icon_name(icon)
-            .tooltip_text(label)
+            .tooltip_text(tooltip)
             .valign(gtk4::Align::Center)
             .css_classes(["flat"])
             .build();
-        button.update_property(&[gtk4::accessible::Property::Label(label)]);
+        button.update_property(&[gtk4::accessible::Property::Label(accessible_label)]);
         let weak = std::rc::Rc::downgrade(this);
         button.connect_clicked(move |_| {
             let Some(inner) = weak.upgrade() else { return };

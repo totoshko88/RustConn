@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:04+0200\n"
+"POT-Creation-Date: 2026-11-10 19:06+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Swedish\n"
@@ -88,7 +88,7 @@ msgstr "Spara inte"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1011
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1022
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -228,7 +228,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "”{}” behöver följande innan anslutning kan ske."
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1016
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1027
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
@@ -243,7 +243,7 @@ msgstr "Ange makrodetaljer"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "Kommandomakrot ”{}” behöver följande innan det kan skickas."
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1017
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1028
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -288,7 +288,7 @@ msgstr "Nytt kluster"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:1012
+#: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 #: rustconn/src/window/operations.rs:402
@@ -1696,13 +1696,13 @@ msgid "Edit Connection"
 msgstr "Redigera anslutning"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:227
-#: rustconn/src/dialogs/connection/winrm.rs:57
+#: rustconn/src/dialogs/connection/winrm.rs:58
 msgid "Tunnel WinRM through an SSH connection"
 msgstr "Tunnla WinRM genom en SSH-anslutning"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
-#: rustconn/src/dialogs/widgets.rs:408
+#: rustconn/src/dialogs/widgets.rs:419
 msgid "(Root)"
 msgstr "(Rot)"
 
@@ -2414,7 +2414,7 @@ msgstr "Containeravbildning för tillfällig pod"
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
-#: rustconn/src/dialogs/connection/winrm.rs:62
+#: rustconn/src/dialogs/connection/winrm.rs:63
 #: rustconn/src/dialogs/connection/zerotrust.rs:199
 #: rustconn/src/dialogs/template.rs:954 rustconn/src/dialogs/template.rs:1131
 #: rustconn/src/dialogs/template.rs:1469
@@ -3024,7 +3024,7 @@ msgstr "Om det skiljer sig från anslutningens användarnamn"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:413 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/dialogs/widgets.rs:424 rustconn/src/window/edit_dialogs.rs:809
 #: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "(Ingen)"
@@ -3033,7 +3033,8 @@ msgstr "(Ingen)"
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/ssh.rs:679
 #: rustconn/src/dialogs/connection/vnc.rs:351
-#: rustconn/src/dialogs/connection/winrm.rs:56
+#: rustconn/src/dialogs/connection/winrm.rs:55
+#: rustconn/src/dialogs/connection/winrm.rs:57
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:147
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:102
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:90
@@ -3077,7 +3078,7 @@ msgstr "Lägg till"
 #: rustconn/src/dialogs/flatpak_components.rs:361
 #: rustconn/src/dialogs/flatpak_components.rs:501
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
-#: rustconn/src/dialogs/widgets.rs:316
+#: rustconn/src/dialogs/widgets.rs:325
 msgid "Remove"
 msgstr "Ta bort"
 
@@ -3275,7 +3276,7 @@ msgstr "Layout skickat till RDP-server (Auto använder systeminställning)"
 
 #: rustconn/src/dialogs/connection/rdp.rs:992
 #: rustconn/src/dialogs/connection/telnet.rs:43
-#: rustconn/src/dialogs/connection/winrm.rs:63
+#: rustconn/src/dialogs/connection/winrm.rs:64
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
@@ -3710,7 +3711,7 @@ msgid "Path to private key file"
 msgstr "Sökväg till privat nyckelfil"
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:418
+#: rustconn/src/dialogs/widgets.rs:429
 msgid "(No keys loaded)"
 msgstr "(Inga nycklar laddade)"
 
@@ -4724,7 +4725,7 @@ msgstr "Lösenfras för den portabla filen"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1015
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1026
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4850,7 +4851,7 @@ msgstr "Kopiering stoppad"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1010 rustconn/src/sidebar_ui.rs:488
+#: rustconn/src/dialogs/widgets.rs:1021 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
@@ -4887,7 +4888,7 @@ msgid "Export Connections"
 msgstr "Exportera anslutningar"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1013
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1024
 msgid "Export"
 msgstr "Exportera"
 
@@ -5179,7 +5180,7 @@ msgstr "Export slutförd"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:1019
+#: rustconn/src/dialogs/widgets.rs:1030
 msgid "Done"
 msgstr "Klar"
 
@@ -5364,7 +5365,7 @@ msgstr "Importera anslutningar"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1014
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1025
 #: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "Importera"
@@ -8590,13 +8591,13 @@ msgid "Token loaded from keyring"
 msgstr "Token laddad från nyckelring"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
-#: rustconn/src/dialogs/widgets.rs:956 rustconn/src/dialogs/widgets.rs:961
-#: rustconn/src/dialogs/widgets.rs:973
+#: rustconn/src/dialogs/widgets.rs:967 rustconn/src/dialogs/widgets.rs:972
+#: rustconn/src/dialogs/widgets.rs:984
 msgid "Select KeePass Database"
 msgstr "Välj KeePass-databas"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
-#: rustconn/src/dialogs/widgets.rs:969
+#: rustconn/src/dialogs/widgets.rs:980
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass-databas (*.kdbx)"
 
@@ -10244,7 +10245,7 @@ msgid "Edit"
 msgstr "Redigera"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:1018
+#: rustconn/src/dialogs/widgets.rs:1029
 msgid "Use Template"
 msgstr "Använd mall"
 
@@ -10806,31 +10807,47 @@ msgstr "Reservhoppvärdar"
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr "Provas i tur och ordning när hoppvärden inte kan nås"
 
-#: rustconn/src/dialogs/widgets.rs:205
+#: rustconn/src/dialogs/widgets.rs:206
+msgid "Fallback Jump Host to Add"
+msgstr "Reservhoppvärd att lägga till"
+
+#: rustconn/src/dialogs/widgets.rs:208
 msgid "Add Fallback Jump Host"
 msgstr "Lägg till reservhoppvärd"
 
-#: rustconn/src/dialogs/widgets.rs:282 rustconn/src/window/edit_group.rs:869
+#: rustconn/src/dialogs/widgets.rs:285 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "(okänd anslutning)"
 
-#: rustconn/src/dialogs/widgets.rs:300
+#: rustconn/src/dialogs/widgets.rs:307
 msgid "Move Up"
 msgstr "Flytta upp"
 
 #: rustconn/src/dialogs/widgets.rs:308
+msgid "Move {} up"
+msgstr "Flytta upp {}"
+
+#: rustconn/src/dialogs/widgets.rs:316
 msgid "Move Down"
 msgstr "Flytta ned"
 
-#: rustconn/src/dialogs/widgets.rs:877
+#: rustconn/src/dialogs/widgets.rs:317
+msgid "Move {} down"
+msgstr "Flytta ned {}"
+
+#: rustconn/src/dialogs/widgets.rs:326
+msgid "Remove {}"
+msgstr "Ta bort {}"
+
+#: rustconn/src/dialogs/widgets.rs:888
 msgid "Underline colour (#RRGGBB)"
 msgstr "Understrykningsfärg (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:883
+#: rustconn/src/dialogs/widgets.rs:894
 msgid "Background colour (#RRGGBB)"
 msgstr "Bakgrundsfärg (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:890
+#: rustconn/src/dialogs/widgets.rs:901
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10840,24 +10857,24 @@ msgstr ""
 "tomt för ingen understrykning. Ge anslutningen ett utdatafilter som "
 "ChromaTerm för att färga själva texten."
 
-#: rustconn/src/dialogs/widgets.rs:897
+#: rustconn/src/dialogs/widgets.rs:908
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr "Hexadecimal färg, till exempel #402020. Lämna tomt för ingen bakgrund."
 
-#: rustconn/src/dialogs/widgets.rs:1030
+#: rustconn/src/dialogs/widgets.rs:1041
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:1031
+#: rustconn/src/dialogs/widgets.rs:1042
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr ""
 "Aktivera eller inaktivera JavaScript-körning i den inbäddade webbläsaren"
 
-#: rustconn/src/dialogs/widgets.rs:1032
+#: rustconn/src/dialogs/widgets.rs:1043
 msgid "Navigation Toolbar"
 msgstr "Navigeringsfält"
 
-#: rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/widgets.rs:1045
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10866,11 +10883,11 @@ msgstr ""
 "Tangentbordsgenvägar för bakåt, framåt, uppdatera och zoom fungerar "
 "fortfarande."
 
-#: rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/widgets.rs:1047
 msgid "Private / Incognito Mode"
 msgstr "Privat / inkognitoläge"
 
-#: rustconn/src/dialogs/widgets.rs:1037
+#: rustconn/src/dialogs/widgets.rs:1048
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "Öppna URL i ett privat webbläsarfönster (Firefox, Chrome, Brave)"
 

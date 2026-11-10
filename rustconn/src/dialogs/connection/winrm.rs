@@ -52,6 +52,7 @@ pub fn create_winrm_options() -> WinRmOptionsWidgets {
     jump_host_dropdown.set_size_request(200, -1);
     jump_host_dropdown.set_hexpand(false);
     jump_host_dropdown.set_valign(gtk4::Align::Center);
+    jump_host_dropdown.update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
     let jump_host_row = adw::ActionRow::builder()
         .title(i18n("Jump Host"))
         .subtitle(i18n("Tunnel WinRM through an SSH connection"))

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 19:04+0200\n"
+"POT-Creation-Date: 2026-11-10 19:06+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -89,7 +89,7 @@ msgstr "不保存"
 #: rustconn/src/dialogs/smart_folder.rs:84 rustconn/src/dialogs/snippet.rs:420
 #: rustconn/src/dialogs/template.rs:2785
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:194
-#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1011
+#: rustconn/src/dialogs/variables.rs:132 rustconn/src/dialogs/widgets.rs:1022
 #: rustconn/src/window/edit_group.rs:49 rustconn/src/window/edit_group.rs:50
 #: rustconn/src/window/workspaces.rs:555
 msgid "Save"
@@ -219,7 +219,7 @@ msgid "‘{}’ needs the following before it can connect."
 msgstr "“{}” 连接前需要以下信息。"
 
 #: rustconn/src/dialogs/ask_prompt.rs:73 rustconn/src/dialogs/history.rs:105
-#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1016
+#: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1027
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
 #: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5726
@@ -234,7 +234,7 @@ msgstr "输入宏详细信息"
 msgid "The command macro ‘{}’ needs the following before it can be sent."
 msgstr "命令宏“{}”在发送前需要以下内容。"
 
-#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1017
+#: rustconn/src/dialogs/ask_prompt.rs:95 rustconn/src/dialogs/widgets.rs:1028
 #: rustconn/src/dialogs/wol.rs:45 rustconn/src/dialogs/wol.rs:46
 #: rustconn/src/window/sessions.rs:337
 msgid "Send"
@@ -277,7 +277,7 @@ msgstr "新建集群"
 #: rustconn/src/dialogs/snippet.rs:88 rustconn/src/dialogs/template.rs:144
 #: rustconn/src/dialogs/template.rs:145
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:191
-#: rustconn/src/dialogs/widgets.rs:1012
+#: rustconn/src/dialogs/widgets.rs:1023
 #: rustconn/src/window/connection_dialogs.rs:382
 #: rustconn/src/window/connection_dialogs.rs:383
 #: rustconn/src/window/operations.rs:402
@@ -1652,13 +1652,13 @@ msgid "Edit Connection"
 msgstr "编辑连接"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:227
-#: rustconn/src/dialogs/connection/winrm.rs:57
+#: rustconn/src/dialogs/connection/winrm.rs:58
 msgid "Tunnel WinRM through an SSH connection"
 msgstr "通过 SSH 连接隧道传输 WinRM"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
-#: rustconn/src/dialogs/widgets.rs:408
+#: rustconn/src/dialogs/widgets.rs:419
 msgid "(Root)"
 msgstr "（根）"
 
@@ -2360,7 +2360,7 @@ msgstr "临时 Pod 的容器镜像"
 #: rustconn/src/dialogs/connection/serial.rs:99
 #: rustconn/src/dialogs/connection/telnet.rs:42
 #: rustconn/src/dialogs/connection/vnc.rs:328
-#: rustconn/src/dialogs/connection/winrm.rs:62
+#: rustconn/src/dialogs/connection/winrm.rs:63
 #: rustconn/src/dialogs/connection/zerotrust.rs:199
 #: rustconn/src/dialogs/template.rs:954 rustconn/src/dialogs/template.rs:1131
 #: rustconn/src/dialogs/template.rs:1469
@@ -2945,7 +2945,7 @@ msgstr "如果与连接用户名不同"
 #: rustconn/src/dialogs/settings/network_tab.rs:122
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:111
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:439
-#: rustconn/src/dialogs/widgets.rs:413 rustconn/src/window/edit_dialogs.rs:809
+#: rustconn/src/dialogs/widgets.rs:424 rustconn/src/window/edit_dialogs.rs:809
 #: rustconn/src/window/edit_group.rs:813
 msgid "(None)"
 msgstr "（无）"
@@ -2954,7 +2954,8 @@ msgstr "（无）"
 #: rustconn/src/dialogs/connection/spice.rs:347
 #: rustconn/src/dialogs/connection/ssh.rs:679
 #: rustconn/src/dialogs/connection/vnc.rs:351
-#: rustconn/src/dialogs/connection/winrm.rs:56
+#: rustconn/src/dialogs/connection/winrm.rs:55
+#: rustconn/src/dialogs/connection/winrm.rs:57
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:147
 #: rustconn/src/dialogs/tunnel_builder/step_connection.rs:102
 #: rustconn/src/dialogs/tunnel_builder/step_review.rs:90
@@ -2997,7 +2998,7 @@ msgstr "添加"
 #: rustconn/src/dialogs/flatpak_components.rs:361
 #: rustconn/src/dialogs/flatpak_components.rs:501
 #: rustconn/src/dialogs/settings/clients_tab.rs:296
-#: rustconn/src/dialogs/widgets.rs:316
+#: rustconn/src/dialogs/widgets.rs:325
 msgid "Remove"
 msgstr "移除"
 
@@ -3193,7 +3194,7 @@ msgstr "发送到 RDP 服务器的布局（自动使用系统设置）"
 
 #: rustconn/src/dialogs/connection/rdp.rs:992
 #: rustconn/src/dialogs/connection/telnet.rs:43
-#: rustconn/src/dialogs/connection/winrm.rs:63
+#: rustconn/src/dialogs/connection/winrm.rs:64
 #: rustconn/src/dialogs/connection/zerotrust.rs:194
 #: rustconn/src/dialogs/template.rs:949 rustconn/src/dialogs/template.rs:1464
 msgid "Additional command-line arguments"
@@ -3623,7 +3624,7 @@ msgid "Path to private key file"
 msgstr "私钥文件路径"
 
 #: rustconn/src/dialogs/connection/ssh.rs:448
-#: rustconn/src/dialogs/widgets.rs:418
+#: rustconn/src/dialogs/widgets.rs:429
 msgid "(No keys loaded)"
 msgstr "（未加载密钥）"
 
@@ -4609,7 +4610,7 @@ msgstr "便携文件口令"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1015
+#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1026
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4726,7 +4727,7 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/recording.rs:831 rustconn/src/dialogs/recording.rs:843
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:238
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
-#: rustconn/src/dialogs/widgets.rs:1010 rustconn/src/sidebar_ui.rs:488
+#: rustconn/src/dialogs/widgets.rs:1021 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:689 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
@@ -4761,7 +4762,7 @@ msgid "Export Connections"
 msgstr "导出连接"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1013
+#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1024
 msgid "Export"
 msgstr "导出"
 
@@ -5052,7 +5053,7 @@ msgstr "导出完成"
 #: rustconn/src/dialogs/import/sources.rs:1427
 #: rustconn/src/dialogs/import/sources.rs:1543
 #: rustconn/src/dialogs/import/sources.rs:1697
-#: rustconn/src/dialogs/widgets.rs:1019
+#: rustconn/src/dialogs/widgets.rs:1030
 msgid "Done"
 msgstr "完成"
 
@@ -5232,7 +5233,7 @@ msgstr "导入连接"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1014
+#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1025
 #: rustconn/src/split_view/bridge.rs:1870 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "导入"
@@ -8358,13 +8359,13 @@ msgid "Token loaded from keyring"
 msgstr "令牌已从密钥环加载"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2655
-#: rustconn/src/dialogs/widgets.rs:956 rustconn/src/dialogs/widgets.rs:961
-#: rustconn/src/dialogs/widgets.rs:973
+#: rustconn/src/dialogs/widgets.rs:967 rustconn/src/dialogs/widgets.rs:972
+#: rustconn/src/dialogs/widgets.rs:984
 msgid "Select KeePass Database"
 msgstr "选择 KeePass 数据库"
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2661
-#: rustconn/src/dialogs/widgets.rs:969
+#: rustconn/src/dialogs/widgets.rs:980
 msgid "KeePass Database (*.kdbx)"
 msgstr "KeePass 数据库 (*.kdbx)"
 
@@ -9984,7 +9985,7 @@ msgid "Edit"
 msgstr "编辑"
 
 #: rustconn/src/dialogs/template_manager.rs:118
-#: rustconn/src/dialogs/widgets.rs:1018
+#: rustconn/src/dialogs/widgets.rs:1029
 msgid "Use Template"
 msgstr "使用模板"
 
@@ -10532,31 +10533,47 @@ msgstr "备用跳板机"
 msgid "Tried in order when the Jump Host is unreachable"
 msgstr "跳板机不可达时按顺序尝试"
 
-#: rustconn/src/dialogs/widgets.rs:205
+#: rustconn/src/dialogs/widgets.rs:206
+msgid "Fallback Jump Host to Add"
+msgstr "要添加的备用跳板机"
+
+#: rustconn/src/dialogs/widgets.rs:208
 msgid "Add Fallback Jump Host"
 msgstr "添加备用跳板机"
 
-#: rustconn/src/dialogs/widgets.rs:282 rustconn/src/window/edit_group.rs:869
+#: rustconn/src/dialogs/widgets.rs:285 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
 msgstr "（未知连接）"
 
-#: rustconn/src/dialogs/widgets.rs:300
+#: rustconn/src/dialogs/widgets.rs:307
 msgid "Move Up"
 msgstr "上移"
 
 #: rustconn/src/dialogs/widgets.rs:308
+msgid "Move {} up"
+msgstr "上移 {}"
+
+#: rustconn/src/dialogs/widgets.rs:316
 msgid "Move Down"
 msgstr "下移"
 
-#: rustconn/src/dialogs/widgets.rs:877
+#: rustconn/src/dialogs/widgets.rs:317
+msgid "Move {} down"
+msgstr "下移 {}"
+
+#: rustconn/src/dialogs/widgets.rs:326
+msgid "Remove {}"
+msgstr "移除 {}"
+
+#: rustconn/src/dialogs/widgets.rs:888
 msgid "Underline colour (#RRGGBB)"
 msgstr "下划线颜色 (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:883
+#: rustconn/src/dialogs/widgets.rs:894
 msgid "Background colour (#RRGGBB)"
 msgstr "背景颜色 (#RRGGBB)"
 
-#: rustconn/src/dialogs/widgets.rs:890
+#: rustconn/src/dialogs/widgets.rs:901
 msgid ""
 "Hexadecimal colour such as #00AAFF, drawn as an underline under the match. "
 "Leave empty for none. To recolour the text itself, give the connection an "
@@ -10565,23 +10582,23 @@ msgstr ""
 "十六进制颜色，例如 #00AAFF，用于在匹配项下方绘制下划线。留空则不显示下划线。"
 "若要更改文字本身的颜色，请为连接设置输出过滤器，例如 ChromaTerm。"
 
-#: rustconn/src/dialogs/widgets.rs:897
+#: rustconn/src/dialogs/widgets.rs:908
 msgid "Hexadecimal colour such as #402020. Leave empty for no background."
 msgstr "十六进制颜色，例如 #402020。留空则不设置背景。"
 
-#: rustconn/src/dialogs/widgets.rs:1030
+#: rustconn/src/dialogs/widgets.rs:1041
 msgid "JavaScript"
 msgstr "JavaScript"
 
-#: rustconn/src/dialogs/widgets.rs:1031
+#: rustconn/src/dialogs/widgets.rs:1042
 msgid "Enable or disable JavaScript execution in the embedded browser"
 msgstr "启用或禁用内嵌浏览器中的 JavaScript 执行"
 
-#: rustconn/src/dialogs/widgets.rs:1032
+#: rustconn/src/dialogs/widgets.rs:1043
 msgid "Navigation Toolbar"
 msgstr "导航工具栏"
 
-#: rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/widgets.rs:1045
 msgid ""
 "Turn off to remove the floating toolbar and its reveal arrow. Keyboard "
 "shortcuts for back, forward, reload and zoom still work."
@@ -10589,11 +10606,11 @@ msgstr ""
 "关闭后将移除浮动工具栏及其展开箭头。后退、前进、重新加载和缩放的键盘快捷键仍"
 "然有效。"
 
-#: rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/widgets.rs:1047
 msgid "Private / Incognito Mode"
 msgstr "隐私/无痕模式"
 
-#: rustconn/src/dialogs/widgets.rs:1037
+#: rustconn/src/dialogs/widgets.rs:1048
 msgid "Open URL in a private browsing window (Firefox, Chrome, Brave)"
 msgstr "在隐私浏览窗口中打开 URL（Firefox、Chrome、Brave）"
 
