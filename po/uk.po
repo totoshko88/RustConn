@@ -1192,15 +1192,16 @@ msgstr ""
 #: rustconn/src/dialogs/connection/builders.rs:462
 msgid "Enter the SOCKS5 proxy as host:port, with any login in its own fields"
 msgstr ""
-"Введіть проксі SOCKS5 у вигляді вузол:порт, а облікові дані — в окремих полях"
+"Уведи проксі SOCKS5 у вигляді гост:порт, а облікові дані — в окремих полях"
 
 #: rustconn/src/dialogs/connection/builders.rs:467
 msgid "Choose either an SSH tunnel or a SOCKS proxy, not both"
-msgstr "Виберіть або тунель SSH, або проксі SOCKS, але не обидва"
+msgstr "Обери або SSH-тунель, або SOCKS-проксі, але не обидва"
 
 #: rustconn/src/dialogs/connection/builders.rs:475
 msgid "A SOCKS5 login needs a proxy, a username and a password variable"
-msgstr "Для входу в SOCKS5 потрібні проксі, ім’я користувача та змінна пароля"
+msgstr ""
+"Для входу в SOCKS5 потрібні проксі, ім'я користувача та змінниця пароля"
 
 #: rustconn/src/dialogs/connection/builders.rs:483
 msgid "Browser command is required when Custom mode is selected"
@@ -1704,7 +1705,7 @@ msgstr "Редагуй з'єднок"
 #: rustconn/src/dialogs/connection/dialog/populate.rs:227
 #: rustconn/src/dialogs/connection/winrm.rs:58
 msgid "Tunnel WinRM through an SSH connection"
-msgstr "Тунелювати WinRM через з’єднання SSH"
+msgstr "Тунелюй WinRM через SSH-з'єднок"
 
 #: rustconn/src/dialogs/connection/dialog/populate.rs:460
 #: rustconn/src/dialogs/connection/general_tab.rs:423
@@ -4181,7 +4182,7 @@ msgstr "Тунель крізь SSH"
 
 #: rustconn/src/dialogs/connection/web.rs:114
 msgid "Browse via a SOCKS proxy over the chosen SSH connection"
-msgstr "Переглядай через SOCKS-проксі вибраного SSH-з'єднка"
+msgstr "Переглядай через SOCKS-проксі вибраного SSH-з'єднанка"
 
 #: rustconn/src/dialogs/connection/web.rs:140
 msgid "SOCKS5 Proxy"
@@ -4225,26 +4226,26 @@ msgid ""
 msgstr ""
 "Відкриває сеанс PowerShell через клієнт evil-winrm, який має бути "
 "встановлено. Пароль надається у відповідь на його запит і ніколи не "
-"з’являється в командному рядку."
+"з'являється в командному рядку."
 
 #: rustconn/src/dialogs/connection/winrm.rs:29
 msgid "Use HTTPS"
-msgstr "Використовувати HTTPS"
+msgstr "Використовуй HTTPS"
 
 #: rustconn/src/dialogs/connection/winrm.rs:31
 msgid "Encrypts the connection. WinRM over HTTPS usually listens on port 5986"
-msgstr "Шифрує з’єднання. WinRM через HTTPS зазвичай слухає порт 5986"
+msgstr "Шифрує з'єднування. WinRM через HTTPS зазвичай слухає порт 5986"
 
 #: rustconn/src/dialogs/connection/winrm.rs:37
 msgid "Accept Invalid Certificates"
-msgstr "Приймати недійсні сертифікати"
+msgstr "Приймай недійсні сертифікати"
 
 #: rustconn/src/dialogs/connection/winrm.rs:39
 msgid ""
 "Needed for a self-signed certificate or a jump host when running scripts. "
 "Terminal sessions never verify it"
 msgstr ""
-"Потрібно для самопідписаного сертифіката або проміжного вузла під час "
+"Потрібно для самопідписаного сертифіката або проміжного госта під час "
 "запуску скриптів. Сеанси термінала ніколи його не перевіряють"
 
 #: rustconn/src/dialogs/connection/zerotrust.rs:78
@@ -10801,11 +10802,11 @@ msgstr "Отримується зі сховища під час з'єднува
 
 #: rustconn/src/dialogs/widgets.rs:198
 msgid "Fallback Jump Hosts"
-msgstr "Резервні проміжні вузли"
+msgstr "Резервні проміжні гости"
 
 #: rustconn/src/dialogs/widgets.rs:199
 msgid "Tried in order when the Jump Host is unreachable"
-msgstr "Використовуються за порядком, якщо проміжний вузол недоступний"
+msgstr "Пробуються по черзі, якщо проміжний гост недоступний"
 
 #: rustconn/src/dialogs/widgets.rs:206
 msgid "Fallback Jump Host to Add"
@@ -10813,7 +10814,7 @@ msgstr "Резервний проміжний гост для додавання
 
 #: rustconn/src/dialogs/widgets.rs:208
 msgid "Add Fallback Jump Host"
-msgstr "Додати резервний проміжний вузол"
+msgstr "Додай резервний проміжний гост"
 
 #: rustconn/src/dialogs/widgets.rs:285 rustconn/src/window/edit_group.rs:869
 msgid "(unknown connection)"
@@ -10821,7 +10822,7 @@ msgstr "(невідомий з’єднок)"
 
 #: rustconn/src/dialogs/widgets.rs:307
 msgid "Move Up"
-msgstr "Перемістити вище"
+msgstr "Перемісти вгору"
 
 #: rustconn/src/dialogs/widgets.rs:308
 msgid "Move {} up"
@@ -10829,7 +10830,7 @@ msgstr "Перемісти {} вгору"
 
 #: rustconn/src/dialogs/widgets.rs:316
 msgid "Move Down"
-msgstr "Перемістити нижче"
+msgstr "Перемісти вниз"
 
 #: rustconn/src/dialogs/widgets.rs:317
 msgid "Move {} down"
@@ -12201,7 +12202,7 @@ msgstr "З'єднай все"
 
 #: rustconn/src/sidebar_ui.rs:356 rustconn/src/sidebar_ui.rs:511
 msgid "Run Local Script…"
-msgstr "Запустити локальний скрипт…"
+msgstr "Запусти локальний скрипт…"
 
 #: rustconn/src/sidebar_ui.rs:367
 msgid "New Connection in Group"
@@ -12233,7 +12234,7 @@ msgstr "Дублюй"
 
 #: rustconn/src/sidebar_ui.rs:418
 msgid "Duplicate as Range…"
-msgstr "Дублювати як діапазон…"
+msgstr "Дублюй як діапазон…"
 
 #: rustconn/src/sidebar_ui.rs:422
 msgid "Duplicate via Wizard…"
@@ -13465,7 +13466,7 @@ msgstr ""
 
 #: rustconn/src/window/edit_actions.rs:996
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
-msgstr "Змінна пароля проксі SOCKS ‘{}’ не має значення"
+msgstr "Змінниця пароля SOCKS-проксі «{}» не має значення"
 
 #: rustconn/src/window/edit_actions.rs:1003
 msgid "Could not start the SOCKS relay: {}"
@@ -13490,9 +13491,9 @@ msgid ""
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
 "an external browser."
 msgstr ""
-"Команда браузера для тунелю ‘{}’ не може використовувати проксі; натомість "
+"Команда браузера для тунелю «{}» не може використовувати проксі, тож "
 "відкривається вбудований браузер. Щоб користуватися зовнішнім браузером, "
-"вкажіть у налаштуваннях браузер на основі Chromium або Firefox."
+"вкажи в Уставах браузер на основі Chromium або Firefox."
 
 #: rustconn/src/window/edit_actions.rs:1348
 msgid ""
@@ -13569,7 +13570,7 @@ msgid ""
 "based browser, Firefox or the embedded browser."
 msgstr ""
 "Цей браузер не може використовувати проксі, тому сторінку не відкрито. "
-"Скористайтеся браузером на основі Chromium, Firefox або вбудованим браузером."
+"Скористайся браузером на основі Chromium, Firefox або вбудованим браузером."
 
 #: rustconn/src/window/edit_actions.rs:1868
 #: rustconn/src/window/edit_actions.rs:1921
@@ -13581,9 +13582,8 @@ msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
 msgstr ""
-"Браузер, який може використовувати проксі, не знайдено, тому сторінку не "
-"відкрито. Встановіть Chromium або Firefox чи скористайтеся вбудованим "
-"браузером."
+"Браузера, який може використовувати проксі, не знайдено, тому сторінку не "
+"відкрито. Встанови Chromium або Firefox чи скористайся вбудованим браузером."
 
 #: rustconn/src/window/edit_actions.rs:2075
 #: rustconn/src/window/edit_actions.rs:2177
@@ -14390,7 +14390,7 @@ msgstr "Не вдалося здублювати з'єднок"
 
 #: rustconn/src/window/operations.rs:341
 msgid "Use one number range, such as host[02-10]"
-msgstr "Використайте один числовий діапазон, наприклад host[02-10]"
+msgstr "Використай один числовий діапазон, як-от host[02-10]"
 
 #: rustconn/src/window/operations.rs:342
 msgid "The range must run from low to high"
@@ -14398,19 +14398,19 @@ msgstr "Діапазон має йти від меншого до більшог
 
 #: rustconn/src/window/operations.rs:344
 msgid "A range can create at most this many connections: {}"
-msgstr "Діапазон може створити щонайбільше стільки з’єднань: {}"
+msgstr "Діапазон може створити щонайбільше стільки з'єднків: {}"
 
 #: rustconn/src/window/operations.rs:348
 msgid "The name and host ranges must be the same size"
-msgstr "Діапазони назв і вузлів мають бути однакового розміру"
+msgstr "Діапазони назв і гостів мають бути однакового розміру"
 
 #: rustconn/src/window/operations.rs:351
 msgid "‘{}’ would not be a valid connection"
-msgstr "«{}» не буде дійсним з’єднанням"
+msgstr "«{}» не буде дійсним з'єднанком"
 
 #: rustconn/src/window/operations.rs:410
 msgid "Duplicate ‘{}’ as a Range"
-msgstr "Дублювати «{}» як діапазон"
+msgstr "Дублюй «{}» як діапазон"
 
 #: rustconn/src/window/operations.rs:412
 msgid ""
@@ -14426,7 +14426,7 @@ msgstr "Шаблон назви"
 
 #: rustconn/src/window/operations.rs:473
 msgid "Connections to create: {} (‘{}’ to ‘{}’)"
-msgstr "Буде створено з’єднань: {} (від «{}» до «{}»)"
+msgstr "Буде створено з'єднків: {} (від «{}» до «{}»)"
 
 #: rustconn/src/window/operations.rs:480
 msgid "Already exist, will be skipped: {}"
@@ -14446,11 +14446,11 @@ msgstr "Збережений пароль не скопійовано до но�
 
 #: rustconn/src/window/operations.rs:638
 msgid "Connections created: {}"
-msgstr "Створено з’єднань: {}"
+msgstr "Створено з'єднків: {}"
 
 #: rustconn/src/window/operations.rs:641
 msgid "Connections created: {}, already existed: {}"
-msgstr "Створено з’єднань: {}, уже існувало: {}"
+msgstr "Створено з'єднків: {}, уже існувало: {}"
 
 #: rustconn/src/window/operations.rs:648
 msgid "Connections created: {}, failed: {}"
@@ -14574,11 +14574,11 @@ msgstr "Не вдалося запустити зовнішній перегля
 
 #: rustconn/src/window/protocols.rs:1357
 msgid "Jump host unreachable, connecting through ‘{}’"
-msgstr "Проміжний вузол недоступний, підключення через «{}»"
+msgstr "Проміжний гост недоступний, з'єднування через «{}»"
 
 #: rustconn/src/window/protocols.rs:1364
 msgid "No jump host responded, trying ‘{}’"
-msgstr "Жоден проміжний вузол не відповів, спроба через «{}»"
+msgstr "Жоден проміжний гост не відповів, спроба через «{}»"
 
 #: rustconn/src/window/protocols.rs:1671 rustconn/src/window/rdp_vnc.rs:1579
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
@@ -14595,7 +14595,7 @@ msgstr "Хибна змінниця: {}"
 #: rustconn/src/window/protocols.rs:2503
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
-"evil-winrm не встановлено. Встановіть його командою: gem install evil-winrm"
+"evil-winrm не встановлено. Встанови його командою: gem install evil-winrm"
 
 #: rustconn/src/window/protocols.rs:2856
 msgid "Invalid config: {}"
@@ -14686,7 +14686,7 @@ msgstr "Не вдалося прочитати скрипт"
 
 #: rustconn/src/window/remote_script.rs:114
 msgid "Choose a script file, not a folder"
-msgstr "Виберіть файл скрипту, а не теку"
+msgstr "Обери файл скрипту, а не теку"
 
 #: rustconn/src/window/remote_script.rs:115
 msgid "The script is empty"
@@ -14727,15 +14727,15 @@ msgstr "Не вдалося запустити"
 
 #: rustconn/src/window/remote_script.rs:184
 msgid "No SSH or WinRM connections are selected"
-msgstr "Не вибрано жодного з’єднання SSH або WinRM"
+msgstr "Не вибрано жодного з'єднанка SSH або WinRM"
 
 #: rustconn/src/window/remote_script.rs:206
 msgid "Hosts"
-msgstr "Вузли"
+msgstr "Гости"
 
 #: rustconn/src/window/remote_script.rs:213
 msgid "Hosts (not using SSH or WinRM, left out: {})"
-msgstr "Вузли (без SSH або WinRM, пропущено: {})"
+msgstr "Гости (без SSH або WinRM, пропущено: {})"
 
 #: rustconn/src/window/remote_script.rs:224
 msgid "Script File"
@@ -14743,15 +14743,15 @@ msgstr "Файл скрипту"
 
 #: rustconn/src/window/remote_script.rs:225
 msgid "Choose File"
-msgstr "Вибрати файл"
+msgstr "Обери файл"
 
 #: rustconn/src/window/remote_script.rs:235
 msgid "Hosts at Once"
-msgstr "Вузлів одночасно"
+msgstr "Гостів одночасно"
 
 #: rustconn/src/window/remote_script.rs:238
 msgid "Time Limit per Host (minutes)"
-msgstr "Обмеження часу на вузол (хвилини)"
+msgstr "Обмеження часу на гост (хвилини)"
 
 #: rustconn/src/window/remote_script.rs:243
 msgid ""
@@ -14759,10 +14759,10 @@ msgid ""
 "on SSH hosts, as the login user. Nothing is saved on the hosts. An SSH host "
 "you have never connected to is refused until its key is known."
 msgstr ""
-"Файл .ps1 виконується в PowerShell на вузлах WinRM; будь-який інший файл "
-"виконується через bash на вузлах SSH від імені користувача входу. На вузлах "
-"нічого не зберігається. Вузол SSH, до якого ви ніколи не під’єднувалися, "
-"відхиляється, доки його ключ невідомий."
+"Файл .ps1 виконується в PowerShell на гостах WinRM; будь-який інший файл "
+"виконується через bash на гостах SSH від імені користувача входу. На гостах "
+"нічого не зберігається. Гост SSH, з яким ти ще не з'єднувався, буде "
+"відхилено, доки його ключ невідомий."
 
 #: rustconn/src/window/remote_script.rs:251
 msgid "Passwords"
@@ -14791,7 +14791,7 @@ msgstr "Виведення скрипту"
 #: rustconn/src/window/remote_script.rs:339
 #: rustconn/src/window/remote_script.rs:357
 msgid "Run Local Script"
-msgstr "Запустити локальний скрипт"
+msgstr "Запусти локальний скрипт"
 
 #: rustconn/src/window/remote_script.rs:410
 msgid "Output of {}"
@@ -14799,11 +14799,11 @@ msgstr "Виведення з {}"
 
 #: rustconn/src/window/remote_script.rs:421
 msgid "Choose Script"
-msgstr "Вибрати скрипт"
+msgstr "Обери скрипт"
 
 #: rustconn/src/window/remote_script.rs:459
 msgid "None of the selected hosts can run this type of script"
-msgstr "Жоден із вибраних вузлів не може виконати скрипт такого типу"
+msgstr "Жоден із вибраних гостів не може виконати скрипт такого типу"
 
 #: rustconn/src/window/remote_script.rs:533
 msgid "Run ‘{}’?"
@@ -14814,7 +14814,7 @@ msgid ""
 "It will run on these hosts as their login users, and its changes cannot be "
 "undone: {}"
 msgstr ""
-"Скрипт буде запущено на цих вузлах від імені користувачів входу, і його "
+"Скрипт буде запущено на цих гостах від імені користувачів входу, і його "
 "зміни неможливо скасувати: {}"
 
 #: rustconn/src/window/remote_script.rs:574
@@ -15327,117 +15327,3 @@ msgstr "RustConn"
 #: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;з'єднок;термінал;віддалений;kubernetes;k8s;послідовний;sftp;"
-
-#~ msgid ""
-#~ "Browse via a SOCKS proxy over the chosen SSH connection (embedded or "
-#~ "Chromium browser)"
-#~ msgstr ""
-#~ "Переглядай крізь SOCKS-проксі обраного SSH-з’єднанка (вбудований або "
-#~ "Chromium оглядач)"
-
-#~ msgid "SOCKS5 Proxy (host:port)"
-#~ msgstr "Проксі SOCKS5 (вузол:порт)"
-
-#~ msgid "SOCKS5 Username (only if the proxy needs a login)"
-#~ msgstr "Ім’я користувача SOCKS5 (лише якщо проксі вимагає входу)"
-
-#~ msgid "Secret Variable Holding the SOCKS5 Password"
-#~ msgstr "Секретна змінна з паролем SOCKS5"
-
-#~ msgid ""
-#~ "For hosts set to ask at connect. Leave a field empty to reuse the one "
-#~ "above it."
-#~ msgstr ""
-#~ "Для вузлів, які запитують пароль під час з’єднання. Залиште поле "
-#~ "порожнім, щоб використати пароль із поля вище."
-
-#~ msgid "Enter the SOCKS5 proxy as host:port, without a login"
-#~ msgstr "Введіть проксі SOCKS5 у вигляді вузол:порт, без облікових даних"
-
-#~ msgid ""
-#~ "The tunnelled browser command ‘{}’ is not Chromium-based and can't be "
-#~ "tunnelled; opening the embedded browser instead. Set a chromium/chrome/"
-#~ "brave/vivaldi/edge command in Settings to use an external browser."
-#~ msgstr ""
-#~ "Команда тунельного оглядача ‘{}’ не на основі Chromium і не тунелюється; "
-#~ "відкриваю вбудований оглядач. Задай команду chromium/chrome/brave/vivaldi/"
-#~ "edge в Уставах, щоб користуватися зовнішнім оглядачем."
-
-#~ msgid ""
-#~ "This browser can't use a SOCKS proxy from the command line, so the page "
-#~ "was not opened. Use a Chromium-based browser or the embedded browser."
-#~ msgstr ""
-#~ "Цей браузер не може використовувати проксі SOCKS з командного рядка, тому "
-#~ "сторінку не відкрито. Скористайтеся браузером на основі Chromium або "
-#~ "вбудованим браузером."
-
-#~ msgid ""
-#~ "This browser can't be tunnelled from the command line. Use a Chromium-"
-#~ "based browser or the embedded browser for SSH tunnelling."
-#~ msgstr ""
-#~ "Цей оглядач не можна тунелювати з командного рядка. Для SSH-тунелювання "
-#~ "візьми оглядач на основі Chromium або вбудований оглядач."
-
-#~ msgid ""
-#~ "The system browser can't use a SOCKS proxy, so the page was not opened. "
-#~ "Use the embedded browser or a Custom Chromium-based browser."
-#~ msgstr ""
-#~ "Системний браузер не може використовувати проксі SOCKS, тому сторінку не "
-#~ "відкрито. Скористайтеся вбудованим браузером або власним браузером на "
-#~ "основі Chromium."
-
-#~ msgid ""
-#~ "SSH tunnelling needs the embedded or a Custom (Chromium) browser; the "
-#~ "system browser opens without the tunnel."
-#~ msgstr ""
-#~ "SSH-тунелювання потребує вбудованого або власного (Chromium) оглядача; "
-#~ "системний оглядач відкриється без тунелю."
-
-#~ msgid "No SSH connections are selected"
-#~ msgstr "Не вибрано з’єднань SSH"
-
-#~ msgid "Hosts (not using SSH, left out: {})"
-#~ msgstr "Вузли (без SSH, пропущено: {})"
-
-#~ msgid ""
-#~ "Runs with bash on each host as its login user. Nothing is saved on the "
-#~ "hosts. A host you have never connected to is refused until its key is "
-#~ "known."
-#~ msgstr ""
-#~ "Виконується через bash на кожному вузлі від імені користувача входу. На "
-#~ "вузлах нічого не зберігається. Вузол, до якого ви ніколи не підключалися, "
-#~ "відхиляється, доки його ключ невідомий."
-
-#~ msgid "Password for Hosts That Ask at Connect"
-#~ msgstr "Пароль для вузлів, які запитують його під час з’єднання"
-
-#~ msgid "{} UI session(s), {} tracked session(s)"
-#~ msgstr "{} сеансів UI, {} відстежуваних сеансів"
-
-#~ msgid "Search connections, > commands, @ tags, # groups, % tabs"
-#~ msgstr "Шукай з'єднки, > команди, @ познаки, # групи, % вкладки"
-
-#~ msgid "Hide the Windows admin tools when the server runs Linux"
-#~ msgstr ""
-#~ "Приховувати інструменти адміністрування Windows, коли сервер працює на "
-#~ "Linux"
-
-#~ msgid "Load Balance Info"
-#~ msgstr "Відомості про балансування навантаження"
-
-#~ msgid ""
-#~ "Connection broker routing value (loadbalanceinfo) from an .rdp file "
-#~ "(requires FreeRDP)"
-#~ msgstr ""
-#~ "Значення маршрутизації брокера підключень (loadbalanceinfo) з файлу .rdp "
-#~ "(потребує FreeRDP)"
-
-#~ msgid ""
-#~ "The embedded client does not support connection broker load balancing. "
-#~ "Using FreeRDP instead."
-#~ msgstr ""
-#~ "Вбудований клієнт не підтримує балансування навантаження через брокер "
-#~ "підключень. Натомість використано FreeRDP."
-
-#~ msgid "Send the local microphone to the remote session (requires FreeRDP)"
-#~ msgstr "Передавай локальний мікрофон у віддалений сеанс (потребує FreeRDP)"
