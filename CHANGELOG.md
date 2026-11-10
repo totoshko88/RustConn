@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **The "Routing changed" warning now notices jump hosts chosen from the picker — [PR #420](https://github.com/totoshko88/RustConn/pull/420), contributed by Konstantinos Patronas** — it compared free-text ProxyJump values only, so re-pointing a connection's saved Jump Host went unseen. Connections that use one will show the warning once after updating, because their route is now recorded for the first time.
+- **`rustconn-cli run-script` no longer types a host's password at a bastion from `~/.ssh/config`** — for a host with no saved jump host whose own OpenSSH config routes it through `ProxyJump` or `ProxyCommand`, the bastion's `ssh` inherited the askpass helper, and its password prompt was answered with the target's password (the issue #191 leak). The CLI now asks `ssh -G` first, as the GUI runner does, and for such a host does not send the password and says why. (`rustconn-cli/src/commands/run_script.rs`)
 
 ## [0.24.10] - 2026-11-09
 ### Fixed

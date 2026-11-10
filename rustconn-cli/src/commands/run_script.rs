@@ -21,7 +21,7 @@ use rustconn_core::ssh_key_setup::{DeployCredentials, SshTarget};
 use rustconn_core::ssh_tunnel::{
     SshTunnelParams, append_proxy_command_destination, askpass_disabled_proxy_prefix,
     askpass_proxy_prefix, build_nested_proxy_command_with_askpass, proxy_jump_arg,
-    shell_single_quote, target_password_askpass_allowed,
+    shell_single_quote, ssh_config_declares_proxy, target_password_askpass_allowed,
 };
 use secrecy::{ExposeSecret, SecretString};
 use uuid::Uuid;
@@ -521,6 +521,33 @@ fn hop_askpass(
     (helpers, secrets)
 }
 
+/// Drops the target's password when OpenSSH's own config routes the host
+/// through a proxy, as the GUI runner does.
+///
+/// With no resolved jump chain nothing on the command line overrides a
+/// `ProxyJump`/`ProxyCommand` from `~/.ssh/config`. The bastion's `ssh` then
+/// inherits `SSH_ASKPASS`, and the helper answers its `'s password:` prompt
+/// with the target's password (issue #191). A resolved chain is safe: its
+/// `-J`/`ProxyCommand` outranks the config. `declares_proxy` is
+/// [`ssh_config_declares_proxy`] outside tests, and runs only when there is a
+/// password to protect.
+fn withhold_from_config_proxy(
+    routed: &Connection,
+    password: Option<SecretString>,
+    chain_is_empty: bool,
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> Option<SecretString> {
+    let password = password?;
+    if chain_is_empty && declares_proxy(&routed.host, routed.port, routed.username.as_deref()) {
+        eprintln!(
+            "[{}] not sending the password: ~/.ssh/config routes this host through a proxy",
+            routed.name
+        );
+        return None;
+    }
+    Some(password)
+}
+
 /// Builds the launch of an SSH host: its options, key, jump hosts and passwords.
 fn ssh_script_host(
     routed: &Connection,
@@ -551,6 +578,12 @@ fn ssh_script_host(
     }
 
     let chain = resolve_jump_chain(routed, connections, groups, network);
+    password = withhold_from_config_proxy(
+        routed,
+        password,
+        chain.hops.is_empty(),
+        ssh_config_declares_proxy,
+    );
     let (helpers, mut jump_host_passwords) = hop_askpass(&chain, connections, passwords);
     if !chain.hops.is_empty() {
         let plain_jump = chain.proxy_jump_value();
@@ -606,9 +639,58 @@ fn ssh_script_host(
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use std::path::Path;
 
-    use super::bastion_proxy_command;
+    use rustconn_core::models::Connection;
+    use secrecy::{ExposeSecret, SecretString};
+
+    use super::{bastion_proxy_command, withhold_from_config_proxy};
+
+    fn target() -> Connection {
+        let mut connection = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 2222);
+        connection.username = Some("alice".to_string());
+        connection
+    }
+
+    fn secret() -> Option<SecretString> {
+        Some(SecretString::from("hunter2".to_string()))
+    }
+
+    #[test]
+    fn a_config_proxy_with_no_chain_withholds_the_password() {
+        let asked = Cell::new(None);
+        let kept = withhold_from_config_proxy(&target(), secret(), true, |host, port, user| {
+            asked.set(Some((host.to_string(), port, user.map(str::to_string))));
+            true
+        });
+        assert!(kept.is_none());
+        assert_eq!(
+            asked.take(),
+            Some(("web.lan".to_string(), 2222, Some("alice".to_string())))
+        );
+    }
+
+    #[test]
+    fn no_config_proxy_keeps_the_password() {
+        let kept = withhold_from_config_proxy(&target(), secret(), true, |_, _, _| false);
+        assert_eq!(
+            kept.map(|p| p.expose_secret().to_string()),
+            Some("hunter2".to_string())
+        );
+    }
+
+    #[test]
+    fn a_resolved_chain_or_no_password_skips_the_config_check() {
+        let asked = Cell::new(false);
+        let probe = |_: &str, _: u16, _: Option<&str>| {
+            asked.set(true);
+            true
+        };
+        assert!(withhold_from_config_proxy(&target(), secret(), false, probe).is_some());
+        assert!(withhold_from_config_proxy(&target(), None, true, probe).is_none());
+        assert!(!asked.get(), "ssh -G must only run to protect a password");
+    }
 
     #[test]
     fn a_single_hop_goes_straight_to_the_bastion() {
