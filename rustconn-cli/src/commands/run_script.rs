@@ -771,10 +771,12 @@ fn ssh_script_host(
 mod tests {
     use std::cell::Cell;
 
-    use rustconn_core::models::Connection;
+    use rustconn_core::connection::jump_chain::JumpChain;
+    use rustconn_core::jump_route::JumpRoute;
+    use rustconn_core::models::{Connection, ProtocolConfig, SshKeySource};
     use secrecy::{ExposeSecret, SecretString};
 
-    use super::{hops_are_plain, plain_path, withhold_from_config_proxy, within};
+    use super::{hops_are_plain, plain_jump_route, plain_path, withhold_from_config_proxy, within};
 
     fn target() -> Connection {
         let mut connection = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 2222);
@@ -953,5 +955,106 @@ mod tests {
             Some("/home/a/.ssh/id_ed25519")
         );
         assert_eq!(plain_path("/home/a/my key"), None);
+    }
+
+    fn bastion(host: &str, pkcs11: Option<&str>, key: Option<&std::path::Path>) -> Connection {
+        let mut hop = Connection::new_ssh(host.to_string(), host.to_string(), 22);
+        if let ProtocolConfig::Ssh(config) = &mut hop.protocol_config {
+            config.pkcs11_provider = pkcs11.map(str::to_string);
+            if let Some(key) = key {
+                config.key_source = SshKeySource::File {
+                    path: key.to_path_buf(),
+                };
+            }
+        }
+        hop
+    }
+
+    /// The chain through `hops`, the one closest to the target first.
+    fn chain_through(hops: &[&Connection]) -> JumpChain {
+        JumpChain {
+            hops: hops.iter().map(|hop| hop.host.clone()).collect(),
+            hop_ids: hops.iter().map(|hop| Some(hop.id)).collect(),
+        }
+    }
+
+    #[test]
+    fn every_proxy_command_hop_refuses_an_unknown_host_key() {
+        let near = bastion("near.lan", Some("/usr/lib/opensc-pkcs11.so"), None);
+        let far = bastion("far.lan", None, None);
+        let chain = chain_through(&[&near, &far]);
+        let connections = [near, far];
+
+        let route = plain_jump_route(&chain, &[None, None], &connections, &[], &[], false);
+        let Some(JumpRoute::ProxyCommand { command, passwords }) = route else {
+            panic!("a PKCS#11 bastion needs a ProxyCommand: {route:?}");
+        };
+        assert!(passwords.is_empty());
+        assert_eq!(
+            command.matches("StrictHostKeyChecking=yes").count(),
+            2,
+            "{command}"
+        );
+        assert!(!command.contains("accept-new"), "{command}");
+        assert!(
+            command.contains("PKCS11Provider=/usr/lib/opensc-pkcs11.so"),
+            "{command}"
+        );
+    }
+
+    #[test]
+    fn a_single_bastion_gets_its_own_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("id_bastion");
+        std::fs::write(&key, "").unwrap();
+        let hop = bastion("jump.lan", None, Some(&key));
+        let chain = chain_through(&[&hop]);
+        let session_args = ["-i".to_string(), "/k/target".to_string()];
+
+        let route = plain_jump_route(
+            &chain,
+            &[None],
+            std::slice::from_ref(&hop),
+            &[],
+            &session_args,
+            false,
+        );
+        let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
+            panic!("a bastion key needs a ProxyCommand: {route:?}");
+        };
+        assert!(
+            command.contains(&format!("-i {}", key.display())),
+            "{command}"
+        );
+        assert!(!command.contains("/k/target"), "{command}");
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
+    }
+
+    #[test]
+    fn paths_a_shell_could_interpret_stay_out_of_the_proxy_command() {
+        let dir = tempfile::tempdir().unwrap();
+        let key = dir.path().join("my key");
+        std::fs::write(&key, "").unwrap();
+        let hop = bastion("jump.lan", Some("/usr/lib/my pkcs11.so"), Some(&key));
+        let chain = chain_through(&[&hop]);
+        let session_args = ["-i".to_string(), "/k/target key".to_string()];
+        let connections = std::slice::from_ref(&hop);
+
+        // With nothing usable left, the hop is reached through `-J`.
+        let route = plain_jump_route(&chain, &[None], connections, &[], &session_args, false);
+        assert!(
+            matches!(route, Some(JumpRoute::ProxyJump { .. })),
+            "{route:?}"
+        );
+
+        // A password still needs a ProxyCommand, without the refused paths.
+        let route = plain_jump_route(&chain, &[secret()], connections, &[], &session_args, false);
+        let Some(JumpRoute::ProxyCommand { command, .. }) = route else {
+            panic!("a bastion password needs a ProxyCommand: {route:?}");
+        };
+        for refused in ["my key", "target key", "pkcs11", " -i "] {
+            assert!(!command.contains(refused), "{refused}: {command}");
+        }
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
     }
 }
