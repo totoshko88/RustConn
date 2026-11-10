@@ -72,6 +72,9 @@ struct RunView {
     succeeded: Cell<usize>,
     failed: Cell<usize>,
     finished: Cell<usize>,
+    /// Set when the user asked to close a running window: it closes once
+    /// every host has stopped.
+    close_when_done: Cell<bool>,
 }
 
 fn script_error_text(error: &ScriptFileError) -> String {
@@ -342,8 +345,19 @@ pub(super) fn open_dialog(
         succeeded: Cell::new(0),
         failed: Cell::new(0),
         finished: Cell::new(0),
+        close_when_done: Cell::new(false),
     });
 
+    // While a run is going `can_close` is false, so Escape and the close
+    // button land here instead of doing nothing.
+    dialog.connect_close_attempt({
+        let view = Rc::downgrade(&view);
+        move |_| {
+            if let Some(view) = view.upgrade() {
+                confirm_stop(&view);
+            }
+        }
+    });
     stop_button.connect_clicked({
         let view = Rc::clone(&view);
         move |button| {
@@ -811,10 +825,46 @@ fn show_progress(view: &RunView) {
     view.title.set_subtitle(&progress_text(view));
 }
 
+/// Asks whether to stop a run the user tried to close.
+fn confirm_stop(view: &Rc<RunView>) {
+    let alert = adw::AlertDialog::new(
+        Some(&i18n("Stop the Script?")),
+        Some(&i18n(
+            "It is stopped on every host still running it, and the window closes. Changes it has already made stay in place.",
+        )),
+    );
+    alert.add_response("cancel", &i18n("Keep Running"));
+    alert.add_response("stop", &i18n("Stop and Close"));
+    alert.set_response_appearance("stop", adw::ResponseAppearance::Destructive);
+    alert.set_default_response(Some("cancel"));
+    alert.set_close_response("cancel");
+    alert.connect_response(None, {
+        let view = Rc::clone(view);
+        move |_, response| {
+            if response != "stop" {
+                return;
+            }
+            view.cancel.store(true, Ordering::Relaxed);
+            view.stop_button.set_sensitive(false);
+            // The run may have ended while the question was open.
+            if view.dialog.can_close() {
+                view.dialog.close();
+            } else {
+                view.close_when_done.set(true);
+            }
+        }
+    });
+    alert.present(Some(&view.dialog));
+}
+
 fn finish(view: &RunView) {
     show_progress(view);
     view.stop_button.set_visible(false);
     view.dialog.set_can_close(true);
+    if view.close_when_done.get() {
+        view.dialog.close();
+        return;
+    }
     // The header subtitle changes silently; say once that the run is over.
     view.list.announce(
         &i18n_f("Script finished. {}", &[&progress_text(view)]),
