@@ -240,9 +240,17 @@ fn prune_browser_profiles(base: &std::path::Path, now: std::time::SystemTime) {
     }
 }
 
+/// Chromium's switch that keeps WebRTC behind the proxy: a SOCKS5 proxy carries
+/// no UDP, and WebRTC otherwise reaches STUN servers directly and hands the
+/// page this computer's own addresses.
+const CHROMIUM_WEBRTC_PROXY_ONLY: &str =
+    "--force-webrtc-ip-handling-policy=disable_non_proxied_udp";
+
 /// Firefox reads a proxy only from its profile. `socks_remote_dns` keeps name
-/// lookups inside the proxy, and the last two preferences stop localhost and
-/// first-run pages from going around it.
+/// lookups inside the proxy, the next two preferences stop localhost and
+/// first-run pages from going around it, and the two `peerconnection` ones keep
+/// WebRTC on the proxy and off the local interface addresses, as
+/// [`CHROMIUM_WEBRTC_PROXY_ONLY`] does for Chromium.
 fn firefox_preferences(host: &str, port: &str) -> String {
     format!(
         "user_pref(\"network.proxy.type\", 1);\n\
@@ -252,6 +260,8 @@ fn firefox_preferences(host: &str, port: &str) -> String {
          user_pref(\"network.proxy.socks_remote_dns\", true);\n\
          user_pref(\"network.proxy.no_proxies_on\", \"\");\n\
          user_pref(\"network.proxy.allow_hijacking_localhost\", true);\n\
+         user_pref(\"media.peerconnection.ice.proxy_only_if_behind_proxy\", true);\n\
+         user_pref(\"media.peerconnection.ice.default_address_only\", true);\n\
          user_pref(\"browser.shell.checkDefaultBrowser\", false);\n\
          user_pref(\"browser.aboutwelcome.enabled\", false);\n\
          user_pref(\"datareporting.policy.dataSubmissionEnabled\", false);\n"
@@ -295,6 +305,7 @@ pub fn proxied_browser_args(
             "--no-first-run".to_string(),
             "--no-default-browser-check".to_string(),
             format!("--proxy-server={proxy}"),
+            CHROMIUM_WEBRTC_PROXY_ONLY.to_string(),
             url.to_string(),
         ],
         BrowserFamily::Firefox => {
@@ -627,6 +638,11 @@ mod tests {
                 .any(|a| a == "--proxy-server=socks5://proxy:1080")
         );
         assert!(cmd.iter().any(|a| a.starts_with("--user-data-dir=")));
+        assert!(
+            cmd.iter()
+                .any(|a| a == "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"),
+            "WebRTC stays behind the proxy: {cmd:?}"
+        );
         assert_eq!(cmd.last().map(String::as_str), Some("https://example.com"));
     }
 
@@ -650,6 +666,15 @@ mod tests {
             prefs.contains(r#""network.proxy.socks_remote_dns", true"#),
             "{prefs}"
         );
+        for webrtc in [
+            r#""media.peerconnection.ice.proxy_only_if_behind_proxy", true"#,
+            r#""media.peerconnection.ice.default_address_only", true"#,
+        ] {
+            assert!(
+                prefs.contains(webrtc),
+                "WebRTC stays behind the proxy: {prefs}"
+            );
+        }
         std::fs::remove_dir_all(profile).unwrap();
     }
 
