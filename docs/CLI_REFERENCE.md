@@ -236,7 +236,7 @@ Options:
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
 | `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it, and its login, with an empty value. Not together with `--tunnel-via`. A browser that cannot use it is not opened |
 | `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
-| `--socks-proxy-password-var` | — | Secret global variable holding that login's password |
+| `--socks-proxy-password-var` | — | Secret global variable holding that login's password. It must already exist as a secret global variable (`rustconn-cli var set <name> <value> --secret`); `add` and `update` refuse a missing or plain one |
 | `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
 | `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
 | `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
