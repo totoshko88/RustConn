@@ -22,7 +22,7 @@ use rustconn_core::remote_script::{
     ScriptEventSink, ScriptFileError, ScriptHost, ScriptKind, ScriptOutcome, ScriptTransport,
     WinRmTarget,
 };
-use secrecy::SecretString;
+use secrecy::{ExposeSecret, SecretString};
 use uuid::Uuid;
 
 use super::protocols::{
@@ -129,20 +129,20 @@ fn script_error_text(error: &ScriptFileError) -> String {
 /// With `shared` (the "Use One Password for All Hosts" switch on) every host
 /// gets that one; otherwise each host gets its own field. An empty field gives
 /// that host no password, never the one typed for another host.
-fn typed_passwords<'a>(
-    fields: impl Iterator<Item = (Uuid, &'a str)>,
-    shared: Option<&str>,
+fn typed_passwords(
+    fields: impl Iterator<Item = (Uuid, SecretString)>,
+    shared: Option<SecretString>,
 ) -> HashMap<Uuid, SecretString> {
-    let password = |text: &str| (!text.is_empty()).then(|| SecretString::from(text.to_string()));
+    let given = |secret: SecretString| (!secret.expose_secret().is_empty()).then_some(secret);
     match shared {
-        Some(text) => {
-            let Some(shared) = password(text) else {
+        Some(shared) => {
+            let Some(shared) = given(shared) else {
                 return HashMap::new();
             };
             fields.map(|(id, _)| (id, shared.clone())).collect()
         }
         None => fields
-            .filter_map(|(id, text)| password(text).map(|p| (id, p)))
+            .filter_map(|(id, secret)| given(secret).map(|p| (id, p)))
             .collect(),
     }
 }
@@ -467,18 +467,19 @@ pub(super) fn open_dialog(
                 error_label.set_visible(true);
                 return;
             }
+            // Each field's text goes straight into a `SecretString`, with no named
+            // copy left to drop unzeroed. The GTK entry buffer itself cannot be
+            // zeroed from Rust (secrets-guide.md); the fields are emptied once the
+            // run is confirmed.
             let shared = same_password_row
                 .is_active()
-                .then(|| shared_password_row.text());
-            let fields: Vec<(Uuid, glib::GString)> = password_rows
-                .iter()
-                .map(|(id, row)| (*id, row.text()))
-                .collect();
+                .then(|| SecretString::from(shared_password_row.text().to_string()));
             *view.typed_passwords.borrow_mut() = typed_passwords(
-                fields.iter().map(|(id, text)| (*id, text.as_str())),
-                shared.as_deref(),
+                password_rows
+                    .iter()
+                    .map(|(id, row)| (*id, SecretString::from(row.text().to_string()))),
+                shared,
             );
-            drop(fields);
             let entries = password_rows
                 .iter()
                 .map(|(_, row)| row.clone())
@@ -914,15 +915,19 @@ fn finish(view: &RunView) {
 
 #[cfg(test)]
 mod tests {
-    use secrecy::ExposeSecret;
+    use secrecy::{ExposeSecret, SecretString};
     use uuid::Uuid;
 
     use super::typed_passwords;
 
+    fn secret(text: &str) -> SecretString {
+        SecretString::from(text.to_string())
+    }
+
     #[test]
     fn an_empty_field_gives_no_password() {
         let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
-        let typed = typed_passwords([(a, "first"), (b, "")].into_iter(), None);
+        let typed = typed_passwords([(a, secret("first")), (b, secret(""))].into_iter(), None);
         assert_eq!(typed.len(), 1);
         assert_eq!(typed[&a].expose_secret(), "first");
         assert!(!typed.contains_key(&b), "b must not reuse a's password");
@@ -931,10 +936,13 @@ mod tests {
     #[test]
     fn one_password_goes_to_every_host() {
         let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
-        let typed = typed_passwords([(a, "ignored"), (b, "")].into_iter(), Some("shared"));
+        let typed = typed_passwords(
+            [(a, secret("ignored")), (b, secret(""))].into_iter(),
+            Some(secret("shared")),
+        );
         assert_eq!(typed[&a].expose_secret(), "shared");
         assert_eq!(typed[&b].expose_secret(), "shared");
-        let none = typed_passwords([(a, "ignored")].into_iter(), Some(""));
+        let none = typed_passwords([(a, secret("ignored"))].into_iter(), Some(secret("")));
         assert!(none.is_empty(), "an empty shared field sends nothing");
     }
 }
