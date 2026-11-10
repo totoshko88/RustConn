@@ -401,6 +401,7 @@ A WinRM connection opens a PowerShell session on a Windows machine in a terminal
 - A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p`, `-H`, `--password` and `--hash` in every form the client accepts: abbreviated (`--pass`), with the value attached (`-pSECRET`, `--hash=…`) or inside a group of short options (`-np`). With no saved password, type it in the terminal.
 - A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
 - To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
+- RustConn 0.24.10 and older cannot read a configuration, a Simple Sync file or a Group Sync `.rcn` file that holds a WinRM connection: the whole file fails to load. Update every device that shares the configuration or syncs it before adding one.
 
 ### Automatic Login (Telnet & Serial)
 
@@ -2176,6 +2177,8 @@ If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), ent
 If the proxy needs a login, fill in **SOCKS5 Username** and name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
 
 The embedded browser, Chromium-based browsers and Firefox all work; external ones open with a separate, temporary profile. With the System browser mode, RustConn opens an installed browser that can use the proxy instead of your default if it can't. If none is found the page is **not opened** rather than loaded directly.
+
+RustConn 0.24.10 and older do not know these fields. They open the page directly, without the proxy, and saving the configuration there drops the fields, which sync then carries to your other devices. Update every device that shares the configuration or syncs it before setting a SOCKS5 proxy.
 
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
