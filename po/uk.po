@@ -14617,7 +14617,7 @@ msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
 msgstr ""
-"evil-winrm не може працювати всередині Snap. Під'єднуйся до Windows через "
+"evil-winrm не може працювати всередині Snap. З'єднуйся з Windows через "
 "SSH або користуйся Flatpak чи пакунком RustConn зі свого дистрибутива"
 
 #: rustconn/src/window/protocols.rs:2506
