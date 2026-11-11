@@ -450,10 +450,17 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
     });
     window.add_action(&search_action);
 
-    // Ctrl+W in a detached window ends only this session.
+    // Ctrl+W in a detached window ends only this session — or, while a dialog
+    // is open in the window, closes just the dialog.
     let close_action = gio::SimpleAction::new("close-tab", None);
     let handles_close = handles.clone();
+    let window_close = window.downgrade();
     close_action.connect_activate(move |_, _| {
+        if let Some(window) = window_close.upgrade()
+            && super::terminal_actions::close_visible_dialog(&window)
+        {
+            return;
+        }
         close_detached_session(&handles_close, session_id);
     });
     window.add_action(&close_action);

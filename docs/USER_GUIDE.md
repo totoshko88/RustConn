@@ -4883,7 +4883,7 @@ Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl
 | Ctrl+Shift+C | Copy |
 | Ctrl+Shift+V | Paste |
 | Ctrl+Shift+F | Terminal Search |
-| Ctrl+W / Ctrl+Shift+W | Close Tab |
+| Ctrl+W / Ctrl+Shift+W | Close Tab. While a terminal has focus, Ctrl+W goes to the shell and only Ctrl+Shift+W closes the tab. With no tab open, Ctrl+W closes the window; with a dialog open, it closes the dialog |
 | Ctrl+Tab / Ctrl+PageDown | Next Tab |
 | Ctrl+Shift+Tab / Ctrl+PageUp | Previous Tab |
 | Ctrl+Shift+T | Local Shell |

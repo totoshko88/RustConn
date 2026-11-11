@@ -22,6 +22,22 @@ struct HelpEntry {
     accel: String,
     /// Already-translated description.
     label: String,
+    /// Already-translated explanation shown under the description, if any.
+    note: Option<String>,
+}
+
+/// Explains where Ctrl+W and Ctrl+Shift+W act, for the Close Tab line.
+///
+/// Ctrl+W goes to the shell while a terminal has focus (issues #197, #216), so
+/// a reviewer pressing it in an SSH tab sees nothing close; and with no tab
+/// open it closes the window. Shown only for the default accelerators, which
+/// are the ones the text names.
+fn close_tab_note(def: &KeybindingDef, accel: &str) -> Option<String> {
+    (def.action == "win.close-tab" && accel == def.default_accels).then(|| {
+        i18n(
+            "Closes the window when no tab is open. In a terminal, Ctrl+W goes to the shell; use Ctrl+Shift+W there.",
+        )
+    })
 }
 
 /// Returns the effective accelerator for an action from the user's keybinding
@@ -59,6 +75,7 @@ fn fixed_shortcuts(category: KeybindingCategory) -> Vec<HelpEntry> {
     let entry = |accel: &str, label: String| HelpEntry {
         accel: accel.to_owned(),
         label,
+        note: None,
     };
     match category {
         KeybindingCategory::Connections => vec![
@@ -116,9 +133,13 @@ fn entries_for(
     let mut entries: Vec<HelpEntry> = defs
         .iter()
         .filter(|def| def.category == category)
-        .map(|def| HelpEntry {
-            accel: effective_accel(overrides, def),
-            label: i18n(&def.label),
+        .map(|def| {
+            let accel = effective_accel(overrides, def);
+            HelpEntry {
+                note: close_tab_note(def, &accel),
+                label: i18n(&def.label),
+                accel,
+            }
         })
         .collect();
     entries.extend(fixed_shortcuts(category));
@@ -255,10 +276,12 @@ mod native {
                     // `gtk_accelerator_parse` reject the whole thing — six items
                     // rendered with no keys at all, in exactly the builds that use
                     // this path, since `adw-1-8` is on for every package.
-                    section.add(adw::ShortcutsItem::new(
-                        &entry.label,
-                        &entry.accel.replace('|', " "),
-                    ));
+                    let item =
+                        adw::ShortcutsItem::new(&entry.label, &entry.accel.replace('|', " "));
+                    if let Some(note) = &entry.note {
+                        item.set_subtitle(note);
+                    }
+                    section.add(item);
                 }
                 dialog.add(section);
             }
@@ -358,7 +381,7 @@ mod legacy {
                 list_box.append(&header_row);
                 for entry in entries {
                     let keys = accel_key_parts(&entry.accel);
-                    let row = Self::create_shortcut_row(&keys, &entry.label);
+                    let row = Self::create_shortcut_row(&keys, &entry.label, entry.note.as_deref());
                     list_box.append(&row);
                 }
             }
@@ -401,7 +424,11 @@ mod legacy {
         /// empty keycaps for `<Control>plus`, which is a real binding (terminal
         /// zoom in). The separator cannot be recovered from the display string,
         /// so it is never collapsed into one.
-        fn create_shortcut_row(keys: &[String], description: &str) -> ListBoxRow {
+        fn create_shortcut_row(
+            keys: &[String],
+            description: &str,
+            note: Option<&str>,
+        ) -> ListBoxRow {
             let row = ListBoxRow::new();
             row.set_activatable(false);
 
@@ -411,12 +438,24 @@ mod legacy {
             hbox.set_margin_start(12);
             hbox.set_margin_end(12);
 
+            let text_box = GtkBox::new(Orientation::Vertical, 3);
+            text_box.set_hexpand(true);
             let desc_label = Label::builder()
                 .label(description)
                 .halign(gtk4::Align::Start)
-                .hexpand(true)
                 .build();
-            hbox.append(&desc_label);
+            text_box.append(&desc_label);
+            if let Some(note) = note {
+                let note_label = Label::builder()
+                    .label(note)
+                    .halign(gtk4::Align::Start)
+                    .xalign(0.0)
+                    .wrap(true)
+                    .css_classes(["dim-label", "caption"])
+                    .build();
+                text_box.append(&note_label);
+            }
+            hbox.append(&text_box);
 
             let keys_box = GtkBox::new(Orientation::Horizontal, 4);
             for (index, key) in keys.iter().enumerate() {
@@ -751,6 +790,26 @@ mod tests {
                 "category {category:?} has fixed shortcuts but no registry entries"
             );
         }
+    }
+
+    #[test]
+    fn close_tab_line_explains_ctrl_w_only_for_the_default_keys() {
+        // The note names Ctrl+W and Ctrl+Shift+W, so it would be wrong under a
+        // user's own binding.
+        let defaults = default_keybindings();
+        let close_tab_note = |overrides: Option<&KeybindingSettings>| {
+            entries_for(overrides, KeybindingCategory::Terminal, &defaults)
+                .into_iter()
+                .find(|entry| entry.label == i18n("Close Tab"))
+                .and_then(|entry| entry.note)
+        };
+        assert!(close_tab_note(None).is_some());
+
+        let mut custom = KeybindingSettings::default();
+        custom
+            .overrides
+            .insert("win.close-tab".into(), "<Control><Alt>w".into());
+        assert!(close_tab_note(Some(&custom)).is_none());
     }
 
     #[test]

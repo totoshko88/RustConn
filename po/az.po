@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 19:38+0200\n"
+"POT-Creation-Date: 2026-11-11 23:07+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -103,7 +103,7 @@ msgstr ""
 "KeePass parolu açar dəstindən yüklənmədi — onu Tənzimləmələrdə yenidən daxil "
 "edin"
 
-#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:178
+#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:199
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2198
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
@@ -349,7 +349,7 @@ msgstr "Ən azı bir bağlantı seçin və ya avtomatik üzvlük nümunəsi təy
 
 #: rustconn/src/dialogs/cluster.rs:297
 #: rustconn/src/dialogs/settings/ui_tab.rs:501
-#: rustconn/src/dialogs/shortcuts.rs:150 rustconn/src/sidebar_ui.rs:1255
+#: rustconn/src/dialogs/shortcuts.rs:171 rustconn/src/sidebar_ui.rs:1255
 msgid "Connections"
 msgstr "Bağlantılar"
 
@@ -439,7 +439,7 @@ msgstr "Sil"
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:176
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Command Palette"
 msgstr "Əmr paneli"
 
@@ -743,7 +743,7 @@ msgid "Add Rule"
 msgstr "Qayda əlavə et"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:648
-#: rustconn/src/dialogs/shortcuts.rs:161 rustconn/src/dialogs/wol.rs:38
+#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:530 rustconn/src/smart_folder_ui.rs:453
 msgid "Wake On LAN"
 msgstr "WOL (Wake On LAN)"
@@ -1514,7 +1514,7 @@ msgid "Script timed out after 30 seconds"
 msgstr "Skript 30 saniyədən sonra vaxt aşımına uğradı"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:191
-#: rustconn/src/dialogs/shortcuts.rs:165
+#: rustconn/src/dialogs/shortcuts.rs:186
 #: rustconn/src/window/connection_dialogs.rs:297
 msgid "New Connection (Advanced)"
 msgstr "Yeni bağlantı (qabaqcıl)"
@@ -4676,7 +4676,7 @@ msgstr "Şablonlarınız"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:460
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
-#: rustconn/src/dialogs/shortcuts.rs:164 rustconn/src/sidebar_ui.rs:552
+#: rustconn/src/dialogs/shortcuts.rs:185 rustconn/src/sidebar_ui.rs:552
 #: rustconn/src/sidebar_ui.rs:589 rustconn/src/sidebar_ui.rs:1287
 #: rustconn/src/split_view/bridge.rs:2024 rustconn/src/window/ui.rs:257
 msgid "New Connection"
@@ -4724,7 +4724,7 @@ msgstr "Portativ faylın keçid ifadəsi"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:180 rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/dialogs/widgets.rs:1036
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4888,7 +4888,7 @@ msgid "Export Connections"
 msgstr "Bağlantıları ixrac et"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:168 rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/shortcuts.rs:189 rustconn/src/dialogs/widgets.rs:1034
 msgid "Export"
 msgstr "İxrac"
 
@@ -5308,7 +5308,7 @@ msgstr "Yükləmə üçün mövcud deyil"
 msgid "Failed"
 msgstr "Uğursuz"
 
-#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:158
+#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:179
 #: rustconn/src/sidebar_ui.rs:1170
 msgid "Connection History"
 msgstr "Bağlantı tarixçəsi"
@@ -5376,7 +5376,7 @@ msgstr "Bağlantıları idxal et"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:167 rustconn/src/dialogs/widgets.rs:1035
+#: rustconn/src/dialogs/shortcuts.rs:188 rustconn/src/dialogs/widgets.rs:1035
 #: rustconn/src/split_view/bridge.rs:2038 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "İdxal"
@@ -6538,7 +6538,7 @@ msgid "Connect to {}"
 msgstr "{} ilə qoşul"
 
 #: rustconn/src/dialogs/password_generator.rs:25
-#: rustconn/src/dialogs/shortcuts.rs:160
+#: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Password Generator"
 msgstr "Parol generatoru"
 
@@ -7400,7 +7400,7 @@ msgid "Keybindings"
 msgstr "Klaviatura qısayolları"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:157 rustconn/src/dialogs/shortcuts.rs:307
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/shortcuts.rs:330
 #: rustconn/src/split_view/bridge.rs:2186
 msgid "Keyboard Shortcuts"
 msgstr "Klaviatura qısayolları"
@@ -8813,7 +8813,7 @@ msgid "Remove key from SSH agent"
 msgstr "Açarı SSH agent-dən sil"
 
 #: rustconn/src/dialogs/settings/terminal_tab.rs:42
-#: rustconn/src/dialogs/shortcuts.rs:152
+#: rustconn/src/dialogs/shortcuts.rs:173
 msgid "Terminal"
 msgstr "Terminal"
 
@@ -9036,7 +9036,7 @@ msgstr ""
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:926
-#: rustconn/src/dialogs/shortcuts.rs:170
+#: rustconn/src/dialogs/shortcuts.rs:191
 #: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:259
 #: rustconn/src/tray.rs:649 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
@@ -9505,220 +9505,227 @@ msgstr "Maks. yaş"
 msgid "Hours before sessions expire"
 msgstr "Sessiyaların bitməsinə qalan saat"
 
-#: rustconn/src/dialogs/shortcuts.rs:65
+#: rustconn/src/dialogs/shortcuts.rs:38
+msgid ""
+"Closes the window when no tab is open. In a terminal, Ctrl+W goes to the "
+"shell; use Ctrl+Shift+W there."
+msgstr "Heç bir tab açıq olmadıqda pəncərəni bağlayır. Terminalda Ctrl+W shell-ə ötürülür; orada Ctrl+Shift+W istifadə edin."
+
+#: rustconn/src/dialogs/shortcuts.rs:82
 msgid "Edit selected connection (sidebar)"
 msgstr "Seçilmiş bağlantını redaktə et (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:68
+#: rustconn/src/dialogs/shortcuts.rs:85
 msgid "Delete selected connection or group (sidebar)"
 msgstr "Seçilmiş bağlantını və ya qrupu sil (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:70
+#: rustconn/src/dialogs/shortcuts.rs:87
 msgid "Rename selected item"
 msgstr "Seçilmiş elementin adını dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:71
+#: rustconn/src/dialogs/shortcuts.rs:88
 msgid "Duplicate connection (sidebar)"
 msgstr "Bağlantını dublikat et (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:72
+#: rustconn/src/dialogs/shortcuts.rs:89
 msgid "Copy connection"
 msgstr "Bağlantını köçür"
 
-#: rustconn/src/dialogs/shortcuts.rs:73
+#: rustconn/src/dialogs/shortcuts.rs:90
 msgid "Paste connection"
 msgstr "Bağlantını yapışdır"
 
-#: rustconn/src/dialogs/shortcuts.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:91
 msgid "Connect to selected"
 msgstr "Seçilmişə qoşul"
 
-#: rustconn/src/dialogs/shortcuts.rs:75
+#: rustconn/src/dialogs/shortcuts.rs:92
 msgid "Expand selected group (sidebar)"
 msgstr "Seçilmiş qrupu genişləndir (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:76
+#: rustconn/src/dialogs/shortcuts.rs:93
 msgid "Collapse group, or go to parent (sidebar)"
 msgstr "Qrupu yığ və ya valideynə keç (yan panel)"
 
-#: rustconn/src/dialogs/shortcuts.rs:79
+#: rustconn/src/dialogs/shortcuts.rs:96
 msgid "Zoom In (font size)"
 msgstr "Yaxınlaşdır (şrift ölçüsü)"
 
-#: rustconn/src/dialogs/shortcuts.rs:80
+#: rustconn/src/dialogs/shortcuts.rs:97
 msgid "Zoom Out (font size)"
 msgstr "Uzaqlaşdır (şrift ölçüsü)"
 
-#: rustconn/src/dialogs/shortcuts.rs:81
+#: rustconn/src/dialogs/shortcuts.rs:98
 msgid "Reset Zoom"
 msgstr "Yaxınlaşdırmanı sıfırla"
 
-#: rustconn/src/dialogs/shortcuts.rs:84
+#: rustconn/src/dialogs/shortcuts.rs:101
 msgid "Open Primary Menu"
 msgstr "Əsas menyunu aç"
 
-#: rustconn/src/dialogs/shortcuts.rs:149
+#: rustconn/src/dialogs/shortcuts.rs:170
 msgid "Application"
 msgstr "Tətbiq"
 
-#: rustconn/src/dialogs/shortcuts.rs:151
+#: rustconn/src/dialogs/shortcuts.rs:172
 msgid "Navigation"
 msgstr "Naviqasiya"
 
-#: rustconn/src/dialogs/shortcuts.rs:153
+#: rustconn/src/dialogs/shortcuts.rs:174
 msgid "Split View"
 msgstr "Bölünmüş görünüş"
 
-#: rustconn/src/dialogs/shortcuts.rs:154
+#: rustconn/src/dialogs/shortcuts.rs:175
 msgid "View"
 msgstr "Görünüş"
 
-#: rustconn/src/dialogs/shortcuts.rs:156 rustconn/src/tray.rs:288
+#: rustconn/src/dialogs/shortcuts.rs:177 rustconn/src/tray.rs:288
 #: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:346
 msgid "Quit"
 msgstr "Çıx"
 
-#: rustconn/src/dialogs/shortcuts.rs:159
+#: rustconn/src/dialogs/shortcuts.rs:180
 msgid "Statistics"
 msgstr "Statistika"
 
-#: rustconn/src/dialogs/shortcuts.rs:162
+#: rustconn/src/dialogs/shortcuts.rs:183
 msgid "SSH Tunnel Manager"
 msgstr "SSH tunel meneceri"
 
-#: rustconn/src/dialogs/shortcuts.rs:166 rustconn/src/sidebar_ui.rs:590
+#: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/sidebar_ui.rs:590
 #: rustconn/src/sidebar_ui.rs:1091 rustconn/src/sidebar_ui.rs:1292
 #: rustconn/src/window/connection_dialogs.rs:375 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Yeni qrup"
 
-#: rustconn/src/dialogs/shortcuts.rs:169 rustconn/src/sidebar_ui.rs:588
+#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:588
 #: rustconn/src/sidebar_ui.rs:1310 rustconn/src/split_view/bridge.rs:2031
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Sürətli qoşulma"
 
-#: rustconn/src/dialogs/shortcuts.rs:171 rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:1100
 msgid "Move to Group"
 msgstr "Qrupa köçür"
 
-#: rustconn/src/dialogs/shortcuts.rs:173 rustconn/src/split_view/bridge.rs:2194
+#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/split_view/bridge.rs:2194
 msgid "Search"
 msgstr "Axtar"
 
-#: rustconn/src/dialogs/shortcuts.rs:174
+#: rustconn/src/dialogs/shortcuts.rs:195
 msgid "Focus Sidebar"
 msgstr "Yan panelə fokusla"
 
-#: rustconn/src/dialogs/shortcuts.rs:175
+#: rustconn/src/dialogs/shortcuts.rs:196
 msgid "Focus Terminal"
 msgstr "Terminala fokusla"
 
-#: rustconn/src/dialogs/shortcuts.rs:177
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Command Palette (Commands)"
 msgstr "Əmr palitrası (Əmrlər)"
 
-#: rustconn/src/dialogs/shortcuts.rs:181 rustconn/src/embedded_rdp/mod.rs:602
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/embedded_rdp/mod.rs:602
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Yapışdır"
 
-#: rustconn/src/dialogs/shortcuts.rs:182
+#: rustconn/src/dialogs/shortcuts.rs:203
 msgid "Find in Terminal"
 msgstr "Terminalda tap"
 
-#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1285
+#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/dialogs/shortcuts.rs:804
+#: rustconn/src/terminal/tab_menu.rs:1285
 msgid "Close Tab"
 msgstr "Tabı bağla"
 
-#: rustconn/src/dialogs/shortcuts.rs:184
+#: rustconn/src/dialogs/shortcuts.rs:205
 msgid "Next Tab"
 msgstr "Növbəti tab"
 
-#: rustconn/src/dialogs/shortcuts.rs:185
+#: rustconn/src/dialogs/shortcuts.rs:206
 msgid "Previous Tab"
 msgstr "Əvvəlki tab"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Tab icmalı"
 
-#: rustconn/src/dialogs/shortcuts.rs:187
+#: rustconn/src/dialogs/shortcuts.rs:208
 msgid "Switch Tab"
 msgstr "Tabı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:188
+#: rustconn/src/dialogs/shortcuts.rs:209
 msgid "Move Session to New Window"
 msgstr "Sessiyanı yeni pəncərəyə köçür"
 
-#: rustconn/src/dialogs/shortcuts.rs:189
+#: rustconn/src/dialogs/shortcuts.rs:210
 msgid "Previous Prompt"
 msgstr "Əvvəlki sorğu"
 
-#: rustconn/src/dialogs/shortcuts.rs:190
+#: rustconn/src/dialogs/shortcuts.rs:211
 msgid "Next Prompt"
 msgstr "Növbəti sorğu"
 
-#: rustconn/src/dialogs/shortcuts.rs:192
+#: rustconn/src/dialogs/shortcuts.rs:213
 msgid "Split Horizontal"
 msgstr "Üfüqi böl"
 
-#: rustconn/src/dialogs/shortcuts.rs:193
+#: rustconn/src/dialogs/shortcuts.rs:214
 msgid "Split Vertical"
 msgstr "Şaquli böl"
 
-#: rustconn/src/dialogs/shortcuts.rs:194
+#: rustconn/src/dialogs/shortcuts.rs:215
 msgid "Close Pane"
 msgstr "Paneli bağla"
 
-#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:479
+#: rustconn/src/dialogs/shortcuts.rs:216 rustconn/src/sidebar_ui.rs:479
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Bölmədən çıxar"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:217
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1226
 msgid "Remove Split"
 msgstr "Bölməni sil"
 
-#: rustconn/src/dialogs/shortcuts.rs:197
+#: rustconn/src/dialogs/shortcuts.rs:218
 msgid "Focus Next Pane"
 msgstr "Növbəti panelə fokusla"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:219
 msgid "Reconnect Session"
 msgstr "Sessiyaya yenidən qoşul"
 
-#: rustconn/src/dialogs/shortcuts.rs:200
+#: rustconn/src/dialogs/shortcuts.rs:221
 msgid "Toggle Fullscreen"
 msgstr "Tam ekranı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Yan paneli dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:202
+#: rustconn/src/dialogs/shortcuts.rs:223
 msgid "Toggle Compact Interface"
 msgstr "Yığcam interfeysi dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:224
 msgid "Toggle Keyboard Passthrough"
 msgstr "Klaviatura ötürməsini dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:204
+#: rustconn/src/dialogs/shortcuts.rs:225
 msgid "Toggle Split Broadcast"
 msgstr "Bölünmüş yayımı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:205
+#: rustconn/src/dialogs/shortcuts.rs:226
 msgid "Toggle Group Broadcast"
 msgstr "Qrup yayımını dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:333
+#: rustconn/src/dialogs/shortcuts.rs:356
 msgid "Search shortcuts…"
 msgstr "Qısayolları axtar…"
 
@@ -15180,7 +15187,7 @@ msgstr "Port: {}"
 msgid "User: {}"
 msgstr "İstifadəçi: {}"
 
-#: rustconn/src/window/terminal_actions.rs:411
+#: rustconn/src/window/terminal_actions.rs:441
 msgid ""
 "Could not start recording for '{}' — the recordings folder is missing or not "
 "writable"
@@ -15188,7 +15195,7 @@ msgstr ""
 "'{}' üçün yazma başladıla bilmədi — yazılar qovluğu yoxdur və ya yazıla "
 "bilməz"
 
-#: rustconn/src/window/terminal_actions.rs:475
+#: rustconn/src/window/terminal_actions.rs:505
 msgid "This viewer runs independently and cannot be closed from RustConn"
 msgstr "Bu görüntüləyici müstəqil işləyir və RustConn-dan bağlana bilməz"
 

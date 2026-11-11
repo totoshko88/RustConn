@@ -66,6 +66,26 @@ impl TerminalNotebook {
         }
     }
 
+    /// Closes the selected tab when it belongs to no session, such as a
+    /// recording playback tab.
+    ///
+    /// Returns `false` when there is no such tab to close: nothing is selected,
+    /// the selected page is the Welcome placeholder, or it holds a session (those
+    /// close through [`Self::close_tab`]). `win.close-tab` closes the window
+    /// in that case, so a playback tab must not be mistaken for an empty window.
+    pub fn close_selected_sessionless_page(&self) -> bool {
+        let Some(page) = self.tab_view.selected_page() else {
+            return false;
+        };
+        if TabPageContainer::is_welcome(&page.child())
+            || self.sessions.borrow().values().any(|p| p == &page)
+        {
+            return false;
+        }
+        self.tab_view.close_page(&page);
+        true
+    }
+
     /// Restores the Welcome page when the configured empty-notebook conditions hold.
     pub(super) fn ensure_welcome_page(&self) {
         if self.show_welcome.get()
