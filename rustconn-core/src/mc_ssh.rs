@@ -73,9 +73,23 @@ pub struct McSshEnv {
     /// The owner-only file holding the connection's password, when the
     /// wrapper delivers one. Holds a path only, never the secret.
     secret_file: Option<PathBuf>,
+    /// The connection the wrapper was prepared for, which keys its
+    /// auth-failure marker.
+    connection_id: Uuid,
 }
 
 impl McSshEnv {
+    /// Whether mc's `ssh` reported a refused sign-in for this connection that
+    /// no mc open has taken yet.
+    ///
+    /// Leaves the report in place for [`take_auth_failure`], so the next mc
+    /// open still opens without the password. Called when mc exits, so the
+    /// caller can drop its cached password before a Connect sends it again.
+    #[must_use]
+    pub fn sign_in_refused(&self) -> bool {
+        auth_failure_marker(self.connection_id).exists()
+    }
+
     /// Whether the wrapper hands the connection's password to mc's `ssh`.
     #[must_use]
     pub fn delivers_password(&self) -> bool {
@@ -704,6 +718,7 @@ pub fn prepare_mc_ssh_env(
         wrapper_dir,
         config_path,
         secret_file,
+        connection_id: connection.id,
     })
 }
 
@@ -1122,6 +1137,7 @@ mod tests {
             wrapper_dir: wrapper_dir.to_path_buf(),
             config_path: wrapper_dir.join("ssh_config"),
             secret_file: None,
+            connection_id: Uuid::new_v4(),
         }
     }
 
@@ -1532,6 +1548,23 @@ mod tests {
         std::fs::write(&marker, b"").unwrap();
         assert!(take_auth_failure(id));
         assert!(!take_auth_failure(id));
+    }
+
+    /// Review item mc-n4: mc's exit reads the report without taking it, so
+    /// the next mc open still sees it.
+    #[test]
+    fn sign_in_refused_leaves_the_report_for_the_next_open() {
+        let mut env = env_in(Path::new("/nonexistent/rustconn-mc-ssh/session"));
+        let id = Uuid::new_v4();
+        env.connection_id = id;
+        assert!(!env.sign_in_refused());
+        let marker = auth_failure_marker(id);
+        std::fs::create_dir_all(marker.parent().unwrap()).unwrap();
+        std::fs::write(&marker, b"").unwrap();
+        assert!(env.sign_in_refused());
+        assert!(env.sign_in_refused());
+        assert!(take_auth_failure(id));
+        assert!(!env.sign_in_refused());
     }
 
     fn route_args(

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 18:47+0200\n"
+"POT-Creation-Date: 2026-11-11 18:52+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Uzbek\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:356
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:379
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3641,7 +3641,7 @@ msgstr "Har satrda bitta muntazam ifoda; bo'sh bo'lsa — ichki namunalar"
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:350
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:373
 msgid "Password"
 msgstr "Parol"
 
@@ -9714,7 +9714,7 @@ msgstr "Keyingi varaq"
 msgid "Previous Tab"
 msgstr "Oldingi varaq"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:560
 msgid "Tab Overview"
 msgstr "Varaqlar ko'rinishi"
 
@@ -11037,7 +11037,7 @@ msgstr "Tanlangan ish maydonini oʻchirish"
 msgid "Rename selected workspace"
 msgstr "Tanlangan ish maydoni nomini oʻzgartirish"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:357
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:380
 msgid "Open"
 msgstr "Ochish"
 
@@ -11696,14 +11696,14 @@ msgstr "Masofaviy almashish buferidan fayllarni saqlash"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1488
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1490
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Qayta ulanish"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1490
+#: rustconn/src/terminal/mod.rs:1492
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Bu seansga qayta ulanish"
@@ -12723,31 +12723,31 @@ msgstr "Tanlanganni parcha sifatida saqlash…"
 msgid "Execute Snippet…"
 msgstr "Parchani bajarish…"
 
-#: rustconn/src/terminal/mod.rs:554
+#: rustconn/src/terminal/mod.rs:556
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Varaqlar ko'rinishi (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:573 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Xush kelibsiz"
 
-#: rustconn/src/terminal/mod.rs:1132
+#: rustconn/src/terminal/mod.rs:1134
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "«{}» chiqish filtri oʻrnatilmagan; sessiya chiqishi filtrlanmaydi"
 
-#: rustconn/src/terminal/mod.rs:1482
+#: rustconn/src/terminal/mod.rs:1484
 msgid "Command not found: {}"
 msgstr "Buyruq topilmadi: {}"
 
-#: rustconn/src/terminal/mod.rs:1484
+#: rustconn/src/terminal/mod.rs:1486
 msgid "Failed to start '{}'"
 msgstr "«{}» ishga tushirib boʻlmadi"
 
-#: rustconn/src/terminal/mod.rs:1506
+#: rustconn/src/terminal/mod.rs:1508
 msgid "'{}' is not installed"
 msgstr "«{}» oʻrnatilmagan"
 
-#: rustconn/src/terminal/mod.rs:1509
+#: rustconn/src/terminal/mod.rs:1511
 msgid "Failed to start '{}': {}"
 msgstr "«{}» ishga tushirib boʻlmadi: {}"
 
@@ -13718,7 +13718,7 @@ msgstr ""
 msgid "SSH key not available"
 msgstr "SSH kalit mavjud emas"
 
-#: rustconn/src/window/edit_actions.rs:2094 rustconn/src/window/mc_launch.rs:61
+#: rustconn/src/window/edit_actions.rs:2094 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP faqat SSH ulanishlari uchun mavjud."
 
@@ -14175,11 +14175,11 @@ msgstr "Buyruq makrosi"
 msgid "“{}” was not sent. {}"
 msgstr "«{}» yuborilmadi. {}"
 
-#: rustconn/src/window/mc_launch.rs:69
+#: rustconn/src/window/mc_launch.rs:70
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) o'rnatilmagan."
 
-#: rustconn/src/window/mc_launch.rs:117
+#: rustconn/src/window/mc_launch.rs:121
 msgid ""
 "The saved password for “{}” was refused. Type the password in the mc tab "
 "when mc waits for it."
@@ -14187,22 +14187,22 @@ msgstr ""
 "«{}» uchun saqlangan parol rad etildi. mc uni kutganda, parolni mc varag‘ida "
 "kiriting."
 
-#: rustconn/src/window/mc_launch.rs:124
+#: rustconn/src/window/mc_launch.rs:128
 msgid "Opening mc SFTP…"
 msgstr "mc SFTP ochilmoqda…"
 
-#: rustconn/src/window/mc_launch.rs:181
+#: rustconn/src/window/mc_launch.rs:186
 msgid ""
 "mc did not get a password from RustConn. Type it in the mc tab when mc waits "
 "for it."
 msgstr ""
 "mc RustConn’dan parol olmadi. mc uni kutganda, parolni mc varag‘ida kiriting."
 
-#: rustconn/src/window/mc_launch.rs:343
+#: rustconn/src/window/mc_launch.rs:366
 msgid "Password for {}"
 msgstr "{} uchun parol"
 
-#: rustconn/src/window/mc_launch.rs:345
+#: rustconn/src/window/mc_launch.rs:368
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

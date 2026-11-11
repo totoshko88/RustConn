@@ -192,6 +192,8 @@ pub enum ChildExitHook {
     Transcript,
     /// Flushing the session log so it is readable while the tab lingers.
     SessionLog,
+    /// Dropping the cached password mc's `ssh` was refused with.
+    McSignIn,
 }
 
 /// Shared slot for the reconnect banner's cloud login callback.

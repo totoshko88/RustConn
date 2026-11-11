@@ -23,6 +23,7 @@ use uuid::Uuid;
 use super::types::{SharedNotebook, SharedSidebar, SharedSplitView};
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
+use crate::terminal::ChildExitHook;
 use crate::toast::ToastType;
 
 /// One mc tab to open, with what the launch needs from the state.
@@ -77,6 +78,7 @@ pub(super) fn open_mc_tab(
     let split_view = split_view.cloned();
     let sidebar = sidebar.cloned();
     let (connection_id, conn) = (tab.connection_id, tab.conn.clone());
+    let state_for_tab = state.clone();
     mc_password(
         state,
         notebook,
@@ -84,6 +86,7 @@ pub(super) fn open_mc_tab(
         &conn,
         move |password: McPassword| {
             spawn_mc_tab(
+                &state_for_tab,
                 &notebook_for_tab,
                 split_view.as_ref(),
                 sidebar.as_ref(),
@@ -98,6 +101,7 @@ pub(super) fn open_mc_tab(
 /// Creates the tab, prepares the `ssh` wrapper off the GTK thread and starts
 /// mc once it is ready.
 fn spawn_mc_tab(
+    state: &SharedAppState,
     notebook: &SharedNotebook,
     split_view: Option<&SharedSplitView>,
     sidebar: Option<&SharedSidebar>,
@@ -147,6 +151,7 @@ fn spawn_mc_tab(
         && !rustconn_core::mc_ssh::has_identity_file(&tab.conn, &tab.groups);
     let downloads = rustconn_core::sftp::get_downloads_dir();
     let notebook_for_spawn = notebook.clone();
+    let state_for_exit = state.clone();
     let McTab {
         conn,
         connections,
@@ -181,6 +186,24 @@ fn spawn_mc_tab(
                         "mc did not get a password from RustConn. Type it in the mc tab when mc waits for it.",
                     ),
                     ToastType::Warning,
+                );
+            }
+            // A refused password must leave the cache when mc exits, not at the
+            // next mc open, or a Connect in between sends it once more.
+            if let Some(env) = env.as_ref().filter(|env| env.delivers_password()) {
+                let env = env.clone();
+                notebook_for_spawn.connect_child_exited(
+                    session_id,
+                    ChildExitHook::McSignIn,
+                    move |_status| {
+                        if env.sign_in_refused() {
+                            tracing::info!(
+                                %connection_id,
+                                "mc's sign-in was refused; dropping the cached password"
+                            );
+                            crate::state::forget_cached_credentials(&state_for_exit, connection_id);
+                        }
+                    },
                 );
             }
             let path_env = env.as_ref().map(rustconn_core::McSshEnv::path_env);
