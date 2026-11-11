@@ -619,7 +619,14 @@ fn script_host(
             )?),
         });
     }
-    ssh_script_host(&routed, connections, groups, network, passwords)
+    ssh_script_host(
+        &routed,
+        connections,
+        groups,
+        network,
+        passwords,
+        ssh_config_declares_proxy,
+    )
 }
 
 /// Drops the target's password when OpenSSH's own config routes the host
@@ -698,12 +705,14 @@ fn plain_jump_route(
 }
 
 /// Builds the launch of an SSH host: its options, key, jump hosts and passwords.
+/// `declares_proxy` is passed to [`withhold_from_config_proxy`].
 fn ssh_script_host(
     routed: &Connection,
     connections: &[Connection],
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
     passwords: &mut Passwords<'_>,
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
 ) -> Option<RemoteHost> {
     let ProtocolConfig::Ssh(config) = &routed.protocol_config else {
         return None;
@@ -727,12 +736,7 @@ fn ssh_script_host(
     }
 
     let chain = resolve_jump_chain(routed, connections, groups, network);
-    password = withhold_from_config_proxy(
-        routed,
-        password,
-        chain.hops.is_empty(),
-        ssh_config_declares_proxy,
-    );
+    password = withhold_from_config_proxy(routed, password, chain.hops.is_empty(), declares_proxy);
     let mut jump_host_passwords = Vec::new();
     if !chain.hops.is_empty() {
         let find = |id: Option<Uuid>| id.and_then(|id| connections.iter().find(|c| c.id == id));
@@ -851,6 +855,32 @@ mod tests {
         assert!(withhold_from_config_proxy(&target(), secret(), false, probe).is_some());
         assert!(withhold_from_config_proxy(&target(), None, true, probe).is_none());
         assert!(!asked.get(), "ssh -G must only run to protect a password");
+    }
+
+    #[test]
+    fn ssh_script_host_drops_the_password_a_config_proxy_would_receive() {
+        use rustconn_core::config::{AppSettings, NetworkSettings};
+        use rustconn_core::remote_script::ScriptTransport;
+
+        let settings = AppSettings::default();
+        let network = NetworkSettings::default();
+        let target = target();
+        let mut passwords = super::Passwords::new(&settings, &[], false);
+        passwords.known.insert(target.id, secret());
+
+        let mut sent = |declares_proxy: bool| {
+            let host =
+                super::ssh_script_host(&target, &[], &[], &network, &mut passwords, |_, _, _| {
+                    declares_proxy
+                })
+                .expect("an SSH connection gives a host");
+            let ScriptTransport::Ssh { credentials, .. } = host.transport else {
+                panic!("an SSH host runs over SSH");
+            };
+            credentials.password.map(|p| p.expose_secret().to_string())
+        };
+        assert_eq!(sent(true), None);
+        assert_eq!(sent(false), Some("hunter2".to_string()));
     }
 
     #[test]
