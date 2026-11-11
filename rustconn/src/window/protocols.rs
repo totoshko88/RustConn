@@ -2534,7 +2534,7 @@ fn launch_winrm(
     let Some(client) = rustconn_core::protocol::locate_winrm_client() else {
         let hint = if rustconn_core::flatpak::is_flatpak() {
             i18n(
-                "evil-winrm was not found on this computer. Install it outside the Flatpak, from your distribution or with: gem install evil-winrm",
+                "evil-winrm was not found on this computer. Install it outside the Flatpak, from your distribution or with: gem install evil-winrm. It must be on the PATH of your login shell on the host (set in ~/.profile, not only in ~/.bashrc).",
             )
         } else if rustconn_core::snap::is_snap() {
             i18n(

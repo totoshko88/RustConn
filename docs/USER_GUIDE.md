@@ -394,7 +394,7 @@ For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically
 
 ### WinRM (Windows PowerShell)
 
-A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package). The Flatpak does not bundle it: install it on the host and RustConn runs it there. The Snap cannot run it at all. See [WinRM or SSH for Windows](#winrm-or-ssh-for-windows).
+A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package). The Flatpak does not bundle it: install it on the host and RustConn runs it there, in your login shell, so it has to be on that shell's `PATH` (for rbenv, rvm or a gem directory, set up in `~/.profile`, not only in `~/.bashrc`). The Snap cannot run it at all. See [WinRM or SSH for Windows](#winrm-or-ssh-for-windows).
 
 - Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
 - Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
@@ -414,7 +414,7 @@ Where each WinRM client comes from:
 | Package | Interactive session (`evil-winrm`) | Run Local Script `.ps1` (`pywinrm`) |
 |---------|-------------------------------------|-------------------------------------|
 | Native (.deb, .rpm, AppImage, source) | `gem install evil-winrm` or your distribution's package | `python3-winrm` from your distribution, or `pip install pywinrm` |
-| Flatpak | Installed on the host (`gem install evil-winrm` or the distribution's package); RustConn runs it through `flatpak-spawn --host` | Menu → **Components** → *Remote Scripts* → pywinrm |
+| Flatpak | Installed on the host (`gem install evil-winrm` or the distribution's package) and on the `PATH` of your login shell there; RustConn runs it through `flatpak-spawn --host` in that shell | Menu → **Components** → *Remote Scripts* → pywinrm |
 | Snap | Not available; use SSH, or the Flatpak or a native package | Menu → **Components** → *Remote Scripts* → pywinrm |
 
 ### Automatic Login (Telnet & Serial)

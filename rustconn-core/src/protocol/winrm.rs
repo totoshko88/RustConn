@@ -37,15 +37,29 @@ pub fn locate_winrm_client() -> Option<WinRmClient> {
         .or_else(|| crate::which::find_on_host(WINRM_CLIENT).map(WinRmClient::Host))
 }
 
+/// The host shell command a [`WinRmClient::Host`] runs: `exec` its `$0` (the
+/// client's path) with its `"$@"` (the arguments), each passed as its own
+/// argument, so none of them is parsed by the shell.
+const HOST_LOGIN_EXEC: &str = r#"exec "$0" "$@""#;
+
 impl WinRmClient {
     /// The argv that runs `built`, a [`WinRmProtocol::build_command`] result
     /// whose first element is [`WINRM_CLIENT`], with this client.
     ///
-    /// For a host client only `TERM` is passed, because the host process does
-    /// not inherit the sandbox's environment and the client needs a terminal
-    /// type; nothing else, and no secret, goes on the `flatpak-spawn` line.
+    /// A host client starts in a host *login* shell (`sh -lc`), the one
+    /// [`locate_winrm_client`] found it with, so a Ruby manager such as rbenv
+    /// or rvm that the profile sets up is in place for the launch too; the
+    /// session helper's own environment has neither its `PATH` nor its
+    /// `GEM_HOME`. Only `TERM` is passed, because the host process does not
+    /// inherit the sandbox's environment and the client needs a terminal type;
+    /// nothing else, and no secret, goes on the `flatpak-spawn` line.
     #[must_use]
     pub fn command(&self, built: Vec<String>) -> Vec<String> {
+        debug_assert_eq!(
+            built.first().map(String::as_str),
+            Some(WINRM_CLIENT),
+            "built must start with the client it replaces"
+        );
         let rest = built.into_iter().skip(1);
         match self {
             Self::Local(path) => std::iter::once(path.to_string_lossy().into_owned())
@@ -57,6 +71,9 @@ impl WinRmClient {
                 "--watch-bus",
                 "--env=TERM=xterm-256color",
                 "--",
+                "sh",
+                "-lc",
+                HOST_LOGIN_EXEC,
             ]
             .into_iter()
             .map(str::to_string)
@@ -463,6 +480,9 @@ mod tests {
                 "--watch-bus",
                 "--env=TERM=xterm-256color",
                 "--",
+                "sh",
+                "-lc",
+                r#"exec "$0" "$@""#,
                 "/home/a/.gem/bin/evil-winrm",
                 "-i",
                 "win.lan",
@@ -479,6 +499,25 @@ mod tests {
                 .all(|a| a == "--env=TERM=xterm-256color"),
             "only TERM is passed to the host"
         );
+    }
+
+    #[test]
+    fn the_host_shell_passes_the_path_and_arguments_through_unparsed() {
+        // `-c` rather than the launch's `-lc`, so the test reads no profile.
+        let output = std::process::Command::new("sh")
+            .args([
+                "-c",
+                HOST_LOGIN_EXEC,
+                "printf",
+                "%s\n",
+                "a b",
+                "$(x);y",
+                "*",
+            ])
+            .output()
+            .expect("sh runs");
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8_lossy(&output.stdout), "a b\n$(x);y\n*\n");
     }
 
     #[test]
