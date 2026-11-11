@@ -573,6 +573,63 @@ fn tunnel_command_line(
     (if tailscale { "tailscale" } else { "ssh" }, args)
 }
 
+/// The jump host password [`spawn_tunnel`] may hand to its askpass helper.
+///
+/// `None` when `extra_args` start an `ssh` for a further hop that would inherit
+/// the helper's environment, so that hop could be sent this password (the issue
+/// #191 class). Callers route such hops through
+/// [`crate::jump_route::tunnel_hop_args`]; this is the check that holds when a
+/// caller did not.
+fn deliverable_password(params: &SshTunnelParams) -> Option<&SecretString> {
+    let password = params.password.as_ref()?;
+    if askpass_reaches_other_hops(&params.extra_args) {
+        tracing::warn!(
+            jump_host = %params.jump_host,
+            "Not sending the jump host password: the hops past it would receive it too"
+        );
+        return None;
+    }
+    Some(password)
+}
+
+/// Whether `ssh` with `args` starts an `ssh` for another hop outside an `env`
+/// boundary from [`askpass_disabled_proxy_prefix`] or [`askpass_proxy_prefix`]:
+/// any `-J`/`ProxyJump`, or a `ProxyCommand` that does not start with one.
+pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
+    let boundary = format!("env {}=", crate::ssh_askpass::TARGET_PASSWORD_ENV);
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        if arg.starts_with("-J") {
+            return true;
+        }
+        let option = match arg.strip_prefix("-o") {
+            Some("") => match args.next() {
+                Some(next) => next.as_str(),
+                None => break,
+            },
+            Some(inline) => inline,
+            None => continue,
+        };
+        let option = option.trim_start();
+        let split = option
+            .find(|c: char| c == '=' || c.is_whitespace())
+            .unwrap_or(option.len());
+        let (name, value) = option.split_at(split);
+        let value = value
+            .trim_start_matches(|c: char| c == '=' || c.is_whitespace())
+            .trim_end();
+        if value.eq_ignore_ascii_case("none") {
+            continue;
+        }
+        if name.eq_ignore_ascii_case("ProxyJump")
+            || (name.eq_ignore_ascii_case("ProxyCommand") && !value.starts_with(&boundary))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 /// Shared spawn path for [`create_tunnel`] and [`create_socks_tunnel`].
 ///
 /// `forward_args` is the forwarding flag and its value (`["-L", spec]` or
@@ -596,7 +653,7 @@ fn spawn_tunnel(
     // Writes the password to an owner-only file and passes its *path* in the
     // environment, so the secret never lands in `/proc/<pid>/environ`. Both the
     // script and the secret file are torn down by `SshTunnel`'s `Drop`.
-    let (askpass_script_path, secret_file_path) = if let Some(ref pw) = params.password {
+    let (askpass_script_path, secret_file_path) = if let Some(pw) = deliverable_password(params) {
         match (
             create_tunnel_askpass_script(),
             create_tunnel_secret_file(pw),
@@ -2742,5 +2799,149 @@ mod tailscale_tunnel_tests {
         };
         let (_, session_args) = zt.build_command(conn.username.as_deref());
         assert_eq!(session_args[1], destination);
+    }
+}
+
+#[cfg(test)]
+mod tunnel_password_tests {
+    use secrecy::ExposeSecret;
+
+    use super::*;
+    use crate::jump_route::{TunnelHopsRequest, tunnel_hop_args};
+
+    fn strs(v: &[&str]) -> Vec<String> {
+        v.iter().map(ToString::to_string).collect()
+    }
+
+    fn with_password(extra_args: Vec<String>) -> SshTunnelParams {
+        SshTunnelParams {
+            jump_host: "alice@near.lan".to_string(),
+            jump_port: 22,
+            remote_host: "win.lan".to_string(),
+            remote_port: 5985,
+            identity_file: None,
+            password: Some(SecretString::from("hunter2".to_string())),
+            extra_args,
+            launcher: TunnelLauncher::OpenSsh,
+        }
+    }
+
+    fn far_hops(host_keys: HopHostKeys) -> Vec<String> {
+        let hops = strs(&["bob@far.lan", "carol@farthest.lan:2222"]);
+        tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: None,
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: None,
+            hop_host_keys: host_keys,
+        })
+        .expect("plain hops give a route")
+    }
+
+    #[test]
+    fn a_route_whose_hops_inherit_the_helper_gets_no_password() {
+        for extra_args in [
+            strs(&["-J", "far.lan"]),
+            strs(&["-Jfar.lan"]),
+            strs(&["-o", "ProxyJump=far.lan"]),
+            strs(&["-oProxyJump far.lan"]),
+            strs(&["-o", "proxycommand=ssh -W %h:%p far.lan"]),
+            strs(&[
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                "ProxyCommand=nc %h %p",
+            ]),
+        ] {
+            assert!(
+                deliverable_password(&with_password(extra_args.clone())).is_none(),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_route_behind_the_env_boundary_keeps_the_password() {
+        for extra_args in [
+            Vec::new(),
+            strs(&["-o", "StrictHostKeyChecking=yes"]),
+            strs(&["-o", "ProxyJump=none", "-o", "ProxyCommand=none"]),
+            far_hops(HopHostKeys::UserConfig),
+            far_hops(HopHostKeys::KnownOnly),
+        ] {
+            let params = with_password(extra_args.clone());
+            assert_eq!(
+                deliverable_password(&params).map(ExposeSecret::expose_secret),
+                Some("hunter2"),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn every_far_hop_starts_behind_the_env_boundary() {
+        let args = far_hops(HopHostKeys::KnownOnly);
+        assert_eq!(args.len(), 2, "{args:?}");
+        assert_eq!(args[0], "-o");
+        let command = args[1]
+            .strip_prefix("ProxyCommand=")
+            .expect("a ProxyCommand");
+        assert!(!command.contains(" -J "), "{command}");
+        // One `ssh` per hop, each after `SSH_ASKPASS=` with no helper.
+        assert_eq!(command.matches(" ssh -W ").count(), 2, "{command}");
+        assert_eq!(command.matches("SSH_ASKPASS= ").count(), 2, "{command}");
+        assert_eq!(
+            command.matches("StrictHostKeyChecking=yes").count(),
+            2,
+            "{command}"
+        );
+        assert!(command.ends_with("bob@far.lan"), "{command}");
+    }
+
+    #[test]
+    fn a_hop_a_shell_could_interpret_gives_no_route() {
+        for hop in ["far.lan,farther.lan", "far;reboot", "-oProxyCommand=x"] {
+            let hops = strs(&[hop]);
+            let args = tunnel_hop_args(&TunnelHopsRequest {
+                hops: &hops,
+                first_hop_identity: None,
+                deeper_hop_identity: None,
+                first_hop_pkcs11: None,
+                known_hosts: None,
+                hop_host_keys: HopHostKeys::UserConfig,
+            });
+            assert!(args.is_none(), "{hop}");
+        }
+    }
+
+    #[test]
+    fn key_paths_a_shell_could_interpret_stay_out() {
+        let hops = strs(&["far.lan"]);
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: Some("/k/my key"),
+            deeper_hop_identity: None,
+            first_hop_pkcs11: Some("/usr/lib/$(reboot).so"),
+            known_hosts: None,
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("a plain hop gives a route");
+        assert!(!args[1].contains("my key"), "{args:?}");
+        assert!(!args[1].contains("reboot"), "{args:?}");
+
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: Some("/k/far"),
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: None,
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("a plain hop gives a route");
+        assert!(
+            args[1].contains("-i /k/far -o IdentitiesOnly=yes"),
+            "{args:?}"
+        );
     }
 }

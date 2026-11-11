@@ -1373,9 +1373,19 @@ fn probe_gateway(
     true
 }
 
+/// The `ssh` arguments that take a tunnel to `jump_conn` through the jump hosts
+/// past it.
+///
+/// `tunnel_has_password` is true when the tunnel answers `jump_conn`'s password
+/// through its askpass helper. Those hops then go through
+/// [`rustconn_core::jump_route::tunnel_hop_args`], so none of them inherits
+/// that helper. When they cannot (an address a shell could interpret), the
+/// usual route is returned and `create_tunnel` does not send the password.
 pub fn resolve_jump_chain_for_tunnel(
     state_ref: &crate::state::AppState,
     jump_conn: &rustconn_core::Connection,
+    tunnel_has_password: bool,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> Vec<String> {
     let groups: Vec<rustconn_core::ConnectionGroup> = state_ref.list_groups_owned();
     let network = state_ref.settings().network.clone();
@@ -1471,7 +1481,29 @@ pub fn resolve_jump_chain_for_tunnel(
 
     // In Flatpak, use ProxyCommand so the nested SSH inherits known_hosts
     let flatpak_kh = rustconn_core::get_flatpak_known_hosts_path();
-    if flatpak_kh.is_some() || first_hop_pkcs11.is_some() {
+    let proxy_command_route = flatpak_kh.is_some() || first_hop_pkcs11.is_some();
+    if tunnel_has_password {
+        // The deeper hops get what the routes below give them: the first
+        // hop's key only where those use a ProxyCommand.
+        let request = rustconn_core::jump_route::TunnelHopsRequest {
+            hops: &chain,
+            first_hop_identity: first_hop_identity.as_deref(),
+            deeper_hop_identity: first_hop_identity
+                .as_deref()
+                .filter(|_| proxy_command_route),
+            first_hop_pkcs11: first_hop_pkcs11.as_deref(),
+            known_hosts: flatpak_kh.as_deref(),
+            hop_host_keys,
+        };
+        if let Some(args) = rustconn_core::jump_route::tunnel_hop_args(&request) {
+            return args;
+        }
+        tracing::warn!(
+            "Tunnel: a jump host past the first has an address RustConn does not pass to a \
+             shell, so the first jump host's password is not sent"
+        );
+    }
+    if proxy_command_route {
         // Build ProxyCommand for the first hop in the chain. `-J` does not pass
         // -o/-i to the nested SSH, so Flatpak known_hosts and PKCS#11 tokens must
         // be injected explicitly here.
@@ -1920,8 +1952,20 @@ fn start_spice_connection_internal(
                 .and_then(|p| rustconn_core::resolve_key_path(&p))
                 .map(|p| p.to_string_lossy().to_string());
 
+            let password = state_ref
+                .get_cached_credentials(jump_id)
+                .filter(|c| {
+                    use secrecy::ExposeSecret;
+                    !c.password.expose_secret().is_empty()
+                })
+                .map(|c| c.password.clone());
             // Resolve recursive jump host chain (e.g. jump_conn itself needs a jump host)
-            let extra_args = resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+            let extra_args = resolve_jump_chain_for_tunnel(
+                &state_ref,
+                jump_conn,
+                password.is_some(),
+                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+            );
 
             let params = rustconn_core::ssh_tunnel::SshTunnelParams {
                 jump_host: jump_dest,
@@ -1929,13 +1973,7 @@ fn start_spice_connection_internal(
                 remote_host: host.clone(),
                 remote_port: port,
                 identity_file,
-                password: state_ref
-                    .get_cached_credentials(jump_id)
-                    .filter(|c| {
-                        use secrecy::ExposeSecret;
-                        !c.password.expose_secret().is_empty()
-                    })
-                    .map(|c| c.password.clone()),
+                password,
                 extra_args,
                 launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
             };
@@ -2517,8 +2555,13 @@ fn launch_winrm(
         .as_ref()
         .map(|user| substitute_variables(user, global_variables));
 
-    let Some(params) = ssh_tunnel_params_via_jump(state, conn, resolved.host.clone(), conn.port)
-    else {
+    let Some(params) = ssh_tunnel_params_via_jump(
+        state,
+        conn,
+        resolved.host.clone(),
+        conn.port,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+    ) else {
         return spawn_winrm(
             state,
             notebook,
@@ -2622,9 +2665,16 @@ pub(super) fn ssh_tunnel_params_via_jump(
     conn: &rustconn_core::Connection,
     host: String,
     port: u16,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> Option<rustconn_core::ssh_tunnel::SshTunnelParams> {
+    let jump_id = resolve_first_hop_id(&*state.try_borrow().ok()?, conn)?;
+    // Before the route: the hops past the jump host are routed differently
+    // when the tunnel sends its password.
+    let password = state
+        .try_borrow_mut()
+        .ok()
+        .and_then(|mut s| s.ensure_connection_password(jump_id));
     let state_ref = state.try_borrow().ok()?;
-    let jump_id = resolve_first_hop_id(&state_ref, conn)?;
     let jump_conn = state_ref.get_connection(jump_id)?;
     let jump_host = jump_conn.username.as_ref().map_or_else(
         || jump_conn.host.clone(),
@@ -2635,12 +2685,9 @@ pub(super) fn ssh_tunnel_params_via_jump(
     let identity_file = ssh_inheritance::resolve_ssh_key_path(jump_conn, &groups)
         .and_then(|path| rustconn_core::resolve_key_path(&path))
         .map(|path| path.to_string_lossy().to_string());
-    let extra_args = resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+    let extra_args =
+        resolve_jump_chain_for_tunnel(&state_ref, jump_conn, password.is_some(), hop_host_keys);
     drop(state_ref);
-    let password = state
-        .try_borrow_mut()
-        .ok()
-        .and_then(|mut s| s.ensure_connection_password(jump_id));
     Some(rustconn_core::ssh_tunnel::SshTunnelParams {
         jump_host,
         jump_port,

@@ -11,7 +11,8 @@ use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gatew
 use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
 use rustconn_core::jump_route::{
-    JumpRoute, JumpRouteRequest, hops_are_plain, jump_route, plain_path,
+    JumpRoute, JumpRouteRequest, TunnelHopsRequest, hops_are_plain, jump_route, plain_path,
+    tunnel_hop_args,
 };
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
@@ -488,12 +489,16 @@ fn route(
 }
 
 /// The SSH tunnel that reaches a WinRM host through its jump hosts, if it has any.
+///
+/// `hop_host_keys` applies to the jump hosts past the nearest one when they go
+/// through a `ProxyCommand`, which they do when the tunnel sends a password.
 fn winrm_tunnel(
     routed: &Connection,
     connections: &[Connection],
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
     passwords: &mut Passwords<'_>,
+    hop_host_keys: HopHostKeys,
 ) -> Option<SshTunnelParams> {
     let chain = resolve_jump_chain(routed, connections, groups, network);
     let closest = chain.hops.first()?;
@@ -518,11 +523,49 @@ fn winrm_tunnel(
             (host, hop.port)
         },
     );
-    let extra_args = if chain.hops.len() > 1 {
-        vec!["-J".to_string(), proxy_jump_arg(&chain.hops[1..].join(","))]
-    } else {
-        Vec::new()
-    };
+    let mut password = hop.and_then(|hop| passwords.of(hop));
+    let farther = &chain.hops[1..];
+    let mut extra_args = Vec::new();
+    if !farther.is_empty() {
+        // Through `-J` the farther hops would inherit the askpass helper that
+        // answers with the nearest hop's password, so with a password they
+        // get a ProxyCommand that keeps it away from them.
+        let routed_past = password.as_ref().and_then(|_| {
+            let next = chain
+                .hop_ids
+                .get(1)
+                .copied()
+                .flatten()
+                .and_then(|id| connections.iter().find(|c| c.id == id));
+            let identity = next
+                .and_then(|hop| resolve_ssh_key_path(hop, groups))
+                .and_then(|path| rustconn_core::resolve_key_path(&path))
+                .map(|path| path.to_string_lossy().into_owned());
+            let pkcs11 = next.and_then(|hop| match &hop.protocol_config {
+                ProtocolConfig::Ssh(c) => c.pkcs11_provider.clone(),
+                _ => None,
+            });
+            tunnel_hop_args(&TunnelHopsRequest {
+                hops: farther,
+                first_hop_identity: identity.as_deref(),
+                deeper_hop_identity: None,
+                first_hop_pkcs11: pkcs11.as_deref(),
+                known_hosts: None,
+                hop_host_keys,
+            })
+        });
+        if let Some(args) = routed_past {
+            extra_args = args;
+        } else {
+            if password.take().is_some() {
+                eprintln!(
+                    "[{}] not sending the jump host password: unexpected jump host address",
+                    routed.name
+                );
+            }
+            extra_args = vec!["-J".to_string(), proxy_jump_arg(&farther.join(","))];
+        }
+    }
     Some(SshTunnelParams {
         jump_host,
         jump_port,
@@ -532,7 +575,7 @@ fn winrm_tunnel(
             .and_then(|hop| resolve_ssh_key_path(hop, groups))
             .and_then(|path| rustconn_core::resolve_key_path(&path))
             .map(|path| path.to_string_lossy().into_owned()),
-        password: hop.and_then(|hop| passwords.of(hop)),
+        password,
         extra_args,
         launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
     })
@@ -563,12 +606,15 @@ pub(super) fn connect_winrm_through_tunnel(
         settings.connection.port_check_timeout_secs,
     );
     let mut passwords = Passwords::new(settings, groups, false);
+    // Someone is at the terminal: the user's ssh configuration decides about
+    // a farther jump host's unknown key, as it does under `-J`.
     let Some(params) = winrm_tunnel(
         &routed,
         connections,
         groups,
         &settings.network,
         &mut passwords,
+        HopHostKeys::UserConfig,
     ) else {
         return Ok(false);
     };
@@ -610,7 +656,14 @@ fn script_host(
 ) -> Option<RemoteHost> {
     let routed = route(connection, connections, groups, network, probe_timeout_secs);
     if matches!(routed.protocol_config, ProtocolConfig::WinRm(_)) {
-        let tunnel = winrm_tunnel(&routed, connections, groups, network, passwords);
+        let tunnel = winrm_tunnel(
+            &routed,
+            connections,
+            groups,
+            network,
+            passwords,
+            HopHostKeys::KnownOnly,
+        );
         let password = passwords.of_target(connection);
         return Some(RemoteHost {
             name: routed.name.clone(),
@@ -1076,6 +1129,63 @@ mod tests {
             hops: hops.iter().map(|hop| hop.host.clone()).collect(),
             hop_ids: hops.iter().map(|hop| Some(hop.id)).collect(),
         }
+    }
+
+    /// A WinRM host behind `near`, which is behind `far`, with `near`'s password
+    /// known. Returns the tunnel `winrm_tunnel` builds.
+    fn winrm_tunnel_through(far_host: &str) -> rustconn_core::ssh_tunnel::SshTunnelParams {
+        use rustconn_core::config::{AppSettings, NetworkSettings};
+        use rustconn_core::models::WinRmConfig;
+
+        let far = bastion(far_host, None, None);
+        let mut near = bastion("near.lan", None, None);
+        near.set_jump_host_id(far.id);
+        let mut win = Connection::new(
+            "win".to_string(),
+            "win.lan".to_string(),
+            5985,
+            ProtocolConfig::WinRm(WinRmConfig::default()),
+        );
+        win.set_jump_host_id(near.id);
+        let settings = AppSettings::default();
+        let mut passwords = super::Passwords::new(&settings, &[], false);
+        passwords.known.insert(near.id, secret());
+        let connections = [near, far];
+        super::winrm_tunnel(
+            &win,
+            &connections,
+            &[],
+            &NetworkSettings::default(),
+            &mut passwords,
+            rustconn_core::ssh_tunnel::HopHostKeys::KnownOnly,
+        )
+        .expect("a jump host gives a tunnel")
+    }
+
+    #[test]
+    fn a_winrm_tunnel_keeps_the_near_password_from_farther_hops() {
+        let tunnel = winrm_tunnel_through("far.lan");
+        assert_eq!(tunnel.jump_host, "near.lan");
+        assert_eq!(
+            tunnel.password.as_ref().map(ExposeSecret::expose_secret),
+            Some("hunter2")
+        );
+        assert!(!tunnel.extra_args.iter().any(|arg| arg.starts_with("-J")));
+        let [option, route] = tunnel.extra_args.as_slice() else {
+            panic!("one ProxyCommand: {:?}", tunnel.extra_args);
+        };
+        assert_eq!(option, "-o");
+        let command = route.strip_prefix("ProxyCommand=env ").expect(route);
+        assert!(command.contains(" SSH_ASKPASS= "), "{command}");
+        assert!(command.contains("StrictHostKeyChecking=yes"), "{command}");
+        assert!(command.ends_with(" far.lan"), "{command}");
+    }
+
+    #[test]
+    fn a_winrm_tunnel_past_an_unexpected_address_sends_no_password() {
+        let tunnel = winrm_tunnel_through("far;reboot");
+        assert!(tunnel.password.is_none());
+        assert_eq!(tunnel.extra_args, ["-J", "far;reboot"]);
     }
 
     #[test]

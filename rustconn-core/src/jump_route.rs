@@ -136,6 +136,69 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
     ))
 }
 
+/// What [`tunnel_hop_args`] needs to know about the hops past a tunnel's own
+/// jump host.
+#[derive(Debug)]
+pub struct TunnelHopsRequest<'a> {
+    /// The hops past the tunnel's jump host as `[user@]host[:port]`, in the
+    /// order of [`JumpRouteRequest::hops`]: the one next to that jump host
+    /// first.
+    pub hops: &'a [String],
+    /// The identity file of `hops[0]`.
+    pub first_hop_identity: Option<&'a str>,
+    /// The identity passed to the hops past `hops[0]`.
+    pub deeper_hop_identity: Option<&'a str>,
+    /// The PKCS#11 provider of `hops[0]`, when it opts in.
+    pub first_hop_pkcs11: Option<&'a str>,
+    /// A writable `known_hosts` for every hop (Flatpak).
+    pub known_hosts: Option<&'a Path>,
+    /// What a hop does with an unknown host key.
+    pub hop_host_keys: HopHostKeys,
+}
+
+/// The `ssh` arguments that take a tunnel past its jump host when the tunnel
+/// answers that jump host's password through its askpass helper.
+///
+/// `-J` would start an `ssh` for each further hop that inherits the tunnel's
+/// askpass environment, so a farther bastion could be sent the password of the
+/// tunnel's jump host (the issue #191 class). The `ProxyCommand` built here
+/// starts every hop behind an `env` boundary that clears that environment. The
+/// hops get no password of their own; they authenticate with keys or ask the
+/// way OpenSSH asks without RustConn's helper.
+///
+/// Returns `None` when a hop, key path or provider is not plain, because it
+/// would go into a command a shell runs. The caller then must not send the
+/// password; [`crate::ssh_tunnel::create_tunnel`] refuses to as well.
+#[must_use]
+pub fn tunnel_hop_args(request: &TunnelHopsRequest<'_>) -> Option<Vec<String>> {
+    if !hops_are_plain(request.hops) {
+        return None;
+    }
+    let route = jump_route(&JumpRouteRequest {
+        hops: request.hops,
+        hop_passwords: &[],
+        first_hop_identity: request.first_hop_identity.and_then(plain_path),
+        target_identity: None,
+        deeper_hop_identity: request.deeper_hop_identity.and_then(plain_path),
+        first_hop_pkcs11: request
+            .first_hop_pkcs11
+            .map(str::trim)
+            .filter(|provider| !provider.is_empty())
+            .and_then(plain_path),
+        known_hosts: request.known_hosts,
+        hop_host_keys: request.hop_host_keys,
+        // The tunnel's own helper is the askpass environment to keep away
+        // from the hops; this always gives a ProxyCommand.
+        target_askpass_allowed: true,
+    })?;
+    match route {
+        JumpRoute::ProxyCommand { command, .. } => {
+            Some(vec!["-o".to_string(), format!("ProxyCommand={command}")])
+        }
+        JumpRoute::ProxyJump { .. } => None,
+    }
+}
+
 /// A character a shell passes through unchanged inside a `ProxyCommand`.
 fn is_plain(c: char) -> bool {
     c.is_ascii_alphanumeric() || ".-_:@[]".contains(c)

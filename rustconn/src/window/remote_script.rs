@@ -828,8 +828,14 @@ fn winrm_transport(
         .username
         .as_ref()
         .map(|user| substitute_variables(user, &globals));
-    let tunnel =
-        ssh_tunnel_params_via_jump(state, connection, resolved.host.clone(), resolved.port);
+    // Nobody watches a run: the hops past the first refuse an unknown key too.
+    let tunnel = ssh_tunnel_params_via_jump(
+        state,
+        connection,
+        resolved.host.clone(),
+        resolved.port,
+        rustconn_core::ssh_tunnel::HopHostKeys::KnownOnly,
+    );
     WinRmTarget::for_connection(&resolved, password, tunnel).map(ScriptTransport::WinRm)
 }
 

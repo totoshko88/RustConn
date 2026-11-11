@@ -890,7 +890,6 @@ impl MainWindow {
             rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path(jump_conn, &groups)
                 .and_then(|p| rustconn_core::resolve_key_path(&p))
                 .map(|p| p.to_string_lossy().to_string());
-        let extra_args = super::protocols::resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
         let password = state_ref
             .get_cached_credentials(jump_id)
             .filter(|c| {
@@ -898,6 +897,12 @@ impl MainWindow {
                 !c.password.expose_secret().is_empty()
             })
             .map(|c| c.password.clone());
+        let extra_args = super::protocols::resolve_jump_chain_for_tunnel(
+            &state_ref,
+            jump_conn,
+            password.is_some(),
+            rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+        );
 
         Ok(rustconn_core::ssh_tunnel::SshTunnelParams {
             jump_host: jump_dest,
