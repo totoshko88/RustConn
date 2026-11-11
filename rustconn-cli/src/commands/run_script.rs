@@ -917,6 +917,30 @@ mod tests {
     }
 
     #[test]
+    fn a_secret_variable_without_a_value_counts_as_undefined() {
+        use rustconn_core::variables::Variable;
+
+        let mut connection = target();
+        connection.host = "${site}.lan".to_string();
+        let resolved =
+            super::with_global_variables(&connection, &[Variable::new_secret("site", "")]).unwrap();
+        assert_eq!(resolved.host, ".lan");
+    }
+
+    #[test]
+    fn an_undefined_reference_is_cleared() {
+        use rustconn_core::variables::Variable;
+
+        let mut connection = target();
+        connection.host = "${site}.lan".to_string();
+        connection.username = Some("${login}".to_string());
+        let resolved =
+            super::with_global_variables(&connection, &[Variable::new("other", "x")]).unwrap();
+        assert_eq!(resolved.host, ".lan");
+        assert_eq!(resolved.username.as_deref(), Some(""));
+    }
+
+    #[test]
     fn an_ask_variable_leaves_the_host_out() {
         use rustconn_core::variables::Variable;
 

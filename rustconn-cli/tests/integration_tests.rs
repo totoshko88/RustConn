@@ -1066,6 +1066,41 @@ fn connect_warns_about_kerberos_with_an_ip_host() {
     );
 }
 
+/// `connect` does not fail over, so a deleted primary jump host is reported
+/// even when a fallback jump host still exists.
+#[cfg(feature = "client-launch")]
+#[test]
+fn connect_warns_about_a_deleted_jump_host_even_with_a_fallback() {
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::models::Connection;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let bastion = Connection::new_ssh("bastion".to_string(), "bastion.lan".to_string(), 22);
+    let mut target = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 22);
+    let deleted = uuid::Uuid::new_v4();
+    target.set_jump_host_id(deleted);
+    target.fallback_jump_host_ids = vec![bastion.id];
+    ConfigManager::with_config_dir(config_dir.to_path_buf())
+        .save_connections(&[bastion, target])
+        .expect("save connections");
+
+    let out = run_cli(&["connect", "web", "--dry-run"], Some(config_dir));
+    assert!(
+        out.status.success(),
+        "dry-run connect should succeed. stderr: {}",
+        stderr_str(&out)
+    );
+    let stderr = stderr_str(&out);
+    assert!(
+        stderr.contains(&format!(
+            "jump host {deleted} (referenced by its own Jump Host setting) no longer exists; \
+             this hop is skipped"
+        )),
+        "{stderr}"
+    );
+}
 
 // ============================================================================
 // CLI usability (0.24.3): explicit --format, group feedback, aws_ssm validation,
