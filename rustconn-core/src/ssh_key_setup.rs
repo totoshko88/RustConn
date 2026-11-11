@@ -1358,15 +1358,8 @@ fn push_tail(args: &mut Vec<String>, target: &SshTarget) -> Result<(), KeySetupE
     if let Some(path) = &target.known_hosts_file
         && !declares_option(&target.session_args, "UserKnownHostsFile")
     {
-        let path = path.to_str().ok_or(KeySetupError::InvalidTarget)?;
-        let value = if path.chars().any(char::is_whitespace) {
-            if path.contains('"') {
-                return Err(KeySetupError::InvalidTarget);
-            }
-            format!("UserKnownHostsFile=\"{path}\"")
-        } else {
-            format!("UserKnownHostsFile={path}")
-        };
+        let value =
+            crate::ssh_tunnel::user_known_hosts_option(path).ok_or(KeySetupError::InvalidTarget)?;
         args.push("-o".to_owned());
         args.push(value);
     }

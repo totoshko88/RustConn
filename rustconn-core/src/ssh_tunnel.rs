@@ -550,9 +550,12 @@ fn tunnel_command_line(
 
     // Flatpak writable known_hosts. Not for Tailscale: it sets its own
     // UserKnownHostsFile first, and the first value wins in OpenSSH.
-    if !tailscale && let Some(kh_path) = crate::get_flatpak_known_hosts_path() {
+    if !tailscale
+        && let Some(option) =
+            crate::get_flatpak_known_hosts_path().and_then(|kh| user_known_hosts_option(&kh))
+    {
         args.push("-o".to_string());
-        args.push(format!("UserKnownHostsFile={}", kh_path.display()));
+        args.push(option);
     }
 
     // No password helper — prevent SSH from reading stdin
@@ -1451,6 +1454,34 @@ pub fn target_password_askpass_allowed(config: &SshConfig, has_resolved_identity
         && !has_pkcs11_identity
         && !has_auth_override
         && !has_unmanaged_proxy_route(config)
+}
+
+/// The `UserKnownHostsFile=<path>` value for an `ssh -o` argument that goes
+/// straight into argv.
+///
+/// ssh splits that option's value on whitespace into several files, so a
+/// path with a space is double-quoted (`UserKnownHostsFile="<path>"`), which
+/// OpenSSH reads as one file. Returns `None` for a path ssh cannot be given
+/// this way: not UTF-8, or holding a `"` or `\`, which ssh reads as quoting;
+/// the caller then leaves the option out and ssh uses its default
+/// `known_hosts`. A `ProxyCommand` is run by a shell and needs
+/// [`crate::jump_route::proxy_known_hosts_option`] instead.
+#[must_use]
+pub fn user_known_hosts_option(path: &std::path::Path) -> Option<String> {
+    let option = path
+        .to_str()
+        .filter(|path| !path.contains(['"', '\\']))
+        .map(|path| {
+            if path.chars().any(char::is_whitespace) {
+                format!("UserKnownHostsFile=\"{path}\"")
+            } else {
+                format!("UserKnownHostsFile={path}")
+            }
+        });
+    if option.is_none() {
+        tracing::debug!("known_hosts path cannot be passed to ssh; it uses the default");
+    }
+    option
 }
 
 /// What a proxy hop's `ssh` does with a host key that is not in `known_hosts`.
@@ -2427,6 +2458,30 @@ mod proxy_detection_tests {
             "target.example.com"
         ));
         assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    /// Review item known-hosts-quote: a path with a space is quoted so ssh
+    /// reads one file, and a path ssh would misread is left out.
+    #[test]
+    fn known_hosts_option_quotes_a_path_with_a_space() {
+        use std::path::Path;
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/me/.var/app/x/.ssh/known_hosts"))
+                .as_deref(),
+            Some("UserKnownHostsFile=/home/me/.var/app/x/.ssh/known_hosts")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/my name/.ssh/known_hosts")).as_deref(),
+            Some("UserKnownHostsFile=\"/home/my name/.ssh/known_hosts\"")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/a\"b/kh")),
+            None
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/a\\ b/kh")),
+            None
+        );
     }
 
     /// Review item from issue #422: the proxy check asks the `ssh` it is

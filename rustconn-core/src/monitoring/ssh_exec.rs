@@ -694,8 +694,9 @@ pub fn ssh_exec_factory(
             cmd.arg("-o").arg("StrictHostKeyChecking=yes");
 
             // In Flatpak, ~/.ssh is read-only — use writable known_hosts path
-            if let Some(kh_path) = crate::flatpak::get_flatpak_known_hosts_path() {
-                let kh_opt = format!("UserKnownHostsFile={}", kh_path.display());
+            if let Some(kh_opt) = crate::flatpak::get_flatpak_known_hosts_path()
+                .and_then(|kh_path| crate::ssh_tunnel::user_known_hosts_option(&kh_path))
+            {
                 cmd.arg("-o").arg(kh_opt);
             }
 

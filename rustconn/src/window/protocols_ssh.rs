@@ -693,8 +693,10 @@ fn build_ssh_command_args(
             path = %kh_path.display(),
             "Using Flatpak-writable known_hosts"
         );
-        args.push("-o".to_string());
-        args.push(format!("UserKnownHostsFile={}", kh_path.display()));
+        if let Some(option) = rustconn_core::ssh_tunnel::user_known_hosts_option(kh_path) {
+            args.push("-o".to_string());
+            args.push(option);
+        }
     }
 
     // Override proxy_jump with resolved jump host chain if we have

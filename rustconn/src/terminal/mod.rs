@@ -1956,9 +1956,11 @@ impl TerminalNotebook {
         // unless the caller already set UserKnownHostsFile via extra_args
         let kh_option;
         let has_known_hosts_opt = extra_args.iter().any(|a| a.contains("UserKnownHostsFile"));
-        if !has_known_hosts_opt && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
+        if !has_known_hosts_opt
+            && let Some(option) = rustconn_core::get_flatpak_known_hosts_path()
+                .and_then(|kh_path| rustconn_core::ssh_tunnel::user_known_hosts_option(&kh_path))
         {
-            kh_option = format!("UserKnownHostsFile={}", kh_path.display());
+            kh_option = option;
             argv.push("-o");
             argv.push(&kh_option);
         }
