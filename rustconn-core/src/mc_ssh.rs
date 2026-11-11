@@ -162,19 +162,35 @@ fn hop_hostname(spec: &str) -> &str {
     }
 }
 
-/// Whether mc's `ssh` for `connection` will ask for the account password.
+/// Whether mc's `ssh` for `connection` may ask for the account password.
 ///
-/// SSH-family, authentication method Password or Keyboard Interactive, and no
-/// identity file resolved through the group chain. Key and agent connections
-/// return `false`; their mc launch never reads a password.
+/// SSH-family with authentication method Password or Keyboard Interactive.
+/// Key and agent connections return `false`; their mc launch never reads a
+/// password.
+///
+/// An identity file, the connection's own or one inherited from a group, is
+/// deliberately not a veto, as for an SSH session since 0.21.2 (see
+/// [`crate::ssh_tunnel::target_password_askpass_allowed`]): the helper answers
+/// only the account password prompt, so a key that authenticates means it is
+/// never asked.
 #[must_use]
-pub fn expects_password(connection: &Connection, groups: &[ConnectionGroup]) -> bool {
+pub fn expects_password(connection: &Connection) -> bool {
     ssh_config(connection).is_some_and(|cfg| {
         matches!(
             cfg.auth_method,
             SshAuthMethod::Password | SshAuthMethod::KeyboardInteractive
         )
-    }) && identity_file(connection, groups).is_none()
+    })
+}
+
+/// Whether an identity file resolves for `connection`, its own or a group's.
+///
+/// The mc launch uses it only to decide whether "type the password" is worth
+/// saying when no password was handed over: with a key, mc likely signs in
+/// without one.
+#[must_use]
+pub fn has_identity_file(connection: &Connection, groups: &[ConnectionGroup]) -> bool {
+    identity_file(connection, groups).is_some()
 }
 
 /// Whether the wrapper may hand `connection`'s password to mc's `ssh` at all.
@@ -185,8 +201,8 @@ pub fn expects_password(connection: &Connection, groups: &[ConnectionGroup]) -> 
 /// an explicit `ProxyCommand` all refuse. Spawns nothing, so a caller can ask
 /// it before reading the vault; [`prepare_mc_ssh_env`] adds the route checks.
 #[must_use]
-pub fn password_may_be_sent(connection: &Connection, groups: &[ConnectionGroup]) -> bool {
-    expects_password(connection, groups)
+pub fn password_may_be_sent(connection: &Connection) -> bool {
+    expects_password(connection)
         && ssh_config(connection)
             .is_some_and(|cfg| crate::ssh_tunnel::target_password_askpass_allowed(cfg, false))
 }
@@ -711,7 +727,7 @@ fn password_delivery(
     network: &crate::config::NetworkSettings,
     password: &SecretString,
 ) -> Option<(PathBuf, PathBuf, Vec<String>)> {
-    if !password_may_be_sent(connection, groups) {
+    if !password_may_be_sent(connection) {
         return None;
     }
     let cfg = ssh_config(connection)?;
@@ -1640,25 +1656,56 @@ mod tests {
     }
 
     #[test]
-    fn expects_password_only_without_a_key() {
-        let dir = tempfile::tempdir().unwrap();
+    fn expects_password_follows_the_auth_method() {
         let mut conn = ssh("target", "target.example.com", 22, Some("me"));
-        assert!(expects_password(&conn, &[]));
+        assert!(expects_password(&conn));
         cfg_of(&mut conn).auth_method = SshAuthMethod::KeyboardInteractive;
-        assert!(expects_password(&conn, &[]));
-        assert!(!password_may_be_sent(&conn, &[]));
+        assert!(expects_password(&conn));
+        assert!(!password_may_be_sent(&conn));
 
         for method in [SshAuthMethod::PublicKey, SshAuthMethod::Agent] {
             cfg_of(&mut conn).auth_method = method;
-            assert!(!expects_password(&conn, &[]));
+            assert!(!expects_password(&conn));
         }
 
-        cfg_of(&mut conn).auth_method = SshAuthMethod::Password;
-        set_key(&mut conn, &key_file(dir.path(), "target"));
-        assert!(!expects_password(&conn, &[]));
-
         let rdp = Connection::new_rdp("rdp".to_string(), "host".to_string(), 3389);
-        assert!(!expects_password(&rdp, &[]));
+        assert!(!expects_password(&rdp));
+    }
+
+    /// Review item mc-n3: a key, the connection's own or a group's, does not
+    /// stop the password from being sent, as for an SSH session since 0.21.2.
+    #[test]
+    fn a_resolved_key_does_not_veto_the_password() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut own = ssh("target", "target.example.com", 22, Some("me"));
+        set_key(&mut own, &key_file(dir.path(), "own"));
+        assert!(has_identity_file(&own, &[]));
+        assert!(expects_password(&own));
+        assert!(password_may_be_sent(&own));
+        assert!(route_args(&own, &JumpChain::default(), &[], |_, _, _| false).is_some());
+
+        let mut group = ConnectionGroup::new("G".into());
+        group.ssh_key_path = Some(key_file(dir.path(), "group"));
+        let mut inherited = ssh("target", "target.example.com", 22, Some("me"));
+        inherited.group_id = Some(group.id);
+        cfg_of(&mut inherited).key_source = SshKeySource::Inherit;
+        let groups = [group];
+        assert!(has_identity_file(&inherited, &groups));
+        assert!(expects_password(&inherited));
+        assert!(password_may_be_sent(&inherited));
+        let cfg = ssh_config(&inherited).unwrap();
+        assert!(
+            password_route_args(
+                &inherited,
+                cfg,
+                &JumpChain::default(),
+                &[],
+                &groups,
+                None,
+                |_, _, _| false
+            )
+            .is_some()
+        );
     }
 
     #[cfg(unix)]

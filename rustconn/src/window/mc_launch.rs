@@ -76,24 +76,17 @@ pub(super) fn open_mc_tab(
     let notebook_for_tab = notebook.clone();
     let split_view = split_view.cloned();
     let sidebar = sidebar.cloned();
-    let (connection_id, conn, groups) = (tab.connection_id, tab.conn.clone(), tab.groups.clone());
-    mc_password(
-        state,
-        notebook,
-        connection_id,
-        &conn,
-        &groups,
-        move |password| {
-            spawn_mc_tab(
-                &notebook_for_tab,
-                split_view.as_ref(),
-                sidebar.as_ref(),
-                tab,
-                mc_args,
-                password,
-            );
-        },
-    );
+    let (connection_id, conn) = (tab.connection_id, tab.conn.clone());
+    mc_password(state, notebook, connection_id, &conn, move |password| {
+        spawn_mc_tab(
+            &notebook_for_tab,
+            split_view.as_ref(),
+            sidebar.as_ref(),
+            tab,
+            mc_args,
+            password,
+        );
+    });
 }
 
 /// Creates the tab, prepares the `ssh` wrapper off the GTK thread and starts
@@ -125,7 +118,10 @@ fn spawn_mc_tab(
         &[],
     );
 
-    let expects_password = rustconn_core::mc_ssh::expects_password(&tab.conn, &tab.groups);
+    // With a key, mc likely signs in without the password, so saying "type it"
+    // when none was handed over would mislead.
+    let warn_without_password = rustconn_core::mc_ssh::expects_password(&tab.conn)
+        && !rustconn_core::mc_ssh::has_identity_file(&tab.conn, &tab.groups);
     let downloads = rustconn_core::sftp::get_downloads_dir();
     let notebook_for_spawn = notebook.clone();
     let McTab {
@@ -151,7 +147,7 @@ fn spawn_mc_tab(
             )
         },
         move |env: Option<rustconn_core::McSshEnv>| {
-            if expects_password
+            if warn_without_password
                 && !env
                     .as_ref()
                     .is_some_and(rustconn_core::McSshEnv::delivers_password)
@@ -214,10 +210,9 @@ fn mc_password(
     notebook: &SharedNotebook,
     connection_id: Uuid,
     conn: &Connection,
-    groups: &[ConnectionGroup],
     then: impl FnOnce(Option<SecretString>) + 'static,
 ) {
-    if !rustconn_core::mc_ssh::expects_password(conn, groups) {
+    if !rustconn_core::mc_ssh::expects_password(conn) {
         then(None);
         return;
     }
@@ -225,7 +220,7 @@ fn mc_password(
         tracing::info!(%connection_id, "mc's last sign-in was refused; reading the password again");
         crate::state::forget_cached_credentials(state, connection_id);
     }
-    if !rustconn_core::mc_ssh::password_may_be_sent(conn, groups) {
+    if !rustconn_core::mc_ssh::password_may_be_sent(conn) {
         then(None);
         return;
     }

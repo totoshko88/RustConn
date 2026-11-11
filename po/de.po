@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 15:38+0200\n"
+"POT-Creation-Date: 2026-11-11 18:43+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:311
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:306
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3646,7 +3646,7 @@ msgstr "Ein regulärer Ausdruck pro Zeile; leer bedeutet die eingebauten Muster"
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:305
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:300
 msgid "Password"
 msgstr "Passwort"
 
@@ -11084,7 +11084,7 @@ msgstr "Ausgewählten Arbeitsbereich löschen"
 msgid "Rename selected workspace"
 msgstr "Ausgewählten Arbeitsbereich umbenennen"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:312
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:307
 msgid "Open"
 msgstr "Öffnen"
 
@@ -13663,7 +13663,7 @@ msgstr "SOCKS-Relay konnte nicht gestartet werden: {}"
 #: rustconn/src/window/edit_actions.rs:1395
 #: rustconn/src/window/edit_actions.rs:1654
 #: rustconn/src/window/edit_actions.rs:1763
-#: rustconn/src/window/protocols.rs:2612
+#: rustconn/src/window/protocols.rs:2615
 msgid "Could not open the SSH tunnel: {}"
 msgstr "SSH-Tunnel konnte nicht geöffnet werden: {}"
 
@@ -14271,11 +14271,11 @@ msgstr "„{}“ wurde nicht gesendet. {}"
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) ist nicht installiert."
 
-#: rustconn/src/window/mc_launch.rs:110
+#: rustconn/src/window/mc_launch.rs:103
 msgid "Opening mc SFTP…"
 msgstr "mc SFTP wird geöffnet…"
 
-#: rustconn/src/window/mc_launch.rs:162
+#: rustconn/src/window/mc_launch.rs:158
 msgid ""
 "mc did not get a password from RustConn. Type it in the mc tab when mc waits "
 "for it."
@@ -14283,11 +14283,11 @@ msgstr ""
 "mc hat kein Passwort von RustConn erhalten. Geben Sie es im mc-Tab ein, wenn "
 "mc darauf wartet."
 
-#: rustconn/src/window/mc_launch.rs:298
+#: rustconn/src/window/mc_launch.rs:293
 msgid "Password for {}"
 msgstr "Passwort für {}"
 
-#: rustconn/src/window/mc_launch.rs:300
+#: rustconn/src/window/mc_launch.rs:295
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."
@@ -14811,19 +14811,19 @@ msgstr "Jump-Host nicht erreichbar, Verbindung über „{}“"
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Kein Jump-Host hat geantwortet, versuche „{}“"
 
-#: rustconn/src/window/protocols.rs:1703 rustconn/src/window/rdp_vnc.rs:1591
+#: rustconn/src/window/protocols.rs:1706 rustconn/src/window/rdp_vnc.rs:1591
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Kein VNC-Viewer gefunden. Installieren Sie TigerVNC oder Remmina."
 
-#: rustconn/src/window/protocols.rs:2045
+#: rustconn/src/window/protocols.rs:2048
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Kein SPICE-Viewer gefunden. Installieren Sie virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2279 rustconn/src/window/protocols.rs:3004
+#: rustconn/src/window/protocols.rs:2282 rustconn/src/window/protocols.rs:3007
 msgid "Invalid variable: {}"
 msgstr "Ungültige Variable: {}"
 
-#: rustconn/src/window/protocols.rs:2537
+#: rustconn/src/window/protocols.rs:2540
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -14835,7 +14835,7 @@ msgstr ""
 "winrm. Es muss im PATH Ihrer Login-Shell außerhalb des Flatpaks liegen (in "
 "~/.profile setzen, nicht nur in ~/.bashrc)."
 
-#: rustconn/src/window/protocols.rs:2541
+#: rustconn/src/window/protocols.rs:2544
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -14844,29 +14844,29 @@ msgstr ""
 "SSH mit Windows, oder verwenden Sie das Flatpak oder ein Distributionspaket "
 "von RustConn"
 
-#: rustconn/src/window/protocols.rs:2544
+#: rustconn/src/window/protocols.rs:2547
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm ist nicht installiert. Installieren Sie es mit: gem install evil-"
 "winrm"
 
-#: rustconn/src/window/protocols.rs:2924
+#: rustconn/src/window/protocols.rs:2927
 msgid "Invalid config: {}"
 msgstr "Ungültige Konfiguration: {}"
 
-#: rustconn/src/window/protocols.rs:3110
+#: rustconn/src/window/protocols.rs:3113
 msgid "Install picocom for Serial connections"
 msgstr "Installieren Sie picocom für serielle Verbindungen"
 
-#: rustconn/src/window/protocols.rs:3286
+#: rustconn/src/window/protocols.rs:3289
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Installieren Sie kubectl für Kubernetes-Verbindungen"
 
-#: rustconn/src/window/protocols.rs:3304
+#: rustconn/src/window/protocols.rs:3307
 msgid "Configure pod and container for Kubernetes"
 msgstr "Pod und Container für Kubernetes konfigurieren"
 
-#: rustconn/src/window/protocols.rs:3534
+#: rustconn/src/window/protocols.rs:3537
 msgid "Install mosh for MOSH connections"
 msgstr "Installieren Sie mosh für MOSH-Verbindungen"
 

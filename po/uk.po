@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 15:38+0200\n"
+"POT-Creation-Date: 2026-11-11 18:43+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: Mykola Zubkov <zubkov139@ukr.net>\n"
 "Language-Team: Ukrainian\n"
@@ -65,7 +65,7 @@ msgstr "Гаразд"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:311
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:306
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3623,7 +3623,7 @@ msgstr "Один регулярний вираз на рядок; порожнь
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:305
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:300
 msgid "Password"
 msgstr "Пароль"
 
@@ -10964,7 +10964,7 @@ msgstr "Вилучи обраний робочий простір"
 msgid "Rename selected workspace"
 msgstr "Перейменуй обраний робочий простір"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:312
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:307
 msgid "Open"
 msgstr "Відкрий"
 
@@ -13494,7 +13494,7 @@ msgstr "Не вдалося запустити ретранслятор SOCKS: {
 #: rustconn/src/window/edit_actions.rs:1395
 #: rustconn/src/window/edit_actions.rs:1654
 #: rustconn/src/window/edit_actions.rs:1763
-#: rustconn/src/window/protocols.rs:2612
+#: rustconn/src/window/protocols.rs:2615
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Не вдалося відкрити SSH-тунель: {}"
 
@@ -14076,11 +14076,11 @@ msgstr "«{}» не надіслано. {}"
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) не встановлено."
 
-#: rustconn/src/window/mc_launch.rs:110
+#: rustconn/src/window/mc_launch.rs:103
 msgid "Opening mc SFTP…"
 msgstr "Відкриття mc SFTP…"
 
-#: rustconn/src/window/mc_launch.rs:162
+#: rustconn/src/window/mc_launch.rs:158
 msgid ""
 "mc did not get a password from RustConn. Type it in the mc tab when mc waits "
 "for it."
@@ -14088,11 +14088,11 @@ msgstr ""
 "mc не отримав пароля від RustConn. Введи його у вкладинці mc, коли mc на "
 "нього чекатиме."
 
-#: rustconn/src/window/mc_launch.rs:298
+#: rustconn/src/window/mc_launch.rs:293
 msgid "Password for {}"
 msgstr "Пароль для {}"
 
-#: rustconn/src/window/mc_launch.rs:300
+#: rustconn/src/window/mc_launch.rs:295
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."
@@ -14611,19 +14611,19 @@ msgstr "Проміжний гост недоступний, з'єднуванн�
 msgid "No jump host responded, trying ‘{}’"
 msgstr "Жоден проміжний гост не відповів, спроба через «{}»"
 
-#: rustconn/src/window/protocols.rs:1703 rustconn/src/window/rdp_vnc.rs:1591
+#: rustconn/src/window/protocols.rs:1706 rustconn/src/window/rdp_vnc.rs:1591
 msgid "No VNC viewer found. Install TigerVNC or Remmina."
 msgstr "Переглядач VNC не знайдено. Встанови TigerVNC або Remmina."
 
-#: rustconn/src/window/protocols.rs:2045
+#: rustconn/src/window/protocols.rs:2048
 msgid "No SPICE viewer found. Install virt-viewer."
 msgstr "Переглядач SPICE не знайдено. Встанови virt-viewer."
 
-#: rustconn/src/window/protocols.rs:2279 rustconn/src/window/protocols.rs:3004
+#: rustconn/src/window/protocols.rs:2282 rustconn/src/window/protocols.rs:3007
 msgid "Invalid variable: {}"
 msgstr "Хибна змінниця: {}"
 
-#: rustconn/src/window/protocols.rs:2537
+#: rustconn/src/window/protocols.rs:2540
 msgid ""
 "evil-winrm was not found on this computer. Install it outside the Flatpak, "
 "from your distribution or with: gem install evil-winrm. It must be on the "
@@ -14635,7 +14635,7 @@ msgstr ""
 "твоєї оболонки входу поза Flatpak (задай це в ~/.profile, а не лише в "
 "~/.bashrc)."
 
-#: rustconn/src/window/protocols.rs:2541
+#: rustconn/src/window/protocols.rs:2544
 msgid ""
 "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, "
 "or use the Flatpak or a distribution package of RustConn"
@@ -14643,28 +14643,28 @@ msgstr ""
 "evil-winrm не може працювати всередині Snap. З'єднуйся з Windows через SSH "
 "або користуйся Flatpak чи пакунком RustConn зі свого дистрибутива"
 
-#: rustconn/src/window/protocols.rs:2544
+#: rustconn/src/window/protocols.rs:2547
 msgid "evil-winrm is not installed. Install it with: gem install evil-winrm"
 msgstr ""
 "evil-winrm не встановлено. Встанови його командою: gem install evil-winrm"
 
-#: rustconn/src/window/protocols.rs:2924
+#: rustconn/src/window/protocols.rs:2927
 msgid "Invalid config: {}"
 msgstr "Хибна конфігурація: {}"
 
-#: rustconn/src/window/protocols.rs:3110
+#: rustconn/src/window/protocols.rs:3113
 msgid "Install picocom for Serial connections"
 msgstr "Встанови picocom для Serial-з'єднків"
 
-#: rustconn/src/window/protocols.rs:3286
+#: rustconn/src/window/protocols.rs:3289
 msgid "Install kubectl for Kubernetes connections"
 msgstr "Встанови kubectl для Kubernetes-з'єднків"
 
-#: rustconn/src/window/protocols.rs:3304
+#: rustconn/src/window/protocols.rs:3307
 msgid "Configure pod and container for Kubernetes"
 msgstr "Налаштуй pod і контейнер для Kubernetes"
 
-#: rustconn/src/window/protocols.rs:3534
+#: rustconn/src/window/protocols.rs:3537
 msgid "Install mosh for MOSH connections"
 msgstr "Встанови mosh для MOSH-з'єднків"
 
