@@ -14113,7 +14113,7 @@ msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."
 msgstr ""
-"Midnight Commander входить із ним на цей сервер. RustConn тримає його лише "
+"Midnight Commander входить із ним на цей сервер. RustConn тримає його, лише "
 "доки відкрита ця вкладинка mc."
 
 #: rustconn/src/window/mod.rs:407
