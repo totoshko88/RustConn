@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.totoshko88.RustConn</id>
   <name>RustConn</name>
-  <summary>Manage SSH, RDP, and VNC connections</summary>
+  <summary>Manage remote connections</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <developer id="io.github.totoshko88">
@@ -13,8 +13,9 @@
     <p>
       RustConn is a modern connection manager for Linux. Manage SSH, RDP, VNC,
       SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust connections from a
-      single application with embedded protocol support and no external
-      dependencies required.
+      single application. Terminals and RDP, VNC, and SPICE sessions open inside
+      the window. Some features use external command-line tools, such as a cloud
+      provider's CLI for Zero Trust connections or a password manager's client.
     </p>
     <p>
       Organize connections into groups and tags, split terminals side by side, automate
