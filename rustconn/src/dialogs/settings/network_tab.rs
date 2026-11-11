@@ -73,6 +73,9 @@ pub fn create_network_group() -> NetworkPageWidgets {
     jump_host_dropdown.set_tooltip_text(Some(&i18n(
         "A saved connection also carries its port, identity file and its own jump host",
     )));
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    jump_host_dropdown
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Global Jump Host"))]);
 
     let jump_host_row = adw::ActionRow::builder()
         .title(i18n("Global Jump Host"))

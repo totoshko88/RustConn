@@ -22,7 +22,7 @@ use rustconn_core::session::recording::{
 };
 use vte4::prelude::*;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 // ---------------------------------------------------------------------------
 // PlaybackState
@@ -388,6 +388,14 @@ fn update_accessible_label_widget(widget: &SearchEntry, label: &str) {
     widget.update_property(&[gtk4::accessible::Property::Label(label)]);
 }
 
+/// Gives the playback terminal the accessible name of the recording it plays.
+fn label_playback_terminal(vte: &vte4::Terminal, entry: &RecordingEntry) {
+    vte.update_property(&[gtk4::accessible::Property::Label(&i18n_f(
+        "Playback: {}",
+        &[&recording_display_name(entry)],
+    ))]);
+}
+
 /// Returns the display name for a [`RecordingEntry`].
 fn recording_display_name(entry: &RecordingEntry) -> String {
     entry
@@ -429,6 +437,8 @@ pub fn create_playback_tab_widget(initial_entry: &RecordingEntry) -> GtkBox {
     // with no PTY attached aborts the process — see
     // [`super::config::apply_erase_bindings`].
     super::config::apply_erase_bindings(&vte);
+    // Named like the tab, so a screen reader does not announce a bare "terminal".
+    label_playback_terminal(&vte, initial_entry);
     container.append(&vte);
 
     // Create PlaybackController and load the initial recording.
@@ -522,6 +532,7 @@ pub fn create_playback_tab_widget(initial_entry: &RecordingEntry) -> GtkBox {
                 return;
             }
             status_for_select.set_text(&recording_display_name(entry));
+            label_playback_terminal(&vte_for_select, entry);
             controller_for_select.play(&vte_for_select);
         }
         popover_for_select.popdown();

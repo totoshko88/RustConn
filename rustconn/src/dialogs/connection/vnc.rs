@@ -346,6 +346,9 @@ pub(super) fn create_vnc_options() -> (
     crate::dialogs::widgets::enable_string_search(&vnc_jump_host_dropdown);
     vnc_jump_host_dropdown.set_size_request(200, -1);
     vnc_jump_host_dropdown.set_hexpand(false);
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    vnc_jump_host_dropdown
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
     let vnc_jump_host_row = adw::ActionRow::builder()
         .title(i18n("Jump Host"))

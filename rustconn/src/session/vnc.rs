@@ -465,6 +465,12 @@ impl VncSessionWidget {
         self.overlay.upcast_ref()
     }
 
+    /// Returns the drawing area the remote desktop is painted on
+    #[must_use]
+    pub fn drawing_area(&self) -> &gtk4::DrawingArea {
+        self.embedded_widget.drawing_area()
+    }
+
     /// Returns the current session state
     #[must_use]
     pub fn state(&self) -> SessionState {

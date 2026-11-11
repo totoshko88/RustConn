@@ -191,7 +191,12 @@ pub(super) fn create_advanced_tab() -> (
     }
 
     // Preview mini-rectangle showing chosen colors
-    let theme_preview = DrawingArea::builder().height_request(40).build();
+    // Decorative for a screen reader: the colour buttons above carry the
+    // values, so the preview is kept out of the accessibility tree.
+    let theme_preview = DrawingArea::builder()
+        .height_request(40)
+        .accessible_role(gtk4::AccessibleRole::Presentation)
+        .build();
 
     // Wire preview to redraw when any color button changes
     {

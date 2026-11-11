@@ -846,6 +846,9 @@ pub fn show_edit_group_dialog(
     crate::dialogs::widgets::enable_string_search(&ssh_jump_host_dropdown);
     ssh_jump_host_dropdown.set_size_request(200, -1);
     ssh_jump_host_dropdown.set_hexpand(false);
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    ssh_jump_host_dropdown
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
     // Pre-select the current jump host
     let mut preselected_jump_idx = 0u32;

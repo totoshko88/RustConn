@@ -445,6 +445,7 @@ impl TerminalNotebook {
         }
 
         self.terminals.borrow_mut().insert(session_id, terminal);
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
         self.terminal_overlays
             .borrow_mut()
             .insert(session_id, terminal_overlay);
@@ -555,6 +556,7 @@ impl TerminalNotebook {
         self.session_widgets
             .borrow_mut()
             .insert(session_id, SessionWidgetStorage::Vnc(vnc_widget));
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
 
         self.session_info.borrow_mut().insert(
             session_id,
@@ -626,6 +628,7 @@ impl TerminalNotebook {
         self.session_widgets
             .borrow_mut()
             .insert(session_id, SessionWidgetStorage::EmbeddedRdp(widget));
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
 
         self.session_info.borrow_mut().insert(
             session_id,

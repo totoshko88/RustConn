@@ -131,6 +131,54 @@ pub struct RdpLaunchCallbacks {
     /// spawned child to the external-session registry here.
     pub on_connected: Box<dyn FnOnce() + 'static>,
 }
+
+/// Names an embedded RDP or VNC viewer for screen readers.
+///
+/// A focusable drawing area has no text of its own, so without this Orca
+/// announces a bare image and every remote desktop tab sounds the same. The
+/// description says how to get the keyboard back, because once the viewer has
+/// focus every key goes to the remote machine. Called when the tab is created
+/// and again on each rename, so the name follows the tab title.
+pub fn label_remote_view(view: &DrawingArea, connection_name: &str) {
+    view.update_property(&[
+        // Translators: screen-reader name of a remote desktop view; {} is the connection name.
+        gtk4::accessible::Property::Label(&i18n_f("Remote desktop {}", &[connection_name])),
+        gtk4::accessible::Property::Description(&remote_view_keyboard_hint()),
+    ]);
+}
+
+/// How to take the keyboard back from an embedded viewer.
+///
+/// Names the current Toggle Keyboard Passthrough accelerator rather than its
+/// default, so a remapped binding is read out. The live registration is safe
+/// to read for this one action: it is a default passthrough exception and not
+/// one of the single-Control chords suspended while a terminal has focus. With
+/// no binding registered the sentence about it is left out.
+/// Super+Escape is GNOME Shell's own key for restoring the desktop shortcuts
+/// a viewer has inhibited.
+fn remote_view_keyboard_hint() -> String {
+    let passthrough_key = gtk4::gio::Application::default()
+        .and_downcast::<gtk4::Application>()
+        .and_then(|app| {
+            app.accels_for_action("win.toggle-passthrough")
+                .first()
+                .cloned()
+        })
+        .and_then(|accel| gtk4::accelerator_parse(accel.as_str()))
+        .map(|(key, mods)| gtk4::accelerator_get_label(key, mods));
+    match passthrough_key {
+        Some(key) => i18n_f(
+            // Translators: read by a screen reader after the remote desktop's
+            // name; {} is a key combination such as Shift+Ctrl+Backspace.
+            "Keys typed here go to the remote desktop. {} turns keyboard passthrough on or off. In GNOME, Super+Escape gives the desktop shortcuts back.",
+            &[key.as_str()],
+        ),
+        None => i18n(
+            "Keys typed here go to the remote desktop. In GNOME, Super+Escape gives the desktop shortcuts back.",
+        ),
+    }
+}
+
 /// Embedded session tab for RDP/VNC connections
 #[expect(dead_code, reason = "Fields kept for GTK widget lifecycle")]
 pub struct EmbeddedSessionTab {
@@ -177,20 +225,29 @@ impl EmbeddedSessionTab {
         let embed_area = DrawingArea::new();
         embed_area.set_hexpand(true);
         embed_area.set_vexpand(true);
+        // The client draws its own window in here; the grab key is the client's
+        // (FreeRDP's Right Ctrl), the same one the external-window page lists.
+        embed_area.update_property(&[
+            gtk4::accessible::Property::Label(&i18n_f("Remote desktop {}", &[connection_name])),
+            gtk4::accessible::Property::Description(&i18n(
+                "Right Ctrl releases the keyboard and mouse grab",
+            )),
+        ]);
 
+        let protocol_name = protocol.to_uppercase();
         if is_embedded {
             embed_area.set_content_width(800);
             embed_area.set_content_height(600);
-            controls.set_status(&format!(
+            controls.set_status(&i18n_f(
+                // Translators: the first {} is the protocol (RDP, VNC), the second the connection name.
                 "{} session - {} (embedded)",
-                protocol.to_uppercase(),
-                connection_name
+                &[&protocol_name, connection_name],
             ));
         } else {
-            controls.set_status(&format!(
+            controls.set_status(&i18n_f(
+                // Translators: the first {} is the protocol (RDP, VNC), the second the connection name.
                 "{} session - {} (external window)",
-                protocol.to_uppercase(),
-                connection_name
+                &[&protocol_name, connection_name],
             ));
 
             // StatusPage for external sessions — shows hotkeys and connection info.

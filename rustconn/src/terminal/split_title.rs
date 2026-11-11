@@ -59,6 +59,9 @@ pub(crate) struct TabChrome {
     pub(super) split_tab_titles: SplitTabTitles,
     pub(super) session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
     pub(super) on_session_relabelled: SessionRelabelHook,
+    /// The session views, renamed for screen readers along with the tab.
+    pub(super) terminals: Rc<RefCell<HashMap<Uuid, vte4::Terminal>>>,
+    pub(super) session_widgets: Rc<RefCell<HashMap<Uuid, super::SessionWidgetStorage>>>,
 }
 
 /// Told a session's new name after a rename, so whatever else shows it — the
@@ -298,6 +301,8 @@ impl TerminalNotebook {
             split_tab_titles: Rc::clone(&self.split_tab_titles),
             session_cwd: Rc::clone(&self.session_cwd),
             on_session_relabelled: Rc::clone(&self.on_session_relabelled),
+            terminals: Rc::clone(&self.terminals),
+            session_widgets: Rc::clone(&self.session_widgets),
         }
     }
 

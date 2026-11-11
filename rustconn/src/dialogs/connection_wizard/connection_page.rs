@@ -142,6 +142,9 @@ impl ConnectionPage {
         jump_host_dropdown.set_size_request(200, -1);
         jump_host_dropdown.set_hexpand(false);
         crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
+        // A row suffix is not labelled by the row title, so name it for Orca.
+        jump_host_dropdown
+            .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
         let jump_host_row = adw::ActionRow::builder()
             .title(i18n("Jump Host"))

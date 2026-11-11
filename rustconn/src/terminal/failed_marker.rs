@@ -53,7 +53,11 @@ pub(super) struct FailedMarkerOverlay {
 impl FailedMarkerOverlay {
     /// Creates the failure-marker layer for `terminal`, reading `registry`.
     pub(super) fn attach(terminal: &Terminal, registry: Rc<RefCell<MarkRegistry>>) -> Self {
-        let drawing_area = DrawingArea::new();
+        // Presentation: a decoration over the terminal, whose own text a
+        // screen reader already reads; `accessible-role` is construct-only.
+        let drawing_area = DrawingArea::builder()
+            .accessible_role(gtk4::AccessibleRole::Presentation)
+            .build();
         drawing_area.set_hexpand(true);
         drawing_area.set_vexpand(true);
         // Mouse events pass through to the terminal underneath.

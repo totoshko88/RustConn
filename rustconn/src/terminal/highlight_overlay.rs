@@ -163,7 +163,11 @@ impl HighlightOverlay {
         session_id: Uuid,
         match_tags: Vec<i32>,
     ) -> Self {
-        let drawing_area = DrawingArea::new();
+        // Presentation: a decoration over the terminal, whose own text a
+        // screen reader already reads; `accessible-role` is construct-only.
+        let drawing_area = DrawingArea::builder()
+            .accessible_role(gtk4::AccessibleRole::Presentation)
+            .build();
         drawing_area.set_hexpand(true);
         drawing_area.set_vexpand(true);
         // Let mouse events pass through to the terminal underneath

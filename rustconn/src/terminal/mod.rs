@@ -3320,6 +3320,12 @@ impl TerminalNotebook {
             info.name = label.to_owned();
             (info.tab_group.clone(), info.host.clone())
         };
+        Self::label_session_view(
+            &chrome.terminals,
+            &chrome.session_widgets,
+            session_id,
+            label,
+        );
 
         // The page is bound to its own `let` first: an `if let` scrutinee
         // temporary would keep the `sessions` borrow alive across the two GTK
@@ -3346,6 +3352,37 @@ impl TerminalNotebook {
         let hook = chrome.on_session_relabelled.borrow().clone();
         if let Some(hook) = hook {
             hook(session_id, label);
+        }
+    }
+
+    /// Gives a session's view the name a screen reader announces for it.
+    ///
+    /// Without one Orca says only "terminal" or reads an unnamed image, and in
+    /// a split layout every pane sounds the same. A terminal is named after
+    /// `label`, the session name its tab shows; an embedded RDP or VNC viewer
+    /// gets "Remote desktop <label>" and a hint on taking the keyboard back
+    /// ([`crate::embedded::label_remote_view`]). The name lives on the widget,
+    /// so it moves with it into a split pane or a detached window. Called when
+    /// the tab is created and from [`Self::apply_session_label`] on a rename.
+    pub(super) fn label_session_view(
+        terminals: &RefCell<HashMap<Uuid, Terminal>>,
+        session_widgets: &RefCell<HashMap<Uuid, SessionWidgetStorage>>,
+        session_id: Uuid,
+        label: &str,
+    ) {
+        // Cloned out so no map borrow is held while GTK updates the widget.
+        let terminal = terminals.borrow().get(&session_id).cloned();
+        if let Some(terminal) = terminal {
+            terminal.update_property(&[gtk4::accessible::Property::Label(label)]);
+            return;
+        }
+        let viewer = match session_widgets.borrow().get(&session_id) {
+            Some(SessionWidgetStorage::EmbeddedRdp(widget)) => Some(widget.drawing_area().clone()),
+            Some(SessionWidgetStorage::Vnc(widget)) => Some(widget.drawing_area().clone()),
+            _ => None,
+        };
+        if let Some(viewer) = viewer {
+            crate::embedded::label_remote_view(&viewer, label);
         }
     }
 
