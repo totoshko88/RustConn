@@ -232,7 +232,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 12: CLI List Output Completeness**
-    /// **Validates: Requirements 7.1**
     ///
     /// For any set of connections, the CLI list command should output all connections
     /// with their name, host, port, and protocol.
@@ -285,7 +284,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 12: CLI List Output Completeness (JSON)**
-    /// **Validates: Requirements 7.1**
     ///
     /// For any set of connections, the CLI list command JSON output should contain
     /// all connections with their name, host, port, and protocol.
@@ -340,7 +338,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 12: CLI List Output Completeness (CSV)**
-    /// **Validates: Requirements 7.1**
     ///
     /// For any set of connections, the CLI list command CSV output should contain
     /// all connections with their name, host, port, and protocol.
@@ -395,7 +392,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 12: CLI List Empty Output**
-    /// **Validates: Requirements 7.1**
     ///
     /// For an empty connection list, the CLI list command should output
     /// an appropriate message.
@@ -412,7 +408,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 12: CLI List CSV Escaping**
-    /// **Validates: Requirements 7.1**
     ///
     /// For connections with special characters (commas, quotes), the CSV output
     /// should properly escape them.
@@ -447,7 +442,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 13: CLI Add Connection**
-    /// **Validates: Requirements 7.3**
     ///
     /// For any valid connection parameters, the CLI add command should create a connection
     /// with the specified name, host, port, protocol, and username.
@@ -525,7 +519,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 13: CLI Add Connection with SSH Key**
-    /// **Validates: Requirements 7.3**
     ///
     /// For SSH connections with a key path, the key path should be stored correctly.
     #[test]
@@ -575,7 +568,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 13: CLI Add Connection Default Port**
-    /// **Validates: Requirements 7.3**
     ///
     /// When no port is specified, the default port for the protocol should be used.
     #[test]
@@ -776,7 +768,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (SSH Config)**
-    /// **Validates: Requirements 9.1, 9.2, 9.3**
     ///
     /// For any imported SSH connection from SSH config format, the hostname, port,
     /// username, and key path should match the source data.
@@ -848,7 +839,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Ansible)**
-    /// **Validates: Requirements 9.1, 9.2, 9.3**
     ///
     /// For any imported SSH connection from Ansible inventory format, the hostname,
     /// port, username, and key path should match the source data.
@@ -920,7 +910,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Remmina)**
-    /// **Validates: Requirements 9.1, 9.2, 9.3**
     ///
     /// For any imported SSH connection from Remmina format, the hostname, port,
     /// username, and key path should match the source data.
@@ -992,7 +981,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (Asbru)**
-    /// **Validates: Requirements 9.1, 9.2, 9.3**
     ///
     /// For any imported SSH connection from Asbru format, the hostname, port,
     /// username, and key path should match the source data.
@@ -1064,7 +1052,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 18: Import Field Preservation (RDP)**
-    /// **Validates: Requirements 9.2**
     ///
     /// For any imported RDP connection, the hostname, port, username, and domain
     /// should match the source data.
@@ -1216,7 +1203,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 15: CLI Error Exit Codes**
-    /// **Validates: Requirements 7.7**
     ///
     /// For any CLI command that fails, the exit code should be non-zero and
     /// appropriate for the error type:
@@ -1255,7 +1241,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 15: CLI Error Exit Codes - Connection Failures**
-    /// **Validates: Requirements 7.7**
     ///
     /// For any connection-related failure (TestFailed, ConnectionNotFound),
     /// the exit code should be 2.
@@ -1292,7 +1277,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 15: CLI Error Exit Codes - General Errors**
-    /// **Validates: Requirements 7.7**
     ///
     /// For any general error (Config, Export, Import, Io),
     /// the exit code should be 1.
@@ -1382,7 +1366,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 2: CLI Output Message Format**
-    /// **Validates: Requirements 5.1, 5.3**
     ///
     /// For any protocol name and host string, the connection message should contain
     /// both values and the 🔗 emoji.
@@ -1428,7 +1411,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 3: CLI Command Echo Format**
-    /// **Validates: Requirements 5.2, 5.4**
     ///
     /// For any command string, the command echo message should contain the exact
     /// command and the ⚡ emoji.
@@ -1463,7 +1445,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 2: CLI Output Message Format - Empty Inputs**
-    /// **Validates: Requirements 5.1, 5.3**
     ///
     /// For empty protocol or host strings, the function should still produce
     /// a valid message with the emoji prefix.
@@ -1495,7 +1476,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 3: CLI Command Echo Format - Empty Command**
-    /// **Validates: Requirements 5.2, 5.4**
     ///
     /// For an empty command string, the function should still produce
     /// a valid message with the emoji prefix.
@@ -1521,7 +1501,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 2 & 3: CLI Output Special Characters**
-    /// **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
     ///
     /// For inputs containing special characters, the functions should preserve
     /// them exactly in the output.

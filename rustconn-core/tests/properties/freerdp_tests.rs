@@ -3,12 +3,12 @@
 //! These tests validate the correctness properties for FreeRDP command generation
 //! as defined in the design document.
 //!
-//! # Requirements Coverage
+//! # Coverage
 //!
-//! - Requirement 6.1: `/decorations` flag for window controls
-//! - Requirement 6.2: Window geometry persistence (save on close)
-//! - Requirement 6.3: Window geometry restoration (load on start)
-//! - Requirement 6.4: Respect `remember_window_position` setting
+//! - `/decorations` flag for window controls
+//! - Window geometry persistence (save on close)
+//! - Window geometry restoration (load on start)
+//! - Respect `remember_window_position` setting
 
 use proptest::prelude::*;
 use rustconn_core::models::{RdpDisplayMode, WindowGeometry};
@@ -137,7 +137,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: native-protocol-embedding, Property 17: FreeRDP Decorations Flag**
-    // **Validates: Requirements 6.1**
     //
     // For any FreeRDP external mode launch, the command should include the `/decorations` flag.
 
@@ -153,7 +152,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 18: Window Geometry Restoration**
-    // **Validates: Requirements 6.3**
     //
     // For any connection with saved window geometry and remember_window_position enabled,
     // the restored geometry should match the saved values.
@@ -189,7 +187,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 19: Disabled Position Memory**
-    // **Validates: Requirements 6.4**
     //
     // For any connection with remember_window_position disabled, no window geometry
     // should be applied to the launch command.

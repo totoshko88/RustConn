@@ -54,7 +54,6 @@ fn arb_session_status() -> impl Strategy<Value = ClusterSessionStatus> {
 
 // ============================================================================
 // Property 13: Cluster Session Independence
-// **Validates: Requirements 3.4**
 //
 // For any cluster with multiple connections, failure of one session should not
 // affect other sessions.
@@ -64,7 +63,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 13: Cluster Session Independence**
-    /// **Validates: Requirements 3.4**
     ///
     /// For any cluster with multiple connections, when one session fails,
     /// the other sessions should maintain their state unchanged.
@@ -141,7 +139,6 @@ proptest! {
 
 
     /// **Feature: rustconn-enhancements, Property 13: Cluster Session Independence**
-    /// **Validates: Requirements 3.4**
     ///
     /// For any cluster, updating the status of one session should not affect
     /// the status of other sessions.
@@ -202,7 +199,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 13: Cluster Session Independence**
-    /// **Validates: Requirements 3.4**
     ///
     /// For any cluster managed by ClusterManager, failing a session in one cluster
     /// should not affect sessions in other clusters.
@@ -337,7 +333,6 @@ fn test_session_recovery_independence() {
 
 // ============================================================================
 // Broadcast Mode Tests
-// **Validates: Requirements 3.3**
 // ============================================================================
 
 proptest! {
@@ -352,7 +347,6 @@ proptest! {
     // stays.
 
     /// **Feature: rustconn-enhancements, Broadcast Mode**
-    /// **Validates: Requirements 3.6**
     ///
     /// Toggling broadcast mode should correctly switch between enabled and disabled.
     #[test]
@@ -420,14 +414,12 @@ fn test_broadcast_mode_in_summary() {
 
 // ============================================================================
 // Cluster Serialization Tests
-// **Validates: Requirements 3.1**
 // ============================================================================
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Cluster Serialization**
-    /// **Validates: Requirements 3.1**
     ///
     /// For any valid cluster, serializing to JSON and deserializing should
     /// produce an equivalent cluster.
@@ -451,7 +443,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Cluster Serialization**
-    /// **Validates: Requirements 3.1**
     ///
     /// For any valid cluster, serializing to TOML and deserializing should
     /// produce an equivalent cluster.
@@ -506,14 +497,12 @@ fn test_cluster_serialization_preserves_fields() {
 
 // ============================================================================
 // Property 8: Cluster Serialization Round-Trip (Persistence)
-// **Validates: Requirements 10.1, 10.2**
 // ============================================================================
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 8: Cluster Serialization Round-Trip**
-    /// **Validates: Requirements 10.1, 10.2**
     ///
     /// For any valid Cluster, saving to ConfigManager and loading back should
     /// produce an equivalent cluster. This validates that clusters persist
@@ -564,7 +553,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 8: Cluster Serialization Round-Trip**
-    /// **Validates: Requirements 10.1, 10.2**
     ///
     /// For any list of valid Clusters, saving to ConfigManager and loading back
     /// should produce equivalent clusters. This validates that multiple clusters
@@ -662,7 +650,6 @@ fn test_cluster_persistence_through_config_manager() {
 
 // ============================================================================
 // Property 3: Cluster List Refresh After Modification
-// **Validates: Requirements 4.1, 4.2, 4.3**
 //
 // For any cluster add/edit/delete operation, the cluster list should
 // immediately reflect the change without requiring dialog close/reopen.
@@ -672,7 +659,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-fixes-v2, Property 3: Cluster List Refresh After Modification**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// For any cluster creation operation, the cluster manager should immediately
     /// contain the new cluster and return it in get_all_clusters().
@@ -717,7 +703,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 3: Cluster List Refresh After Modification**
-    /// **Validates: Requirements 4.2**
     ///
     /// For any cluster deletion operation, the cluster manager should immediately
     /// no longer contain the deleted cluster.
@@ -752,7 +737,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 3: Cluster List Refresh After Modification**
-    /// **Validates: Requirements 4.3**
     ///
     /// For any cluster edit operation, the cluster manager should immediately
     /// reflect the updated cluster data.
@@ -805,7 +789,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 3: Cluster List Refresh After Modification**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// For any sequence of add/edit/delete operations, the cluster list should
     /// always accurately reflect the current state.

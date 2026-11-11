@@ -26,7 +26,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any drag operation over a connection row, the drop indicator
     /// should be positioned either above (Before) or below (After) the row,
@@ -55,7 +54,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any Before or After drop position, the indicator Y coordinate
     /// should be at a row boundary (not in the middle of a row).
@@ -94,7 +92,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any Into drop position (groups/documents only), no line indicator
     /// should be shown (returns None).
@@ -111,7 +108,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any Y coordinate, the calculated row index should be consistent
     /// with the drop position calculation.
@@ -134,7 +130,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any item type and position, the validity check should be consistent
     /// with the actual position calculation.
@@ -157,7 +152,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-fixes-v2, Property 11: Drop Indicator Position**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For groups and documents, the middle zone should result in Into position,
     /// while the edges should result in Before or After.

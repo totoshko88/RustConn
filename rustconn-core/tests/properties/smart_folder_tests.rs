@@ -1,7 +1,5 @@
 //! Property-based tests for Smart Folders: filter evaluation, serde round-trip,
 //! and empty-filter behaviour.
-//!
-//! **Validates: Requirements 9.2, 9.3, 9.8, 11.5**
 
 use std::collections::HashMap;
 
@@ -128,7 +126,6 @@ fn matching_smart_folder(
 
 // ---------------------------------------------------------------------------
 // Proptest 17: Connection matching ALL criteria → present in result
-// **Validates: Requirements 9.2, 11.5**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -156,7 +153,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 18: Connection NOT matching at least one criterion → absent
-// **Validates: Requirements 9.2, 11.5**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -197,7 +193,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 19: Serde round-trip for SmartFolder
-// **Validates: Requirements 9.8, 11.5**
 // ---------------------------------------------------------------------------
 
 fn arb_smart_folder() -> impl Strategy<Value = SmartFolder> {
@@ -256,7 +251,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 20: Empty filter → empty result
-// **Validates: Requirements 9.3, 11.5**
 // ---------------------------------------------------------------------------
 
 proptest! {

@@ -124,7 +124,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 7: SSH Config Import Parsing**
-    /// **Validates: Requirements 6.2, 6.3**
     ///
     /// For any valid SSH config file content, parsing should extract all Host entries
     /// with their corresponding parameters (hostname, port, user, identity file, proxy jump)
@@ -217,7 +216,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 7: SSH Config Import Parsing (Wildcards)**
-    /// **Validates: Requirements 6.2, 6.3**
     ///
     /// Wildcard patterns should be skipped during import.
     #[test]
@@ -407,7 +405,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 8: Asbru-CM Import Parsing**
-    /// **Validates: Requirements 6.1**
     ///
     /// For any valid Asbru-CM configuration (YAML), parsing should create Connection
     /// objects with correctly mapped protocol, host, port, and authentication settings.
@@ -484,7 +481,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 8: Asbru-CM Import Parsing (Flat Groups)**
-    /// **Validates: Requirements 6.1**
     ///
     /// Groups in Asbru-CM (flat format with _is_group and parent fields) should be
     /// correctly parsed and connections should be assigned to their parent groups.
@@ -547,7 +543,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 2: Asbru Hostname Extraction**
-    /// **Validates: Requirements 2.1, 2.2**
     ///
     /// For any Asbru entry with hostname in ip, host, name, or title field,
     /// the importer SHALL extract a valid hostname using the fallback chain.
@@ -616,7 +611,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 2: Asbru Hostname Extraction (Dynamic Variables)**
-    /// **Validates: Requirements 2.1, 2.2, 2.3**
     ///
     /// For any Asbru entry with dynamic variables (${VAR} syntax) in hostname fields,
     /// the importer SHALL preserve the variable syntax and extract it as hostname.
@@ -676,7 +670,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 2: Asbru Hostname Extraction (Skip Invalid)**
-    /// **Validates: Requirements 2.1, 2.2**
     ///
     /// For any Asbru entry with no valid hostname in any field (all "tmp" or empty),
     /// the importer SHALL skip the entry with a descriptive message.
@@ -847,7 +840,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 9: Remmina Import Parsing**
-    /// **Validates: Requirements 6.4**
     ///
     /// For any valid .remmina file, parsing should create a Connection object
     /// with correctly mapped protocol type, server, port, and protocol-specific settings.
@@ -934,7 +926,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 9: Remmina Import Parsing (Unsupported Protocols)**
-    /// **Validates: Requirements 6.4**
     ///
     /// Unsupported protocols should be skipped during import.
     /// Note: SPICE is now supported, so it's not in this list.
@@ -1077,7 +1068,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 10: Ansible Inventory Import Parsing (INI)**
-    /// **Validates: Requirements 6.5**
     ///
     /// For any valid Ansible INI inventory, parsing should create Connection objects
     /// for each host with correctly mapped hostname, port, and ansible_user.
@@ -1166,7 +1156,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 10: Ansible Inventory Import Parsing (YAML)**
-    /// **Validates: Requirements 6.5**
     ///
     /// For any valid Ansible YAML inventory, parsing should create Connection objects
     /// for each host with correctly mapped hostname, port, and ansible_user.
@@ -1239,7 +1228,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 10: Ansible Inventory Import Parsing (Host Ranges)**
-    /// **Validates: Requirements 6.5**
     ///
     /// Host ranges should be skipped during import.
     #[test]
@@ -1333,7 +1321,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 11: Import Error Handling (SSH Config)**
-    /// **Validates: Requirements 6.6, 6.7**
     ///
     /// For any import source containing a mix of valid and invalid entries,
     /// the import result should contain all valid entries as connections,
@@ -1375,7 +1362,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 11: Import Error Handling (Asbru)**
-    /// **Validates: Requirements 6.6, 6.7**
     ///
     /// For Asbru imports with mixed valid/invalid entries, valid entries should
     /// be imported and invalid entries should be skipped.
@@ -1444,7 +1430,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 11: Import Error Handling (Summary)**
-    /// **Validates: Requirements 6.6, 6.7**
     ///
     /// Import result summary should accurately reflect the counts.
     #[test]

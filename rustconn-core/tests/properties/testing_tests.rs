@@ -52,7 +52,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 16: Test Result Error Details**
-    /// **Validates: Requirements 8.5**
     ///
     /// For any failed connection test, the result should include a descriptive
     /// error message explaining the failure.
@@ -120,7 +119,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 17: Batch Test Summary Accuracy**
-    /// **Validates: Requirements 8.6**
     ///
     /// For any batch test of N connections, the summary should report exactly N
     /// total tests with passed + failed = N.

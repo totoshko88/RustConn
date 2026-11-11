@@ -3,7 +3,7 @@
 //! These tests verify that the async credential resolution patterns work correctly
 //! when used with callbacks, simulating how they would be used in a GTK context.
 //!
-//! **Validates: Requirements 9.1, 9.2 - Async operations instead of blocking calls**
+//! Async operations instead of blocking calls
 
 use std::collections::HashMap;
 use std::sync::Arc;

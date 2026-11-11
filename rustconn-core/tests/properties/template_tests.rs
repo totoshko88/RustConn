@@ -1,7 +1,7 @@
 //! Property-based tests for the Connection Template system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Connection Template system (Requirements 8.x).
+//! for the Connection Template system.
 
 use proptest::prelude::*;
 use rustconn_core::{
@@ -115,7 +115,6 @@ proptest! {
 
     // ========== Property 20: Template Application ==========
     // **Feature: rustconn-enhancements, Property 20: Template Application**
-    // **Validates: Requirements 8.2**
     //
     // For any template and new connection, applying the template should copy
     // all template fields to the connection.
@@ -155,7 +154,6 @@ proptest! {
 
     // ========== Property 21: Template Independence ==========
     // **Feature: rustconn-enhancements, Property 21: Template Independence**
-    // **Validates: Requirements 8.3**
     //
     // For any connection created from a template, modifying the template
     // should not affect the connection.
@@ -192,7 +190,6 @@ proptest! {
 
     // ========== Property 19: Template Field Preservation ==========
     // **Feature: rustconn-enhancements, Property 19: Template Field Preservation**
-    // **Validates: Requirements 8.5**
     //
     // For any connection template, all field values should be preserved
     // when serializing and deserializing.
@@ -232,7 +229,6 @@ proptest! {
 
     // ========== Property 9: Template Serialization Round-Trip ==========
     // **Feature: rustconn-bugfixes, Property 9: Template Serialization Round-Trip**
-    // **Validates: Requirements 11.3**
     //
     // For any valid ConnectionTemplate, serializing and deserializing should
     // produce an equivalent template.
@@ -291,7 +287,6 @@ proptest! {
 
     // ========== Property 12: Template Protocol Persistence ==========
     // **Feature: rustconn-fixes-v2, Property 12: Template Protocol Persistence**
-    // **Validates: Requirements 10.1, 10.2, 10.3**
     //
     // For any template with a non-SSH protocol, saving and loading should
     // preserve the protocol type and all protocol-specific settings.

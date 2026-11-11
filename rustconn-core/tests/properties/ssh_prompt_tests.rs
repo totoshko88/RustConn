@@ -1,7 +1,6 @@
 //! Property-based tests for SSH password-prompt detection.
 //!
 //! **Feature: release-0.17.5, Property 1: prompt detection (#194)**
-//! **Validates: Requirements 1.1, 1.5**
 //!
 //! `looks_like_password_prompt` is true for all supported localized prompts and
 //! `pass:`/trailing-spaces/no-trailing-space; false for `passphrase for key`.
@@ -64,8 +63,6 @@ proptest! {
     /// The leading prefix is drawn from a space-free, ASCII charset so it can
     /// never accidentally spell `passphrase for` (which would legitimately make
     /// the line a passphrase prompt and flip the expected result).
-    ///
-    /// **Validates: Requirements 1.1**
     #[test]
     fn prop_localized_prompt_detected(
         idx in 0usize..PASSWORD_SUFFIXES.len(),
@@ -82,8 +79,6 @@ proptest! {
 
     /// Property 1 (positive, case-insensitive): the same holds when the suffix
     /// uses upper-case where ASCII permits, since matching lowercases first.
-    ///
-    /// **Validates: Requirements 1.1**
     #[test]
     fn prop_detection_is_case_insensitive(
         idx in 0usize..PASSWORD_SUFFIXES.len(),
@@ -101,8 +96,6 @@ proptest! {
     /// Property 1 (negative): any line containing `passphrase for key` is never
     /// treated as a password prompt, even when it would otherwise end in a
     /// recognized suffix.
-    ///
-    /// **Validates: Requirements 1.5**
     #[test]
     fn prop_passphrase_prompt_rejected(
         prefix in "[a-zA-Z0-9 '/._-]{0,30}",

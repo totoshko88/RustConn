@@ -1,7 +1,6 @@
 //! Property-based tests for Window Mode and Geometry Persistence
 //!
 //! **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-//! **Validates: Requirements 9.4**
 
 use proptest::prelude::*;
 use rustconn_core::models::{Connection, WindowGeometry, WindowMode};
@@ -52,7 +51,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// For any external window with "remember position" enabled, closing and reopening
     /// should restore the same geometry (width and height).
@@ -82,7 +80,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// When remember_window_position is disabled, geometry should not be saved.
     #[test]
@@ -105,7 +102,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// Window geometry serialization round-trip should preserve all values.
     #[test]
@@ -124,7 +120,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// Window mode serialization round-trip should preserve the mode.
     #[test]
@@ -140,7 +135,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// Connection with window mode and geometry should serialize and deserialize correctly.
     #[test]
@@ -171,7 +165,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// WindowGeometry::is_valid should return true only for positive dimensions.
     #[test]
@@ -192,7 +185,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// WindowMode index conversion should be consistent.
     #[test]
@@ -204,7 +196,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 33: Window Geometry Persistence**
-    /// **Validates: Requirements 9.4**
     ///
     /// Connection helper methods for window mode should work correctly.
     #[test]

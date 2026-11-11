@@ -1,7 +1,6 @@
 //! Property-based tests for Quick Connect functionality
 //!
 //! **Property 20: Quick Connect No Persistence**
-//! **Validates: Requirements 7.4**
 //!
 //! Quick Connect creates temporary connections that are NOT saved to the
 //! connection list. This module tests that:

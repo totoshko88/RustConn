@@ -1,7 +1,7 @@
 //! Property-based tests for unified credential storage
 //!
 //! These tests validate the correctness properties for credential storage
-//! backend selection and migration as defined in Requirements 3.1-3.6.
+//! backend selection and migration.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -115,7 +115,7 @@ fn create_test_connection(id: Uuid, name: &str, host: &str) -> Connection {
 
 proptest! {
     /// Property 10: Backend Selection Priority
-    /// Validates: Requirement 3.1 - Store to KeePass if enabled, otherwise Keyring
+    /// Store to KeePass if enabled, otherwise Keyring
     ///
     /// When preferred_backend is KeePassXc, KeePass is enabled AND has a valid path,
     /// select KdbxFile backend. Otherwise, select LibSecret backend.
@@ -198,7 +198,7 @@ proptest! {
 
 proptest! {
     /// Property 12: Migration Button Visibility
-    /// Validates: Requirement 3.3 - Detect credentials in Keyring but not KeePass
+    /// Detect credentials in Keyring but not KeePass
     ///
     /// Migration is only needed when:
     /// 1. KeePass is enabled with valid path
@@ -398,7 +398,7 @@ proptest! {
 
 proptest! {
     /// Property 11: Keyring Fallback When KeePass Empty
-    /// Validates: Requirement 3.2 - Check both backends during resolution
+    /// Check both backends during resolution
     ///
     /// When fallback is enabled and KeePass lookup fails, should try Keyring.
     /// We test this by verifying the resolver is configured correctly.

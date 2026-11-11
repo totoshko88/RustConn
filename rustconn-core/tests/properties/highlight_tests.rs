@@ -1,7 +1,5 @@
 //! Property-based tests for highlight rules: regex validation, serde round-trip,
 //! match-position correctness, and the viewport rows the overlay draws them on.
-//!
-//! **Validates: Requirements 7.8, 11.6**
 
 use proptest::prelude::*;
 use rustconn_core::highlight::{CompiledHighlightRules, builtin_defaults, viewport_rows};
@@ -72,7 +70,6 @@ fn valid_highlight_rule() -> impl Strategy<Value = HighlightRule> {
 
 // ---------------------------------------------------------------------------
 // Proptest 14: Valid regex passes validate_pattern(), invalid does not
-// **Validates: Requirements 7.8, 11.6**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -105,7 +102,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 15: Serde round-trip for HighlightRule
-// **Validates: Requirements 7.8, 11.6**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -128,7 +124,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 16: Matching positions are correct for known patterns
-// **Validates: Requirements 7.8, 11.6**
 // ---------------------------------------------------------------------------
 
 proptest! {

@@ -89,7 +89,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(256))]
 
     // Feature: detachable-session-windows — detachability predicate
-    // **Validates: Requirements 4.6**
     //
     // *For any* `DetachContext`, `detach_verdict` returns the same verdict on
     // every call, so context menu population, the keyboard action, and sidebar
@@ -111,8 +110,6 @@ proptest! {
         prop_assert_eq!(detach_verdict(&rebuilt), first);
     }
 
-    // **Validates: Requirements 4.6**
-    //
     // *For any* `DetachContext`, the verdict names exactly one blocking
     // condition, and that condition holds for the context — so a rejection can
     // never be explained by a reason the session does not actually have.
@@ -139,8 +136,6 @@ proptest! {
         }
     }
 
-    // **Validates: Requirements 4.6**
-    //
     // *For any* `DetachContext`, a detach is permitted exactly when no blocking
     // flag is set, and `is_allowed` agrees with the verdict variant.
     #[test]
@@ -155,8 +150,6 @@ proptest! {
         prop_assert_eq!(verdict == DetachVerdict::Allowed, no_blocker);
     }
 
-    // **Validates: Requirements 7.3, 7.7**
-    //
     // *For any* `DetachContext`, a split layout only accepts a session whose
     // in-process widget is free to move: never one that lives in a detached
     // window (the picker must not rip a widget out of its own window), never one
@@ -188,8 +181,6 @@ proptest! {
         }
     }
 
-    // **Validates: Requirements 4.6, 10.2**
-    //
     // *For any* `DetachContext`, the verdict's reason key is non-empty and
     // identifies the verdict uniquely, so the GUI always has exactly one
     // translatable explanation to show.

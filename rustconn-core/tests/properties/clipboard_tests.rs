@@ -2,7 +2,6 @@
 //!
 //! **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
 //! **Feature: rustconn-bugfixes, Property 11: Connection Paste Preserves Group**
-//! **Validates: Requirements 12.1, 12.2, 12.3**
 
 use chrono::Utc;
 use proptest::prelude::*;
@@ -156,7 +155,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
-    /// **Validates: Requirements 12.1, 12.2**
     ///
     /// For any connection, copying and pasting should create a new connection with:
     /// - A different (new) ID
@@ -219,7 +217,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 11: Connection Paste Preserves Group**
-    /// **Validates: Requirements 12.3**
     ///
     /// For any copied connection with a source group, pasting should return
     /// the same source group ID.
@@ -245,7 +242,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
-    /// **Validates: Requirements 12.1**
     ///
     /// Multiple pastes from the same copy should create unique connections each time.
     #[test]
@@ -278,7 +274,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
-    /// **Validates: Requirements 12.1, 12.2**
     ///
     /// Copying a new connection should replace the previous clipboard content.
     #[test]
@@ -307,7 +302,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
-    /// **Validates: Requirements 12.1**
     ///
     /// Empty clipboard should return None on paste.
     #[test]
@@ -320,7 +314,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 10: Connection Copy Creates Valid Duplicate**
-    /// **Validates: Requirements 12.1**
     ///
     /// Clearing the clipboard should remove all content.
     #[test]

@@ -1,10 +1,8 @@
 //! Property-based tests for configuration round-trip through ConfigManager
 //!
 //! **Feature: rustconn, Property 6: Connection Serialization Round-Trip** (extended to full config)
-//! **Validates: Requirements 10.5, 10.6**
 //!
 //! **Feature: rustconn-enhancements, Property 4: Settings Persistence Round-Trip**
-//! **Validates: Requirements 6.1, 6.2**
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -642,7 +640,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 6: Connection Serialization Round-Trip** (extended to full config)
-    /// **Validates: Requirements 10.5, 10.6**
     ///
     /// For any list of valid Connection objects, saving through ConfigManager and then loading
     /// should produce equivalent Connection objects with all fields preserved.
@@ -687,7 +684,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 6: Connection Serialization Round-Trip** (groups)
-    /// **Validates: Requirements 10.5, 10.6**
     ///
     /// For any list of valid ConnectionGroup objects, saving through ConfigManager and then loading
     /// should produce equivalent ConnectionGroup objects with all fields preserved.
@@ -722,7 +718,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 6: Connection Serialization Round-Trip** (snippets)
-    /// **Validates: Requirements 10.5, 10.6**
     ///
     /// For any list of valid Snippet objects, saving through ConfigManager and then loading
     /// should produce equivalent Snippet objects with all fields preserved.
@@ -754,7 +749,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 6: Connection Serialization Round-Trip** (settings)
-    /// **Validates: Requirements 10.5, 10.6**
     ///
     /// For any valid AppSettings object, saving through ConfigManager and then loading
     /// should produce an equivalent AppSettings object with all fields preserved.
@@ -780,7 +774,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 4: Settings Persistence Round-Trip**
-    /// **Validates: Requirements 6.1, 6.2**
     ///
     /// For any settings configuration, saving via build_settings() and then loading via
     /// set_settings() should produce identical settings values. This tests the complete
@@ -878,7 +871,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 3: Settings Serialization Round-Trip**
-    /// **Validates: Requirements 5.1, 5.2, 5.3**
     ///
     /// For any valid SecretSettings, serializing to TOML and deserializing back SHALL produce
     /// equivalent settings, except the kdbx_password field which SHALL always be None after

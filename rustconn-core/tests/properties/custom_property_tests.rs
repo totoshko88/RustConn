@@ -1,7 +1,6 @@
 //! Property-based tests for custom properties
 //!
 //! **Feature: rustconn-enhancements, Property 22: Custom Property Type Preservation**
-//! **Validates: Requirements 10.6**
 
 use proptest::prelude::*;
 use rustconn_core::{CustomProperty, PropertyType};
@@ -48,7 +47,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 22: Custom Property Type Preservation**
-    /// **Validates: Requirements 10.6**
     ///
     /// For any custom property with a specific type, serializing to JSON and
     /// deserializing should preserve the property type.
@@ -78,7 +76,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 22: Custom Property Type Preservation**
-    /// **Validates: Requirements 10.6**
     ///
     /// For any custom property with a specific type, serializing to TOML and
     /// deserializing should preserve the property type.

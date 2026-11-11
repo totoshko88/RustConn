@@ -107,8 +107,6 @@ fn expected_key_path(connection: &Connection, groups: &[ConnectionGroup]) -> Opt
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(200))]
 
-    /// **Validates: Requirements 1.3**
-    ///
     /// P5 — SSH Inheritance Termination: `resolve_ssh_key_path()` terminates
     /// for any group hierarchy, including cycles. If this test body executes
     /// to completion, the function terminated.
@@ -130,8 +128,6 @@ proptest! {
         }
     }
 
-    /// **Validates: Requirements 1.2**
-    ///
     /// P6 — SSH Inheritance Correctness: The result of `resolve_ssh_key_path()`
     /// matches a manual chain walk (the oracle). If the nearest ancestor has
     /// `ssh_key_path = Some(p)`, the function returns `Some(p)`. If none has
@@ -160,8 +156,6 @@ proptest! {
         }
     }
 
-    /// **Validates: Requirements 1.2**
-    ///
     /// P6 supplement — Determinism: Same input always produces same output.
     #[test]
     fn p6_resolve_ssh_key_path_is_deterministic(
@@ -184,8 +178,6 @@ proptest! {
         prop_assert_eq!(result1, result2, "resolve_ssh_key_path is not deterministic");
     }
 
-    /// **Validates: Requirements 1.3**
-    ///
     /// P5 supplement — Cycles with keys: Even when a cycle exists, if a group
     /// in the cycle has a key set, the function returns it (before hitting
     /// the cycle again).

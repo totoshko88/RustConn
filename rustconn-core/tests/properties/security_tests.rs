@@ -1,7 +1,6 @@
 //! Property-based tests for credentials security
 //!
 //! **Feature: rustconn, Property 13: Credentials Security Invariant**
-//! **Validates: Requirements 5.5**
 
 use std::path::PathBuf;
 
@@ -98,7 +97,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 13: Credentials Security Invariant**
-    /// **Validates: Requirements 5.5**
     ///
     /// For any Credentials object associated with SSH key authentication,
     /// the credentials must contain only the key file path and never the

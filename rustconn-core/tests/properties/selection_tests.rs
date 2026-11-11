@@ -1,7 +1,6 @@
 //! Property-based tests for Multi-Selection operations
 //!
 //! **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-//! **Validates: Requirements 2.1, 2.2, 2.3, 2.6**
 //!
 //! Note: These tests verify the selection logic at the data model level.
 //! The actual GTK4 SelectionModel integration is tested through the sidebar module.
@@ -166,7 +165,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.1, 2.2, 2.3, 2.6**
     ///
     /// For any set of selection operations (select, deselect, select-all, clear),
     /// the set of selected IDs returned by get_selected_ids() must exactly match
@@ -224,7 +222,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.1, 2.6**
     ///
     /// When switching from multi-selection mode to single-selection mode,
     /// all selections should be cleared.
@@ -259,7 +256,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.3**
     ///
     /// In multi-selection mode, select_all should select all items.
     #[test]
@@ -290,7 +286,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.3**
     ///
     /// In single-selection mode, select_all should have no effect.
     #[test]
@@ -312,7 +307,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.2**
     ///
     /// In single-selection mode, selecting a new item should deselect the previous one.
     #[test]
@@ -352,7 +346,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.2**
     ///
     /// In multi-selection mode, selecting multiple items should keep all of them selected.
     #[test]
@@ -386,7 +379,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.5**
     ///
     /// Clear selection should remove all selections regardless of mode.
     #[test]
@@ -423,7 +415,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 1: Multi-Selection Consistency**
-    /// **Validates: Requirements 2.2**
     ///
     /// Toggle operation should correctly add or remove items from selection.
     #[test]

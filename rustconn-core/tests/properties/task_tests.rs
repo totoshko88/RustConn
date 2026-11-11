@@ -1,7 +1,7 @@
 //! Property-based tests for the Connection Tasks system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Connection Tasks system (Requirements 1.x).
+//! for the Connection Tasks system.
 
 use proptest::prelude::*;
 use rustconn_core::{
@@ -55,7 +55,6 @@ proptest! {
 
     // ========== Property 11: Task Variable Substitution ==========
     // **Feature: rustconn-enhancements, Property 11: Task Variable Substitution**
-    // **Validates: Requirements 1.6**
     //
     // For any task command containing variable references, execution should use
     // substituted values.
@@ -211,7 +210,6 @@ proptest! {
 
     // ========== Property 12: Task Failure Handling ==========
     // **Feature: rustconn-enhancements, Property 12: Task Failure Handling**
-    // **Validates: Requirements 1.3**
     //
     // For any pre-connect task that returns non-zero exit code, the connection
     // attempt should be aborted.

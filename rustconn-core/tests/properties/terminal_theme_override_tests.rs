@@ -1,6 +1,4 @@
 //! Property-based tests for `ConnectionThemeOverride` validation and serde round-trip.
-//!
-//! **Validates: Requirements 1.1, 1.6, 11.2**
 
 use proptest::prelude::*;
 use rustconn_core::models::ConnectionThemeOverride;
@@ -76,7 +74,6 @@ fn valid_theme_override() -> impl Strategy<Value = ConnectionThemeOverride> {
 
 // ---------------------------------------------------------------------------
 // Proptest 1: Any valid hex `#[0-9a-fA-F]{6}` passes validation
-// **Validates: Requirements 1.1, 1.6**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -93,7 +90,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 2: Invalid string (no #, wrong length, invalid chars) fails
-// **Validates: Requirements 1.6**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -125,7 +121,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 3: Serde round-trip — serialize → deserialize = identical result
-// **Validates: Requirements 1.1, 11.2**
 // ---------------------------------------------------------------------------
 
 proptest! {

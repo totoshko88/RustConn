@@ -1,6 +1,4 @@
 //! Property-based tests for the MOSH protocol module.
-//!
-//! **Validates: Requirements 4.7, 11.3**
 
 use proptest::prelude::*;
 use rustconn_core::models::{Connection, MoshConfig, MoshPredictMode, ProtocolConfig};
@@ -51,8 +49,6 @@ fn arb_hostname() -> impl Strategy<Value = String> {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
-    /// **Validates: Requirements 4.7, 11.3**
-    ///
     /// Serde round-trip: serialize then deserialize MoshConfig produces identical value.
     #[test]
     fn mosh_config_serde_roundtrip(config in arb_mosh_config()) {
@@ -79,8 +75,6 @@ proptest! {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
-    /// **Validates: Requirements 4.3, 4.4**
-    ///
     /// build_command() with various option combinations generates a valid command
     /// where the first element is "mosh" and the host is present.
     #[test]
@@ -129,8 +123,6 @@ proptest! {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(50))]
 
-    /// **Validates: Requirements 4.5**
-    ///
     /// Empty host should produce a validation error.
     #[test]
     fn mosh_empty_host_validation_error(config in arb_mosh_config()) {

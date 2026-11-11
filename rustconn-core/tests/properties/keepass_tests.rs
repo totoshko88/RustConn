@@ -125,7 +125,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: keepass-integration, Property 1: KDBX Path Validation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any file path string, the validation function SHALL return success only if
     /// the path ends with ".kdbx" extension (case-insensitive) and the file exists.
@@ -150,7 +149,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 1: KDBX Path Validation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any file path string, the validation function SHALL return success only if
     /// the path ends with ".kdbx" extension (case-insensitive) and the file exists.
@@ -179,7 +177,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 1: KDBX Path Validation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any file path string, the validation function SHALL return success only if
     /// the path ends with ".kdbx" extension (case-insensitive) and the file exists.
@@ -205,7 +202,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 1: KDBX Path Validation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any file path string, the validation function SHALL return success only if
     /// the path ends with ".kdbx" extension (case-insensitive) and the file exists.
@@ -234,7 +230,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 7: Version String Parsing**
-    /// **Validates: Requirements 2.2**
     ///
     /// For any valid KeePassXC version output string, the parser SHALL extract
     /// a non-empty version string.
@@ -273,7 +268,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 7: Version String Parsing**
-    /// **Validates: Requirements 2.2**
     ///
     /// For any invalid version output (no version number), the parser should return None.
     #[test]
@@ -289,7 +283,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 6: Lookup Key Generation**
-    /// **Validates: Requirements 4.4**
     ///
     /// For any connection, the generated KeePass lookup key SHALL contain either
     /// the connection name or the host, ensuring consistent retrieval.
@@ -316,7 +309,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 6: Lookup Key Generation**
-    /// **Validates: Requirements 4.4**
     ///
     /// For any connection with empty/whitespace name, the generated KeePass lookup key
     /// SHALL contain the host, ensuring consistent retrieval.
@@ -341,7 +333,6 @@ proptest! {
     }
 
     /// **Feature: keepass-integration, Property 6: Lookup Key Generation**
-    /// **Validates: Requirements 4.4**
     ///
     /// For any connection, the generated lookup key SHALL be non-empty and contain
     /// a meaningful identifier (either name or host).
@@ -433,7 +424,6 @@ fn create_test_connection_with_source(
 // ========== Button State Consistency Tests ==========
 
 /// **Feature: keepass-integration, Property 4: Button State Consistency**
-/// **Validates: Requirements 3.2, 3.3**
 ///
 /// For any KeePass integration state (enabled/disabled), the "Save to KeePass"
 /// button sensitivity SHALL equal the integration enabled state.
@@ -458,7 +448,6 @@ mod button_state_tests {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         /// **Feature: keepass-integration, Property 4: Button State Consistency**
-        /// **Validates: Requirements 3.2, 3.3**
         ///
         /// For any KeePass integration state, the button sensitivity equals the enabled state.
         #[test]
@@ -473,7 +462,6 @@ mod button_state_tests {
         }
 
         /// **Feature: keepass-integration, Property 4: Button State Consistency**
-        /// **Validates: Requirements 3.2, 3.3**
         ///
         /// For any SecretSettings configuration, the button sensitivity should match
         /// the kdbx_enabled field.
@@ -504,7 +492,6 @@ mod button_state_tests {
         }
 
         /// **Feature: keepass-integration, Property 4: Button State Consistency**
-        /// **Validates: Requirements 3.2, 3.3**
         ///
         /// When KeePass is disabled, the button should always be insensitive.
         #[test]
@@ -530,7 +517,6 @@ mod button_state_tests {
         }
 
         /// **Feature: keepass-integration, Property 4: Button State Consistency**
-        /// **Validates: Requirements 3.2, 3.3**
         ///
         /// When KeePass is enabled, the button should always be sensitive.
         #[test]
@@ -569,7 +555,6 @@ mod resolution_chain_tests {
     use super::*;
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// For any connection with password_source set to Stored or Prompt,
     /// the resolver SHALL return None (caller handles these cases).
@@ -637,7 +622,6 @@ mod resolution_chain_tests {
     }
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// For any connection with password_source set to KeePass, when KeePass
     /// integration is NOT active, the resolver SHALL return None (or try fallback).
@@ -667,7 +651,6 @@ mod resolution_chain_tests {
     }
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// For any connection with password_source set to None and fallback disabled,
     /// the resolver SHALL return None.
@@ -696,7 +679,6 @@ mod resolution_chain_tests {
     }
 
     /// **Feature: keepass-integration, Property 5: Credential Resolution Chain**
-    /// **Validates: Requirements 4.1, 4.2, 4.3**
     ///
     /// Verifies that is_keepass_active correctly reflects the settings state.
     #[test]
@@ -741,7 +723,6 @@ mod resolution_chain_tests {
 // ========== KeePass Hierarchy Tests ==========
 
 /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
-/// **Validates: Requirements 3.2, 3.3**
 ///
 /// For any connection with a group assignment, the KeePass entry path should contain
 /// all ancestor group names in order from root to leaf.
@@ -848,7 +829,6 @@ mod hierarchy_tests {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
-        /// **Validates: Requirements 3.2, 3.3**
         ///
         /// For any connection with a group assignment, the KeePass entry path should contain
         /// all ancestor group names in order from root to leaf.
@@ -910,7 +890,6 @@ mod hierarchy_tests {
         }
 
         /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
-        /// **Validates: Requirements 3.2**
         ///
         /// For any connection without a group, the path should be RustConn/connection_name
         #[test]
@@ -930,7 +909,6 @@ mod hierarchy_tests {
         }
 
         /// **Feature: rustconn-fixes-v2, Property 2: KeePass Entry Creation Creates All Parent Groups**
-        /// **Validates: Requirements 3.4**
         ///
         /// For any KeePass entry path with multiple levels, the ensure_groups_exist function
         /// should identify all parent groups that need to be created.
@@ -982,7 +960,6 @@ mod hierarchy_tests {
         }
 
         /// **Feature: rustconn-fixes-v2, Property 2: KeePass Entry Creation Creates All Parent Groups**
-        /// **Validates: Requirements 3.4**
         ///
         /// When some groups already exist, only missing groups should be created.
         #[test]
@@ -1036,7 +1013,6 @@ mod hierarchy_tests {
         }
 
         /// **Feature: rustconn-fixes-v2, Property 1: KeePass Entry Path Matches Connection Hierarchy**
-        /// **Validates: Requirements 3.3**
         ///
         /// When a connection's group changes, the new path should reflect the new hierarchy.
         #[test]

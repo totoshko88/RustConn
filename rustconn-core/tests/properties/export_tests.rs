@@ -111,7 +111,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 4: Ansible Export Round-Trip**
-    /// **Validates: Requirements 3.6, 9.5**
     ///
     /// For any set of SSH connections, exporting to Ansible inventory format (INI)
     /// and re-importing should preserve hostname, port, username, and key path.
@@ -189,7 +188,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 4: Ansible Export Round-Trip (YAML)**
-    /// **Validates: Requirements 3.6, 9.5**
     ///
     /// For any set of SSH connections, exporting to Ansible inventory format (YAML)
     /// and re-importing should preserve hostname, port, username, and key path.
@@ -255,7 +253,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 5: Ansible Export Completeness**
-    /// **Validates: Requirements 3.2, 3.3, 3.4**
     ///
     /// For any SSH connection with non-default port, the exported Ansible inventory
     /// should include ansible_host, ansible_user, ansible_port, and
@@ -313,7 +310,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 5: Ansible Export Completeness (Groups)**
-    /// **Validates: Requirements 3.3**
     ///
     /// For any set of connections organized in groups, the exported Ansible inventory
     /// should organize hosts under their respective group sections.
@@ -361,7 +357,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 5: Ansible Export Completeness (YAML Groups)**
-    /// **Validates: Requirements 3.3**
     ///
     /// For any set of connections organized in groups, the exported YAML inventory
     /// should have a nested structure with children groups.
@@ -405,7 +400,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property: Non-SSH connections are skipped**
-    /// **Validates: Requirements 3.1**
     ///
     /// For any non-SSH connection mixed with SSH connections, the Ansible exporter
     /// should only export the SSH connections (Ansible inventory only supports SSH).
@@ -452,7 +446,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 6: SSH Config Export Round-Trip**
-    /// **Validates: Requirements 4.6, 9.5**
     ///
     /// For any set of SSH connections, exporting to SSH config format
     /// and re-importing should preserve hostname, port, username, and identity file.
@@ -530,7 +523,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 7: SSH Config Export Completeness**
-    /// **Validates: Requirements 4.2, 4.3, 4.4**
     ///
     /// For any SSH connection, the exported SSH config should include Host (from name),
     /// HostName, User, Port, and IdentityFile directives when applicable.
@@ -592,7 +584,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 7: SSH Config Export with ProxyJump**
-    /// **Validates: Requirements 4.2, 4.3**
     ///
     /// For any SSH connection with ProxyJump configured, the exported SSH config
     /// should include the ProxyJump directive.
@@ -619,7 +610,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property: SSH Config Export skips non-SSH**
-    /// **Validates: Requirements 4.1**
     ///
     /// For any non-SSH connection mixed with SSH connections, the SSH config exporter
     /// should only export the SSH connections.
@@ -666,7 +656,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 8: Remmina Export Round-Trip**
-    /// **Validates: Requirements 5.6, 9.5**
     ///
     /// For any connection (SSH, RDP, or VNC), exporting to Remmina format
     /// and re-importing should preserve protocol type, hostname, port, and username.
@@ -742,7 +731,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 8: Remmina Export Round-Trip (RDP)**
-    /// **Validates: Requirements 5.6, 9.5**
     ///
     /// For any RDP connection, exporting to Remmina format and re-importing
     /// should preserve protocol type, hostname, port, and username.
@@ -816,7 +804,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 8: Remmina Export Round-Trip (VNC)**
-    /// **Validates: Requirements 5.6, 9.5**
     ///
     /// For any VNC connection, exporting to Remmina format and re-importing
     /// should preserve protocol type, hostname, and port.
@@ -888,7 +875,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 9: Remmina Export Protocol Handling (SSH)**
-    /// **Validates: Requirements 5.2, 5.3, 5.4**
     ///
     /// For any SSH connection, the exported Remmina file should contain
     /// the correct protocol-specific fields (protocol=SSH, ssh_privatekey).
@@ -935,7 +921,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 9: Remmina Export Protocol Handling (RDP)**
-    /// **Validates: Requirements 5.2, 5.3, 5.4**
     ///
     /// For any RDP connection, the exported Remmina file should contain
     /// the correct protocol-specific fields (protocol=RDP, domain).
@@ -989,7 +974,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 9: Remmina Export Protocol Handling (VNC)**
-    /// **Validates: Requirements 5.2, 5.3, 5.4**
     ///
     /// For any VNC connection, the exported Remmina file should contain
     /// the correct protocol-specific fields (protocol=VNC, server with port).
@@ -1021,7 +1005,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 10: Asbru Export Round-Trip**
-    /// **Validates: Requirements 6.5, 9.5**
     ///
     /// For any set of connections with groups, exporting to Asbru format
     /// and re-importing should preserve connection properties and group hierarchy.
@@ -1095,7 +1078,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 10: Asbru Export Round-Trip (RDP)**
-    /// **Validates: Requirements 6.5, 9.5**
     ///
     /// For any RDP connection, exporting to Asbru format and re-importing
     /// should preserve protocol type, hostname, port, and username.
@@ -1169,7 +1151,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 10: Asbru Export Round-Trip (VNC)**
-    /// **Validates: Requirements 6.5, 9.5**
     ///
     /// For any VNC connection, exporting to Asbru format and re-importing
     /// should preserve protocol type, hostname, and port.
@@ -1241,7 +1222,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 11: Asbru Export Group Hierarchy**
-    /// **Validates: Requirements 6.2, 6.3**
     ///
     /// For any set of connections organized in groups, the exported Asbru YAML
     /// should preserve the parent-child relationships.
@@ -1328,7 +1308,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 11: Asbru Export Nested Group Hierarchy**
-    /// **Validates: Requirements 6.2, 6.3**
     ///
     /// For nested groups (parent-child groups), the exported Asbru YAML
     /// should preserve the nested hierarchy.

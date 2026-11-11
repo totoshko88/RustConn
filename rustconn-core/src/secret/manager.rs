@@ -508,7 +508,7 @@ impl SecretManager {
     /// Returns `SecretError::BackendUnavailable` when no backends are registered.
     /// When `allow_fallback` is `false` and the primary backend fails, the
     /// primary's original error is returned unchanged — it is neither wrapped nor
-    /// replaced (Requirement 14.2). A primary [`SecretError::ReadOnly`] is
+    /// replaced. A primary [`SecretError::ReadOnly`] is
     /// returned unchanged even when `allow_fallback` is `true`: read-only is a
     /// refusal, not a failure to route around. When `allow_fallback` is `true` and every
     /// backend in the chain fails, the primary backend's error is returned so the
@@ -535,7 +535,7 @@ impl SecretManager {
             Err(e) => e,
         };
 
-        // Requirement 14.2: without fallback authorisation, surface the
+        // Without fallback authorisation, surface the
         // primary error unchanged. A read-only primary is a refusal the user
         // configured, not an availability failure, so it is never routed
         // around either: writing the fallback would violate read-only and leave

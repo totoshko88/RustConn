@@ -8,7 +8,6 @@ use rustconn_core::models::PasswordSource;
 
 // ---------------------------------------------------------------------------
 // Proptest 10: Serde round-trip for PasswordSource::Script(command)
-// **Validates: Requirements 5.8**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -31,7 +30,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 11: Arbitrary command string preserved through serialize/deserialize
-// **Validates: Requirements 5.8, 11.4, 11.8**
 // ---------------------------------------------------------------------------
 
 proptest! {

@@ -6,7 +6,6 @@
 //! # Requirements Coverage
 //!
 //! - Property 14: SPICE Fallback on Failure
-//! - Validates: Requirements 1.5
 
 use proptest::prelude::*;
 use rustconn_core::spice_client::{
@@ -127,8 +126,6 @@ proptest! {
     ///
     /// *For any* failed native SPICE connection attempt, the system SHALL attempt
     /// fallback to external viewer.
-    ///
-    /// **Validates: Requirements 1.5**
     ///
     /// This test verifies that:
     /// 1. The fallback mechanism is available (detect_spice_viewer works)

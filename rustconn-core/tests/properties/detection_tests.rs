@@ -4,16 +4,12 @@
 //! and cloud provider detection as defined in the design document.
 //!
 //! **Feature: rustconn-bugfixes, Property 9: Client Detection**
-//! **Validates: Requirements 7.2, 7.3, 7.4**
 //!
 //! **Feature: rustconn-fixes-v2, Property 10: VNC Viewer Detection**
-//! **Validates: Requirements 8.1, 8.3**
 //!
 //! **Feature: rustconn-fixes-v2, Property 4: AWS SSM Command Detection**
-//! **Validates: Requirements 5.1**
 //!
 //! **Feature: rustconn-fixes-v2, Property 5: GCloud Command Detection**
-//! **Validates: Requirements 5.2**
 
 use proptest::prelude::*;
 use rustconn_core::protocol::icons::{CloudProvider, detect_provider};
@@ -30,7 +26,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: rustconn-bugfixes, Property 9: Client Detection**
-    // **Validates: Requirements 7.2, 7.3, 7.4**
     //
     // For any installed client binary, detection SHALL return installed=true
     // with version string.
@@ -148,7 +143,6 @@ proptest! {
 
     // ========================================================================
     // **Feature: rustconn-fixes-v2, Property 10: VNC Viewer Detection**
-    // **Validates: Requirements 8.1, 8.3**
     //
     // For any system with at least one VNC viewer installed, the detection
     // function should return a valid viewer path.
@@ -241,7 +235,6 @@ proptest! {
 
     // ========================================================================
     // **Feature: rustconn-fixes-v2, Property 4: AWS SSM Command Detection**
-    // **Validates: Requirements 5.1**
     //
     // For any command containing "aws ssm", "aws-ssm", or EC2 instance ID
     // patterns (i-*), the provider detection should return AWS.
@@ -328,7 +321,6 @@ proptest! {
 
     // ========================================================================
     // **Feature: rustconn-fixes-v2, Property 5: GCloud Command Detection**
-    // **Validates: Requirements 5.2**
     //
     // For any command containing "gcloud" or "iap-tunnel", the provider
     // detection should return Google Cloud.
@@ -681,7 +673,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: hoop-dev-zerotrust, Property 1: HoopDevConfig serialization round-trip**
-    // **Validates: Requirements 2.4, 10.1, 10.2, 10.3, 12.3**
     //
     // For any valid HoopDevConfig, serializing to JSON then deserializing
     // must produce an equivalent HoopDevConfig.
@@ -695,7 +686,6 @@ proptest! {
     }
 
     // **Feature: hoop-dev-zerotrust, Property 2: None fields omitted from serialized JSON**
-    // **Validates: Requirements 2.5**
     //
     // When gateway_url or grpc_url is None, the serialized JSON must not
     // contain the corresponding key.
@@ -719,7 +709,6 @@ proptest! {
     }
 
     // **Feature: hoop-dev-zerotrust, Property 3: Validation accepts valid configs and rejects empty connection_name**
-    // **Validates: Requirements 3.1, 3.2**
     //
     // ZeroTrustConfig::validate() returns Ok(()) iff connection_name.trim()
     // is non-empty. Empty or whitespace-only names must be rejected.
