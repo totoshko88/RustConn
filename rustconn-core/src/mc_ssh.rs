@@ -90,12 +90,22 @@ impl McSshEnv {
 
     /// Returns the `PATH=…` entry to pass to the mc child process.
     ///
-    /// Prepends the wrapper directory to the inherited `PATH` so mc's `ssh`
-    /// resolves to the wrapper and everything else still resolves normally.
+    /// Prepends the wrapper directory to
+    /// [`crate::cli_download::get_extended_path`] so mc's `ssh` resolves to the
+    /// wrapper and everything else resolves as in any other session. The
+    /// extended path, not the inherited `PATH`: this entry replaces the child's
+    /// whole `PATH`, and the child is started by that `PATH`. A macOS app
+    /// launched from the Dock or Finder inherits launchd's
+    /// `/usr/bin:/bin:/usr/sbin:/sbin`, so a Homebrew `mc` that the
+    /// availability check found could not be started (issue #422).
     #[must_use]
     pub fn path_env(&self) -> String {
-        let inherited = std::env::var("PATH").unwrap_or_default();
-        format!("PATH={}:{inherited}", self.wrapper_dir.display())
+        self.path_env_over(&crate::cli_download::get_extended_path())
+    }
+
+    /// `PATH=<wrapper dir>:<search_path>`.
+    fn path_env_over(&self, search_path: &str) -> String {
+        format!("PATH={}:{search_path}", self.wrapper_dir.display())
     }
 
     /// Returns the generated `ssh_config` path (useful for logging and tests).
@@ -502,12 +512,22 @@ fn build_ssh_config(
 
 /// Locates the real `ssh` binary, skipping our own wrapper directory.
 ///
-/// Scanning `PATH` rather than hardcoding `/usr/bin/ssh` keeps the wrapper
-/// working where ssh lives elsewhere (Homebrew on macOS, Nix profiles), and
-/// excluding `wrapper_dir` is what stops the wrapper from calling itself.
+/// Scanning the search path rather than hardcoding `/usr/bin/ssh` keeps the
+/// wrapper working where ssh lives elsewhere (Homebrew on macOS, Nix
+/// profiles), and excluding `wrapper_dir` is what stops the wrapper from
+/// calling itself. The search path is the one mc gets ([`McSshEnv::path_env`]),
+/// so a Dock launch and a terminal launch pick the same `ssh`.
 fn find_real_ssh(wrapper_dir: &Path) -> PathBuf {
-    let path = std::env::var_os("PATH").unwrap_or_default();
-    for dir in std::env::split_paths(&path) {
+    find_real_ssh_in(wrapper_dir, &crate::cli_download::get_extended_path())
+}
+
+/// [`find_real_ssh`] over an explicit `:`-separated search path.
+fn find_real_ssh_in(wrapper_dir: &Path, search_path: &str) -> PathBuf {
+    for dir in search_path
+        .split(':')
+        .filter(|d| !d.is_empty())
+        .map(Path::new)
+    {
         if dir == wrapper_dir {
             continue;
         }
@@ -1081,16 +1101,86 @@ mod tests {
         );
     }
 
-    #[test]
-    fn find_real_ssh_skips_the_wrapper_directory() {
-        let dir = tempfile::tempdir().unwrap();
-        let decoy = dir.path().join("ssh");
-        std::fs::write(&decoy, b"#!/bin/sh\n").unwrap();
+    fn env_in(wrapper_dir: &Path) -> McSshEnv {
+        McSshEnv {
+            wrapper_dir: wrapper_dir.to_path_buf(),
+            config_path: wrapper_dir.join("ssh_config"),
+            secret_file: None,
+        }
+    }
 
-        // With the directory excluded, the decoy must not be chosen even though
-        // it is first on PATH.
-        let found = find_real_ssh(dir.path());
-        assert_ne!(found, decoy);
+    #[test]
+    fn path_env_prepends_the_wrapper_to_the_extended_path() {
+        let env = env_in(Path::new("/tmp/rustconn-mc-ssh/session"));
+        assert_eq!(
+            env.path_env(),
+            format!(
+                "PATH=/tmp/rustconn-mc-ssh/session:{}",
+                crate::cli_download::get_extended_path()
+            )
+        );
+    }
+
+    /// Issue #422: the child is started by the `PATH` it is given, so a program
+    /// only on the extended search path (a Homebrew `mc` under a Dock launch)
+    /// is found with `path_env_over` and is "not installed" with launchd's PATH.
+    #[cfg(unix)]
+    #[test]
+    fn a_program_only_on_the_search_path_is_found_by_the_child() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tools = tempfile::tempdir().unwrap();
+        let probe = tools.path().join("rc-issue422-probe");
+        std::fs::write(&probe, b"#!/bin/sh\nexit 0\n").unwrap();
+        std::fs::set_permissions(&probe, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let wrapper = tempfile::tempdir().unwrap();
+        let env = env_in(wrapper.path());
+
+        let search_path = format!("{}:/usr/bin:/bin", tools.path().display());
+        let path = env.path_env_over(&search_path);
+        let status = std::process::Command::new("rc-issue422-probe")
+            .env_clear()
+            .env("PATH", path.trim_start_matches("PATH="))
+            .status()
+            .unwrap();
+        assert!(status.success());
+
+        let launchd = std::process::Command::new("rc-issue422-probe")
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
+            .status()
+            .unwrap_err();
+        assert_eq!(launchd.kind(), std::io::ErrorKind::NotFound);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn find_real_ssh_in_skips_the_wrapper_and_uses_the_given_path() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let wrapper = tempfile::tempdir().unwrap();
+        let decoy = wrapper.path().join("ssh");
+        std::fs::write(&decoy, b"#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&decoy, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let tools = tempfile::tempdir().unwrap();
+        let real = tools.path().join("ssh");
+        std::fs::write(&real, b"#!/bin/sh\n").unwrap();
+        std::fs::set_permissions(&real, std::fs::Permissions::from_mode(0o700)).unwrap();
+
+        // The wrapper directory comes first and must be skipped; the next
+        // directory of the given path wins over anything on the process PATH.
+        let search_path = format!(
+            "{}::{}:/usr/bin",
+            wrapper.path().display(),
+            tools.path().display()
+        );
+        assert_eq!(find_real_ssh_in(wrapper.path(), &search_path), real);
+        // Nothing usable on the given path: the hardcoded fallback.
+        let only_wrapper = wrapper.path().display().to_string();
+        assert_eq!(
+            find_real_ssh_in(wrapper.path(), &only_wrapper),
+            PathBuf::from("/usr/bin/ssh")
+        );
     }
 
     fn strs(v: &[&str]) -> Vec<String> {
