@@ -653,6 +653,264 @@ fn show_prints_the_socks_login_of_a_web_connection() {
     assert!(!text.contains("hunter2"), "{text}");
 }
 
+/// Saves `variables` as the global variables of the config dir.
+fn save_variables(config_dir: &std::path::Path, variables: &[rustconn_core::variables::Variable]) {
+    rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf())
+        .save_variables(variables)
+        .expect("save variables");
+}
+
+/// The names of the saved connections.
+fn saved_connection_names(config_dir: &std::path::Path) -> Vec<String> {
+    rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf())
+        .load_connections()
+        .expect("load connections")
+        .into_iter()
+        .map(|c| c.name)
+        .collect()
+}
+
+/// `add` of a Web connection through a SOCKS proxy, with `extra` arguments.
+fn add_socks_web(config_dir: &std::path::Path, extra: &[&str]) -> Output {
+    let mut args = vec![
+        "add",
+        "--name",
+        "intranet",
+        "--protocol",
+        "web",
+        "--host",
+        "https://example.com",
+        "--socks-proxy",
+        "127.0.0.1:1080",
+    ];
+    args.extend_from_slice(extra);
+    run_cli(&args, Some(config_dir))
+}
+
+/// Asserts that `out` failed with `expected` on stderr and saved no `intranet`.
+fn assert_socks_refused(config_dir: &std::path::Path, out: &Output, expected: &str) {
+    assert!(!out.status.success(), "must be refused");
+    let stderr = stderr_str(out);
+    assert!(stderr.contains(expected), "{stderr}");
+    assert!(!stderr.contains("hunter2"), "{stderr}");
+    assert!(
+        !saved_connection_names(config_dir).contains(&"intranet".to_string()),
+        "a refused connection must not be saved"
+    );
+}
+
+/// Adds an SSH connection named `bastion` for `--tunnel-via`.
+fn add_tunnel_bastion(config_dir: &std::path::Path) {
+    let bastion = run_cli(
+        &[
+            "add",
+            "--name",
+            "bastion",
+            "--protocol",
+            "ssh",
+            "--host",
+            "bastion.lan",
+        ],
+        Some(config_dir),
+    );
+    assert!(bastion.status.success(), "{}", stderr_str(&bastion));
+}
+
+/// On `add` the argument parser refuses the pair before `check_web_socks_settings`.
+#[test]
+fn add_refuses_a_socks_proxy_with_a_tunnel() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    add_tunnel_bastion(config_dir);
+
+    let out = add_socks_web(config_dir, &["--tunnel-via", "bastion"]);
+    assert_socks_refused(
+        config_dir,
+        &out,
+        "'--socks-proxy <HOST:PORT>' cannot be used with '--tunnel-via <NAME|UUID>'",
+    );
+}
+
+/// A proxy added by `update` to a connection that already tunnels is refused by
+/// `check_web_socks_settings`.
+#[test]
+fn update_refuses_a_socks_proxy_beside_a_saved_tunnel() {
+    use rustconn_core::models::ProtocolConfig;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    add_tunnel_bastion(config_dir);
+    let add = run_cli(
+        &[
+            "add",
+            "--name",
+            "intranet",
+            "--protocol",
+            "web",
+            "--host",
+            "https://example.com",
+            "--tunnel-via",
+            "bastion",
+        ],
+        Some(config_dir),
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let out = run_cli(
+        &["update", "intranet", "--socks-proxy", "127.0.0.1:1080"],
+        Some(config_dir),
+    );
+    assert!(
+        !out.status.success(),
+        "a proxy beside a tunnel must be refused"
+    );
+    let stderr = stderr_str(&out);
+    assert!(
+        stderr.contains("Choose either an SSH tunnel or a SOCKS proxy, not both"),
+        "{stderr}"
+    );
+    let connections =
+        rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf())
+            .load_connections()
+            .expect("load connections");
+    let web = connections
+        .iter()
+        .find(|c| c.name == "intranet")
+        .expect("the Web connection is still saved");
+    let ProtocolConfig::Web(cfg) = &web.protocol_config else {
+        panic!("the saved connection is a Web connection");
+    };
+    assert_eq!(cfg.socks_proxy, None, "a refused update must not be saved");
+}
+
+#[test]
+fn add_refuses_a_socks_login_without_a_password_variable() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = add_socks_web(config_dir, &["--socks-proxy-user", "alice"]);
+    assert_socks_refused(
+        config_dir,
+        &out,
+        "A SOCKS proxy login needs a proxy, a username and a password variable",
+    );
+}
+
+#[test]
+fn add_refuses_a_missing_socks_password_variable() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+
+    let out = add_socks_web(
+        config_dir,
+        &[
+            "--socks-proxy-user",
+            "alice",
+            "--socks-proxy-password-var",
+            "absent_pw",
+        ],
+    );
+    assert_socks_refused(config_dir, &out, "no global variable is named 'absent_pw'");
+}
+
+#[test]
+fn add_refuses_a_plain_socks_password_variable() {
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    save_variables(config_dir, &[Variable::new("plain_pw", "hunter2")]);
+
+    let out = add_socks_web(
+        config_dir,
+        &[
+            "--socks-proxy-user",
+            "alice",
+            "--socks-proxy-password-var",
+            "plain_pw",
+        ],
+    );
+    assert_socks_refused(config_dir, &out, "the variable 'plain_pw' is not secret");
+}
+
+#[test]
+fn add_accepts_a_secret_socks_password_variable() {
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    save_variables(config_dir, &[Variable::new_secret("proxy_pw", "hunter2")]);
+
+    let out = add_socks_web(
+        config_dir,
+        &[
+            "--socks-proxy-user",
+            "alice",
+            "--socks-proxy-password-var",
+            "proxy_pw",
+        ],
+    );
+    assert!(out.status.success(), "{}", stderr_str(&out));
+    assert!(!stdout_str(&out).contains("hunter2"));
+    assert_eq!(saved_connection_names(config_dir), ["intranet"]);
+}
+
+#[test]
+fn update_refuses_a_plain_socks_password_variable() {
+    use rustconn_core::models::ProtocolConfig;
+    use rustconn_core::variables::Variable;
+
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let config_dir = temp_dir.path();
+    save_variables(
+        config_dir,
+        &[
+            Variable::new_secret("proxy_pw", "hunter2"),
+            Variable::new("plain_pw", "hunter2"),
+        ],
+    );
+    let add = add_socks_web(
+        config_dir,
+        &[
+            "--socks-proxy-user",
+            "alice",
+            "--socks-proxy-password-var",
+            "proxy_pw",
+        ],
+    );
+    assert!(add.status.success(), "{}", stderr_str(&add));
+
+    let out = run_cli(
+        &[
+            "update",
+            "intranet",
+            "--socks-proxy-password-var",
+            "plain_pw",
+        ],
+        Some(config_dir),
+    );
+    assert!(!out.status.success(), "a plain variable must be refused");
+    let stderr = stderr_str(&out);
+    assert!(
+        stderr.contains("the variable 'plain_pw' is not secret"),
+        "{stderr}"
+    );
+    assert!(!stderr.contains("hunter2"), "{stderr}");
+
+    let connections =
+        rustconn_core::config::ConfigManager::with_config_dir(config_dir.to_path_buf())
+            .load_connections()
+            .expect("load connections");
+    let ProtocolConfig::Web(cfg) = &connections[0].protocol_config else {
+        panic!("the saved connection is a Web connection");
+    };
+    assert_eq!(
+        cfg.socks_proxy_password_variable.as_deref(),
+        Some("proxy_pw"),
+        "a refused update must leave the saved variable alone"
+    );
+}
+
 #[test]
 fn add_kerberos_stores_and_normalizes_the_kdc_address() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -807,6 +1065,7 @@ fn connect_warns_about_kerberos_with_an_ip_host() {
         stderr_str(&out)
     );
 }
+
 
 // ============================================================================
 // CLI usability (0.24.3): explicit --format, group feedback, aws_ssm validation,
