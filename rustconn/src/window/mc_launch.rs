@@ -213,12 +213,13 @@ fn spawn_mc_tab(
                 .map(std::path::Path::to_path_buf)
                 .into_iter()
                 .collect();
+            let handover = env.filter(rustconn_core::McSshEnv::delivers_password);
             // Delay mc slightly so GTK allocates the VTE widget's final size
             // before mc reads the terminal dimensions at startup.
             glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
                 let argv: Vec<&str> = mc_args.iter().map(String::as_str).collect();
                 let envv: Option<Vec<&str>> = path_env.as_ref().map(|e| vec![e.as_str()]);
-                notebook_for_spawn.spawn_command_with_cleanup(
+                let spawned = notebook_for_spawn.spawn_command_with_cleanup(
                     session_id,
                     &argv,
                     envv.as_deref(),
@@ -226,6 +227,9 @@ fn spawn_mc_tab(
                     None,
                     cleanup,
                 );
+                if spawned && let Some(env) = handover {
+                    watch_password_handover(&notebook_for_spawn, session_id, env);
+                }
             });
         },
     );
@@ -243,6 +247,66 @@ fn spawn_mc_tab(
     }
     notebook.widget().set_vexpand(true);
     notebook.show_tab_view_content();
+}
+
+/// How often [`watch_password_handover`] looks at the wrapper's gate.
+const HANDOVER_POLL: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// How many looks [`watch_password_handover`] takes before it gives up.
+///
+/// mc starts its `ssh` for the `sh://` panel within a second of starting, so
+/// 30 seconds is long enough for a slow machine and short enough to stop.
+const HANDOVER_POLLS: u32 = 60;
+
+/// Warns once when the wrapper was ready to hand over the password but mc's
+/// first `ssh` did not have the argv shape it delivers to.
+///
+/// Without this an mc build that adds a flag makes delivery fail closed in
+/// silence, and the tab waits with no hint to type the password.
+// ponytail: polls a marker file every 500 ms for at most 30 s; a gio
+// FileMonitor on the wrapper directory would remove the delay if it matters.
+fn watch_password_handover(
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    env: rustconn_core::McSshEnv,
+) {
+    use rustconn_core::mc_ssh::PasswordHandover;
+
+    let notebook = std::rc::Rc::downgrade(notebook);
+    let mut polls = 0;
+    glib::timeout_add_local(HANDOVER_POLL, move || {
+        let Some(notebook) = notebook.upgrade() else {
+            return glib::ControlFlow::Break;
+        };
+        if notebook.get_terminal(session_id).is_none() {
+            return glib::ControlFlow::Break;
+        }
+        match env.password_handover() {
+            Some(PasswordHandover::Delivered) => glib::ControlFlow::Break,
+            Some(PasswordHandover::Withheld) => {
+                tracing::warn!(
+                    %session_id,
+                    "mc's ssh did not have the argument shape RustConn hands the password to; mc got no password"
+                );
+                toast(
+                    &notebook,
+                    &i18n(
+                        "RustConn could not hand the password to mc. Type it in the mc tab when mc waits for it.",
+                    ),
+                    ToastType::Warning,
+                );
+                glib::ControlFlow::Break
+            }
+            None if polls >= HANDOVER_POLLS => {
+                tracing::debug!(%session_id, "mc started no ssh yet; no longer watching the password handover");
+                glib::ControlFlow::Break
+            }
+            None => {
+                polls += 1;
+                glib::ControlFlow::Continue
+            }
+        }
+    });
 }
 
 /// What [`mc_password`] found for mc's `ssh`.

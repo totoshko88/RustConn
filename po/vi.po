@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 18:52+0200\n"
+"POT-Creation-Date: 2026-11-11 19:04+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:379
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3601,7 +3601,7 @@ msgstr "Mỗi dòng một regex; để trống nghĩa là dùng các mẫu dựn
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:373
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
 msgid "Password"
 msgstr "Mật khẩu"
 
@@ -10931,7 +10931,7 @@ msgstr "Xóa không gian làm việc đã chọn"
 msgid "Rename selected workspace"
 msgstr "Đổi tên không gian làm việc đã chọn"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:380
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
 msgid "Open"
 msgstr "Mở"
 
@@ -14048,11 +14048,19 @@ msgstr ""
 "mc không nhận được mật khẩu từ RustConn. Hãy nhập mật khẩu trong thẻ mc khi "
 "mc chờ."
 
-#: rustconn/src/window/mc_launch.rs:366
+#: rustconn/src/window/mc_launch.rs:294
+msgid ""
+"RustConn could not hand the password to mc. Type it in the mc tab when mc "
+"waits for it."
+msgstr ""
+"RustConn không thể chuyển mật khẩu cho mc. Hãy nhập mật khẩu trong thẻ mc "
+"khi mc chờ."
+
+#: rustconn/src/window/mc_launch.rs:430
 msgid "Password for {}"
 msgstr "Mật khẩu cho {}"
 
-#: rustconn/src/window/mc_launch.rs:368
+#: rustconn/src/window/mc_launch.rs:432
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

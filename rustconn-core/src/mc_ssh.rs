@@ -79,6 +79,23 @@ pub struct McSshEnv {
 }
 
 impl McSshEnv {
+    /// What the wrapper's gate has done with the password, or `None` before
+    /// mc started an `ssh`.
+    ///
+    /// [`PasswordHandover::Delivered`] wins as soon as one `ssh` got it.
+    /// Meaningful only when [`Self::delivers_password`]: a wrapper without a
+    /// password notes nothing.
+    #[must_use]
+    pub fn password_handover(&self) -> Option<PasswordHandover> {
+        if self.wrapper_dir.join(HANDOVER_DELIVERED).exists() {
+            Some(PasswordHandover::Delivered)
+        } else if self.wrapper_dir.join(HANDOVER_WITHHELD).exists() {
+            Some(PasswordHandover::Withheld)
+        } else {
+            None
+        }
+    }
+
     /// Whether mc's `ssh` reported a refused sign-in for this connection that
     /// no mc open has taken yet.
     ///
@@ -323,6 +340,24 @@ struct Delivery<'a> {
     /// only ssh's messages, not the remote stderr; mc sends stderr to
     /// `/dev/null`. Read by [`McSshEnv::sign_in_refused`].
     log_prefix: &'a Path,
+    /// Where the gate notes each decision for [`McSshEnv::password_handover`].
+    handover_dir: &'a Path,
+}
+
+/// Left in the wrapper directory when an `ssh` got the password.
+const HANDOVER_DELIVERED: &str = "handover-delivered";
+
+/// Left in the wrapper directory when an `ssh` ran without it.
+const HANDOVER_WITHHELD: &str = "handover-withheld";
+
+/// What the wrapper's gate has done with the password so far.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PasswordHandover {
+    /// An `ssh` with mc's argv shape for this connection got the password.
+    Delivered,
+    /// Only `ssh` processes without that shape ran, so none got it: another
+    /// `sh://` link, or an mc build whose argv the gate does not know.
+    Withheld,
 }
 
 /// File name prefix of the delivering `ssh`'s per-run log.
@@ -383,16 +418,30 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
              if [ \"$_rc_ok\" = 1 ] && [ -z \"$_rc_want\" ] && [ \"$_rc_words\" -eq 2 ] \\\n\
              \x20 && [ \"$_rc_host\" = {host} ] && [ \"$_rc_user\" = {user} ] \\\n\
              \x20 && [ \"$_rc_port\" = {port} ]; then\n\
+             \x20 : > {delivered}\n\
              \x20 _RC_TGT_PW_FILE={secret} SSH_ASKPASS={helper} SSH_ASKPASS_REQUIRE=force\n\
              \x20 export _RC_TGT_PW_FILE SSH_ASKPASS SSH_ASKPASS_REQUIRE\n\
              \x20 exec {ssh} -F {config}{route} -E {log}.$$ \"$@\"\n\
-             fi\n",
+             fi\n\
+             : > {withheld}\n",
             host = shell_single_quote(delivery.host),
             user = shell_single_quote(delivery.user),
             port = shell_single_quote(&delivery.port.to_string()),
             secret = shell_single_quote(&delivery.secret_file.to_string_lossy()),
             helper = shell_single_quote(&delivery.helper.to_string_lossy()),
             log = shell_single_quote(&delivery.log_prefix.to_string_lossy()),
+            delivered = shell_single_quote(
+                &delivery
+                    .handover_dir
+                    .join(HANDOVER_DELIVERED)
+                    .to_string_lossy()
+            ),
+            withheld = shell_single_quote(
+                &delivery
+                    .handover_dir
+                    .join(HANDOVER_WITHHELD)
+                    .to_string_lossy()
+            ),
         );
     }
     let _ = writeln!(script, "exec {ssh} -F {config} \"$@\"");
@@ -727,6 +776,7 @@ pub fn prepare_mc_ssh_env(
                 port: connection.port,
                 args,
                 log_prefix: &log_prefix,
+                handover_dir: &wrapper_dir,
             })
             .as_ref(),
     );
@@ -1332,6 +1382,7 @@ mod tests {
                     port,
                     args: &args,
                     log_prefix: &dir.path().join(SSH_LOG_PREFIX),
+                    handover_dir: dir.path(),
                 }),
             );
             let wrapper = dir.path().join("ssh");
@@ -1649,6 +1700,54 @@ mod tests {
         assert!(stub.marker.exists());
         // The logs do not outlive the reading.
         assert!(stub.log_files().is_empty());
+    }
+
+    /// Review item mc-n7: the gate notes what it did, so the tab can say when
+    /// mc's `ssh` never got the password.
+    #[cfg(unix)]
+    #[test]
+    fn the_gate_notes_whether_the_password_was_handed_over() {
+        let mc_argv = [
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ];
+
+        let stub = StubWrapper::new(2222);
+        let env = env_in(stub.dir.path());
+        assert_eq!(env.password_handover(), None);
+        // An mc build with a flag the gate does not know.
+        stub.assert_refused(&["-x", "-p", "2222", "-l", "me", "target.example.com"]);
+        assert_eq!(env.password_handover(), Some(PasswordHandover::Withheld));
+        stub.run(&mc_argv, None, "");
+        assert_eq!(env.password_handover(), Some(PasswordHandover::Delivered));
+
+        let stub = StubWrapper::new(2222);
+        let env = env_in(stub.dir.path());
+        stub.run(&mc_argv, None, "");
+        assert_eq!(env.password_handover(), Some(PasswordHandover::Delivered));
+        stub.assert_refused(&[
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "other.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        assert_eq!(
+            env.password_handover(),
+            Some(PasswordHandover::Delivered),
+            "a later sh:// link does not undo the handover"
+        );
+
+        // The plain wrapper notes nothing.
+        let dir = tempfile::tempdir().unwrap();
+        let script = wrapper_script(Path::new("/bin/true"), &dir.path().join("config"), None);
+        assert!(!script.contains(HANDOVER_WITHHELD));
+        assert!(!script.contains(HANDOVER_DELIVERED));
     }
 
     /// Review item mc-n6: the delivering branch `exec`s ssh, so the process

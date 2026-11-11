@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 18:52+0200\n"
+"POT-Creation-Date: 2026-11-11 19:04+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -60,7 +60,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:379
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3618,7 +3618,7 @@ msgstr "Адзін рэгулярны выраз на радок; пусты —
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:373
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
 msgid "Password"
 msgstr "Пароль"
 
@@ -10975,7 +10975,7 @@ msgstr "Выдаліць абраную працоўную прастору"
 msgid "Rename selected workspace"
 msgstr "Перайменаваць абраную працоўную прастору"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:380
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
 msgid "Open"
 msgstr "Адкрыць"
 
@@ -14122,11 +14122,19 @@ msgstr ""
 "mc не атрымаў пароля ад RustConn. Увядзіце яго ва ўкладцы mc, калі mc будзе "
 "яго чакаць."
 
-#: rustconn/src/window/mc_launch.rs:366
+#: rustconn/src/window/mc_launch.rs:294
+msgid ""
+"RustConn could not hand the password to mc. Type it in the mc tab when mc "
+"waits for it."
+msgstr ""
+"RustConn не змог перадаць пароль у mc. Увядзіце яго ва ўкладцы mc, калі mc "
+"будзе яго чакаць."
+
+#: rustconn/src/window/mc_launch.rs:430
 msgid "Password for {}"
 msgstr "Пароль для {}"
 
-#: rustconn/src/window/mc_launch.rs:368
+#: rustconn/src/window/mc_launch.rs:432
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."
