@@ -4078,6 +4078,45 @@ mod output_filter_gate_tests {
     }
 }
 
+/// The mc tab passes its wrapper `PATH` as an `envv` entry; this pins that it
+/// replaces the extended `PATH` rather than sitting next to it (issue #422).
+#[cfg(test)]
+mod child_env_tests {
+    use super::build_child_env;
+
+    #[test]
+    fn a_path_entry_from_the_caller_replaces_the_extended_path() {
+        // An explicit agent socket keeps the test away from the agent lookup.
+        let env = build_child_env(
+            Some(&["PATH=/run/rc-mc-wrapper:/usr/bin"]),
+            Some("/run/rc-test-agent.sock"),
+        );
+        let paths: Vec<&str> = env
+            .iter()
+            .map(|entry| entry.as_str())
+            .filter(|entry| entry.starts_with("PATH="))
+            .collect();
+        assert_eq!(paths, ["PATH=/run/rc-mc-wrapper:/usr/bin"]);
+    }
+
+    #[test]
+    fn without_a_caller_path_the_child_gets_the_extended_one() {
+        let env = build_child_env(None, Some("/run/rc-test-agent.sock"));
+        let paths: Vec<String> = env
+            .iter()
+            .filter(|entry| entry.starts_with("PATH="))
+            .map(|entry| entry.as_str().to_owned())
+            .collect();
+        assert_eq!(
+            paths,
+            [format!(
+                "PATH={}",
+                rustconn_core::cli_download::get_extended_path()
+            )]
+        );
+    }
+}
+
 #[cfg(test)]
 mod reconnect_separator_tests {
     use super::reconnect_separator;
