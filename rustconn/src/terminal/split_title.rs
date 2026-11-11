@@ -287,6 +287,7 @@ impl TerminalNotebook {
             }
         }
         Self::apply_split_tab_title(&self.tab_chrome(), source.owner);
+        self.notify_split_title_changed();
     }
 
     /// The maps the tab chrome is written from, for paths without `&self`.
@@ -297,6 +298,36 @@ impl TerminalNotebook {
             split_tab_titles: Rc::clone(&self.split_tab_titles),
             session_cwd: Rc::clone(&self.session_cwd),
             on_session_relabelled: Rc::clone(&self.on_session_relabelled),
+        }
+    }
+
+    /// The session the selected tab is named after: for a split tab the one in
+    /// its focused pane, otherwise the tab's own session. `None` for a page
+    /// with no session (the Welcome tab).
+    ///
+    /// Whatever describes "the connection on screen" next to the tab title —
+    /// the header-bar subtitle — reads this, so it never names one pane while
+    /// the title names another.
+    #[must_use]
+    pub fn active_named_session_id(&self) -> Option<Uuid> {
+        self.get_active_session_id()
+            .map(|session| named_session(&self.split_tab_titles, session))
+    }
+
+    /// Sets the hook told after a split tab's title source changes: the
+    /// focused pane, the pane contents, or the split ending.
+    pub fn set_on_split_title_changed<F>(&self, hook: F)
+    where
+        F: Fn() + 'static,
+    {
+        *self.on_split_title_changed.borrow_mut() = Some(Rc::new(hook));
+    }
+
+    /// Calls the split-title hook with no notebook borrow held.
+    fn notify_split_title_changed(&self) {
+        let hook = self.on_split_title_changed.borrow().clone();
+        if let Some(hook) = hook {
+            hook();
         }
     }
 
@@ -318,6 +349,13 @@ impl TerminalNotebook {
         let Some(entry) = self.split_tab_titles.borrow_mut().remove(&owner) else {
             return;
         };
+        self.restore_owner_chrome(owner, entry);
+        // The tab is named after its owner again, whatever happened above.
+        self.notify_split_title_changed();
+    }
+
+    /// Writes the owner's own title and tooltip back onto its tab.
+    fn restore_owner_chrome(&self, owner: Uuid, entry: SplitTabTitle) {
         let page = self.sessions.borrow().get(&owner).cloned();
         let Some(page) = page else {
             return;

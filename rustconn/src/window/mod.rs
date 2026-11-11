@@ -888,6 +888,22 @@ impl MainWindow {
                             &state_for_sub,
                         );
                     });
+
+                // A split tab names its focused pane (issue #421), so the
+                // subtitle follows pane focus too, not only tab switches.
+                let header_title_for_split = header_title.clone();
+                let state_for_split = state.clone();
+                let notebook_for_split = Rc::downgrade(&terminal_notebook);
+                terminal_notebook.set_on_split_title_changed(move || {
+                    let Some(notebook) = notebook_for_split.upgrade() else {
+                        return;
+                    };
+                    Self::refresh_header_subtitle(
+                        &header_title_for_split,
+                        &notebook,
+                        &state_for_split,
+                    );
+                });
             }
         }
 
@@ -4214,9 +4230,11 @@ impl MainWindow {
     /// Sets the content header's subtitle to the active connection's group
     /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
     ///
-    /// The connection comes from the selected tab's session metadata, not its
-    /// title: a title carries a "\[group\] " prefix once the tab is grouped, and
-    /// two connections may share a name. The subtitle is cleared when the
+    /// The connection comes from the session metadata of the session the
+    /// selected tab is named after (for a split tab, the focused pane's —
+    /// issue #421), not from its title: a title carries a "\[group\] " prefix
+    /// once the tab is grouped, and two connections may share a name. The
+    /// subtitle is cleared when the
     /// setting is off, the page has no session (Welcome), the session has no
     /// saved connection (local shell), or the connection is ungrouped. The WM
     /// window title (issue #211) is untouched. Shared by the tab-switch hook
@@ -4227,8 +4245,10 @@ impl MainWindow {
         notebook: &SharedNotebook,
         state: &SharedAppState,
     ) {
+        // The session the tab is named after: for a split tab, the focused
+        // pane's, so the subtitle and the title describe one connection.
         let connection_id = notebook
-            .get_active_session_id()
+            .active_named_session_id()
             .and_then(|session_id| notebook.get_session_info(session_id))
             .map(|info| info.connection_id);
         let Ok(state_ref) = state.try_borrow() else {

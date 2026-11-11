@@ -360,6 +360,9 @@ pub struct TerminalNotebook {
     /// Told every session rename, so the split pane header follows it
     /// (issue #421); see `set_on_session_relabelled`.
     on_session_relabelled: split_title::SessionRelabelHook,
+    /// Told after a split tab's title source changes, so the header subtitle
+    /// follows the focused pane (issue #421); see `set_on_split_title_changed`.
+    on_split_title_changed: Rc<RefCell<Option<Rc<dyn Fn()>>>>,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -610,6 +613,7 @@ impl TerminalNotebook {
             session_cwd: Rc::new(RefCell::new(HashMap::new())),
             split_tab_titles: Rc::new(RefCell::new(HashMap::new())),
             on_session_relabelled: Rc::new(RefCell::new(None)),
+            on_split_title_changed: Rc::new(RefCell::new(None)),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
