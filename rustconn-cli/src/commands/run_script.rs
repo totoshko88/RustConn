@@ -530,6 +530,7 @@ fn winrm_tunnel(
         // Through `-J` the farther hops would inherit the askpass helper that
         // answers with the nearest hop's password, so with a password they
         // get a ProxyCommand that keeps it away from them.
+        let known_hosts = rustconn_core::get_flatpak_known_hosts_path();
         let routed_past = password.as_ref().and_then(|_| {
             let next = chain
                 .hop_ids
@@ -550,7 +551,7 @@ fn winrm_tunnel(
                 first_hop_identity: identity.as_deref(),
                 deeper_hop_identity: None,
                 first_hop_pkcs11: pkcs11.as_deref(),
-                known_hosts: None,
+                known_hosts: known_hosts.as_deref(),
                 hop_host_keys,
             })
         });
