@@ -435,10 +435,17 @@ button.context-menu-item label {
 
 /* Context menu item — visible keyboard-focus indication (the menu is a
  * custom Box of flat buttons, so the focused item must be highlighted
- * like a regular menu row for keyboard navigation to be usable) */
-.context-menu-item:focus {
+ * like a regular menu row for keyboard navigation to be usable).
+ * `:focus-visible`, so a mouse click does not leave the highlight behind.
+ * A focus ring is drawn on top of the tint, because a 15% tint alone is close
+ * to invisible in high contrast. Its geometry is libadwaita's (2px, inset
+ * 2px); the colour is left to the theme, which sets a stronger one in high
+ * contrast, and falls back to the text colour on a theme that sets none. */
+.context-menu-item:focus-visible {
     background-color: alpha(@accent_color, 0.15);
-    outline: none;
+    outline-style: solid;
+    outline-width: 2px;
+    outline-offset: -2px;
 }
 
 /* Context menu destructive button - ensure text is visible. Uses a
