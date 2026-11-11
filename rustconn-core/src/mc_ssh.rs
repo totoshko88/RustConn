@@ -82,12 +82,17 @@ impl McSshEnv {
     /// Whether mc's `ssh` reported a refused sign-in for this connection that
     /// no mc open has taken yet.
     ///
-    /// Leaves the report in place for [`take_auth_failure`], so the next mc
-    /// open still opens without the password. Called when mc exits, so the
-    /// caller can drop its cached password before a Connect sends it again.
+    /// Reads the delivering `ssh`'s per-run logs in the wrapper directory,
+    /// records a refusal as the report [`take_auth_failure`] takes, and
+    /// removes the logs it read. Leaves the report in place, so the next mc
+    /// open still opens without the password. Call it when mc exits, so the
+    /// caller can drop its cached password before a Connect sends it again;
+    /// until then nothing records the refusal.
     #[must_use]
     pub fn sign_in_refused(&self) -> bool {
-        auth_failure_marker(self.connection_id).exists()
+        let marker = auth_failure_marker(self.connection_id);
+        record_refused_sign_in(&self.wrapper_dir, &marker);
+        marker.exists()
     }
 
     /// Whether the wrapper hands the connection's password to mc's `ssh`.
@@ -313,21 +318,30 @@ struct Delivery<'a> {
     port: u16,
     /// The route arguments from [`password_route_args`].
     args: &'a [String],
-    /// Where the delivering `ssh`'s stderr goes, with `.<pid>` appended per
-    /// run so concurrent `ssh` processes each have their own file; mc sends
-    /// stderr to `/dev/null`.
-    stderr_prefix: &'a Path,
-    /// Created when the delivering `ssh` reports a refused sign-in.
-    failure_marker: &'a Path,
+    /// The delivering `ssh`'s own log (`ssh -E`), with `.<pid>` appended per
+    /// run so concurrent `ssh` processes each have their own file. Holds
+    /// only ssh's messages, not the remote stderr; mc sends stderr to
+    /// `/dev/null`. Read by [`McSshEnv::sign_in_refused`].
+    log_prefix: &'a Path,
 }
+
+/// File name prefix of the delivering `ssh`'s per-run log.
+const SSH_LOG_PREFIX: &str = "ssh-log";
+
+/// What ssh logs when the server refuses every method it tried
+/// (`user@host: Permission denied (password).`). The parenthesis keeps out
+/// local errors such as `Load key "…": Permission denied`.
+const REFUSED_SIGN_IN: &str = "Permission denied (";
 
 /// The `ssh` wrapper script for mc.
 ///
 /// Without `delivery` this is the two-line `exec` wrapper. With it, the script
 /// first parses its argv against the shape mc uses (`[-C] [-p PORT] [-l USER]
 /// HOST COMMAND`); only an exact match for the delivery's host, user and port
-/// runs `ssh` with the askpass environment on its own command line. Every
-/// embedded value is single-quoted; the password itself is never in the text.
+/// gets the askpass environment, exported just before it `exec`s `ssh`. Both
+/// branches end in `exec`, so the process mc started is `ssh` itself and a
+/// signal mc sends reaches it. Every embedded value is single-quoted; the
+/// password itself is never in the text.
 fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>>) -> String {
     let ssh = shell_single_quote(&real_ssh.to_string_lossy());
     let config = shell_single_quote(&config.to_string_lossy());
@@ -369,39 +383,59 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
              if [ \"$_rc_ok\" = 1 ] && [ -z \"$_rc_want\" ] && [ \"$_rc_words\" -eq 2 ] \\\n\
              \x20 && [ \"$_rc_host\" = {host} ] && [ \"$_rc_user\" = {user} ] \\\n\
              \x20 && [ \"$_rc_port\" = {port} ]; then\n\
-             \x20 _rc_err={stderr}.$$\n\
-             \x20 _RC_TGT_PW_FILE={secret} SSH_ASKPASS={helper} SSH_ASKPASS_REQUIRE=force \\\n\
-             \x20   {ssh} -F {config}{route} \"$@\" 2>\"$_rc_err\"\n\
-             \x20 _rc_status=$?\n\
-             \x20 if [ \"$_rc_status\" -eq 255 ] && grep -q 'Permission denied' \"$_rc_err\" 2>/dev/null; then\n\
-             \x20   : > {marker}\n\
-             \x20 fi\n\
-             \x20 rm -f \"$_rc_err\"\n\
-             \x20 exit \"$_rc_status\"\n\
+             \x20 _RC_TGT_PW_FILE={secret} SSH_ASKPASS={helper} SSH_ASKPASS_REQUIRE=force\n\
+             \x20 export _RC_TGT_PW_FILE SSH_ASKPASS SSH_ASKPASS_REQUIRE\n\
+             \x20 exec {ssh} -F {config}{route} -E {log}.$$ \"$@\"\n\
              fi\n",
             host = shell_single_quote(delivery.host),
             user = shell_single_quote(delivery.user),
             port = shell_single_quote(&delivery.port.to_string()),
             secret = shell_single_quote(&delivery.secret_file.to_string_lossy()),
             helper = shell_single_quote(&delivery.helper.to_string_lossy()),
-            stderr = shell_single_quote(&delivery.stderr_prefix.to_string_lossy()),
-            marker = shell_single_quote(&delivery.failure_marker.to_string_lossy()),
+            log = shell_single_quote(&delivery.log_prefix.to_string_lossy()),
         );
     }
     let _ = writeln!(script, "exec {ssh} -F {config} \"$@\"");
     script
 }
 
-/// The marker the wrapper leaves when `connection_id`'s sign-in was refused.
+/// The marker left when `connection_id`'s sign-in from mc was refused.
 fn auth_failure_marker(connection_id: Uuid) -> PathBuf {
     wrapper_root().join(format!("{}.auth-failed", connection_id.as_hyphenated()))
+}
+
+/// Creates `marker` when a delivering `ssh` log in `wrapper_dir` reports a
+/// refused sign-in, and removes every such log.
+///
+/// The logs are written through `ssh -E`, after the wrapper has `exec`ed
+/// `ssh`, so nothing in the wrapper can check them; this runs instead when
+/// mc exits.
+fn record_refused_sign_in(wrapper_dir: &Path, marker: &Path) {
+    let Ok(entries) = std::fs::read_dir(wrapper_dir) else {
+        return;
+    };
+    let log_name = format!("{SSH_LOG_PREFIX}.");
+    let mut refused = false;
+    for path in entries.flatten().map(|entry| entry.path()) {
+        if !path
+            .file_name()
+            .is_some_and(|name| name.to_string_lossy().starts_with(&log_name))
+        {
+            continue;
+        }
+        refused |= std::fs::read_to_string(&path).is_ok_and(|log| log.contains(REFUSED_SIGN_IN));
+        let _ = std::fs::remove_file(&path);
+    }
+    if refused && let Err(error) = std::fs::write(marker, b"") {
+        tracing::warn!(%error, "Could not record mc's refused sign-in");
+    }
 }
 
 /// Whether mc's `ssh` reported a refused password for `connection_id` since
 /// the last call, clearing the report.
 ///
-/// The caller then forgets its cached password, so the next mc open reads the
-/// vault again rather than repeating a stale one.
+/// The report is recorded by [`McSshEnv::sign_in_refused`] when that mc
+/// exits. The caller then opens mc without the saved password once.
 #[must_use]
 pub fn take_auth_failure(connection_id: Uuid) -> bool {
     std::fs::remove_file(auth_failure_marker(connection_id)).is_ok()
@@ -678,8 +712,7 @@ pub fn prepare_mc_ssh_env(
     let wrapper_path = wrapper_dir.join("ssh");
     let delivery = password
         .and_then(|password| password_delivery(connection, connections, groups, network, password));
-    let stderr_prefix = wrapper_dir.join("ssh-stderr");
-    let failure_marker = auth_failure_marker(connection.id);
+    let log_prefix = wrapper_dir.join(SSH_LOG_PREFIX);
     let user = connection.username.as_deref().unwrap_or_default();
     let wrapper = wrapper_script(
         &real_ssh,
@@ -693,8 +726,7 @@ pub fn prepare_mc_ssh_env(
                 user,
                 port: connection.port,
                 args,
-                stderr_prefix: &stderr_prefix,
-                failure_marker: &failure_marker,
+                log_prefix: &log_prefix,
             })
             .as_ref(),
     );
@@ -1248,13 +1280,15 @@ mod tests {
     }
 
     /// A delivering wrapper around a stub `ssh` that prints the password file
-    /// it was given and its argv, and exits with `$RC_STUB_STATUS`.
+    /// it was given, its argv and its pid, writes `$RC_STUB_ERR` to its `-E`
+    /// log (stderr without one), and exits with `$RC_STUB_STATUS`.
     #[cfg(unix)]
     struct StubWrapper {
         dir: tempfile::TempDir,
         wrapper: PathBuf,
         config: PathBuf,
         secret: PathBuf,
+        /// Where [`record_refused_sign_in`] records a refusal in these tests.
         marker: PathBuf,
     }
 
@@ -1269,7 +1303,14 @@ mod tests {
                 "#!/bin/sh\n\
                  printf '%s\\n' \"${_RC_TGT_PW_FILE-unset}\"\n\
                  printf '%s\\n' \"$*\"\n\
-                 [ -z \"$RC_STUB_ERR\" ] || printf '%s\\n' \"$RC_STUB_ERR\" >&2\n\
+                 printf '%s\\n' \"$$\"\n\
+                 _log= _prev=\n\
+                 for _a do [ \"$_prev\" = -E ] && _log=$_a; _prev=$_a; done\n\
+                 [ -z \"$_log\" ] || : >> \"$_log\"\n\
+                 if [ -n \"$RC_STUB_ERR\" ]; then\n\
+                 \x20 if [ -n \"$_log\" ]; then printf '%s\\n' \"$RC_STUB_ERR\" >> \"$_log\";\n\
+                 \x20 else printf '%s\\n' \"$RC_STUB_ERR\" >&2; fi\n\
+                 fi\n\
                  [ -z \"$RC_STUB_SLEEP\" ] || sleep \"$RC_STUB_SLEEP\"\n\
                  exit \"${RC_STUB_STATUS:-0}\"\n",
             )
@@ -1290,8 +1331,7 @@ mod tests {
                     user: "me",
                     port,
                     args: &args,
-                    stderr_prefix: &dir.path().join("ssh-stderr"),
-                    failure_marker: &marker,
+                    log_prefix: &dir.path().join(SSH_LOG_PREFIX),
                 }),
             );
             let wrapper = dir.path().join("ssh");
@@ -1306,7 +1346,7 @@ mod tests {
         }
 
         /// The wrapper with `argv`, the stub exiting with `status` after
-        /// printing `stderr`.
+        /// logging `stderr`.
         fn command(
             &self,
             argv: &[&str],
@@ -1323,17 +1363,27 @@ mod tests {
             command
         }
 
-        /// The stderr capture files left in the wrapper directory.
-        fn stderr_files(&self) -> Vec<PathBuf> {
-            std::fs::read_dir(self.dir.path())
+        /// The delivering `ssh` logs in the wrapper directory.
+        fn log_files(&self) -> Vec<PathBuf> {
+            let mut logs: Vec<PathBuf> = std::fs::read_dir(self.dir.path())
                 .unwrap()
                 .flatten()
                 .map(|entry| entry.path())
                 .filter(|path| {
                     path.file_name()
-                        .is_some_and(|name| name.to_string_lossy().starts_with("ssh-stderr"))
+                        .is_some_and(|name| name.to_string_lossy().starts_with(SSH_LOG_PREFIX))
                 })
-                .collect()
+                .collect();
+            logs.sort();
+            logs
+        }
+
+        /// The `-E` arguments the delivering `ssh` with `pid` gets.
+        fn log_args(&self, pid: u32) -> String {
+            format!(
+                "-E {}.{pid}",
+                self.dir.path().join(SSH_LOG_PREFIX).display()
+            )
         }
 
         /// Runs the wrapper with `argv`; returns (password file seen, argv seen, status).
@@ -1344,6 +1394,25 @@ mod tests {
             let file = lines.next().unwrap_or_default().to_string();
             let seen = lines.next().unwrap_or_default().to_string();
             (file, seen, out.status.code().unwrap_or(-1))
+        }
+
+        /// Runs the wrapper with `argv` and no error; returns (password file
+        /// seen, argv seen, pid of the process started, pid the stub ran as).
+        fn run_with_pid(&self, argv: &[&str]) -> (String, String, u32, String) {
+            let child = self
+                .command(argv, None, "")
+                .stdout(std::process::Stdio::piped())
+                .spawn()
+                .unwrap();
+            let started = child.id();
+            let out = child.wait_with_output().unwrap();
+            assert!(out.status.success());
+            let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
+            let mut lines = stdout.lines().map(ToString::to_string);
+            let file = lines.next().unwrap_or_default();
+            let seen = lines.next().unwrap_or_default();
+            let ran_as = lines.next().unwrap_or_default();
+            (file, seen, started, ran_as)
         }
 
         fn assert_refused(&self, argv: &[&str]) {
@@ -1379,14 +1448,14 @@ mod tests {
                 MC_REMOTE_COMMAND,
             ],
         ] {
-            let (file, seen, status) = stub.run(&argv, None, "");
+            let (file, seen, pid, _) = stub.run_with_pid(&argv);
             assert_eq!(file, stub.secret.display().to_string(), "{argv:?}");
-            assert_eq!(status, 0);
             assert_eq!(
                 seen,
                 format!(
-                    "-F {} -o NumberOfPasswordPrompts=1 {}",
+                    "-F {} -o NumberOfPasswordPrompts=1 {} {}",
                     stub.config.display(),
+                    stub.log_args(pid),
                     argv.join(" ")
                 )
             );
@@ -1554,7 +1623,17 @@ mod tests {
 
         let (_, _, status) = stub.run(&argv, Some("255"), "Connection closed by 192.0.2.1");
         assert_eq!(status, 255);
+        record_refused_sign_in(stub.dir.path(), &stub.marker);
         assert!(!stub.marker.exists(), "a lost connection is not a refusal");
+
+        let (_, _, status) = stub.run(
+            &argv,
+            Some("255"),
+            "Load key \"/home/me/.ssh/id_ed25519\": Permission denied",
+        );
+        assert_eq!(status, 255);
+        record_refused_sign_in(stub.dir.path(), &stub.marker);
+        assert!(!stub.marker.exists(), "an unreadable key is not a refusal");
 
         let (_, _, status) = stub.run(
             &argv,
@@ -1562,17 +1641,44 @@ mod tests {
             "me@target: Permission denied (password).",
         );
         assert_eq!(status, 255);
+        assert!(
+            !stub.marker.exists(),
+            "recorded only when RustConn reads the logs"
+        );
+        record_refused_sign_in(stub.dir.path(), &stub.marker);
         assert!(stub.marker.exists());
-        // The captured stderr does not outlive the ssh it came from.
-        assert!(stub.stderr_files().is_empty());
+        // The logs do not outlive the reading.
+        assert!(stub.log_files().is_empty());
     }
 
-    /// Review item mc-n5: two delivering `ssh` processes at once each capture
-    /// their own stderr, so the one that ends first neither truncates nor
-    /// deletes the other's refusal.
+    /// Review item mc-n6: the delivering branch `exec`s ssh, so the process
+    /// mc started, and every signal mc sends it, is ssh itself.
     #[cfg(unix)]
     #[test]
-    fn concurrent_delivering_ssh_runs_keep_their_own_stderr() {
+    fn the_delivering_wrapper_becomes_ssh() {
+        let stub = StubWrapper::new(2222);
+        let (file, _, started, ran_as) = stub.run_with_pid(&[
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        assert_eq!(file, stub.secret.display().to_string());
+        assert_eq!(ran_as, started.to_string());
+        // The refusing branch has always exec'd.
+        let (file, _, started, ran_as) = stub.run_with_pid(&["-p", "2222", "other.example.com"]);
+        assert_eq!(file, "unset");
+        assert_eq!(ran_as, started.to_string());
+    }
+
+    /// Review items mc-n5 and mc-n6: two delivering `ssh` processes at once
+    /// each log to their own file, so the one that ends first neither
+    /// truncates nor deletes the other's refusal.
+    #[cfg(unix)]
+    #[test]
+    fn concurrent_delivering_ssh_runs_keep_their_own_logs() {
         let stub = StubWrapper::new(2222);
         let argv = [
             "-p",
@@ -1595,11 +1701,13 @@ mod tests {
         assert_eq!(status, 0);
 
         assert_eq!(refused.wait().unwrap().code(), Some(255));
+        assert_eq!(stub.log_files().len(), 2, "one log per delivering ssh");
+        record_refused_sign_in(stub.dir.path(), &stub.marker);
         assert!(
             stub.marker.exists(),
             "the refusal was lost to the other run"
         );
-        assert!(stub.stderr_files().is_empty());
+        assert!(stub.log_files().is_empty());
     }
 
     #[test]
