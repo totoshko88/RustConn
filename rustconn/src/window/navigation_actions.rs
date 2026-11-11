@@ -311,12 +311,17 @@ impl MainWindow {
         // Track active tab → reflect the connection name in the window title,
         // when the user opted in (issue #211). The setting is read live from
         // state on each switch, so toggling it in Preferences needs no restart.
+        // The handlers live on the notebook's own TabView and its pages, so they
+        // hold the notebook weakly: a strong one would be a reference cycle.
         {
             let window_weak = window.downgrade();
-            let notebook_for_title = terminal_notebook.clone();
+            let notebook_for_title = Rc::downgrade(terminal_notebook);
             let state_for_title = state.clone();
             let refresh_title: Rc<dyn Fn()> = Rc::new(move || {
                 let Some(win) = window_weak.upgrade() else {
+                    return;
+                };
+                let Some(notebook_for_title) = notebook_for_title.upgrade() else {
                     return;
                 };
                 // A tab title can now change from any code path, not only a tab
