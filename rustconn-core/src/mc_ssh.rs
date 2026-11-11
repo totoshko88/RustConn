@@ -247,7 +247,8 @@ pub fn password_may_be_sent(connection: &Connection) -> bool {
 /// when the password must not be sent along this route.
 ///
 /// With no jump chain, `declares_proxy` (normally
-/// [`crate::ssh_tunnel::ssh_config_declares_proxy`]) must report no proxy in
+/// [`crate::ssh_tunnel::ssh_config_declares_proxy_with`] on the wrapper's own
+/// `ssh`) must report no proxy in
 /// the user's ssh configuration. A chain goes through
 /// [`crate::jump_route::tunnel_hop_args`], whose `ProxyCommand` starts every
 /// hop behind the `env` boundary that clears the helper, and outranks the
@@ -759,8 +760,16 @@ pub fn prepare_mc_ssh_env(
 
     let real_ssh = find_real_ssh(&wrapper_dir);
     let wrapper_path = wrapper_dir.join("ssh");
-    let delivery = password
-        .and_then(|password| password_delivery(connection, connections, groups, network, password));
+    let delivery = password.and_then(|password| {
+        password_delivery(
+            connection,
+            connections,
+            groups,
+            network,
+            password,
+            &real_ssh,
+        )
+    });
     let log_prefix = wrapper_dir.join(SSH_LOG_PREFIX);
     let user = connection.username.as_deref().unwrap_or_default();
     let wrapper = wrapper_script(
@@ -820,12 +829,16 @@ fn write_wrapper(path: &Path, text: &str) -> std::io::Result<()> {
 
 /// The askpass helper, the password file and the route arguments for
 /// delivering `password` to mc's `ssh`, or `None` when it must not be sent.
+///
+/// `real_ssh` is the binary the wrapper runs; the proxy check asks that same
+/// binary, so it judges the route of the `ssh` that gets the password.
 fn password_delivery(
     connection: &Connection,
     connections: &[Connection],
     groups: &[ConnectionGroup],
     network: &crate::config::NetworkSettings,
     password: &SecretString,
+    real_ssh: &Path,
 ) -> Option<(PathBuf, PathBuf, Vec<String>)> {
     if !password_may_be_sent(connection) {
         return None;
@@ -840,7 +853,9 @@ fn password_delivery(
         connections,
         groups,
         known_hosts.as_deref(),
-        crate::ssh_tunnel::ssh_config_declares_proxy,
+        |host, port, user| {
+            crate::ssh_tunnel::ssh_config_declares_proxy_with(real_ssh, host, port, user)
+        },
     ) else {
         tracing::info!(
             connection = %connection.name,

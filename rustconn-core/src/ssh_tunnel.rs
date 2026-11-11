@@ -1287,7 +1287,24 @@ pub fn ssh_g_output_declares_proxy(output: &str) -> bool {
 /// must not enable automatic delivery.
 #[must_use]
 pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) -> bool {
-    let mut command = std::process::Command::new("ssh");
+    ssh_config_declares_proxy_with(std::path::Path::new("ssh"), host, port, username)
+}
+
+/// [`ssh_config_declares_proxy`], asking the `ssh` binary at `ssh` (or found
+/// on `PATH` under that name).
+///
+/// For a caller that runs a specific `ssh` with the password, such as the mc
+/// wrapper with the one it resolved on the extended search path: two OpenSSH
+/// builds can read the same configuration differently, so the check has to
+/// ask the binary it protects.
+#[must_use]
+pub fn ssh_config_declares_proxy_with(
+    ssh: &std::path::Path,
+    host: &str,
+    port: u16,
+    username: Option<&str>,
+) -> bool {
+    let mut command = std::process::Command::new(ssh);
     command.arg("-G").arg("-p").arg(port.to_string());
     if let Some(user) = username.map(str::trim).filter(|user| !user.is_empty()) {
         command.arg("-l").arg(user);
@@ -2410,6 +2427,36 @@ mod proxy_detection_tests {
             "target.example.com"
         ));
         assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    /// Review item from issue #422: the proxy check asks the `ssh` it is
+    /// given, so the mc wrapper checks the binary it delivers to.
+    #[cfg(unix)]
+    #[test]
+    fn the_proxy_check_asks_the_given_ssh() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let stub = |name: &str, output: &str| {
+            let path = dir.path().join(name);
+            std::fs::write(&path, format!("#!/bin/sh\nprintf '{output}'\n")).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+            path
+        };
+        let with_proxy = stub("ssh-with-proxy", "proxyjump bastion.example.com\\n");
+        let without = stub("ssh-without", "proxyjump none\\nproxycommand none\\n");
+        assert!(super::ssh_config_declares_proxy_with(
+            &with_proxy,
+            "target.example.com",
+            22,
+            Some("me")
+        ));
+        assert!(!super::ssh_config_declares_proxy_with(
+            &without,
+            "target.example.com",
+            22,
+            Some("me")
+        ));
     }
 
     #[test]
