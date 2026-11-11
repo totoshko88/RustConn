@@ -146,6 +146,7 @@ rustconn/src/terminal/playback.rs
 rustconn/src/terminal/recording.rs
 rustconn/src/terminal/safe_paste.rs
 rustconn/src/terminal/session_lifecycle.rs
+rustconn/src/terminal/split_title.rs
 rustconn/src/terminal/tab_lifecycle.rs
 rustconn/src/terminal/tab_menu.rs
 rustconn/src/validation.rs

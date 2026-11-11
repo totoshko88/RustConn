@@ -315,18 +315,42 @@ impl MainWindow {
             let window_weak = window.downgrade();
             let notebook_for_title = terminal_notebook.clone();
             let state_for_title = state.clone();
+            let refresh_title: Rc<dyn Fn()> = Rc::new(move || {
+                let Some(win) = window_weak.upgrade() else {
+                    return;
+                };
+                // A tab title can now change from any code path, not only a tab
+                // switch, so one that holds the state for writing skips this
+                // refresh rather than panicking; the next switch catches up.
+                let Ok(state) = state_for_title.try_borrow() else {
+                    tracing::debug!("window title: state busy, refresh skipped");
+                    return;
+                };
+                let enabled = state.settings().ui.window_title_shows_connection;
+                drop(state);
+                Self::update_window_title(&win, &notebook_for_title, enabled);
+            });
+            let refresh_on_switch = Rc::clone(&refresh_title);
             terminal_notebook
                 .tab_view()
-                .connect_selected_page_notify(move |_| {
-                    if let Some(win) = window_weak.upgrade() {
-                        let enabled = state_for_title
-                            .borrow()
-                            .settings()
-                            .ui
-                            .window_title_shows_connection;
-                        Self::update_window_title(&win, &notebook_for_title, enabled);
+                .connect_selected_page_notify(move |_| refresh_on_switch());
+
+            // The selected tab can also be retitled in place — a split tab
+            // follows its focused pane (issue #421), a rename relabels it — and
+            // the window title must not keep the old name until the next switch.
+            let watch_title = move |page: &adw::TabPage| {
+                let refresh = Rc::clone(&refresh_title);
+                page.connect_title_notify(move |page| {
+                    if page.is_selected() {
+                        refresh();
                     }
                 });
+            };
+            let tab_view = terminal_notebook.tab_view();
+            for position in 0..tab_view.n_pages() {
+                watch_title(&tab_view.nth_page(position));
+            }
+            tab_view.connect_page_attached(move |_, page, _| watch_title(page));
         }
     }
 

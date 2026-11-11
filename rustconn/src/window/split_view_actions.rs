@@ -372,6 +372,11 @@ impl SplitTeardown {
         if let Some(departing) = departing {
             bridges.remove(&departing);
         }
+        drop(bridges);
+
+        // The owner's tab is an ordinary tab again, named after its own session
+        // (issue #421).
+        self.notebook.clear_split_tab_title(owner);
     }
 
     /// Reports whether a layout has stopped being a split after a pane removal.
@@ -410,7 +415,7 @@ impl MainWindow {
             session_id: Uuid,
             session_split_bridges: &SessionSplitBridges,
             color_pool: &SharedColorPool,
-            terminals: &crate::split_view::SharedTerminals,
+            notebook: &SharedNotebook,
         ) -> Rc<SplitViewBridge> {
             let mut bridges = session_split_bridges.borrow_mut();
             // Check if this session already owns a bridge
@@ -440,7 +445,7 @@ impl MainWindow {
                 // for everything — which is what kept keystroke broadcast
                 // permanently unavailable.
                 let new_bridge = Rc::new(SplitViewBridge::with_shared_terminals_and_color_pool(
-                    Rc::clone(terminals),
+                    notebook.shared_terminals(),
                     Rc::clone(color_pool),
                 ));
                 // This session asked for the split, so its tab is where the
@@ -448,6 +453,13 @@ impl MainWindow {
                 // a guest, and the difference decides what closing a tab does to
                 // the layout — see `SplitViewBridge::is_owned_by`.
                 new_bridge.set_owner_session(session_id);
+                // That tab is named after the focused pane, whatever protocol
+                // the pane shows (issue #421). The listener holds the notebook,
+                // not the bridge, so no cycle runs through the bridge.
+                let notebook_for_title = notebook.clone();
+                new_bridge.set_title_listener(Rc::new(move |source| {
+                    notebook_for_title.update_split_tab_title(source);
+                }));
                 bridges.insert(session_id, new_bridge.clone());
                 new_bridge
             }
@@ -539,7 +551,7 @@ impl MainWindow {
                 current_session,
                 &session_bridges,
                 &color_pool_h,
-                &notebook_for_split_h.shared_terminals(),
+                &notebook_for_split_h,
             );
 
             // Apply the pane labels setting from current config (issue #277).
@@ -760,7 +772,7 @@ impl MainWindow {
                 current_session,
                 &session_bridges_v,
                 &color_pool_v,
-                &notebook_for_split_v.shared_terminals(),
+                &notebook_for_split_v,
             );
 
             // Apply the pane labels setting from current config (issue #277).

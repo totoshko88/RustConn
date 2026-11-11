@@ -400,11 +400,16 @@ impl TerminalNotebook {
                 // Update tooltip to include group name
                 if let Some(page) = sessions_clone.borrow().get(&session_id) {
                     let current_tooltip = page.tooltip().unwrap_or_default();
-                    let base_tooltip = current_tooltip
-                        .as_str()
+                    // A split tab's panes line (issue #421) is kept.
+                    let (without_panes, panes_line) =
+                        super::split_title::split_panes_line(current_tooltip.as_str());
+                    let base_tooltip = without_panes
                         .rsplit_once("\n[")
-                        .map_or(current_tooltip.as_str(), |(base, _)| base);
-                    page.set_tooltip(&format!("{base_tooltip}\n[{group_name}]"));
+                        .map_or(without_panes.as_str(), |(base, _)| base);
+                    page.set_tooltip(&format!(
+                        "{base_tooltip}\n[{group_name}]{}",
+                        panes_line.unwrap_or_default()
+                    ));
                 }
 
                 tracing::debug!(
@@ -431,6 +436,7 @@ impl TerminalNotebook {
         let context_page_rename = context_page.clone();
         let session_info = self.session_info.clone();
         let sessions = self.sessions.clone();
+        let split_tab_titles = self.split_tab_titles.clone();
 
         rename_label_action.connect_activate(move |_, _| {
             let Some(session_id) = Self::context_menu_session_id(&context_page_rename, &sessions)
@@ -467,6 +473,7 @@ impl TerminalNotebook {
             // one-shot response handler.
             let sessions_for_apply = sessions.clone();
             let session_info_for_apply = session_info.clone();
+            let split_tab_titles_for_apply = split_tab_titles.clone();
 
             // One commit path, reached by the "apply" response and by Enter in
             // the entry alike. An empty entry resets the title rather than
@@ -478,6 +485,7 @@ impl TerminalNotebook {
                 Self::apply_session_label(
                     &sessions_for_apply,
                     &session_info_for_apply,
+                    &split_tab_titles_for_apply,
                     session_id,
                     &label,
                 );
@@ -562,9 +570,11 @@ impl TerminalNotebook {
             // Restore original tooltip (remove group suffix)
             if let Some(page) = sessions.borrow().get(&session_id) {
                 let tooltip = page.tooltip().unwrap_or_default();
-                let tooltip_str = tooltip.as_str();
-                if let Some(base) = tooltip_str.rsplit_once("\n[") {
-                    page.set_tooltip(base.0);
+                // A split tab's panes line (issue #421) is kept.
+                let (without_panes, panes_line) =
+                    super::split_title::split_panes_line(tooltip.as_str());
+                if let Some((base, _)) = without_panes.rsplit_once("\n[") {
+                    page.set_tooltip(&format!("{base}{}", panes_line.unwrap_or_default()));
                 }
             }
 

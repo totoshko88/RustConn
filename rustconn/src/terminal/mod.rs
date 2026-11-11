@@ -40,6 +40,7 @@ mod recording;
 pub mod safe_paste;
 mod selection_hold;
 mod session_lifecycle;
+mod split_title;
 pub mod tab_container;
 mod tab_lifecycle;
 mod tab_menu;
@@ -352,6 +353,10 @@ pub struct TerminalNotebook {
     /// `current-directory-uri-changed`; absent until the shell reports one (it
     /// needs OSC 7, which the same `vte.sh` that drives shell integration emits).
     session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
+    /// Title state of every tab that hosts a split layout, keyed by the owner
+    /// session (issue #421). Such a tab is named after its focused pane; see
+    /// `split_title.rs`. Absent for an ordinary tab.
+    split_tab_titles: split_title::SplitTabTitles,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -600,6 +605,7 @@ impl TerminalNotebook {
             mark_registries: Rc::new(RefCell::new(HashMap::new())),
             failed_markers: Rc::new(RefCell::new(HashMap::new())),
             session_cwd: Rc::new(RefCell::new(HashMap::new())),
+            split_tab_titles: Rc::new(RefCell::new(HashMap::new())),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
@@ -668,6 +674,7 @@ impl TerminalNotebook {
         let mark_registries_on_close = Rc::clone(&self.mark_registries);
         let failed_markers_on_close = Rc::clone(&self.failed_markers);
         let session_cwd_on_close = Rc::clone(&self.session_cwd);
+        let split_tab_titles_on_close = Rc::clone(&self.split_tab_titles);
         let pty_relays_on_close = Rc::clone(&self.pty_relays);
         let output_observers_on_close = Rc::clone(&self.output_observers);
         let output_filters_on_close = Rc::clone(&self.output_filters);
@@ -800,6 +807,7 @@ impl TerminalNotebook {
                 mark_registries_on_close.borrow_mut().remove(&session_id);
                 failed_markers_on_close.borrow_mut().remove(&session_id);
                 session_cwd_on_close.borrow_mut().remove(&session_id);
+                split_tab_titles_on_close.borrow_mut().remove(&session_id);
 
                 // Stop the session's PTY: dropping the relay ends its reader and
                 // writer threads and closes the descriptor. The child is killed
@@ -2148,8 +2156,10 @@ impl TerminalNotebook {
             // Lift the CWD line out first so it is not mistaken for the
             // broadcast suffix (and so toggling broadcast never drops it), then
             // re-append it after rebuilding the broadcast portion.
+            // A split tab's panes line (issue #421) is lifted out the same way.
             let tooltip = page.tooltip().unwrap_or_default().to_string();
             let (without_cwd, cwd_line) = Self::split_cwd_line(&tooltip);
+            let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
             let base_tooltip = without_cwd
                 .strip_suffix(TOOLTIP_LINE)
                 .unwrap_or(&without_cwd);
@@ -2158,6 +2168,9 @@ impl TerminalNotebook {
             } else {
                 base_tooltip.to_string()
             };
+            if let Some(panes) = panes_line {
+                new_tooltip.push_str(&panes);
+            }
             if let Some(cwd) = cwd_line {
                 new_tooltip.push_str(&cwd);
             }
@@ -3169,10 +3182,14 @@ impl TerminalNotebook {
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let current_tooltip = page.tooltip().unwrap_or_default().to_string();
             let (without_cwd, cwd_line) = Self::split_cwd_line(&current_tooltip);
+            let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
             let base_tooltip = without_cwd
                 .rsplit_once("\n[")
                 .map_or(without_cwd.as_str(), |(base, _)| base);
             let mut new_tooltip = format!("{base_tooltip}\n[{group_name}]");
+            if let Some(panes) = panes_line {
+                new_tooltip.push_str(&panes);
+            }
             if let Some(cwd) = cwd_line {
                 new_tooltip.push_str(&cwd);
             }
@@ -3198,7 +3215,13 @@ impl TerminalNotebook {
             .collect();
 
         for session_id in &affected {
-            Self::apply_session_label(&self.sessions, &self.session_info, *session_id, new_name);
+            Self::apply_session_label(
+                &self.sessions,
+                &self.session_info,
+                &self.split_tab_titles,
+                *session_id,
+                new_name,
+            );
         }
         if !affected.is_empty() {
             tracing::debug!(
@@ -3224,9 +3247,14 @@ impl TerminalNotebook {
     /// all — a split pane header and a detached window title are both read from
     /// `info.name` when the session is placed, and the session carries the
     /// label from then on.
+    ///
+    /// The one exception is the tab hosting a split layout: it names its
+    /// focused pane (issue #421), so a relabelled session — the owner, or a
+    /// guest in one of its panes — is re-derived there once the label is stored.
     pub(super) fn apply_session_label(
         sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
         session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+        split_tab_titles: &split_title::SplitTabTitles,
         session_id: Uuid,
         label: &str,
     ) {
@@ -3243,12 +3271,13 @@ impl TerminalNotebook {
         // temporary would keep the `sessions` borrow alive across the two GTK
         // setters below.
         let page = sessions.borrow().get(&session_id).cloned();
+        let retitled = page.is_some();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
             // `tab_tooltip` rebuilds the title/host/group tooltip from scratch
             // and knows nothing of the CWD line, so carry the existing one over
             // from the old tooltip and re-append it, keeping it alive across a
-            // rename.
+            // rename. A split tab's panes line is put back by the refresh below.
             let cwd_line = page.tooltip().and_then(|t| Self::split_cwd_line(&t).1);
             let mut new_tooltip = Self::tab_tooltip(label, host.as_deref(), group.as_deref());
             if let Some(cwd) = cwd_line {
@@ -3256,6 +3285,14 @@ impl TerminalNotebook {
             }
             page.set_tooltip(&new_tooltip);
         }
+
+        Self::refresh_split_tabs_for(
+            sessions,
+            session_info,
+            split_tab_titles,
+            session_id,
+            retitled.then_some(label),
+        );
     }
 
     /// Returns the group name for a session, if any.
@@ -3306,7 +3343,11 @@ impl TerminalNotebook {
             // Compose from `info.name`, the structural base label, not from the
             // rendered title: stripping a prefix off the title would eat the
             // first segment of a user label that happens to look like `[x] y`.
-            page.set_title(&tab_title(&info.name, Some(group_name)));
+            // A split tab names its focused pane instead (issue #421).
+            let name = self
+                .split_tab_shown_name(session_id)
+                .unwrap_or_else(|| info.name.clone());
+            page.set_title(&tab_title(&name, Some(group_name)));
         }
     }
 
@@ -4119,6 +4160,7 @@ mod tab_tooltip_tests {
     fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
         const TOOLTIP_LINE: &str = "\n[Broadcast]";
         let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = super::split_title::split_panes_line(&without_cwd);
         let base = without_cwd
             .strip_suffix(TOOLTIP_LINE)
             .unwrap_or(&without_cwd);
@@ -4127,6 +4169,9 @@ mod tab_tooltip_tests {
         } else {
             base.to_string()
         };
+        if let Some(panes) = panes_line {
+            out.push_str(&panes);
+        }
         if let Some(cwd) = cwd_line {
             out.push_str(&cwd);
         }
@@ -4136,14 +4181,41 @@ mod tab_tooltip_tests {
     /// Replays `set_tab_group`'s tooltip transformation.
     fn group_tooltip(tooltip: &str, group: &str) -> String {
         let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = super::split_title::split_panes_line(&without_cwd);
         let base = without_cwd
             .rsplit_once("\n[")
             .map_or(without_cwd.as_str(), |(base, _)| base);
         let mut out = format!("{base}\n[{group}]");
+        if let Some(panes) = panes_line {
+            out.push_str(&panes);
+        }
         if let Some(cwd) = cwd_line {
             out.push_str(&cwd);
         }
         out
+    }
+
+    #[test]
+    fn a_split_tabs_panes_line_survives_broadcast_and_group_changes() {
+        // Issue #421: the panes line is appended last, after a broadcast line;
+        // turning broadcast off must still find and strip `[Broadcast]`, and
+        // a group assignment must not cut the panes line off with it.
+        const PANES: &str = "\nPanes: server_A, server_B";
+        let split = format!("server_A\n10.0.0.5\n[Broadcast]{PANES}");
+        assert_eq!(
+            broadcast_tooltip(&split, false),
+            format!("server_A\n10.0.0.5{PANES}")
+        );
+        assert_eq!(
+            group_tooltip(&split, "Production"),
+            format!("server_A\n10.0.0.5\n[Production]{PANES}")
+        );
+        // With a directory line too, both lines come back.
+        let with_cwd = format!("server_A{PANES}{CWD}/var/log");
+        assert_eq!(
+            broadcast_tooltip(&with_cwd, true),
+            format!("server_A\n[Broadcast]{PANES}{CWD}/var/log")
+        );
     }
 
     #[test]

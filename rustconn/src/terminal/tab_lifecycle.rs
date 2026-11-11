@@ -214,20 +214,10 @@ impl TerminalNotebook {
     /// broadcast toggle or a rename — it is maintained independently of those
     /// lines, as the feature documents.
     pub(super) fn split_cwd_line(tooltip: &str) -> (String, Option<String>) {
-        let Some(start) = tooltip.find(Self::CWD_TOOLTIP_PREFIX) else {
-            return (tooltip.to_string(), None);
-        };
         // The marker itself begins with `\n`; the line's content ends at the
-        // next `\n` after the marker, or at the end of the string.
-        let content_start = start + Self::CWD_TOOLTIP_PREFIX.len();
-        let end = tooltip[content_start..]
-            .find('\n')
-            .map_or(tooltip.len(), |rel| content_start + rel);
-        let cwd_line = tooltip[start..end].to_string();
-        let mut without = String::with_capacity(tooltip.len());
-        without.push_str(&tooltip[..start]);
-        without.push_str(&tooltip[end..]);
-        (without, Some(cwd_line))
+        // next `\n` after the marker, or at the end of the string. The split
+        // tab's panes line is cut out by the same rule.
+        super::split_title::split_marked_line(tooltip, Self::CWD_TOOLTIP_PREFIX)
     }
 
     // ========================================================================

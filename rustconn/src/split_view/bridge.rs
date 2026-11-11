@@ -260,6 +260,88 @@ pub type ContentProvider = Rc<dyn Fn(Uuid) -> Option<gtk4::Widget>>;
 /// Shared, settable content-widget provider used by the placement path.
 type SharedContentProvider = Rc<RefCell<Option<ContentProvider>>>;
 
+/// What the title of a split tab is derived from (issue #421).
+///
+/// A layout lives on its owner's `TabPage`, so without this the tab would name
+/// the owner whichever pane the user works in. The bridge reports it to its
+/// [`TitleListener`] whenever the focused pane or the pane contents change, and
+/// the notebook decides the title from it — one path for every protocol a pane
+/// can hold, since the bridge does not care what the pane shows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SplitTitleSource {
+    /// The session whose tab hosts the layout.
+    pub owner: Uuid,
+    /// The session shown in the focused pane, `None` when that pane is empty.
+    pub focused: Option<Uuid>,
+    /// The sessions shown in the panes, in layout order.
+    pub displayed: Vec<Uuid>,
+    /// Whether the layout has more than one pane. A single pane is an ordinary
+    /// tab and keeps its own title.
+    pub is_split: bool,
+}
+
+/// Receives a [`SplitTitleSource`] after every focus or pane-content change.
+pub type TitleListener = Rc<dyn Fn(&SplitTitleSource)>;
+
+/// The bridge state a [`SplitTitleSource`] is read from, cloneable into the
+/// `'static` drop-target closure that places a session without going through a
+/// bridge method.
+#[derive(Clone)]
+struct TitleProbe {
+    adapter: Rc<RefCell<SplitViewAdapter>>,
+    uuid_panel_map: Rc<RefCell<HashMap<Uuid, PanelId>>>,
+    focused_pane_uuid: Rc<RefCell<Option<Uuid>>>,
+    owner_session: Rc<std::cell::Cell<Option<Uuid>>>,
+    listener: Rc<RefCell<Option<TitleListener>>>,
+}
+
+impl TitleProbe {
+    /// Reports the current title source to the listener, if one is set.
+    ///
+    /// A layout with no owner (the window-global split view) has no tab to
+    /// title, so it reports nothing. Callers invoke this after releasing their
+    /// own borrows; if the layout is still borrowed mutably the refresh is
+    /// skipped rather than panicking, and the next focus change catches up.
+    fn emit(&self) {
+        let Some(owner) = self.owner_session.get() else {
+            return;
+        };
+        let listener = self.listener.borrow().clone();
+        let Some(listener) = listener else {
+            return;
+        };
+        let Some(source) = self.snapshot(owner) else {
+            tracing::debug!(%owner, "split title: layout busy, title refresh skipped");
+            return;
+        };
+        listener(&source);
+    }
+
+    fn snapshot(&self, owner: Uuid) -> Option<SplitTitleSource> {
+        let adapter = self.adapter.try_borrow().ok()?;
+        let focused_pane = *self.focused_pane_uuid.try_borrow().ok()?;
+        let focused_panel = match focused_pane {
+            Some(uuid) => self.uuid_panel_map.try_borrow().ok()?.get(&uuid).copied(),
+            None => None,
+        };
+        let focused = focused_panel
+            .and_then(|panel_id| adapter.get_panel_session(panel_id))
+            .map(|session| session.as_uuid());
+        let displayed = adapter
+            .panel_ids()
+            .into_iter()
+            .filter_map(|panel_id| adapter.get_panel_session(panel_id))
+            .map(|session| session.as_uuid())
+            .collect();
+        Some(SplitTitleSource {
+            owner,
+            focused,
+            displayed,
+            is_split: adapter.panel_count() > 1,
+        })
+    }
+}
+
 /// Bridge providing legacy-compatible API over new split view system
 pub struct SplitViewBridge {
     /// The underlying adapter
@@ -328,6 +410,9 @@ pub struct SplitViewBridge {
     /// re-apply labels after a layout rebuild, since moved sessions are not
     /// in the `sessions` map.
     label_cache: Rc<RefCell<HashMap<Uuid, (String, String)>>>,
+    /// Told what the owner tab's title should name (issue #421); see
+    /// [`Self::set_title_listener`].
+    title_listener: Rc<RefCell<Option<TitleListener>>>,
 }
 
 impl SplitViewBridge {
@@ -394,7 +479,33 @@ impl SplitViewBridge {
             broadcast_busy: Rc::new(std::cell::Cell::new(false)),
             owner_session: Rc::new(std::cell::Cell::new(None)),
             label_cache: Rc::new(RefCell::new(HashMap::new())),
+            title_listener: Rc::new(RefCell::new(None)),
         }
+    }
+
+    /// Sets the listener told which session the owner tab's title names.
+    ///
+    /// Called after every change of the focused pane — a click, the pane
+    /// navigation shortcut, a pane closing — and of the pane contents, so the
+    /// tab follows the pane the user works in rather than staying on whichever
+    /// session joined last (issue #421).
+    pub fn set_title_listener(&self, listener: TitleListener) {
+        *self.title_listener.borrow_mut() = Some(listener);
+    }
+
+    fn title_probe(&self) -> TitleProbe {
+        TitleProbe {
+            adapter: Rc::clone(&self.adapter),
+            uuid_panel_map: Rc::clone(&self.uuid_panel_map),
+            focused_pane_uuid: Rc::clone(&self.focused_pane_uuid),
+            owner_session: Rc::clone(&self.owner_session),
+            listener: Rc::clone(&self.title_listener),
+        }
+    }
+
+    /// Reports the title source to the listener. Call with no bridge borrow held.
+    fn emit_title_source(&self) {
+        self.title_probe().emit();
     }
 
     /// Records which session's tab hosts this layout.
@@ -908,6 +1019,7 @@ impl SplitViewBridge {
         // Update the panel header with the connection name (issue #277).
         self.update_panel_label(panel_id, session_id);
 
+        self.emit_title_source();
         Ok(())
     }
 
@@ -979,6 +1091,7 @@ impl SplitViewBridge {
         // Update the panel header with the connection name (issue #277).
         self.update_panel_label(panel_id, session_id);
 
+        self.emit_title_source();
         Ok(())
     }
 
@@ -1126,9 +1239,11 @@ impl SplitViewBridge {
                 break;
             }
         }
+        drop(adapter);
 
         self.clear_session_color(session_id);
         self.remove_session(session_id);
+        self.emit_title_source();
     }
 
     /// Closes a session from panes with auto-cleanup
@@ -1177,6 +1292,8 @@ impl SplitViewBridge {
                 .release(rustconn_core::split::ColorId::new(color as u8));
             *self.container_color.borrow_mut() = None;
         }
+        drop(adapter);
+        self.emit_title_source();
 
         // When the last remaining Panel in a Split_Container
         // is closed, close the parent Root_Tab. We signal this by returning true
@@ -1220,6 +1337,7 @@ impl SplitViewBridge {
         // Check if this was the last panel
         let remaining_panels = adapter.panel_ids();
         let should_close_split = remaining_panels.is_empty();
+        drop(adapter);
 
         // Release container color only when closing the entire split view
         if should_close_split && let Some(color) = *self.container_color.borrow() {
@@ -1238,6 +1356,9 @@ impl SplitViewBridge {
             *self.focused_pane_uuid.borrow_mut() = None;
         }
 
+        // The focus moved to the first remaining pane, so the tab title follows
+        // it there.
+        self.emit_title_source();
         Ok(should_close_split)
     }
 
@@ -1377,10 +1498,13 @@ impl SplitViewBridge {
         *self.focused_pane_uuid.borrow_mut() = Some(pane_uuid);
 
         // Update adapter focus styling
-        self.adapter
+        let styled = self
+            .adapter
             .borrow_mut()
             .set_focus(panel_id)
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string());
+        self.emit_title_source();
+        styled
     }
 
     /// Sets up drop target for a pane with callbacks
@@ -1424,6 +1548,7 @@ impl SplitViewBridge {
         let content_provider_rc = Rc::clone(&self.content_provider);
         let focused_pane_uuid = Rc::new(RefCell::new(pane_uuid));
         let show_scrollbar_for_drop = self.show_scrollbar;
+        let title_probe = self.title_probe();
 
         // Visual feedback on enter
         drop_target.connect_enter(move |_target, _x, _y| {
@@ -1543,6 +1668,8 @@ impl SplitViewBridge {
                 );
             }
 
+            // The layout gained a session, which the tab tooltip lists.
+            title_probe.emit();
             true
         });
 
@@ -1689,6 +1816,7 @@ impl SplitViewBridge {
 
         *self.adapter.borrow_mut() = new_adapter;
 
+        self.emit_title_source();
         displayed_sessions
     }
 
@@ -1718,6 +1846,7 @@ impl SplitViewBridge {
         {
             tracing::warn!("Failed to set adapter focus: {}", e);
         }
+        self.emit_title_source();
     }
 
     /// Returns the panel widget for a pane UUID
@@ -2666,6 +2795,7 @@ impl SplitViewBridge {
             color_index
         );
 
+        self.emit_title_source();
         Ok(color_index)
     }
 
