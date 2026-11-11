@@ -2947,6 +2947,40 @@ mod tunnel_password_tests {
     }
 
     #[test]
+    fn tunnel_hops_get_the_flatpak_known_hosts() {
+        let known_hosts =
+            std::path::Path::new("/home/u/.var/app/io.github.totoshko88.RustConn/.ssh/known_hosts");
+        let hops = strs(&["bob@far.lan", "carol@farthest.lan:2222"]);
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: None,
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: Some(known_hosts),
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("plain hops and a plain path give a route");
+        assert_eq!(args.len(), 2, "{args:?}");
+        assert_eq!(args[0], "-o");
+        let outer = args[1]
+            .strip_prefix("ProxyCommand=")
+            .expect("a ProxyCommand");
+        let option = format!("-o UserKnownHostsFile={}", known_hosts.display());
+        let boundary = "env _RC_TGT_PW_FILE= ";
+        assert!(outer.starts_with(boundary), "{outer}");
+        // The outer `ssh -W` for far.lan, then the nested one for farthest.lan
+        // inside its quoted ProxyCommand: each carries the path.
+        let (outer_hop, nested) = outer
+            .split_once("ProxyCommand='")
+            .expect("the farther hop is nested");
+        assert!(outer_hop.contains(&option), "{outer}");
+        assert!(nested.starts_with(boundary), "{nested}");
+        assert!(nested.contains(&option), "{nested}");
+        assert_eq!(outer.matches(&option).count(), 2, "{outer}");
+        assert_eq!(outer.matches(" ssh -W ").count(), 2, "{outer}");
+    }
+
+    #[test]
     fn a_route_whose_hops_inherit_the_helper_gets_no_password() {
         for extra_args in [
             strs(&["-J", "far.lan"]),
