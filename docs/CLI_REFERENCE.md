@@ -236,7 +236,7 @@ Options:
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
 | `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it, and its login, with an empty value. Not together with `--tunnel-via`. A browser that cannot use it is not opened |
 | `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
-| `--socks-proxy-password-var` | — | Secret global variable holding that login's password. It must already exist as a secret global variable (`rustconn-cli var set <name> <value> --secret`); `add` and `update` refuse a missing or plain one |
+| `--socks-proxy-password-var` | — | Name of the global variable holding that login's password, which must already exist and be secret; `add` and `update` refuse a missing or plain one. Create it in the GUI (Menu → Tools → Variables, with **Secret (mask value)** on): `rustconn-cli var set <name> <value> --secret` puts the password on the command line, where other local processes and your shell history can read it |
 | `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
 | `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
 | `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
@@ -885,13 +885,13 @@ Global variables can be referenced in snippets and connection templates. Secret 
 |------------|-------------|
 | `var list` | List all variables (`--format`) |
 | `var show <name>` | Show variable value |
-| `var set <name> <value>` | Set a variable (`--secret`, `--description`) |
+| `var set <name> <value>` | Set a variable (`--secret`, `--description`). The value is a command-line argument, so a password set here is visible to other local processes and kept in your shell history; set secret values in the GUI (Menu → Tools → Variables) instead |
 | `var delete <name>` | Delete a variable |
 
 ```bash
 rustconn-cli var list
 rustconn-cli var set my_var "my_value"
-rustconn-cli var set api_key "secret123" --secret                # Masked in output
+rustconn-cli var set api_key "secret123" --secret                # Masked in output, but on the command line
 rustconn-cli var set deploy_env "staging" --description "Current deploy target"
 rustconn-cli var delete "my_var"
 ```
