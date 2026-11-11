@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 13:56+0200\n"
+"POT-Creation-Date: 2026-11-11 15:38+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -60,11 +60,11 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mod.rs:3638
-#: rustconn/src/window/mod.rs:3702 rustconn/src/window/mod.rs:4714
-#: rustconn/src/window/mod.rs:5762 rustconn/src/window/operations.rs:117
-#: rustconn/src/window/operations.rs:443 rustconn/src/window/operations.rs:824
-#: rustconn/src/window/operations.rs:1007
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:311
+#: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
+#: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
+#: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
+#: rustconn/src/window/operations.rs:824 rustconn/src/window/operations.rs:1007
 #: rustconn/src/window/remote_script.rs:616 rustconn/src/window/sessions.rs:335
 #: rustconn/src/window/workspaces.rs:554
 msgid "Cancel"
@@ -231,7 +231,7 @@ msgstr "«{}» перад злучэннем патрабуе наступнае
 #: rustconn/src/dialogs/key_setup.rs:592 rustconn/src/dialogs/widgets.rs:1037
 #: rustconn/src/sidebar_ui.rs:401 rustconn/src/smart_folder_ui.rs:438
 #: rustconn/src/window/edit_dialogs.rs:785
-#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5763
+#: rustconn/src/window/edit_dialogs.rs:786 rustconn/src/window/mod.rs:5764
 msgid "Connect"
 msgstr "Злучыцца"
 
@@ -269,7 +269,7 @@ msgstr "Увесці пароль уручную"
 
 #: rustconn/src/dialogs/backend_missing.rs:56
 #: rustconn/src/embedded_rdp/connection.rs:2490 rustconn/src/vault_ops.rs:66
-#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1192
+#: rustconn/src/vault_ops.rs:316 rustconn/src/window/mod.rs:1193
 msgid "Open Settings"
 msgstr "Адкрыць налады"
 
@@ -2697,7 +2697,7 @@ msgstr "Перанакіраванне прынтара"
 msgid "Share your local printer with the remote session"
 msgstr "Абагуліць лакальны прынтар з аддаленым сеансам"
 
-#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5736
+#: rustconn/src/dialogs/connection/rdp.rs:363 rustconn/src/window/mod.rs:5737
 msgid "Microphone"
 msgstr "Мікрафон"
 
@@ -2705,7 +2705,7 @@ msgstr "Мікрафон"
 msgid "Send the local microphone to the remote session"
 msgstr "Перадаваць лакальны мікрафон у аддалены сеанс"
 
-#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5739
+#: rustconn/src/dialogs/connection/rdp.rs:373 rustconn/src/window/mod.rs:5740
 msgid "Smart Cards"
 msgstr "Смарт-карты"
 
@@ -3618,7 +3618,7 @@ msgstr "Адзін рэгулярны выраз на радок; пусты —
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:305
 msgid "Password"
 msgstr "Пароль"
 
@@ -3643,7 +3643,7 @@ msgstr "SSH-агент"
 
 #: rustconn/src/dialogs/connection/ssh.rs:389
 #: rustconn/src/dialogs/connection_wizard/auth_page.rs:340
-#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5742
+#: rustconn/src/dialogs/template.rs:635 rustconn/src/window/mod.rs:5743
 msgid "Security Key (FIDO2)"
 msgstr "Ключ бяспекі (FIDO2)"
 
@@ -4745,7 +4745,7 @@ msgstr "Капіяваць"
 
 #: rustconn/src/dialogs/credential_transfer.rs:152
 #: rustconn/src/dialogs/key_setup.rs:628 rustconn/src/dialogs/script.rs:171
-#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1304
+#: rustconn/src/terminal/playback.rs:264 rustconn/src/window/mod.rs:1305
 #: rustconn/src/window/remote_script.rs:403
 msgid "Stop"
 msgstr "Спыніць"
@@ -4867,7 +4867,7 @@ msgstr "Капіяванне спынена"
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
 #: rustconn/src/terminal/tab_menu.rs:715 rustconn/src/vault_ops.rs:65
-#: rustconn/src/window/mod.rs:4715
+#: rustconn/src/window/mod.rs:4716
 msgid "Close"
 msgstr "Закрыць"
 
@@ -10975,7 +10975,7 @@ msgstr "Выдаліць абраную працоўную прастору"
 msgid "Rename selected workspace"
 msgstr "Перайменаваць абраную працоўную прастору"
 
-#: rustconn/src/dialogs/workspace.rs:134
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:312
 msgid "Open"
 msgstr "Адкрыць"
 
@@ -11619,14 +11619,14 @@ msgstr "Захаваць файлы з аддаленага буфера абм�
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1486
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1488
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Перазлучыцца"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1488
+#: rustconn/src/terminal/mod.rs:1490
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Перазлучыцца з гэтым сеансам"
@@ -11748,7 +11748,7 @@ msgid "RDP session running in external window"
 msgstr "Сеанс RDP працуе ў знешнім акне"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3199
+#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3200
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Злучэнне не ўдалося"
@@ -12653,23 +12653,23 @@ msgstr "Агляд укладак (Ctrl+Shift+O)"
 msgid "Welcome"
 msgstr "Вітаем"
 
-#: rustconn/src/terminal/mod.rs:1130
+#: rustconn/src/terminal/mod.rs:1132
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Фільтр вываду «{}» не ўсталяваны; вывад сеанса не фільтруецца"
 
-#: rustconn/src/terminal/mod.rs:1480
+#: rustconn/src/terminal/mod.rs:1482
 msgid "Command not found: {}"
 msgstr "Каманда не знойдзена: {}"
 
-#: rustconn/src/terminal/mod.rs:1482
+#: rustconn/src/terminal/mod.rs:1484
 msgid "Failed to start '{}'"
 msgstr "Не ўдалося запусціць «{}»"
 
-#: rustconn/src/terminal/mod.rs:1504
+#: rustconn/src/terminal/mod.rs:1506
 msgid "'{}' is not installed"
 msgstr "«{}» не ўсталявана"
 
-#: rustconn/src/terminal/mod.rs:1507
+#: rustconn/src/terminal/mod.rs:1509
 msgid "Failed to start '{}': {}"
 msgstr "Не ўдалося запусціць «{}»: {}"
 
@@ -12948,7 +12948,7 @@ msgstr "{} актыўных сеансаў"
 msgid "About RustConn"
 msgstr "Пра RustConn"
 
-#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5719
+#: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5720
 msgid "Passphrase Does Not Open the Portable File"
 msgstr "Парольная фраза не адкрывае партатыўны файл"
 
@@ -13154,8 +13154,8 @@ msgstr ""
 msgid "Jump Host Unavailable"
 msgstr "Прамежкавы вузел недаступны"
 
-#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3639
-#: rustconn/src/window/mod.rs:3705 rustconn/src/window/rdp_vnc.rs:787
+#: rustconn/src/window/clusters.rs:457 rustconn/src/window/mod.rs:3640
+#: rustconn/src/window/mod.rs:3706 rustconn/src/window/rdp_vnc.rs:787
 msgid "Connect Anyway"
 msgstr "Усё роўна злучыцца"
 
@@ -13402,7 +13402,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2420
+#: rustconn/src/window/edit_actions.rs:2319
 msgid "Connection failed. Host unreachable."
 msgstr "Злучэнне не ўдалося. Хост недасяжны."
 
@@ -13625,40 +13625,25 @@ msgstr ""
 "адкрыта. Усталюйце Chromium або Firefox ці скарыстайцеся ўбудаваным "
 "браўзерам."
 
-#: rustconn/src/window/edit_actions.rs:2061
-#: rustconn/src/window/edit_actions.rs:2163
-#: rustconn/src/window/edit_actions.rs:2221
-msgid "SFTP is only available for SSH connections."
-msgstr "SFTP даступны толькі для SSH-злучэнняў."
-
-#: rustconn/src/window/edit_actions.rs:2071
-msgid "mc requires SSH key in agent. Password auth is not supported."
-msgstr ""
-"mc патрабуе SSH-ключа ў агенце. Аўтэнтыфікацыя паролем не падтрымліваецца."
-
-#: rustconn/src/window/edit_actions.rs:2079
+#: rustconn/src/window/edit_actions.rs:2056
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "Агент SSH не запушчаны. Выканайце «eval $(ssh-agent)» і паўтарыце."
 
-#: rustconn/src/window/edit_actions.rs:2090
+#: rustconn/src/window/edit_actions.rs:2067
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr ""
 "Не ўдалося праверыць, ці мае агент SSH гэты ключ. mc усё роўна будзе адкрыты."
 
-#: rustconn/src/window/edit_actions.rs:2096
+#: rustconn/src/window/edit_actions.rs:2073
 msgid "SSH key not available"
 msgstr "SSH-ключ недаступны"
 
-#: rustconn/src/window/edit_actions.rs:2107
-msgid "Midnight Commander (mc) is not installed."
-msgstr "Midnight Commander (mc) не ўсталяваны."
+#: rustconn/src/window/edit_actions.rs:2094 rustconn/src/window/mc_launch.rs:61
+msgid "SFTP is only available for SSH connections."
+msgstr "SFTP даступны толькі для SSH-злучэнняў."
 
-#: rustconn/src/window/edit_actions.rs:2112
-msgid "Opening mc SFTP…"
-msgstr "Адкрыццё mc SFTP…"
-
-#: rustconn/src/window/edit_actions.rs:2192
-#: rustconn/src/window/edit_actions.rs:2583
+#: rustconn/src/window/edit_actions.rs:2123
+#: rustconn/src/window/edit_actions.rs:2420
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13668,18 +13653,18 @@ msgstr ""
 "Flatpak.                          Уключыце \"SFTP via mc\" у Наладах для "
 "надзейнага доступу."
 
-#: rustconn/src/window/edit_actions.rs:2208
-#: rustconn/src/window/edit_actions.rs:2601
+#: rustconn/src/window/edit_actions.rs:2139
+#: rustconn/src/window/edit_actions.rs:2438
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Выяўлены прамежкавы гост. SFTP адкрываецца праз mc замест файлавага "
 "менеджара."
 
-#: rustconn/src/window/edit_actions.rs:2267
+#: rustconn/src/window/edit_actions.rs:2166
 msgid "Opening SFTP…"
 msgstr "Адкрыццё SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2314
+#: rustconn/src/window/edit_actions.rs:2213
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "Агент SSH не запушчаны — файлавы менеджар можа не прайсці аўтэнтыфікацыю."
@@ -14113,29 +14098,57 @@ msgstr "Камандны макрас"
 msgid "“{}” was not sent. {}"
 msgstr "«{}» не адпраўлена. {}"
 
-#: rustconn/src/window/mod.rs:406
+#: rustconn/src/window/mc_launch.rs:69
+msgid "Midnight Commander (mc) is not installed."
+msgstr "Midnight Commander (mc) не ўсталяваны."
+
+#: rustconn/src/window/mc_launch.rs:110
+msgid "Opening mc SFTP…"
+msgstr "Адкрыццё mc SFTP…"
+
+#: rustconn/src/window/mc_launch.rs:162
+msgid ""
+"mc did not get a password from RustConn. Type it in the mc tab when mc waits "
+"for it."
+msgstr ""
+"mc не атрымаў пароля ад RustConn. Увядзіце яго ва ўкладцы mc, калі mc будзе "
+"яго чакаць."
+
+#: rustconn/src/window/mc_launch.rs:298
+msgid "Password for {}"
+msgstr "Пароль для {}"
+
+#: rustconn/src/window/mc_launch.rs:300
+msgid ""
+"Midnight Commander signs in to this server with it. RustConn keeps it only "
+"while this mc tab is open."
+msgstr ""
+"Midnight Commander уваходзіць з ім на гэты сервер. RustConn захоўвае яго, "
+"толькі пакуль адкрыта гэтая ўкладка mc."
+
+#: rustconn/src/window/mod.rs:407
 msgid "The jump host set for “{}” no longer exists."
 msgstr "Прамежкавы вузел, зададзены для «{}», больш не існуе."
 
-#: rustconn/src/window/mod.rs:410
+#: rustconn/src/window/mod.rs:411
 msgid "“{}” is set to use itself as its jump host."
 msgstr "«{}» наладжана выкарыстоўваць сябе як прамежкавы вузел."
 
-#: rustconn/src/window/mod.rs:422
+#: rustconn/src/window/mod.rs:423
 msgid "The setting is inherited from the group “{}”."
 msgstr "Налада ўспадкавана ад групы «{}»."
 
-#: rustconn/src/window/mod.rs:427
+#: rustconn/src/window/mod.rs:428
 msgid "The setting is the Global Jump Host in Settings."
 msgstr "Гэта глабальны прамежкавы вузел у наладах."
 
-#: rustconn/src/window/mod.rs:432
+#: rustconn/src/window/mod.rs:433
 msgid ""
 "Connecting to “{}” now reaches the server directly, without a jump host."
 msgstr ""
 "Злучэнне з «{}» цяпер дасягае сервера напрамую, без прамежкавага вузла."
 
-#: rustconn/src/window/mod.rs:436
+#: rustconn/src/window/mod.rs:437
 msgid ""
 "Connecting to “{}” now skips that jump host and uses only the rest of its "
 "configured route."
@@ -14143,55 +14156,55 @@ msgstr ""
 "Злучэнне з «{}» цяпер прапускае гэты прамежкавы вузел і выкарыстоўвае толькі "
 "астатні наладжаны маршрут."
 
-#: rustconn/src/window/mod.rs:1168 rustconn/src/window/mod.rs:1179
+#: rustconn/src/window/mod.rs:1169 rustconn/src/window/mod.rs:1180
 msgid "Dismiss"
 msgstr "Адхіліць"
 
-#: rustconn/src/window/mod.rs:1211
+#: rustconn/src/window/mod.rs:1212
 msgid "Open Log"
 msgstr "Адкрыць журнал"
 
-#: rustconn/src/window/mod.rs:1214
+#: rustconn/src/window/mod.rs:1215
 msgid ""
 "RustConn closed unexpectedly the last time it ran. A crash log was saved "
 "locally."
 msgstr ""
 "Мінулым разам RustConn нечакана закрыўся. Журнал збою захаваны лакальна."
 
-#: rustconn/src/window/mod.rs:1239
+#: rustconn/src/window/mod.rs:1240
 msgid "Could not open the crash log. It is saved at {}"
 msgstr "Не ўдалося адкрыць журнал збою. Ён захаваны ў {}"
 
-#: rustconn/src/window/mod.rs:1268
+#: rustconn/src/window/mod.rs:1269
 msgid "Touch your hardware key to unlock the password database"
 msgstr ""
 "Дакраніцеся да апаратнага ключа, каб разблакіраваць базу дадзеных пароляў"
 
-#: rustconn/src/window/mod.rs:2766
+#: rustconn/src/window/mod.rs:2767
 msgid "Already running in an external window"
 msgstr "Ужо выконваецца ў вонкавым акне"
 
-#: rustconn/src/window/mod.rs:2995
+#: rustconn/src/window/mod.rs:2996
 msgid "Connection to ‘{}’ failed"
 msgstr "Злучэнне з ‘{}’ не ўдалося"
 
-#: rustconn/src/window/mod.rs:3343 rustconn/src/window/mod.rs:3357
+#: rustconn/src/window/mod.rs:3344 rustconn/src/window/mod.rs:3358
 msgid "Pre-connect task failed: {}"
 msgstr "Задача перад злучэннем не ўдалася: {}"
 
-#: rustconn/src/window/mod.rs:3391
+#: rustconn/src/window/mod.rs:3392
 msgid "Port knock failed: {}"
 msgstr "Памылка port knock: {}"
 
-#: rustconn/src/window/mod.rs:3440
+#: rustconn/src/window/mod.rs:3441
 msgid "SPA failed: {}"
 msgstr "Памылка SPA: {}"
 
-#: rustconn/src/window/mod.rs:3624
+#: rustconn/src/window/mod.rs:3625
 msgid "{} (via {})"
 msgstr "{} (праз {})"
 
-#: rustconn/src/window/mod.rs:3630
+#: rustconn/src/window/mod.rs:3631
 msgid ""
 "This connection no longer goes where it did.\n"
 "\n"
@@ -14215,35 +14228,35 @@ msgstr ""
 "Калі вы не рабілі гэтай змены, скасуйце — злучэнне можа адправіць захаваныя "
 "ўліковыя дадзеныя на іншую машыну."
 
-#: rustconn/src/window/mod.rs:3635
+#: rustconn/src/window/mod.rs:3636
 msgid "Routing changed for “{}”"
 msgstr "Змяніўся маршрут для «{}»"
 
-#: rustconn/src/window/mod.rs:3699
+#: rustconn/src/window/mod.rs:3700
 msgid "Jump Host Unavailable for “{}”"
 msgstr "Прамежкавы вузел недаступны для «{}»"
 
-#: rustconn/src/window/mod.rs:3704
+#: rustconn/src/window/mod.rs:3705
 msgid "Connect Directly"
 msgstr "Злучыцца напрамую"
 
-#: rustconn/src/window/mod.rs:3793 rustconn/src/window/mod.rs:3968
+#: rustconn/src/window/mod.rs:3794 rustconn/src/window/mod.rs:3969
 msgid "Connection “{}” created"
 msgstr "Злучэнне “{}” створана"
 
-#: rustconn/src/window/mod.rs:4225
+#: rustconn/src/window/mod.rs:4226
 msgid "RustConn - {}"
 msgstr "RustConn — {}"
 
-#: rustconn/src/window/mod.rs:4437
+#: rustconn/src/window/mod.rs:4438
 msgid "Settings saved"
 msgstr "Налады захаваны"
 
-#: rustconn/src/window/mod.rs:4474
+#: rustconn/src/window/mod.rs:4475
 msgid "Passphrase Not Saved on This Computer"
 msgstr "Парольная фраза не захавана на гэтым камп'ютары"
 
-#: rustconn/src/window/mod.rs:4476
+#: rustconn/src/window/mod.rs:4477
 msgid ""
 "The passphrase could not be encrypted for local storage, so it is kept for "
 "this session only and you will be asked for it again after a restart. Choose "
@@ -14255,11 +14268,11 @@ msgstr ""
 "Выберыце замест гэтага «Сістэмны звязак ключоў» або праверце, чы можа "
 "RustConn пісаць у свой каталог даных."
 
-#: rustconn/src/window/mod.rs:4522
+#: rustconn/src/window/mod.rs:4523
 msgid "Credentials Not Saved to Keyring"
 msgstr "Уліковыя дадзеныя не захаваны ў сховішчы ключоў"
 
-#: rustconn/src/window/mod.rs:4524
+#: rustconn/src/window/mod.rs:4525
 msgid ""
 "The system keyring did not accept the credentials, so they are kept for this "
 "session only and will be gone after a restart. Check that your keyring "
@@ -14269,15 +14282,15 @@ msgstr ""
 "толькі на гэты сеанс і знікнуць пасля перазапуску. Праверце, што служба "
 "сховішча ключоў працуе і разблакаваная, потым захавайце налады зноў."
 
-#: rustconn/src/window/mod.rs:4708
+#: rustconn/src/window/mod.rs:4709
 msgid "Close RustConn?"
 msgstr "Закрыць RustConn?"
 
-#: rustconn/src/window/mod.rs:4710
+#: rustconn/src/window/mod.rs:4711
 msgid "{} session tab(s) are open. Active connections will be disconnected."
 msgstr "Адкрыта ўкладак сеансаў: {}. Актыўныя злучэнні будуць разарваны."
 
-#: rustconn/src/window/mod.rs:4747
+#: rustconn/src/window/mod.rs:4748
 msgid ""
 "Settings could not be read, so defaults are in use. The unreadable file was "
 "kept as {}."
@@ -14285,7 +14298,7 @@ msgstr ""
 "Не ўдалося прачытаць налады, таму выкарыстоўваюцца значэнні па змаўчанні. "
 "Нечытальны файл захаваны як {}."
 
-#: rustconn/src/window/mod.rs:4752
+#: rustconn/src/window/mod.rs:4753
 msgid ""
 "These settings were saved by a newer RustConn ({}). A backup is kept before "
 "they are changed."
@@ -14293,35 +14306,35 @@ msgstr ""
 "Гэтыя налады былі захаваны навейшай версіяй RustConn ({}). Перад іх зменай "
 "захоўваецца рэзервовая копія."
 
-#: rustconn/src/window/mod.rs:4777
+#: rustconn/src/window/mod.rs:4778
 msgid "Cloud sync failed for '{}': {}"
 msgstr "Не ўдалося сінхранізаваць з воблакам для «{}»: {}"
 
-#: rustconn/src/window/mod.rs:4960
+#: rustconn/src/window/mod.rs:4961
 msgid "Startup connection not found"
 msgstr "Злучэнне для запуску не знойдзена"
 
-#: rustconn/src/window/mod.rs:5033
+#: rustconn/src/window/mod.rs:5034
 msgid "Failed to open .rdp file"
 msgstr "Не ўдалося адкрыць файл .rdp"
 
-#: rustconn/src/window/mod.rs:5069
+#: rustconn/src/window/mod.rs:5070
 msgid "Failed to open .vv file"
 msgstr "Не ўдалося адкрыць файл .vv"
 
-#: rustconn/src/window/mod.rs:5106
+#: rustconn/src/window/mod.rs:5107
 msgid "Tunnel “{}” stopped: {}"
 msgstr "Тунель “{}” спынены: {}"
 
-#: rustconn/src/window/mod.rs:5122
+#: rustconn/src/window/mod.rs:5123
 msgid "Gave up reconnecting tunnel “{}”: {}"
 msgstr "Спынены спробы перазлучыць тунель “{}”: {}"
 
-#: rustconn/src/window/mod.rs:5635
+#: rustconn/src/window/mod.rs:5636
 msgid "Successfully exported {} connection(s). {} skipped."
 msgstr "Паспяхова экспартавана {} злучэнняў. {} прапушчана."
 
-#: rustconn/src/window/mod.rs:5721
+#: rustconn/src/window/mod.rs:5722
 msgid ""
 "The passphrase you saved does not decrypt the portable credential file, so "
 "none of the passwords in it can be read. Open Settings ▸ Secrets and enter "
@@ -14331,11 +14344,11 @@ msgstr ""
 "таму ні аднаго пароля з яго не прачытаць. Адкрыйце Налады ▸ Сакрэты і "
 "ўвядзіце парольную фразу, з якой быў створаны гэты файл."
 
-#: rustconn/src/window/mod.rs:5756
+#: rustconn/src/window/mod.rs:5757
 msgid "Share Local Devices?"
 msgstr "Падзяліцца лакальнымі прыладамі?"
 
-#: rustconn/src/window/mod.rs:5758
+#: rustconn/src/window/mod.rs:5759
 msgid ""
 "The file {} asks to share these devices with {}:\n"
 "\n"
@@ -14641,7 +14654,11 @@ msgid ""
 "from your distribution or with: gem install evil-winrm. It must be on the "
 "PATH of your login shell on the host (set in ~/.profile, not only in "
 "~/.bashrc)."
-msgstr "evil-winrm не знойдзены на гэтым камп'ютары. Усталюйце яго па-за Flatpak, з вашага дыстрыбутыва або камандай: gem install evil-winrm. Ён мусіць быць у PATH вашай абалонкі ўваходу па-за Flatpak (задайце гэта ў ~/.profile, а не толькі ў ~/.bashrc)."
+msgstr ""
+"evil-winrm не знойдзены на гэтым камп'ютары. Усталюйце яго па-за Flatpak, з "
+"вашага дыстрыбутыва або камандай: gem install evil-winrm. Ён мусіць быць у "
+"PATH вашай абалонкі ўваходу па-за Flatpak (задайце гэта ў ~/.profile, а не "
+"толькі ў ~/.bashrc)."
 
 #: rustconn/src/window/protocols.rs:2541
 msgid ""

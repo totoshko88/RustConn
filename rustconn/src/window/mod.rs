@@ -21,6 +21,7 @@ mod history_actions;
 mod key_setup;
 mod key_unlock;
 mod macro_dispatch;
+mod mc_launch;
 mod navigation_actions;
 mod network_monitor;
 mod operations;

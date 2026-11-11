@@ -996,7 +996,9 @@ impl TerminalNotebook {
         )
     }
 
-    fn spawn_command_with_cleanup(
+    /// [`Self::spawn_command`], removing `cleanup_paths` when the child exits
+    /// or the spawn fails (a secret file the child reads, for instance).
+    pub(crate) fn spawn_command_with_cleanup(
         &self,
         session_id: Uuid,
         argv: &[&str],

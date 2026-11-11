@@ -2036,41 +2036,18 @@ impl MainWindow {
         let key_path = rustconn_core::sftp::get_ssh_key_path(conn, &groups)
             .and_then(|p| rustconn_core::resolve_key_path(&p));
 
-        // Check if password auth — mc FISH doesn't support it
-        let uses_password = matches!(
-            &conn.protocol_config,
-            rustconn_core::models::ProtocolConfig::Ssh(cfg)
-            | rustconn_core::models::ProtocolConfig::Sftp(cfg)
-                if matches!(
-                    cfg.auth_method,
-                    rustconn_core::models::SshAuthMethod::Password
-                        | rustconn_core::models::SshAuthMethod::KeyboardInteractive
-                )
-        );
-
         if use_mc {
             // Open mc in a local shell tab with SFTP panel
-            let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
-            let conn_name = conn.name.clone();
-            let conn_for_ssh_env = conn.clone();
-            let terminal_settings = state_ref.settings().terminal.clone();
-            drop(state_ref);
-
-            let Some(mc_args) = mc_cmd else {
-                toast_clone.show_warning(&crate::i18n::i18n(
-                    "SFTP is only available for SSH connections.",
-                ));
-                return;
+            let tab = super::mc_launch::McTab {
+                connection_id: conn_id,
+                conn: conn.clone(),
+                connections,
+                groups,
+                network,
+                terminal_settings: state_ref.settings().terminal.clone(),
+                announce: true,
             };
-
-            tracing::info!(?mc_args, "Opening SFTP via mc");
-
-            // Warn about password auth — mc FISH can't prompt
-            if uses_password && key_path.is_none() {
-                toast_clone.show_warning(&crate::i18n::i18n(
-                    "mc requires SSH key in agent. Password auth is not supported.",
-                ));
-            }
+            drop(state_ref);
 
             // Add SSH key to agent if configured
             if let Some(ref kp) = key_path {
@@ -2101,60 +2078,13 @@ impl MainWindow {
                 }
             }
 
-            // Check mc availability
-            if !rustconn_core::which::is_available("mc") {
-                toast_clone.show_error(&crate::i18n::i18n(
-                    "Midnight Commander (mc) is not installed.",
-                ));
-                return;
-            }
-
-            toast_clone.show_toast(&crate::i18n::i18n("Opening mc SFTP…"));
-
-            let tab_name = format!("mc: {conn_name}");
-            let session_id = notebook_clone.create_terminal_tab_with_settings(
-                conn_id,
-                &tab_name,
-                "sftp",
+            super::mc_launch::open_mc_tab(
+                state_clone,
+                notebook_clone,
+                Some(split_view_clone),
                 None,
-                &terminal_settings,
-                None,
-                &[],
+                tab,
             );
-
-            let downloads = rustconn_core::sftp::get_downloads_dir();
-
-            // Delay mc spawn slightly so GTK allocates the VTE widget's
-            // final size before mc reads terminal dimensions at startup.
-            let nb = notebook_clone.clone();
-            let mc_clone = mc_args.clone();
-            let dl = downloads.clone();
-            // mc's `sh://` URI carries only user, host and port; the jump
-            // host, identity file, HostKeyAlias and custom options reach the
-            // `ssh` it spawns through a generated ssh_config behind a PATH
-            // wrapper keyed on this session (issue #255).
-            let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                session_id,
-                &conn_for_ssh_env,
-                &connections,
-                &groups,
-                &network,
-                None,
-            )
-            .map(|env| env.path_env());
-            glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
-                let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
-            });
-
-            if let Some(info) = notebook_clone.get_session_info(session_id) {
-                split_view_clone.add_session(info);
-            }
-            split_view_clone.widget().set_visible(false);
-            split_view_clone.widget().set_vexpand(false);
-            notebook_clone.widget().set_vexpand(true);
-            notebook_clone.show_tab_view_content();
         } else {
             // Open file manager with sftp:// URI. The home directory is
             // resolved later off the main thread; base_uri (server root)
@@ -2209,59 +2139,26 @@ impl MainWindow {
                     "Jump host detected. Opening SFTP via mc instead of the file manager.",
                 ));
 
-                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(&conn_for_uri);
-                let conn_name = conn_for_uri.name.clone();
                 let terminal_settings = state_clone
                     .try_borrow()
                     .ok()
                     .map(|s| s.settings().terminal.clone())
                     .unwrap_or_default();
-
-                let Some(mc_args) = mc_cmd else {
-                    toast_clone.show_warning(&crate::i18n::i18n(
-                        "SFTP is only available for SSH connections.",
-                    ));
-                    return;
-                };
-
-                let tab_name = format!("mc: {conn_name}");
-                let session_id = notebook_clone.create_terminal_tab_with_settings(
-                    conn_id,
-                    &tab_name,
-                    "sftp",
+                super::mc_launch::open_mc_tab(
+                    state_clone,
+                    notebook_clone,
+                    Some(split_view_clone),
                     None,
-                    &terminal_settings,
-                    None,
-                    &[],
+                    super::mc_launch::McTab {
+                        connection_id: conn_id,
+                        conn: conn_for_uri,
+                        connections: connections_for_uri,
+                        groups: groups_for_uri,
+                        network: network_for_uri,
+                        terminal_settings,
+                        announce: false,
+                    },
                 );
-
-                let downloads = rustconn_core::sftp::get_downloads_dir();
-                let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                    session_id,
-                    &conn_for_uri,
-                    &connections_for_uri,
-                    &groups_for_uri,
-                    &network_for_uri,
-                    None,
-                )
-                .map(|env| env.path_env());
-
-                let nb = notebook_clone.clone();
-                let mc_clone = mc_args.clone();
-                let dl = downloads.clone();
-                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                    let argv: Vec<&str> = mc_clone.iter().map(String::as_str).collect();
-                    let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                    nb.spawn_command(session_id, &argv, envv.as_deref(), Some(&dl), None);
-                });
-
-                if let Some(info) = notebook_clone.get_session_info(session_id) {
-                    split_view_clone.add_session(info);
-                }
-                split_view_clone.widget().set_visible(false);
-                split_view_clone.widget().set_vexpand(false);
-                notebook_clone.widget().set_vexpand(true);
-                notebook_clone.show_tab_view_content();
                 return;
             }
 
@@ -2460,17 +2357,16 @@ impl MainWindow {
             .and_then(|p| rustconn_core::resolve_key_path(&p));
 
         if use_mc {
-            let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(conn);
-            let conn_name = conn.name.clone();
-            let conn_for_ssh_env = conn.clone();
-            let terminal_settings = state_ref.settings().terminal.clone();
-            drop(state_ref);
-
-            let Some(mc_args) = mc_cmd else {
-                return;
+            let tab = super::mc_launch::McTab {
+                connection_id,
+                conn: conn.clone(),
+                connections,
+                groups,
+                network,
+                terminal_settings: state_ref.settings().terminal.clone(),
+                announce: false,
             };
-
-            tracing::info!(?mc_args, "SFTP connect: opening mc");
+            drop(state_ref);
 
             if let Some(ref kp) = key_path {
                 match rustconn_core::sftp::ensure_identity_loaded(kp) {
@@ -2490,69 +2386,7 @@ impl MainWindow {
                 }
             }
 
-            // Update sidebar status for SFTP connection
-            if let Some(sb) = sidebar {
-                sb.update_connection_status(&connection_id.to_string(), "connecting");
-            }
-
-            let tab_name = format!("mc: {conn_name}");
-            let session_id = notebook.create_terminal_tab_with_settings(
-                connection_id,
-                &tab_name,
-                "sftp",
-                None,
-                &terminal_settings,
-                None,
-                &[],
-            );
-
-            let downloads = rustconn_core::sftp::get_downloads_dir();
-
-            // Delay mc spawn slightly so GTK allocates the VTE widget's
-            // final size before mc reads terminal dimensions at startup.
-            let notebook_clone = notebook.clone();
-            let mc_args_clone = mc_args.clone();
-            let downloads_clone = downloads.clone();
-            // mc's `sh://` URI carries only user, host and port; the jump host,
-            // identity file, HostKeyAlias and custom options reach the `ssh` it
-            // spawns through a generated ssh_config behind a PATH wrapper keyed
-            // on this session (issue #255).
-            let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                session_id,
-                &conn_for_ssh_env,
-                &connections,
-                &groups,
-                &network,
-                None,
-            )
-            .map(|env| env.path_env());
-            glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                let argv: Vec<&str> = mc_args_clone.iter().map(String::as_str).collect();
-                let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                notebook_clone.spawn_command(
-                    session_id,
-                    &argv,
-                    envv.as_deref(),
-                    Some(&downloads_clone),
-                    None,
-                );
-            });
-
-            // Mark as connected and increment session count
-            if let Some(sb) = sidebar {
-                sb.update_connection_status(&connection_id.to_string(), "connected");
-                sb.increment_session_count(&connection_id.to_string(), session_id);
-            }
-
-            if let Some(sv) = split_view {
-                if let Some(info) = notebook.get_session_info(session_id) {
-                    sv.add_session(info);
-                }
-                sv.widget().set_visible(false);
-                sv.widget().set_vexpand(false);
-            }
-            notebook.widget().set_vexpand(true);
-            notebook.show_tab_view_content();
+            super::mc_launch::open_mc_tab(state, notebook, split_view, sidebar, tab);
         } else {
             let Some(base_uri) = rustconn_core::sftp::build_sftp_uri_from_connection(conn) else {
                 drop(state_ref);
@@ -2605,68 +2439,26 @@ impl MainWindow {
                     ),
                 );
 
-                let mc_cmd = rustconn_core::sftp::build_mc_sftp_command(&conn_for_uri);
                 let terminal_settings = state
                     .try_borrow()
                     .ok()
                     .map(|s| s.settings().terminal.clone())
                     .unwrap_or_default();
-                let conn_name = conn_for_uri.name.clone();
-
-                let Some(mc_args) = mc_cmd else {
-                    return;
-                };
-
-                let tab_name = format!("mc: {conn_name}");
-                let session_id = notebook.create_terminal_tab_with_settings(
-                    connection_id,
-                    &tab_name,
-                    "sftp",
-                    None,
-                    &terminal_settings,
-                    None,
-                    &[],
+                super::mc_launch::open_mc_tab(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    super::mc_launch::McTab {
+                        connection_id,
+                        conn: conn_for_uri,
+                        connections: connections_for_uri,
+                        groups: groups_for_uri,
+                        network: network_for_uri,
+                        terminal_settings,
+                        announce: false,
+                    },
                 );
-
-                let downloads = rustconn_core::sftp::get_downloads_dir();
-                let mc_home_env = rustconn_core::prepare_mc_ssh_env(
-                    session_id,
-                    &conn_for_uri,
-                    &connections_for_uri,
-                    &groups_for_uri,
-                    &network,
-                    None,
-                )
-                .map(|env| env.path_env());
-
-                let notebook_clone = notebook.clone();
-                let mc_args_clone = mc_args.clone();
-                let downloads_clone = downloads.clone();
-                glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-                    let argv: Vec<&str> = mc_args_clone.iter().map(String::as_str).collect();
-                    let envv: Option<Vec<&str>> = mc_home_env.as_ref().map(|e| vec![e.as_str()]);
-                    notebook_clone.spawn_command(
-                        session_id,
-                        &argv,
-                        envv.as_deref(),
-                        Some(&downloads_clone),
-                        None,
-                    );
-                });
-
-                if let Some(sb) = sidebar {
-                    sb.update_connection_status(&connection_id.to_string(), "connected");
-                    sb.increment_session_count(&connection_id.to_string(), session_id);
-                }
-                if let Some(sv) = split_view {
-                    if let Some(info) = notebook.get_session_info(session_id) {
-                        sv.add_session(info);
-                    }
-                    sv.widget().set_visible(false);
-                    sv.widget().set_vexpand(false);
-                }
-                notebook.widget().set_vexpand(true);
-                notebook.show_tab_view_content();
                 return;
             }
 
