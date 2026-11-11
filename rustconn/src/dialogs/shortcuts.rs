@@ -176,6 +176,7 @@ fn i18n_markers() -> Vec<String> {
         // Application
         i18n("Quit"),
         i18n("Keyboard Shortcuts"),
+        i18n("Help"),
         i18n("Connection History"),
         i18n("Statistics"),
         i18n("Password Generator"),
@@ -641,7 +642,8 @@ mod tests {
     const EXPECTED_ACCELS: &[&str] = &[
         // Application
         "<Control>q",
-        "<Control>question|F1",
+        "<Control>question",
+        "F1",
         "<Control>h",
         "<Control><Shift>i",
         "<Control>g",

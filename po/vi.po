@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:07+0200\n"
+"POT-Creation-Date: 2026-11-11 23:14+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2203 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -103,7 +103,7 @@ msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Chưa tải được mật khẩu KeePass từ chùm khóa — hãy nhập lại trong Cài đặt"
 
-#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:199
+#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:200
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2198
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
@@ -126,7 +126,13 @@ msgid ""
 msgstr ""
 "Đã chọn {}, nhưng nó chưa thể lưu mật khẩu: {}. Hãy mở Cài đặt, rồi Bí mật."
 
-#: rustconn/src/app.rs:2047
+#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/window/edit_actions.rs:1865
+#: rustconn/src/window/edit_actions.rs:1893
+msgid "Failed to open URL: {}"
+msgstr "Mở URL thất bại: {}"
+
+#: rustconn/src/app.rs:2084
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -136,31 +142,31 @@ msgstr ""
 "Quản lý các kết nối SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes và Zero "
 "Trust từ một ứng dụng duy nhất."
 
-#: rustconn/src/app.rs:2126
+#: rustconn/src/app.rs:2162
 msgid "User Guide"
 msgstr "Hướng dẫn sử dụng"
 
-#: rustconn/src/app.rs:2130
+#: rustconn/src/app.rs:2164
 msgid "Installation"
 msgstr "Hướng dẫn cài đặt"
 
-#: rustconn/src/app.rs:2134
+#: rustconn/src/app.rs:2168
 msgid "Releases"
 msgstr "Các bản phát hành"
 
-#: rustconn/src/app.rs:2138
+#: rustconn/src/app.rs:2172
 msgid "Changelog"
 msgstr "Nhật ký thay đổi"
 
-#: rustconn/src/app.rs:2148
+#: rustconn/src/app.rs:2182
 msgid "Special Thanks"
 msgstr "Lời cảm ơn đặc biệt"
 
-#: rustconn/src/app.rs:2163
+#: rustconn/src/app.rs:2197
 msgid "Made in Ukraine"
 msgstr "Sản xuất tại Ukraina"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2198
 msgid "All contributors and supporters"
 msgstr "Tất cả những người đóng góp và ủng hộ"
 
@@ -432,7 +438,7 @@ msgstr "Xóa"
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:197
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Command Palette"
 msgstr "Bảng lệnh"
 
@@ -733,7 +739,7 @@ msgid "Add Rule"
 msgstr "Thêm quy tắc"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:648
-#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/wol.rs:38
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:530 rustconn/src/smart_folder_ui.rs:453
 msgid "Wake On LAN"
 msgstr "Wake On LAN"
@@ -1504,7 +1510,7 @@ msgid "Script timed out after 30 seconds"
 msgstr "Tập lệnh hết thời gian chờ sau 30 giây"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:191
-#: rustconn/src/dialogs/shortcuts.rs:186
+#: rustconn/src/dialogs/shortcuts.rs:187
 #: rustconn/src/window/connection_dialogs.rs:297
 msgid "New Connection (Advanced)"
 msgstr "Kết nối mới (nâng cao)"
@@ -4666,7 +4672,7 @@ msgstr "Mẫu của bạn"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:460
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
-#: rustconn/src/dialogs/shortcuts.rs:185 rustconn/src/sidebar_ui.rs:552
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/sidebar_ui.rs:552
 #: rustconn/src/sidebar_ui.rs:589 rustconn/src/sidebar_ui.rs:1287
 #: rustconn/src/split_view/bridge.rs:2024 rustconn/src/window/ui.rs:257
 msgid "New Connection"
@@ -4714,7 +4720,7 @@ msgstr "Cụm mật khẩu của tệp di động"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/dialogs/widgets.rs:1036
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4876,7 +4882,7 @@ msgid "Export Connections"
 msgstr "Xuất kết nối"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:189 rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/dialogs/widgets.rs:1034
 msgid "Export"
 msgstr "Xuất"
 
@@ -5292,7 +5298,7 @@ msgstr "Không có để tải xuống"
 msgid "Failed"
 msgstr "Thất bại"
 
-#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:180
 #: rustconn/src/sidebar_ui.rs:1170
 msgid "Connection History"
 msgstr "Lịch sử kết nối"
@@ -5360,7 +5366,7 @@ msgstr "Nhập kết nối"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:188 rustconn/src/dialogs/widgets.rs:1035
+#: rustconn/src/dialogs/shortcuts.rs:189 rustconn/src/dialogs/widgets.rs:1035
 #: rustconn/src/split_view/bridge.rs:2038 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "Nhập"
@@ -6517,7 +6523,7 @@ msgid "Connect to {}"
 msgstr "Kết nối tới {}"
 
 #: rustconn/src/dialogs/password_generator.rs:25
-#: rustconn/src/dialogs/shortcuts.rs:181
+#: rustconn/src/dialogs/shortcuts.rs:182
 msgid "Password Generator"
 msgstr "Trình tạo mật khẩu"
 
@@ -7380,7 +7386,7 @@ msgid "Keybindings"
 msgstr "Tổ hợp phím"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/shortcuts.rs:330
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/shortcuts.rs:331
 #: rustconn/src/split_view/bridge.rs:2186
 msgid "Keyboard Shortcuts"
 msgstr "Phím tắt"
@@ -9016,7 +9022,7 @@ msgstr "Gửi tiền tố Escape thay vì ký tự ghép (cho vim/emacs)"
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:926
-#: rustconn/src/dialogs/shortcuts.rs:191
+#: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:259
 #: rustconn/src/tray.rs:649 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
@@ -9490,7 +9496,9 @@ msgstr "Số giờ trước khi phiên hết hạn"
 msgid ""
 "Closes the window when no tab is open. In a terminal, Ctrl+W goes to the "
 "shell; use Ctrl+Shift+W there."
-msgstr "Đóng cửa sổ khi không có thẻ nào mở. Trong terminal, Ctrl+W được gửi tới shell; hãy dùng Ctrl+Shift+W ở đó."
+msgstr ""
+"Đóng cửa sổ khi không có thẻ nào mở. Trong terminal, Ctrl+W được gửi tới "
+"shell; hãy dùng Ctrl+Shift+W ở đó."
 
 #: rustconn/src/dialogs/shortcuts.rs:82
 msgid "Edit selected connection (sidebar)"
@@ -9561,152 +9569,156 @@ msgid "View"
 msgstr "Xem"
 
 #: rustconn/src/dialogs/shortcuts.rs:177 rustconn/src/tray.rs:288
-#: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:346
+#: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:347
 msgid "Quit"
 msgstr "Thoát"
 
-#: rustconn/src/dialogs/shortcuts.rs:180
+#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Trợ giúp"
+
+#: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Thống kê"
 
-#: rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/dialogs/shortcuts.rs:184
 msgid "SSH Tunnel Manager"
 msgstr "Trình quản lý đường hầm SSH"
 
-#: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/sidebar_ui.rs:590
+#: rustconn/src/dialogs/shortcuts.rs:188 rustconn/src/sidebar_ui.rs:590
 #: rustconn/src/sidebar_ui.rs:1091 rustconn/src/sidebar_ui.rs:1292
 #: rustconn/src/window/connection_dialogs.rs:375 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Nhóm mới"
 
-#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:588
+#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:588
 #: rustconn/src/sidebar_ui.rs:1310 rustconn/src/split_view/bridge.rs:2031
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Kết nối nhanh"
 
-#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/sidebar_ui.rs:1100
 msgid "Move to Group"
 msgstr "Chuyển vào nhóm"
 
-#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/split_view/bridge.rs:2194
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/split_view/bridge.rs:2194
 msgid "Search"
 msgstr "Tìm kiếm"
 
-#: rustconn/src/dialogs/shortcuts.rs:195
+#: rustconn/src/dialogs/shortcuts.rs:196
 msgid "Focus Sidebar"
 msgstr "Chuyển tới thanh bên"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Focus Terminal"
 msgstr "Chuyển tới terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:199
 msgid "Command Palette (Commands)"
 msgstr "Bảng lệnh (lệnh)"
 
-#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/embedded_rdp/mod.rs:602
+#: rustconn/src/dialogs/shortcuts.rs:203 rustconn/src/embedded_rdp/mod.rs:602
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Dán"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:204
 msgid "Find in Terminal"
 msgstr "Tìm trong terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/dialogs/shortcuts.rs:804
+#: rustconn/src/dialogs/shortcuts.rs:205 rustconn/src/dialogs/shortcuts.rs:805
 #: rustconn/src/terminal/tab_menu.rs:1285
 msgid "Close Tab"
 msgstr "Đóng thẻ"
 
-#: rustconn/src/dialogs/shortcuts.rs:205
+#: rustconn/src/dialogs/shortcuts.rs:206
 msgid "Next Tab"
 msgstr "Thẻ tiếp theo"
 
-#: rustconn/src/dialogs/shortcuts.rs:206
+#: rustconn/src/dialogs/shortcuts.rs:207
 msgid "Previous Tab"
 msgstr "Thẻ trước"
 
-#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:208 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Tổng quan thẻ"
 
-#: rustconn/src/dialogs/shortcuts.rs:208
+#: rustconn/src/dialogs/shortcuts.rs:209
 msgid "Switch Tab"
 msgstr "Chuyển thẻ"
 
-#: rustconn/src/dialogs/shortcuts.rs:209
+#: rustconn/src/dialogs/shortcuts.rs:210
 msgid "Move Session to New Window"
 msgstr "Chuyển phiên sang cửa sổ mới"
 
-#: rustconn/src/dialogs/shortcuts.rs:210
+#: rustconn/src/dialogs/shortcuts.rs:211
 msgid "Previous Prompt"
 msgstr "Lời nhắc trước"
 
-#: rustconn/src/dialogs/shortcuts.rs:211
+#: rustconn/src/dialogs/shortcuts.rs:212
 msgid "Next Prompt"
 msgstr "Lời nhắc tiếp theo"
 
-#: rustconn/src/dialogs/shortcuts.rs:213
+#: rustconn/src/dialogs/shortcuts.rs:214
 msgid "Split Horizontal"
 msgstr "Chia ngang"
 
-#: rustconn/src/dialogs/shortcuts.rs:214
+#: rustconn/src/dialogs/shortcuts.rs:215
 msgid "Split Vertical"
 msgstr "Chia dọc"
 
-#: rustconn/src/dialogs/shortcuts.rs:215
+#: rustconn/src/dialogs/shortcuts.rs:216
 msgid "Close Pane"
 msgstr "Đóng khung"
 
-#: rustconn/src/dialogs/shortcuts.rs:216 rustconn/src/sidebar_ui.rs:479
+#: rustconn/src/dialogs/shortcuts.rs:217 rustconn/src/sidebar_ui.rs:479
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Gỡ bỏ khỏi chế độ chia"
 
-#: rustconn/src/dialogs/shortcuts.rs:217
+#: rustconn/src/dialogs/shortcuts.rs:218
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1226
 msgid "Remove Split"
 msgstr "Bỏ chia"
 
-#: rustconn/src/dialogs/shortcuts.rs:218
+#: rustconn/src/dialogs/shortcuts.rs:219
 msgid "Focus Next Pane"
 msgstr "Chuyển tới khung tiếp theo"
 
-#: rustconn/src/dialogs/shortcuts.rs:219
+#: rustconn/src/dialogs/shortcuts.rs:220
 msgid "Reconnect Session"
 msgstr "Kết nối lại phiên"
 
-#: rustconn/src/dialogs/shortcuts.rs:221
+#: rustconn/src/dialogs/shortcuts.rs:222
 msgid "Toggle Fullscreen"
 msgstr "Bật/tắt toàn màn hình"
 
-#: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:223 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Bật/tắt thanh bên"
 
-#: rustconn/src/dialogs/shortcuts.rs:223
+#: rustconn/src/dialogs/shortcuts.rs:224
 msgid "Toggle Compact Interface"
 msgstr "Bật/tắt giao diện thu gọn"
 
-#: rustconn/src/dialogs/shortcuts.rs:224
+#: rustconn/src/dialogs/shortcuts.rs:225
 msgid "Toggle Keyboard Passthrough"
 msgstr "Bật/tắt chuyển thẳng bàn phím"
 
-#: rustconn/src/dialogs/shortcuts.rs:225
+#: rustconn/src/dialogs/shortcuts.rs:226
 msgid "Toggle Split Broadcast"
 msgstr "Bật/tắt phát đồng loạt trong chế độ chia"
 
-#: rustconn/src/dialogs/shortcuts.rs:226
+#: rustconn/src/dialogs/shortcuts.rs:227
 msgid "Toggle Group Broadcast"
 msgstr "Bật/tắt phát đồng loạt theo nhóm"
 
-#: rustconn/src/dialogs/shortcuts.rs:356
+#: rustconn/src/dialogs/shortcuts.rs:357
 msgid "Search shortcuts…"
 msgstr "Tìm phím tắt…"
 
@@ -12887,7 +12899,7 @@ msgid "{} Active Session(s)"
 msgstr "{} phiên đang hoạt động"
 
 #: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:345
+#: rustconn/src/window/ui.rs:346
 msgid "About RustConn"
 msgstr "Giới thiệu RustConn"
 
@@ -13533,12 +13545,6 @@ msgstr "{} (đường hầm)"
 #: rustconn/src/window/edit_actions.rs:1694
 msgid "Could not open the page: {}"
 msgstr "Không thể mở trang: {}"
-
-#: rustconn/src/window/edit_actions.rs:1726
-#: rustconn/src/window/edit_actions.rs:1865
-#: rustconn/src/window/edit_actions.rs:1893
-msgid "Failed to open URL: {}"
-msgstr "Mở URL thất bại: {}"
 
 #: rustconn/src/window/edit_actions.rs:1788
 msgid ""

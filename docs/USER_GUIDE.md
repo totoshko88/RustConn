@@ -4851,7 +4851,7 @@ flatpak override --user --reset io.github.totoshko88.RustConn
 
 ## Keyboard Shortcuts
 
-Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
+Press **Ctrl+?** for the searchable shortcuts dialog, and **F1** (or Menu → **Help**) to open this guide.
 
 Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl+M, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
 
@@ -4954,7 +4954,8 @@ markers appear; nothing else changes.
 | Ctrl+Shift+L | Wake On LAN |
 | Ctrl+T | SSH Tunnel Manager |
 | F10 | Open Menu (suspended in passthrough mode) |
-| Ctrl+? / F1 | Keyboard Shortcuts |
+| Ctrl+? | Keyboard Shortcuts |
+| F1 | Help (opens this guide in the browser) |
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
 | Ctrl+Q | Quit |

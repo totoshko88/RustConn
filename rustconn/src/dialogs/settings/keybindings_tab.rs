@@ -460,8 +460,7 @@ fn suspend_accels(app: &gtk4::Application) {
 pub fn restore_accels_with_overrides(app: &gtk4::Application, overrides: &KeybindingSettings) {
     let defaults = default_keybindings();
     for def in &defaults {
-        let effective = overrides.get_accel(def);
-        let accels: Vec<&str> = effective.split('|').collect();
+        let accels = overrides.registered_accels(def);
         app.set_accels_for_action(&def.action, &accels);
     }
 }

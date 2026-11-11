@@ -154,6 +154,31 @@ impl KeybindingSettings {
         !self.overrides.is_empty()
     }
 
+    /// Returns the accelerators to register with GTK for an action.
+    ///
+    /// A user override is returned as it is. A default accelerator is left out
+    /// when the user has bound the same combination to another action: an
+    /// explicit choice wins over a default, so a new default (F1 for Help, which
+    /// used to open the shortcuts window) cannot take a key the user already
+    /// gave to something else.
+    #[must_use]
+    pub fn registered_accels<'a>(&'a self, def: &'a KeybindingDef) -> Vec<&'a str> {
+        if let Some(accel) = self.overrides.get(&def.action) {
+            return accel.split('|').collect();
+        }
+        def.default_accel_list()
+            .into_iter()
+            .filter(|default| {
+                !self.overrides.iter().any(|(action, accel)| {
+                    *action != def.action
+                        && accel
+                            .split('|')
+                            .any(|taken| accelerators_equivalent(taken, default))
+                })
+            })
+            .collect()
+    }
+
     /// Resets a single action to its default binding.
     pub fn reset(&mut self, action: &str) {
         self.overrides.remove(action);
@@ -181,10 +206,12 @@ pub fn default_keybindings() -> Vec<KeybindingDef> {
         KeybindingDef::new("app.quit", "<Control>q", "Quit", Application),
         KeybindingDef::new(
             "app.shortcuts",
-            "<Control>question|F1",
+            "<Control>question",
             "Keyboard Shortcuts",
             Application,
         ),
+        // F1 is Help in the GNOME HIG; it used to open the shortcuts window.
+        KeybindingDef::new("app.help", "F1", "Help", Application),
         // Connections
         KeybindingDef::new(
             "win.new-connection",
@@ -628,6 +655,74 @@ mod tests {
             .overrides
             .insert("win.copy".into(), "<Control>c".into());
         assert_eq!(settings.get_accel(&def), "<Control>c");
+    }
+
+    #[test]
+    fn f1_opens_help_and_ctrl_question_the_shortcuts() {
+        let defs = default_keybindings();
+        let accels_of = |action: &str| {
+            defs.iter()
+                .find(|d| d.action == action)
+                .map(|d| d.default_accels.clone())
+        };
+        assert_eq!(accels_of("app.help").as_deref(), Some("F1"));
+        assert_eq!(
+            accels_of("app.shortcuts").as_deref(),
+            Some("<Control>question")
+        );
+        for def in defs.iter().filter(|d| d.action != "app.help") {
+            assert!(
+                !def.default_accel_list()
+                    .iter()
+                    .any(|a| accelerators_equivalent(a, "F1")),
+                "'{}' also claims F1",
+                def.action
+            );
+        }
+    }
+
+    #[test]
+    fn registered_accels_keep_an_override_as_it_is() {
+        let mut settings = KeybindingSettings::default();
+        let def = KeybindingDef::new(
+            "app.shortcuts",
+            "<Control>question",
+            "Keyboard Shortcuts",
+            KeybindingCategory::Application,
+        );
+        assert_eq!(settings.registered_accels(&def), vec!["<Control>question"]);
+
+        settings
+            .overrides
+            .insert("app.shortcuts".into(), "F1".into());
+        assert_eq!(settings.registered_accels(&def), vec!["F1"]);
+    }
+
+    #[test]
+    fn registered_accels_leave_a_default_the_user_bound_elsewhere() {
+        // A user who had bound F1 to the shortcuts window keeps it: the new
+        // Help default must not take F1 back.
+        let mut settings = KeybindingSettings::default();
+        settings
+            .overrides
+            .insert("app.shortcuts".into(), "F1".into());
+        let help = KeybindingDef::new("app.help", "F1", "Help", KeybindingCategory::Application);
+        assert!(settings.registered_accels(&help).is_empty());
+
+        // Only the colliding default goes; the others stay.
+        settings
+            .overrides
+            .insert("win.copy".into(), "<Control>w".into());
+        let close = KeybindingDef::new(
+            "win.close-tab",
+            "<Control>w|<Control><Shift>w",
+            "Close Tab",
+            KeybindingCategory::Terminal,
+        );
+        assert_eq!(
+            settings.registered_accels(&close),
+            vec!["<Control><Shift>w"]
+        );
     }
 
     #[test]

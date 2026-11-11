@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:07+0200\n"
+"POT-Creation-Date: 2026-11-11 23:14+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2203 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -103,7 +103,7 @@ msgid "KeePass password not loaded from keyring — re-enter it in Settings"
 msgstr ""
 "Heslo KeePass nebolo načítané z kľúčenky — zadajte ho znova v Nastaveniach"
 
-#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:199
+#: rustconn/src/app.rs:881 rustconn/src/dialogs/shortcuts.rs:200
 #: rustconn/src/embedded_rdp/mod.rs:410 rustconn/src/split_view/bridge.rs:2198
 #: rustconn/src/window/ui.rs:99
 msgid "Settings"
@@ -127,7 +127,13 @@ msgstr ""
 "{} je vybraný, ale zatiaľ nedokáže ukladať heslá: {}. Otvorte Nastavenia a "
 "potom Tajomstvá."
 
-#: rustconn/src/app.rs:2047
+#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/window/edit_actions.rs:1865
+#: rustconn/src/window/edit_actions.rs:1893
+msgid "Failed to open URL: {}"
+msgstr "Nepodarilo sa otvoriť URL: {}"
+
+#: rustconn/src/app.rs:2084
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -137,31 +143,31 @@ msgstr ""
 "Spravujte SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes a Zero Trust "
 "pripojenia z jednej aplikácie."
 
-#: rustconn/src/app.rs:2126
+#: rustconn/src/app.rs:2162
 msgid "User Guide"
 msgstr "Používateľská príručka"
 
-#: rustconn/src/app.rs:2130
+#: rustconn/src/app.rs:2164
 msgid "Installation"
 msgstr "Inštalácia"
 
-#: rustconn/src/app.rs:2134
+#: rustconn/src/app.rs:2168
 msgid "Releases"
 msgstr "Vydania"
 
-#: rustconn/src/app.rs:2138
+#: rustconn/src/app.rs:2172
 msgid "Changelog"
 msgstr "Zoznam zmien"
 
-#: rustconn/src/app.rs:2148
+#: rustconn/src/app.rs:2182
 msgid "Special Thanks"
 msgstr "Špeciálne poďakovanie"
 
-#: rustconn/src/app.rs:2163
+#: rustconn/src/app.rs:2197
 msgid "Made in Ukraine"
 msgstr "Vyrobené na Ukrajine"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2198
 msgid "All contributors and supporters"
 msgstr "Všetkým prispievateľom a podporovateľom"
 
@@ -442,7 +448,7 @@ msgstr "Odstrániť"
 
 #: rustconn/src/dialogs/command_palette.rs:78
 #: rustconn/src/dialogs/command_palette.rs:97
-#: rustconn/src/dialogs/shortcuts.rs:197
+#: rustconn/src/dialogs/shortcuts.rs:198
 msgid "Command Palette"
 msgstr "Paleta príkazov"
 
@@ -743,7 +749,7 @@ msgid "Add Rule"
 msgstr "Pridať pravidlo"
 
 #: rustconn/src/dialogs/connection/advanced_tab.rs:648
-#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/wol.rs:38
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/dialogs/wol.rs:38
 #: rustconn/src/sidebar_ui.rs:530 rustconn/src/smart_folder_ui.rs:453
 msgid "Wake On LAN"
 msgstr "Wake On LAN"
@@ -1516,7 +1522,7 @@ msgid "Script timed out after 30 seconds"
 msgstr "Skript prekročil časový limit 30 sekúnd"
 
 #: rustconn/src/dialogs/connection/dialog/construction.rs:191
-#: rustconn/src/dialogs/shortcuts.rs:186
+#: rustconn/src/dialogs/shortcuts.rs:187
 #: rustconn/src/window/connection_dialogs.rs:297
 msgid "New Connection (Advanced)"
 msgstr "Nové pripojenie (pokročilé)"
@@ -4698,7 +4704,7 @@ msgstr "Vaše šablóny"
 
 #: rustconn/src/dialogs/connection_wizard/mod.rs:460
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
-#: rustconn/src/dialogs/shortcuts.rs:185 rustconn/src/sidebar_ui.rs:552
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/sidebar_ui.rs:552
 #: rustconn/src/sidebar_ui.rs:589 rustconn/src/sidebar_ui.rs:1287
 #: rustconn/src/split_view/bridge.rs:2024 rustconn/src/window/ui.rs:257
 msgid "New Connection"
@@ -4746,7 +4752,7 @@ msgstr "Prístupová fráza prenosného súboru"
 
 #: rustconn/src/dialogs/credential_transfer.rs:142
 #: rustconn/src/dialogs/credential_transfer.rs:458
-#: rustconn/src/dialogs/shortcuts.rs:201 rustconn/src/dialogs/widgets.rs:1036
+#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/dialogs/widgets.rs:1036
 #: rustconn/src/embedded_rdp/mod.rs:594 rustconn/src/embedded_vnc/ui.rs:51
 #: rustconn/src/sidebar_ui.rs:263 rustconn/src/terminal/config.rs:289
 msgid "Copy"
@@ -4907,7 +4913,7 @@ msgid "Export Connections"
 msgstr "Exportovať pripojenia"
 
 #: rustconn/src/dialogs/export.rs:102 rustconn/src/dialogs/export.rs:103
-#: rustconn/src/dialogs/shortcuts.rs:189 rustconn/src/dialogs/widgets.rs:1034
+#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/dialogs/widgets.rs:1034
 msgid "Export"
 msgstr "Export"
 
@@ -5326,7 +5332,7 @@ msgstr "Nie je k dispozícii na stiahnutie"
 msgid "Failed"
 msgstr "Zlyhalo"
 
-#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:180
 #: rustconn/src/sidebar_ui.rs:1170
 msgid "Connection History"
 msgstr "História pripojení"
@@ -5394,7 +5400,7 @@ msgstr "Importovať pripojenia"
 
 #: rustconn/src/dialogs/import/mod.rs:62 rustconn/src/dialogs/import/mod.rs:63
 #: rustconn/src/dialogs/settings/cloud_sync_tab.rs:184
-#: rustconn/src/dialogs/shortcuts.rs:188 rustconn/src/dialogs/widgets.rs:1035
+#: rustconn/src/dialogs/shortcuts.rs:189 rustconn/src/dialogs/widgets.rs:1035
 #: rustconn/src/split_view/bridge.rs:2038 rustconn/src/window/edit_group.rs:967
 msgid "Import"
 msgstr "Importovať"
@@ -6551,7 +6557,7 @@ msgid "Connect to {}"
 msgstr "Pripojiť k {}"
 
 #: rustconn/src/dialogs/password_generator.rs:25
-#: rustconn/src/dialogs/shortcuts.rs:181
+#: rustconn/src/dialogs/shortcuts.rs:182
 msgid "Password Generator"
 msgstr "Generátor hesiel"
 
@@ -7413,7 +7419,7 @@ msgid "Keybindings"
 msgstr "Klávesové skratky"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/shortcuts.rs:330
+#: rustconn/src/dialogs/shortcuts.rs:178 rustconn/src/dialogs/shortcuts.rs:331
 #: rustconn/src/split_view/bridge.rs:2186
 msgid "Keyboard Shortcuts"
 msgstr "Klávesové skratky"
@@ -9054,7 +9060,7 @@ msgstr "Odosielať prefix Escape namiesto zložených znakov (pre vim/emacs)"
 #: rustconn/src/dialogs/settings/terminal_tab.rs:490
 #: rustconn/src/dialogs/settings/ui_tab.rs:599
 #: rustconn/src/dialogs/settings/ui_tab.rs:926
-#: rustconn/src/dialogs/shortcuts.rs:191
+#: rustconn/src/dialogs/shortcuts.rs:192
 #: rustconn/src/split_view/adapter.rs:1838 rustconn/src/tray.rs:259
 #: rustconn/src/tray.rs:649 rustconn/src/window/ui.rs:266
 msgid "Local Shell"
@@ -9529,7 +9535,9 @@ msgstr "Hodiny do vypršania relácií"
 msgid ""
 "Closes the window when no tab is open. In a terminal, Ctrl+W goes to the "
 "shell; use Ctrl+Shift+W there."
-msgstr "Zatvorí okno, keď nie je otvorená žiadna karta. V termináli ide Ctrl+W do shellu; tam použite Ctrl+Shift+W."
+msgstr ""
+"Zatvorí okno, keď nie je otvorená žiadna karta. V termináli ide Ctrl+W do "
+"shellu; tam použite Ctrl+Shift+W."
 
 #: rustconn/src/dialogs/shortcuts.rs:82
 msgid "Edit selected connection (sidebar)"
@@ -9600,152 +9608,156 @@ msgid "View"
 msgstr "Zobrazenie"
 
 #: rustconn/src/dialogs/shortcuts.rs:177 rustconn/src/tray.rs:288
-#: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:346
+#: rustconn/src/tray.rs:662 rustconn/src/window/ui.rs:347
 msgid "Quit"
 msgstr "Ukončiť"
 
-#: rustconn/src/dialogs/shortcuts.rs:180
+#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Pomocník"
+
+#: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Štatistiky"
 
-#: rustconn/src/dialogs/shortcuts.rs:183
+#: rustconn/src/dialogs/shortcuts.rs:184
 msgid "SSH Tunnel Manager"
 msgstr "Správca tunelov SSH"
 
-#: rustconn/src/dialogs/shortcuts.rs:187 rustconn/src/sidebar_ui.rs:590
+#: rustconn/src/dialogs/shortcuts.rs:188 rustconn/src/sidebar_ui.rs:590
 #: rustconn/src/sidebar_ui.rs:1091 rustconn/src/sidebar_ui.rs:1292
 #: rustconn/src/window/connection_dialogs.rs:375 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Nová skupina"
 
-#: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:588
+#: rustconn/src/dialogs/shortcuts.rs:191 rustconn/src/sidebar_ui.rs:588
 #: rustconn/src/sidebar_ui.rs:1310 rustconn/src/split_view/bridge.rs:2031
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Rýchle pripojenie"
 
-#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/dialogs/shortcuts.rs:193 rustconn/src/sidebar_ui.rs:1100
 msgid "Move to Group"
 msgstr "Presunúť do skupiny"
 
-#: rustconn/src/dialogs/shortcuts.rs:194 rustconn/src/split_view/bridge.rs:2194
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/split_view/bridge.rs:2194
 msgid "Search"
 msgstr "Hľadať"
 
-#: rustconn/src/dialogs/shortcuts.rs:195
+#: rustconn/src/dialogs/shortcuts.rs:196
 msgid "Focus Sidebar"
 msgstr "Prejsť na bočný panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:196
+#: rustconn/src/dialogs/shortcuts.rs:197
 msgid "Focus Terminal"
 msgstr "Prejsť na terminál"
 
-#: rustconn/src/dialogs/shortcuts.rs:198
+#: rustconn/src/dialogs/shortcuts.rs:199
 msgid "Command Palette (Commands)"
 msgstr "Paleta príkazov (príkazy)"
 
-#: rustconn/src/dialogs/shortcuts.rs:202 rustconn/src/embedded_rdp/mod.rs:602
+#: rustconn/src/dialogs/shortcuts.rs:203 rustconn/src/embedded_rdp/mod.rs:602
 #: rustconn/src/embedded_vnc/ui.rs:62 rustconn/src/terminal/config.rs:290
 #: rustconn/src/terminal/safe_paste.rs:167
 msgid "Paste"
 msgstr "Prilepiť"
 
-#: rustconn/src/dialogs/shortcuts.rs:203
+#: rustconn/src/dialogs/shortcuts.rs:204
 msgid "Find in Terminal"
 msgstr "Nájsť v termináli"
 
-#: rustconn/src/dialogs/shortcuts.rs:204 rustconn/src/dialogs/shortcuts.rs:804
+#: rustconn/src/dialogs/shortcuts.rs:205 rustconn/src/dialogs/shortcuts.rs:805
 #: rustconn/src/terminal/tab_menu.rs:1285
 msgid "Close Tab"
 msgstr "Zavrieť kartu"
 
-#: rustconn/src/dialogs/shortcuts.rs:205
+#: rustconn/src/dialogs/shortcuts.rs:206
 msgid "Next Tab"
 msgstr "Nasledujúca karta"
 
-#: rustconn/src/dialogs/shortcuts.rs:206
+#: rustconn/src/dialogs/shortcuts.rs:207
 msgid "Previous Tab"
 msgstr "Predchádzajúca karta"
 
-#: rustconn/src/dialogs/shortcuts.rs:207 rustconn/src/terminal/mod.rs:558
+#: rustconn/src/dialogs/shortcuts.rs:208 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Prehľad kariet"
 
-#: rustconn/src/dialogs/shortcuts.rs:208
+#: rustconn/src/dialogs/shortcuts.rs:209
 msgid "Switch Tab"
 msgstr "Prepnúť kartu"
 
-#: rustconn/src/dialogs/shortcuts.rs:209
+#: rustconn/src/dialogs/shortcuts.rs:210
 msgid "Move Session to New Window"
 msgstr "Presunúť sedenie do nového okna"
 
-#: rustconn/src/dialogs/shortcuts.rs:210
+#: rustconn/src/dialogs/shortcuts.rs:211
 msgid "Previous Prompt"
 msgstr "Predchádzajúca výzva"
 
-#: rustconn/src/dialogs/shortcuts.rs:211
+#: rustconn/src/dialogs/shortcuts.rs:212
 msgid "Next Prompt"
 msgstr "Ďalšia výzva"
 
-#: rustconn/src/dialogs/shortcuts.rs:213
+#: rustconn/src/dialogs/shortcuts.rs:214
 msgid "Split Horizontal"
 msgstr "Rozdeliť vodorovne"
 
-#: rustconn/src/dialogs/shortcuts.rs:214
+#: rustconn/src/dialogs/shortcuts.rs:215
 msgid "Split Vertical"
 msgstr "Rozdeliť zvisle"
 
-#: rustconn/src/dialogs/shortcuts.rs:215
+#: rustconn/src/dialogs/shortcuts.rs:216
 msgid "Close Pane"
 msgstr "Zavrieť panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:216 rustconn/src/sidebar_ui.rs:479
+#: rustconn/src/dialogs/shortcuts.rs:217 rustconn/src/sidebar_ui.rs:479
 #: rustconn/src/split_view/adapter.rs:1129
 #: rustconn/src/split_view/adapter.rs:1671
 #: rustconn/src/split_view/adapter.rs:1740
 msgid "Remove from Split"
 msgstr "Odstrániť z rozdeleného zobrazenia"
 
-#: rustconn/src/dialogs/shortcuts.rs:217
+#: rustconn/src/dialogs/shortcuts.rs:218
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
 #: rustconn/src/terminal/tab_menu.rs:1226
 msgid "Remove Split"
 msgstr "Odstrániť rozdelenie"
 
-#: rustconn/src/dialogs/shortcuts.rs:218
+#: rustconn/src/dialogs/shortcuts.rs:219
 msgid "Focus Next Pane"
 msgstr "Prejsť na nasledujúci panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:219
+#: rustconn/src/dialogs/shortcuts.rs:220
 msgid "Reconnect Session"
 msgstr "Znovu pripojiť reláciu"
 
-#: rustconn/src/dialogs/shortcuts.rs:221
+#: rustconn/src/dialogs/shortcuts.rs:222
 msgid "Toggle Fullscreen"
 msgstr "Prepnúť celú obrazovku"
 
-#: rustconn/src/dialogs/shortcuts.rs:222 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:223 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Prepnúť bočný panel"
 
-#: rustconn/src/dialogs/shortcuts.rs:223
+#: rustconn/src/dialogs/shortcuts.rs:224
 msgid "Toggle Compact Interface"
 msgstr "Prepnúť kompaktné rozhranie"
 
-#: rustconn/src/dialogs/shortcuts.rs:224
+#: rustconn/src/dialogs/shortcuts.rs:225
 msgid "Toggle Keyboard Passthrough"
 msgstr "Prepnúť priame odovzdávanie klávesnice"
 
-#: rustconn/src/dialogs/shortcuts.rs:225
+#: rustconn/src/dialogs/shortcuts.rs:226
 msgid "Toggle Split Broadcast"
 msgstr "Prepnúť vysielanie v rozdelenom zobrazení"
 
-#: rustconn/src/dialogs/shortcuts.rs:226
+#: rustconn/src/dialogs/shortcuts.rs:227
 msgid "Toggle Group Broadcast"
 msgstr "Prepnúť skupinové vysielanie"
 
-#: rustconn/src/dialogs/shortcuts.rs:356
+#: rustconn/src/dialogs/shortcuts.rs:357
 msgid "Search shortcuts…"
 msgstr "Hľadať skratky…"
 
@@ -12951,7 +12963,7 @@ msgid "{} Active Session(s)"
 msgstr "{} aktívna(-e) relácia(-e)"
 
 #: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:345
+#: rustconn/src/window/ui.rs:346
 msgid "About RustConn"
 msgstr "O aplikácii RustConn"
 
@@ -13615,12 +13627,6 @@ msgstr "{} (tunel)"
 #: rustconn/src/window/edit_actions.rs:1694
 msgid "Could not open the page: {}"
 msgstr "Stránku sa nepodarilo otvoriť: {}"
-
-#: rustconn/src/window/edit_actions.rs:1726
-#: rustconn/src/window/edit_actions.rs:1865
-#: rustconn/src/window/edit_actions.rs:1893
-msgid "Failed to open URL: {}"
-msgstr "Nepodarilo sa otvoriť URL: {}"
 
 #: rustconn/src/window/edit_actions.rs:1788
 msgid ""

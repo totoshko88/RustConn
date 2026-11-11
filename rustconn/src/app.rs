@@ -1874,6 +1874,21 @@ fn setup_app_actions(
     });
     app.add_action(&shortcuts_action);
 
+    // Help action (F1): opens the user guide, the same page as the AppStream
+    // `help` URL. Parented to the focused window so the portal's chooser, if
+    // one appears, is in front of the window the user pressed F1 in.
+    let help_action = gio::SimpleAction::new("help", None);
+    let app_for_help = app.downgrade();
+    let window_weak = window.gtk_window().downgrade();
+    help_action.connect_activate(move |_, _| {
+        let parent = app_for_help
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        open_user_guide(parent.as_ref());
+    });
+    app.add_action(&help_action);
+
     // Set up keyboard shortcuts dynamically from settings
     apply_keybindings(app, state);
 }
@@ -1906,8 +1921,7 @@ pub fn apply_keybindings(app: &adw::Application, state: &SharedAppState) {
     let defaults = rustconn_core::default_keybindings();
 
     for def in &defaults {
-        let accel_str = keybinding_settings.get_accel(def);
-        let accels: Vec<&str> = accel_str.split('|').collect();
+        let accels = keybinding_settings.registered_accels(def);
         app.set_accels_for_action(&def.action, &accels);
     }
 }
@@ -1942,8 +1956,7 @@ pub fn set_passthrough(app: &adw::Application, state: &SharedAppState, enable: b
         for def in &defaults {
             if exceptions.contains(&def.action) {
                 // Keep exception bindings active
-                let accel_str = keybinding_settings.get_accel(def);
-                let accels: Vec<&str> = accel_str.split('|').collect();
+                let accels = keybinding_settings.registered_accels(def);
                 app.set_accels_for_action(&def.action, &accels);
             } else {
                 // Remove all other bindings
@@ -1973,12 +1986,12 @@ pub fn suspend_terminal_accels(app: &adw::Application, state: &SharedAppState) {
         if !TERMINAL_CONFLICTING_ACTIONS.contains(&def.action.as_str()) {
             continue;
         }
-        let accel_str = keybinding_settings.get_accel(def);
         // Keep only multi-modifier accelerators (those with more than one
         // modifier flag set, e.g. Ctrl+Shift). Single-Control chords are
         // dropped so they pass through to VTE/readline.
-        let kept: Vec<&str> = accel_str
-            .split('|')
+        let kept: Vec<&str> = keybinding_settings
+            .registered_accels(def)
+            .into_iter()
             .filter(|accel| is_multi_modifier(accel))
             .collect();
         app.set_accels_for_action(&def.action, &kept);
@@ -1997,8 +2010,7 @@ pub fn restore_terminal_accels(app: &adw::Application, state: &SharedAppState) {
 
     for def in &defaults {
         if TERMINAL_CONFLICTING_ACTIONS.contains(&def.action.as_str()) {
-            let accel_str = keybinding_settings.get_accel(def);
-            let accels: Vec<&str> = accel_str.split('|').collect();
+            let accels = keybinding_settings.registered_accels(def);
             app.set_accels_for_action(&def.action, &accels);
         }
     }
@@ -2039,6 +2051,31 @@ fn is_multi_modifier(accel: &str) -> bool {
 
     // Multi-modifier = Ctrl + at least one more modifier.
     has_ctrl && has_extra
+}
+
+/// The user guide: the Help action, the About dialog's link and the AppStream
+/// `help` URL in the metainfo all point here.
+const USER_GUIDE_URL: &str = "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md";
+
+/// Opens the user guide in the default browser.
+///
+/// A failure is shown as a toast. Dismissing the portal's app chooser is not a
+/// failure and is only logged.
+fn open_user_guide(parent: Option<&gtk4::Window>) {
+    gtk4::UriLauncher::new(USER_GUIDE_URL).launch(parent, gio::Cancellable::NONE, |result| {
+        let Err(error) = result else {
+            return;
+        };
+        if error.matches(gtk4::DialogError::Dismissed) {
+            tracing::debug!("user guide: app chooser dismissed");
+            return;
+        }
+        tracing::warn!(%error, url = USER_GUIDE_URL, "could not open the user guide");
+        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+            "Failed to open URL: {}",
+            &[&error.to_string()],
+        ));
+    });
 }
 
 /// Shows the about dialog
@@ -2122,10 +2159,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         .build();
 
     // Documentation & resources links
-    about.add_link(
-        &gettext("User Guide"),
-        "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md",
-    );
+    about.add_link(&gettext("User Guide"), USER_GUIDE_URL);
     about.add_link(
         &gettext("Installation"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md",
