@@ -2142,7 +2142,6 @@ impl TerminalNotebook {
     /// membership is discoverable on hover (issue #329).
     pub fn set_broadcast_member_marker(&self, session_id: Uuid, member: bool) {
         const MARKER: &str = "⇄ ";
-        const TOOLTIP_LINE: &str = "\n[Broadcast]";
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let title = page.title().to_string();
@@ -2153,29 +2152,74 @@ impl TerminalNotebook {
                 page.set_title(base);
             }
 
-            // Lift the CWD line out first so it is not mistaken for the
-            // broadcast suffix (and so toggling broadcast never drops it), then
-            // re-append it after rebuilding the broadcast portion.
-            // A split tab's panes line (issue #421) is lifted out the same way.
             let tooltip = page.tooltip().unwrap_or_default().to_string();
-            let (without_cwd, cwd_line) = Self::split_cwd_line(&tooltip);
-            let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
-            let base_tooltip = without_cwd
-                .strip_suffix(TOOLTIP_LINE)
-                .unwrap_or(&without_cwd);
-            let mut new_tooltip = if member {
-                format!("{base_tooltip}{TOOLTIP_LINE}")
-            } else {
-                base_tooltip.to_string()
-            };
-            if let Some(panes) = panes_line {
-                new_tooltip.push_str(&panes);
-            }
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            page.set_tooltip(&Self::broadcast_tooltip(&tooltip, member));
         }
+    }
+
+    /// Re-appends the lines a tooltip mutator lifted out, in their fixed order:
+    /// a split tab's panes line (issue #421), then the working-directory line.
+    fn with_lifted_lines(
+        mut tooltip: String,
+        panes: Option<String>,
+        cwd: Option<String>,
+    ) -> String {
+        if let Some(panes) = panes {
+            tooltip.push_str(&panes);
+        }
+        if let Some(cwd) = cwd {
+            tooltip.push_str(&cwd);
+        }
+        tooltip
+    }
+
+    /// The tooltip with its broadcast line added (`member`) or removed.
+    ///
+    /// The CWD and panes lines are lifted out first, so neither is mistaken for
+    /// the broadcast suffix nor dropped by a toggle, and re-appended after it.
+    pub(super) fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
+        const TOOLTIP_LINE: &str = "\n[Broadcast]";
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let base = without_cwd
+            .strip_suffix(TOOLTIP_LINE)
+            .unwrap_or(&without_cwd);
+        let rebuilt = if member {
+            format!("{base}{TOOLTIP_LINE}")
+        } else {
+            base.to_owned()
+        };
+        Self::with_lifted_lines(rebuilt, panes_line, cwd_line)
+    }
+
+    /// The tooltip with its group line set to `group_name`.
+    ///
+    /// Shared by [`Self::set_tab_group`] and the tab menu's **Set Group…**, so
+    /// the two cannot drift. The CWD and panes lines are lifted out first, so
+    /// the `\n[` split cannot land on a `[Broadcast]`/old group line and
+    /// discard the lines beyond it, and re-appended after the group line.
+    pub(super) fn grouped_tooltip(tooltip: &str, group_name: &str) -> String {
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let base = without_cwd
+            .rsplit_once("\n[")
+            .map_or(without_cwd.as_str(), |(base, _)| base);
+        Self::with_lifted_lines(format!("{base}\n[{group_name}]"), panes_line, cwd_line)
+    }
+
+    /// The tooltip without its group line, or `None` when it has none.
+    ///
+    /// Lifts the CWD and panes lines like [`Self::grouped_tooltip`], so
+    /// removing a group keeps the directory line rather than cutting it off.
+    pub(super) fn ungrouped_tooltip(tooltip: &str) -> Option<String> {
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let (base, _) = without_cwd.rsplit_once("\n[")?;
+        Some(Self::with_lifted_lines(
+            base.to_owned(),
+            panes_line,
+            cwd_line,
+        ))
     }
 
     /// Sets whether an in-place reconnect keeps the previous scrollback (#253).
@@ -3176,24 +3220,10 @@ impl TerminalNotebook {
         // Apply group label prefix to tab title (independent of split/protocol indicator)
         self.apply_group_color(session_id, color_index);
 
-        // Update tooltip to include group name. Lift the CWD line out first so
-        // the `\n[` split cannot land on a `[Broadcast]`/old group line and
-        // discard the directory beyond it; re-append it at the end afterwards.
+        // Update tooltip to include group name.
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let current_tooltip = page.tooltip().unwrap_or_default().to_string();
-            let (without_cwd, cwd_line) = Self::split_cwd_line(&current_tooltip);
-            let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
-            let base_tooltip = without_cwd
-                .rsplit_once("\n[")
-                .map_or(without_cwd.as_str(), |(base, _)| base);
-            let mut new_tooltip = format!("{base_tooltip}\n[{group_name}]");
-            if let Some(panes) = panes_line {
-                new_tooltip.push_str(&panes);
-            }
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            page.set_tooltip(&Self::grouped_tooltip(&current_tooltip, group_name));
         }
 
         tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
@@ -3274,16 +3304,14 @@ impl TerminalNotebook {
         let retitled = page.is_some();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
-            // `tab_tooltip` rebuilds the title/host/group tooltip from scratch
-            // and knows nothing of the CWD line, so carry the existing one over
-            // from the old tooltip and re-append it, keeping it alive across a
-            // rename. A split tab's panes line is put back by the refresh below.
-            let cwd_line = page.tooltip().and_then(|t| Self::split_cwd_line(&t).1);
-            let mut new_tooltip = Self::tab_tooltip(label, host.as_deref(), group.as_deref());
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            // A split tab's panes line is put back by the refresh below.
+            let old_tooltip = page.tooltip().unwrap_or_default();
+            page.set_tooltip(&Self::relabelled_tooltip(
+                old_tooltip.as_str(),
+                label,
+                host.as_deref(),
+                group.as_deref(),
+            ));
         }
 
         Self::refresh_split_tabs_for(
@@ -3293,6 +3321,20 @@ impl TerminalNotebook {
             session_id,
             retitled.then_some(label),
         );
+    }
+
+    /// The tooltip of a relabelled tab, built from scratch by `tab_tooltip`.
+    ///
+    /// `tab_tooltip` knows nothing of the CWD line, so the one in `old` is
+    /// carried over and re-appended, keeping it alive across a rename.
+    pub(super) fn relabelled_tooltip(
+        old: &str,
+        label: &str,
+        host: Option<&str>,
+        group: Option<&str>,
+    ) -> String {
+        let cwd_line = Self::split_cwd_line(old).1;
+        Self::with_lifted_lines(Self::tab_tooltip(label, host, group), None, cwd_line)
     }
 
     /// Returns the group name for a session, if any.
@@ -4151,48 +4193,49 @@ mod tab_tooltip_tests {
         assert_eq!(cwd, None);
     }
 
-    // The three tooltip mutators that rebuild the host/group/broadcast portion
-    // must lift the CWD line out first and re-append it, so a group assignment,
-    // a broadcast toggle or a rename never drops or mis-orders the directory.
-    // These reproduce each mutator's exact string transformation.
+    // The tooltip mutators that rebuild the host/group/broadcast portion must
+    // lift the CWD line out first and re-append it, so a group assignment, a
+    // broadcast toggle or a rename never drops or mis-orders the directory.
+    // The tests call the transformations the mutators themselves use.
 
-    /// Replays `set_broadcast_member_marker`'s tooltip transformation.
     fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
-        const TOOLTIP_LINE: &str = "\n[Broadcast]";
-        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
-        let (without_cwd, panes_line) = super::split_title::split_panes_line(&without_cwd);
-        let base = without_cwd
-            .strip_suffix(TOOLTIP_LINE)
-            .unwrap_or(&without_cwd);
-        let mut out = if member {
-            format!("{base}{TOOLTIP_LINE}")
-        } else {
-            base.to_string()
-        };
-        if let Some(panes) = panes_line {
-            out.push_str(&panes);
-        }
-        if let Some(cwd) = cwd_line {
-            out.push_str(&cwd);
-        }
-        out
+        TerminalNotebook::broadcast_tooltip(tooltip, member)
     }
 
-    /// Replays `set_tab_group`'s tooltip transformation.
     fn group_tooltip(tooltip: &str, group: &str) -> String {
-        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
-        let (without_cwd, panes_line) = super::split_title::split_panes_line(&without_cwd);
-        let base = without_cwd
-            .rsplit_once("\n[")
-            .map_or(without_cwd.as_str(), |(base, _)| base);
-        let mut out = format!("{base}\n[{group}]");
-        if let Some(panes) = panes_line {
-            out.push_str(&panes);
-        }
-        if let Some(cwd) = cwd_line {
-            out.push_str(&cwd);
-        }
-        out
+        TerminalNotebook::grouped_tooltip(tooltip, group)
+    }
+
+    #[test]
+    fn tab_menu_set_group_keeps_the_cwd_line_last() {
+        // Review of #421, finding 5: the tab menu's Set Group lifted the panes
+        // line but not the directory line, so the group line landed after 📁.
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        assert_eq!(
+            group_tooltip(&t, "Production"),
+            format!("prod-db\n10.0.0.5\n[Production]{CWD}/var/log")
+        );
+        // Regrouping replaces the group line in place.
+        let regrouped = group_tooltip(&group_tooltip(&t, "Production"), "Staging");
+        assert_eq!(
+            regrouped,
+            format!("prod-db\n10.0.0.5\n[Staging]{CWD}/var/log")
+        );
+    }
+
+    #[test]
+    fn removing_a_group_keeps_the_cwd_and_panes_lines() {
+        const PANES: &str = "\nPanes: server_A, server_B";
+        let t = format!("server_A\n10.0.0.5\n[Production]{PANES}{CWD}/var/log");
+        assert_eq!(
+            TerminalNotebook::ungrouped_tooltip(&t),
+            Some(format!("server_A\n10.0.0.5{PANES}{CWD}/var/log"))
+        );
+        // No group line: nothing to remove, the tooltip is left alone.
+        assert_eq!(
+            TerminalNotebook::ungrouped_tooltip(&format!("prod-db{CWD}/var/log")),
+            None
+        );
     }
 
     #[test]
@@ -4276,11 +4319,7 @@ mod tab_tooltip_tests {
     fn rename_keeps_the_cwd_line() {
         // `apply_session_label` rebuilds via `tab_tooltip` then re-appends CWD.
         let old = format!("prod-db\n10.0.0.5{CWD}/var/log");
-        let cwd_line = TerminalNotebook::split_cwd_line(&old).1;
-        let mut rebuilt = TerminalNotebook::tab_tooltip("renamed", Some("10.0.0.5"), None);
-        if let Some(cwd) = cwd_line {
-            rebuilt.push_str(&cwd);
-        }
+        let rebuilt = TerminalNotebook::relabelled_tooltip(&old, "renamed", Some("10.0.0.5"), None);
         assert_eq!(rebuilt, format!("renamed\n10.0.0.5{CWD}/var/log"));
     }
 }

@@ -411,17 +411,13 @@ impl TerminalNotebook {
                 }
 
                 // Update tooltip to include group name
+                // The same transformation as `set_tab_group`, which keeps the
+                // panes line (issue #421) and the directory line after it.
                 if let Some(page) = sessions_clone.borrow().get(&session_id) {
                     let current_tooltip = page.tooltip().unwrap_or_default();
-                    // A split tab's panes line (issue #421) is kept.
-                    let (without_panes, panes_line) =
-                        super::split_title::split_panes_line(current_tooltip.as_str());
-                    let base_tooltip = without_panes
-                        .rsplit_once("\n[")
-                        .map_or(without_panes.as_str(), |(base, _)| base);
-                    page.set_tooltip(&format!(
-                        "{base_tooltip}\n[{group_name}]{}",
-                        panes_line.unwrap_or_default()
+                    page.set_tooltip(&Self::grouped_tooltip(
+                        current_tooltip.as_str(),
+                        &group_name,
                     ));
                 }
 
@@ -598,11 +594,10 @@ impl TerminalNotebook {
             // Restore original tooltip (remove group suffix)
             if let Some(page) = sessions.borrow().get(&session_id) {
                 let tooltip = page.tooltip().unwrap_or_default();
-                // A split tab's panes line (issue #421) is kept.
-                let (without_panes, panes_line) =
-                    super::split_title::split_panes_line(tooltip.as_str());
-                if let Some((base, _)) = without_panes.rsplit_once("\n[") {
-                    page.set_tooltip(&format!("{base}{}", panes_line.unwrap_or_default()));
+                // Keeps a split tab's panes line (issue #421) and the
+                // directory line.
+                if let Some(ungrouped) = Self::ungrouped_tooltip(tooltip.as_str()) {
+                    page.set_tooltip(&ungrouped);
                 }
             }
 
