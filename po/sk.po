@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:14+0200\n"
+"POT-Creation-Date: 2026-11-11 23:18+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Slovak\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2249 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -127,13 +127,13 @@ msgstr ""
 "{} je vybraný, ale zatiaľ nedokáže ukladať heslá: {}. Otvorte Nastavenia a "
 "potom Tajomstvá."
 
-#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/app.rs:2087 rustconn/src/window/edit_actions.rs:1726
 #: rustconn/src/window/edit_actions.rs:1865
 #: rustconn/src/window/edit_actions.rs:1893
 msgid "Failed to open URL: {}"
 msgstr "Nepodarilo sa otvoriť URL: {}"
 
-#: rustconn/src/app.rs:2084
+#: rustconn/src/app.rs:2096
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -143,31 +143,31 @@ msgstr ""
 "Spravujte SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes a Zero Trust "
 "pripojenia z jednej aplikácie."
 
-#: rustconn/src/app.rs:2162
+#: rustconn/src/app.rs:2174
 msgid "User Guide"
 msgstr "Používateľská príručka"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2176
 msgid "Installation"
 msgstr "Inštalácia"
 
-#: rustconn/src/app.rs:2168
+#: rustconn/src/app.rs:2180
 msgid "Releases"
 msgstr "Vydania"
 
-#: rustconn/src/app.rs:2172
+#: rustconn/src/app.rs:2184
 msgid "Changelog"
 msgstr "Zoznam zmien"
 
-#: rustconn/src/app.rs:2182
+#: rustconn/src/app.rs:2194
 msgid "Special Thanks"
 msgstr "Špeciálne poďakovanie"
 
-#: rustconn/src/app.rs:2197
+#: rustconn/src/app.rs:2209
 msgid "Made in Ukraine"
 msgstr "Vyrobené na Ukrajine"
 
-#: rustconn/src/app.rs:2198
+#: rustconn/src/app.rs:2210
 msgid "All contributors and supporters"
 msgstr "Všetkým prispievateľom a podporovateľom"
 
@@ -210,7 +210,7 @@ msgstr "Príkazové makro „{}“: {}"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:151
+#: rustconn/src/detached_window.rs:156
 #: rustconn/src/embedded_rdp/connection.rs:1791
 #: rustconn/src/embedded_rdp/connection.rs:2768
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
@@ -220,9 +220,37 @@ msgstr "{} — RustConn"
 msgid "Session disconnected"
 msgstr "Relácia odpojená"
 
-#: rustconn/src/detached_window.rs:446
+#: rustconn/src/detached_window.rs:459
 msgid "Move to Main Window"
 msgstr "Presunúť do hlavného okna"
+
+#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:326
+msgid "Settings…"
+msgstr "Nastavenia…"
+
+#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:344
+msgid "Keyboard Shortcuts…"
+msgstr "Klávesové skratky…"
+
+#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Pomocník"
+
+#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:281
+#: rustconn/src/tray.rs:656 rustconn/src/window/ui.rs:346
+msgid "About RustConn"
+msgstr "O aplikácii RustConn"
+
+#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+msgid "Menu (F10)"
+msgstr "Ponuka (F10)"
+
+#: rustconn/src/detached_window.rs:489
+#: rustconn/src/embedded_web/navigation.rs:152
+#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
+msgid "Menu"
+msgstr "Menu"
 
 #: rustconn/src/dialogs/ask_prompt.rs:64
 msgid "Enter Connection Details"
@@ -9612,10 +9640,6 @@ msgstr "Zobrazenie"
 msgid "Quit"
 msgstr "Ukončiť"
 
-#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
-msgid "Help"
-msgstr "Pomocník"
-
 #: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Štatistiky"
@@ -11873,11 +11897,6 @@ msgstr "Priblížiť"
 msgid "Zoom out"
 msgstr "Oddialiť"
 
-#: rustconn/src/embedded_web/navigation.rs:152
-#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
-msgid "Menu"
-msgstr "Menu"
-
 #: rustconn/src/embedded_web/navigation.rs:429
 msgid "Copy URL"
 msgstr "Kopírovať URL"
@@ -12961,11 +12980,6 @@ msgstr "Rýchle pripojenie…"
 #: rustconn/src/tray.rs:268 rustconn/src/tray.rs:627
 msgid "{} Active Session(s)"
 msgstr "{} aktívna(-e) relácia(-e)"
-
-#: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:346
-msgid "About RustConn"
-msgstr "O aplikácii RustConn"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5720
 msgid "Passphrase Does Not Open the Portable File"
@@ -15267,10 +15281,6 @@ msgstr "Prebieha operácia"
 msgid "Toggle Sidebar (F9)"
 msgstr "Prepnúť bočný panel (F9)"
 
-#: rustconn/src/window/ui.rs:82
-msgid "Menu (F10)"
-msgstr "Ponuka (F10)"
-
 #: rustconn/src/window/ui.rs:97
 msgid "Settings (Ctrl+,)"
 msgstr "Nastavenia (Ctrl+,)"
@@ -15408,10 +15418,6 @@ msgstr "Kopírovať pripojenie"
 msgid "Paste Connection"
 msgstr "Vložiť pripojenie"
 
-#: rustconn/src/window/ui.rs:326
-msgid "Settings…"
-msgstr "Nastavenia…"
-
 #: rustconn/src/window/ui.rs:332
 msgid "Components…"
 msgstr "Komponenty…"
@@ -15423,10 +15429,6 @@ msgstr "Kompaktné rozhranie"
 #: rustconn/src/window/ui.rs:341
 msgid "Keyboard Passthrough"
 msgstr "Priechod klávesnice"
-
-#: rustconn/src/window/ui.rs:344
-msgid "Keyboard Shortcuts…"
-msgstr "Klávesové skratky…"
 
 #: rustconn/src/window/workspaces.rs:456
 msgid "No active sessions to save"

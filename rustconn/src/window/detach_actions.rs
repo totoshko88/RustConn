@@ -511,6 +511,65 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
         }
     });
     window.add_action(&passthrough_action);
+
+    // Ctrl+, and the menu's Settings… open Settings, which are application-wide
+    // and whose dialog lives on the main window: raise the main window (it may
+    // be behind this one, or hidden in the tray) and run its action there.
+    let settings_action = gio::SimpleAction::new("settings", None);
+    let main_window = handles.main_window.clone();
+    settings_action.connect_activate(move |_, _| {
+        if let Some(main_window) = main_window.upgrade() {
+            main_window.present();
+            let _ = WidgetExt::activate_action(&main_window, "win.settings", None);
+        }
+    });
+    window.add_action(&settings_action);
+
+    follow_passthrough_for_primary_menu(detached, handles);
+}
+
+/// Keeps the detached window's F10 binding in step with keyboard passthrough.
+///
+/// F10 comes from the menu button's GTK-internal `primary` flag, not from the
+/// accelerator table, so `set_passthrough` cannot drop it. The main window
+/// clears its own button's flag in the `win.toggle-passthrough` handler; this
+/// window follows that action's state the same way, so F10 reaches the session
+/// (Midnight Commander, for one) while passthrough is on. The handler is
+/// removed when the window is destroyed.
+fn follow_passthrough_for_primary_menu(detached: &DetachedSessionWindow, handles: &DetachHandles) {
+    let Some(action) = handles
+        .main_window
+        .upgrade()
+        .and_then(|main_window| main_window.lookup_action("toggle-passthrough"))
+        .and_downcast::<gio::SimpleAction>()
+    else {
+        tracing::warn!(
+            session = %detached.session_id(),
+            "detached window: no passthrough action to follow, F10 stays bound"
+        );
+        return;
+    };
+    let passthrough_on =
+        |action: &gio::SimpleAction| action.state().and_then(|v| v.get::<bool>()) == Some(true);
+
+    let button = detached.menu_button();
+    button.set_primary(!passthrough_on(&action));
+    let button_weak = button.downgrade();
+    let state_watch = action.connect_state_notify(move |action| {
+        if let Some(button) = button_weak.upgrade() {
+            button.set_primary(!passthrough_on(action));
+        }
+    });
+
+    let action_weak = action.downgrade();
+    let state_watch = std::cell::RefCell::new(Some(state_watch));
+    detached.window().connect_destroy(move |_| {
+        if let Some(action) = action_weak.upgrade()
+            && let Some(id) = state_watch.take()
+        {
+            action.disconnect(id);
+        }
+    });
 }
 
 impl MainWindow {

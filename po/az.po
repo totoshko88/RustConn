@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:14+0200\n"
+"POT-Creation-Date: 2026-11-11 23:18+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2249 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -127,13 +127,13 @@ msgstr ""
 "{} seçilib, lakin hələ parolları saxlaya bilmir: {}. Tənzimləmələri, sonra "
 "Sirlər bölməsini açın."
 
-#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/app.rs:2087 rustconn/src/window/edit_actions.rs:1726
 #: rustconn/src/window/edit_actions.rs:1865
 #: rustconn/src/window/edit_actions.rs:1893
 msgid "Failed to open URL: {}"
 msgstr "URL açıla bilmədi: {}"
 
-#: rustconn/src/app.rs:2084
+#: rustconn/src/app.rs:2096
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -143,31 +143,31 @@ msgstr ""
 "RDP, VNC, SPICE, Telnet, Serial, Kubernetes və Zero Trust bağlantılarını tək "
 "tətbiqdən idarə edin."
 
-#: rustconn/src/app.rs:2162
+#: rustconn/src/app.rs:2174
 msgid "User Guide"
 msgstr "İstifadəçi bələdçisi"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2176
 msgid "Installation"
 msgstr "Quraşdırma"
 
-#: rustconn/src/app.rs:2168
+#: rustconn/src/app.rs:2180
 msgid "Releases"
 msgstr "Buraxılışlar"
 
-#: rustconn/src/app.rs:2172
+#: rustconn/src/app.rs:2184
 msgid "Changelog"
 msgstr "Dəyişikliklər"
 
-#: rustconn/src/app.rs:2182
+#: rustconn/src/app.rs:2194
 msgid "Special Thanks"
 msgstr "Xüsusi təşəkkür"
 
-#: rustconn/src/app.rs:2197
+#: rustconn/src/app.rs:2209
 msgid "Made in Ukraine"
 msgstr "Ukraynada hazırlanıb"
 
-#: rustconn/src/app.rs:2198
+#: rustconn/src/app.rs:2210
 msgid "All contributors and supporters"
 msgstr "Bütün töhfə verənlər və dəstəkçilər"
 
@@ -210,7 +210,7 @@ msgstr "Əmr makrosu “{}”: {}"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:151
+#: rustconn/src/detached_window.rs:156
 #: rustconn/src/embedded_rdp/connection.rs:1791
 #: rustconn/src/embedded_rdp/connection.rs:2768
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
@@ -220,9 +220,37 @@ msgstr "{} — RustConn"
 msgid "Session disconnected"
 msgstr "Sessiyanın bağlantısı kəsildi"
 
-#: rustconn/src/detached_window.rs:446
+#: rustconn/src/detached_window.rs:459
 msgid "Move to Main Window"
 msgstr "Əsas pəncərəyə köçür"
+
+#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:326
+msgid "Settings…"
+msgstr "Tənzimləmələr…"
+
+#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:344
+msgid "Keyboard Shortcuts…"
+msgstr "Klaviatura qısayolları…"
+
+#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Kömək"
+
+#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:281
+#: rustconn/src/tray.rs:656 rustconn/src/window/ui.rs:346
+msgid "About RustConn"
+msgstr "RustConn haqqında"
+
+#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+msgid "Menu (F10)"
+msgstr "Menyu (F10)"
+
+#: rustconn/src/detached_window.rs:489
+#: rustconn/src/embedded_web/navigation.rs:152
+#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
+msgid "Menu"
+msgstr "Menyu"
 
 #: rustconn/src/dialogs/ask_prompt.rs:64
 msgid "Enter Connection Details"
@@ -9592,10 +9620,6 @@ msgstr "Görünüş"
 msgid "Quit"
 msgstr "Çıx"
 
-#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
-msgid "Help"
-msgstr "Kömək"
-
 #: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Statistika"
@@ -11849,11 +11873,6 @@ msgstr "Böyüt"
 msgid "Zoom out"
 msgstr "Kiçilt"
 
-#: rustconn/src/embedded_web/navigation.rs:152
-#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
-msgid "Menu"
-msgstr "Menyu"
-
 #: rustconn/src/embedded_web/navigation.rs:429
 msgid "Copy URL"
 msgstr "URL-i kopyala"
@@ -12934,11 +12953,6 @@ msgstr "Sürətli qoşulma…"
 #: rustconn/src/tray.rs:268 rustconn/src/tray.rs:627
 msgid "{} Active Session(s)"
 msgstr "{} aktiv sessiya"
-
-#: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:346
-msgid "About RustConn"
-msgstr "RustConn haqqında"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5720
 msgid "Passphrase Does Not Open the Portable File"
@@ -15213,10 +15227,6 @@ msgstr "Əməliyyat davam edir"
 msgid "Toggle Sidebar (F9)"
 msgstr "Yan paneli dəyiş (F9)"
 
-#: rustconn/src/window/ui.rs:82
-msgid "Menu (F10)"
-msgstr "Menyu (F10)"
-
 #: rustconn/src/window/ui.rs:97
 msgid "Settings (Ctrl+,)"
 msgstr "Tənzimləmələr (Ctrl+,)"
@@ -15353,10 +15363,6 @@ msgstr "Bağlantını kopyala"
 msgid "Paste Connection"
 msgstr "Bağlantını yapışdır"
 
-#: rustconn/src/window/ui.rs:326
-msgid "Settings…"
-msgstr "Tənzimləmələr…"
-
 #: rustconn/src/window/ui.rs:332
 msgid "Components…"
 msgstr "Komponentlər…"
@@ -15368,10 +15374,6 @@ msgstr "Yığcam interfeys"
 #: rustconn/src/window/ui.rs:341
 msgid "Keyboard Passthrough"
 msgstr "Klaviatura ötürməsi"
-
-#: rustconn/src/window/ui.rs:344
-msgid "Keyboard Shortcuts…"
-msgstr "Klaviatura qısayolları…"
 
 #: rustconn/src/window/workspaces.rs:456
 msgid "No active sessions to save"

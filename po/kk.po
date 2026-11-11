@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:14+0200\n"
+"POT-Creation-Date: 2026-11-11 23:18+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Kazakh\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Generated-By: Babel 2.10.3\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2249 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -128,13 +128,13 @@ msgstr ""
 "{} таңдалды, бірақ ол әзірге құпия сөздерді сақтай алмайды: {}. "
 "Параметрлерді, содан кейін Құпияларды ашыңыз."
 
-#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/app.rs:2087 rustconn/src/window/edit_actions.rs:1726
 #: rustconn/src/window/edit_actions.rs:1865
 #: rustconn/src/window/edit_actions.rs:1893
 msgid "Failed to open URL: {}"
 msgstr "URL ашу сәтсіз: {}"
 
-#: rustconn/src/app.rs:2084
+#: rustconn/src/app.rs:2096
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -144,31 +144,31 @@ msgstr ""
 "VNC, SPICE, Telnet, Serial, Kubernetes және Zero Trust қосылымдарын бір "
 "қолданбадан басқарыңыз."
 
-#: rustconn/src/app.rs:2162
+#: rustconn/src/app.rs:2174
 msgid "User Guide"
 msgstr "Пайдаланушы нұсқаулығы"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2176
 msgid "Installation"
 msgstr "Орнату"
 
-#: rustconn/src/app.rs:2168
+#: rustconn/src/app.rs:2180
 msgid "Releases"
 msgstr "Шығарылымдар"
 
-#: rustconn/src/app.rs:2172
+#: rustconn/src/app.rs:2184
 msgid "Changelog"
 msgstr "Өзгерістер журналы"
 
-#: rustconn/src/app.rs:2182
+#: rustconn/src/app.rs:2194
 msgid "Special Thanks"
 msgstr "Ерекше алғыс"
 
-#: rustconn/src/app.rs:2197
+#: rustconn/src/app.rs:2209
 msgid "Made in Ukraine"
 msgstr "Украинада жасалған"
 
-#: rustconn/src/app.rs:2198
+#: rustconn/src/app.rs:2210
 msgid "All contributors and supporters"
 msgstr "Барлық қатысушылар мен қолдаушыларға"
 
@@ -210,7 +210,7 @@ msgstr "Пәрмен макросы «{}»: {}"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:151
+#: rustconn/src/detached_window.rs:156
 #: rustconn/src/embedded_rdp/connection.rs:1791
 #: rustconn/src/embedded_rdp/connection.rs:2768
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
@@ -220,9 +220,37 @@ msgstr "{} — RustConn"
 msgid "Session disconnected"
 msgstr "Сеанс ажыратылды"
 
-#: rustconn/src/detached_window.rs:446
+#: rustconn/src/detached_window.rs:459
 msgid "Move to Main Window"
 msgstr "Негізгі терезеге жылжыту"
+
+#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:326
+msgid "Settings…"
+msgstr "Параметрлер…"
+
+#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:344
+msgid "Keyboard Shortcuts…"
+msgstr "Пернетақта тіркесімдері…"
+
+#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Анықтама"
+
+#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:281
+#: rustconn/src/tray.rs:656 rustconn/src/window/ui.rs:346
+msgid "About RustConn"
+msgstr "RustConn туралы"
+
+#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+msgid "Menu (F10)"
+msgstr "Мәзір (F10)"
+
+#: rustconn/src/detached_window.rs:489
+#: rustconn/src/embedded_web/navigation.rs:152
+#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
+msgid "Menu"
+msgstr "Мәзір"
 
 #: rustconn/src/dialogs/ask_prompt.rs:64
 msgid "Enter Connection Details"
@@ -9608,10 +9636,6 @@ msgstr "Көрініс"
 msgid "Quit"
 msgstr "Шығу"
 
-#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
-msgid "Help"
-msgstr "Анықтама"
-
 #: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Статистика"
@@ -11871,11 +11895,6 @@ msgstr "Ұлғайту"
 msgid "Zoom out"
 msgstr "Кішірейту"
 
-#: rustconn/src/embedded_web/navigation.rs:152
-#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
-msgid "Menu"
-msgstr "Мәзір"
-
 #: rustconn/src/embedded_web/navigation.rs:429
 msgid "Copy URL"
 msgstr "URL көшіру"
@@ -12956,11 +12975,6 @@ msgstr "Жылдам қосылу…"
 #: rustconn/src/tray.rs:268 rustconn/src/tray.rs:627
 msgid "{} Active Session(s)"
 msgstr "{} белсенді сеанс"
-
-#: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:346
-msgid "About RustConn"
-msgstr "RustConn туралы"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5720
 msgid "Passphrase Does Not Open the Portable File"
@@ -15241,10 +15255,6 @@ msgstr "Операция орындалуда"
 msgid "Toggle Sidebar (F9)"
 msgstr "Бүйір тақтаны ауыстыру (F9)"
 
-#: rustconn/src/window/ui.rs:82
-msgid "Menu (F10)"
-msgstr "Мәзір (F10)"
-
 #: rustconn/src/window/ui.rs:97
 msgid "Settings (Ctrl+,)"
 msgstr "Параметрлер (Ctrl+,)"
@@ -15381,10 +15391,6 @@ msgstr "Қосылымды көшіру"
 msgid "Paste Connection"
 msgstr "Қосылымды қою"
 
-#: rustconn/src/window/ui.rs:326
-msgid "Settings…"
-msgstr "Параметрлер…"
-
 #: rustconn/src/window/ui.rs:332
 msgid "Components…"
 msgstr "компоненттері…"
@@ -15396,10 +15402,6 @@ msgstr "Тығыз интерфейс"
 #: rustconn/src/window/ui.rs:341
 msgid "Keyboard Passthrough"
 msgstr "Пернетақта берілуі"
-
-#: rustconn/src/window/ui.rs:344
-msgid "Keyboard Shortcuts…"
-msgstr "Пернетақта тіркесімдері…"
 
 #: rustconn/src/window/workspaces.rs:456
 msgid "No active sessions to save"

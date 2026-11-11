@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 23:14+0200\n"
+"POT-Creation-Date: 2026-11-11 23:18+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: rustconn/src/alert.rs:15 rustconn/src/alert.rs:54 rustconn/src/alert.rs:64
-#: rustconn/src/app.rs:2237 rustconn/src/script_runner.rs:774
+#: rustconn/src/app.rs:2249 rustconn/src/script_runner.rs:774
 #: rustconn/src/script_runner.rs:806 rustconn/src/toast.rs:283
 msgid "OK"
 msgstr "OK"
@@ -126,13 +126,13 @@ msgid ""
 msgstr ""
 "Đã chọn {}, nhưng nó chưa thể lưu mật khẩu: {}. Hãy mở Cài đặt, rồi Bí mật."
 
-#: rustconn/src/app.rs:2075 rustconn/src/window/edit_actions.rs:1726
+#: rustconn/src/app.rs:2087 rustconn/src/window/edit_actions.rs:1726
 #: rustconn/src/window/edit_actions.rs:1865
 #: rustconn/src/window/edit_actions.rs:1893
 msgid "Failed to open URL: {}"
 msgstr "Mở URL thất bại: {}"
 
-#: rustconn/src/app.rs:2084
+#: rustconn/src/app.rs:2096
 msgid ""
 "Modern connection manager for Linux with a GTK4/Wayland-native interface. "
 "Manage SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes, and Zero Trust "
@@ -142,31 +142,31 @@ msgstr ""
 "Quản lý các kết nối SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes và Zero "
 "Trust từ một ứng dụng duy nhất."
 
-#: rustconn/src/app.rs:2162
+#: rustconn/src/app.rs:2174
 msgid "User Guide"
 msgstr "Hướng dẫn sử dụng"
 
-#: rustconn/src/app.rs:2164
+#: rustconn/src/app.rs:2176
 msgid "Installation"
 msgstr "Hướng dẫn cài đặt"
 
-#: rustconn/src/app.rs:2168
+#: rustconn/src/app.rs:2180
 msgid "Releases"
 msgstr "Các bản phát hành"
 
-#: rustconn/src/app.rs:2172
+#: rustconn/src/app.rs:2184
 msgid "Changelog"
 msgstr "Nhật ký thay đổi"
 
-#: rustconn/src/app.rs:2182
+#: rustconn/src/app.rs:2194
 msgid "Special Thanks"
 msgstr "Lời cảm ơn đặc biệt"
 
-#: rustconn/src/app.rs:2197
+#: rustconn/src/app.rs:2209
 msgid "Made in Ukraine"
 msgstr "Sản xuất tại Ukraina"
 
-#: rustconn/src/app.rs:2198
+#: rustconn/src/app.rs:2210
 msgid "All contributors and supporters"
 msgstr "Tất cả những người đóng góp và ủng hộ"
 
@@ -209,7 +209,7 @@ msgstr "Macro lệnh “{}”: {}"
 msgid "{} — RustConn"
 msgstr "{} — RustConn"
 
-#: rustconn/src/detached_window.rs:151
+#: rustconn/src/detached_window.rs:156
 #: rustconn/src/embedded_rdp/connection.rs:1791
 #: rustconn/src/embedded_rdp/connection.rs:2768
 #: rustconn/src/embedded_rdp/mod.rs:783 rustconn/src/embedded_rdp/mod.rs:2175
@@ -219,9 +219,37 @@ msgstr "{} — RustConn"
 msgid "Session disconnected"
 msgstr "Phiên đã ngắt kết nối"
 
-#: rustconn/src/detached_window.rs:446
+#: rustconn/src/detached_window.rs:459
 msgid "Move to Main Window"
 msgstr "Chuyển về cửa sổ chính"
+
+#: rustconn/src/detached_window.rs:474 rustconn/src/window/ui.rs:326
+msgid "Settings…"
+msgstr "Cài đặt…"
+
+#: rustconn/src/detached_window.rs:476 rustconn/src/window/ui.rs:344
+msgid "Keyboard Shortcuts…"
+msgstr "Phím tắt…"
+
+#: rustconn/src/detached_window.rs:477 rustconn/src/dialogs/shortcuts.rs:179
+#: rustconn/src/window/ui.rs:345
+msgid "Help"
+msgstr "Trợ giúp"
+
+#: rustconn/src/detached_window.rs:478 rustconn/src/tray.rs:281
+#: rustconn/src/tray.rs:656 rustconn/src/window/ui.rs:346
+msgid "About RustConn"
+msgstr "Giới thiệu RustConn"
+
+#: rustconn/src/detached_window.rs:485 rustconn/src/window/ui.rs:82
+msgid "Menu (F10)"
+msgstr "Menu (F10)"
+
+#: rustconn/src/detached_window.rs:489
+#: rustconn/src/embedded_web/navigation.rs:152
+#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
+msgid "Menu"
+msgstr "Menu"
 
 #: rustconn/src/dialogs/ask_prompt.rs:64
 msgid "Enter Connection Details"
@@ -9573,10 +9601,6 @@ msgstr "Xem"
 msgid "Quit"
 msgstr "Thoát"
 
-#: rustconn/src/dialogs/shortcuts.rs:179 rustconn/src/window/ui.rs:345
-msgid "Help"
-msgstr "Trợ giúp"
-
 #: rustconn/src/dialogs/shortcuts.rs:181
 msgid "Statistics"
 msgstr "Thống kê"
@@ -11814,11 +11838,6 @@ msgstr "Phóng to"
 msgid "Zoom out"
 msgstr "Thu nhỏ"
 
-#: rustconn/src/embedded_web/navigation.rs:152
-#: rustconn/src/embedded_web/navigation.rs:153 rustconn/src/window/ui.rs:84
-msgid "Menu"
-msgstr "Menu"
-
 #: rustconn/src/embedded_web/navigation.rs:429
 msgid "Copy URL"
 msgstr "Sao chép URL"
@@ -12897,11 +12916,6 @@ msgstr "Kết nối nhanh…"
 #: rustconn/src/tray.rs:268 rustconn/src/tray.rs:627
 msgid "{} Active Session(s)"
 msgstr "{} phiên đang hoạt động"
-
-#: rustconn/src/tray.rs:281 rustconn/src/tray.rs:656
-#: rustconn/src/window/ui.rs:346
-msgid "About RustConn"
-msgstr "Giới thiệu RustConn"
 
 #: rustconn/src/vault_ops.rs:50 rustconn/src/window/mod.rs:5720
 msgid "Passphrase Does Not Open the Portable File"
@@ -15175,10 +15189,6 @@ msgstr "Đang có thao tác thực hiện"
 msgid "Toggle Sidebar (F9)"
 msgstr "Bật/tắt thanh bên (F9)"
 
-#: rustconn/src/window/ui.rs:82
-msgid "Menu (F10)"
-msgstr "Menu (F10)"
-
 #: rustconn/src/window/ui.rs:97
 msgid "Settings (Ctrl+,)"
 msgstr "Cài đặt (Ctrl+,)"
@@ -15315,10 +15325,6 @@ msgstr "Sao chép kết nối"
 msgid "Paste Connection"
 msgstr "Dán kết nối"
 
-#: rustconn/src/window/ui.rs:326
-msgid "Settings…"
-msgstr "Cài đặt…"
-
 #: rustconn/src/window/ui.rs:332
 msgid "Components…"
 msgstr "Thành phần…"
@@ -15330,10 +15336,6 @@ msgstr "Giao diện thu gọn"
 #: rustconn/src/window/ui.rs:341
 msgid "Keyboard Passthrough"
 msgstr "Chuyển thẳng bàn phím"
-
-#: rustconn/src/window/ui.rs:344
-msgid "Keyboard Shortcuts…"
-msgstr "Phím tắt…"
 
 #: rustconn/src/window/workspaces.rs:456
 msgid "No active sessions to save"

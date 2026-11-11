@@ -1846,11 +1846,18 @@ fn setup_app_actions(
     });
     app.add_action(&quit_action);
 
-    // About action
+    // About action. Like the shortcuts and help actions below it opens on the
+    // focused window, so pressing it in a detached window does not put the
+    // dialog on a main window that is behind it or hidden in the tray.
     let about_action = gio::SimpleAction::new("about", None);
+    let app_for_about = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
     about_action.connect_activate(move |_, _| {
-        if let Some(window) = window_weak.upgrade() {
+        let parent = app_for_about
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        if let Some(window) = parent {
             show_about_dialog(&window);
         }
     });
@@ -1858,10 +1865,15 @@ fn setup_app_actions(
 
     // Keyboard shortcuts action
     let shortcuts_action = gio::SimpleAction::new("shortcuts", None);
+    let app_for_shortcuts = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
     let state_for_shortcuts = state.clone();
     shortcuts_action.connect_activate(move |_, _| {
-        if let Some(window) = window_weak.upgrade() {
+        let parent = app_for_shortcuts
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        if let Some(window) = parent {
             // Read the bindings from settings, not from the application: while a
             // terminal has focus the single-modifier accelerators are suspended
             // (issue #216), so the live registration is not what the user has
@@ -2079,7 +2091,7 @@ fn open_user_guide(parent: Option<&gtk4::Window>) {
 }
 
 /// Shows the about dialog
-fn show_about_dialog(parent: &adw::ApplicationWindow) {
+fn show_about_dialog(parent: &gtk4::Window) {
     let description = gettext(
         "Modern connection manager for Linux with a \
 GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
