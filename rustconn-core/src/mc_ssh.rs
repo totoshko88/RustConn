@@ -101,14 +101,17 @@ impl McSshEnv {
     ///
     /// Reads the delivering `ssh`'s per-run logs in the wrapper directory,
     /// records a refusal as the report [`take_auth_failure`] takes, and
-    /// removes the logs it read. Leaves the report in place, so the next mc
-    /// open still opens without the password. Call it when mc exits, so the
-    /// caller can drop its cached password before a Connect sends it again;
-    /// until then nothing records the refusal.
+    /// removes the logs that hold one. Leaves the report in place, so the
+    /// next mc open still opens without the password. Call it when mc exits,
+    /// so the caller can drop its cached password before a Connect sends it
+    /// again.
     #[must_use]
     pub fn sign_in_refused(&self) -> bool {
-        let marker = auth_failure_marker(self.connection_id);
-        record_refused_sign_in(&self.wrapper_dir, &marker);
+        let Some(root) = self.wrapper_dir.parent() else {
+            return false;
+        };
+        let marker = auth_failure_marker(root, self.connection_id);
+        record_refused_sign_in(&self.wrapper_dir, self.connection_id, &marker);
         marker.exists()
     }
 
@@ -412,7 +415,8 @@ struct Delivery<'a> {
     /// The delivering `ssh`'s own log (`ssh -E`), with `.<pid>` appended per
     /// run so concurrent `ssh` processes each have their own file. Holds
     /// only ssh's messages, not the remote stderr; mc sends stderr to
-    /// `/dev/null`. Read by [`McSshEnv::sign_in_refused`].
+    /// `/dev/null`. Named by [`ssh_log_prefix`]; read by
+    /// [`McSshEnv::sign_in_refused`] and [`take_auth_failure`].
     log_prefix: &'a Path,
     /// Where the gate notes each decision for [`McSshEnv::password_handover`].
     handover_dir: &'a Path,
@@ -436,6 +440,15 @@ pub enum PasswordHandover {
 
 /// File name prefix of the delivering `ssh`'s per-run log.
 const SSH_LOG_PREFIX: &str = "ssh-log";
+
+/// The file name every per-run log of `connection_id`'s delivering `ssh`
+/// starts with (the wrapper appends `.<pid>`).
+///
+/// It names the connection so that an mc open can find the refusals of this
+/// connection's other mc sessions without knowing their session ids.
+fn ssh_log_prefix(connection_id: Uuid) -> String {
+    format!("{SSH_LOG_PREFIX}.{}", connection_id.as_hyphenated())
+}
 
 /// What ssh logs when the server refuses every method it tried
 /// (`user@host: Permission denied (password).`). The parenthesis keeps out
@@ -522,22 +535,25 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
     script
 }
 
-/// The marker left when `connection_id`'s sign-in from mc was refused.
-fn auth_failure_marker(connection_id: Uuid) -> PathBuf {
-    wrapper_root().join(format!("{}.auth-failed", connection_id.as_hyphenated()))
+/// The marker left in the wrapper `root` when `connection_id`'s sign-in from
+/// mc was refused.
+fn auth_failure_marker(root: &Path, connection_id: Uuid) -> PathBuf {
+    root.join(format!("{}.auth-failed", connection_id.as_hyphenated()))
 }
 
-/// Creates `marker` when a delivering `ssh` log in `wrapper_dir` reports a
-/// refused sign-in, and removes every such log.
+/// Creates `marker` when a log of `connection_id`'s delivering `ssh` in
+/// `wrapper_dir` reports a refused sign-in, and removes the logs that do.
 ///
 /// The logs are written through `ssh -E`, after the wrapper has `exec`ed
-/// `ssh`, so nothing in the wrapper can check them; this runs instead when
-/// mc exits.
-fn record_refused_sign_in(wrapper_dir: &Path, marker: &Path) {
+/// `ssh`, so nothing in the wrapper can check them; this runs when mc exits
+/// and again at the next mc open. A log without a refusal is left alone,
+/// because its `ssh` may still be signing in; it goes when the directory is
+/// rewritten or pruned.
+fn record_refused_sign_in(wrapper_dir: &Path, connection_id: Uuid, marker: &Path) {
     let Ok(entries) = std::fs::read_dir(wrapper_dir) else {
         return;
     };
-    let log_name = format!("{SSH_LOG_PREFIX}.");
+    let log_name = format!("{}.", ssh_log_prefix(connection_id));
     let mut refused = false;
     for path in entries.flatten().map(|entry| entry.path()) {
         if !path
@@ -546,8 +562,10 @@ fn record_refused_sign_in(wrapper_dir: &Path, marker: &Path) {
         {
             continue;
         }
-        refused |= std::fs::read_to_string(&path).is_ok_and(|log| log.contains(REFUSED_SIGN_IN));
-        let _ = std::fs::remove_file(&path);
+        if std::fs::read_to_string(&path).is_ok_and(|log| log.contains(REFUSED_SIGN_IN)) {
+            refused = true;
+            let _ = std::fs::remove_file(&path);
+        }
     }
     if refused && let Err(error) = std::fs::write(marker, b"") {
         tracing::warn!(%error, "Could not record mc's refused sign-in");
@@ -557,11 +575,33 @@ fn record_refused_sign_in(wrapper_dir: &Path, marker: &Path) {
 /// Whether mc's `ssh` reported a refused password for `connection_id` since
 /// the last call, clearing the report.
 ///
-/// The report is recorded by [`McSshEnv::sign_in_refused`] when that mc
-/// exits. The caller then opens mc without the saved password once.
+/// Besides the report [`McSshEnv::sign_in_refused`] left when an mc exited,
+/// this reads the logs of every mc session of the connection, so a refusal
+/// counts even when that mc's exit was never seen (RustConn quit first) or
+/// that mc is still open. The caller then opens mc without the saved password
+/// once. A wrapper root that is not this user's own reports nothing.
 #[must_use]
 pub fn take_auth_failure(connection_id: Uuid) -> bool {
-    std::fs::remove_file(auth_failure_marker(connection_id)).is_ok()
+    take_auth_failure_in(&wrapper_root(), current_uid(), connection_id)
+}
+
+/// [`take_auth_failure`] in the wrapper `root`, which must belong to `uid`.
+fn take_auth_failure_in(root: &Path, uid: u32, connection_id: Uuid) -> bool {
+    // In a shared `/tmp` another user could plant a marker or a log; neither
+    // says anything about this user's sign-in.
+    if let Err(reason) = ensure_private_dir(root, uid) {
+        tracing::debug!(dir = %root.display(), %reason, "Not reading mc sign-in reports");
+        return false;
+    }
+    let marker = auth_failure_marker(root, connection_id);
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for dir in entries.flatten().map(|entry| entry.path()) {
+            if dir.is_dir() {
+                record_refused_sign_in(&dir, connection_id, &marker);
+            }
+        }
+    }
+    std::fs::remove_file(&marker).is_ok()
 }
 
 /// Returns the `SshConfig` of an SSH or SFTP connection.
@@ -854,7 +894,7 @@ pub fn prepare_mc_ssh_env(
             &real_ssh,
         )
     });
-    let log_prefix = wrapper_dir.join(SSH_LOG_PREFIX);
+    let log_prefix = wrapper_dir.join(ssh_log_prefix(connection.id));
     let user = connection.username.as_deref().unwrap_or_default();
     let wrapper = wrapper_script(
         &real_ssh,
@@ -1439,6 +1479,8 @@ mod tests {
         secret: PathBuf,
         /// Where [`record_refused_sign_in`] records a refusal in these tests.
         marker: PathBuf,
+        /// The connection the logs are named after.
+        id: Uuid,
     }
 
     #[cfg(unix)]
@@ -1469,6 +1511,7 @@ mod tests {
             let secret = dir.path().join("secret");
             let helper = dir.path().join("helper");
             let marker = dir.path().join("auth-failed");
+            let id = Uuid::new_v4();
             let args = strs(&["-o", "NumberOfPasswordPrompts=1"]);
             let text = wrapper_script(
                 &ssh,
@@ -1480,7 +1523,7 @@ mod tests {
                     user: "me",
                     port,
                     args: &args,
-                    log_prefix: &dir.path().join(SSH_LOG_PREFIX),
+                    log_prefix: &dir.path().join(ssh_log_prefix(id)),
                     handover_dir: dir.path(),
                 }),
             );
@@ -1492,6 +1535,7 @@ mod tests {
                 config,
                 secret,
                 marker,
+                id,
             }
         }
 
@@ -1532,7 +1576,7 @@ mod tests {
         fn log_args(&self, pid: u32) -> String {
             format!(
                 "-E {}.{pid}",
-                self.dir.path().join(SSH_LOG_PREFIX).display()
+                self.dir.path().join(ssh_log_prefix(self.id)).display()
             )
         }
 
@@ -1773,7 +1817,7 @@ mod tests {
 
         let (_, _, status) = stub.run(&argv, Some("255"), "Connection closed by 192.0.2.1");
         assert_eq!(status, 255);
-        record_refused_sign_in(stub.dir.path(), &stub.marker);
+        record_refused_sign_in(stub.dir.path(), stub.id, &stub.marker);
         assert!(!stub.marker.exists(), "a lost connection is not a refusal");
 
         let (_, _, status) = stub.run(
@@ -1782,7 +1826,7 @@ mod tests {
             "Load key \"/home/me/.ssh/id_ed25519\": Permission denied",
         );
         assert_eq!(status, 255);
-        record_refused_sign_in(stub.dir.path(), &stub.marker);
+        record_refused_sign_in(stub.dir.path(), stub.id, &stub.marker);
         assert!(!stub.marker.exists(), "an unreadable key is not a refusal");
 
         let (_, _, status) = stub.run(
@@ -1795,10 +1839,17 @@ mod tests {
             !stub.marker.exists(),
             "recorded only when RustConn reads the logs"
         );
-        record_refused_sign_in(stub.dir.path(), &stub.marker);
+        record_refused_sign_in(stub.dir.path(), stub.id, &stub.marker);
         assert!(stub.marker.exists());
-        // The logs do not outlive the reading.
-        assert!(stub.log_files().is_empty());
+        // The refusal does not outlive the reading; the other two logs, whose
+        // ssh could still be running, are left alone.
+        let logs = stub.log_files();
+        assert_eq!(logs.len(), 2);
+        assert!(logs.iter().all(|log| {
+            !std::fs::read_to_string(log)
+                .unwrap()
+                .contains(REFUSED_SIGN_IN)
+        }));
     }
 
     /// Review item mc-n7: the gate notes what it did, so the tab can say when
@@ -1900,12 +1951,12 @@ mod tests {
 
         assert_eq!(refused.wait().unwrap().code(), Some(255));
         assert_eq!(stub.log_files().len(), 2, "one log per delivering ssh");
-        record_refused_sign_in(stub.dir.path(), &stub.marker);
+        record_refused_sign_in(stub.dir.path(), stub.id, &stub.marker);
         assert!(
             stub.marker.exists(),
             "the refusal was lost to the other run"
         );
-        assert!(stub.log_files().is_empty());
+        assert_eq!(stub.log_files().len(), 1, "only the refused log goes");
     }
 
     /// Review item mc-r1: the root is created owner-only, an old one is
@@ -1958,29 +2009,89 @@ mod tests {
 
     #[test]
     fn take_auth_failure_reports_a_marker_once() {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let uid = current_uid();
         let id = Uuid::new_v4();
-        assert!(!take_auth_failure(id));
-        let marker = auth_failure_marker(id);
-        std::fs::create_dir_all(marker.parent().unwrap()).unwrap();
+        assert!(!take_auth_failure_in(&root, uid, id));
+        std::fs::write(auth_failure_marker(&root, id), b"").unwrap();
+        assert!(take_auth_failure_in(&root, uid, id));
+        assert!(!take_auth_failure_in(&root, uid, id));
+    }
+
+    /// Review item mc-n2: a refusal still in a session's logs, because that
+    /// mc's exit was never seen (RustConn quit first) or that mc is still
+    /// open, is taken by the next open of the same connection only.
+    #[test]
+    fn take_auth_failure_reads_the_logs_of_every_session_of_the_connection() {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let uid = current_uid();
+        let (id, other) = (Uuid::new_v4(), Uuid::new_v4());
+        ensure_private_dir(&root, uid).unwrap();
+        let log = |session: &str, connection: Uuid, text: &str| {
+            let dir = root.join(session);
+            std::fs::create_dir_all(&dir).unwrap();
+            let path = dir.join(format!("{}.4242", ssh_log_prefix(connection)));
+            std::fs::write(&path, text).unwrap();
+            path
+        };
+
+        let signing_in = log("a", id, "");
+        assert!(!take_auth_failure_in(&root, uid, id));
+        assert!(signing_in.exists(), "a running ssh keeps its log");
+
+        log("b", id, "me@target: Permission denied (password).\n");
+        let others = log("c", other, "me@other: Permission denied (password).\n");
+        assert!(take_auth_failure_in(&root, uid, id));
+        assert!(!take_auth_failure_in(&root, uid, id), "taken once");
+        assert!(others.exists(), "another connection's refusal is its own");
+        assert!(take_auth_failure_in(&root, uid, other));
+    }
+
+    /// Review item mc-r1: on a root that is not this user's own, a planted
+    /// marker or log reports nothing and is left where it is.
+    #[cfg(unix)]
+    #[test]
+    fn take_auth_failure_ignores_a_foreign_root() {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let uid = current_uid();
+        let id = Uuid::new_v4();
+        ensure_private_dir(&root, uid).unwrap();
+        let marker = auth_failure_marker(&root, id);
         std::fs::write(&marker, b"").unwrap();
-        assert!(take_auth_failure(id));
-        assert!(!take_auth_failure(id));
+        assert!(!take_auth_failure_in(&root, uid.wrapping_add(1), id));
+        assert!(marker.exists());
+
+        let link = base.path().join("link");
+        std::os::unix::fs::symlink(&root, &link).unwrap();
+        assert!(!take_auth_failure_in(&link, uid, id));
+        assert!(marker.exists());
     }
 
     /// Review item mc-n4: mc's exit reads the report without taking it, so
     /// the next mc open still sees it.
     #[test]
     fn sign_in_refused_leaves_the_report_for_the_next_open() {
-        let mut env = env_in(Path::new("/nonexistent/rustconn-mc-ssh/session"));
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let uid = current_uid();
+        ensure_private_dir(&root, uid).unwrap();
+        let session = root.join("session");
+        std::fs::create_dir(&session).unwrap();
+        let mut env = env_in(&session);
         let id = Uuid::new_v4();
         env.connection_id = id;
         assert!(!env.sign_in_refused());
-        let marker = auth_failure_marker(id);
-        std::fs::create_dir_all(marker.parent().unwrap()).unwrap();
-        std::fs::write(&marker, b"").unwrap();
+        std::fs::write(
+            session.join(format!("{}.4242", ssh_log_prefix(id))),
+            "me@target: Permission denied (password).\n",
+        )
+        .unwrap();
         assert!(env.sign_in_refused());
         assert!(env.sign_in_refused());
-        assert!(take_auth_failure(id));
+        assert!(take_auth_failure_in(&root, uid, id));
         assert!(!env.sign_in_refused());
     }
 

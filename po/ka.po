@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 19:04+0200\n"
+"POT-Creation-Date: 2026-11-11 19:38+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -60,7 +60,7 @@ msgstr "დიახ"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:450
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3639,7 +3639,7 @@ msgstr ""
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:444
 msgid "Password"
 msgstr "პაროლი"
 
@@ -9686,7 +9686,7 @@ msgstr "შემდეგი ჩანართი"
 msgid "Previous Tab"
 msgstr "წინა ჩანართი"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:560
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "ჩანართის მიმოხილვა"
 
@@ -11001,7 +11001,7 @@ msgstr "მონიშნული სამუშაო სივრცის 
 msgid "Rename selected workspace"
 msgstr "მონიშნული სამუშაო სივრცის სახელის გადარქმევა"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:451
 msgid "Open"
 msgstr "გახსნა"
 
@@ -11641,14 +11641,14 @@ msgstr "ფაილების შენახვა დაშორებუ�
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1490
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1487
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "თავიდან დაკავშირება"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1492
+#: rustconn/src/terminal/mod.rs:1489
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "თავიდან დაკავშირება ამ სესიასთან"
@@ -12664,32 +12664,32 @@ msgstr "მონიშნულის შენახვა ფრაგმე�
 msgid "Execute Snippet…"
 msgstr "ფრაგმენტის გაშვება…"
 
-#: rustconn/src/terminal/mod.rs:556
+#: rustconn/src/terminal/mod.rs:554
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "ჩანართის მიმოხილვა (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:573 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "მოგესალმებით"
 
-#: rustconn/src/terminal/mod.rs:1134
+#: rustconn/src/terminal/mod.rs:1131
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "გამონატანის ფილტრი '{}' დაყენებული არაა; სესიის გამონატანი არ იფილტრება"
 
-#: rustconn/src/terminal/mod.rs:1484
+#: rustconn/src/terminal/mod.rs:1481
 msgid "Command not found: {}"
 msgstr "ბრძანება აღმოჩენილი არაა: {}"
 
-#: rustconn/src/terminal/mod.rs:1486
+#: rustconn/src/terminal/mod.rs:1483
 msgid "Failed to start '{}'"
 msgstr "'{}'-ის გაშვების შეცდომა"
 
-#: rustconn/src/terminal/mod.rs:1508
+#: rustconn/src/terminal/mod.rs:1505
 msgid "'{}' is not installed"
 msgstr "'{}' დაყენებული არაა"
 
-#: rustconn/src/terminal/mod.rs:1511
+#: rustconn/src/terminal/mod.rs:1508
 msgid "Failed to start '{}': {}"
 msgstr "'{}'-ის გაშვების შეცდომა: {}"
 
@@ -14151,7 +14151,7 @@ msgstr ""
 "mc-მ RustConn-ისგან პაროლი ვერ მიიღო. შეიყვანეთ ის mc-ის ჩანართში, როცა mc "
 "მას დაელოდება."
 
-#: rustconn/src/window/mc_launch.rs:294
+#: rustconn/src/window/mc_launch.rs:301
 msgid ""
 "RustConn could not hand the password to mc. Type it in the mc tab when mc "
 "waits for it."
@@ -14159,11 +14159,11 @@ msgstr ""
 "RustConn-მა პაროლი mc-ს ვერ გადასცა. შეიყვანეთ ის mc-ის ჩანართში, როცა mc "
 "მას დაელოდება."
 
-#: rustconn/src/window/mc_launch.rs:430
+#: rustconn/src/window/mc_launch.rs:437
 msgid "Password for {}"
 msgstr "პაროლი {}-სთვის"
 
-#: rustconn/src/window/mc_launch.rs:432
+#: rustconn/src/window/mc_launch.rs:439
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

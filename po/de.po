@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 19:04+0200\n"
+"POT-Creation-Date: 2026-11-11 19:38+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: German\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:450
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3646,7 +3646,7 @@ msgstr "Ein regulärer Ausdruck pro Zeile; leer bedeutet die eingebauten Muster"
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:444
 msgid "Password"
 msgstr "Passwort"
 
@@ -9756,7 +9756,7 @@ msgstr "Nächster Tab"
 msgid "Previous Tab"
 msgstr "Vorheriger Tab"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:560
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Tab-Übersicht"
 
@@ -11084,7 +11084,7 @@ msgstr "Ausgewählten Arbeitsbereich löschen"
 msgid "Rename selected workspace"
 msgstr "Ausgewählten Arbeitsbereich umbenennen"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:451
 msgid "Open"
 msgstr "Öffnen"
 
@@ -11748,14 +11748,14 @@ msgstr "Dateien aus Remote-Zwischenablage speichern"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1490
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1487
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Neu verbinden"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1492
+#: rustconn/src/terminal/mod.rs:1489
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Erneut mit dieser Sitzung verbinden"
@@ -12780,33 +12780,33 @@ msgstr "Auswahl als Snippet speichern…"
 msgid "Execute Snippet…"
 msgstr "Snippet ausführen…"
 
-#: rustconn/src/terminal/mod.rs:556
+#: rustconn/src/terminal/mod.rs:554
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Tab-Übersicht (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:573 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Willkommen"
 
-#: rustconn/src/terminal/mod.rs:1134
+#: rustconn/src/terminal/mod.rs:1131
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr ""
 "Der Ausgabefilter „{}“ ist nicht installiert; die Sitzungsausgabe wird nicht "
 "gefiltert"
 
-#: rustconn/src/terminal/mod.rs:1484
+#: rustconn/src/terminal/mod.rs:1481
 msgid "Command not found: {}"
 msgstr "Befehl nicht gefunden: {}"
 
-#: rustconn/src/terminal/mod.rs:1486
+#: rustconn/src/terminal/mod.rs:1483
 msgid "Failed to start '{}'"
 msgstr "Start von „{}“ fehlgeschlagen"
 
-#: rustconn/src/terminal/mod.rs:1508
+#: rustconn/src/terminal/mod.rs:1505
 msgid "'{}' is not installed"
 msgstr "„{}“ ist nicht installiert"
 
-#: rustconn/src/terminal/mod.rs:1511
+#: rustconn/src/terminal/mod.rs:1508
 msgid "Failed to start '{}': {}"
 msgstr "Start von „{}“ fehlgeschlagen: {}"
 
@@ -14291,7 +14291,7 @@ msgstr ""
 "mc hat kein Passwort von RustConn erhalten. Geben Sie es im mc-Tab ein, wenn "
 "mc darauf wartet."
 
-#: rustconn/src/window/mc_launch.rs:294
+#: rustconn/src/window/mc_launch.rs:301
 msgid ""
 "RustConn could not hand the password to mc. Type it in the mc tab when mc "
 "waits for it."
@@ -14299,11 +14299,11 @@ msgstr ""
 "RustConn konnte das Passwort nicht an mc übergeben. Geben Sie es im mc-Tab "
 "ein, wenn mc darauf wartet."
 
-#: rustconn/src/window/mc_launch.rs:430
+#: rustconn/src/window/mc_launch.rs:437
 msgid "Password for {}"
 msgstr "Passwort für {}"
 
-#: rustconn/src/window/mc_launch.rs:432
+#: rustconn/src/window/mc_launch.rs:439
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

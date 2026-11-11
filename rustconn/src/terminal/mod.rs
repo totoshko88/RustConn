@@ -192,8 +192,6 @@ pub enum ChildExitHook {
     Transcript,
     /// Flushing the session log so it is readable while the tab lingers.
     SessionLog,
-    /// Dropping the cached password mc's `ssh` was refused with.
-    McSignIn,
 }
 
 /// Shared slot for the reconnect banner's cloud login callback.
@@ -994,12 +992,12 @@ impl TerminalNotebook {
             envv,
             working_directory,
             ssh_agent_socket,
-            Vec::new(),
+            ChildCleanup::default(),
         )
     }
 
-    /// [`Self::spawn_command`], removing `cleanup_paths` when the child exits
-    /// or the spawn fails (a secret file the child reads, for instance).
+    /// [`Self::spawn_command`], running `cleanup` when the child exits or the
+    /// spawn fails, whether or not the tab is still open.
     pub(crate) fn spawn_command_with_cleanup(
         &self,
         session_id: Uuid,
@@ -1007,9 +1005,8 @@ impl TerminalNotebook {
         envv: Option<&[&str]>,
         working_directory: Option<&str>,
         ssh_agent_socket: Option<&str>,
-        cleanup_paths: Vec<PathBuf>,
+        cleanup: ChildCleanup,
     ) -> bool {
-        let cleanup_paths = ChildCleanupPaths(cleanup_paths);
         let Some(terminal) = self.get_terminal(session_id) else {
             return false;
         };
@@ -1096,7 +1093,7 @@ impl TerminalNotebook {
         self.deliver_output_to(session_id, &terminal, output);
         self.forward_input_from(session_id, &terminal);
         self.watch_grid_size(session_id, &terminal);
-        watch_child_exit(&terminal, child.pid, cleanup_paths);
+        watch_child_exit(&terminal, child.pid, cleanup);
 
         true
     }
@@ -1654,36 +1651,58 @@ fn reap_child(pid: u32) {
     let _ = nix::sys::wait::waitpid(pid, None);
 }
 
-struct ChildCleanupPaths(Vec<PathBuf>);
+/// What is undone when a session child exits or fails to spawn.
+///
+/// Runs from the child watch, so it runs after the tab is closed too, unlike a
+/// `child-exited` handler, which needs the terminal widget.
+#[derive(Default)]
+pub(crate) struct ChildCleanup {
+    /// Files to remove, such as a secret file the child reads.
+    pub(crate) paths: Vec<PathBuf>,
+    /// Runs once, after the files are removed.
+    pub(crate) on_exit: Option<Box<dyn FnOnce()>>,
+}
 
-impl Drop for ChildCleanupPaths {
+impl From<Vec<PathBuf>> for ChildCleanup {
+    fn from(paths: Vec<PathBuf>) -> Self {
+        Self {
+            paths,
+            on_exit: None,
+        }
+    }
+}
+
+impl Drop for ChildCleanup {
     fn drop(&mut self) {
-        for path in &self.0 {
+        for path in &self.paths {
             if let Err(error) = std::fs::remove_file(path)
                 && error.kind() != std::io::ErrorKind::NotFound
             {
                 tracing::warn!(%error, path = %path.display(), "Failed to remove child secret file");
             }
         }
+        if let Some(on_exit) = self.on_exit.take() {
+            on_exit();
+        }
     }
 }
 
 /// Raises `child-exited` on a terminal when its child process ends.
 ///
-/// `cleanup_paths` remain owned by the child watch for the complete process
-/// lifetime and are removed on exit. Early spawn failures drop the same guard
-/// before returning. VTE does not emit this signal for a child it did not spawn;
-/// the GLib watch also performs `waitpid`, which is why
+/// `cleanup` stays owned by the child watch for the complete process lifetime
+/// and runs on exit, even when the terminal is gone. Early spawn failures drop
+/// the same guard before returning. VTE does not emit this signal for a child
+/// it did not spawn; the GLib watch also performs `waitpid`, which is why
 /// [`pty_spawn::spawn_on_pty`] deliberately leaks its `Child` handle.
-fn watch_child_exit(terminal: &Terminal, pid: u32, cleanup_paths: ChildCleanupPaths) {
+fn watch_child_exit(terminal: &Terminal, pid: u32, cleanup: ChildCleanup) {
     let terminal = terminal.downgrade();
-    let mut cleanup_paths = Some(cleanup_paths);
+    let mut cleanup = Some(cleanup);
     glib::child_watch_add_local(glib::Pid(pid as i32), move |_pid, status| {
         tracing::debug!(status, pid, "Session child exited");
         if let Some(terminal) = terminal.upgrade() {
             terminal.emit_by_name::<()>("child-exited", &[&status]);
         }
-        drop(cleanup_paths.take());
+        drop(cleanup.take());
     });
 }
 
@@ -2002,7 +2021,7 @@ impl TerminalNotebook {
             extra_env,
             None,
             ssh_agent_socket,
-            cleanup_paths,
+            cleanup_paths.into(),
         )
     }
 

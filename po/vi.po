@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 19:04+0200\n"
+"POT-Creation-Date: 2026-11-11 19:38+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:450
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3601,7 +3601,7 @@ msgstr "Mỗi dòng một regex; để trống nghĩa là dùng các mẫu dựn
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:444
 msgid "Password"
 msgstr "Mật khẩu"
 
@@ -9621,7 +9621,7 @@ msgstr "Thẻ tiếp theo"
 msgid "Previous Tab"
 msgstr "Thẻ trước"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:560
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Tổng quan thẻ"
 
@@ -10931,7 +10931,7 @@ msgstr "Xóa không gian làm việc đã chọn"
 msgid "Rename selected workspace"
 msgstr "Đổi tên không gian làm việc đã chọn"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:451
 msgid "Open"
 msgstr "Mở"
 
@@ -11561,14 +11561,14 @@ msgstr "Lưu tệp từ bộ nhớ tạm từ xa"
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1490
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1487
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Kết nối lại"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1492
+#: rustconn/src/terminal/mod.rs:1489
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Kết nối lại phiên này"
@@ -12583,31 +12583,31 @@ msgstr "Lưu vùng chọn thành đoạn lệnh…"
 msgid "Execute Snippet…"
 msgstr "Thực thi đoạn lệnh…"
 
-#: rustconn/src/terminal/mod.rs:556
+#: rustconn/src/terminal/mod.rs:554
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Tổng quan thẻ (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:573 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Chào mừng"
 
-#: rustconn/src/terminal/mod.rs:1134
+#: rustconn/src/terminal/mod.rs:1131
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Bộ lọc đầu ra “{}” chưa được cài đặt; đầu ra của phiên không được lọc"
 
-#: rustconn/src/terminal/mod.rs:1484
+#: rustconn/src/terminal/mod.rs:1481
 msgid "Command not found: {}"
 msgstr "Không tìm thấy lệnh: {}"
 
-#: rustconn/src/terminal/mod.rs:1486
+#: rustconn/src/terminal/mod.rs:1483
 msgid "Failed to start '{}'"
 msgstr "Khởi chạy “{}” thất bại"
 
-#: rustconn/src/terminal/mod.rs:1508
+#: rustconn/src/terminal/mod.rs:1505
 msgid "'{}' is not installed"
 msgstr "“{}” chưa được cài đặt"
 
-#: rustconn/src/terminal/mod.rs:1511
+#: rustconn/src/terminal/mod.rs:1508
 msgid "Failed to start '{}': {}"
 msgstr "Khởi chạy “{}” thất bại: {}"
 
@@ -14048,7 +14048,7 @@ msgstr ""
 "mc không nhận được mật khẩu từ RustConn. Hãy nhập mật khẩu trong thẻ mc khi "
 "mc chờ."
 
-#: rustconn/src/window/mc_launch.rs:294
+#: rustconn/src/window/mc_launch.rs:301
 msgid ""
 "RustConn could not hand the password to mc. Type it in the mc tab when mc "
 "waits for it."
@@ -14056,11 +14056,11 @@ msgstr ""
 "RustConn không thể chuyển mật khẩu cho mc. Hãy nhập mật khẩu trong thẻ mc "
 "khi mc chờ."
 
-#: rustconn/src/window/mc_launch.rs:430
+#: rustconn/src/window/mc_launch.rs:437
 msgid "Password for {}"
 msgstr "Mật khẩu cho {}"
 
-#: rustconn/src/window/mc_launch.rs:432
+#: rustconn/src/window/mc_launch.rs:439
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

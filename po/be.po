@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 19:04+0200\n"
+"POT-Creation-Date: 2026-11-11 19:38+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -60,7 +60,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:443
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:450
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3618,7 +3618,7 @@ msgstr "Адзін рэгулярны выраз на радок; пусты —
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:437
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:444
 msgid "Password"
 msgstr "Пароль"
 
@@ -9661,7 +9661,7 @@ msgstr "Наступная ўкладка"
 msgid "Previous Tab"
 msgstr "Папярэдняя ўкладка"
 
-#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:560
+#: rustconn/src/dialogs/shortcuts.rs:186 rustconn/src/terminal/mod.rs:558
 msgid "Tab Overview"
 msgstr "Агляд укладак"
 
@@ -10975,7 +10975,7 @@ msgstr "Выдаліць абраную працоўную прастору"
 msgid "Rename selected workspace"
 msgstr "Перайменаваць абраную працоўную прастору"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:444
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:451
 msgid "Open"
 msgstr "Адкрыць"
 
@@ -11619,14 +11619,14 @@ msgstr "Захаваць файлы з аддаленага буфера абм�
 
 #: rustconn/src/embedded_rdp/mod.rs:786 rustconn/src/embedded_vnc/ui.rs:149
 #: rustconn/src/split_view/adapter.rs:1670
-#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1490
+#: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1487
 #: rustconn/src/terminal/session_lifecycle.rs:407
 #: rustconn/src/terminal/tab_menu.rs:1153
 msgid "Reconnect"
 msgstr "Перазлучыцца"
 
 #: rustconn/src/embedded_rdp/mod.rs:788 rustconn/src/embedded_vnc/ui.rs:151
-#: rustconn/src/terminal/mod.rs:1492
+#: rustconn/src/terminal/mod.rs:1489
 #: rustconn/src/terminal/session_lifecycle.rs:409
 msgid "Reconnect to this session"
 msgstr "Перазлучыцца з гэтым сеансам"
@@ -12645,31 +12645,31 @@ msgstr "Захаваць вылучанае як фрагмент…"
 msgid "Execute Snippet…"
 msgstr "Выканаць фрагмент…"
 
-#: rustconn/src/terminal/mod.rs:556
+#: rustconn/src/terminal/mod.rs:554
 msgid "Tab Overview (Ctrl+Shift+O)"
 msgstr "Агляд укладак (Ctrl+Shift+O)"
 
-#: rustconn/src/terminal/mod.rs:573 rustconn/src/terminal/tab_lifecycle.rs:35
+#: rustconn/src/terminal/mod.rs:571 rustconn/src/terminal/tab_lifecycle.rs:35
 msgid "Welcome"
 msgstr "Вітаем"
 
-#: rustconn/src/terminal/mod.rs:1134
+#: rustconn/src/terminal/mod.rs:1131
 msgid "Output filter '{}' is not installed; session output is not filtered"
 msgstr "Фільтр вываду «{}» не ўсталяваны; вывад сеанса не фільтруецца"
 
-#: rustconn/src/terminal/mod.rs:1484
+#: rustconn/src/terminal/mod.rs:1481
 msgid "Command not found: {}"
 msgstr "Каманда не знойдзена: {}"
 
-#: rustconn/src/terminal/mod.rs:1486
+#: rustconn/src/terminal/mod.rs:1483
 msgid "Failed to start '{}'"
 msgstr "Не ўдалося запусціць «{}»"
 
-#: rustconn/src/terminal/mod.rs:1508
+#: rustconn/src/terminal/mod.rs:1505
 msgid "'{}' is not installed"
 msgstr "«{}» не ўсталявана"
 
-#: rustconn/src/terminal/mod.rs:1511
+#: rustconn/src/terminal/mod.rs:1508
 msgid "Failed to start '{}': {}"
 msgstr "Не ўдалося запусціць «{}»: {}"
 
@@ -14122,7 +14122,7 @@ msgstr ""
 "mc не атрымаў пароля ад RustConn. Увядзіце яго ва ўкладцы mc, калі mc будзе "
 "яго чакаць."
 
-#: rustconn/src/window/mc_launch.rs:294
+#: rustconn/src/window/mc_launch.rs:301
 msgid ""
 "RustConn could not hand the password to mc. Type it in the mc tab when mc "
 "waits for it."
@@ -14130,11 +14130,11 @@ msgstr ""
 "RustConn не змог перадаць пароль у mc. Увядзіце яго ва ўкладцы mc, калі mc "
 "будзе яго чакаць."
 
-#: rustconn/src/window/mc_launch.rs:430
+#: rustconn/src/window/mc_launch.rs:437
 msgid "Password for {}"
 msgstr "Пароль для {}"
 
-#: rustconn/src/window/mc_launch.rs:432
+#: rustconn/src/window/mc_launch.rs:439
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."

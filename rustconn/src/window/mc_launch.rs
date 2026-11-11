@@ -23,7 +23,7 @@ use uuid::Uuid;
 use super::types::{SharedNotebook, SharedSidebar, SharedSplitView};
 use crate::i18n::{i18n, i18n_f};
 use crate::state::SharedAppState;
-use crate::terminal::ChildExitHook;
+use crate::terminal::ChildCleanup;
 use crate::toast::ToastType;
 
 /// One mc tab to open, with what the launch needs from the state.
@@ -189,30 +189,37 @@ fn spawn_mc_tab(
                 );
             }
             // A refused password must leave the cache when mc exits, not at the
-            // next mc open, or a Connect in between sends it once more.
-            if let Some(env) = env.as_ref().filter(|env| env.delivers_password()) {
-                let env = env.clone();
-                notebook_for_spawn.connect_child_exited(
-                    session_id,
-                    ChildExitHook::McSignIn,
-                    move |_status| {
-                        if env.sign_in_refused() {
+            // next mc open, or a Connect in between sends it once more. This
+            // runs from the child watch, so closing the tab, the usual way out
+            // of a failed mc, still records the refusal.
+            let on_exit = env
+                .as_ref()
+                .filter(|env| env.delivers_password())
+                .map(|env| {
+                    let env = env.clone();
+                    let state = std::rc::Rc::downgrade(&state_for_exit);
+                    Box::new(move || {
+                        if env.sign_in_refused()
+                            && let Some(state) = state.upgrade()
+                        {
                             tracing::info!(
                                 %connection_id,
                                 "mc's sign-in was refused; dropping the cached password"
                             );
-                            crate::state::forget_cached_credentials(&state_for_exit, connection_id);
+                            crate::state::forget_cached_credentials(&state, connection_id);
                         }
-                    },
-                );
-            }
+                    }) as Box<dyn FnOnce()>
+                });
             let path_env = env.as_ref().map(rustconn_core::McSshEnv::path_env);
-            let cleanup: Vec<std::path::PathBuf> = env
-                .as_ref()
-                .and_then(rustconn_core::McSshEnv::secret_file)
-                .map(std::path::Path::to_path_buf)
-                .into_iter()
-                .collect();
+            let cleanup = ChildCleanup {
+                paths: env
+                    .as_ref()
+                    .and_then(rustconn_core::McSshEnv::secret_file)
+                    .map(std::path::Path::to_path_buf)
+                    .into_iter()
+                    .collect(),
+                on_exit,
+            };
             let handover = env.filter(rustconn_core::McSshEnv::delivers_password);
             // Delay mc slightly so GTK allocates the VTE widget's final size
             // before mc reads the terminal dimensions at startup.
