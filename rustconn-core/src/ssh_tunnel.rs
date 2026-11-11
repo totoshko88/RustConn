@@ -1589,8 +1589,9 @@ fn build_nested_proxy_command_inner(
 
 /// Builds an `env` prefix that keeps RustConn's credentials out of a proxy hop.
 ///
-/// The target credential and every indexed bastion credential are cleared, so a hop RustConn
-/// holds no password for cannot reach one it was not given. The shell that starts a
+/// The target credential, every indexed bastion credential and the path of a tunnel's own
+/// secret file (`_RC_TUN_PW_FILE`) are cleared, so a hop RustConn holds no password for
+/// cannot reach one it was not given. The shell that starts a
 /// `ProxyCommand` necessarily inherits the outer environment long enough to execute `env`, but
 /// the nested SSH process sees these overrides.
 ///
@@ -1619,6 +1620,7 @@ pub fn askpass_disabled_proxy_prefix(hop_count: usize) -> Vec<String> {
         format!("{}=", crate::ssh_askpass::TARGET_PASSWORD_ENV),
     ];
     prefix.extend((0..hop_count).map(|index| format!("{}=", jump_host_pw_env_name(index))));
+    prefix.push(format!("{TUNNEL_ASKPASS_ENV_VAR}="));
     prefix.push("SSH_ASKPASS=".to_string());
     prefix.push("SSH_ASKPASS_REQUIRE=".to_string());
     prefix
@@ -1988,6 +1990,7 @@ mod tests {
                 "_RC_JH_PW_FILE=".to_string(),
                 "_RC_JH_PW_FILE_1=".to_string(),
                 "_RC_JH_PW_FILE_2=".to_string(),
+                "_RC_TUN_PW_FILE=".to_string(),
                 "SSH_ASKPASS=".to_string(),
                 "SSH_ASKPASS_REQUIRE=".to_string(),
             ]
@@ -2152,9 +2155,9 @@ mod tests {
         );
         assert_eq!(
             cmd,
-            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p \
-             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p far' near"
         );
     }
@@ -2181,7 +2184,7 @@ mod tests {
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh \
              SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=accept-new \
-             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p far' near"
         );
     }
@@ -2205,7 +2208,7 @@ mod tests {
         // → gets accept-new inside the nested ProxyCommand (#203).
         assert_eq!(
             cmd,
-            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p \
              -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass-1.sh \
@@ -2232,7 +2235,7 @@ mod tests {
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh \
              SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=yes \
-             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p -o StrictHostKeyChecking=yes far' near"
         );
         assert!(!cmd.contains("accept-new"), "{cmd}");
