@@ -3360,7 +3360,7 @@ impl TerminalNotebook {
     /// Without one Orca says only "terminal" or reads an unnamed image, and in
     /// a split layout every pane sounds the same. A terminal is named after
     /// `label`, the session name its tab shows; an embedded RDP or VNC viewer
-    /// gets "Remote desktop <label>" and a hint on taking the keyboard back
+    /// gets "Remote desktop <code>label</code>" and a hint on taking the keyboard back
     /// ([`crate::embedded::label_remote_view`]). The name lives on the widget,
     /// so it moves with it into a split pane or a detached window. Called when
     /// the tab is created and from [`Self::apply_session_label`] on a rename.
