@@ -3413,7 +3413,7 @@ Runs a script from this computer on several hosts: a `.ps1` file in PowerShell o
 - It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
 - Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. Hosts set to ask for a password at connect get a field each, and a host whose field is empty gets no password. With several such hosts, **Use One Password for All Hosts** replaces the fields with one that every one of them uses.
 - WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`; in Flatpak and Snap install `pywinrm` from [Components](#flatpak-components)) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
-- A host whose key is not yet known is refused. Connect to it once normally and accept the key. A run never accepts a jump host's new key either: every jump host of a run must already be known, including the one closest to a WinRM host. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys. Three cases go through `ProxyJump` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own and that sends no password and uses no PKCS#11 provider, because only `ProxyJump` carries that key past the first jump host; a jump host address with anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in the ProxyJump or SSH Proxy Jump field, which `ProxyJump` parses itself; and the jump hosts past the first of a WinRM tunnel. In the GUI such an address takes `ProxyJump` only while the route needs no `ProxyCommand` of RustConn's own for another reason. With a password, a PKCS#11 provider or the first jump host's own key on the route, and always in the Flatpak, where every jump host is given RustConn's writable `known_hosts`, the address goes into that `ProxyCommand`, which a shell runs. The CLI keeps `ProxyJump` for it and sends no password along that route.
+- A host whose key is not yet known is refused. Connect to it once normally and accept the key. A run never accepts a jump host's new key either: every jump host of a run must already be known, including the one closest to a WinRM host, and the ones past it when the WinRM tunnel sends that jump host's password. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys, unless a password is sent along the route. Three cases go through `ProxyJump` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own and that sends no password and uses no PKCS#11 provider, because only `ProxyJump` carries that key past the first jump host; a jump host address with anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in the ProxyJump or SSH Proxy Jump field, which `ProxyJump` parses itself; and the jump hosts past the first of a WinRM tunnel that sends no password. In the GUI such an address takes `ProxyJump` only while the route needs no `ProxyCommand` of RustConn's own for another reason. With a password, a PKCS#11 provider or the first jump host's own key on the route, and always in the Flatpak, where every jump host is given RustConn's writable `known_hosts`, the address goes into that `ProxyCommand`, which a shell runs. The CLI keeps `ProxyJump` for it and sends no password along that route.
 - **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
 - **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
 - Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
@@ -3663,11 +3663,11 @@ Before 0.22.13 this was an on/off switch, and saving a connection in the editor 
 
 ### Flatpak Components
 
-**Available only in Flatpak environment**
+**Available in the Flatpak and the Snap**
 
-Menu → **Flatpak Components...**
+Menu → **Components…**
 
-Download and install additional CLI tools directly within the Flatpak sandbox:
+Download and install additional CLI tools directly within the sandbox:
 
 **Zero Trust CLIs:** AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, HashiCorp Boundary, Hoop.dev
 
@@ -3675,11 +3675,11 @@ Download and install additional CLI tools directly within the Flatpak sandbox:
 
 **Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
-**Protocol Clients:** TigerVNC Viewer
+**Protocol Clients:** TigerVNC Viewer (outside a sandbox only, so neither the Flatpak nor the Snap lists it; see [SNAP.md](SNAP.md))
 
 **Features:** One-click Install/Remove/Update, progress indicators with cancel support, SHA256 checksum verification, automatic PATH configuration.
 
-**Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/`
+**Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/` in the Flatpak, `$SNAP_USER_DATA/cli/` in the Snap
 
 ### SSH Tunnel Manager
 

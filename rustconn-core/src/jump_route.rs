@@ -27,7 +27,8 @@ pub struct JumpRouteRequest<'a> {
     pub hops: &'a [String],
     /// Each hop's own password, aligned with `hops`.
     pub hop_passwords: &'a [Option<SecretString>],
-    /// The identity file of `hops[0]`, the hop the client dials.
+    /// The identity file of `hops[0]`, the hop next to the target, whose `ssh`
+    /// (the outer `ProxyCommand`) runs on this computer.
     pub first_hop_identity: Option<&'a str>,
     /// The target's identity file. The first hop falls back to it, the common
     /// case of one key for the bastion and the target.
