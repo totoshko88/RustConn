@@ -439,10 +439,14 @@ impl TerminalNotebook {
         let split_tab_titles = self.split_tab_titles.clone();
 
         rename_label_action.connect_activate(move |_, _| {
-            let Some(session_id) = Self::context_menu_session_id(&context_page_rename, &sessions)
+            let Some(tab_session) = Self::context_menu_session_id(&context_page_rename, &sessions)
             else {
                 return;
             };
+            // A split tab is named after its focused pane (issue #421), which
+            // may hold a guest rather than the tab's owner. The dialog edits the
+            // name the user reads in the tab bar, so it targets that session.
+            let session_id = super::split_title::named_session(&split_tab_titles, tab_session);
 
             let current = session_info
                 .borrow()

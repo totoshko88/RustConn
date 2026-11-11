@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:15+0200\n"
+"POT-Creation-Date: 2026-11-11 12:31+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Dutch\n"
@@ -51,8 +51,8 @@ msgstr "OK"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:773
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:465
-#: rustconn/src/terminal/tab_menu.rs:698 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:469
+#: rustconn/src/terminal/tab_menu.rs:702 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4893,7 +4893,7 @@ msgstr "Kopiëren gestopt"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:699 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:703 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
 msgid "Close"
 msgstr "Sluiten"
@@ -9723,7 +9723,7 @@ msgstr "Plakken"
 msgid "Find in Terminal"
 msgstr "Zoeken in terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1269
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1273
 msgid "Close Tab"
 msgstr "Tabblad sluiten"
 
@@ -9777,7 +9777,7 @@ msgstr "Uit gesplitste weergave verwijderen"
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1210
+#: rustconn/src/terminal/tab_menu.rs:1214
 msgid "Remove Split"
 msgstr "Splitsing verwijderen"
 
@@ -11706,7 +11706,7 @@ msgstr "Bestanden opslaan van extern klembord"
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1478
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1137
+#: rustconn/src/terminal/tab_menu.rs:1141
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
@@ -12370,7 +12370,7 @@ msgstr "Nieuwe sessie openen"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1217
+#: rustconn/src/terminal/tab_menu.rs:1221
 msgid "Move to New Window"
 msgstr "Naar nieuw venster verplaatsen"
 
@@ -12845,7 +12845,9 @@ msgstr "Aanmelden bij {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "“{}” uitvoeren om opnieuw aan te melden in de browser"
 
-#: rustconn/src/terminal/split_title.rs:75
+#. Translators: starts the tab tooltip line listing the sessions shown in a
+#. split view, e.g. "Panes: server_A, server_B". Keep it on one line.
+#: rustconn/src/terminal/split_title.rs:93
 msgid "Panes:"
 msgstr "Deelvensters:"
 
@@ -12869,119 +12871,119 @@ msgstr "Bestaande groepen:"
 msgid "or enter a new name:"
 msgstr "of voer een nieuwe naam in:"
 
-#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:466
+#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:470
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Toepassen"
 
-#: rustconn/src/terminal/tab_menu.rs:453
+#: rustconn/src/terminal/tab_menu.rs:457
 msgid "Rename Tab"
 msgstr "Tabblad hernoemen"
 
-#: rustconn/src/terminal/tab_menu.rs:455
+#: rustconn/src/terminal/tab_menu.rs:459
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Het label noemt alleen dit tabblad. Laat het leeg om de standaardnaam te "
 "herstellen."
 
-#: rustconn/src/terminal/tab_menu.rs:461
+#: rustconn/src/terminal/tab_menu.rs:465
 msgid "Tab name"
 msgstr "Tabbladnaam"
 
-#: rustconn/src/terminal/tab_menu.rs:692 rustconn/src/terminal/tab_menu.rs:1169
+#: rustconn/src/terminal/tab_menu.rs:696 rustconn/src/terminal/tab_menu.rs:1173
 msgid "Close All in Group"
 msgstr "Alles in groep sluiten"
 
-#: rustconn/src/terminal/tab_menu.rs:694
+#: rustconn/src/terminal/tab_menu.rs:698
 msgid "Close {} tabs in group '{}'?"
 msgstr "{} tabbladen in groep '{}' sluiten?"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:969
 msgid "Save Output"
 msgstr "Uitvoer opslaan"
 
-#: rustconn/src/terminal/tab_menu.rs:971
+#: rustconn/src/terminal/tab_menu.rs:975
 msgid "Text files"
 msgstr "Tekstbestanden"
 
-#: rustconn/src/terminal/tab_menu.rs:997
+#: rustconn/src/terminal/tab_menu.rs:1001
 msgid "Output saved"
 msgstr "Uitvoer opgeslagen"
 
-#: rustconn/src/terminal/tab_menu.rs:1007
+#: rustconn/src/terminal/tab_menu.rs:1011
 msgid "Could not save output"
 msgstr "Kon uitvoer niet opslaan"
 
-#: rustconn/src/terminal/tab_menu.rs:1069
+#: rustconn/src/terminal/tab_menu.rs:1073
 msgid "Move to New Window on {}"
 msgstr "Naar nieuw venster verplaatsen op {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1089
+#: rustconn/src/terminal/tab_menu.rs:1093
 msgid "Monitor {} ({})"
 msgstr "Monitor {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1090
+#: rustconn/src/terminal/tab_menu.rs:1094
 msgid "Monitor {}"
 msgstr "Monitor {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1144
+#: rustconn/src/terminal/tab_menu.rs:1148
 msgid "Unpin Tab"
 msgstr "Tabblad losmaken"
 
-#: rustconn/src/terminal/tab_menu.rs:1146
+#: rustconn/src/terminal/tab_menu.rs:1150
 msgid "Pin Tab"
 msgstr "Tabblad vastmaken"
 
-#: rustconn/src/terminal/tab_menu.rs:1157
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Rename Tab…"
 msgstr "Tabblad hernoemen…"
 
-#: rustconn/src/terminal/tab_menu.rs:1165
+#: rustconn/src/terminal/tab_menu.rs:1169
 msgid "Set Group…"
 msgstr "Groep instellen…"
 
-#: rustconn/src/terminal/tab_menu.rs:1167
+#: rustconn/src/terminal/tab_menu.rs:1171
 msgid "Remove from Group"
 msgstr "Uit groep verwijderen"
 
-#: rustconn/src/terminal/tab_menu.rs:1179
+#: rustconn/src/terminal/tab_menu.rs:1183
 msgid "Remove from Broadcast"
 msgstr "Verwijderen uit uitzending"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Add to Broadcast"
 msgstr "Toevoegen aan uitzending"
 
-#: rustconn/src/terminal/tab_menu.rs:1203
+#: rustconn/src/terminal/tab_menu.rs:1207
 msgid "Monitor"
 msgstr "Monitoring"
 
-#: rustconn/src/terminal/tab_menu.rs:1247
+#: rustconn/src/terminal/tab_menu.rs:1251
 msgid "Edit Connection…"
 msgstr "Verbinding bewerken…"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1267
 msgid "Save Output…"
 msgstr "Uitvoer opslaan…"
 
-#: rustconn/src/terminal/tab_menu.rs:1270
+#: rustconn/src/terminal/tab_menu.rs:1274
 msgid "Close Others"
 msgstr "Overige sluiten"
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1279
 msgid "Close to the Left"
 msgstr "Links sluiten"
 
-#: rustconn/src/terminal/tab_menu.rs:1276
+#: rustconn/src/terminal/tab_menu.rs:1280
 msgid "Close to the Right"
 msgstr "Rechts sluiten"
 
-#: rustconn/src/terminal/tab_menu.rs:1280
+#: rustconn/src/terminal/tab_menu.rs:1284
 msgid "Close All Ungrouped"
 msgstr "Alle ongegroepeerde sluiten"
 
-#: rustconn/src/terminal/tab_menu.rs:1284
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Close All Tabs"
 msgstr "Alle tabbladen sluiten"
 

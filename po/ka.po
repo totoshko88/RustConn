@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.20.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:15+0200\n"
+"POT-Creation-Date: 2026-11-11 12:31+0200\n"
 "PO-Revision-Date: 2026-08-19 09:53+0200\n"
 "Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -52,8 +52,8 @@ msgstr "დიახ"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:773
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:465
-#: rustconn/src/terminal/tab_menu.rs:698 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:469
+#: rustconn/src/terminal/tab_menu.rs:702 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4884,7 +4884,7 @@ msgstr "კოპირება შეჩერდა"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:699 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:703 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
 msgid "Close"
 msgstr "დახურვა"
@@ -9674,7 +9674,7 @@ msgstr "ჩასმა"
 msgid "Find in Terminal"
 msgstr "იპოვნეთ ტერმინალში"
 
-#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1269
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1273
 msgid "Close Tab"
 msgstr "ჩანართის დახურვა"
 
@@ -9728,7 +9728,7 @@ msgstr "მოცილება გაყოფილიდან"
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1210
+#: rustconn/src/terminal/tab_menu.rs:1214
 msgid "Remove Split"
 msgstr "გაყოფის წაშლა"
 
@@ -11643,7 +11643,7 @@ msgstr "ფაილების შენახვა დაშორებუ�
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1478
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1137
+#: rustconn/src/terminal/tab_menu.rs:1141
 msgid "Reconnect"
 msgstr "თავიდან დაკავშირება"
 
@@ -12304,7 +12304,7 @@ msgstr "ახალი სესიის გახსნა"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1217
+#: rustconn/src/terminal/tab_menu.rs:1221
 msgid "Move to New Window"
 msgstr "ახალ ფანჯარაში გადატანა"
 
@@ -12775,7 +12775,9 @@ msgstr "{}-ში შესვლა"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "გაუშვით „{}“ ბრაუზერში ხელახლა შესასვლელად"
 
-#: rustconn/src/terminal/split_title.rs:75
+#. Translators: starts the tab tooltip line listing the sessions shown in a
+#. split view, e.g. "Panes: server_A, server_B". Keep it on one line.
+#: rustconn/src/terminal/split_title.rs:93
 msgid "Panes:"
 msgstr "პანელები:"
 
@@ -12799,119 +12801,119 @@ msgstr "არსებული ჯგუფები:"
 msgid "or enter a new name:"
 msgstr "ან შეიყვანეთ ახალი სახელი:"
 
-#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:466
+#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:470
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "გადატარება"
 
-#: rustconn/src/terminal/tab_menu.rs:453
+#: rustconn/src/terminal/tab_menu.rs:457
 msgid "Rename Tab"
 msgstr "ჩანართის გადარქმნა"
 
-#: rustconn/src/terminal/tab_menu.rs:455
+#: rustconn/src/terminal/tab_menu.rs:459
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "მინიშნება სახელდებს მხოლოდ ამ ჩანართს. დატოვეთ ცარიელი, რომ ნაგულისხმევა "
 "დაბრუნდეს."
 
-#: rustconn/src/terminal/tab_menu.rs:461
+#: rustconn/src/terminal/tab_menu.rs:465
 msgid "Tab name"
 msgstr "ჩანართის სახელი"
 
-#: rustconn/src/terminal/tab_menu.rs:692 rustconn/src/terminal/tab_menu.rs:1169
+#: rustconn/src/terminal/tab_menu.rs:696 rustconn/src/terminal/tab_menu.rs:1173
 msgid "Close All in Group"
 msgstr "ჯგუფში ყველას დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:694
+#: rustconn/src/terminal/tab_menu.rs:698
 msgid "Close {} tabs in group '{}'?"
 msgstr "დაიხუროს {} ჩანართი ჯგუფში '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:969
 msgid "Save Output"
 msgstr "გამონატანის შენახვა"
 
-#: rustconn/src/terminal/tab_menu.rs:971
+#: rustconn/src/terminal/tab_menu.rs:975
 msgid "Text files"
 msgstr "ტექსტური ფაილები"
 
-#: rustconn/src/terminal/tab_menu.rs:997
+#: rustconn/src/terminal/tab_menu.rs:1001
 msgid "Output saved"
 msgstr "გამონატანი შენახულია"
 
-#: rustconn/src/terminal/tab_menu.rs:1007
+#: rustconn/src/terminal/tab_menu.rs:1011
 msgid "Could not save output"
 msgstr "გამონატანის შენახვა ვერ მოხერხდა"
 
-#: rustconn/src/terminal/tab_menu.rs:1069
+#: rustconn/src/terminal/tab_menu.rs:1073
 msgid "Move to New Window on {}"
 msgstr "ახალ ფანჯარაში გადატანა {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1089
+#: rustconn/src/terminal/tab_menu.rs:1093
 msgid "Monitor {} ({})"
 msgstr "{}-ის მონიტორინგი ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1090
+#: rustconn/src/terminal/tab_menu.rs:1094
 msgid "Monitor {}"
 msgstr "{}-ის მონიტორინგი"
 
-#: rustconn/src/terminal/tab_menu.rs:1144
+#: rustconn/src/terminal/tab_menu.rs:1148
 msgid "Unpin Tab"
 msgstr "ჩანართის ჩამოხსნა"
 
-#: rustconn/src/terminal/tab_menu.rs:1146
+#: rustconn/src/terminal/tab_menu.rs:1150
 msgid "Pin Tab"
 msgstr "ჩანართის მიმაგრება"
 
-#: rustconn/src/terminal/tab_menu.rs:1157
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Rename Tab…"
 msgstr "ჩანართის გადარქმნა…"
 
-#: rustconn/src/terminal/tab_menu.rs:1165
+#: rustconn/src/terminal/tab_menu.rs:1169
 msgid "Set Group…"
 msgstr "ჯგუფის დაყენება…"
 
-#: rustconn/src/terminal/tab_menu.rs:1167
+#: rustconn/src/terminal/tab_menu.rs:1171
 msgid "Remove from Group"
 msgstr "ჯგუფიდან წაშლა"
 
-#: rustconn/src/terminal/tab_menu.rs:1179
+#: rustconn/src/terminal/tab_menu.rs:1183
 msgid "Remove from Broadcast"
 msgstr "მაუწყებლობიდან ამოშლა"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Add to Broadcast"
 msgstr "მაუწყებლობაში დამატება"
 
-#: rustconn/src/terminal/tab_menu.rs:1203
+#: rustconn/src/terminal/tab_menu.rs:1207
 msgid "Monitor"
 msgstr "მონიტორინგი"
 
-#: rustconn/src/terminal/tab_menu.rs:1247
+#: rustconn/src/terminal/tab_menu.rs:1251
 msgid "Edit Connection…"
 msgstr "შეერთების ჩასწორება…"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1267
 msgid "Save Output…"
 msgstr "გამონატანის შენახვა…"
 
-#: rustconn/src/terminal/tab_menu.rs:1270
+#: rustconn/src/terminal/tab_menu.rs:1274
 msgid "Close Others"
 msgstr "სხვების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1279
 msgid "Close to the Left"
 msgstr "მარცხნივ მყოფების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1276
+#: rustconn/src/terminal/tab_menu.rs:1280
 msgid "Close to the Right"
 msgstr "მარჯვნივ მყოფების დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1280
+#: rustconn/src/terminal/tab_menu.rs:1284
 msgid "Close All Ungrouped"
 msgstr "ყველა დაუჯგუფებლის დახურვა"
 
-#: rustconn/src/terminal/tab_menu.rs:1284
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Close All Tabs"
 msgstr "ყველა ჩანართის დახურვა"
 

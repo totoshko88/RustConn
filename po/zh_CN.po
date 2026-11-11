@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:15+0200\n"
+"POT-Creation-Date: 2026-11-11 12:31+0200\n"
 "PO-Revision-Date: 2026-04-30 14:42+0800\n"
 "Last-Translator: GaaChun <zeonsinsang@163.com>\n"
 "Language-Team: Chinese(Simplified)\n"
@@ -52,8 +52,8 @@ msgstr "确定"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:773
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:465
-#: rustconn/src/terminal/tab_menu.rs:698 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:469
+#: rustconn/src/terminal/tab_menu.rs:702 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4736,7 +4736,7 @@ msgstr "复制已停止"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:699 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:703 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
 msgid "Close"
 msgstr "关闭"
@@ -9381,7 +9381,7 @@ msgstr "粘贴"
 msgid "Find in Terminal"
 msgstr "在终端中查找"
 
-#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1269
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1273
 msgid "Close Tab"
 msgstr "关闭标签页"
 
@@ -9435,7 +9435,7 @@ msgstr "从拆分视图中移除"
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1210
+#: rustconn/src/terminal/tab_menu.rs:1214
 msgid "Remove Split"
 msgstr "移除拆分"
 
@@ -11289,7 +11289,7 @@ msgstr "从远程剪贴板保存文件"
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1478
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1137
+#: rustconn/src/terminal/tab_menu.rs:1141
 msgid "Reconnect"
 msgstr "重连"
 
@@ -11947,7 +11947,7 @@ msgstr "打开新会话"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1217
+#: rustconn/src/terminal/tab_menu.rs:1221
 msgid "Move to New Window"
 msgstr "移动到新窗口"
 
@@ -12415,7 +12415,9 @@ msgstr "登录到 {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "运行“{}”以在浏览器中重新登录"
 
-#: rustconn/src/terminal/split_title.rs:75
+#. Translators: starts the tab tooltip line listing the sessions shown in a
+#. split view, e.g. "Panes: server_A, server_B". Keep it on one line.
+#: rustconn/src/terminal/split_title.rs:93
 msgid "Panes:"
 msgstr "窗格："
 
@@ -12439,117 +12441,117 @@ msgstr "现有组："
 msgid "or enter a new name:"
 msgstr "或输入新名称："
 
-#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:466
+#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:470
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "应用"
 
-#: rustconn/src/terminal/tab_menu.rs:453
+#: rustconn/src/terminal/tab_menu.rs:457
 msgid "Rename Tab"
 msgstr "重命名标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:455
+#: rustconn/src/terminal/tab_menu.rs:459
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr "标签仅命名此标签页。留空可恢复默认名称。"
 
-#: rustconn/src/terminal/tab_menu.rs:461
+#: rustconn/src/terminal/tab_menu.rs:465
 msgid "Tab name"
 msgstr "标签页名称"
 
-#: rustconn/src/terminal/tab_menu.rs:692 rustconn/src/terminal/tab_menu.rs:1169
+#: rustconn/src/terminal/tab_menu.rs:696 rustconn/src/terminal/tab_menu.rs:1173
 msgid "Close All in Group"
 msgstr "关闭组内所有"
 
-#: rustconn/src/terminal/tab_menu.rs:694
+#: rustconn/src/terminal/tab_menu.rs:698
 msgid "Close {} tabs in group '{}'?"
 msgstr "关闭组 '{}' 中的 {} 个标签页？"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:969
 msgid "Save Output"
 msgstr "保存输出"
 
-#: rustconn/src/terminal/tab_menu.rs:971
+#: rustconn/src/terminal/tab_menu.rs:975
 msgid "Text files"
 msgstr "文本文件"
 
-#: rustconn/src/terminal/tab_menu.rs:997
+#: rustconn/src/terminal/tab_menu.rs:1001
 msgid "Output saved"
 msgstr "输出已保存"
 
-#: rustconn/src/terminal/tab_menu.rs:1007
+#: rustconn/src/terminal/tab_menu.rs:1011
 msgid "Could not save output"
 msgstr "无法保存输出"
 
-#: rustconn/src/terminal/tab_menu.rs:1069
+#: rustconn/src/terminal/tab_menu.rs:1073
 msgid "Move to New Window on {}"
 msgstr "移动到指定显示器的新窗口 {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1089
+#: rustconn/src/terminal/tab_menu.rs:1093
 msgid "Monitor {} ({})"
 msgstr "显示器 {}（{}）"
 
-#: rustconn/src/terminal/tab_menu.rs:1090
+#: rustconn/src/terminal/tab_menu.rs:1094
 msgid "Monitor {}"
 msgstr "显示器 {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1144
+#: rustconn/src/terminal/tab_menu.rs:1148
 msgid "Unpin Tab"
 msgstr "取消固定标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:1146
+#: rustconn/src/terminal/tab_menu.rs:1150
 msgid "Pin Tab"
 msgstr "固定标签页"
 
-#: rustconn/src/terminal/tab_menu.rs:1157
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Rename Tab…"
 msgstr "重命名标签页…"
 
-#: rustconn/src/terminal/tab_menu.rs:1165
+#: rustconn/src/terminal/tab_menu.rs:1169
 msgid "Set Group…"
 msgstr "设置组…"
 
-#: rustconn/src/terminal/tab_menu.rs:1167
+#: rustconn/src/terminal/tab_menu.rs:1171
 msgid "Remove from Group"
 msgstr "从组中移除"
 
-#: rustconn/src/terminal/tab_menu.rs:1179
+#: rustconn/src/terminal/tab_menu.rs:1183
 msgid "Remove from Broadcast"
 msgstr "移出广播"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Add to Broadcast"
 msgstr "加入广播"
 
-#: rustconn/src/terminal/tab_menu.rs:1203
+#: rustconn/src/terminal/tab_menu.rs:1207
 msgid "Monitor"
 msgstr "监控"
 
-#: rustconn/src/terminal/tab_menu.rs:1247
+#: rustconn/src/terminal/tab_menu.rs:1251
 msgid "Edit Connection…"
 msgstr "编辑连接…"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1267
 msgid "Save Output…"
 msgstr "保存输出…"
 
-#: rustconn/src/terminal/tab_menu.rs:1270
+#: rustconn/src/terminal/tab_menu.rs:1274
 msgid "Close Others"
 msgstr "关闭其他"
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1279
 msgid "Close to the Left"
 msgstr "关闭左侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1276
+#: rustconn/src/terminal/tab_menu.rs:1280
 msgid "Close to the Right"
 msgstr "关闭右侧"
 
-#: rustconn/src/terminal/tab_menu.rs:1280
+#: rustconn/src/terminal/tab_menu.rs:1284
 msgid "Close All Ungrouped"
 msgstr "关闭所有未分组"
 
-#: rustconn/src/terminal/tab_menu.rs:1284
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Close All Tabs"
 msgstr "关闭所有标签页"
 

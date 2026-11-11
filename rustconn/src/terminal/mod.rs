@@ -3240,17 +3240,17 @@ impl TerminalNotebook {
     /// reaches it from a `'static` action closure, which holds clones of both
     /// and cannot borrow the notebook.
     ///
-    /// Only the tab chrome is touched, and that is the whole scope: a tab being
-    /// relabelled is by definition one that still has a tab, since a session
-    /// parked in a split or moved to its own window has none for the menu to
-    /// act on. The label does reach those sessions later rather than not at
-    /// all — a split pane header and a detached window title are both read from
-    /// `info.name` when the session is placed, and the session carries the
-    /// label from then on.
+    /// Only the tab chrome is touched. A session parked in a split or moved to
+    /// its own window has no tab of its own, so for it only the stored name
+    /// changes; the label reaches it later rather than not at all — a split
+    /// pane header and a detached window title are both read from `info.name`
+    /// when the session is placed, and the session carries the label from then
+    /// on.
     ///
-    /// The one exception is the tab hosting a split layout: it names its
-    /// focused pane (issue #421), so a relabelled session — the owner, or a
-    /// guest in one of its panes — is re-derived there once the label is stored.
+    /// The tab hosting a split layout names its focused pane (issue #421), so
+    /// a relabelled session — the owner, or a guest in one of its panes, which
+    /// Rename Tab targets when the guest's pane has focus — is re-derived there
+    /// once the label is stored.
     pub(super) fn apply_session_label(
         sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
         session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,

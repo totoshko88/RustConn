@@ -67,20 +67,46 @@ pub fn replace_title_name(title: &str, shown: &str, name: &str) -> Option<String
         .map(|prefix| format!("{prefix}{name}"))
 }
 
+/// The session a tab is named after: for a split tab, the one [`title_session`]
+/// picks from its recorded state; for any other tab, the tab's own session.
+///
+/// Whatever acts on "the session this tab names" — Rename Tab is the case —
+/// resolves it here, so it acts on the session the user reads in the tab bar
+/// rather than on the split's owner.
+#[must_use]
+pub(super) fn named_session(split_tab_titles: &SplitTabTitles, tab_session: Uuid) -> Uuid {
+    split_tab_titles
+        .borrow()
+        .get(&tab_session)
+        .map_or(tab_session, |entry| {
+            title_session(tab_session, entry.focused, &entry.displayed)
+        })
+}
+
 /// Start of the tooltip line that lists a split tab's panes.
 ///
 /// Translated, and also what finds the line again: the locale cannot change
 /// while the program runs, so the marker is stable for the life of a tooltip.
 fn panes_line_marker() -> String {
+    // Translators: starts the tab tooltip line listing the sessions shown in a
+    // split view, e.g. "Panes: server_A, server_B". Keep it on one line.
     format!("\n{} ", i18n("Panes:"))
 }
 
 /// Builds the tooltip line that lists the sessions in a split tab's panes.
 ///
 /// `None` with fewer than two sessions: one session is already the tab title.
+/// The names are escaped, because a tab tooltip is Pango markup and a name
+/// such as `R&D` would otherwise make GTK drop the whole tooltip.
 #[must_use]
 pub fn panes_tooltip_line(names: &[String]) -> Option<String> {
-    (names.len() >= 2).then(|| format!("{}{}", panes_line_marker(), names.join(", ")))
+    (names.len() >= 2).then(|| {
+        let escaped: Vec<String> = names
+            .iter()
+            .map(|name| gtk4::glib::markup_escape_text(name).to_string())
+            .collect();
+        format!("{}{}", panes_line_marker(), escaped.join(", "))
+    })
 }
 
 /// Splits a tooltip into the text without one marked line and that line.
@@ -113,13 +139,20 @@ pub fn split_panes_line(tooltip: &str) -> (String, Option<String>) {
 }
 
 /// Replaces the panes line of a tooltip, removing it when `line` is `None`.
+///
+/// The line goes in front of the working-directory line, the order every
+/// other tooltip mutator keeps, so the two lines do not swap between refreshes.
 #[must_use]
 fn with_panes_line(tooltip: &str, line: Option<&str>) -> String {
-    let (mut without, _) = split_panes_line(tooltip);
+    let (without, _) = split_panes_line(tooltip);
+    let (mut out, cwd_line) = TerminalNotebook::split_cwd_line(&without);
     if let Some(line) = line {
-        without.push_str(line);
+        out.push_str(line);
     }
-    without
+    if let Some(cwd) = cwd_line {
+        out.push_str(&cwd);
+    }
+    out
 }
 
 impl TerminalNotebook {
@@ -312,9 +345,70 @@ impl TerminalNotebook {
 mod tests {
     use uuid::Uuid;
 
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::rc::Rc;
+
     use super::{
-        panes_tooltip_line, replace_title_name, split_panes_line, title_session, with_panes_line,
+        SplitTabTitle, SplitTabTitles, named_session, panes_tooltip_line, replace_title_name,
+        split_panes_line, title_session, with_panes_line,
     };
+    use crate::terminal::TerminalNotebook;
+
+    #[test]
+    fn rename_tab_targets_the_session_the_split_tab_names() {
+        // Review of #421: Rename Tab on a split tab whose focused pane is a
+        // guest must relabel the guest, the session the tab bar shows.
+        let a = Uuid::new_v4();
+        let b = Uuid::new_v4();
+        let titles: SplitTabTitles = Rc::new(RefCell::new(HashMap::new()));
+        titles.borrow_mut().insert(
+            a,
+            SplitTabTitle {
+                focused: Some(b),
+                displayed: vec![a, b],
+                shown_name: "server_B".to_owned(),
+            },
+        );
+        assert_eq!(named_session(&titles, a), b);
+        // Focus back on the owner's pane: the owner is renamed.
+        if let Some(entry) = titles.borrow_mut().get_mut(&a) {
+            entry.focused = Some(a);
+        }
+        assert_eq!(named_session(&titles, a), a);
+    }
+
+    #[test]
+    fn a_single_pane_tab_still_renames_its_own_session() {
+        let a = Uuid::new_v4();
+        let titles: SplitTabTitles = Rc::new(RefCell::new(HashMap::new()));
+        assert_eq!(named_session(&titles, a), a);
+    }
+
+    #[test]
+    fn pane_names_are_escaped_for_the_markup_tooltip() {
+        let names = vec!["R&D".to_owned(), "<prod>".to_owned()];
+        assert_eq!(
+            panes_tooltip_line(&names).as_deref(),
+            Some("\nPanes: R&amp;D, &lt;prod&gt;")
+        );
+    }
+
+    #[test]
+    fn the_panes_line_stays_in_front_of_the_directory_line() {
+        let cwd = TerminalNotebook::CWD_TOOLTIP_PREFIX;
+        let tooltip = format!("server_A\n10.0.0.5{cwd}/var/log");
+        let panes = "\nPanes: server_A, server_B";
+        let first = with_panes_line(&tooltip, Some(panes));
+        assert_eq!(first, format!("server_A\n10.0.0.5{panes}{cwd}/var/log"));
+        // A refresh with other panes keeps the same order.
+        let other = "\nPanes: server_A, server_C";
+        assert_eq!(
+            with_panes_line(&first, Some(other)),
+            format!("server_A\n10.0.0.5{other}{cwd}/var/log")
+        );
+        assert_eq!(with_panes_line(&first, None), tooltip);
+    }
 
     #[test]
     fn the_focused_pane_names_the_tab() {

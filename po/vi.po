@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:15+0200\n"
+"POT-Creation-Date: 2026-11-11 12:31+0200\n"
 "PO-Revision-Date: 2026-11-04 10:00+0700\n"
 "Last-Translator: dinhkarate <dinhkarat@gmail.com>\n"
 "Language-Team: Vietnamese\n"
@@ -51,8 +51,8 @@ msgstr "OK"
 #: rustconn/src/embedded_rdp/autotype.rs:166 rustconn/src/script_runner.rs:773
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:465
-#: rustconn/src/terminal/tab_menu.rs:698 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:354 rustconn/src/terminal/tab_menu.rs:469
+#: rustconn/src/terminal/tab_menu.rs:702 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:401
 #: rustconn/src/window/clusters.rs:456
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4841,7 +4841,7 @@ msgstr "Đã dừng sao chép"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:699 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:703 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4678
 msgid "Close"
 msgstr "Đóng"
@@ -9609,7 +9609,7 @@ msgstr "Dán"
 msgid "Find in Terminal"
 msgstr "Tìm trong terminal"
 
-#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1269
+#: rustconn/src/dialogs/shortcuts.rs:183 rustconn/src/terminal/tab_menu.rs:1273
 msgid "Close Tab"
 msgstr "Đóng thẻ"
 
@@ -9663,7 +9663,7 @@ msgstr "Gỡ bỏ khỏi chế độ chia"
 #: rustconn/src/dialogs/shortcuts.rs:196
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1210
+#: rustconn/src/terminal/tab_menu.rs:1214
 msgid "Remove Split"
 msgstr "Bỏ chia"
 
@@ -11563,7 +11563,7 @@ msgstr "Lưu tệp từ bộ nhớ tạm từ xa"
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1478
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1137
+#: rustconn/src/terminal/tab_menu.rs:1141
 msgid "Reconnect"
 msgstr "Kết nối lại"
 
@@ -12223,7 +12223,7 @@ msgstr "Mở phiên mới"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1217
+#: rustconn/src/terminal/tab_menu.rs:1221
 msgid "Move to New Window"
 msgstr "Chuyển sang cửa sổ mới"
 
@@ -12693,7 +12693,9 @@ msgstr "Đăng nhập vào {}"
 msgid "Run “{}” to sign in again in the browser"
 msgstr "Chạy “{}” để đăng nhập lại trong trình duyệt"
 
-#: rustconn/src/terminal/split_title.rs:75
+#. Translators: starts the tab tooltip line listing the sessions shown in a
+#. split view, e.g. "Panes: server_A, server_B". Keep it on one line.
+#: rustconn/src/terminal/split_title.rs:93
 msgid "Panes:"
 msgstr "Các khung:"
 
@@ -12717,117 +12719,117 @@ msgstr "Các nhóm hiện có:"
 msgid "or enter a new name:"
 msgstr "hoặc nhập tên mới:"
 
-#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:466
+#: rustconn/src/terminal/tab_menu.rs:355 rustconn/src/terminal/tab_menu.rs:470
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Áp dụng"
 
-#: rustconn/src/terminal/tab_menu.rs:453
+#: rustconn/src/terminal/tab_menu.rs:457
 msgid "Rename Tab"
 msgstr "Đổi tên thẻ"
 
-#: rustconn/src/terminal/tab_menu.rs:455
+#: rustconn/src/terminal/tab_menu.rs:459
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr "Nhãn này chỉ đặt tên cho thẻ này. Để trống để quay về tên mặc định."
 
-#: rustconn/src/terminal/tab_menu.rs:461
+#: rustconn/src/terminal/tab_menu.rs:465
 msgid "Tab name"
 msgstr "Tên thẻ"
 
-#: rustconn/src/terminal/tab_menu.rs:692 rustconn/src/terminal/tab_menu.rs:1169
+#: rustconn/src/terminal/tab_menu.rs:696 rustconn/src/terminal/tab_menu.rs:1173
 msgid "Close All in Group"
 msgstr "Đóng tất cả trong nhóm"
 
-#: rustconn/src/terminal/tab_menu.rs:694
+#: rustconn/src/terminal/tab_menu.rs:698
 msgid "Close {} tabs in group '{}'?"
 msgstr "Đóng {} thẻ trong nhóm “{}”?"
 
-#: rustconn/src/terminal/tab_menu.rs:965
+#: rustconn/src/terminal/tab_menu.rs:969
 msgid "Save Output"
 msgstr "Lưu đầu ra"
 
-#: rustconn/src/terminal/tab_menu.rs:971
+#: rustconn/src/terminal/tab_menu.rs:975
 msgid "Text files"
 msgstr "Tệp văn bản"
 
-#: rustconn/src/terminal/tab_menu.rs:997
+#: rustconn/src/terminal/tab_menu.rs:1001
 msgid "Output saved"
 msgstr "Đã lưu đầu ra"
 
-#: rustconn/src/terminal/tab_menu.rs:1007
+#: rustconn/src/terminal/tab_menu.rs:1011
 msgid "Could not save output"
 msgstr "Không thể lưu đầu ra"
 
-#: rustconn/src/terminal/tab_menu.rs:1069
+#: rustconn/src/terminal/tab_menu.rs:1073
 msgid "Move to New Window on {}"
 msgstr "Chuyển sang cửa sổ mới trên {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1089
+#: rustconn/src/terminal/tab_menu.rs:1093
 msgid "Monitor {} ({})"
 msgstr "Màn hình {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1090
+#: rustconn/src/terminal/tab_menu.rs:1094
 msgid "Monitor {}"
 msgstr "Màn hình {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1144
+#: rustconn/src/terminal/tab_menu.rs:1148
 msgid "Unpin Tab"
 msgstr "Bỏ ghim thẻ"
 
-#: rustconn/src/terminal/tab_menu.rs:1146
+#: rustconn/src/terminal/tab_menu.rs:1150
 msgid "Pin Tab"
 msgstr "Ghim thẻ"
 
-#: rustconn/src/terminal/tab_menu.rs:1157
+#: rustconn/src/terminal/tab_menu.rs:1161
 msgid "Rename Tab…"
 msgstr "Đổi tên thẻ…"
 
-#: rustconn/src/terminal/tab_menu.rs:1165
+#: rustconn/src/terminal/tab_menu.rs:1169
 msgid "Set Group…"
 msgstr "Đặt nhóm…"
 
-#: rustconn/src/terminal/tab_menu.rs:1167
+#: rustconn/src/terminal/tab_menu.rs:1171
 msgid "Remove from Group"
 msgstr "Gỡ bỏ khỏi nhóm"
 
-#: rustconn/src/terminal/tab_menu.rs:1179
+#: rustconn/src/terminal/tab_menu.rs:1183
 msgid "Remove from Broadcast"
 msgstr "Gỡ bỏ khỏi phát đồng loạt"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1185
 msgid "Add to Broadcast"
 msgstr "Thêm vào phát đồng loạt"
 
-#: rustconn/src/terminal/tab_menu.rs:1203
+#: rustconn/src/terminal/tab_menu.rs:1207
 msgid "Monitor"
 msgstr "Theo dõi"
 
-#: rustconn/src/terminal/tab_menu.rs:1247
+#: rustconn/src/terminal/tab_menu.rs:1251
 msgid "Edit Connection…"
 msgstr "Sửa kết nối…"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1267
 msgid "Save Output…"
 msgstr "Lưu đầu ra…"
 
-#: rustconn/src/terminal/tab_menu.rs:1270
+#: rustconn/src/terminal/tab_menu.rs:1274
 msgid "Close Others"
 msgstr "Đóng các thẻ khác"
 
-#: rustconn/src/terminal/tab_menu.rs:1275
+#: rustconn/src/terminal/tab_menu.rs:1279
 msgid "Close to the Left"
 msgstr "Đóng các thẻ bên trái"
 
-#: rustconn/src/terminal/tab_menu.rs:1276
+#: rustconn/src/terminal/tab_menu.rs:1280
 msgid "Close to the Right"
 msgstr "Đóng các thẻ bên phải"
 
-#: rustconn/src/terminal/tab_menu.rs:1280
+#: rustconn/src/terminal/tab_menu.rs:1284
 msgid "Close All Ungrouped"
 msgstr "Đóng tất cả thẻ chưa phân nhóm"
 
-#: rustconn/src/terminal/tab_menu.rs:1284
+#: rustconn/src/terminal/tab_menu.rs:1288
 msgid "Close All Tabs"
 msgstr "Đóng tất cả thẻ"
 
