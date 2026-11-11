@@ -1480,15 +1480,15 @@ msgstr "Час перевірки вичерпано"
 #: rustconn/src/dialogs/connection/dialog/build.rs:1571
 #: rustconn/src/dialogs/connection/dialog/build.rs:1576
 msgid "Script Test Failed"
-msgstr "Тест скрипта невдалий"
+msgstr "Тест скрипту невдалий"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1492
 msgid "Script command is empty"
-msgstr "Команда скрипта порожня"
+msgstr "Команда скрипту порожня"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1502
 msgid "Script command is empty after parsing"
-msgstr "Команда скрипта порожня після розбору"
+msgstr "Команда скрипту порожня після розбору"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1511
 msgid "Failed to parse command"
@@ -1504,7 +1504,7 @@ msgstr "(порожній вивід)"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1554
 msgid "Script Test Successful"
-msgstr "Тест скрипта успішний"
+msgstr "Тест скрипту успішний"
 
 #: rustconn/src/dialogs/connection/dialog/build.rs:1555
 #: rustconn/src/dialogs/export.rs:322
@@ -2271,7 +2271,7 @@ msgstr "напр. vault kv get -field=password secret/myapp"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:376
 msgid "Test the script command"
-msgstr "Випробуй команду скрипта"
+msgstr "Випробуй команду скрипту"
 
 #: rustconn/src/dialogs/connection/general_tab.rs:396
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2227
@@ -7020,11 +7020,11 @@ msgstr "Скрипти зберігаються в теці бібліотеки
 
 #: rustconn/src/dialogs/script.rs:132
 msgid "Script id (file name)"
-msgstr "Ідентифікатор скрипта (назва файлу)"
+msgstr "Ідентифікатор скрипту (назва файлу)"
 
 #: rustconn/src/dialogs/script.rs:133
 msgid "Script ID"
-msgstr "Ідентифікатор скрипта"
+msgstr "Ідентифікатор скрипту"
 
 #: rustconn/src/dialogs/script.rs:153
 msgid "Select or create a script."
@@ -7044,7 +7044,7 @@ msgstr "Вилучи скрипт"
 
 #: rustconn/src/dialogs/script.rs:326
 msgid "Editing script. Save writes it back to the library."
-msgstr "Редагування скрипта. «Збережи» запише його назад у бібліотеку."
+msgstr "Редагування скрипту. «Збережи» запише його назад у бібліотеку."
 
 #: rustconn/src/dialogs/script.rs:329 rustconn/src/dialogs/script.rs:533
 msgid "Could not load script"
@@ -7056,7 +7056,7 @@ msgstr "Новий скрипт. Введи ідентифікатор і тек
 
 #: rustconn/src/dialogs/script.rs:360
 msgid "A script id is required."
-msgstr "Потрібен ідентифікатор скрипта."
+msgstr "Потрібен ідентифікатор скрипту."
 
 #: rustconn/src/dialogs/script.rs:370
 msgid "Script saved."
@@ -12074,7 +12074,7 @@ msgstr "⚠ Моніторинг зупинено — метрики можут�
 
 #: rustconn/src/script_runner.rs:603
 msgid "Script error: {}"
-msgstr "Помилка скрипта: {}"
+msgstr "Помилка скрипту: {}"
 
 #: rustconn/src/script_runner.rs:912
 msgid "Could not start script “{}”: {}"
@@ -13785,7 +13785,7 @@ msgstr "Динамічна тека"
 
 #: rustconn/src/window/edit_group.rs:1064
 msgid "Generate connections from a script"
-msgstr "Генеруй з'єднки зі скрипта"
+msgstr "Генеруй з'єднки зі скрипту"
 
 #: rustconn/src/window/edit_group.rs:1079
 msgid "Shell command executed via sh -c"
@@ -14691,7 +14691,7 @@ msgid ""
 "scripts on WinRM hosts."
 msgstr ""
 "python3 не знайдено. Встанови Python 3 з бібліотекою pywinrm, щоб запускати "
-"скрипти на WinRM-гостах."
+"скрипти на гостах WinRM."
 
 #: rustconn/src/window/remote_script.rs:125
 msgid ""
@@ -14699,7 +14699,7 @@ msgid ""
 "to run scripts on WinRM hosts."
 msgstr ""
 "Бібліотеку pywinrm не встановлено. Встанови pywinrm у Меню → Складники, щоб "
-"запускати скрипти на WinRM-гостах."
+"запускати скрипти на гостах WinRM."
 
 #: rustconn/src/window/remote_script.rs:128
 msgid ""
