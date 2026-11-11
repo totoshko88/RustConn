@@ -312,6 +312,8 @@ Some connections still have their password typed into the terminal, exactly as b
 
 The last row is detected by asking `ssh -G` what your configuration resolves to, which costs a few milliseconds and touches the network not at all. A bastion configured **in RustConn** is handled and does not fall back — each hop gets its own password out of band.
 
+The last row also holds for the jump host of an RDP, VNC, SPICE, WinRM or Web tunnel: when your `~/.ssh/config` routes that jump host through a `ProxyJump` or `ProxyCommand`, the tunnel opens without sending the jump host's password.
+
 #### Unlocking an encrypted SSH key
 
 When a connection uses a key file protected by a passphrase, RustConn asks for the passphrase once, in its own **Unlock SSH Key** dialog, before `ssh` starts. The dialog appears when all of these hold:

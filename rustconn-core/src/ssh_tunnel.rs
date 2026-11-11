@@ -575,12 +575,21 @@ fn tunnel_command_line(
 
 /// The jump host password [`spawn_tunnel`] may hand to its askpass helper.
 ///
-/// `None` when `extra_args` start an `ssh` for a further hop that would inherit
-/// the helper's environment, so that hop could be sent this password (the issue
-/// #191 class). Callers route such hops through
-/// [`crate::jump_route::tunnel_hop_args`]; this is the check that holds when a
-/// caller did not.
+/// `None` when the tunnel's `ssh` would start an `ssh` for a further hop that
+/// inherits the helper's environment, so that hop could be sent this password
+/// (the issue #191 class): see [`askpass_stays_on_destination`]. Callers route
+/// such hops through [`crate::jump_route::tunnel_hop_args`]; this is the check
+/// that holds when a caller did not, or when `~/.ssh/config` declares the proxy.
+/// May run `ssh -G` through [`ssh_config_declares_proxy`].
 fn deliverable_password(params: &SshTunnelParams) -> Option<&SecretString> {
+    deliverable_password_with(params, ssh_config_declares_proxy)
+}
+
+/// [`deliverable_password`] with the `ssh -G` check passed in, so tests run none.
+fn deliverable_password_with(
+    params: &SshTunnelParams,
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> Option<&SecretString> {
     let password = params.password.as_ref()?;
     if askpass_reaches_other_hops(&params.extra_args) {
         tracing::warn!(
@@ -589,18 +598,45 @@ fn deliverable_password(params: &SshTunnelParams) -> Option<&SecretString> {
         );
         return None;
     }
+    let (user, host) = match params.jump_host.rsplit_once('@') {
+        Some((user, host)) => (Some(user), host),
+        None => (None, params.jump_host.as_str()),
+    };
+    if !askpass_stays_on_destination(
+        host,
+        params.jump_port,
+        user,
+        &params.extra_args,
+        declares_proxy,
+    ) {
+        tracing::warn!(
+            jump_host = %params.jump_host,
+            "Not sending the jump host password: its ssh configuration routes it through a proxy"
+        );
+        return None;
+    }
     Some(password)
 }
 
-/// Whether `ssh` with `args` starts an `ssh` for another hop outside an `env`
-/// boundary from [`askpass_disabled_proxy_prefix`] or [`askpass_proxy_prefix`]:
-/// any `-J`/`ProxyJump`, or a `ProxyCommand` that does not start with one.
-pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
+/// How the `ssh` options in some arguments route the connection.
+enum ArgsRoute {
+    /// No `-J`, `ProxyJump` or `ProxyCommand`: `~/.ssh/config` decides.
+    Unset,
+    /// Only routes that keep the askpass helper away from other hops: a
+    /// `ProxyCommand` behind the `env` boundary, or `none`.
+    Contained,
+    /// A route that starts an `ssh` for another hop which inherits the helper.
+    Leaks,
+}
+
+/// Reads the route the `ssh` options in `args` set; see [`ArgsRoute`].
+fn args_route(args: &[String]) -> ArgsRoute {
     let boundary = format!("env {}=", crate::ssh_askpass::TARGET_PASSWORD_ENV);
+    let mut route = ArgsRoute::Unset;
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         if arg.starts_with("-J") {
-            return true;
+            return ArgsRoute::Leaks;
         }
         let option = match arg.strip_prefix("-o") {
             Some("") => match args.next() {
@@ -618,16 +654,50 @@ pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
         let value = value
             .trim_start_matches(|c: char| c == '=' || c.is_whitespace())
             .trim_end();
-        if value.eq_ignore_ascii_case("none") {
+        let is_jump = name.eq_ignore_ascii_case("ProxyJump");
+        let is_command = name.eq_ignore_ascii_case("ProxyCommand");
+        if !is_jump && !is_command {
             continue;
         }
-        if name.eq_ignore_ascii_case("ProxyJump")
-            || (name.eq_ignore_ascii_case("ProxyCommand") && !value.starts_with(&boundary))
-        {
-            return true;
+        if value.eq_ignore_ascii_case("none") || (is_command && value.starts_with(&boundary)) {
+            route = ArgsRoute::Contained;
+            continue;
         }
+        return ArgsRoute::Leaks;
     }
-    false
+    route
+}
+
+/// Whether `ssh` with `args` starts an `ssh` for another hop outside an `env`
+/// boundary from [`askpass_disabled_proxy_prefix`] or [`askpass_proxy_prefix`]:
+/// any `-J`/`ProxyJump`, or a `ProxyCommand` that does not start with one.
+pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
+    matches!(args_route(args), ArgsRoute::Leaks)
+}
+
+/// Whether an askpass helper given to `ssh <args> [user@]host -p port` answers
+/// only that destination's own prompt.
+///
+/// False when `args` start an `ssh` for another hop that inherits the helper
+/// ([`askpass_reaches_other_hops`]). When `args` set no route at all,
+/// `~/.ssh/config` decides, so `declares_proxy` (normally
+/// [`ssh_config_declares_proxy`]) is asked: a `ProxyJump` or `ProxyCommand`
+/// declared there starts a child `ssh` that inherits the helper too, and its
+/// bastion would be sent the password (issue #191). A route on the command line
+/// (`ProxyJump=none`, or a `ProxyCommand` behind the `env` boundary) overrides
+/// the config, so the check is skipped.
+pub(crate) fn askpass_stays_on_destination(
+    host: &str,
+    port: u16,
+    user: Option<&str>,
+    args: &[String],
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> bool {
+    match args_route(args) {
+        ArgsRoute::Leaks => false,
+        ArgsRoute::Contained => true,
+        ArgsRoute::Unset => !declares_proxy(host, port, user),
+    }
 }
 
 /// Shared spawn path for [`create_tunnel`] and [`create_socks_tunnel`].
@@ -2855,7 +2925,8 @@ mod tunnel_password_tests {
             ]),
         ] {
             assert!(
-                deliverable_password(&with_password(extra_args.clone())).is_none(),
+                deliverable_password_with(&with_password(extra_args.clone()), |_, _, _| false)
+                    .is_none(),
                 "{extra_args:?}"
             );
         }
@@ -2872,7 +2943,64 @@ mod tunnel_password_tests {
         ] {
             let params = with_password(extra_args.clone());
             assert_eq!(
-                deliverable_password(&params).map(ExposeSecret::expose_secret),
+                deliverable_password_with(&params, |_, _, _| false)
+                    .map(ExposeSecret::expose_secret),
+                Some("hunter2"),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_jump_host_whose_ssh_config_declares_a_proxy_gets_no_password() {
+        for extra_args in [Vec::new(), strs(&["-o", "StrictHostKeyChecking=yes"])] {
+            let mut params = with_password(extra_args.clone());
+            params.jump_host = "alice@bastion.example.com".to_string();
+            params.jump_port = 2200;
+            let mut asked = None;
+            let delivered = deliverable_password_with(&params, |host, port, user| {
+                asked = Some((host.to_string(), port, user.map(ToString::to_string)));
+                true
+            });
+            assert!(delivered.is_none(), "{extra_args:?}");
+            assert_eq!(
+                asked,
+                Some((
+                    "bastion.example.com".to_string(),
+                    2200,
+                    Some("alice".to_string())
+                )),
+                "{extra_args:?}"
+            );
+        }
+
+        // No user in the destination: `ssh -G` is asked without `-l`.
+        let mut params = with_password(Vec::new());
+        params.jump_host = "bastion.example.com".to_string();
+        let mut asked_user = Some(Some(String::new()));
+        assert!(
+            deliverable_password_with(&params, |_, _, user| {
+                asked_user = Some(user.map(ToString::to_string));
+                true
+            })
+            .is_none()
+        );
+        assert_eq!(asked_user, Some(None));
+    }
+
+    #[test]
+    fn a_route_on_the_command_line_skips_the_ssh_config_check() {
+        for extra_args in [
+            strs(&["-o", "ProxyJump=none"]),
+            strs(&["-o", "ProxyCommand=none"]),
+            far_hops(HopHostKeys::UserConfig),
+        ] {
+            let params = with_password(extra_args.clone());
+            assert_eq!(
+                deliverable_password_with(&params, |_, _, _| {
+                    panic!("a route on the command line overrides ~/.ssh/config")
+                })
+                .map(ExposeSecret::expose_secret),
                 Some("hunter2"),
                 "{extra_args:?}"
             );
