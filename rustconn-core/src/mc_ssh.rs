@@ -302,7 +302,9 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
         let _ = write!(
             script,
             "# The saved password goes only to mc's own ssh for this connection.\n\
-             _rc_host= _rc_user= _rc_port=22 _rc_words=0 _rc_ok=1 _rc_want=\n\
+             # OpenSSH keeps the first -p/-l and parses options after HOST too,\n\
+             # so a repeat or any option after HOST runs without the password.\n\
+             _rc_host= _rc_user= _rc_port=22 _rc_words=0 _rc_ok=1 _rc_want= _rc_seen=\n\
              for _rc_arg do\n\
              \x20 if [ -n \"$_rc_want\" ]; then\n\
              \x20   if [ \"$_rc_want\" = p ]; then _rc_port=$_rc_arg; else _rc_user=$_rc_arg; fi\n\
@@ -310,12 +312,15 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
              \x20 elif [ \"$_rc_words\" -eq 0 ]; then\n\
              \x20   case $_rc_arg in\n\
              \x20     -C) ;;\n\
-             \x20     -p) _rc_want=p ;;\n\
-             \x20     -l) _rc_want=l ;;\n\
+             \x20     -p|-l)\n\
+             \x20       _rc_want=${{_rc_arg#-}}\n\
+             \x20       case $_rc_seen in *$_rc_want*) _rc_ok=0 ;; esac\n\
+             \x20       _rc_seen=$_rc_seen$_rc_want ;;\n\
              \x20     -*) _rc_ok=0 ;;\n\
              \x20     *) _rc_host=$_rc_arg; _rc_words=1 ;;\n\
              \x20   esac\n\
              \x20 else\n\
+             \x20   case $_rc_arg in -*) _rc_ok=0 ;; esac\n\
              \x20   _rc_words=$((_rc_words + 1))\n\
              \x20 fi\n\
              done\n\
@@ -1299,6 +1304,56 @@ mod tests {
             argv.extend(["target.example.com", MC_REMOTE_COMMAND]);
             stub.assert_refused(&argv);
         }
+    }
+
+    /// OpenSSH parses options after HOST too, so `HOST -Jbastion` would reach
+    /// the bastion with the target's askpass environment.
+    #[cfg(unix)]
+    #[test]
+    fn refuses_options_after_host() {
+        let stub = StubWrapper::new(2222);
+        for extra in [
+            &["-Jbastion.example.com"][..],
+            &["-oProxyJump=bastion.example.com"][..],
+            &["-J", "bastion.example.com"][..],
+        ] {
+            let mut argv = vec!["-p", "2222", "-l", "me", "target.example.com"];
+            argv.extend(extra);
+            argv.push(MC_REMOTE_COMMAND);
+            stub.assert_refused(&argv);
+            let mut argv = vec!["-p", "2222", "-l", "me", "target.example.com"];
+            argv.push(MC_REMOTE_COMMAND);
+            argv.extend(extra);
+            stub.assert_refused(&argv);
+        }
+    }
+
+    /// OpenSSH keeps the first `-p`/`-l`, so a repeat must not pass the gate
+    /// on its last value.
+    #[cfg(unix)]
+    #[test]
+    fn refuses_a_repeated_port_or_user() {
+        let stub = StubWrapper::new(2222);
+        stub.assert_refused(&[
+            "-p",
+            "22",
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        stub.assert_refused(&[
+            "-p",
+            "2222",
+            "-l",
+            "root",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
     }
 
     #[cfg(unix)]
