@@ -164,9 +164,11 @@ pub struct TunnelHopsRequest<'a> {
 /// askpass environment, so a farther bastion could be sent the password of the
 /// tunnel's jump host (the issue #191 class). The `ProxyCommand` built here
 /// starts every hop behind an `env` boundary that clears that environment. The
-/// hops get no password of their own, and a tunnel has no terminal to ask on,
-/// so they must log in with a key or the agent: a hop that accepts only a
-/// password fails.
+/// hops get no password of their own. A GUI tunnel has no terminal to ask on,
+/// so there they must log in with a key or the agent, and a hop that accepts
+/// only a password fails. A tunnel that `rustconn-cli connect` or
+/// `run-script` starts from a terminal may have a hop's `ssh` ask for its
+/// password on that terminal.
 ///
 /// Returns `None` when a hop, key path or provider is not plain, because it
 /// would go into a command a shell runs. The caller then must not send the
@@ -231,9 +233,14 @@ pub fn plain_path(path: &str) -> Option<&str> {
 /// The `UserKnownHostsFile=<path>` option for an `ssh` inside a `ProxyCommand`.
 ///
 /// A shell runs that command, so this is `None` when [`plain_path`] refuses
-/// `path`, such as a home folder with a space or a `;` in its name. Quoting
-/// would not help, because `UserKnownHostsFile` takes a space-separated list.
-/// Without it the hop uses its default `known_hosts`.
+/// `path`, such as a home folder with a space or a `;` in its name. Such a
+/// path could be carried by quoting it twice, for the shell and then for ssh
+/// (which reads `UserKnownHostsFile="<path>"` as one file, see
+/// [`crate::ssh_tunnel::user_known_hosts_option`]); that is not done, because
+/// a home path like that is rare. Without it the hop uses its default
+/// `known_hosts`: a host already known there connects as before, and an
+/// unknown one is left to the host key policy, so under `accept-new` it still
+/// connects but its key cannot be recorded in the Flatpak's read-only `~/.ssh`.
 #[must_use]
 pub fn proxy_known_hosts_option(path: &Path) -> Option<String> {
     let option = path
