@@ -42,8 +42,10 @@ pub struct TabMenuState {
     /// scrollback can be offered for saving (issue #371). An embedded viewer
     /// (RDP/VNC/Web) and the Welcome tab have no VTE buffer and clear this.
     pub is_terminal: bool,
-    /// The tab is a local shell, whose title is the only thing that tells it
-    /// apart from another one, and which therefore may be relabelled.
+    /// The session the tab is named after is a local shell, whose title is the
+    /// only thing that tells it apart from another one, and which therefore may
+    /// be relabelled. For a split tab that is the focused pane's session, not
+    /// necessarily the owner's (issue #421).
     pub is_local_shell: bool,
     /// The user has enabled the directional "Close to the Left" / "Close to the
     /// Right" items (hidden by default to keep the close block short).
@@ -146,6 +148,7 @@ impl TerminalNotebook {
         let connection_menu_for_menu = self.tab_connection_menu.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let directional_close_for_menu = self.show_directional_close.clone();
+        let split_tab_titles_for_menu = self.split_tab_titles.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -246,11 +249,21 @@ impl TerminalNotebook {
                         // session_widgets and the Welcome tab has no session.
                         is_terminal: session_id
                             .is_some_and(|sid| terminals_for_menu.borrow().contains_key(&sid)),
-                        is_local_shell: session_id.is_some_and(|sid| {
-                            info_ref
-                                .get(&sid)
-                                .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
-                        }),
+                        // Asks about the session the tab is named after, the
+                        // same one the action renames (issue #421).
+                        is_local_shell: session_id
+                            .and_then(|sid| {
+                                super::split_title::rename_tab_target(
+                                    &split_tab_titles_for_menu,
+                                    sid,
+                                    |id| {
+                                        info_ref
+                                            .get(&id)
+                                            .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                                    },
+                                )
+                            })
+                            .is_some(),
                         show_directional_close: directional_close_for_menu.get(),
                     }
                 })
@@ -445,8 +458,19 @@ impl TerminalNotebook {
             };
             // A split tab is named after its focused pane (issue #421), which
             // may hold a guest rather than the tab's owner. The dialog edits the
-            // name the user reads in the tab bar, so it targets that session.
-            let session_id = super::split_title::named_session(&split_tab_titles, tab_session);
+            // name the user reads in the tab bar, so it targets that session —
+            // through the same check the menu gate made, so a saved connection
+            // focused since the menu opened is never relabelled from here.
+            let Some(session_id) =
+                super::split_title::rename_tab_target(&split_tab_titles, tab_session, |id| {
+                    session_info
+                        .borrow()
+                        .get(&id)
+                        .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                })
+            else {
+                return;
+            };
 
             let current = session_info
                 .borrow()

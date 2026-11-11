@@ -83,6 +83,25 @@ pub(super) fn named_session(split_tab_titles: &SplitTabTitles, tab_session: Uuid
         })
 }
 
+/// The session **Rename Tab…** relabels from a tab, or `None` when the tab
+/// does not offer the item.
+///
+/// Only a Local Shell is relabelled from its tab; a saved connection is renamed
+/// by editing the connection. The menu gate and the action both call this, so
+/// the session checked is the session renamed: the one the tab is named after
+/// ([`named_session`]), not the split's owner. A split owned by a Local Shell
+/// with an SSH guest focused therefore offers no Rename Tab, and one owned by
+/// SSH with a Local Shell guest focused offers it for the guest.
+#[must_use]
+pub(super) fn rename_tab_target(
+    split_tab_titles: &SplitTabTitles,
+    tab_session: Uuid,
+    is_local_shell: impl Fn(Uuid) -> bool,
+) -> Option<Uuid> {
+    let named = named_session(split_tab_titles, tab_session);
+    is_local_shell(named).then_some(named)
+}
+
 /// Start of the tooltip line that lists a split tab's panes.
 ///
 /// Translated, and also what finds the line again: the locale cannot change
@@ -350,10 +369,63 @@ mod tests {
     use std::rc::Rc;
 
     use super::{
-        SplitTabTitle, SplitTabTitles, named_session, panes_tooltip_line, replace_title_name,
-        split_panes_line, title_session, with_panes_line,
+        SplitTabTitle, SplitTabTitles, named_session, panes_tooltip_line, rename_tab_target,
+        replace_title_name, split_panes_line, title_session, with_panes_line,
     };
     use crate::terminal::TerminalNotebook;
+
+    /// A split owned by `owner` showing `owner` and `guest`, focus on `focused`.
+    fn split_of(owner: Uuid, guest: Uuid, focused: Uuid) -> SplitTabTitles {
+        let titles: SplitTabTitles = Rc::new(RefCell::new(HashMap::new()));
+        titles.borrow_mut().insert(
+            owner,
+            SplitTabTitle {
+                focused: Some(focused),
+                displayed: vec![owner, guest],
+                shown_name: String::new(),
+            },
+        );
+        titles
+    }
+
+    #[test]
+    fn rename_tab_is_offered_for_the_named_session_only() {
+        // Review of #421, finding 1: the gate looked at the owner while the
+        // action renamed the focused pane's session.
+        let shell = Uuid::new_v4();
+        let ssh = Uuid::new_v4();
+        let is_local_shell = |id: Uuid| id == shell;
+
+        // Local Shell owner, SSH guest focused: the tab names the SSH session,
+        // a saved connection, so no Rename Tab.
+        let titles = split_of(shell, ssh, ssh);
+        assert_eq!(rename_tab_target(&titles, shell, is_local_shell), None);
+        // Focus back on the shell: offered, and it renames the shell.
+        let titles = split_of(shell, ssh, shell);
+        assert_eq!(
+            rename_tab_target(&titles, shell, is_local_shell),
+            Some(shell)
+        );
+
+        // SSH owner, Local Shell guest focused: offered, for the guest.
+        let titles = split_of(ssh, shell, shell);
+        assert_eq!(rename_tab_target(&titles, ssh, is_local_shell), Some(shell));
+        let titles = split_of(ssh, shell, ssh);
+        assert_eq!(rename_tab_target(&titles, ssh, is_local_shell), None);
+    }
+
+    #[test]
+    fn a_single_pane_tab_offers_rename_tab_as_before() {
+        let shell = Uuid::new_v4();
+        let ssh = Uuid::new_v4();
+        let titles: SplitTabTitles = Rc::new(RefCell::new(HashMap::new()));
+        let is_local_shell = |id: Uuid| id == shell;
+        assert_eq!(
+            rename_tab_target(&titles, shell, is_local_shell),
+            Some(shell)
+        );
+        assert_eq!(rename_tab_target(&titles, ssh, is_local_shell), None);
+    }
 
     #[test]
     fn rename_tab_targets_the_session_the_split_tab_names() {
