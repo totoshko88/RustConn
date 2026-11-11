@@ -1325,6 +1325,10 @@ mod tests {
             argv.push(MC_REMOTE_COMMAND);
             argv.extend(extra);
             stub.assert_refused(&argv);
+            // No remote command at all: the shape that leaked before af92b6ca.
+            let mut argv = vec!["-p", "2222", "-l", "me", "target.example.com"];
+            argv.extend(extra);
+            stub.assert_refused(&argv);
         }
     }
 
