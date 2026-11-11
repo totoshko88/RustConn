@@ -891,7 +891,7 @@ Global variables can be referenced in snippets and connection templates. Secret 
 ```bash
 rustconn-cli var list
 rustconn-cli var set my_var "my_value"
-rustconn-cli var set api_key "secret123" --secret                # Masked in output, but on the command line
+rustconn-cli var set api_host "api.example.com"                  # Secret values: Menu → Tools → Variables
 rustconn-cli var set deploy_env "staging" --description "Current deploy target"
 rustconn-cli var delete "my_var"
 ```
