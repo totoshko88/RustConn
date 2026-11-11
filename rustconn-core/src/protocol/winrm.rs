@@ -53,6 +53,11 @@ impl WinRmClient {
     /// `GEM_HOME`. Only `TERM` is passed, because the host process does not
     /// inherit the sandbox's environment and the client needs a terminal type;
     /// nothing else, and no secret, goes on the `flatpak-spawn` line.
+    ///
+    /// # Panics
+    ///
+    /// In debug builds, when `built` does not start with [`WINRM_CLIENT`]
+    /// (`evil-winrm`).
     #[must_use]
     pub fn command(&self, built: Vec<String>) -> Vec<String> {
         debug_assert_eq!(
