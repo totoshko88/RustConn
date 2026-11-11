@@ -357,6 +357,9 @@ pub struct TerminalNotebook {
     /// session (issue #421). Such a tab is named after its focused pane; see
     /// `split_title.rs`. Absent for an ordinary tab.
     split_tab_titles: split_title::SplitTabTitles,
+    /// Told every session rename, so the split pane header follows it
+    /// (issue #421); see `set_on_session_relabelled`.
+    on_session_relabelled: split_title::SessionRelabelHook,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -606,6 +609,7 @@ impl TerminalNotebook {
             failed_markers: Rc::new(RefCell::new(HashMap::new())),
             session_cwd: Rc::new(RefCell::new(HashMap::new())),
             split_tab_titles: Rc::new(RefCell::new(HashMap::new())),
+            on_session_relabelled: Rc::new(RefCell::new(None)),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
@@ -3265,12 +3269,10 @@ impl TerminalNotebook {
     /// reaches it from a `'static` action closure, which holds clones of both
     /// and cannot borrow the notebook.
     ///
-    /// Only the tab chrome is touched. A session parked in a split or moved to
-    /// its own window has no tab of its own, so for it only the stored name
-    /// changes; the label reaches it later rather than not at all — a split
-    /// pane header and a detached window title are both read from `info.name`
-    /// when the session is placed, and the session carries the label from then
-    /// on.
+    /// The tab chrome is touched here, and the split pane header showing the
+    /// session through the relabel hook. A session moved to its own window has
+    /// no tab, so for it only the stored name changes here; its window title is
+    /// renamed by the caller or read from `info.name` when it is placed.
     ///
     /// The tab hosting a split layout names its focused pane (issue #421), so
     /// a relabelled session — the owner, or a guest in one of its panes, which
@@ -3309,6 +3311,13 @@ impl TerminalNotebook {
         }
 
         Self::refresh_split_tabs_for(chrome, session_id, retitled.then_some(label));
+
+        // The split pane header showing the session follows the rename too.
+        // The hook is cloned out first, so it runs with no notebook borrow.
+        let hook = chrome.on_session_relabelled.borrow().clone();
+        if let Some(hook) = hook {
+            hook(session_id, label);
+        }
     }
 
     /// The tooltip of a relabelled tab, built from scratch by `tab_tooltip`.

@@ -813,6 +813,23 @@ impl MainWindow {
             }
         });
 
+        // A renamed session's split pane header (issue #277) follows the rename,
+        // for a guest and an owner alike (issue #421). The map is held weakly:
+        // each bridge's title listener holds the notebook, so a strong
+        // reference from the notebook's hook would close a cycle.
+        {
+            let bridges_weak = Rc::downgrade(&session_split_bridges);
+            terminal_notebook.set_on_session_relabelled(move |session_id, name| {
+                let Some(bridges) = bridges_weak.upgrade() else {
+                    return;
+                };
+                let bridge = bridges.borrow().get(&session_id).cloned();
+                if let Some(bridge) = bridge {
+                    bridge.relabel_session(session_id, name);
+                }
+            });
+        }
+
         // Wire activity monitoring from the single session-creation choke point.
         // This covers every terminal protocol and both synchronous and async
         // (port-checked) connection paths, regardless of which connect action

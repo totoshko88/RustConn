@@ -58,7 +58,12 @@ pub(crate) struct TabChrome {
     pub(super) session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
     pub(super) split_tab_titles: SplitTabTitles,
     pub(super) session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
+    pub(super) on_session_relabelled: SessionRelabelHook,
 }
+
+/// Told a session's new name after a rename, so whatever else shows it — the
+/// header of the split pane that holds it — can follow (issue #421).
+pub(crate) type SessionRelabelHook = Rc<RefCell<Option<Rc<dyn Fn(Uuid, &str)>>>>;
 
 /// Picks the session a split tab is named after.
 ///
@@ -291,7 +296,17 @@ impl TerminalNotebook {
             session_info: Rc::clone(&self.session_info),
             split_tab_titles: Rc::clone(&self.split_tab_titles),
             session_cwd: Rc::clone(&self.session_cwd),
+            on_session_relabelled: Rc::clone(&self.on_session_relabelled),
         }
+    }
+
+    /// Sets the hook told every session rename (Rename Tab, a connection
+    /// rename), wired by the window to the split pane headers.
+    pub fn set_on_session_relabelled<F>(&self, hook: F)
+    where
+        F: Fn(Uuid, &str) + 'static,
+    {
+        *self.on_session_relabelled.borrow_mut() = Some(Rc::new(hook));
     }
 
     /// Gives a tab that stopped hosting a split its own title back.

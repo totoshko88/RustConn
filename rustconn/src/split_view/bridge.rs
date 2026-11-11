@@ -1217,6 +1217,45 @@ impl SplitViewBridge {
             .insert(session_id, (name.to_string(), protocol.to_string()));
     }
 
+    /// Shows a session's new name in the header of the pane that holds it.
+    ///
+    /// The header (issue #277) is otherwise written only when a session is
+    /// placed, so after a rename it kept the old name while the tab title
+    /// showed the new one (issue #421). Updates the bridge's own copy of the
+    /// name and the label cache too, so a layout rebuild keeps the new name.
+    /// A session this bridge never labelled is left alone.
+    pub fn relabel_session(&self, session_id: Uuid, name: &str) {
+        let protocol = self
+            .sessions
+            .borrow_mut()
+            .get_mut(&session_id)
+            .map(|session| {
+                name.clone_into(&mut session.name);
+                session.protocol.clone()
+            })
+            .or_else(|| {
+                self.label_cache
+                    .borrow()
+                    .get(&session_id)
+                    .map(|(_, protocol)| protocol.clone())
+            });
+        let Some(protocol) = protocol else {
+            return;
+        };
+        self.label_cache
+            .borrow_mut()
+            .insert(session_id, (name.to_owned(), protocol.clone()));
+        let adapter = self.adapter.borrow();
+        for panel_id in adapter.panel_ids() {
+            if adapter
+                .get_panel_session(panel_id)
+                .is_some_and(|session| session.as_uuid() == session_id)
+            {
+                adapter.set_panel_label(panel_id, Some(name), Some(&protocol));
+            }
+        }
+    }
+
     /// Clears a session from all panes
     pub fn clear_session_from_panes(&self, session_id: Uuid) {
         let session = SessionId::from_uuid(session_id);
