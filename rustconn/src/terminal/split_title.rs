@@ -11,7 +11,9 @@
 //! front of the name — the `[group] ` label, the `●REC` and `⇄ ` markers — is
 //! owned by other features that edit the title in place, so it is kept as is.
 //! The tooltip gains one line listing the panes; it is lifted out and put back
-//! by every tooltip mutator, the same way the working-directory line is.
+//! by every tooltip mutator, the same way the working-directory line is. Its
+//! header (name and host) and directory line describe the same session as the
+//! title, and the owner's own header comes back when the split ends.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -40,6 +42,22 @@ pub(crate) struct SplitTabTitle {
     /// the session's name before the title, and the old name is what has to be
     /// found at the end of the title to be replaced.
     shown_name: String,
+    /// The header (name and host lines) of the owner's own tooltip, put back
+    /// verbatim when the tab stops hosting a split.
+    owner_header: String,
+}
+
+/// The maps a tab's chrome — title and tooltip — is written from.
+///
+/// One bundle rather than four parameters, because the tab context menu's
+/// `'static` closures and the terminal's directory handler reach these paths
+/// without a `&TerminalNotebook`, and hold clones of the maps instead.
+#[derive(Clone)]
+pub(crate) struct TabChrome {
+    pub(super) sessions: Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
+    pub(super) session_info: Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+    pub(super) split_tab_titles: SplitTabTitles,
+    pub(super) session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
 }
 
 /// Picks the session a split tab is named after.
@@ -157,21 +175,64 @@ pub fn split_panes_line(tooltip: &str) -> (String, Option<String>) {
     split_marked_line(tooltip, &panes_line_marker())
 }
 
-/// Replaces the panes line of a tooltip, removing it when `line` is `None`.
+/// Splits a tooltip into its header — the session's name and host lines — and
+/// the lines after it, after lifting the panes and working-directory lines out.
 ///
-/// The line goes in front of the working-directory line, the order every
-/// other tooltip mutator keeps, so the two lines do not swap between refreshes.
+/// The header ends at the first `\n[` line (group, `[Broadcast]`), the layout
+/// `tab_tooltip` writes and `set_tab_group` already relies on.
+fn split_header(tooltip: &str) -> (String, String) {
+    let (without_cwd, _) = TerminalNotebook::split_cwd_line(tooltip);
+    let (mut header, _) = split_panes_line(&without_cwd);
+    let rest = header
+        .find("\n[")
+        .map_or_else(String::new, |end| header.split_off(end));
+    (header, rest)
+}
+
+/// The tooltip header for a session: its name, then its host on a line of its
+/// own. Both are escaped, because a tab tooltip is Pango markup and a name
+/// such as `R&D` would otherwise make GTK drop the whole tooltip.
 #[must_use]
-fn with_panes_line(tooltip: &str, line: Option<&str>) -> String {
-    let (without, _) = split_panes_line(tooltip);
-    let (mut out, cwd_line) = TerminalNotebook::split_cwd_line(&without);
-    if let Some(line) = line {
+pub fn tooltip_header(name: &str, host: Option<&str>) -> String {
+    let mut header = gtk4::glib::markup_escape_text(name).to_string();
+    if let Some(host) = host.filter(|host| !host.is_empty()) {
+        header.push('\n');
+        header.push_str(&gtk4::glib::markup_escape_text(host));
+    }
+    header
+}
+
+/// Rebuilds a tab tooltip around `header`, the panes line and the directory.
+///
+/// The group and broadcast lines belong to the tab and are kept. The header,
+/// the panes line and the directory describe a session, so all three are
+/// replaced: a split tab's tooltip speaks of the session the tab is named
+/// after, never of one pane's name with another pane's host or directory.
+/// The panes line goes in front of the directory line, the order every other
+/// tooltip mutator keeps, so the two lines do not swap between refreshes.
+#[must_use]
+fn rebuilt_tooltip(tooltip: &str, parts: &SplitTooltip<'_>) -> String {
+    let (_, rest) = split_header(tooltip);
+    let mut out = format!("{}{rest}", parts.header);
+    if let Some(line) = parts.panes_line {
         out.push_str(line);
     }
-    if let Some(cwd) = cwd_line {
-        out.push_str(&cwd);
+    if let Some(cwd) = parts.cwd {
+        out.push_str(TerminalNotebook::CWD_TOOLTIP_PREFIX);
+        out.push_str(cwd);
     }
     out
+}
+
+/// The session-describing parts of a split tab's tooltip; see
+/// [`rebuilt_tooltip`].
+struct SplitTooltip<'a> {
+    /// Name and host lines, already escaped ([`tooltip_header`]).
+    header: &'a str,
+    /// The panes line, `None` to remove it.
+    panes_line: Option<&'a str>,
+    /// The working directory, `None` to remove the line.
+    cwd: Option<&'a str>,
 }
 
 impl TerminalNotebook {
@@ -192,7 +253,8 @@ impl TerminalNotebook {
                 entry.displayed.clone_from(&source.displayed);
             } else {
                 // The first time the layout is reported, the title still ends
-                // with the owner's own name.
+                // with the owner's own name and the tooltip starts with the
+                // owner's own header; both are kept to be put back later.
                 let Some(shown_name) = self
                     .session_info
                     .borrow()
@@ -201,28 +263,42 @@ impl TerminalNotebook {
                 else {
                     return;
                 };
+                let owner_header = self
+                    .sessions
+                    .borrow()
+                    .get(&source.owner)
+                    .and_then(adw::TabPage::tooltip)
+                    .map(|tooltip| split_header(&tooltip).0)
+                    .unwrap_or_default();
                 titles.insert(
                     source.owner,
                     SplitTabTitle {
                         focused: source.focused,
                         displayed: source.displayed.clone(),
                         shown_name,
+                        owner_header,
                     },
                 );
             }
         }
-        Self::apply_split_tab_title(
-            &self.sessions,
-            &self.session_info,
-            &self.split_tab_titles,
-            source.owner,
-        );
+        Self::apply_split_tab_title(&self.tab_chrome(), source.owner);
+    }
+
+    /// The maps the tab chrome is written from, for paths without `&self`.
+    pub(super) fn tab_chrome(&self) -> TabChrome {
+        TabChrome {
+            sessions: Rc::clone(&self.sessions),
+            session_info: Rc::clone(&self.session_info),
+            split_tab_titles: Rc::clone(&self.split_tab_titles),
+            session_cwd: Rc::clone(&self.session_cwd),
+        }
     }
 
     /// Gives a tab that stopped hosting a split its own title back.
     ///
-    /// The owner's name returns to the end of the title and the panes line
-    /// leaves the tooltip. A no-op for a tab that was not titled as a split.
+    /// The owner's name returns to the end of the title, the owner's own header
+    /// and directory return to the tooltip, and the panes line leaves it. A
+    /// no-op for a tab that was not titled as a split.
     pub fn clear_split_tab_title(&self, owner: Uuid) {
         let Some(entry) = self.split_tab_titles.borrow_mut().remove(&owner) else {
             return;
@@ -231,15 +307,31 @@ impl TerminalNotebook {
         let Some(page) = page else {
             return;
         };
-        let Some((name, group)) = self
+        let Some((name, host, group)) = self
             .session_info
             .borrow()
             .get(&owner)
-            .map(|info| (info.name.clone(), info.tab_group.clone()))
+            .map(|info| (info.name.clone(), info.host.clone(), info.tab_group.clone()))
         else {
             return;
         };
-        Self::set_split_tab_chrome(&page, &entry.shown_name, &name, group.as_deref(), None);
+        let header = if entry.owner_header.is_empty() {
+            tooltip_header(&name, host.as_deref())
+        } else {
+            entry.owner_header
+        };
+        let cwd = self.session_cwd.borrow().get(&owner).cloned();
+        Self::set_split_tab_chrome(
+            &page,
+            &entry.shown_name,
+            &name,
+            group.as_deref(),
+            &SplitTooltip {
+                header: &header,
+                panes_line: None,
+                cwd: cwd.as_deref(),
+            },
+        );
     }
 
     /// The name at the end of a split tab's title, when the tab is titled as one.
@@ -259,19 +351,32 @@ impl TerminalNotebook {
     /// was rebuilt from scratch with the new label, that label is now what ends
     /// the title. Every split tab that shows the session, as owner or in a pane,
     /// is then re-derived, so the title and the panes line carry the new name.
+    /// A session whose working directory changed is re-derived the same way
+    /// (`retitled_owner_label` is `None` then), since the tooltip shows the
+    /// named session's directory.
+    ///
+    /// Returns whether any split tab shows the session.
     pub(super) fn refresh_split_tabs_for(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-        split_tab_titles: &SplitTabTitles,
+        chrome: &TabChrome,
         session_id: Uuid,
         retitled_owner_label: Option<&str>,
-    ) {
+    ) -> bool {
         let owners: Vec<Uuid> = {
-            let mut titles = split_tab_titles.borrow_mut();
+            let mut titles = chrome.split_tab_titles.borrow_mut();
             if let Some(label) = retitled_owner_label
                 && let Some(entry) = titles.get_mut(&session_id)
             {
                 label.clone_into(&mut entry.shown_name);
+                // The owner's tooltip was rebuilt with the new label too, so
+                // that is the header to put back when the split ends.
+                if let Some(tooltip) = chrome
+                    .sessions
+                    .borrow()
+                    .get(&session_id)
+                    .and_then(adw::TabPage::tooltip)
+                {
+                    entry.owner_header = split_header(&tooltip).0;
+                }
             }
             titles
                 .iter()
@@ -281,32 +386,34 @@ impl TerminalNotebook {
                 .map(|(owner, _)| *owner)
                 .collect()
         };
-        for owner in owners {
-            Self::apply_split_tab_title(sessions, session_info, split_tab_titles, owner);
+        for owner in &owners {
+            Self::apply_split_tab_title(chrome, *owner);
         }
+        !owners.is_empty()
     }
 
     /// Writes a split tab's title and tooltip from its recorded state.
     ///
-    /// Takes the maps rather than `&self` so the tab context menu's `'static`
-    /// rename closure can reach it, as it does `apply_session_label`.
-    fn apply_split_tab_title(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-        split_tab_titles: &SplitTabTitles,
-        owner: Uuid,
-    ) {
-        let Some(entry) = split_tab_titles.borrow().get(&owner).cloned() else {
+    /// The title, the tooltip header (name and host) and the directory line
+    /// all describe the named session, so Orca reading the tab never pairs one
+    /// pane's name with another pane's host. Takes the maps rather than `&self`
+    /// so the tab context menu's `'static` rename closure can reach it, as it
+    /// does `apply_session_label`.
+    fn apply_split_tab_title(chrome: &TabChrome, owner: Uuid) {
+        let Some(entry) = chrome.split_tab_titles.borrow().get(&owner).cloned() else {
             return;
         };
-        let page = sessions.borrow().get(&owner).cloned();
+        let page = chrome.sessions.borrow().get(&owner).cloned();
         let Some(page) = page else {
             return;
         };
         let target = title_session(owner, entry.focused, &entry.displayed);
-        let (name, group, names) = {
-            let info = session_info.borrow();
-            let Some(name) = info.get(&target).map(|session| session.name.clone()) else {
+        let (name, host, group, names) = {
+            let info = chrome.session_info.borrow();
+            let Some((name, host)) = info
+                .get(&target)
+                .map(|session| (session.name.clone(), session.host.clone()))
+            else {
                 tracing::debug!(%owner, %target, "split title: named session has no info");
                 return;
             };
@@ -318,12 +425,14 @@ impl TerminalNotebook {
                 .iter()
                 .filter_map(|id| info.get(id).map(|session| session.name.clone()))
                 .collect();
-            (name, group, names)
+            (name, host, group, names)
         };
-        if let Some(stored) = split_tab_titles.borrow_mut().get_mut(&owner) {
+        if let Some(stored) = chrome.split_tab_titles.borrow_mut().get_mut(&owner) {
             stored.shown_name.clone_from(&name);
         }
         let panes_line = panes_tooltip_line(&names);
+        let header = tooltip_header(&name, host.as_deref());
+        let cwd = chrome.session_cwd.borrow().get(&target).cloned();
         // Set last and outside every borrow: the setters emit `notify`, and the
         // window title follows the tab title from that signal.
         Self::set_split_tab_chrome(
@@ -331,18 +440,22 @@ impl TerminalNotebook {
             &entry.shown_name,
             &name,
             group.as_deref(),
-            panes_line.as_deref(),
+            &SplitTooltip {
+                header: &header,
+                panes_line: panes_line.as_deref(),
+                cwd: cwd.as_deref(),
+            },
         );
     }
 
-    /// Puts `name` at the end of a tab title in place of `shown` and sets the
-    /// panes line of its tooltip (removed when `panes_line` is `None`).
+    /// Puts `name` at the end of a tab title in place of `shown` and rebuilds
+    /// the session-describing parts of its tooltip from `tooltip`.
     fn set_split_tab_chrome(
         page: &adw::TabPage,
         shown: &str,
         name: &str,
         group: Option<&str>,
-        panes_line: Option<&str>,
+        tooltip: &SplitTooltip<'_>,
     ) {
         let title = page.title().to_string();
         let new_title = replace_title_name(&title, shown, name).unwrap_or_else(|| {
@@ -352,9 +465,9 @@ impl TerminalNotebook {
         if new_title != title {
             page.set_title(&new_title);
         }
-        let tooltip = page.tooltip().unwrap_or_default().to_string();
-        let new_tooltip = with_panes_line(&tooltip, panes_line);
-        if new_tooltip != tooltip {
+        let current = page.tooltip().unwrap_or_default().to_string();
+        let new_tooltip = rebuilt_tooltip(&current, tooltip);
+        if new_tooltip != current {
             page.set_tooltip(&new_tooltip);
         }
     }
@@ -369,8 +482,9 @@ mod tests {
     use std::rc::Rc;
 
     use super::{
-        SplitTabTitle, SplitTabTitles, named_session, panes_tooltip_line, rename_tab_target,
-        replace_title_name, split_panes_line, title_session, with_panes_line,
+        SplitTabTitle, SplitTabTitles, SplitTooltip, named_session, panes_tooltip_line,
+        rebuilt_tooltip, rename_tab_target, replace_title_name, split_header, split_panes_line,
+        title_session, tooltip_header,
     };
     use crate::terminal::TerminalNotebook;
 
@@ -383,6 +497,7 @@ mod tests {
                 focused: Some(focused),
                 displayed: vec![owner, guest],
                 shown_name: String::new(),
+                owner_header: String::new(),
             },
         );
         titles
@@ -440,6 +555,7 @@ mod tests {
                 focused: Some(b),
                 displayed: vec![a, b],
                 shown_name: "server_B".to_owned(),
+                owner_header: "server_A".to_owned(),
             },
         );
         assert_eq!(named_session(&titles, a), b);
@@ -466,20 +582,88 @@ mod tests {
         );
     }
 
+    /// Rebuilds `tooltip` as `rebuilt_tooltip` would for a split tab.
+    fn rebuild(tooltip: &str, header: &str, panes: Option<&str>, cwd: Option<&str>) -> String {
+        rebuilt_tooltip(
+            tooltip,
+            &SplitTooltip {
+                header,
+                panes_line: panes,
+                cwd,
+            },
+        )
+    }
+
     #[test]
     fn the_panes_line_stays_in_front_of_the_directory_line() {
         let cwd = TerminalNotebook::CWD_TOOLTIP_PREFIX;
         let tooltip = format!("server_A\n10.0.0.5{cwd}/var/log");
         let panes = "\nPanes: server_A, server_B";
-        let first = with_panes_line(&tooltip, Some(panes));
+        let header = "server_A\n10.0.0.5";
+        let first = rebuild(&tooltip, header, Some(panes), Some("/var/log"));
         assert_eq!(first, format!("server_A\n10.0.0.5{panes}{cwd}/var/log"));
         // A refresh with other panes keeps the same order.
         let other = "\nPanes: server_A, server_C";
         assert_eq!(
-            with_panes_line(&first, Some(other)),
+            rebuild(&first, header, Some(other), Some("/var/log")),
             format!("server_A\n10.0.0.5{other}{cwd}/var/log")
         );
-        assert_eq!(with_panes_line(&first, None), tooltip);
+        assert_eq!(rebuild(&first, header, None, Some("/var/log")), tooltip);
+    }
+
+    #[test]
+    fn the_tooltip_describes_the_focused_session_not_the_owner() {
+        // Review of #421, finding 2: a tab titled server_B showed server_A's
+        // name, host and directory above the panes line.
+        let cwd = TerminalNotebook::CWD_TOOLTIP_PREFIX;
+        let owner = format!("server_A\n10.0.0.5\n[Prod]\n[Broadcast]{cwd}/home/a");
+        let panes = "\nPanes: server_A, server_B";
+        let header = tooltip_header("server_B", Some("10.0.0.6"));
+        let focused_b = rebuild(&owner, &header, Some(panes), Some("/srv/b"));
+        // The tab's own lines — group and broadcast — stay; the rest is B's.
+        assert_eq!(
+            focused_b,
+            format!("server_B\n10.0.0.6\n[Prod]\n[Broadcast]{panes}{cwd}/srv/b")
+        );
+        // Focus back on A, whose shell has not reported a directory: no line.
+        let header = tooltip_header("server_A", Some("10.0.0.5"));
+        assert_eq!(
+            rebuild(&focused_b, &header, Some(panes), None),
+            format!("server_A\n10.0.0.5\n[Prod]\n[Broadcast]{panes}")
+        );
+        // A session with no host (a Local Shell) has a one-line header.
+        assert_eq!(tooltip_header("Local Shell", None), "Local Shell");
+        assert_eq!(tooltip_header("Local Shell", Some("")), "Local Shell");
+    }
+
+    #[test]
+    fn the_owner_header_is_put_back_verbatim_after_the_split() {
+        // The header is captured before the split and restored when it ends,
+        // so an unsplit tab's tooltip is the one it had before.
+        let cwd = TerminalNotebook::CWD_TOOLTIP_PREFIX;
+        let before = format!("server_A\n[Prod]{cwd}/home/a");
+        let (owner_header, rest) = split_header(&before);
+        assert_eq!(owner_header, "server_A");
+        assert_eq!(rest, "\n[Prod]");
+        let split = rebuild(
+            &before,
+            &tooltip_header("server_B", Some("10.0.0.6")),
+            Some("\nPanes: server_A, server_B"),
+            Some("/srv/b"),
+        );
+        assert_eq!(
+            rebuild(&split, &owner_header, None, Some("/home/a")),
+            before
+        );
+    }
+
+    #[test]
+    fn the_tooltip_header_is_escaped_for_markup() {
+        // An owner named `R&D` made GTK drop the whole split tooltip.
+        assert_eq!(
+            tooltip_header("R&D <lab>", Some("10.0.0.5")),
+            "R&amp;D &lt;lab&gt;\n10.0.0.5"
+        );
     }
 
     #[test]
@@ -543,12 +727,13 @@ mod tests {
 
     #[test]
     fn the_panes_line_is_replaced_not_stacked() {
-        let first = with_panes_line("server_A\n10.0.0.5", Some("\nPanes: server_A, server_B"));
+        let header = "server_A\n10.0.0.5";
+        let first = rebuild(header, header, Some("\nPanes: server_A, server_B"), None);
         assert_eq!(first, "server_A\n10.0.0.5\nPanes: server_A, server_B");
-        let second = with_panes_line(&first, Some("\nPanes: server_A, server_C"));
+        let second = rebuild(&first, header, Some("\nPanes: server_A, server_C"), None);
         assert_eq!(second, "server_A\n10.0.0.5\nPanes: server_A, server_C");
         // Back to a single pane: the line goes, the rest stays.
-        assert_eq!(with_panes_line(&second, None), "server_A\n10.0.0.5");
+        assert_eq!(rebuild(&second, header, None, None), "server_A\n10.0.0.5");
     }
 
     #[test]

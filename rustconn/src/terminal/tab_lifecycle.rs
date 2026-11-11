@@ -167,22 +167,32 @@ impl TerminalNotebook {
     /// removed. The update replaces only the trailing CWD line (identified by
     /// [`Self::CWD_TOOLTIP_PREFIX`]), leaving the title, host and any group /
     /// broadcast markers untouched.
+    ///
+    /// A split tab shows the directory of the session it is named after
+    /// (issue #421), so a session that sits in a split — as owner or in a
+    /// pane — has its split tab re-derived instead.
     pub(super) fn update_session_cwd(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_cwd: &Rc<RefCell<HashMap<Uuid, String>>>,
+        chrome: &super::split_title::TabChrome,
         session_id: Uuid,
         dir: Option<String>,
     ) {
         match &dir {
             Some(d) => {
-                session_cwd.borrow_mut().insert(session_id, d.clone());
+                chrome
+                    .session_cwd
+                    .borrow_mut()
+                    .insert(session_id, d.clone());
             }
             None => {
-                session_cwd.borrow_mut().remove(&session_id);
+                chrome.session_cwd.borrow_mut().remove(&session_id);
             }
         }
 
-        let Some(page) = sessions.borrow().get(&session_id).cloned() else {
+        if Self::refresh_split_tabs_for(chrome, session_id, None) {
+            return;
+        }
+
+        let Some(page) = chrome.sessions.borrow().get(&session_id).cloned() else {
             return;
         };
         let tooltip = page.tooltip().unwrap_or_default().to_string();
@@ -405,13 +415,12 @@ impl TerminalNotebook {
             )
         )]
         {
-            let sessions = Rc::clone(&self.sessions);
-            let session_cwd = Rc::clone(&self.session_cwd);
+            let chrome = self.tab_chrome();
             terminal.connect_current_directory_uri_changed(move |term| {
                 let dir = term
                     .current_directory_uri()
                     .and_then(|uri| Self::path_from_osc7_uri(&uri));
-                Self::update_session_cwd(&sessions, &session_cwd, session_id, dir);
+                Self::update_session_cwd(&chrome, session_id, dir);
             });
         }
 

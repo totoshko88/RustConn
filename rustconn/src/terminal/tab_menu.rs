@@ -443,12 +443,13 @@ impl TerminalNotebook {
         // split pane header and the session-restore snapshot from one place.
         let rename_label_action = gio::SimpleAction::new("rename-label", None);
         let context_page_rename = context_page.clone();
-        let session_info = self.session_info.clone();
-        let sessions = self.sessions.clone();
-        let split_tab_titles = self.split_tab_titles.clone();
+        let chrome = self.tab_chrome();
 
         rename_label_action.connect_activate(move |_, _| {
-            let Some(tab_session) = Self::context_menu_session_id(&context_page_rename, &sessions)
+            let session_info = &chrome.session_info;
+            let split_tab_titles = &chrome.split_tab_titles;
+            let Some(tab_session) =
+                Self::context_menu_session_id(&context_page_rename, &chrome.sessions)
             else {
                 return;
             };
@@ -458,7 +459,7 @@ impl TerminalNotebook {
             // through the same check the menu gate made, so a saved connection
             // focused since the menu opened is never relabelled from here.
             let Some(session_id) =
-                super::split_title::rename_tab_target(&split_tab_titles, tab_session, |id| {
+                super::split_title::rename_tab_target(split_tab_titles, tab_session, |id| {
                     session_info
                         .borrow()
                         .get(&id)
@@ -492,12 +493,10 @@ impl TerminalNotebook {
             dialog.set_default_response(Some("apply"));
             dialog.set_close_response("cancel");
 
-            // Both maps are cloned per activation: the action closure is `Fn`,
+            // The maps are cloned per activation: the action closure is `Fn`,
             // so it may run again and cannot hand its own captures to the
             // one-shot response handler.
-            let sessions_for_apply = sessions.clone();
-            let session_info_for_apply = session_info.clone();
-            let split_tab_titles_for_apply = split_tab_titles.clone();
+            let chrome_for_apply = chrome.clone();
 
             // One commit path, reached by the "apply" response and by Enter in
             // the entry alike. An empty entry resets the title rather than
@@ -506,13 +505,7 @@ impl TerminalNotebook {
             let commit_entry = entry.clone();
             let commit: Rc<dyn Fn()> = Rc::new(move || {
                 let label = local_shell_label(&commit_entry.text()).to_owned();
-                Self::apply_session_label(
-                    &sessions_for_apply,
-                    &session_info_for_apply,
-                    &split_tab_titles_for_apply,
-                    session_id,
-                    &label,
-                );
+                Self::apply_session_label(&chrome_for_apply, session_id, &label);
                 tracing::debug!(session_id = %session_id, label, "Tab relabelled");
             });
 

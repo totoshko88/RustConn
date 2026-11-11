@@ -3244,14 +3244,9 @@ impl TerminalNotebook {
             .map(|(id, _)| *id)
             .collect();
 
+        let chrome = self.tab_chrome();
         for session_id in &affected {
-            Self::apply_session_label(
-                &self.sessions,
-                &self.session_info,
-                &self.split_tab_titles,
-                *session_id,
-                new_name,
-            );
+            Self::apply_session_label(&chrome, *session_id, new_name);
         }
         if !affected.is_empty() {
             tracing::debug!(
@@ -3282,14 +3277,12 @@ impl TerminalNotebook {
     /// Rename Tab targets when the guest's pane has focus — is re-derived there
     /// once the label is stored.
     pub(super) fn apply_session_label(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
-        split_tab_titles: &split_title::SplitTabTitles,
+        chrome: &split_title::TabChrome,
         session_id: Uuid,
         label: &str,
     ) {
         let (group, host) = {
-            let mut info_ref = session_info.borrow_mut();
+            let mut info_ref = chrome.session_info.borrow_mut();
             let Some(info) = info_ref.get_mut(&session_id) else {
                 return;
             };
@@ -3300,11 +3293,12 @@ impl TerminalNotebook {
         // The page is bound to its own `let` first: an `if let` scrutinee
         // temporary would keep the `sessions` borrow alive across the two GTK
         // setters below.
-        let page = sessions.borrow().get(&session_id).cloned();
+        let page = chrome.sessions.borrow().get(&session_id).cloned();
         let retitled = page.is_some();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
-            // A split tab's panes line is put back by the refresh below.
+            // A split tab's header, panes and directory lines are put back by
+            // the refresh below.
             let old_tooltip = page.tooltip().unwrap_or_default();
             page.set_tooltip(&Self::relabelled_tooltip(
                 old_tooltip.as_str(),
@@ -3314,13 +3308,7 @@ impl TerminalNotebook {
             ));
         }
 
-        Self::refresh_split_tabs_for(
-            sessions,
-            session_info,
-            split_tab_titles,
-            session_id,
-            retitled.then_some(label),
-        );
+        Self::refresh_split_tabs_for(chrome, session_id, retitled.then_some(label));
     }
 
     /// The tooltip of a relabelled tab, built from scratch by `tab_tooltip`.
