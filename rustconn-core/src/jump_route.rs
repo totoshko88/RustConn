@@ -164,8 +164,9 @@ pub struct TunnelHopsRequest<'a> {
 /// askpass environment, so a farther bastion could be sent the password of the
 /// tunnel's jump host (the issue #191 class). The `ProxyCommand` built here
 /// starts every hop behind an `env` boundary that clears that environment. The
-/// hops get no password of their own; they authenticate with keys or ask the
-/// way OpenSSH asks without RustConn's helper.
+/// hops get no password of their own, and a tunnel has no terminal to ask on,
+/// so they must log in with a key or the agent: a hop that accepts only a
+/// password fails.
 ///
 /// Returns `None` when a hop, key path or provider is not plain, because it
 /// would go into a command a shell runs. The caller then must not send the
@@ -177,6 +178,10 @@ pub fn tunnel_hop_args(request: &TunnelHopsRequest<'_>) -> Option<Vec<String>> {
     }
     let route = jump_route(&JumpRouteRequest {
         hops: request.hops,
+        // ponytail: farther tunnel hops get no saved password; route each
+        // hop's own password through hop_passwords and askpass_proxy_prefix
+        // (as jump_route does for sessions) if a password-only bastion behind
+        // a tunnel jump host is reported.
         hop_passwords: &[],
         first_hop_identity: request.first_hop_identity.and_then(plain_path),
         target_identity: None,
