@@ -77,16 +77,22 @@ pub(super) fn open_mc_tab(
     let split_view = split_view.cloned();
     let sidebar = sidebar.cloned();
     let (connection_id, conn) = (tab.connection_id, tab.conn.clone());
-    mc_password(state, notebook, connection_id, &conn, move |password| {
-        spawn_mc_tab(
-            &notebook_for_tab,
-            split_view.as_ref(),
-            sidebar.as_ref(),
-            tab,
-            mc_args,
-            password,
-        );
-    });
+    mc_password(
+        state,
+        notebook,
+        connection_id,
+        &conn,
+        move |password: McPassword| {
+            spawn_mc_tab(
+                &notebook_for_tab,
+                split_view.as_ref(),
+                sidebar.as_ref(),
+                tab,
+                mc_args,
+                password,
+            );
+        },
+    );
 }
 
 /// Creates the tab, prepares the `ssh` wrapper off the GTK thread and starts
@@ -97,8 +103,23 @@ fn spawn_mc_tab(
     sidebar: Option<&SharedSidebar>,
     tab: McTab,
     mc_args: Vec<String>,
-    password: Option<SecretString>,
+    password: McPassword,
 ) {
+    let (password, refused) = match password {
+        McPassword::Deliver(password) => (Some(password), false),
+        McPassword::Absent => (None, false),
+        McPassword::Refused => (None, true),
+    };
+    if refused {
+        toast(
+            notebook,
+            &i18n_f(
+                "The saved password for “{}” was refused. Type the password in the mc tab when mc waits for it.",
+                &[&tab.conn.name],
+            ),
+            ToastType::Warning,
+        );
+    }
     if tab.announce {
         toast(notebook, &i18n("Opening mc SFTP…"), ToastType::Info);
     }
@@ -120,7 +141,9 @@ fn spawn_mc_tab(
 
     // With a key, mc likely signs in without the password, so saying "type it"
     // when none was handed over would mislead.
-    let warn_without_password = rustconn_core::mc_ssh::expects_password(&tab.conn)
+    // After a refusal the toast above already said so.
+    let warn_without_password = !refused
+        && rustconn_core::mc_ssh::expects_password(&tab.conn)
         && !rustconn_core::mc_ssh::has_identity_file(&tab.conn, &tab.groups);
     let downloads = rustconn_core::sftp::get_downloads_dir();
     let notebook_for_spawn = notebook.clone();
@@ -199,27 +222,54 @@ fn spawn_mc_tab(
     notebook.show_tab_view_content();
 }
 
+/// What [`mc_password`] found for mc's `ssh`.
+enum McPassword {
+    /// Hand this password to mc's `ssh`.
+    Deliver(SecretString),
+    /// Nothing to hand over: a key or agent connection, a route that would
+    /// not get it, or no password found.
+    Absent,
+    /// mc's last sign-in with the saved password was refused: open without
+    /// it so the user can type the right one.
+    Refused,
+}
+
 /// Finds the password mc's `ssh` should get, then calls `then` with it.
 ///
-/// `None` without a lookup for a key or agent connection and for one whose
-/// password the wrapper would not send anyway. A refused sign-in reported by
-/// the wrapper drops the cached entry first, so the vault is read again. For
+/// [`McPassword::Absent`] without a lookup for a key or agent connection and
+/// for one whose password the wrapper would not send anyway. A refused
+/// sign-in reported by the wrapper drops the cached entry, as a refused
+/// Connect does, and gives [`McPassword::Refused`] once, without reading the
+/// vault; a connection set to ask at connect is asked again instead. For
 /// **Prompt** the user is asked once; Cancel ends here without `then`.
 fn mc_password(
     state: &SharedAppState,
     notebook: &SharedNotebook,
     connection_id: Uuid,
     conn: &Connection,
-    then: impl FnOnce(Option<SecretString>) + 'static,
+    then: impl FnOnce(McPassword) + 'static,
 ) {
     if !rustconn_core::mc_ssh::expects_password(conn) {
-        then(None);
+        then(McPassword::Absent);
         return;
     }
     if rustconn_core::mc_ssh::take_auth_failure(connection_id) {
-        tracing::info!(%connection_id, "mc's last sign-in was refused; reading the password again");
         crate::state::forget_cached_credentials(state, connection_id);
+        // A saved password would only be refused again; a typed one is asked
+        // for again.
+        if !matches!(conn.password_source, PasswordSource::Prompt) {
+            tracing::info!(
+                %connection_id,
+                "mc's last sign-in was refused; opening mc without the saved password"
+            );
+            then(McPassword::Refused);
+            return;
+        }
+        tracing::info!(%connection_id, "mc's last sign-in was refused; asking again");
     }
+    let then = move |password: Option<SecretString>| {
+        then(password.map_or(McPassword::Absent, McPassword::Deliver));
+    };
     if !rustconn_core::mc_ssh::password_may_be_sent(conn) {
         then(None);
         return;

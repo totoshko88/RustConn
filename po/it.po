@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 18:43+0200\n"
+"POT-Creation-Date: 2026-11-11 18:47+0200\n"
 "PO-Revision-Date: 2026-06-14 09:46+0000\n"
 "Last-Translator: Albano Battistella\n"
 "Language-Team: Italian\n"
@@ -59,7 +59,7 @@ msgstr "OK"
 #: rustconn/src/window/edit_group.rs:2037
 #: rustconn/src/window/edit_group.rs:2086
 #: rustconn/src/window/group_broadcast.rs:379
-#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:306
+#: rustconn/src/window/key_setup.rs:1010 rustconn/src/window/mc_launch.rs:356
 #: rustconn/src/window/mod.rs:3639 rustconn/src/window/mod.rs:3703
 #: rustconn/src/window/mod.rs:4715 rustconn/src/window/mod.rs:5763
 #: rustconn/src/window/operations.rs:117 rustconn/src/window/operations.rs:443
@@ -3646,7 +3646,7 @@ msgstr "Una espressione regolare per riga; vuoto significa i modelli integrati"
 #: rustconn/src/window/copy_field_actions.rs:83
 #: rustconn/src/window/edit_dialogs.rs:869
 #: rustconn/src/window/edit_group.rs:269 rustconn/src/window/edit_group.rs:708
-#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:300
+#: rustconn/src/window/edit_group.rs:731 rustconn/src/window/mc_launch.rs:350
 msgid "Password"
 msgstr "Password"
 
@@ -11051,7 +11051,7 @@ msgstr "Elimina lo spazio di lavoro selezionato"
 msgid "Rename selected workspace"
 msgstr "Rinomina lo spazio di lavoro selezionato"
 
-#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:307
+#: rustconn/src/dialogs/workspace.rs:134 rustconn/src/window/mc_launch.rs:357
 msgid "Open"
 msgstr "Apri"
 
@@ -14188,11 +14188,19 @@ msgstr "«{}» non è stato inviato. {}"
 msgid "Midnight Commander (mc) is not installed."
 msgstr "Midnight Commander (mc) non è installato."
 
-#: rustconn/src/window/mc_launch.rs:103
+#: rustconn/src/window/mc_launch.rs:117
+msgid ""
+"The saved password for “{}” was refused. Type the password in the mc tab "
+"when mc waits for it."
+msgstr ""
+"La password salvata per «{}» è stata rifiutata. Digita la password nella "
+"scheda di mc quando mc la attende."
+
+#: rustconn/src/window/mc_launch.rs:124
 msgid "Opening mc SFTP…"
 msgstr "Apertura mc SFTP…"
 
-#: rustconn/src/window/mc_launch.rs:158
+#: rustconn/src/window/mc_launch.rs:181
 msgid ""
 "mc did not get a password from RustConn. Type it in the mc tab when mc waits "
 "for it."
@@ -14200,11 +14208,11 @@ msgstr ""
 "mc non ha ricevuto una password da RustConn. Digitala nella scheda di mc "
 "quando mc la attende."
 
-#: rustconn/src/window/mc_launch.rs:293
+#: rustconn/src/window/mc_launch.rs:343
 msgid "Password for {}"
 msgstr "Password per {}"
 
-#: rustconn/src/window/mc_launch.rs:295
+#: rustconn/src/window/mc_launch.rs:345
 msgid ""
 "Midnight Commander signs in to this server with it. RustConn keeps it only "
 "while this mc tab is open."
