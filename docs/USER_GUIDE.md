@@ -3677,8 +3677,6 @@ Download and install additional CLI tools directly within the sandbox:
 
 **Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
-**Protocol Clients:** TigerVNC Viewer (outside a sandbox only, so neither the Flatpak nor the Snap lists it; see [SNAP.md](SNAP.md))
-
 **Features:** One-click Install/Remove/Update, progress indicators with cancel support, SHA256 checksum verification, automatic PATH configuration.
 
 **Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/` in the Flatpak, `$SNAP_USER_DATA/cli/` in the Snap
