@@ -313,8 +313,10 @@ struct Delivery<'a> {
     port: u16,
     /// The route arguments from [`password_route_args`].
     args: &'a [String],
-    /// Where the delivering `ssh`'s stderr goes; mc sends it to `/dev/null`.
-    stderr_file: &'a Path,
+    /// Where the delivering `ssh`'s stderr goes, with `.<pid>` appended per
+    /// run so concurrent `ssh` processes each have their own file; mc sends
+    /// stderr to `/dev/null`.
+    stderr_prefix: &'a Path,
     /// Created when the delivering `ssh` reports a refused sign-in.
     failure_marker: &'a Path,
 }
@@ -367,13 +369,14 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
              if [ \"$_rc_ok\" = 1 ] && [ -z \"$_rc_want\" ] && [ \"$_rc_words\" -eq 2 ] \\\n\
              \x20 && [ \"$_rc_host\" = {host} ] && [ \"$_rc_user\" = {user} ] \\\n\
              \x20 && [ \"$_rc_port\" = {port} ]; then\n\
+             \x20 _rc_err={stderr}.$$\n\
              \x20 _RC_TGT_PW_FILE={secret} SSH_ASKPASS={helper} SSH_ASKPASS_REQUIRE=force \\\n\
-             \x20   {ssh} -F {config}{route} \"$@\" 2>{stderr}\n\
+             \x20   {ssh} -F {config}{route} \"$@\" 2>\"$_rc_err\"\n\
              \x20 _rc_status=$?\n\
-             \x20 if [ \"$_rc_status\" -eq 255 ] && grep -q 'Permission denied' {stderr} 2>/dev/null; then\n\
+             \x20 if [ \"$_rc_status\" -eq 255 ] && grep -q 'Permission denied' \"$_rc_err\" 2>/dev/null; then\n\
              \x20   : > {marker}\n\
              \x20 fi\n\
-             \x20 rm -f {stderr}\n\
+             \x20 rm -f \"$_rc_err\"\n\
              \x20 exit \"$_rc_status\"\n\
              fi\n",
             host = shell_single_quote(delivery.host),
@@ -381,7 +384,7 @@ fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>
             port = shell_single_quote(&delivery.port.to_string()),
             secret = shell_single_quote(&delivery.secret_file.to_string_lossy()),
             helper = shell_single_quote(&delivery.helper.to_string_lossy()),
-            stderr = shell_single_quote(&delivery.stderr_file.to_string_lossy()),
+            stderr = shell_single_quote(&delivery.stderr_prefix.to_string_lossy()),
             marker = shell_single_quote(&delivery.failure_marker.to_string_lossy()),
         );
     }
@@ -675,7 +678,7 @@ pub fn prepare_mc_ssh_env(
     let wrapper_path = wrapper_dir.join("ssh");
     let delivery = password
         .and_then(|password| password_delivery(connection, connections, groups, network, password));
-    let stderr_file = wrapper_dir.join("ssh-stderr");
+    let stderr_prefix = wrapper_dir.join("ssh-stderr");
     let failure_marker = auth_failure_marker(connection.id);
     let user = connection.username.as_deref().unwrap_or_default();
     let wrapper = wrapper_script(
@@ -690,7 +693,7 @@ pub fn prepare_mc_ssh_env(
                 user,
                 port: connection.port,
                 args,
-                stderr_file: &stderr_file,
+                stderr_prefix: &stderr_prefix,
                 failure_marker: &failure_marker,
             })
             .as_ref(),
@@ -1267,6 +1270,7 @@ mod tests {
                  printf '%s\\n' \"${_RC_TGT_PW_FILE-unset}\"\n\
                  printf '%s\\n' \"$*\"\n\
                  [ -z \"$RC_STUB_ERR\" ] || printf '%s\\n' \"$RC_STUB_ERR\" >&2\n\
+                 [ -z \"$RC_STUB_SLEEP\" ] || sleep \"$RC_STUB_SLEEP\"\n\
                  exit \"${RC_STUB_STATUS:-0}\"\n",
             )
             .unwrap();
@@ -1286,7 +1290,7 @@ mod tests {
                     user: "me",
                     port,
                     args: &args,
-                    stderr_file: &dir.path().join("ssh-stderr"),
+                    stderr_prefix: &dir.path().join("ssh-stderr"),
                     failure_marker: &marker,
                 }),
             );
@@ -1301,8 +1305,14 @@ mod tests {
             }
         }
 
-        /// Runs the wrapper with `argv`; returns (password file seen, argv seen, status).
-        fn run(&self, argv: &[&str], status: Option<&str>, stderr: &str) -> (String, String, i32) {
+        /// The wrapper with `argv`, the stub exiting with `status` after
+        /// printing `stderr`.
+        fn command(
+            &self,
+            argv: &[&str],
+            status: Option<&str>,
+            stderr: &str,
+        ) -> std::process::Command {
             let mut command = std::process::Command::new("sh");
             command.arg(&self.wrapper).args(argv);
             command.env_remove("_RC_TGT_PW_FILE");
@@ -1310,7 +1320,25 @@ mod tests {
                 command.env("RC_STUB_STATUS", status);
             }
             command.env("RC_STUB_ERR", stderr);
-            let out = command.output().unwrap();
+            command
+        }
+
+        /// The stderr capture files left in the wrapper directory.
+        fn stderr_files(&self) -> Vec<PathBuf> {
+            std::fs::read_dir(self.dir.path())
+                .unwrap()
+                .flatten()
+                .map(|entry| entry.path())
+                .filter(|path| {
+                    path.file_name()
+                        .is_some_and(|name| name.to_string_lossy().starts_with("ssh-stderr"))
+                })
+                .collect()
+        }
+
+        /// Runs the wrapper with `argv`; returns (password file seen, argv seen, status).
+        fn run(&self, argv: &[&str], status: Option<&str>, stderr: &str) -> (String, String, i32) {
+            let out = self.command(argv, status, stderr).output().unwrap();
             let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
             let mut lines = stdout.lines();
             let file = lines.next().unwrap_or_default().to_string();
@@ -1536,7 +1564,42 @@ mod tests {
         assert_eq!(status, 255);
         assert!(stub.marker.exists());
         // The captured stderr does not outlive the ssh it came from.
-        assert!(!stub.dir.path().join("ssh-stderr").exists());
+        assert!(stub.stderr_files().is_empty());
+    }
+
+    /// Review item mc-n5: two delivering `ssh` processes at once each capture
+    /// their own stderr, so the one that ends first neither truncates nor
+    /// deletes the other's refusal.
+    #[cfg(unix)]
+    #[test]
+    fn concurrent_delivering_ssh_runs_keep_their_own_stderr() {
+        let stub = StubWrapper::new(2222);
+        let argv = [
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ];
+        let mut refused = stub.command(
+            &argv,
+            Some("255"),
+            "me@target: Permission denied (password).",
+        );
+        refused.env("RC_STUB_SLEEP", "1");
+        let mut refused = refused.stdout(std::process::Stdio::null()).spawn().unwrap();
+        // Let the refused run write its stderr before the second one starts.
+        std::thread::sleep(Duration::from_millis(300));
+        let (_, _, status) = stub.run(&argv, None, "");
+        assert_eq!(status, 0);
+
+        assert_eq!(refused.wait().unwrap().code(), Some(255));
+        assert!(
+            stub.marker.exists(),
+            "the refusal was lost to the other run"
+        );
+        assert!(stub.stderr_files().is_empty());
     }
 
     #[test]
