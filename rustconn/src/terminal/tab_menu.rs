@@ -1061,7 +1061,7 @@ impl TerminalNotebook {
     /// Appends one flat "Move to New Window on …" item per monitor.
     ///
     /// With a single monitor there is no choice to present, so nothing is added
-    /// and only the plain "Move to New Window" item stands (Requirement 8.3).
+    /// and only the plain "Move to New Window" item stands.
     /// These are flat items rather than a submenu because the labels are
     /// *dynamic* — one per connected monitor — so a submodel built here would
     /// be a fresh object on every rebuild, and re-appending a different submenu

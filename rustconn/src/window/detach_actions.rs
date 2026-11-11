@@ -13,7 +13,7 @@
 //!
 //! Every closure holds `Weak` handles to the notebook, the registry, and the
 //! main window, so nothing registered here can keep a session alive past its
-//! teardown (Requirement 10.4).
+//! teardown.
 //!
 //! The free helpers below are `pub` rather than `pub(crate)` even though this
 //! module is private: `clippy::redundant_pub_crate` is part of the nursery set
@@ -156,7 +156,7 @@ fn monitor_for_preference(preference: &crate::terminal::DetachMonitor) -> Option
 ///
 /// Session-scoped feedback belongs on the window the user is looking at, so
 /// anything addressed to a session asks here first and falls back to the main
-/// window (Requirement 5.4). The window is cloned out of the registry, so no
+/// window. The window is cloned out of the registry, so no
 /// borrow is held while it is used.
 pub fn detached_host_window(session_id: Uuid) -> Option<adw::ApplicationWindow> {
     crate::window::detached_window_registry()?
@@ -194,7 +194,7 @@ fn show_error_in_window(window: &DetachedSessionWindow, message: &str) {
 ///
 /// A rejected verdict is explained as a toast and changes nothing. Every other
 /// failure leaves the session in its tab, because `take_session_content` rolls
-/// itself back (Requirement 1.8).
+/// itself back.
 fn detach_session(
     handles: &DetachHandles,
     session_id: Uuid,
@@ -276,7 +276,7 @@ fn detach_session(
 /// Moves a detached session back into a tab of the main window.
 ///
 /// On failure the session keeps running in its detached window and the error is
-/// reported there (Requirement 2.7).
+/// reported there.
 fn attach_session(handles: &DetachHandles, session_id: Uuid) {
     let Some(targets) = handles.upgrade() else {
         return;
@@ -375,7 +375,7 @@ fn wire_detached_window_callbacks(detached: &DetachedSessionWindow, handles: &De
 /// Installs the session-scoped actions of a detached window.
 ///
 /// Every handler targets `detached.session_id()`, so a shortcut pressed here
-/// never reaches the main window's selected tab (Requirements 5.2, 5.3).
+/// never reaches the main window's selected tab.
 fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &DetachHandles) {
     let window = detached.window().clone();
     let session_id = detached.session_id();
@@ -678,7 +678,7 @@ impl MainWindow {
         // A detached session can also end without the window being involved: a
         // remote disconnect, its child exiting, or a terminate from the session
         // manager all tear it down inside the notebook. Closing the window from
-        // here is what keeps no empty detached window behind (Requirement 6.5).
+        // here is what keeps no empty detached window behind.
         let registry_ended = handles.registry.clone();
         self.terminal_notebook
             .set_on_session_ended(move |session_id| {

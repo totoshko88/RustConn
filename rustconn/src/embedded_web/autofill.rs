@@ -489,7 +489,6 @@ mod tests {
             #![proptest_config(ProptestConfig::with_cases(100))]
 
             /// **Feature: embedded-web-browser, Property 8: Autofill Credential Handling (No Partial Injection)**
-            /// **Validates: Requirements 5.5, 5.6**
             ///
             /// For any `Option<(String, SecretString)>` credentials input:
             /// - If credentials are `None` → `is_available()` is false (no injection possible)

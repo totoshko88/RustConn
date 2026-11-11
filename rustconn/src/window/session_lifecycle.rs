@@ -649,7 +649,7 @@ impl MainWindow {
 
         // 4.4: Show toast via existing ToastOverlay — on the window the session
         // actually lives in, which is its own one while it is detached
-        // (Requirement 5.4, issue #236).
+        // (issue #236).
         let host_window: Option<gtk4::Window> =
             super::detach_actions::detached_host_window(session_id)
                 .map(gtk4::prelude::Cast::upcast)

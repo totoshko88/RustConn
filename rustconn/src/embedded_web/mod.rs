@@ -1388,7 +1388,6 @@ mod tests {
             #![proptest_config(ProptestConfig::with_cases(100))]
 
             /// **Feature: embedded-web-browser, Property 1: URL Validation Round-Trip**
-            /// **Validates: Requirements 2.2, 2.8**
             ///
             /// For any string accepted by validate_url(), it starts with a supported
             /// scheme (http://, https://, file://) and is non-empty.
@@ -1412,7 +1411,6 @@ mod tests {
             }
 
             /// **Feature: embedded-web-browser, Property 1: URL Validation Round-Trip**
-            /// **Validates: Requirements 2.2, 2.8**
             ///
             /// For any string without a supported scheme or that is empty,
             /// validate_url() returns an error.
@@ -1432,7 +1430,6 @@ mod tests {
             }
 
             /// **Feature: embedded-web-browser, Property 1: URL Validation Round-Trip**
-            /// **Validates: Requirements 2.2, 2.8**
             ///
             /// For any arbitrary string, if validate_url() accepts it, then it must
             /// start with a supported scheme and be non-empty. If it does not start
@@ -1461,7 +1458,6 @@ mod tests {
             // ========== Property 3: Session Isolation ==========
 
             /// **Feature: embedded-web-browser, Property 3: Session Isolation**
-            /// **Validates: Requirements 4.1, 4.6**
             ///
             /// For any two distinct UUIDs, session_data_dir produces non-overlapping
             /// directory paths (neither is a prefix of the other), ensuring cookies and
@@ -1504,7 +1500,6 @@ mod tests {
             }
 
             /// **Feature: embedded-web-browser, Property 3: Session Isolation**
-            /// **Validates: Requirements 4.1, 4.6**
             ///
             /// For any two distinct UUIDs, session_cache_dir produces non-overlapping
             /// directory paths, ensuring HTTP disk cache written by one connection is

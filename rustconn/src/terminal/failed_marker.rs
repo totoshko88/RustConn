@@ -8,7 +8,7 @@
 //! [`super::highlight_overlay`] uses, reusing its terminal-overlay plumbing
 //! (`grid_origin`, `attach_to_host_overlay`, `next_frame_redraw`).
 //!
-//! It is deliberately minimal and non-blocking (Requirement 3.3): a margin bar,
+//! It is deliberately minimal and non-blocking: a margin bar,
 //! not a modal, not a full-row wash. A row-background tint was the stated
 //! fallback if a margin bar proved unworkable; the margin bar works, so that is
 //! what ships. The marker is purely a function of the registry, so it stays

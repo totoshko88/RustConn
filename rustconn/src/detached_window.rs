@@ -29,7 +29,7 @@ use crate::terminal::{DetachMonitor, DetachPresentation};
 
 /// Default window width, matching a comfortable 80-column terminal plus chrome.
 const DEFAULT_WIDTH: i32 = 900;
-/// Default window height (Requirement 5.8 asks for at least 800x600).
+/// Default window height; the default size stays at least 800x600.
 const DEFAULT_HEIGHT: i32 = 650;
 /// Smallest width a detached window may be shrunk to before the session content
 /// stops being usable.

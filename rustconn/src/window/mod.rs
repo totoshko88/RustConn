@@ -5798,7 +5798,7 @@ mod tests {
     #[test]
     fn only_detached_sessions_still_count_as_open() {
         // The main window can hold nothing but a Welcome tab while a session
-        // runs in its own window — quitting must still ask (Requirement 6.4).
+        // runs in its own window — quitting must still ask.
         assert_eq!(open_session_count(0, 2, 0), 2);
     }
 

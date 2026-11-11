@@ -5,11 +5,10 @@
 
 /* ============================================================
  * Split View Redesign Styles
- * Requirements: 6.2, 6.3, 6.4, 12.4
  * ============================================================ */
 
 /* Base panel styling - applied to all panels in split containers */
-/* Requirement 6.3: Panel borders within Split_Container */
+/* Panel borders within Split_Container */
 .split-panel {
     border-radius: 6px;
     margin: 3px;
@@ -17,15 +16,15 @@
 }
 
 /* Focused panel styling - highlights the currently focused panel */
-/* Requirement 12.3: Keyboard accessible interactive elements */
+/* Keyboard accessible interactive elements */
 .focused-panel {
     border: 2px solid @accent_color;
     box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
 }
 
 /* Panel border colors by ColorId index (0-5) */
-/* Requirement 6.3: Panel borders painted using assigned Color_ID */
-/* Requirement 6.4: Colors visually distinct in light and dark themes */
+/* Panel borders painted using assigned Color_ID */
+/* Colors visually distinct in light and dark themes */
 /* Intentionally a fixed GNOME palette (not @accent_color-derived):
  * the six panel colors must stay distinct from each other and stable
  * across light/dark themes and user accent-color changes, because they
@@ -84,7 +83,7 @@
 .split-panel-color-5 > .split-pane-header { background-color: alpha(#f66151, 0.15); }
 
 /* Empty panel placeholder styling */
-/* Requirement 4.1: Empty panel displays placeholder with Select Tab button */
+/* Empty panel displays placeholder with Select Tab button */
 .empty-panel-placeholder {
     background-color: alpha(@view_bg_color, 0.5);
     border: 2px dashed alpha(@borders, 0.5);
@@ -92,7 +91,7 @@
 }
 
 /* Panel close button styling */
-/* Requirement 4.5: Close button (X icon) in top-right corner */
+/* Close button (X icon) in top-right corner */
 .panel-close-button {
     min-width: 24px;
     min-height: 24px;
@@ -461,8 +460,8 @@ button.context-menu-destructive:hover {
 }
 
 /* Drop target highlight for drag-and-drop to split panes */
-/* Requirement 8.1: Highlight target zone with focus border when drag enters */
-/* Requirement 8.2: Remove highlight when drag leaves */
+/* Highlight target zone with focus border when drag enters */
+/* Remove highlight when drag leaves */
 .drop-target-highlight {
     background-color: alpha(@accent_color, 0.15);
     border: 2px dashed @accent_color;
@@ -479,7 +478,7 @@ button.context-menu-destructive:hover {
                 box-shadow 150ms ease-in-out;
 }
 
-/* Requirement 8.3: Distinguish between Empty_Panel and Occupied_Panel drop targets */
+/* Distinguish between Empty_Panel and Occupied_Panel drop targets */
 /* Empty panel drop target - uses accent color (inviting) */
 .drop-target-empty {
     background-color: alpha(@accent_color, 0.2);
@@ -497,7 +496,7 @@ button.context-menu-destructive:hover {
 }
 
 /* Drag source visual feedback */
-/* Requirement 7.4: Visual feedback during drag */
+/* Visual feedback during drag */
 .dragging {
     opacity: 0.5;
     background-color: alpha(@accent_color, 0.1);
@@ -632,7 +631,7 @@ window:not(.compact):not(.macos) .sidebar-search-row {
 
 /* ============================================================
  * Playback Tab Styles
- * Requirement 6.2: Distinct visual overlay for playback tabs
+ * Distinct visual overlay for playback tabs
  * ============================================================ */
 
 .playback-tab {

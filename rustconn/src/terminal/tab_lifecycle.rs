@@ -104,8 +104,7 @@ impl TerminalNotebook {
     ///
     /// One place decides the layout — title, then the host line the embedded
     /// creation paths add, then the group line `set_tab_group` appends — so a tab
-    /// recreated after a park or a rename is indistinguishable from the original
-    /// (Requirement 2.3).
+    /// recreated after a park or a rename is indistinguishable from the original.
     pub(super) fn tab_tooltip(title: &str, host: Option<&str>, group: Option<&str>) -> String {
         use std::fmt::Write;
 
@@ -891,7 +890,7 @@ impl TerminalNotebook {
             &protocol,
         ))));
         // The creation path sets a tooltip too, and a grouped tab carries the
-        // group name as a second line (Requirement 2.3).
+        // group name as a second line.
         page.set_tooltip(&Self::tab_tooltip(
             &title,
             host.as_deref(),
