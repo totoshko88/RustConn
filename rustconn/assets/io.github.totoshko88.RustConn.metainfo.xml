@@ -13,9 +13,10 @@
     <p>
       RustConn is a modern connection manager for Linux. Manage SSH, RDP, VNC,
       SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust connections from a
-      single application. Terminals and RDP, VNC, and SPICE sessions open inside
-      the window. Some features use external command-line tools, such as a cloud
-      provider's CLI for Zero Trust connections or a password manager's client.
+      single application. Terminals and RDP and VNC sessions open inside the
+      window; SPICE sessions open in an external viewer (remote-viewer). Some
+      features use other command-line tools, such as a cloud provider's CLI for
+      Zero Trust connections or a password manager's client.
     </p>
     <p>
       Organize connections into groups and tags, split terminals side by side, automate
@@ -25,7 +26,7 @@
     </p>
     <ul>
       <li>SSH, MOSH, Telnet, Serial, and Kubernetes terminals with scrollbar and font zoom</li>
-      <li>Embedded RDP, VNC, and SPICE sessions with external client fallback</li>
+      <li>Embedded RDP and VNC sessions with external client fallback, and SPICE through remote-viewer</li>
       <li>Zero Trust tunnels: AWS SSM, GCP IAP, Azure Bastion, Cloudflare, Teleport, Tailscale, and more</li>
       <li>Cloud Sync via shared directories (Google Drive, Syncthing, Nextcloud, Dropbox)</li>
       <li>Tab Overview, Tab Pinning, Split View, and cluster commands for managing many sessions</li>
