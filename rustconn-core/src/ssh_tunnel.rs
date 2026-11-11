@@ -629,48 +629,82 @@ enum ArgsRoute {
     Leaks,
 }
 
+/// The `ssh` option letters that take a value, from OpenSSH's `getopt` string.
+const SSH_VALUE_FLAGS: &str = "BbcDEeFIiJLlmOoPpQRSWw";
+
 /// Reads the route the `ssh` options in `args` set; see [`ArgsRoute`].
+///
+/// An argument starting with a single `-` is read as `ssh` reads it, as a
+/// cluster of flags (`-qJ far`, `-NJfar`): the first letter that takes a value
+/// ends the cluster and takes the rest of the argument, or the next one, as
+/// that value.
 fn args_route(args: &[String]) -> ArgsRoute {
     let boundary = format!("env {}=", crate::ssh_askpass::TARGET_PASSWORD_ENV);
     let mut route = ArgsRoute::Unset;
     let mut args = args.iter();
     while let Some(arg) = args.next() {
-        if arg.starts_with("-J") {
+        let Some(cluster) = arg
+            .strip_prefix('-')
+            .filter(|cluster| !cluster.is_empty() && !cluster.starts_with('-'))
+        else {
+            continue;
+        };
+        let Some((at, letter)) = cluster
+            .char_indices()
+            .find(|&(_, letter)| SSH_VALUE_FLAGS.contains(letter))
+        else {
+            continue;
+        };
+        if letter == 'J' {
             return ArgsRoute::Leaks;
         }
-        let option = match arg.strip_prefix("-o") {
-            Some("") => match args.next() {
+        let inline = &cluster[at + letter.len_utf8()..];
+        let value = if inline.is_empty() {
+            match args.next() {
                 Some(next) => next.as_str(),
                 None => break,
-            },
-            Some(inline) => inline,
-            None => continue,
+            }
+        } else {
+            inline
         };
-        let option = option.trim_start();
-        let split = option
-            .find(|c: char| c == '=' || c.is_whitespace())
-            .unwrap_or(option.len());
-        let (name, value) = option.split_at(split);
-        let value = value
-            .trim_start_matches(|c: char| c == '=' || c.is_whitespace())
-            .trim_end();
-        let is_jump = name.eq_ignore_ascii_case("ProxyJump");
-        let is_command = name.eq_ignore_ascii_case("ProxyCommand");
-        if !is_jump && !is_command {
+        if letter != 'o' {
             continue;
         }
-        if value.eq_ignore_ascii_case("none") || (is_command && value.starts_with(&boundary)) {
-            route = ArgsRoute::Contained;
-            continue;
+        match option_route(value, &boundary) {
+            ArgsRoute::Leaks => return ArgsRoute::Leaks,
+            ArgsRoute::Contained => route = ArgsRoute::Contained,
+            ArgsRoute::Unset => {}
         }
-        return ArgsRoute::Leaks;
     }
     route
 }
 
+/// The route one `-o` value sets: [`ArgsRoute::Unset`] for an option that is
+/// not `ProxyJump` or `ProxyCommand`.
+fn option_route(option: &str, boundary: &str) -> ArgsRoute {
+    let option = option.trim_start();
+    let split = option
+        .find(|c: char| c == '=' || c.is_whitespace())
+        .unwrap_or(option.len());
+    let (name, value) = option.split_at(split);
+    let value = value
+        .trim_start_matches(|c: char| c == '=' || c.is_whitespace())
+        .trim_end();
+    let is_jump = name.eq_ignore_ascii_case("ProxyJump");
+    let is_command = name.eq_ignore_ascii_case("ProxyCommand");
+    if !is_jump && !is_command {
+        ArgsRoute::Unset
+    } else if value.eq_ignore_ascii_case("none") || (is_command && value.starts_with(boundary)) {
+        ArgsRoute::Contained
+    } else {
+        ArgsRoute::Leaks
+    }
+}
+
 /// Whether `ssh` with `args` starts an `ssh` for another hop outside an `env`
 /// boundary from [`askpass_disabled_proxy_prefix`] or [`askpass_proxy_prefix`]:
-/// any `-J`/`ProxyJump`, or a `ProxyCommand` that does not start with one.
+/// any `-J`/`ProxyJump`, also inside a flag cluster such as `-qJ`, or a
+/// `ProxyCommand` that does not start with one.
 pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
     matches!(args_route(args), ArgsRoute::Leaks)
 }
@@ -2926,6 +2960,12 @@ mod tunnel_password_tests {
                 "-o",
                 "ProxyCommand=nc %h %p",
             ]),
+            // Flag clusters, read as ssh reads them.
+            strs(&["-qJ", "far"]),
+            strs(&["-NJfar"]),
+            strs(&["-qo", "ProxyJump=far"]),
+            strs(&["-qoProxyCommand=ssh x"]),
+            strs(&["-l", "me", "-qJ", "far"]),
         ] {
             assert!(
                 deliverable_password_with(&with_password(extra_args.clone()), |_, _, _| false)
@@ -2943,6 +2983,12 @@ mod tunnel_password_tests {
             strs(&["-o", "ProxyJump=none", "-o", "ProxyCommand=none"]),
             far_hops(HopHostKeys::UserConfig),
             far_hops(HopHostKeys::KnownOnly),
+            // A `J` that is a value, not a flag, routes nothing.
+            strs(&["-lJohn"]),
+            strs(&["-l", "-J"]),
+            strs(&["-p22"]),
+            strs(&["-qN"]),
+            strs(&["-qNo", "ProxyJump=none"]),
         ] {
             let params = with_password(extra_args.clone());
             assert_eq!(
