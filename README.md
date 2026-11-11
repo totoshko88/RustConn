@@ -133,7 +133,7 @@ in the app for the complete, always-current list.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers development setup, the quality gate,
 and the conventions a pull request is checked against. Participation is under the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[Code of Conduct](#code-of-conduct).
 
 - **Bugs and features** — [issue tracker](https://github.com/totoshko88/RustConn/issues);
   the forms ask for the version, install method, and desktop, which is usually
@@ -147,6 +147,15 @@ and the conventions a pull request is checked against. Participation is under th
 - **Vulnerabilities** — privately, via
   [Security Advisories](https://github.com/totoshko88/RustConn/security/advisories/new)
   rather than an issue ([SECURITY.md](SECURITY.md)).
+
+## Code of Conduct
+
+RustConn follows the [GNOME Code of Conduct](https://conduct.gnome.org/).
+It applies to everyone taking part in the project's issues, pull requests,
+discussions and code review. To report a problem, write to the maintainer at
+totoshko88@gmail.com or contact the
+[GNOME Code of Conduct Committee](https://conduct.gnome.org/reporter-guide/).
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
 
 ## Support
 

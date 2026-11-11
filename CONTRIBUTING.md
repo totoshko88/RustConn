@@ -4,7 +4,9 @@ Thanks for being here. RustConn is a GTK4/libadwaita connection manager written
 in Rust, and it grows from bug reports, translations, packaging fixes, and code
 alike. This file explains how to get a change merged.
 
-By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to follow the
+[GNOME Code of Conduct](https://conduct.gnome.org/); [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+says where it applies and how to report a problem.
 
 ## Ways to contribute
 

@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Update every device that shares or syncs a configuration before using WinRM or a SOCKS5 proxy** — RustConn 0.24.10 and older cannot read a `connections.toml`, a Simple Sync file or a Group Sync `.rcn` file that holds a WinRM connection: the whole file fails to load, not only that connection. They also do not know the new SOCKS5 proxy fields of a Web connection, so they open its page directly instead of through the proxy, and saving there drops the fields, which sync then carries to the other devices. (`docs/USER_GUIDE.md`)
 
+### Documentation
+- **RustConn now follows the GNOME Code of Conduct** — it replaces the Contributor Covenant 2.1 for the project's issues, pull requests, discussions and code review. `CODE_OF_CONDUCT.md` now links to [conduct.gnome.org](https://conduct.gnome.org/) and says how to report a problem, to the maintainer or to the GNOME Code of Conduct Committee; the README has a Code of Conduct section, and CONTRIBUTING.md points to it. (`CODE_OF_CONDUCT.md`, `README.md`, `CONTRIBUTING.md`)
+
 ## [0.24.10] - 2026-11-09
 ### Fixed
 - **macOS: the menu-bar icon follows the system style** — the tray icon was a full-colour image that clashed with the other status items. It is now a monochrome template glyph, so macOS tints it for a light or dark menu bar like any native item. (`rustconn/src/tray.rs`, `rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn-tray-macos.svg`)
