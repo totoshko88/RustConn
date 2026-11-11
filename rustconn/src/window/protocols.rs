@@ -1508,9 +1508,12 @@ pub fn resolve_jump_chain_for_tunnel(
         // -o/-i to the nested SSH, so Flatpak known_hosts and PKCS#11 tokens must
         // be injected explicitly here.
         let mut proxy_parts = vec!["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()];
-        if let Some(ref kh_path) = flatpak_kh {
+        if let Some(option) = flatpak_kh
+            .as_deref()
+            .and_then(rustconn_core::jump_route::proxy_known_hosts_option)
+        {
             proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!("UserKnownHostsFile={}", kh_path.display()));
+            proxy_parts.push(option);
         }
 
         // Pass identity file for the first hop if available

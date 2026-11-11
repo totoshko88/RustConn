@@ -1585,9 +1585,9 @@ fn build_nested_proxy_command_inner(
         parts.push("-o".to_string());
         parts.push(option.to_string());
     }
-    if let Some(kh) = known_hosts {
+    if let Some(option) = known_hosts.and_then(crate::jump_route::proxy_known_hosts_option) {
         parts.push("-o".to_string());
-        parts.push(format!("UserKnownHostsFile={}", kh.display()));
+        parts.push(option);
     }
     if let Some(key) = identity_file {
         parts.push("-i".to_string());

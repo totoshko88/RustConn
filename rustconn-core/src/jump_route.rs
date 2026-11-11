@@ -228,6 +228,26 @@ pub fn plain_path(path: &str) -> Option<&str> {
         .then_some(path)
 }
 
+/// The `UserKnownHostsFile=<path>` option for an `ssh` inside a `ProxyCommand`.
+///
+/// A shell runs that command, so this is `None` when [`plain_path`] refuses
+/// `path`, such as a home folder with a space or a `;` in its name. Quoting
+/// would not help, because `UserKnownHostsFile` takes a space-separated list.
+/// Without it the hop uses its default `known_hosts`.
+#[must_use]
+pub fn proxy_known_hosts_option(path: &Path) -> Option<String> {
+    let option = path
+        .to_str()
+        .and_then(plain_path)
+        .map(|plain| format!("UserKnownHostsFile={plain}"));
+    if option.is_none() {
+        tracing::debug!(
+            "Flatpak known_hosts path is not passed to a shell; jump hosts use the default"
+        );
+    }
+    option
+}
+
 /// Builds the explicit `ProxyCommand` route to `first_hop`, nesting the deeper
 /// hops. `askpass_script` is the first hop's helper, when it has a password.
 ///
@@ -305,9 +325,9 @@ fn proxy_command(
     }
 
     // Pass UserKnownHostsFile to jump host (Flatpak only)
-    if let Some(kh_path) = request.known_hosts {
+    if let Some(option) = request.known_hosts.and_then(proxy_known_hosts_option) {
         proxy_parts.push("-o".to_string());
-        proxy_parts.push(format!("UserKnownHostsFile={}", kh_path.display()));
+        proxy_parts.push(option);
     }
 
     // Reuse the jump host's ControlMaster socket (created by the direct
@@ -849,6 +869,27 @@ mod tests {
             "{command}"
         );
         assert!(passwords.is_empty());
+    }
+
+    #[test]
+    fn a_known_hosts_path_a_shell_would_split_stays_out_of_the_proxy_command() {
+        assert_eq!(
+            proxy_known_hosts_option(Path::new("/home/u/.var/app/x/.ssh/known_hosts")),
+            Some("UserKnownHostsFile=/home/u/.var/app/x/.ssh/known_hosts".to_string())
+        );
+        let chain = hops(&["near.example", "far.example"]);
+        let passwords = [None, None];
+        for unusual in ["/home/a b/kh", "/home/a;b/kh", "/home/a'b/kh"] {
+            let known_hosts = Path::new(unusual);
+            assert_eq!(proxy_known_hosts_option(known_hosts), None, "{unusual}");
+            let mut req = request(&chain, &passwords, HopHostKeys::UserConfig);
+            req.known_hosts = Some(known_hosts);
+            let Some(JumpRoute::ProxyCommand { command, .. }) = jump_route(&req) else {
+                panic!("Flatpak known_hosts still takes the ProxyCommand route");
+            };
+            assert!(!command.contains("UserKnownHostsFile"), "{command}");
+            assert!(!command.contains(unusual), "{command}");
+        }
     }
 
     #[test]
