@@ -21,15 +21,36 @@
 //!
 //! The same mechanism previously existed in `sftp::ensure_flatpak_mc_ssh_wrapper`
 //! but only inside Flatpak and only to supply a writable `known_hosts`.
+//!
+//! # Password delivery
+//!
+//! mc gives `ssh` no terminal it can answer a password prompt on (it reads the
+//! remote shell's output and sends `ssh`'s stderr to `/dev/null`), so a
+//! password-authenticated connection used to stop at `shell: Waiting for
+//! initial line...`. When the caller passes the connection's password,
+//! [`prepare_mc_ssh_env`] writes it to an owner-only file
+//! ([`crate::ssh_askpass::create_secret_file`]) and the wrapper hands that file
+//! to the prompt-aware askpass helper — but only for the one `ssh` that has
+//! mc's exact argument shape (`[-C] [-p PORT] [-l USER] HOST COMMAND`) for this
+//! connection's own host, user and port. Any other invocation (another `sh://`
+//! link opened in the same mc, an `ssh` with `-J` or `-o`) runs exactly as
+//! without delivery. The password and its path never enter mc's environment;
+//! only the wrapper script knows the path, and only the delivering `ssh` gets
+//! it. Saved jump hosts are then reached through
+//! [`crate::jump_route::tunnel_hop_args`], whose hops start without the helper,
+//! so no bastion can be sent the target's password (issue #191).
 
 use std::collections::HashSet;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
+use secrecy::SecretString;
 use uuid::Uuid;
 
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
+use crate::connection::JumpChain;
+use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod, SshConfig};
+use crate::ssh_tunnel::shell_single_quote;
 
 /// Name of the directory holding all per-session wrapper directories.
 const WRAPPER_ROOT: &str = "rustconn-mc-ssh";
@@ -49,9 +70,24 @@ pub struct McSshEnv {
     wrapper_dir: PathBuf,
     /// The generated `ssh_config` the wrapper passes via `-F`.
     config_path: PathBuf,
+    /// The owner-only file holding the connection's password, when the
+    /// wrapper delivers one. Holds a path only, never the secret.
+    secret_file: Option<PathBuf>,
 }
 
 impl McSshEnv {
+    /// Whether the wrapper hands the connection's password to mc's `ssh`.
+    #[must_use]
+    pub fn delivers_password(&self) -> bool {
+        self.secret_file.is_some()
+    }
+
+    /// The password file the caller must remove when mc exits.
+    #[must_use]
+    pub fn secret_file(&self) -> Option<&Path> {
+        self.secret_file.as_deref()
+    }
+
     /// Returns the `PATH=…` entry to pass to the mc child process.
     ///
     /// Prepends the wrapper directory to the inherited `PATH` so mc's `ssh`
@@ -114,6 +150,213 @@ fn hop_hostname(spec: &str) -> &str {
         }
         _ => host_port,
     }
+}
+
+/// Whether mc's `ssh` for `connection` will ask for the account password.
+///
+/// SSH-family, authentication method Password or Keyboard Interactive, and no
+/// identity file resolved through the group chain. Key and agent connections
+/// return `false`; their mc launch never reads a password.
+#[must_use]
+pub fn expects_password(connection: &Connection, groups: &[ConnectionGroup]) -> bool {
+    ssh_config(connection).is_some_and(|cfg| {
+        matches!(
+            cfg.auth_method,
+            SshAuthMethod::Password | SshAuthMethod::KeyboardInteractive
+        )
+    }) && identity_file(connection, groups).is_none()
+}
+
+/// Whether the wrapper may hand `connection`'s password to mc's `ssh` at all.
+///
+/// [`expects_password`], and the cheap half of the SSH session's gate
+/// ([`crate::ssh_tunnel::target_password_askpass_allowed`]): Keyboard
+/// Interactive, a PKCS#11 token, a custom routing or authentication option and
+/// an explicit `ProxyCommand` all refuse. Spawns nothing, so a caller can ask
+/// it before reading the vault; [`prepare_mc_ssh_env`] adds the route checks.
+#[must_use]
+pub fn password_may_be_sent(connection: &Connection, groups: &[ConnectionGroup]) -> bool {
+    expects_password(connection, groups)
+        && ssh_config(connection)
+            .is_some_and(|cfg| crate::ssh_tunnel::target_password_askpass_allowed(cfg, false))
+}
+
+/// The arguments the delivering `ssh` gets in front of mc's own, or `None`
+/// when the password must not be sent along this route.
+///
+/// With no jump chain, `declares_proxy` (normally
+/// [`crate::ssh_tunnel::ssh_config_declares_proxy`]) must report no proxy in
+/// the user's ssh configuration. A chain goes through
+/// [`crate::jump_route::tunnel_hop_args`], whose `ProxyCommand` starts every
+/// hop behind the `env` boundary that clears the helper, and outranks the
+/// generated config's `ProxyJump`. Under `ProxyJump` the hops past the first
+/// got their keys from the generated config; the nested `ProxyCommand` cannot
+/// pass them, so a chain where one of those hops has its own key, or where the
+/// first hop's key path is not plain, keeps today's route and gets no password.
+fn password_route_args(
+    connection: &Connection,
+    cfg: &SshConfig,
+    chain: &JumpChain,
+    connections: &[Connection],
+    groups: &[ConnectionGroup],
+    known_hosts: Option<&Path>,
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> Option<Vec<String>> {
+    if !crate::ssh_tunnel::target_password_askpass_allowed(cfg, false) {
+        return None;
+    }
+    let mut args = if chain.hops.is_empty() {
+        Vec::new()
+    } else {
+        let hop_key = |index: usize| {
+            chain
+                .hop_ids
+                .get(index)
+                .copied()
+                .flatten()
+                .and_then(|id| connections.iter().find(|c| c.id == id))
+                .and_then(|hop| identity_file(hop, groups))
+        };
+        if (1..chain.hops.len()).any(|index| hop_key(index).is_some()) {
+            return None;
+        }
+        let first_key = hop_key(0).map(|key| key.to_string_lossy().into_owned());
+        if first_key
+            .as_deref()
+            .is_some_and(|key| crate::jump_route::plain_path(key).is_none())
+        {
+            return None;
+        }
+        crate::jump_route::tunnel_hop_args(&crate::jump_route::TunnelHopsRequest {
+            hops: &chain.hops,
+            first_hop_identity: first_key.as_deref(),
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts,
+            hop_host_keys: crate::ssh_tunnel::HopHostKeys::UserConfig,
+        })?
+    };
+    if !crate::ssh_tunnel::askpass_stays_on_destination(
+        &connection.host,
+        connection.port,
+        connection.username.as_deref(),
+        &args,
+        declares_proxy,
+    ) {
+        return None;
+    }
+    args.push("-o".to_string());
+    args.push("NumberOfPasswordPrompts=1".to_string());
+    // A first-seen host is accepted, as for an SSH session with a delivered
+    // password, unless the connection sets its own policy.
+    if !cfg
+        .custom_options
+        .keys()
+        .any(|key| key.trim().eq_ignore_ascii_case("StrictHostKeyChecking"))
+    {
+        args.push("-o".to_string());
+        args.push("StrictHostKeyChecking=accept-new".to_string());
+    }
+    Some(args)
+}
+
+/// What the wrapper needs to hand the password to mc's own `ssh`.
+struct Delivery<'a> {
+    /// The owner-only file holding the password.
+    secret_file: &'a Path,
+    /// The prompt-aware askpass helper for the target slot.
+    helper: &'a Path,
+    /// The connection's host, user (empty for none) and port, which mc's
+    /// argv must name exactly.
+    host: &'a str,
+    user: &'a str,
+    port: u16,
+    /// The route arguments from [`password_route_args`].
+    args: &'a [String],
+    /// Where the delivering `ssh`'s stderr goes; mc sends it to `/dev/null`.
+    stderr_file: &'a Path,
+    /// Created when the delivering `ssh` reports a refused sign-in.
+    failure_marker: &'a Path,
+}
+
+/// The `ssh` wrapper script for mc.
+///
+/// Without `delivery` this is the two-line `exec` wrapper. With it, the script
+/// first parses its argv against the shape mc uses (`[-C] [-p PORT] [-l USER]
+/// HOST COMMAND`); only an exact match for the delivery's host, user and port
+/// runs `ssh` with the askpass environment on its own command line. Every
+/// embedded value is single-quoted; the password itself is never in the text.
+fn wrapper_script(real_ssh: &Path, config: &Path, delivery: Option<&Delivery<'_>>) -> String {
+    let ssh = shell_single_quote(&real_ssh.to_string_lossy());
+    let config = shell_single_quote(&config.to_string_lossy());
+    let mut script = String::from(
+        "#!/bin/sh\n\
+         # Auto-generated by RustConn so mc's sh:// VFS picks up this\n\
+         # connection's SSH options. See rustconn-core/src/mc_ssh.rs.\n",
+    );
+    if let Some(delivery) = delivery {
+        let route = delivery.args.iter().fold(String::new(), |mut route, arg| {
+            let _ = write!(route, " {}", shell_single_quote(arg));
+            route
+        });
+        let _ = write!(
+            script,
+            "# The saved password goes only to mc's own ssh for this connection.\n\
+             _rc_host= _rc_user= _rc_port=22 _rc_words=0 _rc_ok=1 _rc_want=\n\
+             for _rc_arg do\n\
+             \x20 if [ -n \"$_rc_want\" ]; then\n\
+             \x20   if [ \"$_rc_want\" = p ]; then _rc_port=$_rc_arg; else _rc_user=$_rc_arg; fi\n\
+             \x20   _rc_want=\n\
+             \x20 elif [ \"$_rc_words\" -eq 0 ]; then\n\
+             \x20   case $_rc_arg in\n\
+             \x20     -C) ;;\n\
+             \x20     -p) _rc_want=p ;;\n\
+             \x20     -l) _rc_want=l ;;\n\
+             \x20     -*) _rc_ok=0 ;;\n\
+             \x20     *) _rc_host=$_rc_arg; _rc_words=1 ;;\n\
+             \x20   esac\n\
+             \x20 else\n\
+             \x20   _rc_words=$((_rc_words + 1))\n\
+             \x20 fi\n\
+             done\n\
+             if [ \"$_rc_ok\" = 1 ] && [ -z \"$_rc_want\" ] && [ \"$_rc_words\" -eq 2 ] \\\n\
+             \x20 && [ \"$_rc_host\" = {host} ] && [ \"$_rc_user\" = {user} ] \\\n\
+             \x20 && [ \"$_rc_port\" = {port} ]; then\n\
+             \x20 _RC_TGT_PW_FILE={secret} SSH_ASKPASS={helper} SSH_ASKPASS_REQUIRE=force \\\n\
+             \x20   {ssh} -F {config}{route} \"$@\" 2>{stderr}\n\
+             \x20 _rc_status=$?\n\
+             \x20 if [ \"$_rc_status\" -eq 255 ] && grep -q 'Permission denied' {stderr} 2>/dev/null; then\n\
+             \x20   : > {marker}\n\
+             \x20 fi\n\
+             \x20 rm -f {stderr}\n\
+             \x20 exit \"$_rc_status\"\n\
+             fi\n",
+            host = shell_single_quote(delivery.host),
+            user = shell_single_quote(delivery.user),
+            port = shell_single_quote(&delivery.port.to_string()),
+            secret = shell_single_quote(&delivery.secret_file.to_string_lossy()),
+            helper = shell_single_quote(&delivery.helper.to_string_lossy()),
+            stderr = shell_single_quote(&delivery.stderr_file.to_string_lossy()),
+            marker = shell_single_quote(&delivery.failure_marker.to_string_lossy()),
+        );
+    }
+    let _ = writeln!(script, "exec {ssh} -F {config} \"$@\"");
+    script
+}
+
+/// The marker the wrapper leaves when `connection_id`'s sign-in was refused.
+fn auth_failure_marker(connection_id: Uuid) -> PathBuf {
+    wrapper_root().join(format!("{}.auth-failed", connection_id.as_hyphenated()))
+}
+
+/// Whether mc's `ssh` reported a refused password for `connection_id` since
+/// the last call, clearing the report.
+///
+/// The caller then forgets its cached password, so the next mc open reads the
+/// vault again rather than repeating a stale one.
+#[must_use]
+pub fn take_auth_failure(connection_id: Uuid) -> bool {
+    std::fs::remove_file(auth_failure_marker(connection_id)).is_ok()
 }
 
 /// Returns the `SshConfig` of an SSH or SFTP connection.
@@ -325,6 +568,14 @@ fn prune_stale(root: &Path, keep: &Path) {
 /// directory is keyed on the session so two mc tabs with different jump hosts
 /// do not share one wrapper, and is rewritten from scratch on every call.
 ///
+/// With `password`, the wrapper also delivers it to mc's own `ssh` (see the
+/// module docs) when [`password_may_be_sent`] holds and the route keeps it on
+/// this connection's host. Checking the route may run `ssh -G` (bounded at a
+/// few seconds), so call this off the GTK main thread. Whether it delivers is
+/// [`McSshEnv::delivers_password`]; the caller removes
+/// [`McSshEnv::secret_file`] when mc exits. Any failure on the delivery path is
+/// logged and leaves the wrapper as without a password.
+///
 /// Returns `None` for a non-SSH connection, or if the files cannot be written —
 /// in which case the caller should launch mc without a `PATH` override, exactly
 /// as it did before this mechanism existed.
@@ -335,6 +586,7 @@ pub fn prepare_mc_ssh_env(
     connections: &[Connection],
     groups: &[ConnectionGroup],
     network: &crate::config::NetworkSettings,
+    password: Option<&SecretString>,
 ) -> Option<McSshEnv> {
     let config_text = build_ssh_config(connection, connections, groups, network)?;
 
@@ -366,47 +618,109 @@ pub fn prepare_mc_ssh_env(
 
     let real_ssh = find_real_ssh(&wrapper_dir);
     let wrapper_path = wrapper_dir.join("ssh");
-    let wrapper = format!(
-        "#!/bin/sh\n\
-         # Auto-generated by RustConn so mc's sh:// VFS picks up this\n\
-         # connection's SSH options. See rustconn-core/src/mc_ssh.rs.\n\
-         exec {} -F {} \"$@\"\n",
-        crate::ssh_tunnel::shell_single_quote(&real_ssh.to_string_lossy()),
-        crate::ssh_tunnel::shell_single_quote(&config_path.to_string_lossy()),
+    let delivery = password
+        .and_then(|password| password_delivery(connection, connections, groups, network, password));
+    let stderr_file = wrapper_dir.join("ssh-stderr");
+    let failure_marker = auth_failure_marker(connection.id);
+    let user = connection.username.as_deref().unwrap_or_default();
+    let wrapper = wrapper_script(
+        &real_ssh,
+        &config_path,
+        delivery
+            .as_ref()
+            .map(|(helper, secret_file, args)| Delivery {
+                secret_file,
+                helper,
+                host: &connection.host,
+                user,
+                port: connection.port,
+                args,
+                stderr_file: &stderr_file,
+                failure_marker: &failure_marker,
+            })
+            .as_ref(),
     );
-    if let Err(e) = std::fs::write(&wrapper_path, wrapper.as_bytes()) {
+    let secret_file = delivery.map(|(_, secret_file, _)| secret_file);
+    if let Err(e) = write_wrapper(&wrapper_path, &wrapper) {
         tracing::warn!(
             path = %wrapper_path.display(),
             error = %e,
             "Could not write the ssh wrapper for mc"
         );
-        return None;
-    }
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if let Err(e) =
-            std::fs::set_permissions(&wrapper_path, std::fs::Permissions::from_mode(0o700))
-        {
-            tracing::warn!(
-                path = %wrapper_path.display(),
-                error = %e,
-                "Could not make the mc ssh wrapper executable"
-            );
-            return None;
+        if let Some(ref path) = secret_file {
+            let _ = std::fs::remove_file(path);
         }
+        return None;
     }
 
     tracing::debug!(
         dir = %wrapper_dir.display(),
         real_ssh = %real_ssh.display(),
+        delivers_password = secret_file.is_some(),
         "Prepared ssh wrapper for mc"
     );
     Some(McSshEnv {
         wrapper_dir,
         config_path,
+        secret_file,
     })
+}
+
+/// Writes the wrapper script and makes it executable for the owner only.
+fn write_wrapper(path: &Path, text: &str) -> std::io::Result<()> {
+    std::fs::write(path, text.as_bytes())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))?;
+    }
+    Ok(())
+}
+
+/// The askpass helper, the password file and the route arguments for
+/// delivering `password` to mc's `ssh`, or `None` when it must not be sent.
+fn password_delivery(
+    connection: &Connection,
+    connections: &[Connection],
+    groups: &[ConnectionGroup],
+    network: &crate::config::NetworkSettings,
+    password: &SecretString,
+) -> Option<(PathBuf, PathBuf, Vec<String>)> {
+    if !password_may_be_sent(connection, groups) {
+        return None;
+    }
+    let cfg = ssh_config(connection)?;
+    let chain = crate::connection::resolve_jump_chain(connection, connections, groups, network);
+    let known_hosts = crate::flatpak::get_flatpak_known_hosts_path();
+    let Some(args) = password_route_args(
+        connection,
+        cfg,
+        &chain,
+        connections,
+        groups,
+        known_hosts.as_deref(),
+        crate::ssh_tunnel::ssh_config_declares_proxy,
+    ) else {
+        tracing::info!(
+            connection = %connection.name,
+            "Not giving mc the password: its route could hand it to another host"
+        );
+        return None;
+    };
+    let helper = match crate::ssh_askpass::helper_script(crate::ssh_askpass::AskpassSlot::Target) {
+        Ok(helper) => helper,
+        Err(error) => {
+            tracing::warn!(%error, "Could not write the askpass helper for mc");
+            return None;
+        }
+    };
+    match crate::ssh_askpass::create_secret_file(password) {
+        Ok(secret_file) => Some((helper, secret_file, args)),
+        Err(error) => {
+            tracing::warn!(%error, "Could not write the password file for mc");
+            None
+        }
+    }
 }
 
 /// Removes the wrapper directory for `session_id`.
@@ -684,9 +998,11 @@ mod tests {
             &[],
             &[],
             &crate::config::NetworkSettings::default(),
+            None,
         ) else {
             return;
         };
+        assert!(!env.delivers_password());
 
         let wrapper = env.wrapper_dir().join("ssh");
         assert!(wrapper.is_file());
@@ -733,6 +1049,7 @@ mod tests {
             std::slice::from_ref(&bastion),
             &[],
             &crate::config::NetworkSettings::default(),
+            None,
         ) else {
             return;
         };
@@ -769,5 +1086,479 @@ mod tests {
         // it is first on PATH.
         let found = find_real_ssh(dir.path());
         assert_ne!(found, decoy);
+    }
+
+    fn strs(v: &[&str]) -> Vec<String> {
+        v.iter().map(ToString::to_string).collect()
+    }
+
+    fn cfg_of(conn: &mut Connection) -> &mut SshConfig {
+        match conn.protocol_config {
+            ProtocolConfig::Ssh(ref mut cfg) | ProtocolConfig::Sftp(ref mut cfg) => cfg,
+            _ => panic!("not an SSH connection"),
+        }
+    }
+
+    /// mc's own argv for `sh://me@target.example.com:2222/~`.
+    const MC_REMOTE_COMMAND: &str = "echo SHELL:; /bin/sh";
+
+    #[test]
+    fn wrapper_without_password_is_unchanged() {
+        assert_eq!(
+            wrapper_script(
+                Path::new("/usr/bin/ssh"),
+                Path::new("/run/user/1000/rustconn-mc-ssh/s/config"),
+                None
+            ),
+            "#!/bin/sh\n\
+             # Auto-generated by RustConn so mc's sh:// VFS picks up this\n\
+             # connection's SSH options. See rustconn-core/src/mc_ssh.rs.\n\
+             exec '/usr/bin/ssh' -F '/run/user/1000/rustconn-mc-ssh/s/config' \"$@\"\n"
+        );
+    }
+
+    /// A delivering wrapper around a stub `ssh` that prints the password file
+    /// it was given and its argv, and exits with `$RC_STUB_STATUS`.
+    #[cfg(unix)]
+    struct StubWrapper {
+        dir: tempfile::TempDir,
+        wrapper: PathBuf,
+        config: PathBuf,
+        secret: PathBuf,
+        marker: PathBuf,
+    }
+
+    #[cfg(unix)]
+    impl StubWrapper {
+        fn new(port: u16) -> Self {
+            use std::os::unix::fs::PermissionsExt;
+            let dir = tempfile::tempdir().unwrap();
+            let ssh = dir.path().join("real-ssh");
+            std::fs::write(
+                &ssh,
+                "#!/bin/sh\n\
+                 printf '%s\\n' \"${_RC_TGT_PW_FILE-unset}\"\n\
+                 printf '%s\\n' \"$*\"\n\
+                 [ -z \"$RC_STUB_ERR\" ] || printf '%s\\n' \"$RC_STUB_ERR\" >&2\n\
+                 exit \"${RC_STUB_STATUS:-0}\"\n",
+            )
+            .unwrap();
+            std::fs::set_permissions(&ssh, std::fs::Permissions::from_mode(0o700)).unwrap();
+            let config = dir.path().join("config");
+            let secret = dir.path().join("secret");
+            let helper = dir.path().join("helper");
+            let marker = dir.path().join("auth-failed");
+            let args = strs(&["-o", "NumberOfPasswordPrompts=1"]);
+            let text = wrapper_script(
+                &ssh,
+                &config,
+                Some(&Delivery {
+                    secret_file: &secret,
+                    helper: &helper,
+                    host: "target.example.com",
+                    user: "me",
+                    port,
+                    args: &args,
+                    stderr_file: &dir.path().join("ssh-stderr"),
+                    failure_marker: &marker,
+                }),
+            );
+            let wrapper = dir.path().join("ssh");
+            write_wrapper(&wrapper, &text).unwrap();
+            Self {
+                dir,
+                wrapper,
+                config,
+                secret,
+                marker,
+            }
+        }
+
+        /// Runs the wrapper with `argv`; returns (password file seen, argv seen, status).
+        fn run(&self, argv: &[&str], status: Option<&str>, stderr: &str) -> (String, String, i32) {
+            let mut command = std::process::Command::new("sh");
+            command.arg(&self.wrapper).args(argv);
+            command.env_remove("_RC_TGT_PW_FILE");
+            if let Some(status) = status {
+                command.env("RC_STUB_STATUS", status);
+            }
+            command.env("RC_STUB_ERR", stderr);
+            let out = command.output().unwrap();
+            let stdout = String::from_utf8_lossy(&out.stdout).into_owned();
+            let mut lines = stdout.lines();
+            let file = lines.next().unwrap_or_default().to_string();
+            let seen = lines.next().unwrap_or_default().to_string();
+            (file, seen, out.status.code().unwrap_or(-1))
+        }
+
+        fn assert_refused(&self, argv: &[&str]) {
+            let (file, seen, _) = self.run(argv, None, "");
+            assert_eq!(file, "unset", "{argv:?}");
+            assert_eq!(
+                seen,
+                format!("-F {} {}", self.config.display(), argv.join(" ")),
+                "{argv:?}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn delivers_only_for_mc_argv_to_this_host() {
+        let stub = StubWrapper::new(2222);
+        for argv in [
+            [
+                "-p",
+                "2222",
+                "-l",
+                "me",
+                "target.example.com",
+                MC_REMOTE_COMMAND,
+            ],
+            [
+                "-l",
+                "me",
+                "-p",
+                "2222",
+                "target.example.com",
+                MC_REMOTE_COMMAND,
+            ],
+        ] {
+            let (file, seen, status) = stub.run(&argv, None, "");
+            assert_eq!(file, stub.secret.display().to_string(), "{argv:?}");
+            assert_eq!(status, 0);
+            assert_eq!(
+                seen,
+                format!(
+                    "-F {} -o NumberOfPasswordPrompts=1 {}",
+                    stub.config.display(),
+                    argv.join(" ")
+                )
+            );
+        }
+        // `-C` is the one flag mc adds on its own.
+        let (file, _, _) = stub.run(
+            &[
+                "-C",
+                "-p",
+                "2222",
+                "-l",
+                "me",
+                "target.example.com",
+                MC_REMOTE_COMMAND,
+            ],
+            None,
+            "",
+        );
+        assert_eq!(file, stub.secret.display().to_string());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_another_host_user_or_port() {
+        let stub = StubWrapper::new(2222);
+        stub.assert_refused(&[
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "other.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        stub.assert_refused(&[
+            "-p",
+            "2222",
+            "-l",
+            "root",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        stub.assert_refused(&[
+            "-p",
+            "22",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+        stub.assert_refused(&["-l", "me", "target.example.com", MC_REMOTE_COMMAND]);
+        stub.assert_refused(&["-p", "2222", "target.example.com", MC_REMOTE_COMMAND]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_extra_options() {
+        let stub = StubWrapper::new(2222);
+        for extra in [
+            ["-J", "far.example.com"],
+            ["-o", "ProxyJump=far.example.com"],
+            ["-qJ", "far.example.com"],
+        ] {
+            let mut argv = vec!["-p", "2222", "-l", "me"];
+            argv.extend(extra);
+            argv.extend(["target.example.com", MC_REMOTE_COMMAND]);
+            stub.assert_refused(&argv);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_without_exactly_one_remote_command() {
+        let stub = StubWrapper::new(2222);
+        stub.assert_refused(&["-p", "2222", "-l", "me", "target.example.com"]);
+        stub.assert_refused(&["-p", "2222", "-l", "me", "target.example.com", "id", "-a"]);
+        stub.assert_refused(&["-p", "2222", "-l"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn default_port_matches_without_p() {
+        let stub = StubWrapper::new(22);
+        let (file, _, _) = stub.run(
+            &["-l", "me", "target.example.com", MC_REMOTE_COMMAND],
+            None,
+            "",
+        );
+        assert_eq!(file, stub.secret.display().to_string());
+        stub.assert_refused(&[
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_refused_sign_in_leaves_an_auth_failure_marker() {
+        let stub = StubWrapper::new(2222);
+        let argv = [
+            "-p",
+            "2222",
+            "-l",
+            "me",
+            "target.example.com",
+            MC_REMOTE_COMMAND,
+        ];
+
+        let (_, _, status) = stub.run(&argv, Some("255"), "Connection closed by 192.0.2.1");
+        assert_eq!(status, 255);
+        assert!(!stub.marker.exists(), "a lost connection is not a refusal");
+
+        let (_, _, status) = stub.run(
+            &argv,
+            Some("255"),
+            "me@target: Permission denied (password).",
+        );
+        assert_eq!(status, 255);
+        assert!(stub.marker.exists());
+        // The captured stderr does not outlive the ssh it came from.
+        assert!(!stub.dir.path().join("ssh-stderr").exists());
+    }
+
+    #[test]
+    fn take_auth_failure_reports_a_marker_once() {
+        let id = Uuid::new_v4();
+        assert!(!take_auth_failure(id));
+        let marker = auth_failure_marker(id);
+        std::fs::create_dir_all(marker.parent().unwrap()).unwrap();
+        std::fs::write(&marker, b"").unwrap();
+        assert!(take_auth_failure(id));
+        assert!(!take_auth_failure(id));
+    }
+
+    fn route_args(
+        conn: &Connection,
+        chain: &JumpChain,
+        connections: &[Connection],
+        declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+    ) -> Option<Vec<String>> {
+        let cfg = ssh_config(conn).unwrap();
+        password_route_args(conn, cfg, chain, connections, &[], None, declares_proxy)
+    }
+
+    #[test]
+    fn a_direct_route_asks_the_ssh_config_first() {
+        let conn = ssh("target", "target.example.com", 2222, Some("me"));
+        let mut asked = None;
+        let args = route_args(&conn, &JumpChain::default(), &[], |host, port, user| {
+            asked = Some((host.to_string(), port, user.map(ToString::to_string)));
+            false
+        })
+        .expect("a direct route keeps the password");
+        assert_eq!(
+            asked,
+            Some((
+                "target.example.com".to_string(),
+                2222,
+                Some("me".to_string())
+            ))
+        );
+        assert!(
+            !args.iter().any(|arg| arg.starts_with("ProxyCommand")),
+            "{args:?}"
+        );
+        assert_eq!(
+            args,
+            strs(&[
+                "-o",
+                "NumberOfPasswordPrompts=1",
+                "-o",
+                "StrictHostKeyChecking=accept-new"
+            ])
+        );
+
+        assert!(route_args(&conn, &JumpChain::default(), &[], |_, _, _| true).is_none());
+    }
+
+    #[test]
+    fn the_connections_own_host_key_policy_is_kept() {
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        cfg_of(&mut conn)
+            .custom_options
+            .insert("StrictHostKeyChecking".to_string(), "yes".to_string());
+        let args = route_args(&conn, &JumpChain::default(), &[], |_, _, _| false).unwrap();
+        assert!(
+            !args.iter().any(|arg| arg.contains("accept-new")),
+            "{args:?}"
+        );
+    }
+
+    #[test]
+    fn a_saved_jump_host_goes_behind_the_env_boundary() {
+        let bastion = ssh("bastion", "jump.example.com", 22, Some("ops"));
+        let conn = ssh("target", "target.example.com", 22, Some("me"));
+        let chain = JumpChain {
+            hops: strs(&["ops@jump.example.com"]),
+            hop_ids: vec![Some(bastion.id)],
+        };
+        let args = route_args(&conn, &chain, std::slice::from_ref(&bastion), |_, _, _| {
+            panic!("a ProxyCommand on the command line overrides ~/.ssh/config")
+        })
+        .expect("a plain hop keeps the password");
+        assert_eq!(args[0], "-o");
+        assert!(
+            args[1].starts_with("ProxyCommand=env _RC_TGT_PW_FILE="),
+            "{args:?}"
+        );
+        assert!(args[1].ends_with("ops@jump.example.com"), "{args:?}");
+    }
+
+    #[test]
+    fn routes_that_could_reach_another_host_get_no_password() {
+        let plain = ssh("target", "target.example.com", 22, Some("me"));
+
+        let mut keyboard = plain.clone();
+        cfg_of(&mut keyboard).auth_method = SshAuthMethod::KeyboardInteractive;
+        let mut proxy_command = plain.clone();
+        cfg_of(&mut proxy_command).proxy_command = Some("nc %h %p".to_string());
+        let mut custom_jump = plain.clone();
+        cfg_of(&mut custom_jump)
+            .custom_options
+            .insert("ProxyJump".to_string(), "far.example.com".to_string());
+        for (case, conn) in [
+            ("keyboard interactive", &keyboard),
+            ("proxy command", &proxy_command),
+            ("custom ProxyJump", &custom_jump),
+        ] {
+            assert!(
+                route_args(conn, &JumpChain::default(), &[], |_, _, _| false).is_none(),
+                "{case}"
+            );
+        }
+
+        let shell_word = JumpChain {
+            hops: strs(&["far;reboot"]),
+            hop_ids: vec![None],
+        };
+        assert!(route_args(&plain, &shell_word, &[], |_, _, _| false).is_none());
+    }
+
+    #[test]
+    fn a_farther_hop_with_its_own_key_keeps_todays_route() {
+        let dir = tempfile::tempdir().unwrap();
+        let near = ssh("near", "near.example.com", 22, Some("ops"));
+        let mut far = ssh("far", "far.example.com", 22, Some("ops"));
+        set_key(&mut far, &key_file(dir.path(), "far"));
+        let conn = ssh("target", "target.example.com", 22, Some("me"));
+        let chain = JumpChain {
+            hops: strs(&["ops@near.example.com", "ops@far.example.com"]),
+            hop_ids: vec![Some(near.id), Some(far.id)],
+        };
+        assert!(route_args(&conn, &chain, &[near, far], |_, _, _| false).is_none());
+    }
+
+    #[test]
+    fn expects_password_only_without_a_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut conn = ssh("target", "target.example.com", 22, Some("me"));
+        assert!(expects_password(&conn, &[]));
+        cfg_of(&mut conn).auth_method = SshAuthMethod::KeyboardInteractive;
+        assert!(expects_password(&conn, &[]));
+        assert!(!password_may_be_sent(&conn, &[]));
+
+        for method in [SshAuthMethod::PublicKey, SshAuthMethod::Agent] {
+            cfg_of(&mut conn).auth_method = method;
+            assert!(!expects_password(&conn, &[]));
+        }
+
+        cfg_of(&mut conn).auth_method = SshAuthMethod::Password;
+        set_key(&mut conn, &key_file(dir.path(), "target"));
+        assert!(!expects_password(&conn, &[]));
+
+        let rdp = Connection::new_rdp("rdp".to_string(), "host".to_string(), 3389);
+        assert!(!expects_password(&rdp, &[]));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_direct_password_connection_gets_an_owner_only_secret_file() {
+        use secrecy::ExposeSecret as _;
+        use std::os::unix::fs::PermissionsExt;
+
+        let conn = ssh("target", "target.example.com", 22, Some("me"));
+        // The real `ssh -G` decides; a proxy in this machine's config (or no
+        // ssh at all) means no delivery, which other tests cover.
+        if crate::ssh_tunnel::ssh_config_declares_proxy("target.example.com", 22, Some("me")) {
+            return;
+        }
+        let password = SecretString::from("hunter2-mc-secret".to_string());
+        let session = Uuid::new_v4();
+        let Some(env) = prepare_mc_ssh_env(
+            session,
+            &conn,
+            &[],
+            &[],
+            &crate::config::NetworkSettings::default(),
+            Some(&password),
+        ) else {
+            return;
+        };
+        let Some(secret) = env.secret_file().map(Path::to_path_buf) else {
+            // No runtime directory for secrets on this machine.
+            cleanup_mc_ssh_env(session);
+            return;
+        };
+        assert!(env.delivers_password());
+        let mode = std::fs::metadata(&secret).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o600);
+        assert_eq!(
+            std::fs::read_to_string(&secret)
+                .unwrap()
+                .trim_end_matches('\n'),
+            password.expose_secret()
+        );
+
+        let script = std::fs::read_to_string(env.wrapper_dir().join("ssh")).unwrap();
+        assert!(!script.contains(password.expose_secret()));
+        assert!(script.contains(&secret.display().to_string()));
+        // The path goes only to the delivering ssh, never to mc itself.
+        assert!(!env.path_env().contains(&secret.display().to_string()));
+
+        let _ = std::fs::remove_file(&secret);
+        cleanup_mc_ssh_env(session);
+        assert!(!env.wrapper_dir().exists());
     }
 }

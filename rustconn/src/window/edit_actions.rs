@@ -2139,6 +2139,7 @@ impl MainWindow {
                 &connections,
                 &groups,
                 &network,
+                None,
             )
             .map(|env| env.path_env());
             glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
@@ -2241,6 +2242,7 @@ impl MainWindow {
                     &connections_for_uri,
                     &groups_for_uri,
                     &network_for_uri,
+                    None,
                 )
                 .map(|env| env.path_env());
 
@@ -2521,6 +2523,7 @@ impl MainWindow {
                 &connections,
                 &groups,
                 &network,
+                None,
             )
             .map(|env| env.path_env());
             glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
@@ -2632,6 +2635,7 @@ impl MainWindow {
                     &connections_for_uri,
                     &groups_for_uri,
                     &network,
+                    None,
                 )
                 .map(|env| env.path_env());
 

@@ -35,8 +35,16 @@ fn run_mc(
     // A fresh id per invocation keeps two concurrent runs against the same
     // connection from tearing down each other's wrapper directory.
     let wrapper_id = uuid::Uuid::new_v4();
-    let mc_ssh =
-        rustconn_core::prepare_mc_ssh_env(wrapper_id, connection, connections, groups, network);
+    // No password: the CLI does not read the secret backend for mc, so a
+    // password-authenticated connection is typed in mc's terminal.
+    let mc_ssh = rustconn_core::prepare_mc_ssh_env(
+        wrapper_id,
+        connection,
+        connections,
+        groups,
+        network,
+        None,
+    );
     if let Some(ref env) = mc_ssh {
         proc.env("PATH", env.path_env().trim_start_matches("PATH="));
     }
