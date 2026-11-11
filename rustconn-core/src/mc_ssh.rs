@@ -162,12 +162,85 @@ impl McSshEnv {
 /// `XDG_RUNTIME_DIR` is preferred: it is user-private, on tmpfs, mounted
 /// executable (the existing jump-host askpass helper already runs from there)
 /// and cleared at logout.
+///
+/// Without it the root falls back to the temp directory, which on Linux is
+/// the shared `/tmp`, so [`prepare_mc_ssh_env`] uses the root only after
+/// [`ensure_private_dir`] has made sure it is this user's own.
 fn wrapper_root() -> PathBuf {
     let base = std::env::var("XDG_RUNTIME_DIR")
         .ok()
         .filter(|d| !d.is_empty())
         .map_or_else(std::env::temp_dir, PathBuf::from);
     base.join(WRAPPER_ROOT)
+}
+
+/// Why the wrapper root is not used.
+#[derive(Debug, thiserror::Error)]
+enum UnsafeRoot {
+    /// A symlink could send the wrapper's files anywhere.
+    #[error("it is a symbolic link")]
+    Symlink,
+    /// Something other than a directory sits at the path.
+    #[error("it is not a directory")]
+    NotDirectory,
+    /// Another account could replace the `ssh` script, which runs as this
+    /// user and names the password file.
+    #[error("another user owns it")]
+    ForeignOwner,
+    /// The directory could not be created, read or made owner-only.
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+}
+
+/// Creates `dir` with mode 0700, or checks an existing one: it must be a
+/// real directory owned by `uid`, and is made owner-only if it is not.
+///
+/// The root falls back to the shared `/tmp` when `XDG_RUNTIME_DIR` is unset,
+/// where another local user could have created it first (issue #255).
+#[cfg(unix)]
+fn ensure_private_dir(dir: &Path, uid: u32) -> Result<(), UnsafeRoot> {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
+
+    match std::fs::DirBuilder::new().mode(0o700).create(dir) {
+        Err(error) if error.kind() != std::io::ErrorKind::AlreadyExists => {
+            return Err(error.into());
+        }
+        _ => {}
+    }
+    let metadata = std::fs::symlink_metadata(dir)?;
+    if metadata.file_type().is_symlink() {
+        return Err(UnsafeRoot::Symlink);
+    }
+    if !metadata.is_dir() {
+        return Err(UnsafeRoot::NotDirectory);
+    }
+    if metadata.uid() != uid {
+        return Err(UnsafeRoot::ForeignOwner);
+    }
+    // An older RustConn created it with the default mode.
+    if metadata.mode() & 0o077 != 0 {
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+    }
+    Ok(())
+}
+
+/// Off Unix there is no shared `/tmp` to defend against; just create it.
+#[cfg(not(unix))]
+fn ensure_private_dir(dir: &Path, _uid: u32) -> Result<(), UnsafeRoot> {
+    std::fs::create_dir_all(dir)?;
+    Ok(())
+}
+
+/// This process's real user id.
+fn current_uid() -> u32 {
+    #[cfg(unix)]
+    {
+        nix::unistd::getuid().as_raw()
+    }
+    #[cfg(not(unix))]
+    {
+        0
+    }
 }
 
 /// Strips `user@` and `:port` from a hop spec, leaving the bare hostname.
@@ -718,9 +791,12 @@ fn prune_stale(root: &Path, keep: &Path) {
 /// [`McSshEnv::secret_file`] when mc exits. Any failure on the delivery path is
 /// logged and leaves the wrapper as without a password.
 ///
-/// Returns `None` for a non-SSH connection, or if the files cannot be written —
-/// in which case the caller should launch mc without a `PATH` override, exactly
-/// as it did before this mechanism existed.
+/// Returns `None` for a non-SSH connection, if the wrapper root is not this
+/// user's own owner-only directory (a symlink, or one another user created
+/// in a shared `/tmp`; no password is delivered there), or if the files
+/// cannot be written — in which case the
+/// caller should launch mc without a `PATH` override, exactly as it did
+/// before this mechanism existed.
 #[must_use]
 pub fn prepare_mc_ssh_env(
     session_id: Uuid,
@@ -733,6 +809,14 @@ pub fn prepare_mc_ssh_env(
     let config_text = build_ssh_config(connection, connections, groups, network)?;
 
     let root = wrapper_root();
+    if let Err(reason) = ensure_private_dir(&root, current_uid()) {
+        tracing::warn!(
+            dir = %root.display(),
+            %reason,
+            "Not using the mc ssh wrapper directory; launching mc without SSH options or a password"
+        );
+        return None;
+    }
     let wrapper_dir = root.join(session_id.as_hyphenated().to_string());
     // Start from a clean directory so a stale config from a previous open of
     // the same session cannot survive an edit to the connection.
@@ -1822,6 +1906,54 @@ mod tests {
             "the refusal was lost to the other run"
         );
         assert!(stub.log_files().is_empty());
+    }
+
+    /// Review item mc-r1: the root is created owner-only, an old one is
+    /// tightened, and one that is a symlink or someone else's is refused
+    /// without being touched.
+    #[cfg(unix)]
+    #[test]
+    fn the_wrapper_root_must_be_this_users_own() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+        let base = tempfile::tempdir().unwrap();
+        let mode = |path: &Path| std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+        let me = std::fs::metadata(base.path()).unwrap().uid();
+        assert_eq!(me, current_uid());
+
+        let fresh = base.path().join("fresh");
+        ensure_private_dir(&fresh, me).unwrap();
+        assert_eq!(mode(&fresh), 0o700);
+        // A second call accepts its own directory.
+        ensure_private_dir(&fresh, me).unwrap();
+
+        let old = base.path().join("old");
+        std::fs::create_dir(&old).unwrap();
+        std::fs::set_permissions(&old, std::fs::Permissions::from_mode(0o755)).unwrap();
+        ensure_private_dir(&old, me).unwrap();
+        assert_eq!(mode(&old), 0o700);
+
+        let link = base.path().join("link");
+        std::os::unix::fs::symlink(&fresh, &link).unwrap();
+        assert!(matches!(
+            ensure_private_dir(&link, me),
+            Err(UnsafeRoot::Symlink)
+        ));
+
+        let file = base.path().join("file");
+        std::fs::write(&file, b"").unwrap();
+        assert!(matches!(
+            ensure_private_dir(&file, me),
+            Err(UnsafeRoot::NotDirectory)
+        ));
+
+        // Owned by "another user": refused, and its mode is left alone.
+        std::fs::set_permissions(&old, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(matches!(
+            ensure_private_dir(&old, me.wrapping_add(1)),
+            Err(UnsafeRoot::ForeignOwner)
+        ));
+        assert_eq!(mode(&old), 0o755);
     }
 
     #[test]
