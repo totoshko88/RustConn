@@ -11,7 +11,9 @@
 #   operations, so the timing sidechannel is not exploitable in this context.
 #   Upgrade path: picky/sspi/winscard move to rsa 0.10.0 and
 #   ironrdp-connector follows; then drop this ignore.
-#   Last reviewed: 2026-11-09
+#   Re-checked 2026-11-13: sspi 0.23.1, winscard 0.4.1 and picky
+#   7.0.0-rc.29 still require rsa =0.10.0-rc.18.
+#   Last reviewed: 2026-11-13
 #   Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to

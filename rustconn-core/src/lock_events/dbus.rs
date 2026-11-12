@@ -33,9 +33,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use futures::StreamExt as _;
-use zbus::Connection;
 use zbus::proxy::CacheProperties;
-use zbus::zvariant::OwnedFd;
+use zbus::{Connection, OwnedFd};
 
 use super::LockEvent;
 
@@ -43,8 +42,7 @@ use super::LockEvent;
 #[zbus::proxy(
     interface = "org.freedesktop.login1.Manager",
     default_service = "org.freedesktop.login1",
-    default_path = "/org/freedesktop/login1",
-    gen_blocking = false
+    default_path = "/org/freedesktop/login1"
 )]
 trait Login1Manager {
     /// Takes an inhibitor lock; it lasts until the returned fd is closed.
@@ -58,8 +56,7 @@ trait Login1Manager {
 #[zbus::proxy(
     interface = "org.freedesktop.ScreenSaver",
     default_service = "org.freedesktop.ScreenSaver",
-    default_path = "/org/freedesktop/ScreenSaver",
-    gen_blocking = false
+    default_path = "/org/freedesktop/ScreenSaver"
 )]
 trait ScreenSaver {
     #[zbus(signal)]
@@ -75,8 +72,7 @@ mod gnome {
     #[zbus::proxy(
         interface = "org.gnome.ScreenSaver",
         default_service = "org.gnome.ScreenSaver",
-        default_path = "/org/gnome/ScreenSaver",
-        gen_blocking = false
+        default_path = "/org/gnome/ScreenSaver"
     )]
     pub(super) trait GnomeScreenSaver {
         #[zbus(signal)]

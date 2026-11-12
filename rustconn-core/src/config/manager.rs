@@ -7,8 +7,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use fs2::FileExt;
-
 use super::settings::AppSettings;
 use super::version_skew::{self, Existing, RUNNING_VERSION, is_newer_than_running};
 use crate::cluster::Cluster;
@@ -42,7 +40,7 @@ const LOCK_WAIT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10
 
 /// Poll interval while waiting for the lock.
 ///
-/// `fs2` offers no timed acquire, so the wait is a poll. Short enough that the
+/// `File::try_lock` offers no timed acquire, so the wait is a poll. Short enough that the
 /// ordinary case — a lock held for the length of one fsync — is barely delayed.
 const LOCK_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(25);
 
@@ -368,7 +366,7 @@ impl ConfigManager {
                 ))
             })?;
 
-        if lock_file.try_lock_exclusive().is_ok() {
+        if lock_file.try_lock().is_ok() {
             return Ok(lock_file);
         }
 
@@ -384,7 +382,7 @@ impl ConfigManager {
         let deadline = std::time::Instant::now() + LOCK_WAIT_TIMEOUT;
         loop {
             std::thread::sleep(LOCK_POLL_INTERVAL);
-            if lock_file.try_lock_exclusive().is_ok() {
+            if lock_file.try_lock().is_ok() {
                 return Ok(lock_file);
             }
             if std::time::Instant::now() >= deadline {
@@ -1724,11 +1722,11 @@ mod tests {
             .open(&lock_path)
             .unwrap();
         // try_lock_exclusive should fail because lock1 is held
-        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_err());
+        assert!(lock_file2.try_lock().is_err());
 
         // Drop lock1 — now lock2 should succeed
         drop(lock1);
-        assert!(fs2::FileExt::try_lock_exclusive(&lock_file2).is_ok());
+        assert!(lock_file2.try_lock().is_ok());
     }
 
     #[test]

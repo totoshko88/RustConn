@@ -23,8 +23,11 @@ yanked = "warn"
 #   local-client context: no RSA decryption oracle is exposed.
 #   Upgrade path: picky/sspi/winscard move to rsa 0.10.0 and ironrdp-connector
 #   follows; then drop this ignore.
+#   Re-checked 2026-11-13: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29
+#   still require rsa =0.10.0-rc.18, and ironrdp-connector 0.12.0 is still the
+#   latest. No newer release of any of them drops the pin.
 #   Mirrored in .cargo/audit.toml so cargo-audit and cargo-deny agree.
-# Last reviewed: 2026-11-09
+# Last reviewed: 2026-11-13
 # Next review: when picky, sspi or ironrdp-connector publishes a new version.
 #
 # RUSTSEC-2026-0244 (gettext-rs `setlocale` unsound off the main thread) used to
@@ -51,16 +54,16 @@ yanked = "warn"
 #   serde_yaml; its own libyaml port carries the advisory. Fix: serde_yaml_ng
 #   replaces the bundled port, or a maintained YAML stack lands.
 # - zbus_names 4.3.5, zvariant 5.15.1, zvariant_derive 5.15.1 — via zbus 5.19,
-#   pulled by the desktop-integration stack (ashpd portals, ksni tray, oo7
-#   Secret Service). The zbus project split these crates out and the advisory
-#   DB flags the standalone crates as unmaintained ahead of a reshuffle. Fix: a
-#   zbus release that folds them back in or renames them.
+#   now pulled only by ksni 0.3.7 (tray, a default feature). Our own zbus
+#   (lock-events) and oo7 0.7 / ashpd 0.14 use zbus 6, which no longer depends
+#   on these crates. Fix: ksni moves to zbus 6.
+# - pin-utils 0.1.1 — via sspi -> async-dnssd. Same upstream as the rsa pin.
 # - atomic-polyfill 1.0.3 — deep under the RDP smartcard path
 #   (ironrdp -> ironrdp-connector -> sspi -> winscard -> iso7816 -> heapless).
 #   heapless 0.7 depends on it; heapless 0.8 dropped it. Fix: sspi's winscard
 #   chain moves to heapless 0.8.
-# Last reviewed: 2026-10-20
-# Next review: when serde_yaml_ng, zbus, or the sspi/ironrdp stack releases a
+# Last reviewed: 2026-11-13
+# Next review: when serde_yaml_ng, ksni, or the sspi/ironrdp stack releases a
 # new major version.
 ignore = [
     "RUSTSEC-2023-0071",
