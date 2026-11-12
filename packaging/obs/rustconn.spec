@@ -9,7 +9,7 @@ Name:           rustconn
 Version:        0.24.11
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
-# protocol list belongs in %description, which has room for all of it. Kept in
+# protocol list belongs in %%description, which has room for all of it. Kept in
 # step with debian.control's short description.
 Summary:        Modern connection manager for SSH, RDP, VNC, SPICE and more
 License:        GPL-3.0-or-later
@@ -49,7 +49,7 @@ Source2:        rust-toolchain.tar.zst
 # Rust 1.95+ required (MSRV)
 # openSUSE: use devel:languages:rust repo for Rust 1.95+
 # Fedora: system Rust may lag behind MSRV, so a bundled toolchain
-#         (rust-toolchain.tar.zst) is used — see the %if 0%{?fedora} block below
+#         (rust-toolchain.tar.zst) is used — see the %if 0%%{?fedora} block below
 %if 0%{?suse_version}
 %if !0%{?bundled_rust}
 BuildRequires:  cargo >= 1.95
@@ -228,7 +228,7 @@ EOF
 %endif
 
 %build
-# The bundled toolchain again: %prep and %build are separate shell invocations, so
+# The bundled toolchain again: %%prep and %%build are separate shell invocations, so
 # the PATH set there does not survive to here.
 %if 0%{?bundled_rust}
 export PATH="$PWD/rust-toolchain/bin:$PATH"
@@ -1236,7 +1236,7 @@ done
   openSUSE — exists only in devel:languages:rust. Slowroll now builds with the bundled
   toolchain, the same way Fedora, Debian and Ubuntu already did, which removes the
   need for rust, cargo and cargo-packaging there. The four sites that must agree —
-  build requirements, the toolchain unpack in %prep, the PATH export in %build and the
+  build requirements, the toolchain unpack in %%prep, the PATH export in %%build and the
   choice of build invocation — are driven by a single bundled_rust flag rather than a
   distro test repeated four times, because a mismatch between them would be silent.
   Verified by parsing the spec in three colours before uploading: Tumbleweed still
@@ -1585,8 +1585,8 @@ done
   RUSTCONN_OPENH264 names a library to try first
 - Improved: every Secret Service call has a deadline, not just the GUI's whole
   credential resolution
-- Packaging: rpmlint errors cleared — Summary within 79 characters, %find_lang
-  for the locale files, no Requires that rpm already derives, and a %check
+- Packaging: rpmlint errors cleared — Summary within 79 characters, %%find_lang
+  for the locale files, no Requires that rpm already derives, and a %%check
   section running the rustconn-core suites
 - Localisation: Simplified Chinese now loads; 13 new strings translated in all
   17 locales
@@ -2152,7 +2152,7 @@ done
 - Updated chacha20 0.10.0->0.10.1
 
 * Tue Jun 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.0-0
-- Packaging (openSUSE): pin the cargo linker to gcc in %prep to fix "linker `clang` not found" — the bare /usr/bin/clang symlink is not reliably present in the OBS build root
+- Packaging (openSUSE): pin the cargo linker to gcc in %%prep to fix "linker `clang` not found" — the bare /usr/bin/clang symlink is not reliably present in the OBS build root
 - Security: kubectl and Zero Trust Generic sessions now spawn argv directly instead of via sh -c, preventing shell-metacharacter command injection from imported/untrusted configs
 - Security: removed the obsolete legacy XOR credential fallback (only AES-256-GCM credentials are read)
 - Security: documented the machine-key threat model and the Passbolt passphrase Known Issue in SECURITY.md

@@ -5,6 +5,23 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-11-13
+
+### Fixed
+- **`fractional_scroll_position_is_kept` failed on VTE 0.84** — the ignored GTK test read the scroll adjustment of a terminal that had never been placed in a window; VTE only sizes `upper` and `page_size` on allocation, so both stayed 0. The test now presents the terminal in a window first. Nobody noticed because no CI job ran the ignored tests
+- **`packaging/obs/rustconn.spec` macros in comments and `%changelog`** — `%description`, `%prep`, `%build`, `%find_lang`, `%check` and `%{?fedora}` in prose were expanded by rpm (rpmspec warned "Macro expanded in comment"); now escaped as `%%`
+
+### Added
+- **CI runs the ignored GTK tests** — new `gui-tests` job executes all 18 under Xvfb, one process per test (`scripts/run-ignored-gui-tests.sh`)
+- **CI launches the GUI headlessly** — new `gui-smoke` job runs `rustconn --version` and a 10 s start under Xvfb, failing on a panic or early exit (`scripts/gui-smoke.sh`)
+- **CI lints the RPM spec** — new `rpm-spec` job runs `rpmspec -P` and `rpmlint`; the filtered warnings are documented in `packaging/obs/rustconn.rpmlint.toml`
+
+### Documentation
+- **Local tooling** — `CONTRIBUTING.md` lists typos, cargo-machete, cargo-nextest, cargo-deny, cargo-audit, rpmlint and Xvfb with what uses them, and the ~23 GB debug `target/` size
+
+### Changed
+- **`scripts/verify.sh` names the tools it could not run** — a closing "NOT CHECKED" line lists every gate skipped for a missing tool, so a green run no longer hides them
+
 ## [0.24.11] - 2026-11-12
 
 ### Added
