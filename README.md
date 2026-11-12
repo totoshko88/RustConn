@@ -166,4 +166,8 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
 
 ## License
 
-GPL-3.0 — Made with ❤️ in Ukraine 🇺🇦
+GPL-3.0-or-later — Made with ❤️ in Ukraine 🇺🇦
+
+From release 0.24.11, the author's own material carries additional terms under
+GPL-3.0 section 7 (author attribution, the origin of modified versions, and the
+use of the name), set out in [NOTICE](NOTICE).
