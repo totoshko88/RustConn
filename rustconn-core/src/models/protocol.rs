@@ -3655,11 +3655,7 @@ impl ZeroTrustConfig {
                     // ssh's own UserKnownHostsFile to the writable dir.
                     let known_hosts = ssh_dir.join("google_compute_known_hosts");
                     a.push("--strict-host-key-checking=no".to_string());
-                    a.push("--ssh-flag=-o".to_string());
-                    a.push(format!(
-                        "--ssh-flag=UserKnownHostsFile={}",
-                        known_hosts.display()
-                    ));
+                    a.extend(gcloud_known_hosts_flags(&known_hosts));
                 }
                 ("gcloud".to_string(), a)
             }
@@ -4153,9 +4149,47 @@ pub fn build_remote_app_freerdp_args(
     args
 }
 
+/// The `gcloud compute ssh` flags that point ssh's `UserKnownHostsFile` at
+/// `known_hosts`, or none when the path cannot be passed.
+///
+/// The option comes from [`crate::ssh_tunnel::user_known_hosts_option`]. gcloud
+/// splits every `--ssh-flag` value on whitespace, quotes included, so a path
+/// with a space is left out too; ssh then uses its default `known_hosts`.
+// ponytail: gcloud also replaces %USER%, %INSTANCE% and %INTERNAL% in the
+// value; a home path holding one of those is not guarded against.
+fn gcloud_known_hosts_flags(known_hosts: &std::path::Path) -> Vec<String> {
+    crate::ssh_tunnel::user_known_hosts_option(known_hosts)
+        .filter(|option| !option.chars().any(char::is_whitespace))
+        .map(|option| vec!["--ssh-flag=-o".to_string(), format!("--ssh-flag={option}")])
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod zerotrust_tests {
     use super::*;
+
+    /// Review item cleanup-gcloud-known-hosts: the gcloud flag goes through
+    /// the shared helper, and a path gcloud would split is left out.
+    #[test]
+    fn gcloud_known_hosts_flags_use_the_shared_helper() {
+        use std::path::Path;
+        assert_eq!(
+            gcloud_known_hosts_flags(Path::new("/home/u/.var/app/x/.ssh/kh")),
+            [
+                "--ssh-flag=-o",
+                "--ssh-flag=UserKnownHostsFile=/home/u/.var/app/x/.ssh/kh"
+            ]
+        );
+        assert_eq!(
+            gcloud_known_hosts_flags(Path::new("/home/100%u/.ssh/kh")),
+            [
+                "--ssh-flag=-o",
+                "--ssh-flag=UserKnownHostsFile=/home/100%%u/.ssh/kh"
+            ]
+        );
+        assert!(gcloud_known_hosts_flags(Path::new("/home/my name/.ssh/kh")).is_empty());
+        assert!(gcloud_known_hosts_flags(Path::new("/home/a\"b/kh")).is_empty());
+    }
 
     #[test]
     fn test_aws_ssm_build_command() {
