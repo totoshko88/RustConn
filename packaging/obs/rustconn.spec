@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.10
+Version:        0.24.11
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %description, which has room for all of it. Kept in
@@ -394,6 +394,34 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Thu Nov 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.11-0
+- Version bump to 0.24.11
+- Added: fallback jump hosts (PR #420, Konstantinos Patronas)
+- Added: Duplicate as Range (PR #420, Konstantinos Patronas)
+- Added: Run Local Script on many SSH/WinRM hosts (PR #420,
+  Konstantinos Patronas)
+- Added: WinRM connections via evil-winrm (PR #420, Konstantinos Patronas)
+- Added: Web connections through a SOCKS5 proxy (PR #420,
+  Konstantinos Patronas)
+- Fixed: Routing changed warning sees a re-pointed saved Jump Host
+  (PR #420, Konstantinos Patronas)
+- Fixed: tunnelled and proxied browsers no longer leave profiles behind
+- Fixed: a split tab is named after the focused pane (#421)
+- Fixed: a tunnel's jump host password no longer reaches farther hops
+- Fixed: SFTP via mc signs in with the saved password; owner-only wrapper
+- Fixed: macOS: Homebrew mc found when started from the Dock (#422)
+- Fixed: Flatpak: home path with a space; host evil-winrm via rbenv/rvm
+- Fixed: slow Match exec in ~/.ssh/config no longer stalls a connect
+- Fixed: Ctrl+W, Ctrl+, and F10 in dialogs and detached windows
+- Fixed: screen-reader names, menu focus ring, split-pane contrast
+- Fixed: Ukrainian uses one form for "script"
+- Changed: update every syncing device before using WinRM or SOCKS5
+- Changed: F1 opens the user guide; user bindings win over defaults
+- Changed: shorter AppStream summary and descriptions
+- Changed: GPL-3.0 section 7 terms in NOTICE; copyright names Ukraine
+- Changed: Flatpak FreeRDP 3.33.0→3.33.1
+- Documentation: Code of Conduct, TRADEMARKS.md, AI and translation policy
+- Dependencies: libz-sys, openh264, rpassword, rustls-pki-types, zip
 * Mon Nov 09 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.10-0
 - Version bump to 0.24.10
 - Fixed: macOS menu-bar icon follows the menu bar style; grey Dock tile

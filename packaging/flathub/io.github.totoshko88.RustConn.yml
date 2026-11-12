@@ -302,8 +302,8 @@ modules:
       - -DWITH_RDTK=OFF
     sources:
       - type: archive
-        url: https://pub.freerdp.com/releases/freerdp-3.33.0.tar.xz
-        sha256: 9cea38e972e3775e1ce83b30e9ae0cbf8d00af1c708c640e6244fc81bdb1e08b
+        url: https://pub.freerdp.com/releases/freerdp-3.33.1.tar.xz
+        sha256: 0248c0d70cba3c2d2e1203eefff39c1bda369518d4cd1006c074461a9b9f7c49
         x-checker-data:
           type: anitya
           project-id: 10442
@@ -381,7 +381,7 @@ modules:
         # chicken-and-egg problem and any placeholder would be a fake pin.
         # The immutable commit is added once the tag exists — by hand or by the
         # Flathub bot — in the Flathub repository, not here.
-        tag: v0.24.10
+        tag: v0.24.11
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$
