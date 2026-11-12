@@ -40,8 +40,11 @@ fn close_tab_note(def: &KeybindingDef, accel: &str) -> Option<String> {
     })
 }
 
-/// Returns the effective accelerator for an action from the user's keybinding
-/// settings, falling back to the definition's default when it is not overridden.
+/// Returns the accelerators registered for an action, from the user's
+/// keybinding settings: the user's override, else the defaults that no other
+/// action's override has taken ([`KeybindingSettings::registered_accels`],
+/// what `app.rs` hands to `set_accels_for_action`). Empty when every default
+/// was taken. Without settings, the definition's default.
 ///
 /// The settings are the source of truth rather than `accels_for_action` on the
 /// live application, which is what this originally read. The application's
@@ -54,7 +57,7 @@ fn close_tab_note(def: &KeybindingDef, accel: &str) -> Option<String> {
 fn effective_accel(overrides: Option<&KeybindingSettings>, def: &KeybindingDef) -> String {
     overrides.map_or_else(
         || def.default_accels.clone(),
-        |settings| settings.get_accel(def).to_owned(),
+        |settings| settings.registered_accels(def).join("|"),
     )
 }
 
@@ -125,6 +128,7 @@ pub(crate) fn fixed_shortcut_accels() -> Vec<(String, String)> {
 
 /// Every line the dialog shows for one category: registry entries first, then
 /// the fixed ones, so a remappable shortcut is never buried under a static list.
+/// An action left with no registered accelerator has no line.
 fn entries_for(
     overrides: Option<&KeybindingSettings>,
     category: KeybindingCategory,
@@ -133,13 +137,13 @@ fn entries_for(
     let mut entries: Vec<HelpEntry> = defs
         .iter()
         .filter(|def| def.category == category)
-        .map(|def| {
+        .filter_map(|def| {
             let accel = effective_accel(overrides, def);
-            HelpEntry {
+            (!accel.is_empty()).then(|| HelpEntry {
                 note: close_tab_note(def, &accel),
                 label: i18n(&def.label),
                 accel,
-            }
+            })
         })
         .collect();
     entries.extend(fixed_shortcuts(category));
@@ -812,6 +816,37 @@ mod tests {
             .overrides
             .insert("win.close-tab".into(), "<Control><Alt>w".into());
         assert!(close_tab_note(Some(&custom)).is_none());
+
+        // Ctrl+W given to another action leaves Close Tab with Ctrl+Shift+W
+        // only, so the note that names Ctrl+W goes too.
+        let mut taken = KeybindingSettings::default();
+        taken
+            .overrides
+            .insert("win.copy".into(), "<Control>w".into());
+        assert!(close_tab_note(Some(&taken)).is_none());
+    }
+
+    /// Review item cleanup-shortcuts-registered: a default another action's
+    /// user binding took is not shown next to its old action.
+    #[test]
+    fn a_default_taken_by_a_user_binding_is_not_shown() {
+        let defaults = default_keybindings();
+        let accel_of = |overrides: &KeybindingSettings, label: &str| {
+            entries_for(Some(overrides), KeybindingCategory::Application, &defaults)
+                .into_iter()
+                .find(|entry| entry.label == i18n(label))
+                .map(|entry| entry.accel)
+        };
+        let mut settings = KeybindingSettings::default();
+        assert_eq!(accel_of(&settings, "Help").as_deref(), Some("F1"));
+        settings
+            .overrides
+            .insert("app.shortcuts".into(), "F1".into());
+        assert_eq!(
+            accel_of(&settings, "Keyboard Shortcuts").as_deref(),
+            Some("F1")
+        );
+        assert_eq!(accel_of(&settings, "Help"), None, "Help has no key left");
     }
 
     #[test]
