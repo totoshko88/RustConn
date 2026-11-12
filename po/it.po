@@ -12687,7 +12687,7 @@ msgid "Basic Information"
 msgstr "Informazioni di base"
 
 #: rustconn/src/split_view/bridge.rs:1997
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Gestisci facilmente le connessioni remote"
 
@@ -15586,6 +15586,10 @@ msgstr "Impossibile salvare lo spazio di lavoro"
 msgid "RustConn"
 msgstr "RustConn"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connessione;terminal;remote;kubernetes;k8s;seriale;sftp;"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+msgid "Connection Manager"
+msgstr "Gestore connessioni"

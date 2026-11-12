@@ -105,3 +105,4 @@ semantic-review/
 
 # Kiro agents tasks
 .agents/
+messages.mo

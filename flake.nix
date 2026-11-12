@@ -1,6 +1,10 @@
 {
   description = "RustConn — GTK4/libadwaita connection manager for SSH, RDP, VNC, SPICE, and more";
 
+  # No flake.lock is committed on purpose (docs/INSTALL.md, "flake.lock policy"):
+  # nixpkgs follows nixpkgs-unstable so the GTK4/libadwaita stack stays current.
+  # scripts/release.sh and the CI `nix` job evaluate this flake against the
+  # current unstable instead; pin a rev here only if that proves too noisy.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -71,8 +75,9 @@
 
           postInstall = ''
             # Install desktop file and icon
-            install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-              $out/share/applications/io.github.totoshko88.RustConn.desktop
+            install -d $out/share/applications
+            msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+              -o $out/share/applications/io.github.totoshko88.RustConn.desktop
             install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
               $out/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg
             # Install metainfo

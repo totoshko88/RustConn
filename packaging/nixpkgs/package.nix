@@ -24,19 +24,20 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "rustconn";
-  version = "0.19.4";
+  version = "0.24.11";
 
   src = fetchFromGitHub {
     owner = "totoshko88";
     repo = "RustConn";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    hash = "sha256-9fhpr59wdl2CjB1a4fbbwjUOPHno0a0EAnLyiyJNHPM="; # v0.24.11, nix store prefetch-file --unpack
   };
 
-  # Replace with the real hash obtained by running:
-  #   nix-prefetch --option extra-experimental-features flakes \
-  #     '(import <nixpkgs> {}).rustconn.cargoDeps'
-  # or by setting lib.fakeHash here and reading the actual hash from the build error.
+  # Placeholder: needs a real build (nix sandbox). Set lib.fakeHash, run
+  #   nix-build -A rustconn   (in a nixpkgs checkout)
+  # and copy the "got:" hash from the error. Cargo.lock has no git sources, so
+  # no outputHashes are needed. src hash is refreshed per release the same way:
+  #   nix store prefetch-file --unpack https://github.com/totoshko88/RustConn/archive/refs/tags/v<version>.tar.gz
   cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
   nativeBuildInputs = [
@@ -82,8 +83,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     install -Dm755 target/release/rustconn     "$out/bin/rustconn"
     install -Dm755 target/release/rustconn-cli "$out/bin/rustconn-cli"
 
-    install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-      "$out/share/applications/io.github.totoshko88.RustConn.desktop"
+    install -d "$out/share/applications"
+    msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+      -o "$out/share/applications/io.github.totoshko88.RustConn.desktop"
 
     install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
       "$out/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"

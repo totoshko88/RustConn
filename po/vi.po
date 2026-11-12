@@ -12549,7 +12549,7 @@ msgid "Basic Information"
 msgstr "Thông tin cơ bản"
 
 #: rustconn/src/split_view/bridge.rs:1997
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Quản lý kết nối từ xa dễ dàng"
 
@@ -15409,8 +15409,12 @@ msgstr "Lưu không gian làm việc thất bại"
 msgid "RustConn"
 msgstr "RustConn"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr ""
 "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;kết "
 "nối;terminal;remote;từ xa;kubernetes;k8s;serial;sftp;"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+msgid "Connection Manager"
+msgstr "Trình quản lý kết nối"

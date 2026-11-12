@@ -432,7 +432,8 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/share/applications
       mkdir -p $CRAFT_PART_INSTALL/usr/share/icons
       mkdir -p $CRAFT_PART_INSTALL/usr/share/metainfo
-      cp rustconn/assets/io.github.totoshko88.RustConn.desktop $CRAFT_PART_INSTALL/usr/share/applications/
+      msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+        -o $CRAFT_PART_INSTALL/usr/share/applications/io.github.totoshko88.RustConn.desktop
       cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml $CRAFT_PART_INSTALL/usr/share/metainfo/
       cp -r rustconn/assets/icons/hicolor $CRAFT_PART_INSTALL/usr/share/icons/
       for po_file in po/*.po; do
