@@ -1,0 +1,11 @@
+# rpmlint filters for packaging/obs/rustconn.spec — used by the `rpm-spec` CI job
+# and by `rpmlint -c packaging/obs/rustconn.rpmlint.toml packaging/obs/rustconn.spec`.
+# Every filter is a deliberate decision, not a way to silence a finding; anything
+# not listed here (errors AND the remaining warnings) must stay visible.
+Filters = [
+    # SourceN are tarballs that the OBS `_service` file generates at build time,
+    # so there is no URL to resolve and none to put in the spec.
+    'invalid-url Source[0-9]+:',
+    # "No %%check section, on purpose." — see the comment above %build in the spec.
+    'no-%check-section',
+]

@@ -498,6 +498,86 @@ jobs:
       - name: Run property tests
         run: cargo nextest run -p rustconn-core --all-features --test property_tests
 
+  # The `#[ignore]`d GTK tests need a display and one process each (GTK
+  # initialises once per process), so `cargo nextest` in the `test` job skips
+  # them. Run here under Xvfb, one process per test.
+  gui-tests:
+    name: GUI tests (Xvfb)
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Install Xvfb
+        run: sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-gui-tests
+
+      - name: Run the ignored GTK tests
+        env:
+          GDK_BACKEND: x11
+          GTK_A11Y: none
+        run: xvfb-run -a scripts/run-ignored-gui-tests.sh
+
+  # Starts the real binary headlessly: catches a startup panic that no unit test
+  # reaches (missing resource, bad schema, widget-tree assertion).
+  gui-smoke:
+    name: GUI smoke (Xvfb)
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+
+      - name: Install Xvfb
+        run: sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: Cache cargo (rust-cache)
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          prefix-key: ${{ runner.os }}-cargo-gui-smoke
+
+      - name: Build rustconn
+        run: cargo build -p rustconn
+
+      - name: Launch for 10 s and fail on panic
+        run: xvfb-run -a scripts/gui-smoke.sh
+
+  # Expands the OBS spec and lints it. Errors fail the job; the filtered warnings
+  # and why are in packaging/obs/rustconn.rpmlint.toml.
+  rpm-spec:
+    name: RPM spec (rpmspec + rpmlint)
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install rpm tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm rpmlint
+
+      - name: Expand the spec
+        run: rpmspec -P packaging/obs/rustconn.spec > /dev/null
+
+      - name: rpmlint
+        run: rpmlint -c packaging/obs/rustconn.rpmlint.toml packaging/obs/rustconn.spec
+
   msrv:
     name: MSRV (1.95)
     runs-on: ubuntu-26.04
@@ -910,6 +990,9 @@ jobs:
       - test
       - test-core
       - property-tests
+      - gui-tests
+      - gui-smoke
+      - rpm-spec
       - msrv
       - cargo-deny
       - feature-powerset

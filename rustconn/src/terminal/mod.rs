@@ -4671,12 +4671,18 @@ mod vte_contract_tests {
     #[test]
     #[ignore = "initialises GTK: needs a display and its own process"]
     fn fractional_scroll_position_is_kept() {
-        use gtk4::prelude::{AdjustmentExt, ScrollableExt};
+        use gtk4::prelude::{AdjustmentExt, GtkWindowExt, ScrollableExt};
 
         if gtk4::init().is_err() {
             return;
         }
         let terminal = super::Terminal::new();
+        // VTE sizes its vertical adjustment (upper, page_size) in size_allocate,
+        // so a terminal never placed in a mapped window reports 0 for
+        // both (measured on VTE 0.84.1). Give it a real allocation first.
+        let window = gtk4::Window::new();
+        window.set_child(Some(&terminal));
+        window.present();
         terminal.set_size(80, 10);
         for line in 0..40 {
             terminal.feed(format!("line {line}\r\n").as_bytes());

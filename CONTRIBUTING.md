@@ -49,7 +49,7 @@ patch; it explains why the code is split the way it is.
 
 ## The quality gate
 
-CI runs twelve jobs and a red one blocks the merge. You can reproduce all of the
+CI runs a job per gate and a red one blocks the merge. You can reproduce all of the
 important ones locally:
 
 ```bash
@@ -59,6 +59,35 @@ cargo test --workspace             # ~2.5 min including the compile
 typos                              # spell check, configured in typos.toml
 cargo machete                      # unused dependencies
 ```
+
+Local tools beyond cargo itself. `scripts/verify.sh` skips a gate whose tool is
+missing and lists every skipped tool in its summary, so "all gates passed" with
+a `skip` line above it means *not* checked:
+
+| Tool | Install | Used by |
+|------|---------|---------|
+| `typos` | `cargo install typos-cli` | `verify.sh`, CI `hygiene` |
+| `cargo-machete` | `cargo install cargo-machete` | `verify.sh`, CI `hygiene` |
+| `cargo-nextest` | `cargo install cargo-nextest` | CI `test` (locally `cargo test` is enough) |
+| `cargo-deny` | `cargo install cargo-deny` | CI `cargo-deny` (licences, advisories, bans) |
+| `cargo-audit` | `cargo install cargo-audit` | `scripts/dep-audit.sh`; also lists unmaintained crates |
+| `rpmspec`, `rpmlint` | your distro's `rpm` and `rpmlint` packages | CI `rpm-spec` |
+| `Xvfb` (`xvfb-run`) | your distro's `xorg-x11-server-Xvfb` / `xvfb` | `scripts/run-ignored-gui-tests.sh`, `scripts/gui-smoke.sh` |
+
+Install system packages with your package manager; the cargo tools build from
+source into `~/.cargo/bin`.
+
+The `#[ignore]`d GTK tests and the launch smoke test need a display and are not
+part of `cargo test`. CI runs them under Xvfb; locally:
+
+```bash
+xvfb-run -a scripts/run-ignored-gui-tests.sh   # one process per test
+cargo build -p rustconn && xvfb-run -a scripts/gui-smoke.sh
+```
+
+A debug build is large: a full workspace `target/` reaches about 23 GB with
+tests and clippy artefacts. Point `CARGO_TARGET_DIR` at a disk with room (for
+example one per worktree) and `cargo clean` it when you are done.
 
 Two traps worth knowing before they cost you an hour:
 
