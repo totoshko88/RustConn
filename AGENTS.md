@@ -124,7 +124,7 @@ build. Scopes: rustconn-core, rustconn-cli, rustconn (gui), i18n, packaging, ci.
   `target/.kiro-session-edits` — never `git add -A`/`git add .`.
 - **Every commit an agent makes ends with a `Co-Authored-By:` trailer** naming
   the agent, e.g. `Co-Authored-By: Claude <noreply@anthropic.com>`.
-  CONTRIBUTING.md promises this from 0.24.11 on.
+  CONTRIBUTING.md promises this for commits made since 12 November 2026.
 - **Never `git push`** — no branch, no tag, no remote. Commit locally and hand
   over. `git push --dry-run` is fine.
 - **An agent prepares a release; it never cuts one.** `./scripts/release.sh

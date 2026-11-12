@@ -243,8 +243,9 @@ What holds for every change, whoever or whatever wrote it:
   [Flathub's policy](https://docs.flathub.org/docs/for-app-authors/requirements)
   requires.
 
-From release 0.24.11, a commit made with an agent carries a `Co-Authored-By`
-trailer naming it. Most agent-assisted commits before 0.24.11 do not have one.
+Since 12 November 2026, a commit made with an agent carries a `Co-Authored-By`
+trailer naming it. Most earlier agent-assisted commits, including most of the
+0.24.11 cycle, do not have one.
 
 You may use AI tools for your own contributions. You must understand what you
 submit and be able to explain it in review: why the change is needed, what it
