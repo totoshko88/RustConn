@@ -457,9 +457,12 @@ fn ask_password(
     let row = password_row.downgrade();
     dialog.connect_response(None, move |_, response| {
         let typed = row.upgrade().map(|row| {
-            let text = SecretString::from(row.text().to_string());
+            // The intermediate copy is wiped on drop; the GString that
+            // `text()` returns and the entry's own buffer belong to GTK and
+            // cannot be cleared from Rust beyond emptying the entry.
+            let text = zeroize::Zeroizing::new(row.text().to_string());
             row.set_text("");
-            text
+            SecretString::from(text.as_str())
         });
         let Some(done) = done.take() else {
             return;
