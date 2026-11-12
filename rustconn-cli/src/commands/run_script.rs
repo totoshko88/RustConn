@@ -11,8 +11,8 @@ use rustconn_core::connection::gateway_failover::{gateway_probes_by, probe_gatew
 use rustconn_core::connection::jump_chain::{JumpChain, resolve_jump_chain};
 use rustconn_core::connection::ssh_inheritance::resolve_ssh_key_path;
 use rustconn_core::jump_route::{
-    JumpRoute, JumpRouteRequest, TunnelHopsRequest, hops_are_plain, jump_route, plain_path,
-    tunnel_hop_args,
+    JumpHop, JumpRoute, JumpRouteRequest, TunnelHopsRequest, hops_are_plain, jump_route,
+    plain_path, tunnel_hop_args,
 };
 use rustconn_core::models::{Connection, ConnectionGroup, PasswordSource, ProtocolConfig};
 use rustconn_core::remote_script::{
@@ -741,9 +741,18 @@ fn plain_jump_route(
         .iter()
         .position(|arg| arg == "-i")
         .and_then(|position| session_args.get(position + 1));
+    // `chain.hops` has the length; a short `hop_passwords` leaves the rest without one.
+    let hops: Vec<JumpHop> = chain
+        .hops
+        .iter()
+        .zip(hop_passwords.iter().cloned().chain(std::iter::repeat(None)))
+        .map(|(spec, password)| JumpHop {
+            spec: spec.clone(),
+            password,
+        })
+        .collect();
     jump_route(&JumpRouteRequest {
-        hops: &chain.hops,
-        hop_passwords,
+        hops: &hops,
         first_hop_identity: first_hop_identity.as_deref().and_then(plain_path),
         target_identity: target_identity.map(String::as_str).and_then(plain_path),
         deeper_hop_identity: None,

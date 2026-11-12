@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tests for the lock listener, the SSH key unlock dialog and the failed-command marker**, with the dialog's outcome decision and the marker's bar placement moved out of GTK code; the keyring save helpers in Settings share one timed helper, and the client version checks use `rustconn_core::proc::wait_bounded`. (`rustconn-core/src/lock_events/dbus.rs`, `rustconn/src/dialogs/key_unlock.rs`, `rustconn/src/terminal/failed_marker.rs`, `rustconn/src/dialogs/settings/secrets_tab/keyring.rs`, `rustconn/src/dialogs/settings/clients_tab.rs`)
 
+- **One tested rule for when mc's ssh gets the saved password** — `mc_ssh::password_plan` replaces checks that were spread over GUI code with no tests. Behavior is unchanged.
+- **A jump host's password travels with its hop** — the route builder takes hops that carry their own password instead of two parallel lists, and the tunnel's jump-host route lives in `rustconn-core` (`jump_route::tunnel_jump_args`). Behavior is unchanged.
+
 ### Dependencies
 
 - **resvg 0.49 → 0.50** (tray icon renderer; also usvg 0.50, harfrust 0.15, read-fonts 0.46, skrifa 0.49)
@@ -37,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semver-compatible updates: rustls-webpki 0.103.16 → 0.103.17, vnc-rs 0.6.0 → 0.6.1, zstd 0.14.3 → 0.14.4 (zstd-safe 8.3.0, zstd-sys 2.1.3). tokio was already at 1.54.1
 - `nix`, `libc` and `socket2` are declared once in `[workspace.dependencies]`
 - RUSTSEC-2023-0071 (`rsa`) stays ignored: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29 still pin rsa 0.10.0-rc.18
+- **A host name or option with a line break can no longer add directives to the ssh configuration Midnight Commander uses** — the generated `ssh_config` took the host, jump hosts, `ProxyJump`, custom options and key paths as written, so an imported connection or a Dynamic Folder script could slip in a `ProxyCommand` of its own. A connection with such a value now opens mc without the wrapper, so it gets no jump host and no saved password, and the log names the option (not its value).
+- **Known-hosts and key paths with an apostrophe, `${VAR}` or `%` reach ssh as written** — an apostrophe in the Flatpak `known_hosts` path made ssh fail on the option, `${HOME}` in it was expanded, and the mc ssh configuration read `%d` in a key path as a token. A path ssh cannot be given is left out, as before. The remote clean-up after a session recording quotes its paths as well.
 
 ## [0.24.11] - 2026-11-12
 

@@ -440,13 +440,23 @@ fn retrieve_remote_recording(remote: &RemoteRecordingInfo) -> bool {
     let _ = std::process::Command::new("ssh")
         .args(&ssh_args)
         .arg(&user_host)
-        .arg(format!(
-            "rm -f '{}' '{}'",
-            remote.remote_data, remote.remote_timing
+        .arg(remote_cleanup_command(
+            &remote.remote_data,
+            &remote.remote_timing,
         ))
         .output();
 
     data_ok && timing_ok
+}
+
+/// The remote command that removes the recording's temporary files.
+fn remote_cleanup_command(data: &str, timing: &str) -> String {
+    use rustconn_core::ssh_tunnel::shell_single_quote;
+    format!(
+        "rm -f {} {}",
+        shell_single_quote(data),
+        shell_single_quote(timing)
+    )
 }
 
 /// Reports the outcome of a remote retrieval, identically on both stop paths.
@@ -455,5 +465,33 @@ fn log_retrieval(session_id: Uuid, scp_ok: bool) {
         tracing::info!(%session_id, "Remote recording files retrieved via SCP");
     } else {
         tracing::warn!(%session_id, "Failed to retrieve remote recording files via SCP");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::remote_cleanup_command;
+
+    /// The remote shell must read each path back as one word, whatever it holds.
+    #[test]
+    fn cleanup_command_keeps_each_path_one_shell_word() {
+        for path in [
+            "/tmp/rec.log",
+            "/tmp/a b",
+            "/tmp/it's",
+            "/tmp/$(id)",
+            "/tmp/a;b",
+        ] {
+            let command = remote_cleanup_command(path, "/tmp/t");
+            let output = std::process::Command::new("sh")
+                .args(["-c", &command.replacen("rm -f", "printf '%s\\n'", 1)])
+                .output()
+                .expect("sh runs");
+            assert_eq!(
+                String::from_utf8_lossy(&output.stdout),
+                format!("{path}\n/tmp/t\n"),
+                "{command}"
+            );
+        }
     }
 }
