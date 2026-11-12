@@ -5,6 +5,20 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - Unreleased
+
+### Changed
+- **Secret Service client updated to oo7 0.7 (ashpd 0.14)** — the GNOME Keyring / KWallet backend and the Flatpak portal path use the new client. The calls RustConn makes are unchanged. oo7 0.7 matches items stored without an `xdg:schema` attribute against the generic schema, and handles unencrypted keyrings. (`Cargo.toml`)
+- **Screen-lock and suspend listener moved to zbus 6** — it needs no code change in behaviour. zbus 6 no longer depends on the unmaintained `zvariant` and `zbus_names` crates, so only the tray library still pulls them. (`rustconn-core/src/lock_events/dbus.rs`, `Cargo.toml`)
+- **Config file locking uses the standard library** — `File::try_lock` replaces the `fs2` crate; the lock is the same advisory `flock`. (`rustconn-core/src/config/manager.rs`)
+
+### Dependencies
+- **resvg 0.49 → 0.50** (tray icon renderer; also usvg 0.50, harfrust 0.15, read-fonts 0.46, skrifa 0.49)
+- **oo7 0.6 → 0.7.1**, **ashpd 0.13 → 0.14**, **zbus 5 → 6** (direct dependency); removed `fs2`, `cbc`, `hkdf`, `pbkdf2`, `block-padding`
+- Semver-compatible updates: rustls-webpki 0.103.16 → 0.103.17, vnc-rs 0.6.0 → 0.6.1, zstd 0.14.3 → 0.14.4 (zstd-safe 8.3.0, zstd-sys 2.1.3). tokio was already at 1.54.1
+- `nix`, `libc` and `socket2` are declared once in `[workspace.dependencies]`
+- RUSTSEC-2023-0071 (`rsa`) stays ignored: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29 still pin rsa 0.10.0-rc.18
+
 ## [0.24.11] - 2026-11-12
 
 ### Added
