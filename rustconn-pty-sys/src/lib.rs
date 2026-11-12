@@ -50,9 +50,9 @@ mod controlling_terminal {
     ///
     /// Verified on `aarch64-apple-darwin`: at the call site the widening form
     /// tripped `clippy::cast_lossless` whichever way the target type was written,
-    /// which is what ruled out collapsing the two arms. The glibc arm is not
-    /// checkable here — no CI job and no local target builds it — so it is left
-    /// as the expression that needs no conversion at all.
+    /// which is what ruled out collapsing the two arms. The glibc arm is the
+    /// one every Linux CI job builds; it is the expression that needs no
+    /// conversion at all.
     ///
     /// Not `unsafe`, and not a precondition guard: it only names the integer
     /// handed to `ioctl`. A type mismatch is a compile error, so there is nothing
@@ -339,8 +339,8 @@ mod tests {
         //   fails first with `EPERM`.
         //
         // The `ENODEV` arm was missing, which made this the one test in the
-        // workspace that failed on macOS — invisibly, because no CI job builds
-        // it. Accepting the three keeps the assertion narrow enough to still rule
+        // workspace that failed on macOS — invisibly, because no CI job built
+        // macOS then (the `macos-sys` job does since 0.21.0). Accepting the three keeps the assertion narrow enough to still rule
         // out an unrelated spawn failure.
         let errno = err.raw_os_error();
         assert!(

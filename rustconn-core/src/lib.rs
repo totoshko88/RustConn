@@ -5,15 +5,19 @@
 //!
 //! # Crate Structure
 //!
+//! The main modules; the full list is the `pub mod` block below.
+//!
 //! - [`models`] - Core data structures (Connection, Group, Protocol configs)
 //! - [`config`] - Application settings and persistence
 //! - [`connection`] - Connection CRUD operations and managers
-//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes)
-//! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm)
+//! - [`protocol`] - Protocol trait and implementations (SSH, RDP, VNC, SPICE, Telnet, Serial, SFTP, Kubernetes, MOSH, WinRM, Web, Zero Trust)
+//! - [`import`] / [`export`] - Format converters (Remmina, Asbru-CM, SSH config, Ansible, MobaXterm,
+//!   Royal TS, SecureCRT, PuTTY, mRemoteNG, RDM, RDP files, virt-viewer, libvirt, CSV, native)
 //! - [`secret`] - Credential backends and resolvers; host keyring integration is optional
 //! - [`search`] - Fuzzy search with caching and debouncing
 //! - [`automation`] - Expect scripts, key sequences, tasks
-//! - [`performance`] - Connection-string interner (dedup) + search debouncer
+//! - [`performance`] - Search debouncer and a connection-string interner
+//! - [`sync`] / [`session`] / [`ssh_tunnel`] - Cloud/group sync, session logging, SSH tunnels
 //!
 //! # Feature Flags
 //!
@@ -25,6 +29,10 @@
 //! - `rdp-embedded` - Native RDP client via `IronRDP`
 //! - `gfx-h264` - RDP EGFX/H.264 pipeline support
 //! - `rd-gateway` - Native RD Gateway tunneling for embedded RDP
+//! - `web-embedded` - Makes the embedded WebKitGTK browser the default for new Web connections
+//! - `bitwarden-serve` - Persistent `bw serve` transport for the Bitwarden backend
+//! - `lock-events` - D-Bus listener for screen lock and suspend (Linux; the GUI
+//!   always enables it)
 //!
 //! SPICE sessions use an external viewer (virt-viewer/remote-viewer); the
 //! native embedded SPICE client was removed in 0.18.0.
@@ -33,7 +41,7 @@
 #![warn(missing_docs)]
 // Inline test modules import items via `use super::*` and sometimes also via explicit
 // `use crate::...` paths — the latter are flagged as redundant. Suppressing here avoids
-// touching 146 inline test modules.
+// touching every inline test module.
 #![cfg_attr(
     test,
     allow(

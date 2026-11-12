@@ -1,7 +1,7 @@
 # rustconn-pty-sys
 
 Sanctioned FFI crate (M-UNSAFE). Isolated `libc` helpers for the PTY layer:
-`setsid` + `TIOCSCTTY` in a `pre_exec` hook, `openpty(2)`, `TIOCSWINSZ`,
+`setsid` + `TIOCSCTTY` in a `pre_exec` hook, `openpty(2)` (via `nix`), `TIOCSWINSZ`,
 `poll(2)` with a timeout, and a close-on-exec `dup`.
 
 **`unsafe` is allowed here and nowhere else in the workspace except the four
@@ -19,7 +19,8 @@ Rules for editing this crate:
   inline closure passed to an unsafe registrar puts its own unsafe calls in the
   outer block. Bind the closure with `let` first, then call the registrar in a
   minimal block — `set_controlling_terminal` is the worked example.
-- `libc` is the only dependency. Keep it that way.
+- `libc` and `nix` (`term` feature, for `nix::pty::openpty` only) are the only
+  dependencies. Keep it that way.
 - No panics. This code runs in `pre_exec`, between `fork` and `exec`, where the
   child holds a copy of every lock in the parent — a panic there is not a
   recoverable error, it is a wedged child. Return `io::Error`.

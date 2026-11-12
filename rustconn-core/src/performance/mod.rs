@@ -1,9 +1,9 @@
 //! Performance utilities for `RustConn`.
 //!
-//! Two utilities are in active use:
-//! - [`StringInterner`] — deduplicates frequently repeated connection strings
-//!   (protocol names, hostnames, usernames) to reduce memory usage.
 //! - [`Debouncer`] — rate-limits rapid operations (e.g. search input).
+//! - [`StringInterner`] — deduplicates repeated connection strings. The
+//!   connection manager feeds it protocol names, hostnames and usernames, but
+//!   the models keep their own `String`s, so today it saves no memory.
 
 use std::sync::{Mutex, MutexGuard, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
