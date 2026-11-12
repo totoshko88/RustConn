@@ -137,7 +137,6 @@ native-tls = { workspace = true, optional = true }
 nix = { version = "0.31.2", features = ["fs", "signal", "process", "user"] }
 # MPTCP (Multipath TCP) socket creation — safe API, no unsafe needed
 socket2 = { version = "0.6", features = ["all"] }
-fs2 = "0.4"
 
 # HTTP/1.1 client for the persistent `bw serve` transport (feature
 # `bitwarden-serve`, W2). All already in Cargo.lock transitively (hyper 1.12,
