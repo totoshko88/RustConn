@@ -550,9 +550,12 @@ fn tunnel_command_line(
 
     // Flatpak writable known_hosts. Not for Tailscale: it sets its own
     // UserKnownHostsFile first, and the first value wins in OpenSSH.
-    if !tailscale && let Some(kh_path) = crate::get_flatpak_known_hosts_path() {
+    if !tailscale
+        && let Some(option) =
+            crate::get_flatpak_known_hosts_path().and_then(|kh| user_known_hosts_option(&kh))
+    {
         args.push("-o".to_string());
-        args.push(format!("UserKnownHostsFile={}", kh_path.display()));
+        args.push(option);
     }
 
     // No password helper — prevent SSH from reading stdin
@@ -571,6 +574,167 @@ fn tunnel_command_line(
     }
 
     (if tailscale { "tailscale" } else { "ssh" }, args)
+}
+
+/// The jump host password [`spawn_tunnel`] may hand to its askpass helper.
+///
+/// `None` when the tunnel's `ssh` would start an `ssh` for a further hop that
+/// inherits the helper's environment, so that hop could be sent this password
+/// (the issue #191 class): see [`askpass_stays_on_destination`]. Callers route
+/// such hops through [`crate::jump_route::tunnel_hop_args`]; this is the check
+/// that holds when a caller did not, or when `~/.ssh/config` declares the proxy.
+/// May run `ssh -G` through [`ssh_config_declares_proxy`].
+fn deliverable_password(params: &SshTunnelParams) -> Option<&SecretString> {
+    deliverable_password_with(params, ssh_config_declares_proxy)
+}
+
+/// [`deliverable_password`] with the `ssh -G` check passed in, so tests run none.
+fn deliverable_password_with(
+    params: &SshTunnelParams,
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> Option<&SecretString> {
+    let password = params.password.as_ref()?;
+    if askpass_reaches_other_hops(&params.extra_args) {
+        tracing::warn!(
+            jump_host = %params.jump_host,
+            "Not sending the jump host password: the hops past it would receive it too"
+        );
+        return None;
+    }
+    let (user, host) = match params.jump_host.rsplit_once('@') {
+        Some((user, host)) => (Some(user), host),
+        None => (None, params.jump_host.as_str()),
+    };
+    if !askpass_stays_on_destination(
+        host,
+        params.jump_port,
+        user,
+        &params.extra_args,
+        declares_proxy,
+    ) {
+        tracing::warn!(
+            jump_host = %params.jump_host,
+            "Not sending the jump host password: its ssh configuration routes it through a proxy"
+        );
+        return None;
+    }
+    Some(password)
+}
+
+/// How the `ssh` options in some arguments route the connection.
+enum ArgsRoute {
+    /// No `-J`, `ProxyJump` or `ProxyCommand`: `~/.ssh/config` decides.
+    Unset,
+    /// Only routes that keep the askpass helper away from other hops: a
+    /// `ProxyCommand` behind the `env` boundary, or `none`.
+    Contained,
+    /// A route that starts an `ssh` for another hop which inherits the helper.
+    Leaks,
+}
+
+/// The `ssh` option letters that take a value, from OpenSSH's `getopt` string.
+const SSH_VALUE_FLAGS: &str = "BbcDEeFIiJLlmOoPpQRSWw";
+
+/// Reads the route the `ssh` options in `args` set; see [`ArgsRoute`].
+///
+/// An argument starting with a single `-` is read as `ssh` reads it, as a
+/// cluster of flags (`-qJ far`, `-NJfar`): the first letter that takes a value
+/// ends the cluster and takes the rest of the argument, or the next one, as
+/// that value.
+fn args_route(args: &[String]) -> ArgsRoute {
+    let boundary = format!("env {}=", crate::ssh_askpass::TARGET_PASSWORD_ENV);
+    let mut route = ArgsRoute::Unset;
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        let Some(cluster) = arg
+            .strip_prefix('-')
+            .filter(|cluster| !cluster.is_empty() && !cluster.starts_with('-'))
+        else {
+            continue;
+        };
+        let Some((at, letter)) = cluster
+            .char_indices()
+            .find(|&(_, letter)| SSH_VALUE_FLAGS.contains(letter))
+        else {
+            continue;
+        };
+        if letter == 'J' {
+            return ArgsRoute::Leaks;
+        }
+        let inline = &cluster[at + letter.len_utf8()..];
+        let value = if inline.is_empty() {
+            match args.next() {
+                Some(next) => next.as_str(),
+                None => break,
+            }
+        } else {
+            inline
+        };
+        if letter != 'o' {
+            continue;
+        }
+        match option_route(value, &boundary) {
+            ArgsRoute::Leaks => return ArgsRoute::Leaks,
+            ArgsRoute::Contained => route = ArgsRoute::Contained,
+            ArgsRoute::Unset => {}
+        }
+    }
+    route
+}
+
+/// The route one `-o` value sets: [`ArgsRoute::Unset`] for an option that is
+/// not `ProxyJump` or `ProxyCommand`.
+fn option_route(option: &str, boundary: &str) -> ArgsRoute {
+    let option = option.trim_start();
+    let split = option
+        .find(|c: char| c == '=' || c.is_whitespace())
+        .unwrap_or(option.len());
+    let (name, value) = option.split_at(split);
+    let value = value
+        .trim_start_matches(|c: char| c == '=' || c.is_whitespace())
+        .trim_end();
+    let is_jump = name.eq_ignore_ascii_case("ProxyJump");
+    let is_command = name.eq_ignore_ascii_case("ProxyCommand");
+    if !is_jump && !is_command {
+        ArgsRoute::Unset
+    } else if value.eq_ignore_ascii_case("none") || (is_command && value.starts_with(boundary)) {
+        ArgsRoute::Contained
+    } else {
+        ArgsRoute::Leaks
+    }
+}
+
+/// Whether `ssh` with `args` starts an `ssh` for another hop outside an `env`
+/// boundary from [`askpass_disabled_proxy_prefix`] or [`askpass_proxy_prefix`]:
+/// any `-J`/`ProxyJump`, also inside a flag cluster such as `-qJ`, or a
+/// `ProxyCommand` that does not start with one.
+pub(crate) fn askpass_reaches_other_hops(args: &[String]) -> bool {
+    matches!(args_route(args), ArgsRoute::Leaks)
+}
+
+/// Whether an askpass helper given to `ssh <args> [user@]host -p port` answers
+/// only that destination's own prompt.
+///
+/// False when `args` start an `ssh` for another hop that inherits the helper
+/// ([`askpass_reaches_other_hops`]). When `args` set no route at all,
+/// `~/.ssh/config` decides, so `declares_proxy` (normally
+/// [`ssh_config_declares_proxy`]) is asked: a `ProxyJump` or `ProxyCommand`
+/// declared there starts a child `ssh` that inherits the helper too, and its
+/// bastion would be sent the password (issue #191). A route on the command line
+/// (`ProxyJump=none`, or a `ProxyCommand` behind the `env` boundary) overrides
+/// the config, so the check is skipped.
+pub(crate) fn askpass_stays_on_destination(
+    host: &str,
+    port: u16,
+    user: Option<&str>,
+    args: &[String],
+    declares_proxy: impl FnOnce(&str, u16, Option<&str>) -> bool,
+) -> bool {
+    match args_route(args) {
+        ArgsRoute::Leaks => false,
+        ArgsRoute::Contained => true,
+        ArgsRoute::Unset => !declares_proxy(host, port, user),
+    }
 }
 
 /// Shared spawn path for [`create_tunnel`] and [`create_socks_tunnel`].
@@ -596,7 +760,7 @@ fn spawn_tunnel(
     // Writes the password to an owner-only file and passes its *path* in the
     // environment, so the secret never lands in `/proc/<pid>/environ`. Both the
     // script and the secret file are torn down by `SshTunnel`'s `Drop`.
-    let (askpass_script_path, secret_file_path) = if let Some(ref pw) = params.password {
+    let (askpass_script_path, secret_file_path) = if let Some(pw) = deliverable_password(params) {
         match (
             create_tunnel_askpass_script(),
             create_tunnel_secret_file(pw),
@@ -1121,22 +1285,69 @@ pub fn ssh_g_output_declares_proxy(output: &str) -> bool {
 /// prompts, which is the documented fallback.
 ///
 /// Cost is a single short-lived `ssh -G`, measured at ~4 ms against OpenSSH 10.2 — it performs no
-/// network I/O. Returns `true` on any failure to run or parse, because "cannot tell" must not
-/// enable automatic delivery.
+/// network I/O. A `Match exec` in the config can still run anything, so the check gives up after
+/// [`SSH_G_TIMEOUT`]. Returns `true` on any failure to run, finish or parse, because "cannot tell"
+/// must not enable automatic delivery.
 #[must_use]
 pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) -> bool {
-    let mut command = std::process::Command::new("ssh");
+    ssh_config_declares_proxy_with(std::path::Path::new("ssh"), host, port, username)
+}
+
+/// [`ssh_config_declares_proxy`], asking the `ssh` binary at `ssh` (or found
+/// on `PATH` under that name).
+///
+/// For a caller that runs a specific `ssh` with the password, such as the mc
+/// wrapper with the one it resolved on the extended search path: two OpenSSH
+/// builds can read the same configuration differently, so the check has to
+/// ask the binary it protects.
+#[must_use]
+pub fn ssh_config_declares_proxy_with(
+    ssh: &std::path::Path,
+    host: &str,
+    port: u16,
+    username: Option<&str>,
+) -> bool {
+    let mut command = std::process::Command::new(ssh);
     command.arg("-G").arg("-p").arg(port.to_string());
     if let Some(user) = username.map(str::trim).filter(|user| !user.is_empty()) {
         command.arg("-l").arg(user);
     }
+    command.arg(host);
+    declares_proxy_within(command, SSH_G_TIMEOUT, host)
+}
+
+/// How long [`ssh_config_declares_proxy`] waits for `ssh -G`.
+///
+/// `ssh -G` itself takes milliseconds; only a `Match exec` command in the user's config can make
+/// it slow, and a connect or a script run must not hang on that.
+const SSH_G_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Runs `command` (an `ssh -G` invocation) for at most `budget` and reads its answer.
+///
+/// The output of `ssh -G` is a few KiB, well under the pipe buffer that
+/// [`crate::proc::wait_bounded`] requires.
+fn declares_proxy_within(
+    mut command: std::process::Command,
+    budget: std::time::Duration,
+    host: &str,
+) -> bool {
     command
-        .arg(host)
         .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null());
 
-    match command.output() {
-        Ok(output) if output.status.success() => {
+    let waited = command
+        .spawn()
+        .and_then(|child| crate::proc::wait_bounded(child, budget, "ssh -G proxy check"));
+    match waited {
+        Ok(crate::proc::Waited::TimedOut) => {
+            tracing::warn!(
+                host,
+                "ssh -G did not finish in time; assuming a proxy route and leaving automatic password delivery off"
+            );
+            true
+        }
+        Ok(crate::proc::Waited::Exited(output)) if output.status.success() => {
             let declares = ssh_g_output_declares_proxy(&String::from_utf8_lossy(&output.stdout));
             if declares {
                 tracing::debug!(
@@ -1146,7 +1357,7 @@ pub fn ssh_config_declares_proxy(host: &str, port: u16, username: Option<&str>) 
             }
             declares
         }
-        Ok(output) => {
+        Ok(crate::proc::Waited::Exited(output)) => {
             tracing::warn!(
                 host,
                 status = ?output.status.code(),
@@ -1245,6 +1456,37 @@ pub fn target_password_askpass_allowed(config: &SshConfig, has_resolved_identity
         && !has_unmanaged_proxy_route(config)
 }
 
+/// The `UserKnownHostsFile=<path>` value for an `ssh -o` argument that goes
+/// straight into argv.
+///
+/// ssh splits that option's value on whitespace into several files, so a
+/// path with a space is double-quoted (`UserKnownHostsFile="<path>"`), which
+/// OpenSSH reads as one file. ssh also expands `%` tokens in this option
+/// (ssh_config(5), TOKENS: `UserKnownHostsFile` accepts `%%`, "A literal
+/// '%'"), so a `%` in the path is written as `%%`. Returns `None` for a path
+/// ssh cannot be given this way: not UTF-8, or holding a `"` or `\`, which ssh
+/// reads as quoting; the caller then leaves the option out and ssh uses its
+/// default `known_hosts`. A `ProxyCommand` is run by a shell and needs
+/// [`crate::jump_route::proxy_known_hosts_option`] instead.
+#[must_use]
+pub fn user_known_hosts_option(path: &std::path::Path) -> Option<String> {
+    let option = path
+        .to_str()
+        .filter(|path| !path.contains(['"', '\\']))
+        .map(|path| path.replace('%', "%%"))
+        .map(|path| {
+            if path.chars().any(char::is_whitespace) {
+                format!("UserKnownHostsFile=\"{path}\"")
+            } else {
+                format!("UserKnownHostsFile={path}")
+            }
+        });
+    if option.is_none() {
+        tracing::debug!("known_hosts path cannot be passed to ssh; it uses the default");
+    }
+    option
+}
+
 /// What a proxy hop's `ssh` does with a host key that is not in `known_hosts`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HopHostKeys {
@@ -1253,9 +1495,29 @@ pub enum HopHostKeys {
     /// see [`build_nested_proxy_command_with_askpass`]).
     UserConfig,
     /// `StrictHostKeyChecking=yes`: a hop whose key is unknown fails, with no
-    /// question and nothing written to `known_hosts`. For background probes,
-    /// which must never accept a key the user has not accepted.
+    /// question and nothing written to `known_hosts`, even when it answers
+    /// through an askpass helper. For background probes and script runs, which
+    /// must never accept a key the user has not accepted.
     KnownOnly,
+}
+
+/// The `StrictHostKeyChecking` option RustConn passes to a proxy hop's `ssh`,
+/// if any.
+///
+/// [`HopHostKeys::KnownOnly`] always gives `yes`. [`HopHostKeys::UserConfig`]
+/// gives `accept-new` only to a hop that answers through a forced askpass
+/// helper (issue #203, see [`build_nested_proxy_command_with_askpass`]) and
+/// otherwise leaves the user's ssh configuration in charge.
+#[must_use]
+pub const fn proxy_hop_host_key_option(
+    host_keys: HopHostKeys,
+    uses_askpass: bool,
+) -> Option<&'static str> {
+    match host_keys {
+        HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
+        HopHostKeys::UserConfig if uses_askpass => Some("StrictHostKeyChecking=accept-new"),
+        HopHostKeys::UserConfig => None,
+    }
 }
 
 /// Builds a (possibly nested) SSH `ProxyCommand` value that reaches `hops[0]`
@@ -1309,13 +1571,15 @@ pub fn build_nested_proxy_command(
 /// original chain. The helper opens and unlinks that file before returning its
 /// contents, so no password value enters the SSH process environment.
 ///
-/// The other hops leave `StrictHostKeyChecking` to the user's ssh
-/// configuration ([`HopHostKeys::UserConfig`]). Any hop that gets an askpass
-/// helper is forced to `StrictHostKeyChecking=accept-new`, because a
-/// forced-askpass hop with an unknown host key would otherwise feed its
-/// password into the host-key confirmation prompt and loop (issue #203). That
-/// chain belongs to a connect the user started, and a *changed* key is still
-/// refused.
+/// With [`HopHostKeys::UserConfig`] the hops leave `StrictHostKeyChecking` to
+/// the user's ssh configuration, except that any hop that gets an askpass
+/// helper is forced to `StrictHostKeyChecking=accept-new`: a forced-askpass hop
+/// with an unknown host key would otherwise feed its password into the
+/// host-key confirmation prompt and loop (issue #203). That chain belongs to a
+/// connect the user started, and a *changed* key is still refused. With
+/// [`HopHostKeys::KnownOnly`] every hop gets `StrictHostKeyChecking=yes`, which
+/// asks no question either, so an unknown key fails before any password is
+/// sent.
 ///
 /// # Panics
 /// Panics in debug builds if `hops` is empty.
@@ -1324,6 +1588,7 @@ pub fn build_nested_proxy_command_with_askpass(
     hops: &[&str],
     identity_file: Option<&str>,
     known_hosts: Option<&std::path::Path>,
+    host_keys: HopHostKeys,
     askpass_scripts: &[Option<&std::path::Path>],
     hop_index_offset: usize,
     total_hop_count: usize,
@@ -1332,7 +1597,7 @@ pub fn build_nested_proxy_command_with_askpass(
         hops,
         identity_file,
         known_hosts,
-        HopHostKeys::UserConfig,
+        host_keys,
         askpass_scripts,
         true,
         (hop_index_offset, total_hop_count),
@@ -1367,20 +1632,13 @@ fn build_nested_proxy_command_inner(
     // rejecting a CHANGED one, so MITM protection is preserved. `KnownOnly`
     // asks no question either, so it needs no such exception.
     let this_hop_uses_askpass = matches!(askpass_scripts.first(), Some(Some(_)));
-    let strict_host_key_checking = match host_keys {
-        HopHostKeys::KnownOnly => Some("StrictHostKeyChecking=yes"),
-        HopHostKeys::UserConfig if this_hop_uses_askpass => {
-            Some("StrictHostKeyChecking=accept-new")
-        }
-        HopHostKeys::UserConfig => None,
-    };
-    if let Some(option) = strict_host_key_checking {
+    if let Some(option) = proxy_hop_host_key_option(host_keys, this_hop_uses_askpass) {
         parts.push("-o".to_string());
         parts.push(option.to_string());
     }
-    if let Some(kh) = known_hosts {
+    if let Some(option) = known_hosts.and_then(crate::jump_route::proxy_known_hosts_option) {
         parts.push("-o".to_string());
-        parts.push(format!("UserKnownHostsFile={}", kh.display()));
+        parts.push(option);
     }
     if let Some(key) = identity_file {
         parts.push("-i".to_string());
@@ -1416,8 +1674,9 @@ fn build_nested_proxy_command_inner(
 
 /// Builds an `env` prefix that keeps RustConn's credentials out of a proxy hop.
 ///
-/// The target credential and every indexed bastion credential are cleared, so a hop RustConn
-/// holds no password for cannot reach one it was not given. The shell that starts a
+/// The target credential, every indexed bastion credential and the path of a tunnel's own
+/// secret file (`_RC_TUN_PW_FILE`) are cleared, so a hop RustConn holds no password for
+/// cannot reach one it was not given. The shell that starts a
 /// `ProxyCommand` necessarily inherits the outer environment long enough to execute `env`, but
 /// the nested SSH process sees these overrides.
 ///
@@ -1446,6 +1705,7 @@ pub fn askpass_disabled_proxy_prefix(hop_count: usize) -> Vec<String> {
         format!("{}=", crate::ssh_askpass::TARGET_PASSWORD_ENV),
     ];
     prefix.extend((0..hop_count).map(|index| format!("{}=", jump_host_pw_env_name(index))));
+    prefix.push(format!("{TUNNEL_ASKPASS_ENV_VAR}="));
     prefix.push("SSH_ASKPASS=".to_string());
     prefix.push("SSH_ASKPASS_REQUIRE=".to_string());
     prefix
@@ -1815,6 +2075,7 @@ mod tests {
                 "_RC_JH_PW_FILE=".to_string(),
                 "_RC_JH_PW_FILE_1=".to_string(),
                 "_RC_JH_PW_FILE_2=".to_string(),
+                "_RC_TUN_PW_FILE=".to_string(),
                 "SSH_ASKPASS=".to_string(),
                 "SSH_ASKPASS_REQUIRE=".to_string(),
             ]
@@ -1968,12 +2229,20 @@ mod tests {
 
     #[test]
     fn test_nested_askpass_empty_scripts_isolates_every_hop() {
-        let cmd = build_nested_proxy_command_with_askpass(&["near", "far"], None, None, &[], 0, 2);
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            HopHostKeys::UserConfig,
+            &[],
+            0,
+            2,
+        );
         assert_eq!(
             cmd,
-            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p \
-             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p far' near"
         );
     }
@@ -1987,6 +2256,7 @@ mod tests {
             &["near", "far"],
             None,
             None,
+            HopHostKeys::UserConfig,
             &[Some(script), None],
             0,
             2,
@@ -1999,7 +2269,7 @@ mod tests {
             "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh \
              SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=accept-new \
-             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p far' near"
         );
     }
@@ -2014,6 +2284,7 @@ mod tests {
             &["near", "far"],
             None,
             None,
+            HopHostKeys::UserConfig,
             &[None, Some(inner)],
             0,
             2,
@@ -2022,11 +2293,56 @@ mod tests {
         // → gets accept-new inside the nested ProxyCommand (#203).
         assert_eq!(
             cmd,
-            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= SSH_ASKPASS= \
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
              SSH_ASKPASS_REQUIRE= ssh -W %h:%p \
              -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= \
              SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass-1.sh \
              SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=accept-new far' near"
+        );
+    }
+
+    #[test]
+    fn test_nested_askpass_known_only_never_accepts_a_new_key() {
+        // A script run hands passwords to bastions without anyone watching, so
+        // every hop, with a helper or without, must refuse an unknown key.
+        let outer = std::path::Path::new("/run/user/1000/rustconn-jh-askpass.sh");
+        let cmd = build_nested_proxy_command_with_askpass(
+            &["near", "far"],
+            None,
+            None,
+            HopHostKeys::KnownOnly,
+            &[Some(outer), None],
+            0,
+            2,
+        );
+        assert_eq!(
+            cmd,
+            "env _RC_TGT_PW_FILE= _RC_JH_PW_FILE_1= \
+             SSH_ASKPASS=/run/user/1000/rustconn-jh-askpass.sh \
+             SSH_ASKPASS_REQUIRE=force ssh -W %h:%p -o StrictHostKeyChecking=yes \
+             -o ProxyCommand='env _RC_TGT_PW_FILE= _RC_JH_PW_FILE= _RC_JH_PW_FILE_1= _RC_TUN_PW_FILE= SSH_ASKPASS= \
+             SSH_ASKPASS_REQUIRE= ssh -W %h:%p -o StrictHostKeyChecking=yes far' near"
+        );
+        assert!(!cmd.contains("accept-new"), "{cmd}");
+    }
+
+    #[test]
+    fn test_proxy_hop_host_key_option() {
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::KnownOnly, true),
+            Some("StrictHostKeyChecking=yes")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::KnownOnly, false),
+            Some("StrictHostKeyChecking=yes")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::UserConfig, true),
+            Some("StrictHostKeyChecking=accept-new")
+        );
+        assert_eq!(
+            proxy_hop_host_key_option(HopHostKeys::UserConfig, false),
+            None
         );
     }
 
@@ -2129,6 +2445,103 @@ mod proxy_detection_tests {
         // Prefix matching would fire on this; the parser compares the whole first field.
         assert!(!ssh_g_output_declares_proxy(
             "proxyusepdisc no\nproxyjumpsomething value\n"
+        ));
+    }
+
+    #[test]
+    fn a_hung_proxy_check_counts_as_a_proxy() {
+        // A `Match exec` that never returns must not stall the caller, and "cannot tell" keeps
+        // the password back.
+        let mut command = std::process::Command::new("sh");
+        command.arg("-c").arg("sleep 30");
+        let started = std::time::Instant::now();
+        assert!(super::declares_proxy_within(
+            command,
+            std::time::Duration::from_millis(200),
+            "target.example.com"
+        ));
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    /// Review item known-hosts-quote: a path with a space is quoted so ssh
+    /// reads one file, and a path ssh would misread is left out.
+    #[test]
+    fn known_hosts_option_quotes_a_path_with_a_space() {
+        use std::path::Path;
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/me/.var/app/x/.ssh/known_hosts"))
+                .as_deref(),
+            Some("UserKnownHostsFile=/home/me/.var/app/x/.ssh/known_hosts")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/my name/.ssh/known_hosts")).as_deref(),
+            Some("UserKnownHostsFile=\"/home/my name/.ssh/known_hosts\"")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/a\"b/kh")),
+            None
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/a\\ b/kh")),
+            None
+        );
+    }
+
+    /// Review item cleanup-known-hosts-percent: ssh expands `%` tokens in
+    /// `UserKnownHostsFile`, so a literal `%` goes in as `%%`.
+    #[test]
+    fn known_hosts_option_escapes_a_percent() {
+        use std::path::Path;
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/100%u/.ssh/known_hosts")).as_deref(),
+            Some("UserKnownHostsFile=/home/100%%u/.ssh/known_hosts")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/50% off/kh")).as_deref(),
+            Some("UserKnownHostsFile=\"/home/50%% off/kh\"")
+        );
+    }
+
+    /// Review item from issue #422: the proxy check asks the `ssh` it is
+    /// given, so the mc wrapper checks the binary it delivers to.
+    #[cfg(unix)]
+    #[test]
+    fn the_proxy_check_asks_the_given_ssh() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let stub = |name: &str, output: &str| {
+            let path = dir.path().join(name);
+            std::fs::write(&path, format!("#!/bin/sh\nprintf '{output}'\n")).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700)).unwrap();
+            path
+        };
+        let with_proxy = stub("ssh-with-proxy", "proxyjump bastion.example.com\\n");
+        let without = stub("ssh-without", "proxyjump none\\nproxycommand none\\n");
+        assert!(super::ssh_config_declares_proxy_with(
+            &with_proxy,
+            "target.example.com",
+            22,
+            Some("me")
+        ));
+        assert!(!super::ssh_config_declares_proxy_with(
+            &without,
+            "target.example.com",
+            22,
+            Some("me")
+        ));
+    }
+
+    #[test]
+    fn a_finished_proxy_check_is_parsed() {
+        let mut command = std::process::Command::new("sh");
+        command
+            .arg("-c")
+            .arg("printf 'proxyjump none\\nproxycommand none\\n'");
+        assert!(!super::declares_proxy_within(
+            command,
+            std::time::Duration::from_secs(5),
+            "target.example.com"
         ));
     }
 
@@ -2613,5 +3026,253 @@ mod tailscale_tunnel_tests {
         };
         let (_, session_args) = zt.build_command(conn.username.as_deref());
         assert_eq!(session_args[1], destination);
+    }
+}
+
+#[cfg(test)]
+mod tunnel_password_tests {
+    use secrecy::ExposeSecret;
+
+    use super::*;
+    use crate::jump_route::{TunnelHopsRequest, tunnel_hop_args};
+
+    fn strs(v: &[&str]) -> Vec<String> {
+        v.iter().map(ToString::to_string).collect()
+    }
+
+    fn with_password(extra_args: Vec<String>) -> SshTunnelParams {
+        SshTunnelParams {
+            jump_host: "alice@near.lan".to_string(),
+            jump_port: 22,
+            remote_host: "win.lan".to_string(),
+            remote_port: 5985,
+            identity_file: None,
+            password: Some(SecretString::from("hunter2".to_string())),
+            extra_args,
+            launcher: TunnelLauncher::OpenSsh,
+        }
+    }
+
+    fn far_hops(host_keys: HopHostKeys) -> Vec<String> {
+        let hops = strs(&["bob@far.lan", "carol@farthest.lan:2222"]);
+        tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: None,
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: None,
+            hop_host_keys: host_keys,
+        })
+        .expect("plain hops give a route")
+    }
+
+    #[test]
+    fn tunnel_hops_get_the_flatpak_known_hosts() {
+        let known_hosts =
+            std::path::Path::new("/home/u/.var/app/io.github.totoshko88.RustConn/.ssh/known_hosts");
+        let hops = strs(&["bob@far.lan", "carol@farthest.lan:2222"]);
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: None,
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: Some(known_hosts),
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("plain hops and a plain path give a route");
+        assert_eq!(args.len(), 2, "{args:?}");
+        assert_eq!(args[0], "-o");
+        let outer = args[1]
+            .strip_prefix("ProxyCommand=")
+            .expect("a ProxyCommand");
+        let option = format!("-o UserKnownHostsFile={}", known_hosts.display());
+        let boundary = "env _RC_TGT_PW_FILE= ";
+        assert!(outer.starts_with(boundary), "{outer}");
+        // The outer `ssh -W` for far.lan, then the nested one for farthest.lan
+        // inside its quoted ProxyCommand: each carries the path.
+        let (outer_hop, nested) = outer
+            .split_once("ProxyCommand='")
+            .expect("the farther hop is nested");
+        assert!(outer_hop.contains(&option), "{outer}");
+        assert!(nested.starts_with(boundary), "{nested}");
+        assert!(nested.contains(&option), "{nested}");
+        assert_eq!(outer.matches(&option).count(), 2, "{outer}");
+        assert_eq!(outer.matches(" ssh -W ").count(), 2, "{outer}");
+    }
+
+    #[test]
+    fn a_route_whose_hops_inherit_the_helper_gets_no_password() {
+        for extra_args in [
+            strs(&["-J", "far.lan"]),
+            strs(&["-Jfar.lan"]),
+            strs(&["-o", "ProxyJump=far.lan"]),
+            strs(&["-oProxyJump far.lan"]),
+            strs(&["-o", "proxycommand=ssh -W %h:%p far.lan"]),
+            strs(&[
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                "ProxyCommand=nc %h %p",
+            ]),
+            // Flag clusters, read as ssh reads them.
+            strs(&["-qJ", "far"]),
+            strs(&["-NJfar"]),
+            strs(&["-qo", "ProxyJump=far"]),
+            strs(&["-qoProxyCommand=ssh x"]),
+            strs(&["-l", "me", "-qJ", "far"]),
+        ] {
+            assert!(
+                deliverable_password_with(&with_password(extra_args.clone()), |_, _, _| false)
+                    .is_none(),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_route_behind_the_env_boundary_keeps_the_password() {
+        for extra_args in [
+            Vec::new(),
+            strs(&["-o", "StrictHostKeyChecking=yes"]),
+            strs(&["-o", "ProxyJump=none", "-o", "ProxyCommand=none"]),
+            far_hops(HopHostKeys::UserConfig),
+            far_hops(HopHostKeys::KnownOnly),
+            // A `J` that is a value, not a flag, routes nothing.
+            strs(&["-lJohn"]),
+            strs(&["-l", "-J"]),
+            strs(&["-p22"]),
+            strs(&["-qN"]),
+            strs(&["-qNo", "ProxyJump=none"]),
+        ] {
+            let params = with_password(extra_args.clone());
+            assert_eq!(
+                deliverable_password_with(&params, |_, _, _| false)
+                    .map(ExposeSecret::expose_secret),
+                Some("hunter2"),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_jump_host_whose_ssh_config_declares_a_proxy_gets_no_password() {
+        for extra_args in [Vec::new(), strs(&["-o", "StrictHostKeyChecking=yes"])] {
+            let mut params = with_password(extra_args.clone());
+            params.jump_host = "alice@bastion.example.com".to_string();
+            params.jump_port = 2200;
+            let mut asked = None;
+            let delivered = deliverable_password_with(&params, |host, port, user| {
+                asked = Some((host.to_string(), port, user.map(ToString::to_string)));
+                true
+            });
+            assert!(delivered.is_none(), "{extra_args:?}");
+            assert_eq!(
+                asked,
+                Some((
+                    "bastion.example.com".to_string(),
+                    2200,
+                    Some("alice".to_string())
+                )),
+                "{extra_args:?}"
+            );
+        }
+
+        // No user in the destination: `ssh -G` is asked without `-l`.
+        let mut params = with_password(Vec::new());
+        params.jump_host = "bastion.example.com".to_string();
+        let mut asked_user = Some(Some(String::new()));
+        assert!(
+            deliverable_password_with(&params, |_, _, user| {
+                asked_user = Some(user.map(ToString::to_string));
+                true
+            })
+            .is_none()
+        );
+        assert_eq!(asked_user, Some(None));
+    }
+
+    #[test]
+    fn a_route_on_the_command_line_skips_the_ssh_config_check() {
+        for extra_args in [
+            strs(&["-o", "ProxyJump=none"]),
+            strs(&["-o", "ProxyCommand=none"]),
+            far_hops(HopHostKeys::UserConfig),
+        ] {
+            let params = with_password(extra_args.clone());
+            assert_eq!(
+                deliverable_password_with(&params, |_, _, _| {
+                    panic!("a route on the command line overrides ~/.ssh/config")
+                })
+                .map(ExposeSecret::expose_secret),
+                Some("hunter2"),
+                "{extra_args:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn every_far_hop_starts_behind_the_env_boundary() {
+        let args = far_hops(HopHostKeys::KnownOnly);
+        assert_eq!(args.len(), 2, "{args:?}");
+        assert_eq!(args[0], "-o");
+        let command = args[1]
+            .strip_prefix("ProxyCommand=")
+            .expect("a ProxyCommand");
+        assert!(!command.contains(" -J "), "{command}");
+        // One `ssh` per hop, each after `SSH_ASKPASS=` with no helper.
+        assert_eq!(command.matches(" ssh -W ").count(), 2, "{command}");
+        assert_eq!(command.matches("SSH_ASKPASS= ").count(), 2, "{command}");
+        assert_eq!(
+            command.matches("StrictHostKeyChecking=yes").count(),
+            2,
+            "{command}"
+        );
+        assert!(command.ends_with("bob@far.lan"), "{command}");
+    }
+
+    #[test]
+    fn a_hop_a_shell_could_interpret_gives_no_route() {
+        for hop in ["far.lan,farther.lan", "far;reboot", "-oProxyCommand=x"] {
+            let hops = strs(&[hop]);
+            let args = tunnel_hop_args(&TunnelHopsRequest {
+                hops: &hops,
+                first_hop_identity: None,
+                deeper_hop_identity: None,
+                first_hop_pkcs11: None,
+                known_hosts: None,
+                hop_host_keys: HopHostKeys::UserConfig,
+            });
+            assert!(args.is_none(), "{hop}");
+        }
+    }
+
+    #[test]
+    fn key_paths_a_shell_could_interpret_stay_out() {
+        let hops = strs(&["far.lan"]);
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: Some("/k/my key"),
+            deeper_hop_identity: None,
+            first_hop_pkcs11: Some("/usr/lib/$(reboot).so"),
+            known_hosts: None,
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("a plain hop gives a route");
+        assert!(!args[1].contains("my key"), "{args:?}");
+        assert!(!args[1].contains("reboot"), "{args:?}");
+
+        let args = tunnel_hop_args(&TunnelHopsRequest {
+            hops: &hops,
+            first_hop_identity: Some("/k/far"),
+            deeper_hop_identity: None,
+            first_hop_pkcs11: None,
+            known_hosts: None,
+            hop_host_keys: HopHostKeys::UserConfig,
+        })
+        .expect("a plain hop gives a route");
+        assert!(
+            args[1].contains("-i /k/far -o IdentitiesOnly=yes"),
+            "{args:?}"
+        );
     }
 }

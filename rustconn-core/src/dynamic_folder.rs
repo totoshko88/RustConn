@@ -206,6 +206,7 @@ fn protocol_type_from_str(protocol: &str) -> ProtocolType {
         "spice" => ProtocolType::Spice,
         "telnet" => ProtocolType::Telnet,
         "mosh" => ProtocolType::Mosh,
+        "winrm" => ProtocolType::WinRm,
         _ => ProtocolType::Ssh,
     }
 }
@@ -216,6 +217,7 @@ const fn default_port_for(protocol_type: ProtocolType) -> u16 {
         ProtocolType::Rdp => 3389,
         ProtocolType::Vnc | ProtocolType::Spice => 5900,
         ProtocolType::Telnet => 23,
+        ProtocolType::WinRm => 5985,
         _ => 22,
     }
 }

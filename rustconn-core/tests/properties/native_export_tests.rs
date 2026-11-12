@@ -92,7 +92,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 12: Native Export Contains All Data Types**
-    /// **Validates: Requirements 13.2**
     ///
     /// For any NativeExport with connections, groups, templates, clusters, and variables,
     /// the JSON output should contain all data.
@@ -153,7 +152,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 13: Native Import Restores All Data**
-    /// **Validates: Requirements 13.3**
     ///
     /// For any valid NativeExport JSON, importing should restore all connections,
     /// groups, templates, clusters, and variables.
@@ -236,7 +234,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 14: Native Format Round-Trip**
-    /// **Validates: Requirements 13.6**
     ///
     /// For any valid NativeExport, serializing to JSON and deserializing should
     /// produce an equivalent export.
@@ -309,7 +306,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 15: Native Format Schema Version**
-    /// **Validates: Requirements 13.4**
     ///
     /// For any NativeExport, the JSON output should contain a version field with value >= 1.
     #[test]
@@ -343,7 +339,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 16: Native Import Version Validation**
-    /// **Validates: Requirements 13.5**
     ///
     /// For any NativeExport JSON with version > NATIVE_FORMAT_VERSION,
     /// importing should return an UnsupportedVersion error.

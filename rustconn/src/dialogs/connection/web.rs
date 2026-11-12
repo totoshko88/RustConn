@@ -36,6 +36,12 @@ pub struct WebOptionsWidgets {
     /// Populated with SSH connections after construction, like the jump-host
     /// dropdowns; only meaningful in the embedded browser.
     pub tunnel_dropdown: gtk4::DropDown,
+    /// Address of an existing SOCKS5 proxy to browse through (empty = none).
+    pub socks_proxy_row: adw::EntryRow,
+    /// Username for a proxy that requires a login (empty = none).
+    pub socks_user_row: adw::EntryRow,
+    /// Name of the secret global variable holding that login's password.
+    pub socks_password_var_row: adw::EntryRow,
 }
 
 /// Creates the Web bookmark options panel using libadwaita components.
@@ -92,25 +98,6 @@ pub fn create_web_options() -> WebOptionsWidgets {
     user_agent_row.set_show_apply_button(false);
     embedded_group.add(&user_agent_row);
 
-    // Browse through an SSH host (dynamic SOCKS tunnel). Model is filled with
-    // SSH connections after construction (see populate.rs); "(None)" is a direct
-    // connection. Wrapped in an ActionRow so it reads like the other rows.
-    let tunnel_dropdown = gtk4::DropDown::builder().build();
-    tunnel_dropdown.set_valign(gtk4::Align::Center);
-    tunnel_dropdown.set_size_request(200, -1);
-    tunnel_dropdown.set_hexpand(false);
-    // Type-to-search: a long connection list is impractical to scroll (user feedback).
-    crate::dialogs::widgets::enable_string_search(&tunnel_dropdown);
-    let tunnel_row = adw::ActionRow::builder()
-        .title(i18n("Tunnel Through SSH"))
-        .subtitle(i18n(
-            "Browse via a SOCKS proxy over the chosen SSH connection (embedded or Chromium browser)",
-        ))
-        .build();
-    tunnel_row.add_suffix(&tunnel_dropdown);
-    tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
-    embedded_group.add(&tunnel_row);
-
     // Floating navigation toolbar (issue #260). Positive here, stored as
     // `hide_floating_toolbar`; see the RDP panel for why. Unlike the remote
     // desktops, most of what this toolbar offers has a keyboard route, which is
@@ -124,6 +111,47 @@ pub fn create_web_options() -> WebOptionsWidgets {
     embedded_group.add(&floating_toolbar_switch);
 
     content.append(&embedded_group);
+
+    // === SOCKS5 Proxy Group ===
+    // Both SOCKS5 routes: one raised over SSH, or an existing proxy. Its own
+    // group: both apply to external browsers too, and the instructions live in
+    // the description, where they wrap, rather than in the row titles.
+    let socks_group = adw::PreferencesGroup::builder()
+        .title(i18n("SOCKS5 Proxy"))
+        .description(i18n(
+            "Browse through a SOCKS5 proxy: one RustConn opens over an SSH connection, or an existing one, not both. Enter an existing proxy's address as host:port. If it needs a login, enter a username and the secret variable that holds the password.",
+        ))
+        .build();
+
+    // Browse through an SSH host (dynamic SOCKS tunnel). Model is filled with
+    // SSH connections after construction (see populate.rs); "(None)" is a direct
+    // connection. Wrapped in an ActionRow so it reads like the other rows.
+    let tunnel_dropdown = gtk4::DropDown::builder().build();
+    tunnel_dropdown.set_valign(gtk4::Align::Center);
+    tunnel_dropdown.set_size_request(200, -1);
+    tunnel_dropdown.set_hexpand(false);
+    // Type-to-search: a long connection list is impractical to scroll (user feedback).
+    crate::dialogs::widgets::enable_string_search(&tunnel_dropdown);
+    // The tunnel works in the embedded browser, Chromium and Firefox alike.
+    let tunnel_row = adw::ActionRow::builder()
+        .title(i18n("Tunnel Through SSH"))
+        .subtitle(i18n(
+            "Browse via a SOCKS proxy over the chosen SSH connection",
+        ))
+        .build();
+    tunnel_row.add_suffix(&tunnel_dropdown);
+    tunnel_row.set_activatable_widget(Some(&tunnel_dropdown));
+    socks_group.add(&tunnel_row);
+
+    let socks_proxy_row = adw::EntryRow::builder().title(i18n("Address")).build();
+    socks_group.add(&socks_proxy_row);
+    let socks_user_row = adw::EntryRow::builder().title(i18n("Username")).build();
+    socks_group.add(&socks_user_row);
+    let socks_password_var_row = adw::EntryRow::builder()
+        .title(i18n("Password Variable"))
+        .build();
+    socks_group.add(&socks_password_var_row);
+    content.append(&socks_group);
 
     // === General Settings Group ===
     let general_group = adw::PreferencesGroup::builder()
@@ -167,6 +195,9 @@ pub fn create_web_options() -> WebOptionsWidgets {
         user_agent_row,
         floating_toolbar_switch,
         tunnel_dropdown,
+        socks_proxy_row,
+        socks_user_row,
+        socks_password_var_row,
     }
 }
 

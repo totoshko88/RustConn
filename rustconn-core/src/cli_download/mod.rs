@@ -43,8 +43,8 @@ use thiserror::Error;
 pub(crate) const HTTP_DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub use self::components::{
-    DOWNLOADABLE_COMPONENTS, get_available_components, get_component, get_components_by_category,
-    get_installation_status, get_pinned_versions,
+    DOWNLOADABLE_COMPONENTS, PYWINRM_COMPONENT, get_available_components, get_component,
+    get_components_by_category, get_installation_status, get_pinned_versions,
 };
 pub use self::detection::{PackageManager, detect_package_manager, get_system_install_command};
 pub use self::extract::find_binary_recursive;
@@ -189,6 +189,8 @@ pub enum ComponentCategory {
     PasswordManager,
     /// Container orchestration CLI (kubectl)
     ContainerOrchestration,
+    /// Libraries for Run Local Script
+    ScriptRunner,
 }
 
 /// Policy for verifying download integrity.
@@ -705,6 +707,52 @@ mod tests {
                 c.id,
             );
         }
+
+        let script_runners = get_components_by_category(ComponentCategory::ScriptRunner);
+        assert!(!script_runners.is_empty());
+        for c in &script_runners {
+            assert!(
+                c.works_in_sandbox,
+                "Script runner library {} should work in sandbox",
+                c.id,
+            );
+        }
+    }
+
+    #[test]
+    fn the_pywinrm_component_is_a_sandbox_pip_package() {
+        let component = get_component(PYWINRM_COMPONENT).expect("pywinrm is listed");
+        assert_eq!(component.install_method, InstallMethod::Pip);
+        assert_eq!(component.pip_package, Some("pywinrm"));
+        assert!(component.is_downloadable());
+        assert_ne!(
+            component.install_subdir, "python/bin",
+            "removing pywinrm must not delete the az and oci wrappers"
+        );
+    }
+
+    #[test]
+    fn the_pywinrm_wrapper_runs_python_with_the_component_path() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let component = get_component(PYWINRM_COMPONENT).unwrap();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let path = runtime
+            .block_on(install_pip::create_pip_wrapper_script(
+                dir.path(),
+                component,
+            ))
+            .unwrap();
+        assert_eq!(path, dir.path().join("bin").join(component.binary_name));
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(text.contains("export PYTHONPATH="), "{text}");
+        assert!(text.contains("exec python3 \"$@\""), "{text}");
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o755);
     }
 
     #[test]

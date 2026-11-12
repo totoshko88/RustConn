@@ -48,7 +48,6 @@ proptest! {
     // =========================================================================
 
     /// **Feature: performance-improvements, Property 16: Batch Processing Size**
-    /// **Validates: Requirements 10.1, 10.2, 10.3**
     ///
     /// For any batch import operation, items SHALL be processed in batches
     /// not exceeding the configured batch size.
@@ -112,7 +111,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 16: Batch Processing Size**
-    /// **Validates: Requirements 10.1, 10.2, 10.3**
     ///
     /// For any batch export operation, items SHALL be processed in batches
     /// not exceeding the configured batch size.
@@ -158,7 +156,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 16: Batch Processing Size**
-    /// **Validates: Requirements 10.3**
     ///
     /// For any batch size configuration, the batch processor SHALL respect
     /// the configured size and process items accordingly.
@@ -198,7 +195,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 16: Batch Processing Size**
-    /// **Validates: Requirements 10.1, 10.2**
     ///
     /// For any import/export with more than threshold items, batch processing
     /// should be recommended.
@@ -240,7 +236,6 @@ proptest! {
     // =========================================================================
 
     /// **Feature: performance-improvements, Property 17: Batch Processing Cancellation**
-    /// **Validates: Requirements 10.5**
     ///
     /// For any cancelled batch import operation, processing SHALL stop
     /// and partial results SHALL be reported.
@@ -308,7 +303,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 17: Batch Processing Cancellation**
-    /// **Validates: Requirements 10.5**
     ///
     /// For any cancelled batch export operation, processing SHALL stop
     /// and partial results SHALL be reported.
@@ -367,7 +361,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 17: Batch Processing Cancellation**
-    /// **Validates: Requirements 10.5**
     ///
     /// For any batch operation, the cancel handle should work correctly
     /// from a separate context.
@@ -406,7 +399,6 @@ proptest! {
     }
 
     /// **Feature: performance-improvements, Property 17: Batch Processing Cancellation**
-    /// **Validates: Requirements 10.5**
     ///
     /// For any batch operation cancelled via progress reporter, processing
     /// SHALL stop and partial results SHALL be reported.

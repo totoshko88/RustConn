@@ -337,8 +337,6 @@ fn build_merge_inputs(
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(200))]
 
-    /// **Validates: Requirements 4.7**
-    ///
     /// P1 — Group Merge Completeness: Every connection in the remote export
     /// is either created locally, updates an existing local connection, or
     /// matches an unchanged local connection. No remote connection is silently
@@ -410,8 +408,6 @@ proptest! {
         }
     }
 
-    /// **Validates: Requirements 4.6**
-    ///
     /// P3 — Group Merge Determinism: Given the same local state and remote
     /// export, `GroupMergeEngine::merge()` always produces the same
     /// `GroupMergeResult` (compared as sets, since Vec ordering may vary
@@ -502,8 +498,6 @@ proptest! {
         prop_assert_eq!(&var_set1, &var_set2, "variables_to_create differs");
     }
 
-    /// **Validates: Requirements 4.7**
-    ///
     /// P1 supplement — Local-only connections deleted: connections that exist
     /// only locally (not in remote) must appear in `connections_to_delete`.
     #[test]

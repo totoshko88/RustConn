@@ -1,10 +1,8 @@
 //! Property-based tests for async credential resolution
 //!
-//! These tests validate the correctness properties for async credential resolution
-//! as defined in Requirements 9.1, 9.4.
+//! These tests validate the correctness properties for async credential resolution.
 //!
 //! **Feature: performance-improvements, Property 15: Async Credential Resolution**
-//! **Validates: Requirements 9.1, 9.4**
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -72,6 +70,7 @@ fn create_test_connection(
         password_source: PasswordSource::None,
         kdbx_path_override: None,
         network_mode: rustconn_core::models::NetworkMode::default(),
+        fallback_jump_host_ids: Vec::new(),
         domain: None,
         custom_properties: Vec::new(),
         pre_connect_task: None,
@@ -117,7 +116,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: performance-improvements, Property 15: Async Credential Resolution**
-    /// **Validates: Requirements 9.1, 9.4**
     ///
     /// For any credential resolution request, the operation SHALL complete
     /// without blocking the calling thread.

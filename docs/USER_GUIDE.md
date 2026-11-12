@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.10** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.24.11** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -96,7 +96,7 @@ RustConn is a modern connection manager designed for Linux with Wayland-first ap
 ### First Connection
 
 1. Press **Ctrl+N** or click **+** in header bar — the **Connection Wizard** opens
-2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Zero Trust, Web)
+2. Select a protocol (SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, WinRM, Serial, Kubernetes, Zero Trust, Web)
 3. Enter host and connection details
 4. Configure authentication (password, SSH key, or SSH Agent) and terminal theme
 5. Click **Save & Connect**
@@ -206,7 +206,7 @@ The Connection Wizard provides a streamlined 3-step flow for creating connection
 Protocols are displayed in a grouped FlowBox layout that wraps adaptively on narrow windows:
 - **Secure Shell:** SSH, MOSH, SFTP
 - **Remote Desktop:** RDP, VNC, SPICE
-- **Terminal:** Telnet, Serial, Custom Command
+- **Terminal:** Telnet, WinRM, Serial, Custom Command
 - **Other:** Kubernetes, Zero Trust, Web
 
 **Step 2 — Connection Details:**
@@ -312,6 +312,8 @@ Some connections still have their password typed into the terminal, exactly as b
 
 The last row is detected by asking `ssh -G` what your configuration resolves to, which costs a few milliseconds and touches the network not at all. A bastion configured **in RustConn** is handled and does not fall back — each hop gets its own password out of band.
 
+The last row also holds for the jump host of an RDP, VNC, SPICE, WinRM or Web tunnel: when your `~/.ssh/config` routes that jump host through a `ProxyJump` or `ProxyCommand`, the tunnel opens without sending the jump host's password.
+
 #### Unlocking an encrypted SSH key
 
 When a connection uses a key file protected by a passphrase, RustConn asks for the passphrase once, in its own **Unlock SSH Key** dialog, before `ssh` starts. The dialog appears when all of these hold:
@@ -349,6 +351,18 @@ A connection can reach its target through a bastion without naming one itself. T
 
 The *ProxyJump* field's subtitle names the bastion a connection has inherited — a group's or the global one, whether it was typed as `user@host` or picked from the dropdown — so a connection routed through one is not silently doing so. It follows *Network Mode* as you change it, and says so when *Direct* is ignoring an inherited bastion.
 
+#### Fallback Jump Hosts
+
+A connection or a group can list **Fallback Jump Hosts** behind its *Jump Host* (connection: Edit connection → **General** → *Connection*; group: Edit group → **SSH Settings**). This works for SSH, SFTP, RDP, VNC, SPICE and WinRM. The list appears once a *Jump Host* is picked on that connection or group, and only for those protocols; removing the *Jump Host* hides it, and saving then drops it. A SPICE connection with *Unix Socket* on and a socket path set uses no *Jump Host*, so it shows no list either.
+
+Before each new connection or reconnect, RustConn checks the gateways in order and uses the first one that accepts a TCP connection and identifies itself as an SSH server within the *port check timeout*. A toast names the fallback when one is used, and the next connection tries the primary again.
+
+- If no gateway answers, RustConn tries the first one and shows the normal SSH error. It never falls back to connecting directly.
+- Only reachability is checked. A gateway that answers but rejects your login, or that cannot reach the target, does not trigger a fallback.
+- Fallbacks belong to the *Jump Host* at the same level: a connection with its own *Jump Host* does not pick up its group's fallbacks. The global tier has no fallback list.
+- A gateway behind a free-text *ProxyJump* cannot be checked and is treated as available. Free-text *ProxyJump* values and custom *ProxyCommand* routes have no failover.
+- `rustconn-cli connect` does not use saved jump hosts, so it has no failover; `rustconn-cli sftp --mc` and `--cli` do.
+
 Three notes on scope:
 
 - The **global** tier exists because a group cannot stand in for "everything". There is no single implicit root group — a top-level group is just a group with no parent, and there can be many — and an ungrouped connection has no chain to walk, so nothing set on a group can reach it.
@@ -379,6 +393,31 @@ For RDP, VNC and SPICE a bastion means an SSH tunnel to it, set up automatically
 - **Automation** — Automatic login (expected text of the device's username/password prompts), expect rules for auto-responding to terminal patterns, pattern tester with built-in templates (Sudo, SSH Host Key, Login, etc.), pre-connect task, post-disconnect task (with conditions: first/last connection only)
 - **Data** — Local variables (connection-scoped, override global variables), custom properties (Text/URL/Protected metadata)
 - **Logging** — Session logging (enable/disable, log path template with variables, timestamp format, max file size, retention days, granular content options: log activity, log input, log output, add timestamps)
+
+### WinRM (Windows PowerShell)
+
+A WinRM connection opens a PowerShell session on a Windows machine in a terminal tab. It runs the [evil-winrm](https://github.com/Hackplayers/evil-winrm) client, which you install yourself (`gem install evil-winrm`, or your distribution's package). The Flatpak does not bundle it: install it on the host and RustConn runs it there, in your login shell, so it has to be on that shell's `PATH` (for rbenv, rvm or a gem directory, set up in `~/.profile`, not only in `~/.bashrc`). The Snap cannot run it at all. See [WinRM or SSH for Windows](#winrm-or-ssh-for-windows).
+
+- Windows has to have WinRM enabled (`Enable-PSRemoting` on the machine). The default port is 5985. Turn on **Use HTTPS** for an encrypted connection, usually port 5986, and set the port to match.
+- Set **Username**, and **Domain** for a domain account. An account already written as `DOMAIN\user` or `user@domain` is left as it is.
+- A saved password is typed at the client's own prompt, so it never appears on a command line, and **Custom Arguments** refuses `-p`, `-H`, `--password` and `--hash` in every form the client accepts: abbreviated (`--pass`), with the value attached (`-pSECRET`, `--hash=…`) or inside a group of short options (`-np`). A short option with its value attached that happens to contain one of these letters is refused too: `-uHank` reads as `-u` plus `-H`, so write it as `-u Hank`. With no saved password, type it in the terminal.
+- A **Jump Host** (or [fallback jump hosts](#fallback-jump-hosts)) reaches the machine through an SSH tunnel.
+- To run PowerShell scripts on the machine, see [Run Local Script](#run-local-script).
+- RustConn 0.24.10 and older cannot read a configuration, a Simple Sync file or a Group Sync `.rcn` file that holds a WinRM connection: the whole file fails to load. Update every device that shares the configuration or syncs it before adding one.
+
+#### WinRM or SSH for Windows
+
+Windows 10 (build 1809) and later, and Windows Server 2019 and later, ship OpenSSH Server as an optional feature ([install it](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse); Windows Server 2025 has it installed). An ordinary RustConn **SSH** connection to such a machine, with PowerShell set as the server's default shell (the `DefaultShell` value under `HKLM:\SOFTWARE\OpenSSH`, see [OpenSSH Server configuration](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh-server-configuration)), is the preferred route: it needs no extra client and works in every package.
+
+Use WinRM for older Windows versions, or where SSH is not enabled. [Run Local Script](#run-local-script) runs a `.ps1` file only over WinRM: over SSH it runs the script with `bash`.
+
+Where each WinRM client comes from:
+
+| Package | Interactive session (`evil-winrm`) | Run Local Script `.ps1` (`pywinrm`) |
+|---------|-------------------------------------|-------------------------------------|
+| Native (.deb, .rpm, AppImage, source) | `gem install evil-winrm` or your distribution's package | `python3-winrm` from your distribution, or `pip install pywinrm` |
+| Flatpak | Installed on the host (`gem install evil-winrm` or the distribution's package) and on the `PATH` of your login shell there; RustConn runs it through `flatpak-spawn --host` in that shell | Menu → **Components** → *Remote Scripts* → pywinrm |
+| Snap | Not available; use SSH, or the Flatpak or a native package | Menu → **Components** → *Remote Scripts* → pywinrm |
 
 ### Automatic Login (Telnet & Serial)
 
@@ -667,6 +706,7 @@ Temporary connection without saving:
 | Edit | Ctrl+E or right-click → Edit |
 | Rename | F2 or right-click → Rename |
 | Duplicate | Ctrl+D or right-click → Duplicate |
+| Duplicate as a numbered range | Right-click → Duplicate as Range… — `host[02-10]` creates `host02` … `host10`, and `host[2-10]` creates `host2` … `host10`. *Host Pattern* fills in by itself when the host contains the connection's name; otherwise enter one such as `10.0.0.[2-10]`. Up to 256 at a time; names that already exist are skipped |
 | Copy/Paste | Ctrl+C / Ctrl+V (sidebar focus) or Menu → Copy/Paste Connection |
 | Delete | Delete key or right-click → Delete (moves to Trash) |
 | Move to Group | Drag-drop or right-click → Move to Group |
@@ -776,6 +816,7 @@ Protocol-specific options are configured in the connection dialog's protocol tab
 | SPICE | TLS encryption, CA certificate (with inline validation), skip certificate verification, USB redirection, clipboard sharing, image compression (Auto/Off/GLZ/LZ/QUIC), proxy URL, shared folders |
 | MOSH | Predict mode (Adaptive/Always/Never), SSH port, UDP port range, server binary path, backspace/delete key behavior, custom arguments |
 | Telnet | Custom arguments, backspace key behavior, delete key behavior |
+| WinRM | Use HTTPS, custom arguments |
 | Serial | Device path, baud rate, data bits, stop bits, parity, flow control, custom picocom arguments |
 | Kubernetes | Kubeconfig path, context, namespace, pod, container, shell, busybox mode, busybox image, custom kubectl arguments |
 | ZeroTrust | Provider-specific (AWS SSM, GCP IAP, Azure Bastion, Azure SSH, OCI Bastion, Cloudflare Access, Teleport, Tailscale SSH, HashiCorp Boundary, Hoop.dev, Generic Command), custom CLI arguments |
@@ -1862,8 +1903,8 @@ On macOS there is no `xdg-open`, `dolphin` or `nautilus`; RustConn opens locatio
 Settings → Terminal page → Behavior → enable "SFTP via mc". When enabled, "Open SFTP" opens a local shell tab with Midnight Commander connected to the remote server via `sh://user@host:port` FISH VFS panel.
 
 Requirements for mc mode:
-- Midnight Commander must be installed (`mc` in PATH). RustConn checks availability before launch.
-- mc FISH VFS requires SSH key authentication — password and keyboard-interactive auth are not supported. A warning toast is shown if password auth is configured.
+- Midnight Commander must be installed (`mc` in PATH). RustConn checks availability before launch. On macOS it is also found in `/opt/homebrew/bin` and `/usr/local/bin` when RustConn is started from the Dock or Finder, whose `PATH` has neither.
+- A password-authenticated connection signs in with its saved password: RustConn reads it as Connect does (the session cache first, then the vault; a connection whose Password Source is **Prompt** is asked once, in a small dialog). A key file on the connection or its group does not stop this, as for an SSH session: when the key signs in, the password is never used. The password is written to a file only your account can read and is handed only to the `ssh` that mc starts for this connection's own host, user and port; another `sh://` link opened in the same mc gets nothing, and the password never enters mc's environment. Saved jump hosts are reached through RustConn's own `ProxyCommand`, so none of them is sent the target's password; they log in with a key or the agent, or ask in the mc tab. The cases in the table under [How an SSH password reaches the server](#how-an-ssh-password-reaches-the-server) do not get the password either (Keyboard Interactive, a PKCS#11 token, a custom routing option, a proxy in `~/.ssh/config`), nor does a chain whose farther jump hosts have keys of their own; then a warning says to type the password in the mc tab when mc waits for it. A similar warning appears when mc's first `ssh` does not have the form RustConn hands the password to (an mc build that adds a flag, for instance); the log names it. When the saved password is refused, RustConn drops it from the session cache once that mc exits, also when you close its tab, so a Connect reads the vault again, and the next mc open of that connection says so (also while the first mc is still open, or after a restart in the same login session) and opens without it, so you can type the right one in the tab; the open after that reads the vault again. With Password Source **Prompt** you are asked again instead. `rustconn-cli sftp --mc` does not send the password.
 - In Flatpak builds, mc 4.8.32 is bundled automatically.
 
 mc-based SFTP sessions run in a VTE terminal, so they support split view (Ctrl+Shift+H / Ctrl+Shift+S) just like SSH tabs.
@@ -2146,6 +2187,15 @@ Disable JavaScript execution for specific connections in the connection dialog's
 **Accept Invalid TLS Certificates:**
 Enable "Accept Invalid Certs" in the connection dialog's protocol tab to allow self-signed, expired, or hostname-mismatched certificates. Useful for local services like Cockpit, Proxmox, or development environments that use self-signed certificates. This setting applies only to the embedded browser mode.
 
+**SOCKS5 Proxy:**
+If a SOCKS5 proxy is already running (a VPN client's, or your own `ssh -D`), enter its address as `host:port` in **SOCKS5 Proxy → Address**. Every request from the browser then goes through it, and this setting cannot be combined with **Tunnel Through SSH**.
+
+If the proxy needs a login, fill in **Username** and, in **Password Variable**, name a secret global variable that holds the password. Browsers can't log in to a SOCKS proxy, so RustConn runs a small relay on this computer that does it for them. Like `ssh -D`, the relay accepts connections from anything on this computer while it runs.
+
+The embedded browser, Chromium-based browsers and Firefox all work; external ones open with a separate, temporary profile. With the System browser mode, RustConn opens an installed browser that can use the proxy instead of your default if it can't. If none is found the page is **not opened** rather than loaded directly.
+
+RustConn 0.24.10 and older do not know these fields. They open the page directly, without the proxy, and saving the configuration there drops the fields, which sync then carries to your other devices. Update every device that shares the configuration or syncs it before setting a SOCKS5 proxy.
+
 **Tunnel Through SSH (SOCKS proxy):**
 To reach a web service that only a particular SSH host can see — an internal
 dashboard, a router admin page, a service in a DMZ — set **Tunnel Through SSH**
@@ -2304,7 +2354,7 @@ A session can be moved out of the main window into a window of its own — usefu
 
 **Not offered for:** sessions handed to an external viewer (SPICE, or RDP/VNC in External Window mode), which already run in their own operating-system window. On a **split tab** the tab menu's **Move to New Window** is hidden (a session in a split cannot be detached while the split stands); remove the split first, or use the sidebar's **Move to New Window**, which pops the pane out and detaches it in one step.
 
-A detached window behaves like the main window: copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
+A detached window behaves like the main window: copy, paste, terminal search, close, and fullscreen (F11) act on the session in that window and never on a session in the main window, the keyboard passthrough toggle works from there as well, and toasts raised by that session appear in it. Its header bar has a menu (F10, suspended in passthrough mode like the main window's) with Settings, Keyboard Shortcuts, Help and About; **Ctrl+,** opens Settings in the main window and raises it, and Keyboard Shortcuts (Ctrl+?) and About open in the detached window itself. Compact-interface and layout-independent accelerator handling apply the same way as in the main window.
 
 **Lifecycle:**
 - **Closing a detached window ends its session** — the same teardown as closing its tab: the child process is stopped, SSH tunnels are dropped, and the sidebar status and history entry are updated. Ctrl+W inside a detached window closes only that session.
@@ -3357,6 +3407,19 @@ Where a knock *sequence* can be replayed or observed by anyone watching the wire
 - SPA runs only when both keys are set; otherwise it is skipped. It can be combined with a knock sequence, but on its own it is the more secure of the two.
 - The keys never appear in the config file — only vault references are stored.
 
+### Run Local Script
+
+Runs a script from this computer on several hosts: a `.ps1` file in PowerShell on WinRM hosts, any other file with bash on SSH hosts, and shows a result for each one. Right-click a connection, a group or a multi-selection → **Run Local Script…**, choose the file, and confirm. A group includes its subgroups; connections that do not use SSH are left out. The same feature is available as [`rustconn-cli run-script`](CLI_REFERENCE.md).
+
+- The script reaches each host over stdin and runs under `bash`, as the login user. Nothing is saved on the host, and `bash` must be installed there.
+- It is syntax-checked on the host first, so a script with a syntax error runs nothing. Commands inside it read an empty stdin, so a `read` prompt gets no answer. There is no terminal, so `sudo` needs passwordless rules.
+- Each host connects like a session does: its options, jump hosts (including [fallback jump hosts](#fallback-jump-hosts)) and saved passwords. Hosts set to ask for a password at connect get a field each, and a host whose field is empty gets no password. With several such hosts, **Use One Password for All Hosts** replaces the fields with one that every one of them uses.
+- WinRM hosts need the `pywinrm` Python library on this computer (`python3-winrm`, or `pip install pywinrm`; in Flatpak and Snap install `pywinrm` from [Components](#flatpak-components)) and a password, which is sent over NTLM. Through a jump host, or with a self-signed HTTPS certificate, turn on **Accept Invalid Certificates**. Stopping a run closes the remote shell, which can take up to 25 seconds. A table printed just before an explicit `exit N` can be lost; pipe it through `Out-String` first.
+- A host whose key is not yet known is refused. Connect to it once normally and accept the key. A run never accepts a jump host's new key either: every jump host of a run must already be known, including the one closest to a WinRM host, and the ones past it when the WinRM tunnel sends that jump host's password. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys, unless a password is sent along the route. Three cases go through `ProxyJump` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own and that sends no password and uses no PKCS#11 provider, because only `ProxyJump` carries that key past the first jump host; a jump host address with anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in the ProxyJump or SSH Proxy Jump field, which `ProxyJump` parses itself; and the jump hosts past the first of a WinRM tunnel that sends no password. In the GUI such an address takes `ProxyJump` only while the route needs no `ProxyCommand` of RustConn's own for another reason. With a password, a PKCS#11 provider or the first jump host's own key on the route, and always in the Flatpak, where every jump host is given RustConn's writable `known_hosts`, the address goes into that `ProxyCommand`, which a shell runs. The CLI keeps `ProxyJump` for it and sends no password along that route.
+- **Connection failed** means SSH could not connect or log in, or the connection dropped. A script that exits with status 255 is reported as a failed script, like any other status.
+- **Stop**, the time limit and a lost connection all stop the script on the host: it gets SIGTERM, then SIGKILL two seconds later, along with the processes it started. A command running as another user, such as under `sudo`, can outlive it, and so can anything that moved to its own session with `setsid`.
+- Output is kept up to 4 MiB per host, and scripts can be up to 1 MiB.
+
 ### Broadcast Input
 
 Type once and have the keystrokes reach several terminals at the same time.
@@ -3602,21 +3665,21 @@ Before 0.22.13 this was an on/off switch, and saving a connection in the editor 
 
 ### Flatpak Components
 
-**Available only in Flatpak environment**
+**Available in the Flatpak and the Snap**
 
-Menu → **Flatpak Components...**
+Menu → **Components…**
 
-Download and install additional CLI tools directly within the Flatpak sandbox:
+Download and install additional CLI tools directly within the sandbox:
 
 **Zero Trust CLIs:** AWS CLI, AWS SSM Plugin, Google Cloud CLI, Azure CLI, OCI CLI, Teleport, Tailscale, Cloudflare Tunnel, HashiCorp Boundary, Hoop.dev
 
 **Password Manager CLIs:** Bitwarden CLI, 1Password CLI
 
-**Protocol Clients:** TigerVNC Viewer
+**Remote Scripts:** pywinrm, for `.ps1` scripts on WinRM hosts with [Run Local Script](#run-local-script)
 
 **Features:** One-click Install/Remove/Update, progress indicators with cancel support, SHA256 checksum verification, automatic PATH configuration.
 
-**Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/`
+**Installation Location:** `~/.var/app/io.github.totoshko88.RustConn/cli/` in the Flatpak, `$SNAP_USER_DATA/cli/` in the Snap
 
 ### SSH Tunnel Manager
 
@@ -4788,7 +4851,7 @@ flatpak override --user --reset io.github.totoshko88.RustConn
 
 ## Keyboard Shortcuts
 
-Press **Ctrl+?** or **F1** for searchable shortcuts dialog.
+Press **Ctrl+?** for the searchable shortcuts dialog, and **F1** (or Menu → **Help**) to open this guide.
 
 Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl+M, Left, Right) only work when the sidebar has focus. In right-to-left layouts Left and Right swap.
 
@@ -4820,7 +4883,7 @@ Note: Sidebar-scoped shortcuts (F2, Delete, Ctrl+E, Ctrl+D, Ctrl+C, Ctrl+V, Ctrl
 | Ctrl+Shift+C | Copy |
 | Ctrl+Shift+V | Paste |
 | Ctrl+Shift+F | Terminal Search |
-| Ctrl+W / Ctrl+Shift+W | Close Tab |
+| Ctrl+W / Ctrl+Shift+W | Close Tab. While a terminal has focus, Ctrl+W goes to the shell and only Ctrl+Shift+W closes the tab. With no tab open, Ctrl+W closes the window; with a dialog open, it closes the dialog |
 | Ctrl+Tab / Ctrl+PageDown | Next Tab |
 | Ctrl+Shift+Tab / Ctrl+PageUp | Previous Tab |
 | Ctrl+Shift+T | Local Shell |
@@ -4891,7 +4954,8 @@ markers appear; nothing else changes.
 | Ctrl+Shift+L | Wake On LAN |
 | Ctrl+T | SSH Tunnel Manager |
 | F10 | Open Menu (suspended in passthrough mode) |
-| Ctrl+? / F1 | Keyboard Shortcuts |
+| Ctrl+? | Keyboard Shortcuts |
+| F1 | Help (opens this guide in the browser) |
 | Ctrl+Shift+Backspace | Toggle Keyboard Passthrough |
 | Ctrl+Shift+B | Toggle Split Broadcast |
 | Ctrl+Q | Quit |

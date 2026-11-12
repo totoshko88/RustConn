@@ -40,6 +40,7 @@ mod recording;
 pub mod safe_paste;
 mod selection_hold;
 mod session_lifecycle;
+mod split_title;
 pub mod tab_container;
 mod tab_lifecycle;
 mod tab_menu;
@@ -352,6 +353,16 @@ pub struct TerminalNotebook {
     /// `current-directory-uri-changed`; absent until the shell reports one (it
     /// needs OSC 7, which the same `vte.sh` that drives shell integration emits).
     session_cwd: Rc<RefCell<HashMap<Uuid, String>>>,
+    /// Title state of every tab that hosts a split layout, keyed by the owner
+    /// session (issue #421). Such a tab is named after its focused pane; see
+    /// `split_title.rs`. Absent for an ordinary tab.
+    split_tab_titles: split_title::SplitTabTitles,
+    /// Told every session rename, so the split pane header follows it
+    /// (issue #421); see `set_on_session_relabelled`.
+    on_session_relabelled: split_title::SessionRelabelHook,
+    /// Told after a split tab's title source changes, so the header subtitle
+    /// follows the focused pane (issue #421); see `set_on_split_title_changed`.
+    on_split_title_changed: Rc<RefCell<Option<Rc<dyn Fn()>>>>,
     /// First buffer row a session's transcript has not been logged yet
     /// (issue [#247](https://github.com/totoshko88/RustConn/issues/247)).
     ///
@@ -600,6 +611,9 @@ impl TerminalNotebook {
             mark_registries: Rc::new(RefCell::new(HashMap::new())),
             failed_markers: Rc::new(RefCell::new(HashMap::new())),
             session_cwd: Rc::new(RefCell::new(HashMap::new())),
+            split_tab_titles: Rc::new(RefCell::new(HashMap::new())),
+            on_session_relabelled: Rc::new(RefCell::new(None)),
+            on_split_title_changed: Rc::new(RefCell::new(None)),
             pty_relays: Rc::new(RefCell::new(HashMap::new())),
             output_observers: Rc::new(RefCell::new(HashMap::new())),
             output_filters: Rc::new(RefCell::new(HashMap::new())),
@@ -668,6 +682,7 @@ impl TerminalNotebook {
         let mark_registries_on_close = Rc::clone(&self.mark_registries);
         let failed_markers_on_close = Rc::clone(&self.failed_markers);
         let session_cwd_on_close = Rc::clone(&self.session_cwd);
+        let split_tab_titles_on_close = Rc::clone(&self.split_tab_titles);
         let pty_relays_on_close = Rc::clone(&self.pty_relays);
         let output_observers_on_close = Rc::clone(&self.output_observers);
         let output_filters_on_close = Rc::clone(&self.output_filters);
@@ -800,6 +815,7 @@ impl TerminalNotebook {
                 mark_registries_on_close.borrow_mut().remove(&session_id);
                 failed_markers_on_close.borrow_mut().remove(&session_id);
                 session_cwd_on_close.borrow_mut().remove(&session_id);
+                split_tab_titles_on_close.borrow_mut().remove(&session_id);
 
                 // Stop the session's PTY: dropping the relay ends its reader and
                 // writer threads and closes the descriptor. The child is killed
@@ -976,20 +992,21 @@ impl TerminalNotebook {
             envv,
             working_directory,
             ssh_agent_socket,
-            Vec::new(),
+            ChildCleanup::default(),
         )
     }
 
-    fn spawn_command_with_cleanup(
+    /// [`Self::spawn_command`], running `cleanup` when the child exits or the
+    /// spawn fails, whether or not the tab is still open.
+    pub(crate) fn spawn_command_with_cleanup(
         &self,
         session_id: Uuid,
         argv: &[&str],
         envv: Option<&[&str]>,
         working_directory: Option<&str>,
         ssh_agent_socket: Option<&str>,
-        cleanup_paths: Vec<PathBuf>,
+        cleanup: ChildCleanup,
     ) -> bool {
-        let cleanup_paths = ChildCleanupPaths(cleanup_paths);
         let Some(terminal) = self.get_terminal(session_id) else {
             return false;
         };
@@ -1076,7 +1093,7 @@ impl TerminalNotebook {
         self.deliver_output_to(session_id, &terminal, output);
         self.forward_input_from(session_id, &terminal);
         self.watch_grid_size(session_id, &terminal);
-        watch_child_exit(&terminal, child.pid, cleanup_paths);
+        watch_child_exit(&terminal, child.pid, cleanup);
 
         true
     }
@@ -1634,36 +1651,58 @@ fn reap_child(pid: u32) {
     let _ = nix::sys::wait::waitpid(pid, None);
 }
 
-struct ChildCleanupPaths(Vec<PathBuf>);
+/// What is undone when a session child exits or fails to spawn.
+///
+/// Runs from the child watch, so it runs after the tab is closed too, unlike a
+/// `child-exited` handler, which needs the terminal widget.
+#[derive(Default)]
+pub(crate) struct ChildCleanup {
+    /// Files to remove, such as a secret file the child reads.
+    pub(crate) paths: Vec<PathBuf>,
+    /// Runs once, after the files are removed.
+    pub(crate) on_exit: Option<Box<dyn FnOnce()>>,
+}
 
-impl Drop for ChildCleanupPaths {
+impl From<Vec<PathBuf>> for ChildCleanup {
+    fn from(paths: Vec<PathBuf>) -> Self {
+        Self {
+            paths,
+            on_exit: None,
+        }
+    }
+}
+
+impl Drop for ChildCleanup {
     fn drop(&mut self) {
-        for path in &self.0 {
+        for path in &self.paths {
             if let Err(error) = std::fs::remove_file(path)
                 && error.kind() != std::io::ErrorKind::NotFound
             {
                 tracing::warn!(%error, path = %path.display(), "Failed to remove child secret file");
             }
         }
+        if let Some(on_exit) = self.on_exit.take() {
+            on_exit();
+        }
     }
 }
 
 /// Raises `child-exited` on a terminal when its child process ends.
 ///
-/// `cleanup_paths` remain owned by the child watch for the complete process
-/// lifetime and are removed on exit. Early spawn failures drop the same guard
-/// before returning. VTE does not emit this signal for a child it did not spawn;
-/// the GLib watch also performs `waitpid`, which is why
+/// `cleanup` stays owned by the child watch for the complete process lifetime
+/// and runs on exit, even when the terminal is gone. Early spawn failures drop
+/// the same guard before returning. VTE does not emit this signal for a child
+/// it did not spawn; the GLib watch also performs `waitpid`, which is why
 /// [`pty_spawn::spawn_on_pty`] deliberately leaks its `Child` handle.
-fn watch_child_exit(terminal: &Terminal, pid: u32, cleanup_paths: ChildCleanupPaths) {
+fn watch_child_exit(terminal: &Terminal, pid: u32, cleanup: ChildCleanup) {
     let terminal = terminal.downgrade();
-    let mut cleanup_paths = Some(cleanup_paths);
+    let mut cleanup = Some(cleanup);
     glib::child_watch_add_local(glib::Pid(pid as i32), move |_pid, status| {
         tracing::debug!(status, pid, "Session child exited");
         if let Some(terminal) = terminal.upgrade() {
             terminal.emit_by_name::<()>("child-exited", &[&status]);
         }
-        drop(cleanup_paths.take());
+        drop(cleanup.take());
     });
 }
 
@@ -1936,9 +1975,11 @@ impl TerminalNotebook {
         // unless the caller already set UserKnownHostsFile via extra_args
         let kh_option;
         let has_known_hosts_opt = extra_args.iter().any(|a| a.contains("UserKnownHostsFile"));
-        if !has_known_hosts_opt && let Some(kh_path) = rustconn_core::get_flatpak_known_hosts_path()
+        if !has_known_hosts_opt
+            && let Some(option) = rustconn_core::get_flatpak_known_hosts_path()
+                .and_then(|kh_path| rustconn_core::ssh_tunnel::user_known_hosts_option(&kh_path))
         {
-            kh_option = format!("UserKnownHostsFile={}", kh_path.display());
+            kh_option = option;
             argv.push("-o");
             argv.push(&kh_option);
         }
@@ -1980,7 +2021,7 @@ impl TerminalNotebook {
             extra_env,
             None,
             ssh_agent_socket,
-            cleanup_paths,
+            cleanup_paths.into(),
         )
     }
 
@@ -2134,7 +2175,6 @@ impl TerminalNotebook {
     /// membership is discoverable on hover (issue #329).
     pub fn set_broadcast_member_marker(&self, session_id: Uuid, member: bool) {
         const MARKER: &str = "⇄ ";
-        const TOOLTIP_LINE: &str = "\n[Broadcast]";
 
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let title = page.title().to_string();
@@ -2145,24 +2185,74 @@ impl TerminalNotebook {
                 page.set_title(base);
             }
 
-            // Lift the CWD line out first so it is not mistaken for the
-            // broadcast suffix (and so toggling broadcast never drops it), then
-            // re-append it after rebuilding the broadcast portion.
             let tooltip = page.tooltip().unwrap_or_default().to_string();
-            let (without_cwd, cwd_line) = Self::split_cwd_line(&tooltip);
-            let base_tooltip = without_cwd
-                .strip_suffix(TOOLTIP_LINE)
-                .unwrap_or(&without_cwd);
-            let mut new_tooltip = if member {
-                format!("{base_tooltip}{TOOLTIP_LINE}")
-            } else {
-                base_tooltip.to_string()
-            };
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            page.set_tooltip(&Self::broadcast_tooltip(&tooltip, member));
         }
+    }
+
+    /// Re-appends the lines a tooltip mutator lifted out, in their fixed order:
+    /// a split tab's panes line (issue #421), then the working-directory line.
+    fn with_lifted_lines(
+        mut tooltip: String,
+        panes: Option<String>,
+        cwd: Option<String>,
+    ) -> String {
+        if let Some(panes) = panes {
+            tooltip.push_str(&panes);
+        }
+        if let Some(cwd) = cwd {
+            tooltip.push_str(&cwd);
+        }
+        tooltip
+    }
+
+    /// The tooltip with its broadcast line added (`member`) or removed.
+    ///
+    /// The CWD and panes lines are lifted out first, so neither is mistaken for
+    /// the broadcast suffix nor dropped by a toggle, and re-appended after it.
+    pub(super) fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
+        const TOOLTIP_LINE: &str = "\n[Broadcast]";
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let base = without_cwd
+            .strip_suffix(TOOLTIP_LINE)
+            .unwrap_or(&without_cwd);
+        let rebuilt = if member {
+            format!("{base}{TOOLTIP_LINE}")
+        } else {
+            base.to_owned()
+        };
+        Self::with_lifted_lines(rebuilt, panes_line, cwd_line)
+    }
+
+    /// The tooltip with its group line set to `group_name`.
+    ///
+    /// Shared by [`Self::set_tab_group`] and the tab menu's **Set Group…**, so
+    /// the two cannot drift. The CWD and panes lines are lifted out first, so
+    /// the `\n[` split cannot land on a `[Broadcast]`/old group line and
+    /// discard the lines beyond it, and re-appended after the group line.
+    pub(super) fn grouped_tooltip(tooltip: &str, group_name: &str) -> String {
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let base = without_cwd
+            .rsplit_once("\n[")
+            .map_or(without_cwd.as_str(), |(base, _)| base);
+        Self::with_lifted_lines(format!("{base}\n[{group_name}]"), panes_line, cwd_line)
+    }
+
+    /// The tooltip without its group line, or `None` when it has none.
+    ///
+    /// Lifts the CWD and panes lines like [`Self::grouped_tooltip`], so
+    /// removing a group keeps the directory line rather than cutting it off.
+    pub(super) fn ungrouped_tooltip(tooltip: &str) -> Option<String> {
+        let (without_cwd, cwd_line) = Self::split_cwd_line(tooltip);
+        let (without_cwd, panes_line) = split_title::split_panes_line(&without_cwd);
+        let (base, _) = without_cwd.rsplit_once("\n[")?;
+        Some(Self::with_lifted_lines(
+            base.to_owned(),
+            panes_line,
+            cwd_line,
+        ))
     }
 
     /// Sets whether an in-place reconnect keeps the previous scrollback (#253).
@@ -3163,20 +3253,10 @@ impl TerminalNotebook {
         // Apply group label prefix to tab title (independent of split/protocol indicator)
         self.apply_group_color(session_id, color_index);
 
-        // Update tooltip to include group name. Lift the CWD line out first so
-        // the `\n[` split cannot land on a `[Broadcast]`/old group line and
-        // discard the directory beyond it; re-append it at the end afterwards.
+        // Update tooltip to include group name.
         if let Some(page) = self.sessions.borrow().get(&session_id) {
             let current_tooltip = page.tooltip().unwrap_or_default().to_string();
-            let (without_cwd, cwd_line) = Self::split_cwd_line(&current_tooltip);
-            let base_tooltip = without_cwd
-                .rsplit_once("\n[")
-                .map_or(without_cwd.as_str(), |(base, _)| base);
-            let mut new_tooltip = format!("{base_tooltip}\n[{group_name}]");
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            page.set_tooltip(&Self::grouped_tooltip(&current_tooltip, group_name));
         }
 
         tracing::debug!(session_id = %session_id, group = group_name, color_index, "Tab assigned to group");
@@ -3197,8 +3277,9 @@ impl TerminalNotebook {
             .map(|(id, _)| *id)
             .collect();
 
+        let chrome = self.tab_chrome();
         for session_id in &affected {
-            Self::apply_session_label(&self.sessions, &self.session_info, *session_id, new_name);
+            Self::apply_session_label(&chrome, *session_id, new_name);
         }
         if !affected.is_empty() {
             tracing::debug!(
@@ -3217,45 +3298,106 @@ impl TerminalNotebook {
     /// reaches it from a `'static` action closure, which holds clones of both
     /// and cannot borrow the notebook.
     ///
-    /// Only the tab chrome is touched, and that is the whole scope: a tab being
-    /// relabelled is by definition one that still has a tab, since a session
-    /// parked in a split or moved to its own window has none for the menu to
-    /// act on. The label does reach those sessions later rather than not at
-    /// all — a split pane header and a detached window title are both read from
-    /// `info.name` when the session is placed, and the session carries the
-    /// label from then on.
+    /// The tab chrome is touched here, and the split pane header showing the
+    /// session through the relabel hook. A session moved to its own window has
+    /// no tab, so for it only the stored name changes here; its window title is
+    /// renamed by the caller or read from `info.name` when it is placed.
+    ///
+    /// The tab hosting a split layout names its focused pane (issue #421), so
+    /// a relabelled session — the owner, or a guest in one of its panes, which
+    /// Rename Tab targets when the guest's pane has focus — is re-derived there
+    /// once the label is stored.
     pub(super) fn apply_session_label(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_info: &Rc<RefCell<HashMap<Uuid, TerminalSession>>>,
+        chrome: &split_title::TabChrome,
         session_id: Uuid,
         label: &str,
     ) {
         let (group, host) = {
-            let mut info_ref = session_info.borrow_mut();
+            let mut info_ref = chrome.session_info.borrow_mut();
             let Some(info) = info_ref.get_mut(&session_id) else {
                 return;
             };
             info.name = label.to_owned();
             (info.tab_group.clone(), info.host.clone())
         };
+        Self::label_session_view(
+            &chrome.terminals,
+            &chrome.session_widgets,
+            session_id,
+            label,
+        );
 
         // The page is bound to its own `let` first: an `if let` scrutinee
         // temporary would keep the `sessions` borrow alive across the two GTK
         // setters below.
-        let page = sessions.borrow().get(&session_id).cloned();
+        let page = chrome.sessions.borrow().get(&session_id).cloned();
+        let retitled = page.is_some();
         if let Some(page) = page {
             page.set_title(&tab_title(label, group.as_deref()));
-            // `tab_tooltip` rebuilds the title/host/group tooltip from scratch
-            // and knows nothing of the CWD line, so carry the existing one over
-            // from the old tooltip and re-append it, keeping it alive across a
-            // rename.
-            let cwd_line = page.tooltip().and_then(|t| Self::split_cwd_line(&t).1);
-            let mut new_tooltip = Self::tab_tooltip(label, host.as_deref(), group.as_deref());
-            if let Some(cwd) = cwd_line {
-                new_tooltip.push_str(&cwd);
-            }
-            page.set_tooltip(&new_tooltip);
+            // A split tab's header, panes and directory lines are put back by
+            // the refresh below.
+            let old_tooltip = page.tooltip().unwrap_or_default();
+            page.set_tooltip(&Self::relabelled_tooltip(
+                old_tooltip.as_str(),
+                label,
+                host.as_deref(),
+                group.as_deref(),
+            ));
         }
+
+        Self::refresh_split_tabs_for(chrome, session_id, retitled.then_some(label));
+
+        // The split pane header showing the session follows the rename too.
+        // The hook is cloned out first, so it runs with no notebook borrow.
+        let hook = chrome.on_session_relabelled.borrow().clone();
+        if let Some(hook) = hook {
+            hook(session_id, label);
+        }
+    }
+
+    /// Gives a session's view the name a screen reader announces for it.
+    ///
+    /// Without one Orca says only "terminal" or reads an unnamed image, and in
+    /// a split layout every pane sounds the same. A terminal is named after
+    /// `label`, the session name its tab shows; an embedded RDP or VNC viewer
+    /// gets "Remote desktop <code>label</code>" and a hint on taking the keyboard back
+    /// ([`crate::embedded::label_remote_view`]). The name lives on the widget,
+    /// so it moves with it into a split pane or a detached window. Called when
+    /// the tab is created and from [`Self::apply_session_label`] on a rename.
+    pub(super) fn label_session_view(
+        terminals: &RefCell<HashMap<Uuid, Terminal>>,
+        session_widgets: &RefCell<HashMap<Uuid, SessionWidgetStorage>>,
+        session_id: Uuid,
+        label: &str,
+    ) {
+        // Cloned out so no map borrow is held while GTK updates the widget.
+        let terminal = terminals.borrow().get(&session_id).cloned();
+        if let Some(terminal) = terminal {
+            terminal.update_property(&[gtk4::accessible::Property::Label(label)]);
+            return;
+        }
+        let viewer = match session_widgets.borrow().get(&session_id) {
+            Some(SessionWidgetStorage::EmbeddedRdp(widget)) => Some(widget.drawing_area().clone()),
+            Some(SessionWidgetStorage::Vnc(widget)) => Some(widget.drawing_area().clone()),
+            _ => None,
+        };
+        if let Some(viewer) = viewer {
+            crate::embedded::label_remote_view(&viewer, label);
+        }
+    }
+
+    /// The tooltip of a relabelled tab, built from scratch by `tab_tooltip`.
+    ///
+    /// `tab_tooltip` knows nothing of the CWD line, so the one in `old` is
+    /// carried over and re-appended, keeping it alive across a rename.
+    pub(super) fn relabelled_tooltip(
+        old: &str,
+        label: &str,
+        host: Option<&str>,
+        group: Option<&str>,
+    ) -> String {
+        let cwd_line = Self::split_cwd_line(old).1;
+        Self::with_lifted_lines(Self::tab_tooltip(label, host, group), None, cwd_line)
     }
 
     /// Returns the group name for a session, if any.
@@ -3306,7 +3448,11 @@ impl TerminalNotebook {
             // Compose from `info.name`, the structural base label, not from the
             // rendered title: stripping a prefix off the title would eat the
             // first segment of a user label that happens to look like `[x] y`.
-            page.set_title(&tab_title(&info.name, Some(group_name)));
+            // A split tab names its focused pane instead (issue #421).
+            let name = self
+                .split_tab_shown_name(session_id)
+                .unwrap_or_else(|| info.name.clone());
+            page.set_title(&tab_title(&name, Some(group_name)));
         }
     }
 
@@ -3990,6 +4136,45 @@ mod output_filter_gate_tests {
     }
 }
 
+/// The mc tab passes its wrapper `PATH` as an `envv` entry; this pins that it
+/// replaces the extended `PATH` rather than sitting next to it (issue #422).
+#[cfg(test)]
+mod child_env_tests {
+    use super::build_child_env;
+
+    #[test]
+    fn a_path_entry_from_the_caller_replaces_the_extended_path() {
+        // An explicit agent socket keeps the test away from the agent lookup.
+        let env = build_child_env(
+            Some(&["PATH=/run/rc-mc-wrapper:/usr/bin"]),
+            Some("/run/rc-test-agent.sock"),
+        );
+        let paths: Vec<&str> = env
+            .iter()
+            .map(|entry| entry.as_str())
+            .filter(|entry| entry.starts_with("PATH="))
+            .collect();
+        assert_eq!(paths, ["PATH=/run/rc-mc-wrapper:/usr/bin"]);
+    }
+
+    #[test]
+    fn without_a_caller_path_the_child_gets_the_extended_one() {
+        let env = build_child_env(None, Some("/run/rc-test-agent.sock"));
+        let paths: Vec<String> = env
+            .iter()
+            .filter(|entry| entry.starts_with("PATH="))
+            .map(|entry| entry.as_str().to_owned())
+            .collect();
+        assert_eq!(
+            paths,
+            [format!(
+                "PATH={}",
+                rustconn_core::cli_download::get_extended_path()
+            )]
+        );
+    }
+}
+
 #[cfg(test)]
 mod reconnect_separator_tests {
     use super::reconnect_separator;
@@ -4110,40 +4295,72 @@ mod tab_tooltip_tests {
         assert_eq!(cwd, None);
     }
 
-    // The three tooltip mutators that rebuild the host/group/broadcast portion
-    // must lift the CWD line out first and re-append it, so a group assignment,
-    // a broadcast toggle or a rename never drops or mis-orders the directory.
-    // These reproduce each mutator's exact string transformation.
+    // The tooltip mutators that rebuild the host/group/broadcast portion must
+    // lift the CWD line out first and re-append it, so a group assignment, a
+    // broadcast toggle or a rename never drops or mis-orders the directory.
+    // The tests call the transformations the mutators themselves use.
 
-    /// Replays `set_broadcast_member_marker`'s tooltip transformation.
     fn broadcast_tooltip(tooltip: &str, member: bool) -> String {
-        const TOOLTIP_LINE: &str = "\n[Broadcast]";
-        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
-        let base = without_cwd
-            .strip_suffix(TOOLTIP_LINE)
-            .unwrap_or(&without_cwd);
-        let mut out = if member {
-            format!("{base}{TOOLTIP_LINE}")
-        } else {
-            base.to_string()
-        };
-        if let Some(cwd) = cwd_line {
-            out.push_str(&cwd);
-        }
-        out
+        TerminalNotebook::broadcast_tooltip(tooltip, member)
     }
 
-    /// Replays `set_tab_group`'s tooltip transformation.
     fn group_tooltip(tooltip: &str, group: &str) -> String {
-        let (without_cwd, cwd_line) = TerminalNotebook::split_cwd_line(tooltip);
-        let base = without_cwd
-            .rsplit_once("\n[")
-            .map_or(without_cwd.as_str(), |(base, _)| base);
-        let mut out = format!("{base}\n[{group}]");
-        if let Some(cwd) = cwd_line {
-            out.push_str(&cwd);
-        }
-        out
+        TerminalNotebook::grouped_tooltip(tooltip, group)
+    }
+
+    #[test]
+    fn tab_menu_set_group_keeps_the_cwd_line_last() {
+        // Review of #421, finding 5: the tab menu's Set Group lifted the panes
+        // line but not the directory line, so the group line landed after 📁.
+        let t = format!("prod-db\n10.0.0.5{CWD}/var/log");
+        assert_eq!(
+            group_tooltip(&t, "Production"),
+            format!("prod-db\n10.0.0.5\n[Production]{CWD}/var/log")
+        );
+        // Regrouping replaces the group line in place.
+        let regrouped = group_tooltip(&group_tooltip(&t, "Production"), "Staging");
+        assert_eq!(
+            regrouped,
+            format!("prod-db\n10.0.0.5\n[Staging]{CWD}/var/log")
+        );
+    }
+
+    #[test]
+    fn removing_a_group_keeps_the_cwd_and_panes_lines() {
+        const PANES: &str = "\nPanes: server_A, server_B";
+        let t = format!("server_A\n10.0.0.5\n[Production]{PANES}{CWD}/var/log");
+        assert_eq!(
+            TerminalNotebook::ungrouped_tooltip(&t),
+            Some(format!("server_A\n10.0.0.5{PANES}{CWD}/var/log"))
+        );
+        // No group line: nothing to remove, the tooltip is left alone.
+        assert_eq!(
+            TerminalNotebook::ungrouped_tooltip(&format!("prod-db{CWD}/var/log")),
+            None
+        );
+    }
+
+    #[test]
+    fn a_split_tabs_panes_line_survives_broadcast_and_group_changes() {
+        // Issue #421: the panes line is appended last, after a broadcast line;
+        // turning broadcast off must still find and strip `[Broadcast]`, and
+        // a group assignment must not cut the panes line off with it.
+        const PANES: &str = "\nPanes: server_A, server_B";
+        let split = format!("server_A\n10.0.0.5\n[Broadcast]{PANES}");
+        assert_eq!(
+            broadcast_tooltip(&split, false),
+            format!("server_A\n10.0.0.5{PANES}")
+        );
+        assert_eq!(
+            group_tooltip(&split, "Production"),
+            format!("server_A\n10.0.0.5\n[Production]{PANES}")
+        );
+        // With a directory line too, both lines come back.
+        let with_cwd = format!("server_A{PANES}{CWD}/var/log");
+        assert_eq!(
+            broadcast_tooltip(&with_cwd, true),
+            format!("server_A\n[Broadcast]{PANES}{CWD}/var/log")
+        );
     }
 
     #[test]
@@ -4204,11 +4421,7 @@ mod tab_tooltip_tests {
     fn rename_keeps_the_cwd_line() {
         // `apply_session_label` rebuilds via `tab_tooltip` then re-appends CWD.
         let old = format!("prod-db\n10.0.0.5{CWD}/var/log");
-        let cwd_line = TerminalNotebook::split_cwd_line(&old).1;
-        let mut rebuilt = TerminalNotebook::tab_tooltip("renamed", Some("10.0.0.5"), None);
-        if let Some(cwd) = cwd_line {
-            rebuilt.push_str(&cwd);
-        }
+        let rebuilt = TerminalNotebook::relabelled_tooltip(&old, "renamed", Some("10.0.0.5"), None);
         assert_eq!(rebuilt, format!("renamed\n10.0.0.5{CWD}/var/log"));
     }
 }

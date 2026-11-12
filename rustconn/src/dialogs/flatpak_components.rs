@@ -199,6 +199,17 @@ impl FlatpakComponentsDialog {
             inner.append(&k8s_group);
         }
 
+        // Libraries for Run Local Script
+        let scripts_group = Self::build_category_group(
+            &i18n("Remote Scripts"),
+            &i18n("Required to run PowerShell scripts on WinRM hosts with Run Local Script"),
+            ComponentCategory::ScriptRunner,
+            component_rows,
+        );
+        if Self::category_has_visible_components(ComponentCategory::ScriptRunner) {
+            inner.append(&scripts_group);
+        }
+
         clamp.set_child(Some(&inner));
         scrolled.set_child(Some(&clamp));
         content.append(&scrolled);

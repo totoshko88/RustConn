@@ -323,6 +323,7 @@ pub fn show_context_menu_for_item(
     conn_id: &str,
     is_group: bool,
     is_ssh: bool,
+    can_run_script: bool,
     offers_key_setup: bool,
     can_tunnel_browser: bool,
     is_connected: bool,
@@ -350,6 +351,10 @@ pub fn show_context_menu_for_item(
         items.push(ContextMenuItem::action(
             &i18n("Connect All"),
             "connect-all-in-group",
+        ));
+        items.push(ContextMenuItem::action(
+            &i18n("Run Local Script…"),
+            "run-local-script",
         ));
         // § Organisation
         items.push(ContextMenuItem::Separator);
@@ -408,6 +413,10 @@ pub fn show_context_menu_for_item(
         items.push(ContextMenuItem::action(
             &i18n("Duplicate"),
             "duplicate-connection",
+        ));
+        items.push(ContextMenuItem::action(
+            &i18n("Duplicate as Range…"),
+            "duplicate-as-range",
         ));
         items.push(ContextMenuItem::action(
             &i18n("Duplicate via Wizard…"),
@@ -497,6 +506,12 @@ pub fn show_context_menu_for_item(
             &i18n("Session Log…"),
             "show-connection-log",
         ));
+        if can_run_script {
+            items.push(ContextMenuItem::action(
+                &i18n("Run Local Script…"),
+                "run-local-script",
+            ));
+        }
         if is_ssh {
             items.push(ContextMenuItem::action(&i18n("Open SFTP"), "open-sftp"));
         }

@@ -942,12 +942,13 @@ impl ConnectionSidebar {
         // `update_search_with_filters`), so it must match the family part of
         // `window::types::get_protocol_string` — "kubernetes", "zerotrust" (which
         // the window filter matches against every "zerotrust:<provider>").
-        let protocols: [(&str, String); 9] = [
+        let protocols: [(&str, String); 10] = [
             ("SSH", i18n("SSH")),
             ("RDP", i18n("RDP")),
             ("VNC", i18n("VNC")),
             ("SPICE", i18n("SPICE")),
             ("Telnet", i18n("Telnet")),
+            ("WinRM", i18n("WinRM")),
             ("Serial", i18n("Serial")),
             ("ZeroTrust", i18n("ZeroTrust")),
             ("Kubernetes", i18n("Kubernetes")),

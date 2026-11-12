@@ -13,7 +13,7 @@
 //!
 //! Every closure holds `Weak` handles to the notebook, the registry, and the
 //! main window, so nothing registered here can keep a session alive past its
-//! teardown (Requirement 10.4).
+//! teardown.
 //!
 //! The free helpers below are `pub` rather than `pub(crate)` even though this
 //! module is private: `clippy::redundant_pub_crate` is part of the nursery set
@@ -156,7 +156,7 @@ fn monitor_for_preference(preference: &crate::terminal::DetachMonitor) -> Option
 ///
 /// Session-scoped feedback belongs on the window the user is looking at, so
 /// anything addressed to a session asks here first and falls back to the main
-/// window (Requirement 5.4). The window is cloned out of the registry, so no
+/// window. The window is cloned out of the registry, so no
 /// borrow is held while it is used.
 pub fn detached_host_window(session_id: Uuid) -> Option<adw::ApplicationWindow> {
     crate::window::detached_window_registry()?
@@ -194,7 +194,7 @@ fn show_error_in_window(window: &DetachedSessionWindow, message: &str) {
 ///
 /// A rejected verdict is explained as a toast and changes nothing. Every other
 /// failure leaves the session in its tab, because `take_session_content` rolls
-/// itself back (Requirement 1.8).
+/// itself back.
 fn detach_session(
     handles: &DetachHandles,
     session_id: Uuid,
@@ -276,7 +276,7 @@ fn detach_session(
 /// Moves a detached session back into a tab of the main window.
 ///
 /// On failure the session keeps running in its detached window and the error is
-/// reported there (Requirement 2.7).
+/// reported there.
 fn attach_session(handles: &DetachHandles, session_id: Uuid) {
     let Some(targets) = handles.upgrade() else {
         return;
@@ -375,7 +375,7 @@ fn wire_detached_window_callbacks(detached: &DetachedSessionWindow, handles: &De
 /// Installs the session-scoped actions of a detached window.
 ///
 /// Every handler targets `detached.session_id()`, so a shortcut pressed here
-/// never reaches the main window's selected tab (Requirements 5.2, 5.3).
+/// never reaches the main window's selected tab.
 fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &DetachHandles) {
     let window = detached.window().clone();
     let session_id = detached.session_id();
@@ -450,10 +450,17 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
     });
     window.add_action(&search_action);
 
-    // Ctrl+W in a detached window ends only this session.
+    // Ctrl+W in a detached window ends only this session — or, while a dialog
+    // is open in the window, closes just the dialog.
     let close_action = gio::SimpleAction::new("close-tab", None);
     let handles_close = handles.clone();
+    let window_close = window.downgrade();
     close_action.connect_activate(move |_, _| {
+        if let Some(window) = window_close.upgrade()
+            && super::terminal_actions::close_visible_dialog(&window)
+        {
+            return;
+        }
         close_detached_session(&handles_close, session_id);
     });
     window.add_action(&close_action);
@@ -504,6 +511,65 @@ fn install_detached_window_actions(detached: &DetachedSessionWindow, handles: &D
         }
     });
     window.add_action(&passthrough_action);
+
+    // Ctrl+, and the menu's Settings… open Settings, which are application-wide
+    // and whose dialog lives on the main window: raise the main window (it may
+    // be behind this one, or hidden in the tray) and run its action there.
+    let settings_action = gio::SimpleAction::new("settings", None);
+    let main_window = handles.main_window.clone();
+    settings_action.connect_activate(move |_, _| {
+        if let Some(main_window) = main_window.upgrade() {
+            main_window.present();
+            let _ = WidgetExt::activate_action(&main_window, "win.settings", None);
+        }
+    });
+    window.add_action(&settings_action);
+
+    follow_passthrough_for_primary_menu(detached, handles);
+}
+
+/// Keeps the detached window's F10 binding in step with keyboard passthrough.
+///
+/// F10 comes from the menu button's GTK-internal `primary` flag, not from the
+/// accelerator table, so `set_passthrough` cannot drop it. The main window
+/// clears its own button's flag in the `win.toggle-passthrough` handler; this
+/// window follows that action's state the same way, so F10 reaches the session
+/// (Midnight Commander, for one) while passthrough is on. The handler is
+/// removed when the window is destroyed.
+fn follow_passthrough_for_primary_menu(detached: &DetachedSessionWindow, handles: &DetachHandles) {
+    let Some(action) = handles
+        .main_window
+        .upgrade()
+        .and_then(|main_window| main_window.lookup_action("toggle-passthrough"))
+        .and_downcast::<gio::SimpleAction>()
+    else {
+        tracing::warn!(
+            session = %detached.session_id(),
+            "detached window: no passthrough action to follow, F10 stays bound"
+        );
+        return;
+    };
+    let passthrough_on =
+        |action: &gio::SimpleAction| action.state().and_then(|v| v.get::<bool>()) == Some(true);
+
+    let button = detached.menu_button();
+    button.set_primary(!passthrough_on(&action));
+    let button_weak = button.downgrade();
+    let state_watch = action.connect_state_notify(move |action| {
+        if let Some(button) = button_weak.upgrade() {
+            button.set_primary(!passthrough_on(action));
+        }
+    });
+
+    let action_weak = action.downgrade();
+    let state_watch = std::cell::RefCell::new(Some(state_watch));
+    detached.window().connect_destroy(move |_| {
+        if let Some(action) = action_weak.upgrade()
+            && let Some(id) = state_watch.take()
+        {
+            action.disconnect(id);
+        }
+    });
 }
 
 impl MainWindow {
@@ -612,7 +678,7 @@ impl MainWindow {
         // A detached session can also end without the window being involved: a
         // remote disconnect, its child exiting, or a terminate from the session
         // manager all tear it down inside the notebook. Closing the window from
-        // here is what keeps no empty detached window behind (Requirement 6.5).
+        // here is what keeps no empty detached window behind.
         let registry_ended = handles.registry.clone();
         self.terminal_notebook
             .set_on_session_ended(move |session_id| {

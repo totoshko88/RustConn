@@ -1,7 +1,6 @@
 //! Property-based tests for snippet variable extraction
 //!
 //! **Feature: rustconn, Property 12: Snippet Variable Extraction**
-//! **Validates: Requirements 8.3**
 
 use std::collections::{HashMap, HashSet};
 
@@ -52,7 +51,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 12: Snippet Variable Extraction**
-    /// **Validates: Requirements 8.3**
     ///
     /// For any snippet command template containing variable placeholders (e.g., `${var_name}`),
     /// extracting variables should return all unique variable names present in the template.
@@ -238,7 +236,6 @@ proptest! {
     // ========== Property 5: Snippet Variable Extraction (rustconn-enhancements) ==========
 
     /// **Feature: rustconn-enhancements, Property 5: Snippet Variable Extraction**
-    /// **Validates: Requirements 7.2, 7.3**
     ///
     /// For any snippet command containing ${variable} placeholders, the extracted
     /// variable list should contain exactly the unique variable names present in
@@ -265,7 +262,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Snippet Variable Extraction**
-    /// **Validates: Requirements 7.2, 7.3**
     ///
     /// For any snippet with variables, extracting variable objects should produce
     /// SnippetVariable instances with the correct names.

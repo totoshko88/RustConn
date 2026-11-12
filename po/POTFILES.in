@@ -30,6 +30,8 @@ rustconn/src/window/connection_dialogs.rs
 rustconn/src/window/copy_field_actions.rs
 rustconn/src/window/detach_actions.rs
 rustconn/src/window/edit_actions.rs
+rustconn/src/window/mc_launch.rs
+rustconn/src/window/remote_script.rs
 rustconn/src/window/key_setup.rs
 rustconn/src/window/key_unlock.rs
 rustconn/src/window/edit_dialogs.rs
@@ -68,6 +70,7 @@ rustconn/src/dialogs/connection/vnc.rs
 rustconn/src/dialogs/connection/spice.rs
 rustconn/src/dialogs/connection/serial.rs
 rustconn/src/dialogs/connection/telnet.rs
+rustconn/src/dialogs/connection/winrm.rs
 rustconn/src/dialogs/connection/kubernetes.rs
 rustconn/src/dialogs/connection/web.rs
 rustconn/src/dialogs/connection/data_tab.rs
@@ -144,6 +147,7 @@ rustconn/src/terminal/playback.rs
 rustconn/src/terminal/recording.rs
 rustconn/src/terminal/safe_paste.rs
 rustconn/src/terminal/session_lifecycle.rs
+rustconn/src/terminal/split_title.rs
 rustconn/src/terminal/tab_lifecycle.rs
 rustconn/src/terminal/tab_menu.rs
 rustconn/src/validation.rs

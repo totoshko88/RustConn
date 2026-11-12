@@ -1,7 +1,6 @@
 //! Property-based tests for Connection CRUD operations
 //!
 //! **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-//! **Validates: Requirements 1.1, 1.2, 1.3**
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -340,7 +339,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-    /// **Validates: Requirements 1.1, 1.2, 1.3**
     ///
     /// For any valid connection configuration, creating a connection and then
     /// retrieving it by ID should return a connection with identical name, host,
@@ -374,7 +372,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-    /// **Validates: Requirements 1.1, 1.2**
     ///
     /// For any existing connection and valid update, updating the connection
     /// should preserve the original ID while changing only the specified fields.
@@ -436,7 +433,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-    /// **Validates: Requirements 1.3**
     ///
     /// For any existing connection, deleting it should result in the connection
     /// being absent from all queries.
@@ -476,7 +472,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-    /// **Validates: Requirements 1.1, 1.3**
     ///
     /// Creating multiple connections and deleting one should only remove that
     /// specific connection, leaving others intact.
@@ -517,7 +512,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 1: Connection CRUD Data Integrity**
-    /// **Validates: Requirements 1.1**
     ///
     /// Creating a connection from an existing Connection object should preserve
     /// all fields including the original ID.
@@ -561,7 +555,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 14: Group Hierarchy Integrity**
-    /// **Validates: Requirements 1.4**
     ///
     /// For any sequence of group creation and nesting operations, the resulting
     /// hierarchy should be acyclic (no group is its own ancestor).
@@ -602,7 +595,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 14: Group Hierarchy Integrity**
-    /// **Validates: Requirements 1.4**
     ///
     /// Moving a group should never create a cycle in the hierarchy.
     #[test]
@@ -645,7 +637,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 14: Group Hierarchy Integrity**
-    /// **Validates: Requirements 1.4**
     ///
     /// All parent references should point to existing groups.
     #[test]
@@ -685,7 +676,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 14: Group Hierarchy Integrity**
-    /// **Validates: Requirements 1.4**
     ///
     /// Deleting a group should maintain valid parent references for child groups.
     #[test]
@@ -734,7 +724,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 14: Group Hierarchy Integrity**
-    /// **Validates: Requirements 1.4**
     ///
     /// Moving a group to root succeeds unless root already holds that name, and
     /// leaves the hierarchy valid either way.
@@ -797,7 +786,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 6: Group Hierarchy Acyclicity**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any sequence of group creation and move operations, the resulting
     /// group hierarchy must remain acyclic - no group can be its own ancestor.
@@ -870,7 +858,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 6: Group Hierarchy Acyclicity**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// Creating a group with a parent should correctly establish the parent-child
     /// relationship and the group path should reflect the hierarchy.
@@ -923,7 +910,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 6: Group Hierarchy Acyclicity**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// Moving a connection to a group should update the connection's group_id correctly.
     #[test]
@@ -974,7 +960,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.5, 1.6**
     ///
     /// For any set of connections and search query, all returned results must
     /// match the query against at least one of: name, host, tags, or group path.
@@ -1014,7 +999,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.5, 1.6**
     ///
     /// No connection matching the query should be excluded from results.
     #[test]
@@ -1057,7 +1041,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.6**
     ///
     /// Tag-based filtering should return only connections with the specified tag.
     #[test]
@@ -1099,7 +1082,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.6**
     ///
     /// Filtering by multiple tags should return only connections with ALL tags.
     #[test]
@@ -1149,7 +1131,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.5**
     ///
     /// Search should be case-insensitive.
     #[test]
@@ -1182,7 +1163,6 @@ proptest! {
     }
 
     /// **Feature: rustconn, Property 2: Connection Search Correctness**
-    /// **Validates: Requirements 1.5**
     ///
     /// Search by group path should find connections in that group.
     #[test]
@@ -1217,7 +1197,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 2: Bulk Delete Completeness**
-    /// **Validates: Requirements 3.2, 3.3, 3.4**
     ///
     /// For any set of selected connections, after bulk delete completes successfully,
     /// none of the deleted connection IDs should exist in the connection manager,
@@ -1300,7 +1279,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 2: Bulk Delete Completeness**
-    /// **Validates: Requirements 3.2, 3.3, 3.4**
     ///
     /// Bulk delete should continue processing remaining items even if some deletions fail.
     /// This tests the "continue on failure" behavior.
@@ -1387,7 +1365,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 2: Bulk Delete Completeness**
-    /// **Validates: Requirements 3.2, 3.3, 3.4**
     ///
     /// Bulk delete of groups should also work correctly, moving connections to ungrouped.
     #[test]
@@ -1449,7 +1426,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 3: Connection Duplication**
-    /// **Validates: Requirements 3.3**
     ///
     /// For any connection, duplicating it SHALL create a new connection with "(copy)"
     /// suffix and different UUID while preserving all other fields.
@@ -1541,7 +1517,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 4: Group Deletion Cascade**
-    /// **Validates: Requirements 3.7**
     ///
     /// For any group with connections, deleting the group with cascade SHALL remove
     /// all connections within that group.
@@ -1605,7 +1580,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 4: Group Deletion Cascade**
-    /// **Validates: Requirements 3.7**
     ///
     /// Cascade delete should also delete connections in nested child groups.
     #[test]
@@ -1680,7 +1654,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 5: Group-Scoped Sorting**
-    /// **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
     ///
     /// For any set of connections, sorting within a group SHALL only reorder
     /// connections in that group, leaving other groups unchanged.
@@ -1754,7 +1727,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 5: Group-Scoped Sorting**
-    /// **Validates: Requirements 4.2, 4.3**
     ///
     /// For any set of connections, sort_all SHALL sort all groups and their
     /// connections alphabetically, including ungrouped connections.
@@ -1844,7 +1816,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 5: Group-Scoped Sorting**
-    /// **Validates: Requirements 4.4**
     ///
     /// After sorting, the sort order SHALL be persisted to configuration.
     #[test]
@@ -1917,7 +1888,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 6: Drag-Drop Reordering**
-    /// **Validates: Requirements 5.1, 5.2, 5.3, 5.5**
     ///
     /// For any connection moved via drag-drop, the connection's group_id and sort_order
     /// SHALL be updated correctly.
@@ -1995,7 +1965,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 6: Drag-Drop Reordering**
-    /// **Validates: Requirements 5.2, 5.3**
     ///
     /// Moving a connection to a different group via drag-drop SHALL update
     /// the group_id and assign a valid sort_order in the new group.
@@ -2052,7 +2021,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 6: Drag-Drop Reordering**
-    /// **Validates: Requirements 5.3**
     ///
     /// Moving a connection to root (no group) SHALL set group_id to None
     /// and assign a valid sort_order.
@@ -2104,7 +2072,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 6: Drag-Drop Reordering**
-    /// **Validates: Requirements 5.5**
     ///
     /// After drag-drop reordering, the new order SHALL be persisted to configuration.
     #[test]
@@ -2175,7 +2142,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 7: Recent Sort Ordering**
-    /// **Validates: Requirements 6.1, 6.2**
     ///
     /// For any set of connections with timestamps, sorting by recent SHALL place
     /// connections with more recent timestamps first, and connections without
@@ -2252,7 +2218,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 7: Recent Sort Ordering**
-    /// **Validates: Requirements 6.1, 6.2**
     ///
     /// Connections without last_connected timestamp SHALL be placed at the end
     /// of the list when sorting by recent.
@@ -2315,7 +2280,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 8: Last Connected Update**
-    /// **Validates: Requirements 6.4**
     ///
     /// For any connection, after calling update_last_connected, the last_connected
     /// timestamp SHALL be updated to approximately the current time.
@@ -2373,7 +2337,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 8: Last Connected Update**
-    /// **Validates: Requirements 6.4**
     ///
     /// Calling update_last_connected multiple times SHALL update the timestamp
     /// to a more recent value each time.
@@ -2447,7 +2410,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 13: Connection Name Deduplication**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// For any new connection with a name that already exists, the generated name
     /// should include a protocol suffix and be unique among all connections.
@@ -2493,6 +2455,9 @@ proptest! {
                 ProtocolType::Mosh => ProtocolConfig::Mosh(
                     rustconn_core::MoshConfig::default(),
                 ),
+                ProtocolType::WinRm => {
+                    ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+                }
                 ProtocolType::Web => ProtocolConfig::Web(
                     rustconn_core::models::WebConfig::default(),
                 ),
@@ -2535,7 +2500,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 13: Connection Name Deduplication**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// When a name already exists with a different protocol, the generated name
     /// should include the protocol suffix.
@@ -2566,6 +2530,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2600,7 +2567,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
-    /// **Validates: Requirements 4.3**
     ///
     /// For any connection rename to a unique name, any auto-generated suffix
     /// should be removed from the final name.
@@ -2632,6 +2598,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2653,7 +2622,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
-    /// **Validates: Requirements 4.3**
     ///
     /// When the base name is still taken by another connection, the suffix
     /// should be preserved.
@@ -2684,6 +2652,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),
@@ -2711,7 +2682,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 14: Name Suffix Removal**
-    /// **Validates: Requirements 4.3**
     ///
     /// Numeric suffixes should also be removed when the base name becomes unique.
     #[test]
@@ -2743,6 +2713,9 @@ proptest! {
             ProtocolType::Mosh => ProtocolConfig::Mosh(
                 rustconn_core::MoshConfig::default(),
             ),
+            ProtocolType::WinRm => {
+                ProtocolConfig::WinRm(rustconn_core::models::WinRmConfig::default())
+            }
             ProtocolType::Web => ProtocolConfig::Web(
                 rustconn_core::models::WebConfig::default(),
             ),

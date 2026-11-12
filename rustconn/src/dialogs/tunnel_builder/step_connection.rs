@@ -114,6 +114,9 @@ impl StepConnectionPage {
         jump_host_dropdown.set_selected(0);
         jump_host_dropdown.set_hexpand(true);
         crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
+        // The group title is not the dropdown's label, so name it for Orca.
+        jump_host_dropdown
+            .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
         jump_host_group.add(&jump_host_dropdown);
 
         // "New SSH Connection" button

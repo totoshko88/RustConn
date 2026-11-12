@@ -4,7 +4,6 @@
 //! and compile-time default behavior.
 //!
 //! Feature: embedded-web-browser, Properties 4, 5, 6
-//! **Validates: Requirements 7.1, 7.4, 7.5, 7.6, 7.7, 7.8**
 use proptest::prelude::*;
 use rustconn_core::models::{WebBrowserMode, WebConfig};
 // Strategy for generating valid WebBrowserMode variants (without web-embedded feature)
@@ -50,6 +49,9 @@ fn arb_web_config() -> impl Strategy<Value = WebConfig> {
                     accept_invalid_certs: false,
                     hide_floating_toolbar,
                     tunnel_via: None,
+                    socks_proxy: None,
+                    socks_proxy_username: None,
+                    socks_proxy_password_variable: None,
                 }
             },
         )
@@ -58,7 +60,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
     // ========== Property 4: WebBrowserMode Serialization Round-Trip ==========
     /// **Feature: embedded-web-browser, Property 4: WebBrowserMode Serialization Round-Trip**
-    /// **Validates: Requirements 7.1, 7.6, 7.8**
     ///
     /// For any valid WebConfig instance, serializing to JSON and then
     /// deserializing the result produces a WebConfig that is equal to the original.
@@ -81,7 +82,6 @@ proptest! {
     }
     // ========== Property 5: User Agent Length Validation ==========
     /// **Feature: embedded-web-browser, Property 5: User Agent Length Validation**
-    /// **Validates: Requirements 7.7**
     ///
     /// For any string with length greater than 512 characters used as user_agent,
     /// deserialization of a WebConfig containing that value fails with an error.
@@ -137,7 +137,6 @@ proptest! {
     }
     // ========== Property 6: Browser Mode Compile-Time Default ==========
     /// **Feature: embedded-web-browser, Property 6: Browser Mode Compile-Time Default**
-    /// **Validates: Requirements 7.4, 7.5, 7.6**
     ///
     /// For any WebConfig deserialized from JSON that lacks a browser_mode field,
     /// the resulting browser_mode value equals the compile-time default:

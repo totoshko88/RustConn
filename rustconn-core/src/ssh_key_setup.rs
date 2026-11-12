@@ -1358,15 +1358,8 @@ fn push_tail(args: &mut Vec<String>, target: &SshTarget) -> Result<(), KeySetupE
     if let Some(path) = &target.known_hosts_file
         && !declares_option(&target.session_args, "UserKnownHostsFile")
     {
-        let path = path.to_str().ok_or(KeySetupError::InvalidTarget)?;
-        let value = if path.chars().any(char::is_whitespace) {
-            if path.contains('"') {
-                return Err(KeySetupError::InvalidTarget);
-            }
-            format!("UserKnownHostsFile=\"{path}\"")
-        } else {
-            format!("UserKnownHostsFile={path}")
-        };
+        let value =
+            crate::ssh_tunnel::user_known_hosts_option(path).ok_or(KeySetupError::InvalidTarget)?;
         args.push("-o".to_owned());
         args.push(value);
     }
@@ -1390,6 +1383,21 @@ fn push_tail(args: &mut Vec<String>, target: &SshTarget) -> Result<(), KeySetupE
 /// host with a shell metacharacter (`` ` `` `$` `;` `&` `|` quotes, brackets
 /// and the like), or port 0.
 pub fn deploy_args(target: &SshTarget, has_password: bool) -> Result<Vec<String>, KeySetupError> {
+    remote_command_args(target, has_password, &deploy_remote_command())
+}
+
+/// The `ssh` arguments that run `remote_command` over the control channel.
+///
+/// `BatchMode=yes` is added unless a password has to be answered.
+///
+/// # Errors
+///
+/// Returns [`KeySetupError::InvalidTarget`] as [`deploy_args`] does.
+pub fn remote_command_args(
+    target: &SshTarget,
+    has_password: bool,
+    remote_command: &str,
+) -> Result<Vec<String>, KeySetupError> {
     validate_target(target)?;
     let mut args = control_channel_args(&target.session_args);
     if !has_password {
@@ -1397,7 +1405,7 @@ pub fn deploy_args(target: &SshTarget, has_password: bool) -> Result<Vec<String>
         args.push("BatchMode=yes".to_owned());
     }
     push_tail(&mut args, target)?;
-    args.push(deploy_remote_command());
+    args.push(remote_command.to_owned());
     Ok(args)
 }
 
@@ -1902,7 +1910,7 @@ fn log_stream(what: &str, text: &str) {
 /// Temporary helper scripts and secret files, removed (zeroed first) on drop so
 /// that an early `return` cannot leave one behind.
 #[derive(Default)]
-struct SecretFiles(Vec<PathBuf>);
+pub(crate) struct SecretFiles(Vec<PathBuf>);
 
 impl SecretFiles {
     fn track(&mut self, path: PathBuf) {
@@ -1929,7 +1937,7 @@ fn askpass_failed(error: &str) -> KeySetupError {
 ///
 /// Fails closed: if a password was given and an entry for it is missing, `ssh`
 /// is not started without it.
-fn stage_password_env(
+pub(crate) fn stage_password_env(
     jump_host_passwords: &[(AskpassSlot, SecretString)],
     password: Option<&SecretString>,
     files: &mut SecretFiles,
@@ -2012,7 +2020,7 @@ fn push_passphrase_env(env: &mut Vec<(String, String)>, script: &Path, secret: &
 
 /// Older OpenSSH only consults `SSH_ASKPASS` when `DISPLAY` is set; the other
 /// askpass users in this crate do the same.
-fn ensure_askpass_display(env: &mut Vec<(String, String)>) {
+pub(crate) fn ensure_askpass_display(env: &mut Vec<(String, String)>) {
     let has_askpass = env.iter().any(|(name, _)| name == "SSH_ASKPASS");
     let has_display = env.iter().any(|(name, _)| name == "DISPLAY");
     if has_askpass && !has_display && std::env::var_os("DISPLAY").is_none() {

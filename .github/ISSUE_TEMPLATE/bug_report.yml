@@ -33,20 +33,28 @@ body:
   - type: dropdown
     id: install-method
     attributes:
-      label: How did you install it?
+      label: Where did you get RustConn?
+      description: |
+        The official channels are listed under
+        [Official sources](https://github.com/totoshko88/RustConn#official-sources).
+        A package from a distribution not listed here (for example nixpkgs,
+        Debian or Fedora) is not a fork: choose **Another distribution's
+        package**.
+        If you choose **Other / a fork**, please report the bug in the tracker
+        of the project you got the build from: this tracker covers the official
+        builds, and reports about other builds are handled in their own trackers.
       options:
-        - Flatpak (Flathub)
-        - Flatpak (local build)
-        - Snap
-        - Homebrew (macOS)
-        - .deb from OBS
-        - .rpm from OBS
-        - AUR
+        - Flathub
+        - Snap Store
+        - GitHub Releases (AppImage, .deb, .rpm or Flatpak bundle)
+        - openSUSE Build Service repository (.deb or .rpm)
+        - Homebrew tap (macOS)
+        - AUR (rustconn)
         - FreeBSD pkg / ports
-        - Nix
-        - AppImage
-        - Built from source
-        - Other
+        - Nix flake
+        - Built from source from this repository (including a local Flatpak build)
+        - Another distribution's package (e.g. nixpkgs, Debian, Fedora)
+        - Other / a fork
     validations:
       required: true
 

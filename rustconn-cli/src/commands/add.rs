@@ -56,6 +56,7 @@ pub(super) struct AddParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -141,6 +142,13 @@ pub(super) struct AddParams<'a> {
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
     pub tunnel_via: Option<&'a str>,
+    pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: bool,
+    pub winrm_accept_invalid_certs: bool,
 }
 
 /// Add connection command handler
@@ -631,6 +639,14 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         apply_jump_host_id(&mut connection, jump_id)?;
     }
 
+    if !params.fallback_jump_hosts.is_empty() && params.jump_host.is_none() {
+        return Err(CliError::Config(
+            "--fallback-jump-host requires --jump-host".into(),
+        ));
+    }
+    connection.fallback_jump_host_ids =
+        resolve_fallback_jump_hosts(&connections, params.fallback_jump_hosts, connection.id)?;
+
     // Resolve --tunnel-via to a UUID (Web connections only): browse through the
     // referenced SSH connection's host via an auto-raised dynamic SOCKS proxy.
     if let Some(tunnel_ref) = params.tunnel_via {
@@ -646,6 +662,55 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
         }
     }
 
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        cfg.socks_proxy = Some(
+            rustconn_core::protocol::normalize_socks_proxy(proxy)
+                .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+        );
+    }
+
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        cfg.socks_proxy_username = params.socks_proxy_user.map(str::to_string);
+        cfg.socks_proxy_password_variable = params.socks_proxy_password_var.map(str::to_string);
+        if let Some(browser) = params.browser {
+            cfg.browser = Some(browser.to_string());
+        }
+    }
+    if params.socks_proxy_password_var.is_some() {
+        check_socks_password_variable(&config_manager, &connection)?;
+    }
+
+    if params.winrm_ssl || params.winrm_accept_invalid_certs {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
+            ));
+        };
+        cfg.use_ssl = params.winrm_ssl;
+        cfg.accept_invalid_certs = params.winrm_accept_invalid_certs;
+    }
+
+    check_web_socks_settings(&connection)?;
     ConfigManager::validate_connection(&connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;
 
@@ -682,6 +747,47 @@ pub(super) fn cmd_add(config_path: Option<&Path>, params: AddParams<'_>) -> Resu
     );
 
     Ok(())
+}
+
+/// Refuses the SOCKS proxy settings of a Web connection that the GUI editor
+/// would refuse: a proxy together with `--tunnel-via`, or a login without a
+/// proxy or a password variable. `ConfigManager::validate_connection` does not
+/// run the protocol's own checks, so without this they were saved and failed
+/// only at connect.
+pub(super) fn check_web_socks_settings(connection: &Connection) -> Result<(), CliError> {
+    match &connection.protocol_config {
+        rustconn_core::models::ProtocolConfig::Web(cfg) => {
+            rustconn_core::protocol::validate_socks_settings(cfg)
+                .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))
+        }
+        _ => Ok(()),
+    }
+}
+
+/// Refuses a Web connection's SOCKS password variable unless it names a secret
+/// global variable: a plain one keeps the proxy password in the configuration
+/// file as plain text.
+pub(super) fn check_socks_password_variable(
+    config_manager: &ConfigManager,
+    connection: &Connection,
+) -> Result<(), CliError> {
+    let rustconn_core::models::ProtocolConfig::Web(cfg) = &connection.protocol_config else {
+        return Ok(());
+    };
+    let Some(name) = cfg.socks_proxy_password_variable.as_deref() else {
+        return Ok(());
+    };
+    let variables = config_manager
+        .load_variables()
+        .map_err(|e| CliError::Variable(format!("Failed to load variables: {e}")))?;
+    rustconn_core::protocol::socks_password_variable(&variables, name)
+        .map(|_| ())
+        .map_err(|e| {
+            CliError::Config(format!(
+                "--socks-proxy-password-var: {e}; it must name a secret global variable \
+                 ('var list' shows them)"
+            ))
+        })
 }
 
 /// Reads a password from stdin (one line) and stores it in the configured
@@ -985,6 +1091,14 @@ fn create_connection(
             ));
         }
         ProtocolType::Telnet => Connection::new_telnet(name.to_string(), host.to_string(), port),
+        ProtocolType::WinRm => Connection::new(
+            name.to_string(),
+            host.to_string(),
+            port,
+            rustconn_core::models::ProtocolConfig::WinRm(
+                rustconn_core::models::WinRmConfig::default(),
+            ),
+        ),
         ProtocolType::Serial => Connection::new_serial(name.to_string(), host.to_string()),
         ProtocolType::Sftp => {
             let mut conn = Connection::new_sftp(name.to_string(), host.to_string(), port);
@@ -1228,6 +1342,26 @@ fn create_zerotrust_connection(name: &str, params: &AddParams<'_>) -> Result<Con
     }
 }
 
+/// Resolves `--fallback-jump-host` values to connection ids, in the given order.
+pub(super) fn resolve_fallback_jump_hosts(
+    connections: &[Connection],
+    references: &[String],
+    own_id: uuid::Uuid,
+) -> Result<Vec<uuid::Uuid>, CliError> {
+    references
+        .iter()
+        .map(|reference| {
+            let id = find_connection(connections, reference)?.id;
+            if id == own_id {
+                return Err(CliError::Config(
+                    "A connection cannot use itself as a jump host".into(),
+                ));
+            }
+            Ok(id)
+        })
+        .collect()
+}
+
 /// Set `jump_host_id` on a connection's protocol config.
 ///
 /// Supported protocols: SSH, SFTP, RDP, VNC, SPICE.
@@ -1250,6 +1384,9 @@ pub(super) fn apply_jump_host_id(
             cfg.jump_host_id = Some(jump_id);
         }
         rustconn_core::models::ProtocolConfig::Spice(ref mut cfg) => {
+            cfg.jump_host_id = Some(jump_id);
+        }
+        rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) => {
             cfg.jump_host_id = Some(jump_id);
         }
         _ => {
@@ -1753,6 +1890,83 @@ pub(super) fn apply_serial_wave2_fields(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod socks_password_variable_tests {
+    use super::check_socks_password_variable;
+    use rustconn_core::Variable;
+    use rustconn_core::config::ConfigManager;
+    use rustconn_core::models::{Connection, ProtocolConfig, ProtocolType, WebConfig};
+
+    fn web_with_variable(variable: &str) -> Connection {
+        let mut conn = Connection::new_ssh("web".into(), "https://example.com".into(), 443);
+        conn.protocol = ProtocolType::Web;
+        conn.protocol_config = ProtocolConfig::Web(WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".into()),
+            socks_proxy_username: Some("alice".into()),
+            socks_proxy_password_variable: Some(variable.into()),
+            ..WebConfig::default()
+        });
+        conn
+    }
+
+    #[test]
+    fn only_a_secret_global_variable_holds_the_socks_password() {
+        let dir = tempfile::tempdir().unwrap();
+        let manager = ConfigManager::with_config_dir(dir.path().to_path_buf());
+        manager
+            .save_variables(&[
+                Variable::new("plain_pw", "hunter2"),
+                Variable::new_secret("proxy_pw", ""),
+            ])
+            .unwrap();
+
+        assert!(check_socks_password_variable(&manager, &web_with_variable("proxy_pw")).is_ok());
+        let plain = check_socks_password_variable(&manager, &web_with_variable("plain_pw"))
+            .unwrap_err()
+            .to_string();
+        assert!(plain.contains("not secret"), "{plain}");
+        assert!(!plain.contains("hunter2"), "{plain}");
+        assert!(check_socks_password_variable(&manager, &web_with_variable("absent")).is_err());
+    }
+
+    #[test]
+    fn socks_settings_the_gui_refuses_are_refused() {
+        use super::check_web_socks_settings;
+
+        let mut conn = web_with_variable("proxy_pw");
+        assert!(check_web_socks_settings(&conn).is_ok());
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.tunnel_via = Some(uuid::Uuid::new_v4());
+        assert!(check_web_socks_settings(&conn).is_err(), "tunnel and proxy");
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.tunnel_via = None;
+        cfg.socks_proxy_password_variable = None;
+        assert!(
+            check_web_socks_settings(&conn).is_err(),
+            "login without a variable"
+        );
+
+        let ProtocolConfig::Web(cfg) = &mut conn.protocol_config else {
+            unreachable!("built as a Web connection");
+        };
+        cfg.socks_proxy_password_variable = Some("proxy_pw".into());
+        cfg.socks_proxy = None;
+        assert!(
+            check_web_socks_settings(&conn).is_err(),
+            "login without a proxy"
+        );
+
+        let ssh = Connection::new_ssh("ssh".into(), "host".into(), 22);
+        assert!(check_web_socks_settings(&ssh).is_ok());
+    }
 }
 
 #[cfg(test)]

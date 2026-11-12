@@ -9,7 +9,7 @@ use gtk4::prelude::*;
 use gtk4::{Button, CheckButton, DropDown, Entry, SpinButton, StringList};
 use libadwaita as adw;
 
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f};
 
 /// Creates a standard dialog header bar following GNOME HIG.
 ///
@@ -50,6 +50,374 @@ pub fn dialog_pack_action(header: &adw::HeaderBar, button: &impl IsA<gtk4::Widge
     header.pack_end(button);
     #[cfg(not(target_os = "macos"))]
     header.pack_start(button);
+}
+
+/// Whether a Jump Host dropdown position names a saved connection rather than
+/// "(None)" (index 0 of every Jump Host dropdown) or no selection.
+#[must_use]
+pub const fn names_jump_host(selected: u32) -> bool {
+    selected != 0 && selected != gtk4::INVALID_LIST_POSITION
+}
+
+/// Editor for an ordered list of fallback jump hosts.
+///
+/// Shared by the connection and group editors, which store the same list.
+#[derive(Clone)]
+pub struct FallbackJumpHostsEditor {
+    inner: std::rc::Rc<FallbackJumpHostsInner>,
+}
+
+struct FallbackJumpHostsInner {
+    expander: adw::ExpanderRow,
+    add_row: adw::ActionRow,
+    add_dropdown: DropDown,
+    add_button: Button,
+    /// Every saved connection that can act as a gateway, as `(id, label)`.
+    options: std::cell::RefCell<Vec<(uuid::Uuid, String)>>,
+    /// The connection being edited, which cannot be its own gateway.
+    owner: std::cell::Cell<Option<uuid::Uuid>>,
+    selected: std::cell::RefCell<Vec<uuid::Uuid>>,
+    /// What each entry of `add_dropdown` adds, parallel to its model.
+    addable: std::cell::RefCell<Vec<uuid::Uuid>>,
+    rows: std::cell::RefCell<Vec<FallbackRow>>,
+}
+
+/// One listed fallback jump host and its buttons.
+struct FallbackRow {
+    row: adw::ActionRow,
+    up: Button,
+    down: Button,
+    remove: Button,
+}
+
+impl FallbackRow {
+    fn button(&self, action: RowAction) -> &Button {
+        match action {
+            RowAction::Up => &self.up,
+            RowAction::Down => &self.down,
+            RowAction::Remove => &self.remove,
+        }
+    }
+}
+
+/// A row button's action.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RowAction {
+    Up,
+    Down,
+    Remove,
+}
+
+/// The edit a rebuild follows, which decides where keyboard focus goes.
+///
+/// A rebuild replaces every row, so the focused button is destroyed (or, for
+/// Add, unparented) and the next Tab would start at the top of the dialog.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Refocus {
+    /// The list was loaded, not edited: leave focus where it is.
+    Keep,
+    /// `action` was clicked on the row that was at `index`.
+    Row { index: usize, action: RowAction },
+    /// An entry was added.
+    Added,
+}
+
+/// The widget that receives focus after a rebuild.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FocusTarget {
+    Unchanged,
+    Button { index: usize, action: RowAction },
+    AddDropdown,
+}
+
+impl Refocus {
+    /// Where focus goes in the rebuilt list of `len` entries; `can_add` is
+    /// whether the Add row is still sensitive.
+    fn target(self, len: usize, can_add: bool) -> FocusTarget {
+        let fallback = if can_add {
+            FocusTarget::AddDropdown
+        } else {
+            FocusTarget::Unchanged
+        };
+        let Some(last) = len.checked_sub(1) else {
+            return match self {
+                Self::Keep => FocusTarget::Unchanged,
+                _ => fallback,
+            };
+        };
+        match self {
+            Self::Keep => FocusTarget::Unchanged,
+            Self::Added if can_add => FocusTarget::AddDropdown,
+            // Nothing left to add: stay on the entry just added.
+            Self::Added => FocusTarget::Button {
+                index: last,
+                action: RowAction::Remove,
+            },
+            // The next entry slides into place, so Remove can be pressed again.
+            Self::Row {
+                index,
+                action: RowAction::Remove,
+            } => FocusTarget::Button {
+                index: index.min(last),
+                action: RowAction::Remove,
+            },
+            // Follow the moved entry. At the top or bottom the arrow just used
+            // is insensitive, so take the other one; a single entry has neither.
+            Self::Row { index, action } => {
+                let at = if action == RowAction::Up {
+                    index.saturating_sub(1)
+                } else {
+                    index + 1
+                }
+                .min(last);
+                let can_go = |action| match action {
+                    RowAction::Up => at > 0,
+                    RowAction::Down => at < last,
+                    RowAction::Remove => true,
+                };
+                let other = if action == RowAction::Up {
+                    RowAction::Down
+                } else {
+                    RowAction::Up
+                };
+                let action = [action, other, RowAction::Remove]
+                    .into_iter()
+                    .find(|action| can_go(*action))
+                    .unwrap_or(RowAction::Remove);
+                FocusTarget::Button { index: at, action }
+            }
+        }
+    }
+}
+
+/// Applies `action` to entry `id` wherever it is now, and returns the
+/// position it had before, or `None` when it is no longer in the list.
+///
+/// A move at the top or bottom leaves the list as it is.
+fn apply_row_action(
+    selected: &mut Vec<uuid::Uuid>,
+    id: uuid::Uuid,
+    action: RowAction,
+) -> Option<usize> {
+    let index = selected.iter().position(|entry| *entry == id)?;
+    let other = match action {
+        RowAction::Up => index.checked_sub(1),
+        RowAction::Down => Some(index + 1).filter(|other| *other < selected.len()),
+        RowAction::Remove => {
+            selected.remove(index);
+            return Some(index);
+        }
+    };
+    if let Some(other) = other {
+        selected.swap(index, other);
+    }
+    Some(index)
+}
+
+impl FallbackJumpHostsEditor {
+    /// Creates an empty editor.
+    #[must_use]
+    pub fn new() -> Self {
+        let expander = adw::ExpanderRow::builder()
+            .title(i18n("Fallback Jump Hosts"))
+            .subtitle(i18n("Tried in order when the Jump Host is unreachable"))
+            .build();
+
+        let add_dropdown = DropDown::builder().valign(gtk4::Align::Center).build();
+        enable_string_search(&add_dropdown);
+        add_dropdown.set_size_request(200, -1);
+        add_dropdown.update_property(&[gtk4::accessible::Property::Label(&i18n(
+            "Fallback Jump Host to Add",
+        ))]);
+        let add_label = i18n("Add Fallback Jump Host");
+        let add_button = Button::builder()
+            .icon_name("list-add-symbolic")
+            .tooltip_text(&add_label)
+            .valign(gtk4::Align::Center)
+            .css_classes(["flat"])
+            .build();
+        add_button.update_property(&[gtk4::accessible::Property::Label(&add_label)]);
+        let add_row = adw::ActionRow::builder().title(&add_label).build();
+        add_row.add_suffix(&add_dropdown);
+        add_row.add_suffix(&add_button);
+
+        let editor = Self {
+            inner: std::rc::Rc::new(FallbackJumpHostsInner {
+                expander,
+                add_row,
+                add_dropdown,
+                add_button,
+                options: std::cell::RefCell::default(),
+                owner: std::cell::Cell::default(),
+                selected: std::cell::RefCell::default(),
+                addable: std::cell::RefCell::default(),
+                rows: std::cell::RefCell::default(),
+            }),
+        };
+        let weak = std::rc::Rc::downgrade(&editor.inner);
+        editor.inner.add_button.connect_clicked(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            let index = inner.add_dropdown.selected() as usize;
+            let chosen = inner.addable.borrow().get(index).copied();
+            if let Some(id) = chosen {
+                inner.selected.borrow_mut().push(id);
+                FallbackJumpHostsInner::rebuild(&inner, Refocus::Added);
+            }
+        });
+        FallbackJumpHostsInner::rebuild(&editor.inner, Refocus::Keep);
+        editor
+    }
+
+    /// The row to place in a preferences group or another expander.
+    #[must_use]
+    pub fn widget(&self) -> &adw::ExpanderRow {
+        &self.inner.expander
+    }
+
+    /// Sets the connections that can be picked, as `(id, label)`.
+    pub fn set_options(&self, options: Vec<(uuid::Uuid, String)>) {
+        *self.inner.options.borrow_mut() = options;
+        FallbackJumpHostsInner::rebuild(&self.inner, Refocus::Keep);
+    }
+
+    /// Loads the stored list; `owner` is the connection being edited, if any.
+    pub fn set_value(&self, owner: Option<uuid::Uuid>, selected: &[uuid::Uuid]) {
+        self.inner.owner.set(owner);
+        *self.inner.selected.borrow_mut() = selected.to_vec();
+        FallbackJumpHostsInner::rebuild(&self.inner, Refocus::Keep);
+    }
+
+    /// Returns the list in failover order.
+    #[must_use]
+    pub fn value(&self) -> Vec<uuid::Uuid> {
+        self.inner.selected.borrow().clone()
+    }
+}
+
+impl Default for FallbackJumpHostsEditor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FallbackJumpHostsInner {
+    fn label_of(&self, id: uuid::Uuid) -> String {
+        self.options
+            .borrow()
+            .iter()
+            .find(|(option, _)| *option == id)
+            .map_or_else(|| i18n("(unknown connection)"), |(_, label)| label.clone())
+    }
+
+    fn rebuild(this: &std::rc::Rc<Self>, refocus: Refocus) {
+        for entry in this.rows.borrow_mut().drain(..) {
+            this.expander.remove(&entry.row);
+        }
+        this.expander.remove(&this.add_row);
+
+        let selected = this.selected.borrow().clone();
+        for (index, id) in selected.iter().enumerate() {
+            let label = this.label_of(*id);
+            let row = adw::ActionRow::builder()
+                .title(&label)
+                .use_markup(false)
+                .build();
+            // The tooltip sits next to the host's name; a screen reader that
+            // lands on the button hears only the accessible label, so it
+            // names the host.
+            let up = Self::row_button(
+                this,
+                "go-up-symbolic",
+                &i18n("Move Up"),
+                &i18n_f("Move {} up", &[&label]),
+                *id,
+                RowAction::Up,
+            );
+            up.set_sensitive(index > 0);
+            let down = Self::row_button(
+                this,
+                "go-down-symbolic",
+                &i18n("Move Down"),
+                &i18n_f("Move {} down", &[&label]),
+                *id,
+                RowAction::Down,
+            );
+            down.set_sensitive(index + 1 < selected.len());
+            let remove = Self::row_button(
+                this,
+                "list-remove-symbolic",
+                &i18n("Remove"),
+                &i18n_f("Remove {}", &[&label]),
+                *id,
+                RowAction::Remove,
+            );
+            row.add_suffix(&up);
+            row.add_suffix(&down);
+            row.add_suffix(&remove);
+            this.expander.add_row(&row);
+            this.rows.borrow_mut().push(FallbackRow {
+                row,
+                up,
+                down,
+                remove,
+            });
+        }
+
+        let addable: Vec<(uuid::Uuid, String)> = this
+            .options
+            .borrow()
+            .iter()
+            .filter(|(id, _)| !selected.contains(id) && this.owner.get() != Some(*id))
+            .cloned()
+            .collect();
+        let labels: Vec<&str> = addable.iter().map(|(_, label)| label.as_str()).collect();
+        this.add_dropdown.set_model(Some(&StringList::new(&labels)));
+        this.add_row.set_sensitive(!addable.is_empty());
+        *this.addable.borrow_mut() = addable.into_iter().map(|(id, _)| id).collect();
+        this.expander.add_row(&this.add_row);
+
+        match refocus.target(selected.len(), this.add_row.is_sensitive()) {
+            FocusTarget::Unchanged => {}
+            FocusTarget::AddDropdown => {
+                this.add_dropdown.grab_focus();
+            }
+            FocusTarget::Button { index, action } => {
+                if let Some(entry) = this.rows.borrow().get(index) {
+                    entry.button(action).grab_focus();
+                }
+            }
+        }
+    }
+
+    /// Builds a button that applies `action` to entry `id`.
+    fn row_button(
+        this: &std::rc::Rc<Self>,
+        icon: &str,
+        tooltip: &str,
+        accessible_label: &str,
+        id: uuid::Uuid,
+        action: RowAction,
+    ) -> Button {
+        let button = Button::builder()
+            .icon_name(icon)
+            .tooltip_text(tooltip)
+            .valign(gtk4::Align::Center)
+            .css_classes(["flat"])
+            .build();
+        button.update_property(&[gtk4::accessible::Property::Label(accessible_label)]);
+        let weak = std::rc::Rc::downgrade(this);
+        button.connect_clicked(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            // A second click can land before the idle rebuild. The button
+            // names its entry, not a position, so it still acts on that entry.
+            let applied = apply_row_action(&mut inner.selected.borrow_mut(), id, action);
+            let Some(index) = applied else { return };
+            // Later than this click: rebuilding removes the button being clicked.
+            let refocus = Refocus::Row { index, action };
+            gtk4::glib::idle_add_local_once(move || Self::rebuild(&inner, refocus));
+        });
+        button
+    }
 }
 
 /// Common label strings used across dialogs
@@ -700,5 +1068,121 @@ mod tests {
         assert_ne!(labels::root_group(), "");
         assert_ne!(labels::none_label(), "");
         assert_ne!(labels::no_keys_loaded(), "");
+    }
+
+    fn button(index: usize, action: RowAction) -> FocusTarget {
+        FocusTarget::Button { index, action }
+    }
+
+    fn row(index: usize, action: RowAction) -> Refocus {
+        Refocus::Row { index, action }
+    }
+
+    #[test]
+    fn loading_the_list_leaves_focus_alone() {
+        assert_eq!(Refocus::Keep.target(3, true), FocusTarget::Unchanged);
+        assert_eq!(Refocus::Keep.target(0, true), FocusTarget::Unchanged);
+    }
+
+    #[test]
+    fn a_moved_entry_keeps_focus_on_its_arrow() {
+        // Entry 2 of 3 moved up to 1: Move Up is still usable there.
+        assert_eq!(
+            row(2, RowAction::Up).target(3, true),
+            button(1, RowAction::Up)
+        );
+        // Entry 1 moved up to the top, where Move Up is insensitive.
+        assert_eq!(
+            row(1, RowAction::Up).target(3, true),
+            button(0, RowAction::Down)
+        );
+        assert_eq!(
+            row(0, RowAction::Down).target(3, true),
+            button(1, RowAction::Down)
+        );
+        // Entry 1 moved down to the bottom, where Move Down is insensitive.
+        assert_eq!(
+            row(1, RowAction::Down).target(3, true),
+            button(2, RowAction::Up)
+        );
+    }
+
+    #[test]
+    fn removing_an_entry_focuses_the_one_that_takes_its_place() {
+        assert_eq!(
+            row(0, RowAction::Remove).target(2, true),
+            button(0, RowAction::Remove)
+        );
+        // The last entry went: the new last one takes focus.
+        assert_eq!(
+            row(2, RowAction::Remove).target(2, true),
+            button(1, RowAction::Remove)
+        );
+        // The list is empty: focus goes to the Add dropdown.
+        assert_eq!(
+            row(0, RowAction::Remove).target(0, true),
+            FocusTarget::AddDropdown
+        );
+        assert_eq!(
+            row(0, RowAction::Remove).target(0, false),
+            FocusTarget::Unchanged
+        );
+    }
+
+    #[test]
+    fn adding_an_entry_returns_to_the_add_dropdown() {
+        assert_eq!(Refocus::Added.target(2, true), FocusTarget::AddDropdown);
+        // Nothing is left to add, so the dropdown is insensitive.
+        assert_eq!(
+            Refocus::Added.target(2, false),
+            button(1, RowAction::Remove)
+        );
+    }
+
+    #[test]
+    fn a_stale_click_never_points_past_the_list() {
+        assert_eq!(
+            row(5, RowAction::Down).target(2, true),
+            button(1, RowAction::Up)
+        );
+        assert_eq!(
+            row(5, RowAction::Remove).target(2, true),
+            button(1, RowAction::Remove)
+        );
+    }
+
+    fn ids(count: u128) -> Vec<uuid::Uuid> {
+        (1..=count).map(uuid::Uuid::from_u128).collect()
+    }
+
+    #[test]
+    fn two_quick_moves_move_the_same_entry_twice() {
+        let [a, b, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        // Both clicks land on c's Move Up before the list redraws.
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Up), Some(2));
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Up), Some(1));
+        assert_eq!(selected, vec![c, a, b]);
+    }
+
+    #[test]
+    fn a_second_remove_click_does_not_remove_the_neighbour() {
+        let [a, b, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        assert_eq!(
+            apply_row_action(&mut selected, b, RowAction::Remove),
+            Some(1)
+        );
+        assert_eq!(apply_row_action(&mut selected, b, RowAction::Remove), None);
+        assert_eq!(selected, vec![a, c]);
+    }
+
+    #[test]
+    fn a_move_at_the_edge_changes_nothing() {
+        let [a, _, c] = [1, 2, 3].map(uuid::Uuid::from_u128);
+        let mut selected = ids(3);
+        assert_eq!(apply_row_action(&mut selected, a, RowAction::Up), Some(0));
+        assert_eq!(apply_row_action(&mut selected, c, RowAction::Down), Some(2));
+        assert_eq!(selected, ids(3));
     }
 }

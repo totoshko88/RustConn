@@ -117,31 +117,28 @@ pub fn create_keybindings_page() -> (
 
             // --- Record button handler ---
             let action_name = def.action.clone();
-            let default_accels = def.default_accels.clone();
             let accel_label_clone = accel_label.clone();
             let overrides_clone = overrides_cell.clone();
+            let page_labels = accel_labels.clone();
 
             record_btn.connect_clicked(move |btn| {
                 show_shortcut_recorder(
                     btn,
                     action_name.clone(),
-                    default_accels.clone(),
                     accel_label_clone.clone(),
                     overrides_clone.clone(),
+                    page_labels.clone(),
                 );
             });
 
             // --- Reset button handler ---
             let action_name = def.action.clone();
-            let default_accels = def.default_accels.clone();
             let overrides_clone = overrides_cell.clone();
+            let page_labels = accel_labels.clone();
 
             reset_btn.connect_clicked(move |_| {
                 overrides_clone.borrow_mut().reset(&action_name);
-                accel_label.set_label(&default_accels);
-                accel_label.remove_css_class("warning");
-                accel_label.add_css_class("dim-label");
-                accel_label.set_tooltip_text(None);
+                refresh_default_labels(&page_labels, &overrides_clone.borrow());
             });
 
             expander.add_row(&row);
@@ -214,9 +211,9 @@ pub fn create_keybindings_page() -> (
 fn show_shortcut_recorder(
     anchor: &Button,
     action: String,
-    default_accels: String,
     accel_label: Label,
     overrides: Rc<RefCell<KeybindingSettings>>,
+    page_labels: AccelLabels,
 ) {
     let app = gio::Application::default().and_then(|a| a.downcast::<gtk4::Application>().ok());
 
@@ -269,10 +266,7 @@ fn show_shortcut_recorder(
             // Backspace resets the binding to its default.
             if keyval == gtk4::gdk::Key::BackSpace {
                 overrides.borrow_mut().reset(&action);
-                accel_label.set_label(&default_accels);
-                accel_label.set_tooltip_text(None);
-                accel_label.remove_css_class("warning");
-                accel_label.add_css_class("dim-label");
+                refresh_default_labels(&page_labels, &overrides.borrow());
                 dialog.close();
                 return gtk4::glib::Propagation::Stop;
             }
@@ -308,6 +302,7 @@ fn show_shortcut_recorder(
                 .borrow_mut()
                 .overrides
                 .insert(action.clone(), accel.to_string());
+            refresh_default_labels(&page_labels, &overrides.borrow());
             dialog.close();
             gtk4::glib::Propagation::Stop
         });
@@ -346,7 +341,26 @@ pub fn load_keybinding_settings(
     let labels = accel_labels.borrow();
     for def in &defaults {
         if let Some(label) = labels.get(&def.action) {
-            set_accel_label(label, settings.get_accel(def));
+            set_accel_label(label, &settings.registered_accels(def).join("|"));
+        }
+    }
+}
+
+/// Refreshes the labels of the actions the user has not rebound.
+///
+/// Such a row shows its defaults minus any another action's binding has taken
+/// ([`KeybindingSettings::registered_accels`], what GTK gets), so a change to
+/// one binding can change another row: binding F1 to Keyboard Shortcuts
+/// leaves Help with no key, and resetting it gives F1 back. Rows with a binding
+/// of their own keep their label, including a conflict warning.
+fn refresh_default_labels(accel_labels: &AccelLabels, settings: &KeybindingSettings) {
+    let defaults = default_keybindings();
+    let labels = accel_labels.borrow();
+    for def in &defaults {
+        if !settings.overrides.contains_key(&def.action)
+            && let Some(label) = labels.get(&def.action)
+        {
+            set_accel_label(label, &settings.registered_accels(def).join("|"));
         }
     }
 }
@@ -460,8 +474,7 @@ fn suspend_accels(app: &gtk4::Application) {
 pub fn restore_accels_with_overrides(app: &gtk4::Application, overrides: &KeybindingSettings) {
     let defaults = default_keybindings();
     for def in &defaults {
-        let effective = overrides.get_accel(def);
-        let accels: Vec<&str> = effective.split('|').collect();
+        let accels = overrides.registered_accels(def);
         app.set_accels_for_action(&def.action, &accels);
     }
 }

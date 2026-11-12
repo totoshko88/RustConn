@@ -419,6 +419,10 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
     // Prune stale agent key files left behind by a previous crash or kill.
     rustconn_core::ssh_agent::prune_stale_agent_keys();
 
+    // Remove proxied browser profiles a crash, a kill or `rustconn-cli connect`
+    // left behind. Deleting a large profile takes a moment, so off the main thread.
+    std::thread::spawn(rustconn_core::protocol::remove_stale_browser_profiles);
+
     // Apply saved color scheme from settings
     apply_saved_color_scheme(&state);
 
@@ -1842,11 +1846,18 @@ fn setup_app_actions(
     });
     app.add_action(&quit_action);
 
-    // About action
+    // About action. Like the shortcuts and help actions below it opens on the
+    // focused window, so pressing it in a detached window does not put the
+    // dialog on a main window that is behind it or hidden in the tray.
     let about_action = gio::SimpleAction::new("about", None);
+    let app_for_about = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
     about_action.connect_activate(move |_, _| {
-        if let Some(window) = window_weak.upgrade() {
+        let parent = app_for_about
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        if let Some(window) = parent {
             show_about_dialog(&window);
         }
     });
@@ -1854,10 +1865,15 @@ fn setup_app_actions(
 
     // Keyboard shortcuts action
     let shortcuts_action = gio::SimpleAction::new("shortcuts", None);
+    let app_for_shortcuts = app.downgrade();
     let window_weak = window.gtk_window().downgrade();
     let state_for_shortcuts = state.clone();
     shortcuts_action.connect_activate(move |_, _| {
-        if let Some(window) = window_weak.upgrade() {
+        let parent = app_for_shortcuts
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        if let Some(window) = parent {
             // Read the bindings from settings, not from the application: while a
             // terminal has focus the single-modifier accelerators are suspended
             // (issue #216), so the live registration is not what the user has
@@ -1869,6 +1885,21 @@ fn setup_app_actions(
         }
     });
     app.add_action(&shortcuts_action);
+
+    // Help action (F1): opens the user guide, the same page as the AppStream
+    // `help` URL. Parented to the focused window so the portal's chooser, if
+    // one appears, is in front of the window the user pressed F1 in.
+    let help_action = gio::SimpleAction::new("help", None);
+    let app_for_help = app.downgrade();
+    let window_weak = window.gtk_window().downgrade();
+    help_action.connect_activate(move |_, _| {
+        let parent = app_for_help
+            .upgrade()
+            .and_then(|app| focused_application_window(&app))
+            .or_else(|| window_weak.upgrade().map(Cast::upcast));
+        open_user_guide(parent.as_ref());
+    });
+    app.add_action(&help_action);
 
     // Set up keyboard shortcuts dynamically from settings
     apply_keybindings(app, state);
@@ -1902,8 +1933,7 @@ pub fn apply_keybindings(app: &adw::Application, state: &SharedAppState) {
     let defaults = rustconn_core::default_keybindings();
 
     for def in &defaults {
-        let accel_str = keybinding_settings.get_accel(def);
-        let accels: Vec<&str> = accel_str.split('|').collect();
+        let accels = keybinding_settings.registered_accels(def);
         app.set_accels_for_action(&def.action, &accels);
     }
 }
@@ -1938,8 +1968,7 @@ pub fn set_passthrough(app: &adw::Application, state: &SharedAppState, enable: b
         for def in &defaults {
             if exceptions.contains(&def.action) {
                 // Keep exception bindings active
-                let accel_str = keybinding_settings.get_accel(def);
-                let accels: Vec<&str> = accel_str.split('|').collect();
+                let accels = keybinding_settings.registered_accels(def);
                 app.set_accels_for_action(&def.action, &accels);
             } else {
                 // Remove all other bindings
@@ -1969,12 +1998,12 @@ pub fn suspend_terminal_accels(app: &adw::Application, state: &SharedAppState) {
         if !TERMINAL_CONFLICTING_ACTIONS.contains(&def.action.as_str()) {
             continue;
         }
-        let accel_str = keybinding_settings.get_accel(def);
         // Keep only multi-modifier accelerators (those with more than one
         // modifier flag set, e.g. Ctrl+Shift). Single-Control chords are
         // dropped so they pass through to VTE/readline.
-        let kept: Vec<&str> = accel_str
-            .split('|')
+        let kept: Vec<&str> = keybinding_settings
+            .registered_accels(def)
+            .into_iter()
             .filter(|accel| is_multi_modifier(accel))
             .collect();
         app.set_accels_for_action(&def.action, &kept);
@@ -1993,8 +2022,7 @@ pub fn restore_terminal_accels(app: &adw::Application, state: &SharedAppState) {
 
     for def in &defaults {
         if TERMINAL_CONFLICTING_ACTIONS.contains(&def.action.as_str()) {
-            let accel_str = keybinding_settings.get_accel(def);
-            let accels: Vec<&str> = accel_str.split('|').collect();
+            let accels = keybinding_settings.registered_accels(def);
             app.set_accels_for_action(&def.action, &accels);
         }
     }
@@ -2037,8 +2065,33 @@ fn is_multi_modifier(accel: &str) -> bool {
     has_ctrl && has_extra
 }
 
+/// The user guide: the Help action, the About dialog's link and the AppStream
+/// `help` URL in the metainfo all point here.
+const USER_GUIDE_URL: &str = "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md";
+
+/// Opens the user guide in the default browser.
+///
+/// A failure is shown as a toast. Dismissing the portal's app chooser is not a
+/// failure and is only logged.
+fn open_user_guide(parent: Option<&gtk4::Window>) {
+    gtk4::UriLauncher::new(USER_GUIDE_URL).launch(parent, gio::Cancellable::NONE, |result| {
+        let Err(error) = result else {
+            return;
+        };
+        if error.matches(gtk4::DialogError::Dismissed) {
+            tracing::debug!("user guide: app chooser dismissed");
+            return;
+        }
+        tracing::warn!(%error, url = USER_GUIDE_URL, "could not open the user guide");
+        crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n_f(
+            "Failed to open URL: {}",
+            &[&error.to_string()],
+        ));
+    });
+}
+
 /// Shows the about dialog
-fn show_about_dialog(parent: &adw::ApplicationWindow) {
+fn show_about_dialog(parent: &gtk4::Window) {
     let description = gettext(
         "Modern connection manager for Linux with a \
 GTK4/Wayland-native interface. Manage SSH, RDP, VNC, SPICE, Telnet, \
@@ -2089,7 +2142,10 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
             "cocide https://github.com/cocide",
             "Austin Eschweiler https://github.com/Eschguy",
         ])
-        .copyright("© 2024-2026 Anton Isaiev")
+        // The attribution in this line and the "Made in Ukraine" section
+        // below are the Appropriate Legal Notices that NOTICE (GPL-3.0
+        // section 7(b)) asks a modified version to keep.
+        .copyright("© 2024-2026 Anton Isaiev, Ukraine")
         .application_icon("io.github.totoshko88.RustConn")
         // The translators section. Its heading ("Translated by") is one of
         // GTK's own strings, so libadwaita localises it automatically in every
@@ -2118,10 +2174,7 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
         .build();
 
     // Documentation & resources links
-    about.add_link(
-        &gettext("User Guide"),
-        "https://github.com/totoshko88/RustConn/blob/main/docs/USER_GUIDE.md",
-    );
+    about.add_link(&gettext("User Guide"), USER_GUIDE_URL);
     about.add_link(
         &gettext("Installation"),
         "https://github.com/totoshko88/RustConn/blob/main/docs/INSTALL.md",

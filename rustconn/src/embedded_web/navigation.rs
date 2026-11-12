@@ -656,7 +656,6 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         /// **Feature: embedded-web-browser, Property 2: Zoom Level Clamping**
-        /// **Validates: Requirements 3.9, 3.10, 3.11, 3.12, 3.13**
         ///
         /// For any sequence of zoom in/out/reset operations applied to a WebView
         /// starting from any valid zoom level in [0.3, 3.0], the resulting zoom level
@@ -796,7 +795,6 @@ mod tests {
     // ========== Property 7: Navigation Button Sensitivity Consistency ==========
 
     // **Feature: embedded-web-browser, Property 7: Navigation Button Sensitivity Consistency**
-    // **Validates: Requirements 3.2, 3.3**
     //
     // For any (can_go_back, can_go_forward) state, the back button is disabled
     // when can_go_back is false, and the forward button is disabled when

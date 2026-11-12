@@ -35,8 +35,16 @@ fn run_mc(
     // A fresh id per invocation keeps two concurrent runs against the same
     // connection from tearing down each other's wrapper directory.
     let wrapper_id = uuid::Uuid::new_v4();
-    let mc_ssh =
-        rustconn_core::prepare_mc_ssh_env(wrapper_id, connection, connections, groups, network);
+    // No password: the CLI does not read the secret backend for mc, so a
+    // password-authenticated connection is typed in mc's terminal.
+    let mc_ssh = rustconn_core::prepare_mc_ssh_env(
+        wrapper_id,
+        connection,
+        connections,
+        groups,
+        network,
+        None,
+    );
     if let Some(ref env) = mc_ssh {
         proc.env("PATH", env.path_env().trim_start_matches("PATH="));
     }
@@ -176,6 +184,42 @@ pub(super) fn cmd_sftp(
     }
 
     if use_mc || use_cli {
+        // Fallback jump hosts: the file-manager path above cannot use a bastion.
+        use rustconn_core::connection::gateway_failover::{
+            GatewayOutcome, gateway_probes_by, probe_gateways, use_gateway,
+        };
+        let probes = gateway_probes_by(
+            connection,
+            |id| connections.iter().find(|c| c.id == id),
+            &groups,
+            &network,
+        );
+        let timeout = config_manager
+            .load_settings()
+            .unwrap_or_default()
+            .connection
+            .port_check_timeout_secs;
+        let mut routed = connection.clone();
+        if let Some(selection) = probe_gateways(&probes, timeout) {
+            use_gateway(&mut routed, selection.gateway_id);
+            match selection.outcome {
+                GatewayOutcome::Primary => {}
+                GatewayOutcome::FailedOver => {
+                    eprintln!(
+                        "Jump host unreachable, connecting through '{}'.",
+                        selection.gateway_name
+                    );
+                }
+                GatewayOutcome::NoneReachable => {
+                    eprintln!(
+                        "No jump host responded, trying '{}'.",
+                        selection.gateway_name
+                    );
+                }
+            }
+        }
+        let connection = &routed;
+
         let result = if use_mc {
             run_mc(connection, &connections, &groups, &network)
         } else {

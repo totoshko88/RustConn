@@ -136,7 +136,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // Feature: split-view-redesign, Property 1: Layout Independence
-    // Validates: Requirements 1.3, 1.4, 3.1, 3.3, 3.4
     //
     // *For any* collection of tabs managed by `TabSplitManager`, operations on one
     // tab's `SplitLayoutModel` (split, place, remove) SHALL NOT affect any other
@@ -415,7 +414,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // Feature: split-view-redesign, Property 2: Split Operation Invariants
-    // Validates: Requirements 2.1, 2.2, 2.3, 2.4
     //
     // *For any* `SplitLayoutModel` with a focused panel containing a session, after calling `split(direction)`:
     // - The layout SHALL contain exactly one more panel than before
@@ -722,7 +720,6 @@ proptest! {
 // ============================================================================
 
 // Feature: split-view-redesign, Property 3: Color Allocation Uniqueness
-// Validates: Requirements 2.5, 6.1
 //
 // *For any* sequence of split container creations, each `ColorId` allocated by
 // `ColorPool` SHALL be unique until released. When all colors are allocated,
@@ -1093,7 +1090,6 @@ proptest! {
 // ============================================================================
 
 // Feature: split-view-redesign, Property 4: Recursive Nesting Integrity
-// Validates: Requirements 5.1, 5.2, 5.3
 //
 // *For any* `SplitLayoutModel`, after a sequence of split operations:
 // - The panel tree SHALL maintain valid parent-child relationships
@@ -1498,7 +1494,6 @@ proptest! {
 // ============================================================================
 
 // Feature: split-view-redesign, Property 5: Empty Panel Placement
-// Validates: Requirements 9.1, 9.3, 9.4
 //
 // *For any* `SplitLayoutModel` with an empty panel, calling `place_in_panel(panel_id, session_id)` SHALL:
 // - Return `DropResult::Placed`
@@ -1909,7 +1904,6 @@ proptest! {
 // ============================================================================
 
 // Feature: split-view-redesign, Property 6: Occupied Panel Eviction
-// Validates: Requirements 10.1, 10.2, 10.3, 10.4
 //
 // *For any* `SplitLayoutModel` with an occupied panel containing `old_session`,
 // calling `place_in_panel(panel_id, new_session)` SHALL:
@@ -2442,7 +2436,6 @@ mod unit_tests {
 // ============================================================================
 
 // Feature: split-view-redesign, Property 7: Panel Removal and Tree Collapse
-// Validates: Requirements 4.6, 5.4, 13.1, 13.2, 13.3, 13.5
 //
 // *For any* `SplitLayoutModel` with more than one panel:
 // - Removing a panel SHALL decrease the panel count by exactly one

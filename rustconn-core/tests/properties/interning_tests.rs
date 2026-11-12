@@ -1,7 +1,7 @@
 //! Property-based tests for String Interning
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the String Interning system (Requirements 5.x).
+//! for the String Interning system.
 
 #![allow(
     clippy::overly_complex_bool_expr,
@@ -64,7 +64,6 @@ proptest! {
 
     // ========== Property 9: String Interning Deduplication ==========
     // **Feature: performance-improvements, Property 9: String Interning Deduplication**
-    // **Validates: Requirements 5.1, 5.2**
     //
     // For any set of connections with repeated protocol names, interning SHALL
     // reduce memory usage compared to non-interned storage by returning the
@@ -187,7 +186,6 @@ proptest! {
 
     // ========== Property 10: String Interning Statistics ==========
     // **Feature: performance-improvements, Property 10: String Interning Statistics**
-    // **Validates: Requirements 5.3, 5.4**
     //
     // For any sequence of intern operations, statistics (hit rate, bytes saved)
     // SHALL be accurately tracked.

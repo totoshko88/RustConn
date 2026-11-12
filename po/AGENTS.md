@@ -3,6 +3,12 @@
 - **`ls po/*.po` is the authoritative locale count.** Do not trust a number written
   in prose anywhere in this repo, including in the root `AGENTS.md`. That number has
   already been wrong once (16 vs 17, missing `ka`).
+- **No Russian catalogue.** The project does not ship a Russian translation: do
+  not add `ru.po` or `ru` to `LINGUAS`, and do not generate one. Every other
+  language is welcome, including the region's (Bashkir `ba`, Tatar `tt`, Nogai
+  `nog`). It is a product decision, not a rule about contributors — see
+  `CONTRIBUTING.md#translations` and the
+  [PR #413 reply](https://github.com/totoshko88/RustConn/pull/413#issuecomment-6714428433).
 - After adding or changing an `i18n()` / `i18n_f()` string in Rust:
   `bash po/update-pot.sh`, then `msgmerge --update` the affected catalogues.
 - A source file containing `i18n()` must be listed in `POTFILES.in` or

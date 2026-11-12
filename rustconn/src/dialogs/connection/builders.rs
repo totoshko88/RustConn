@@ -48,6 +48,14 @@ fn non_empty_text(entry: &Entry) -> Option<String> {
     if text.is_empty() { None } else { Some(text) }
 }
 
+/// The Unix socket a SPICE connection saves from the editor's switch and path
+/// entry: `None` unless the switch is on and the path is not blank. A socket
+/// connection saves no Jump Host, so the fallback editor reads this too.
+pub(super) fn spice_unix_socket_path(switch_on: bool, path_text: &str) -> Option<PathBuf> {
+    let path = path_text.trim();
+    (switch_on && !path.is_empty()).then(|| PathBuf::from(path))
+}
+
 pub(super) struct ConnectionDialogData<'a> {
     pub name_entry: &'a Entry,
     pub icon_entry: &'a Entry,
@@ -206,6 +214,10 @@ pub(super) struct ConnectionDialogData<'a> {
     pub telnet_custom_args_entry: &'a Entry,
     pub telnet_backspace_dropdown: &'a DropDown,
     pub telnet_delete_dropdown: &'a DropDown,
+    pub winrm_ssl_switch: &'a adw::SwitchRow,
+    pub winrm_accept_certs_switch: &'a adw::SwitchRow,
+    pub winrm_jump_host_dropdown: &'a DropDown,
+    pub winrm_custom_args_entry: &'a Entry,
     // Serial fields
     pub serial_device_entry: &'a Entry,
     pub serial_baud_dropdown: &'a DropDown,
@@ -236,6 +248,9 @@ pub(super) struct ConnectionDialogData<'a> {
     pub web_user_agent_row: &'a adw::EntryRow,
     pub web_floating_toolbar_switch: &'a adw::SwitchRow,
     pub web_tunnel_dropdown: &'a gtk4::DropDown,
+    pub web_socks_proxy_row: &'a adw::EntryRow,
+    pub web_socks_user_row: &'a adw::EntryRow,
+    pub web_socks_password_var_row: &'a adw::EntryRow,
     pub web_connections_data: &'a Rc<RefCell<Vec<(Option<uuid::Uuid>, String)>>>,
     pub local_variables: &'a HashMap<String, Variable>,
     pub logging_tab: &'a logging_tab::LoggingTab,
@@ -282,6 +297,7 @@ pub(super) struct ConnectionDialogData<'a> {
     /// Connection-level, so it is on the Basic tab rather than the SSH page —
     /// see `general_tab::BasicTabWidgets::network_mode_row` (issue #301).
     pub network_mode_row: &'a adw::ComboRow,
+    pub fallback_jump_hosts: &'a crate::dialogs::widgets::FallbackJumpHostsEditor,
     pub ssh_jump_host_dropdown: &'a DropDown,
     pub connections_data: &'a Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     // Script credential fields
@@ -439,6 +455,26 @@ impl ConnectionDialogData<'_> {
         // Web (10): Custom browser mode requires a non-empty browser command
         if protocol_idx == 10 {
             use crate::dialogs::connection::web::browser_mode_from_combo_index;
+            let socks_proxy = self.web_socks_proxy_row.text();
+            if !socks_proxy.trim().is_empty() {
+                if rustconn_core::protocol::normalize_socks_proxy(&socks_proxy).is_err() {
+                    return Err(i18n(
+                        "Enter the SOCKS5 proxy as host:port, with any login in its own fields",
+                    ));
+                }
+                if self.web_tunnel_dropdown.selected() != 0 {
+                    return Err(i18n(
+                        "Choose either an SSH tunnel or a SOCKS proxy, not both",
+                    ));
+                }
+            }
+            let has_user = !self.web_socks_user_row.text().trim().is_empty();
+            let has_variable = !self.web_socks_password_var_row.text().trim().is_empty();
+            if has_user != has_variable || (has_user && socks_proxy.trim().is_empty()) {
+                return Err(i18n(
+                    "A SOCKS5 login needs a proxy, a username and a password variable",
+                ));
+            }
             let mode = browser_mode_from_combo_index(self.web_browser_mode_combo.selected());
             if mode == rustconn_core::models::WebBrowserMode::Custom {
                 let browser_text = self.web_browser_entry.text();
@@ -627,6 +663,13 @@ impl ConnectionDialogData<'_> {
             rustconn_core::models::NetworkMode::Direct
         } else {
             rustconn_core::models::NetworkMode::Inherit
+        };
+        // Fallbacks are used only behind the connection's own Jump Host, as
+        // the editor's visibility shows; a hidden list is not kept.
+        conn.fallback_jump_host_ids = if conn.jump_host_id().is_some() {
+            self.fallback_jump_hosts.value()
+        } else {
+            Vec::new()
         };
 
         // Set local variables
@@ -1036,6 +1079,7 @@ impl ConnectionDialogData<'_> {
             8 => Some(ProtocolConfig::Kubernetes(self.build_kubernetes_config())),
             9 => Some(ProtocolConfig::Mosh(self.build_mosh_config())),
             10 => Some(ProtocolConfig::Web(self.build_web_config())),
+            11 => Some(ProtocolConfig::WinRm(self.build_winrm_config())),
             _ => None,
         }
     }
@@ -1187,6 +1231,19 @@ impl ConnectionDialogData<'_> {
             provider,
             provider_config,
             custom_args,
+        }
+    }
+
+    fn build_winrm_config(&self) -> rustconn_core::models::WinRmConfig {
+        rustconn_core::models::WinRmConfig {
+            use_ssl: self.winrm_ssl_switch.is_active(),
+            custom_args: Self::parse_args(&self.winrm_custom_args_entry.text()),
+            accept_invalid_certs: self.winrm_accept_certs_switch.is_active(),
+            jump_host_id: self
+                .vnc_connections_data
+                .borrow()
+                .get(self.winrm_jump_host_dropdown.selected() as usize)
+                .and_then(|(id, _)| *id),
         }
     }
 
@@ -1377,6 +1434,15 @@ impl ConnectionDialogData<'_> {
             conns.get(idx).and_then(|(id, _)| *id)
         };
 
+        let trimmed = |row: &adw::EntryRow| {
+            let text = row.text();
+            (!text.trim().is_empty()).then(|| text.trim().to_string())
+        };
+        let socks_proxy_username = trimmed(self.web_socks_user_row);
+        let socks_proxy_password_variable = trimmed(self.web_socks_password_var_row);
+        let socks_proxy =
+            rustconn_core::protocol::normalize_socks_proxy(&self.web_socks_proxy_row.text()).ok();
+
         rustconn_core::models::WebConfig {
             browser,
             private_mode: self.web_private_mode_switch.is_active(),
@@ -1385,6 +1451,9 @@ impl ConnectionDialogData<'_> {
             user_agent,
             hide_floating_toolbar: !self.web_floating_toolbar_switch.is_active(),
             tunnel_via,
+            socks_proxy,
+            socks_proxy_username,
+            socks_proxy_password_variable,
             ..self.web_config_seed.borrow().clone().unwrap_or_default()
         }
     }
@@ -1872,16 +1941,10 @@ impl ConnectionDialogData<'_> {
             _ => Some(SpiceImageCompression::Auto), // 0 and any other value default to Auto
         };
 
-        let unix_socket_path = if self.spice_unix_socket_check.is_active() {
-            let text = self.spice_socket_path_entry.text();
-            if text.trim().is_empty() {
-                None
-            } else {
-                Some(PathBuf::from(text.trim().to_string()))
-            }
-        } else {
-            None
-        };
+        let unix_socket_path = spice_unix_socket_path(
+            self.spice_unix_socket_check.is_active(),
+            &self.spice_socket_path_entry.text(),
+        );
 
         SpiceConfig {
             tls_enabled: self.spice_tls_check.is_active(),
@@ -1961,4 +2024,21 @@ impl ConnectionDialogData<'_> {
 /// Returns the default SSH public key path (~/.ssh/id_rsa.pub)
 fn default_ssh_pub_key_path() -> PathBuf {
     dirs::home_dir().unwrap_or_default().join(".ssh/id_rsa.pub")
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::spice_unix_socket_path;
+
+    #[test]
+    fn spice_socket_needs_the_switch_and_a_path() {
+        assert_eq!(
+            spice_unix_socket_path(true, " /run/vm.sock "),
+            Some(PathBuf::from("/run/vm.sock"))
+        );
+        assert_eq!(spice_unix_socket_path(true, "  "), None);
+        assert_eq!(spice_unix_socket_path(false, "/run/vm.sock"), None);
+    }
 }

@@ -274,12 +274,12 @@ impl DropIndicator {
                 min-height: 9px;
                 border-radius: 2px;
             }
-            .split-marker.sidebar-split-0 { background-color: #3584e4; } /* Blue */
-            .split-marker.sidebar-split-1 { background-color: #33d17a; } /* Green */
-            .split-marker.sidebar-split-2 { background-color: #ff7800; } /* Orange */
-            .split-marker.sidebar-split-3 { background-color: #9141ac; } /* Purple */
-            .split-marker.sidebar-split-4 { background-color: #00b4d8; } /* Cyan */
-            .split-marker.sidebar-split-5 { background-color: #f66151; } /* Pink */
+            .split-marker.sidebar-split-0 { background-color: #3584e4; } /* Blue 3 */
+            .split-marker.sidebar-split-1 { background-color: #26a269; } /* Green 5 */
+            .split-marker.sidebar-split-2 { background-color: #e66100; } /* Orange 4 */
+            .split-marker.sidebar-split-3 { background-color: #c061cb; } /* Purple 2 */
+            .split-marker.sidebar-split-4 { background-color: #2190a4; } /* Teal */
+            .split-marker.sidebar-split-5 { background-color: #ed333b; } /* Red 2 */
 
             ",
         );

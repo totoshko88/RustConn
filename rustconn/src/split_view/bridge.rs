@@ -28,8 +28,8 @@ pub const SPLIT_PANE_COLORS: &[(&str, &str)] = &[
     ("split-color-green", "tab-split-green"),
     ("split-color-orange", "tab-split-orange"),
     ("split-color-purple", "tab-split-purple"),
-    ("split-color-cyan", "tab-split-cyan"),
-    ("split-color-pink", "tab-split-pink"),
+    ("split-color-teal", "tab-split-teal"),
+    ("split-color-red", "tab-split-red"),
 ];
 
 /// Returns the CSS class for a given color index
@@ -49,14 +49,20 @@ pub fn get_tab_color_class(color_index: usize) -> &'static str {
 }
 
 /// Color values for split pane indicators (RGB)
-/// These match the CSS colors defined in app.rs
+///
+/// GNOME palette shades with at least 3:1 contrast against both white and
+/// `#222226`, so a marker stays visible in light and dark themes. The same
+/// values, in the same order, are in `assets/style.css` (`split-panel-color-*`,
+/// `split-color-*`, `tab-split-*`, pane headers) and in the sidebar markers in
+/// `sidebar_types.rs`. The order is the `ColorId` index of saved layouts: do
+/// not reorder.
 pub const SPLIT_COLOR_VALUES: &[(u8, u8, u8)] = &[
-    (0x35, 0x84, 0xe4), // Blue (#3584e4)
-    (0x33, 0xd1, 0x7a), // Green (#33d17a)
-    (0xff, 0x78, 0x00), // Orange (#ff7800)
-    (0x91, 0x41, 0xac), // Purple (#9141ac)
-    (0x00, 0xb4, 0xd8), // Cyan (#00b4d8)
-    (0xf6, 0x61, 0x51), // Pink (#f66151)
+    (0x35, 0x84, 0xe4), // Blue 3 (#3584e4)
+    (0x26, 0xa2, 0x69), // Green 5 (#26a269)
+    (0xe6, 0x61, 0x00), // Orange 4 (#e66100)
+    (0xc0, 0x61, 0xcb), // Purple 2 (#c061cb)
+    (0x21, 0x90, 0xa4), // Teal (#2190a4)
+    (0xed, 0x33, 0x3b), // Red 2 (#ed333b)
 ];
 
 /// Creates a colored circle icon for tab indicators
@@ -260,6 +266,88 @@ pub type ContentProvider = Rc<dyn Fn(Uuid) -> Option<gtk4::Widget>>;
 /// Shared, settable content-widget provider used by the placement path.
 type SharedContentProvider = Rc<RefCell<Option<ContentProvider>>>;
 
+/// What the title of a split tab is derived from (issue #421).
+///
+/// A layout lives on its owner's `TabPage`, so without this the tab would name
+/// the owner whichever pane the user works in. The bridge reports it to its
+/// [`TitleListener`] whenever the focused pane or the pane contents change, and
+/// the notebook decides the title from it — one path for every protocol a pane
+/// can hold, since the bridge does not care what the pane shows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SplitTitleSource {
+    /// The session whose tab hosts the layout.
+    pub owner: Uuid,
+    /// The session shown in the focused pane, `None` when that pane is empty.
+    pub focused: Option<Uuid>,
+    /// The sessions shown in the panes, in layout order.
+    pub displayed: Vec<Uuid>,
+    /// Whether the layout has more than one pane. A single pane is an ordinary
+    /// tab and keeps its own title.
+    pub is_split: bool,
+}
+
+/// Receives a [`SplitTitleSource`] after every focus or pane-content change.
+pub type TitleListener = Rc<dyn Fn(&SplitTitleSource)>;
+
+/// The bridge state a [`SplitTitleSource`] is read from, cloneable into the
+/// `'static` drop-target closure that places a session without going through a
+/// bridge method.
+#[derive(Clone)]
+struct TitleProbe {
+    adapter: Rc<RefCell<SplitViewAdapter>>,
+    uuid_panel_map: Rc<RefCell<HashMap<Uuid, PanelId>>>,
+    focused_pane_uuid: Rc<RefCell<Option<Uuid>>>,
+    owner_session: Rc<std::cell::Cell<Option<Uuid>>>,
+    listener: Rc<RefCell<Option<TitleListener>>>,
+}
+
+impl TitleProbe {
+    /// Reports the current title source to the listener, if one is set.
+    ///
+    /// A layout with no owner (the window-global split view) has no tab to
+    /// title, so it reports nothing. Callers invoke this after releasing their
+    /// own borrows; if the layout is still borrowed mutably the refresh is
+    /// skipped rather than panicking, and the next focus change catches up.
+    fn emit(&self) {
+        let Some(owner) = self.owner_session.get() else {
+            return;
+        };
+        let listener = self.listener.borrow().clone();
+        let Some(listener) = listener else {
+            return;
+        };
+        let Some(source) = self.snapshot(owner) else {
+            tracing::debug!(%owner, "split title: layout busy, title refresh skipped");
+            return;
+        };
+        listener(&source);
+    }
+
+    fn snapshot(&self, owner: Uuid) -> Option<SplitTitleSource> {
+        let adapter = self.adapter.try_borrow().ok()?;
+        let focused_pane = *self.focused_pane_uuid.try_borrow().ok()?;
+        let focused_panel = match focused_pane {
+            Some(uuid) => self.uuid_panel_map.try_borrow().ok()?.get(&uuid).copied(),
+            None => None,
+        };
+        let focused = focused_panel
+            .and_then(|panel_id| adapter.get_panel_session(panel_id))
+            .map(|session| session.as_uuid());
+        let displayed = adapter
+            .panel_ids()
+            .into_iter()
+            .filter_map(|panel_id| adapter.get_panel_session(panel_id))
+            .map(|session| session.as_uuid())
+            .collect();
+        Some(SplitTitleSource {
+            owner,
+            focused,
+            displayed,
+            is_split: adapter.panel_count() > 1,
+        })
+    }
+}
+
 /// Bridge providing legacy-compatible API over new split view system
 pub struct SplitViewBridge {
     /// The underlying adapter
@@ -328,6 +416,9 @@ pub struct SplitViewBridge {
     /// re-apply labels after a layout rebuild, since moved sessions are not
     /// in the `sessions` map.
     label_cache: Rc<RefCell<HashMap<Uuid, (String, String)>>>,
+    /// Told what the owner tab's title should name (issue #421); see
+    /// [`Self::set_title_listener`].
+    title_listener: Rc<RefCell<Option<TitleListener>>>,
 }
 
 impl SplitViewBridge {
@@ -394,7 +485,33 @@ impl SplitViewBridge {
             broadcast_busy: Rc::new(std::cell::Cell::new(false)),
             owner_session: Rc::new(std::cell::Cell::new(None)),
             label_cache: Rc::new(RefCell::new(HashMap::new())),
+            title_listener: Rc::new(RefCell::new(None)),
         }
+    }
+
+    /// Sets the listener told which session the owner tab's title names.
+    ///
+    /// Called after every change of the focused pane — a click, the pane
+    /// navigation shortcut, a pane closing — and of the pane contents, so the
+    /// tab follows the pane the user works in rather than staying on whichever
+    /// session joined last (issue #421).
+    pub fn set_title_listener(&self, listener: TitleListener) {
+        *self.title_listener.borrow_mut() = Some(listener);
+    }
+
+    fn title_probe(&self) -> TitleProbe {
+        TitleProbe {
+            adapter: Rc::clone(&self.adapter),
+            uuid_panel_map: Rc::clone(&self.uuid_panel_map),
+            focused_pane_uuid: Rc::clone(&self.focused_pane_uuid),
+            owner_session: Rc::clone(&self.owner_session),
+            listener: Rc::clone(&self.title_listener),
+        }
+    }
+
+    /// Reports the title source to the listener. Call with no bridge borrow held.
+    fn emit_title_source(&self) {
+        self.title_probe().emit();
     }
 
     /// Records which session's tab hosts this layout.
@@ -908,6 +1025,7 @@ impl SplitViewBridge {
         // Update the panel header with the connection name (issue #277).
         self.update_panel_label(panel_id, session_id);
 
+        self.emit_title_source();
         Ok(())
     }
 
@@ -979,6 +1097,7 @@ impl SplitViewBridge {
         // Update the panel header with the connection name (issue #277).
         self.update_panel_label(panel_id, session_id);
 
+        self.emit_title_source();
         Ok(())
     }
 
@@ -1104,6 +1223,45 @@ impl SplitViewBridge {
             .insert(session_id, (name.to_string(), protocol.to_string()));
     }
 
+    /// Shows a session's new name in the header of the pane that holds it.
+    ///
+    /// The header (issue #277) is otherwise written only when a session is
+    /// placed, so after a rename it kept the old name while the tab title
+    /// showed the new one (issue #421). Updates the bridge's own copy of the
+    /// name and the label cache too, so a layout rebuild keeps the new name.
+    /// A session this bridge never labelled is left alone.
+    pub fn relabel_session(&self, session_id: Uuid, name: &str) {
+        let protocol = self
+            .sessions
+            .borrow_mut()
+            .get_mut(&session_id)
+            .map(|session| {
+                name.clone_into(&mut session.name);
+                session.protocol.clone()
+            })
+            .or_else(|| {
+                self.label_cache
+                    .borrow()
+                    .get(&session_id)
+                    .map(|(_, protocol)| protocol.clone())
+            });
+        let Some(protocol) = protocol else {
+            return;
+        };
+        self.label_cache
+            .borrow_mut()
+            .insert(session_id, (name.to_owned(), protocol.clone()));
+        let adapter = self.adapter.borrow();
+        for panel_id in adapter.panel_ids() {
+            if adapter
+                .get_panel_session(panel_id)
+                .is_some_and(|session| session.as_uuid() == session_id)
+            {
+                adapter.set_panel_label(panel_id, Some(name), Some(&protocol));
+            }
+        }
+    }
+
     /// Clears a session from all panes
     pub fn clear_session_from_panes(&self, session_id: Uuid) {
         let session = SessionId::from_uuid(session_id);
@@ -1126,9 +1284,11 @@ impl SplitViewBridge {
                 break;
             }
         }
+        drop(adapter);
 
         self.clear_session_color(session_id);
         self.remove_session(session_id);
+        self.emit_title_source();
     }
 
     /// Closes a session from panes with auto-cleanup
@@ -1177,6 +1337,8 @@ impl SplitViewBridge {
                 .release(rustconn_core::split::ColorId::new(color as u8));
             *self.container_color.borrow_mut() = None;
         }
+        drop(adapter);
+        self.emit_title_source();
 
         // When the last remaining Panel in a Split_Container
         // is closed, close the parent Root_Tab. We signal this by returning true
@@ -1220,6 +1382,7 @@ impl SplitViewBridge {
         // Check if this was the last panel
         let remaining_panels = adapter.panel_ids();
         let should_close_split = remaining_panels.is_empty();
+        drop(adapter);
 
         // Release container color only when closing the entire split view
         if should_close_split && let Some(color) = *self.container_color.borrow() {
@@ -1238,6 +1401,9 @@ impl SplitViewBridge {
             *self.focused_pane_uuid.borrow_mut() = None;
         }
 
+        // The focus moved to the first remaining pane, so the tab title follows
+        // it there.
+        self.emit_title_source();
         Ok(should_close_split)
     }
 
@@ -1377,10 +1543,13 @@ impl SplitViewBridge {
         *self.focused_pane_uuid.borrow_mut() = Some(pane_uuid);
 
         // Update adapter focus styling
-        self.adapter
+        let styled = self
+            .adapter
             .borrow_mut()
             .set_focus(panel_id)
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string());
+        self.emit_title_source();
+        styled
     }
 
     /// Sets up drop target for a pane with callbacks
@@ -1424,6 +1593,7 @@ impl SplitViewBridge {
         let content_provider_rc = Rc::clone(&self.content_provider);
         let focused_pane_uuid = Rc::new(RefCell::new(pane_uuid));
         let show_scrollbar_for_drop = self.show_scrollbar;
+        let title_probe = self.title_probe();
 
         // Visual feedback on enter
         drop_target.connect_enter(move |_target, _x, _y| {
@@ -1543,6 +1713,8 @@ impl SplitViewBridge {
                 );
             }
 
+            // The layout gained a session, which the tab tooltip lists.
+            title_probe.emit();
             true
         });
 
@@ -1689,6 +1861,7 @@ impl SplitViewBridge {
 
         *self.adapter.borrow_mut() = new_adapter;
 
+        self.emit_title_source();
         displayed_sessions
     }
 
@@ -1718,6 +1891,7 @@ impl SplitViewBridge {
         {
             tracing::warn!("Failed to set adapter focus: {}", e);
         }
+        self.emit_title_source();
     }
 
     /// Returns the panel widget for a pane UUID
@@ -2666,6 +2840,7 @@ impl SplitViewBridge {
             color_index
         );
 
+        self.emit_title_source();
         Ok(color_index)
     }
 

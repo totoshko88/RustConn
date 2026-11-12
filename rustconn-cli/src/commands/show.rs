@@ -90,6 +90,17 @@ fn print_json(
     let Some(map) = obj.as_object_mut() else {
         return Err(CliError::Config("Failed to build JSON object".to_string()));
     };
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        map.insert(
+            "fallback_jump_hosts".to_string(),
+            serde_json::Value::from(names),
+        );
+    }
 
     match &connection.protocol_config {
         ProtocolConfig::Ssh(config) => {
@@ -326,6 +337,43 @@ fn print_json(
                     serde_json::json!(config.zoom_level),
                 );
             }
+            if let Some(proxy) = &config.socks_proxy {
+                map.insert("socks_proxy".to_string(), serde_json::json!(proxy));
+            }
+            if let Some(user) = &config.socks_proxy_username {
+                map.insert("socks_proxy_username".to_string(), serde_json::json!(user));
+            }
+            // The variable's name, not its value.
+            if let Some(variable) = &config.socks_proxy_password_variable {
+                map.insert(
+                    "socks_proxy_password_variable".to_string(),
+                    serde_json::json!(variable),
+                );
+            }
+        }
+        ProtocolConfig::WinRm(config) => {
+            map.insert(
+                "use_ssl".to_string(),
+                serde_json::Value::Bool(config.use_ssl),
+            );
+            if config.accept_invalid_certs {
+                map.insert(
+                    "accept_invalid_certs".to_string(),
+                    serde_json::Value::Bool(true),
+                );
+            }
+            if let Some(jump_id) = config.jump_host_id {
+                map.insert(
+                    "jump_host".to_string(),
+                    serde_json::Value::String(resolve_jump(jump_id)),
+                );
+            }
+            // What the client is given: a secret option a hand-edited config
+            // may hold is dropped at launch, so it is not printed either.
+            let custom_args = rustconn_core::protocol::launch_custom_args(config);
+            if !custom_args.is_empty() {
+                map.insert("custom_args".to_string(), serde_json::json!(custom_args));
+            }
         }
         _ => {}
     }
@@ -418,6 +466,15 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
 
     if !connection.tags.is_empty() {
         println!("  Tags:     {}", connection.tags.join(", "));
+    }
+
+    if !connection.fallback_jump_host_ids.is_empty() {
+        let names: Vec<String> = connection
+            .fallback_jump_host_ids
+            .iter()
+            .map(|id| resolve_jump(*id))
+            .collect();
+        println!("  Fallback Jump Hosts: {}", names.join(", "));
     }
 
     if let Some(last) = connection.last_connected {
@@ -598,6 +655,31 @@ fn print_table(connection: &Connection, connections: &[Connection]) -> Result<()
             }
             if (config.zoom_level - 1.0).abs() > f64::EPSILON {
                 println!("  Zoom Level:   {:.0}%", config.zoom_level * 100.0);
+            }
+            if let Some(proxy) = &config.socks_proxy {
+                println!("  SOCKS Proxy:  {proxy}");
+            }
+            if let Some(user) = &config.socks_proxy_username {
+                println!("  SOCKS User:   {user}");
+            }
+            if let Some(variable) = &config.socks_proxy_password_variable {
+                println!("  SOCKS Password Var: {variable}");
+            }
+        }
+        ProtocolConfig::WinRm(ref config) => {
+            println!(
+                "  HTTPS:        {}",
+                if config.use_ssl { "yes" } else { "no" }
+            );
+            if config.accept_invalid_certs {
+                println!("  Accept Invalid TLS: yes");
+            }
+            if let Some(jump_id) = config.jump_host_id {
+                println!("  Jump Host: {}", resolve_jump(jump_id));
+            }
+            let custom_args = rustconn_core::protocol::launch_custom_args(config);
+            if !custom_args.is_empty() {
+                println!("  Custom Args: {}", custom_args.join(" "));
             }
         }
         _ => {}

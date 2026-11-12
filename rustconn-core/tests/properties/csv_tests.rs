@@ -1,6 +1,4 @@
 //! Property-based tests for CSV import/export.
-//!
-//! **Validates: Requirements 2.10, 3.8, 11.1**
 
 use proptest::prelude::*;
 use rustconn_core::export::csv_export::CsvExporter;
@@ -61,7 +59,6 @@ fn default_config(protocol: ProtocolType) -> ProtocolConfig {
 
 // ---------------------------------------------------------------------------
 // Proptest 4: Round-trip — export → parse → equivalent connections
-// **Validates: Requirements 2.10, 3.8**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -146,7 +143,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 5: Strings with commas, quotes, newlines are correctly quoted (RFC 4180)
-// **Validates: Requirements 2.7, 3.5**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -193,7 +189,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 6: Missing required fields (name, host) → SkippedEntry
-// **Validates: Requirements 2.5**
 // ---------------------------------------------------------------------------
 
 proptest! {

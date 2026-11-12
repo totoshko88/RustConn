@@ -292,8 +292,20 @@ fn start_rdp_session_internal(
             .and_then(|p| rustconn_core::resolve_key_path(&p))
             .map(|p| p.to_string_lossy().to_string());
 
+            let jump_password = state_ref
+                .get_cached_credentials(jump_id)
+                .filter(|c| {
+                    use secrecy::ExposeSecret;
+                    !c.password.expose_secret().is_empty()
+                })
+                .map(|c| c.password.clone());
             // Resolve recursive jump host chain (e.g. jump_conn itself needs a jump host)
-            let extra_args = super::protocols::resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+            let extra_args = super::protocols::resolve_jump_chain_for_tunnel(
+                &state_ref,
+                jump_conn,
+                jump_password.is_some(),
+                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+            );
 
             let params = rustconn_core::ssh_tunnel::SshTunnelParams {
                 jump_host: jump_dest,
@@ -301,13 +313,7 @@ fn start_rdp_session_internal(
                 remote_host: host.clone(),
                 remote_port: port,
                 identity_file,
-                password: state_ref
-                    .get_cached_credentials(jump_id)
-                    .filter(|c| {
-                        use secrecy::ExposeSecret;
-                        !c.password.expose_secret().is_empty()
-                    })
-                    .map(|c| c.password.clone()),
+                password: jump_password,
                 extra_args,
                 launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
             };
@@ -1488,8 +1494,20 @@ fn start_vnc_session_internal(
             .and_then(|p| rustconn_core::resolve_key_path(&p))
             .map(|p| p.to_string_lossy().to_string());
 
+            let jump_password = state_ref
+                .get_cached_credentials(jump_id)
+                .filter(|c| {
+                    use secrecy::ExposeSecret;
+                    !c.password.expose_secret().is_empty()
+                })
+                .map(|c| c.password.clone());
             // Resolve recursive jump host chain (e.g. jump_conn itself needs a jump host)
-            let extra_args = super::protocols::resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+            let extra_args = super::protocols::resolve_jump_chain_for_tunnel(
+                &state_ref,
+                jump_conn,
+                jump_password.is_some(),
+                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+            );
 
             let params = rustconn_core::ssh_tunnel::SshTunnelParams {
                 jump_host: jump_dest,
@@ -1497,13 +1515,7 @@ fn start_vnc_session_internal(
                 remote_host: host.clone(),
                 remote_port: port,
                 identity_file,
-                password: state_ref
-                    .get_cached_credentials(jump_id)
-                    .filter(|c| {
-                        use secrecy::ExposeSecret;
-                        !c.password.expose_secret().is_empty()
-                    })
-                    .map(|c| c.password.clone()),
+                password: jump_password,
                 extra_args,
                 launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
             };

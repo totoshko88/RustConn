@@ -31,8 +31,7 @@ pub struct TerminalSession {
     /// one (embedded VNC today).
     ///
     /// Carried with the session so a tab rebuilt after a detach or a rename
-    /// keeps the same tooltip the creation path produced (Requirement 2.3,
-    /// issue #236).
+    /// keeps the same tooltip the creation path produced (issue #236).
     pub host: Option<String>,
     /// Log file path if logging is enabled
     pub log_file: Option<PathBuf>,

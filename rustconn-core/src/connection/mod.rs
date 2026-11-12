@@ -17,6 +17,8 @@
 pub mod automation_inheritance;
 pub mod copy_field;
 mod dial;
+pub mod gateway_failover;
+pub mod host_range;
 mod interning;
 pub mod jump_chain;
 pub mod keepalive;
@@ -56,7 +58,9 @@ pub use mptcp::{
     MptcpError, MptcpResult, connect_mptcp, connect_mptcp_async, is_mptcp_available,
     is_mptcpize_available,
 };
-pub use port_check::{PortCheckError, PortCheckResult, check_port, check_port_async};
+pub use port_check::{
+    PortCheckError, PortCheckResult, check_port, check_port_async, check_ssh_banner,
+};
 pub use retry::{DEFAULT_BACKOFF_MULTIPLIER, RetryConfig, RetryState};
 pub use routing_memory::{Route, RouteVerdict, RoutingMemory, routing_memory_path};
 pub use spa::{SpaError, SpaResult, build_spa_packet, send_spa};

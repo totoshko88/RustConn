@@ -199,6 +199,7 @@ impl ConnectionDialog {
                 8 => "kubernetes",
                 9 => "mosh",
                 10 => "web",
+                11 => "winrm",
                 _ => "ssh",
             };
 
@@ -597,6 +598,7 @@ impl ConnectionDialog {
                 8 => "kubernetes",
                 9 => "mosh",
                 10 => "web",
+                11 => "winrm",
                 _ => "ssh",
             };
 

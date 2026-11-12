@@ -80,8 +80,10 @@ never require URL or version updates.
 
 ### Flatpak runtime & bundled libraries
 
-File: `packaging/flatpak/io.github.totoshko88.RustConn.yml` (keep
-`packaging/flathub/io.github.totoshko88.RustConn.yml` in sync).
+File: `packaging/flatpak/io.github.totoshko88.RustConn.yml`. The Flathub copy,
+`packaging/flathub/io.github.totoshko88.RustConn.yml`, needs the same changes, and
+only the maintainer writes it (`packaging/AGENTS.md`, "Flathub is
+maintainer-only"): report what it needs, do not edit it.
 
 Check each release:
 1. **GNOME runtime** — `runtime-version` of `org.gnome.Platform` / `org.gnome.Sdk`
@@ -259,10 +261,13 @@ MUST point at the new release tag (the `release.sh` gate checks
 ### 13. `packaging/flatpak/io.github.totoshko88.RustConn.local.yml`
 DO NOT modify — uses local path.
 
-### 14. `packaging/flathub/io.github.totoshko88.RustConn.yml`
+### 14. `packaging/flathub/io.github.totoshko88.RustConn.yml` (maintainer step)
 ```yaml
         tag: vX.Y.Z
 ```
+An agent does not write this file (`packaging/AGENTS.md`, "Flathub is
+maintainer-only"). List it in the release report as a maintainer step, together
+with the Flathub copy of `cargo-sources.json`.
 
 ### 15. `rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml`
 Add `<release>` at the TOP of `<releases>`:
@@ -309,7 +314,7 @@ grep -r "X.Y.Z" Cargo.toml debian/changelog packaging/ rustconn/assets/*.xml doc
 | `packaging/obs/_service` | `revision">vX.Y.Z<` |
 | `packaging/obs/AppImageBuilder.yml` | `version: X.Y.Z` |
 | `packaging/flatpak/*.yml` | `tag: vX.Y.Z` |
-| `packaging/flathub/*.yml` | `tag: vX.Y.Z` |
+| `packaging/flathub/*.yml` | `tag: vX.Y.Z` (maintainer writes it) |
 | `metainfo.xml` | `<release version="X.Y.Z"` |
 | `docs/USER_GUIDE.md` | `Version X.Y.Z` |
 | `docs/ARCHITECTURE.md` | `Version X.Y.Z` |

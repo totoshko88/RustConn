@@ -142,6 +142,9 @@ impl ConnectionPage {
         jump_host_dropdown.set_size_request(200, -1);
         jump_host_dropdown.set_hexpand(false);
         crate::dialogs::widgets::enable_string_search(&jump_host_dropdown);
+        // A row suffix is not labelled by the row title, so name it for Orca.
+        jump_host_dropdown
+            .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
         let jump_host_row = adw::ActionRow::builder()
             .title(i18n("Jump Host"))
@@ -592,6 +595,14 @@ impl ConnectionPage {
             ProtocolType::Telnet => {
                 self.connection_group.set_visible(true);
                 self.port_row.set_value(23.0);
+            }
+            ProtocolType::WinRm => {
+                self.connection_group.set_visible(true);
+                self.username_row.set_visible(true);
+                self.domain_row.set_visible(true);
+                self.jump_host_row.set_visible(true);
+                self.port_row.set_value(5985.0);
+                self.populate_jump_hosts();
             }
             ProtocolType::Serial => {
                 self.connection_group.set_visible(true);

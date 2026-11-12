@@ -4,7 +4,6 @@
 //! encrypted-file secret backend (Part B of the resilient-secret-storage spec).
 //!
 //! **Feature: resilient-secret-storage, Task 2.7**
-//! **Validates: Requirements 18.1, 18.2, 5.5, 6.5**
 //!
 //! - Round-trip (R18.1, R5.5): `store` then `retrieve` yields an equivalent
 //!   credential across arbitrary field values (empty, unicode, long).
@@ -13,7 +12,6 @@
 //! - Delete-isolation (R6.5): deleting one entry leaves the others intact.
 //!
 //! **Feature: resilient-secret-storage, Task 3.4**
-//! **Validates: Requirements 3.1, 3.3**
 //!
 //! - Fallback (R3.1, R3.3): when the preferred backend's `store` fails, the
 //!   `SecretManager` falls back to the encrypted-file backend, reports the
@@ -78,8 +76,6 @@ fn runtime() -> tokio::runtime::Runtime {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
 
-    /// **Validates: Requirements 18.1, 5.5**
-    ///
     /// For arbitrary credentials, `store` followed by `retrieve` yields an
     /// equivalent credential — every field (username/password/domain)
     /// is preserved across the encrypt -> on-disk -> decrypt round trip.
@@ -113,8 +109,6 @@ proptest! {
         })?;
     }
 
-    /// **Validates: Requirement 6.5**
-    ///
     /// Retrieving an absent connection id returns `None` (no panic, no error).
     #[test]
     fn retrieve_absent_returns_none(connection_id in arb_connection_id()) {
@@ -135,8 +129,6 @@ proptest! {
 
 // ========== Debug-leak (R18.2) ==========
 
-/// **Validates: Requirement 18.2**
-///
 /// The backend's `Debug` representation never contains a stored secret value;
 /// the backend holds only the (non-secret) path, so a sentinel password stored
 /// through it must not appear in `format!("{backend:?}")`.
@@ -163,8 +155,6 @@ fn backend_debug_does_not_leak_secret() {
     });
 }
 
-/// **Validates: Requirement 18.2**
-///
 /// A `Credentials` value retrieved from the backend redacts its secret fields in
 /// `Debug` (via `SecretString`), so a round-tripped sentinel password is absent
 /// from the rendered debug string.
@@ -203,8 +193,6 @@ fn retrieved_credentials_debug_does_not_leak_secret() {
 
 // ========== Delete-isolation (R6.5) ==========
 
-/// **Validates: Requirement 6.5**
-///
 /// Storing two entries under different connection ids and deleting one leaves
 /// the other retrievable while the deleted one returns `None`.
 #[test]
@@ -285,8 +273,6 @@ impl SecretBackend for AlwaysFailsBackend {
     }
 }
 
-/// **Validates: Requirements 3.1, 3.3**
-///
 /// With a failing primary and a real `EncryptedFileBackend` as the next backend
 /// in the chain, `store_reported(.., allow_fallback = true)` reports a fallback
 /// to `encrypted_file`, and the credential is subsequently retrievable through
@@ -334,8 +320,6 @@ fn fallback_to_encrypted_file_when_primary_fails() {
     });
 }
 
-/// **Validates: Requirement 14.2**
-///
 /// When `allow_fallback` is `false` and the primary backend fails, the primary's
 /// original error is returned unchanged — the fallback chain is not consulted.
 #[test]

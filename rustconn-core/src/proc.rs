@@ -21,7 +21,7 @@
 //! `secret::script_resolver` already do that.
 
 use std::io;
-use std::process::{Child, Output};
+use std::process::{Child, ExitStatus, Output};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
@@ -102,19 +102,16 @@ pub fn wait_bounded_cancellable(
     cancel: &AtomicBool,
     what: &'static str,
 ) -> io::Result<Option<Waited>> {
-    let deadline = Instant::now() + budget;
-    loop {
-        if child.try_wait()?.is_some() {
-            return child.wait_with_output().map(|o| Some(Waited::Exited(o)));
-        }
-        if cancel.load(Ordering::Relaxed) {
+    match poll_until(&mut child, budget, cancel)? {
+        Polled::Exited(_) => child.wait_with_output().map(|o| Some(Waited::Exited(o))),
+        Polled::Cancelled => {
             tracing::debug!(child = what, "child process cancelled; killing it");
             // Same reasoning as the timeout branch below.
             let _ = child.kill();
             let _ = child.wait();
-            return Ok(None);
+            Ok(None)
         }
-        if Instant::now() >= deadline {
+        Polled::OutOfTime => {
             tracing::warn!(
                 child = what,
                 budget_ms = budget.as_millis(),
@@ -126,7 +123,42 @@ pub fn wait_bounded_cancellable(
             // do if even that fails.
             let _ = child.kill();
             let _ = child.wait();
-            return Ok(Some(Waited::TimedOut));
+            Ok(Some(Waited::TimedOut))
+        }
+    }
+}
+
+/// How a [`poll_until`] wait ended.
+#[derive(Debug)]
+pub enum Polled {
+    /// The child exited on its own.
+    Exited(ExitStatus),
+    /// `cancel` became `true` first. The child is still running.
+    Cancelled,
+    /// The budget ran out first. The child is still running.
+    OutOfTime,
+}
+
+/// Polls `child` until it exits, `cancel` is raised or `budget` runs out.
+///
+/// Unlike [`wait_bounded_cancellable`] this neither kills nor reaps a child
+/// that is still running: the caller decides how to stop it, for example by
+/// closing its stdin first and giving it a grace period. A caller that does
+/// not stop it must still `wait` on it eventually, or it becomes a zombie.
+///
+/// # Errors
+/// Returns the `io::Error` from `try_wait`.
+pub fn poll_until(child: &mut Child, budget: Duration, cancel: &AtomicBool) -> io::Result<Polled> {
+    let deadline = Instant::now() + budget;
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(Polled::Exited(status));
+        }
+        if cancel.load(Ordering::Relaxed) {
+            return Ok(Polled::Cancelled);
+        }
+        if Instant::now() >= deadline {
+            return Ok(Polled::OutOfTime);
         }
         std::thread::sleep(POLL_INTERVAL);
     }
@@ -221,6 +253,22 @@ mod tests {
             "returned after {:?}, so cancel was not honoured",
             started.elapsed()
         );
+    }
+
+    #[test]
+    fn poll_until_leaves_an_over_budget_child_running() {
+        let mut child = spawn(&["sleep", "30"]);
+        let never = AtomicBool::new(false);
+        let polled = poll_until(&mut child, Duration::from_millis(50), &never)
+            .expect("polling must not error");
+
+        assert!(matches!(polled, Polled::OutOfTime), "{polled:?}");
+        assert!(
+            child.try_wait().expect("try_wait").is_none(),
+            "poll_until must not stop the child"
+        );
+        child.kill().expect("the test stops the child");
+        child.wait().expect("and reaps it");
     }
 
     /// A killed child must not be left as a zombie. Asserted through the same

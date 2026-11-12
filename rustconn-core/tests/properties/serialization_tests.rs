@@ -1,7 +1,6 @@
 //! Property-based tests for serialization round-trip
 //!
 //! **Feature: rustconn, Property 6: Connection Serialization Round-Trip**
-//! **Validates: Requirements 10.5, 10.6**
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -367,7 +366,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn, Property 6: Connection Serialization Round-Trip**
-    /// **Validates: Requirements 10.5, 10.6**
     ///
     /// For any valid Connection object, serializing to TOML and then deserializing
     /// should produce an equivalent Connection object with all fields preserved.
@@ -422,7 +420,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 4: Protocol configuration round-trip serialization**
-    /// **Validates: Requirements 6.2**
     ///
     /// For any valid SpiceConfig, serializing to TOML/JSON and deserializing back
     /// should produce an equivalent configuration with all fields preserved.
@@ -454,7 +451,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 4: Protocol configuration round-trip serialization**
-    /// **Validates: Requirements 6.2**
     ///
     /// For any valid SpiceConfig, JSON round-trip should preserve all fields.
     #[test]

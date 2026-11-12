@@ -66,6 +66,26 @@ impl TerminalNotebook {
         }
     }
 
+    /// Closes the selected tab when it belongs to no session, such as a
+    /// recording playback tab.
+    ///
+    /// Returns `false` when there is no such tab to close: nothing is selected,
+    /// the selected page is the Welcome placeholder, or it holds a session (those
+    /// close through [`Self::close_tab`]). `win.close-tab` closes the window
+    /// in that case, so a playback tab must not be mistaken for an empty window.
+    pub fn close_selected_sessionless_page(&self) -> bool {
+        let Some(page) = self.tab_view.selected_page() else {
+            return false;
+        };
+        if TabPageContainer::is_welcome(&page.child())
+            || self.sessions.borrow().values().any(|p| p == &page)
+        {
+            return false;
+        }
+        self.tab_view.close_page(&page);
+        true
+    }
+
     /// Restores the Welcome page when the configured empty-notebook conditions hold.
     pub(super) fn ensure_welcome_page(&self) {
         if self.show_welcome.get()
@@ -84,8 +104,7 @@ impl TerminalNotebook {
     ///
     /// One place decides the layout — title, then the host line the embedded
     /// creation paths add, then the group line `set_tab_group` appends — so a tab
-    /// recreated after a park or a rename is indistinguishable from the original
-    /// (Requirement 2.3).
+    /// recreated after a park or a rename is indistinguishable from the original.
     pub(super) fn tab_tooltip(title: &str, host: Option<&str>, group: Option<&str>) -> String {
         use std::fmt::Write;
 
@@ -167,22 +186,32 @@ impl TerminalNotebook {
     /// removed. The update replaces only the trailing CWD line (identified by
     /// [`Self::CWD_TOOLTIP_PREFIX`]), leaving the title, host and any group /
     /// broadcast markers untouched.
+    ///
+    /// A split tab shows the directory of the session it is named after
+    /// (issue #421), so a session that sits in a split — as owner or in a
+    /// pane — has its split tab re-derived instead.
     pub(super) fn update_session_cwd(
-        sessions: &Rc<RefCell<HashMap<Uuid, adw::TabPage>>>,
-        session_cwd: &Rc<RefCell<HashMap<Uuid, String>>>,
+        chrome: &super::split_title::TabChrome,
         session_id: Uuid,
         dir: Option<String>,
     ) {
         match &dir {
             Some(d) => {
-                session_cwd.borrow_mut().insert(session_id, d.clone());
+                chrome
+                    .session_cwd
+                    .borrow_mut()
+                    .insert(session_id, d.clone());
             }
             None => {
-                session_cwd.borrow_mut().remove(&session_id);
+                chrome.session_cwd.borrow_mut().remove(&session_id);
             }
         }
 
-        let Some(page) = sessions.borrow().get(&session_id).cloned() else {
+        if Self::refresh_split_tabs_for(chrome, session_id, None) {
+            return;
+        }
+
+        let Some(page) = chrome.sessions.borrow().get(&session_id).cloned() else {
             return;
         };
         let tooltip = page.tooltip().unwrap_or_default().to_string();
@@ -214,20 +243,10 @@ impl TerminalNotebook {
     /// broadcast toggle or a rename — it is maintained independently of those
     /// lines, as the feature documents.
     pub(super) fn split_cwd_line(tooltip: &str) -> (String, Option<String>) {
-        let Some(start) = tooltip.find(Self::CWD_TOOLTIP_PREFIX) else {
-            return (tooltip.to_string(), None);
-        };
         // The marker itself begins with `\n`; the line's content ends at the
-        // next `\n` after the marker, or at the end of the string.
-        let content_start = start + Self::CWD_TOOLTIP_PREFIX.len();
-        let end = tooltip[content_start..]
-            .find('\n')
-            .map_or(tooltip.len(), |rel| content_start + rel);
-        let cwd_line = tooltip[start..end].to_string();
-        let mut without = String::with_capacity(tooltip.len());
-        without.push_str(&tooltip[..start]);
-        without.push_str(&tooltip[end..]);
-        (without, Some(cwd_line))
+        // next `\n` after the marker, or at the end of the string. The split
+        // tab's panes line is cut out by the same rule.
+        super::split_title::split_marked_line(tooltip, Self::CWD_TOOLTIP_PREFIX)
     }
 
     // ========================================================================
@@ -415,17 +434,17 @@ impl TerminalNotebook {
             )
         )]
         {
-            let sessions = Rc::clone(&self.sessions);
-            let session_cwd = Rc::clone(&self.session_cwd);
+            let chrome = self.tab_chrome();
             terminal.connect_current_directory_uri_changed(move |term| {
                 let dir = term
                     .current_directory_uri()
                     .and_then(|uri| Self::path_from_osc7_uri(&uri));
-                Self::update_session_cwd(&sessions, &session_cwd, session_id, dir);
+                Self::update_session_cwd(&chrome, session_id, dir);
             });
         }
 
         self.terminals.borrow_mut().insert(session_id, terminal);
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
         self.terminal_overlays
             .borrow_mut()
             .insert(session_id, terminal_overlay);
@@ -536,6 +555,7 @@ impl TerminalNotebook {
         self.session_widgets
             .borrow_mut()
             .insert(session_id, SessionWidgetStorage::Vnc(vnc_widget));
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
 
         self.session_info.borrow_mut().insert(
             session_id,
@@ -607,6 +627,7 @@ impl TerminalNotebook {
         self.session_widgets
             .borrow_mut()
             .insert(session_id, SessionWidgetStorage::EmbeddedRdp(widget));
+        Self::label_session_view(&self.terminals, &self.session_widgets, session_id, title);
 
         self.session_info.borrow_mut().insert(
             session_id,
@@ -869,7 +890,7 @@ impl TerminalNotebook {
             &protocol,
         ))));
         // The creation path sets a tooltip too, and a grouped tab carries the
-        // group name as a second line (Requirement 2.3).
+        // group name as a second line.
         page.set_tooltip(&Self::tab_tooltip(
             &title,
             host.as_deref(),

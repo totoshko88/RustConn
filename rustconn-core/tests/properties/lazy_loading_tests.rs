@@ -1,7 +1,7 @@
 //! Property-based tests for the Lazy Loading system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Lazy Loading system (Requirements 3.x).
+//! for the Lazy Loading system.
 
 use std::collections::HashSet;
 
@@ -84,7 +84,6 @@ proptest! {
 
     // ========== Property 5: Lazy Loading Initial State ==========
     // **Feature: performance-improvements, Property 5: Lazy Loading Initial State**
-    // **Validates: Requirements 3.1**
     //
     // For any connection database, initial sidebar load SHALL only include
     // root-level groups and ungrouped connections.
@@ -192,7 +191,6 @@ proptest! {
 
     // ========== Property 6: Lazy Loading Expansion ==========
     // **Feature: performance-improvements, Property 6: Lazy Loading Expansion**
-    // **Validates: Requirements 3.2, 3.3**
     //
     // For any group expansion, the loaded children SHALL match the actual
     // children in the database.
@@ -504,7 +502,6 @@ proptest! {
 
     // ========== Property 7: Search Ignores Lazy Loading ==========
     // **Feature: performance-improvements, Property 7: Search Ignores Lazy Loading**
-    // **Validates: Requirements 3.5**
     //
     // For any search query, results SHALL include matches from all connections
     // regardless of lazy loading state.

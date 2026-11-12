@@ -222,7 +222,10 @@ pub fn refresh_templates_list(
             continue;
         }
         match template.protocol {
-            ProtocolType::Ssh | ProtocolType::ZeroTrust | ProtocolType::Telnet => {
+            ProtocolType::Ssh
+            | ProtocolType::ZeroTrust
+            | ProtocolType::Telnet
+            | ProtocolType::WinRm => {
                 ssh_templates.push(template);
             }
             ProtocolType::Rdp => rdp_templates.push(template),

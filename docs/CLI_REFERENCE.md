@@ -1,6 +1,6 @@
 # RustConn CLI Reference
 
-**Version 0.24.10** | Command-line interface for RustConn connection management
+**Version 0.24.11** | Command-line interface for RustConn connection management
 
 The `rustconn-cli` binary provides headless connection management from the terminal. It shares the same configuration files as the GUI (`~/.config/rustconn/`), so changes made in either tool are immediately visible to the other. The default build is the minimal headless path; desktop/client-launch and secret-management commands are enabled with optional features.
 
@@ -144,8 +144,8 @@ Options:
 | `--name` | `-n` | Connection name (required, unless `--from-file`) |
 | `--host` | `-H` | Hostname, IP, or device path (required, unless `--from-file`) |
 | `--from-file` | — | Bulk-add connections from a YAML or JSON file, or `-` for stdin (see [Bulk add](#bulk-add-from-a-file)). Mutually exclusive with `--name`/`--host` |
-| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23) |
-| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
+| `--port` | `-p` | Port number (defaults: SSH=22, RDP=3389, VNC=5900, Telnet=23, WinRM=5985) |
+| `--protocol` | `-P` | Protocol: `ssh`, `rdp`, `vnc`, `spice`, `sftp`, `telnet`, `winrm`, `serial`, `mosh`, `kubernetes`/`k8s`, `zerotrust`/`zt`, `web` (default: `ssh`) |
 | `--user` | `-u` | Username |
 | `--password-stdin` | — | Read a password from stdin (one line) and store it in the configured secret backend — the same vault the GUI uses — not in the connections file. For headless/CI provisioning. The value never appears in argv, output or logs. Requires a build with the `secret-management` feature |
 | `--key` | `-k` | Path to SSH private key file |
@@ -156,6 +156,7 @@ Options:
 | `--ssh-agent-socket` | — | Custom SSH agent socket path |
 | `--kdbx-path` | — | KeePass database (`.kdbx`) for this connection's password, instead of its group's or the global one. Sets the password source to `Vault`; with `--password-stdin` the password is stored there. Local-only, never synced |
 | `--jump-host` | — | SSH jump host (connection name or UUID, for SSH/SFTP/RDP/VNC/SPICE) |
+| `--fallback-jump-host` | — | Saved SSH connection to try when the jump host is unreachable. Repeat in failover order. Needs a jump host on the connection; `update` replaces the list, and `--clear-fallback-jump-hosts` removes it |
 | `--keep-alive-interval` | — | SSH keep-alive interval in seconds (`ServerAliveInterval`) |
 | `--keep-alive-count` | — | SSH keep-alive count max (`ServerAliveCountMax`) |
 | `--ssh-verbose` | — | Enable SSH verbose/debug output (`-v` flag) |
@@ -233,6 +234,12 @@ Options:
 | `--web-toolbar` | — | Floating navigation toolbar in the embedded browser: `true` (default) or `false`; bare `--web-toolbar` = `false`. Off removes the toolbar and its reveal arrow; the keyboard routes (Alt+←/→, Ctrl+R, Ctrl+L, Ctrl+±/0) keep working |
 | `--private-mode` | — | Open in private/incognito mode (custom browser) |
 | `--zoom-level` | — | Zoom level for embedded browser (0.3–3.0, default: 1.0) |
+| `--socks-proxy` | — | Existing SOCKS5 proxy for a Web connection (`host:port`). `update` removes it, and its login, with an empty value. Not together with `--tunnel-via`. A browser that cannot use it is not opened |
+| `--socks-proxy-user` | — | Username for a proxy that needs a login. `connect` can't relay one; open it from the GUI |
+| `--socks-proxy-password-var` | — | Name of the global variable holding that login's password, which must already exist and be secret; `add` and `update` refuse a missing or plain one. Create it in the GUI (Menu → Tools → Variables, with **Secret (mask value)** on): `rustconn-cli var set <name> <value> --secret` puts the password on the command line, where other local processes and your shell history can read it |
+| `--browser` | — | Browser command for `--browser-mode custom` (Chromium-based or Firefox to use a proxy) |
+| `--winrm-ssl` | — | Use HTTPS for a WinRM connection |
+| `--winrm-accept-invalid-certs` | — | Accept a self-signed HTTPS certificate when running scripts over WinRM |
 | `--provider` | — | Zero Trust provider (see [Zero Trust examples](#zero-trust-examples) below) |
 
 **Protocol examples:**
@@ -255,6 +262,9 @@ rustconn-cli add -n "VM" -H 10.0.0.1 -P spice
 
 # Telnet
 rustconn-cli add -n "Switch" -H 10.0.0.1 -P telnet
+
+# WinRM (needs the evil-winrm client)
+rustconn-cli add -n "Windows" -H 10.0.0.5 -P winrm -u alice --domain CORP
 
 # Serial
 rustconn-cli add -n "Router" -H /dev/ttyUSB0 -P serial --baud-rate 9600
@@ -534,6 +544,35 @@ rustconn-cli duplicate "My Server" --new-name "Staging"     # Custom name
 ```
 
 The duplicate gets a new UUID, fresh timestamps, and no `last_connected` value.
+
+To create several copies at once, give a number range. Quote it so the shell leaves the brackets alone:
+
+```bash
+rustconn-cli duplicate "host01" --range 'host[02-10]'                                # host02 … host10
+rustconn-cli duplicate "host1" --range 'host[2-10]'                                  # host2 … host10
+rustconn-cli duplicate "web01" --range 'web[02-10]' --host-range '10.0.0.[2-10]'     # explicit addresses
+```
+
+The width of the first number sets the zero padding. `--host-range` is optional when the source's host contains its name (`host01.example.com` becomes `host02.example.com`), and otherwise required. It must cover the same count as `--range`. A range can create up to 256 connections, and names that already exist are skipped. Unlike the GUI, the CLI does not copy a password stored in a vault to the new connections.
+
+### run-script — Run a local script on SSH or WinRM connections
+
+```bash
+rustconn-cli run-script ./check.sh --on web1 --on web2       # Named connections
+rustconn-cli run-script ./check.sh --group Production --yes  # A group and its subgroups
+rustconn-cli run-script ./patch.sh --group DB --parallel 2 --timeout 1800
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--on` | — | Connection name or UUID (repeatable) |
+| `--group` | — | Group name or UUID, including subgroups (repeatable) |
+| `--parallel` | 8 | Hosts at once (1–64) |
+| `--timeout` | 600 | Time limit per host, in seconds |
+| `--yes`, `-y` | — | Skip the confirmation; required when stdin is not a terminal |
+| `--same-password` | — | Ask once and use that password for every connection set to ask at connect. An answer belongs to the connection, so a host that is also another host's jump host uses it there too; a jump host that is not itself a target is asked on its own |
+
+Output is prefixed with `[connection name]`. The exit status is non-zero unless the script succeeded on every host. A `.ps1` file runs in PowerShell on WinRM connections (needs the `pywinrm` Python library); any other file runs with bash on SSH connections. Saved passwords are read from the configured secret backend (the system keyring needs a build with `secret-management`), for the hosts and their jump hosts. A host whose key is not in `known_hosts` is refused (`StrictHostKeyChecking=yes`). So is every jump host of an SSH host: RustConn reaches it through its own `ProxyCommand`, which refuses an unknown key too. A WinRM host is reached through an `ssh -L` tunnel to its nearest jump host, which gets `StrictHostKeyChecking=yes` as well. The jump hosts past that one go through `-J` and follow your ssh configuration, unless the tunnel sends the nearest jump host's password: then they go through RustConn's own `ProxyCommand`, which keeps that password from them and refuses an unknown key. A jump host with no key of its own still offers `~/.ssh/id_*` and the agent's keys there, unless a password is sent along the route. In the CLI, three cases go through `-J` instead and follow your ssh configuration: a chain of several jump hosts whose first one has an SSH key of its own (set on it or its group) and that sends no password and uses no PKCS#11 provider, because `-J` is the only way to carry that key past the first jump host; a jump host address RustConn cannot pass to a shell safely, that is anything but letters, digits and `.-_:@[]`, such as a comma-separated chain in a ProxyJump or SSH Proxy Jump field (the CLI then sends no password along that route); and the jump hosts past the first of a WinRM tunnel that sends no password. The GUI can put such an address into a `ProxyCommand` of its own instead; [Run Local Script](USER_GUIDE.md#run-local-script) in the user guide says when. Connections set to ask at connect are each asked once, unless `--same-password` asks a single time for all of them; an empty answer sends no password, so that host uses its keys. With no terminal they use their keys. Global variables in a host or user name (`${name}`) are filled in; one set to ask at connect (`@ask:`) leaves that host out with a warning, since run-script cannot ask for it, and that host counts as not succeeded. A secret variable is not read from the secret backend, so one whose value is not in the configuration file counts as undefined. `--quiet` leaves out the progress lines (connections left out, hosts that succeeded, the closing count) and keeps the script's own output, hosts that did not succeed, warnings and prompts.
 
 ### test — Test connectivity
 
@@ -846,13 +885,13 @@ Global variables can be referenced in snippets and connection templates. Secret 
 |------------|-------------|
 | `var list` | List all variables (`--format`) |
 | `var show <name>` | Show variable value |
-| `var set <name> <value>` | Set a variable (`--secret`, `--description`) |
+| `var set <name> <value>` | Set a variable (`--secret`, `--description`). The value is a command-line argument, so a password set here is visible to other local processes and kept in your shell history; set secret values in the GUI (Menu → Tools → Variables) instead |
 | `var delete <name>` | Delete a variable |
 
 ```bash
 rustconn-cli var list
 rustconn-cli var set my_var "my_value"
-rustconn-cli var set api_key "secret123" --secret                # Masked in output
+rustconn-cli var set api_host "api.example.com"                  # Secret values: Menu → Tools → Variables
 rustconn-cli var set deploy_env "staging" --description "Current deploy target"
 rustconn-cli var delete "my_var"
 ```

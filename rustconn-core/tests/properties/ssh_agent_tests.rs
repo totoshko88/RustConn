@@ -43,7 +43,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 1: SSH Agent Output Parsing**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any valid ssh-agent -s output string (bash format), parsing should
     /// extract the SSH_AUTH_SOCK path correctly.
@@ -71,7 +70,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 1: SSH Agent Output Parsing**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any valid ssh-agent -c output string (csh format), parsing should
     /// extract the SSH_AUTH_SOCK path correctly.
@@ -99,7 +97,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 1: SSH Agent Output Parsing**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any output that doesn't contain SSH_AUTH_SOCK, parsing should fail
     /// with an appropriate error.
@@ -223,7 +220,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 2: SSH Key List Parsing**
-    /// **Validates: Requirements 1.6**
     ///
     /// For any valid ssh-add -l output string, parsing should extract all key
     /// fingerprints, types, and comments correctly.
@@ -294,7 +290,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 2: SSH Key List Parsing**
-    /// **Validates: Requirements 1.6**
     ///
     /// For empty agent output, parsing should return an empty list.
     #[test]
@@ -316,7 +311,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 2: SSH Key List Parsing**
-    /// **Validates: Requirements 1.6**
     ///
     /// For "no identities" message, parsing should return an empty list.
     #[test]
@@ -365,7 +359,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: ssh-agent-cli, Property 3: Agent Key Fingerprint Storage**
-    /// **Validates: Requirements 2.3**
     ///
     /// For any SSH connection configured with an agent key, the fingerprint
     /// should be stored and retrievable for identification.
@@ -437,7 +430,6 @@ proptest! {
     }
 
     /// **Feature: ssh-agent-cli, Property 3: Agent Key Fingerprint Storage**
-    /// **Validates: Requirements 2.3**
     ///
     /// For any SSH connection with agent key, serialization and deserialization
     /// should preserve the fingerprint.

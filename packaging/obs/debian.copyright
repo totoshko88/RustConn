@@ -4,8 +4,11 @@ Upstream-Contact: Anton Isaiev <totoshko88@gmail.com>
 Source: https://github.com/totoshko88/RustConn
 
 Files: *
-Copyright: 2025-2026 Anton Isaiev
+Copyright: 2024-2026 Anton Isaiev, Ukraine
 License: GPL-3.0+
+Comment: From release 0.24.11, the material authored by Anton Isaiev carries
+ additional terms under section 7 of GPL-3.0, set out in the NOTICE file of the
+ source: https://github.com/totoshko88/RustConn/blob/main/NOTICE
 
 License: GPL-3.0+
  This program is free software: you can redistribute it and/or modify

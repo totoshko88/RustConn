@@ -51,6 +51,34 @@ impl MainWindow {
         activity: Option<types::SharedActivityCoordinator>,
         observer: Option<types::SessionStartObserver>,
     ) {
+        // Jump host failover comes first: RDP and SFTP never reach
+        // `start_connection_inner`, and the credentials to unlock depend on the
+        // gateway that gets chosen.
+        let retry = {
+            let state = state.clone();
+            let notebook = notebook.clone();
+            let split_view = split_view.clone();
+            let sidebar = sidebar.clone();
+            let monitoring = Rc::clone(&monitoring);
+            let activity = activity.clone();
+            let observer = observer.clone();
+            move || {
+                Self::start_connection_with_credential_resolution_observed(
+                    state,
+                    notebook,
+                    split_view,
+                    sidebar,
+                    monitoring,
+                    connection_id,
+                    activity,
+                    observer,
+                );
+            }
+        };
+        if super::protocols::start_gateway_probe(&state, connection_id, retry) {
+            return;
+        }
+
         // Acquire busy guard — spinner shows while connection is in progress.
         // The guard is moved into closures so it stays alive until the
         // connection completes (or the credential dialog is dismissed).
@@ -872,6 +900,7 @@ impl MainWindow {
             | ProtocolType::Spice
             | ProtocolType::ZeroTrust
             | ProtocolType::Telnet
+            | ProtocolType::WinRm
             | ProtocolType::Serial
             | ProtocolType::Kubernetes
             | ProtocolType::Mosh => {

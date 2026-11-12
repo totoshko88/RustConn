@@ -14,6 +14,7 @@
 //! two callbacks ([`ExternalSessionCallbacks`]) that bridge into the sidebar
 //! session count and the connection history.
 
+use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::process::Child;
@@ -22,6 +23,26 @@ use std::time::Duration;
 
 use gtk4::glib;
 use uuid::Uuid;
+
+/// Drops `held` once `child` exits, for a process no registry entry watches.
+///
+/// GLib reaps the child and runs the drop on the main loop. If the child's PID
+/// cannot be watched, the child is killed and reaped and `held` is dropped at
+/// once, so a SOCKS relay among it stops and zeroes its password and a browser
+/// profile is removed. That branch is unreachable on Linux and macOS, where
+/// `pid_t` is `i32`; it fails closed rather than leaking.
+pub fn drop_when_exits(mut child: Child, held: impl Any) {
+    let Ok(pid) = i32::try_from(child.id()) else {
+        let _ = child.kill();
+        let _ = child.wait();
+        drop(held);
+        return;
+    };
+    // GLib's watch waits on the PID; the `Child` handle has nothing left to do.
+    drop(child);
+    let mut held = Some(held);
+    glib::child_watch_add_local(glib::Pid(pid), move |_, _| drop(held.take()));
+}
 
 /// Poll interval for watching external viewer child processes.
 ///
@@ -42,6 +63,9 @@ struct ExternalSession {
     /// Guards the exactly-once `on_ended` firing (defence against re-entrancy;
     /// the primary guard is removing the entry from the map).
     ended: bool,
+    /// Values that must live exactly as long as the viewer, such as a browser
+    /// profile directory; dropped once the child has exited (see [`ExternalSessionRegistry::hold`]).
+    held: Vec<Box<dyn Any>>,
 }
 
 /// Callbacks into sidebar/state, injected at construction so the registry stays
@@ -102,6 +126,7 @@ impl ExternalSessionRegistry {
                 child,
                 history_entry_id,
                 ended: false,
+                held: Vec::new(),
             },
         );
         // Fire the callback after the borrow is released (avoids BorrowMutError
@@ -110,11 +135,34 @@ impl ExternalSessionRegistry {
         self.ensure_timer();
     }
 
+    /// Keeps `value` alive until the session's viewer has exited.
+    ///
+    /// It drops when the poll timer reaps the child, after a Disconnect or at
+    /// shutdown (both kill the child first). A session that is only stopped
+    /// being tracked hands it to [`drop_when_exits`] with the child, so a
+    /// browser that keeps running keeps its profile. Without a matching session
+    /// the value drops at once.
+    pub fn hold(&self, session_id: Uuid, value: impl Any) {
+        if let Some(session) = self.sessions.borrow_mut().get_mut(&session_id) {
+            session.held.push(Box::new(value));
+        }
+    }
+
     /// Deregisters a session and fires `on_ended`, dropping the child handle
     /// WITHOUT killing it (R5.4). Dropping [`std::process::Child`] does not kill
     /// the process, so the viewer keeps running.
     pub fn stop_tracking(&self, session_id: Uuid) {
+        // Whatever the session holds belongs to a viewer that is still running.
+        let handover = self
+            .sessions
+            .borrow_mut()
+            .get_mut(&session_id)
+            .filter(|session| !session.held.is_empty())
+            .and_then(|session| Some((session.child.take()?, std::mem::take(&mut session.held))));
         self.finish(session_id);
+        if let Some((child, held)) = handover {
+            drop_when_exits(child, held);
+        }
     }
 
     /// Terminates an owned viewer child and deregisters it (R5.2/5.3).
@@ -495,6 +543,86 @@ mod tests {
             );
 
             kill_pid(pid);
+        });
+    }
+
+    /// Sets its flag when dropped, standing in for a browser profile or relay.
+    struct DropFlag(Rc<Cell<bool>>);
+
+    impl Drop for DropFlag {
+        fn drop(&mut self) {
+            self.0.set(true);
+        }
+    }
+
+    /// Runs the default main context (where GLib child watches attach) until
+    /// `done` holds, for at most two seconds.
+    fn iterate_until(done: impl Fn() -> bool) {
+        let ctx = glib::MainContext::default();
+        for _ in 0..200 {
+            if done() {
+                return;
+            }
+            while ctx.iteration(false) {}
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
+
+    #[test]
+    fn held_values_drop_when_the_viewer_is_reaped() {
+        run_in_ctx(|| {
+            let (registry, _counters) = make_registry();
+            let child = spawn_true();
+            let pid = child.id();
+            let session_id = Uuid::new_v4();
+            let dropped = Rc::new(Cell::new(false));
+
+            registry.register(session_id, Uuid::new_v4(), Some(child), None);
+            registry.hold(session_id, DropFlag(Rc::clone(&dropped)));
+            assert!(!dropped.get(), "held while the viewer runs");
+
+            drive_until_reaped(&registry, pid);
+            let _ = registry.poll_once();
+            assert!(dropped.get(), "dropped once the viewer exited");
+        });
+    }
+
+    #[test]
+    fn stop_tracking_keeps_held_values_until_the_viewer_exits() {
+        run_in_ctx(|| {
+            let (registry, counters) = make_registry();
+            let child = spawn_sleep();
+            let pid = child.id();
+            let session_id = Uuid::new_v4();
+            let dropped = Rc::new(Cell::new(false));
+
+            registry.register(session_id, Uuid::new_v4(), Some(child), None);
+            registry.hold(session_id, DropFlag(Rc::clone(&dropped)));
+            registry.stop_tracking(session_id);
+            assert_eq!(counters.ended.get(), 1);
+            assert!(!dropped.get(), "a running viewer keeps what it holds");
+
+            kill_pid(pid);
+            iterate_until(|| dropped.get());
+            assert!(dropped.get(), "dropped once the untracked viewer exited");
+        });
+    }
+
+    #[test]
+    fn drop_when_exits_waits_for_the_child() {
+        run_in_ctx(|| {
+            let child = spawn_sleep();
+            let pid = child.id();
+            let dropped = Rc::new(Cell::new(false));
+
+            super::drop_when_exits(child, DropFlag(Rc::clone(&dropped)));
+            let ctx = glib::MainContext::default();
+            while ctx.iteration(false) {}
+            assert!(!dropped.get(), "held while the child runs");
+
+            kill_pid(pid);
+            iterate_until(|| dropped.get());
+            assert!(dropped.get(), "dropped once the child exited");
         });
     }
 

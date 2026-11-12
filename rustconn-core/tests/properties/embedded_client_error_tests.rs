@@ -1,7 +1,5 @@
 //! Property tests for `EmbeddedClientError` unified error type.
 //!
-//! **Validates: Requirements 2.1, 2.2**
-//!
 //! These tests verify that the unified error type correctly handles all variants
 //! and maintains backward compatibility through type aliases.
 

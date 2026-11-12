@@ -1,0 +1,45 @@
+RustConn
+Copyright (C) 2024-2026 Anton Isaiev, Ukraine
+
+RustConn is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. The full text of the license is in the file LICENSE.
+
+
+Additional terms under section 7 of the GNU General Public License version 3
+---------------------------------------------------------------------------
+
+The material in RustConn authored by Anton Isaiev is licensed under the license
+above with the additional terms below, under section 7 of GPL-3.0. They apply to
+release 0.24.11 and every later release.
+
+They do not apply to release 0.24.10 or any earlier release, and they do not
+apply to material contributed by other people, which is licensed under
+GPL-3.0-or-later alone.
+
+1. Author attribution (section 7(b)). You must preserve the author attribution
+   "Anton Isaiev, Ukraine" in the copyright notices of this material and in the
+   Appropriate Legal Notices of any interactive program that contains it. In
+   RustConn these are the copyright line of the About dialog
+   ("© <years> Anton Isaiev, Ukraine") and its "Made in Ukraine" section, which
+   is shown translated in other languages.
+
+2. Origin (section 7(c)). You may not misrepresent the origin of this material.
+   A modified version distributed as a separate project must be marked as
+   different from the original: it must not be named "RustConn" alone, must not
+   use an application ID beginning with "io.github.totoshko88", must not use the
+   RustConn icon, and must state that it is modified and by whom.
+   Packaging by an operating-system distribution, including the patches it
+   applies to build, integrate or fix the program, is not a separate project as
+   long as it does not change the program's features.
+
+3. Publicity (section 7(d)). The author's name may not be used to promote a
+   modified version without his written permission.
+
+4. Trademarks (section 7(e)). No rights are granted to the name "RustConn", its
+   icon or the application ID prefix "io.github.totoshko88", except as stated in
+   TRADEMARKS.md.
+
+These terms do not limit who may run, study, share or modify RustConn, or
+where. Those freedoms are as the GNU General Public License grants them.

@@ -46,6 +46,7 @@ impl ConnectionDialog {
         let port_spin = basic.port_spin.clone();
         let port_row = basic.port_row.clone();
         let network_mode_row = basic.network_mode_row.clone();
+        let fallback_jump_hosts = basic.fallback_jump_hosts.clone();
         let username_entry = basic.username_entry.clone();
         let username_row = basic.username_row.clone();
         let domain_entry = basic.domain_entry.clone();
@@ -293,6 +294,16 @@ impl ConnectionDialog {
         ) = crate::dialogs::connection::telnet::create_telnet_options();
         protocol_stack.add_named(&telnet_box, Some("telnet"));
 
+        // WinRM options
+        let (
+            winrm_box,
+            winrm_ssl_switch,
+            winrm_accept_certs_switch,
+            winrm_jump_host_dropdown,
+            winrm_custom_args_entry,
+        ) = crate::dialogs::connection::winrm::create_winrm_options();
+        protocol_stack.add_named(&winrm_box, Some("winrm"));
+
         // Serial options
         let (
             serial_box,
@@ -331,6 +342,9 @@ impl ConnectionDialog {
         let web_user_agent_row = web_options.user_agent_row;
         let web_floating_toolbar_switch = web_options.floating_toolbar_switch;
         let web_tunnel_dropdown = web_options.tunnel_dropdown;
+        let web_socks_proxy_row = web_options.socks_proxy_row;
+        let web_socks_user_row = web_options.socks_user_row;
+        let web_socks_password_var_row = web_options.socks_password_var_row;
 
         // MOSH now uses SSH tab with additional MOSH settings group
         // (mosh_port_range_entry, mosh_predict_dropdown, mosh_server_binary_entry
@@ -355,6 +369,16 @@ impl ConnectionDialog {
             // Not kept on the dialog: only the protocol dropdown ever touches it.
             ssh_keyboard_group,
             ssh_key_setup_row: ssh_key_setup_row.clone(),
+            fallback_jump_hosts: fallback_jump_hosts.clone(),
+            jump_host_dropdowns: super::construction::JumpHostDropdowns {
+                ssh: ssh_jump_host_dropdown.clone(),
+                rdp: rdp_jump_host_dropdown.clone(),
+                vnc: vnc_jump_host_dropdown.clone(),
+                spice: spice_jump_host_dropdown.clone(),
+                winrm: winrm_jump_host_dropdown.clone(),
+            },
+            spice_unix_socket_check: spice_unix_socket_check.clone(),
+            spice_socket_path_entry: spice_socket_path_entry.clone(),
         };
         Self::connect_protocol_dropdown(
             &protocol_dropdown,
@@ -595,6 +619,7 @@ impl ConnectionDialog {
             &ssh_agent_key_dropdown,
             &ssh_agent_keys,
             &network_mode_row,
+            &fallback_jump_hosts,
             &ssh_jump_host_dropdown,
             &ssh_proxy_entry,
             &ssh_proxy_command_entry,
@@ -730,6 +755,10 @@ impl ConnectionDialog {
             &telnet_custom_args_entry,
             &telnet_backspace_dropdown,
             &telnet_delete_dropdown,
+            &winrm_ssl_switch,
+            &winrm_accept_certs_switch,
+            &winrm_jump_host_dropdown,
+            &winrm_custom_args_entry,
             &serial_device_entry,
             &serial_baud_dropdown,
             &serial_data_bits_dropdown,
@@ -756,6 +785,9 @@ impl ConnectionDialog {
             &web_user_agent_row,
             &web_floating_toolbar_switch,
             &web_tunnel_dropdown,
+            &web_socks_proxy_row,
+            &web_socks_user_row,
+            &web_socks_password_var_row,
             &web_connections_data,
             &variables_rows,
             &logging_tab_struct,
@@ -858,6 +890,7 @@ impl ConnectionDialog {
             ssh_agent_keys,
             pending_agent_selection,
             network_mode_row,
+            fallback_jump_hosts,
             ssh_jump_host_dropdown,
             ssh_jump_host_row,
             ssh_proxy_entry,
@@ -1004,6 +1037,10 @@ impl ConnectionDialog {
             telnet_custom_args_entry,
             telnet_backspace_dropdown,
             telnet_delete_dropdown,
+            winrm_ssl_switch,
+            winrm_accept_certs_switch,
+            winrm_jump_host_dropdown,
+            winrm_custom_args_entry,
             serial_device_entry,
             serial_baud_dropdown,
             serial_data_bits_dropdown,
@@ -1027,6 +1064,9 @@ impl ConnectionDialog {
             web_user_agent_row,
             web_floating_toolbar_switch,
             web_tunnel_dropdown,
+            web_socks_proxy_row,
+            web_socks_user_row,
+            web_socks_password_var_row,
             web_connections_data,
             mosh_port_range_entry,
             mosh_predict_dropdown,
@@ -1343,6 +1383,11 @@ impl ConnectionDialog {
                         rustconn_core::models::ProtocolType::ZeroTrust => {
                             rustconn_core::models::ProtocolConfig::Ssh(
                                 rustconn_core::models::SshConfig::default(),
+                            )
+                        }
+                        rustconn_core::models::ProtocolType::WinRm => {
+                            rustconn_core::models::ProtocolConfig::WinRm(
+                                rustconn_core::models::WinRmConfig::default(),
                             )
                         }
                         rustconn_core::models::ProtocolType::Telnet => {

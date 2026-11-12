@@ -104,7 +104,62 @@ pub fn cmd_connect(config_path: Option<&Path>, name: &str, dry_run: bool) -> Res
         connection.name, connection.protocol, connection.host, connection.port
     );
 
+    if matches!(
+        connection.protocol_config,
+        rustconn_core::models::ProtocolConfig::WinRm(_)
+    ) {
+        let client = rustconn_core::protocol::locate_winrm_client()
+            .ok_or_else(|| CliError::Config(winrm_client_missing().to_string()))?;
+        let settings = config_manager.load_settings().unwrap_or_default();
+        if super::run_script::connect_winrm_through_tunnel(
+            connection,
+            &connections,
+            &groups,
+            &settings,
+            &client,
+        )? {
+            return Ok(());
+        }
+        let launch = winrm_launch(connection, &client)
+            .ok_or_else(|| CliError::Connection("Could not build the WinRM command".to_string()))?;
+        return execute_connection_command(&launch);
+    }
+
     execute_connection_command(&command)
+}
+
+/// The launch of WinRM `connection` with `client`.
+///
+/// Built from the WinRM handler itself rather than from
+/// [`build_connection_command`]: [`rustconn_core::protocol::WinRmClient::command`]
+/// replaces the first element, which must be `evil-winrm`, and that function's
+/// fallback is an `echo`.
+fn winrm_launch(
+    connection: &Connection,
+    client: &rustconn_core::protocol::WinRmClient,
+) -> Option<ConnectionCommand> {
+    use rustconn_core::protocol::{Protocol, WinRmProtocol};
+
+    let launch = client.command(WinRmProtocol::new().build_command(connection)?);
+    let (program, args) = launch.split_first()?;
+    Some(ConnectionCommand {
+        program: program.clone(),
+        args: args.to_vec(),
+    })
+}
+
+/// Says where to get `evil-winrm` for this package.
+fn winrm_client_missing() -> &'static str {
+    if rustconn_core::flatpak::is_flatpak() {
+        "Required program 'evil-winrm' not found on this computer. Install it outside the \
+         Flatpak, from your distribution or with: gem install evil-winrm. It must be on the \
+         PATH of your login shell on the host (set in ~/.profile, not only in ~/.bashrc)"
+    } else if rustconn_core::snap::is_snap() {
+        "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, or use \
+         the Flatpak or a distribution package of RustConn"
+    } else {
+        "Required program 'evil-winrm' not found. Install it with: gem install evil-winrm"
+    }
 }
 
 /// Renders the stderr warning for one unusable bastion reference.
@@ -165,6 +220,23 @@ fn build_connection_command(connection: &Connection) -> ConnectionCommand {
         return ConnectionCommand {
             program: program.clone(),
             args: args.to_vec(),
+        };
+    }
+
+    if let rustconn_core::models::ProtocolConfig::Web(config) = &connection.protocol_config
+        && config.socks_proxy.is_some()
+    {
+        return ConnectionCommand {
+            program: "echo".to_string(),
+            args: vec![if config.socks_proxy_username.is_some() {
+                "This Web connection's SOCKS proxy needs a login, which only the GUI \
+                     can relay."
+                    .to_string()
+            } else {
+                "No browser that can use this SOCKS proxy was found. Install Chromium or \
+                     Firefox, or set one with --browser and --browser-mode custom."
+                    .to_string()
+            }],
         };
     }
 
@@ -298,6 +370,61 @@ fn format_command_for_log(command: &ConnectionCommand) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn winrm_connection() -> Connection {
+        use rustconn_core::models::{ProtocolConfig, WinRmConfig};
+
+        let mut connection = Connection::new(
+            "win".to_string(),
+            "win.lan".to_string(),
+            5985,
+            ProtocolConfig::WinRm(WinRmConfig::default()),
+        );
+        connection.username = Some("alice".to_string());
+        connection
+    }
+
+    #[test]
+    fn a_host_winrm_client_starts_in_a_host_login_shell() {
+        use rustconn_core::protocol::WinRmClient;
+
+        let client = WinRmClient::Host("/home/a/.rbenv/shims/evil-winrm".into());
+        let launch = winrm_launch(&winrm_connection(), &client).expect("a WinRM launch");
+        assert_eq!(launch.program, "flatpak-spawn");
+        assert_eq!(
+            launch.args,
+            [
+                "--host",
+                "--watch-bus",
+                "--env=TERM=xterm-256color",
+                "--",
+                "sh",
+                "-lc",
+                r#"exec "$0" "$@""#,
+                "/home/a/.rbenv/shims/evil-winrm",
+                "-i",
+                "win.lan",
+                "-P",
+                "5985",
+                "-u",
+                "alice"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_local_winrm_client_replaces_only_the_client_name() {
+        use rustconn_core::protocol::WinRmClient;
+
+        let client = WinRmClient::Local("/usr/bin/evil-winrm".into());
+        let launch = winrm_launch(&winrm_connection(), &client).expect("a WinRM launch");
+        assert_eq!(launch.program, "/usr/bin/evil-winrm");
+        assert_eq!(launch.args, ["-i", "win.lan", "-P", "5985", "-u", "alice"]);
+        // Nothing but a WinRM connection gives a WinRM launch, so the `echo`
+        // fallback can never reach the client as its arguments.
+        let ssh = Connection::new_ssh("web".to_string(), "web.lan".to_string(), 22);
+        assert!(winrm_launch(&ssh, &client).is_none());
+    }
 
     #[test]
     fn dangling_bastion_warning_does_not_claim_a_direct_connection() {

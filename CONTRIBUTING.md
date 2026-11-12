@@ -4,7 +4,9 @@ Thanks for being here. RustConn is a GTK4/libadwaita connection manager written
 in Rust, and it grows from bug reports, translations, packaging fixes, and code
 alike. This file explains how to get a change merged.
 
-By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to follow the
+[GNOME Code of Conduct](https://conduct.gnome.org/); [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+says where it applies and how to report a problem.
 
 ## Ways to contribute
 
@@ -178,6 +180,15 @@ bullet:
 RustConn ships every catalogue listed in `po/LINGUAS`. `ls po/*.po` is the
 authoritative list — numbers written in prose have been wrong before.
 
+Every language is welcome, with one exception: the project does not ship a
+Russian translation, and a Russian catalogue will not be merged. This is a
+decision about the product, explained in the
+[maintainer's reply on PR #413](https://github.com/totoshko88/RustConn/pull/413#issuecomment-6714428433).
+It is not a rule about people: anyone may contribute in any other language. New
+languages of the region, such as Bashkir (`ba`), Tatar (`tt`) and Nogai
+(`nog`), are as welcome as every other language, and Kazakh (`kk`), which
+RustConn already ships, always needs maintainers.
+
 To correct or complete an existing language, edit its `po/<lang>.po` and run the
 three gates:
 
@@ -214,6 +225,31 @@ new compiler lint — say so in the PR and it will get sorted out together.
 Small, reviewable PRs land faster than large ones. If a change spans crate
 boundaries, name the boundary in the description and keep each layer readable on
 its own.
+
+## AI-assisted development
+
+The maintainer develops RustConn with AI coding agents: Kiro, with Claude
+models. The agents' configuration is public, in [`.kiro/`](.kiro/) (steering
+files, hooks and agent profiles) and in the `AGENTS.md` files at the root and in
+each crate, so you can read exactly what they are told.
+
+What holds for every change, whoever or whatever wrote it:
+
+- The maintainer reads it before it goes into the repository.
+- It passes `scripts/verify.sh --tests`: formatting, clippy with
+  `-D warnings`, rustdoc with `-D warnings`, the test suite, and the i18n and
+  crate-boundary gates. It is then tested by hand.
+- Flathub manifests and Flathub submissions are written by hand, as
+  [Flathub's policy](https://docs.flathub.org/docs/for-app-authors/requirements)
+  requires.
+
+Since 12 November 2026, a commit made with an agent carries a `Co-Authored-By`
+trailer naming it. Most earlier agent-assisted commits, including most of the
+0.24.11 cycle, do not have one.
+
+You may use AI tools for your own contributions. You must understand what you
+submit and be able to explain it in review: why the change is needed, what it
+does, and how you checked it.
 
 ## Releases
 

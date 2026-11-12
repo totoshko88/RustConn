@@ -3,7 +3,7 @@
 //! These tests verify that the async credential resolution patterns work correctly
 //! when used with callbacks, simulating how they would be used in a GTK context.
 //!
-//! **Validates: Requirements 9.1, 9.2 - Async operations instead of blocking calls**
+//! Async operations instead of blocking calls
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -36,6 +36,7 @@ fn create_test_connection(name: &str, host: &str) -> Connection {
         password_source: PasswordSource::None,
         kdbx_path_override: None,
         network_mode: rustconn_core::models::NetworkMode::default(),
+        fallback_jump_host_ids: Vec::new(),
         domain: None,
         custom_properties: Vec::new(),
         pre_connect_task: None,

@@ -33,7 +33,7 @@ fn main() {
     color::init(cli.no_color || std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty()));
     setup_logging(cli.verbose, cli.quiet);
 
-    let result = commands::dispatch(config_path, cli.command);
+    let result = commands::dispatch(config_path, cli.command, cli.quiet);
 
     if let Err(e) = result {
         tracing::error!("{e}");

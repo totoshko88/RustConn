@@ -1,7 +1,7 @@
 //! Property-based tests for the Expect system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Expect-style automation system (Requirements 4.x).
+//! for the Expect-style automation system.
 
 use proptest::prelude::*;
 use rustconn_core::{ExpectEngine, ExpectError, ExpectRule};
@@ -97,7 +97,6 @@ proptest! {
 
     // ========== Property 8: Expect Pattern Validation ==========
     // **Feature: rustconn-enhancements, Property 8: Expect Pattern Validation**
-    // **Validates: Requirements 4.6**
     //
     // For any expect rule pattern, validation should either confirm valid regex
     // syntax or report the specific error.
@@ -214,7 +213,6 @@ proptest! {
 
     // ========== Property 10: Expect Pattern Matching Priority ==========
     // **Feature: rustconn-enhancements, Property 10: Expect Pattern Matching Priority**
-    // **Validates: Requirements 4.3**
     //
     // For any terminal output that matches multiple expect patterns, the rule
     // with highest priority should be selected.
@@ -470,7 +468,6 @@ proptest! {
 
     // ========== Property 9: Expect Rule Serialization Round-Trip ==========
     // **Feature: rustconn-enhancements, Property 9: Expect Rule Serialization Round-Trip**
-    // **Validates: Requirements 4.7**
     //
     // For any valid expect rule, serializing and deserializing should produce
     // an equivalent rule.

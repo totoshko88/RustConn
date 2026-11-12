@@ -48,7 +48,6 @@ fn arb_log_data() -> impl Strategy<Value = String> {
 
 // ============================================================================
 // Property 7: Session Logger File Creation
-// **Validates: Requirements 9.1, 9.2**
 //
 // For any enabled LogConfig with valid path, creating a SessionLogger should
 // result in a log file being created.
@@ -58,7 +57,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 7: Session Logger File Creation**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any enabled LogConfig with a valid path, creating a SessionLogger
     /// should result in a log file being created at the specified path.
@@ -106,7 +104,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 7: Session Logger File Creation**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any enabled LogConfig with a path template containing variables,
     /// creating a SessionLogger should expand the template and create the file.
@@ -162,7 +159,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 7: Session Logger File Creation**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any enabled LogConfig, the log directory should be created automatically
     /// if it doesn't exist.
@@ -211,7 +207,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 7: Session Logger File Creation**
-    /// **Validates: Requirements 9.1, 9.2**
     ///
     /// For any disabled LogConfig, no log file should be created.
     #[test]
@@ -253,7 +248,6 @@ proptest! {
 
 // ============================================================================
 // Property 16: Log Timestamp Formatting
-// **Validates: Requirements 7.2**
 //
 // For any log entry, the timestamp should be formatted according to the
 // configured format string.
@@ -263,7 +257,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 16: Log Timestamp Formatting**
-    /// **Validates: Requirements 7.2**
     ///
     /// For any valid timestamp format, the logger should produce timestamps
     /// that match the expected format pattern.
@@ -347,7 +340,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 16: Log Timestamp Formatting**
-    /// **Validates: Requirements 7.2**
     ///
     /// The format_timestamp method should produce consistent output for the same format.
     #[test]
@@ -432,7 +424,6 @@ fn test_timestamp_in_log_output() {
 
 // ============================================================================
 // Property 17: Log Path Template Expansion
-// **Validates: Requirements 7.5**
 //
 // For any log path template with variables, expansion should produce a valid
 // file path.
@@ -442,7 +433,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 17: Log Path Template Expansion**
-    /// **Validates: Requirements 7.5**
     ///
     /// For any valid path template with supported variables, expansion should
     /// produce a valid file path containing the substituted values.
@@ -506,7 +496,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 17: Log Path Template Expansion**
-    /// **Validates: Requirements 7.5**
     ///
     /// Path template expansion should produce valid file paths (no invalid characters).
     #[test]
@@ -541,7 +530,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 17: Log Path Template Expansion**
-    /// **Validates: Requirements 7.5**
     ///
     /// Custom variables in context should be expanded correctly.
     #[test]
@@ -650,7 +638,6 @@ fn test_path_template_datetime_variable() {
 
 // ============================================================================
 // Property 18: Log Rotation Trigger
-// **Validates: Requirements 7.3**
 //
 // For any log file that exceeds the configured size limit, rotation should
 // create a new file.
@@ -660,7 +647,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// **Feature: rustconn-enhancements, Property 18: Log Rotation Trigger**
-    /// **Validates: Requirements 7.3**
     ///
     /// When a log file exceeds the configured size limit, rotation should occur
     /// and a new log file should be created.
@@ -720,7 +706,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 18: Log Rotation Trigger**
-    /// **Validates: Requirements 7.3**
     ///
     /// Log rotation should preserve data integrity - no data should be lost.
     #[test]

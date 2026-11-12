@@ -122,7 +122,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(256))]
 
     /// **Feature: external-session-tracking, Property 1: Predicate determinism**
-    /// **Validates: Requirements 1.2, 1.3**
     ///
     /// For any connection, `uses_external_viewer()` returns the same value on
     /// every call — no hidden state, no I/O.
@@ -139,7 +138,6 @@ proptest! {
     }
 
     /// **Feature: external-session-tracking, Property 1: Predicate determinism**
-    /// **Validates: Requirements 1.2, 1.3**
     ///
     /// Referential transparency: two connections built from the same
     /// `(protocol, window_mode, client_mode)` inputs yield the same decision.
@@ -158,7 +156,6 @@ proptest! {
     }
 
     /// **Feature: external-session-tracking, Property 2: SPICE is always external**
-    /// **Validates: Requirements 1.1**
     ///
     /// For any SPICE connection, the predicate is `true` regardless of
     /// `window_mode` (SPICE has no client_mode; the embedded client was removed).
@@ -172,7 +169,6 @@ proptest! {
     }
 
     /// **Feature: external-session-tracking, Property 3: Non-graphical is never external**
-    /// **Validates: Requirements 1.1**
     ///
     /// For any SSH/Telnet/Serial/Kubernetes/Mosh/ZeroTrust/Web connection, the
     /// predicate is `false` for every `window_mode`.
@@ -188,7 +184,6 @@ proptest! {
     }
 
     /// **Feature: external-session-tracking, Property 2/3 combined via matrix**
-    /// **Validates: Requirements 1.1**
     ///
     /// For VNC, external iff `window_mode == External` OR
     /// `client_mode == External`, across the full generated input space.
@@ -204,7 +199,6 @@ proptest! {
     }
 
     /// **Feature: external-session-tracking, Property 2/3 combined via matrix**
-    /// **Validates: Requirements 1.1**
     ///
     /// For RDP, external iff `window_mode == External` OR
     /// `client_mode == External`, across the full generated input space.
@@ -223,8 +217,6 @@ proptest! {
 // ========== Exhaustive matrix unit tests ==========
 
 /// Exhaustive VNC `window_mode` × `client_mode` matrix (Property 2/3 boundary).
-///
-/// **Validates: Requirements 1.1**
 #[test]
 fn vnc_full_matrix_is_exhaustive() {
     for &window_mode in WindowMode::all() {
@@ -242,8 +234,6 @@ fn vnc_full_matrix_is_exhaustive() {
 }
 
 /// Exhaustive RDP `window_mode` × `client_mode` matrix.
-///
-/// **Validates: Requirements 1.1**
 #[test]
 fn rdp_full_matrix_is_exhaustive() {
     for &window_mode in WindowMode::all() {
@@ -262,8 +252,6 @@ fn rdp_full_matrix_is_exhaustive() {
 
 /// Embedded VNC/RDP with an embedded client and non-External window is *not*
 /// external — the common default case (#209 embedded path stays a tab).
-///
-/// **Validates: Requirements 1.1**
 #[test]
 fn embedded_defaults_are_not_external() {
     assert!(!vnc_conn(WindowMode::Embedded, VncClientMode::Embedded).uses_external_viewer());
@@ -273,8 +261,6 @@ fn embedded_defaults_are_not_external() {
 }
 
 /// SPICE is external in every window mode (exhaustive).
-///
-/// **Validates: Requirements 1.1**
 #[test]
 fn spice_external_in_every_window_mode() {
     for &window_mode in WindowMode::all() {

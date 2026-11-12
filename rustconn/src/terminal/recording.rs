@@ -397,9 +397,11 @@ fn retrieve_remote_recording(remote: &RemoteRecordingInfo) -> bool {
             args.push("-i".to_string());
             args.push(key.clone());
         }
-        if let Some(kh) = rustconn_core::get_flatpak_known_hosts_path() {
+        if let Some(option) = rustconn_core::get_flatpak_known_hosts_path()
+            .and_then(|kh| rustconn_core::ssh_tunnel::user_known_hosts_option(&kh))
+        {
             args.push("-o".to_string());
-            args.push(format!("UserKnownHostsFile={}", kh.display()));
+            args.push(option);
         }
         // Runs in the background after the session the user connected (and
         // accepted the host key) in: only a key already known is trusted, so

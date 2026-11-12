@@ -674,6 +674,8 @@ fn create_connection_group() -> ConnectionGroupWidgets {
     // Limit width so long hostnames don't stretch the dialog
     jump_host_dropdown.set_size_request(200, -1);
     jump_host_dropdown.set_hexpand(false);
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    jump_host_dropdown.update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
     let jump_host_row = adw::ActionRow::builder()
         .title(i18n("Jump Host"))

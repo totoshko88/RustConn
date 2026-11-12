@@ -33,6 +33,21 @@ fn focused_pane_terminal(
     notebook.get_terminal(focused_session)
 }
 
+/// Closes the `adw::Dialog` shown in `window`, if there is one.
+///
+/// Application accelerators run in the window's capture phase, ahead of
+/// anything inside an `adw::Dialog` (which handles only Escape itself), so Ctrl+W
+/// pressed in Settings reached `win.close-tab` and closed the session tab behind
+/// the dialog. `close` honours a dialog's `can-close`, and an `adw::AlertDialog`
+/// answers with its close response, as it would for Escape.
+pub(super) fn close_visible_dialog(window: &adw::ApplicationWindow) -> bool {
+    let Some(dialog) = window.visible_dialog() else {
+        return false;
+    };
+    dialog.close();
+    true
+}
+
 impl MainWindow {
     pub(crate) fn setup_terminal_actions(
         &self,
@@ -145,13 +160,21 @@ impl MainWindow {
         });
         window.add_action(&terminal_search_action);
 
-        // Close tab action - closes the currently active session tab
+        // Close tab action (Ctrl+W) - closes an open dialog first, then the
+        // active session tab, then a tab without a session; with nothing left
+        // to close it closes the window, as the GNOME HIG asks of Ctrl+W.
         let close_tab_action = gio::SimpleAction::new("close-tab", None);
         let notebook_clone = terminal_notebook.clone();
         let split_view_clone = self.split_view.clone();
         let sidebar_clone = self.sidebar.clone();
         let session_bridges_close_tab = self.session_split_bridges.clone();
+        let window_close_tab = window.downgrade();
         close_tab_action.connect_activate(move |_, _| {
+            if let Some(win) = window_close_tab.upgrade()
+                && close_visible_dialog(&win)
+            {
+                return;
+            }
             if let Some(session_id) = notebook_clone.get_active_session_id() {
                 // Get connection ID before closing
                 let connection_id = notebook_clone
@@ -192,6 +215,13 @@ impl MainWindow {
                     // Trigger redraw for RDP widget
                     notebook_clone.queue_rdp_redraw(new_session_id);
                 }
+            } else if !notebook_clone.close_selected_sessionless_page()
+                && let Some(win) = window_close_tab.upgrade()
+            {
+                // Only the Welcome page, or no page at all: close the window
+                // through `close_request`, which asks before ending detached or
+                // external sessions and hides to the tray when that is enabled.
+                win.close();
             }
         });
         window.add_action(&close_tab_action);

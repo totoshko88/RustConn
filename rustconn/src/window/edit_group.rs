@@ -846,6 +846,9 @@ pub fn show_edit_group_dialog(
     crate::dialogs::widgets::enable_string_search(&ssh_jump_host_dropdown);
     ssh_jump_host_dropdown.set_size_request(200, -1);
     ssh_jump_host_dropdown.set_hexpand(false);
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    ssh_jump_host_dropdown
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
     // Pre-select the current jump host
     let mut preselected_jump_idx = 0u32;
@@ -871,6 +874,30 @@ pub fn show_edit_group_dialog(
     }
     ssh_jump_host_row.add_suffix(&ssh_jump_host_dropdown);
     ssh_expander.add_row(&ssh_jump_host_row);
+
+    let ssh_fallback_jump_hosts = crate::dialogs::widgets::FallbackJumpHostsEditor::new();
+    ssh_fallback_jump_hosts.set_options(
+        jump_host_data
+            .iter()
+            .filter_map(|(id, label)| id.map(|id| (id, label.clone())))
+            .collect(),
+    );
+    ssh_fallback_jump_hosts.set_value(None, &group.ssh_fallback_jump_host_ids);
+    ssh_expander.add_row(ssh_fallback_jump_hosts.widget());
+    // Fallbacks apply only behind this group's own Jump Host, which is also
+    // all that saving keeps.
+    let names_jump_host = crate::dialogs::widgets::names_jump_host;
+    ssh_fallback_jump_hosts
+        .widget()
+        .set_visible(names_jump_host(ssh_jump_host_dropdown.selected()));
+    ssh_jump_host_dropdown.connect_selected_notify({
+        let editor = ssh_fallback_jump_hosts.clone();
+        move |dropdown| {
+            editor
+                .widget()
+                .set_visible(names_jump_host(dropdown.selected()));
+        }
+    });
 
     // SSH Proxy Jump text field (manual entry, fallback when no saved connection)
     let ssh_proxy_jump_row = adw::EntryRow::builder()
@@ -1804,6 +1831,12 @@ pub fn show_edit_group_dialog(
                     } else {
                         None
                     };
+                    // Fallbacks only apply behind a primary of the same tier.
+                    updated.ssh_fallback_jump_host_ids = if updated.ssh_jump_host_id.is_some() {
+                        ssh_fallback_jump_hosts.value()
+                    } else {
+                        Vec::new()
+                    };
 
                     let agent_socket_text = ssh_agent_socket_row_clone.text().trim().to_string();
                     updated.ssh_agent_socket = if agent_socket_text.is_empty() {
@@ -1816,6 +1849,7 @@ pub fn show_edit_group_dialog(
                     updated.ssh_key_path = None;
                     updated.ssh_proxy_jump = None;
                     updated.ssh_jump_host_id = None;
+                    updated.ssh_fallback_jump_host_ids = Vec::new();
                     updated.ssh_agent_socket = None;
                 }
 

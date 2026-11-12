@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.totoshko88.RustConn</id>
   <name>RustConn</name>
-  <summary>Manage SSH, RDP, and VNC connections</summary>
+  <summary>Manage remote connections</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <developer id="io.github.totoshko88">
@@ -13,8 +13,10 @@
     <p>
       RustConn is a modern connection manager for Linux. Manage SSH, RDP, VNC,
       SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust connections from a
-      single application with embedded protocol support and no external
-      dependencies required.
+      single application. Terminals and RDP and VNC sessions open inside the
+      window; SPICE sessions open in an external viewer (remote-viewer). Some
+      features use other command-line tools, such as a cloud provider's CLI for
+      Zero Trust connections or a password manager's client.
     </p>
     <p>
       Organize connections into groups and tags, split terminals side by side, automate
@@ -24,7 +26,7 @@
     </p>
     <ul>
       <li>SSH, MOSH, Telnet, Serial, and Kubernetes terminals with scrollbar and font zoom</li>
-      <li>Embedded RDP, VNC, and SPICE sessions with external client fallback</li>
+      <li>Embedded RDP and VNC sessions with external client fallback, and SPICE through remote-viewer</li>
       <li>Zero Trust tunnels: AWS SSM, GCP IAP, Azure Bastion, Cloudflare, Teleport, Tailscale, and more</li>
       <li>Cloud Sync via shared directories (Google Drive, Syncthing, Nextcloud, Dropbox)</li>
       <li>Tab Overview, Tab Pinning, Split View, and cluster commands for managing many sessions</li>
@@ -140,6 +142,28 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.24.11" date="2026-11-12">
+      <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.11</url>
+      <description>
+        <p>Version 0.24.11 - WinRM, SOCKS5 proxies, scripts on many hosts and fallback jump hosts, contributed by Konstantinos Patronas (#420):</p>
+        <ul>
+          <li>A connection or group can list fallback jump hosts, tried in order when its Jump Host is unreachable.</li>
+          <li>Duplicate as Range turns one connection into numbered copies such as host02 to host10.</li>
+          <li>Run Local Script runs a local bash script on many SSH hosts, or a PowerShell script on WinRM hosts, with live output per host.</li>
+          <li>WinRM connections open a PowerShell session on a Windows machine through the evil-winrm client.</li>
+          <li>Web connections can browse through an existing SOCKS5 proxy, including one that needs a login.</li>
+          <li>Update every device that shares or syncs a configuration before using WinRM or a SOCKS5 proxy: 0.24.10 and older cannot read it.</li>
+          <li>A split tab is named after the pane you work in (#421).</li>
+          <li>SFTP through Midnight Commander signs in with the saved password, and on macOS finds a Homebrew mc when started from the Dock (#422).</li>
+          <li>A tunnel no longer sends its jump host's password to farther jump hosts or to a proxy from the ssh configuration.</li>
+          <li>Ctrl+W closes an open dialog or the empty window, and Ctrl+, and F10 work in a detached session window.</li>
+          <li>F1 opens the user guide; the Keyboard Shortcuts window keeps Ctrl+?.</li>
+          <li>Screen readers name each session view, the context menu shows a focus ring, and split-pane colours are visible in light and dark themes.</li>
+          <li>Additional license terms for the author's code are set out in the NOTICE file.</li>
+          <li>Updated dependencies, and FreeRDP 3.33.1 in the Flatpak.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.24.10" date="2026-11-09">
       <url>https://github.com/totoshko88/RustConn/releases/tag/v0.24.10</url>
       <description>

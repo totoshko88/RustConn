@@ -51,7 +51,6 @@ fn arb_config() -> impl Strategy<Value = ActivityMonitorConfig> {
 // ---------------------------------------------------------------------------
 // Property 5: Mode cycling visits every mode exactly once
 // Feature: terminal-activity-monitor, Property 5
-// **Validates: Requirements 1.10**
 //
 // Was "cycling is a 3-cycle", asserting `next()` three times is the identity. That
 // hard-coded the number of variants into the property, so adding `Command` failed
@@ -107,7 +106,6 @@ fn cycling_reaches_every_mode() {
 // ---------------------------------------------------------------------------
 // Property 6: Serialization round-trip for ActivityMonitorConfig
 // Feature: terminal-activity-monitor, Property 6: Serialization round-trip
-// **Validates: Requirements 1.11**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -123,7 +121,6 @@ proptest! {
 // ---------------------------------------------------------------------------
 // Property 7: Config resolution prefers per-connection overrides
 // Feature: terminal-activity-monitor, Property 7: Config resolution prefers per-connection overrides
-// **Validates: Requirements 1.8, 1.9, 1.18**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -161,7 +158,6 @@ proptest! {
 // ---------------------------------------------------------------------------
 // Property 8: Timeout clamping for quiet_period and silence_timeout
 // Feature: terminal-activity-monitor, Property 8: Timeout clamping
-// **Validates: Requirements 1.15, 1.16**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -221,7 +217,6 @@ proptest! {
 // ---------------------------------------------------------------------------
 // Property 3: Off mode suppresses all notifications
 // Feature: terminal-activity-monitor, Property 3: Off mode suppresses all notifications
-// **Validates: Requirements 1.3**
 // ---------------------------------------------------------------------------
 
 proptest! {

@@ -164,7 +164,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 21: RDP Config Round-Trip Serialization**
-    /// **Validates: Requirements 10.4**
     ///
     /// For any valid RdpClientConfig, serializing to JSON and deserializing back
     /// should produce an equivalent configuration with all fields preserved
@@ -199,7 +198,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 21: RDP Config Round-Trip Serialization**
-    /// **Validates: Requirements 10.4**
     ///
     /// For any valid RdpClientConfig, serializing to TOML and deserializing back
     /// should produce an equivalent configuration.
@@ -322,7 +320,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// For any valid framebuffer data in any supported pixel format,
     /// converting to BGRA should produce valid output with correct size.
@@ -355,7 +352,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// BGRA to BGRA conversion should be identity (passthrough).
     #[test]
@@ -377,7 +373,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// RGBA to BGRA conversion should swap R and B channels.
     #[test]
@@ -400,7 +395,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// RGB to BGRA conversion should swap R and B and add full alpha.
     #[test]
@@ -422,7 +416,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// create_frame_update should produce valid FrameUpdate events for valid input.
     #[test]
@@ -449,7 +442,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// create_frame_update_with_conversion should handle all pixel formats.
     #[test]
@@ -477,7 +469,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// Conversion should fail gracefully for insufficient data.
     #[test]
@@ -498,7 +489,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 1: RDP Framebuffer Event Conversion**
-    /// **Validates: Requirements 1.1, 10.3**
     ///
     /// RdpRect validation should correctly identify valid and invalid rectangles.
     #[test]
@@ -530,7 +520,7 @@ proptest! {
 }
 
 // ============================================================================
-// Resource Cleanup Tests (Requirement 1.6)
+// Resource Cleanup Tests
 // ============================================================================
 
 // These tests require the rdp-embedded feature to access RdpClient
@@ -563,7 +553,6 @@ mod resource_cleanup_tests {
         #![proptest_config(ProptestConfig::with_cases(100))]
 
         /// **Feature: native-protocol-embedding, Property 4: Resource Cleanup on Disconnect**
-        /// **Validates: Requirements 1.6**
         ///
         /// For any RDP client configuration, after creating a client and calling disconnect,
         /// all resources (channels, thread handle) should be properly released.
@@ -598,7 +587,6 @@ mod resource_cleanup_tests {
         }
 
         /// **Feature: native-protocol-embedding, Property 4: Resource Cleanup on Disconnect**
-        /// **Validates: Requirements 1.6**
         ///
         /// For any RDP client, calling disconnect multiple times should be safe
         /// and should not cause panics or resource leaks.
@@ -619,7 +607,6 @@ mod resource_cleanup_tests {
         }
 
         /// **Feature: native-protocol-embedding, Property 4: Resource Cleanup on Disconnect**
-        /// **Validates: Requirements 1.6**
         ///
         /// For any RDP client, dropping the client should automatically clean up resources.
         /// This tests the Drop implementation.
@@ -637,7 +624,7 @@ mod resource_cleanup_tests {
 }
 
 // ============================================================================
-// Coordinate Transformation Tests (Requirement 1.2)
+// Coordinate Transformation Tests
 // ============================================================================
 
 use rustconn_core::{
@@ -659,7 +646,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any widget coordinates within the embedded RDP widget bounds,
     /// the transformation to RDP server coordinates should produce valid
@@ -692,7 +678,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any widget coordinates, transform_clamped should always produce
     /// valid RDP coordinates within bounds.
@@ -724,7 +709,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// For any coordinate transform, the center of the widget should map
     /// to approximately the center of the RDP framebuffer.
@@ -763,7 +747,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// When widget and RDP have the same dimensions, transform should be identity.
     #[test]
@@ -815,7 +798,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// transform_to_u16 should produce valid u16 coordinates.
     #[test]
@@ -834,7 +816,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 2: Mouse Coordinate Transformation**
-    /// **Validates: Requirements 1.2**
     ///
     /// Aspect ratio should be preserved (scale is uniform).
     #[test]
@@ -861,14 +842,13 @@ proptest! {
 }
 
 // ============================================================================
-// Resize Request Tests (Requirement 1.7)
+// Resize Request Tests
 // ============================================================================
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 5: Resize Request Generation**
-    /// **Validates: Requirements 1.7**
     ///
     /// For any resize event on the embedded RDP widget, the system should
     /// generate a resolution change request with dimensions that fit within
@@ -909,7 +889,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 5: Resize Request Generation**
-    /// **Validates: Requirements 1.7**
     ///
     /// When using standard resolutions, the result should be a known standard resolution.
     #[test]
@@ -933,7 +912,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 5: Resize Request Generation**
-    /// **Validates: Requirements 1.7**
     ///
     /// Standard resolution should fit within the widget dimensions when widget
     /// is large enough to contain at least the smallest standard resolution.
@@ -960,7 +938,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 5: Resize Request Generation**
-    /// **Validates: Requirements 1.7**
     ///
     /// should_resize correctly detects when resize is needed.
     #[test]
@@ -997,7 +974,7 @@ proptest! {
 }
 
 // ============================================================================
-// Keyboard Event Forwarding Tests (Requirement 1.3)
+// Keyboard Event Forwarding Tests
 // ============================================================================
 
 use rustconn_core::{
@@ -1068,7 +1045,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// For any GTK key event with a valid keyval, the system should produce
     /// a corresponding RDP scancode that can be sent to the server.
@@ -1094,7 +1070,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// Lowercase and uppercase letters should produce the same scancode.
     #[test]
@@ -1116,7 +1091,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// Navigation keys should produce extended scancodes.
     #[test]
@@ -1143,7 +1117,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// All scancodes should be unique for different key groups.
     #[test]
@@ -1170,7 +1143,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// Number key scancodes should be sequential.
     #[test]
@@ -1202,7 +1174,6 @@ proptest! {
     }
 
     /// **Feature: native-protocol-embedding, Property 3: Key Event Forwarding**
-    /// **Validates: Requirements 1.3**
     ///
     /// Function key scancodes should be sequential.
     #[test]

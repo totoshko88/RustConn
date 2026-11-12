@@ -1,7 +1,7 @@
 //! Property-based tests for the Variables system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Variables system (Requirements 6.x).
+//! for the Variables system.
 
 use proptest::prelude::*;
 use rustconn_core::{Variable, VariableManager, VariableScope};
@@ -29,7 +29,6 @@ proptest! {
 
     // ========== Property 1: Variable Substitution Consistency ==========
     // **Feature: rustconn-enhancements, Property 1: Variable Substitution Consistency**
-    // **Validates: Requirements 6.3, 6.6**
     //
     // For any string containing variable references and any variable scope,
     // substituting variables and then checking for remaining unresolved references
@@ -122,7 +121,6 @@ proptest! {
 
     // ========== Property 2: Variable Resolution with Override ==========
     // **Feature: rustconn-enhancements, Property 2: Variable Resolution with Override**
-    // **Validates: Requirements 6.2**
     //
     // For any variable name that exists in both global and local scope,
     // resolution should return the local value when using connection scope.
@@ -208,7 +206,6 @@ proptest! {
 
     // ========== Property 3: Nested Variable Resolution Depth ==========
     // **Feature: rustconn-enhancements, Property 3: Nested Variable Resolution Depth**
-    // **Validates: Requirements 6.4, 6.7**
     //
     // For any chain of variable references, resolution should terminate within
     // the configured maximum depth and detect cycles.
@@ -332,7 +329,6 @@ proptest! {
 
     // ========== Property 4: Variable Serialization Round-Trip ==========
     // **Feature: rustconn-enhancements, Property 4: Variable Serialization Round-Trip**
-    // **Validates: Requirements 6.8**
     //
     // For any valid variable definition, serializing to JSON and deserializing
     // should produce an equivalent variable.
@@ -420,7 +416,6 @@ proptest! {
 }
 
 // ========== Unit Tests for Edge Cases ==========
-// **Validates: Requirements 6.6**
 
 #[cfg(test)]
 mod edge_case_tests {

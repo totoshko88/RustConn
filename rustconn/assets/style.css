@@ -5,11 +5,10 @@
 
 /* ============================================================
  * Split View Redesign Styles
- * Requirements: 6.2, 6.3, 6.4, 12.4
  * ============================================================ */
 
 /* Base panel styling - applied to all panels in split containers */
-/* Requirement 6.3: Panel borders within Split_Container */
+/* Panel borders within Split_Container */
 .split-panel {
     border-radius: 6px;
     margin: 3px;
@@ -17,49 +16,52 @@
 }
 
 /* Focused panel styling - highlights the currently focused panel */
-/* Requirement 12.3: Keyboard accessible interactive elements */
+/* Keyboard accessible interactive elements */
 .focused-panel {
     border: 2px solid @accent_color;
     box-shadow: 0 0 0 1px alpha(@accent_color, 0.3);
 }
 
 /* Panel border colors by ColorId index (0-5) */
-/* Requirement 6.3: Panel borders painted using assigned Color_ID */
-/* Requirement 6.4: Colors visually distinct in light and dark themes */
+/* Panel borders painted using assigned Color_ID */
+/* Colors visually distinct in light and dark themes */
 /* Intentionally a fixed GNOME palette (not @accent_color-derived):
  * the six panel colors must stay distinct from each other and stable
  * across light/dark themes and user accent-color changes, because they
  * identify panels — deriving them from the theme would let two panels
- * collapse into similar hues. */
+ * collapse into similar hues. Each shade has at least 3:1 contrast
+ * against both white and #222226 (non-text contrast, WCAG 1.4.11).
+ * Same values, same order as SPLIT_COLOR_VALUES in split_view/bridge.rs
+ * and the sidebar markers in sidebar_types.rs. */
 
-/* Color 0: Blue (#3584e4) - GNOME Blue */
+/* Color 0: Blue (#3584e4) - GNOME Blue 3 */
 .split-panel-color-0 {
     border-left: 4px solid #3584e4;
 }
 
-/* Color 1: Green (#33d17a) — matches SPLIT_COLOR_VALUES[1] in split_view/bridge.rs */
+/* Color 1: Green (#26a269) - GNOME Green 5 */
 .split-panel-color-1 {
-    border-left: 4px solid #33d17a;
+    border-left: 4px solid #26a269;
 }
 
-/* Color 2: Orange (#ff7800) - Vibrant Orange */
+/* Color 2: Orange (#e66100) - GNOME Orange 4 */
 .split-panel-color-2 {
-    border-left: 4px solid #ff7800;
+    border-left: 4px solid #e66100;
 }
 
-/* Color 3: Purple (#9141ac) - GNOME Purple */
+/* Color 3: Purple (#c061cb) - GNOME Purple 2 */
 .split-panel-color-3 {
-    border-left: 4px solid #9141ac;
+    border-left: 4px solid #c061cb;
 }
 
-/* Color 4: Cyan (#00b4d8) - Bright Cyan */
+/* Color 4: Teal (#2190a4) - GNOME Teal */
 .split-panel-color-4 {
-    border-left: 4px solid #00b4d8;
+    border-left: 4px solid #2190a4;
 }
 
-/* Color 5: Pink (#f66151) — matches SPLIT_COLOR_VALUES[5] in split_view/bridge.rs */
+/* Color 5: Red (#ed333b) - GNOME Red 2 */
 .split-panel-color-5 {
-    border-left: 4px solid #f66151;
+    border-left: 4px solid #ed333b;
 }
 
 /* ============================================================
@@ -77,14 +79,14 @@
 }
 
 .split-panel-color-0 > .split-pane-header { background-color: alpha(#3584e4, 0.15); }
-.split-panel-color-1 > .split-pane-header { background-color: alpha(#33d17a, 0.15); }
-.split-panel-color-2 > .split-pane-header { background-color: alpha(#ff7800, 0.15); }
-.split-panel-color-3 > .split-pane-header { background-color: alpha(#9141ac, 0.15); }
-.split-panel-color-4 > .split-pane-header { background-color: alpha(#00b4d8, 0.15); }
-.split-panel-color-5 > .split-pane-header { background-color: alpha(#f66151, 0.15); }
+.split-panel-color-1 > .split-pane-header { background-color: alpha(#26a269, 0.15); }
+.split-panel-color-2 > .split-pane-header { background-color: alpha(#e66100, 0.15); }
+.split-panel-color-3 > .split-pane-header { background-color: alpha(#c061cb, 0.15); }
+.split-panel-color-4 > .split-pane-header { background-color: alpha(#2190a4, 0.15); }
+.split-panel-color-5 > .split-pane-header { background-color: alpha(#ed333b, 0.15); }
 
 /* Empty panel placeholder styling */
-/* Requirement 4.1: Empty panel displays placeholder with Select Tab button */
+/* Empty panel displays placeholder with Select Tab button */
 .empty-panel-placeholder {
     background-color: alpha(@view_bg_color, 0.5);
     border: 2px dashed alpha(@borders, 0.5);
@@ -92,7 +94,7 @@
 }
 
 /* Panel close button styling */
-/* Requirement 4.5: Close button (X icon) in top-right corner */
+/* Close button (X icon) in top-right corner */
 .panel-close-button {
     min-width: 24px;
     min-height: 24px;
@@ -145,19 +147,19 @@
     border-left: 4px solid #3584e4;
 }
 .split-color-green {
-    border-left: 4px solid #33d17a;
+    border-left: 4px solid #26a269;
 }
 .split-color-orange {
-    border-left: 4px solid #ff7800;
+    border-left: 4px solid #e66100;
 }
 .split-color-purple {
-    border-left: 4px solid #9141ac;
+    border-left: 4px solid #c061cb;
 }
-.split-color-cyan {
-    border-left: 4px solid #00b4d8;
+.split-color-teal {
+    border-left: 4px solid #2190a4;
 }
-.split-color-pink {
-    border-left: 4px solid #f66151;
+.split-color-red {
+    border-left: 4px solid #ed333b;
 }
 
 /* Tab color indicators - applied to tab content containers */
@@ -166,23 +168,23 @@
     padding-left: 6px;
 }
 .tab-split-green {
-    border-left: 3px solid #33d17a;
+    border-left: 3px solid #26a269;
     padding-left: 6px;
 }
 .tab-split-orange {
-    border-left: 3px solid #ff7800;
+    border-left: 3px solid #e66100;
     padding-left: 6px;
 }
 .tab-split-purple {
-    border-left: 3px solid #9141ac;
+    border-left: 3px solid #c061cb;
     padding-left: 6px;
 }
-.tab-split-cyan {
-    border-left: 3px solid #00b4d8;
+.tab-split-teal {
+    border-left: 3px solid #2190a4;
     padding-left: 6px;
 }
-.tab-split-pink {
-    border-left: 3px solid #f66151;
+.tab-split-red {
+    border-left: 3px solid #ed333b;
     padding-left: 6px;
 }
 
@@ -435,10 +437,17 @@ button.context-menu-item label {
 
 /* Context menu item — visible keyboard-focus indication (the menu is a
  * custom Box of flat buttons, so the focused item must be highlighted
- * like a regular menu row for keyboard navigation to be usable) */
-.context-menu-item:focus {
+ * like a regular menu row for keyboard navigation to be usable).
+ * `:focus-visible`, so a mouse click does not leave the highlight behind.
+ * A focus ring is drawn on top of the tint, because a 15% tint alone is close
+ * to invisible in high contrast. Its geometry is libadwaita's (2px, inset
+ * 2px); the colour is left to the theme, which sets a stronger one in high
+ * contrast, and falls back to the text colour on a theme that sets none. */
+.context-menu-item:focus-visible {
     background-color: alpha(@accent_color, 0.15);
-    outline: none;
+    outline-style: solid;
+    outline-width: 2px;
+    outline-offset: -2px;
 }
 
 /* Context menu destructive button - ensure text is visible. Uses a
@@ -454,8 +463,8 @@ button.context-menu-destructive:hover {
 }
 
 /* Drop target highlight for drag-and-drop to split panes */
-/* Requirement 8.1: Highlight target zone with focus border when drag enters */
-/* Requirement 8.2: Remove highlight when drag leaves */
+/* Highlight target zone with focus border when drag enters */
+/* Remove highlight when drag leaves */
 .drop-target-highlight {
     background-color: alpha(@accent_color, 0.15);
     border: 2px dashed @accent_color;
@@ -472,7 +481,7 @@ button.context-menu-destructive:hover {
                 box-shadow 150ms ease-in-out;
 }
 
-/* Requirement 8.3: Distinguish between Empty_Panel and Occupied_Panel drop targets */
+/* Distinguish between Empty_Panel and Occupied_Panel drop targets */
 /* Empty panel drop target - uses accent color (inviting) */
 .drop-target-empty {
     background-color: alpha(@accent_color, 0.2);
@@ -490,7 +499,7 @@ button.context-menu-destructive:hover {
 }
 
 /* Drag source visual feedback */
-/* Requirement 7.4: Visual feedback during drag */
+/* Visual feedback during drag */
 .dragging {
     opacity: 0.5;
     background-color: alpha(@accent_color, 0.1);
@@ -625,7 +634,7 @@ window:not(.compact):not(.macos) .sidebar-search-row {
 
 /* ============================================================
  * Playback Tab Styles
- * Requirement 6.2: Distinct visual overlay for playback tabs
+ * Distinct visual overlay for playback tabs
  * ============================================================ */
 
 .playback-tab {

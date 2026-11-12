@@ -27,7 +27,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 1: Priority chain ordering**
-    /// **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6**
     ///
     /// For any combination of per-connection and global values,
     /// `resolve_ssh_agent_socket` returns the first non-empty value
@@ -85,7 +84,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 2: Empty strings are treated as absent**
-    /// **Validates: Requirements 1.3, 2.2, 3.1, 3.2**
     ///
     /// `Some("")` produces the same result as `None` for both
     /// per-connection and global parameters.
@@ -103,7 +101,6 @@ proptest! {
     }
 
     /// **Feature: custom-ssh-agent-socket, Property 2: Empty strings are treated as absent**
-    /// **Validates: Requirements 1.3, 2.2, 3.1, 3.2**
     ///
     /// Same property for the global parameter.
     #[test]
@@ -129,7 +126,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 3: Serialization round-trip for SshConfig**
-    /// **Validates: Requirements 2.1, 2.2**
     ///
     /// Serialize SshConfig with arbitrary ssh_agent_socket to TOML,
     /// deserialize back, assert equality.
@@ -161,7 +157,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 4: Serialization round-trip for AppSettings**
-    /// **Validates: Requirements 1.2, 1.3**
     ///
     /// Serialize AppSettings with arbitrary ssh_agent_socket to TOML,
     /// deserialize back, assert equality.
@@ -191,7 +186,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 5: Socket path validation correctness**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// For any string, `validate_socket_path` returns `NotAbsolute`
     /// if and only if the string is non-empty and does not start with `/`.
@@ -233,7 +227,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: custom-ssh-agent-socket, Property 6: Per-connection override isolation**
-    /// **Validates: Requirements 3.1, 3.2, 3.5, 3.6**
     ///
     /// Two connections with different per-connection values resolve
     /// independently. Connection A's override does not affect connection B.

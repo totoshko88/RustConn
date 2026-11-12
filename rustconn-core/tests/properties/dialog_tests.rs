@@ -1,10 +1,8 @@
 //! Property-based tests for dialog validation and round-trip
 //!
 //! **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-//! **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5**
 //!
 //! **Feature: rustconn-bugfixes, Property 1: Connection Validation**
-//! **Validates: Requirements 1.1, 1.2**
 
 use std::collections::HashMap;
 
@@ -65,7 +63,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.4, 4.5**
     ///
     /// For any valid custom options HashMap, formatting to string and parsing back
     /// should produce an equivalent HashMap.
@@ -96,7 +93,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.4, 4.5**
     ///
     /// For any valid argument vector, formatting to string and parsing back
     /// should produce an equivalent vector.
@@ -126,7 +122,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// For any valid connection name, validation should succeed.
     #[test]
@@ -141,7 +136,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// For any valid hostname, validation should succeed.
     #[test]
@@ -156,7 +150,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// For any valid port, validation should succeed.
     #[test]
@@ -171,7 +164,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// Empty or whitespace-only names should fail validation.
     #[test]
@@ -184,7 +176,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// Empty or whitespace-only hosts should fail validation.
     #[test]
@@ -197,7 +188,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// Hosts containing spaces should fail validation.
     #[test]
@@ -215,7 +205,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.1, 4.2**
     ///
     /// Port 0 should fail validation.
     #[test]
@@ -228,7 +217,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.4**
     ///
     /// Parsing custom options should handle malformed input gracefully.
     #[test]
@@ -279,7 +267,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 3: Dialog Validation Round-Trip**
-    /// **Validates: Requirements 4.5**
     ///
     /// Parsing args should handle any whitespace-separated input.
     #[test]
@@ -347,7 +334,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-bugfixes, Property 1: Connection Validation**
-    /// **Validates: Requirements 1.1, 1.2**
     ///
     /// For any connection data with empty name, validation SHALL return an error.
     #[test]
@@ -368,7 +354,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 1: Connection Validation**
-    /// **Validates: Requirements 1.1, 1.2**
     ///
     /// For any connection data with empty host, validation SHALL return an error.
     #[test]
@@ -389,7 +374,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 1: Connection Validation**
-    /// **Validates: Requirements 1.1, 1.2**
     ///
     /// For any connection data with valid name, host, and port, validation SHALL succeed.
     #[test]
@@ -413,7 +397,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-bugfixes, Property 1: Connection Validation**
-    /// **Validates: Requirements 1.1, 1.2**
     ///
     /// For any connection data with port 0, validation SHALL return an error.
     #[test]

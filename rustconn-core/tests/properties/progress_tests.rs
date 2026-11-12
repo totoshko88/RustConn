@@ -24,7 +24,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.1, 3.3**
     ///
     /// For any import operation with N items, the progress reporter should be called
     /// at least N times with monotonically increasing current values from 0 to N.
@@ -75,7 +74,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.1, 3.3**
     ///
     /// For any progress reporter, the total value passed should remain consistent
     /// throughout the operation.
@@ -107,7 +105,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.1, 3.3**
     ///
     /// For any progress reporter, current should always be less than or equal to total.
     #[test]
@@ -138,7 +135,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.5**
     ///
     /// For any progress reporter, cancellation should be respected and is_cancelled
     /// should return true after cancel is called.
@@ -183,7 +179,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.5**
     ///
     /// For any progress reporter, the cancel handle should work from a separate context.
     #[test]
@@ -206,7 +201,6 @@ proptest! {
     }
 
     /// **Feature: rustconn-enhancements, Property 5: Progress Reporter Invocation**
-    /// **Validates: Requirements 3.1**
     ///
     /// NoOpProgressReporter should never report cancelled and should accept any input.
     #[test]

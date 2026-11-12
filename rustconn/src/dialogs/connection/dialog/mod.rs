@@ -151,6 +151,7 @@ pub struct ConnectionDialog {
     /// connection-level and applies to RDP, VNC and SPICE as well, and the
     /// protocol stack only ever shows one page.
     network_mode_row: adw::ComboRow,
+    fallback_jump_hosts: crate::dialogs::widgets::FallbackJumpHostsEditor,
     ssh_jump_host_dropdown: DropDown,
     /// Row around `ssh_jump_host_dropdown`, so its subtitle can warn when the
     /// stored `jump_host_id` points at a deleted connection (issue #345).
@@ -321,6 +322,10 @@ pub struct ConnectionDialog {
     telnet_custom_args_entry: Entry,
     telnet_backspace_dropdown: DropDown,
     telnet_delete_dropdown: DropDown,
+    winrm_ssl_switch: adw::SwitchRow,
+    winrm_accept_certs_switch: adw::SwitchRow,
+    winrm_jump_host_dropdown: DropDown,
+    winrm_custom_args_entry: Entry,
     // MOSH fields (embedded in SSH tab, visible only when MOSH protocol selected)
     mosh_port_range_entry: Entry,
     mosh_predict_dropdown: DropDown,
@@ -350,6 +355,9 @@ pub struct ConnectionDialog {
     web_javascript_switch: adw::SwitchRow,
     web_user_agent_row: adw::EntryRow,
     web_tunnel_dropdown: DropDown,
+    web_socks_proxy_row: adw::EntryRow,
+    web_socks_user_row: adw::EntryRow,
+    web_socks_password_var_row: adw::EntryRow,
     web_connections_data: Rc<RefCell<Vec<(Option<Uuid>, String)>>>,
     web_floating_toolbar_switch: adw::SwitchRow,
     // Variables fields

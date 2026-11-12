@@ -6,8 +6,9 @@ use rustconn_core::config::ConfigManager;
 use rustconn_core::models::RdpGateway;
 
 use crate::commands::add::{
-    apply_jump_host_id, apply_ssh_wave2_fields, parse_auth_method, parse_resolution,
-    parse_shared_folder, parse_spice_image_compression,
+    apply_jump_host_id, apply_ssh_wave2_fields, check_socks_password_variable,
+    check_web_socks_settings, parse_auth_method, parse_resolution, parse_shared_folder,
+    parse_spice_image_compression, resolve_fallback_jump_hosts,
 };
 use crate::error::CliError;
 use crate::util::{create_config_manager, find_connection};
@@ -159,6 +160,8 @@ pub(super) struct UpdateParams<'a> {
     pub boundary_addr: Option<&'a str>,
     pub custom_command: Option<&'a str>,
     pub jump_host: Option<&'a str>,
+    pub fallback_jump_hosts: &'a [String],
+    pub clear_fallback_jump_hosts: bool,
     pub keep_alive_interval: Option<u32>,
     pub keep_alive_count: Option<u32>,
     pub ssh_verbose: bool,
@@ -245,6 +248,13 @@ pub(super) struct UpdateParams<'a> {
     pub web_toolbar: Option<bool>,
     pub private_mode: bool,
     pub zoom_level: Option<f64>,
+    pub socks_proxy: Option<&'a str>,
+    pub socks_proxy_user: Option<&'a str>,
+    pub socks_proxy_password_var: Option<&'a str>,
+    pub browser: Option<&'a str>,
+    // WinRM
+    pub winrm_ssl: Option<bool>,
+    pub winrm_accept_invalid_certs: Option<bool>,
     // Output filter (postpend command) — terminal protocols
     pub postpend_command: Option<&'a str>,
     pub postpend_arg: &'a [String],
@@ -289,6 +299,13 @@ pub(super) fn cmd_update(
             .position(|c| c.id == conn_id)
             .ok_or_else(|| CliError::Config("Connection disappeared during lookup".to_string()))?
     };
+
+    // Resolve fallback jump hosts for the same reason as --jump-host below.
+    let resolved_fallbacks = resolve_fallback_jump_hosts(
+        &connections,
+        params.fallback_jump_hosts,
+        connections[index].id,
+    )?;
 
     // Resolve --jump-host early (before mutable borrow of connection)
     let resolved_jump_id = if let Some(jump_host_ref) = params.jump_host {
@@ -642,6 +659,11 @@ pub(super) fn cmd_update(
         }
         apply_jump_host_id(connection, jump_id)?;
     }
+    apply_fallback_jump_hosts(
+        connection,
+        params.clear_fallback_jump_hosts,
+        resolved_fallbacks,
+    )?;
 
     // Apply RDP-specific fields (gateway, RemoteApp, resolution, etc.)
     if params.gateway.is_some()
@@ -824,6 +846,60 @@ pub(super) fn cmd_update(
         }
     }
 
+    if let Some(proxy) = params.socks_proxy {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy is only valid for Web connections".into(),
+            ));
+        };
+        apply_socks_proxy_update(cfg, proxy)?;
+    }
+
+    if params.socks_proxy_user.is_some()
+        || params.socks_proxy_password_var.is_some()
+        || params.browser.is_some()
+    {
+        let rustconn_core::models::ProtocolConfig::Web(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--socks-proxy-user, --socks-proxy-password-var and --browser are only valid \
+                 for Web connections"
+                    .into(),
+            ));
+        };
+        let value = |text: &str| (!text.trim().is_empty()).then(|| text.trim().to_string());
+        if let Some(user) = params.socks_proxy_user {
+            cfg.socks_proxy_username = value(user);
+        }
+        if let Some(variable) = params.socks_proxy_password_var {
+            cfg.socks_proxy_password_variable = value(variable);
+        }
+        if let Some(browser) = params.browser {
+            cfg.browser = value(browser);
+        }
+    }
+    if params.socks_proxy_password_var.is_some() {
+        check_socks_password_variable(&config_manager, connection)?;
+    }
+
+    if params.winrm_ssl.is_some() || params.winrm_accept_invalid_certs.is_some() {
+        let rustconn_core::models::ProtocolConfig::WinRm(ref mut cfg) = connection.protocol_config
+        else {
+            return Err(CliError::Config(
+                "--winrm-ssl and --winrm-accept-invalid-certs are only valid for WinRM \
+                 connections"
+                    .into(),
+            ));
+        };
+        if let Some(use_ssl) = params.winrm_ssl {
+            cfg.use_ssl = use_ssl;
+        }
+        if let Some(accept) = params.winrm_accept_invalid_certs {
+            cfg.accept_invalid_certs = accept;
+        }
+    }
+
     if let Some(icon) = params.icon {
         connection.icon = Some(icon.to_string());
     }
@@ -920,6 +996,7 @@ pub(super) fn cmd_update(
         None
     };
 
+    check_web_socks_settings(connection)?;
     ConfigManager::validate_connection(connection)
         .map_err(|e| CliError::Config(format!("Invalid connection: {e}")))?;
 
@@ -959,6 +1036,25 @@ pub(super) fn cmd_update(
         group_feedback.as_deref().unwrap_or("")
     );
 
+    Ok(())
+}
+
+/// Applies `--socks-proxy`: a new address, or an empty value that removes the
+/// proxy together with its login, which means nothing without it.
+fn apply_socks_proxy_update(
+    cfg: &mut rustconn_core::models::WebConfig,
+    proxy: &str,
+) -> Result<(), CliError> {
+    if proxy.trim().is_empty() {
+        cfg.socks_proxy = None;
+        cfg.socks_proxy_username = None;
+        cfg.socks_proxy_password_variable = None;
+    } else {
+        cfg.socks_proxy = Some(
+            rustconn_core::protocol::normalize_socks_proxy(proxy)
+                .map_err(|e| CliError::Config(format!("--socks-proxy: {e}")))?,
+        );
+    }
     Ok(())
 }
 
@@ -1256,4 +1352,106 @@ fn apply_serial_wave2_fields_update(
         cfg.custom_args.push(arg.clone());
     }
     Ok(())
+}
+
+/// Applies `--fallback-jump-host` or `--clear-fallback-jump-hosts`, after any
+/// `--jump-host`.
+///
+/// As in `add`, a new list needs a Jump Host of the connection's own: fallbacks
+/// only stand in for it, and without one the jump host and its fallbacks come
+/// from the group, so a list saved here would never be used.
+fn apply_fallback_jump_hosts(
+    connection: &mut rustconn_core::models::Connection,
+    clear: bool,
+    resolved: Vec<uuid::Uuid>,
+) -> Result<(), CliError> {
+    if clear {
+        connection.fallback_jump_host_ids.clear();
+        return Ok(());
+    }
+    if resolved.is_empty() {
+        return Ok(());
+    }
+    if connection.jump_host_id().is_none() {
+        return Err(CliError::Config(
+            "--fallback-jump-host requires a Jump Host on the connection; set one with --jump-host"
+                .into(),
+        ));
+    }
+    connection.fallback_jump_host_ids = resolved;
+    Ok(())
+}
+
+#[cfg(test)]
+mod fallback_jump_host_update_tests {
+    use super::apply_fallback_jump_hosts;
+    use rustconn_core::models::{Connection, ProtocolConfig};
+    use uuid::Uuid;
+
+    fn with_jump_host(jump: Option<Uuid>) -> Connection {
+        let mut connection = Connection::new_ssh("web".into(), "web.lan".into(), 22);
+        if let ProtocolConfig::Ssh(cfg) = &mut connection.protocol_config {
+            cfg.jump_host_id = jump;
+        }
+        connection
+    }
+
+    #[test]
+    fn fallbacks_without_a_jump_host_are_refused() {
+        let mut connection = with_jump_host(None);
+        assert!(apply_fallback_jump_hosts(&mut connection, false, vec![Uuid::new_v4()]).is_err());
+        assert!(connection.fallback_jump_host_ids.is_empty());
+    }
+
+    #[test]
+    fn fallbacks_with_a_jump_host_are_saved() {
+        let mut connection = with_jump_host(Some(Uuid::new_v4()));
+        let fallback = Uuid::new_v4();
+        apply_fallback_jump_hosts(&mut connection, false, vec![fallback]).unwrap();
+        assert_eq!(connection.fallback_jump_host_ids, [fallback]);
+    }
+
+    #[test]
+    fn clearing_or_leaving_the_list_needs_no_jump_host() {
+        let mut connection = with_jump_host(None);
+        connection.fallback_jump_host_ids = vec![Uuid::new_v4()];
+        apply_fallback_jump_hosts(&mut connection, false, Vec::new()).unwrap();
+        assert_eq!(connection.fallback_jump_host_ids.len(), 1);
+        apply_fallback_jump_hosts(&mut connection, true, Vec::new()).unwrap();
+        assert!(connection.fallback_jump_host_ids.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod socks_proxy_update_tests {
+    use super::apply_socks_proxy_update;
+    use rustconn_core::models::WebConfig;
+
+    fn with_login() -> WebConfig {
+        WebConfig {
+            socks_proxy: Some("socks5://proxy:1080".into()),
+            socks_proxy_username: Some("alice".into()),
+            socks_proxy_password_variable: Some("proxy_pw".into()),
+            ..WebConfig::default()
+        }
+    }
+
+    #[test]
+    fn an_empty_proxy_removes_its_login_too() {
+        let mut cfg = with_login();
+        apply_socks_proxy_update(&mut cfg, " ").unwrap();
+        assert_eq!(cfg.socks_proxy, None);
+        assert_eq!(cfg.socks_proxy_username, None);
+        assert_eq!(cfg.socks_proxy_password_variable, None);
+        assert!(rustconn_core::protocol::validate_socks_settings(&cfg).is_ok());
+    }
+
+    #[test]
+    fn a_new_proxy_keeps_the_login() {
+        let mut cfg = with_login();
+        apply_socks_proxy_update(&mut cfg, "other:9050").unwrap();
+        assert_eq!(cfg.socks_proxy.as_deref(), Some("socks5://other:9050"));
+        assert_eq!(cfg.socks_proxy_username.as_deref(), Some("alice"));
+        assert!(apply_socks_proxy_update(&mut cfg, "bad").is_err());
+    }
 }

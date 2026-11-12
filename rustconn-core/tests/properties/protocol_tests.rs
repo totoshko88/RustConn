@@ -288,7 +288,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: rustconn, Property: SSH Validation Accepts Valid Connections**
-    // **Validates: Requirements 2.2, 2.3, 2.4, 2.5**
     //
     // For any valid SSH connection configuration, validation should pass.
 
@@ -300,7 +299,6 @@ proptest! {
     }
 
     // **Feature: rustconn, Property: RDP Validation Accepts Valid Connections**
-    // **Validates: Requirements 3.1, 3.2, 3.3, 3.5**
     //
     // For any valid RDP connection configuration, validation should pass.
 
@@ -312,7 +310,6 @@ proptest! {
     }
 
     // **Feature: rustconn, Property: VNC Validation Accepts Valid Connections**
-    // **Validates: Requirements 4.1, 4.2, 4.3**
     //
     // For any valid VNC connection configuration, validation should pass.
 
@@ -434,7 +431,6 @@ proptest! {
 // ============================================================================
 
 /// **Feature: rustconn-bugfixes, Property 10: Protocol Port Defaults**
-/// **Validates: Requirements 8.2, 8.3, 8.4, 8.5**
 ///
 /// For any protocol selection in Quick Connect, the default port SHALL match
 /// the protocol standard (SSH=22, RDP=3389, VNC=5900).
@@ -469,7 +465,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: rustconn-bugfixes, Property 10: Protocol Port Defaults**
-    // **Validates: Requirements 8.2, 8.3, 8.4, 8.5**
     //
     // For any protocol type, the default port returned by the Protocol trait
     // implementation must match the standard port for that protocol.
@@ -518,6 +513,7 @@ proptest! {
             ProtocolConfig::Kubernetes(_) => 0u16,
             ProtocolConfig::Mosh(_) => 22u16,
             ProtocolConfig::Web(_) => 0u16,
+            ProtocolConfig::WinRm(_) => 5985u16,
         };
 
         prop_assert_eq!(
@@ -528,7 +524,6 @@ proptest! {
     }
 
     // **Feature: rustconn-enhancements, Property 3: Shared Folder CRUD Operations**
-    // **Validates: Requirements 2.3, 2.5**
     //
     // For any RDP configuration, adding a shared folder should increase the folder
     // count by one, and removing a shared folder should decrease it by one, with
@@ -685,7 +680,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: native-protocol-embedding, Property 5: Protocol configuration validation rejects invalid inputs**
-    // **Validates: Requirements 6.3**
     //
     // For any valid SPICE configuration, validation should pass.
 
@@ -696,7 +690,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 5: Protocol configuration validation rejects invalid inputs**
-    // **Validates: Requirements 6.3**
     //
     // SPICE config with empty shared folder path should be rejected.
 
@@ -712,7 +705,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 5: Protocol configuration validation rejects invalid inputs**
-    // **Validates: Requirements 6.3**
     //
     // SPICE config with empty shared folder name should be rejected.
 
@@ -728,7 +720,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 5: Protocol configuration validation rejects invalid inputs**
-    // **Validates: Requirements 6.3**
     //
     // SPICE connection with empty host should be rejected (common validation).
 
@@ -740,7 +731,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 5: Protocol configuration validation rejects invalid inputs**
-    // **Validates: Requirements 6.3**
     //
     // SPICE connection with zero port should be rejected (common validation).
 
@@ -757,7 +747,6 @@ proptest! {
 // ============================================================================
 
 /// **Feature: native-protocol-embedding, Property 6: Default configurations are valid**
-/// **Validates: Requirements 6.4**
 ///
 /// For any protocol type, `Default::default()` SHALL produce a configuration
 /// that passes validation.
@@ -803,7 +792,6 @@ fn prop_default_spice_config_is_valid() {
 }
 
 /// **Feature: native-protocol-embedding, Property 6: Default configurations are valid**
-/// **Validates: Requirements 6.4**
 ///
 /// All protocol default configurations should be valid.
 #[test]
@@ -949,7 +937,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: rustconn-bugfixes, Property 4: SSH IdentitiesOnly Command Generation**
-    // **Validates: Requirements 6.2, 6.3**
     //
     // For any SSH config with identities_only=true, the generated command should
     // contain "-o IdentitiesOnly=yes".
@@ -977,7 +964,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 4: SSH IdentitiesOnly Command Generation**
-    // **Validates: Requirements 6.2, 6.3**
     //
     // For any SSH config with a key_path, the generated command should contain
     // "-i <path>" when the path is non-empty.
@@ -999,7 +985,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 5: SSH Config Serialization Round-Trip**
-    // **Validates: Requirements 6.4, 8.4**
     //
     // For any valid SshConfig including identities_only and ssh_agent_key_fingerprint,
     // serializing and deserializing should produce an equivalent config.
@@ -1039,7 +1024,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 6: SSH Agent Key Fingerprint Persistence**
-    // **Validates: Requirements 8.1, 8.2, 8.4**
     //
     // For any connection with a saved ssh_agent_key_fingerprint, loading the connection
     // should preserve the fingerprint value.
@@ -1159,7 +1143,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: native-protocol-embedding, Property 15: SSH Key File Flag Generation**
-    // **Validates: Requirements 5.1, 5.2**
     //
     // For any SSH connection with File authentication method and a key file path,
     // the generated command should include `-i <path>` and `-o IdentitiesOnly=yes`.
@@ -1171,7 +1154,7 @@ proptest! {
         if let SshKeySource::File { ref path } = config.key_source {
             let path_str = path.display().to_string();
 
-            // Requirement 5.1: Should include -i <key_path> flag
+            // Should include -i <key_path> flag
             let has_identity_flag = args.windows(2).any(|w| w[0] == "-i" && w[1] == path_str);
             prop_assert!(
                 has_identity_flag,
@@ -1179,7 +1162,7 @@ proptest! {
                 args
             );
 
-            // Requirement 5.2: Should include -o IdentitiesOnly=yes flag
+            // Should include -o IdentitiesOnly=yes flag
             let has_identities_only = args.windows(2).any(|w| w[0] == "-o" && w[1] == "IdentitiesOnly=yes");
             prop_assert!(
                 has_identities_only,
@@ -1190,7 +1173,6 @@ proptest! {
     }
 
     // **Feature: native-protocol-embedding, Property 16: SSH Agent No IdentitiesOnly**
-    // **Validates: Requirements 5.3**
     //
     // For any SSH connection with Agent authentication method, the generated command
     // should NOT include `-o IdentitiesOnly=yes` to allow SSH to use all keys from the agent.
@@ -1198,7 +1180,7 @@ proptest! {
     fn prop_ssh_agent_no_identities_only(config in arb_ssh_config_with_agent_key_source()) {
         let args = config.build_command_args();
 
-        // Requirement 5.3: Agent auth should NOT include IdentitiesOnly
+        // Agent auth should NOT include IdentitiesOnly
         let has_identities_only = args.iter().any(|a| a.contains("IdentitiesOnly"));
         prop_assert!(
             !has_identities_only,
@@ -1409,7 +1391,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-    // **Validates: Requirements 4.2**
     //
     // For any CLI command string, the provider detection function should return
     // a valid CloudProvider enum value.
@@ -1427,7 +1408,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-    // **Validates: Requirements 4.2**
     //
     // For any known provider command, detection should return the correct provider.
     #[test]
@@ -1442,7 +1422,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-    // **Validates: Requirements 4.3**
     //
     // For any unknown/generic command, detection should return Generic provider.
     #[test]
@@ -1459,7 +1438,6 @@ proptest! {
     }
 
     // **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-    // **Validates: Requirements 4.2**
     //
     // Provider detection should be case-insensitive.
     #[test]
@@ -1484,7 +1462,6 @@ proptest! {
 // ============================================================================
 
 /// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-/// **Validates: Requirements 4.2**
 ///
 /// Verify that each provider has a valid icon name.
 #[test]
@@ -1505,7 +1482,6 @@ fn test_all_providers_have_icon_names() {
 }
 
 /// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-/// **Validates: Requirements 4.2**
 ///
 /// Verify that each provider has a valid display name.
 #[test]
@@ -1521,7 +1497,6 @@ fn test_all_providers_have_display_names() {
 }
 
 /// **Feature: rustconn-bugfixes, Property 1: Provider Icon Detection**
-/// **Validates: Requirements 4.3**
 ///
 /// Verify that Generic provider is the default.
 #[test]
@@ -1542,7 +1517,6 @@ use rustconn_core::models::ProtocolType;
 use rustconn_core::protocol::icons::{all_protocol_icons, get_protocol_icon};
 
 /// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
-/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 ///
 /// For any two different protocol types (SSH, RDP, VNC, SPICE), the icon names
 /// returned should be different.
@@ -1577,42 +1551,40 @@ fn prop_protocol_icons_are_distinct() {
 }
 
 /// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
-/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 ///
 /// Verify that each protocol has the expected icon name as per requirements.
 #[test]
 fn test_protocol_icons_match_requirements() {
-    // Requirements 7.1: SSH should show terminal icon
+    // SSH should show terminal icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Ssh),
         "utilities-terminal-symbolic",
-        "SSH should use terminal icon (Requirement 7.3)"
+        "SSH should use terminal icon"
     );
 
-    // Requirements 7.2: VNC should show video display icon
+    // VNC should show video display icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Vnc),
         "video-joined-displays-symbolic",
-        "VNC should use joined displays icon (Requirement 7.2)"
+        "VNC should use joined displays icon"
     );
 
-    // Requirements 7.1: RDP should show computer/monitor icon
+    // RDP should show computer/monitor icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Rdp),
         "computer-symbolic",
-        "RDP should use computer icon (Requirement 7.1)"
+        "RDP should use computer icon"
     );
 
-    // Requirements 7.4: SPICE should show remote desktop icon
+    // SPICE should show remote desktop icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Spice),
         "preferences-desktop-remote-desktop-symbolic",
-        "SPICE should use remote desktop icon (Requirement 7.4)"
+        "SPICE should use remote desktop icon"
     );
 }
 
 /// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
-/// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 ///
 /// Verify that all_protocol_icons returns consistent data.
 #[test]
@@ -1640,7 +1612,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     /// **Feature: rustconn-fixes-v2, Property 9: Protocol Icons Are Distinct**
-    /// **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
     ///
     /// For any randomly selected pair of different protocol types,
     /// their icons should be different.
@@ -1849,7 +1820,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(100))]
 
     // **Feature: hoop-dev-zerotrust, Property 4: Command generation correctness**
-    // **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
     //
     // For any valid HoopDevConfig, build_command() must return "hoop" as the
     // program, with ["connect", connection_name] as the first arguments,
@@ -1898,7 +1868,6 @@ proptest! {
 }
 
 // **Feature: hoop-dev-zerotrust, Property 5: Provider icon names are unique**
-// **Validates: Requirements 1.3, 12.4**
 //
 // For all pairs of distinct ZeroTrustProvider variants (including HoopDev),
 // icon_name() must return different values.

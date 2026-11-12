@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns="http://usefulinc.com/ns/doap#">
+
+  <name xml:lang="en">RustConn</name>
+  <shortdesc xml:lang="en">Manage remote connections</shortdesc>
+  <description xml:lang="en">
+    Connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes
+    and Zero Trust brokers, with embedded terminals and remote desktops.
+  </description>
+
+  <homepage rdf:resource="https://github.com/totoshko88/RustConn"/>
+  <bug-database rdf:resource="https://github.com/totoshko88/RustConn/issues"/>
+  <download-page rdf:resource="https://flathub.org/apps/io.github.totoshko88.RustConn"/>
+  <license rdf:resource="https://spdx.org/licenses/GPL-3.0-or-later.html"/>
+
+  <programming-language>Rust</programming-language>
+  <platform>GTK 4</platform>
+  <platform>Libadwaita</platform>
+
+  <repository>
+    <GitRepository>
+      <browse rdf:resource="https://github.com/totoshko88/RustConn"/>
+      <location rdf:resource="https://github.com/totoshko88/RustConn.git"/>
+    </GitRepository>
+  </repository>
+
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Anton Isaiev</foaf:name>
+      <foaf:mbox rdf:resource="mailto:totoshko88@gmail.com"/>
+      <foaf:account>
+        <foaf:OnlineAccount>
+          <foaf:accountServiceHomepage rdf:resource="https://github.com"/>
+          <foaf:accountName>totoshko88</foaf:accountName>
+        </foaf:OnlineAccount>
+      </foaf:account>
+      <foaf:account>
+        <foaf:OnlineAccount>
+          <foaf:accountServiceHomepage rdf:resource="https://gitlab.gnome.org"/>
+          <foaf:accountName>totoshko88</foaf:accountName>
+        </foaf:OnlineAccount>
+      </foaf:account>
+    </foaf:Person>
+  </maintainer>
+</Project>

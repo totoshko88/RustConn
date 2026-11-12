@@ -42,8 +42,10 @@ pub struct TabMenuState {
     /// scrollback can be offered for saving (issue #371). An embedded viewer
     /// (RDP/VNC/Web) and the Welcome tab have no VTE buffer and clear this.
     pub is_terminal: bool,
-    /// The tab is a local shell, whose title is the only thing that tells it
-    /// apart from another one, and which therefore may be relabelled.
+    /// The session the tab is named after is a local shell, whose title is the
+    /// only thing that tells it apart from another one, and which therefore may
+    /// be relabelled. For a split tab that is the focused pane's session, not
+    /// necessarily the owner's (issue #421).
     pub is_local_shell: bool,
     /// The user has enabled the directional "Close to the Left" / "Close to the
     /// Right" items (hidden by default to keep the close block short).
@@ -146,6 +148,7 @@ impl TerminalNotebook {
         let connection_menu_for_menu = self.tab_connection_menu.clone();
         let disconnected_for_menu = self.disconnected_sessions.clone();
         let directional_close_for_menu = self.show_directional_close.clone();
+        let split_tab_titles_for_menu = self.split_tab_titles.clone();
         let menu_for_setup = menu;
 
         // Create the action group and the stateful monitor action up front, so
@@ -246,11 +249,21 @@ impl TerminalNotebook {
                         // session_widgets and the Welcome tab has no session.
                         is_terminal: session_id
                             .is_some_and(|sid| terminals_for_menu.borrow().contains_key(&sid)),
-                        is_local_shell: session_id.is_some_and(|sid| {
-                            info_ref
-                                .get(&sid)
-                                .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
-                        }),
+                        // Asks about the session the tab is named after, the
+                        // same one the action renames (issue #421).
+                        is_local_shell: session_id
+                            .and_then(|sid| {
+                                super::split_title::rename_tab_target(
+                                    &split_tab_titles_for_menu,
+                                    sid,
+                                    |id| {
+                                        info_ref
+                                            .get(&id)
+                                            .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                                    },
+                                )
+                            })
+                            .is_some(),
                         show_directional_close: directional_close_for_menu.get(),
                     }
                 })
@@ -398,13 +411,14 @@ impl TerminalNotebook {
                 }
 
                 // Update tooltip to include group name
+                // The same transformation as `set_tab_group`, which keeps the
+                // panes line (issue #421) and the directory line after it.
                 if let Some(page) = sessions_clone.borrow().get(&session_id) {
                     let current_tooltip = page.tooltip().unwrap_or_default();
-                    let base_tooltip = current_tooltip
-                        .as_str()
-                        .rsplit_once("\n[")
-                        .map_or(current_tooltip.as_str(), |(base, _)| base);
-                    page.set_tooltip(&format!("{base_tooltip}\n[{group_name}]"));
+                    page.set_tooltip(&Self::grouped_tooltip(
+                        current_tooltip.as_str(),
+                        &group_name,
+                    ));
                 }
 
                 tracing::debug!(
@@ -429,11 +443,28 @@ impl TerminalNotebook {
         // split pane header and the session-restore snapshot from one place.
         let rename_label_action = gio::SimpleAction::new("rename-label", None);
         let context_page_rename = context_page.clone();
-        let session_info = self.session_info.clone();
-        let sessions = self.sessions.clone();
+        let chrome = self.tab_chrome();
 
         rename_label_action.connect_activate(move |_, _| {
-            let Some(session_id) = Self::context_menu_session_id(&context_page_rename, &sessions)
+            let session_info = &chrome.session_info;
+            let split_tab_titles = &chrome.split_tab_titles;
+            let Some(tab_session) =
+                Self::context_menu_session_id(&context_page_rename, &chrome.sessions)
+            else {
+                return;
+            };
+            // A split tab is named after its focused pane (issue #421), which
+            // may hold a guest rather than the tab's owner. The dialog edits the
+            // name the user reads in the tab bar, so it targets that session —
+            // through the same check the menu gate made, so a saved connection
+            // focused since the menu opened is never relabelled from here.
+            let Some(session_id) =
+                super::split_title::rename_tab_target(split_tab_titles, tab_session, |id| {
+                    session_info
+                        .borrow()
+                        .get(&id)
+                        .is_some_and(|i| i.protocol == LOCAL_SHELL_PROTOCOL)
+                })
             else {
                 return;
             };
@@ -462,11 +493,10 @@ impl TerminalNotebook {
             dialog.set_default_response(Some("apply"));
             dialog.set_close_response("cancel");
 
-            // Both maps are cloned per activation: the action closure is `Fn`,
+            // The maps are cloned per activation: the action closure is `Fn`,
             // so it may run again and cannot hand its own captures to the
             // one-shot response handler.
-            let sessions_for_apply = sessions.clone();
-            let session_info_for_apply = session_info.clone();
+            let chrome_for_apply = chrome.clone();
 
             // One commit path, reached by the "apply" response and by Enter in
             // the entry alike. An empty entry resets the title rather than
@@ -475,12 +505,7 @@ impl TerminalNotebook {
             let commit_entry = entry.clone();
             let commit: Rc<dyn Fn()> = Rc::new(move || {
                 let label = local_shell_label(&commit_entry.text()).to_owned();
-                Self::apply_session_label(
-                    &sessions_for_apply,
-                    &session_info_for_apply,
-                    session_id,
-                    &label,
-                );
+                Self::apply_session_label(&chrome_for_apply, session_id, &label);
                 tracing::debug!(session_id = %session_id, label, "Tab relabelled");
             });
 
@@ -562,9 +587,10 @@ impl TerminalNotebook {
             // Restore original tooltip (remove group suffix)
             if let Some(page) = sessions.borrow().get(&session_id) {
                 let tooltip = page.tooltip().unwrap_or_default();
-                let tooltip_str = tooltip.as_str();
-                if let Some(base) = tooltip_str.rsplit_once("\n[") {
-                    page.set_tooltip(base.0);
+                // Keeps a split tab's panes line (issue #421) and the
+                // directory line.
+                if let Some(ungrouped) = Self::ungrouped_tooltip(tooltip.as_str()) {
+                    page.set_tooltip(&ungrouped);
                 }
             }
 
@@ -1035,7 +1061,7 @@ impl TerminalNotebook {
     /// Appends one flat "Move to New Window on …" item per monitor.
     ///
     /// With a single monitor there is no choice to present, so nothing is added
-    /// and only the plain "Move to New Window" item stands (Requirement 8.3).
+    /// and only the plain "Move to New Window" item stands.
     /// These are flat items rather than a submenu because the labels are
     /// *dynamic* — one per connected monitor — so a submodel built here would
     /// be a fresh object on every rebuild, and re-appending a different submenu

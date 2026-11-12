@@ -66,6 +66,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | VNC | vnc-rs / vncviewer fallback | Embedded + external |
 | SPICE | remote-viewer / virt-viewer | External |
 | Telnet | VTE terminal | Embedded |
+| WinRM | VTE terminal, external `evil-winrm` | Embedded |
 | Serial | picocom via VTE | External (bundled in Flatpak) |
 | Kubernetes | kubectl exec via VTE | External |
 | MOSH | mosh via VTE | External |
@@ -113,6 +114,27 @@ verify a download with
 Keyboard shortcuts are customizable in Settings → Keybindings; press `Ctrl+?`
 in the app for the complete, always-current list.
 
+### Official sources
+
+RustConn is published through these channels only:
+
+| Channel | Where |
+|---------|-------|
+| GitHub Releases | [totoshko88/RustConn releases](https://github.com/totoshko88/RustConn/releases); the deb, rpm, AppImage and Flatpak files carry a build-provenance attestation |
+| Flathub | [`io.github.totoshko88.RustConn`](https://flathub.org/apps/io.github.totoshko88.RustConn) |
+| Snap Store | [`rustconn`](https://snapcraft.io/rustconn) |
+| openSUSE Build Service | [`home:totoshko88:rustconn`](https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn): Debian, Ubuntu, openSUSE and Fedora repositories |
+| Homebrew tap | `totoshko88/rustconn` |
+| AUR | [`rustconn`](https://aur.archlinux.org/packages/rustconn) (community-maintained) |
+| FreeBSD ports | [`net/rustconn`](https://www.freshports.org/net/rustconn/) (community-maintained) |
+| Nix flake | `github:totoshko88/RustConn` |
+
+Forks of RustConn are not affiliated with this project. If your build came from
+a fork, report its bugs in that project's own tracker. The issue tracker here
+covers the builds above, builds from this repository's source, and packages
+from other distributions (for example nixpkgs, Debian or Fedora), which are not
+forks.
+
 ## Documentation
 
 | Document | Description |
@@ -132,7 +154,7 @@ in the app for the complete, always-current list.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers development setup, the quality gate,
 and the conventions a pull request is checked against. Participation is under the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[Code of Conduct](#code-of-conduct).
 
 - **Bugs and features** — [issue tracker](https://github.com/totoshko88/RustConn/issues);
   the forms ask for the version, install method, and desktop, which is usually
@@ -142,10 +164,20 @@ and the conventions a pull request is checked against. Participation is under th
   [Architecture](docs/ARCHITECTURE.md) to get started.
 - **Translations** — RustConn ships every catalogue listed in
   [`po/LINGUAS`](po/LINGUAS); the `.po` files live in [`po/`](po/). New
-  languages and corrections are appreciated.
+  languages and corrections are appreciated; which languages the project
+  ships is in [CONTRIBUTING.md](CONTRIBUTING.md#translations).
 - **Vulnerabilities** — privately, via
   [Security Advisories](https://github.com/totoshko88/RustConn/security/advisories/new)
   rather than an issue ([SECURITY.md](SECURITY.md)).
+
+## Code of Conduct
+
+RustConn follows the [GNOME Code of Conduct](https://conduct.gnome.org/).
+It applies to everyone taking part in the project's issues, pull requests,
+discussions and code review. To report a problem, write to the maintainer at
+totoshko88@gmail.com or contact the
+[GNOME Code of Conduct Committee](https://conduct.gnome.org/reporter-guide/).
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
 
 ## Support
 
@@ -156,4 +188,8 @@ and the conventions a pull request is checked against. Participation is under th
 
 ## License
 
-GPL-3.0 — Made with ❤️ in Ukraine 🇺🇦
+GPL-3.0-or-later — Made with ❤️ in Ukraine 🇺🇦
+
+From release 0.24.11, the author's own material carries additional terms under
+GPL-3.0 section 7 (author attribution, the origin of modified versions, and the
+use of the name), set out in [NOTICE](NOTICE).

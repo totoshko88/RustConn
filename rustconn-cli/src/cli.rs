@@ -86,7 +86,7 @@ pub enum Commands {
         #[arg(short, long)]
         port: Option<u16>,
 
-        /// Protocol type (ssh, rdp, vnc, spice, sftp, telnet, serial,
+        /// Protocol type (ssh, rdp, vnc, spice, sftp, telnet, winrm, serial,
         /// mosh, kubernetes/k8s, zerotrust/zt, web)
         #[arg(short = 'P', long, default_value = "ssh")]
         protocol: String,
@@ -227,6 +227,11 @@ pub enum Commands {
         /// (sets jump_host_id for SSH/RDP/VNC/SPICE/SFTP connections)
         #[arg(long, value_name = "NAME|UUID")]
         jump_host: Option<String>,
+
+        /// Saved SSH connection to try if the jump host is unreachable.
+        /// Repeat in failover order; requires --jump-host
+        #[arg(long, value_name = "NAME|UUID")]
+        fallback_jump_host: Vec<String>,
 
         /// SSH keep-alive interval in seconds (ServerAliveInterval)
         #[arg(long, value_name = "SECONDS")]
@@ -573,6 +578,31 @@ pub enum Commands {
         /// auto-raised dynamic SOCKS proxy (existing SSH connection name or UUID)
         #[arg(long, value_name = "NAME|UUID")]
         tunnel_via: Option<String>,
+
+        /// Browse this Web connection through an existing SOCKS5 proxy (host:port).
+        /// A browser that cannot use it is not opened
+        #[arg(long, value_name = "HOST:PORT", conflicts_with = "tunnel_via")]
+        socks_proxy: Option<String>,
+
+        /// Username for a SOCKS5 proxy that requires a login
+        #[arg(long, value_name = "NAME", requires = "socks_proxy")]
+        socks_proxy_user: Option<String>,
+
+        /// Secret global variable holding that login's password
+        #[arg(long, value_name = "VARIABLE", requires = "socks_proxy_user")]
+        socks_proxy_password_var: Option<String>,
+
+        /// Browser command for a Web connection in custom mode
+        #[arg(long, value_name = "COMMAND")]
+        browser: Option<String>,
+
+        /// Connect over HTTPS (WinRM connections, usually port 5986)
+        #[arg(long)]
+        winrm_ssl: bool,
+
+        /// Accept a self-signed HTTPS certificate when running scripts over WinRM
+        #[arg(long)]
+        winrm_accept_invalid_certs: bool,
     },
 
     /// Export connections to external format
@@ -786,6 +816,15 @@ pub enum Commands {
         /// (sets jump_host_id for SSH/RDP/VNC/SPICE/SFTP connections)
         #[arg(long, value_name = "NAME|UUID")]
         jump_host: Option<String>,
+
+        /// Saved SSH connection to try if the jump host is unreachable.
+        /// Repeat in failover order; replaces the existing list
+        #[arg(long, value_name = "NAME|UUID")]
+        fallback_jump_host: Vec<String>,
+
+        /// Remove every fallback jump host
+        #[arg(long, conflicts_with = "fallback_jump_host")]
+        clear_fallback_jump_hosts: bool,
 
         /// SSH keep-alive interval in seconds (ServerAliveInterval)
         #[arg(long, value_name = "SECONDS")]
@@ -1135,6 +1174,32 @@ pub enum Commands {
         #[arg(long, value_name = "FLOAT")]
         zoom_level: Option<f64>,
 
+        /// Existing SOCKS5 proxy for a Web connection (host:port); an empty value
+        /// removes it
+        #[arg(long, value_name = "HOST:PORT")]
+        socks_proxy: Option<String>,
+
+        /// Username for a SOCKS5 proxy login; an empty value removes the login
+        #[arg(long, value_name = "NAME")]
+        socks_proxy_user: Option<String>,
+
+        /// Secret global variable holding the SOCKS5 proxy password
+        #[arg(long, value_name = "VARIABLE")]
+        socks_proxy_password_var: Option<String>,
+
+        /// Browser command for a Web connection in custom mode; an empty value
+        /// removes it
+        #[arg(long, value_name = "COMMAND")]
+        browser: Option<String>,
+
+        /// Use HTTPS for a WinRM connection
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        winrm_ssl: Option<bool>,
+
+        /// Accept a self-signed HTTPS certificate when running scripts over WinRM
+        #[arg(long, value_name = "BOOL", num_args = 0..=1, default_missing_value = "true")]
+        winrm_accept_invalid_certs: Option<bool>,
+
         /// Output filter: pipe terminal output through this command
         /// (e.g. chromaterm, ccze). Pass an empty string to remove the filter.
         #[arg(long, value_name = "COMMAND")]
@@ -1193,6 +1258,37 @@ pub enum Commands {
     #[command(subcommand, about = "Manage connection templates")]
     Template(TemplateCommands),
 
+    /// Run a local script: bash on SSH connections, PowerShell (.ps1) on WinRM ones
+    #[command(about = "Run a local script on SSH or WinRM connections")]
+    RunScript {
+        /// Path to the local script: bash for SSH connections, a .ps1 file for WinRM ones
+        script: std::path::PathBuf,
+
+        /// Connection name or UUID to run on (repeatable)
+        #[arg(long = "on", value_name = "NAME|UUID")]
+        connections: Vec<String>,
+
+        /// Group name or UUID to run on, including subgroups (repeatable)
+        #[arg(long = "group", value_name = "NAME|UUID")]
+        groups: Vec<String>,
+
+        /// Hosts to run on at once (1-64)
+        #[arg(long, default_value_t = rustconn_core::remote_script::DEFAULT_PARALLEL)]
+        parallel: usize,
+
+        /// Time limit per host, in seconds
+        #[arg(long, default_value_t = rustconn_core::remote_script::DEFAULT_HOST_TIMEOUT.as_secs())]
+        timeout: u64,
+
+        /// Do not ask for confirmation
+        #[arg(short, long)]
+        yes: bool,
+
+        /// Ask once and use that password for every host set to ask at connect
+        #[arg(long)]
+        same_password: bool,
+    },
+
     /// Manage connection clusters
     #[command(subcommand, about = "Manage connection clusters")]
     Cluster(ClusterCommands),
@@ -1231,8 +1327,17 @@ pub enum Commands {
         name: String,
 
         /// New name for the duplicated connection
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "range")]
         new_name: Option<String>,
+
+        /// Create one copy per number, e.g. 'host[02-10]'. Quote it for the shell
+        #[arg(long, value_name = "PATTERN")]
+        range: Option<String>,
+
+        /// Host range for --range, e.g. '10.0.0.[2-10]'. Optional when the
+        /// source's host contains its name
+        #[arg(long, value_name = "PATTERN", requires = "range")]
+        host_range: Option<String>,
     },
 
     /// Open SFTP session for an SSH connection

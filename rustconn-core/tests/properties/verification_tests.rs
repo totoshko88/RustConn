@@ -1,7 +1,6 @@
 //! Property-based tests for credential verification tracking
 //!
-//! These tests validate the correctness properties for credential verification
-//! as defined in Requirements 2.1, 2.2, 2.3, 2.5.
+//! These tests validate the correctness properties for credential verification.
 
 use proptest::prelude::*;
 use rustconn_core::{
@@ -122,7 +121,7 @@ proptest! {
 
 proptest! {
     /// Property 6: Verified credentials with password can be used automatically
-    /// Validates: Requirement 2.1 - Skip dialog for verified credentials
+    /// Skip dialog for verified credentials
     #[test]
     fn verified_credentials_skip_dialog(
         username in arb_username(),
@@ -138,7 +137,7 @@ proptest! {
     }
 
     /// Property 7: Missing credentials require dialog
-    /// Validates: Requirement 2.2 - Show dialog for missing credentials
+    /// Show dialog for missing credentials
     #[test]
     fn missing_credentials_require_dialog(
         username in arb_username(),
@@ -199,7 +198,7 @@ proptest! {
 
 proptest! {
     /// Property 9: Successful auth marks verified
-    /// Validates: Requirement 2.5 - Mark credentials as verified after successful auth
+    /// Mark credentials as verified after successful auth
     #[test]
     fn successful_auth_marks_verified(id in arb_uuid()) {
         let mut manager = CredentialVerificationManager::new();
@@ -219,7 +218,7 @@ proptest! {
     }
 
     /// Property: Failed auth marks unverified
-    /// Validates: Requirement 2.3 - Mark credentials as requiring verification on auth failure
+    /// Mark credentials as requiring verification on auth failure
     #[test]
     fn failed_auth_marks_unverified(
         id in arb_uuid(),
@@ -428,7 +427,6 @@ fn arb_connection_name() -> impl Strategy<Value = String> {
 
 proptest! {
     /// **Feature: native-protocol-embedding, Property 8: Dialog Pre-fill from Connection**
-    /// **Validates: Requirements 2.4**
     ///
     /// For any connection with saved username and domain, the password dialog
     /// should be pre-filled with those values.

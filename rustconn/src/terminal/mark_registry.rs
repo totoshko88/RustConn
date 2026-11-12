@@ -104,8 +104,8 @@ impl MarkRegistry {
     /// Drops every mark whose row is below `oldest_row`.
     ///
     /// Call this when VTE trims scrollback, with the row number of the oldest
-    /// line still in the buffer, so no stored row points past the live buffer
-    /// (Requirement 1.3). Marks are sorted, so this is a prefix drop.
+    /// line still in the buffer, so no stored row points past the live buffer.
+    /// Marks are sorted, so this is a prefix drop.
     pub(crate) fn trim_below(&mut self, oldest_row: i64) {
         let keep_from = self.marks.partition_point(|mark| mark.row < oldest_row);
         if keep_from > 0 {

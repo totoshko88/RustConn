@@ -190,6 +190,21 @@ pub enum ConfigFileNotice {
     WrittenByNewer(String),
 }
 
+/// How long a failover decision covers the steps of one launch.
+///
+/// ponytail: a launch passes through more than one entry point (credential
+/// resolution, then the protocol start), and this window is what keeps them from
+/// probing a dead primary twice. A deliberate retry inside it reuses the answer;
+/// pass the launch through one owner if that ever matters.
+const GATEWAY_CHOICE_FRESH_FOR: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// One failover decision. See [`AppState::set_gateway_choice`].
+#[derive(Debug, Clone, Copy)]
+struct GatewayChoice {
+    gateway_id: Uuid,
+    fresh_until: Option<std::time::Instant>,
+}
+
 /// Application state holding all managers
 ///
 /// This struct provides centralized access to all core functionality
@@ -264,6 +279,9 @@ pub struct AppState {
     /// routing_memory`). `RefCell` so the check/remember path can update it
     /// through a shared borrow; persisted outside the synced catalog.
     routing_memory: std::cell::RefCell<rustconn_core::connection::RoutingMemory>,
+    /// The jump host failover picked for each connection's latest launch, and
+    /// when. Session-only; the stored connection keeps its configured primary.
+    gateway_choices: std::cell::RefCell<std::collections::HashMap<Uuid, GatewayChoice>>,
     /// Connections whose changed route the user accepted this session, so a
     /// confirmed re-point does not ask again until the app restarts.
     confirmed_reroutes: std::cell::RefCell<std::collections::HashSet<Uuid>>,
@@ -721,6 +739,7 @@ impl AppState {
             ),
             confirmed_reroutes: std::cell::RefCell::new(std::collections::HashSet::new()),
             confirmed_bastion_skips: std::cell::RefCell::new(std::collections::HashSet::new()),
+            gateway_choices: std::cell::RefCell::new(std::collections::HashMap::new()),
         })
     }
 
@@ -813,6 +832,76 @@ impl AppState {
             .map_or(&[], Vec::as_slice)
     }
 
+    // ========== Jump Host Failover ==========
+
+    /// Returns the gateways to probe before launching `conn`; empty when
+    /// failover does not apply to it.
+    #[must_use]
+    pub fn gateway_probes(
+        &self,
+        conn: &Connection,
+    ) -> Vec<rustconn_core::connection::gateway_failover::GatewayProbe> {
+        rustconn_core::connection::gateway_failover::gateway_probes_by(
+            conn,
+            |id| self.get_connection(id),
+            &self.list_groups_owned(),
+            &self.settings().network,
+        )
+    }
+
+    /// Records the gateway chosen for the launch of `connection_id`.
+    pub fn set_gateway_choice(&self, connection_id: Uuid, gateway_id: Uuid) {
+        self.gateway_choices.borrow_mut().insert(
+            connection_id,
+            GatewayChoice {
+                gateway_id,
+                fresh_until: Some(std::time::Instant::now() + GATEWAY_CHOICE_FRESH_FOR),
+            },
+        );
+    }
+
+    /// Returns `true` when `connection_id` was probed moments ago, so the
+    /// launch steps that follow do not probe again.
+    #[must_use]
+    pub fn gateway_choice_is_fresh(&self, connection_id: Uuid) -> bool {
+        self.gateway_choices
+            .borrow()
+            .get(&connection_id)
+            .and_then(|choice| choice.fresh_until)
+            .is_some_and(|until| std::time::Instant::now() < until)
+    }
+
+    /// Makes the next launch of `connection_id` probe again, even within the
+    /// freshness window. For a reconnect, whose gateway may just have died.
+    pub fn expire_gateway_choice(&self, connection_id: Uuid) {
+        if let Some(choice) = self.gateway_choices.borrow_mut().get_mut(&connection_id) {
+            choice.fresh_until = None;
+        }
+    }
+
+    /// Forgets the choice for a connection that no longer has failover.
+    pub fn clear_gateway_choice(&self, connection_id: Uuid) {
+        self.gateway_choices.borrow_mut().remove(&connection_id);
+    }
+
+    /// Returns the gateway failover chose for `conn`, if it is still one of its
+    /// configured candidates.
+    #[must_use]
+    pub fn chosen_gateway(
+        &self,
+        conn: &Connection,
+        groups: &[rustconn_core::models::ConnectionGroup],
+    ) -> Option<Uuid> {
+        let chosen = self.gateway_choices.borrow().get(&conn.id)?.gateway_id;
+        rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_candidates(
+            conn,
+            groups,
+            &self.settings().network,
+        )
+        .contains(&chosen)
+        .then_some(chosen)
+    }
+
     // ========== Routing Memory (re-point detection) ==========
 
     /// Builds the current effective [`rustconn_core::connection::Route`] for a connection.
@@ -823,9 +912,12 @@ impl AppState {
     fn current_route(&self, conn: &Connection) -> rustconn_core::connection::Route {
         let groups = self.list_groups_owned();
         let network = self.settings().network.clone();
-        let jump =
-            rustconn_core::connection::resolve_proxy_jump_value(conn, &[], &groups, &network)
-                .unwrap_or_default();
+        let jump = rustconn_core::connection::gateway_failover::gateway_route_by(
+            conn,
+            |id| self.get_connection(id),
+            &groups,
+            &network,
+        );
         let password_source = match &conn.password_source {
             rustconn_core::models::PasswordSource::None => "none".to_string(),
             rustconn_core::models::PasswordSource::Vault => "vault".to_string(),
@@ -903,7 +995,8 @@ impl AppState {
     #[must_use]
     pub fn skipped_bastions(&self, connection_ids: &[Uuid]) -> Vec<(Uuid, SkippedBastion)> {
         use rustconn_core::connection::jump_chain::{
-            bastion_fallback, find_dangling_bastions_by, routes_through_jump_host,
+            bastion_fallback, failover_covers_missing_primary, find_dangling_bastions_by,
+            routes_through_jump_host,
         };
 
         let candidates: Vec<&Connection> = connection_ids
@@ -921,6 +1014,16 @@ impl AppState {
         candidates
             .into_iter()
             .filter_map(|conn| {
+                // The GUI fails over, so a gone primary with a live fallback
+                // is not a skipped hop: the session goes through the fallback.
+                if failover_covers_missing_primary(
+                    conn,
+                    |id| self.get_connection(id),
+                    &groups,
+                    network,
+                ) {
+                    return None;
+                }
                 let dangling =
                     find_dangling_bastions_by(conn, |id| self.get_connection(id), &groups, network);
                 let fallback = bastion_fallback(conn, &dangling, &groups, network);
@@ -2597,7 +2700,7 @@ mod cacheable_credentials_tests {
         }
     }
 
-    const ALL_PROTOCOLS: [ProtocolType; 11] = [
+    const ALL_PROTOCOLS: [ProtocolType; 12] = [
         ProtocolType::Ssh,
         ProtocolType::Rdp,
         ProtocolType::Vnc,
@@ -2609,6 +2712,7 @@ mod cacheable_credentials_tests {
         ProtocolType::Kubernetes,
         ProtocolType::Mosh,
         ProtocolType::Web,
+        ProtocolType::WinRm,
     ];
 
     /// A full answer is cached for every protocol, domain included.

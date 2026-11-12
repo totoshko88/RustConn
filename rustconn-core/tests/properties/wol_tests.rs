@@ -1,7 +1,7 @@
 //! Property-based tests for the Wake On LAN (WOL) system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the WOL system (Requirements 5.x).
+//! for the WOL system.
 
 use proptest::prelude::*;
 use rustconn_core::wol::{MAGIC_PACKET_SIZE, MacAddress, WolConfig, generate_magic_packet};
@@ -48,7 +48,6 @@ proptest! {
 
     // ========== Property 14: MAC Address Parse Round-Trip ==========
     // **Feature: rustconn-enhancements, Property 14: MAC Address Parse Round-Trip**
-    // **Validates: Requirements 5.1**
     //
     // For any valid MAC address string, parsing and formatting should produce
     // an equivalent string.
@@ -166,7 +165,6 @@ proptest! {
 
     // ========== Property 15: WOL Magic Packet Format ==========
     // **Feature: rustconn-enhancements, Property 15: WOL Magic Packet Format**
-    // **Validates: Requirements 5.2**
     //
     // For any MAC address, the generated magic packet should contain 6 bytes
     // of 0xFF followed by 16 repetitions of the MAC address.

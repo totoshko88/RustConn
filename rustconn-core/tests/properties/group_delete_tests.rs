@@ -88,7 +88,6 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(50))]
 
     /// **Property 1: Cascade delete removes all empty descendants**
-    /// **Validates: Requirements 2.1, 2.2**
     ///
     /// For any group tree where all subgroups are empty (zero connections),
     /// calling `delete_group_cascade()` on the root removes every descendant
@@ -132,7 +131,6 @@ proptest! {
     }
 
     /// **Property 2: delete_group reparents children and ungroups connections**
-    /// **Validates: Requirements 2.3, 2.4**
     ///
     /// For any group with child subgroups, calling `delete_group()` reparents
     /// all direct children to the deleted group's parent and ungroups all
@@ -218,7 +216,6 @@ proptest! {
     }
 
     /// **Property 3: Leaf group deletion is identical for delete_group and delete_group_cascade**
-    /// **Validates: Requirements 3.4, 3.5, 3.6**
     ///
     /// For any leaf group (no subgroups), deleting it with `delete_group()` or
     /// `delete_group_cascade()` produces the same result: the group is removed,

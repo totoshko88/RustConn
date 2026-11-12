@@ -31,6 +31,8 @@ pub enum ProtocolType {
     Mosh,
     /// Web bookmark (opens URL in default browser)
     Web,
+    /// Windows Remote Management shell (external `evil-winrm` client)
+    WinRm,
 }
 
 impl ProtocolType {
@@ -51,6 +53,7 @@ impl ProtocolType {
             Self::Kubernetes => "kubernetes",
             Self::Mosh => "mosh",
             Self::Web => "web",
+            Self::WinRm => "winrm",
         }
     }
 
@@ -67,6 +70,7 @@ impl ProtocolType {
             Self::Kubernetes => 0,
             Self::Mosh => 22,
             Self::Web => 443,
+            Self::WinRm => 5985,
         }
     }
 }
@@ -85,6 +89,7 @@ impl std::fmt::Display for ProtocolType {
             Self::Kubernetes => write!(f, "Kubernetes"),
             Self::Mosh => write!(f, "MOSH"),
             Self::Web => write!(f, "Web"),
+            Self::WinRm => write!(f, "WinRM"),
         }
     }
 }
@@ -115,6 +120,8 @@ pub enum ProtocolConfig {
     Mosh(MoshConfig),
     /// Web bookmark configuration (opens URL in default browser)
     Web(WebConfig),
+    /// WinRM shell configuration
+    WinRm(WinRmConfig),
 }
 
 impl ProtocolConfig {
@@ -133,6 +140,7 @@ impl ProtocolConfig {
             Self::Kubernetes(_) => ProtocolType::Kubernetes,
             Self::Mosh(_) => ProtocolType::Mosh,
             Self::Web(_) => ProtocolType::Web,
+            Self::WinRm(_) => ProtocolType::WinRm,
         }
     }
 
@@ -291,6 +299,28 @@ pub struct TelnetConfig {
     /// What the Delete key sends
     #[serde(default)]
     pub delete_sends: DeleteSends,
+}
+
+/// WinRM protocol configuration
+///
+/// Sessions run the external `evil-winrm` client in a VTE terminal. The password
+/// is never part of its command line, see [`crate::protocol::WinRmProtocol`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WinRmConfig {
+    /// Connect over HTTPS, usually port 5986, instead of HTTP on 5985
+    #[serde(default)]
+    pub use_ssl: bool,
+    /// Custom command-line arguments for the client
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub custom_args: Vec<String>,
+    /// SSH connection to reach the host through, by an SSH tunnel
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub jump_host_id: Option<uuid::Uuid>,
+    /// Accept a self-signed or mismatched HTTPS certificate when running scripts.
+    /// Interactive sessions do not verify it at all: `evil-winrm` has no option
+    /// to do so.
+    #[serde(default)]
+    pub accept_invalid_certs: bool,
 }
 
 /// MOSH prediction mode
@@ -3625,11 +3655,7 @@ impl ZeroTrustConfig {
                     // ssh's own UserKnownHostsFile to the writable dir.
                     let known_hosts = ssh_dir.join("google_compute_known_hosts");
                     a.push("--strict-host-key-checking=no".to_string());
-                    a.push("--ssh-flag=-o".to_string());
-                    a.push(format!(
-                        "--ssh-flag=UserKnownHostsFile={}",
-                        known_hosts.display()
-                    ));
+                    a.extend(gcloud_known_hosts_flags(&known_hosts));
                 }
                 ("gcloud".to_string(), a)
             }
@@ -4123,9 +4149,47 @@ pub fn build_remote_app_freerdp_args(
     args
 }
 
+/// The `gcloud compute ssh` flags that point ssh's `UserKnownHostsFile` at
+/// `known_hosts`, or none when the path cannot be passed.
+///
+/// The option comes from [`crate::ssh_tunnel::user_known_hosts_option`]. gcloud
+/// splits every `--ssh-flag` value on whitespace, quotes included, so a path
+/// with a space is left out too; ssh then uses its default `known_hosts`.
+// ponytail: gcloud also replaces %USER%, %INSTANCE% and %INTERNAL% in the
+// value; a home path holding one of those is not guarded against.
+fn gcloud_known_hosts_flags(known_hosts: &std::path::Path) -> Vec<String> {
+    crate::ssh_tunnel::user_known_hosts_option(known_hosts)
+        .filter(|option| !option.chars().any(char::is_whitespace))
+        .map(|option| vec!["--ssh-flag=-o".to_string(), format!("--ssh-flag={option}")])
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod zerotrust_tests {
     use super::*;
+
+    /// Review item cleanup-gcloud-known-hosts: the gcloud flag goes through
+    /// the shared helper, and a path gcloud would split is left out.
+    #[test]
+    fn gcloud_known_hosts_flags_use_the_shared_helper() {
+        use std::path::Path;
+        assert_eq!(
+            gcloud_known_hosts_flags(Path::new("/home/u/.var/app/x/.ssh/kh")),
+            [
+                "--ssh-flag=-o",
+                "--ssh-flag=UserKnownHostsFile=/home/u/.var/app/x/.ssh/kh"
+            ]
+        );
+        assert_eq!(
+            gcloud_known_hosts_flags(Path::new("/home/100%u/.ssh/kh")),
+            [
+                "--ssh-flag=-o",
+                "--ssh-flag=UserKnownHostsFile=/home/100%%u/.ssh/kh"
+            ]
+        );
+        assert!(gcloud_known_hosts_flags(Path::new("/home/my name/.ssh/kh")).is_empty());
+        assert!(gcloud_known_hosts_flags(Path::new("/home/a\"b/kh")).is_empty());
+    }
 
     #[test]
     fn test_aws_ssm_build_command() {
@@ -4563,6 +4627,20 @@ pub struct WebConfig {
     /// `None` means a direct connection.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tunnel_via: Option<uuid::Uuid>,
+    /// An existing SOCKS5 proxy to browse through, as `socks5://host:port`
+    /// (see [`crate::protocol::normalize_socks_proxy`]). Unlike [`Self::tunnel_via`]
+    /// nothing is started: the proxy must already be running. The two are
+    /// mutually exclusive.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy: Option<String>,
+    /// Username for a [`Self::socks_proxy`] that requires a login. Browsers
+    /// cannot log in to one, so RustConn relays through
+    /// [`crate::socks_relay::SocksRelay`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy_username: Option<String>,
+    /// Name of the secret global variable holding that login's password.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub socks_proxy_password_variable: Option<String>,
 }
 
 // Manual Eq: zoom_level is always clamped to [0.3, 3.0] (finite, no NaN),
@@ -4581,6 +4659,9 @@ impl Default for WebConfig {
             accept_invalid_certs: false,
             hide_floating_toolbar: false,
             tunnel_via: None,
+            socks_proxy: None,
+            socks_proxy_username: None,
+            socks_proxy_password_variable: None,
         }
     }
 }
@@ -4615,6 +4696,12 @@ impl<'de> Deserialize<'de> for WebConfig {
             hide_floating_toolbar: bool,
             #[serde(default)]
             tunnel_via: Option<uuid::Uuid>,
+            #[serde(default)]
+            socks_proxy: Option<String>,
+            #[serde(default)]
+            socks_proxy_username: Option<String>,
+            #[serde(default)]
+            socks_proxy_password_variable: Option<String>,
         }
 
         let raw = WebConfigRaw::deserialize(deserializer)?;
@@ -4638,6 +4725,9 @@ impl<'de> Deserialize<'de> for WebConfig {
             accept_invalid_certs: raw.accept_invalid_certs,
             hide_floating_toolbar: raw.hide_floating_toolbar,
             tunnel_via: raw.tunnel_via,
+            socks_proxy: raw.socks_proxy,
+            socks_proxy_username: raw.socks_proxy_username,
+            socks_proxy_password_variable: raw.socks_proxy_password_variable,
         })
     }
 }

@@ -516,7 +516,7 @@ mod tests {
     /// Decrypting a pre-refactor `RCSC` blob still yields the original plaintext.
     ///
     /// Proves the extracted crypto reads blobs produced by the old `settings.rs`
-    /// format byte-for-byte (Requirement 14.1 — no silent data loss on upgrade).
+    /// format byte-for-byte (no silent data loss on upgrade).
     #[test]
     fn decrypts_pre_refactor_fixture_blob() {
         let blob = hex_to_bytes(FIXTURE_BLOB_HEX);

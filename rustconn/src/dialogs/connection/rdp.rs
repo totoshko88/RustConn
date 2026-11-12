@@ -775,6 +775,9 @@ pub(super) fn create_rdp_options() -> (
     crate::dialogs::widgets::enable_string_search(&rdp_jump_host_dropdown);
     rdp_jump_host_dropdown.set_size_request(200, -1);
     rdp_jump_host_dropdown.set_hexpand(false);
+    // A row suffix is not labelled by the row title, so name it for Orca.
+    rdp_jump_host_dropdown
+        .update_property(&[gtk4::accessible::Property::Label(&i18n("Jump Host"))]);
 
     let rdp_jump_host_row = adw::ActionRow::builder()
         .title(i18n("Jump Host"))

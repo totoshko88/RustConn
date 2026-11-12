@@ -1277,16 +1277,115 @@ pub fn resolve_first_hop_id(
     conn: &rustconn_core::Connection,
 ) -> Option<uuid::Uuid> {
     let groups = state_ref.list_groups_owned();
-    rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_id(
-        conn,
-        &groups,
-        &state_ref.settings().network,
-    )
+    // Failover's answer for this launch wins over the configured primary.
+    state_ref.chosen_gateway(conn, &groups).or_else(|| {
+        rustconn_core::connection::ssh_inheritance::resolve_ssh_jump_host_id(
+            conn,
+            &groups,
+            &state_ref.settings().network,
+        )
+    })
 }
 
+/// Chooses the jump host for a launch of `connection_id` that has fallbacks.
+///
+/// Returns `false` when the launch can go ahead now. Returns `true` when probing
+/// has started in the background: the caller must stop, and `retry` runs once
+/// the choice is recorded, on the main thread, and restarts the launch.
+pub(super) fn start_gateway_probe(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    retry: impl FnOnce() + 'static,
+) -> bool {
+    probe_gateway(state, connection_id, true, retry)
+}
+
+/// [`start_gateway_probe`] without the failover toasts, for bulk operations that
+/// report per host and would otherwise raise one toast per host.
+pub(super) fn start_gateway_probe_quiet(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    retry: impl FnOnce() + 'static,
+) -> bool {
+    probe_gateway(state, connection_id, false, retry)
+}
+
+fn probe_gateway(
+    state: &SharedAppState,
+    connection_id: Uuid,
+    announce: bool,
+    retry: impl FnOnce() + 'static,
+) -> bool {
+    use rustconn_core::connection::gateway_failover::{GatewayOutcome, probe_gateways};
+
+    let Ok(state_ref) = state.try_borrow() else {
+        return false;
+    };
+    if state_ref.gateway_choice_is_fresh(connection_id) {
+        return false;
+    }
+    let Some(conn) = state_ref.get_connection(connection_id) else {
+        return false;
+    };
+    let mut probes = state_ref.gateway_probes(conn);
+    if probes.is_empty() {
+        state_ref.clear_gateway_choice(connection_id);
+        return false;
+    }
+    let timeout = state_ref.settings().connection.port_check_timeout_secs;
+    drop(state_ref);
+
+    let globals = resolve_globals_with_ask(state, connection_id);
+    for (host, _) in probes.iter_mut().filter_map(|p| p.entry_point.as_mut()) {
+        *host = substitute_variables(host, &globals);
+    }
+
+    let state = state.clone();
+    crate::utils::spawn_blocking_with_callback(
+        move || probe_gateways(&probes, timeout),
+        move |selection| {
+            if let Some(selection) = selection {
+                state
+                    .borrow()
+                    .set_gateway_choice(connection_id, selection.gateway_id);
+                match selection.outcome {
+                    _ if !announce => {}
+                    GatewayOutcome::Primary => {}
+                    GatewayOutcome::FailedOver => {
+                        tracing::info!(gateway = %selection.gateway_name, "Failing over to a fallback jump host");
+                        crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                            "Jump host unreachable, connecting through ‘{}’",
+                            &[&selection.gateway_name],
+                        ));
+                    }
+                    GatewayOutcome::NoneReachable => {
+                        tracing::warn!(gateway = %selection.gateway_name, "No jump host responded to the probe");
+                        crate::toast::show_warning_toast_on_active_window(&i18n_f(
+                            "No jump host responded, trying ‘{}’",
+                            &[&selection.gateway_name],
+                        ));
+                    }
+                }
+            }
+            retry();
+        },
+    );
+    true
+}
+
+/// The `ssh` arguments that take a tunnel to `jump_conn` through the jump hosts
+/// past it.
+///
+/// `tunnel_has_password` is true when the tunnel answers `jump_conn`'s password
+/// through its askpass helper. Those hops then go through
+/// [`rustconn_core::jump_route::tunnel_hop_args`], so none of them inherits
+/// that helper. When they cannot (an address a shell could interpret), the
+/// usual route is returned and `create_tunnel` does not send the password.
 pub fn resolve_jump_chain_for_tunnel(
     state_ref: &crate::state::AppState,
     jump_conn: &rustconn_core::Connection,
+    tunnel_has_password: bool,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
 ) -> Vec<String> {
     let groups: Vec<rustconn_core::ConnectionGroup> = state_ref.list_groups_owned();
     let network = state_ref.settings().network.clone();
@@ -1382,14 +1481,39 @@ pub fn resolve_jump_chain_for_tunnel(
 
     // In Flatpak, use ProxyCommand so the nested SSH inherits known_hosts
     let flatpak_kh = rustconn_core::get_flatpak_known_hosts_path();
-    if flatpak_kh.is_some() || first_hop_pkcs11.is_some() {
+    let proxy_command_route = flatpak_kh.is_some() || first_hop_pkcs11.is_some();
+    if tunnel_has_password {
+        // The deeper hops get what the routes below give them: the first
+        // hop's key only where those use a ProxyCommand.
+        let request = rustconn_core::jump_route::TunnelHopsRequest {
+            hops: &chain,
+            first_hop_identity: first_hop_identity.as_deref(),
+            deeper_hop_identity: first_hop_identity
+                .as_deref()
+                .filter(|_| proxy_command_route),
+            first_hop_pkcs11: first_hop_pkcs11.as_deref(),
+            known_hosts: flatpak_kh.as_deref(),
+            hop_host_keys,
+        };
+        if let Some(args) = rustconn_core::jump_route::tunnel_hop_args(&request) {
+            return args;
+        }
+        tracing::warn!(
+            "Tunnel: a jump host past the first has an address RustConn does not pass to a \
+             shell, so the first jump host's password is not sent"
+        );
+    }
+    if proxy_command_route {
         // Build ProxyCommand for the first hop in the chain. `-J` does not pass
         // -o/-i to the nested SSH, so Flatpak known_hosts and PKCS#11 tokens must
         // be injected explicitly here.
         let mut proxy_parts = vec!["ssh".to_string(), "-W".to_string(), "%h:%p".to_string()];
-        if let Some(ref kh_path) = flatpak_kh {
+        if let Some(option) = flatpak_kh
+            .as_deref()
+            .and_then(rustconn_core::jump_route::proxy_known_hosts_option)
+        {
             proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!("UserKnownHostsFile={}", kh_path.display()));
+            proxy_parts.push(option);
         }
 
         // Pass identity file for the first hop if available
@@ -1831,8 +1955,20 @@ fn start_spice_connection_internal(
                 .and_then(|p| rustconn_core::resolve_key_path(&p))
                 .map(|p| p.to_string_lossy().to_string());
 
+            let password = state_ref
+                .get_cached_credentials(jump_id)
+                .filter(|c| {
+                    use secrecy::ExposeSecret;
+                    !c.password.expose_secret().is_empty()
+                })
+                .map(|c| c.password.clone());
             // Resolve recursive jump host chain (e.g. jump_conn itself needs a jump host)
-            let extra_args = resolve_jump_chain_for_tunnel(&state_ref, jump_conn);
+            let extra_args = resolve_jump_chain_for_tunnel(
+                &state_ref,
+                jump_conn,
+                password.is_some(),
+                rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+            );
 
             let params = rustconn_core::ssh_tunnel::SshTunnelParams {
                 jump_host: jump_dest,
@@ -1840,13 +1976,7 @@ fn start_spice_connection_internal(
                 remote_host: host.clone(),
                 remote_port: port,
                 identity_file,
-                password: state_ref
-                    .get_cached_credentials(jump_id)
-                    .filter(|c| {
-                        use secrecy::ExposeSecret;
-                        !c.password.expose_secret().is_empty()
-                    })
-                    .map(|c| c.password.clone()),
+                password,
                 extra_args,
                 launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
             };
@@ -2181,6 +2311,20 @@ pub fn reconnect_generic_vte_in_place(
                 telnet_config.delete_sends,
             );
         }
+        rustconn_core::ProtocolConfig::WinRm(_) => {
+            let globals = resolve_globals_with_ask(state, connection_id);
+            if !launch_winrm(
+                state,
+                notebook,
+                sidebar,
+                session_id,
+                connection_id,
+                &conn,
+                &globals,
+            ) {
+                return false;
+            }
+        }
         rustconn_core::ProtocolConfig::Serial(_) => {
             let serial = SerialProtocol::new();
             let Some(command) = serial.build_command(&conn) else {
@@ -2377,7 +2521,189 @@ pub fn start_telnet_connection_observed(
     }
 }
 
-/// Internal function to start Telnet connection (after port check).
+/// Spawns `evil-winrm` in an open terminal tab and answers its password prompt.
+///
+/// The password goes through the prompt, never `-p`, so it stays out of the
+/// process list. Returns `false` when the session could not start.
+fn launch_winrm(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    sidebar: &SharedSidebar,
+    session_id: Uuid,
+    connection_id: Uuid,
+    conn: &rustconn_core::Connection,
+    global_variables: &[Variable],
+) -> bool {
+    let Some(client) = rustconn_core::protocol::locate_winrm_client() else {
+        let hint = if rustconn_core::flatpak::is_flatpak() {
+            i18n(
+                "evil-winrm was not found on this computer. Install it outside the Flatpak, from your distribution or with: gem install evil-winrm. It must be on the PATH of your login shell on the host (set in ~/.profile, not only in ~/.bashrc).",
+            )
+        } else if rustconn_core::snap::is_snap() {
+            i18n(
+                "evil-winrm cannot run inside the Snap. Connect to Windows over SSH instead, or use the Flatpak or a distribution package of RustConn",
+            )
+        } else {
+            i18n("evil-winrm is not installed. Install it with: gem install evil-winrm")
+        };
+        notebook.display_connect_banner(session_id, &format!("{hint}\r\n"));
+        sidebar.update_connection_status(&connection_id.to_string(), "failed");
+        return false;
+    };
+
+    let mut resolved = conn.clone();
+    resolved.host = substitute_variables(&conn.host, global_variables);
+    resolved.username = conn
+        .username
+        .as_ref()
+        .map(|user| substitute_variables(user, global_variables));
+
+    let Some(params) = ssh_tunnel_params_via_jump(
+        state,
+        conn,
+        resolved.host.clone(),
+        conn.port,
+        rustconn_core::ssh_tunnel::HopHostKeys::UserConfig,
+    ) else {
+        return spawn_winrm(
+            state,
+            notebook,
+            session_id,
+            connection_id,
+            &resolved,
+            &client,
+        );
+    };
+
+    // Raised off the GTK thread so a dead jump host cannot freeze the window.
+    let state = state.clone();
+    let notebook = notebook.clone();
+    let sidebar = sidebar.clone();
+    spawn_blocking_with_callback(
+        move || {
+            let mut tunnel = rustconn_core::ssh_tunnel::create_tunnel(&params)?;
+            rustconn_core::ssh_tunnel::wait_for_tunnel_ready(
+                &mut tunnel,
+                50,
+                std::time::Duration::from_millis(200),
+            )?;
+            Ok::<_, rustconn_core::ssh_tunnel::SshTunnelError>(tunnel)
+        },
+        move |result| match result {
+            Ok(tunnel) => {
+                resolved.host = "127.0.0.1".to_string();
+                resolved.port = tunnel.local_port();
+                // The tunnel closes with the tab.
+                notebook.store_ssh_tunnel(session_id, tunnel);
+                // A host client reaches the tunnel's 127.0.0.1 port because the
+                // Flatpak shares the host's network namespace (`--share=network`).
+                spawn_winrm(
+                    &state,
+                    &notebook,
+                    session_id,
+                    connection_id,
+                    &resolved,
+                    &client,
+                );
+            }
+            Err(error) => {
+                tracing::error!(%error, "SSH tunnel for WinRM failed");
+                notebook.display_connect_banner(
+                    session_id,
+                    &format!(
+                        "{}\r\n",
+                        i18n_f("Could not open the SSH tunnel: {}", &[&error.to_string()])
+                    ),
+                );
+                sidebar.update_connection_status(&connection_id.to_string(), "failed");
+            }
+        },
+    );
+    true
+}
+
+/// Starts the client against `resolved`, which already has its final address.
+fn spawn_winrm(
+    state: &SharedAppState,
+    notebook: &SharedNotebook,
+    session_id: Uuid,
+    connection_id: Uuid,
+    resolved: &rustconn_core::Connection,
+    client: &rustconn_core::protocol::WinRmClient,
+) -> bool {
+    use rustconn_core::protocol::{
+        Protocol, WINRM_PASSWORD_PROMPT, WinRmProtocol, format_command_message,
+        format_connection_message,
+    };
+
+    let Some(command) = WinRmProtocol::new().build_command(resolved) else {
+        tracing::warn!(%session_id, "Failed to build WinRM command");
+        return false;
+    };
+    let command = client.command(command);
+
+    let conn_msg = format_connection_message("WinRM", &resolved.host);
+    let cmd_msg = format_command_message(&command.join(" "));
+    notebook.display_connect_banner(session_id, &format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n"));
+    let argv: Vec<&str> = command.iter().map(String::as_str).collect();
+    notebook.spawn_command(session_id, &argv, None, None, None);
+
+    prompt_autofill::install_login_autofill(
+        notebook,
+        session_id,
+        prompt_autofill::LoginAutofill {
+            username: None,
+            password: cached_connection_password(state, connection_id),
+            matcher: rustconn_core::LoginPromptMatcher::new(None, Some(WINRM_PASSWORD_PROMPT)),
+            protocol: "winrm",
+            deadline_secs: None,
+        },
+    );
+    true
+}
+
+/// The SSH tunnel that reaches `host:port` through `conn`'s jump host, if any.
+pub(super) fn ssh_tunnel_params_via_jump(
+    state: &SharedAppState,
+    conn: &rustconn_core::Connection,
+    host: String,
+    port: u16,
+    hop_host_keys: rustconn_core::ssh_tunnel::HopHostKeys,
+) -> Option<rustconn_core::ssh_tunnel::SshTunnelParams> {
+    let jump_id = resolve_first_hop_id(&*state.try_borrow().ok()?, conn)?;
+    // Before the route: the hops past the jump host are routed differently
+    // when the tunnel sends its password.
+    let password = state
+        .try_borrow_mut()
+        .ok()
+        .and_then(|mut s| s.ensure_connection_password(jump_id));
+    let state_ref = state.try_borrow().ok()?;
+    let jump_conn = state_ref.get_connection(jump_id)?;
+    let jump_host = jump_conn.username.as_ref().map_or_else(
+        || jump_conn.host.clone(),
+        |user| format!("{user}@{}", jump_conn.host),
+    );
+    let jump_port = jump_conn.port;
+    let groups = state_ref.list_groups_owned();
+    let identity_file = ssh_inheritance::resolve_ssh_key_path(jump_conn, &groups)
+        .and_then(|path| rustconn_core::resolve_key_path(&path))
+        .map(|path| path.to_string_lossy().to_string());
+    let extra_args =
+        resolve_jump_chain_for_tunnel(&state_ref, jump_conn, password.is_some(), hop_host_keys);
+    drop(state_ref);
+    Some(rustconn_core::ssh_tunnel::SshTunnelParams {
+        jump_host,
+        jump_port,
+        remote_host: host,
+        remote_port: port,
+        identity_file,
+        password,
+        extra_args,
+        launcher: rustconn_core::ssh_tunnel::TunnelLauncher::OpenSsh,
+    })
+}
+
+/// Internal function to start Telnet or WinRM connection (after port check).
 ///
 /// Creates a terminal tab and spawns the telnet process.
 fn start_telnet_connection_internal(
@@ -2411,11 +2737,11 @@ fn start_telnet_connection_internal(
     // Resolve automation config with group inheritance
     let resolved_automation = resolve_automation_for_connection(state, conn);
 
-    // Create terminal tab for Telnet
+    // Create terminal tab for Telnet or WinRM
     let session_id = notebook.create_terminal_tab_with_settings(
         connection_id,
         &conn.name,
-        "telnet",
+        conn.protocol_config.protocol_type().as_str(),
         Some(&resolved_automation),
         &terminal_settings,
         conn.theme_override.as_ref(),
@@ -2452,22 +2778,6 @@ fn start_telnet_connection_internal(
 
     let host = substitute_variables(&conn.host, &global_variables);
 
-    // Get custom args and keyboard settings from TelnetConfig
-    let (extra_args, backspace_sends, delete_sends) =
-        if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config {
-            (
-                config.custom_args.clone(),
-                config.backspace_sends,
-                config.delete_sends,
-            )
-        } else {
-            (
-                Vec::new(),
-                rustconn_core::models::BackspaceSends::Automatic,
-                rustconn_core::models::DeleteSends::Automatic,
-            )
-        };
-
     // Update last_connected timestamp
     if let Ok(mut state_mut) = state.try_borrow_mut()
         && let Err(e) = state_mut.update_last_connected(connection_id)
@@ -2483,54 +2793,89 @@ fn start_telnet_connection_internal(
     // Wire up child exited callback
     MainWindow::setup_child_exited_handler(state, notebook, sidebar, session_id, connection_id);
 
-    // Build telnet command string for display
-    let mut cmd_parts = vec!["telnet".to_string()];
-    cmd_parts.extend(extra_args.clone());
-    cmd_parts.push(host.clone());
-    cmd_parts.push(port.to_string());
-    let telnet_command = cmd_parts.join(" ");
-
-    // Display CLI output feedback
-    let conn_msg = format_connection_message("Telnet", &host);
-    let cmd_msg = format_command_message(&telnet_command);
-    let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
-    notebook.display_connect_banner(session_id, &feedback);
-
-    // Spawn telnet
-    let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
-    notebook.spawn_telnet(
-        session_id,
-        &host,
-        port,
-        &extra_refs,
-        backspace_sends,
-        delete_sends,
-    );
-
-    // --- Automatic login (issue #254) ---
-    // Telnet has no authentication protocol: the device prints its own prompts
-    // and expects the account name and the password to be typed. Network gear
-    // words those prompts inconsistently (`>>User name:`, `Username:`,
-    // `login:`), so the expected text can be overridden per connection or per
-    // group; unset falls back to the built-in matchers.
-    prompt_autofill::install_login_autofill(
-        notebook,
-        session_id,
-        login_autofill_for(
+    if matches!(
+        conn.protocol_config,
+        rustconn_core::ProtocolConfig::WinRm(_)
+    ) {
+        launch_winrm(
             state,
+            notebook,
+            sidebar,
+            session_id,
             connection_id,
             conn,
-            &resolved_automation,
             &global_variables,
-            "telnet",
-        ),
-    );
+        );
+    } else {
+        // Get custom args and keyboard settings from TelnetConfig
+        let (extra_args, backspace_sends, delete_sends) =
+            if let rustconn_core::ProtocolConfig::Telnet(ref config) = conn.protocol_config {
+                (
+                    config.custom_args.clone(),
+                    config.backspace_sends,
+                    config.delete_sends,
+                )
+            } else {
+                (
+                    Vec::new(),
+                    rustconn_core::models::BackspaceSends::Automatic,
+                    rustconn_core::models::DeleteSends::Automatic,
+                )
+            };
+
+        // Build telnet command string for display
+        let mut cmd_parts = vec!["telnet".to_string()];
+        cmd_parts.extend(extra_args.clone());
+        cmd_parts.push(host.clone());
+        cmd_parts.push(port.to_string());
+        let telnet_command = cmd_parts.join(" ");
+
+        // Display CLI output feedback
+        let conn_msg = format_connection_message("Telnet", &host);
+        let cmd_msg = format_command_message(&telnet_command);
+        let feedback = format!("{conn_msg}\r\n{cmd_msg}\r\n\r\n");
+        notebook.display_connect_banner(session_id, &feedback);
+
+        // Spawn telnet
+        let extra_refs: Vec<&str> = extra_args.iter().map(String::as_str).collect();
+        notebook.spawn_telnet(
+            session_id,
+            &host,
+            port,
+            &extra_refs,
+            backspace_sends,
+            delete_sends,
+        );
+
+        // --- Automatic login (issue #254) ---
+        // Telnet has no authentication protocol: the device prints its own prompts
+        // and expects the account name and the password to be typed. Network gear
+        // words those prompts inconsistently (`>>User name:`, `Username:`,
+        // `login:`), so the expected text can be overridden per connection or per
+        // group; unset falls back to the built-in matchers.
+        prompt_autofill::install_login_autofill(
+            notebook,
+            session_id,
+            login_autofill_for(
+                state,
+                connection_id,
+                conn,
+                &resolved_automation,
+                &global_variables,
+                "telnet",
+            ),
+        );
+    }
 
     // --- Auto-recording for Telnet ---
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
         let recording_conn_name = conn_name.clone();
-        let recording_ssh_params = Some(crate::terminal::SshRecordingParams {
+        let recording_ssh_params = matches!(
+            conn.protocol_config,
+            rustconn_core::ProtocolConfig::Telnet(_)
+        )
+        .then(|| crate::terminal::SshRecordingParams {
             host: host.clone(),
             port,
             username: conn.username.clone(),
@@ -2541,7 +2886,7 @@ fn start_telnet_connection_internal(
             notebook_clone.start_recording(session_id, &recording_conn_name, recording_ssh_params);
             tracing::info!(
                 %session_id,
-                "Auto-recording started after Telnet connection"
+                "Auto-recording started after Telnet or WinRM connection"
             );
         });
     }

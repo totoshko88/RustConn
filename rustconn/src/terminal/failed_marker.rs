@@ -8,7 +8,7 @@
 //! [`super::highlight_overlay`] uses, reusing its terminal-overlay plumbing
 //! (`grid_origin`, `attach_to_host_overlay`, `next_frame_redraw`).
 //!
-//! It is deliberately minimal and non-blocking (Requirement 3.3): a margin bar,
+//! It is deliberately minimal and non-blocking: a margin bar,
 //! not a modal, not a full-row wash. A row-background tint was the stated
 //! fallback if a margin bar proved unworkable; the margin bar works, so that is
 //! what ships. The marker is purely a function of the registry, so it stays
@@ -53,7 +53,11 @@ pub(super) struct FailedMarkerOverlay {
 impl FailedMarkerOverlay {
     /// Creates the failure-marker layer for `terminal`, reading `registry`.
     pub(super) fn attach(terminal: &Terminal, registry: Rc<RefCell<MarkRegistry>>) -> Self {
-        let drawing_area = DrawingArea::new();
+        // Presentation: a decoration over the terminal, whose own text a
+        // screen reader already reads; `accessible-role` is construct-only.
+        let drawing_area = DrawingArea::builder()
+            .accessible_role(gtk4::AccessibleRole::Presentation)
+            .build();
         drawing_area.set_hexpand(true);
         drawing_area.set_vexpand(true);
         // Mouse events pass through to the terminal underneath.

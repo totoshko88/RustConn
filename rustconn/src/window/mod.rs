@@ -21,6 +21,7 @@ mod history_actions;
 mod key_setup;
 mod key_unlock;
 mod macro_dispatch;
+mod mc_launch;
 mod navigation_actions;
 mod network_monitor;
 mod operations;
@@ -28,6 +29,7 @@ mod prompt_autofill;
 pub(crate) mod protocols;
 mod protocols_ssh;
 mod rdp_vnc;
+mod remote_script;
 mod resume_monitor;
 mod session_lifecycle;
 pub mod session_restore;
@@ -812,6 +814,23 @@ impl MainWindow {
             }
         });
 
+        // A renamed session's split pane header (issue #277) follows the rename,
+        // for a guest and an owner alike (issue #421). The map is held weakly:
+        // each bridge's title listener holds the notebook, so a strong
+        // reference from the notebook's hook would close a cycle.
+        {
+            let bridges_weak = Rc::downgrade(&session_split_bridges);
+            terminal_notebook.set_on_session_relabelled(move |session_id, name| {
+                let Some(bridges) = bridges_weak.upgrade() else {
+                    return;
+                };
+                let bridge = bridges.borrow().get(&session_id).cloned();
+                if let Some(bridge) = bridge {
+                    bridge.relabel_session(session_id, name);
+                }
+            });
+        }
+
         // Wire activity monitoring from the single session-creation choke point.
         // This covers every terminal protocol and both synchronous and async
         // (port-checked) connection paths, regardless of which connect action
@@ -870,6 +889,22 @@ impl MainWindow {
                             &state_for_sub,
                         );
                     });
+
+                // A split tab names its focused pane (issue #421), so the
+                // subtitle follows pane focus too, not only tab switches.
+                let header_title_for_split = header_title.clone();
+                let state_for_split = state.clone();
+                let notebook_for_split = Rc::downgrade(&terminal_notebook);
+                terminal_notebook.set_on_split_title_changed(move || {
+                    let Some(notebook) = notebook_for_split.upgrade() else {
+                        return;
+                    };
+                    Self::refresh_header_subtitle(
+                        &header_title_for_split,
+                        &notebook,
+                        &state_for_split,
+                    );
+                });
             }
         }
 
@@ -964,6 +999,7 @@ impl MainWindow {
                 let is_vte_protocol = protocol.as_deref().is_some_and(|p| {
                     p == "ssh"
                         || p == "telnet"
+                        || p == "winrm"
                         || p == "serial"
                         || p == "kubernetes"
                         || p == "mosh"
@@ -3138,6 +3174,42 @@ impl MainWindow {
             }
         }
 
+        // Jump host failover: the choice is made off the main thread, so a
+        // connection with fallbacks comes back through here once it is known.
+        // Ahead of Wake-on-LAN and the pre-connect task, which must run once.
+        drop(state_ref);
+        let retry = {
+            let state = state.clone();
+            let notebook = notebook.clone();
+            let sidebar = sidebar.clone();
+            let monitoring = Rc::clone(monitoring);
+            let observer = observer.clone();
+            move || {
+                let result = Self::start_connection_inner(
+                    &state,
+                    &notebook,
+                    &sidebar,
+                    &monitoring,
+                    connection_id,
+                    observer,
+                    false,
+                );
+                if matches!(result, types::ConnectionStartResult::Failed) {
+                    sidebar.update_connection_status(&connection_id.to_string(), "failed");
+                    crate::toast::show_error_toast_on_active_window(&crate::i18n::i18n(
+                        "Connection failed",
+                    ));
+                }
+            }
+        };
+        if protocols::start_gateway_probe(state, connection_id, retry) {
+            return types::ConnectionStartResult::Pending;
+        }
+        let state_ref = state.borrow();
+        let Some(conn) = state_ref.get_connection(connection_id) else {
+            return types::ConnectionStartResult::Failed;
+        };
+
         // Auto-WoL: send magic packet before connecting if configured
         // Fire-and-forget on background thread to avoid blocking GTK
         if let Some(wol_config) = conn.get_wol_config() {
@@ -3379,7 +3451,7 @@ impl MainWindow {
         // *may* be pending so we can distinguish Pending from Failed below.
         let may_be_pending = matches!(
             protocol.as_str(),
-            "ssh" | "vnc" | "spice" | "telnet" | "mosh"
+            "ssh" | "vnc" | "spice" | "telnet" | "winrm" | "mosh"
         );
 
         // The key sequence goes out when the session exists, which for an
@@ -3421,7 +3493,7 @@ impl MainWindow {
                 connection_id,
                 &conn_clone,
             ),
-            "telnet" => protocols::start_telnet_connection_observed(
+            "telnet" | "winrm" => protocols::start_telnet_connection_observed(
                 state,
                 notebook,
                 sidebar,
@@ -4159,9 +4231,11 @@ impl MainWindow {
     /// Sets the content header's subtitle to the active connection's group
     /// path (e.g. "AWS Test Lab / Prod"), gated on `window_title_shows_path`.
     ///
-    /// The connection comes from the selected tab's session metadata, not its
-    /// title: a title carries a "\[group\] " prefix once the tab is grouped, and
-    /// two connections may share a name. The subtitle is cleared when the
+    /// The connection comes from the session metadata of the session the
+    /// selected tab is named after (for a split tab, the focused pane's —
+    /// issue #421), not from its title: a title carries a "\[group\] " prefix
+    /// once the tab is grouped, and two connections may share a name. The
+    /// subtitle is cleared when the
     /// setting is off, the page has no session (Welcome), the session has no
     /// saved connection (local shell), or the connection is ungrouped. The WM
     /// window title (issue #211) is untouched. Shared by the tab-switch hook
@@ -4172,8 +4246,10 @@ impl MainWindow {
         notebook: &SharedNotebook,
         state: &SharedAppState,
     ) {
+        // The session the tab is named after: for a split tab, the focused
+        // pane's, so the subtitle and the title describe one connection.
         let connection_id = notebook
-            .get_active_session_id()
+            .active_named_session_id()
             .and_then(|session_id| notebook.get_session_info(session_id))
             .map(|info| info.connection_id);
         let Ok(state_ref) = state.try_borrow() else {
@@ -5722,7 +5798,7 @@ mod tests {
     #[test]
     fn only_detached_sessions_still_count_as_open() {
         // The main window can hold nothing but a Welcome tab while a session
-        // runs in its own window — quitting must still ask (Requirement 6.4).
+        // runs in its own window — quitting must still ask.
         assert_eq!(open_session_count(0, 2, 0), 2);
     }
 

@@ -400,8 +400,6 @@ impl SecretBackend for EncryptedFileBackend {
 mod tests {
     use super::*;
 
-    /// **Validates: Requirements 18.2, 8.6**
-    ///
     /// The private `StoredCredentials` redacts its secret fields in `Debug`: a
     /// sentinel password/passphrase must not appear in the rendered string, while
     /// non-secret fields (username/domain) remain visible.

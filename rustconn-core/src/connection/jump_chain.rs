@@ -31,7 +31,7 @@ use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
 /// Matches the limit the GUI resolvers use. A chain this long is a
 /// configuration mistake, not a topology anyone maintains deliberately, and the
 /// cap is a second line of defence behind the visited-set cycle check.
-const MAX_HOPS: usize = 10;
+pub(super) const MAX_HOPS: usize = 10;
 
 /// A resolved jump-host chain.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -85,7 +85,7 @@ impl JumpChain {
 /// Formats a connection as an OpenSSH hop spec: `[user@]host[:port]`.
 ///
 /// The port is omitted when it is 22, matching what the GUI resolvers emit.
-fn hop_spec(conn: &Connection) -> String {
+pub(super) fn hop_spec(conn: &Connection) -> String {
     let mut spec = conn.host.clone();
     if let Some(user) = &conn.username {
         spec = format!("{user}@{spec}");
@@ -96,19 +96,8 @@ fn hop_spec(conn: &Connection) -> String {
     spec
 }
 
-/// Returns the `jump_host_id` of an SSH-family connection.
-fn jump_host_id_of(conn: &Connection) -> Option<Uuid> {
-    match &conn.protocol_config {
-        ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
-        ProtocolConfig::Rdp(c) => c.jump_host_id,
-        ProtocolConfig::Vnc(c) => c.jump_host_id,
-        ProtocolConfig::Spice(c) => c.jump_host_id,
-        _ => None,
-    }
-}
-
 /// Returns the free-text `proxy_jump` of an SSH-family connection.
-fn proxy_jump_of(conn: &Connection) -> Option<&str> {
+pub(super) fn proxy_jump_of(conn: &Connection) -> Option<&str> {
     match &conn.protocol_config {
         ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.proxy_jump.as_deref(),
         _ => None,
@@ -184,7 +173,7 @@ pub fn resolve_jump_chain(
             chain.hop_ids.insert(insert_at, None);
         }
 
-        current = jump_host_id_of(hop);
+        current = hop.jump_host_id();
     }
 
     chain
@@ -263,8 +252,8 @@ pub enum BastionFallback {
 
 /// Returns `true` when `connection`'s launch path routes through a jump host.
 ///
-/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC and SPICE reach a bastion
-/// through an SSH tunnel. SPICE over a local Unix socket connects locally and
+/// SSH and SFTP hand the chain to OpenSSH; RDP, VNC, SPICE and WinRM reach a
+/// bastion through an SSH tunnel. SPICE over a local Unix socket connects locally and
 /// ignores the jump host. Every other protocol (Telnet, Serial, Kubernetes,
 /// MOSH, Zero Trust, Web, …) never consults one — an inherited group or global
 /// jump host means nothing to it, so a dangling one must not be reported.
@@ -274,7 +263,8 @@ pub fn routes_through_jump_host(connection: &Connection) -> bool {
         ProtocolConfig::Ssh(_)
         | ProtocolConfig::Sftp(_)
         | ProtocolConfig::Rdp(_)
-        | ProtocolConfig::Vnc(_) => true,
+        | ProtocolConfig::Vnc(_)
+        | ProtocolConfig::WinRm(_) => true,
         ProtocolConfig::Spice(c) => c.unix_socket_path.is_none(),
         _ => false,
     }
@@ -330,7 +320,7 @@ fn classify_first_bastion_origin(
 ) -> Option<(Uuid, BastionRefOrigin)> {
     use crate::models::NetworkMode;
 
-    if let Some(id) = jump_host_id_of(connection) {
+    if let Some(id) = connection.jump_host_id() {
         return Some((id, BastionRefOrigin::Connection));
     }
     if connection.network_mode == NetworkMode::Direct {
@@ -382,6 +372,9 @@ fn classify_first_bastion_origin(
 /// ([`routes_through_jump_host`]) has nothing to report, even when a group or
 /// the global settings name a bastion that is gone.
 ///
+/// A missing primary is reported even when a fallback jump host is still
+/// there; a caller that fails over checks [`failover_covers_missing_primary`].
+///
 /// A connection naming *itself* in its own Jump Host field is reported as
 /// [`DanglingReason::SelfReference`]. The same id arriving through inheritance
 /// is not: that is a bastion living in the group it serves, and going direct is
@@ -402,6 +395,31 @@ pub fn find_dangling_bastions(
         |id| connections.iter().find(|c| c.id == id),
         groups,
         network,
+    )
+}
+
+/// Whether gateway failover covers a missing primary jump host: the primary
+/// [`resolve_ssh_jump_host_candidates`](crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates)
+/// returns is gone and one of its fallbacks still exists.
+///
+/// [`find_dangling_bastions`] reports such a primary all the same, because a
+/// path that does not fail over (`rustconn-cli connect`) really does skip it.
+/// A caller that fails over, as the GUI connect path does, checks this first
+/// and leaves out the warning, since the fallback carries the session.
+#[must_use]
+pub fn failover_covers_missing_primary<'a>(
+    connection: &Connection,
+    lookup: impl Fn(Uuid) -> Option<&'a Connection>,
+    groups: &[ConnectionGroup],
+    network: &NetworkSettings,
+) -> bool {
+    let candidates = crate::connection::ssh_inheritance::resolve_ssh_jump_host_candidates(
+        connection, groups, network,
+    );
+    matches!(
+        candidates.as_slice(),
+        [primary, fallbacks @ ..]
+            if lookup(*primary).is_none() && fallbacks.iter().any(|id| lookup(*id).is_some())
     )
 }
 
@@ -472,7 +490,7 @@ pub fn find_dangling_bastions_by<'a>(
         // The hop resolved; follow its own `jump_host_id` outward. Deeper hops
         // are always own-field references (a bastion's bastion), so the origin
         // is Connection and the source is this hop.
-        let Some(next_id) = jump_host_id_of(hop) else {
+        let Some(next_id) = hop.jump_host_id() else {
             break;
         };
         source_id = hop.id;

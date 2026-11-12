@@ -1,3 +1,54 @@
+rustconn (0.24.11-1) unstable; urgency=medium
+
+  * Version bump to 0.24.11
+  * Added: fallback jump hosts, tried in order when a connection's or
+    group's Jump Host is unreachable (PR #420, contributed by
+    Konstantinos Patronas)
+  * Added: Duplicate as Range makes numbered copies of a connection, also
+    rustconn-cli duplicate --range (PR #420, contributed by
+    Konstantinos Patronas)
+  * Added: Run Local Script runs a local bash script on many SSH hosts, or
+    a .ps1 on WinRM hosts, also rustconn-cli run-script (PR #420,
+    contributed by Konstantinos Patronas)
+  * Added: WinRM connections through the external evil-winrm client
+    (PR #420, contributed by Konstantinos Patronas)
+  * Added: Web connections can browse through an existing SOCKS5 proxy,
+    with an optional login (PR #420, contributed by Konstantinos Patronas)
+  * Fixed: the Routing changed warning notices a re-pointed saved Jump
+    Host (PR #420, contributed by Konstantinos Patronas)
+  * Fixed: tunnelled and proxied browsers no longer leave profiles behind
+  * Fixed: a split tab is named after the focused pane (#421)
+  * Fixed: a tunnel no longer sends its jump host's password to farther
+    jump hosts or to a proxy set in ~/.ssh/config
+  * Fixed: SFTP through Midnight Commander signs in with the saved
+    password; its ssh wrapper directory is owner-only
+  * Fixed: macOS: a Homebrew mc is found when RustConn starts from the
+    Dock or Finder (#422)
+  * Fixed: Flatpak: a home path with a space no longer breaks
+    known_hosts; a host evil-winrm from rbenv, rvm or a gem dir starts
+  * Fixed: a slow Match exec in ~/.ssh/config no longer stalls a connect
+  * Fixed: Ctrl+W closes a dialog, a playback tab or the empty window;
+    Ctrl+, and F10 work in a detached session window
+  * Fixed: screen readers name each session view and every Jump Host
+    dropdown; the sidebar context menu shows a focus ring; split-pane
+    colours keep 3:1 contrast in light and dark themes
+  * Fixed: Ukrainian uses one form for "script" and for WinRM hosts
+  * Changed: update every device that shares a configuration before using
+    WinRM or a SOCKS5 proxy; 0.24.10 and older cannot read it
+  * Changed: F1 opens the user guide; a user binding wins over a default
+  * Changed: shorter AppStream summary; package descriptions mention the
+    external command-line tools some features use
+  * Changed: additional GPL-3.0 section 7 terms for the author's code
+    (NOTICE); the copyright line names Ukraine
+  * Changed: Flatpak FreeRDP 3.33.0→3.33.1
+  * Documentation: GNOME Code of Conduct, TRADEMARKS.md, AI-assisted
+    development and translation policy, official sources; LICENSE, NOTICE
+    and TRADEMARKS.md ship with the packages
+  * Dependencies: libz-sys 1.1.33, openh264 0.9.10, rpassword 7.5.5,
+    rustls-pki-types 1.16.0, zip 9.5.1
+
+ -- Anton Isaiev <totoshko88@gmail.com>  Thu, 12 Nov 2026 13:49:20 +0200
+
 rustconn (0.24.10-1) unstable; urgency=medium
 
   * Version bump to 0.24.10

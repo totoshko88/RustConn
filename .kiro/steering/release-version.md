@@ -33,7 +33,7 @@ Then perform ALL of the following steps:
 2. **DEPENDENCY FRESHNESS CHECK (report, then ask before applying)** — before bumping anything, audit EVERY dependency type for available updates so the release ships current deps. Report findings grouped; do NOT silently apply. Ask the user which (if any) to update before continuing.
    - **Cargo**: `cargo update --dry-run 2>&1` (patch/minor/major) + `cargo deny check advisories` (fallback `cargo audit`). Record applied updates in CHANGELOG.md `### Dependencies`.
    - **CLI downloads**: run `scripts/check-cli-versions.sh` (or read `rustconn-core/src/cli_download.rs`). For any outdated PINNED tool, update `pinned_version`, `download_url`, `aarch64_url`, and `checksum` (Static policy → fetch the new .sha256). Record under CHANGELOG.md `### Changed` as `- CLI downloads — Tool X.Y.Z→X.Y.W`.
-   - **Flatpak** (`packaging/flatpak/*.yml` + keep `packaging/flathub/*.yml` in sync): check `org.gnome.Platform`/`org.gnome.Sdk` `runtime-version` (currently '50'), the `rust-stable` SDK extension, and bundled pinned source modules with `x-checker-data` (FreeRDP `freerdp-X.Y.Z.tar.xz`, cJSON). For any bump, update the version AND its `sha256`. Ensure flathub manifest FreeRDP version matches the local manifest (they can drift independently — sync flathub to local if behind).
+   - **Flatpak** (`packaging/flatpak/*.yml`; `packaging/flathub/*.yml` is maintainer-only, see `packaging/AGENTS.md` "Flathub is maintainer-only"): check `org.gnome.Platform`/`org.gnome.Sdk` `runtime-version` (currently '50'), the `rust-stable` SDK extension, and bundled pinned source modules with `x-checker-data` (FreeRDP `freerdp-X.Y.Z.tar.xz`, cJSON). For any bump, update the version AND its `sha256`. Compare the flathub manifest's FreeRDP version with the local manifest (they can drift independently) and, if Flathub is behind, report it as a maintainer task; do not edit it.
    - **Nix** (`flake.nix`): version string must match workspace version (checked by `release.sh`). No dependency inputs to audit — uses nixpkgs unstable.
    - **Snap** (`snap/snapcraft.yaml`): check `base` (core26) and the `gnome` extension (gnome-core26 platform, mesa-2604; needs Snapcraft >= 9.2, issue #174) — plus pinned `stage-packages`/`build-packages` drift.
    - If everything is current, note 'dependencies up to date' and proceed.
@@ -42,8 +42,12 @@ Then perform ALL of the following steps:
 
    ```bash
    scripts/bump-version.sh X.Y.Z            # dry run: shows the diff
-   scripts/bump-version.sh X.Y.Z --write    # apply
+   scripts/bump-version.sh X.Y.Z --write    # apply (maintainer only, see below)
    ```
+
+   `--write` also rewrites the Flathub manifest's version line, which an agent
+   must not touch (`packaging/AGENTS.md`, "Flathub is maintainer-only"). An agent
+   runs the dry run and reports its diff; the Flathub line is a maintainer step.
 
    It takes the file list from `PKG_FILES` in `scripts/release.sh` at runtime, so
    the two cannot drift, and it writes the workspace `Cargo.toml` plus all 16
@@ -82,13 +86,13 @@ Then perform ALL of the following steps:
 
 7. **Regenerate Cargo.lock** — run `cargo generate-lockfile`
 
-8. **Regenerate cargo-sources.json** — run `scripts/sync-cargo-sources.sh`.
-   It regenerates the Flatpak manifest from `Cargo.lock` and copies it to
-   Flathub, so both stay in step (the drift `release.sh` section 11b fails on).
-   Do this right after step 7's lockfile regeneration — a dependency bump
-   without it leaves both manifests stale and the first `release.sh --dry-run`
-   fails on exactly that. `scripts/sync-cargo-sources.sh --check` verifies
-   without writing.
+8. **Check cargo-sources.json** — run `scripts/sync-cargo-sources.sh --check`.
+   The writing form regenerates the Flatpak copy from `Cargo.lock` and copies
+   it to Flathub, so both stay in step (the drift `release.sh` section 11b fails
+   on). Because it writes Flathub, that form is a maintainer step: list it in
+   the report, right after step 7's lockfile regeneration — a dependency bump
+   without it leaves both copies stale and the first `release.sh --dry-run`
+   fails on exactly that.
 
 9. **Verify consistency** — grep for the OLD version across the repo (excluding Cargo.lock, target/, .git/) and report any remaining references that are NOT historical changelog entries.
 

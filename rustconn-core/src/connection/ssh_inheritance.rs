@@ -167,17 +167,6 @@ fn own_proxy_jump(connection: &Connection) -> Option<String> {
     }
 }
 
-/// Returns the connection's own `jump_host_id`, for any protocol that has one.
-fn own_jump_host_id(connection: &Connection) -> Option<Uuid> {
-    match &connection.protocol_config {
-        ProtocolConfig::Ssh(c) | ProtocolConfig::Sftp(c) => c.jump_host_id,
-        ProtocolConfig::Rdp(c) => c.jump_host_id,
-        ProtocolConfig::Vnc(c) => c.jump_host_id,
-        ProtocolConfig::Spice(c) => c.jump_host_id,
-        _ => None,
-    }
-}
-
 /// Resolves the free-text `ProxyJump` for a connection.
 ///
 /// Order: the connection's own `proxy_jump`, then the group chain's
@@ -217,13 +206,54 @@ pub fn resolve_ssh_jump_host_id(
     groups: &[ConnectionGroup],
     network: &NetworkSettings,
 ) -> Option<Uuid> {
-    if let Some(own) = own_jump_host_id(connection) {
+    if let Some(own) = connection.jump_host_id() {
         return Some(own);
     }
     if connection.network_mode == NetworkMode::Direct {
         return None;
     }
     walk_group_chain(connection.group_id, groups, |g| g.ssh_jump_host_id).or(network.jump_host_id)
+}
+
+/// Resolves the ordered jump hosts to try for a connection, primary first.
+///
+/// The first entry is always what [`resolve_ssh_jump_host_id`] returns. Fallbacks
+/// come from the same tier as the primary and from nowhere else, so a connection
+/// with its own Jump Host never picks up the fallbacks of its group. The global
+/// tier has no fallback list.
+///
+/// Repeats are dropped, as is the connection itself when it is listed as a
+/// fallback. A primary that names the connection itself gets no fallbacks: that
+/// is a bastion sitting in the group it serves, and it must stay reachable
+/// without going through its own group's other gateways.
+#[must_use]
+pub fn resolve_ssh_jump_host_candidates(
+    connection: &Connection,
+    groups: &[ConnectionGroup],
+    network: &NetworkSettings,
+) -> Vec<Uuid> {
+    let tier = if let Some(own) = connection.jump_host_id() {
+        Some((own, connection.fallback_jump_host_ids.clone()))
+    } else if connection.network_mode == NetworkMode::Direct {
+        None
+    } else {
+        walk_group_chain(connection.group_id, groups, |g| {
+            g.ssh_jump_host_id
+                .map(|id| (id, g.ssh_fallback_jump_host_ids.clone()))
+        })
+        .or_else(|| network.jump_host_id.map(|id| (id, Vec::new())))
+    };
+    let Some((primary, fallbacks)) = tier else {
+        return Vec::new();
+    };
+    if primary == connection.id {
+        return vec![primary];
+    }
+
+    let mut seen = HashSet::from([primary, connection.id]);
+    let mut candidates = vec![primary];
+    candidates.extend(fallbacks.into_iter().filter(|id| seen.insert(*id)));
+    candidates
 }
 
 /// Resolves the SSH agent socket path for a connection.

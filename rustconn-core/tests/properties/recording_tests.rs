@@ -1,6 +1,4 @@
 //! Property-based tests for session recording (scriptreplay-compatible format).
-//!
-//! **Validates: Requirements 6.1, 6.2, 6.10, 6.11, 11.7**
 
 use std::time::Duration;
 
@@ -32,7 +30,6 @@ fn round_trip(chunks: &[Vec<u8>], sanitize: SanitizeConfig) -> Vec<(Duration, Ve
 
 // ---------------------------------------------------------------------------
 // Proptest 12: Round-trip — write timing+data → read timing+data → identical chunks
-// **Validates: Requirements 6.11, 11.7**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -59,7 +56,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Proptest 13: Arbitrary bytes correctly written and read back
-// **Validates: Requirements 6.1, 6.2, 11.7**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -164,7 +160,6 @@ fn arb_timestamp_parts() -> impl Strategy<Value = (u32, u32, u32, u32, u32, u32)
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 4: Metadata serde round-trip
-// **Validates: Requirements 5.5, 5.3, 5.4, 5.1**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -186,7 +181,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 5: Derive metadata from filename
-// **Validates: Requirements 5.6**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -228,7 +222,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 6: Rename persists display name
-// **Validates: Requirements 4.3**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -267,7 +260,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 7: Delete removes all recording files
-// **Validates: Requirements 4.4**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -318,7 +310,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 10: Timing file validation
-// **Validates: Requirements 9.2, 9.3**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -389,7 +380,6 @@ proptest! {
 
 // ---------------------------------------------------------------------------
 // Feature: session-recording-manager, Property 11: Import produces complete recording
-// **Validates: Requirements 9.4, 9.5**
 // ---------------------------------------------------------------------------
 
 proptest! {
@@ -452,7 +442,6 @@ proptest! {
 
 // ===========================================================================
 // Feature: session-recording-manager, Property 12: CLI list contains metadata
-// **Validates: Requirements 11.1**
 // ===========================================================================
 
 use rustconn_core::session::recording::RecordingEntry;

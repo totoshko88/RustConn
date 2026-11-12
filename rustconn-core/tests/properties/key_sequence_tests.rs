@@ -1,7 +1,7 @@
 //! Property-based tests for the Key Sequence system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Key Sequence system (Requirements 2.x).
+//! for the Key Sequence system.
 
 use proptest::prelude::*;
 use rustconn_core::{KeyElement, KeySequence, KeySequenceError, SpecialKey};
@@ -124,7 +124,6 @@ proptest! {
 
     // ========== Property 6: Key Sequence Validation ==========
     // **Feature: rustconn-enhancements, Property 6: Key Sequence Validation**
-    // **Validates: Requirements 2.6**
     //
     // For any key sequence string, parsing should either succeed with a valid
     // KeySequence or fail with a descriptive error for malformed input.
@@ -392,7 +391,6 @@ proptest! {
 
     // ========== Property 5: Key Sequence Parse Round-Trip ==========
     // **Feature: rustconn-enhancements, Property 5: Key Sequence Parse Round-Trip**
-    // **Validates: Requirements 2.7**
     //
     // For any valid key sequence string, parsing and then serializing should
     // produce an equivalent string.
@@ -562,7 +560,6 @@ proptest! {
 
     // ========== Property 7: Key Sequence Variable Substitution ==========
     // **Feature: rustconn-enhancements, Property 7: Key Sequence Variable Substitution**
-    // **Validates: Requirements 2.4**
     //
     // For any key sequence containing variable references, substitution should
     // replace all valid references with their values.

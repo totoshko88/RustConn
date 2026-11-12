@@ -1,7 +1,5 @@
 //! Property tests for Simple Sync bidirectional merge engine.
 //!
-//! **Validates: Requirements 9.2, 9.3, 9.4, 9.6**
-//!
 //! Tests correctness properties P7 (convergence) and P8 (tombstone consistency)
 //! from the design document.
 
@@ -67,7 +65,7 @@ fn build_remote(
 }
 
 proptest! {
-    /// **Validates: Requirements 9.2** — UUID-based merge
+    /// UUID-based merge
     ///
     /// P7 partial: Every remote connection is either created, updated, or
     /// skipped (local is same/newer). No remote connection is silently dropped.
@@ -116,7 +114,7 @@ proptest! {
         }
     }
 
-    /// **Validates: Requirements 9.3** — Tombstone consistency (P8)
+    /// Tombstone consistency (P8)
     ///
     /// If a tombstone has `deleted_at > entity.updated_at`, the entity must
     /// be in `to_delete` (for remote tombstones applied to local entities).
@@ -155,7 +153,7 @@ proptest! {
         }
     }
 
-    /// **Validates: Requirements 9.4** — Tombstone cleanup
+    /// Tombstone cleanup
     ///
     /// Tombstones older than retention_days appear in tombstones_to_remove.
     #[test]
@@ -202,7 +200,7 @@ proptest! {
         prop_assert_eq!(result.tombstones_to_remove.len(), expired_count);
     }
 
-    /// **Validates: Requirements 9.6** — Convergence (P7)
+    /// Convergence (P7)
     ///
     /// After A exports → B imports, both devices agree on which connections
     /// exist (no concurrent edits scenario).

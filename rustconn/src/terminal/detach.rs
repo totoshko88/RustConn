@@ -409,7 +409,7 @@ impl TerminalNotebook {
         let Some(content) = self.build_session_content(session_id) else {
             // The tab exists but holds nothing: roll all the way back to
             // "detached", so the session is never reachable as both a tab and a
-            // window (Requirement 2.7).
+            // window.
             self.detached.borrow_mut().insert(session_id);
             if !self.park_tab_page(session_id) {
                 tracing::error!(

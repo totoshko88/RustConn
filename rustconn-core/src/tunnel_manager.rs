@@ -195,11 +195,12 @@ impl TunnelManager {
         cmd.arg("-o").arg("ExitOnForwardFailure=yes");
 
         // Flatpak writable known_hosts
-        if let Some(kh_path) = crate::get_flatpak_known_hosts_path() {
+        if let Some(option) = crate::get_flatpak_known_hosts_path()
+            .and_then(|kh| crate::ssh_tunnel::user_known_hosts_option(&kh))
+        {
             let already_set = config_args.iter().any(|a| a.contains("UserKnownHostsFile"));
             if !already_set {
-                cmd.arg("-o")
-                    .arg(format!("UserKnownHostsFile={}", kh_path.display()));
+                cmd.arg("-o").arg(option);
             }
         }
 

@@ -122,6 +122,9 @@ build. Scopes: rustconn-core, rustconn-cli, rustconn (gui), i18n, packaging, ci.
 - **A finished feature gets a changelog entry, then a commit**, once the Definition
   of Done holds. Stage only the files this session edited —
   `target/.kiro-session-edits` — never `git add -A`/`git add .`.
+- **Every commit an agent makes ends with a `Co-Authored-By:` trailer** naming
+  the agent, e.g. `Co-Authored-By: Claude <noreply@anthropic.com>`.
+  CONTRIBUTING.md promises this for commits made since 12 November 2026.
 - **Never `git push`** — no branch, no tag, no remote. Commit locally and hand
   over. `git push --dry-run` is fine.
 - **An agent prepares a release; it never cuts one.** `./scripts/release.sh

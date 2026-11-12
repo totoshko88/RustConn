@@ -51,9 +51,10 @@ mkdir -p target 2>/dev/null || exit 0
 {
     printf 'STALE FLATPAK SOURCES: Cargo.lock is newer than:\n'
     printf '%s' "$stale"
-    printf 'Regenerate before the next Flatpak release (not now, unless asked):\n'
-    printf '  python3 packaging/flatpak/flatpak-cargo-generator.py Cargo.lock -o packaging/flatpak/cargo-sources.json\n'
-    printf '  python3 packaging/flatpak/flatpak-cargo-generator.py Cargo.lock -o packaging/flathub/cargo-sources.json\n'
+    printf 'Report it as a maintainer task before the next Flatpak release: the\n'
+    printf 'maintainer regenerates both copies with scripts/sync-cargo-sources.sh, which\n'
+    printf 'writes packaging/flathub/ (packaging/AGENTS.md: Flathub is maintainer-only).\n'
+    printf 'An agent may run only: scripts/sync-cargo-sources.sh --check\n'
 } >>"$report" 2>/dev/null || true
 
 exit 0

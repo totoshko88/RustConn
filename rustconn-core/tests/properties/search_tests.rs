@@ -1,7 +1,7 @@
 //! Property-based tests for the Search system
 //!
 //! These tests validate the correctness properties defined in the design document
-//! for the Search system (Requirements 14.x, 10.5).
+//! for the Search system.
 
 use proptest::prelude::*;
 use rustconn_core::{
@@ -72,6 +72,14 @@ fn arb_connection() -> impl Strategy<Value = Connection> {
                 ProtocolType::Sftp => Connection::new_sftp(name, host, 22),
                 ProtocolType::Kubernetes => Connection::new_kubernetes(name),
                 ProtocolType::Mosh => Connection::new_mosh(name, host, 22),
+                ProtocolType::WinRm => Connection::new(
+                    name,
+                    host,
+                    5985,
+                    rustconn_core::ProtocolConfig::WinRm(
+                        rustconn_core::models::WinRmConfig::default(),
+                    ),
+                ),
                 ProtocolType::Web => Connection::new(
                     name,
                     "https://example.com".to_string(),
@@ -89,7 +97,6 @@ proptest! {
 
     // ========== Property 29: Search Operator Parsing ==========
     // **Feature: rustconn-enhancements, Property 29: Search Operator Parsing**
-    // **Validates: Requirements 14.4**
     //
     // For any search string with operators like "protocol:ssh", parsing should
     // extract the correct filter type and value.
@@ -233,7 +240,6 @@ proptest! {
 
     // ========== Property 27: Search Fuzzy Matching ==========
     // **Feature: rustconn-enhancements, Property 27: Search Fuzzy Matching**
-    // **Validates: Requirements 14.1**
     //
     // For any search query and connection name, fuzzy matching should return
     // a score between 0.0 and 1.0.
@@ -337,7 +343,6 @@ proptest! {
 
     // ========== Property 28: Search Scope Coverage ==========
     // **Feature: rustconn-enhancements, Property 28: Search Scope Coverage**
-    // **Validates: Requirements 14.2**
     //
     // For any search query, matching should check name, host, tags, group name,
     // and custom properties.
@@ -444,7 +449,6 @@ proptest! {
 
     // ========== Property 30: Search Result Ranking ==========
     // **Feature: rustconn-enhancements, Property 30: Search Result Ranking**
-    // **Validates: Requirements 14.3**
     //
     // For any search with multiple results, results should be ordered by
     // descending relevance score.
@@ -531,7 +535,6 @@ proptest! {
 
     // ========== Property 23: Custom Property Search Inclusion ==========
     // **Feature: rustconn-enhancements, Property 23: Custom Property Search Inclusion**
-    // **Validates: Requirements 10.5**
     //
     // For any search query, connections with matching custom property values
     // should be included in results.
@@ -786,7 +789,6 @@ proptest! {
 
     // ========== Property 1: Search Cache Round-Trip ==========
     // **Feature: performance-improvements, Property 1: Search Cache Round-Trip**
-    // **Validates: Requirements 2.1, 2.2**
     //
     // For any search query and result set, caching the results and retrieving
     // them within TTL SHALL return identical results.
@@ -860,7 +862,6 @@ proptest! {
 
     // ========== Property 2: Search Cache Invalidation ==========
     // **Feature: performance-improvements, Property 2: Search Cache Invalidation**
-    // **Validates: Requirements 2.3**
     //
     // For any cached search results, calling invalidate_all() SHALL clear
     // all cached entries.
@@ -929,7 +930,6 @@ proptest! {
 
     // ========== Property 3: Search Cache TTL Expiration ==========
     // **Feature: performance-improvements, Property 3: Search Cache TTL Expiration**
-    // **Validates: Requirements 2.4**
     //
     // For any cached search result, after TTL expiration, the cache SHALL
     // return None for that query.
@@ -998,7 +998,6 @@ proptest! {
 
     // ========== Property 4: Search Cache Size Limit ==========
     // **Feature: performance-improvements, Property 4: Search Cache Size Limit**
-    // **Validates: Requirements 2.5**
     //
     // For any sequence of cache insertions, the cache size SHALL never
     // exceed the configured maximum entries.
@@ -1075,7 +1074,6 @@ proptest! {
 
     // ========== Property 13: Debounce Behavior ==========
     // **Feature: performance-improvements, Property 13: Debounce Behavior**
-    // **Validates: Requirements 7.1, 7.2, 7.3**
     //
     // For any sequence of rapid inputs, only the final input after debounce
     // delay SHALL trigger execution.

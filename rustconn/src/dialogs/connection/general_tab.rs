@@ -44,6 +44,8 @@ pub(super) struct BasicTabWidgets {
     /// every other protocol — which left those three with the inheritance the
     /// row is meant to refuse and no way to refuse it.
     pub network_mode_row: adw::ComboRow,
+    /// Fallback jump hosts: per connection for the same reason as Network Mode.
+    pub fallback_jump_hosts: crate::dialogs::widgets::FallbackJumpHostsEditor,
     pub username_entry: Entry,
     /// Row carrying the Username title — see [`Self::host_row`].
     pub username_row: adw::ActionRow,
@@ -132,6 +134,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         "Kubernetes".to_string(),
         "MOSH".to_string(),
         "Web".to_string(),
+        "WinRM".to_string(),
     ];
     let protocol_strs: Vec<&str> = protocol_items.iter().map(String::as_str).collect();
     let protocol_list = StringList::new(&protocol_strs);
@@ -196,6 +199,9 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         .model(&network_mode_list)
         .build();
     connection_group.add(&network_mode_row);
+
+    let fallback_jump_hosts = crate::dialogs::widgets::FallbackJumpHostsEditor::new();
+    connection_group.add(fallback_jump_hosts.widget());
 
     // Update port description when port changes
     let port_desc_clone = port_desc.clone();
@@ -484,6 +490,7 @@ pub(super) fn create_basic_tab() -> BasicTabWidgets {
         port_spin,
         port_row,
         network_mode_row,
+        fallback_jump_hosts,
         username_entry,
         username_row,
         domain_entry,

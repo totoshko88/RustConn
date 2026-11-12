@@ -96,7 +96,7 @@ jobs:
           done
           
           # Docs and copyright
-          cp README.md LICENSE CHANGELOG.md "${PKG_DIR}/usr/share/doc/rustconn/"
+          cp README.md LICENSE NOTICE TRADEMARKS.md CHANGELOG.md "${PKG_DIR}/usr/share/doc/rustconn/"
           cp debian/copyright "${PKG_DIR}/usr/share/doc/rustconn/copyright"
           
           # Locale files (compile .po to .mo)
@@ -299,6 +299,10 @@ jobs:
           mkdir -p staging/usr/share/icons/hicolor/scalable/apps
           mkdir -p staging/usr/share/icons/hicolor/128x128/apps
           mkdir -p staging/usr/share/icons/hicolor/256x256/apps
+          mkdir -p staging/usr/share/licenses/rustconn staging/usr/share/doc/rustconn
+          # License, the GPL-3.0 section 7 terms and the trademark policy travel with the package
+          cp LICENSE NOTICE staging/usr/share/licenses/rustconn/
+          cp README.md TRADEMARKS.md CHANGELOG.md staging/usr/share/doc/rustconn/
           
           # Copy binaries
           cp target/release/rustconn staging/usr/bin/

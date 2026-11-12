@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use gtk4::prelude::*;
-use gtk4::{Box as GtkBox, Button, DirectionType, gdk, glib};
+use gtk4::{Box as GtkBox, Button, DirectionType, MenuButton, gdk, gio, glib};
 use libadwaita as adw;
 use libadwaita::prelude::*;
 use uuid::Uuid;
@@ -29,7 +29,7 @@ use crate::terminal::{DetachMonitor, DetachPresentation};
 
 /// Default window width, matching a comfortable 80-column terminal plus chrome.
 const DEFAULT_WIDTH: i32 = 900;
-/// Default window height (Requirement 5.8 asks for at least 800x600).
+/// Default window height; the default size stays at least 800x600.
 const DEFAULT_HEIGHT: i32 = 650;
 /// Smallest width a detached window may be shrunk to before the session content
 /// stops being usable.
@@ -103,6 +103,9 @@ pub struct DetachedSessionWindow {
     /// Kept alive for its `clicked` handler — dropping it breaks the attach
     /// button (see the widget-lifecycle note in `main.rs`).
     attach_button: Button,
+    /// The primary menu (F10). The window layer turns its `primary` flag off
+    /// while keyboard passthrough is on, as the main window does with its own.
+    menu_button: MenuButton,
     /// Set while the window is closing because its session moved back into a
     /// tab, so the close handler skips teardown. Same distinction
     /// `parked_in_split` makes for tabs.
@@ -141,10 +144,12 @@ impl DetachedSessionWindow {
         let window_title =
             adw::WindowTitle::new(display_name(params.title, params.protocol), params.protocol);
         let attach_button = build_attach_button();
+        let menu_button = build_menu_button();
 
         let header = adw::HeaderBar::new();
         header.set_title_widget(Some(&window_title));
         header.pack_start(&attach_button);
+        header.pack_end(&menu_button);
 
         // Hidden until the session's connection drops; reuses the wording of the
         // tab reconnect banner so both placements say the same thing.
@@ -201,6 +206,7 @@ impl DetachedSessionWindow {
             window_title,
             disconnect_banner,
             attach_button,
+            menu_button,
             attaching: Rc::new(Cell::new(false)),
             presentation: Rc::new(RefCell::new(DetachPresentation::default())),
             on_attach: Rc::new(RefCell::new(None)),
@@ -367,6 +373,13 @@ impl DetachedSessionWindow {
         &self.toast_overlay
     }
 
+    /// Returns the primary menu button, whose `primary` flag (the F10 binding)
+    /// follows keyboard passthrough.
+    #[must_use]
+    pub const fn menu_button(&self) -> &MenuButton {
+        &self.menu_button
+    }
+
     /// Returns the underlying window, for parenting dialogs to it.
     #[must_use]
     pub const fn window(&self) -> &adw::ApplicationWindow {
@@ -446,6 +459,34 @@ fn build_attach_button() -> Button {
     let label = i18n("Move to Main Window");
     button.set_tooltip_text(Some(&label));
     button.update_property(&[gtk4::accessible::Property::Label(&label)]);
+    button
+}
+
+/// Builds the primary menu button, so F10 opens a menu here as it does in the
+/// main window.
+///
+/// The menu holds the application-wide entries of the main menu: Settings
+/// (`win.settings`, which this window forwards to the main window), Keyboard
+/// Shortcuts, Help and About. Labels, tooltip and accessible name are the main
+/// menu's own strings.
+fn build_menu_button() -> MenuButton {
+    let settings_section = gio::Menu::new();
+    settings_section.append(Some(&i18n("Settings…")), Some("win.settings"));
+    let app_section = gio::Menu::new();
+    app_section.append(Some(&i18n("Keyboard Shortcuts…")), Some("app.shortcuts"));
+    app_section.append(Some(&i18n("Help")), Some("app.help"));
+    app_section.append(Some(&i18n("About RustConn")), Some("app.about"));
+    let menu = gio::Menu::new();
+    menu.append_section(None, &settings_section);
+    menu.append_section(None, &app_section);
+
+    let button = MenuButton::builder()
+        .icon_name("open-menu-symbolic")
+        .tooltip_text(i18n("Menu (F10)"))
+        .menu_model(&menu)
+        .primary(true)
+        .build();
+    button.update_property(&[gtk4::accessible::Property::Label(&i18n("Menu"))]);
     button
 }
 
