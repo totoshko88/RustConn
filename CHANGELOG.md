@@ -5,6 +5,20 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-11-13
+
+### Added
+- **`rustconn-cli import` reads PuTTY and mRemoteNG files** — `-f putty` takes a PuTTY / KiTTY `.reg` Registry export and `-f mremoteng` takes an mRemoteNG `confCons.xml`, through the same importers the GUI uses, so the README's import list is now true for the CLI too. (`rustconn-cli/src/cli.rs`, `rustconn-cli/src/commands/export_import.rs`, `docs/CLI_REFERENCE.md`)
+
+### Fixed
+- **`rustconn-cli completions` and `man-page` no longer panic in a debug build** — the global `--config` and several subcommands (`--connection` in `group`, `cluster`, `tag`, `history`; `--command` in `snippet add`/`edit`; `--category` in `snippet list`) all claimed `-c`, and `snippet run --var` claimed the global `-v`. Release builds skip clap's check, so only debug builds crashed. A test now validates the whole command tree. (`rustconn-cli/src/cli.rs`, `rustconn-cli/tests/integration_tests.rs`)
+
+### Changed
+- **`rustconn-cli --config` has no `-c` short form any more, and `snippet run --var` has no `-v`** — after a subcommand `-c` already meant that subcommand's own flag, and the docs use `-c <connection>` throughout, so the global short was the one to drop. Use `--config <dir>` or `RUSTCONN_CONFIG_DIR`, and `--var key=value`. (`rustconn-cli/src/cli.rs`, `docs/CLI_REFERENCE.md`)
+
+### Documentation
+- **`codec download-h264` is in the CLI reference**, and `scripts/check-cli-docs.sh` (run by `scripts/verify.sh`) fails when any subcommand from `--help` has no entry in `docs/CLI_REFERENCE.md`. (`docs/CLI_REFERENCE.md`, `scripts/check-cli-docs.sh`, `scripts/verify.sh`)
+
 ## [0.24.11] - 2026-11-12
 
 ### Added

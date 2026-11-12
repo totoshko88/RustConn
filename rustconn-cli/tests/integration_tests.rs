@@ -1428,3 +1428,103 @@ fn connect_is_quiet_about_kerberos_when_settings_are_fine() {
         stderr_str(&out)
     );
 }
+
+// ============================================================================
+// Completions, man page, PuTTY / mRemoteNG import
+// ============================================================================
+
+#[test]
+fn test_completions_and_man_page_generate() {
+    for args in [
+        &["completions", "bash"][..],
+        &["completions", "zsh"],
+        &["completions", "fish"],
+        &["man-page"],
+    ] {
+        let output = run_cli(args, None);
+        assert!(
+            output.status.success(),
+            "{args:?} should exit 0. stderr: {}",
+            stderr_str(&output)
+        );
+        assert!(!output.stdout.is_empty(), "{args:?} should print output");
+    }
+}
+
+#[test]
+fn test_snippet_list_category_has_no_short_flag() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let output = run_cli(
+        &["snippet", "list", "--category", "x"],
+        Some(temp_dir.path()),
+    );
+    assert!(
+        output.status.success(),
+        "snippet list --category should work. stderr: {}",
+        stderr_str(&output)
+    );
+}
+
+#[test]
+fn test_import_putty_reg() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let reg = temp_dir.path().join("putty.reg");
+    std::fs::write(
+        &reg,
+        "Windows Registry Editor Version 5.00\r\n\r\n\
+         [HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\My%20Server]\r\n\
+         \"HostName\"=\"example.com\"\r\n\
+         \"Protocol\"=\"ssh\"\r\n\
+         \"PortNumber\"=dword:00000016\r\n\
+         \"UserName\"=\"alice\"\r\n",
+    )
+    .expect("write reg");
+
+    let output = run_cli(
+        &[
+            "import",
+            "-f",
+            "putty",
+            "--dry-run",
+            reg.to_str().expect("utf8"),
+        ],
+        Some(temp_dir.path()),
+    );
+    assert!(output.status.success(), "stderr: {}", stderr_str(&output));
+    assert!(
+        stdout_str(&output).contains("Connections imported: 1"),
+        "Got: {}",
+        stdout_str(&output)
+    );
+}
+
+#[test]
+fn test_import_mremoteng_xml() {
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let xml = temp_dir.path().join("confCons.xml");
+    std::fs::write(
+        &xml,
+        r#"<?xml version="1.0" encoding="utf-8"?>
+<mrng:Connections xmlns:mrng="http://mremoteng.org" Name="Connections" Export="false" EncryptionEngine="AES" BlockCipherMode="GCM" KdfIterations="1000" FullFileEncryption="false" Protected="x" ConfVersion="2.6">
+  <Node Name="web" Type="Connection" Descr="" Icon="" Panel="General" Id="11111111-1111-1111-1111-111111111111" Username="bob" Domain="" Password="" Hostname="web.example.com" Protocol="SSH2" Port="22" />
+</mrng:Connections>"#,
+    )
+    .expect("write xml");
+
+    let output = run_cli(
+        &[
+            "import",
+            "-f",
+            "mremoteng",
+            "--dry-run",
+            xml.to_str().expect("utf8"),
+        ],
+        Some(temp_dir.path()),
+    );
+    assert!(output.status.success(), "stderr: {}", stderr_str(&output));
+    assert!(
+        stdout_str(&output).contains("Connections imported: 1"),
+        "Got: {}",
+        stdout_str(&output)
+    );
+}

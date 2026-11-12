@@ -15,7 +15,9 @@ use crate::util::parse_key_val;
 #[command(propagate_version = true)]
 pub struct Cli {
     /// Path to the configuration directory
-    #[arg(short, long, global = true)]
+    // Long form only: `-c` belongs to the subcommands (`-c <connection>`,
+    // `-c <command>`), and a global short clashes with them.
+    #[arg(long, global = true)]
     pub config: Option<PathBuf>,
 
     /// Increase output verbosity (-v, -vv, -vvv)
@@ -1551,6 +1553,11 @@ pub enum ImportFormatArg {
     Libvirt,
     /// CSV format (.csv)
     Csv,
+    /// PuTTY / KiTTY sessions from a Registry export (.reg)
+    Putty,
+    /// mRemoteNG connection file (confCons.xml)
+    #[value(name = "mremoteng", alias = "m-remote-ng")]
+    MRemoteNg,
     /// SecureCRT session format (.ini directory)
     #[value(name = "secure-crt", alias = "securecrt")]
     SecureCrt,
@@ -1663,7 +1670,8 @@ pub enum SnippetCommands {
         name: String,
 
         /// Variable values (format: var=value, can be repeated)
-        #[arg(short, long, value_parser = parse_key_val)]
+        // Long form only: `-v` is the global `--verbose`.
+        #[arg(long, value_parser = parse_key_val)]
         var: Vec<(String, String)>,
 
         /// Actually execute the command (default: just print)
@@ -2480,4 +2488,25 @@ pub enum MonitorCommands {
         #[arg(long)]
         all: bool,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use super::Cli;
+
+    /// Catches duplicate short/long flags (e.g. a subcommand `-c` shadowing the
+    /// global `--config`), which otherwise panic only when completions are built.
+    #[test]
+    fn command_definition_is_valid() {
+        // The command tree is deep enough to overflow the 2 MiB default test
+        // thread stack in a debug build; the main thread has 8 MiB.
+        std::thread::Builder::new()
+            .stack_size(16 * 1024 * 1024)
+            .spawn(|| Cli::command().debug_assert())
+            .expect("spawn test thread")
+            .join()
+            .expect("command definition is valid");
+    }
 }
