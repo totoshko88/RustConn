@@ -639,17 +639,26 @@ fn unsafe_value(key: &str) {
 /// Values are double-quoted so a path containing spaces survives; OpenSSH
 /// accepts quoted values for every keyword used here. Returns `None`, writing
 /// nothing, for a value with a control character, a `"` or a `\`, which
-/// would end the quotes early.
+/// would end the quotes early, or a `${`, which ssh expands from the
+/// environment.
 fn push_quoted(out: &mut String, key: &str, value: &str) -> Option<()> {
-    if value
-        .chars()
-        .any(|c| c.is_control() || c == '"' || c == '\\')
+    if value.contains("${")
+        || value
+            .chars()
+            .any(|c| c.is_control() || c == '"' || c == '\\')
     {
         unsafe_value(key);
         return None;
     }
     let _ = writeln!(out, "    {key} \"{value}\"");
     Some(())
+}
+
+/// Writes a path-valued option, with each `%` doubled: `IdentityFile` and
+/// `UserKnownHostsFile` read `%d`, `%u` and the like as tokens, and `%%` as a
+/// literal `%`.
+fn push_path(out: &mut String, key: &str, path: &Path) -> Option<()> {
+    push_quoted(out, key, &path.to_string_lossy().replace('%', "%%"))
 }
 
 /// Writes one `ssh_config` option line verbatim.
@@ -732,7 +741,7 @@ fn build_ssh_config(
     }
 
     if let Some(key) = identity_file(connection, groups) {
-        push_quoted(&mut out, "IdentityFile", &key.to_string_lossy())?;
+        push_path(&mut out, "IdentityFile", &key)?;
         if cfg.identities_only {
             push_raw(&mut out, "IdentitiesOnly", "yes")?;
         }
@@ -761,7 +770,7 @@ fn build_ssh_config(
     }
 
     if let Some(ref kh) = known_hosts {
-        push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy())?;
+        push_path(&mut out, "UserKnownHostsFile", kh)?;
         push_raw(&mut out, "StrictHostKeyChecking", "accept-new")?;
     }
 
@@ -782,10 +791,10 @@ fn build_ssh_config(
         out.push('\n');
         push_host(&mut out, host)?;
         if let Some(key) = hop_key {
-            push_quoted(&mut out, "IdentityFile", &key.to_string_lossy())?;
+            push_path(&mut out, "IdentityFile", &key)?;
         }
         if let Some(ref kh) = known_hosts {
-            push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy())?;
+            push_path(&mut out, "UserKnownHostsFile", kh)?;
             push_raw(&mut out, "StrictHostKeyChecking", "accept-new")?;
         }
     }
@@ -1323,6 +1332,18 @@ mod tests {
                 .insert(key.to_string(), "x".to_string());
             assert!(config_for(&conn, &[]).is_none(), "option key {key:?}");
         }
+    }
+
+    #[test]
+    fn a_percent_in_a_path_is_not_a_token() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut conn = ssh("t", "h.example.com", 22, None);
+        set_key(&mut conn, &key_file(dir.path(), "100%d key"));
+        let cfg = config_for(&conn, &[]).unwrap();
+        assert!(cfg.contains("100%%d key\"\n"), "{cfg}");
+
+        // ssh expands `${VAR}` in these options, which cannot be escaped.
+        assert!(push_quoted(&mut String::new(), "IdentityFile", "/k/${HOME}").is_none());
     }
 
     #[test]
