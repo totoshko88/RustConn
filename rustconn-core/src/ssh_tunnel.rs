@@ -1461,16 +1461,19 @@ pub fn target_password_askpass_allowed(config: &SshConfig, has_resolved_identity
 ///
 /// ssh splits that option's value on whitespace into several files, so a
 /// path with a space is double-quoted (`UserKnownHostsFile="<path>"`), which
-/// OpenSSH reads as one file. Returns `None` for a path ssh cannot be given
-/// this way: not UTF-8, or holding a `"` or `\`, which ssh reads as quoting;
-/// the caller then leaves the option out and ssh uses its default
-/// `known_hosts`. A `ProxyCommand` is run by a shell and needs
+/// OpenSSH reads as one file. ssh also expands `%` tokens in this option
+/// (ssh_config(5), TOKENS: `UserKnownHostsFile` accepts `%%`, "A literal
+/// '%'"), so a `%` in the path is written as `%%`. Returns `None` for a path
+/// ssh cannot be given this way: not UTF-8, or holding a `"` or `\`, which ssh
+/// reads as quoting; the caller then leaves the option out and ssh uses its
+/// default `known_hosts`. A `ProxyCommand` is run by a shell and needs
 /// [`crate::jump_route::proxy_known_hosts_option`] instead.
 #[must_use]
 pub fn user_known_hosts_option(path: &std::path::Path) -> Option<String> {
     let option = path
         .to_str()
         .filter(|path| !path.contains(['"', '\\']))
+        .map(|path| path.replace('%', "%%"))
         .map(|path| {
             if path.chars().any(char::is_whitespace) {
                 format!("UserKnownHostsFile=\"{path}\"")
@@ -2481,6 +2484,21 @@ mod proxy_detection_tests {
         assert_eq!(
             super::user_known_hosts_option(Path::new("/home/a\\ b/kh")),
             None
+        );
+    }
+
+    /// Review item cleanup-known-hosts-percent: ssh expands `%` tokens in
+    /// `UserKnownHostsFile`, so a literal `%` goes in as `%%`.
+    #[test]
+    fn known_hosts_option_escapes_a_percent() {
+        use std::path::Path;
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/100%u/.ssh/known_hosts")).as_deref(),
+            Some("UserKnownHostsFile=/home/100%%u/.ssh/known_hosts")
+        );
+        assert_eq!(
+            super::user_known_hosts_option(Path::new("/home/50% off/kh")).as_deref(),
+            Some("UserKnownHostsFile=\"/home/50%% off/kh\"")
         );
     }
 
