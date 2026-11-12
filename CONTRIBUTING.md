@@ -180,6 +180,15 @@ bullet:
 RustConn ships every catalogue listed in `po/LINGUAS`. `ls po/*.po` is the
 authoritative list — numbers written in prose have been wrong before.
 
+Every language is welcome, with one exception: the project does not ship a
+Russian translation, and a Russian catalogue will not be merged. This is a
+decision about the product, explained in the
+[maintainer's reply on PR #413](https://github.com/totoshko88/RustConn/pull/413#issuecomment-6714428433).
+It is not a rule about people: anyone may contribute in any other language. New
+languages of the region, such as Bashkir (`ba`), Tatar (`tt`) and Nogai
+(`nog`), are as welcome as every other language, and Kazakh (`kk`), which
+RustConn already ships, always needs maintainers.
+
 To correct or complete an existing language, edit its `po/<lang>.po` and run the
 three gates:
 

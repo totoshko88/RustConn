@@ -11,6 +11,11 @@ body:
         more welcome than an issue — see
         [CONTRIBUTING.md](https://github.com/totoshko88/RustConn/blob/main/CONTRIBUTING.md#translations).
 
+        New languages are welcome, with one exception: RustConn does not ship a
+        Russian translation, as a product decision explained in
+        [CONTRIBUTING.md](https://github.com/totoshko88/RustConn/blob/main/CONTRIBUTING.md#translations).
+        Every other language, including Bashkir, Tatar and Nogai, is welcome.
+
   - type: input
     id: language
     attributes:

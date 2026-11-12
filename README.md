@@ -143,7 +143,8 @@ and the conventions a pull request is checked against. Participation is under th
   [Architecture](docs/ARCHITECTURE.md) to get started.
 - **Translations** — RustConn ships every catalogue listed in
   [`po/LINGUAS`](po/LINGUAS); the `.po` files live in [`po/`](po/). New
-  languages and corrections are appreciated.
+  languages and corrections are appreciated; which languages the project
+  ships is in [CONTRIBUTING.md](CONTRIBUTING.md#translations).
 - **Vulnerabilities** — privately, via
   [Security Advisories](https://github.com/totoshko88/RustConn/security/advisories/new)
   rather than an issue ([SECURITY.md](SECURITY.md)).
