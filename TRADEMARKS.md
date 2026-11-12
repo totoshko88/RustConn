@@ -31,8 +31,8 @@ A modified version distributed as a separate project uses its own:
 - application ID, one that does not begin with `io.github.totoshko88`;
 - icon.
 
-It also says that it is modified and by whom, and takes bug reports in its own
-tracker.
+It also says that it is modified and by whom. It should take bug reports in
+its own tracker.
 
 ## Questions
 
