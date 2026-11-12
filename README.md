@@ -111,13 +111,16 @@ verify a download with
 `gh attestation verify <file> --repo totoshko88/RustConn`
 ([details](docs/INSTALL.md#verifying-a-file-downloaded-from-a-github-release)).
 
+Keyboard shortcuts are customizable in Settings → Keybindings; press `Ctrl+?`
+in the app for the complete, always-current list.
+
 ### Official sources
 
 RustConn is published through these channels only:
 
 | Channel | Where |
 |---------|-------|
-| GitHub Releases | [totoshko88/RustConn releases](https://github.com/totoshko88/RustConn/releases), every file with a build-provenance attestation |
+| GitHub Releases | [totoshko88/RustConn releases](https://github.com/totoshko88/RustConn/releases); the deb, rpm, AppImage and Flatpak files carry a build-provenance attestation |
 | Flathub | [`io.github.totoshko88.RustConn`](https://flathub.org/apps/io.github.totoshko88.RustConn) |
 | Snap Store | [`rustconn`](https://snapcraft.io/rustconn) |
 | openSUSE Build Service | [`home:totoshko88:rustconn`](https://build.opensuse.org/package/show/home:totoshko88:rustconn/rustconn): Debian, Ubuntu, openSUSE and Fedora repositories |
@@ -128,10 +131,7 @@ RustConn is published through these channels only:
 
 Forks of RustConn are not affiliated with this project. If your build came from
 anywhere else, report its bugs in that project's own tracker; the issue tracker
-here covers the builds above.
-
-Keyboard shortcuts are customizable in Settings → Keybindings; press `Ctrl+?`
-in the app for the complete, always-current list.
+here covers the builds above and builds from this repository's source.
 
 ## Documentation
 
