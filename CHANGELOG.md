@@ -5,15 +5,11 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 ## [0.25.0] - Unreleased
 
 ### Added
 
 - **`rustconn-cli import` reads PuTTY and mRemoteNG files** — `-f putty` takes a PuTTY / KiTTY `.reg` Registry export and `-f mremoteng` takes an mRemoteNG `confCons.xml`, through the same importers the GUI uses, so the README's import list is now true for the CLI too. (`rustconn-cli/src/cli.rs`, `rustconn-cli/src/commands/export_import.rs`, `docs/CLI_REFERENCE.md`)
-
 - **CI runs the ignored GTK tests** — new `gui-tests` job executes all 18 under Xvfb, one process per test (`scripts/run-ignored-gui-tests.sh`)
 - **CI launches the GUI headlessly** — new `gui-smoke` job runs `rustconn --version` and a 10 s start under Xvfb, failing on a panic or early exit (`scripts/gui-smoke.sh`)
 - **CI lints the RPM spec** — new `rpm-spec` job runs `rpmspec -P` and `rpmlint`; the filtered warnings are documented in `packaging/obs/rustconn.rpmlint.toml`
@@ -26,12 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Passbolt passphrase visible in the process list** — the GPG passphrase went to `go-passbolt-cli` as `--userPassword`, readable by any user in `/proc/PID/cmdline`. It now goes through the child's environment (`USERPASSWORD`), which only the owner can read. The resource password still has to be an argument; this and the RDP gateway `Zeroizing` exception are now documented in `AGENTS.md`, `docs/ARCHITECTURE.md` and `SECURITY.md`. (`rustconn-core/src/secret/passbolt.rs`)
 - **Six CLI downloads installed without any integrity check** — kubectl, Teleport, Tailscale, Boundary and Hoop are now checked against the SHA256 their vendor publishes for that exact release, and the Bitwarden CLI against GitHub's asset digest; a missing or wrong hash stops the install. The Bitwarden and 1Password installers had not consulted the checksum policy at all. (`rustconn-core/src/cli_download/`)
 - **A WinRM argument could be lost in release builds** — `WinRmClient::command` dropped the first argument whatever it was, guarded only by a `debug_assert`. It now replaces only a leading `evil-winrm`. (`rustconn-core/src/protocol/winrm.rs`)
-
+- **A host name or option with a line break can no longer add directives to the ssh configuration Midnight Commander uses** — the generated `ssh_config` took the host, jump hosts, `ProxyJump`, custom options and key paths as written, so an imported connection or a Dynamic Folder script could slip in a `ProxyCommand` of its own. A connection with such a value now opens mc without the wrapper, so it gets no jump host and no saved password, and the log names the option (not its value).
+- **Known-hosts and key paths with an apostrophe, `${VAR}` or `%` reach ssh as written** — an apostrophe in the Flatpak `known_hosts` path made ssh fail on the option, `${HOME}` in it was expanded, and the mc ssh configuration read `%d` in a key path as a token. A path ssh cannot be given is left out, as before. The remote clean-up after a session recording quotes its paths as well.
 - **`rustconn-cli completions` and `man-page` no longer panic in a debug build** — the global `--config` and several subcommands (`--connection` in `group`, `cluster`, `tag`, `history`; `--command` in `snippet add`/`edit`; `--category` in `snippet list`) all claimed `-c`, and `snippet run --var` claimed the global `-v`. Release builds skip clap's check, so only debug builds crashed. A test now validates the whole command tree. (`rustconn-cli/src/cli.rs`, `rustconn-cli/tests/integration_tests.rs`)
-
 - **`fractional_scroll_position_is_kept` failed on VTE 0.84** — the ignored GTK test read the scroll adjustment of a terminal that had never been placed in a window; VTE only sizes `upper` and `page_size` on allocation, so both stayed 0. The test now presents the terminal in a window first. Nobody noticed because no CI job ran the ignored tests
 - **`packaging/obs/rustconn.spec` macros in comments and `%changelog`** — `%description`, `%prep`, `%build`, `%find_lang`, `%check` and `%{?fedora}` in prose were expanded by rpm (rpmspec warned "Macro expanded in comment"); now escaped as `%%`
-
 - **nixpkgs package out of date** — `packaging/nixpkgs/package.nix` was stuck at 0.19.4; it now follows the release version.
 - **`rpmspec` "bogus date" warnings** — 60 `%changelog` entries in `packaging/obs/rustconn.spec` named the wrong weekday; corrected.
 
@@ -40,11 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Secret Service client updated to oo7 0.7 (ashpd 0.14)** — the GNOME Keyring / KWallet backend and the Flatpak portal path use the new client. The calls RustConn makes are unchanged. oo7 0.7 matches items stored without an `xdg:schema` attribute against the generic schema, and handles unencrypted keyrings. (`Cargo.toml`)
 - **Screen-lock and suspend listener moved to zbus 6** — it needs no code change in behaviour. zbus 6 no longer depends on the unmaintained `zvariant` and `zbus_names` crates, so only the tray library still pulls them. (`rustconn-core/src/lock_events/dbus.rs`, `Cargo.toml`)
 - **Config file locking uses the standard library** — `File::try_lock` replaces the `fs2` crate; the lock is the same advisory `flock`. (`rustconn-core/src/config/manager.rs`)
-
 - **`rustconn-cli --config` has no `-c` short form any more, and `snippet run --var` has no `-v`** — after a subcommand `-c` already meant that subcommand's own flag, and the docs use `-c <connection>` throughout, so the global short was the one to drop. Use `--config <dir>` or `RUSTCONN_CONFIG_DIR`, and `--var key=value`. (`rustconn-cli/src/cli.rs`, `docs/CLI_REFERENCE.md`)
-
 - **`scripts/verify.sh` names the tools it could not run** — a closing "NOT CHECKED" line lists every gate skipped for a missing tool, so a green run no longer hides them
-
 - **Translated desktop entry** — the desktop entry now carries `Name`, `GenericName`, `Comment` and `Keywords` in every language of `po/`, merged in with `msgfmt --desktop` when the Flatpak, Snap, RPM, Debian, AppImage, `.deb`/`.rpm` release and Nix packages are built. Before, the translations were extracted into the catalogues but never reached the installed file, and only five hand-written `Comment[xx]` lines were shipped. Adds a translated `GenericName` ("Connection Manager"). (`rustconn/assets/io.github.totoshko88.RustConn.desktop`, `po/*.po`)
 - **`scripts/release.sh` validates the Nix flake** — when `nix` is installed it runs `nix flake check --no-build` and evaluates `packages.default`; without `nix` the gate is listed as skipped. `packaging/nixpkgs/package.nix` joins `PKG_FILES`, so its version is bumped by `scripts/bump-version.sh` and checked at release.
 
@@ -55,10 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 
 - **Tests for the lock listener, the SSH key unlock dialog and the failed-command marker**, with the dialog's outcome decision and the marker's bar placement moved out of GTK code; the keyring save helpers in Settings share one timed helper, and the client version checks use `rustconn_core::proc::wait_bounded`. (`rustconn-core/src/lock_events/dbus.rs`, `rustconn/src/dialogs/key_unlock.rs`, `rustconn/src/terminal/failed_marker.rs`, `rustconn/src/dialogs/settings/secrets_tab/keyring.rs`, `rustconn/src/dialogs/settings/clients_tab.rs`)
-
 - **One tested rule for when mc's ssh gets the saved password** — `mc_ssh::password_plan` replaces checks that were spread over GUI code with no tests. Behavior is unchanged.
 - **A jump host's password travels with its hop** — the route builder takes hops that carry their own password instead of two parallel lists, and the tunnel's jump-host route lives in `rustconn-core` (`jump_route::tunnel_jump_args`). Behavior is unchanged.
-
 - **Packaging metadata descriptions** — the AppStream metainfo and `RustConn.doap` now mention WinRM, Web, SOCKS5 and Run Local Script.
 - **CI** — new `Nix flake` job (runs on pull requests that touch `flake.nix`, `Cargo.toml`, `Cargo.lock`) and `Desktop and AppStream metadata` job (`desktop-file-validate` on the source and merged desktop file, `appstreamcli validate --strict`).
 
@@ -66,9 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`codec download-h264` is in the CLI reference**, and `scripts/check-cli-docs.sh` (run by `scripts/verify.sh`) fails when any subcommand from `--help` has no entry in `docs/CLI_REFERENCE.md`. (`docs/CLI_REFERENCE.md`, `scripts/check-cli-docs.sh`, `scripts/verify.sh`)
 - **Docs match the code again** — feature tables in `docs/BUILD.md`, `docs/ARCHITECTURE.md` and the `rustconn-core` crate docs list `web-embedded`, `bitwarden-serve`, `lock-events` and `adw-1-10`; the Protocol trait section shows the real `capabilities()` default and all sixteen `ProtocolCapabilities` fields, and names WinRM and Zero Trust; the split-view note no longer mentions an embedded SPICE widget that was removed in 0.18.0; `rustconn-pty-sys` is documented with its `nix` dependency and as used for every VTE session; `-sys` comments no longer say no CI job builds macOS; the `unsafe` section of `docs/ARCHITECTURE.md` now points at each crate's own contract instead of repeating it; the attestation example in `docs/INSTALL.md` uses `<version>`. (`docs/ARCHITECTURE.md`, `docs/BUILD.md`, `docs/INSTALL.md`, `rustconn-core/src/lib.rs`, `rustconn-core/src/performance/mod.rs`, `rustconn-pty-sys/AGENTS.md`, `rustconn-pty-sys/src/lib.rs`, `rustconn-dock-sys/src/lib.rs`, `rustconn-env-sys/src/lib.rs`)
-
 - **Local tooling** — `CONTRIBUTING.md` lists typos, cargo-machete, cargo-nextest, cargo-deny, cargo-audit, rpmlint and Xvfb with what uses them, and the ~23 GB debug `target/` size
-
 - **Nix `flake.lock` policy** documented in `docs/INSTALL.md` and `flake.nix`: no lock is committed on purpose. The release-verification example no longer names a fixed version.
 
 ### Dependencies
@@ -78,12 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semver-compatible updates: rustls-webpki 0.103.16 → 0.103.17, vnc-rs 0.6.0 → 0.6.1, zstd 0.14.3 → 0.14.4 (zstd-safe 8.3.0, zstd-sys 2.1.3). tokio was already at 1.54.1
 - `nix`, `libc` and `socket2` are declared once in `[workspace.dependencies]`
 - RUSTSEC-2023-0071 (`rsa`) stays ignored: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29 still pin rsa 0.10.0-rc.18
-- **A host name or option with a line break can no longer add directives to the ssh configuration Midnight Commander uses** — the generated `ssh_config` took the host, jump hosts, `ProxyJump`, custom options and key paths as written, so an imported connection or a Dynamic Folder script could slip in a `ProxyCommand` of its own. A connection with such a value now opens mc without the wrapper, so it gets no jump host and no saved password, and the log names the option (not its value).
-- **Known-hosts and key paths with an apostrophe, `${VAR}` or `%` reach ssh as written** — an apostrophe in the Flatpak `known_hosts` path made ssh fail on the option, `${HOME}` in it was expanded, and the mc ssh configuration read `%d` in a key path as a token. A path ssh cannot be given is left out, as before. The remote clean-up after a session recording quotes its paths as well.
-## [0.25.0] - 2026-11-13
-
-## [0.25.0] - 2026-11-13
-## [0.25.0] - 2026-11-13
 
 ## [0.24.11] - 2026-11-12
 
