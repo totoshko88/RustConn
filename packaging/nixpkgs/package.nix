@@ -111,8 +111,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     longDescription = ''
       RustConn is a modern connection manager for Linux with a GTK4/Wayland-native
       interface. Manage SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and
-      Zero Trust connections from a single application. Core protocols use embedded
-      Rust implementations — no external dependencies required.
+      Zero Trust connections from a single application. Terminals and RDP and VNC
+      sessions open inside the window; SPICE sessions open in an external viewer
+      (remote-viewer). Some features use other command-line tools, such as a cloud
+      provider's CLI for Zero Trust connections or a password manager's client.
     '';
     homepage = "https://github.com/totoshko88/RustConn";
     changelog = "https://github.com/totoshko88/RustConn/blob/v${finalAttrs.version}/CHANGELOG.md";
