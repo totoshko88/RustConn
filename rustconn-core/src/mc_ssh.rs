@@ -96,23 +96,23 @@ impl McSshEnv {
         }
     }
 
-    /// Whether mc's `ssh` reported a refused sign-in for this connection that
-    /// no mc open has taken yet.
+    /// Whether this mc session's `ssh` reported a refused sign-in.
     ///
-    /// Reads the delivering `ssh`'s per-run logs in the wrapper directory,
-    /// records a refusal as the report [`take_auth_failure`] takes, and
-    /// removes the logs that hold one. Leaves the report in place, so the
-    /// next mc open still opens without the password. Call it when mc exits,
-    /// so the caller can drop its cached password before a Connect sends it
-    /// again.
+    /// Reads the delivering `ssh`'s per-run logs in this session's wrapper
+    /// directory, records a refusal as the report [`take_auth_failure`]
+    /// takes, and removes the logs that hold one. Leaves the report in place,
+    /// so the next mc open still opens without the password. Only this
+    /// directory's own logs count: a report another mc session of the
+    /// connection left behind does not make this one's exit a refusal. Call
+    /// it when mc exits, so the caller can drop its cached password before a
+    /// Connect sends it again.
     #[must_use]
     pub fn sign_in_refused(&self) -> bool {
         let Some(root) = self.wrapper_dir.parent() else {
             return false;
         };
         let marker = auth_failure_marker(root, self.connection_id);
-        record_refused_sign_in(&self.wrapper_dir, self.connection_id, &marker);
-        marker.exists()
+        record_refused_sign_in(&self.wrapper_dir, self.connection_id, &marker)
     }
 
     /// Whether the wrapper hands the connection's password to mc's `ssh`.
@@ -543,15 +543,16 @@ fn auth_failure_marker(root: &Path, connection_id: Uuid) -> PathBuf {
 
 /// Creates `marker` when a log of `connection_id`'s delivering `ssh` in
 /// `wrapper_dir` reports a refused sign-in, and removes the logs that do.
+/// Returns whether one did.
 ///
 /// The logs are written through `ssh -E`, after the wrapper has `exec`ed
 /// `ssh`, so nothing in the wrapper can check them; this runs when mc exits
 /// and again at the next mc open. A log without a refusal is left alone,
 /// because its `ssh` may still be signing in; it goes when the directory is
 /// rewritten or pruned.
-fn record_refused_sign_in(wrapper_dir: &Path, connection_id: Uuid, marker: &Path) {
+fn record_refused_sign_in(wrapper_dir: &Path, connection_id: Uuid, marker: &Path) -> bool {
     let Ok(entries) = std::fs::read_dir(wrapper_dir) else {
-        return;
+        return false;
     };
     let log_name = format!("{}.", ssh_log_prefix(connection_id));
     let mut refused = false;
@@ -570,6 +571,7 @@ fn record_refused_sign_in(wrapper_dir: &Path, connection_id: Uuid, marker: &Path
     if refused && let Err(error) = std::fs::write(marker, b"") {
         tracing::warn!(%error, "Could not record mc's refused sign-in");
     }
+    refused
 }
 
 /// Whether mc's `ssh` reported a refused password for `connection_id` since
@@ -2090,9 +2092,40 @@ mod tests {
         )
         .unwrap();
         assert!(env.sign_in_refused());
-        assert!(env.sign_in_refused());
+        assert!(
+            !env.sign_in_refused(),
+            "the refusal was read with its log; nothing new since"
+        );
         assert!(take_auth_failure_in(&root, uid, id));
         assert!(!env.sign_in_refused());
+    }
+
+    /// Review item cleanup-mc-refused: a report that another mc session of
+    /// the connection left, and no open has taken yet, does not make an mc
+    /// whose own logs hold no refusal report one at its exit, so that exit
+    /// does not drop the cached password.
+    #[test]
+    fn sign_in_refused_ignores_another_sessions_report() {
+        let base = tempfile::tempdir().unwrap();
+        let root = base.path().join("root");
+        let uid = current_uid();
+        ensure_private_dir(&root, uid).unwrap();
+        let session = root.join("session");
+        std::fs::create_dir(&session).unwrap();
+        let mut env = env_in(&session);
+        let id = Uuid::new_v4();
+        env.connection_id = id;
+        std::fs::write(auth_failure_marker(&root, id), b"").unwrap();
+        std::fs::write(
+            session.join(format!("{}.4242", ssh_log_prefix(id))),
+            "me@target: Authenticated to target ([192.0.2.1]:22) using \"password\".\n",
+        )
+        .unwrap();
+        assert!(!env.sign_in_refused());
+        assert!(
+            take_auth_failure_in(&root, uid, id),
+            "the other session's report is still there for the next open"
+        );
     }
 
     fn route_args(
