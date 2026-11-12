@@ -983,25 +983,16 @@ fn get_version_with_env(
         }
     }
 
-    let mut child = cmd.spawn().ok()?;
-
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(_status)) => break,
-            Ok(None) => {
-                if start.elapsed() >= VERSION_CHECK_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Some("installed (timeout)".to_string());
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
+    let child = cmd.spawn().ok()?;
+    let output =
+        match rustconn_core::proc::wait_bounded(child, VERSION_CHECK_TIMEOUT, "client --version")
+            .ok()?
+        {
+            rustconn_core::proc::Waited::Exited(output) => output,
+            rustconn_core::proc::Waited::TimedOut => {
+                return Some("installed (timeout)".to_string());
             }
-            Err(_) => return None,
-        }
-    }
-
-    let output = child.wait_with_output().ok()?;
+        };
 
     // 126/127 is the shell saying the command could not be run at all — a
     // wrapper script whose target is gone (`/usr/local/bin/tailscale` left
@@ -1045,7 +1036,7 @@ const fn is_unrunnable_exit(code: Option<i32>) -> bool {
 /// outlive the program it launches. Used to mark such a client "Not found"
 /// instead of installed with an error message for a version.
 fn is_runnable(command_path: &std::path::Path, version_arg: &str) -> bool {
-    let Ok(mut child) = std::process::Command::new(command_path)
+    let Ok(child) = std::process::Command::new(command_path)
         .arg(version_arg)
         .env("PATH", rustconn_core::cli_download::get_extended_path())
         .stdout(std::process::Stdio::null())
@@ -1054,19 +1045,13 @@ fn is_runnable(command_path: &std::path::Path, version_arg: &str) -> bool {
     else {
         return false;
     };
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => return !is_unrunnable_exit(status.code()),
-            // Still running means it started; a slow CLI is not a broken one.
-            Ok(None) if start.elapsed() >= VERSION_CHECK_TIMEOUT => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return true;
-            }
-            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(50)),
-            Err(_) => return false,
+    match rustconn_core::proc::wait_bounded(child, VERSION_CHECK_TIMEOUT, "client runnable check") {
+        Ok(rustconn_core::proc::Waited::Exited(output)) => {
+            !is_unrunnable_exit(output.status.code())
         }
+        // Still running means it started; a slow CLI is not a broken one.
+        Ok(rustconn_core::proc::Waited::TimedOut) => true,
+        Err(_) => false,
     }
 }
 
