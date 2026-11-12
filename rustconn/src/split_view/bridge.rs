@@ -28,8 +28,8 @@ pub const SPLIT_PANE_COLORS: &[(&str, &str)] = &[
     ("split-color-green", "tab-split-green"),
     ("split-color-orange", "tab-split-orange"),
     ("split-color-purple", "tab-split-purple"),
-    ("split-color-cyan", "tab-split-cyan"),
-    ("split-color-pink", "tab-split-pink"),
+    ("split-color-teal", "tab-split-teal"),
+    ("split-color-red", "tab-split-red"),
 ];
 
 /// Returns the CSS class for a given color index
@@ -49,14 +49,20 @@ pub fn get_tab_color_class(color_index: usize) -> &'static str {
 }
 
 /// Color values for split pane indicators (RGB)
-/// These match the CSS colors defined in app.rs
+///
+/// GNOME palette shades with at least 3:1 contrast against both white and
+/// `#222226`, so a marker stays visible in light and dark themes. The same
+/// values, in the same order, are in `assets/style.css` (`split-panel-color-*`,
+/// `split-color-*`, `tab-split-*`, pane headers) and in the sidebar markers in
+/// `sidebar_types.rs`. The order is the `ColorId` index of saved layouts: do
+/// not reorder.
 pub const SPLIT_COLOR_VALUES: &[(u8, u8, u8)] = &[
-    (0x35, 0x84, 0xe4), // Blue (#3584e4)
-    (0x33, 0xd1, 0x7a), // Green (#33d17a)
-    (0xff, 0x78, 0x00), // Orange (#ff7800)
-    (0x91, 0x41, 0xac), // Purple (#9141ac)
-    (0x00, 0xb4, 0xd8), // Cyan (#00b4d8)
-    (0xf6, 0x61, 0x51), // Pink (#f66151)
+    (0x35, 0x84, 0xe4), // Blue 3 (#3584e4)
+    (0x26, 0xa2, 0x69), // Green 5 (#26a269)
+    (0xe6, 0x61, 0x00), // Orange 4 (#e66100)
+    (0xc0, 0x61, 0xcb), // Purple 2 (#c061cb)
+    (0x21, 0x90, 0xa4), // Teal (#2190a4)
+    (0xed, 0x33, 0x3b), // Red 2 (#ed333b)
 ];
 
 /// Creates a colored circle icon for tab indicators

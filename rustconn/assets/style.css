@@ -29,36 +29,39 @@
  * the six panel colors must stay distinct from each other and stable
  * across light/dark themes and user accent-color changes, because they
  * identify panels — deriving them from the theme would let two panels
- * collapse into similar hues. */
+ * collapse into similar hues. Each shade has at least 3:1 contrast
+ * against both white and #222226 (non-text contrast, WCAG 1.4.11).
+ * Same values, same order as SPLIT_COLOR_VALUES in split_view/bridge.rs
+ * and the sidebar markers in sidebar_types.rs. */
 
-/* Color 0: Blue (#3584e4) - GNOME Blue */
+/* Color 0: Blue (#3584e4) - GNOME Blue 3 */
 .split-panel-color-0 {
     border-left: 4px solid #3584e4;
 }
 
-/* Color 1: Green (#33d17a) — matches SPLIT_COLOR_VALUES[1] in split_view/bridge.rs */
+/* Color 1: Green (#26a269) - GNOME Green 5 */
 .split-panel-color-1 {
-    border-left: 4px solid #33d17a;
+    border-left: 4px solid #26a269;
 }
 
-/* Color 2: Orange (#ff7800) - Vibrant Orange */
+/* Color 2: Orange (#e66100) - GNOME Orange 4 */
 .split-panel-color-2 {
-    border-left: 4px solid #ff7800;
+    border-left: 4px solid #e66100;
 }
 
-/* Color 3: Purple (#9141ac) - GNOME Purple */
+/* Color 3: Purple (#c061cb) - GNOME Purple 2 */
 .split-panel-color-3 {
-    border-left: 4px solid #9141ac;
+    border-left: 4px solid #c061cb;
 }
 
-/* Color 4: Cyan (#00b4d8) - Bright Cyan */
+/* Color 4: Teal (#2190a4) - GNOME Teal */
 .split-panel-color-4 {
-    border-left: 4px solid #00b4d8;
+    border-left: 4px solid #2190a4;
 }
 
-/* Color 5: Pink (#f66151) — matches SPLIT_COLOR_VALUES[5] in split_view/bridge.rs */
+/* Color 5: Red (#ed333b) - GNOME Red 2 */
 .split-panel-color-5 {
-    border-left: 4px solid #f66151;
+    border-left: 4px solid #ed333b;
 }
 
 /* ============================================================
@@ -76,11 +79,11 @@
 }
 
 .split-panel-color-0 > .split-pane-header { background-color: alpha(#3584e4, 0.15); }
-.split-panel-color-1 > .split-pane-header { background-color: alpha(#33d17a, 0.15); }
-.split-panel-color-2 > .split-pane-header { background-color: alpha(#ff7800, 0.15); }
-.split-panel-color-3 > .split-pane-header { background-color: alpha(#9141ac, 0.15); }
-.split-panel-color-4 > .split-pane-header { background-color: alpha(#00b4d8, 0.15); }
-.split-panel-color-5 > .split-pane-header { background-color: alpha(#f66151, 0.15); }
+.split-panel-color-1 > .split-pane-header { background-color: alpha(#26a269, 0.15); }
+.split-panel-color-2 > .split-pane-header { background-color: alpha(#e66100, 0.15); }
+.split-panel-color-3 > .split-pane-header { background-color: alpha(#c061cb, 0.15); }
+.split-panel-color-4 > .split-pane-header { background-color: alpha(#2190a4, 0.15); }
+.split-panel-color-5 > .split-pane-header { background-color: alpha(#ed333b, 0.15); }
 
 /* Empty panel placeholder styling */
 /* Empty panel displays placeholder with Select Tab button */
@@ -144,19 +147,19 @@
     border-left: 4px solid #3584e4;
 }
 .split-color-green {
-    border-left: 4px solid #33d17a;
+    border-left: 4px solid #26a269;
 }
 .split-color-orange {
-    border-left: 4px solid #ff7800;
+    border-left: 4px solid #e66100;
 }
 .split-color-purple {
-    border-left: 4px solid #9141ac;
+    border-left: 4px solid #c061cb;
 }
-.split-color-cyan {
-    border-left: 4px solid #00b4d8;
+.split-color-teal {
+    border-left: 4px solid #2190a4;
 }
-.split-color-pink {
-    border-left: 4px solid #f66151;
+.split-color-red {
+    border-left: 4px solid #ed333b;
 }
 
 /* Tab color indicators - applied to tab content containers */
@@ -165,23 +168,23 @@
     padding-left: 6px;
 }
 .tab-split-green {
-    border-left: 3px solid #33d17a;
+    border-left: 3px solid #26a269;
     padding-left: 6px;
 }
 .tab-split-orange {
-    border-left: 3px solid #ff7800;
+    border-left: 3px solid #e66100;
     padding-left: 6px;
 }
 .tab-split-purple {
-    border-left: 3px solid #9141ac;
+    border-left: 3px solid #c061cb;
     padding-left: 6px;
 }
-.tab-split-cyan {
-    border-left: 3px solid #00b4d8;
+.tab-split-teal {
+    border-left: 3px solid #2190a4;
     padding-left: 6px;
 }
-.tab-split-pink {
-    border-left: 3px solid #f66151;
+.tab-split-red {
+    border-left: 3px solid #ed333b;
     padding-left: 6px;
 }
 

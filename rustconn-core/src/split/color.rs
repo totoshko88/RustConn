@@ -13,23 +13,26 @@ use super::types::ColorId;
 
 /// Standard color palette for split containers.
 ///
-/// These colors are chosen to be visually distinct and accessible in both
-/// light and dark themes. Each color is represented as an RGB tuple.
+/// GNOME palette shades with at least 3:1 contrast against both white and
+/// `#222226`, so they stay visible in light and dark themes. Each color is
+/// represented as an RGB tuple. The GUI paints the same values, in the same
+/// order (`SPLIT_COLOR_VALUES` in the `rustconn` crate); the index is the
+/// `ColorId` stored in saved layouts, so do not reorder.
 ///
 /// The palette includes:
-/// - Blue (0x3584e4)
-/// - Green (0x2ec27e)
-/// - Orange (0xff7800)
-/// - Purple (0x9141ac)
-/// - Cyan (0x00b4d8)
-/// - Red (0xe01b24)
+/// - Blue 3 (0x3584e4)
+/// - Green 5 (0x26a269)
+/// - Orange 4 (0xe66100)
+/// - Purple 2 (0xc061cb)
+/// - Teal (0x2190a4)
+/// - Red 2 (0xed333b)
 pub const SPLIT_COLORS: &[(u8, u8, u8)] = &[
-    (0x35, 0x84, 0xe4), // Blue
-    (0x2e, 0xc2, 0x7e), // Green
-    (0xff, 0x78, 0x00), // Orange
-    (0x91, 0x41, 0xac), // Purple
-    (0x00, 0xb4, 0xd8), // Cyan
-    (0xe0, 0x1b, 0x24), // Red
+    (0x35, 0x84, 0xe4), // Blue 3
+    (0x26, 0xa2, 0x69), // Green 5
+    (0xe6, 0x61, 0x00), // Orange 4
+    (0xc0, 0x61, 0xcb), // Purple 2
+    (0x21, 0x90, 0xa4), // Teal
+    (0xed, 0x33, 0x3b), // Red 2
 ];
 
 /// Manages color allocation for split containers.
@@ -357,24 +360,24 @@ mod tests {
         ); // Blue
         assert_eq!(
             ColorPool::get_rgb(ColorId::new(1)),
-            Some((0x2e, 0xc2, 0x7e))
-        ); // Green
+            Some((0x26, 0xa2, 0x69))
+        ); // Green 5
         assert_eq!(
             ColorPool::get_rgb(ColorId::new(2)),
-            Some((0xff, 0x78, 0x00))
-        ); // Orange
+            Some((0xe6, 0x61, 0x00))
+        ); // Orange 4
         assert_eq!(
             ColorPool::get_rgb(ColorId::new(3)),
-            Some((0x91, 0x41, 0xac))
-        ); // Purple
+            Some((0xc0, 0x61, 0xcb))
+        ); // Purple 2
         assert_eq!(
             ColorPool::get_rgb(ColorId::new(4)),
-            Some((0x00, 0xb4, 0xd8))
-        ); // Cyan
+            Some((0x21, 0x90, 0xa4))
+        ); // Teal
         assert_eq!(
             ColorPool::get_rgb(ColorId::new(5)),
-            Some((0xe0, 0x1b, 0x24))
-        ); // Red
+            Some((0xed, 0x33, 0x3b))
+        ); // Red 2
     }
 
     #[test]
