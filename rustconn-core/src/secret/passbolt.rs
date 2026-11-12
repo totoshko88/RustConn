@@ -841,8 +841,10 @@ mod debug_tests {
             std_cmd.get_args().collect::<Vec<_>>()
         );
         assert!(
-            std_cmd.get_envs().any(|(k, v)| k == USER_PASSWORD_ENV
-                && v == Some(std::ffi::OsStr::new("s3cret-phrase"))),
+            std_cmd
+                .get_envs()
+                .any(|(k, v)| k == USER_PASSWORD_ENV
+                    && v == Some(std::ffi::OsStr::new("s3cret-phrase"))),
             "passphrase missing from the environment"
         );
     }

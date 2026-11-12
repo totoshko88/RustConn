@@ -176,7 +176,7 @@ pub fn show_key_unlock_dialog(
                     ))));
                     match &result {
                         Ok(()) => {
-                            tracing::info!(?key_path, "SSH key unlocked and added to the agent")
+                            tracing::info!(?key_path, "SSH key unlocked and added to the agent");
                         }
                         Err(AgentError::AddRefused(e)) => {
                             tracing::info!(?key_path, error = %e, "the SSH agent refused the key");
@@ -186,26 +186,22 @@ pub fn show_key_unlock_dialog(
                         }
                         Err(_) => {}
                     }
-                    match next_step(result, attempts.get()) {
-                        Some(outcome) => {
-                            if outcome == KeyUnlockOutcome::GaveUp {
-                                tracing::info!(
-                                    ?key_path,
-                                    "too many wrong SSH key passphrases; not adding the key"
-                                );
-                            }
-                            finish(&dialog, outcome);
+                    if let Some(outcome) = next_step(result, attempts.get()) {
+                        if outcome == KeyUnlockOutcome::GaveUp {
+                            tracing::info!(
+                                ?key_path,
+                                "too many wrong SSH key passphrases; not adding the key"
+                            );
                         }
-                        None => {
-                            status_label.set_text(&i18n("Incorrect passphrase"));
-                            status_label.remove_css_class("dim-label");
-                            status_label.add_css_class("error");
-                            status_label.set_visible(true);
-                            dialog.set_response_enabled("cancel", true);
-                            dialog
-                                .set_response_enabled("unlock", !passphrase_row.text().is_empty());
-                            passphrase_row.grab_focus();
-                        }
+                        finish(&dialog, outcome);
+                    } else {
+                        status_label.set_text(&i18n("Incorrect passphrase"));
+                        status_label.remove_css_class("dim-label");
+                        status_label.add_css_class("error");
+                        status_label.set_visible(true);
+                        dialog.set_response_enabled("cancel", true);
+                        dialog.set_response_enabled("unlock", !passphrase_row.text().is_empty());
+                        passphrase_row.grab_focus();
                     }
                 },
             );
