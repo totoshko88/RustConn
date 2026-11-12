@@ -14,7 +14,6 @@ use crate::config::ConfigManager;
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
 use crate::monitoring::MonitoringOverride;
-use crate::performance::interner;
 use crate::sync::SyncMode;
 
 /// Tuple containing validation/creation, timestamp
@@ -155,8 +154,6 @@ impl ConnectionManager {
     /// Creates a new `ConnectionManager` with the given `ConfigManager`
     ///
     /// Loads existing connections and groups from storage.
-    /// Interns frequently repeated strings (protocol names, hostnames, usernames)
-    /// for memory efficiency.
     ///
     /// # Errors
     ///
@@ -165,11 +162,6 @@ impl ConnectionManager {
         let connections_vec = config_manager.load_connections()?;
         let groups_vec = config_manager.load_groups()?;
         let (trash_connections_vec, trash_groups_vec) = config_manager.load_trash()?;
-
-        // Intern strings for memory efficiency
-        for conn in &connections_vec {
-            Self::intern_connection_strings(conn);
-        }
 
         let connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
         let groups = groups_vec.into_iter().map(|g| (g.id, g)).collect();
@@ -281,7 +273,6 @@ impl ConnectionManager {
         ConfigManager::validate_connection(&connection)?;
 
         // Intern strings for memory efficiency
-        Self::intern_connection_strings(&connection);
 
         let id = connection.id;
         self.connections.insert(id, connection);
@@ -303,7 +294,6 @@ impl ConnectionManager {
         ConfigManager::validate_connection(&connection)?;
 
         // Intern strings for memory efficiency
-        Self::intern_connection_strings(&connection);
 
         let id = connection.id;
         let mut connection = connection;
@@ -369,7 +359,6 @@ impl ConnectionManager {
         ConfigManager::validate_connection(&updated)?;
 
         // Intern strings for memory efficiency
-        Self::intern_connection_strings(&updated);
 
         self.connections.insert(id, updated);
         self.is_sorted = false;
@@ -1442,35 +1431,11 @@ impl ConnectionManager {
         let connections_vec = self.config_manager.load_connections()?;
         let groups_vec = self.config_manager.load_groups()?;
 
-        // Intern strings for memory efficiency
-        for conn in &connections_vec {
-            Self::intern_connection_strings(conn);
-        }
-
         self.connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
 
         self.groups = groups_vec.into_iter().map(|g| (g.id, g)).collect();
 
         Ok(())
-    }
-
-    /// Interns frequently repeated strings from a connection for memory efficiency
-    ///
-    /// This method interns protocol names, hostnames, and usernames which are
-    /// often repeated across many connections.
-    fn intern_connection_strings(conn: &Connection) {
-        let interner = interner();
-
-        // Intern protocol names (frequently repeated)
-        let _ = interner.intern(conn.protocol.as_str());
-
-        // Intern hostnames (often repeated across connections)
-        let _ = interner.intern(&conn.host);
-
-        // Intern usernames if present
-        if let Some(ref username) = conn.username {
-            let _ = interner.intern(username);
-        }
     }
 
     // ========== Sorting Operations ==========

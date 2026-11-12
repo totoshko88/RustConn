@@ -1607,7 +1607,7 @@ rustconn-core/src/
 ├── sftp.rs                # SFTP URI/command builders, ssh-add, mc FISH VFS
 ├── flatpak.rs             # Flatpak sandbox detection, portal key path resolution, stable key copy
 ├── snap.rs                # Snap environment detection and paths
-├── performance/           # String interner (connection-string dedup) + search debouncer
+├── performance/           # Search debouncer
 ├── tracing/               # Span name constants + the `rustconn::perf` timing target (PerfSpan)
 └── ...
 ```

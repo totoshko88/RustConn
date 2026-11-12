@@ -37,7 +37,6 @@ mod import_normalize_tests;
 mod import_preview_tests;
 mod import_statistics_tests;
 mod import_tests;
-mod interning_tests;
 mod keepass_tests;
 mod key_sequence_tests;
 mod keybinding_tests;
