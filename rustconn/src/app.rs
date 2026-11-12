@@ -2142,7 +2142,10 @@ Serial, Kubernetes, and Zero Trust connections from a single application.",
             "cocide https://github.com/cocide",
             "Austin Eschweiler https://github.com/Eschguy",
         ])
-        .copyright("© 2024-2026 Anton Isaiev")
+        // The attribution in this line and the "Made in Ukraine" section
+        // below are the Appropriate Legal Notices that NOTICE (GPL-3.0
+        // section 7(b)) asks a modified version to keep.
+        .copyright("© 2024-2026 Anton Isaiev, Ukraine")
         .application_icon("io.github.totoshko88.RustConn")
         // The translators section. Its heading ("Translated by") is one of
         // GTK's own strings, so libadwaita localises it automatically in every
