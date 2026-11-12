@@ -182,14 +182,15 @@ pub fn open_pty_pair() -> io::Result<PtyPair> {
 /// Sets `FD_CLOEXEC` on an open descriptor.
 #[cfg(unix)]
 fn set_cloexec(fd: &OwnedFd) -> io::Result<()> {
-    // SAFETY: `fd` is a valid open descriptor borrowed for the call; F_GETFD and
-    // F_SETFD only read and write its descriptor flags.
-    unsafe {
-        let flags = libc::fcntl(fd.as_raw_fd(), libc::F_GETFD);
-        if flags == -1 || libc::fcntl(fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC) == -1
-        {
-            return Err(io::Error::last_os_error());
-        }
+    // SAFETY: `fd` is a valid open descriptor borrowed for the call; F_GETFD
+    // only reads its descriptor flags.
+    let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFD) };
+    if flags == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: as above; F_SETFD only writes the descriptor flags.
+    if unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC) } == -1 {
+        return Err(io::Error::last_os_error());
     }
     Ok(())
 }
