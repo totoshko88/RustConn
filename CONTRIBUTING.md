@@ -217,6 +217,28 @@ Small, reviewable PRs land faster than large ones. If a change spans crate
 boundaries, name the boundary in the description and keep each layer readable on
 its own.
 
+## AI-assisted development
+
+The maintainer develops RustConn with AI coding agents: Kiro, with Claude
+models. The agents' configuration is public, in [`.kiro/`](.kiro/) (steering
+files, hooks and agent profiles) and in the `AGENTS.md` files at the root and in
+each crate, so you can read exactly what they are told.
+
+What holds for every change, whoever or whatever wrote it:
+
+- The maintainer reads it before it goes into the repository.
+- It passes `scripts/verify.sh --tests`: formatting, clippy with
+  `-D warnings`, rustdoc with `-D warnings`, the test suite, and the i18n and
+  crate-boundary gates. It is then tested by hand.
+- A commit made with an agent carries a `Co-Authored-By` trailer naming it.
+- Flathub manifests and Flathub submissions are written by hand, as
+  [Flathub's policy](https://docs.flathub.org/docs/for-app-authors/requirements)
+  requires.
+
+You may use AI tools for your own contributions. You must understand what you
+submit and be able to explain it in review: why the change is needed, what it
+does, and how you checked it.
+
 ## Releases
 
 Releases are cut by the maintainer. `./scripts/release.sh` runs every gate and
