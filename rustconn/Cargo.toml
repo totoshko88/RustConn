@@ -75,7 +75,7 @@ tracing-subscriber = { workspace = true }
 cpal = { version = "0.18", optional = true }
 serde = { workspace = true, features = ["derive"] }
 shell-words = "1"
-nix = { version = "0.31", features = ["signal", "process"] }
+nix = { workspace = true, features = ["signal", "process"] }
 # PTY creation, sizing and controlling-terminal setup for every session's
 # child. Lives in its own crate because `unsafe` is forbidden here.
 rustconn-pty-sys = { path = "../rustconn-pty-sys", version = "0.24.11" }

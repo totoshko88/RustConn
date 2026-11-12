@@ -8,9 +8,9 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-libc = "0.2"
+libc = { workspace = true }
 # Only `nix::pty::openpty` is used, which lives behind the `term` feature.
-nix = { version = "0.31", features = ["term"] }
+nix = { workspace = true, features = ["term"] }
 
 # This crate is the single sanctioned location for `unsafe` in the workspace
 # (see rust-pragmatic-guidelines.md, M-UNSAFE: isolate FFI in a small -sys

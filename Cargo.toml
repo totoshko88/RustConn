@@ -108,6 +108,13 @@ unicode-segmentation = "1.13"
 # therefore called only from rustconn-locale-sys; rustconn uses the safe rest.
 gettext-rs = { version = "0.8", features = ["gettext-system"] }
 
+# POSIX bindings. nix features are additive: each crate adds the ones it uses
+# (core: fs/signal/process/user, gui: signal/process, pty-sys: term).
+nix = "0.31.2"
+libc = "0.2"
+# MPTCP (Multipath TCP) socket creation in rustconn-core — safe API
+socket2 = { version = "0.6", features = ["all"] }
+
 # Testing
 proptest = "1.10"
 tempfile = "3.26"
