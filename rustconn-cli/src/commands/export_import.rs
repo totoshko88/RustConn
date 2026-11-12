@@ -400,41 +400,17 @@ fn import_connections(
     file: &Path,
 ) -> Result<rustconn_core::import::ImportResult, CliError> {
     use rustconn_core::import::{
-        AnsibleInventoryImporter, AsbruImporter, ImportSource, LibvirtXmlImporter,
-        MobaXtermImporter, RdmImporter, RdpFileImporter, RemminaImporter, RoyalTsImporter,
-        SshConfigImporter, VirtViewerImporter,
+        AnsibleInventoryImporter, AsbruImporter, CsvImporter, ImportSource, LibvirtXmlImporter,
+        MRemoteNgImporter, MobaXtermImporter, PuttyImporter, RdmImporter, RdpFileImporter,
+        RemminaImporter, RoyalTsImporter, SecureCrtImporter, SshConfigImporter, VirtViewerImporter,
     };
 
-    let result = match format {
-        ImportFormatArg::Ansible => {
-            let importer = AnsibleInventoryImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::SshConfig => {
-            let importer = SshConfigImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Remmina => {
-            let importer = RemminaImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Asbru => {
-            let importer = AsbruImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
+    let importer: Box<dyn ImportSource> = match format {
         ImportFormatArg::Native => {
             let native = rustconn_core::export::NativeExport::from_file(file)
                 .map_err(|e| CliError::Import(e.to_string()))?;
 
-            rustconn_core::import::ImportResult {
+            return Ok(rustconn_core::import::ImportResult {
                 connections: native.connections,
                 groups: native.groups,
                 skipped: Vec::new(),
@@ -443,59 +419,27 @@ fn import_connections(
                 snippets: native.snippets,
                 smart_folders: native.smart_folders,
                 warnings: Vec::new(),
-            }
+            });
         }
-        ImportFormatArg::RoyalTs => {
-            let importer = RoyalTsImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::MobaXterm => {
-            let importer = MobaXtermImporter::with_path(file.to_path_buf());
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Rdp => {
-            let importer = RdpFileImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Rdm => {
-            let importer = RdmImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::VirtViewer => {
-            let importer = VirtViewerImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Libvirt => {
-            let importer = LibvirtXmlImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::Csv => {
-            let importer = rustconn_core::import::CsvImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
-        ImportFormatArg::SecureCrt => {
-            let importer = rustconn_core::import::SecureCrtImporter::new();
-            importer
-                .import_from_path(file)
-                .map_err(|e| CliError::Import(e.to_string()))?
-        }
+        ImportFormatArg::Ansible => Box::new(AnsibleInventoryImporter::new()),
+        ImportFormatArg::SshConfig => Box::new(SshConfigImporter::new()),
+        ImportFormatArg::Remmina => Box::new(RemminaImporter::new()),
+        ImportFormatArg::Asbru => Box::new(AsbruImporter::new()),
+        ImportFormatArg::RoyalTs => Box::new(RoyalTsImporter::new()),
+        ImportFormatArg::MobaXterm => Box::new(MobaXtermImporter::with_path(file.to_path_buf())),
+        ImportFormatArg::Rdp => Box::new(RdpFileImporter::new()),
+        ImportFormatArg::Rdm => Box::new(RdmImporter::new()),
+        ImportFormatArg::VirtViewer => Box::new(VirtViewerImporter::new()),
+        ImportFormatArg::Libvirt => Box::new(LibvirtXmlImporter::new()),
+        ImportFormatArg::Csv => Box::new(CsvImporter::new()),
+        ImportFormatArg::Putty => Box::new(PuttyImporter::new()),
+        ImportFormatArg::MRemoteNg => Box::new(MRemoteNgImporter::new()),
+        ImportFormatArg::SecureCrt => Box::new(SecureCrtImporter::new()),
     };
 
-    Ok(result)
+    importer
+        .import_from_path(file)
+        .map_err(|e| CliError::Import(e.to_string()))
 }
 
 /// Auto-detect available import sources and import from all found

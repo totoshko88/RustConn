@@ -323,6 +323,10 @@ else
     run_gate 'cargo clippy -p rustconn-cli --features full' \
         "$CARGO" clippy -p rustconn-cli --features full --all-targets -- -D warnings
 
+    # Needs the CLI binary, so it sits with the cargo gates rather than the
+    # fast ones; the script builds the debug binary itself.
+    run_gate 'check-cli-docs' scripts/check-cli-docs.sh
+
     # rustdoc lints (broken intra-doc links, unclosed HTML, bare URLs) are only
     # evaluated by rustdoc, so clippy above cannot see them. Same feature set as
     # clippy, for the same macOS reason. --document-private-items because these

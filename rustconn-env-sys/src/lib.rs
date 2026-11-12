@@ -1,4 +1,5 @@
-//! Isolated FFI helper for the one environment variable RustConn sets at startup.
+//! Isolated FFI helper for the two environment variables RustConn sets at startup
+//! (`GSK_RENDERER` and `LANGUAGE`).
 //!
 //! `std::env::set_var` is `unsafe` in the 2024 edition because it is a wrapper
 //! around `setenv(3)`, which mutates the process-global environment block

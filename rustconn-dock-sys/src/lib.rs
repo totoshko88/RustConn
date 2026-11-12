@@ -55,14 +55,15 @@
 //!
 //! # What CI actually checks
 //!
-//! No CI job builds macOS, so the `unsafe` block below is compiled only on a
-//! developer's Mac. Stating that plainly is better than implying otherwise: it
-//! is why the crate is split into a platform-independent precondition layer
+//! Every job but `macos-sys` is Linux, so the `unsafe` block below is compiled,
+//! clippy-checked and tested only there (or with `cargo clippy -p
+//! rustconn-dock-sys --target aarch64-apple-darwin` on Linux), and only a Mac
+//! can show the Dock tile change. That is why the crate is split into a platform-independent precondition layer
 //! ([`png_signature_check`], exercised by the tests below on every platform) and
 //! the few lines that talk to AppKit. The crate is nonetheless an unconditional
 //! workspace member and an unconditional dependency of `rustconn` — the same
 //! rule the other `-sys` crates follow — so its API surface, its outcome
-//! reporting and its guard cannot rot unnoticed between two macOS builds.
+//! reporting and its guard cannot rot unnoticed between two macOS CI runs.
 //! `rustconn-pty-sys` has the identical property for its macOS
 //! controlling-terminal path.
 //!

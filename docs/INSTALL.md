@@ -232,8 +232,10 @@ attestation](https://slsa.dev/spec/v1.0/provenance). Check one with the
 [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh attestation verify RustConn-0.20.0-x86_64.AppImage --repo totoshko88/RustConn
+gh attestation verify RustConn-<version>-x86_64.AppImage --repo totoshko88/RustConn
 ```
+
+Replace `<version>` with the release you downloaded, for example `0.24.11`.
 
 A pass means GitHub holds a Sigstore-signed statement that this exact file — bound
 by both its SHA-256 digest and its filename — was produced by this repository's
