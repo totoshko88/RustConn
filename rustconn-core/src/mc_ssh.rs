@@ -49,7 +49,9 @@ use secrecy::SecretString;
 use uuid::Uuid;
 
 use crate::connection::JumpChain;
-use crate::models::{Connection, ConnectionGroup, ProtocolConfig, SshAuthMethod, SshConfig};
+use crate::models::{
+    Connection, ConnectionGroup, PasswordSource, ProtocolConfig, SshAuthMethod, SshConfig,
+};
 use crate::ssh_tunnel::shell_single_quote;
 
 /// Name of the directory holding all per-session wrapper directories.
@@ -317,6 +319,47 @@ pub fn password_may_be_sent(connection: &Connection) -> bool {
     expects_password(connection)
         && ssh_config(connection)
             .is_some_and(|cfg| crate::ssh_tunnel::target_password_askpass_allowed(cfg, false))
+}
+
+/// What an mc launch does about `connection`'s password, before any lookup.
+///
+/// This is the one place the policy lives; the GUI follows it and only does
+/// the lookup. In order, the first row that applies wins:
+///
+/// | Connection | Plan |
+/// |---|---|
+/// | Not Password / Keyboard Interactive authentication ([`expects_password`]) | [`Absent`](McPasswordPlan::Absent) |
+/// | mc's last sign-in with the saved password was refused, and the password is saved | [`Refused`](McPasswordPlan::Refused) |
+/// | A route or option that must not get the password ([`password_may_be_sent`]) | [`Absent`](McPasswordPlan::Absent) |
+/// | Anything else, a prompt-at-connect connection after a refusal included | [`Lookup`](McPasswordPlan::Lookup) |
+///
+/// A `Lookup` password is still delivered only when the wrapper's gate in
+/// [`prepare_mc_ssh_env`] agrees: the route check (`ssh -G`) and mc's exact
+/// argument shape for this host, user and port.
+#[must_use]
+pub fn password_plan(connection: &Connection, sign_in_refused: bool) -> McPasswordPlan {
+    if !expects_password(connection) {
+        return McPasswordPlan::Absent;
+    }
+    if sign_in_refused && !matches!(connection.password_source, PasswordSource::Prompt) {
+        return McPasswordPlan::Refused;
+    }
+    if !password_may_be_sent(connection) {
+        return McPasswordPlan::Absent;
+    }
+    McPasswordPlan::Lookup
+}
+
+/// The outcome of [`password_plan`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum McPasswordPlan {
+    /// Hand mc no password and look nothing up.
+    Absent,
+    /// The saved password was refused: open without it so the user can type
+    /// the right one. Looks nothing up.
+    Refused,
+    /// Look the password up (session cache, then its source) and hand it over.
+    Lookup,
 }
 
 /// The arguments the delivering `ssh` gets in front of mc's own, or `None`
@@ -1245,6 +1288,75 @@ mod tests {
         let cfg =
             build_ssh_config(&conn, &[], &[], &crate::config::NetworkSettings::default()).unwrap();
         assert!(cfg.contains("HostKeyAlias printer.local\n"));
+    }
+
+    /// Every row of the [`password_plan`] table, over the inputs that decide it.
+    #[test]
+    fn the_password_plan_follows_the_policy_table() {
+        use McPasswordPlan::{Absent, Lookup, Refused};
+        let build = |auth: SshAuthMethod, source: PasswordSource, proxy: Option<&str>| {
+            let mut conn = ssh("t", "h.example.com", 22, Some("me"));
+            conn.password_source = source;
+            let cfg = ssh_cfg(&mut conn);
+            cfg.auth_method = auth;
+            cfg.proxy_command = proxy.map(str::to_string);
+            conn
+        };
+        for source in [
+            PasswordSource::None,
+            PasswordSource::Vault,
+            PasswordSource::Prompt,
+            PasswordSource::Inherit,
+            PasswordSource::Variable("v".into()),
+            PasswordSource::Script("s".into()),
+        ] {
+            for refused in [false, true] {
+                // Key and agent: never a password, refusal or not.
+                for auth in [
+                    SshAuthMethod::PublicKey,
+                    SshAuthMethod::Agent,
+                    SshAuthMethod::SecurityKey,
+                ] {
+                    let conn = build(auth.clone(), source.clone(), None);
+                    assert_eq!(password_plan(&conn, refused), Absent, "{auth:?} {source:?}");
+                }
+                // Keyboard Interactive is `expects_password` but the gate refuses it.
+                let kbd = build(SshAuthMethod::KeyboardInteractive, source.clone(), None);
+                let expected = if refused && !matches!(source, PasswordSource::Prompt) {
+                    Refused
+                } else {
+                    Absent
+                };
+                assert_eq!(password_plan(&kbd, refused), expected, "kbd {source:?}");
+                // A custom ProxyCommand takes the route over.
+                let proxied = build(SshAuthMethod::Password, source.clone(), Some("nc %h %p"));
+                let expected = if refused && !matches!(source, PasswordSource::Prompt) {
+                    Refused
+                } else {
+                    Absent
+                };
+                assert_eq!(
+                    password_plan(&proxied, refused),
+                    expected,
+                    "proxy {source:?}"
+                );
+                // A plain password connection.
+                let plain = build(SshAuthMethod::Password, source.clone(), None);
+                let expected = match (refused, &source) {
+                    (true, PasswordSource::Prompt) | (false, _) => Lookup,
+                    (true, _) => Refused,
+                };
+                assert_eq!(password_plan(&plain, refused), expected, "plain {source:?}");
+            }
+        }
+    }
+
+    /// A non-SSH connection never expects one.
+    #[test]
+    fn a_non_ssh_connection_gets_no_password_plan() {
+        let rdp = Connection::new_rdp("r".to_string(), "h".to_string(), 3389);
+        assert_eq!(password_plan(&rdp, false), McPasswordPlan::Absent);
+        assert_eq!(password_plan(&rdp, true), McPasswordPlan::Absent);
     }
 
     fn config_for(conn: &Connection, hops: &[Connection]) -> Option<String> {

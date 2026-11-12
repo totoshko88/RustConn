@@ -330,12 +330,10 @@ enum McPassword {
 
 /// Finds the password mc's `ssh` should get, then calls `then` with it.
 ///
-/// [`McPassword::Absent`] without a lookup for a key or agent connection and
-/// for one whose password the wrapper would not send anyway. A refused
-/// sign-in reported by the wrapper drops the cached entry, as a refused
-/// Connect does, and gives [`McPassword::Refused`] once, without reading the
-/// vault; a connection set to ask at connect is asked again instead. For
-/// **Prompt** the user is asked once; Cancel ends here without `then`.
+/// Whether to look at all is [`rustconn_core::mc_ssh::password_plan`]'s table.
+/// A refused sign-in reported by the wrapper also drops the cached entry, as a
+/// refused Connect does. A lookup reads the session cache, then the source.
+/// For **Prompt** the user is asked once; Cancel ends here without `then`.
 fn mc_password(
     state: &SharedAppState,
     notebook: &SharedNotebook,
@@ -343,15 +341,21 @@ fn mc_password(
     conn: &Connection,
     then: impl FnOnce(McPassword) + 'static,
 ) {
-    if !rustconn_core::mc_ssh::expects_password(conn) {
-        then(McPassword::Absent);
-        return;
-    }
-    if rustconn_core::mc_ssh::take_auth_failure(connection_id) {
+    use rustconn_core::mc_ssh::{McPasswordPlan, password_plan};
+
+    // `take_auth_failure` consumes the report, so ask it only for a connection
+    // that could have one.
+    let refused = rustconn_core::mc_ssh::expects_password(conn)
+        && rustconn_core::mc_ssh::take_auth_failure(connection_id);
+    if refused {
         crate::state::forget_cached_credentials(state, connection_id);
-        // A saved password would only be refused again; a typed one is asked
-        // for again.
-        if !matches!(conn.password_source, PasswordSource::Prompt) {
+    }
+    match password_plan(conn, refused) {
+        McPasswordPlan::Absent => {
+            then(McPassword::Absent);
+            return;
+        }
+        McPasswordPlan::Refused => {
             tracing::info!(
                 %connection_id,
                 "mc's last sign-in was refused; opening mc without the saved password"
@@ -359,15 +363,14 @@ fn mc_password(
             then(McPassword::Refused);
             return;
         }
-        tracing::info!(%connection_id, "mc's last sign-in was refused; asking again");
+        McPasswordPlan::Lookup if refused => {
+            tracing::info!(%connection_id, "mc's last sign-in was refused; asking again");
+        }
+        McPasswordPlan::Lookup => {}
     }
     let then = move |password: Option<SecretString>| {
         then(password.map_or(McPassword::Absent, McPassword::Deliver));
     };
-    if !rustconn_core::mc_ssh::password_may_be_sent(conn) {
-        then(None);
-        return;
-    }
 
     let Ok(state_ref) = state.try_borrow() else {
         then(None);
