@@ -239,10 +239,12 @@ What holds for every change, whoever or whatever wrote it:
 - It passes `scripts/verify.sh --tests`: formatting, clippy with
   `-D warnings`, rustdoc with `-D warnings`, the test suite, and the i18n and
   crate-boundary gates. It is then tested by hand.
-- A commit made with an agent carries a `Co-Authored-By` trailer naming it.
 - Flathub manifests and Flathub submissions are written by hand, as
   [Flathub's policy](https://docs.flathub.org/docs/for-app-authors/requirements)
   requires.
+
+From release 0.24.11, a commit made with an agent carries a `Co-Authored-By`
+trailer naming it. Most agent-assisted commits before 0.24.11 do not have one.
 
 You may use AI tools for your own contributions. You must understand what you
 submit and be able to explain it in review: why the change is needed, what it
