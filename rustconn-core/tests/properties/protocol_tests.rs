@@ -1559,28 +1559,28 @@ fn test_protocol_icons_match_requirements() {
     assert_eq!(
         get_protocol_icon(ProtocolType::Ssh),
         "utilities-terminal-symbolic",
-        "SSH should use terminal icon (Requirement 7.3)"
+        "SSH should use terminal icon"
     );
 
     // VNC should show video display icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Vnc),
         "video-joined-displays-symbolic",
-        "VNC should use joined displays icon (Requirement 7.2)"
+        "VNC should use joined displays icon"
     );
 
     // RDP should show computer/monitor icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Rdp),
         "computer-symbolic",
-        "RDP should use computer icon (Requirement 7.1)"
+        "RDP should use computer icon"
     );
 
     // SPICE should show remote desktop icon
     assert_eq!(
         get_protocol_icon(ProtocolType::Spice),
         "preferences-desktop-remote-desktop-symbolic",
-        "SPICE should use remote desktop icon (Requirement 7.4)"
+        "SPICE should use remote desktop icon"
     );
 }
 

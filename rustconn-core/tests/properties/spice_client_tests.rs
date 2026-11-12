@@ -3,7 +3,7 @@
 //! Tests for the SPICE viewer launch/config path (native embedding was removed
 //! in 0.18.0).
 //!
-//! # Requirements Coverage
+//! # Coverage
 //!
 //! - Property 14: SPICE Fallback on Failure
 
