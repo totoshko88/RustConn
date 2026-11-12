@@ -381,8 +381,8 @@ done
 # external binary — and expect to keep that list honest by hand.
 
 %files -f %{name}.lang
-%license LICENSE
-%doc README.md CHANGELOG.md docs/
+%license LICENSE NOTICE
+%doc README.md CHANGELOG.md TRADEMARKS.md docs/
 %{_bindir}/rustconn
 %{_bindir}/rustconn-cli
 %{_datadir}/applications/io.github.totoshko88.RustConn.desktop
