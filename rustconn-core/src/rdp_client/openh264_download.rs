@@ -280,52 +280,13 @@ fn bunzip2(compressed: &[u8]) -> Result<Vec<u8>, OpenH264DownloadError> {
     Ok(out)
 }
 
-/// Atomically write `bytes` to `dest` via a sibling temp file + rename, so a
-/// crash mid-write never leaves a half-written library at `dest`.
-///
-/// Mirrors the temp-then-rename pattern used elsewhere in the crate. The temp
-/// file is removed on any failure before the rename, so no partial file leaks.
+/// Atomically write `bytes` to `dest` (see [`crate::fs_atomic::atomic_write`]),
+/// so a crash mid-write never leaves a half-written library at `dest`.
 fn atomic_write(dest: &Path, bytes: &[u8]) -> Result<(), OpenH264DownloadError> {
-    use std::io::Write;
-
     let parent = dest.parent().ok_or(OpenH264DownloadError::NoCacheDir)?;
     std::fs::create_dir_all(parent)?;
-
-    // Unique-enough temp name in the same directory (same filesystem → rename is
-    // atomic). PID + nanos avoids clobbering a concurrent download's temp file.
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let tmp = parent.join(format!(
-        ".{}.{}.{}.tmp",
-        dest.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("openh264"),
-        std::process::id(),
-        nanos
-    ));
-
-    let write_result = (|| -> std::io::Result<()> {
-        let mut f = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&tmp)?;
-        f.write_all(bytes)?;
-        f.sync_all()?;
-        Ok(())
-    })();
-
-    if let Err(e) = write_result {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(OpenH264DownloadError::Io(e));
-    }
-
-    if let Err(e) = std::fs::rename(&tmp, dest) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(OpenH264DownloadError::Io(e));
-    }
-
+    // 0o644: a shared library, not a secret.
+    crate::fs_atomic::atomic_write(dest, bytes, 0o644)?;
     Ok(())
 }
 

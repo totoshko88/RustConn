@@ -61,6 +61,7 @@ pub mod embedded_client_error;
 pub mod error;
 pub mod export;
 pub mod flatpak;
+pub mod fs_atomic;
 pub mod highlight;
 pub mod host_check;
 pub mod import;

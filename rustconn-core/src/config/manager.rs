@@ -423,49 +423,9 @@ impl ConfigManager {
         // rename below replaces; a copy that fails fails this write.
         self.back_up_newer_file(path)?;
 
-        let temp_path = path.with_extension("tmp");
-
-        fs::write(&temp_path, content).map_err(|e| {
-            ConfigError::Write(format!("Failed to write {}: {}", temp_path.display(), e))
-        })?;
-
-        // Restrict file permissions to owner-only (0600)
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&temp_path, fs::Permissions::from_mode(0o600)).map_err(|e| {
-                ConfigError::Write(format!(
-                    "Failed to set permissions on {}: {}",
-                    temp_path.display(),
-                    e
-                ))
-            })?;
-        }
-
-        // Sync data to disk before rename
-        {
-            let file = fs::File::open(&temp_path).map_err(|e| {
-                ConfigError::Write(format!(
-                    "Failed to open {} for sync: {}",
-                    temp_path.display(),
-                    e
-                ))
-            })?;
-            file.sync_all().map_err(|e| {
-                ConfigError::Write(format!("Failed to sync {}: {}", temp_path.display(), e))
-            })?;
-        }
-
-        fs::rename(&temp_path, path).map_err(|e| {
-            ConfigError::Write(format!(
-                "Failed to rename {} to {}: {}",
-                temp_path.display(),
-                path.display(),
-                e
-            ))
-        })?;
-
-        Ok(())
+        // Owner-only from creation, fsynced, temp removed on failure.
+        crate::fs_atomic::atomic_write(path, content.as_bytes(), crate::fs_atomic::MODE_PRIVATE)
+            .map_err(|e| ConfigError::Write(format!("Failed to write {}: {}", path.display(), e)))
     }
 
     // ========== Version Skew ==========
