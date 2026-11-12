@@ -154,7 +154,7 @@ rules_for() {
     "snap/snapcraft.yaml")
         printf "s/^version: '%s'\$/version: '%s'/\n" "$SV" "$NEW"
         ;;
-    "flake.nix")
+    "flake.nix" | "packaging/nixpkgs/package.nix")
         printf 's/^([[:space:]]*)version = "%s";$/\\1version = "%s";/\n' "$SV" "$NEW"
         ;;
     "po/rustconn.pot")

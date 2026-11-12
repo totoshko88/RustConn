@@ -24,7 +24,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "rustconn";
-  version = "0.19.4";
+  version = "0.24.11";
 
   src = fetchFromGitHub {
     owner = "totoshko88";
@@ -82,8 +82,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     install -Dm755 target/release/rustconn     "$out/bin/rustconn"
     install -Dm755 target/release/rustconn-cli "$out/bin/rustconn-cli"
 
-    install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-      "$out/share/applications/io.github.totoshko88.RustConn.desktop"
+    install -d "$out/share/applications"
+    msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+      -o "$out/share/applications/io.github.totoshko88.RustConn.desktop"
 
     install -Dm644 rustconn/assets/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg \
       "$out/share/icons/hicolor/scalable/apps/io.github.totoshko88.RustConn.svg"

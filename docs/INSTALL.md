@@ -232,7 +232,7 @@ attestation](https://slsa.dev/spec/v1.0/provenance). Check one with the
 [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh attestation verify RustConn-0.20.0-x86_64.AppImage --repo totoshko88/RustConn
+gh attestation verify RustConn-<version>-x86_64.AppImage --repo totoshko88/RustConn
 ```
 
 A pass means GitHub holds a Sigstore-signed statement that this exact file — bound
@@ -425,7 +425,8 @@ nix build
 - Both `rustconn` (GUI) and `rustconn-cli` are included in the default package.
 - NixOS stable (24.11) should work — GTK4 4.16 and libadwaita 1.6 are available there.
 - Tests are skipped during `nix build` (`doCheck = false`) — the full test suite takes ~120s due to argon2 property tests and is validated in CI instead.
-- After cloning, run `nix flake lock` to generate `flake.lock` for reproducible builds (the lock file is not committed to avoid pinning nixpkgs for all users).
+- **`flake.lock` policy.** The lock file is deliberately not committed: `nixpkgs` is the moving `nixpkgs-unstable` branch, so a committed lock would pin every user of `github:totoshko88/RustConn` to an old nixpkgs. A user's own flake that takes `rustconn` as an input pins it in that flake's own `flake.lock`. For a reproducible local build run `nix flake lock` after cloning. Because nothing pins it, a nixpkgs change can break the flake without any change here — that is why `scripts/release.sh` runs `nix flake check --no-build` when `nix` is installed and the `nix` CI job runs it on pull requests that touch `flake.nix`, `Cargo.toml` or `Cargo.lock`.
+- `packaging/nixpkgs/package.nix` is the template for the nixpkgs repository. Its `version` is kept in step by `scripts/bump-version.sh` and checked by `scripts/release.sh`; its `hash` and `cargoHash` are placeholders that whoever submits it to nixpkgs fills in.
 
 ## Arch Linux (AUR, community-maintained)
 

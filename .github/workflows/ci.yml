@@ -897,6 +897,73 @@ jobs:
       - name: cargo hack --feature-powerset (rustconn-cli)
         run: cargo hack --package rustconn-cli --feature-powerset --depth 2 check
 
+  # The desktop entry and AppStream metainfo are what software centres show, and
+  # a broken one is otherwise found by the Flathub/OBS build after the tag. The
+  # desktop file is validated twice: as committed, and as the packages ship it,
+  # with the translations from po/ merged in by msgfmt.
+  packaging-metadata:
+    name: Desktop and AppStream metadata
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends appstream desktop-file-utils gettext
+
+      - name: Validate the desktop entry (source and translated)
+        run: |
+          set -euo pipefail
+          desktop=rustconn/assets/io.github.totoshko88.RustConn.desktop
+          desktop-file-validate "$desktop"
+          out="$(mktemp -d)"
+          msgfmt --desktop --template "$desktop" -d po -o "$out/merged.desktop"
+          desktop-file-validate "$out/merged.desktop"
+
+      - name: Validate the AppStream metainfo
+        run: appstreamcli validate --strict --no-net rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml
+
+  # Runs only when a pull request touches what the flake builds from; nixpkgs is
+  # unpinned (no flake.lock, see docs/INSTALL.md), so this is also the early
+  # warning that nixpkgs-unstable moved under the flake. Scoped by a diff rather
+  # than a workflow-level `paths:` filter, which would stop the other jobs too.
+  nix:
+    name: Nix flake
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Did this pull request touch the flake inputs?
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BASE"...HEAD | grep -qE '^(flake\.nix|flake\.lock|Cargo\.toml|Cargo\.lock|[^/]+/Cargo\.toml|packaging/nixpkgs/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No flake-relevant file changed; skipping."
+          fi
+
+      - name: Install Nix
+        if: steps.scope.outputs.run == 'true'
+        uses: cachix/install-nix-action@v31
+
+      - name: nix flake check
+        if: steps.scope.outputs.run == 'true'
+        run: nix flake check --no-build
+
+      - name: Build the default package
+        if: steps.scope.outputs.run == 'true'
+        run: nix build --print-build-logs
+
   ci-success:
     name: CI Success
     runs-on: ubuntu-26.04
@@ -915,6 +982,8 @@ jobs:
       - feature-powerset
       - macos-sys
       - macos-formula
+      - packaging-metadata
+      - nix
     steps:
       - name: Verify no upstream job failed
         shell: bash
