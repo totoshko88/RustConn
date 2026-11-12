@@ -160,15 +160,39 @@ pub struct PtyPair {
 ///
 /// # Errors
 ///
-/// Returns `io::Error` if `openpty` fails (e.g. out of PTY devices).
+/// Returns `io::Error` if `openpty` fails (e.g. out of PTY devices). The error
+/// keeps the OS `errno`, so `kind()` and `raw_os_error()` stay meaningful.
+///
+/// `openpty` does not set `FD_CLOEXEC`, so both descriptors are marked
+/// close-on-exec here; otherwise any child spawned meanwhile (from any session)
+/// would inherit the master and the reader would never see a hangup.
 #[cfg(unix)]
 pub fn open_pty_pair() -> io::Result<PtyPair> {
     let result =
-        nix::pty::openpty(None, None).map_err(|e| io::Error::other(format!("openpty: {e}")))?;
-    Ok(PtyPair {
+        nix::pty::openpty(None, None).map_err(|e| io::Error::from_raw_os_error(e as i32))?;
+    let pair = PtyPair {
         master: result.master,
         slave: result.slave,
-    })
+    };
+    set_cloexec(&pair.master)?;
+    set_cloexec(&pair.slave)?;
+    Ok(pair)
+}
+
+/// Sets `FD_CLOEXEC` on an open descriptor.
+#[cfg(unix)]
+fn set_cloexec(fd: &OwnedFd) -> io::Result<()> {
+    // SAFETY: `fd` is a valid open descriptor borrowed for the call; F_GETFD
+    // only reads its descriptor flags.
+    let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFD) };
+    if flags == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: as above; F_SETFD only writes the descriptor flags.
+    if unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_SETFD, flags | libc::FD_CLOEXEC) } == -1 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
 }
 
 // ============================================================================
@@ -232,7 +256,9 @@ pub fn pty_set_winsize(master_fd: impl AsFd, rows: u16, cols: u16) -> io::Result
 ///
 /// # Errors
 ///
-/// Returns `io::Error` if `poll(2)` fails for any reason other than `EINTR`.
+/// Returns `io::Error` if `poll(2)` fails for any reason other than `EINTR`, or
+/// `EBADF` if the descriptor is not open (`POLLNVAL`) — reporting that as "not
+/// ready" would make the caller's loop spin without blocking.
 #[cfg(unix)]
 pub fn pty_wait_readable(fd: impl AsFd, timeout: std::time::Duration) -> io::Result<bool> {
     let mut pollfd = libc::pollfd {
@@ -260,6 +286,7 @@ pub fn pty_wait_readable(fd: impl AsFd, timeout: std::time::Duration) -> io::Res
             }
         }
         0 => Ok(false),
+        _ if pollfd.revents & libc::POLLNVAL != 0 => Err(io::Error::from_raw_os_error(libc::EBADF)),
         _ => Ok(pollfd.revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0),
     }
 }
@@ -416,5 +443,31 @@ mod tests {
             0,
             "the duplicate must be close-on-exec"
         );
+    }
+
+    /// Both ends of a fresh pair must be close-on-exec (`openpty` does not set it).
+    #[test]
+    fn open_pty_pair_sets_cloexec_on_both_ends() {
+        let pair = open_pty_pair().expect("openpty");
+        for fd in [&pair.master, &pair.slave] {
+            // SAFETY: fd is a valid open fd; F_GETFD only reads flags.
+            let flags = unsafe { libc::fcntl(fd.as_raw_fd(), libc::F_GETFD) };
+            assert_ne!(flags & libc::FD_CLOEXEC, 0, "FD_CLOEXEC must be set");
+        }
+    }
+
+    /// A closed descriptor is an error, not "not ready" (which would busy-loop).
+    #[test]
+    fn wait_readable_reports_closed_fd_as_ebadf() {
+        let pair = open_pty_pair().expect("openpty");
+        let raw = pair.master.as_raw_fd();
+        // Borrow a stale number: close the owner first, then poll the raw value.
+        drop(pair.master);
+        // SAFETY: only used for the duration of one poll; no other thread in
+        // this test opens descriptors, and the number is merely invalid.
+        let stale = unsafe { std::os::fd::BorrowedFd::borrow_raw(raw) };
+        let err = pty_wait_readable(stale, std::time::Duration::from_millis(10))
+            .expect_err("closed fd must be an error");
+        assert_eq!(err.raw_os_error(), Some(libc::EBADF));
     }
 }

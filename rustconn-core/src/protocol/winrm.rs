@@ -54,18 +54,13 @@ impl WinRmClient {
     /// inherit the sandbox's environment and the client needs a terminal type;
     /// nothing else, and no secret, goes on the `flatpak-spawn` line.
     ///
-    /// # Panics
-    ///
-    /// In debug builds, when `built` does not start with [`WINRM_CLIENT`]
-    /// (`evil-winrm`).
+    /// Only a leading [`WINRM_CLIENT`] is replaced. A `built` without it is kept
+    /// whole, so no argument is ever dropped (this used to be a debug-only
+    /// assertion, and release builds silently lost the first argument).
     #[must_use]
     pub fn command(&self, built: Vec<String>) -> Vec<String> {
-        debug_assert_eq!(
-            built.first().map(String::as_str),
-            Some(WINRM_CLIENT),
-            "built must start with the client it replaces"
-        );
-        let rest = built.into_iter().skip(1);
+        let skip = usize::from(built.first().is_some_and(|first| first == WINRM_CLIENT));
+        let rest = built.into_iter().skip(skip);
         match self {
             Self::Local(path) => std::iter::once(path.to_string_lossy().into_owned())
                 .chain(rest)
@@ -471,6 +466,20 @@ mod tests {
                 "alice"
             ]
         );
+    }
+
+    #[test]
+    fn an_argv_without_the_client_name_loses_no_argument() {
+        let client = WinRmClient::Local(PathBuf::from("/usr/bin/evil-winrm"));
+        let mut args = built();
+        args.remove(0);
+        assert_eq!(
+            client.command(args.clone()),
+            std::iter::once("/usr/bin/evil-winrm".to_string())
+                .chain(args)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(client.command(Vec::new()), ["/usr/bin/evil-winrm"]);
     }
 
     #[test]

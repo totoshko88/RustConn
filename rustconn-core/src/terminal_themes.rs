@@ -204,23 +204,10 @@ fn save_custom_themes_to_disk(themes: &[TerminalTheme]) {
         }
     };
 
-    // Atomic write: temp file + rename (consistent with sync file writes)
-    let temp_path = path.with_extension("json.tmp");
-    if let Err(e) = std::fs::write(&temp_path, &json) {
-        tracing::warn!(error = %e, "Failed to write custom themes temp file");
-        return;
-    }
-    if let Err(e) = std::fs::rename(&temp_path, &path) {
-        tracing::warn!(error = %e, "Failed to rename custom themes temp file");
-        let _ = std::fs::remove_file(&temp_path);
-        return;
-    }
-
-    // Restrict file permissions to owner-only (0600) for consistency
-    #[cfg(unix)]
+    if let Err(e) =
+        crate::fs_atomic::atomic_write(&path, json.as_bytes(), crate::fs_atomic::MODE_PRIVATE)
     {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+        tracing::warn!(error = %e, "Failed to write custom themes");
     }
 }
 

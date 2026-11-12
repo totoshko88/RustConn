@@ -50,35 +50,46 @@ where
     }
 }
 
+/// Runs one keyring write under the shared timeout ceiling.
+///
+/// `label` names the entry for the log line only; it never carries the secret.
+/// Returns `true` on success, `false` on any failure (including a timeout).
+fn save_to_keyring<F>(label: &'static str, store: F) -> bool
+where
+    F: std::future::Future<Output = rustconn_core::error::SecretResult<()>>,
+{
+    match crate::async_utils::with_runtime(|rt| {
+        rt.block_on(async {
+            tokio::time::timeout(KEYRING_SAVE_TIMEOUT, store)
+                .await
+                .map_err(|_| "keyring save timed out after 5s".to_string())?
+                .map_err(|e| e.to_string())
+        })
+    }) {
+        Ok(Ok(())) => {
+            tracing::info!(entry = label, "Credential saved to keyring");
+            true
+        }
+        Ok(Err(e)) => {
+            tracing::warn!(entry = label, error = %e, "Failed to save credential to keyring");
+            false
+        }
+        Err(e) => {
+            tracing::warn!(entry = label, error = %e, "Runtime error saving credential to keyring");
+            false
+        }
+    }
+}
+
 /// Saves Bitwarden master password to system keyring via rustconn-core.
 ///
 /// Returns `true` on success, `false` on any failure.
 pub(super) fn save_bw_password_to_keyring(password: &str) -> bool {
     let secret = secrecy::SecretString::from(password.to_owned());
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_master_password_in_keyring(&secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("Bitwarden master password saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save Bitwarden password to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving Bitwarden password to keyring");
-            false
-        }
-    }
+    save_to_keyring(
+        "Bitwarden master password",
+        rustconn_core::secret::store_master_password_in_keyring(&secret),
+    )
 }
 
 /// Loads Bitwarden master password from system keyring via rustconn-core
@@ -94,30 +105,10 @@ pub(super) fn get_bw_password_from_keyring() -> Option<secrecy::SecretString> {
 /// Returns `true` on success, `false` on any failure.
 pub(super) fn save_op_token_to_keyring(token: &str) -> bool {
     let secret = secrecy::SecretString::from(token.to_owned());
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_token_in_keyring(&secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("1Password token saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save 1Password token to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving 1Password token");
-            false
-        }
-    }
+    save_to_keyring(
+        "1Password token",
+        rustconn_core::secret::store_token_in_keyring(&secret),
+    )
 }
 
 /// Loads 1Password service account token from system keyring
@@ -133,30 +124,10 @@ pub(super) fn get_op_token_from_keyring() -> Option<secrecy::SecretString> {
 /// Returns `true` on success, `false` on any failure.
 pub(super) fn save_pb_passphrase_to_keyring(passphrase: &str) -> bool {
     let secret = secrecy::SecretString::from(passphrase.to_owned());
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_passphrase_in_keyring(&secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("Passbolt passphrase saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save Passbolt passphrase to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving Passbolt passphrase");
-            false
-        }
-    }
+    save_to_keyring(
+        "Passbolt passphrase",
+        rustconn_core::secret::store_passphrase_in_keyring(&secret),
+    )
 }
 
 /// Loads Passbolt GPG passphrase from system keyring
@@ -172,30 +143,10 @@ pub(super) fn get_pb_passphrase_from_keyring() -> Option<secrecy::SecretString> 
 /// Returns `true` on success, `false` on any failure.
 pub(super) fn save_portable_passphrase_to_keyring(passphrase: &str) -> bool {
     let secret = secrecy::SecretString::from(passphrase.to_owned());
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_portable_passphrase_in_keyring(&secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("Portable file passphrase saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save the portable file passphrase to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving the portable file passphrase");
-            false
-        }
-    }
+    save_to_keyring(
+        "Portable file passphrase",
+        rustconn_core::secret::store_portable_passphrase_in_keyring(&secret),
+    )
 }
 
 /// Loads the portable credential file passphrase from the system keyring.
@@ -211,30 +162,10 @@ pub(super) fn get_portable_passphrase_from_keyring() -> Option<secrecy::SecretSt
 /// Returns `true` on success, `false` on any failure.
 pub(super) fn save_kdbx_password_to_keyring(password: &str) -> bool {
     let secret = secrecy::SecretString::from(password.to_owned());
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_kdbx_password_in_keyring(&secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("KDBX password saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save KDBX password to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving KDBX password");
-            false
-        }
-    }
+    save_to_keyring(
+        "KDBX password",
+        rustconn_core::secret::store_kdbx_password_in_keyring(&secret),
+    )
 }
 
 /// Loads KDBX database password from system keyring
@@ -257,30 +188,10 @@ pub(super) fn save_bw_api_credentials_to_keyring(
 ) -> bool {
     let client_id = client_id.clone();
     let client_secret = client_secret.clone();
-    match crate::async_utils::with_runtime(|rt| {
-        rt.block_on(async {
-            tokio::time::timeout(
-                KEYRING_SAVE_TIMEOUT,
-                rustconn_core::secret::store_api_credentials_in_keyring(&client_id, &client_secret),
-            )
-            .await
-            .map_err(|_| "keyring save timed out after 5s")?
-            .map_err(|e| e.to_string())
-        })
-    }) {
-        Ok(Ok(())) => {
-            tracing::info!("Bitwarden API credentials saved to keyring");
-            true
-        }
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "Failed to save Bitwarden API credentials to keyring");
-            false
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "Runtime error saving Bitwarden API credentials");
-            false
-        }
-    }
+    save_to_keyring(
+        "Bitwarden API credentials",
+        rustconn_core::secret::store_api_credentials_in_keyring(&client_id, &client_secret),
+    )
 }
 
 /// Runs one keyring deletion under the shared timeout ceiling.

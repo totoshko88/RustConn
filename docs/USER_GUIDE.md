@@ -4702,7 +4702,7 @@ Quick checklist:
 ### Passbolt Not Working
 
 1. Install `go-passbolt-cli` from github.com/passbolt/go-passbolt-cli
-2. Configure: `passbolt configure --serverAddress https://your-server.com --userPrivateKeyFile key.asc --userPassword`
+2. Configure: `passbolt configure --serverAddress https://your-server.com --userPrivateKeyFile key.asc` (if you enter the passphrase in RustConn's Passbolt settings, you can leave `--userPassword` out of the CLI config; RustConn passes it through the environment, never the command line)
 3. Verify: `passbolt list resource`
 
 ### KeePass Not Working

@@ -13,7 +13,7 @@
 //! - [`secret`] - Credential backends and resolvers; host keyring integration is optional
 //! - [`search`] - Fuzzy search with caching and debouncing
 //! - [`automation`] - Expect scripts, key sequences, tasks
-//! - [`performance`] - Connection-string interner (dedup) + search debouncer
+//! - [`performance`] - Search debouncer
 //!
 //! # Feature Flags
 //!
@@ -61,6 +61,7 @@ pub mod embedded_client_error;
 pub mod error;
 pub mod export;
 pub mod flatpak;
+pub mod fs_atomic;
 pub mod highlight;
 pub mod host_check;
 pub mod import;
@@ -150,9 +151,7 @@ pub use config::{
 };
 pub use connection::{
     ConnectionManager, LazyGroupLoader, LoginPrompt, LoginPromptMatcher, PortCheckError,
-    PortCheckResult, RetryConfig, RetryState, SelectionState, check_interning_stats, check_port,
-    check_port_async, get_interning_stats, intern_connection_strings, intern_hostname,
-    intern_protocol_name, intern_username, log_interning_stats, log_interning_stats_with_warning,
+    PortCheckResult, RetryConfig, RetryState, SelectionState, check_port, check_port_async,
     looks_like_password_prompt, looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
@@ -212,7 +211,7 @@ pub use password_generator::{
     CharacterSet, PasswordGenerator, PasswordGeneratorConfig, PasswordGeneratorError,
     PasswordGeneratorResult, PasswordStrength, estimate_crack_time,
 };
-pub use performance::{Debouncer, InternerStats, StringInterner, interner};
+pub use performance::Debouncer;
 pub use progress::{
     CallbackProgressReporter, CancelHandle, LocalProgressReporter, NoOpProgressReporter,
     ProgressReporter,

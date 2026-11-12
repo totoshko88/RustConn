@@ -170,43 +170,38 @@ pub fn show_key_unlock_dialog(
                 },
                 move |result| {
                     busy.set(false);
-                    match result {
+                    attempts.set(attempts.get().saturating_add(u8::from(matches!(
+                        result,
+                        Err(AgentError::WrongPassphrase)
+                    ))));
+                    match &result {
                         Ok(()) => {
                             tracing::info!(?key_path, "SSH key unlocked and added to the agent");
-                            finish(&dialog, KeyUnlockOutcome::Unlocked);
-                        }
-                        Err(AgentError::WrongPassphrase) => {
-                            attempts.set(attempts.get().saturating_add(1));
-                            match after_wrong_passphrase(attempts.get()) {
-                                AfterWrongPassphrase::Retry => {
-                                    tracing::debug!(?key_path, "wrong SSH key passphrase");
-                                    status_label.set_text(&i18n("Incorrect passphrase"));
-                                    status_label.remove_css_class("dim-label");
-                                    status_label.add_css_class("error");
-                                    status_label.set_visible(true);
-                                    dialog.set_response_enabled("cancel", true);
-                                    dialog.set_response_enabled(
-                                        "unlock",
-                                        !passphrase_row.text().is_empty(),
-                                    );
-                                    passphrase_row.grab_focus();
-                                }
-                                AfterWrongPassphrase::GiveUp => {
-                                    tracing::info!(
-                                        ?key_path,
-                                        "too many wrong SSH key passphrases; not adding the key"
-                                    );
-                                    finish(&dialog, KeyUnlockOutcome::GaveUp);
-                                }
-                            }
                         }
                         Err(AgentError::AddRefused(e)) => {
                             tracing::info!(?key_path, error = %e, "the SSH agent refused the key");
-                            finish(&dialog, KeyUnlockOutcome::Refused);
                         }
-                        Err(e) => {
-                            finish(&dialog, KeyUnlockOutcome::Failed(e.to_string()));
+                        Err(AgentError::WrongPassphrase) => {
+                            tracing::debug!(?key_path, "wrong SSH key passphrase");
                         }
+                        Err(_) => {}
+                    }
+                    if let Some(outcome) = next_step(result, attempts.get()) {
+                        if outcome == KeyUnlockOutcome::GaveUp {
+                            tracing::info!(
+                                ?key_path,
+                                "too many wrong SSH key passphrases; not adding the key"
+                            );
+                        }
+                        finish(&dialog, outcome);
+                    } else {
+                        status_label.set_text(&i18n("Incorrect passphrase"));
+                        status_label.remove_css_class("dim-label");
+                        status_label.add_css_class("error");
+                        status_label.set_visible(true);
+                        dialog.set_response_enabled("cancel", true);
+                        dialog.set_response_enabled("unlock", !passphrase_row.text().is_empty());
+                        passphrase_row.grab_focus();
                     }
                 },
             );
@@ -222,4 +217,51 @@ pub fn show_key_unlock_dialog(
     });
 
     dialog.present(Some(parent));
+}
+
+/// How the dialog ends after an add attempt: `None` asks for the passphrase
+/// again, `Some` closes it. `attempts` counts wrong passphrases so far,
+/// including this one.
+fn next_step(result: Result<(), AgentError>, attempts: u8) -> Option<KeyUnlockOutcome> {
+    match result {
+        Ok(()) => Some(KeyUnlockOutcome::Unlocked),
+        Err(AgentError::WrongPassphrase) => match after_wrong_passphrase(attempts) {
+            AfterWrongPassphrase::Retry => None,
+            AfterWrongPassphrase::GiveUp => Some(KeyUnlockOutcome::GaveUp),
+        },
+        Err(AgentError::AddRefused(_)) => Some(KeyUnlockOutcome::Refused),
+        Err(e) => Some(KeyUnlockOutcome::Failed(e.to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_wrong_passphrase_retries_until_the_limit() {
+        assert_eq!(next_step(Err(AgentError::WrongPassphrase), 1), None);
+        // The limit itself gives up; find it from the core rule, not a copy.
+        let limit = (1..=u8::MAX)
+            .find(|n| after_wrong_passphrase(*n) == AfterWrongPassphrase::GiveUp)
+            .expect("a limit exists");
+        assert_eq!(next_step(Err(AgentError::WrongPassphrase), limit - 1), None);
+        assert_eq!(
+            next_step(Err(AgentError::WrongPassphrase), limit),
+            Some(KeyUnlockOutcome::GaveUp)
+        );
+    }
+
+    #[test]
+    fn every_other_result_closes_the_dialog() {
+        assert_eq!(next_step(Ok(()), 0), Some(KeyUnlockOutcome::Unlocked));
+        assert_eq!(
+            next_step(Err(AgentError::AddRefused("1password".into())), 0),
+            Some(KeyUnlockOutcome::Refused)
+        );
+        assert_eq!(
+            next_step(Err(AgentError::NotRunning), 0),
+            Some(KeyUnlockOutcome::Failed("SSH agent not running".into()))
+        );
+    }
 }

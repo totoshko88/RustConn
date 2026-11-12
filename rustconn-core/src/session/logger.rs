@@ -49,6 +49,15 @@ pub enum LogError {
     /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// A custom sanitize pattern is not a valid regex
+    #[error("Invalid sanitize pattern '{pattern}': {reason}")]
+    InvalidPattern {
+        /// The rejected pattern
+        pattern: String,
+        /// Why the regex engine rejected it
+        reason: String,
+    },
 }
 
 /// Result type for logging operations
@@ -1119,15 +1128,22 @@ impl SanitizeConfig {
         self
     }
 
-    /// Adds a custom pattern to sanitize and pre-compiles it
-    #[must_use]
-    pub fn with_custom_pattern(mut self, pattern: impl Into<String>) -> Self {
+    /// Adds a custom pattern to sanitize and pre-compiles it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LogError::InvalidPattern`] if `pattern` is not a valid regex.
+    /// It used to be dropped silently, so a pattern the user believed was
+    /// redacting secrets redacted nothing.
+    pub fn with_custom_pattern(mut self, pattern: impl Into<String>) -> LogResult<Self> {
         let p = pattern.into();
-        if let Ok(re) = regex::Regex::new(&p) {
-            self.compiled_custom.push(re);
-        }
+        let re = regex::Regex::new(&p).map_err(|e| LogError::InvalidPattern {
+            pattern: p.clone(),
+            reason: e.to_string(),
+        })?;
+        self.compiled_custom.push(re);
         self.custom_patterns.push(p);
-        self
+        Ok(self)
     }
 
     /// Sets whether to sanitize full lines containing sensitive prompts
@@ -1346,6 +1362,21 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+
+    #[test]
+    fn invalid_custom_pattern_is_rejected_not_dropped() {
+        for bad in ["(", "[a-", "a{2,1}", "(?P<x"] {
+            let err = SanitizeConfig::new()
+                .with_custom_pattern(bad)
+                .expect_err("invalid regex must be an error");
+            assert!(matches!(err, LogError::InvalidPattern { ref pattern, .. } if pattern == bad));
+        }
+        let ok = SanitizeConfig::new()
+            .with_custom_pattern(r"tok_[0-9]+")
+            .expect("valid regex");
+        assert_eq!(ok.custom_patterns, vec![r"tok_[0-9]+".to_string()]);
+        assert_eq!(sanitize_output("x tok_123 y", &ok), "x [REDACTED] y");
+    }
 
     #[test]
     fn test_log_config_default() {
@@ -1629,7 +1660,9 @@ mod tests {
 
     #[test]
     fn test_sanitize_output_custom_pattern() {
-        let config = SanitizeConfig::new().with_custom_pattern(r"secret_\d+");
+        let config = SanitizeConfig::new()
+            .with_custom_pattern(r"secret_\d+")
+            .expect("valid pattern");
         let input = "Found secret_12345 in config";
         let result = sanitize_output(input, &config);
         assert!(!result.contains("secret_12345"));

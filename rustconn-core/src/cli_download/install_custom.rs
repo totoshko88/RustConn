@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::download::{download_with_progress, enforce_checksum_policy};
+use super::download::{download_with_progress, verify_published_sha256};
 use super::extract::{extract_tar_gz, extract_zip};
 use super::{
     CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
@@ -122,7 +122,7 @@ pub(super) async fn install_kubectl(
         return Err(CliDownloadError::Cancelled);
     }
 
-    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+    verify_published_sha256(&format!("{download_url}.sha256"), "kubectl", &bytes).await?;
 
     let install_dir = cli_dir.join(component.install_subdir);
     tokio::fs::create_dir_all(&install_dir).await?;
@@ -224,7 +224,12 @@ pub(super) async fn install_teleport(
         return Err(CliDownloadError::Cancelled);
     }
 
-    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+    verify_published_sha256(
+        &format!("{download_url}.sha256"),
+        &format!("teleport-v{version}-linux-{arch}-bin.tar.gz"),
+        &bytes,
+    )
+    .await?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -333,7 +338,12 @@ pub(super) async fn install_tailscale(
         return Err(CliDownloadError::Cancelled);
     }
 
-    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+    verify_published_sha256(
+        &format!("{download_url}.sha256"),
+        &format!("tailscale_{version}_{arch_suffix}.tgz"),
+        &bytes,
+    )
+    .await?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -441,7 +451,12 @@ pub(super) async fn install_boundary(
         return Err(CliDownloadError::Cancelled);
     }
 
-    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+    verify_published_sha256(
+        &format!("https://releases.hashicorp.com/boundary/{version}/boundary_{version}_SHA256SUMS"),
+        &format!("boundary_{version}_linux_{arch}.zip"),
+        &bytes,
+    )
+    .await?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -543,7 +558,12 @@ pub(super) async fn install_hoop(
         return Err(CliDownloadError::Cancelled);
     }
 
-    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+    verify_published_sha256(
+        &format!("https://releases.hoop.dev/release/{version}/checksums.txt"),
+        &format!("hoop_{version}_Linux_{arch}.tar.gz"),
+        &bytes,
+    )
+    .await?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
