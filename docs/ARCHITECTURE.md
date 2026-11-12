@@ -874,6 +874,17 @@ pub struct Credentials {
 - Include credentials in error messages
 - Serialize passwords to config files
 
+**Documented exceptions** (the rule list is `AGENTS.md`):
+- *Passbolt resource password on argv.* `go-passbolt-cli` takes the resource
+  password only as `--password` (no stdin, no environment), so it is visible in
+  `/proc/PID/cmdline` while `create`/`update resource` runs. The child is
+  `kill_on_drop` and bounded by a timeout; stderr is redacted. The account
+  passphrase does not share this: it goes through `USERPASSWORD` in the
+  environment, which only the owner can read.
+- *RDP gateway password without `Zeroizing`.* `ironrdp-mstsgu` needs an owned
+  `String`; it is moved (not copied) into `ZeroizingGatewayTarget`, whose `Drop`
+  wipes that one buffer (`rdp_client/client/connection.rs`).
+
 ### Secret Backend Abstraction
 
 ```rust

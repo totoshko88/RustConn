@@ -67,20 +67,19 @@ machine-key encryption as **obfuscation at rest**, not as a security boundary.
 
 ## Known Issues
 
-### Passbolt: passphrase passed as a command-line argument
+### Passbolt: resource password passed as a command-line argument
 
-The Passbolt backend shells out to the community `go-passbolt-cli` tool, which
-currently accepts the GPG passphrase only via the `--userPassword` argument
-(no stdin or environment-variable input). While the command runs, the
-passphrase is therefore visible in `/proc/<pid>/cmdline` to other processes
-running under the **same user**.
+The Passbolt backend shells out to the community `go-passbolt-cli` tool. Since
+0.25.0 the GPG account passphrase is passed through the child's environment
+(`USERPASSWORD`), which only the same user can read. The *resource* password
+is still passed as the `--password` argument when RustConn creates or updates
+a Passbolt entry, because the CLI offers no stdin or environment input for it.
+While that command runs, the password is visible in `/proc/<pid>/cmdline`.
 
-- **Scope:** only during the short-lived `go-passbolt-cli` invocation, and only
-  to processes of the same UID. The passphrase is never written to logs or to
-  disk by RustConn.
-- **Upstream limitation:** this is a constraint of `go-passbolt-cli`, not of
-  RustConn. We will switch to environment-variable or stdin input (as already
-  done for SSH `ASKPASS`) once upstream supports it.
-- **Mitigation:** on a multi-user host, prefer the system keyring or another
-  vault backend for Passbolt-stored secrets, or avoid running untrusted
-  processes under the same user account while connecting.
+- **Scope:** only during the short-lived `passbolt create/update resource`
+  call, which is killed if it outlives its timeout. The password is never
+  written to logs or to disk by RustConn, and the CLI's stderr is redacted.
+- **Upstream limitation:** we will switch once `go-passbolt-cli` accepts the
+  resource password from stdin or the environment.
+- **Mitigation:** on a multi-user host, mount `/proc` with `hidepid=2`, or
+  prefer another vault backend for saving passwords from RustConn.
