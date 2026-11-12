@@ -122,7 +122,8 @@ proptest! {
         secret_value in "[a-z]{10,20}",
     ) {
         let config = SanitizeConfig::new()
-            .with_custom_pattern(r"mysecret_[a-z]+");
+            .with_custom_pattern(r"mysecret_[a-z]+")
+            .expect("valid pattern");
         let input = format!("config: mysecret_{secret_value}");
         let result = sanitize_output(&input, &config);
 
