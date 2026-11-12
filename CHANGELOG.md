@@ -5,6 +5,22 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - Unreleased
+
+### Fixed
+- **PTY descriptors leaked into every child process** — `openpty` does not set close-on-exec, so the master and slave of each terminal session were inherited by anything spawned afterwards, from any tab; a process that kept the master open could stop a closed session from ever seeing its hangup. `rustconn-pty-sys::open_pty_pair` now sets `FD_CLOEXEC` on both, keeps the OS `errno` in its error, and `pty_wait_readable` reports a closed descriptor (`POLLNVAL`) as `EBADF` instead of "not ready", which made the reader loop spin. (`rustconn-pty-sys/src/lib.rs`)
+- **Sync exports were briefly world-readable and not crash-safe** — Simple Sync files were created with the umask and set to `0600` only after the rename (ignoring a failure), with a fixed temp name and no `fsync`; the machine-bound credential store also skipped `fsync` before its rename, so a power loss could leave it empty. All eight temp-and-rename writers (config, both credential stores, sync exports, custom themes, recordings, OpenH264) now share `rustconn_core::fs_atomic::atomic_write`, which creates the temp file with its final mode, `fsync`s it, removes it on any failure and syncs the directory. (`rustconn-core/src/fs_atomic.rs`)
+- **An invalid custom log-sanitize pattern was silently ignored** — `SanitizeConfig::with_custom_pattern` dropped a regex that did not compile while keeping it in the list, so a pattern meant to hide a secret hid nothing. It now returns `LogError::InvalidPattern`. (`rustconn-core/src/session/logger.rs`)
+- **Passbolt passphrase visible in the process list** — the GPG passphrase went to `go-passbolt-cli` as `--userPassword`, readable by any user in `/proc/PID/cmdline`. It now goes through the child's environment (`USERPASSWORD`), which only the owner can read. The resource password still has to be an argument; this and the RDP gateway `Zeroizing` exception are now documented in `AGENTS.md`, `docs/ARCHITECTURE.md` and `SECURITY.md`. (`rustconn-core/src/secret/passbolt.rs`)
+- **Six CLI downloads installed without any integrity check** — kubectl, Teleport, Tailscale, Boundary and Hoop are now checked against the SHA256 their vendor publishes for that exact release, and the Bitwarden CLI against GitHub's asset digest; a missing or wrong hash stops the install. The Bitwarden and 1Password installers had not consulted the checksum policy at all. (`rustconn-core/src/cli_download/`)
+- **A WinRM argument could be lost in release builds** — `WinRmClient::command` dropped the first argument whatever it was, guarded only by a `debug_assert`. It now replaces only a leading `evil-winrm`. (`rustconn-core/src/protocol/winrm.rs`)
+
+### Removed
+- **Unused connection-string interner** — `StringInterner`, `interner()`, `InternerStats` and the `intern_*`/`*_interning_stats` functions are gone from `rustconn-core`: the interned strings were thrown away, so the global set only grew and took a lock on every connection add or update. (`rustconn-core/src/performance/`, `rustconn-core/src/connection/`)
+
+### Improved
+- **Tests for the lock listener, the SSH key unlock dialog and the failed-command marker**, with the dialog's outcome decision and the marker's bar placement moved out of GTK code; the keyring save helpers in Settings share one timed helper, and the client version checks use `rustconn_core::proc::wait_bounded`. (`rustconn-core/src/lock_events/dbus.rs`, `rustconn/src/dialogs/key_unlock.rs`, `rustconn/src/terminal/failed_marker.rs`, `rustconn/src/dialogs/settings/secrets_tab/keyring.rs`, `rustconn/src/dialogs/settings/clients_tab.rs`)
+
 ## [0.24.11] - 2026-11-12
 
 ### Added
