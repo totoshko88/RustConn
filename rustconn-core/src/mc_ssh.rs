@@ -621,20 +621,73 @@ fn identity_file(conn: &Connection, groups: &[ConnectionGroup]) -> Option<PathBu
         .and_then(|p| crate::resolve_key_path(&p))
 }
 
+/// Why a value is not written into the generated `ssh_config`.
+///
+/// The file is line-based: a line break, or a quote that ends a quoted value
+/// early, lets a host name, a custom option or a free-text `ProxyJump` from an
+/// import or a Dynamic Folder script add directives of its own. The value is
+/// not logged; a `ProxyCommand` can hold a secret.
+fn unsafe_value(key: &str) {
+    tracing::warn!(
+        option = key,
+        "Not building the mc ssh_config: a value has a line break, control character or quote"
+    );
+}
+
 /// Writes one `ssh_config` option line, quoting the value.
 ///
 /// Values are double-quoted so a path containing spaces survives; OpenSSH
-/// accepts quoted values for every keyword used here.
-fn push_quoted(out: &mut String, key: &str, value: &str) {
-    let _ = writeln!(out, "    {key} \"{}\"", value.replace('"', ""));
+/// accepts quoted values for every keyword used here. Returns `None`, writing
+/// nothing, for a value with a control character, a `"` or a `\`, which
+/// would end the quotes early.
+fn push_quoted(out: &mut String, key: &str, value: &str) -> Option<()> {
+    if value
+        .chars()
+        .any(|c| c.is_control() || c == '"' || c == '\\')
+    {
+        unsafe_value(key);
+        return None;
+    }
+    let _ = writeln!(out, "    {key} \"{value}\"");
+    Some(())
 }
 
 /// Writes one `ssh_config` option line verbatim.
 ///
 /// Used for values that must not be quoted, such as a comma-separated
-/// `ProxyJump` hop list or a bare keyword like `accept-new`.
-fn push_raw(out: &mut String, key: &str, value: &str) {
+/// `ProxyJump` hop list or a bare keyword like `accept-new`. Returns `None`,
+/// writing nothing, for a value with a control character, and for a `key` that
+/// is not one bare word or that starts a new block.
+fn push_raw(out: &mut String, key: &str, value: &str) -> Option<()> {
+    let bad_key = key.is_empty()
+        || key
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '=')
+        || key.eq_ignore_ascii_case("Host")
+        || key.eq_ignore_ascii_case("Match");
+    if bad_key || value.chars().any(char::is_control) {
+        unsafe_value(if bad_key { "custom option" } else { key });
+        return None;
+    }
     let _ = writeln!(out, "    {key} {value}");
+    Some(())
+}
+
+/// Writes a `Host` line for `host`, which must be one literal name: no
+/// whitespace or control character (a second pattern or a new line), no
+/// pattern or negation character, no quote, and no leading `-`.
+fn push_host(out: &mut String, host: &str) -> Option<()> {
+    let bad = host.is_empty()
+        || host.starts_with('-')
+        || host
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || "*?!\"'#".contains(c));
+    if bad {
+        unsafe_value("Host");
+        return None;
+    }
+    let _ = writeln!(out, "Host {host}");
+    Some(())
 }
 
 /// Builds the `ssh_config` text for `connection`.
@@ -643,7 +696,9 @@ fn push_raw(out: &mut String, key: &str, value: &str) {
 /// that has its own identity file (`-J` does not pass `-i` down to a hop —
 /// issue #241), and a trailing include of the user's own configuration.
 ///
-/// Returns `None` when the connection is not SSH-family.
+/// Returns `None` when the connection is not SSH-family, or when a host name
+/// or option value could add directives of its own (see [`push_raw`]); the
+/// caller then launches mc without the wrapper.
 fn build_ssh_config(
     connection: &Connection,
     connections: &[Connection],
@@ -660,7 +715,7 @@ fn build_ssh_config(
          # Rewritten on every SFTP open; see rustconn-core/src/mc_ssh.rs.\n\n",
     );
 
-    let _ = writeln!(out, "Host {}", connection.host);
+    push_host(&mut out, &connection.host)?;
 
     // An explicit ProxyCommand takes precedence over a jump chain, matching the
     // ssh_config exporter and OpenSSH's own "ProxyCommand instead of a direct
@@ -671,15 +726,15 @@ fn build_ssh_config(
         .map(str::trim)
         .filter(|c| !c.is_empty())
     {
-        push_raw(&mut out, "ProxyCommand", proxy_command);
+        push_raw(&mut out, "ProxyCommand", proxy_command)?;
     } else if let Some(proxy_jump) = chain.proxy_jump_value() {
-        push_raw(&mut out, "ProxyJump", &proxy_jump);
+        push_raw(&mut out, "ProxyJump", &proxy_jump)?;
     }
 
     if let Some(key) = identity_file(connection, groups) {
-        push_quoted(&mut out, "IdentityFile", &key.to_string_lossy());
+        push_quoted(&mut out, "IdentityFile", &key.to_string_lossy())?;
         if cfg.identities_only {
-            push_raw(&mut out, "IdentitiesOnly", "yes");
+            push_raw(&mut out, "IdentitiesOnly", "yes")?;
         }
     }
 
@@ -689,7 +744,7 @@ fn build_ssh_config(
         .map(str::trim)
         .filter(|p| !p.is_empty())
     {
-        push_quoted(&mut out, "PKCS11Provider", provider);
+        push_quoted(&mut out, "PKCS11Provider", provider)?;
     }
 
     // Custom options come last so the settings above win a collision; they
@@ -702,12 +757,12 @@ fn build_ssh_config(
         if key.trim().is_empty() {
             continue;
         }
-        push_raw(&mut out, key.trim(), value.trim());
+        push_raw(&mut out, key.trim(), value.trim())?;
     }
 
     if let Some(ref kh) = known_hosts {
-        push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy());
-        push_raw(&mut out, "StrictHostKeyChecking", "accept-new");
+        push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy())?;
+        push_raw(&mut out, "StrictHostKeyChecking", "accept-new")?;
     }
 
     // One block per jump hop that needs its own credentials or known_hosts.
@@ -724,13 +779,14 @@ fn build_ssh_config(
         if hop_key.is_none() && known_hosts.is_none() {
             continue;
         }
-        let _ = writeln!(out, "\nHost {host}");
+        out.push('\n');
+        push_host(&mut out, host)?;
         if let Some(key) = hop_key {
-            push_quoted(&mut out, "IdentityFile", &key.to_string_lossy());
+            push_quoted(&mut out, "IdentityFile", &key.to_string_lossy())?;
         }
         if let Some(ref kh) = known_hosts {
-            push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy());
-            push_raw(&mut out, "StrictHostKeyChecking", "accept-new");
+            push_quoted(&mut out, "UserKnownHostsFile", &kh.to_string_lossy())?;
+            push_raw(&mut out, "StrictHostKeyChecking", "accept-new")?;
         }
     }
 
@@ -1180,6 +1236,126 @@ mod tests {
         let cfg =
             build_ssh_config(&conn, &[], &[], &crate::config::NetworkSettings::default()).unwrap();
         assert!(cfg.contains("HostKeyAlias printer.local\n"));
+    }
+
+    fn config_for(conn: &Connection, hops: &[Connection]) -> Option<String> {
+        build_ssh_config(conn, hops, &[], &crate::config::NetworkSettings::default())
+    }
+
+    fn ssh_cfg(conn: &mut Connection) -> &mut SshConfig {
+        let (ProtocolConfig::Ssh(cfg) | ProtocolConfig::Sftp(cfg)) = &mut conn.protocol_config
+        else {
+            unreachable!("test connection is SSH");
+        };
+        cfg
+    }
+
+    /// Hosts that would end the `Host` line or add a directive to the file.
+    #[test]
+    fn a_host_that_could_add_directives_gets_no_config() {
+        for host in [
+            "a\nProxyCommand touch /tmp/x",
+            "a\r\nLocalCommand x",
+            "a b",
+            "a\tb",
+            "a\0b",
+            "-oProxyCommand=x",
+            "*",
+            "!a",
+            "a?",
+            "a\"b",
+            "",
+            " ",
+        ] {
+            let conn = ssh("t", host, 22, None);
+            assert!(
+                config_for(&conn, &[]).is_none(),
+                "host {host:?} was accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn ordinary_hosts_still_get_a_config() {
+        for host in [
+            "server.example.com",
+            "10.0.0.5",
+            "::1",
+            "fe80::1%eth0",
+            "сервер.укр",
+            "host_1",
+        ] {
+            let conn = ssh("t", host, 22, None);
+            let cfg = config_for(&conn, &[]).unwrap_or_else(|| panic!("host {host:?} refused"));
+            assert!(cfg.contains(&format!("Host {host}\n")));
+        }
+    }
+
+    #[test]
+    fn a_line_break_in_any_option_value_gets_no_config() {
+        for value in ["x\nProxyCommand y", "x\r\nProxyCommand y", "x\0"] {
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            ssh_cfg(&mut conn).proxy_command = Some(value.to_string());
+            assert!(config_for(&conn, &[]).is_none(), "proxy_command {value:?}");
+
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            ssh_cfg(&mut conn).proxy_jump = Some(value.to_string());
+            assert!(config_for(&conn, &[]).is_none(), "proxy_jump {value:?}");
+
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            ssh_cfg(&mut conn)
+                .custom_options
+                .insert("HostKeyAlias".to_string(), value.to_string());
+            assert!(config_for(&conn, &[]).is_none(), "custom value {value:?}");
+
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            ssh_cfg(&mut conn).pkcs11_provider = Some(value.to_string());
+            assert!(config_for(&conn, &[]).is_none(), "pkcs11 {value:?}");
+        }
+    }
+
+    #[test]
+    fn a_custom_option_cannot_open_a_new_block() {
+        for key in ["Host", "match", "Match exec", "Foo\nHost *", "A B"] {
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            ssh_cfg(&mut conn)
+                .custom_options
+                .insert(key.to_string(), "x".to_string());
+            assert!(config_for(&conn, &[]).is_none(), "option key {key:?}");
+        }
+    }
+
+    #[test]
+    fn a_key_path_cannot_leave_its_quotes() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["k\"ey", "k\\", "k\ney"] {
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            set_key(&mut conn, &key_file(dir.path(), name));
+            assert!(config_for(&conn, &[]).is_none(), "key path {name:?}");
+        }
+        let mut conn = ssh("t", "h.example.com", 22, None);
+        set_key(&mut conn, &key_file(dir.path(), "my key ключ"));
+        assert!(config_for(&conn, &[]).is_some());
+    }
+
+    /// A jump host reaches the file through `Host <hop>`, from the hop's
+    /// saved connection or from a free-text `ProxyJump`.
+    #[test]
+    fn a_jump_hop_that_could_add_directives_gets_no_config() {
+        let dir = tempfile::tempdir().unwrap();
+        for host in ["jump\nHost *", "jump host", "-oProxyCommand=x"] {
+            let mut bastion = ssh("b", host, 22, Some("ops"));
+            set_key(&mut bastion, &key_file(dir.path(), "b"));
+            let mut conn = ssh("t", "h.example.com", 22, None);
+            set_jump_host_id(&mut conn, bastion.id);
+            assert!(
+                config_for(&conn, std::slice::from_ref(&bastion)).is_none(),
+                "hop {host:?}"
+            );
+        }
+        let mut conn = ssh("t", "h.example.com", 22, None);
+        ssh_cfg(&mut conn).proxy_jump = Some("ops@jump\nHost *".to_string());
+        assert!(config_for(&conn, &[]).is_none());
     }
 
     #[test]
