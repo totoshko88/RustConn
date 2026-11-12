@@ -130,8 +130,10 @@ RustConn is published through these channels only:
 | Nix flake | `github:totoshko88/RustConn` |
 
 Forks of RustConn are not affiliated with this project. If your build came from
-anywhere else, report its bugs in that project's own tracker; the issue tracker
-here covers the builds above and builds from this repository's source.
+a fork, report its bugs in that project's own tracker. The issue tracker here
+covers the builds above, builds from this repository's source, and packages
+from other distributions (for example nixpkgs, Debian or Fedora), which are not
+forks.
 
 ## Documentation
 
