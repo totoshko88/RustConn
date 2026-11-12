@@ -5,6 +5,16 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - Unreleased
+
+### Fixed
+- **A host name or option with a line break can no longer add directives to the ssh configuration Midnight Commander uses** — the generated `ssh_config` took the host, jump hosts, `ProxyJump`, custom options and key paths as written, so an imported connection or a Dynamic Folder script could slip in a `ProxyCommand` of its own. A connection with such a value now opens mc without the wrapper, so it gets no jump host and no saved password, and the log names the option (not its value).
+- **Known-hosts and key paths with an apostrophe, `${VAR}` or `%` reach ssh as written** — an apostrophe in the Flatpak `known_hosts` path made ssh fail on the option, `${HOME}` in it was expanded, and the mc ssh configuration read `%d` in a key path as a token. A path ssh cannot be given is left out, as before. The remote clean-up after a session recording quotes its paths as well.
+
+### Improved
+- **One tested rule for when mc's ssh gets the saved password** — `mc_ssh::password_plan` replaces checks that were spread over GUI code with no tests. Behavior is unchanged.
+- **A jump host's password travels with its hop** — the route builder takes hops that carry their own password instead of two parallel lists, and the tunnel's jump-host route lives in `rustconn-core` (`jump_route::tunnel_jump_args`). Behavior is unchanged.
+
 ## [0.24.11] - 2026-11-12
 
 ### Added
