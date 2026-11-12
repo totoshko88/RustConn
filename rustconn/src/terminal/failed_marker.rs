@@ -23,7 +23,7 @@ use std::rc::Rc;
 
 use gtk4::prelude::*;
 use gtk4::{DrawingArea, glib};
-use rustconn_core::highlight::viewport_rows;
+use rustconn_core::highlight::{ViewportRows, viewport_rows};
 use vte4::Terminal;
 use vte4::prelude::*;
 
@@ -182,20 +182,60 @@ fn draw_failed(
     let scroll_value = terminal.vadjustment().map_or(0.0, |adj| adj.value());
     let viewport = viewport_rows(scroll_value, cell_h, row_count);
 
-    let first = viewport.first_row;
-    let last = viewport.first_row.saturating_add(viewport.rows);
-
     cr.set_source_rgba(BAR_RGBA.0, BAR_RGBA.1, BAR_RGBA.2, BAR_RGBA.3);
 
-    for buffer_row in registry.failed_rows() {
-        if buffer_row < first || buffer_row >= last {
-            continue; // not on screen
-        }
-        let visible_row = buffer_row - viewport.first_row;
-        let y = (visible_row as f64).mul_add(cell_h, origin_y - viewport.y_offset);
+    for y in bar_tops(registry.failed_rows(), &viewport, cell_h, origin_y) {
         cr.rectangle(origin_x, y, BAR_WIDTH, cell_h);
         if cr.fill().is_err() {
             return;
         }
+    }
+}
+
+/// The top `y` of a bar for each failed row that is on screen, in order.
+fn bar_tops(
+    failed_rows: impl Iterator<Item = i64>,
+    viewport: &ViewportRows,
+    cell_h: f64,
+    origin_y: f64,
+) -> impl Iterator<Item = f64> {
+    let first = viewport.first_row;
+    let last = first.saturating_add(viewport.rows);
+    let top = origin_y - viewport.y_offset;
+    failed_rows
+        .filter(move |row| (first..last).contains(row))
+        .map(move |row| ((row - first) as f64).mul_add(cell_h, top))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tops(rows: &[i64], first_row: i64, y_offset: f64) -> Vec<f64> {
+        let viewport = ViewportRows {
+            first_row,
+            y_offset,
+            rows: 24,
+        };
+        bar_tops(rows.iter().copied(), &viewport, 10.0, 2.0).collect()
+    }
+
+    #[test]
+    fn only_on_screen_rows_get_a_bar() {
+        // 100..124 is on screen: the edges and one row past each side.
+        assert_eq!(
+            tops(&[99, 100, 101, 123, 124], 100, 0.0),
+            vec![2.0, 12.0, 232.0]
+        );
+    }
+
+    #[test]
+    fn a_partial_scroll_shifts_every_bar_up() {
+        assert_eq!(tops(&[100, 105], 100, 4.0), vec![-2.0, 48.0]);
+    }
+
+    #[test]
+    fn no_failed_rows_draw_nothing() {
+        assert!(tops(&[], 0, 0.0).is_empty());
     }
 }

@@ -295,3 +295,27 @@ async fn connect_gnome_saver(conn: &Connection) -> Option<gnome::ActiveChangedSt
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// An absent source must never be ready, or `select!` would spin on it.
+    #[tokio::test]
+    async fn next_opt_on_an_absent_stream_never_resolves() {
+        let absent: Option<&mut futures::stream::Iter<std::vec::IntoIter<u8>>> = None;
+        let waited =
+            tokio::time::timeout(std::time::Duration::from_millis(20), next_opt(absent)).await;
+        assert!(waited.is_err(), "an absent stream resolved: {waited:?}");
+    }
+
+    /// A present source yields its items, then `None` once it ends, which is
+    /// what makes the listener drop that branch.
+    #[tokio::test]
+    async fn next_opt_yields_then_reports_the_end() {
+        let mut stream = futures::stream::iter(vec![true, false]);
+        assert_eq!(next_opt(Some(&mut stream)).await, Some(true));
+        assert_eq!(next_opt(Some(&mut stream)).await, Some(false));
+        assert_eq!(next_opt(Some(&mut stream)).await, None);
+    }
+}
