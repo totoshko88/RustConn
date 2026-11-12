@@ -5,6 +5,23 @@ All notable changes to RustConn will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-11-13
+
+### Changed
+- **Translated desktop entry** — the desktop entry now carries `Name`, `GenericName`, `Comment` and `Keywords` in every language of `po/`, merged in with `msgfmt --desktop` when the Flatpak, Snap, RPM, Debian, AppImage, `.deb`/`.rpm` release and Nix packages are built. Before, the translations were extracted into the catalogues but never reached the installed file, and only five hand-written `Comment[xx]` lines were shipped. Adds a translated `GenericName` ("Connection Manager"). (`rustconn/assets/io.github.totoshko88.RustConn.desktop`, `po/*.po`)
+- **`scripts/release.sh` validates the Nix flake** — when `nix` is installed it runs `nix flake check --no-build` and evaluates `packages.default`; without `nix` the gate is listed as skipped. `packaging/nixpkgs/package.nix` joins `PKG_FILES`, so its version is bumped by `scripts/bump-version.sh` and checked at release.
+
+### Fixed
+- **nixpkgs package out of date** — `packaging/nixpkgs/package.nix` was stuck at 0.19.4; it now follows the release version.
+- **`rpmspec` "bogus date" warnings** — 60 `%changelog` entries in `packaging/obs/rustconn.spec` named the wrong weekday; corrected.
+
+### Improved
+- **Packaging metadata descriptions** — the AppStream metainfo and `RustConn.doap` now mention WinRM, Web, SOCKS5 and Run Local Script.
+- **CI** — new `Nix flake` job (runs on pull requests that touch `flake.nix`, `Cargo.toml`, `Cargo.lock`) and `Desktop and AppStream metadata` job (`desktop-file-validate` on the source and merged desktop file, `appstreamcli validate --strict`).
+
+### Documentation
+- **Nix `flake.lock` policy** documented in `docs/INSTALL.md` and `flake.nix`: no lock is committed on purpose. The release-verification example no longer names a fixed version.
+
 ## [0.24.11] - 2026-11-12
 
 ### Added

@@ -7,8 +7,9 @@
   <name xml:lang="en">RustConn</name>
   <shortdesc xml:lang="en">Manage remote connections</shortdesc>
   <description xml:lang="en">
-    Connection manager for SSH, RDP, VNC, SPICE, Telnet, Serial, Kubernetes
-    and Zero Trust brokers, with embedded terminals and remote desktops.
+    Connection manager for SSH, MOSH, RDP, VNC, SPICE, Telnet, Serial, WinRM,
+    Web, Kubernetes and Zero Trust brokers, with embedded terminals, remote
+    desktops and web pages.
   </description>
 
   <homepage rdf:resource="https://github.com/totoshko88/RustConn"/>
