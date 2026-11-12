@@ -12602,7 +12602,7 @@ msgid "Basic Information"
 msgstr "Grundläggande information"
 
 #: rustconn/src/split_view/bridge.rs:1997
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:4
 msgid "Manage remote connections easily"
 msgstr "Hantera fjärranslutningar enkelt"
 
@@ -15484,6 +15484,10 @@ msgstr "Det gick inte att spara arbetsytan"
 msgid "RustConn"
 msgstr "RustConn"
 
-#: rustconn/assets/io.github.totoshko88.RustConn.desktop:15
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:11
 msgid "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;connection;terminal;remote;kubernetes;k8s;serial;sftp;"
 msgstr "ssh;rdp;vnc;spice;mosh;telnet;zerotrust;anslutning;terminal;fjärr;kubernetes;k8s;serial;sftp;"
+
+#: rustconn/assets/io.github.totoshko88.RustConn.desktop:3
+msgid "Connection Manager"
+msgstr "Anslutningshanterare"

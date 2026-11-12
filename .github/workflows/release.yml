@@ -84,7 +84,7 @@ jobs:
           cp target/release/rustconn-cli "${PKG_DIR}/usr/bin/"
           
           # Desktop file and metadata
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop "${PKG_DIR}/usr/share/applications/"
+          msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po -o "${PKG_DIR}/usr/share/applications/io.github.totoshko88.RustConn.desktop"
           cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml "${PKG_DIR}/usr/share/metainfo/"
           
           # Icons
@@ -309,7 +309,7 @@ jobs:
           cp target/release/rustconn-cli staging/usr/bin/
           
           # Copy desktop file and metadata
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop staging/usr/share/applications/
+          msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po -o staging/usr/share/applications/io.github.totoshko88.RustConn.desktop
           cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml staging/usr/share/metainfo/
           
           # Copy icons
@@ -435,7 +435,7 @@ jobs:
           
           cp target/release/rustconn AppDir/usr/bin/
           cp target/release/rustconn-cli AppDir/usr/bin/
-          cp rustconn/assets/io.github.totoshko88.RustConn.desktop AppDir/usr/share/applications/
+          msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po -o AppDir/usr/share/applications/io.github.totoshko88.RustConn.desktop
           cp rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml AppDir/usr/share/metainfo/
           
           # Copy icons

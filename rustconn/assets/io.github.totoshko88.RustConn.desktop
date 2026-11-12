@@ -1,11 +1,7 @@
 [Desktop Entry]
 Name=RustConn
+GenericName=Connection Manager
 Comment=Manage remote connections easily
-Comment[uk]=Зручне керування віддаленими підключеннями
-Comment[de]=Fernverbindungen einfach verwalten
-Comment[fr]=Gérer facilement les connexions distantes
-Comment[es]=Gestionar conexiones remotas fácilmente
-Comment[cs]=Snadná správa vzdálených připojení
 Exec=rustconn %f
 Icon=io.github.totoshko88.RustConn
 Terminal=false

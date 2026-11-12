@@ -367,7 +367,9 @@ modules:
       - CC=/app/bin/cc-wrap cargo build --release -p rustconn-cli --features full
       - install -Dm755 target/release/rustconn /app/bin/rustconn
       - install -Dm755 target/release/rustconn-cli /app/bin/rustconn-cli
-      - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop /app/share/applications/io.github.totoshko88.RustConn.desktop
+      # Translated Name/GenericName/Comment/Keywords come from po/*.po.
+      - install -d /app/share/applications
+      - msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po -o /app/share/applications/io.github.totoshko88.RustConn.desktop
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml /app/share/mime/packages/io.github.totoshko88.RustConn-rdp.xml
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-vv.xml /app/share/mime/packages/io.github.totoshko88.RustConn-vv.xml
       - install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.metainfo.xml /app/share/metainfo/io.github.totoshko88.RustConn.metainfo.xml

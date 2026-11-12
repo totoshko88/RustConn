@@ -319,8 +319,9 @@ cargo build --release --offline -p rustconn-cli --features full
 %install
 install -Dm755 target/release/rustconn %{buildroot}%{_bindir}/rustconn
 install -Dm755 target/release/rustconn-cli %{buildroot}%{_bindir}/rustconn-cli
-install -Dm644 rustconn/assets/io.github.totoshko88.RustConn.desktop \
-    %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
+install -d %{buildroot}%{_datadir}/applications
+msgfmt --desktop --template rustconn/assets/io.github.totoshko88.RustConn.desktop -d po \
+    -o %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
 desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.totoshko88.RustConn.desktop
 install -Dm644 rustconn/assets/io.github.totoshko88.RustConn-rdp.xml \
     %{buildroot}%{_datadir}/mime/packages/io.github.totoshko88.RustConn-rdp.xml
@@ -1967,7 +1968,7 @@ done
 - Improved single code path for building a session's tab content
 - Improved localization: new strings translated in all 16 languages
 
-* Wed Jul 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.3-0
+* Thu Jul 23 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.3-0
 - Version bump to 0.19.3
 - Added option to hide Welcome tab at startup (issue #232)
 - Fixed FreeRDP fallback fails on FreeRDP 3.26+ due to args-from exclusivity (issue #234)
@@ -1979,7 +1980,7 @@ done
 - Added Multipath TCP (MPTCP) support for SSH, RDP, and VNC connections
 - Fixed VPN connect/disconnect no longer kills healthy SSH sessions
 
-* Mon Jul 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.1-0
+* Tue Jul 21 2026 Anton Isaiev <totoshko88@gmail.com> - 0.19.1-0
 - Version bump to 0.19.1
 - Fixed RDP certificate mismatch causing silent connection failure (exit 255)
 - Fixed SSH password auto-fill intermittently stuck on prompt
@@ -2014,7 +2015,7 @@ done
 - Fixed: Terminal shortcuts after remapping (#216)
 - Improved: Captive portal detection, rate limiting, embedded reconnect
 
-* Sun Jul 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.7-0
+* Mon Jul 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.18.7-0
 - Version bump to 0.18.7
 - Headless core-cli cleanup: rustconn-core defaults to empty features
 - CLI is minimal by default; client-launch and secret-management are opt-in
@@ -2120,7 +2121,7 @@ done
 - Added a native arm64 (aarch64) snap build alongside amd64
 - Changed: refreshed the gtk4-rs stack and other Cargo dependencies to their latest compatible patch releases; dropped the unused pathdiff
 
-* Fri Jun 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.4-0
+* Sat Jun 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.17.4-0
 - Fixed RDP vault login sending the correct domain — when credentials came from the secret vault, the domain field was passed as an empty string instead of the configured value, causing NLA/CredSSP to reject DOMAIN\user logins with STATUS_LOGON_FAILURE; the vault path now falls back to the connection's saved domain (#188)
 - Fixed Variable password auto-login on network equipment — the password auto-fill relied solely on VTE's contents-changed signal, which does not fire reliably for SSH password prompts in no-echo mode with cursor-positioning escapes; detection now also subscribes to cursor-moved (#194)
 - Changed: CUPS printer redirection forwards all local queues — the embedded IronRDP printer channel previously announced a single dummy "RustConn" printer; it now enumerates all local CUPS queues (or a configured subset via with_printers) and registers each as its own redirected printer, routing print jobs back to the correct local queue (#192)
@@ -2292,13 +2293,13 @@ done
 - Changed keybinding recorder to store shortcuts in a layout-independent (Latin) form (#170)
 - Changed Snap base core26 -> core24 (GNOME 46 / libadwaita 1.5, without adw-1-8); Snap CI installs Snapcraft from latest/stable
 
-* Thu Jun 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.10-0
+* Fri Jun 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.10-0
 - Fixed keybinding overrides not displayed correctly after reopening Settings (#170)
 - Fixed keybinding conflict detection ignoring modifier order
 - Fixed Snap package failing to start on Ubuntu 26.04 (AppArmor error) (#174)
 - Updated bitflags 2.12.1 -> 2.13.0
 
-* Thu Jun 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.9-0
+* Fri Jun 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.9-0
 - Lazy init secret backends — only preferred backend initialized at startup
 - KeePass keyring failure toast at startup when password not loaded
 - Connection wizard: ComboRow model lazy init eliminates auth method flash
@@ -2309,7 +2310,7 @@ done
 - Fixed 1Password/Passbolt credentials not passed in vault entry lookups
 - Fixed connection wizard redundant Method dropdown for non-SSH protocols
 
-* Wed Jun 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.8-0
+* Thu Jun 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.8-0
 - Fixed keybinding reassignment not registering keystrokes — recorder
   moves focus to parent ActionRow and disables PreferencesDialog search
 - Fixed sidebar right-click context menu not appearing for hosts in groups
@@ -2318,7 +2319,7 @@ done
 - Variable dialog: vault entry UX hints — placeholder and tooltip
 - Updated: chrono 0.4.44→0.4.45, log 0.4.31→0.4.32, yoke 0.8.2→0.8.3
 
-* Tue Jun 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.7-0
+* Wed Jun 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.7-0
 - Variable password source: discoverability — subtitle hint and "+"
   button to open Variables manager directly from connection dialog
 - Variable password source: custom vault entry name — reference existing
@@ -2328,7 +2329,7 @@ done
 - Fixed keybinding reassignment not working — accelerators suspended
   during recording, EventControllerKey uses Capture phase
 
-* Mon Jun 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.6-0
+* Tue Jun 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.6-0
 - VNC: new "Accept Certificate" toggle for VeNCrypt servers with
   self-signed TLS certificates; CLI --ignore-certificate for VNC
 - Fixed Welcome screen "Remote host monitoring" icon missing on macOS
@@ -2350,7 +2351,7 @@ done
 - Updated: inotify 0.11.2, ironrdp-tls 0.2.1, rustls-native-certs 0.8.4,
   unicode-segmentation 1.13.3
 
-* Sat May 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.4-0
+* Sun May 31 2026 Anton Isaiev <totoshko88@gmail.com> - 0.15.4-0
 - Fixed macOS UI hang when editing connection with broken/throttled ssh-agent (#163)
 - SSH agent probe now runs asynchronously with a 5-second timeout
 
@@ -2392,12 +2393,12 @@ done
 - PasswordGenerator surfaces RNG errors as RngError
 - Named timeout constants for downloads and vault operations
 
-* Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.9-0
+* Tue May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.9-0
 - Version bump to 0.14.9
 - Added Server Manager quick action in RDP admin tools menu
 - Fixed split view and RemoteApp issues
 
-* Mon May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.8-0
+* Tue May 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.8-0
 - Split-view broadcast toggle in header bar (#160)
 - Compact interface mode for reduced chrome (#157)
 - Fixed broadcast mode — rewired around split view (#160)
@@ -2406,7 +2407,7 @@ done
 - Fixed language change in Flatpak (#158)
 - Improved tray icon visibility on dark panels (#157)
 
-* Sun May 25 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.7-0
+* Mon May 25 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.7-0
 - Version bump to 0.14.7
 - Added Visual Tunnel Builder
 - Added Keyboard passthrough mode
@@ -2418,7 +2419,7 @@ done
 - RDP scripts: instant clipboard paste
 - Snippet delivery mode
 
-* Thu May 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.5-0
+* Fri May 22 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.5-0
 - Version bump to 0.14.5
 - All dialogs migrated to adw::Dialog
 - Edit Group dialog redesigned with 5 tabs
@@ -2426,7 +2427,7 @@ done
 - Snippet target platform
 - Quick Connect theme fix (#156)
 
-* Tue May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.4-1
+* Wed May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.4-1
 - CLI: history, pin/unpin, tag, move, monitor commands — full connection management
 - CLI: import --auto / --dry-run — auto-detect sources and preview imports
 - CLI: export --csv-delimiter, --csv-fields — customize CSV export format
@@ -2438,7 +2439,7 @@ done
 - Settings: Azure/gcloud/OCI CLI not detected in Flatpak — env vars now passed through
 - Command Palette: fixed shortcut display Ctrl+Shift+N → Ctrl+Shift+G
 
-* Tue May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.3-1
+* Wed May 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.3-1
 - Settings: removed duplicate group titles above collapsible sections
 - CLI: secret set --password wrapped in Zeroizing immediately, added --password-stdin
 - External window: migrated to libadwaita (adw::ApplicationWindow + ToolbarView)
@@ -2447,7 +2448,7 @@ done
 - Settings UI: 25 toggles converted from CheckButton to AdwSwitchRow (GNOME HIG)
 - Settings dialog field types unified to adw::SwitchRow
 
-* Mon May 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.2-1
+* Tue May 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.2-1
 - CLI: fix `add --protocol web` port=0 error
 - CLI: add SecureCRT export/import format
 - CSV import: reject invalid port values instead of silent fallback
@@ -2455,7 +2456,7 @@ done
 - Fix tooltip showing wrong shortcut for New Group
 - i18n: localize validation messages, Ctrl+Alt+Del labels, OK button
 
-* Sun May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.1-0
+* Mon May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.1-0
 - Update to version 0.14.1
 - [Added] Predefined connection templates — 20 built-in templates for common
   CLI tools (RustDesk, Docker, Podman, LXC, Incus, Distrobox, Virsh, Proxmox,
@@ -2470,7 +2471,7 @@ done
 - [Fixed] RDP Gateway: "Host unreachable" before connection
 - [Fixed] Highlight overlay: colored underlines persisted after clear
 
-* Sun May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.0-0
+* Mon May 18 2026 Anton Isaiev <totoshko88@gmail.com> - 0.14.0-0
 - Update to version 0.14.0
 - [Added] Connection Wizard (Ctrl+N) — step-by-step dialog for creating
   connections with 4-column protocol grid, adaptive fields, auth/appearance
@@ -2480,7 +2481,7 @@ done
 - [Changed] Ctrl+N opens Wizard; Ctrl+Shift+N opens full dialog
 - [Changed] Highlight Rules collapsed into ExpanderRow
 
-* Fri May 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.17-1
+* Sat May 16 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.17-1
 - Update to version 0.13.17
 - [Fixed] Cloud Sync in Flatpak — detect XDG Document Portal paths when
   selecting sync directory; show a warning dialog with flatpak override
@@ -2489,7 +2490,7 @@ done
   and background highlights now disappear immediately when the terminal screen
   is erased (#154)
 
-* Thu May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16-0
+* Fri May 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.16-0
 - Update to version 0.13.16
 - [Added] macOS port — native PTY, tray icon, Keychain backend, Homebrew formula, DMG packaging
 - [Added] macOS tray icon (tray-macos feature) — NSStatusItem with dynamic menu
@@ -2500,7 +2501,7 @@ done
 - [Fixed] Cross-platform statvfs types, secret backend detection, PTY cleanup
 - [Dependencies] winnow 1.0.2→1.0.3
 
-* Wed May 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.15-1
+* Thu May 14 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.15-1
 - [Added] Local Shell: custom command — new "Command" field in Settings →
   Terminal → Local Shell allows specifying a custom command instead of
   the default login shell
@@ -2512,7 +2513,7 @@ done
   they appear as individual items directly in the terminal right-click
   menu; when more than 5 exist, the previous picker is shown
 
-* Tue May 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.14-1
+* Wed May 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.14-1
 - [Added] Welcome page: Import button — added "Import" action button
   alongside "New Connection" and "Quick Connect" on the welcome page
 - [Added] Template Manager: empty state — added adw::StatusPage placeholder
@@ -2531,7 +2532,7 @@ done
 - [Fixed] Sync file path traversal — added validate_sync_filename() that
   rejects absolute paths, .. components, and directory separators
 
-* Mon May 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.13-0
+* Tue May 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.13-0
 - [Added] SSH ProxyCommand support — custom proxy for .onion hosts and SOCKS proxies
 - [Fixed] SSH Startup Command not executing in GUI terminal
 - [Fixed] SSH ProxyCommand port format — jump hosts with non-standard ports
@@ -2548,7 +2549,7 @@ done
 - SSH: fix identity key -i duplicated in command
 - Terminal: fix per-connection white color displayed as grey
 
-* Sat May 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.11-1
+* Sun May 10 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.11-1
 - [Improved] RDP: better diagnostics for IronRDP fallback to FreeRDP —
   error detection now includes detailed comments explaining the upstream
   limitation (IronRDP connector 0.8.0 does not handle ServerDeactivateAll
@@ -2591,7 +2592,7 @@ done
 - [Dependencies] Added nix 0.31.2 (feature: fs) to rustconn-core for safe
   statvfs access
 
-* Thu May 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.8-1
+* Fri May 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.8-1
 - [Fixed] Per-connection monitoring toggle not saving state — the
   "Enable Monitoring" switch always appeared enabled and did not persist
   the user's choice; now both ON and OFF states are stored as explicit
@@ -2603,7 +2604,7 @@ done
   to extract the version field from JSON output; fixed get_version() to
   set extended PATH in Flatpak
 
-* Thu May 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.7-1
+* Fri May 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.7-1
 - [Fixed] SSH: monitoring no longer triggers a second agent confirmation —
   monitoring waits up to 5s for ControlMaster socket, connects as slave
   only; falls back to own master if socket never appears (#125)
@@ -2617,7 +2618,7 @@ done
 - [Fixed] Flatpak: local shell PTY resize now propagates to host —
   VTE resize forwarded via flatpak-spawn stty to host-side PTY (#122)
 
-* Wed May 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.6-1
+* Thu May 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.6-1
 - [Improved] Preferences: Monitoring moved to its own page with dedicated
   tab and utilities-system-monitor-symbolic icon (#125)
 - [Improved] CLI: machine-readable output (--format json|csv|table) for
@@ -2635,7 +2636,7 @@ done
 - [Fixed] Repository hygiene: removed committed vim swap file; added *.swp,
   *.swo, *.po~ patterns to .gitignore
 
-* Tue May 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.5-0
+* Wed May 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.5-0
 - Version bump to 0.13.5
 - Added Drag & Drop file paths into VTE terminals (#74)
 - Added Drag & Drop files to RDP clipboard via CLIPRDR (#74)
@@ -2643,7 +2644,7 @@ done
 - Fixed RDP dynamic resize without reconnect via Display Control Channel (#131)
 - Fixed SSH agent key selection not remembered in connection dialog (#125)
 
-* Mon May 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.4-1
+* Tue May 05 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.4-1
 - [Added] RDP Autotype: send text as keystrokes bypassing clipboard
   restrictions — Type Clipboard and Type Text toolbar buttons in embedded
   RDP sessions; TS_UNICODE_KEYBOARD_EVENT PDU, keyboard-layout independent;
@@ -2670,18 +2671,18 @@ done
 - Fixed false KeePassXc backend unavailable toast (#123)
 - Fixed Flatpak Local Shell no job control warnings (#122)
 
-* Sun May 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.3-0
+* Mon May 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.3-0
 - [Fixed] False "KeePassXc backend unavailable" toast when KeePassXc is
   running — availability now checked via kdbx_enabled && kdbx_path.exists()
   instead of probing the unrelated LibSecretBackend (#123)
 
-* Sun May 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.2-0
+* Mon May 04 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.2-0
 - [Fixed] Mouse scroll not working in terminal sessions (#121)
 - [Fixed] Flatpak local shell sandboxed shell (#122)
 - [Removed] Mouse passthrough setting
 - [Added] Per-connection monitoring toggle (#106)
 
-* Sat May 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.1-1
+* Sun May 03 2026 Anton Isaiev <totoshko88@gmail.com> - 0.13.1-1
 - [Fixed] Crash when typing in sidebar search field —
   SearchEngine byte-position iteration panics on multi-byte UTF-8
   characters; fixed by iterating over valid char_indices() boundaries
@@ -2709,7 +2710,7 @@ done
 - [Improved] Multi-language SSH password prompt detection (#114)
 - [Improved] GNOME HIG: sidebar toolbar decluttered
 
-* Thu May 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.9-1
+* Fri May 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.9-1
 - [Fixed] Export group exports entire tree instead of selected subtree —
   when exporting a specific group via the Export dialog's group filter,
   all groups were included in the output file even though connections
@@ -2724,7 +2725,7 @@ done
   RDP, VNC, SPICE, Telnet, and MOSH protocols; connections are read-only
   with stable deterministic UUIDs across refreshes
 
-* Thu May 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.8-1
+* Fri May 01 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.8-1
 - [Added] Generic async cache Cached<T> — new rustconn-core/src/cache.rs
   module providing a thread-safe, TTL-based cache with automatic refresh
   via the LoadCacheObject trait; uses double-checked locking with
@@ -2764,7 +2765,7 @@ done
   toggle in SSH connection settings adds -v flag to the SSH command,
   showing detailed debug output to help diagnose connection issues (#106)
 
-* Tue Apr 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.5-1
+* Wed Apr 29 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.5-1
 - [Fixed] Settings dialog overflows after Hoop.dev install — hoop
   version outputs JSON; added dedicated parser that extracts only
   the version field
@@ -2821,7 +2822,7 @@ done
 - [Dependencies] Bitwarden CLI 2026.3.0 → 2026.4.1 (fixes supply chain
   attack in 2026.4.0), kubectl 1.35.4 → 1.36.0
 
-* Thu Apr 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.0-0
+* Fri Apr 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.12.0-0
 - [Added] Cloud Sync — synchronize connections via shared cloud directory
 - [Added] Group Sync — per-group .rcn files with Master/Import access model
 - [Added] Simple Sync — single-file bidirectional sync with UUID-based merge
@@ -2897,7 +2898,7 @@ done
 - [Documentation] Complete CLI reference in User Guide
 - [Dependencies] open 5.3.4, openssl 0.10.78, typenum 1.20.0
 
-* Sat Apr 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.11.1-0
+* Sun Apr 19 2026 Anton Isaiev <totoshko88@gmail.com> - 0.11.1-0
 - [Fixed] Reconnect preserves tab position (#89)
 - [Fixed] Context menu handoff between items (#87)
 - [Fixed] Stale highlight on right-click — residual highlights removed
@@ -2918,14 +2919,14 @@ done
 - [Security] Lazy Bitwarden credential decryption
 - [Dependencies] libbz2-rs-sys 0.2.3, rand 0.8.6, rtoolbox 0.0.5
 
-* Thu Apr 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.22-0
+* Fri Apr 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.22-0
 - [Fixed] Terminal context menu Copy/Paste now works (#84)
 - [Fixed] No more gdk_clipboard_write_async assertion on Copy
 - [Fixed] Blank menus on X11 — Cairo renderer fallback (#85)
 - [Improved] Context menu labels localized
 - [Dependencies] pxfm 0.1.29, tokio 1.52.1, uuid 1.23.1
 
-* Tue Apr 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.21-0
+* Wed Apr 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.21-0
 - [Security] Machine key encryption hardened — HKDF-SHA256 for machine-id
 - [Fixed] Groups expand/collapse on double-click entire row (#83)
 - [Fixed] Ctrl+K no longer hijacks terminal (#83)
@@ -2939,7 +2940,7 @@ done
 - Group name as tab title prefix
 - Updated FreeRDP 3.24.2, VTE 0.80.3
 
-* Sun Apr 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.18-1
+* Mon Apr 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.18-1
 - [Added] Terminal font zoom — Ctrl+Scroll wheel, Ctrl+Plus/Minus, and
   Ctrl+0 to reset; uses VTE native font_scale for per-session zoom (#77)
 - [Added] Copy on select — optional X11-style auto-copy; selected text is
@@ -2967,12 +2968,12 @@ done
 - [Documentation] Keyboard shortcuts fully synchronized in User Guide
 - [Documentation] Terminal clear troubleshooting section added to User Guide
 
-* Tue Apr 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.13-0
+* Wed Apr 08 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.13-0
 - Fixed SSH auto-reconnect infinite loop on authentication failures
 - Fixed duplicate child-exited signal handlers for SSH and Telnet sessions
 - FreeRDP 3.24.0 → 3.24.1 (security fix), Boundary CLI 0.21.1 → 0.21.2
 
-* Mon Apr 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.12-0
+* Tue Apr 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.12-0
 - Technical audit: VNC SecretString, pixel buffer guard, RDP zero-copy,
   sidebar regex cache, sanitization optimization, dead code cleanup
 - Dependencies: gtk4 0.11.2, glib 0.22.4, pango 0.22.4, zip 8.5.1
@@ -2991,15 +2992,15 @@ done
   users can add them manually via flatpak override
 - User Guide: added Flatpak Sandbox Overrides section
 
-* Wed Apr 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9-0
+* Thu Apr 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.9-0
 - See CHANGELOG.md for full release notes
 - Corrected: v0.9.11 incorrectly stated Flatpak uses --device=serial;
   the actual permission is --device=all (required for serial port access)
 
-* Thu Mar 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.8-0
+* Fri Mar 27 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.8-0
 - See CHANGELOG.md for full release notes
 
-* Wed Mar 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.7-0
+* Thu Mar 26 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.7-0
 - See CHANGELOG.md for full release notes
 
 * Tue Mar 24 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.6-0
@@ -3046,7 +3047,7 @@ done
 - Dead code cleanup — removed unused AppStateError, VncLauncher, FieldValidator
 - Dependencies: rustls-webpki 0.103.10, zune-jpeg 0.5.14
 
-* Thu Mar 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.2-0
+* Fri Mar 20 2026 Anton Isaiev <totoshko88@gmail.com> - 0.10.2-0
 - Fixed MOSH connections not dispatched — added start_mosh_connection()
 - Fixed auto-recording not triggered from session_recording_enabled toggle
 - Fixed highlight rules not applied to terminal after connection
@@ -3305,7 +3306,7 @@ done
 - Fixed RDP HiDPI scaling on 4K displays (desktop_scale_factor)
 - Fixed RDP mouse coordinate mismatch on HiDPI displays
 
-* Mon Feb 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
+* Tue Feb 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.8.7-0
 - Version bump to 0.8.7
 - Internationalization (i18n) — 14 languages: uk, de, fr, es, it, pl, cs,
   sk, da, sv, nl, pt, be, kk; gettext support via gettext-rs (#17)
@@ -3474,7 +3475,7 @@ done
 - Removed unused imports in Asbru and MobaXterm exporters
 - Updated dependencies: memchr, ryu, zerocopy, zmij
 
-* Fri Feb 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.7-0
+* Sat Feb 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.7-0
 - Version bump to 0.7.7
 - Fixed keyboard shortcuts intercepting VTE terminal input:
   - Delete, Ctrl+E, Ctrl+D no longer fire when terminal has focus (#4)
@@ -3512,7 +3513,7 @@ done
 - Protocol Dialogs Refactoring - Applied widget builders to SSH, RDP, VNC, SPICE panels
 - Legacy Code Cleanup - Removed unused TabDisplayMode, TabLabelWidgets types
 
-* Thu Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.5-0
+* Fri Feb 06 2026 Anton Isaiev <totoshko88@gmail.com> - 0.7.5-0
 - Version bump to 0.7.5
 - Code Quality Audit - Comprehensive codebase analysis and cleanup
 - Removed duplicate SSH/VNC/SPICE/ZeroTrust/RDP options code (~1850 lines)
@@ -3568,7 +3569,7 @@ done
 - Version bump to 0.6.9
 - Fixed Local Shell tabs not appearing in Split View "Select Tab" dialog
 
-* Thu Jan 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.8-0
+* Fri Jan 30 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.8-0
 - Version bump to 0.6.8
 - 1Password CLI Integration - New secret backend for 1Password password manager
 - Bitwarden API Key Authentication - Support for automated workflows and 2FA
@@ -3583,7 +3584,7 @@ done
 * Sat Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.5-0
 - Version bump to 0.6.5
 
-* Fri Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.4-0
+* Sat Jan 17 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.4-0
 - Update to version 0.6.4
 - Snap Package - New distribution format for easy installation via Snapcraft
 - Classic confinement for full system access (SSH keys, network, etc.)
@@ -3596,14 +3597,14 @@ done
 - Fixed RDP cursor colors (BGRA→ARGB conversion)
 - Updated ironrdp 0.13 → 0.14, ironrdp-tokio 0.7 → 0.8
 
-* Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.3-0
+* Thu Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.3-0
 - Update to version 0.6.3
 - Bitwarden CLI Integration - New secret backend for Bitwarden password manager
 - Password Manager Detection - Automatic detection of installed managers
 - Enhanced Secrets Settings UI - Improved backend selection with dynamic config
 - Detects GNOME Secrets, KeePassXC, KeePass2, Bitwarden CLI, 1Password CLI
 
-* Wed Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2-0
+* Thu Jan 15 2026 Anton Isaiev <totoshko88@gmail.com> - 0.6.2-0
 - Update to version 0.6.2
 - MobaXterm Import/Export - Full support for .mxtsessions files
 - Connection History Button - Quick access from sidebar toolbar
@@ -3611,7 +3612,7 @@ done
 - Persistent Search History - Up to 20 recent searches saved across sessions
 - Updated quick-xml 0.38 → 0.39, resvg 0.45 → 0.46
 
-* Sat Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9-0
+* Sun Jan 11 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.9-0
 - Update to version 0.5.9
 - Migrated Settings dialog from deprecated PreferencesWindow to PreferencesDialog
 - Updated libadwaita feature from v1_4 to v1_5
@@ -3621,14 +3622,14 @@ done
 - Fixed SSH Agent key selection when connecting
 - Improved agent key dropdown display in Connection Dialog
 
-* Tue Jan 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.8-0
+* Wed Jan 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.8-0
 - Update to version 0.5.8
 - Fixed SSH Agent "Add Key" button - now opens file chooser to select any SSH key file
 - Fixed SSH Agent "+" buttons in Available Key Files list - now load keys with passphrase dialog
 - Fixed SSH Agent "Remove Key" (trash) button - now actually removes keys from the agent
 - Fixed SSH Agent Refresh button - updates both loaded keys and available keys lists
 
-* Tue Jan 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.7-0
+* Wed Jan 07 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.7-0
 - Update to version 0.5.7
 - Fixed Test button in New Connection dialog (async runtime issue with GTK)
 - Updated dependencies: h2, proc-macro2, quote, rsa, rustls, serde_json, url, zerocopy
@@ -3654,7 +3655,7 @@ done
 - CSS animations for connection status
 - Enhanced drag-drop visual feedback
 
-* Thu Jan 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.3-0
+* Fri Jan 02 2026 Anton Isaiev <totoshko88@gmail.com> - 0.5.3-0
 - Update to version 0.5.3
 - UI Unification: All dialogs now use consistent 750×500px dimensions
 - Connection history recording for all protocols
@@ -3665,14 +3666,14 @@ done
 - Refactored terminal.rs into modular structure
 - Updated gtk4 dependency to 0.10.2
 
-* Sun Dec 29 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2-0
+* Mon Dec 29 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.2-0
 - Update to version 0.5.2
 - Refactored window.rs, embedded_rdp.rs, sidebar.rs, embedded_vnc.rs into modular structure
 - Fixed tab icons, Snippet dialog Save button, Template dialog layout
 - Added wayland-native feature flag with gdk4-wayland integration
 - CI improvements: libadwaita-1-dev, property tests job, OBS changelog generation
 
-* Sat Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1-0
+* Sun Dec 28 2025 Anton Isaiev <totoshko88@gmail.com> - 0.5.1-0
 - Update to version 0.5.1
 - CLI: Wake-on-LAN, snippet, group management commands
 - CLI: Connection list filters (--group, --tag)
