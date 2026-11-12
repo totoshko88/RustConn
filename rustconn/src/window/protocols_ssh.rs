@@ -734,9 +734,18 @@ fn build_ssh_command_args(
             .position(|a| a == "-i")
             .and_then(|pos| args.get(pos + 1))
             .cloned();
+        // The one place a password is paired with its host; from here the
+        // two travel together.
+        let hops: Vec<jump_route::JumpHop> = jump_hosts
+            .iter()
+            .zip(hop_passwords.into_iter().chain(std::iter::repeat(None)))
+            .map(|(spec, password)| jump_route::JumpHop {
+                spec: spec.clone(),
+                password,
+            })
+            .collect();
         let route = jump_route::jump_route(&JumpRouteRequest {
-            hops: &jump_hosts,
-            hop_passwords: &hop_passwords,
+            hops: &hops,
             first_hop_identity: first_hop_identity.as_deref(),
             target_identity: key.as_deref(),
             deeper_hop_identity: deeper_hop_identity.as_deref(),

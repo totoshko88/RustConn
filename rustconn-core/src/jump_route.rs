@@ -20,13 +20,23 @@ use secrecy::SecretString;
 use crate::ssh_askpass::{self, AskpassSlot};
 use crate::ssh_tunnel::{self, HopHostKeys};
 
+/// One jump host and the only password that may go to it.
+///
+/// The password travels with its hop, so no index can pair it with another
+/// host, and [`jump_route`] gives it only that hop's own askpass slot.
+#[derive(Debug, Clone)]
+pub struct JumpHop {
+    /// `[user@]host[:port]`.
+    pub spec: String,
+    /// This hop's own saved password, if it has one.
+    pub password: Option<SecretString>,
+}
+
 /// What [`jump_route`] needs to know about a chain of jump hosts.
 #[derive(Debug)]
 pub struct JumpRouteRequest<'a> {
-    /// The hops as `[user@]host[:port]`, the one closest to the target first.
-    pub hops: &'a [String],
-    /// Each hop's own password, aligned with `hops`.
-    pub hop_passwords: &'a [Option<SecretString>],
+    /// The hops, the one closest to the target first.
+    pub hops: &'a [JumpHop],
     /// The identity file of `hops[0]`, the hop next to the target, whose `ssh`
     /// (the outer `ProxyCommand`) runs on this computer.
     pub first_hop_identity: Option<&'a str>,
@@ -76,9 +86,8 @@ pub enum JumpRoute {
 /// so no unused secret enters the process tree.
 #[must_use]
 pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
-    let hops = request.hops;
-    let first_hop = hops.first()?;
-    let hop_passwords = request.hop_passwords;
+    let first_hop = request.hops.first()?;
+    let hops: Vec<String> = request.hops.iter().map(|hop| hop.spec.clone()).collect();
 
     // Each hop's own password (issue #191/#203) is delivered here: the nested
     // ProxyCommand ssh has no controlling TTY, so SSH_ASKPASS with
@@ -86,8 +95,8 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
     // prefix — authenticates the bastion with ITS password. If target askpass
     // is enabled, every hop clears `_RC_TGT_PW_FILE` before starting its own
     // ssh process; the outer helper remains target-only.
-    let any_hop_has_password = hop_passwords.iter().any(Option::is_some);
-    let askpass_script = if hop_passwords.first().is_some_and(Option::is_some) {
+    let any_hop_has_password = request.hops.iter().any(|hop| hop.password.is_some());
+    let askpass_script = if first_hop.password.is_some() {
         ssh_askpass::helper_script(AskpassSlot::JumpHost(0)).ok()
     } else {
         None
@@ -113,7 +122,7 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
         // A hop that is not plain, such as a free-text `b1,b2` chain or a
         // value from someone else's synced group, keeps `-J`, which OpenSSH
         // parses itself, rather than going unquoted into a shell command.
-        known_only: request.hop_host_keys == HopHostKeys::KnownOnly && hops_are_plain(hops),
+        known_only: request.hop_host_keys == HopHostKeys::KnownOnly && hops_are_plain(&hops),
     };
 
     if !auth_shape.needs_explicit_proxy_command() {
@@ -131,7 +140,7 @@ pub fn jump_route(request: &JumpRouteRequest<'_>) -> Option<JumpRoute> {
     }
     Some(proxy_command(
         request,
-        first_hop,
+        &first_hop.spec,
         askpass_script.as_deref(),
         auth_shape.needs_proxy_for_auth(),
     ))
@@ -178,13 +187,19 @@ pub fn tunnel_hop_args(request: &TunnelHopsRequest<'_>) -> Option<Vec<String>> {
     if !hops_are_plain(request.hops) {
         return None;
     }
+    // ponytail: farther tunnel hops get no saved password (`password: None`);
+    // give a hop its own password here, as sessions do, if a password-only
+    // bastion behind a tunnel jump host is reported.
+    let hops: Vec<JumpHop> = request
+        .hops
+        .iter()
+        .map(|spec| JumpHop {
+            spec: spec.clone(),
+            password: None,
+        })
+        .collect();
     let route = jump_route(&JumpRouteRequest {
-        hops: request.hops,
-        // ponytail: farther tunnel hops get no saved password; route each
-        // hop's own password through hop_passwords and askpass_proxy_prefix
-        // (as jump_route does for sessions) if a password-only bastion behind
-        // a tunnel jump host is reported.
-        hop_passwords: &[],
+        hops: &hops,
         first_hop_identity: request.first_hop_identity.and_then(plain_path),
         target_identity: None,
         deeper_hop_identity: request.deeper_hop_identity.and_then(plain_path),
@@ -269,8 +284,7 @@ fn proxy_command(
     askpass_script: Option<&Path>,
     offer_keys: bool,
 ) -> JumpRoute {
-    let hops = request.hops;
-    let hop_passwords = request.hop_passwords;
+    let hop_count = request.hops.len();
 
     // Build a ProxyCommand for the first hop;
     // if there are multiple hops, nest them via nested ProxyCommand.
@@ -281,12 +295,12 @@ fn proxy_command(
     // own password gets that helper; all other hops explicitly disable
     // askpass and clear the target credential before `ssh`.
     if let Some(script) = askpass_script {
-        proxy_parts.extend(ssh_tunnel::askpass_proxy_prefix(script, 0, hops.len()));
-        if let Some(Some(pw)) = hop_passwords.first() {
+        proxy_parts.extend(ssh_tunnel::askpass_proxy_prefix(script, 0, hop_count));
+        if let Some(pw) = request.hops.first().and_then(|hop| hop.password.as_ref()) {
             passwords.push((AskpassSlot::JumpHost(0), pw.clone()));
         }
     } else {
-        proxy_parts.extend(ssh_tunnel::askpass_disabled_proxy_prefix(hops.len()));
+        proxy_parts.extend(ssh_tunnel::askpass_disabled_proxy_prefix(hop_count));
     }
 
     proxy_parts.push("ssh".to_string());
@@ -357,7 +371,7 @@ fn proxy_command(
     // Multi-hop (issue #203): nest a ProxyCommand per remaining hop so EACH
     // inherits the identity file, Flatpak known_hosts, AND its own
     // SSH_ASKPASS helper if the hop authenticates by password.
-    if hops.len() > 1 {
+    if hop_count > 1 {
         let inner = nested_proxy_command(request, &mut passwords, offer_keys);
         proxy_parts.push("-o".to_string());
         proxy_parts.push(format!(
@@ -387,16 +401,15 @@ fn nested_proxy_command(
     passwords: &mut Vec<(AskpassSlot, SecretString)>,
     offer_keys: bool,
 ) -> String {
-    let hops = request.hops;
-    let inner_hops: Vec<&str> = hops[1..].iter().map(String::as_str).collect();
-    let deeper_passwords = request.hop_passwords.get(1..).unwrap_or(&[]);
+    let deeper = request.hops.get(1..).unwrap_or(&[]);
+    let inner_hops: Vec<&str> = deeper.iter().map(|hop| hop.spec.as_str()).collect();
 
     // Build per-hop askpass scripts for deeper hops (issue #203).
-    let inner_askpass: Vec<Option<std::path::PathBuf>> = deeper_passwords
+    let inner_askpass: Vec<Option<std::path::PathBuf>> = deeper
         .iter()
         .enumerate()
-        .map(|(rel_idx, pw_opt)| {
-            if pw_opt.is_some() {
+        .map(|(rel_idx, hop)| {
+            if hop.password.is_some() {
                 ssh_askpass::helper_script(AskpassSlot::JumpHost(rel_idx + 1)).ok()
             } else {
                 None
@@ -406,8 +419,8 @@ fn nested_proxy_command(
     // Expose a deeper hop's password only if its helper exists. Helper
     // creation failure is fail-closed: the hop remains manual/unavailable,
     // but no unused secret enters the process tree.
-    for (rel_idx, (pw_opt, script_opt)) in deeper_passwords.iter().zip(&inner_askpass).enumerate() {
-        if let (Some(pw), Some(_script)) = (pw_opt, script_opt) {
+    for (rel_idx, (hop, script_opt)) in deeper.iter().zip(&inner_askpass).enumerate() {
+        if let (Some(pw), Some(_script)) = (&hop.password, script_opt) {
             passwords.push((AskpassSlot::JumpHost(rel_idx + 1), pw.clone()));
         }
     }
@@ -425,7 +438,7 @@ fn nested_proxy_command(
         request.hop_host_keys,
         &askpass_refs,
         1,
-        hops.len(),
+        request.hops.len(),
     )
 }
 
@@ -560,14 +573,22 @@ mod tests {
         names.iter().map(|n| (*n).to_string()).collect()
     }
 
-    fn request<'a>(
-        hops: &'a [String],
-        hop_passwords: &'a [Option<SecretString>],
-        hop_host_keys: HopHostKeys,
-    ) -> JumpRouteRequest<'a> {
+    /// The hops of `names`, each bound to the password at its position.
+    fn jump_hops(names: &[String], passwords: &[Option<SecretString>]) -> Vec<JumpHop> {
+        assert_eq!(names.len(), passwords.len());
+        names
+            .iter()
+            .zip(passwords)
+            .map(|(spec, password)| JumpHop {
+                spec: spec.clone(),
+                password: password.clone(),
+            })
+            .collect()
+    }
+
+    fn request(hops: &[JumpHop], hop_host_keys: HopHostKeys) -> JumpRouteRequest<'_> {
         JumpRouteRequest {
             hops,
-            hop_passwords,
             first_hop_identity: None,
             target_identity: None,
             deeper_hop_identity: None,
@@ -643,15 +664,15 @@ mod tests {
 
     #[test]
     fn no_hops_give_no_route() {
-        assert!(jump_route(&request(&[], &[], HopHostKeys::UserConfig)).is_none());
+        assert!(jump_route(&request(&[], HopHostKeys::UserConfig)).is_none());
     }
 
     #[test]
     fn a_password_hop_gets_its_helper_and_slot() {
         let chain = hops(&["admin@bastion.example"]);
-        let passwords = [secret()];
+        let chain = jump_hops(&chain, &[secret()]);
         let Some(JumpRoute::ProxyCommand { command, passwords }) =
-            jump_route(&request(&chain, &passwords, HopHostKeys::UserConfig))
+            jump_route(&request(&chain, HopHostKeys::UserConfig))
         else {
             panic!("a password hop needs a ProxyCommand");
         };
@@ -670,9 +691,9 @@ mod tests {
     #[test]
     fn known_only_puts_strict_checking_on_every_hop() {
         let chain = hops(&["b1.example", "b2.example"]);
-        let passwords = [secret(), secret()];
+        let chain = jump_hops(&chain, &[secret(), secret()]);
         let Some(JumpRoute::ProxyCommand { command, passwords }) =
-            jump_route(&request(&chain, &passwords, HopHostKeys::KnownOnly))
+            jump_route(&request(&chain, HopHostKeys::KnownOnly))
         else {
             panic!("password hops need a ProxyCommand");
         };
@@ -688,9 +709,9 @@ mod tests {
     #[test]
     fn known_only_routes_a_key_only_hop_through_proxy_command() {
         let chain = hops(&["bastion.example"]);
-        let passwords = [None];
+        let chain = jump_hops(&chain, &[None]);
         let Some(JumpRoute::ProxyCommand { command, passwords }) =
-            jump_route(&request(&chain, &passwords, HopHostKeys::KnownOnly))
+            jump_route(&request(&chain, HopHostKeys::KnownOnly))
         else {
             panic!("a script-run hop needs a ProxyCommand to refuse unknown keys");
         };
@@ -707,8 +728,8 @@ mod tests {
             hops(&["bastion.example"]),
             hops(&["b1.example", "b2.example"]),
         ] {
-            let passwords = vec![None; chain.len()];
-            let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+            let chain = jump_hops(&chain, &vec![None; chain.len()]);
+            let mut req = request(&chain, HopHostKeys::KnownOnly);
             req.target_identity = Some("/k/target");
             req.deeper_hop_identity = Some("/k/deeper");
             let Some(JumpRoute::ProxyCommand { command, .. }) = jump_route(&req) else {
@@ -728,8 +749,8 @@ mod tests {
     #[test]
     fn a_password_hop_under_known_only_still_falls_back_to_the_target_key() {
         let chain = hops(&["bastion.example"]);
-        let passwords = [secret()];
-        let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+        let chain = jump_hops(&chain, &[secret()]);
+        let mut req = request(&chain, HopHostKeys::KnownOnly);
         req.target_identity = Some("/k/target");
         let Some(JumpRoute::ProxyCommand { command, .. }) = jump_route(&req) else {
             panic!("a password hop needs a ProxyCommand");
@@ -746,8 +767,8 @@ mod tests {
         // reach /bin/sh through a ProxyCommand.
         for hop in ["b1.example,b2.example", "bastion;reboot"] {
             let chain = hops(&[hop]);
-            let passwords = [None];
-            let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+            let chain = jump_hops(&chain, &[None]);
+            let mut req = request(&chain, HopHostKeys::KnownOnly);
             req.target_identity = Some("/k/target");
             let route = jump_route(&req);
             assert!(
@@ -777,11 +798,11 @@ mod tests {
     #[test]
     fn user_config_keeps_proxy_jump_for_a_plain_hop() {
         let chain = hops(&["bastion.example"]);
-        let passwords = [None];
+        let chain = jump_hops(&chain, &[None]);
         let Some(JumpRoute::ProxyJump {
             value,
             identity_for_agent,
-        }) = jump_route(&request(&chain, &passwords, HopHostKeys::UserConfig))
+        }) = jump_route(&request(&chain, HopHostKeys::UserConfig))
         else {
             panic!("a session's plain hop keeps -J");
         };
@@ -794,8 +815,8 @@ mod tests {
         // A nested ProxyCommand cannot carry the local key past the first hop,
         // so this chain keeps -J with the key in the agent.
         let chain = hops(&["b1.example", "b2.example"]);
-        let passwords = [None, None];
-        let mut req = request(&chain, &passwords, HopHostKeys::KnownOnly);
+        let chain = jump_hops(&chain, &[None, None]);
+        let mut req = request(&chain, HopHostKeys::KnownOnly);
         req.first_hop_identity = Some("/k/bastion");
         let Some(JumpRoute::ProxyJump {
             identity_for_agent, ..
@@ -809,9 +830,9 @@ mod tests {
     #[test]
     fn user_config_keeps_accept_new_for_a_password_hop() {
         let chain = hops(&["bastion.example"]);
-        let passwords = [secret()];
+        let chain = jump_hops(&chain, &[secret()]);
         let Some(JumpRoute::ProxyCommand { command, .. }) =
-            jump_route(&request(&chain, &passwords, HopHostKeys::UserConfig))
+            jump_route(&request(&chain, HopHostKeys::UserConfig))
         else {
             panic!("a password hop needs a ProxyCommand");
         };
@@ -824,8 +845,8 @@ mod tests {
     #[test]
     fn multi_hop_identity_only_goes_to_proxy_jump_with_the_agent_key() {
         let chain = hops(&["b1.example", "b2.example"]);
-        let passwords = [None, None];
-        let mut req = request(&chain, &passwords, HopHostKeys::UserConfig);
+        let chain = jump_hops(&chain, &[None, None]);
+        let mut req = request(&chain, HopHostKeys::UserConfig);
         req.first_hop_identity = Some("/k/bastion");
         req.target_identity = Some("/k/target");
         let Some(JumpRoute::ProxyJump {
@@ -842,11 +863,11 @@ mod tests {
     #[test]
     fn no_identity_no_password_user_config_uses_proxy_jump() {
         let chain = hops(&["b1.example", "b2.example", "b3.example"]);
-        let passwords = [None, None, None];
+        let chain = jump_hops(&chain, &[None, None, None]);
         let Some(JumpRoute::ProxyJump {
             value,
             identity_for_agent,
-        }) = jump_route(&request(&chain, &passwords, HopHostKeys::UserConfig))
+        }) = jump_route(&request(&chain, HopHostKeys::UserConfig))
         else {
             panic!("nothing to hand to the hops, so -J");
         };
@@ -857,9 +878,9 @@ mod tests {
     #[test]
     fn flatpak_known_hosts_and_pkcs11_reach_the_first_hop() {
         let chain = hops(&["bastion.example:2200"]);
-        let passwords = [None];
+        let chain = jump_hops(&chain, &[None]);
         let known_hosts = Path::new("/var/kh");
-        let mut req = request(&chain, &passwords, HopHostKeys::UserConfig);
+        let mut req = request(&chain, HopHostKeys::UserConfig);
         req.known_hosts = Some(known_hosts);
         req.first_hop_pkcs11 = Some(" /usr/lib/opensc-pkcs11.so ");
         req.target_identity = Some("/k/target");
@@ -885,11 +906,11 @@ mod tests {
             Some("UserKnownHostsFile=/home/u/.var/app/x/.ssh/known_hosts".to_string())
         );
         let chain = hops(&["near.example", "far.example"]);
-        let passwords = [None, None];
+        let chain = jump_hops(&chain, &[None, None]);
         for unusual in ["/home/a b/kh", "/home/a;b/kh", "/home/a'b/kh"] {
             let known_hosts = Path::new(unusual);
             assert_eq!(proxy_known_hosts_option(known_hosts), None, "{unusual}");
-            let mut req = request(&chain, &passwords, HopHostKeys::UserConfig);
+            let mut req = request(&chain, HopHostKeys::UserConfig);
             req.known_hosts = Some(known_hosts);
             let Some(JumpRoute::ProxyCommand { command, .. }) = jump_route(&req) else {
                 panic!("Flatpak known_hosts still takes the ProxyCommand route");
@@ -902,8 +923,8 @@ mod tests {
     #[test]
     fn the_route_debug_does_not_show_a_password() {
         let chain = hops(&["bastion.example"]);
-        let passwords = [secret()];
-        let req = request(&chain, &passwords, HopHostKeys::UserConfig);
+        let chain = jump_hops(&chain, &[secret()]);
+        let req = request(&chain, HopHostKeys::UserConfig);
         assert!(!format!("{req:?}").contains("hunter2"));
         let route = jump_route(&req).expect("one hop gives a route");
         assert!(!format!("{route:?}").contains("hunter2"));

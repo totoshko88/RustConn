@@ -76,6 +76,7 @@ mod split_view;
 mod ssh_agent_socket_tests;
 mod ssh_agent_tests;
 mod ssh_inheritance_tests;
+mod jump_route_tests;
 mod ssh_prompt_tests;
 mod storage_backend_tests;
 mod sync_path_traversal;
