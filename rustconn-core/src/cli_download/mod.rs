@@ -11,7 +11,7 @@
 //! components with a stable release URL pin a `Static` SHA256 and fail to
 //! install on mismatch; components whose installer resolves the latest release
 //! and whose vendor publishes a per-release SHA256 (kubectl, tsh, tailscale,
-//! boundary, hoop) use `Published` and also fail on a missing or wrong hash;
+//! boundary, hoop, bw) use `Published` and also fail on a missing or wrong hash;
 //! the rest, fetched from a "latest" URL with no published hash, use
 //! `SkipLatest` — the download
 //! proceeds over HTTPS but is **not** integrity-verified, and the skip is

@@ -216,7 +216,7 @@ pub static DOWNLOADABLE_COMPONENTS: &[DownloadableComponent] = &[
         install_method: InstallMethod::CustomScript,
         download_url: Some("https://api.github.com/repos/bitwarden/clients/releases"),
         aarch64_url: None,
-        checksum: ChecksumPolicy::SkipLatest,
+        checksum: ChecksumPolicy::Published,
         pip_package: None,
         size_hint: "~50 MB",
         binary_name: "bw",

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::download::{download_with_progress, enforce_checksum_policy};
+use super::download::{download_with_progress, enforce_checksum_policy, verify_checksum};
 use super::extract::{extract_tar_gz_preserve, extract_zip, find_binary_recursive};
 use super::{
     CliDownloadError, CliDownloadResult, DownloadCancellation, DownloadProgress,
@@ -293,9 +293,14 @@ pub(super) async fn install_bitwarden(
             )
         })?;
 
+    let asset_name = format!("bw-linux-{version}.zip");
     let download_url = format!(
-        "https://github.com/bitwarden/clients/releases/download/cli-v{version}/bw-linux-{version}.zip"
+        "https://github.com/bitwarden/clients/releases/download/cli-v{version}/{asset_name}"
     );
+    // GitHub publishes a SHA256 `digest` per release asset; without it the
+    // download is refused rather than installed unverified.
+    let expected_sha256 = github_asset_sha256(&response, &format!("cli-v{version}"), &asset_name)
+        .ok_or(CliDownloadError::NoChecksum)?;
 
     tracing::info!(%version, %download_url, "Bitwarden CLI: detected latest version");
 
@@ -312,6 +317,8 @@ pub(super) async fn install_bitwarden(
     if cancel_token.is_cancelled() {
         return Err(CliDownloadError::Cancelled);
     }
+
+    verify_checksum(&bytes, &expected_sha256)?;
 
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
@@ -419,6 +426,8 @@ pub(super) async fn install_1password(
         return Err(CliDownloadError::Cancelled);
     }
 
+    enforce_checksum_policy(component.checksum, component.name, &bytes)?;
+
     if let Some(ref cb) = progress_callback {
         cb(DownloadProgress {
             downloaded: bytes.len() as u64,
@@ -451,4 +460,55 @@ pub(super) async fn install_1password(
     }
 
     Ok(binary_path)
+}
+
+/// The SHA256 GitHub publishes for `asset` of release `tag`, read from the
+/// releases API JSON (`assets[].digest`, `"sha256:<hex>"`).
+fn github_asset_sha256(releases_json: &str, tag: &str, asset: &str) -> Option<String> {
+    let releases: Vec<serde_json::Value> = serde_json::from_str(releases_json).ok()?;
+    let release = releases.iter().find(|r| r["tag_name"] == tag)?;
+    let digest = release["assets"]
+        .as_array()?
+        .iter()
+        .find(|a| a["name"] == asset)?["digest"]
+        .as_str()?;
+    let hex = digest.strip_prefix("sha256:")?;
+    (hex.len() == 64 && hex.bytes().all(|b| b.is_ascii_hexdigit()))
+        .then(|| hex.to_ascii_lowercase())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn github_asset_sha256_reads_the_matching_asset_only() {
+        let h = "a".repeat(64);
+        let json = format!(
+            r#"[{{"tag_name":"web-v1","assets":[{{"name":"bw-linux-1.zip","digest":"sha256:{z}"}}]}},
+                {{"tag_name":"cli-v1","assets":[
+                    {{"name":"bw-linux-arm64-1.zip","digest":"sha256:{z}"}},
+                    {{"name":"bw-linux-1.zip","digest":"sha256:{h}"}}]}}]"#,
+            z = "0".repeat(64)
+        );
+        assert_eq!(
+            github_asset_sha256(&json, "cli-v1", "bw-linux-1.zip"),
+            Some(h)
+        );
+        // Nearby inputs: wrong tag, missing asset, no digest, bad digest, not JSON.
+        assert_eq!(github_asset_sha256(&json, "cli-v2", "bw-linux-1.zip"), None);
+        assert_eq!(github_asset_sha256(&json, "cli-v1", "bw-macos-1.zip"), None);
+        let no_digest = r#"[{"tag_name":"cli-v1","assets":[{"name":"bw-linux-1.zip"}]}]"#;
+        assert_eq!(
+            github_asset_sha256(no_digest, "cli-v1", "bw-linux-1.zip"),
+            None
+        );
+        let md5 =
+            r#"[{"tag_name":"cli-v1","assets":[{"name":"bw-linux-1.zip","digest":"md5:abc"}]}]"#;
+        assert_eq!(github_asset_sha256(md5, "cli-v1", "bw-linux-1.zip"), None);
+        assert_eq!(
+            github_asset_sha256("rate limited", "cli-v1", "bw-linux-1.zip"),
+            None
+        );
+    }
 }
