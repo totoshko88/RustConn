@@ -183,7 +183,18 @@ impl ScriptHost for GuiHost {
         let sidebar = Rc::clone(&self.sidebar);
         let monitoring = Rc::clone(&self.monitoring);
         let split_view = Rc::clone(&self.runtime.split_view);
-        let _ = cluster; // clusters are a future extension; ignored for now.
+
+        // `cluster=` is parsed by core but not implemented here. Say so instead of
+        // silently starting a plain session. shortcut: reject, implement via
+        // `ClusterManager::start_session` if scripts ever need it.
+        if let Some(cluster) = cluster {
+            let message = format!("start: cluster=<name> is not supported (got `{cluster}`)");
+            glib::idle_add_local_once(move || {
+                engine.borrow_mut().finish(Some(message));
+                resume();
+            });
+            return;
+        }
 
         // Defer every engine mutation to the main loop: the engine holds its
         // `RefCell` borrow while this host method runs, so touching it here
