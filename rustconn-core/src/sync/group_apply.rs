@@ -187,19 +187,23 @@ impl GroupSyncPlan {
     /// A deleted connection is removed outright; there is no trash here.
     pub fn apply_to(&self, groups: &mut Vec<ConnectionGroup>, connections: &mut Vec<Connection>) {
         groups.extend(self.groups_to_create.iter().cloned());
+        let group_index = first_index_by_id(groups.iter().map(|g| g.id));
         for updated in &self.groups_to_update {
-            if let Some(slot) = groups.iter_mut().find(|g| g.id == updated.id) {
-                slot.clone_from(updated);
+            if let Some(&i) = group_index.get(&updated.id) {
+                groups[i].clone_from(updated);
             }
         }
 
         connections.extend(self.connections_to_create.iter().cloned());
+        let connection_index = first_index_by_id(connections.iter().map(|c| c.id));
         for updated in &self.connections_to_update {
-            if let Some(slot) = connections.iter_mut().find(|c| c.id == updated.id) {
-                slot.clone_from(updated);
+            if let Some(&i) = connection_index.get(&updated.id) {
+                connections[i].clone_from(updated);
             }
         }
-        connections.retain(|c| !self.connections_to_delete.contains(&c.id));
+        let to_delete: std::collections::HashSet<Uuid> =
+            self.connections_to_delete.iter().copied().collect();
+        connections.retain(|c| !to_delete.contains(&c.id));
 
         for id in &self.groups_to_delete {
             let Some(index) = groups.iter().position(|g| g.id == *id) else {
@@ -214,6 +218,15 @@ impl GroupSyncPlan {
             }
         }
     }
+}
+
+/// `id → position of its first occurrence`, so updates are O(1) instead of a scan each.
+fn first_index_by_id(ids: impl Iterator<Item = Uuid>) -> HashMap<Uuid, usize> {
+    let mut index = HashMap::new();
+    for (i, id) in ids.enumerate() {
+        index.entry(id).or_insert(i);
+    }
+    index
 }
 
 /// `path inside the synced group → local group id` for the tree after the
