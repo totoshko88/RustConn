@@ -356,17 +356,35 @@ pub fn show_context_menu_for_item(
             &i18n("Run Local Script…"),
             "run-local-script",
         ));
-        // § Organisation
+        // § Creation (GNOME HIG: what makes new things, kept together)
+        // An import group mirrors its source, so a connection or folder made by
+        // hand in it would not survive the next sync.
         items.push(ContextMenuItem::Separator);
-        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
-        // § Creation / properties (GNOME HIG: properties-like items before delete)
-        // Import groups: hide "New Connection in Group" (connections managed by sync)
         if !is_import_group {
-            items.push(ContextMenuItem::Separator);
             items.push(ContextMenuItem::action(
                 &i18n("New Connection in Group"),
                 "new-connection-in-group",
             ));
+            items.push(ContextMenuItem::action(
+                &i18n("New Subgroup"),
+                "new-subgroup",
+            ));
+            items.push(ContextMenuItem::Separator);
+        }
+        // § Organisation and properties
+        items.push(ContextMenuItem::action(&i18n("Rename"), "rename-item"));
+        if !is_import_group {
+            items.push(ContextMenuItem::action(
+                &i18n("Move to Group…"),
+                "move-to-group",
+            ));
+            // A dynamic folder's content is generated, so a copy would be empty.
+            if !has_dynamic_folder {
+                items.push(ContextMenuItem::action(
+                    &i18n("Duplicate"),
+                    "duplicate-group",
+                ));
+            }
         }
         items.push(ContextMenuItem::action(&i18n("Edit"), "edit-connection"));
         // § Cloud Sync (flat items, GNOME HIG)

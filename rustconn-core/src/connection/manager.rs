@@ -4,6 +4,7 @@
 //! updating, and deleting connections with persistence through `ConfigManager`.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::Utc;
@@ -11,6 +12,7 @@ use tokio::sync::{mpsc, watch};
 use uuid::Uuid;
 
 use crate::config::ConfigManager;
+use crate::config::merge::{SharedBase, merge_three_way, same_entries, shared_base, try_lock_base};
 use crate::error::{ConfigError, ConfigResult};
 use crate::models::{Connection, ConnectionGroup, ProtocolConfig};
 use crate::monitoring::MonitoringOverride;
@@ -23,6 +25,60 @@ type TrashData = (
     Vec<TrashEntry<Connection>>,
     Vec<TrashEntry<ConnectionGroup>>,
 );
+
+/// What this process last saw on disk, per file.
+///
+/// Shared with the persistence workers: a save merges against it (so a
+/// connection another process wrote is not overwritten) and then moves it
+/// forward. See [`crate::config::merge`].
+#[derive(Debug, Clone)]
+struct DiskBases {
+    connections: SharedBase<Connection>,
+    groups: SharedBase<ConnectionGroup>,
+    trash_connections: SharedBase<TrashEntry<Connection>>,
+    trash_groups: SharedBase<TrashEntry<ConnectionGroup>>,
+}
+
+impl DiskBases {
+    fn new(
+        connections: Vec<Connection>,
+        groups: Vec<ConnectionGroup>,
+        trash_connections: Vec<TrashEntry<Connection>>,
+        trash_groups: Vec<TrashEntry<ConnectionGroup>>,
+    ) -> Self {
+        Self {
+            connections: shared_base(connections),
+            groups: shared_base(groups),
+            trash_connections: shared_base(trash_connections),
+            trash_groups: shared_base(trash_groups),
+        }
+    }
+}
+
+/// Which lists a [`ConnectionManager::reload_from_disk`] changed in memory.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "independent facts about one reload (which list changed, whether it ran), not a state machine"
+)]
+pub struct ReloadOutcome {
+    /// Connections were added, removed or replaced.
+    pub connections_changed: bool,
+    /// Groups were added, removed or replaced.
+    pub groups_changed: bool,
+    /// Trashed connections or groups changed.
+    pub trash_changed: bool,
+    /// A save was in progress, so nothing was reloaded; try again later.
+    pub skipped: bool,
+}
+
+impl ReloadOutcome {
+    /// Whether anything in memory changed, so a view of it needs rebuilding.
+    #[must_use]
+    pub const fn any_changed(self) -> bool {
+        self.connections_changed || self.groups_changed || self.trash_changed
+    }
+}
 
 /// Manager for connection CRUD operations
 ///
@@ -41,6 +97,9 @@ pub struct ConnectionManager {
     conn_tx: watch::Sender<Option<Vec<Connection>>>,
     group_tx: watch::Sender<Option<Vec<ConnectionGroup>>>,
     trash_tx: watch::Sender<Option<TrashData>>,
+
+    /// The on-disk state last seen; see [`DiskBases`].
+    bases: DiskBases,
 
     // Trash
     trash_connections: HashMap<Uuid, TrashEntry<Connection>>,
@@ -61,6 +120,7 @@ impl ConnectionManager {
     )] // Internal initialization helper, complexity is expected
     fn init_persistence(
         config_manager: ConfigManager,
+        bases: &DiskBases,
     ) -> (
         watch::Sender<Option<Vec<Connection>>>,
         watch::Sender<Option<Vec<ConnectionGroup>>>,
@@ -71,13 +131,20 @@ impl ConnectionManager {
         let (trash_tx, trash_rx) = watch::channel(None);
 
         // Spawn connection persistence worker
+        // Every save merges with the file on disk (see `crate::config::merge`),
+        // so what another process wrote in between is not overwritten.
         let config_c = config_manager.clone();
+        let conn_base = Arc::clone(&bases.connections);
         tokio::spawn(Self::debounce_worker(
             conn_rx,
-            move |connections: Vec<Connection>| {
+            move |rx: watch::Receiver<Option<Vec<Connection>>>| {
                 let cfg = config_c.clone();
+                let base = Arc::clone(&conn_base);
                 async move {
-                    if let Err(e) = cfg.save_connections_async(&connections).await {
+                    if let Err(e) = cfg
+                        .save_connections_merged_async(base, move || rx.borrow().clone())
+                        .await
+                    {
                         tracing::error!("Failed to persist connections: {}", e);
                     }
                 }
@@ -86,12 +153,17 @@ impl ConnectionManager {
 
         // Spawn group persistence worker
         let config_g = config_manager.clone();
+        let group_base = Arc::clone(&bases.groups);
         tokio::spawn(Self::debounce_worker(
             group_rx,
-            move |groups: Vec<ConnectionGroup>| {
+            move |rx: watch::Receiver<Option<Vec<ConnectionGroup>>>| {
                 let cfg = config_g.clone();
+                let base = Arc::clone(&group_base);
                 async move {
-                    if let Err(e) = cfg.save_groups_async(&groups).await {
+                    if let Err(e) = cfg
+                        .save_groups_merged_async(base, move || rx.borrow().clone())
+                        .await
+                    {
                         tracing::error!("Failed to persist groups: {}", e);
                     }
                 }
@@ -100,24 +172,40 @@ impl ConnectionManager {
 
         // Spawn trash persistence worker
         let config_t = config_manager;
-        tokio::spawn(Self::debounce_worker(trash_rx, move |data: TrashData| {
-            let cfg = config_t.clone();
-            async move {
-                if let Err(e) = cfg.save_trash_async(&data.0, &data.1).await {
-                    tracing::error!("Failed to persist trash: {}", e);
+        let trash_conn_base = Arc::clone(&bases.trash_connections);
+        let trash_group_base = Arc::clone(&bases.trash_groups);
+        tokio::spawn(Self::debounce_worker(
+            trash_rx,
+            move |rx: watch::Receiver<Option<TrashData>>| {
+                let cfg = config_t.clone();
+                let base_connections = Arc::clone(&trash_conn_base);
+                let base_groups = Arc::clone(&trash_group_base);
+                async move {
+                    if let Err(e) = cfg
+                        .save_trash_merged_async(base_connections, base_groups, move || {
+                            rx.borrow().clone()
+                        })
+                        .await
+                    {
+                        tracing::error!("Failed to persist trash: {}", e);
+                    }
                 }
-            }
-        }));
+            },
+        ));
 
         (conn_tx, group_tx, trash_tx)
     }
 
     /// Generic debounce worker: waits for watch channel changes, debounces
     /// for 2 seconds of inactivity, then calls the save function.
+    ///
+    /// `save_fn` gets a receiver rather than the value: the save reads the latest
+    /// snapshot itself, once it holds the merge base, so the snapshot and the base
+    /// agree even when a reload ran after the debounce expired.
     async fn debounce_worker<T, F, Fut>(mut rx: watch::Receiver<Option<T>>, save_fn: F)
     where
         T: Clone + Send + Sync + 'static,
-        F: Fn(T) -> Fut + Send + 'static,
+        F: Fn(watch::Receiver<Option<T>>) -> Fut + Send + 'static,
         Fut: std::future::Future<Output = ()> + Send,
     {
         loop {
@@ -143,10 +231,10 @@ impl ConnectionManager {
                 }
             }
 
-            // Take the latest value
-            let data = rx.borrow_and_update().clone();
-            if let Some(payload) = data {
-                save_fn(payload).await;
+            // Mark the latest value seen; the save reads it again under the lock.
+            let pending = rx.borrow_and_update().is_some();
+            if pending {
+                save_fn(rx.clone()).await;
             }
         }
     }
@@ -163,6 +251,14 @@ impl ConnectionManager {
         let groups_vec = config_manager.load_groups()?;
         let (trash_connections_vec, trash_groups_vec) = config_manager.load_trash()?;
 
+        // What was just read is what is on disk, so it is the merge base.
+        let bases = DiskBases::new(
+            connections_vec.clone(),
+            groups_vec.clone(),
+            trash_connections_vec.clone(),
+            trash_groups_vec.clone(),
+        );
+
         let connections = connections_vec.into_iter().map(|c| (c.id, c)).collect();
         let groups = groups_vec.into_iter().map(|g| (g.id, g)).collect();
 
@@ -176,7 +272,7 @@ impl ConnectionManager {
             trash_groups.insert(group.id, (group, time));
         }
 
-        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone());
+        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone(), &bases);
 
         Ok(Self {
             connections,
@@ -185,6 +281,7 @@ impl ConnectionManager {
             conn_tx,
             group_tx,
             trash_tx,
+            bases,
 
             trash_connections,
             trash_groups,
@@ -197,7 +294,8 @@ impl ConnectionManager {
     #[cfg(test)]
     #[must_use]
     pub fn new_empty(config_manager: ConfigManager) -> Self {
-        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone());
+        let bases = DiskBases::new(Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let (conn_tx, group_tx, trash_tx) = Self::init_persistence(config_manager.clone(), &bases);
 
         Self {
             connections: HashMap::new(),
@@ -206,6 +304,7 @@ impl ConnectionManager {
             conn_tx,
             group_tx,
             trash_tx,
+            bases,
 
             trash_connections: HashMap::new(),
             trash_groups: HashMap::new(),
@@ -622,6 +721,9 @@ impl ConnectionManager {
         self.groups.insert(id, group);
         self.is_sorted = false;
         self.persist_groups()?;
+        // A subgroup made inside a Cloud Sync Master tree is part of what the
+        // Master exports; without this it waited for an unrelated change.
+        self.notify_sync_export(Some(id));
 
         Ok(id)
     }
@@ -1346,6 +1448,98 @@ impl ConnectionManager {
         Ok(())
     }
 
+    /// Merges what other processes wrote to disk into memory.
+    ///
+    /// The files are read, merged by id with what is in memory against what this
+    /// process last saw (see [`crate::config::merge`]), and memory is replaced
+    /// when the result differs. Call it when `connections.toml`, `groups.toml` or
+    /// `trash.toml` changed under this process, for instance after a
+    /// `rustconn-cli add`. The returned [`ReloadOutcome`] says which lists
+    /// changed, so a view of them can be rebuilt.
+    ///
+    /// When memory changes, the merged state is queued for saving too: a snapshot
+    /// queued earlier predates the reload, and saving it would undo the merge.
+    ///
+    /// Never waits for a disk write: when a save is in progress the call returns
+    /// [`ReloadOutcome::skipped`] and the caller tries again.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a file exists but cannot be parsed; memory is left as
+    /// it was.
+    pub fn reload_from_disk(&mut self) -> ConfigResult<ReloadOutcome> {
+        let (
+            Some(mut base_conns),
+            Some(mut base_groups),
+            Some(mut trash_conn_base),
+            Some(mut trash_group_base),
+        ) = (
+            try_lock_base(&self.bases.connections),
+            try_lock_base(&self.bases.groups),
+            try_lock_base(&self.bases.trash_connections),
+            try_lock_base(&self.bases.trash_groups),
+        )
+        else {
+            return Ok(ReloadOutcome {
+                skipped: true,
+                ..ReloadOutcome::default()
+            });
+        };
+
+        let theirs_conns = self.config_manager.load_connections()?;
+        let theirs_groups = self.config_manager.load_groups()?;
+        let (theirs_trash_conns, theirs_trash_groups) = self.config_manager.load_trash()?;
+
+        let mut outcome = ReloadOutcome::default();
+
+        let mine = self.list_connections_owned();
+        let merged = merge_three_way(&base_conns, &mine, &theirs_conns);
+        if !same_entries(&merged, &mine) {
+            self.connections = merged.into_iter().map(|c| (c.id, c)).collect();
+            self.is_sorted = false;
+            outcome.connections_changed = true;
+        }
+        *base_conns = theirs_conns;
+
+        let mine = self.list_groups_owned();
+        let merged = merge_three_way(&base_groups, &mine, &theirs_groups);
+        if !same_entries(&merged, &mine) {
+            self.groups = merged.into_iter().map(|g| (g.id, g)).collect();
+            outcome.groups_changed = true;
+        }
+        *base_groups = theirs_groups;
+
+        let mine: Vec<_> = self.trash_connections.values().cloned().collect();
+        let merged = merge_three_way(&trash_conn_base, &mine, &theirs_trash_conns);
+        if !same_entries(&merged, &mine) {
+            self.trash_connections = merged.into_iter().map(|e| (e.0.id, e)).collect();
+            outcome.trash_changed = true;
+        }
+        *trash_conn_base = theirs_trash_conns;
+
+        let mine: Vec<_> = self.trash_groups.values().cloned().collect();
+        let merged = merge_three_way(&trash_group_base, &mine, &theirs_trash_groups);
+        if !same_entries(&merged, &mine) {
+            self.trash_groups = merged.into_iter().map(|e| (e.0.id, e)).collect();
+            outcome.trash_changed = true;
+        }
+        *trash_group_base = theirs_trash_groups;
+
+        // Still holding the bases, so a save cannot slip in between the new
+        // bases and the snapshots that match them.
+        if outcome.connections_changed {
+            self.persist_connections()?;
+        }
+        if outcome.groups_changed {
+            self.persist_groups()?;
+        }
+        if outcome.trash_changed {
+            self.persist_trash()?;
+        }
+
+        Ok(outcome)
+    }
+
     /// Persists trash asynchronously (debounced)
     fn persist_trash(&self) -> ConfigResult<()> {
         let connections: Vec<_> = self.trash_connections.values().cloned().collect();
@@ -1379,7 +1573,13 @@ impl ConnectionManager {
         // can still get it to disk.
         let pending_conns = self.conn_tx.borrow().clone();
         if let Some(conns) = pending_conns {
-            match self.config_manager.save_connections_async(&conns).await {
+            match self
+                .config_manager
+                .save_connections_merged_async(Arc::clone(&self.bases.connections), move || {
+                    Some(conns)
+                })
+                .await
+            {
                 Ok(()) => {
                     self.conn_tx.send_replace(None);
                 }
@@ -1392,7 +1592,11 @@ impl ConnectionManager {
 
         let pending_groups = self.group_tx.borrow().clone();
         if let Some(groups) = pending_groups {
-            match self.config_manager.save_groups_async(&groups).await {
+            match self
+                .config_manager
+                .save_groups_merged_async(Arc::clone(&self.bases.groups), move || Some(groups))
+                .await
+            {
                 Ok(()) => {
                     self.group_tx.send_replace(None);
                 }
@@ -1405,7 +1609,15 @@ impl ConnectionManager {
 
         let pending_trash = self.trash_tx.borrow().clone();
         if let Some((conns, groups)) = pending_trash {
-            match self.config_manager.save_trash_async(&conns, &groups).await {
+            match self
+                .config_manager
+                .save_trash_merged_async(
+                    Arc::clone(&self.bases.trash_connections),
+                    Arc::clone(&self.bases.trash_groups),
+                    move || Some((conns, groups)),
+                )
+                .await
+            {
                 Ok(()) => {
                     self.trash_tx.send_replace(None);
                 }
@@ -2064,6 +2276,164 @@ mod tests {
         let config_manager = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
         let manager = ConnectionManager::new_empty(config_manager);
         (manager, temp_dir)
+    }
+
+    /// A manager that loaded `initial` from disk, as the GUI does at startup, and
+    /// the `ConfigManager` another process (the CLI) would write through.
+    fn loaded_manager(initial: &[Connection]) -> (ConnectionManager, ConfigManager, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let other_process = ConfigManager::with_config_dir(temp_dir.path().to_path_buf());
+        other_process.save_connections(initial).unwrap();
+        let manager = ConnectionManager::new(other_process.clone()).unwrap();
+        (manager, other_process, temp_dir)
+    }
+
+    fn saved_names(config: &ConfigManager) -> Vec<String> {
+        let mut names: Vec<String> = config
+            .load_connections()
+            .unwrap()
+            .into_iter()
+            .map(|c| c.name)
+            .collect();
+        names.sort();
+        names
+    }
+
+    fn ssh(name: &str) -> Connection {
+        Connection::new_ssh(name.to_string(), "h".to_string(), 22)
+    }
+
+    /// The reported bug: the GUI held a stale list, a `rustconn-cli add` wrote
+    /// the file, and the GUI's next save replaced it, dropping the new entry.
+    #[tokio::test]
+    async fn a_save_keeps_a_connection_another_process_added() {
+        let a = ssh("a");
+        let (mut manager, other_process, _temp) = loaded_manager(std::slice::from_ref(&a));
+
+        other_process
+            .save_connections(&[a, ssh("from-cli")])
+            .unwrap();
+        manager.create_connection_from(ssh("from-gui")).unwrap();
+        manager.flush_persistence().await.unwrap();
+
+        assert_eq!(
+            saved_names(&other_process),
+            ["a", "from-cli", "from-gui"],
+            "the entry the other process added must survive the save"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_group_another_process_added_survives_a_save() {
+        let (mut manager, other_process, _temp) = loaded_manager(&[]);
+
+        other_process
+            .save_groups(&[ConnectionGroup::new("from-cli".to_string())])
+            .unwrap();
+        manager.create_group("from-gui".to_string()).unwrap();
+        manager.flush_persistence().await.unwrap();
+
+        let mut names: Vec<_> = other_process
+            .load_groups()
+            .unwrap()
+            .into_iter()
+            .map(|g| g.name)
+            .collect();
+        names.sort();
+        assert_eq!(names, ["from-cli", "from-gui"]);
+    }
+
+    #[tokio::test]
+    async fn reload_applies_what_another_process_added_and_removed() {
+        let a = ssh("a");
+        let b = ssh("b");
+        let (mut manager, other_process, _temp) = loaded_manager(&[a.clone(), b]);
+
+        other_process
+            .save_connections(&[a, ssh("from-cli")])
+            .unwrap();
+        let outcome = manager.reload_from_disk().unwrap();
+
+        assert!(outcome.connections_changed);
+        assert!(!outcome.skipped);
+        let mut names: Vec<_> = manager
+            .list_connections()
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
+        names.sort();
+        assert_eq!(names, ["a", "from-cli"]);
+
+        // The removal must not be undone by the next save.
+        manager.flush_persistence().await.unwrap();
+        assert_eq!(saved_names(&other_process), ["a", "from-cli"]);
+    }
+
+    #[tokio::test]
+    async fn reload_keeps_a_local_edit_that_is_not_saved_yet() {
+        let a = ssh("a");
+        let (mut manager, other_process, _temp) = loaded_manager(std::slice::from_ref(&a));
+
+        let mut edited = a.clone();
+        edited.name = "a-edited".to_string();
+        manager.update_connection(a.id, edited).unwrap();
+        other_process
+            .save_connections(&[a, ssh("from-cli")])
+            .unwrap();
+
+        manager.reload_from_disk().unwrap();
+        manager.flush_persistence().await.unwrap();
+
+        assert_eq!(saved_names(&other_process), ["a-edited", "from-cli"]);
+    }
+
+    #[tokio::test]
+    async fn a_local_deletion_is_not_undone_by_a_stale_file() {
+        let a = ssh("a");
+        let b = ssh("b");
+        let (mut manager, other_process, _temp) = loaded_manager(&[a, b.clone()]);
+
+        manager.delete_connection(b.id).unwrap();
+        manager.flush_persistence().await.unwrap();
+
+        assert_eq!(saved_names(&other_process), ["a"]);
+        assert_eq!(
+            manager.get_trash_connection(b.id).map(|c| c.name.as_str()),
+            Some("b")
+        );
+    }
+
+    /// A subgroup made inside a Master tree has to reach the export; it used to
+    /// wait for some other change to the tree.
+    #[tokio::test]
+    async fn a_subgroup_in_a_master_tree_is_announced_for_export() {
+        let (mut manager, _temp) = create_test_manager();
+        let mut master = ConnectionGroup::new("master".to_string());
+        master.sync_mode = SyncMode::Master;
+        let master_id = manager.create_group_from(master).unwrap();
+        let middle = manager
+            .create_group_with_parent("middle".to_string(), master_id)
+            .unwrap();
+
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        manager.set_export_sender(tx);
+        manager
+            .create_group_with_parent("leaf".to_string(), middle)
+            .unwrap();
+
+        assert_eq!(rx.try_recv().ok(), Some(master_id));
+    }
+
+    #[tokio::test]
+    async fn reload_with_nothing_new_changes_nothing() {
+        let a = ssh("a");
+        let (mut manager, _other_process, _temp) = loaded_manager(std::slice::from_ref(&a));
+
+        let outcome = manager.reload_from_disk().unwrap();
+
+        assert!(!outcome.any_changed());
+        assert!(!outcome.skipped);
+        assert_eq!(manager.connection_count(), 1);
     }
 
     #[tokio::test]

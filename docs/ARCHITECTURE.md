@@ -448,6 +448,14 @@ This is particularly useful during:
 - Bulk import operations
 - Rapid edits to connection properties
 
+### Sharing the files with other processes
+
+`connections.toml`, `groups.toml` and `trash.toml` are also written by `rustconn-cli` and by a second instance, so a save is never a plain overwrite. Each file has a *base*, the list this process last saw on disk (`config::merge::SharedBase`). A save takes the base, asks the debounce channel for the latest snapshot, reads the file under the write locks, merges the three lists by id (`merge_three_way`: an entry added elsewhere is kept, one removed elsewhere is removed, a one-sided edit is taken, a two-sided edit goes to the newer `updated_at`, a deletion made here is honoured) and writes the result unless it equals the file. The base then becomes the snapshot that was saved.
+
+`ConnectionManager::reload_from_disk()` applies the same merge to memory. The GUI calls it from `config::watch::ConfigWatcher` (inotify, polled once a second from the GTK main loop, 700 ms of quiet) so a `rustconn-cli add` shows up in the sidebar without a restart. It takes the bases with `try_lock`, so it never waits for a disk write; a busy reload is retried on the next tick. The snapshot is read *after* the base is held, on both sides, because a snapshot taken earlier can predate a reload and would otherwise delete what the reload just added.
+
+Not covered: `rustconn-cli` still reads, edits and writes the whole file itself, so two CLI commands racing each other, or a CLI command racing a GUI save in the few milliseconds between its read and its write, can still lose one change.
+
 ## Thread Safety Patterns
 
 ### Mutex Poisoning Recovery

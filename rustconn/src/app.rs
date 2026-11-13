@@ -804,6 +804,59 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
         }
     }
 
+    // Merge connection files another process rewrote while this window is open
+    // (a `rustconn-cli add`, a second instance). Saves already merge with the
+    // file, so nothing is lost either way; this makes the new entries appear
+    // without a restart. A failed watch only costs that live update.
+    {
+        let config_dir = with_state(&state, |s| s.config_manager().config_dir().to_path_buf());
+        match rustconn_core::config::watch::ConfigWatcher::new(&config_dir) {
+            Ok(watcher) => {
+                let state_for_watch = state.clone();
+                let sidebar_for_watch = window.sidebar_rc();
+                // Set when a reload had to wait (a save was running, or the state
+                // was borrowed), so the next tick tries again without a new event.
+                let retry = std::cell::Cell::new(false);
+                glib::timeout_add_local(std::time::Duration::from_secs(1), move || {
+                    let changed = watcher.take_changed(std::time::Duration::from_millis(700));
+                    if !changed && !retry.get() {
+                        return glib::ControlFlow::Continue;
+                    }
+                    let outcome = state_for_watch
+                        .try_borrow_mut()
+                        .ok()
+                        .map(|mut s| s.connection_manager().reload_from_disk());
+                    match outcome {
+                        None | Some(Ok(rustconn_core::ReloadOutcome { skipped: true, .. })) => {
+                            retry.set(true);
+                        }
+                        Some(Ok(outcome)) => {
+                            retry.set(false);
+                            if outcome.any_changed() {
+                                tracing::info!(
+                                    connections = outcome.connections_changed,
+                                    groups = outcome.groups_changed,
+                                    trash = outcome.trash_changed,
+                                    "Merged connection changes written by another process"
+                                );
+                                MainWindow::reload_sidebar_preserving_state(
+                                    &state_for_watch,
+                                    &sidebar_for_watch,
+                                );
+                            }
+                        }
+                        Some(Err(e)) => {
+                            retry.set(false);
+                            tracing::warn!(%e, "Could not merge connection files changed on disk");
+                        }
+                    }
+                    glib::ControlFlow::Continue
+                });
+            }
+            Err(e) => tracing::warn!(%e, "Connection files are not watched for outside changes"),
+        }
+    }
+
     // Warm the FreeRDP version cache off the main thread. The first RDP connect
     // otherwise probes each candidate client (`… --version`) synchronously on
     // the GTK main thread — up to seven spawns the user waits through. Filling

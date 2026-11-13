@@ -17,6 +17,7 @@ pub mod automation_inheritance;
 pub mod copy_field;
 mod dial;
 pub mod gateway_failover;
+pub mod group_copy;
 pub mod host_range;
 pub mod jump_chain;
 pub mod keepalive;
@@ -46,7 +47,7 @@ pub use lazy_loader::LazyGroupLoader;
 pub use login_prompt::{
     DEFAULT_USERNAME_PROMPTS, LoginPrompt, LoginPromptMatcher, looks_like_username_prompt,
 };
-pub use manager::ConnectionManager;
+pub use manager::{ConnectionManager, ReloadOutcome};
 pub use mdns::{apply_mdns_fallback, is_mdns_name, resolve_sandboxed_hostname};
 pub use mptcp::{
     MptcpError, MptcpResult, connect_mptcp, connect_mptcp_async, is_mptcp_available,

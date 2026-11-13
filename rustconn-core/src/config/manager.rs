@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use super::merge::{Mergeable, SharedBase, merge_three_way};
 use super::settings::AppSettings;
 use super::version_skew::{self, Existing, RUNNING_VERSION, is_newer_than_running};
 use crate::cluster::Cluster;
@@ -60,6 +61,13 @@ const LOCK_POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis
 /// processes* out. Held only inside [`ConfigManager::write_locked`], which does
 /// not call itself, so it cannot deadlock against itself.
 static CONFIG_WRITE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// The trash as it is stored: trashed connections and trashed groups, each with
+/// the time it was trashed.
+pub type TrashLists = (
+    Vec<(Connection, chrono::DateTime<chrono::Utc>)>,
+    Vec<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+);
 
 /// Marked config files a newer `RustConn` wrote, by path, with the version that wrote each.
 type NewerFiles = std::collections::BTreeMap<PathBuf, String>;
@@ -406,6 +414,15 @@ impl ConfigManager {
     /// of a file a newer `RustConn` wrote happens here: see
     /// [`Self::back_up_newer_file`].
     fn write_locked(&self, path: &Path, content: &str) -> ConfigResult<()> {
+        self.with_write_lock(|manager| manager.write_unlocked(path, content))
+    }
+
+    /// Runs `body` holding both write locks.
+    ///
+    /// For a read-merge-write, which must not let another writer in between its
+    /// read and its write. `body` may call [`Self::write_unlocked`] but never
+    /// [`Self::write_locked`] or anything else that takes the locks again.
+    fn with_write_lock<R>(&self, body: impl FnOnce(&Self) -> ConfigResult<R>) -> ConfigResult<R> {
         // In-process writers queue here; see CONFIG_WRITE_LOCK. The guard holds
         // `()`, so a poisoned mutex carries no invalid state and recovering is
         // strictly better than propagating a panic from an unrelated writer.
@@ -416,6 +433,11 @@ impl ConfigManager {
         // Advisory lock against other processes (released on drop)
         let _lock = self.acquire_lock()?;
 
+        body(self)
+    }
+
+    /// The write itself, for a caller already inside [`Self::with_write_lock`].
+    fn write_unlocked(&self, path: &Path, content: &str) -> ConfigResult<()> {
         // A file a newer RustConn wrote is copied aside before this process first
         // replaces it. Under both locks, so the copy holds exactly the bytes the
         // rename below replaces; a copy that fails fails this write.
@@ -743,6 +765,229 @@ impl ConfigManager {
             groups: std::borrow::Cow::Borrowed(groups),
         };
         self.save_toml_file_async(&path, &file).await
+    }
+
+    // ========== Merged saves ==========
+
+    /// Saves the connections after merging them with what is on disk now.
+    ///
+    /// [`Self::save_connections`] replaces the file with the caller's list, which
+    /// drops anything another process (a `rustconn-cli add`) wrote since this one
+    /// loaded. This takes the write locks and `base`, asks `mine` for the list to
+    /// save, reads the file, merges the two against `base` (see
+    /// [`super::merge::merge_three_way`]) and writes the result unless it equals
+    /// the file. On success `base` becomes the list that was saved: the state this
+    /// process has acted on.
+    ///
+    /// `mine` runs once `base` is held, so the list it returns and `base` agree
+    /// even when a reload ran just before. It may return `None` when there is
+    /// nothing to save, and then nothing is written.
+    ///
+    /// A file that cannot be read is replaced by the list, as a plain save does.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_connections_merged(
+        &self,
+        base: &SharedBase<Connection>,
+        mine: impl FnOnce() -> Option<Vec<Connection>>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(CONNECTIONS_FILE);
+        self.merge_save_list(&path, base, mine, Self::load_connections, |merged| {
+            Self::render_toml(&ConnectionsFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                connections: std::borrow::Cow::Borrowed(merged),
+            })
+        })
+    }
+
+    /// Like [`Self::save_connections_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_connections_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_connections_merged_async(
+        &self,
+        base: SharedBase<Connection>,
+        mine: impl FnOnce() -> Option<Vec<Connection>> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || manager.save_connections_merged(&base, mine))
+            .await
+            .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
+    }
+
+    /// Saves the groups after merging them with the file; see
+    /// [`Self::save_connections_merged`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_groups_merged(
+        &self,
+        base: &SharedBase<ConnectionGroup>,
+        mine: impl FnOnce() -> Option<Vec<ConnectionGroup>>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(GROUPS_FILE);
+        self.merge_save_list(&path, base, mine, Self::load_groups, |merged| {
+            Self::render_toml(&GroupsFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                groups: std::borrow::Cow::Borrowed(merged),
+            })
+        })
+    }
+
+    /// Like [`Self::save_groups_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_groups_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_groups_merged_async(
+        &self,
+        base: SharedBase<ConnectionGroup>,
+        mine: impl FnOnce() -> Option<Vec<ConnectionGroup>> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || manager.save_groups_merged(&base, mine))
+            .await
+            .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
+    }
+
+    /// Serializes `file` as the pretty TOML every config file uses.
+    fn render_toml<T: serde::Serialize>(file: &T) -> ConfigResult<String> {
+        toml::to_string_pretty(file)
+            .map_err(|e| ConfigError::Serialize(format!("Failed to serialize: {e}")))
+    }
+
+    /// The read-merge-write behind the `save_*_merged` methods.
+    ///
+    /// `base` stays locked from before `mine` runs to after the write, so a reload
+    /// that looks at it (see `ConnectionManager::reload_from_disk`) either sees
+    /// the state before this save or the one after, never between.
+    fn merge_save_list<T: Mergeable>(
+        &self,
+        path: &Path,
+        base: &SharedBase<T>,
+        mine: impl FnOnce() -> Option<Vec<T>>,
+        read: impl FnOnce(&Self) -> ConfigResult<Vec<T>>,
+        render: impl FnOnce(&[T]) -> ConfigResult<String>,
+    ) -> ConfigResult<()> {
+        let mut base_guard = base
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(mine) = mine() else {
+            return Ok(());
+        };
+
+        self.with_write_lock(|manager| {
+            let theirs = match read(manager) {
+                Ok(theirs) => Some(theirs),
+                Err(e) => {
+                    tracing::warn!(
+                        file = %path.display(),
+                        error = %e,
+                        "Could not read the file to merge with; replacing it with this process's copy"
+                    );
+                    None
+                }
+            };
+            let merged = match &theirs {
+                Some(theirs) => merge_three_way(&base_guard, &mine, theirs),
+                None => mine.clone(),
+            };
+            // An unchanged file is left alone: a rewrite would wake every
+            // watcher for nothing.
+            if theirs.as_deref() == Some(merged.as_slice()) && path.exists() {
+                return Ok(());
+            }
+            let content = render(&merged)?;
+            manager.write_unlocked(path, &content)
+        })?;
+
+        *base_guard = mine;
+        drop(base_guard);
+        Ok(())
+    }
+
+    /// Saves the trash after merging it with the file; see
+    /// [`Self::save_connections_merged`]. `mine` returns the trashed connections
+    /// and the trashed groups.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be serialized, locked or written.
+    pub fn save_trash_merged(
+        &self,
+        base_connections: &SharedBase<(Connection, chrono::DateTime<chrono::Utc>)>,
+        base_groups: &SharedBase<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+        mine: impl FnOnce() -> Option<TrashLists>,
+    ) -> ConfigResult<()> {
+        self.ensure_config_dir()?;
+        let path = self.config_dir.join(TRASH_FILE);
+        let mut base_conn_guard = base_connections
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut base_group_guard = base_groups
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some((connections, groups)) = mine() else {
+            return Ok(());
+        };
+
+        self.with_write_lock(|manager| {
+            let theirs = manager.load_trash().ok();
+            let (merged_connections, merged_groups) = match &theirs {
+                Some((their_conns, their_groups)) => (
+                    merge_three_way(&base_conn_guard, &connections, their_conns),
+                    merge_three_way(&base_group_guard, &groups, their_groups),
+                ),
+                None => (connections.clone(), groups.clone()),
+            };
+            if let Some((their_conns, their_groups)) = &theirs
+                && *their_conns == merged_connections
+                && *their_groups == merged_groups
+                && path.exists()
+            {
+                return Ok(());
+            }
+            let content = Self::render_toml(&TrashFile {
+                written_by: Some(RUNNING_VERSION.to_owned()),
+                connections: std::borrow::Cow::Borrowed(merged_connections.as_slice()),
+                groups: std::borrow::Cow::Borrowed(merged_groups.as_slice()),
+            })?;
+            manager.write_unlocked(&path, &content)
+        })?;
+
+        *base_conn_guard = connections;
+        *base_group_guard = groups;
+        drop(base_conn_guard);
+        drop(base_group_guard);
+        Ok(())
+    }
+
+    /// Like [`Self::save_trash_merged`], off the async runtime's threads.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error as [`Self::save_trash_merged`] does, or
+    /// [`ConfigError::Write`] if the blocking task could not be joined.
+    pub async fn save_trash_merged_async(
+        &self,
+        base_connections: SharedBase<(Connection, chrono::DateTime<chrono::Utc>)>,
+        base_groups: SharedBase<(ConnectionGroup, chrono::DateTime<chrono::Utc>)>,
+        mine: impl FnOnce() -> Option<TrashLists> + Send + 'static,
+    ) -> ConfigResult<()> {
+        let manager = self.clone();
+        tokio::task::spawn_blocking(move || {
+            manager.save_trash_merged(&base_connections, &base_groups, mine)
+        })
+        .await
+        .map_err(|e| ConfigError::Write(format!("Config write task failed: {e}")))?
     }
 
     // ========== Snippets ==========

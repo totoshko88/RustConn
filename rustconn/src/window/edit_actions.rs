@@ -199,6 +199,22 @@ impl MainWindow {
         });
         window.add_action(&duplicate_action);
 
+        // Duplicate a group with its subgroups and connections
+        let duplicate_group_action = gio::SimpleAction::new("duplicate-group", None);
+        let window_weak = window.downgrade();
+        let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
+        duplicate_group_action.connect_activate(move |_, _| {
+            if let Some(win) = window_weak.upgrade() {
+                super::operations::duplicate_selected_group(
+                    win.upcast_ref(),
+                    &state_clone,
+                    &sidebar_clone,
+                );
+            }
+        });
+        window.add_action(&duplicate_group_action);
+
         // Run a local bash script on the selected SSH hosts
         let run_script_action = gio::SimpleAction::new("run-local-script", None);
         let window_weak = window.downgrade();

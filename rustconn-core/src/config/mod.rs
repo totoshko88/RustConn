@@ -5,14 +5,16 @@
 
 pub mod keybindings;
 mod manager;
+pub mod merge;
 pub mod settings;
 mod version_skew;
+pub mod watch;
 
 pub use keybindings::{
     KeybindingCategory, KeybindingDef, KeybindingSettings, MacroKeybindError, default_keybindings,
     default_passthrough_exceptions, is_valid_accelerator, validate_macro_keybind,
 };
-pub use manager::ConfigManager;
+pub use manager::{ConfigManager, TrashLists};
 pub use settings::{
     AppSettings, ColorScheme, ConnectionSettings, KeyringRevocations, LoggingSettings,
     NetworkSettings, QuickConnectHistoryItem, RendererPreference, SIDEBAR_ROW_MARGIN_MAX,

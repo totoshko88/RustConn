@@ -156,8 +156,8 @@ pub use config::{
 };
 pub use connection::{
     ConnectionManager, LazyGroupLoader, LoginPrompt, LoginPromptMatcher, PortCheckError,
-    PortCheckResult, RetryConfig, RetryState, SelectionState, check_port, check_port_async,
-    looks_like_password_prompt, looks_like_username_prompt,
+    PortCheckResult, ReloadOutcome, RetryConfig, RetryState, SelectionState, check_port,
+    check_port_async, looks_like_password_prompt, looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
 pub use embedded_client_error::EmbeddedClientError;
