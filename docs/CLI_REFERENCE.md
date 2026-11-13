@@ -863,18 +863,17 @@ Clusters group connections for broadcast command execution (send the same input 
 |------------|-------------|
 | `cluster list` | List all clusters (`--format`); the table and CSV count resolved members — explicit plus auto-membership matches |
 | `cluster show <name>` | Show cluster, its auto-membership pattern and its resolved connections; pattern matches are marked `(auto)` |
-| `cluster create` | Create a cluster (`--name`, `--connections`, `--broadcast`) |
-| `cluster edit <name>` | Edit a cluster (`--new-name`, `--broadcast true/false`) |
+| `cluster create` | Create a cluster (`--name`, `--connections`; `--broadcast` is a hidden no-op since 0.14.8) |
+| `cluster edit <name>` | Edit a cluster (`--new-name`; `--broadcast` is a hidden no-op since 0.14.8) |
 | `cluster delete <name>` | Delete a cluster |
 | `cluster add-connection` | Add connection (`-C cluster -c connection`) |
 | `cluster remove-connection` | Remove connection (`-C cluster -c connection`) |
 
 ```bash
 rustconn-cli cluster list
-rustconn-cli cluster create --name "DB Cluster" --broadcast
+rustconn-cli cluster create --name "DB Cluster"
 rustconn-cli cluster create --name "Mixed" --connections "DB-01,DB-02,Web-01"
 rustconn-cli cluster edit "DB Cluster" --new-name "Database Cluster"
-rustconn-cli cluster edit "DB Cluster" --broadcast false
 rustconn-cli cluster add-connection -C "DB Cluster" -c "DB-01"
 rustconn-cli cluster delete "Old Cluster"
 ```
