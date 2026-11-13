@@ -1487,7 +1487,10 @@ mod tests {
             fs::read(&groups_file).unwrap(),
         );
 
-        assert_eq!(ConfigManager::validate_connections(&[conn.clone()]).len(), 1);
+        assert_eq!(
+            ConfigManager::validate_connections(&[conn.clone()]).len(),
+            1
+        );
         let loaded = manager.load_connections().unwrap();
         assert_eq!(loaded.len(), 1);
         assert_eq!(loaded[0].id, conn.id);
