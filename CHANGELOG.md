@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unused core modules** — `rustconn_core::cache` (`Cached`, `CacheRef`, `LoadCacheObject`) and `rustconn_core::drag_drop` (`DropConfig`, `calculate_*`, `ItemType`; the GUI has its own in `sidebar`) had no callers and are gone
 - **Dead GUI code** — the window actions `copy-username`, `copy-password`, `cluster-from-selection` and `select-item-by-id` (no menu, shortcut or palette entry used them), the `dialogs::keyboard` and `dialogs::adw_dialogs` modules, `block_on_async` / `ensure_main_thread` / `is_main_thread`, the unused tab activity/silence indicator CSS classes, and about 40 functions that nothing called (FreeRDP detection helpers, formatting and accessibility helpers, terminal and dialog getters).
 - **Unused `HistorySettings.track_quick_connect`** — nothing read it; configs that still contain the key load unchanged (covered by a test) and it is dropped on the next save. (`rustconn-core/src/models/history.rs`)
+- **Unused `SearchEngine::fuzzy_score_optimized`** and its two private helpers — nothing called it outside its own unit tests; `fuzzy_score` is what search uses. `search::benchmark` stays (integration tests and saved-search tests use it). (`rustconn-core/src/search/mod.rs`)
 
 ### Improved
 

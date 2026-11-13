@@ -701,89 +701,6 @@ impl SearchEngine {
         }
     }
 
-    /// Optimized fuzzy match score using early termination
-    ///
-    /// This version avoids allocations when possible and terminates early
-    /// when a match is impossible. Use this for large datasets.
-    ///
-    /// Returns a score between 0.0 (no match) and 1.0 (exact match)
-    #[must_use]
-    pub fn fuzzy_score_optimized(&self, query: &str, target: &str) -> f32 {
-        // Early termination for empty strings
-        if query.is_empty() || target.is_empty() {
-            return 0.0;
-        }
-
-        let query_len = query.len();
-        let target_len = target.len();
-
-        // Early termination: query longer than target can't be a substring match
-        // but might still have fuzzy matches
-        if query_len > target_len * 2 {
-            return 0.0;
-        }
-
-        // For case-insensitive matching, we compare char by char to avoid allocation
-        // when possible
-        if self.case_sensitive {
-            self.fuzzy_score_inner(query, target)
-        } else {
-            // Check for exact match first (common case optimization)
-            if query.eq_ignore_ascii_case(target) {
-                return 1.0;
-            }
-
-            // Check for prefix match (very common in search)
-            // Guard with is_char_boundary to avoid panicking on multi-byte UTF-8.
-            if target_len >= query_len
-                && target.is_char_boundary(query_len)
-                && target[..query_len].eq_ignore_ascii_case(query)
-            {
-                let ratio = query_len as f32 / target_len as f32;
-                return ratio.mul_add(0.4, 0.6).min(0.99);
-            }
-
-            // Check for substring match using allocation-free case-insensitive search
-            if let Some(pos) = self.find_case_insensitive(query, target) {
-                let ratio = query_len as f32 / target_len as f32;
-                let prefix_bonus = if pos == 0 { 0.1 } else { 0.0 };
-                return ratio.mul_add(0.4, 0.5 + prefix_bonus).min(0.99);
-            }
-
-            // Fall back to fuzzy character matching
-            self.fuzzy_score_chars_case_insensitive(query, target)
-        }
-    }
-
-    /// Inner fuzzy score for case-sensitive matching
-    fn fuzzy_score_inner(&self, query: &str, target: &str) -> f32 {
-        // Exact match
-        if query == target {
-            return 1.0;
-        }
-
-        // Contains match
-        if target.contains(query) {
-            let ratio = query.len() as f32 / target.len() as f32;
-            let prefix_bonus = if target.starts_with(query) { 0.1 } else { 0.0 };
-            return ratio.mul_add(0.4, 0.5 + prefix_bonus).min(0.99);
-        }
-
-        self.fuzzy_score_chars(query.chars(), target.chars(), query.len())
-    }
-
-    /// Fuzzy character matching for case-insensitive search
-    fn fuzzy_score_chars_case_insensitive(&self, query: &str, target: &str) -> f32 {
-        let query_lower: Vec<char> = query.chars().flat_map(char::to_lowercase).collect();
-        let target_lower: Vec<char> = target.chars().flat_map(char::to_lowercase).collect();
-
-        self.fuzzy_score_chars(
-            query_lower.iter().copied(),
-            target_lower.iter().copied(),
-            query_lower.len(),
-        )
-    }
-
     /// Core fuzzy character matching algorithm
     #[expect(
         clippy::unused_self,
@@ -1445,61 +1362,6 @@ mod tests {
 
     // ========== Tests for optimized fuzzy matching ==========
 
-    #[test]
-    fn test_fuzzy_score_optimized_exact_match() {
-        let engine = SearchEngine::new();
-        let score = engine.fuzzy_score_optimized("server", "server");
-        assert!((score - 1.0).abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn test_fuzzy_score_optimized_prefix_match() {
-        let engine = SearchEngine::new();
-        let score = engine.fuzzy_score_optimized("serv", "server");
-        assert!(score > 0.5);
-        assert!(score < 1.0);
-    }
-
-    #[test]
-    fn test_fuzzy_score_optimized_case_insensitive() {
-        let engine = SearchEngine::new();
-        let score = engine.fuzzy_score_optimized("SERVER", "server");
-        assert!((score - 1.0).abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn test_fuzzy_score_optimized_empty_strings() {
-        let engine = SearchEngine::new();
-        assert!(engine.fuzzy_score_optimized("", "server").abs() < f32::EPSILON);
-        assert!(engine.fuzzy_score_optimized("server", "").abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn test_fuzzy_score_optimized_consistency_with_original() {
-        let engine = SearchEngine::new();
-        let test_cases = vec![
-            ("server", "server"),
-            ("serv", "server"),
-            ("web", "webserver"),
-            ("xyz", "server"),
-            ("SERVER", "server"),
-        ];
-
-        for (query, target) in test_cases {
-            let original = engine.fuzzy_score(query, target);
-            let optimized = engine.fuzzy_score_optimized(query, target);
-            // Scores should be very close (within 0.1)
-            assert!(
-                (original - optimized).abs() < 0.15,
-                "Scores differ for ({}, {}): original={}, optimized={}",
-                query,
-                target,
-                original,
-                optimized
-            );
-        }
-    }
-
     // ========== Tests for debounced search engine ==========
 
     #[test]
@@ -1680,14 +1542,6 @@ mod tests {
         let engine = SearchEngine::new();
         let score = engine.fuzzy_score("сервер", "сервер");
         assert!((score - 1.0).abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn test_fuzzy_score_optimized_multibyte_does_not_panic() {
-        let engine = SearchEngine::new();
-        assert!(engine.fuzzy_score_optimized("s", "сервер") >= 0.0);
-        assert!(engine.fuzzy_score_optimized("ser", "сервер-01") >= 0.0);
-        assert!(engine.fuzzy_score_optimized("сер", "server") >= 0.0);
     }
 
     #[test]
