@@ -45,10 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`scripts/verify.sh` names the tools it could not run** — a closing "NOT CHECKED" line lists every gate skipped for a missing tool, so a green run no longer hides them
 - **Translated desktop entry** — the desktop entry now carries `Name`, `GenericName`, `Comment` and `Keywords` in every language of `po/`, merged in with `msgfmt --desktop` when the Flatpak, Snap, RPM, Debian, AppImage, `.deb`/`.rpm` release and Nix packages are built. Before, the translations were extracted into the catalogues but never reached the installed file, and only five hand-written `Comment[xx]` lines were shipped. Adds a translated `GenericName` ("Connection Manager"). (`rustconn/assets/io.github.totoshko88.RustConn.desktop`, `po/*.po`)
 - **`scripts/release.sh` validates the Nix flake** — when `nix` is installed it runs `nix flake check --no-build` and evaluates `packages.default`; without `nix` the gate is listed as skipped. `packaging/nixpkgs/package.nix` joins `PKG_FILES`, so its version is bumped by `scripts/bump-version.sh` and checked at release.
+- **Saving the connection lists no longer copies them** — every `save_*` in `ConfigManager` cloned the whole list into a wrapper just to serialize it; the wrappers now borrow (`Cow`), so a save no longer doubles the memory of a large connection list
+- **Fewer processes spawned for detection** — `virsh` (libvirt import dialog) and the `op`, `passbolt` and `pass` secret backends are found by an in-process `PATH` lookup instead of running `--version` before every secret operation
+- **Group sync applies updates by index** — `GroupSyncPlan::apply_to` looked every updated item up with a linear scan and every deletion with `Vec::contains`; it now builds an index once, so large groups no longer cost O(N·U)
+- **RDP printer discovery no longer parks the runtime** — the `lpstat` queries run in `spawn_blocking` (still bounded by the 2 s limit)
+- **`rustconn-cli monitor metrics` help** says it shows the effective monitoring configuration, not live metrics; `cluster create/edit --broadcast` is hidden and documented as the no-op it has been since 0.14.8 (still accepted)
 
 ### Removed
 
 - **Unused connection-string interner** — `StringInterner`, `interner()`, `InternerStats` and the `intern_*`/`*_interning_stats` functions are gone from `rustconn-core`: the interned strings were thrown away, so the global set only grew and took a lock on every connection add or update. (`rustconn-core/src/performance/`, `rustconn-core/src/connection/`)
+- **Unused core modules** — `rustconn_core::cache` (`Cached`, `CacheRef`, `LoadCacheObject`) and `rustconn_core::drag_drop` (`DropConfig`, `calculate_*`, `ItemType`; the GUI has its own in `sidebar`) had no callers and are gone
 
 ### Improved
 

@@ -242,7 +242,7 @@ fn metrics_view(conn: &Connection, global: &MonitoringSettings) -> MetricsView {
     }
 }
 
-/// Show monitoring metrics/config for a connection
+/// Show the effective monitoring configuration for a connection (no live metrics)
 fn cmd_monitor_metrics(
     config_path: Option<&Path>,
     name: &str,

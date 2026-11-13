@@ -55,7 +55,6 @@
 pub mod activity_monitor;
 pub mod automation;
 pub mod busy;
-pub mod cache;
 pub mod cli_download;
 pub mod cluster;
 pub mod config;
@@ -63,7 +62,6 @@ pub mod connection;
 pub mod crash_report;
 pub mod dialog_utils;
 pub mod display_geometry;
-pub mod drag_drop;
 pub mod dynamic_folder;
 pub mod embedded_client_error;
 pub mod error;
@@ -140,7 +138,6 @@ pub use automation::{
     builtin_templates, elevated_credentials_rules, templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
-pub use cache::{CacheRef, Cached, DEFAULT_CACHE_TTL_SECS, LoadCacheObject};
 pub use cli_download::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
     DOWNLOADABLE_COMPONENTS, DownloadCancellation, DownloadProgress, DownloadableComponent,
@@ -163,10 +160,6 @@ pub use connection::{
     looks_like_password_prompt, looks_like_username_prompt,
 };
 pub use display_geometry::{DesktopRequest, desktop_request_for_area};
-pub use drag_drop::{
-    DropConfig, DropPosition, ItemType, calculate_drop_position, calculate_indicator_y,
-    calculate_row_index, is_valid_drop_position,
-};
 pub use embedded_client_error::EmbeddedClientError;
 pub use error::{
     ConfigError, ConfigResult, ImportError, ProtocolError, RustConnError, SecretError,

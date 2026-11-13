@@ -1972,13 +1972,13 @@ pub enum ClusterCommands {
         #[arg(short, long)]
         connections: Option<String>,
 
-        /// Enable broadcast mode by default
-        #[arg(short, long)]
+        /// Deprecated no-op since 0.14.8 (accepted for script compatibility)
+        #[arg(short, long, hide = true)]
         broadcast: bool,
     },
 
-    /// Edit a cluster (rename or toggle broadcast)
-    #[command(about = "Edit a cluster's name or broadcast setting")]
+    /// Edit a cluster (rename)
+    #[command(about = "Rename a cluster")]
     Edit {
         /// Cluster name or ID
         name: String,
@@ -1987,8 +1987,8 @@ pub enum ClusterCommands {
         #[arg(long)]
         new_name: Option<String>,
 
-        /// Enable or disable broadcast mode (true/false)
-        #[arg(short, long)]
+        /// Deprecated no-op since 0.14.8 (accepted for script compatibility)
+        #[arg(short, long, hide = true)]
         broadcast: Option<bool>,
     },
 
@@ -2464,8 +2464,8 @@ pub enum MonitorCommands {
         name: String,
     },
 
-    /// Show monitoring metrics for a connection
-    #[command(about = "Show monitoring metrics for a connection")]
+    /// Show the effective monitoring configuration for a connection (not live metrics)
+    #[command(about = "Show the effective monitoring configuration (not live metrics)")]
     Metrics {
         /// Connection name or UUID
         name: String,
