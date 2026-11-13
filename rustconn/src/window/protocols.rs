@@ -2637,6 +2637,17 @@ fn start_telnet_connection_internal(
         );
     }
 
+    // --- Status detection: mark the sidebar "connected" once the client has
+    // printed something that is not a failure, counted from below the connect
+    // banner. A client that prints an error and exits stays on "connecting"
+    // until the exit marks it failed (same verdict as an in-place reconnect).
+    {
+        let sidebar = sidebar.clone();
+        when_established(notebook, session_id, StatusClient::Other, move || {
+            sidebar.increment_session_count(&connection_id.to_string(), session_id);
+        });
+    }
+
     // --- Auto-recording for Telnet ---
     if conn.session_recording_enabled {
         let notebook_clone = notebook.clone();
