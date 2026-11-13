@@ -239,7 +239,6 @@ proptest! {
             enabled: true,
             max_entries,
             retention_days,
-            track_quick_connect: true,
         };
 
         prop_assert!(settings.max_entries > 0);
@@ -302,13 +301,11 @@ proptest! {
         enabled in proptest::bool::ANY,
         max_entries in 100..10000_usize,
         retention_days in 7..365_u32,
-        track_quick in proptest::bool::ANY,
     ) {
         let settings = HistorySettings {
             enabled,
             max_entries,
             retention_days,
-            track_quick_connect: track_quick,
         };
 
         let json = serde_json::to_string(&settings).unwrap();
