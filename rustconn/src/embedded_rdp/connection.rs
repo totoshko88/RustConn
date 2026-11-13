@@ -827,12 +827,6 @@ impl super::EmbeddedRdpWidget {
         crate::embedded_rdp::detect::detect_wlfreerdp()
     }
 
-    /// Detects if xfreerdp is available for external mode
-    #[must_use]
-    pub fn detect_xfreerdp() -> Option<String> {
-        crate::embedded_rdp::detect::detect_xfreerdp()
-    }
-
     /// Captures the widget state an external-launch continuation needs.
     fn external_launch_context(&self, generation: u64) -> ExternalLaunchContext {
         ExternalLaunchContext {
