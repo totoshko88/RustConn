@@ -297,19 +297,6 @@ impl TemplateManagerDialog {
         );
     }
 
-    /// Gets the currently selected template
-    #[must_use]
-    pub fn get_selected_template(&self) -> Option<ConnectionTemplate> {
-        if let Some(row) = self.templates_list.selected_row()
-            && let Some(id_str) = row.widget_name().as_str().strip_prefix("template-")
-            && let Ok(id) = Uuid::parse_str(id_str)
-        {
-            let templates = self.state_templates.borrow();
-            return templates.iter().find(|t| t.id == id).cloned();
-        }
-        None
-    }
-
     /// Returns a reference to the underlying dialog
     #[must_use]
     pub const fn dialog(&self) -> &adw::Dialog {
