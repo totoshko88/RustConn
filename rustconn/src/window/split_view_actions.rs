@@ -156,6 +156,13 @@ impl PanelPlacement {
         let origin = self.origin;
         tracing::debug!(%session_id, %panel_uuid, origin, "placing session in panel");
 
+        // Never overwrite a session that already sits in the panel: the move
+        // would drop it from the layout without any message.
+        if !self.bridge.is_pane_empty(panel_uuid) {
+            tracing::warn!(%session_id, %panel_uuid, origin, "panel is not empty");
+            return false;
+        }
+
         // Refuse before anything moves — see `refuses_split_placement`.
         if refuses_split_placement(&self.notebook, session_id, origin) {
             return false;
@@ -1360,6 +1367,7 @@ fn create_split_from_tabs(
         .count();
     if placed < guests.len() {
         tracing::warn!(
+            panes = panes.len(),
             placed,
             wanted = guests.len(),
             "split-with-tabs: some tabs were not placed"

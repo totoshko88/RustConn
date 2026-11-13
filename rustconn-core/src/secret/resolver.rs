@@ -864,7 +864,7 @@ impl CredentialResolver {
             SecretBackendType::Pass => self.resolve_from_pass(connection).await,
             SecretBackendType::EncryptedFile => {
                 // Flat-key backend with no hierarchy: use the flat lookup key
-                // (symmetric with store_unified_with_hierarchy).
+                // (the stores use the same flat key).
                 let lookup_key = Self::generate_lookup_key(connection);
                 self.secret_manager.retrieve(&lookup_key).await
             }

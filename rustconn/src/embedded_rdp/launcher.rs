@@ -384,7 +384,7 @@ impl SafeFreeRdpLauncher {
         // visible in `/proc/<pid>/cmdline`.
         //
         // The exact spelling of the switch depends on the installed FreeRDP
-        // version, see [`super::detect::args_from_argument`].
+        // version, see [`super::detect::args_from_argument_for_form`].
         //
         // The RD Gateway no longer needs a separate secret here: FreeRDP
         // reuses the session credentials (`/u:`, `/d:` and the `/p:` from

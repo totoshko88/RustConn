@@ -176,14 +176,26 @@ pub fn run_balanced_splits(
 
         // The bridge now has one more pane: the new one is the UUID we do not
         // track yet.
-        let all_uuids: Vec<Uuid> = notebook
+        let (all_uuids, first_empty): (Vec<Uuid>, Option<Uuid>) = notebook
             .get_active_session_id()
-            .and_then(|active| session_bridges.borrow().get(&active).map(|b| b.pane_ids()))
+            .and_then(|active| {
+                session_bridges
+                    .borrow()
+                    .get(&active)
+                    .map(|b| (b.pane_ids(), b.first_empty_pane_uuid()))
+            })
             .unwrap_or_default();
-        let new_uuid = all_uuids
-            .iter()
-            .find(|u| !panels.contains(&Some(**u)))
-            .copied();
+        // At step 0 neither pane is tracked yet and `pane_ids()` has no stable
+        // order, so "the first untracked one" could be the original pane that
+        // holds the session. The new pane is the empty one.
+        let new_uuid = if idx == 0 {
+            first_empty
+        } else {
+            all_uuids
+                .iter()
+                .find(|u| !panels.contains(&Some(**u)))
+                .copied()
+        };
         if idx == 0 {
             // The original pane is the one that is NOT new.
             panels[0] = all_uuids.iter().find(|u| Some(**u) != new_uuid).copied();

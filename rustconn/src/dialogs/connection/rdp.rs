@@ -204,9 +204,16 @@ pub(super) fn create_rdp_options() -> (
     rdp_monitors_entry.update_property(&[gtk4::accessible::Property::Label(&i18n(
         "Monitor numbers for the external window",
     ))]);
+    rdp_monitors_entry.connect_changed(|entry| {
+        let invalid = rustconn_core::models::parse_monitor_ids(&entry.text()).is_err();
+        crate::dialogs::widgets::set_invalid(entry, invalid);
+    });
     let monitors_row = adw::ActionRow::builder()
         .title(i18n("Monitors"))
         .subtitle(monitors_row_subtitle())
+        // Connector and model names come from the display server and may hold
+        // `&` or `<`, which Pango would read as broken markup.
+        .use_markup(false)
         .build();
     monitors_row.add_suffix(&rdp_monitors_entry);
     display_group.add(&monitors_row);

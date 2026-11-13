@@ -24,7 +24,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "rustconn";
-  version = "0.24.11";
+  version = "0.25.0";
 
   src = fetchFromGitHub {
     owner = "totoshko88";

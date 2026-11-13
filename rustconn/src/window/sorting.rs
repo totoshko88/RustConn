@@ -547,8 +547,8 @@ fn move_dropped_group(
 }
 
 /// Refreshes only the virtual Trash row, keeping the rest of the tree (and the
-/// selection) as it is. For changes that touch the trash alone: emptying it, or
-/// purging an entry when its Undo toast closes.
+/// selection) as it is. For changes that touch the trash alone, such as
+/// emptying it.
 pub fn refresh_trash_row(state: &SharedAppState, sidebar: &SharedSidebar) {
     let entries = state.borrow().trash_entries();
     sidebar.set_trash_row(&entries, sidebar.trash_expanded());

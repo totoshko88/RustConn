@@ -1096,7 +1096,36 @@ pub fn append_proxy_command_destination(proxy_parts: &mut Vec<String>, jump_host
     } else {
         host.to_string()
     };
-    proxy_parts.push(destination);
+    // The parts are joined into a command that ssh runs through `sh -c`, so a
+    // destination with a shell metacharacter (an imported or synced host such as
+    // `bastion;cmd`) must stay one word, and one that starts with `-` must not
+    // be read as an ssh option.
+    if destination.starts_with('-') {
+        proxy_parts.push("--".to_string());
+    }
+    proxy_parts.push(shell_word(&destination));
+}
+
+/// `s` as one word of a `sh -c` command: unchanged when it holds only
+/// characters a shell passes through, otherwise single-quoted.
+///
+/// Use it for every value that comes from a connection, a key path or an
+/// imported host before it is joined into a `ProxyCommand`.
+#[must_use]
+pub fn shell_word(s: &str) -> String {
+    let bare = !s.is_empty()
+        && s.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || matches!(
+                    c,
+                    '@' | ':' | '.' | '/' | '-' | '_' | '%' | ',' | '=' | '+' | '[' | ']'
+                )
+        });
+    if bare {
+        s.to_string()
+    } else {
+        shell_single_quote(s)
+    }
 }
 
 /// Single-quotes `s` for safe embedding inside a `sh -c` `ProxyCommand`,
@@ -1645,7 +1674,7 @@ fn build_nested_proxy_command_inner(
     }
     if let Some(key) = identity_file {
         parts.push("-i".to_string());
-        parts.push(key.to_string());
+        parts.push(shell_word(key));
         parts.push("-o".to_string());
         parts.push("IdentitiesOnly=yes".to_string());
     }
@@ -1847,6 +1876,44 @@ mod tests {
         let mut parts = Vec::new();
         append_proxy_command_destination(&mut parts, "[fe80::1]");
         assert_eq!(parts, vec!["[fe80::1]"]);
+    }
+
+    #[test]
+    fn test_proxy_destination_with_shell_metacharacter_stays_one_word() {
+        let mut parts = Vec::new();
+        append_proxy_command_destination(&mut parts, "admin@bastion;touch /tmp/x");
+        assert_eq!(parts, vec!["'admin@bastion;touch /tmp/x'"]);
+    }
+
+    #[test]
+    fn test_proxy_destination_starting_with_dash_is_not_an_option() {
+        let mut parts = Vec::new();
+        append_proxy_command_destination(&mut parts, "-oProxyCommand=evil");
+        assert_eq!(parts, vec!["--", "-oProxyCommand=evil"]);
+    }
+
+    #[test]
+    fn test_shell_word_quotes_only_when_needed() {
+        assert_eq!(
+            shell_word("/home/u/.ssh/id_ed25519"),
+            "/home/u/.ssh/id_ed25519"
+        );
+        assert_eq!(shell_word("/home/u/my key"), "'/home/u/my key'");
+        assert_eq!(shell_word("/k/$(reboot)"), "'/k/$(reboot)'");
+        assert_eq!(shell_word("it's"), "'it'\\''s'");
+        assert_eq!(shell_word(""), "''");
+    }
+
+    #[test]
+    fn test_nested_proxy_command_quotes_identity_and_hop() {
+        let cmd = build_nested_proxy_command(
+            &["b;rm -rf x"],
+            Some("/k/my key"),
+            None,
+            HopHostKeys::UserConfig,
+        );
+        assert!(cmd.contains("-i '/k/my key'"), "{cmd}");
+        assert!(cmd.ends_with("'b;rm -rf x'"), "{cmd}");
     }
 
     #[test]

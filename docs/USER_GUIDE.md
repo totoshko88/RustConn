@@ -1,6 +1,6 @@
 # RustConn User Guide
 
-**Version 0.24.11** | GTK4/libadwaita Connection Manager for Linux
+**Version 0.25.0** | GTK4/libadwaita Connection Manager for Linux
 
 RustConn is a modern connection manager designed for Linux with Wayland-first approach. It supports SSH, RDP, VNC, SPICE, MOSH, SFTP, Telnet, Serial, Kubernetes, Web protocols and Zero Trust integrations through a native GTK4/libadwaita interface.
 
@@ -742,6 +742,8 @@ Temporary connection without saving:
 Deleted items are moved to Trash and can be restored:
 - After deleting, an "Undo" notification appears
 - Click "Undo" to restore the deleted item
+- Deleting several selected items at once also moves them to Trash; there is no "Undo" notification for that, so use the Trash row
+- Items stay in Trash, with their saved vault credentials, until you choose **Empty Trash**
 - Trash is persisted across sessions for recovery
 
 **The Trash row:** while the trash holds anything, a 🗑 **Trash** row appears at the bottom of the sidebar tree, like the Favorites group at the top. Expand it to see the deleted connections and groups.

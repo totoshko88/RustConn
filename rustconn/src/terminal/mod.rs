@@ -3499,7 +3499,7 @@ impl TerminalNotebook {
         self.resolve_cluster_pending(connection_id, session_id);
 
         // Take the callback out to avoid holding a borrow across the call —
-        // the callback may call `clear_on_tab_added()` which also borrows.
+        // the callback may set `on_tab_added` itself, which borrows it too.
         let callback = self.on_tab_added.borrow_mut().take();
         if let Some(cb) = callback {
             cb(session_id, connection_id);
@@ -3509,7 +3509,7 @@ impl TerminalNotebook {
             // is still None after the call, the callback was NOT self-clearing
             // from within (because take already emptied it), so we restore.
             // If the workspace callback wants to signal "done", it must NOT
-            // call clear_on_tab_added — instead it signals via a shared flag
+            // clear the slot — instead it signals via a shared flag
             // captured in the closure. We simply always restore here; the
             // workspace code uses an `Rc<Cell<bool>>` to stop re-firing.
             let mut slot = self.on_tab_added.borrow_mut();

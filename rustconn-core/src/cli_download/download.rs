@@ -11,8 +11,15 @@ pub(super) async fn download_with_progress(
 ) -> CliDownloadResult<Vec<u8>> {
     use futures::StreamExt;
 
+    // HTTPS only, redirects included: a redirect to http:// would let a network
+    // attacker swap a download whose checksum is not published (the
+    // `SkipLatest` components). The read timeout is per chunk, so a large
+    // archive on a slow link still completes while a stalled one fails.
     let client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::limited(10))
+        .https_only(true)
+        .connect_timeout(std::time::Duration::from_secs(30))
+        .read_timeout(std::time::Duration::from_secs(60))
         .build()
         .map_err(|e| CliDownloadError::DownloadFailed(e.to_string()))?;
 

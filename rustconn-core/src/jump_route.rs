@@ -382,17 +382,17 @@ fn tunnel_route(
         }
 
         // Pass identity file for the first hop if available
-        if let Some(ref key) = first_hop_identity {
+        if let Some(key) = first_hop_identity {
             proxy_parts.push("-i".to_string());
-            proxy_parts.push(key.to_string());
+            proxy_parts.push(ssh_tunnel::shell_word(key));
             proxy_parts.push("-o".to_string());
             proxy_parts.push("IdentitiesOnly=yes".to_string());
         }
 
         // Pass PKCS#11 provider for the first hop (token also auths the bastion)
-        if let Some(provider) = first_hop_pkcs11 {
+        if let Some(option) = first_hop_pkcs11.and_then(proxy_pkcs11_option) {
             proxy_parts.push("-o".to_string());
-            proxy_parts.push(format!("PKCS11Provider={}", provider.trim()));
+            proxy_parts.push(option);
         }
 
         // Reuse the jump host's ControlMaster socket so parallel tunnel
@@ -470,6 +470,19 @@ pub fn plain_path(path: &str) -> Option<&str> {
     path.chars()
         .all(|c| is_plain(c) || c == '/')
         .then_some(path)
+}
+
+/// The `PKCS11Provider=<path>` option for an `ssh` inside a `ProxyCommand`.
+///
+/// `None` when [`plain_path`] refuses the provider: a shell runs that command,
+/// so a provider with a space or a metacharacter is left out, as the tunnel
+/// route already does, rather than quoted twice.
+fn proxy_pkcs11_option(provider: &str) -> Option<String> {
+    let option = plain_path(provider.trim()).map(|plain| format!("PKCS11Provider={plain}"));
+    if option.is_none() {
+        tracing::warn!("PKCS#11 provider path is not passed to a shell; the jump host gets none");
+    }
+    option
 }
 
 /// The `UserKnownHostsFile=<path>` option for an `ssh` inside a `ProxyCommand`.
@@ -561,15 +574,15 @@ fn proxy_command(
     // same .pem for bastion + target).
     if offer_keys && let Some(key_path) = request.first_hop_identity.or(request.target_identity) {
         proxy_parts.push("-i".to_string());
-        proxy_parts.push(key_path.to_string());
+        proxy_parts.push(ssh_tunnel::shell_word(key_path));
         proxy_parts.push("-o".to_string());
         proxy_parts.push("IdentitiesOnly=yes".to_string());
     }
 
     // Pass PKCS#11 provider to the first hop (token also auths the bastion)
-    if let Some(provider) = request.first_hop_pkcs11 {
+    if let Some(option) = request.first_hop_pkcs11.and_then(proxy_pkcs11_option) {
         proxy_parts.push("-o".to_string());
-        proxy_parts.push(format!("PKCS11Provider={}", provider.trim()));
+        proxy_parts.push(option);
     }
 
     // Pass UserKnownHostsFile to jump host (Flatpak only)

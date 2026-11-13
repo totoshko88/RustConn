@@ -263,8 +263,10 @@ fn decrypt_entry(encoded: &str) -> SecretResult<Credentials> {
 
     let plaintext = decrypt_credential(&blob, &machine_key)
         .map_err(|e| SecretError::RetrieveFailed(format!("decryption failed: {e}")))?;
-    let stored: StoredCredentials = serde_json::from_slice(&plaintext).map_err(|e| {
-        SecretError::RetrieveFailed(format!("cannot parse decrypted credentials: {e}"))
+    // The serde error is dropped on purpose: it can quote the offending value,
+    // which here is decrypted credential text.
+    let stored: StoredCredentials = serde_json::from_slice(&plaintext).map_err(|_| {
+        SecretError::RetrieveFailed("cannot parse decrypted credentials".to_string())
     })?;
     Ok(stored.into_credentials())
 }

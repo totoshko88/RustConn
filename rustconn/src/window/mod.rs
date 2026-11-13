@@ -609,6 +609,8 @@ impl MainWindow {
                     if let Err(e) = state_mut.save_settings() {
                         tracing::warn!(?e, "Failed to save settings");
                     }
+                } else {
+                    tracing::warn!("State busy; the saved searches change was not stored");
                 }
             });
         }

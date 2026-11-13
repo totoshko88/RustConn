@@ -25,7 +25,8 @@ rules alone.
   deprecated `gtk::MessageDialog`.
 - GTK objects are not `Send`, so `tokio::spawn` will not compile against them.
   The house helpers are in `src/async_utils.rs` — `spawn_async`,
-  `spawn_async_with_callback`, `with_runtime`, `ensure_main_thread`; raw
+  `with_runtime` — and `spawn_blocking_with_callback` /
+  `spawn_blocking_with_timeout` in `src/utils.rs`; raw
   `glib::spawn_future_local` is used where no helper fits. Clone the `Rc` before
   the closure rather than holding a `Ref`/`RefMut` across an `.await`.
 - "Cannot start a runtime from within a runtime" means a nested block-on. Go

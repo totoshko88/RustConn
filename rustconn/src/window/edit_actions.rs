@@ -357,46 +357,10 @@ impl MainWindow {
         });
         window.add_action(&undo_delete_action);
 
-        // Purge-deleted action — fired when the Undo toast for a deletion
-        // dismisses without Undo having been used. This is what makes a delete
-        // permanent and removes the credential from the password vault; the
-        // trash itself is only the undo buffer (issue #263).
-        let purge_deleted_action =
-            gio::SimpleAction::new("purge-deleted", Some(glib::VariantTy::STRING));
-        let state_clone = state.clone();
-        let sidebar_clone = sidebar.clone();
-        purge_deleted_action.connect_activate(move |_, param| {
-            if let Some(param) = param
-                && let Some(param_str) = param.get::<String>()
-            {
-                // Format: "type:uuid"
-                let Some((item_type, id_str)) = param_str.split_once(':') else {
-                    return;
-                };
-                let Ok(id) = Uuid::parse_str(id_str) else {
-                    return;
-                };
-
-                // try_borrow_mut: the purge is best-effort cleanup, so a busy
-                // state is simply skipped rather than risking a BorrowMutError.
-                if let Ok(mut state_mut) = state_clone.try_borrow_mut() {
-                    match item_type {
-                        "connection" => state_mut.purge_deleted_connection(id),
-                        "group" => state_mut.purge_deleted_group(id),
-                        _ => {}
-                    }
-                    drop(state_mut);
-                    // The purged entry leaves the Trash row too.
-                    sorting::refresh_trash_row(&state_clone, &sidebar_clone);
-                }
-            }
-        });
-        window.add_action(&purge_deleted_action);
-
-        // Empty-trash action — permanently removes every entry still in the
-        // trash (and its vault credential) after a confirmation. Entries are
-        // normally purged as their Undo toast dismisses, so what remains here
-        // is what a crash or a quit during the toast left behind.
+        // Empty-trash action — permanently removes every entry in the trash
+        // (and its vault credential) after a confirmation. A deleted item stays
+        // in the trash until this runs, so the Trash row can restore it, and the
+        // vault credential survives the deletion for the same reason (issue #263).
         let empty_trash_action = gio::SimpleAction::new("empty-trash", None);
         let state_clone = state.clone();
         let sidebar_clone = sidebar.clone();
@@ -424,7 +388,12 @@ impl MainWindow {
                         tracing::warn!("Empty trash skipped: state busy");
                         return;
                     };
-                    let result = state_mut.empty_trash();
+                    // The vault credentials of the deleted items are removed on a
+                    // worker thread (about 0.7 s each with a KeePass file). The
+                    // header-bar spinner shows until it ends, while the Trash row
+                    // already reflects the emptied trash.
+                    let busy_guard = super::acquire_busy_guard();
+                    let result = state_mut.empty_trash(move || drop(busy_guard));
                     drop(state_mut);
                     // Whatever the outcome, the row must show what is left.
                     sorting::refresh_trash_row(&state, &sidebar);

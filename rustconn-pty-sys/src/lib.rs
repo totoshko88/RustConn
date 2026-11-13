@@ -166,6 +166,12 @@ pub struct PtyPair {
 /// `openpty` does not set `FD_CLOEXEC`, so both descriptors are marked
 /// close-on-exec here; otherwise any child spawned meanwhile (from any session)
 /// would inherit the master and the reader would never see a hangup.
+///
+/// The flag is set after `openpty` returns, so a child forked by another thread
+/// in that instant can still inherit the pair. This narrows the leak to that
+/// window; it does not remove it.
+// ponytail: two-call window between openpty and fcntl; fine while spawns are
+// rare. Upgrade: posix_openpt(O_CLOEXEC) + grantpt/unlockpt, no new unsafe.
 #[cfg(unix)]
 pub fn open_pty_pair() -> io::Result<PtyPair> {
     let result =
@@ -286,9 +292,19 @@ pub fn pty_wait_readable(fd: impl AsFd, timeout: std::time::Duration) -> io::Res
             }
         }
         0 => Ok(false),
-        _ if pollfd.revents & libc::POLLNVAL != 0 => Err(io::Error::from_raw_os_error(libc::EBADF)),
-        _ => Ok(pollfd.revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0),
+        _ => classify_revents(pollfd.revents),
     }
+}
+
+/// Maps the `revents` of a ready `poll(2)` result to "readable or hung up".
+///
+/// `POLLNVAL` means the descriptor is not open: an error (`EBADF`), never "not
+/// ready", which would make a reader loop spin.
+fn classify_revents(revents: libc::c_short) -> io::Result<bool> {
+    if revents & libc::POLLNVAL != 0 {
+        return Err(io::Error::from_raw_os_error(libc::EBADF));
+    }
+    Ok(revents & (libc::POLLIN | libc::POLLHUP | libc::POLLERR) != 0)
 }
 
 // ============================================================================
@@ -457,17 +473,15 @@ mod tests {
     }
 
     /// A closed descriptor is an error, not "not ready" (which would busy-loop).
+    ///
+    /// Tested on the pure mapping: polling a descriptor number that was just
+    /// closed races with parallel tests, which may be handed the same number.
     #[test]
-    fn wait_readable_reports_closed_fd_as_ebadf() {
-        let pair = open_pty_pair().expect("openpty");
-        let raw = pair.master.as_raw_fd();
-        // Borrow a stale number: close the owner first, then poll the raw value.
-        drop(pair.master);
-        // SAFETY: only used for the duration of one poll; no other thread in
-        // this test opens descriptors, and the number is merely invalid.
-        let stale = unsafe { std::os::fd::BorrowedFd::borrow_raw(raw) };
-        let err = pty_wait_readable(stale, std::time::Duration::from_millis(10))
-            .expect_err("closed fd must be an error");
+    fn closed_fd_revents_is_ebadf() {
+        let err = classify_revents(libc::POLLNVAL).expect_err("closed fd must be an error");
         assert_eq!(err.raw_os_error(), Some(libc::EBADF));
+        assert!(classify_revents(libc::POLLIN).expect("readable"));
+        assert!(classify_revents(libc::POLLHUP).expect("hung up"));
+        assert!(!classify_revents(0).expect("not ready"));
     }
 }

@@ -432,6 +432,15 @@ impl ConnectionDialogData<'_> {
                 "The KDC address is not valid. Enter a host name, host:port, or a tcp://, udp://, http:// or https:// address.",
             ));
         }
+        // RDP (1): a monitor list with a token that is not a number must not be
+        // saved, or `build_rdp_config` would drop the whole list without a word.
+        if protocol_idx == 1
+            && rustconn_core::models::parse_monitor_ids(&self.rdp_monitors_entry.text()).is_err()
+        {
+            return Err(i18n(
+                "The monitor numbers are not valid. Enter whole numbers separated by commas, for example 0,1.",
+            ));
+        }
         // RDP (1) and VNC (2) use native embedding, no client validation needed
 
         // WOL validation
@@ -1759,8 +1768,9 @@ impl ConnectionDialogData<'_> {
                 _ => rustconn_core::rdp_client::graphics::GraphicsMode::Auto,
             },
             external_display_mode,
-            // A token that is not a number is dropped here; the entry is free text
-            // and an unreadable list must not turn into a bad `/monitors:` argument.
+            // `validate` refuses a list with a token that is not a number, so the
+            // empty fallback is only reached by code that skips validation; it
+            // must not turn into a bad `/monitors:` argument.
             monitor_ids: rustconn_core::models::parse_monitor_ids(&self.rdp_monitors_entry.text())
                 .unwrap_or_default(),
             resolution,

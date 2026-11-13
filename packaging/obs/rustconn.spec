@@ -6,7 +6,7 @@
 #
 
 Name:           rustconn
-Version:        0.24.11
+Version:        0.25.0
 Release:        0
 # rpmlint caps Summary at 79 characters (summary-too-long, badness 200); the
 # protocol list belongs in %%description, which has room for all of it. Kept in
@@ -395,6 +395,22 @@ done
 %{_datadir}/icons/hicolor/*/apps/io.github.totoshko88.RustConn.*
 
 %changelog
+* Fri Nov 13 2026 Anton Isaiev <totoshko88@gmail.com> - 0.25.0-0
+- Version bump to 0.25.0
+- Added: Split with Other Tabs (#423), Monitors for an external RDP window
+- Added: rustconn-cli import reads PuTTY and mRemoteNG files
+- Added: saved searches and a Trash row in the sidebar
+- Fixed: a jump host or key path with a shell metacharacter could run a command
+- Fixed: Passbolt passphrase no longer visible in the process list
+- Fixed: CLI downloads checked against the vendor SHA256, HTTPS only
+- Fixed: sync exports owner-only and crash-safe; PTY descriptors no longer leak
+- Fixed: -f putty reads a regedit UTF-16 export
+- Fixed: the tray click raises the window on Wayland (KDE)
+- Changed: a deleted item stays in the Trash until Empty Trash
+- Changed: oo7 0.7, zbus 6; rustconn-cli --config has no -c short form
+- Removed: unused credential-resolver methods, interner, cache, drag_drop
+- Dependencies: resvg 0.50, oo7 0.7.1, ashpd 0.14, zbus 6.3.0, rustls-webpki 0.103.17
+
 * Thu Nov 12 2026 Anton Isaiev <totoshko88@gmail.com> - 0.24.11-0
 - Version bump to 0.24.11
 - Added: fallback jump hosts (PR #420, Konstantinos Patronas)

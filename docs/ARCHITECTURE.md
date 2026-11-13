@@ -1,6 +1,6 @@
 # RustConn Architecture Guide
 
-**Version 0.24.11** | Last updated: November 2026
+**Version 0.25.0** | Last updated: November 2026
 
 This document describes the internal architecture of RustConn for contributors and maintainers.
 
@@ -594,23 +594,22 @@ spawn_async(async move {
     update_ui(result);
 });
 
-// Async with callback for result handling
-spawn_async_with_callback(
-    async move { expensive_operation().await },
+// Run a tokio future on the shared runtime (async traits, channels)
+let value = with_runtime(|rt| rt.block_on(async { fetch_value().await }))?;
+
+// Blocking work on a worker thread, result handed back to the main loop
+// (`rustconn/src/utils.rs`)
+spawn_blocking_with_callback(
+    || expensive_operation(),
     |result| handle_result(result),
 );
 
-// Blocking async with timeout (for operations that must complete)
-let result = block_on_async_with_timeout(
-    async move { critical_operation().await },
+// The same with a time limit; the callback gets `None` on timeout
+spawn_blocking_with_timeout(
+    || operation_that_might_hang(),
     Duration::from_secs(30),
-)?;
-
-// Thread safety checks
-if is_main_thread() {
-    update_widget();
-}
-ensure_main_thread(|| update_widget());
+    |result| handle_result(result),
+);
 ```
 
 **When to Use What:**
@@ -618,8 +617,6 @@ ensure_main_thread(|| update_widget());
 - `spawn_blocking_with_timeout`: Operations that might hang
 - `with_runtime`: When you need tokio features (async traits, channels)
 - `spawn_async`: Non-blocking async on GTK main thread
-- `spawn_async_with_callback`: Async with result callback
-- `block_on_async_with_timeout`: Bounded blocking for critical operations
 
 ### Deferred Secret Backend Initialization
 
@@ -1396,7 +1393,7 @@ rustconn/src/
 │   ├── group_broadcast.rs # Cross-tab keystroke broadcast (GroupBroadcast, #329)
 │   └── ...                # Domain-specific window functionality
 ├── state.rs               # SharedAppState
-├── async_utils.rs         # Async helpers (spawn_async, block_on_async_with_timeout)
+├── async_utils.rs         # Async helpers (spawn_async, with_runtime)
 ├── sidebar/               # Connection tree (modular structure)
 │   ├── mod.rs             # Module exports, Sidebar struct
 │   ├── search.rs          # Search logic, predicates, history
