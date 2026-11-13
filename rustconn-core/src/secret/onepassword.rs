@@ -665,13 +665,7 @@ impl SecretBackend for OnePasswordBackend {
 
     async fn is_available(&self) -> bool {
         // Check if op CLI is installed
-        let installed = Command::new("op")
-            .env("PATH", crate::cli_download::get_extended_path())
-            .arg("--version")
-            .output()
-            .await
-            .map(|o| o.status.success())
-            .unwrap_or(false);
+        let installed = crate::which::is_available("op");
 
         if !installed {
             return false;
