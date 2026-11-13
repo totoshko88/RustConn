@@ -318,25 +318,21 @@ where
     F: FnOnce() -> T + Send + 'static,
     C: FnOnce(T) + 'static,
 {
-    let (tx, rx) = std::sync::mpsc::channel();
+    // A oneshot future instead of a 16 ms polling timer: the main loop wakes
+    // only when the worker finishes. shortcut: if the worker panics the
+    // callback is not called (its signature takes `T`, not `Option<T>`), same as
+    // before; upgrade by moving callers to `spawn_blocking_with_timeout`.
+    let (tx, rx) = tokio::sync::oneshot::channel();
 
     std::thread::spawn(move || {
-        let result = operation();
-        let _ = tx.send(result);
+        let _ = tx.send(operation());
     });
 
-    let callback = std::cell::Cell::new(Some(callback));
-    // Poll at 16ms (~60fps) for the result from the background thread
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-        match rx.try_recv() {
-            Ok(result) => {
-                if let Some(cb) = callback.take() {
-                    cb(result);
-                }
-                gtk4::glib::ControlFlow::Break
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => gtk4::glib::ControlFlow::Continue,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => gtk4::glib::ControlFlow::Break,
+    gtk4::glib::spawn_future_local(async move {
+        if let Ok(result) = rx.await {
+            callback(result);
+        } else {
+            tracing::warn!("Background operation ended without a result (panic?)");
         }
     });
 }
@@ -357,53 +353,23 @@ where
     F: FnOnce() -> T + Send + 'static,
     C: FnOnce(Option<T>) + 'static,
 {
-    let (tx, rx) = std::sync::mpsc::channel();
-    let start = std::time::Instant::now();
+    let (tx, rx) = tokio::sync::oneshot::channel();
 
     std::thread::spawn(move || {
-        let result = operation();
-        let _ = tx.send(result);
+        let _ = tx.send(operation());
     });
 
-    let callback = std::rc::Rc::new(std::cell::RefCell::new(Some(
-        Box::new(callback) as Box<dyn FnOnce(Option<T>)>
-    )));
-
-    // Poll at 16ms for result or timeout
-    gtk4::glib::timeout_add_local(std::time::Duration::from_millis(16), move || {
-        // Check if callback was already consumed
-        if callback.borrow().is_none() {
-            return gtk4::glib::ControlFlow::Break;
-        }
-
-        // Try to receive result from background thread
-        match rx.try_recv() {
-            Ok(result) => {
-                if let Some(cb) = callback.borrow_mut().take() {
-                    cb(Some(result));
-                }
-                return gtk4::glib::ControlFlow::Break;
+    gtk4::glib::spawn_future_local(async move {
+        // `Err` from the channel = the worker panicked; `Err` from the timeout
+        // = it took too long (the thread keeps running, its result is dropped).
+        match gtk4::glib::future_with_timeout(timeout, rx).await {
+            Ok(Ok(result)) => callback(Some(result)),
+            Ok(Err(_)) => callback(None),
+            Err(_) => {
+                tracing::warn!("Background operation timed out after {:?}", timeout);
+                callback(None);
             }
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                // Thread panicked or dropped sender without sending
-                if let Some(cb) = callback.borrow_mut().take() {
-                    cb(None);
-                }
-                return gtk4::glib::ControlFlow::Break;
-            }
-            Err(std::sync::mpsc::TryRecvError::Empty) => {}
         }
-
-        // Check timeout
-        if start.elapsed() > timeout {
-            tracing::warn!("Background operation timed out after {:?}", timeout);
-            if let Some(cb) = callback.borrow_mut().take() {
-                cb(None);
-            }
-            return gtk4::glib::ControlFlow::Break;
-        }
-
-        gtk4::glib::ControlFlow::Continue
     });
 }
 
@@ -829,5 +795,49 @@ mod tests {
         assert_eq!(format_bytes(1024), "1.0 KB");
         assert_eq!(format_bytes(1536), "1.5 KB");
         assert_eq!(format_bytes(1_048_576), "1.0 MB");
+    }
+
+    /// Runs `ctx` until `done` is set or a few seconds pass.
+    fn run_until(ctx: &gtk4::glib::MainContext, done: &std::rc::Rc<std::cell::Cell<bool>>) {
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !done.get() && std::time::Instant::now() < deadline {
+            ctx.iteration(false);
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+    }
+
+    #[test]
+    fn spawn_blocking_callbacks_run_on_main_context() {
+        let ctx = gtk4::glib::MainContext::new();
+        ctx.with_thread_default(|| {
+            let done = std::rc::Rc::new(std::cell::Cell::new(false));
+            let got = std::rc::Rc::new(std::cell::Cell::new(None));
+            let (d, g) = (done.clone(), got.clone());
+            spawn_blocking_with_callback(
+                || 41 + 1,
+                move |v| {
+                    g.set(Some(v));
+                    d.set(true);
+                },
+            );
+            run_until(&ctx, &done);
+            assert_eq!(got.get(), Some(42));
+
+            // A panicking worker reports `None` through the timeout variant.
+            let done = std::rc::Rc::new(std::cell::Cell::new(false));
+            let got = std::rc::Rc::new(std::cell::Cell::new(Some(0)));
+            let (d, g) = (done.clone(), got.clone());
+            spawn_blocking_with_timeout(
+                || -> i32 { panic!("worker panic (expected in test)") },
+                std::time::Duration::from_secs(3),
+                move |v| {
+                    g.set(v);
+                    d.set(true);
+                },
+            );
+            run_until(&ctx, &done);
+            assert!(done.get() && got.get().is_none());
+        })
+        .expect("set thread-default context");
     }
 }
