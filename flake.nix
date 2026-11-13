@@ -54,6 +54,10 @@
           # (Same fix as release.yml / Flatpak in 0.18.7)
           buildPhase = ''
             runHook preBuild
+            # nixpkgs' Rust hooks export AWS_LC_SYS_USE_SYSTEM=1, but no system
+            # AWS-LC is provided (only OpenSSL); build aws-lc-sys from source
+            # (cmake and clang are in nativeBuildInputs).
+            unset AWS_LC_SYS_USE_SYSTEM
             cargo build --release --frozen --offline -p rustconn
             cargo build --release --frozen --offline -p rustconn-cli --features full
             runHook postBuild
