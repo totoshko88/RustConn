@@ -68,7 +68,6 @@ mod import;
 mod kdbx_unlock;
 pub mod key_setup;
 pub mod key_unlock;
-pub mod keyboard;
 mod log_viewer;
 mod password;
 mod password_generator;

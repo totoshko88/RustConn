@@ -1442,7 +1442,6 @@ rustconn/src/
 │   │   ├── kubernetes.rs  # Kubernetes options
 │   │   ├── web.rs         # Web (browser) options
 │   │   └── zerotrust.rs   # Zero Trust provider options
-│   ├── keyboard.rs        # Keyboard navigation helpers
 │   ├── command_palette.rs # Command palette dialog (Ctrl+P)
 │   ├── wol.rs             # Wake On LAN dialog (standalone + manual entry)
 │   ├── flatpak_components.rs  # Flatpak CLI download dialog
