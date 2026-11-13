@@ -15,6 +15,10 @@ pub enum DragPayload {
 ///
 /// Returns a ContentProvider containing the serialized DragPayload
 pub fn prepare_drag_data(item: &ConnectionItem) -> Option<gdk::ContentProvider> {
+    // The virtual Trash row and what is in it are not draggable.
+    if item.id().starts_with(crate::sidebar::trash::TRASH_GROUP_ID) {
+        return None;
+    }
     let payload = if item.is_group() {
         DragPayload::Group(item.id())
     } else {

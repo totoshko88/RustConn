@@ -364,6 +364,7 @@ impl MainWindow {
         let purge_deleted_action =
             gio::SimpleAction::new("purge-deleted", Some(glib::VariantTy::STRING));
         let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
         purge_deleted_action.connect_activate(move |_, param| {
             if let Some(param) = param
                 && let Some(param_str) = param.get::<String>()
@@ -384,6 +385,9 @@ impl MainWindow {
                         "group" => state_mut.purge_deleted_group(id),
                         _ => {}
                     }
+                    drop(state_mut);
+                    // The purged entry leaves the Trash row too.
+                    sorting::refresh_trash_row(&state_clone, &sidebar_clone);
                 }
             }
         });
@@ -395,12 +399,14 @@ impl MainWindow {
         // is what a crash or a quit during the toast left behind.
         let empty_trash_action = gio::SimpleAction::new("empty-trash", None);
         let state_clone = state.clone();
+        let sidebar_clone = sidebar.clone();
         let window_weak = window.downgrade();
         empty_trash_action.connect_activate(move |_, _| {
             let Some(win) = window_weak.upgrade() else {
                 return;
             };
             let state = state_clone.clone();
+            let sidebar = sidebar_clone.clone();
             let win_for_result = win.clone();
             crate::alert::show_confirm(
                 &win,
@@ -418,7 +424,11 @@ impl MainWindow {
                         tracing::warn!("Empty trash skipped: state busy");
                         return;
                     };
-                    match state_mut.empty_trash() {
+                    let result = state_mut.empty_trash();
+                    drop(state_mut);
+                    // Whatever the outcome, the row must show what is left.
+                    sorting::refresh_trash_row(&state, &sidebar);
+                    match result {
                         Ok(()) => crate::toast::show_toast_on_window(
                             &win_for_result,
                             &crate::i18n::i18n("Trash emptied"),

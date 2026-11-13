@@ -436,6 +436,38 @@ impl AppState {
         self.connection_manager.list_connections_owned()
     }
 
+    /// Everything in the trash, for the sidebar's Trash row.
+    #[must_use]
+    pub fn trash_entries(&self) -> Vec<crate::sidebar::trash::TrashEntry> {
+        use crate::sidebar::trash::{TrashEntry, TrashKind, sort_entries};
+        let mut entries: Vec<TrashEntry> = self
+            .connection_manager
+            .list_trash_groups()
+            .into_iter()
+            .map(|g| TrashEntry {
+                kind: TrashKind::Group,
+                id: g.id,
+                name: g.name.clone(),
+                protocol: String::new(),
+                host: String::new(),
+            })
+            .collect();
+        entries.extend(
+            self.connection_manager
+                .list_trash_connections()
+                .into_iter()
+                .map(|c| TrashEntry {
+                    kind: TrashKind::Connection,
+                    id: c.id,
+                    name: c.name.clone(),
+                    protocol: crate::window::types::get_protocol_string(&c.protocol_config),
+                    host: c.host.clone(),
+                }),
+        );
+        sort_entries(&mut entries);
+        entries
+    }
+
     /// Gets connections by group
     pub fn get_connections_by_group(&self, group_id: Uuid) -> Vec<&Connection> {
         self.connection_manager.get_by_group(group_id)

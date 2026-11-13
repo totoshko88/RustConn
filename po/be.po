@@ -130,9 +130,9 @@ msgstr ""
 "{} выбрана, але яно яшчэ не можа захоўваць паролі: {}. Адкрыйце Налады, "
 "потым Сакрэты."
 
-#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1748
-#: rustconn/src/window/edit_actions.rs:1887
-#: rustconn/src/window/edit_actions.rs:1915
+#: rustconn/src/app.rs:2086 rustconn/src/window/edit_actions.rs:1758
+#: rustconn/src/window/edit_actions.rs:1897
+#: rustconn/src/window/edit_actions.rs:1925
 msgid "Failed to open URL: {}"
 msgstr "Не ўдалося адкрыць URL: {}"
 
@@ -386,7 +386,7 @@ msgstr "Абярыце хаця б адно злучэнне або задайц
 
 #: rustconn/src/dialogs/cluster.rs:297
 #: rustconn/src/dialogs/settings/ui_tab.rs:501
-#: rustconn/src/dialogs/shortcuts.rs:175 rustconn/src/sidebar_ui.rs:1255
+#: rustconn/src/dialogs/shortcuts.rs:175 rustconn/src/sidebar_ui.rs:1286
 msgid "Connections"
 msgstr "Злучэнні"
 
@@ -398,7 +398,7 @@ msgstr "Абярыце злучэнні для ўключэння ў гэты к
 msgid "Filter connections…"
 msgstr "Фільтр злучэнняў…"
 
-#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1120
+#: rustconn/src/dialogs/cluster.rs:331 rustconn/src/sidebar_ui.rs:1151
 #: rustconn/src/terminal/config.rs:292
 msgid "Select All"
 msgstr "Абраць усё"
@@ -411,7 +411,7 @@ msgstr "Зняць выбар"
 msgid "Edit Cluster"
 msgstr "Рэдагаваць кластар"
 
-#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1297
+#: rustconn/src/dialogs/cluster.rs:554 rustconn/src/sidebar_ui.rs:1328
 msgid "Manage Clusters"
 msgstr "Кіраванне кластарамі"
 
@@ -2363,7 +2363,7 @@ msgstr "Дынамічны"
 
 #: rustconn/src/dialogs/connection/kubernetes.rs:50
 #: rustconn/src/dialogs/connection_wizard/connection_page.rs:185
-#: rustconn/src/sidebar/mod.rs:960
+#: rustconn/src/sidebar/mod.rs:961
 msgid "Kubernetes"
 msgstr "Kubernetes"
 
@@ -4762,7 +4762,7 @@ msgstr "Вашы шаблоны"
 #: rustconn/src/dialogs/connection_wizard/mod.rs:460
 #: rustconn/src/dialogs/connection_wizard/protocol_page.rs:231
 #: rustconn/src/dialogs/shortcuts.rs:190 rustconn/src/sidebar_ui.rs:552
-#: rustconn/src/sidebar_ui.rs:589 rustconn/src/sidebar_ui.rs:1287
+#: rustconn/src/sidebar_ui.rs:620 rustconn/src/sidebar_ui.rs:1318
 #: rustconn/src/split_view/bridge.rs:2030 rustconn/src/window/ui.rs:257
 msgid "New Connection"
 msgstr "Новае злучэнне"
@@ -5393,7 +5393,7 @@ msgid "Failed"
 msgstr "Няўдача"
 
 #: rustconn/src/dialogs/history.rs:33 rustconn/src/dialogs/shortcuts.rs:184
-#: rustconn/src/sidebar_ui.rs:1170
+#: rustconn/src/sidebar_ui.rs:1201
 msgid "Connection History"
 msgstr "Гісторыя злучэнняў"
 
@@ -7679,7 +7679,7 @@ msgid ""
 msgstr ""
 "Гэта перазапіша бягучыя налады. Для прымянення змен патрабуецца перазапуск."
 
-#: rustconn/src/dialogs/settings/mod.rs:596
+#: rustconn/src/dialogs/settings/mod.rs:596 rustconn/src/sidebar_ui.rs:600
 #: rustconn/src/window/session_restore.rs:199
 msgid "Restore"
 msgstr "Аднавіць"
@@ -8727,7 +8727,7 @@ msgstr "Праверка… дакраніцеся да YubiKey, калі ён �
 
 #: rustconn/src/dialogs/settings/secrets_tab/mod.rs:2801
 #: rustconn/src/embedded_rdp/ui.rs:176 rustconn/src/embedded_vnc/ui.rs:342
-#: rustconn/src/sidebar/view.rs:793
+#: rustconn/src/sidebar/view.rs:823
 msgid "Connected"
 msgstr "Злучана"
 
@@ -9693,19 +9693,19 @@ msgstr "Статыстыка"
 msgid "SSH Tunnel Manager"
 msgstr "Кіраўнік тунэляў SSH"
 
-#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:590
-#: rustconn/src/sidebar_ui.rs:1091 rustconn/src/sidebar_ui.rs:1292
+#: rustconn/src/dialogs/shortcuts.rs:192 rustconn/src/sidebar_ui.rs:621
+#: rustconn/src/sidebar_ui.rs:1122 rustconn/src/sidebar_ui.rs:1323
 #: rustconn/src/window/connection_dialogs.rs:375 rustconn/src/window/ui.rs:262
 msgid "New Group"
 msgstr "Новая група"
 
-#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:588
-#: rustconn/src/sidebar_ui.rs:1310 rustconn/src/split_view/bridge.rs:2037
+#: rustconn/src/dialogs/shortcuts.rs:195 rustconn/src/sidebar_ui.rs:619
+#: rustconn/src/sidebar_ui.rs:1341 rustconn/src/split_view/bridge.rs:2037
 #: rustconn/src/window/edit_dialogs.rs:778 rustconn/src/window/ui.rs:265
 msgid "Quick Connect"
 msgstr "Хуткае злучэнне"
 
-#: rustconn/src/dialogs/shortcuts.rs:197 rustconn/src/sidebar_ui.rs:1100
+#: rustconn/src/dialogs/shortcuts.rs:197 rustconn/src/sidebar_ui.rs:1131
 msgid "Move to Group"
 msgstr "Перамясціць у групу"
 
@@ -9838,7 +9838,7 @@ msgstr "Пошук скаротаў…"
 msgid "Edit Smart Folder"
 msgstr "Рэдагаваць разумную тэчку"
 
-#: rustconn/src/dialogs/smart_folder.rs:68 rustconn/src/sidebar_ui.rs:591
+#: rustconn/src/dialogs/smart_folder.rs:68 rustconn/src/sidebar_ui.rs:622
 #: rustconn/src/smart_folder_ui.rs:69
 msgid "New Smart Folder"
 msgstr "Новая разумная папка"
@@ -10342,20 +10342,20 @@ msgstr "Фільтр па пратаколе:"
 msgid "All"
 msgstr "Усе"
 
-#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:952
+#: rustconn/src/dialogs/template_manager.rs:70 rustconn/src/sidebar/mod.rs:953
 #: rustconn/src/window/edit_group.rs:1604
 msgid "SSH"
 msgstr "SSH"
 
-#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:953
+#: rustconn/src/dialogs/template_manager.rs:71 rustconn/src/sidebar/mod.rs:954
 msgid "RDP"
 msgstr "RDP"
 
-#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:954
+#: rustconn/src/dialogs/template_manager.rs:72 rustconn/src/sidebar/mod.rs:955
 msgid "VNC"
 msgstr "VNC"
 
-#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:955
+#: rustconn/src/dialogs/template_manager.rs:73 rustconn/src/sidebar/mod.rs:956
 msgid "SPICE"
 msgstr "SPICE"
 
@@ -11893,7 +11893,7 @@ msgid "RDP session running in external window"
 msgstr "Сеанс RDP працуе ў знешнім акне"
 
 #: rustconn/src/embedded_rdp/ui.rs:185 rustconn/src/session/vnc.rs:342
-#: rustconn/src/sidebar/view.rs:804 rustconn/src/window/mod.rs:3219
+#: rustconn/src/sidebar/view.rs:834 rustconn/src/window/mod.rs:3219
 #: rustconn/src/window/remote_script.rs:209
 msgid "Connection failed"
 msgstr "Злучэнне не ўдалося"
@@ -11962,7 +11962,7 @@ msgid "No login form fields found on this page"
 msgstr "На гэтай старонцы не знойдзена палёў формы ўваходу"
 
 #: rustconn/src/embedded_web/navigation.rs:84
-#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:913
+#: rustconn/src/embedded_web/navigation.rs:85 rustconn/src/sidebar_ui.rs:944
 msgid "Back"
 msgstr "Назад"
 
@@ -12253,63 +12253,67 @@ msgstr "Не ўдалося запусціць скрыпт «{}»: {}"
 msgid "Auto-run script “{}” could not be loaded: {}"
 msgstr "Не ўдалося загрузіць скрыпт аўтазапуску «{}»: {}"
 
-#: rustconn/src/sidebar/mod.rs:161
+#: rustconn/src/sidebar/mod.rs:162
 msgid "Search… (? for help)"
 msgstr "Пошук… (? для даведкі)"
 
-#: rustconn/src/sidebar/mod.rs:165
+#: rustconn/src/sidebar/mod.rs:166
 msgid "Search connections"
 msgstr "Пошук злучэнняў"
 
-#: rustconn/src/sidebar/mod.rs:173
+#: rustconn/src/sidebar/mod.rs:174
 msgid "Search pending…"
 msgstr "Пошук у чаканні…"
 
-#: rustconn/src/sidebar/mod.rs:406
+#: rustconn/src/sidebar/mod.rs:407
 msgid "Connection list"
 msgstr "Спіс злучэнняў"
 
-#: rustconn/src/sidebar/mod.rs:956
+#: rustconn/src/sidebar/mod.rs:957
 msgid "Telnet"
 msgstr "Telnet"
 
-#: rustconn/src/sidebar/mod.rs:957
+#: rustconn/src/sidebar/mod.rs:958
 msgid "WinRM"
 msgstr "WinRM"
 
-#: rustconn/src/sidebar/mod.rs:958
+#: rustconn/src/sidebar/mod.rs:959
 msgid "Serial"
 msgstr "Паслядоўны порт"
 
-#: rustconn/src/sidebar/mod.rs:959
+#: rustconn/src/sidebar/mod.rs:960
 msgid "ZeroTrust"
 msgstr "ZeroTrust"
 
-#: rustconn/src/sidebar/mod.rs:961
+#: rustconn/src/sidebar/mod.rs:962
 msgid "Web"
 msgstr "Вэб"
 
-#: rustconn/src/sidebar/mod.rs:978
+#: rustconn/src/sidebar/mod.rs:979
 msgid "Filter by {} protocol"
 msgstr "Фільтраваць па пратаколе {}"
 
-#: rustconn/src/sidebar/mod.rs:1030 rustconn/src/sidebar/mod.rs:1048
+#: rustconn/src/sidebar/mod.rs:1031 rustconn/src/sidebar/mod.rs:1049
 msgid "Filter by protocol"
 msgstr "Фільтраваць па пратаколе"
 
-#: rustconn/src/sidebar/mod.rs:1045
+#: rustconn/src/sidebar/mod.rs:1046
 msgid "Filter by protocol (filters active)"
 msgstr "Фільтраваць па пратаколе (фільтры актыўныя)"
 
-#: rustconn/src/sidebar/mod.rs:1989
+#: rustconn/src/sidebar/mod.rs:1169
+msgid "Trash"
+msgstr "Сметніца"
+
+#: rustconn/src/sidebar/mod.rs:2066
 msgid "Open Password Vault (Active)"
 msgstr "Адкрыць сховішча пароляў (актыўнае)"
 
-#: rustconn/src/sidebar/mod.rs:1994
+#: rustconn/src/sidebar/mod.rs:2071
 msgid "Password Vault Not Found"
 msgstr "Сховішча пароляў не знойдзена"
 
-#: rustconn/src/sidebar/mod.rs:1997
+#: rustconn/src/sidebar/mod.rs:2074
 msgid "Password Vault Disabled"
 msgstr "Сховішча пароляў адключана"
 
@@ -12381,39 +12385,47 @@ msgstr "protocol:{}: Фільтр па пратаколе"
 msgid "group:{}: Search in group"
 msgstr "group:{}: Пошук у групе"
 
-#: rustconn/src/sidebar/view.rs:254 rustconn/src/sidebar/view.rs:257
+#: rustconn/src/sidebar/view.rs:265 rustconn/src/sidebar/view.rs:268
 msgid "Favorite"
 msgstr "Абранае"
 
-#: rustconn/src/sidebar/view.rs:268
+#: rustconn/src/sidebar/view.rs:279
 msgid "Has notes"
 msgstr "Мае нататкі"
 
-#: rustconn/src/sidebar/view.rs:277 rustconn/src/sidebar/view.rs:279
+#: rustconn/src/sidebar/view.rs:288 rustconn/src/sidebar/view.rs:290
 msgid "Recording session"
 msgstr "Запіс сеансу"
 
-#: rustconn/src/sidebar/view.rs:294 rustconn/src/sidebar/view.rs:296
+#: rustconn/src/sidebar/view.rs:305 rustconn/src/sidebar/view.rs:307
 msgid "Running in external window"
 msgstr "Выконваецца ў вонкавым акне"
 
-#: rustconn/src/sidebar/view.rs:313 rustconn/src/sidebar/view.rs:315
+#: rustconn/src/sidebar/view.rs:324 rustconn/src/sidebar/view.rs:326
 msgid "Part of a split view"
 msgstr "Частка падзеленага выгляду"
 
-#: rustconn/src/sidebar/view.rs:664
+#: rustconn/src/sidebar/view.rs:512
+msgid "Trash, {} deleted items"
+msgstr "Сметніца, выдаленых элементаў: {}"
+
+#: rustconn/src/sidebar/view.rs:517
+msgid "{}, deleted"
+msgstr "{}, выдалена"
+
+#: rustconn/src/sidebar/view.rs:694
 msgid "Master — synced to cloud"
 msgstr "Галоўны — сінхранізавана ў воблака"
 
-#: rustconn/src/sidebar/view.rs:666
+#: rustconn/src/sidebar/view.rs:696
 msgid "Import — synced from cloud"
 msgstr "Імпарт — сінхранізавана з воблака"
 
-#: rustconn/src/sidebar/view.rs:690
+#: rustconn/src/sidebar/view.rs:720
 msgid "Sync error: {}"
 msgstr "Памылка сінхранізацыі: {}"
 
-#: rustconn/src/sidebar/view.rs:798
+#: rustconn/src/sidebar/view.rs:828
 msgid "Connecting"
 msgstr "Злучэнне"
 
@@ -12508,127 +12520,131 @@ msgstr "Пачаць запіс"
 msgid "Stop tracking"
 msgstr "Спыніць адсочванне"
 
-#: rustconn/src/sidebar_ui.rs:593 rustconn/src/sidebar_ui.rs:1311
+#: rustconn/src/sidebar_ui.rs:606 rustconn/src/window/edit_actions.rs:417
+msgid "Empty Trash"
+msgstr "Ачысціць сметніцу"
+
+#: rustconn/src/sidebar_ui.rs:624 rustconn/src/sidebar_ui.rs:1342
 msgid "Import…"
 msgstr "Імпарт…"
 
-#: rustconn/src/sidebar_ui.rs:594 rustconn/src/sidebar_ui.rs:1312
+#: rustconn/src/sidebar_ui.rs:625 rustconn/src/sidebar_ui.rs:1343
 msgid "Export…"
 msgstr "Экспарт…"
 
-#: rustconn/src/sidebar_ui.rs:1094
+#: rustconn/src/sidebar_ui.rs:1125
 msgid "Create new group"
 msgstr "Стварыць новую групу"
 
-#: rustconn/src/sidebar_ui.rs:1103
+#: rustconn/src/sidebar_ui.rs:1134
 msgid "Move selected connections to group"
 msgstr "Перамясціць абраныя злучэнні ў групу"
 
-#: rustconn/src/sidebar_ui.rs:1110 rustconn/src/window/batch_edit.rs:46
+#: rustconn/src/sidebar_ui.rs:1141 rustconn/src/window/batch_edit.rs:46
 msgid "Batch Edit"
 msgstr "Групавое рэдагаванне"
 
-#: rustconn/src/sidebar_ui.rs:1113
+#: rustconn/src/sidebar_ui.rs:1144
 msgid "Edit selected connections together"
 msgstr "Рэдагуй выбраныя злучэнні разам"
 
-#: rustconn/src/sidebar_ui.rs:1123
+#: rustconn/src/sidebar_ui.rs:1154
 msgid "Select all connections"
 msgstr "Абраць усе злучэнні"
 
-#: rustconn/src/sidebar_ui.rs:1130
+#: rustconn/src/sidebar_ui.rs:1161
 msgid "Clear Selection"
 msgstr "Ачысціць выбар"
 
-#: rustconn/src/sidebar_ui.rs:1132
+#: rustconn/src/sidebar_ui.rs:1163
 msgid "Clear selection"
 msgstr "Ачысціць выбар"
 
-#: rustconn/src/sidebar_ui.rs:1139
+#: rustconn/src/sidebar_ui.rs:1170
 msgid "Delete Selected"
 msgstr "Выдаліць абранае"
 
-#: rustconn/src/sidebar_ui.rs:1142
+#: rustconn/src/sidebar_ui.rs:1173
 msgid "Delete selected connections"
 msgstr "Выдаліць абраныя злучэнні"
 
-#: rustconn/src/sidebar_ui.rs:1173
+#: rustconn/src/sidebar_ui.rs:1204
 msgid "View connection history"
 msgstr "Прагляд гісторыі злучэнняў"
 
-#: rustconn/src/sidebar_ui.rs:1186
+#: rustconn/src/sidebar_ui.rs:1217
 msgid "Select Connections"
 msgstr "Выбраць злучэнні"
 
-#: rustconn/src/sidebar_ui.rs:1189
+#: rustconn/src/sidebar_ui.rs:1220
 msgid "Toggle multi-select mode for connections"
 msgstr "Пераключыць рэжым множнага вылучэння злучэнняў"
 
-#: rustconn/src/sidebar_ui.rs:1199
+#: rustconn/src/sidebar_ui.rs:1230
 msgid "Sort alphabetically"
 msgstr "Сартаваць па алфавіце"
 
-#: rustconn/src/sidebar_ui.rs:1202
+#: rustconn/src/sidebar_ui.rs:1233
 msgid "Sort connections alphabetically"
 msgstr "Сартаваць злучэнні па алфавіце"
 
-#: rustconn/src/sidebar_ui.rs:1208
+#: rustconn/src/sidebar_ui.rs:1239
 msgid "Sort by recent usage"
 msgstr "Сартаваць па нядаўнім выкарыстанні"
 
-#: rustconn/src/sidebar_ui.rs:1211
+#: rustconn/src/sidebar_ui.rs:1242
 msgid "Sort connections by recent usage"
 msgstr "Сартаваць злучэнні па апошнім выкарыстанні"
 
-#: rustconn/src/sidebar_ui.rs:1217
+#: rustconn/src/sidebar_ui.rs:1248
 msgid "Open password vault"
 msgstr "Адкрыць сховішча пароляў"
 
-#: rustconn/src/sidebar_ui.rs:1221
+#: rustconn/src/sidebar_ui.rs:1252
 msgid "Open password vault for credential management"
 msgstr "Адкрыць сховішча пароляў для кіравання ўліковымі данымі"
 
-#: rustconn/src/sidebar_ui.rs:1227
+#: rustconn/src/sidebar_ui.rs:1258
 msgid "Toggle smart folders"
 msgstr "Пераключыць разумныя папкі"
 
-#: rustconn/src/sidebar_ui.rs:1230
+#: rustconn/src/sidebar_ui.rs:1261
 msgid "Show or hide smart folders panel"
 msgstr "Паказаць або схаваць панэль разумных тэчак"
 
-#: rustconn/src/sidebar_ui.rs:1265
+#: rustconn/src/sidebar_ui.rs:1296
 msgid "Search (Ctrl+F)"
 msgstr "Пошук (Ctrl+F)"
 
-#: rustconn/src/sidebar_ui.rs:1266
+#: rustconn/src/sidebar_ui.rs:1297
 msgid "Toggle search"
 msgstr "Пераключыць пошук"
 
-#: rustconn/src/sidebar_ui.rs:1289 rustconn/src/window/ui.rs:259
+#: rustconn/src/sidebar_ui.rs:1320 rustconn/src/window/ui.rs:259
 msgid "New Connection (Advanced)…"
 msgstr "Новае злучэнне (пашыранае)…"
 
-#: rustconn/src/sidebar_ui.rs:1299
+#: rustconn/src/sidebar_ui.rs:1330
 msgid "Manage Workspaces"
 msgstr "Кіраванне працоўнымі прасторамі"
 
-#: rustconn/src/sidebar_ui.rs:1302 rustconn/src/window/snippets.rs:218
+#: rustconn/src/sidebar_ui.rs:1333 rustconn/src/window/snippets.rs:218
 msgid "Manage Snippets"
 msgstr "Кіраванне фрагментамі"
 
-#: rustconn/src/sidebar_ui.rs:1303 rustconn/src/window/ui.rs:298
+#: rustconn/src/sidebar_ui.rs:1334 rustconn/src/window/ui.rs:298
 msgid "Tools"
 msgstr "Інструменты"
 
-#: rustconn/src/sidebar_ui.rs:1321
+#: rustconn/src/sidebar_ui.rs:1352
 msgid "Sort Alphabetically"
 msgstr "Сартаваць па алфавіце"
 
-#: rustconn/src/sidebar_ui.rs:1324
+#: rustconn/src/sidebar_ui.rs:1355
 msgid "Sort by Recent Use"
 msgstr "Сартаваць па апошнім выкарыстанні"
 
-#: rustconn/src/sidebar_ui.rs:1327
+#: rustconn/src/sidebar_ui.rs:1358
 msgid "Connection list menu"
 msgstr "Меню спіса злучэнняў"
 
@@ -13119,7 +13135,7 @@ msgid "Show Window"
 msgstr "Паказаць акно"
 
 #: rustconn/src/tray.rs:271 rustconn/src/tray.rs:639
-#: rustconn/src/window/sorting.rs:200
+#: rustconn/src/window/sorting.rs:204
 msgid "Favorites"
 msgstr "Абраныя"
 
@@ -13585,7 +13601,7 @@ msgstr ""
 
 #: rustconn/src/window/credentials.rs:1050
 #: rustconn/src/window/credentials.rs:1286
-#: rustconn/src/window/edit_actions.rs:2341
+#: rustconn/src/window/edit_actions.rs:2351
 msgid "Connection failed. Host unreachable."
 msgstr "Злучэнне не ўдалося. Хост недасяжны."
 
@@ -13629,76 +13645,72 @@ msgstr "Не ўдалося перамясціць сеанс назад у га
 msgid "Item restored"
 msgstr "Элемент адноўлены"
 
-#: rustconn/src/window/edit_actions.rs:407
+#: rustconn/src/window/edit_actions.rs:413
 msgid "Empty trash?"
 msgstr "Ачысціць сметніцу?"
 
-#: rustconn/src/window/edit_actions.rs:409
+#: rustconn/src/window/edit_actions.rs:415
 msgid "Deleted items will be removed permanently. This cannot be undone."
 msgstr ""
 "Выдаленыя элементы будуць выдалены назаўсёды. Гэта дзеянне нельга адмяніць."
 
-#: rustconn/src/window/edit_actions.rs:411
-msgid "Empty Trash"
-msgstr "Ачысціць сметніцу"
-
-#: rustconn/src/window/edit_actions.rs:424
+#: rustconn/src/window/edit_actions.rs:434
 msgid "Trash emptied"
 msgstr "Сметніцу ачышчана"
 
-#: rustconn/src/window/edit_actions.rs:432
+#: rustconn/src/window/edit_actions.rs:442
 msgid "Failed to empty trash: {}"
 msgstr "Не ўдалося ачысціць сметніцу: {}"
 
-#: rustconn/src/window/edit_actions.rs:531
+#: rustconn/src/window/edit_actions.rs:541
 msgid "No Wake On LAN configured. Edit the connection to set a MAC address."
 msgstr "Wake On LAN не наладжаны. Адрэдагуйце злучэнне, каб задаць MAC-адрас."
 
-#: rustconn/src/window/edit_actions.rs:559
+#: rustconn/src/window/edit_actions.rs:569
 msgid "Wake On LAN sent to {} — waiting for host to come online…"
 msgstr "Wake On LAN адпраўлены на {} — чакаем, пакуль хост стане даступным…"
 
-#: rustconn/src/window/edit_actions.rs:600
+#: rustconn/src/window/edit_actions.rs:610
 msgid "{} is online — connecting…"
 msgstr "{} у сетцы — злучэнне…"
 
-#: rustconn/src/window/edit_actions.rs:615
+#: rustconn/src/window/edit_actions.rs:625
 msgid "{} did not come online after WoL"
 msgstr "{} не з'явіўся ў сетцы пасля WoL"
 
-#: rustconn/src/window/edit_actions.rs:627
+#: rustconn/src/window/edit_actions.rs:637
 msgid "Failed to send Wake On LAN packet. Check network permissions."
 msgstr "Не ўдалося адправіць пакет Wake On LAN. Праверце сеткавыя дазволы."
 
-#: rustconn/src/window/edit_actions.rs:662
+#: rustconn/src/window/edit_actions.rs:672
 msgid "Checking if {} is online…"
 msgstr "Праверка, ці {} у сетцы…"
 
-#: rustconn/src/window/edit_actions.rs:693
+#: rustconn/src/window/edit_actions.rs:703
 msgid "{} is online"
 msgstr "{} у сетцы"
 
-#: rustconn/src/window/edit_actions.rs:708
+#: rustconn/src/window/edit_actions.rs:718
 msgid "{} did not come online within timeout"
 msgstr "{} не з'явіўся ў сетцы за адведзены час"
 
-#: rustconn/src/window/edit_actions.rs:715
+#: rustconn/src/window/edit_actions.rs:725
 msgid "Host check failed: {}"
 msgstr "Праверка хоста не ўдалася: {}"
 
-#: rustconn/src/window/edit_actions.rs:859
+#: rustconn/src/window/edit_actions.rs:869
 msgid "This connection type cannot host a SOCKS tunnel"
 msgstr "Гэты тып злучэння не падтрымлівае SOCKS-тунэль"
 
-#: rustconn/src/window/edit_actions.rs:880
+#: rustconn/src/window/edit_actions.rs:890
 msgid "application is busy"
 msgstr "праграма занятая"
 
-#: rustconn/src/window/edit_actions.rs:883
+#: rustconn/src/window/edit_actions.rs:893
 msgid "the SSH connection it tunnels through is gone"
 msgstr "SSH-злучэнне, праз якое ідзе тунель, знікла"
 
-#: rustconn/src/window/edit_actions.rs:1017
+#: rustconn/src/window/edit_actions.rs:1027
 msgid ""
 "The SOCKS proxy password variable ‘{}’ is not secret, so it was not used. "
 "Mark it as secret in Global Variables."
@@ -13706,28 +13718,28 @@ msgstr ""
 "Пераменная пароля проксі SOCKS ‘{}’ не сакрэтная, таму яна не выкарыстана. "
 "Пазначце яе як сакрэтную ў Глабальных зменных."
 
-#: rustconn/src/window/edit_actions.rs:1023
+#: rustconn/src/window/edit_actions.rs:1033
 msgid "The SOCKS proxy password variable ‘{}’ has no value"
 msgstr "Пераменная пароля проксі SOCKS ‘{}’ не мае значэння"
 
-#: rustconn/src/window/edit_actions.rs:1030
+#: rustconn/src/window/edit_actions.rs:1040
 msgid "Could not start the SOCKS relay: {}"
 msgstr "Не ўдалося запусціць рэтранслятар SOCKS: {}"
 
-#: rustconn/src/window/edit_actions.rs:1283
-#: rustconn/src/window/edit_actions.rs:1417
-#: rustconn/src/window/edit_actions.rs:1676
-#: rustconn/src/window/edit_actions.rs:1785
+#: rustconn/src/window/edit_actions.rs:1293
+#: rustconn/src/window/edit_actions.rs:1427
+#: rustconn/src/window/edit_actions.rs:1686
+#: rustconn/src/window/edit_actions.rs:1795
 #: rustconn/src/window/protocols.rs:2385
 msgid "Could not open the SSH tunnel: {}"
 msgstr "Не атрымалася адкрыць SSH-тунель: {}"
 
-#: rustconn/src/window/edit_actions.rs:1296
-#: rustconn/src/window/edit_actions.rs:1396
+#: rustconn/src/window/edit_actions.rs:1306
+#: rustconn/src/window/edit_actions.rs:1406
 msgid "Starting the tunnel…"
 msgstr "Тунэль запускаецца…"
 
-#: rustconn/src/window/edit_actions.rs:1356
+#: rustconn/src/window/edit_actions.rs:1366
 msgid ""
 "The tunnelled browser command ‘{}’ can't use a proxy; opening the embedded "
 "browser instead. Set a Chromium-based browser or Firefox in Settings to use "
@@ -13737,7 +13749,7 @@ msgstr ""
 "адкрываецца ўбудаваны браўзер. Каб карыстацца знешнім браўзерам, задайце ў "
 "наладах браўзер на аснове Chromium або Firefox."
 
-#: rustconn/src/window/edit_actions.rs:1360
+#: rustconn/src/window/edit_actions.rs:1370
 msgid ""
 "The tunnelled browser command ‘{}’ is not a Chromium-based browser. Only "
 "Chromium-family browsers can be proxied through the tunnel; set a chromium/"
@@ -13747,7 +13759,7 @@ msgstr ""
 "Толькі браўзеры сямейства Chromium можна праксіраваць праз тунэль; задайце "
 "каманду chromium/chrome/brave/vivaldi/edge ў наладах."
 
-#: rustconn/src/window/edit_actions.rs:1366
+#: rustconn/src/window/edit_actions.rs:1376
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH; opening the "
 "embedded browser instead. Check the command in Settings, or clear it to auto-"
@@ -13757,7 +13769,7 @@ msgstr ""
 "браўзер. Праверце каманду ў наладах або ачысціце яе для аўтавызначэння "
 "браўзера."
 
-#: rustconn/src/window/edit_actions.rs:1370
+#: rustconn/src/window/edit_actions.rs:1380
 msgid ""
 "The tunnelled browser command ‘{}’ was not found on PATH. Check the command "
 "in Settings, or clear it to auto-detect a browser."
@@ -13765,7 +13777,7 @@ msgstr ""
 "Каманда тунэльнага браўзера ‘{}’ не знойдзена ў PATH. Праверце каманду ў "
 "наладах або ачысціце яе для аўтавызначэння браўзера."
 
-#: rustconn/src/window/edit_actions.rs:1376
+#: rustconn/src/window/edit_actions.rs:1386
 msgid ""
 "No Chromium-based browser found; opening the embedded browser instead. "
 "Install a Chromium-based browser to tunnel an external one."
@@ -13773,7 +13785,7 @@ msgstr ""
 "Браўзер на аснове Chromium не знойдзены; адкрываю вбудаваны браўзер. "
 "Усталюйце браўзер на аснове Chromium, каб тунеляваць знешні."
 
-#: rustconn/src/window/edit_actions.rs:1379
+#: rustconn/src/window/edit_actions.rs:1389
 msgid ""
 "No Chromium-based browser found. Install a Chromium-based browser, or use a "
 "build with the embedded browser, to open a tunnelled browser."
@@ -13782,26 +13794,26 @@ msgstr ""
 "Chromium або скарыстайце зборку з вбудаваным браўзерам, каб адкрыць тунэльны "
 "браўзер."
 
-#: rustconn/src/window/edit_actions.rs:1487
-#: rustconn/src/window/edit_actions.rs:1510
-#: rustconn/src/window/edit_actions.rs:1563
+#: rustconn/src/window/edit_actions.rs:1497
+#: rustconn/src/window/edit_actions.rs:1520
+#: rustconn/src/window/edit_actions.rs:1573
 msgid "Failed to open browser: {}"
 msgstr "Не атрымалася адкрыць браўзер: {}"
 
-#: rustconn/src/window/edit_actions.rs:1505
+#: rustconn/src/window/edit_actions.rs:1515
 msgid "Opened a tunnelled browser"
 msgstr "Тунэльны браўзер адкрыты"
 
-#: rustconn/src/window/edit_actions.rs:1540
+#: rustconn/src/window/edit_actions.rs:1550
 msgid "{} (tunnel)"
 msgstr "{} (тунель)"
 
-#: rustconn/src/window/edit_actions.rs:1554
-#: rustconn/src/window/edit_actions.rs:1716
+#: rustconn/src/window/edit_actions.rs:1564
+#: rustconn/src/window/edit_actions.rs:1726
 msgid "Could not open the page: {}"
 msgstr "Не атрымалася адкрыць старонку: {}"
 
-#: rustconn/src/window/edit_actions.rs:1810
+#: rustconn/src/window/edit_actions.rs:1820
 msgid ""
 "This browser can't use a proxy, so the page was not opened. Use a Chromium-"
 "based browser, Firefox or the embedded browser."
@@ -13809,12 +13821,12 @@ msgstr ""
 "Гэты браўзер не можа выкарыстоўваць проксі, таму старонка не адкрыта. "
 "Скарыстайцеся браўзерам на аснове Chromium, Firefox або ўбудаваным браўзерам."
 
-#: rustconn/src/window/edit_actions.rs:1876
-#: rustconn/src/window/edit_actions.rs:1929
+#: rustconn/src/window/edit_actions.rs:1886
+#: rustconn/src/window/edit_actions.rs:1939
 msgid "Opened in browser"
 msgstr "Адкрыта ў браўзеры"
 
-#: rustconn/src/window/edit_actions.rs:1901
+#: rustconn/src/window/edit_actions.rs:1911
 msgid ""
 "No browser that can use a proxy was found, so the page was not opened. "
 "Install Chromium or Firefox, or use the embedded browser."
@@ -13823,25 +13835,25 @@ msgstr ""
 "адкрыта. Усталюйце Chromium або Firefox ці скарыстайцеся ўбудаваным "
 "браўзерам."
 
-#: rustconn/src/window/edit_actions.rs:2078
+#: rustconn/src/window/edit_actions.rs:2088
 msgid "SSH agent not running. Run 'eval $(ssh-agent)' and retry."
 msgstr "Агент SSH не запушчаны. Выканайце «eval $(ssh-agent)» і паўтарыце."
 
-#: rustconn/src/window/edit_actions.rs:2089
+#: rustconn/src/window/edit_actions.rs:2099
 msgid "Could not check whether the SSH agent holds the key. Opening mc anyway."
 msgstr ""
 "Не ўдалося праверыць, ці мае агент SSH гэты ключ. mc усё роўна будзе адкрыты."
 
-#: rustconn/src/window/edit_actions.rs:2095
+#: rustconn/src/window/edit_actions.rs:2105
 msgid "SSH key not available"
 msgstr "SSH-ключ недаступны"
 
-#: rustconn/src/window/edit_actions.rs:2116 rustconn/src/window/mc_launch.rs:62
+#: rustconn/src/window/edit_actions.rs:2126 rustconn/src/window/mc_launch.rs:62
 msgid "SFTP is only available for SSH connections."
 msgstr "SFTP даступны толькі для SSH-злучэнняў."
 
-#: rustconn/src/window/edit_actions.rs:2145
-#: rustconn/src/window/edit_actions.rs:2442
+#: rustconn/src/window/edit_actions.rs:2155
+#: rustconn/src/window/edit_actions.rs:2452
 msgid ""
 "External file managers cannot access SSH agent in "
 "Flatpak.                          Enable \"SFTP via mc\" in Settings for "
@@ -13851,18 +13863,18 @@ msgstr ""
 "Flatpak.                          Уключыце \"SFTP via mc\" у Наладах для "
 "надзейнага доступу."
 
-#: rustconn/src/window/edit_actions.rs:2161
-#: rustconn/src/window/edit_actions.rs:2460
+#: rustconn/src/window/edit_actions.rs:2171
+#: rustconn/src/window/edit_actions.rs:2470
 msgid "Jump host detected. Opening SFTP via mc instead of the file manager."
 msgstr ""
 "Выяўлены прамежкавы гост. SFTP адкрываецца праз mc замест файлавага "
 "менеджара."
 
-#: rustconn/src/window/edit_actions.rs:2188
+#: rustconn/src/window/edit_actions.rs:2198
 msgid "Opening SFTP…"
 msgstr "Адкрыццё SFTP…"
 
-#: rustconn/src/window/edit_actions.rs:2235
+#: rustconn/src/window/edit_actions.rs:2245
 msgid "SSH agent not running — file manager may not authenticate."
 msgstr ""
 "Агент SSH не запушчаны — файлавы менеджар можа не прайсці аўтэнтыфікацыю."
@@ -15373,13 +15385,13 @@ msgstr "Спачатку адкрыйце тэрмінальны сеанс пе
 msgid "Enter Variable Values"
 msgstr "Увядзіце значэнні зменных"
 
-#: rustconn/src/window/sorting.rs:477 rustconn/src/window/sorting.rs:498
+#: rustconn/src/window/sorting.rs:485 rustconn/src/window/sorting.rs:506
 msgid ""
 "Imported folders are managed by sync and their structure cannot be changed"
 msgstr ""
 "Імпартаваныя папкі кіруюцца сінхранізацыяй, іх структуру нельга змяніць"
 
-#: rustconn/src/window/sorting.rs:509
+#: rustconn/src/window/sorting.rs:517
 msgid "Cannot move a folder into one of its own subfolders"
 msgstr "Немагчыма перамясціць папку ў адну з яе ўкладзеных папак"
 

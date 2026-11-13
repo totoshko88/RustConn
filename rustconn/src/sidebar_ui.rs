@@ -577,6 +577,37 @@ pub fn show_context_menu_for_item(
     show_popover(widget, window, &items, x, y, activation);
 }
 
+/// Shows the context menu of the virtual Trash row (`row_id` is the Trash group
+/// itself) or of one trashed item under it.
+///
+/// Restore reuses `win.undo-delete`, the action behind the Undo toast, so the
+/// restore logic is not duplicated.
+pub fn show_trash_context_menu(
+    widget: &impl IsA<gtk4::Widget>,
+    x: f64,
+    y: f64,
+    row_id: &str,
+    activation: MenuActivation,
+) {
+    let Some(root) = widget.root() else { return };
+    let Some(window) = root.downcast_ref::<gtk4::ApplicationWindow>() else {
+        return;
+    };
+
+    let mut items: Vec<ContextMenuItem> = Vec::new();
+    if let Some((kind, id)) = crate::sidebar::trash::parse_trash_item_id(row_id) {
+        items.push(ContextMenuItem::action_with_target(
+            &i18n("Restore"),
+            "undo-delete",
+            &crate::sidebar::trash::restore_target(kind, id).to_variant(),
+        ));
+        items.push(ContextMenuItem::Separator);
+    }
+    items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
+
+    show_popover(widget, window, &items, x, y, activation);
+}
+
 /// Shows the context menu for empty space in the sidebar
 pub fn show_empty_space_context_menu(widget: &impl IsA<gtk4::Widget>, x: f64, y: f64) {
     let Some(root) = widget.root() else { return };
