@@ -98,7 +98,6 @@ rustconn/src/dialogs/export.rs
 rustconn/src/dialogs/import/mod.rs
 rustconn/src/dialogs/import/sources.rs
 rustconn/src/dialogs/history.rs
-rustconn/src/dialogs/keyboard.rs
 rustconn/src/dialogs/key_setup.rs
 rustconn/src/dialogs/kdbx_unlock.rs
 rustconn/src/dialogs/portable_unlock.rs
