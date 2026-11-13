@@ -2464,8 +2464,8 @@ pub enum MonitorCommands {
         name: String,
     },
 
-    /// Show monitoring metrics for a connection
-    #[command(about = "Show monitoring metrics for a connection")]
+    /// Show the effective monitoring configuration for a connection (not live metrics)
+    #[command(about = "Show the effective monitoring configuration (not live metrics)")]
     Metrics {
         /// Connection name or UUID
         name: String,
