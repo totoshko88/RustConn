@@ -18,23 +18,23 @@
 ---
 
 RustConn is a cross-platform connection orchestrator with a GTK4/libadwaita interface.
-It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, Serial, Kubernetes, and Zero Trust connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
+It brings SSH, RDP, VNC, SPICE, MOSH, Telnet, WinRM, Serial, Kubernetes, Zero Trust and Web connections under one roof — with embedded Rust clients where possible and seamless integration with external tools where needed.
 Runs on Linux (GTK4/libadwaita), macOS, FreeBSD, and Windows via WSLg.
 
 <p align="center">
-  <a href="https://youtu.be/0bSsloXYU7Y"><img src="https://img.youtube.com/vi/0bSsloXYU7Y/sddefault.jpg" alt="Demo" width="640"></a>
+  <a href="https://youtu.be/mml9Pkntzoc"><img src="https://img.youtube.com/vi/mml9Pkntzoc/hqdefault.jpg" alt="RustConn 0.25.0 demo video on YouTube" width="640"></a>
 </p>
 
 ## Screenshots
 
 | | |
 |---|---|
-| ![Welcome screen](rustconn/assets/screenshots/welcome_light.png) | ![Embedded RDP session](rustconn/assets/screenshots/rdp_session_dark.png) |
-| ![Connection wizard](rustconn/assets/screenshots/connection_wizard_light.png) | ![SFTP file browser](rustconn/assets/screenshots/sftp_mc_light.png) |
-| ![Split view](rustconn/assets/screenshots/split_view_dark.png) | ![Tab overview](rustconn/assets/screenshots/tab_overview_light.png) |
-| ![Settings](rustconn/assets/screenshots/settings_dark.png) | ![Embedded web browser](rustconn/assets/screenshots/web_light.png) |
+| ![RDP, WinRM and a local shell in split view](rustconn/assets/screenshots/split_view_light.png) | ![Welcome page](rustconn/assets/screenshots/welcome_light.png) |
+| ![Tab Overview](rustconn/assets/screenshots/tab_overview_light.png) | ![Connection wizard](rustconn/assets/screenshots/connection_wizard_light.png) |
+| ![Connection editor](rustconn/assets/screenshots/connection_editor_light.png) | ![Search filtered by protocol](rustconn/assets/screenshots/filters_light.png) |
+| ![Split view, dark style](rustconn/assets/screenshots/split_view_dark.png) | ![Interface preferences, dark style](rustconn/assets/screenshots/settings_dark.png) |
 
-More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.totoshko88.RustConn).
+The screenshots show a live demo lab: Windows Server over RDP and WinRM, Linux over SSH and AWS SSM, and a k3s cluster on KVM.
 
 ## Features
 
@@ -42,19 +42,19 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 
 | Category | Details |
 |----------|---------|
-| **File Transfer** | SFTP file browser via system file manager (sftp:// URI, D-Bus portal) |
-| **Organization** | Groups, tags, templates, custom icons (emoji/GTK), connection history & statistics |
+| **File Transfer** | SFTP in the system file manager (sftp:// URI, D-Bus portal) or in Midnight Commander inside a tab; drag and drop files onto sessions |
+| **Organization** | Nested groups (duplicate or move a whole folder), tags, templates, custom icons (emoji/GTK), saved searches, a Trash that keeps deleted items until you empty it, connection history & statistics |
 | **Monitoring** | Remote host metrics bar (CPU, RAM, disk, network, load, system info) — agentless, per-connection toggle |
 | **Import** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, SecureCRT, PuTTY/KiTTY (.reg), mRemoteNG (confCons.xml), Remote Desktop Manager, RDP files (.rdp), virt-viewer (.vv), libvirt (XML + daemon), CSV, native (.rcn) |
 | **Export** | Asbru-CM, Remmina, SSH config, Ansible inventory, Royal TS, MobaXterm, SecureCRT, CSV, RDP files (.rdp), native (.rcn) — passwords are never exported |
 | **Security** | KeePassXC (KDBX), libsecret, macOS Keychain, Bitwarden CLI, 1Password CLI, Passbolt CLI, Pass (passwordstore.org), script credentials; encrypted-file fallback with no keyring required (machine-bound or a portable file for use across machines); hardware-token SSH auth (FIDO2 security keys, PKCS#11 / YubiKey / smart cards); FIDO2 passkey redirection for RDP sessions |
-| **Terminal** | Split terminals, command snippets, text highlighting rules, session recording, custom terminal themes, tab overview, tab pinning, OSC 133 shell integration (prompt navigation + failed-command marker) |
+| **Terminal** | Split view that mixes terminals with embedded RDP sessions (split a whole set of tabs in one step), command snippets, text highlighting rules, session recording, custom terminal themes, tab overview, tab pinning, OSC 133 shell integration (prompt navigation + failed-command marker) |
 | **Session Windows** | Move any session (SSH, Telnet, Serial, Kubernetes, MOSH, Zero Trust, embedded RDP/VNC/Web) to its own window and back with `Ctrl+Shift+M` — per-monitor fullscreen, never reconnects |
-| **Automation** | Expect rules, key sequences, pre/post-connect tasks, elevated credentials (sudo/su injection), output filters (ChromaTerm), cluster & ad-hoc broadcast, session reconnect, Wake-on-LAN |
-| **Networking** | Jump hosts (bastions) picked per connection, per group, or as a global default — honoured by SSH, SFTP, RDP, VNC, and SPICE, with multi-hop chains and a per-connection Direct override; **Open Browser via Tunnel** — one right-click on an SSH host raises a SOCKS proxy and opens a browser (embedded or external Chromium) routed through it, to reach host-only web UIs; Multipath TCP for mobility & bandwidth aggregation (SSH/RDP/VNC), network-change auto-reconnect, port knocking, fwknop SPA; one-click QUIC (quicssh) ProxyCommand preset for SSH over QUIC (connection migration and UDP NAT traversal; quicssh installed separately) |
+| **Automation** | Run Local Script on many hosts at once (bash over SSH, PowerShell over WinRM), expect rules, key sequences, pre/post-connect tasks, elevated credentials (sudo/su injection), output filters (ChromaTerm), cluster & ad-hoc broadcast, session reconnect, Wake-on-LAN |
+| **Networking** | Jump hosts (bastions) picked per connection, per group, or as a global default — honoured by SSH, SFTP, RDP, VNC, SPICE and WinRM, with multi-hop chains, fallback jump hosts tried in order, and a per-connection Direct override; **Open Browser via Tunnel** — one right-click on an SSH host raises a SOCKS proxy and opens a browser (embedded or external Chromium) routed through it, to reach host-only web UIs; Multipath TCP for mobility & bandwidth aggregation (SSH/RDP/VNC), network-change auto-reconnect, port knocking, fwknop SPA; one-click QUIC (quicssh) ProxyCommand preset for SSH over QUIC (connection migration and UDP NAT traversal; quicssh installed separately) |
 | **Workflow** | Smart folders, SSH port forwarding, visual SSH tunnel builder, workspace profiles (save/restore open sessions, including split layout and divider ratio), settings backup/restore, .rdp file association |
 | **Cloud Sync** | Synchronize connections via shared cloud directory (Google Drive, Syncthing, Nextcloud, Dropbox); group sync with Master/Import access model; simple sync with UUID-based merge |
-| **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections, import from every file format above (the libvirt daemon is GUI-only) and export, snippets, groups, templates, clusters, WoL, shell completions, man page, OpenH264 codec download; optional secret and client-launch commands behind features |
+| **CLI** | `rustconn-cli` — headless management: list/add/update/delete connections (also in bulk from YAML/JSON), duplicate into numbered ranges, import from every file format above (the libvirt daemon is GUI-only) and export, run local scripts on SSH/WinRM hosts, snippets, groups, templates, clusters, WoL, shell completions, man page, OpenH264 codec download; optional secret and client-launch commands behind features. Changes made with the CLI appear in a running window and are never overwritten by it |
 | **Languages** | English, plus translations into Azerbaijani, Belarusian, Czech, Danish, German, Spanish, French, Italian, Georgian, Kazakh, Dutch, Polish, Portuguese, Slovak, Swedish, Ukrainian, Uzbek, Vietnamese and Simplified Chinese |
 
 ### Protocol support
@@ -66,7 +66,7 @@ More screenshots on the [Flathub listing](https://flathub.org/apps/io.github.tot
 | VNC | vnc-rs / vncviewer fallback | Embedded + external |
 | SPICE | remote-viewer / virt-viewer | External |
 | Telnet | VTE terminal | Embedded |
-| WinRM | VTE terminal, external `evil-winrm` | Embedded |
+| WinRM | evil-winrm via VTE | External |
 | Serial | picocom via VTE | External (bundled in Flatpak) |
 | Kubernetes | kubectl exec via VTE | External |
 | MOSH | mosh via VTE | External |

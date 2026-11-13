@@ -56,71 +56,43 @@
     <color type="primary" scheme_preference="dark">#613583</color>
   </branding>
   <screenshots>
-    <!-- Light theme -->
+    <!-- Light style -->
     <screenshot type="default">
-      <caption>Welcome screen with quick actions</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/welcome_light.png</image>
+      <caption>RDP, WinRM and a local shell side by side in split view</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/split_view_light.png</image>
     </screenshot>
     <screenshot>
-      <caption>Connection Wizard with 4-column protocol selection</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/connection_wizard_light.png</image>
+      <caption>Welcome page with features, shortcuts and import formats</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/welcome_light.png</image>
     </screenshot>
     <screenshot>
-      <caption>Connection Wizard creating a new custom command connection</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/wizard_new_custom_light.png</image>
+      <caption>Tab Overview of twenty open sessions</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/tab_overview_light.png</image>
     </screenshot>
     <screenshot>
-      <caption>Tab Overview grid for navigating open sessions</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/tab_overview_light.png</image>
+      <caption>Connection Wizard listing every supported protocol</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/connection_wizard_light.png</image>
     </screenshot>
     <screenshot>
-      <caption>SFTP file browser via Midnight Commander</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/sftp_mc_light.png</image>
+      <caption>Connection editor with network mode and fallback jump hosts</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/connection_editor_light.png</image>
     </screenshot>
     <screenshot>
-      <caption>Web connection with embedded browser</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/web_light.png</image>
+      <caption>Sidebar search filtered by protocol</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/filters_light.png</image>
     </screenshot>
-    <screenshot>
-      <caption>Protocol filter bar</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/filters_light.png</image>
-    </screenshot>
-    <screenshot>
-      <caption>Settings with terminal and credential options</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/settings_light.png</image>
-    </screenshot>
-    <!-- Dark theme -->
+    <!-- Dark style -->
     <screenshot environment="gnome:dark">
-      <caption>Welcome screen with quick actions</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/welcome_dark.png</image>
+      <caption>Split view in the dark style</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/split_view_dark.png</image>
     </screenshot>
     <screenshot environment="gnome:dark">
-      <caption>Connection Wizard with 4-column protocol selection</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/connection_wizard_dark.png</image>
+      <caption>Tab Overview in the dark style</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/tab_overview_dark.png</image>
     </screenshot>
     <screenshot environment="gnome:dark">
-      <caption>Tab Overview grid for navigating open sessions</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/tab_overview_dark.png</image>
-    </screenshot>
-    <screenshot environment="gnome:dark">
-      <caption>Split terminal view with multiple SSH sessions</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/split_view_dark.png</image>
-    </screenshot>
-    <screenshot environment="gnome:dark">
-      <caption>Embedded RDP session with toolbar</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/rdp_session_dark.png</image>
-    </screenshot>
-    <screenshot environment="gnome:dark">
-      <caption>Web connection in dark theme</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/web_dark.png</image>
-    </screenshot>
-    <screenshot environment="gnome:dark">
-      <caption>Protocol filter bar</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/filters_dark.png</image>
-    </screenshot>
-    <screenshot environment="gnome:dark">
-      <caption>Settings with terminal and credential options</caption>
-      <image type="source" width="2000" height="1400">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/settings_dark.png</image>
+      <caption>Interface preferences in the dark style</caption>
+      <image type="source" width="3488" height="2440">https://raw.githubusercontent.com/totoshko88/RustConn/main/rustconn/assets/screenshots/settings_dark.png</image>
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/totoshko88/RustConn</url>
