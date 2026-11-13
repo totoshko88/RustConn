@@ -179,6 +179,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 } else {
                     rustconn_core::models::RdpDisplayMode::FitScreen
                 },
+                monitor_ids: vec![],
                 resolution,
                 color_depth,
                 audio_redirect,

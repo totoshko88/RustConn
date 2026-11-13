@@ -158,6 +158,7 @@ fn arb_rdp_config() -> impl Strategy<Value = RdpConfig> {
                 mptcp,
             )| {
                 RdpConfig {
+                    monitor_ids: vec![],
                     // Tied to the generated resolution so the round-trip sees a
                     // non-default value whenever there is a resolution to carry.
                     external_display_mode: if resolution.is_some() {

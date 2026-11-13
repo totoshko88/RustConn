@@ -582,6 +582,7 @@ impl SafeFreeRdpLauncher {
             password: None,
             domain: config.domain.clone(),
             display_mode: config.external_display_mode,
+            monitor_ids: config.external_monitor_ids.clone(),
             resolution: config.external_resolution.clone(),
             scale_override: config.scale_override,
             system_scale_percent: config.system_scale_percent,
