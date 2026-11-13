@@ -55,7 +55,6 @@
 pub mod activity_monitor;
 pub mod automation;
 pub mod busy;
-pub mod cache;
 pub mod cli_download;
 pub mod cluster;
 pub mod config;
@@ -140,7 +139,6 @@ pub use automation::{
     builtin_templates, elevated_credentials_rules, templates_for_protocol,
 };
 pub use busy::{BusyGuard, BusyStack};
-pub use cache::{CacheRef, Cached, DEFAULT_CACHE_TTL_SECS, LoadCacheObject};
 pub use cli_download::{
     ChecksumPolicy, CliDownloadError, CliDownloadResult, ComponentCategory,
     DOWNLOADABLE_COMPONENTS, DownloadCancellation, DownloadProgress, DownloadableComponent,
