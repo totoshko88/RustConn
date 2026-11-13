@@ -418,7 +418,7 @@ impl NavigationToolbar {
     /// Sets up the menu button's popover menu with browser actions.
     ///
     /// Menu items: Copy URL, Open in System Browser, separator,
-    /// Zoom Reset (100%), separator, Clear Session Data.
+    /// Zoom Reset (100%), separator, Clear Session Data… (asks first).
     fn setup_menu(&self, web_view: &webkit6::WebView, home_url: &Rc<RefCell<String>>) {
         use gtk4::gio;
 
@@ -438,7 +438,10 @@ impl NavigationToolbar {
         menu.append_section(None, &zoom_section);
 
         let session_section = gio::Menu::new();
-        session_section.append(Some(&i18n("Clear Session Data")), Some("web.clear-session"));
+        session_section.append(
+            Some(&i18n("Clear Session Data…")),
+            Some("web.clear-session"),
+        );
         menu.append_section(None, &session_section);
 
         self.menu_button.set_menu_model(Some(&menu));
@@ -489,23 +492,27 @@ impl NavigationToolbar {
         });
         action_group.add_action(&zoom_reset_action);
 
-        // Clear session data action
+        // Clear session data action. It signs the user out of the site and
+        // cannot be undone, so it asks first (GNOME HIG: the menu item ends in
+        // an ellipsis, the confirmation is destructive and defaults to Cancel).
         let wv_clear = web_view.clone();
         let clear_action = gio::SimpleAction::new("clear-session", None);
         clear_action.connect_activate(move |_, _| {
-            if let Some(session) = wv_clear.network_session()
-                && let Some(data_manager) = session.website_data_manager()
-            {
-                data_manager.clear(
-                    webkit6::WebsiteDataTypes::all(),
-                    glib::TimeSpan(0), // timespan: 0 = all time
-                    gtk4::gio::Cancellable::NONE,
-                    |_| {},
-                );
-                crate::toast::show_info_toast_on_active_window(&crate::i18n::i18n(
-                    "Session data cleared",
-                ));
-            }
+            let wv = wv_clear.clone();
+            crate::alert::show_confirm(
+                &wv_clear,
+                &i18n("Clear session data?"),
+                &i18n(
+                    "Cookies, saved logins and other site data of this connection will be erased, and you will have to sign in again. This cannot be undone.",
+                ),
+                &i18n("Clear"),
+                true,
+                move |confirmed| {
+                    if confirmed {
+                        clear_session_data(&wv);
+                    }
+                },
+            );
         });
         action_group.add_action(&clear_action);
 
@@ -518,6 +525,22 @@ impl NavigationToolbar {
 impl Default for NavigationToolbar {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Erases every kind of website data (cookies, logins, caches) of the view's
+/// network session, for all time.
+fn clear_session_data(web_view: &webkit6::WebView) {
+    if let Some(session) = web_view.network_session()
+        && let Some(data_manager) = session.website_data_manager()
+    {
+        data_manager.clear(
+            webkit6::WebsiteDataTypes::all(),
+            glib::TimeSpan(0), // timespan: 0 = all time
+            gtk4::gio::Cancellable::NONE,
+            |_| {},
+        );
+        crate::toast::show_info_toast_on_active_window(&i18n("Session data cleared"));
     }
 }
 

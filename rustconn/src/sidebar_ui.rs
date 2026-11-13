@@ -599,7 +599,8 @@ pub fn show_context_menu_for_item(
 /// itself) or of one trashed item under it.
 ///
 /// Restore reuses `win.undo-delete`, the action behind the Undo toast, so the
-/// restore logic is not duplicated.
+/// restore logic is not duplicated. Delete Permanently… (`win.purge-trash-item`)
+/// asks before removing that one entry; the Trash row offers Empty Trash.
 pub fn show_trash_context_menu(
     widget: &impl IsA<gtk4::Widget>,
     x: f64,
@@ -620,8 +621,19 @@ pub fn show_trash_context_menu(
             &crate::sidebar::trash::restore_target(kind, id).to_variant(),
         ));
         items.push(ContextMenuItem::Separator);
+        items.push(
+            ContextMenuItem::action_with_target(
+                &i18n("Delete Permanently…"),
+                "purge-trash-item",
+                &crate::sidebar::trash::restore_target(kind, id).to_variant(),
+            )
+            .destructive(),
+        );
+    } else {
+        // The Trash row itself. A trashed item does not offer Empty Trash: two
+        // destructive items side by side invite the wrong one.
+        items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
     }
-    items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
 
     show_popover(widget, window, &items, x, y, activation);
 }

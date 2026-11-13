@@ -65,6 +65,19 @@ pub fn restore_target(kind: TrashKind, id: Uuid) -> String {
     format!("{}:{id}", kind.as_str())
 }
 
+/// Splits a `"type:uuid"` action target made by [`restore_target`], which
+/// `win.purge-trash-item` takes as well; `None` for anything else.
+#[must_use]
+pub fn parse_item_target(target: &str) -> Option<(TrashKind, Uuid)> {
+    let (kind, id) = target.split_once(':')?;
+    let kind = match kind {
+        "connection" => TrashKind::Connection,
+        "group" => TrashKind::Group,
+        _ => return None,
+    };
+    Some((kind, Uuid::parse_str(id).ok()?))
+}
+
 /// Whether the Trash row is shown: only while there is something in it.
 #[must_use]
 pub const fn row_visible(entries: &[TrashEntry]) -> bool {
@@ -123,6 +136,25 @@ mod tests {
             format!("connection:{id}")
         );
         assert_eq!(restore_target(TrashKind::Group, id), format!("group:{id}"));
+    }
+
+    #[test]
+    fn item_target_round_trips_and_rejects_other_strings() {
+        let id = Uuid::new_v4();
+        for kind in [TrashKind::Connection, TrashKind::Group] {
+            assert_eq!(
+                parse_item_target(&restore_target(kind, id)),
+                Some((kind, id))
+            );
+        }
+        assert_eq!(parse_item_target(&id.to_string()), None);
+        assert_eq!(parse_item_target(&format!("other:{id}")), None);
+        assert_eq!(parse_item_target("connection:not-a-uuid"), None);
+        // A sidebar row ID is not an action target.
+        assert_eq!(
+            parse_item_target(&trash_item_id(TrashKind::Connection, id)),
+            None
+        );
     }
 
     #[test]

@@ -562,11 +562,24 @@ impl ConnectionManager {
 
     /// Restores a connection from trash
     ///
+    /// If its group is gone for good (purged from the trash), the connection is
+    /// restored at the root level, as [`Self::restore_group`] does for a
+    /// missing parent: a `group_id` that names no group is listed nowhere in
+    /// the sidebar. A group that is still in the trash is kept: the connection
+    /// reappears when the group is restored, with its group path, and so with
+    /// the vault key its password is stored under.
+    ///
     /// # Errors
     ///
     /// Returns an error if the connection is not in trash.
     pub fn restore_connection(&mut self, id: Uuid) -> ConfigResult<()> {
-        if let Some((conn, _)) = self.trash_connections.remove(&id) {
+        if let Some((mut conn, _)) = self.trash_connections.remove(&id) {
+            if let Some(group_id) = conn.group_id
+                && !self.groups.contains_key(&group_id)
+                && !self.trash_groups.contains_key(&group_id)
+            {
+                conn.group_id = None;
+            }
             self.connections.insert(id, conn);
             self.is_sorted = false;
             self.persist_connections()?;
@@ -2595,6 +2608,101 @@ mod tests {
         assert!(manager.purge_trash_group(group_id).unwrap());
         assert!(manager.get_trash_group(group_id).is_none());
         assert!(!manager.purge_trash_group(group_id).unwrap());
+    }
+
+    /// Delete Permanently… on a cascade-deleted group leaves its connections in
+    /// the trash. Restoring one must bring it back at the root, not under a
+    /// group id that no longer exists (the sidebar would list it nowhere).
+    #[tokio::test]
+    async fn restore_connection_after_its_group_was_purged_lands_at_root() {
+        let (mut manager, _temp) = create_test_manager();
+
+        let group_id = manager.create_group("Doomed".to_string()).unwrap();
+        let conn_id = manager
+            .create_connection(
+                "Child".to_string(),
+                "child.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+        manager
+            .move_connection_to_group(conn_id, Some(group_id))
+            .unwrap();
+        manager.delete_group_cascade(group_id).unwrap();
+        assert_eq!(
+            manager
+                .get_trash_connection(conn_id)
+                .and_then(|c| c.group_id),
+            Some(group_id)
+        );
+
+        assert!(manager.purge_trash_group(group_id).unwrap());
+        manager.restore_connection(conn_id).unwrap();
+
+        let restored = manager.get_connection(conn_id).unwrap();
+        assert_eq!(restored.group_id, None);
+        assert!(manager.get_ungrouped().iter().any(|c| c.id == conn_id));
+    }
+
+    /// Restoring a child before its still-trashed group must keep the group:
+    /// moving it to the root would also drop the group path from its vault
+    /// key, and its saved password could no longer be found.
+    #[tokio::test]
+    async fn restore_connection_before_its_trashed_group_keeps_the_group() {
+        let (mut manager, _temp) = create_test_manager();
+
+        let group_id = manager.create_group("Trashed".to_string()).unwrap();
+        let conn_id = manager
+            .create_connection(
+                "Child".to_string(),
+                "child.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+        manager
+            .move_connection_to_group(conn_id, Some(group_id))
+            .unwrap();
+        manager.delete_group_cascade(group_id).unwrap();
+
+        manager.restore_connection(conn_id).unwrap();
+        assert_eq!(
+            manager.get_connection(conn_id).unwrap().group_id,
+            Some(group_id)
+        );
+
+        manager.restore_group(group_id).unwrap();
+        assert!(manager.get_group(group_id).is_some());
+        assert_eq!(
+            manager.get_connection(conn_id).unwrap().group_id,
+            Some(group_id)
+        );
+    }
+
+    #[tokio::test]
+    async fn restore_connection_keeps_a_live_group() {
+        let (mut manager, _temp) = create_test_manager();
+
+        let group_id = manager.create_group("Alive".to_string()).unwrap();
+        let conn_id = manager
+            .create_connection(
+                "Child".to_string(),
+                "child.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+        manager
+            .move_connection_to_group(conn_id, Some(group_id))
+            .unwrap();
+        manager.delete_connection(conn_id).unwrap();
+        manager.restore_connection(conn_id).unwrap();
+
+        assert_eq!(
+            manager.get_connection(conn_id).unwrap().group_id,
+            Some(group_id)
+        );
     }
 
     #[tokio::test]
