@@ -32,6 +32,7 @@
 
 pub mod cache;
 pub mod command_palette;
+pub mod saved;
 
 use std::borrow::Cow;
 use std::collections::HashMap;

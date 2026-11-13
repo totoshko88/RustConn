@@ -277,6 +277,10 @@ pub use search::cache::SearchCache;
 pub use search::command_palette::{
     CommandPaletteAction, PaletteItem, PaletteMode, builtin_commands, parse_palette_input,
 };
+pub use search::saved::{
+    MAX_SAVED_SEARCH_NAME_CHARS, MAX_SAVED_SEARCHES, SavedSearch, SavedSearchError,
+    add_saved_search, remove_saved_search, rename_saved_search,
+};
 pub use search::{
     ConnectionSearchResult, DebouncedSearchEngine, MatchHighlight, SearchEngine, SearchError,
     SearchFilter, SearchQuery, SearchResult, benchmark,

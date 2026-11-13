@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`rustconn-cli import` reads PuTTY and mRemoteNG files** — `-f putty` takes a PuTTY / KiTTY `.reg` Registry export and `-f mremoteng` takes an mRemoteNG `confCons.xml`, through the same importers the GUI uses, so the README's import list is now true for the CLI too. (`rustconn-cli/src/cli.rs`, `rustconn-cli/src/commands/export_import.rs`, `docs/CLI_REFERENCE.md`)
+- **Saved searches in the sidebar** — the Filter menu now lists named searches: **Save current search…** stores the search text together with the ticked protocols, a click applies it (the same text in the search field, so the same list as typing it), and pencil / bin buttons rename or delete it. Kept in the settings file (`ui.saved_searches`, up to 50), not in `connections.toml`; older versions ignore the key. (`rustconn-core/src/search/saved.rs`, `rustconn/src/sidebar/saved_searches.rs`, `docs/USER_GUIDE.md`)
 - **CI runs the ignored GTK tests** — new `gui-tests` job executes all 18 under Xvfb, one process per test (`scripts/run-ignored-gui-tests.sh`)
 - **CI launches the GUI headlessly** — new `gui-smoke` job runs `rustconn --version` and a 10 s start under Xvfb, failing on a panic or early exit (`scripts/gui-smoke.sh`)
 - **CI lints the RPM spec** — new `rpm-spec` job runs `rpmspec -P` and `rpmlint`; the filtered warnings are documented in `packaging/obs/rustconn.rpmlint.toml`

@@ -1117,6 +1117,10 @@ pub struct UiSettings {
     /// Search history for sidebar (persisted across sessions)
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub search_history: Vec<String>,
+    /// Named sidebar searches (query + protocol filters), applied with one click.
+    /// Kept here, not in `connections.toml`; older builds ignore the unknown key.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub saved_searches: Vec<crate::search::saved::SavedSearch>,
     /// Action to perform on application startup
     #[serde(default)]
     pub startup_action: StartupAction,
@@ -1412,6 +1416,7 @@ impl Default for UiSettings {
             expanded_groups: std::collections::HashSet::new(),
             session_restore: SessionRestoreSettings::default(),
             search_history: Vec::new(),
+            saved_searches: Vec::new(),
             startup_action: StartupAction::default(),
             show_welcome_on_startup: true,
             reveal_session_toolbar_on_hover: true,

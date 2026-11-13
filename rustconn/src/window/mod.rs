@@ -599,7 +599,19 @@ impl MainWindow {
         // Load persisted search history
         with_state(&state, |s| {
             sidebar.load_search_history(&s.settings().ui.search_history);
+            sidebar.load_saved_searches(&s.settings().ui.saved_searches);
         });
+        {
+            let state_for_saved = state.clone();
+            sidebar.connect_saved_searches_changed(move |items| {
+                if let Ok(mut state_mut) = state_for_saved.try_borrow_mut() {
+                    state_mut.settings_mut().ui.saved_searches = items.to_vec();
+                    if let Err(e) = state_mut.save_settings() {
+                        tracing::warn!(?e, "Failed to save settings");
+                    }
+                }
+            });
+        }
 
         // Create global color pool shared across all split containers
         // This ensures different split containers get different colors
