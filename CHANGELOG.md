@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **RDP printer discovery no longer parks the runtime** — the `lpstat` queries run in `spawn_blocking` (still bounded by the 2 s limit)
 - **`rustconn-cli monitor metrics` help** says it shows the effective monitoring configuration, not live metrics; `cluster create/edit --broadcast` is hidden and documented as the no-op it has been since 0.14.8 (still accepted)
 - **Fewer main-loop wake-ups** — `spawn_blocking_with_callback` / `spawn_blocking_with_timeout` (68 call sites) and three start-up waits (tray creation, Bitwarden auto-unlock, secret-backend probe) now wait on a one-shot future instead of a 16 / 50 / 100 ms polling timer.
+- **Sidebar search no longer deep-clones every group per keystroke** — `SearchEngine::search_refs` and `DebouncedSearchEngine::search_debounced` take `&[&ConnectionGroup]`; `search` keeps its signature. (`rustconn-core/src/search/mod.rs`, `rustconn/src/window/mod.rs`)
 
 ### Removed
 

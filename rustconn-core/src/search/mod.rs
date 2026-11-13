@@ -433,6 +433,19 @@ impl SearchEngine {
         connections: &[&Connection],
         groups: &[ConnectionGroup],
     ) -> Vec<ConnectionSearchResult> {
+        let group_refs: Vec<&ConnectionGroup> = groups.iter().collect();
+        self.search_refs(query, connections, &group_refs)
+    }
+
+    /// Same as [`Self::search`], but takes groups by reference so callers
+    /// that already hold `&ConnectionGroup` need no deep clone.
+    #[must_use]
+    pub fn search_refs(
+        &self,
+        query: &SearchQuery,
+        connections: &[&Connection],
+        groups: &[&ConnectionGroup],
+    ) -> Vec<ConnectionSearchResult> {
         let _span = info_span!(
             span_names::SEARCH_EXECUTE,
             query = %query.text,
@@ -448,7 +461,7 @@ impl SearchEngine {
 
         // Index groups by id once: group scoring/filtering is O(1) per
         // connection instead of a linear scan (was O(connections × groups)).
-        let group_map: HashMap<Uuid, &ConnectionGroup> = groups.iter().map(|g| (g.id, g)).collect();
+        let group_map: HashMap<Uuid, &ConnectionGroup> = groups.iter().map(|g| (g.id, *g)).collect();
 
         let mut results: Vec<ConnectionSearchResult> = connections
             .iter()
@@ -910,7 +923,7 @@ impl DebouncedSearchEngine {
         &self,
         query: &SearchQuery,
         connections: &[&Connection],
-        groups: &[ConnectionGroup],
+        groups: &[&ConnectionGroup],
     ) -> Option<Vec<ConnectionSearchResult>> {
         // Store the query for potential deferred execution
         if let Ok(mut last) = self.last_query.lock() {
@@ -930,7 +943,7 @@ impl DebouncedSearchEngine {
             }
 
             // Execute search
-            let results = self.engine.search(query, connections, groups);
+            let results = self.engine.search_refs(query, connections, groups);
 
             // Cache the results
             {
@@ -1247,6 +1260,21 @@ mod tests {
             score < 0.5,
             "scattered subsequence must rank below a substring"
         );
+    }
+
+    #[test]
+    fn test_search_refs_matches_search() {
+        let engine = SearchEngine::new();
+        let connections = vec![
+            create_test_connection("web-server", "10.0.0.1", ProtocolType::Ssh),
+            create_test_connection("database", "10.0.0.2", ProtocolType::Ssh),
+        ];
+        let group = ConnectionGroup::new("web".to_string());
+        let query = SearchQuery::with_text("web");
+        let owned = engine.search(&query, &refs(&connections), std::slice::from_ref(&group));
+        let borrowed = engine.search_refs(&query, &refs(&connections), &[&group]);
+        assert!(!owned.is_empty());
+        assert_eq!(owned.len(), borrowed.len());
     }
 
     #[test]

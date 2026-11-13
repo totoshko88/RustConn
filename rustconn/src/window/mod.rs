@@ -2585,7 +2585,7 @@ impl MainWindow {
         // returns borrowed `&Connection`s, so the search runs on references —
         // no per-keystroke deep clone of every connection.
         let connections: Vec<&rustconn_core::models::Connection> = state_ref.list_connections();
-        let groups: Vec<_> = state_ref.list_groups().iter().cloned().cloned().collect();
+        let groups = state_ref.list_groups();
 
         // Protocol filter syntax: a single name (protocol:rdp, proto:ssh, p:vnc)
         // or an OR-list (protocols:ssh,mosh). Both go straight to a direct
