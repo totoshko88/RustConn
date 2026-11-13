@@ -591,6 +591,7 @@ fn arb_full_settings() -> impl Strategy<Value = AppSettings> {
                         expanded_groups: std::collections::HashSet::new(),
                         session_restore: SessionRestoreSettings::default(),
                         search_history: Vec::new(),
+                        saved_searches: Vec::new(),
                         startup_action: rustconn_core::config::StartupAction::default(),
                         show_welcome_on_startup: true,
                         reveal_session_toolbar_on_hover: true,

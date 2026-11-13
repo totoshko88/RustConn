@@ -25,6 +25,7 @@ pub use crate::sidebar_types::{
 // Submodules
 pub mod drag_drop;
 pub mod filter;
+pub mod saved_searches;
 pub mod search;
 pub mod view;
 
@@ -79,6 +80,8 @@ pub struct ConnectionSidebar {
 
     /// Search history
     search_history: Rc<RefCell<Vec<String>>>,
+    /// Saved searches section of the Filter popover
+    saved_searches: saved_searches::SavedSearchesSection,
     /// Search history popover
     history_popover: gtk4::Popover,
     /// Drop indicator for drag-and-drop visual feedback
@@ -193,11 +196,12 @@ impl ConnectionSidebar {
         // permanent protocol pill buttons. Its popover holds one GtkCheckButton
         // per protocol; toggling a checkbox drives the SAME filtering mechanism
         // (`search::update_search_with_filters`) the old pills used.
-        let (protocol_filter_menu, protocol_filter_checks) = Self::create_protocol_filter_menu(
-            &search_entry,
-            &active_protocol_filters,
-            &programmatic_flag,
-        );
+        let (protocol_filter_menu, protocol_filter_checks, saved_searches) =
+            Self::create_protocol_filter_menu(
+                &search_entry,
+                &active_protocol_filters,
+                &programmatic_flag,
+            );
         search_box.append(&protocol_filter_menu);
 
         // Sidebar as a proper panel: an AdwToolbarView whose TOP BAR is the
@@ -832,6 +836,7 @@ impl ConnectionSidebar {
             group_ops_mode,
 
             search_history,
+            saved_searches,
             history_popover,
             drop_indicator,
             scrolled_window,
@@ -936,6 +941,7 @@ impl ConnectionSidebar {
     ) -> (
         gtk4::MenuButton,
         Rc<RefCell<std::collections::HashMap<String, gtk4::CheckButton>>>,
+        saved_searches::SavedSearchesSection,
     ) {
         // Protocol key paired with its translatable label. The key, lowercased,
         // becomes the `protocol:`/`protocols:` query (see
@@ -1009,6 +1015,9 @@ impl ConnectionSidebar {
         }
 
         let popover = gtk4::Popover::new();
+        let saved = saved_searches::SavedSearchesSection::new(search_entry, &popover);
+        list_box.append(&gtk4::Separator::new(Orientation::Horizontal));
+        list_box.append(saved.widget());
         popover.set_child(Some(&list_box));
 
         menu_button.set_icon_name(crate::icon_render::theme_icon_or(
@@ -1022,7 +1031,7 @@ impl ConnectionSidebar {
         ))]);
         Self::sync_filter_indicator(&menu_button, false);
 
-        (menu_button, checks)
+        (menu_button, checks, saved)
     }
 
     /// Shows on the Filter button whether any protocol filter is on.
@@ -1738,6 +1747,19 @@ impl ConnectionSidebar {
         current.clear();
         current.extend(history.iter().cloned());
         current.truncate(MAX_SEARCH_HISTORY);
+    }
+
+    /// Loads saved searches from persisted settings
+    pub fn load_saved_searches(&self, items: &[rustconn_core::SavedSearch]) {
+        self.saved_searches.set_items(items);
+    }
+
+    /// Registers the persistence callback; it gets the full list after each change
+    pub fn connect_saved_searches_changed<F: Fn(&[rustconn_core::SavedSearch]) + 'static>(
+        &self,
+        f: F,
+    ) {
+        self.saved_searches.connect_changed(f);
     }
 
     /// Saves the current tree state before starting a search

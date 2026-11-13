@@ -1794,6 +1794,7 @@ impl SettingsDialog {
                 ui.window_maximized = cur.ui.window_maximized;
                 ui.expanded_groups = cur.ui.expanded_groups.clone();
                 ui.search_history = cur.ui.search_history.clone();
+                ui.saved_searches = cur.ui.saved_searches.clone();
                 // Retired switches (0.23): no row, no effect — keep whatever
                 // the file already holds rather than rewriting it.
                 ui.color_tabs_by_protocol = cur.ui.color_tabs_by_protocol;

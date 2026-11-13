@@ -1041,6 +1041,7 @@ pub fn collect_ui_settings(
             max_age_hours: max_age_row.value().max(0.0) as u32,
         },
         search_history: Vec::new(), // Preserve existing history from current settings
+        saved_searches: Vec::new(), // Preserved by the caller, like the history
         startup_action,
         // Retired settings with no row any more; the caller copies the stored
         // values back so a save never rewrites what an older build left.

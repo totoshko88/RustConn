@@ -170,6 +170,27 @@ Filter connections by protocol from the **Filter** menu button in the search row
 - Clearing the search field, or closing the search row, resets the filters and
   unticks every box
 
+#### Saved searches
+
+The **Filter** menu also keeps your saved searches. A saved search is a name plus
+the exact text of the search field, so it includes the protocols you ticked, any
+`#tag`, `group:` or free text.
+
+- **Save** — type or tick what you want, open the **Filter** menu and choose
+  **Save current search…**, then enter a name. The button is greyed out while the
+  search field is empty. Names are unique (case is ignored), up to 64 characters;
+  you can keep up to 50.
+- **Apply** — click its name. The text goes back into the search field, so the
+  list is exactly what typing it would give.
+- **Rename / Delete** — the pencil and bin buttons on the row. Deleting asks first
+  and never touches your connections.
+- Everything is keyboard reachable (Tab / Enter); each button has a screen-reader
+  label. A saved search is not refreshed when you later change the tags or groups
+  it names — it simply runs the text again.
+- Saved searches are stored in the settings file (`ui.saved_searches`), not in
+  `connections.toml`, so Simple Sync does not carry them to another device and
+  older versions of RustConn still open your connections and settings.
+
 ### Password Vault Button
 
 The Password Vault button lives in the sidebar's bottom toolbar and shows
