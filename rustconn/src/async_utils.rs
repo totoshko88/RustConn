@@ -73,36 +73,6 @@ where
     ctx.spawn_local(future);
 }
 
-/// Spawns an async task and calls a callback with the result.
-///
-/// This is useful when you need to process the result of an async operation.
-///
-/// # Arguments
-/// * `future` - The async task to run
-/// * `callback` - Called with the result on the main thread
-///
-/// # Example
-/// ```ignore
-/// spawn_async_with_callback(
-///     async { fetch_connections().await },
-///     |connections| {
-///         update_sidebar(connections);
-///     }
-/// );
-/// ```
-pub fn spawn_async_with_callback<F, T, C>(future: F, callback: C)
-where
-    F: Future<Output = T> + 'static,
-    T: 'static,
-    C: FnOnce(T) + 'static,
-{
-    let ctx = glib::MainContext::default();
-    ctx.spawn_local(async move {
-        let result = future.await;
-        callback(result);
-    });
-}
-
 /// Gets or creates the thread-local tokio runtime and executes a closure with it.
 ///
 /// **Warning**: this blocks the current thread. Call it only from worker

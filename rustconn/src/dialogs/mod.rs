@@ -53,7 +53,6 @@ pub(crate) fn rdp_keyboard_hook_label(
     }
 }
 
-mod adw_dialogs;
 mod ask_prompt;
 mod backend_missing;
 mod cluster;
@@ -96,7 +95,6 @@ mod workspace;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub use adw_dialogs::*;
 pub use ask_prompt::{show_ask_dialog, show_macro_ask_dialog};
 pub use backend_missing::{BackendMissingResponse, show_backend_missing_dialog};
 pub use cluster::{ClusterCallback, ClusterDialog, ClusterListDialog, ClusterSummary};

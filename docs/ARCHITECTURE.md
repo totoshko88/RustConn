@@ -1362,7 +1362,7 @@ window.set_content(Some(&toolbar_view));
 ### Toast Notifications
 
 ```rust
-// rustconn/src/dialogs/adw_dialogs.rs
+// rustconn/src/toast.rs (see plain_toast)
 pub fn show_toast(overlay: &adw::ToastOverlay, message: &str) {
     let toast = adw::Toast::builder()
         .title(message)
