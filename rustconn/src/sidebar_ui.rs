@@ -603,7 +603,7 @@ pub fn show_trash_context_menu(
         ));
         items.push(ContextMenuItem::Separator);
     }
-    items.push(ContextMenuItem::action(&i18n("Empty Trash…"), "empty-trash").destructive());
+    items.push(ContextMenuItem::action(&i18n("Empty Trash"), "empty-trash").destructive());
 
     show_popover(widget, window, &items, x, y, activation);
 }
