@@ -1447,6 +1447,18 @@ mod gtk_tests {
             .and_downcast::<gtk4::ScrolledWindow>()
             .expect("the menu sits in a scrolled window");
         let content = scroller.child().expect("viewport");
+        // The Trash row's menu is the single "Empty Trash" item: no separator
+        // without an item on both sides of it.
+        let page = content
+            .first_child()
+            .and_downcast::<gtk4::Stack>()
+            .and_then(|st| st.visible_child())
+            .expect("menu page");
+        assert!(
+            page.first_child().is_some_and(|c| c.is::<Button>())
+                && page.first_child() == page.last_child(),
+            "the Trash row menu must hold exactly one item and no separator"
+        );
         let natural = content.measure(Orientation::Vertical, -1).1;
         assert_eq!(
             scroller.height(),
