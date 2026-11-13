@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`packaging/obs/rustconn.spec` macros in comments and `%changelog`** — `%description`, `%prep`, `%build`, `%find_lang`, `%check` and `%{?fedora}` in prose were expanded by rpm (rpmspec warned "Macro expanded in comment"); now escaped as `%%`
 - **nixpkgs package out of date** — `packaging/nixpkgs/package.nix` was stuck at 0.19.4; it now follows the release version.
 - **`rpmspec` "bogus date" warnings** — 60 `%changelog` entries in `packaging/obs/rustconn.spec` named the wrong weekday; corrected.
+- **`start <name> cluster=<name>` in a script stopped silently ignoring the cluster** — the script engine parses the option but the GUI never implemented it, so the session started as a plain connection. The script now ends with "cluster=<name> is not supported", and the script reference and User Guide no longer list the option.
+- **Bitwarden Unlock no longer freezes the window on a slow keyring** — the saved master password is read from (and, after a typed password unlocks the vault, written to) the system keyring on the worker thread instead of the GTK thread, where a hung Secret Service blocked the whole application for up to 5 s.
+- **A background task that panics no longer leaves a "Testing…" spinner forever when it has a timeout** — `spawn_blocking_with_timeout` reports a panicked worker to its callback as "no result".
 
 ### Changed
 
@@ -45,10 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`scripts/verify.sh` names the tools it could not run** — a closing "NOT CHECKED" line lists every gate skipped for a missing tool, so a green run no longer hides them
 - **Translated desktop entry** — the desktop entry now carries `Name`, `GenericName`, `Comment` and `Keywords` in every language of `po/`, merged in with `msgfmt --desktop` when the Flatpak, Snap, RPM, Debian, AppImage, `.deb`/`.rpm` release and Nix packages are built. Before, the translations were extracted into the catalogues but never reached the installed file, and only five hand-written `Comment[xx]` lines were shipped. Adds a translated `GenericName` ("Connection Manager"). (`rustconn/assets/io.github.totoshko88.RustConn.desktop`, `po/*.po`)
 - **`scripts/release.sh` validates the Nix flake** — when `nix` is installed it runs `nix flake check --no-build` and evaluates `packages.default`; without `nix` the gate is listed as skipped. `packaging/nixpkgs/package.nix` joins `PKG_FILES`, so its version is bumped by `scripts/bump-version.sh` and checked at release.
+- **Fewer main-loop wake-ups** — `spawn_blocking_with_callback` / `spawn_blocking_with_timeout` (68 call sites) and three start-up waits (tray creation, Bitwarden auto-unlock, secret-backend probe) now wait on a one-shot future instead of a 16 / 50 / 100 ms polling timer.
 
 ### Removed
 
 - **Unused connection-string interner** — `StringInterner`, `interner()`, `InternerStats` and the `intern_*`/`*_interning_stats` functions are gone from `rustconn-core`: the interned strings were thrown away, so the global set only grew and took a lock on every connection add or update. (`rustconn-core/src/performance/`, `rustconn-core/src/connection/`)
+- **Dead GUI code** — the window actions `copy-username`, `copy-password`, `cluster-from-selection` and `select-item-by-id` (no menu, shortcut or palette entry used them), the `dialogs::keyboard` and `dialogs::adw_dialogs` modules, `block_on_async` / `ensure_main_thread` / `is_main_thread`, the unused tab activity/silence indicator CSS classes, and about 40 functions that nothing called (FreeRDP detection helpers, formatting and accessibility helpers, terminal and dialog getters).
 
 ### Improved
 
@@ -65,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Local tooling** — `CONTRIBUTING.md` lists typos, cargo-machete, cargo-nextest, cargo-deny, cargo-audit, rpmlint and Xvfb with what uses them, and the ~23 GB debug `target/` size
 - **Nix `flake.lock` policy** documented in `docs/INSTALL.md` and `flake.nix`: no lock is committed on purpose. The release-verification example no longer names a fixed version.
 - **Accessibility and KDE/Wayland in the User Guide** — new Accessibility section (keyboard-only use, screen-reader limits, leaving an embedded session with the keyboard, reduced motion) and a "KDE Plasma and Wayland" troubleshooting entry (tray, portals, external terminal, Flatpak on a KDE host)
+- **`Ctrl+Shift+Y` (Reconnect Session) is in the User Guide shortcut table.**
 
 ### Dependencies
 
