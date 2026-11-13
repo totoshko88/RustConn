@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A missing desktop portal is reported** — at startup RustConn asks `xdg-desktop-portal` for its file-chooser backend (3 s limit) and shows one warning toast, plus a log line, when the service or the backend (`xdg-desktop-portal-kde`/`-gnome`/`-gtk`) is absent, instead of file dialogs silently failing
 - **More terminals for the 1Password sign-in button** — it tries `xdg-terminal-exec`, `ptyxis`, `kitty`, `foot` and `alacritty` before `gnome-terminal`, `konsole`, `xfce4-terminal` and `xterm`
 - **Pulsing indicators respect "reduce animations"** — the tunnel "starting" dot and the active broadcast icon stay still when the desktop turns `gtk-enable-animations` off, and follow the setting live
+- **Empty Trash action** — `win.empty-trash` asks for confirmation, then permanently removes everything left in the trash (and its vault credentials). It has no menu entry of its own yet: the trash view in the sidebar is the place for it.
+- **Settings → Clients keeps detection results for five minutes and has a Refresh button** — reopening the dialog no longer re-runs every client probe; the refresh button in the Core Clients header forces a new scan. (`rustconn/src/dialogs/settings/clients_tab.rs`, `rustconn-core/src/protocol/detection.rs`)
+- **Invalid saved entries are reported, never removed** — loading connections, groups, snippets, clusters and templates now logs a warning for each entry that fails validation (empty name, empty host, port 0) and keeps the data exactly as saved. A test checks that such a config loads and stays byte-identical on disk. (`rustconn-core/src/config/manager.rs`)
+- **CodeQL skips `rustconn-cli/tests` and `tests.rs` files** — CodeQL for Rust has no way to exclude inline `#[cfg(test)]` modules, so those stay in scope. (`.github/codeql/codeql-config.yml`)
 
 ### Fixed
 
@@ -37,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`rpmspec` "bogus date" warnings** — 60 `%changelog` entries in `packaging/obs/rustconn.spec` named the wrong weekday; corrected.
 - **`start <name> cluster=<name>` in a script stopped silently ignoring the cluster** — the script engine parses the option but the GUI never implemented it, so the session started as a plain connection. The script now ends with "cluster=<name> is not supported", and the script reference and User Guide no longer list the option.
 - **Bitwarden Unlock no longer freezes the window on a slow keyring** — the saved master password is read from (and, after a typed password unlocks the vault, written to) the system keyring on the worker thread instead of the GTK thread, where a hung Secret Service blocked the whole application for up to 5 s.
+- **Monitoring and scripts are stopped when they should be** — closing the main window now stops every monitoring collector (`MonitoringCoordinator::stop_all`), and closing a tab cancels a script still running on it, which used to keep its timer and entry alive. (`rustconn/src/window/mod.rs`)
+- **A permanently deleted connection leaves workspaces** — once a deletion is final (Undo toast dismissed, bulk delete, empty trash) the connection is dropped from every workspace profile that listed it; Undo still restores it with its workspace entries. (`rustconn/src/state/connections.rs`)
+- **The Smart Cards switch says when it does nothing** — with the Embedded RDP client the switch now reads "Not used in Embedded mode. Set Client Mode to External RDP client." The saved value is untouched. (`rustconn/src/dialogs/connection/rdp.rs`)
 
 ### Changed
 
