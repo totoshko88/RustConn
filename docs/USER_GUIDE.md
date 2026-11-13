@@ -2368,6 +2368,7 @@ Sessions shown through an external viewer (xfreerdp, vncviewer, or an external S
 - **Vertical Split** — Ctrl+Shift+S splits the current tab vertically (top and bottom)
 - **Close Pane** — Ctrl+Shift+X closes the focused pane; if only one pane remains, the split is dissolved and the session returns to normal tab mode
 - **Focus Next Pane** — Ctrl+` cycles focus between panes
+- **Split with Other Tabs** — right-click a tab and choose **Split with Other Tabs…** or press **Ctrl+Shift+K** while that tab is active (rebind it in **Settings ▸ Interface ▸ Keybindings**). A dialog lists every other tab that can join; tick the ones you want — with the keyboard use Tab to move and Space to tick — and press **Split**. That tab becomes the split's tab and the ticked tabs fill a balanced grid around it (2 tabs side by side or stacked to suit the window's shape, 4 tabs as 2×2, and so on), the same grid a restored workspace uses. The sessions are moved, not reconnected, and each one's own tab disappears while it is in the split. Tabs that cannot be split (external-viewer sessions, tabs in another window) are not listed. The item is hidden on a tab that already hosts a split; use **Remove Split** first, or **Select Tab…** in an empty pane to add one more session. To change the arrangement afterwards, drag the pane headers.
 - **Select Tab** — click the "Select Tab..." button in an empty pane to pick which session to display; sessions already in other split views show a colored indicator
 - **Move between splits** — a session can be moved from one split to another via "Select Tab"; the original split keeps a placeholder in the vacated panel, and the session's own tab shows a "Displayed in Split View" page with a "Go to Split View" button. You can also **drag a pane by its connection-name header** onto another panel or tab to move it there (the pointer turns into a grab hand over the header, and its tooltip shows the full connection name and a "Drag to move…" hint). Because the drag handle is the header, this needs the connection-name labels to be visible. They are on by default for new installations; a configuration saved by an earlier version keeps the setting it had, which was off, so if your panes show no header, turn on **Settings ▸ Interface ▸ Window ▸ Show connection name in split panes**.
 - **Tab Overview** — split-view tabs render correctly in Tab Overview (Ctrl+Shift+O) with live thumbnails showing the split layout
@@ -5014,6 +5015,7 @@ markers appear; nothing else changes.
 | Ctrl+Shift+X | Close Pane |
 | Ctrl+Shift+R | Pop Pane to Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |
+| Ctrl+Shift+K | Split with Other Tabs… (pick tabs to bring into a split with the active tab) |
 | Ctrl+` | Focus Next Pane |
 | Ctrl+Shift+Y | Reconnect Session (focused pane, or the active tab when not split) |
 

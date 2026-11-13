@@ -43,6 +43,7 @@
 //! assert!(matches!(result, DropResult::Placed));
 //! ```
 
+mod balanced;
 mod color;
 mod error;
 mod model;
@@ -50,6 +51,7 @@ pub mod tab_groups;
 mod tree;
 mod types;
 
+pub use balanced::{BalancedSplitStep, balanced_split_plan};
 pub use color::{ColorPool, SPLIT_COLORS};
 pub use error::{DropResult, SplitError};
 pub use model::SplitLayoutModel;

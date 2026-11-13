@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.24.8\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 13:47+0200\n"
+"POT-Creation-Date: 2026-11-13 16:38+0200\n"
 "PO-Revision-Date: 2026-11-08 19:05+0000\n"
 "Last-Translator: Naim Shafiev\n"
 "Language-Team: Azerbaijani\n"
@@ -41,7 +41,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:452
 #: rustconn/src/dialogs/settings/terminal_tab.rs:823
 #: rustconn/src/dialogs/settings/terminal_tab.rs:882
-#: rustconn/src/dialogs/statistics.rs:86
+#: rustconn/src/dialogs/split_tabs.rs:71 rustconn/src/dialogs/statistics.rs:86
 #: rustconn/src/dialogs/template_manager.rs:191
 #: rustconn/src/dialogs/tunnel.rs:727
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:571
@@ -51,8 +51,8 @@ msgstr "OK"
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:367 rustconn/src/terminal/tab_menu.rs:490
-#: rustconn/src/terminal/tab_menu.rs:714 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
+#: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
 #: rustconn/src/window/clusters.rs:410
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4920,7 +4920,7 @@ msgstr "Köçürmə dayandırıldı"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:715 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4728
 msgid "Close"
 msgstr "Bağla"
@@ -7468,7 +7468,7 @@ msgid "Keybindings"
 msgstr "Klaviatura qısayolları"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:335
+#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
 #: rustconn/src/split_view/bridge.rs:2192
 msgid "Keyboard Shortcuts"
 msgstr "Klaviatura qısayolları"
@@ -9705,8 +9705,8 @@ msgstr "Yapışdır"
 msgid "Find in Terminal"
 msgstr "Terminalda tap"
 
-#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:809
-#: rustconn/src/terminal/tab_menu.rs:1285
+#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:810
+#: rustconn/src/terminal/tab_menu.rs:1321
 msgid "Close Tab"
 msgstr "Tabı bağla"
 
@@ -9760,43 +9760,47 @@ msgstr "Bölmədən çıxar"
 #: rustconn/src/dialogs/shortcuts.rs:222
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1226
+#: rustconn/src/terminal/tab_menu.rs:1261
 msgid "Remove Split"
 msgstr "Bölməni sil"
 
-#: rustconn/src/dialogs/shortcuts.rs:223
+#: rustconn/src/dialogs/shortcuts.rs:223 rustconn/src/dialogs/split_tabs.rs:39
+msgid "Split with Other Tabs"
+msgstr "Digər tablarla böl"
+
+#: rustconn/src/dialogs/shortcuts.rs:224
 msgid "Focus Next Pane"
 msgstr "Növbəti panelə fokusla"
 
-#: rustconn/src/dialogs/shortcuts.rs:224
+#: rustconn/src/dialogs/shortcuts.rs:225
 msgid "Reconnect Session"
 msgstr "Sessiyaya yenidən qoşul"
 
-#: rustconn/src/dialogs/shortcuts.rs:226
+#: rustconn/src/dialogs/shortcuts.rs:227
 msgid "Toggle Fullscreen"
 msgstr "Tam ekranı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:228 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Yan paneli dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:228
+#: rustconn/src/dialogs/shortcuts.rs:229
 msgid "Toggle Compact Interface"
 msgstr "Yığcam interfeysi dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:229
+#: rustconn/src/dialogs/shortcuts.rs:230
 msgid "Toggle Keyboard Passthrough"
 msgstr "Klaviatura ötürməsini dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:230
+#: rustconn/src/dialogs/shortcuts.rs:231
 msgid "Toggle Split Broadcast"
 msgstr "Bölünmüş yayımı dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:232
 msgid "Toggle Group Broadcast"
 msgstr "Qrup yayımını dəyiş"
 
-#: rustconn/src/dialogs/shortcuts.rs:361
+#: rustconn/src/dialogs/shortcuts.rs:362
 msgid "Search shortcuts…"
 msgstr "Qısayolları axtar…"
 
@@ -9966,6 +9970,22 @@ msgstr "Fraqment adı tələb olunur"
 #: rustconn/src/dialogs/snippet.rs:495
 msgid "Command is required"
 msgstr "Əmr tələb olunur"
+
+#: rustconn/src/dialogs/split_tabs.rs:36
+msgid ""
+"Choose the tabs to show next to “{}”. They are arranged in a grid and keep "
+"their connections."
+msgstr ""
+"“{}” yanında göstəriləcək tabları seçin. Onlar şəbəkə şəklində düzülür və "
+"bağlantılarını saxlayır."
+
+#: rustconn/src/dialogs/split_tabs.rs:44
+msgid "Tabs to split"
+msgstr "Bölünəcək tablar"
+
+#: rustconn/src/dialogs/split_tabs.rs:72
+msgid "Split"
+msgstr "Böl"
 
 #: rustconn/src/dialogs/statistics.rs:32 rustconn/src/dialogs/statistics.rs:148
 msgid "Connection Statistics"
@@ -11713,7 +11733,7 @@ msgstr "Uzaq buferdən faylları saxla"
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1153
+#: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Yenidən qoşul"
 
@@ -12417,7 +12437,7 @@ msgstr "Yeni sessiya aç"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1233
+#: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Yeni pəncərəyə köçür"
 
@@ -12894,138 +12914,142 @@ msgstr "Brauzerdə yenidən daxil olmaq üçün “{}” əmrini işə salın"
 msgid "Panes:"
 msgstr "Panellər:"
 
-#: rustconn/src/terminal/tab_menu.rs:306
+#: rustconn/src/terminal/tab_menu.rs:312
 msgid "Set Tab Group"
 msgstr "Tab qrupu təyin et"
 
-#: rustconn/src/terminal/tab_menu.rs:314
+#: rustconn/src/terminal/tab_menu.rs:320
 msgid "New group name…"
 msgstr "Yeni qrup adı…"
 
-#: rustconn/src/terminal/tab_menu.rs:319
+#: rustconn/src/terminal/tab_menu.rs:325
 msgid "Enter a group name for this tab"
 msgstr "Bu tab üçün qrup adı daxil edin"
 
-#: rustconn/src/terminal/tab_menu.rs:324
+#: rustconn/src/terminal/tab_menu.rs:330
 msgid "Existing groups:"
 msgstr "Mövcud qruplar:"
 
-#: rustconn/src/terminal/tab_menu.rs:352
+#: rustconn/src/terminal/tab_menu.rs:358
 msgid "or enter a new name:"
 msgstr "və ya yeni ad daxil edin:"
 
-#: rustconn/src/terminal/tab_menu.rs:368 rustconn/src/terminal/tab_menu.rs:491
+#: rustconn/src/terminal/tab_menu.rs:374 rustconn/src/terminal/tab_menu.rs:497
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Tətbiq et"
 
-#: rustconn/src/terminal/tab_menu.rs:478
+#: rustconn/src/terminal/tab_menu.rs:484
 msgid "Rename Tab"
 msgstr "Tabın adını dəyiş"
 
-#: rustconn/src/terminal/tab_menu.rs:480
+#: rustconn/src/terminal/tab_menu.rs:486
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Bu etiket yalnız bu tabı adlandırır. Standart ada qayıtmaq üçün boş buraxın."
 
-#: rustconn/src/terminal/tab_menu.rs:486
+#: rustconn/src/terminal/tab_menu.rs:492
 msgid "Tab name"
 msgstr "Tab adı"
 
-#: rustconn/src/terminal/tab_menu.rs:708 rustconn/src/terminal/tab_menu.rs:1185
+#: rustconn/src/terminal/tab_menu.rs:714 rustconn/src/terminal/tab_menu.rs:1213
 msgid "Close All in Group"
 msgstr "Qrupdakı hamısını bağla"
 
-#: rustconn/src/terminal/tab_menu.rs:710
+#: rustconn/src/terminal/tab_menu.rs:716
 msgid "Close {} tabs in group '{}'?"
 msgstr "Qrupdakı {} tab bağlansın: '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:981
+#: rustconn/src/terminal/tab_menu.rs:1009
 msgid "Save Output"
 msgstr "Çıxışı saxla"
 
-#: rustconn/src/terminal/tab_menu.rs:987
+#: rustconn/src/terminal/tab_menu.rs:1015
 msgid "Text files"
 msgstr "Mətn faylları"
 
-#: rustconn/src/terminal/tab_menu.rs:1013
+#: rustconn/src/terminal/tab_menu.rs:1041
 msgid "Output saved"
 msgstr "Çıxış saxlanıldı"
 
-#: rustconn/src/terminal/tab_menu.rs:1023
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Could not save output"
 msgstr "Çıxış saxlanıla bilmədi"
 
-#: rustconn/src/terminal/tab_menu.rs:1085
+#: rustconn/src/terminal/tab_menu.rs:1113
 msgid "Move to New Window on {}"
 msgstr "{} üzərində yeni pəncərəyə köçür"
 
-#: rustconn/src/terminal/tab_menu.rs:1105
+#: rustconn/src/terminal/tab_menu.rs:1133
 msgid "Monitor {} ({})"
 msgstr "Monitor {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1106
+#: rustconn/src/terminal/tab_menu.rs:1134
 msgid "Monitor {}"
 msgstr "Monitor {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1160
+#: rustconn/src/terminal/tab_menu.rs:1188
 msgid "Unpin Tab"
 msgstr "Tabı bərkitmədən çıxar"
 
-#: rustconn/src/terminal/tab_menu.rs:1162
+#: rustconn/src/terminal/tab_menu.rs:1190
 msgid "Pin Tab"
 msgstr "Tabı bərkit"
 
-#: rustconn/src/terminal/tab_menu.rs:1173
+#: rustconn/src/terminal/tab_menu.rs:1201
 msgid "Rename Tab…"
 msgstr "Tabın adını dəyiş…"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1209
 msgid "Set Group…"
 msgstr "Qrup təyin et…"
 
-#: rustconn/src/terminal/tab_menu.rs:1183
+#: rustconn/src/terminal/tab_menu.rs:1211
 msgid "Remove from Group"
 msgstr "Qrupdan çıxar"
 
-#: rustconn/src/terminal/tab_menu.rs:1195
+#: rustconn/src/terminal/tab_menu.rs:1223
 msgid "Remove from Broadcast"
 msgstr "Yayımdan çıxar"
 
-#: rustconn/src/terminal/tab_menu.rs:1197
+#: rustconn/src/terminal/tab_menu.rs:1225
 msgid "Add to Broadcast"
 msgstr "Yayıma əlavə et"
 
-#: rustconn/src/terminal/tab_menu.rs:1219
+#: rustconn/src/terminal/tab_menu.rs:1247
 msgid "Monitor"
 msgstr "Monitor"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1256
+msgid "Split with Other Tabs…"
+msgstr "Digər tablarla böl…"
+
+#: rustconn/src/terminal/tab_menu.rs:1299
 msgid "Edit Connection…"
 msgstr "Bağlantını redaktə et…"
 
-#: rustconn/src/terminal/tab_menu.rs:1279
+#: rustconn/src/terminal/tab_menu.rs:1315
 msgid "Save Output…"
 msgstr "Çıxışı saxla…"
 
-#: rustconn/src/terminal/tab_menu.rs:1286
+#: rustconn/src/terminal/tab_menu.rs:1322
 msgid "Close Others"
 msgstr "Digərlərini bağla"
 
-#: rustconn/src/terminal/tab_menu.rs:1291
+#: rustconn/src/terminal/tab_menu.rs:1327
 msgid "Close to the Left"
 msgstr "Soldakıları bağla"
 
-#: rustconn/src/terminal/tab_menu.rs:1292
+#: rustconn/src/terminal/tab_menu.rs:1328
 msgid "Close to the Right"
 msgstr "Sağdakıları bağla"
 
-#: rustconn/src/terminal/tab_menu.rs:1296
+#: rustconn/src/terminal/tab_menu.rs:1332
 msgid "Close All Ungrouped"
 msgstr "Qrupsuz hamısını bağla"
 
-#: rustconn/src/terminal/tab_menu.rs:1300
+#: rustconn/src/terminal/tab_menu.rs:1336
 msgid "Close All Tabs"
 msgstr "Bütün tabları bağla"
 
@@ -15297,12 +15321,28 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:538
 #: rustconn/src/window/split_view_actions.rs:759
+#: rustconn/src/window/split_view_actions.rs:1250
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
 msgstr ""
 "Xarici görüntüləyici sessiyaları üçün bölünmüş görünüş mövcud deyil. "
 "Bölmədən istifadə etmək üçün bu bağlantını daxili rejimə keçirin."
+
+#: rustconn/src/window/split_view_actions.rs:1244
+msgid ""
+"This tab already has a split. Remove it first, or use Select Tab in a panel."
+msgstr ""
+"Bu tab artıq bölünüb. Əvvəlcə bölməni silin və ya paneldə “Tab seç” "
+"funksiyasından istifadə edin."
+
+#: rustconn/src/window/split_view_actions.rs:1271
+msgid "There are no other tabs that can be shown in a split."
+msgstr "Bölünmüş görünüşdə göstərilə bilən başqa tab yoxdur."
+
+#: rustconn/src/window/split_view_actions.rs:1369
+msgid "Some tabs could not be added to the split."
+msgstr "Bəzi tabları bölməyə əlavə etmək alınmadı."
 
 #: rustconn/src/window/templates.rs:89 rustconn/src/window/templates.rs:124
 msgid "Error Saving Template"

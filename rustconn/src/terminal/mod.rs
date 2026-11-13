@@ -2518,6 +2518,24 @@ impl TerminalNotebook {
         self.session_info.borrow().values().cloned().collect()
     }
 
+    /// Sessions that currently have a tab, left to right.
+    ///
+    /// Unlike [`Self::get_all_sessions`] (hash order, includes sessions parked
+    /// in a split or detached), this is the order the user sees in the tab bar
+    /// and only lists sessions a tab selection could name.
+    #[must_use]
+    pub fn sessions_in_tab_order(&self) -> Vec<TerminalSession> {
+        let sessions = self.sessions.borrow();
+        let info = self.session_info.borrow();
+        (0..self.tab_view.n_pages())
+            .filter_map(|i| {
+                let page = self.tab_view.nth_page(i);
+                let (id, _) = sessions.iter().find(|(_, p)| **p == page)?;
+                info.get(id).cloned()
+            })
+            .collect()
+    }
+
     /// Sets the log file path for a session
     pub fn set_log_file(&self, session_id: Uuid, log_file: PathBuf) {
         if let Some(info) = self.session_info.borrow_mut().get_mut(&session_id) {

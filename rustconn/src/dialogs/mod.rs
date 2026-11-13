@@ -80,6 +80,7 @@ pub(crate) mod settings;
 mod shortcuts;
 mod smart_folder;
 mod snippet;
+pub mod split_tabs;
 mod statistics;
 mod template;
 mod template_manager;

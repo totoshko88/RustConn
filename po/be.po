@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rustconn 0.12.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-13 13:47+0200\n"
+"POT-Creation-Date: 2026-11-13 16:38+0200\n"
 "PO-Revision-Date: 2026-04-25 10:46+0000\n"
 "Last-Translator: RustConn Team\n"
 "Language-Team: Belarusian\n"
@@ -43,7 +43,7 @@ msgstr "OK"
 #: rustconn/src/dialogs/settings/ssh_agent_tab.rs:452
 #: rustconn/src/dialogs/settings/terminal_tab.rs:823
 #: rustconn/src/dialogs/settings/terminal_tab.rs:882
-#: rustconn/src/dialogs/statistics.rs:86
+#: rustconn/src/dialogs/split_tabs.rs:71 rustconn/src/dialogs/statistics.rs:86
 #: rustconn/src/dialogs/template_manager.rs:191
 #: rustconn/src/dialogs/tunnel.rs:727
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:571
@@ -53,8 +53,8 @@ msgstr "OK"
 #: rustconn/src/sidebar/saved_searches.rs:179
 #: rustconn/src/split_view/adapter.rs:1198
 #: rustconn/src/terminal/safe_paste.rs:166
-#: rustconn/src/terminal/tab_menu.rs:367 rustconn/src/terminal/tab_menu.rs:490
-#: rustconn/src/terminal/tab_menu.rs:714 rustconn/src/vault_ops.rs:315
+#: rustconn/src/terminal/tab_menu.rs:373 rustconn/src/terminal/tab_menu.rs:496
+#: rustconn/src/terminal/tab_menu.rs:720 rustconn/src/vault_ops.rs:315
 #: rustconn/src/window/batch_edit.rs:69 rustconn/src/window/clusters.rs:355
 #: rustconn/src/window/clusters.rs:410
 #: rustconn/src/window/connection_dialogs.rs:944
@@ -4931,7 +4931,7 @@ msgstr "Капіяванне спынена"
 #: rustconn/src/dialogs/tunnel_builder/mod.rs:640
 #: rustconn/src/dialogs/widgets.rs:1031 rustconn/src/sidebar_ui.rs:488
 #: rustconn/src/split_view/adapter.rs:1199
-#: rustconn/src/terminal/tab_menu.rs:715 rustconn/src/vault_ops.rs:65
+#: rustconn/src/terminal/tab_menu.rs:721 rustconn/src/vault_ops.rs:65
 #: rustconn/src/window/mod.rs:4728
 msgid "Close"
 msgstr "Закрыць"
@@ -7477,7 +7477,7 @@ msgid "Keybindings"
 msgstr "Спалучэнні клавіш"
 
 #: rustconn/src/dialogs/settings/keybindings_tab.rs:58
-#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:335
+#: rustconn/src/dialogs/shortcuts.rs:182 rustconn/src/dialogs/shortcuts.rs:336
 #: rustconn/src/split_view/bridge.rs:2192
 msgid "Keyboard Shortcuts"
 msgstr "Клавіятурныя скароты"
@@ -9724,8 +9724,8 @@ msgstr "Уставіць"
 msgid "Find in Terminal"
 msgstr "Знайсці ў тэрмінале"
 
-#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:809
-#: rustconn/src/terminal/tab_menu.rs:1285
+#: rustconn/src/dialogs/shortcuts.rs:209 rustconn/src/dialogs/shortcuts.rs:810
+#: rustconn/src/terminal/tab_menu.rs:1321
 msgid "Close Tab"
 msgstr "Закрыць укладку"
 
@@ -9779,43 +9779,47 @@ msgstr "Выдаліць з падзеленага выгляду"
 #: rustconn/src/dialogs/shortcuts.rs:222
 #: rustconn/src/split_view/adapter.rs:1676
 #: rustconn/src/split_view/adapter.rs:1745
-#: rustconn/src/terminal/tab_menu.rs:1226
+#: rustconn/src/terminal/tab_menu.rs:1261
 msgid "Remove Split"
 msgstr "Выдаліць падзел"
 
-#: rustconn/src/dialogs/shortcuts.rs:223
+#: rustconn/src/dialogs/shortcuts.rs:223 rustconn/src/dialogs/split_tabs.rs:39
+msgid "Split with Other Tabs"
+msgstr "Падзяліць з іншымі ўкладкамі"
+
+#: rustconn/src/dialogs/shortcuts.rs:224
 msgid "Focus Next Pane"
 msgstr "Перайсці да наступнай панэлі"
 
-#: rustconn/src/dialogs/shortcuts.rs:224
+#: rustconn/src/dialogs/shortcuts.rs:225
 msgid "Reconnect Session"
 msgstr "Перазлучыць сеанс"
 
-#: rustconn/src/dialogs/shortcuts.rs:226
+#: rustconn/src/dialogs/shortcuts.rs:227
 msgid "Toggle Fullscreen"
 msgstr "Поўнаэкранны рэжым"
 
-#: rustconn/src/dialogs/shortcuts.rs:227 rustconn/src/window/ui.rs:74
+#: rustconn/src/dialogs/shortcuts.rs:228 rustconn/src/window/ui.rs:74
 msgid "Toggle Sidebar"
 msgstr "Пераключыць бакавую панэль"
 
-#: rustconn/src/dialogs/shortcuts.rs:228
+#: rustconn/src/dialogs/shortcuts.rs:229
 msgid "Toggle Compact Interface"
 msgstr "Пераключыць сціслы інтэрфейс"
 
-#: rustconn/src/dialogs/shortcuts.rs:229
+#: rustconn/src/dialogs/shortcuts.rs:230
 msgid "Toggle Keyboard Passthrough"
 msgstr "Пераключыць прамую перадачу клавіятуры"
 
-#: rustconn/src/dialogs/shortcuts.rs:230
+#: rustconn/src/dialogs/shortcuts.rs:231
 msgid "Toggle Split Broadcast"
 msgstr "Пераключыць рассыланне ў падзеленым выглядзе"
 
-#: rustconn/src/dialogs/shortcuts.rs:231
+#: rustconn/src/dialogs/shortcuts.rs:232
 msgid "Toggle Group Broadcast"
 msgstr "Пераключыць групавую трансляцыю"
 
-#: rustconn/src/dialogs/shortcuts.rs:361
+#: rustconn/src/dialogs/shortcuts.rs:362
 msgid "Search shortcuts…"
 msgstr "Пошук скаротаў…"
 
@@ -9985,6 +9989,22 @@ msgstr "Назва фрагмента абавязковая"
 #: rustconn/src/dialogs/snippet.rs:495
 msgid "Command is required"
 msgstr "Каманда абавязковая"
+
+#: rustconn/src/dialogs/split_tabs.rs:36
+msgid ""
+"Choose the tabs to show next to “{}”. They are arranged in a grid and keep "
+"their connections."
+msgstr ""
+"Абярыце ўкладкі, якія трэба паказаць побач з «{}». Яны будуць размешчаны "
+"сеткай і захаваюць свае злучэнні."
+
+#: rustconn/src/dialogs/split_tabs.rs:44
+msgid "Tabs to split"
+msgstr "Укладкі для падзелу"
+
+#: rustconn/src/dialogs/split_tabs.rs:72
+msgid "Split"
+msgstr "Падзяліць"
 
 #: rustconn/src/dialogs/statistics.rs:32 rustconn/src/dialogs/statistics.rs:148
 msgid "Connection Statistics"
@@ -11735,7 +11755,7 @@ msgstr "Захаваць файлы з аддаленага буфера абм�
 #: rustconn/src/split_view/adapter.rs:1670
 #: rustconn/src/split_view/adapter.rs:1739 rustconn/src/terminal/mod.rs:1462
 #: rustconn/src/terminal/session_lifecycle.rs:407
-#: rustconn/src/terminal/tab_menu.rs:1153
+#: rustconn/src/terminal/tab_menu.rs:1181
 msgid "Reconnect"
 msgstr "Перазлучыцца"
 
@@ -12441,7 +12461,7 @@ msgstr "Адкрыць новы сеанс"
 #: rustconn/src/sidebar_ui.rs:484 rustconn/src/split_view/adapter.rs:1149
 #: rustconn/src/split_view/adapter.rs:1673
 #: rustconn/src/split_view/adapter.rs:1742
-#: rustconn/src/terminal/tab_menu.rs:1233
+#: rustconn/src/terminal/tab_menu.rs:1269
 msgid "Move to New Window"
 msgstr "Перамясціць у новае акно"
 
@@ -12918,139 +12938,143 @@ msgstr "Выканаць «{}», каб зноў увайсці праз бра�
 msgid "Panes:"
 msgstr "Панэлі:"
 
-#: rustconn/src/terminal/tab_menu.rs:306
+#: rustconn/src/terminal/tab_menu.rs:312
 msgid "Set Tab Group"
 msgstr "Усталяваць групу ўкладкі"
 
-#: rustconn/src/terminal/tab_menu.rs:314
+#: rustconn/src/terminal/tab_menu.rs:320
 msgid "New group name…"
 msgstr "Назва новай групы…"
 
-#: rustconn/src/terminal/tab_menu.rs:319
+#: rustconn/src/terminal/tab_menu.rs:325
 msgid "Enter a group name for this tab"
 msgstr "Увядзіце назву групы для гэтай укладкі"
 
-#: rustconn/src/terminal/tab_menu.rs:324
+#: rustconn/src/terminal/tab_menu.rs:330
 msgid "Existing groups:"
 msgstr "Існуючыя групы:"
 
-#: rustconn/src/terminal/tab_menu.rs:352
+#: rustconn/src/terminal/tab_menu.rs:358
 msgid "or enter a new name:"
 msgstr "або ўвядзіце новую назву:"
 
-#: rustconn/src/terminal/tab_menu.rs:368 rustconn/src/terminal/tab_menu.rs:491
+#: rustconn/src/terminal/tab_menu.rs:374 rustconn/src/terminal/tab_menu.rs:497
 #: rustconn/src/window/batch_edit.rs:71
 msgid "Apply"
 msgstr "Прымяніць"
 
-#: rustconn/src/terminal/tab_menu.rs:478
+#: rustconn/src/terminal/tab_menu.rs:484
 msgid "Rename Tab"
 msgstr "Перайменаваць укладку"
 
-#: rustconn/src/terminal/tab_menu.rs:480
+#: rustconn/src/terminal/tab_menu.rs:486
 msgid ""
 "The label names this tab only. Leave it empty to go back to the default name."
 msgstr ""
 "Метка называе толькі гэту ўкладку. Пакіньце яе пустой, каб вярнуць "
 "стандартную назву."
 
-#: rustconn/src/terminal/tab_menu.rs:486
+#: rustconn/src/terminal/tab_menu.rs:492
 msgid "Tab name"
 msgstr "Назва ўкладкі"
 
-#: rustconn/src/terminal/tab_menu.rs:708 rustconn/src/terminal/tab_menu.rs:1185
+#: rustconn/src/terminal/tab_menu.rs:714 rustconn/src/terminal/tab_menu.rs:1213
 msgid "Close All in Group"
 msgstr "Закрыць усе ў групе"
 
-#: rustconn/src/terminal/tab_menu.rs:710
+#: rustconn/src/terminal/tab_menu.rs:716
 msgid "Close {} tabs in group '{}'?"
 msgstr "Закрыць {} укладак у групе '{}'?"
 
-#: rustconn/src/terminal/tab_menu.rs:981
+#: rustconn/src/terminal/tab_menu.rs:1009
 msgid "Save Output"
 msgstr "Захаваць вывад"
 
-#: rustconn/src/terminal/tab_menu.rs:987
+#: rustconn/src/terminal/tab_menu.rs:1015
 msgid "Text files"
 msgstr "Тэкставыя файлы"
 
-#: rustconn/src/terminal/tab_menu.rs:1013
+#: rustconn/src/terminal/tab_menu.rs:1041
 msgid "Output saved"
 msgstr "Вывад захаваны"
 
-#: rustconn/src/terminal/tab_menu.rs:1023
+#: rustconn/src/terminal/tab_menu.rs:1051
 msgid "Could not save output"
 msgstr "Не ўдалося захаваць вывад"
 
-#: rustconn/src/terminal/tab_menu.rs:1085
+#: rustconn/src/terminal/tab_menu.rs:1113
 msgid "Move to New Window on {}"
 msgstr "Перамясціць у новае акно на {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1105
+#: rustconn/src/terminal/tab_menu.rs:1133
 msgid "Monitor {} ({})"
 msgstr "Манітор {} ({})"
 
-#: rustconn/src/terminal/tab_menu.rs:1106
+#: rustconn/src/terminal/tab_menu.rs:1134
 msgid "Monitor {}"
 msgstr "Манітор {}"
 
-#: rustconn/src/terminal/tab_menu.rs:1160
+#: rustconn/src/terminal/tab_menu.rs:1188
 msgid "Unpin Tab"
 msgstr "Адмацаваць укладку"
 
-#: rustconn/src/terminal/tab_menu.rs:1162
+#: rustconn/src/terminal/tab_menu.rs:1190
 msgid "Pin Tab"
 msgstr "Замацаваць укладку"
 
-#: rustconn/src/terminal/tab_menu.rs:1173
+#: rustconn/src/terminal/tab_menu.rs:1201
 msgid "Rename Tab…"
 msgstr "Перайменаваць укладку…"
 
-#: rustconn/src/terminal/tab_menu.rs:1181
+#: rustconn/src/terminal/tab_menu.rs:1209
 msgid "Set Group…"
 msgstr "Усталяваць групу…"
 
-#: rustconn/src/terminal/tab_menu.rs:1183
+#: rustconn/src/terminal/tab_menu.rs:1211
 msgid "Remove from Group"
 msgstr "Выдаліць з групы"
 
-#: rustconn/src/terminal/tab_menu.rs:1195
+#: rustconn/src/terminal/tab_menu.rs:1223
 msgid "Remove from Broadcast"
 msgstr "Выдаліць з трансляцыі"
 
-#: rustconn/src/terminal/tab_menu.rs:1197
+#: rustconn/src/terminal/tab_menu.rs:1225
 msgid "Add to Broadcast"
 msgstr "Дадаць у трансляцыю"
 
-#: rustconn/src/terminal/tab_menu.rs:1219
+#: rustconn/src/terminal/tab_menu.rs:1247
 msgid "Monitor"
 msgstr "Маніторынг"
 
-#: rustconn/src/terminal/tab_menu.rs:1263
+#: rustconn/src/terminal/tab_menu.rs:1256
+msgid "Split with Other Tabs…"
+msgstr "Падзяліць з іншымі ўкладкамі…"
+
+#: rustconn/src/terminal/tab_menu.rs:1299
 msgid "Edit Connection…"
 msgstr "Рэдагаваць злучэнне…"
 
-#: rustconn/src/terminal/tab_menu.rs:1279
+#: rustconn/src/terminal/tab_menu.rs:1315
 msgid "Save Output…"
 msgstr "Захаваць вывад…"
 
-#: rustconn/src/terminal/tab_menu.rs:1286
+#: rustconn/src/terminal/tab_menu.rs:1322
 msgid "Close Others"
 msgstr "Закрыць іншыя"
 
-#: rustconn/src/terminal/tab_menu.rs:1291
+#: rustconn/src/terminal/tab_menu.rs:1327
 msgid "Close to the Left"
 msgstr "Закрыць злева"
 
-#: rustconn/src/terminal/tab_menu.rs:1292
+#: rustconn/src/terminal/tab_menu.rs:1328
 msgid "Close to the Right"
 msgstr "Закрыць справа"
 
-#: rustconn/src/terminal/tab_menu.rs:1296
+#: rustconn/src/terminal/tab_menu.rs:1332
 msgid "Close All Ungrouped"
 msgstr "Закрыць усе без групы"
 
-#: rustconn/src/terminal/tab_menu.rs:1300
+#: rustconn/src/terminal/tab_menu.rs:1336
 msgid "Close All Tabs"
 msgstr "Закрыць усе ўкладкі"
 
@@ -15337,12 +15361,28 @@ msgstr ""
 
 #: rustconn/src/window/split_view_actions.rs:538
 #: rustconn/src/window/split_view_actions.rs:759
+#: rustconn/src/window/split_view_actions.rs:1250
 msgid ""
 "Split view is not available for external-viewer sessions. Switch this "
 "connection to embedded mode to use split."
 msgstr ""
 "Падзелены выгляд недаступны для сеансаў за знешнім праглядальнікам. "
 "Пераключыце гэтае злучэнне ў убудаваны рэжым, каб выкарыстоўваць падзел."
+
+#: rustconn/src/window/split_view_actions.rs:1244
+msgid ""
+"This tab already has a split. Remove it first, or use Select Tab in a panel."
+msgstr ""
+"Гэтая ўкладка ўжо падзелена. Спачатку выдаліце падзел або скарыстайцеся "
+"«Абраць укладку» ў панэлі."
+
+#: rustconn/src/window/split_view_actions.rs:1271
+msgid "There are no other tabs that can be shown in a split."
+msgstr "Няма іншых укладак, якія можна паказаць у падзеле."
+
+#: rustconn/src/window/split_view_actions.rs:1369
+msgid "Some tabs could not be added to the split."
+msgstr "Некаторыя ўкладкі не ўдалося дадаць да падзелу."
 
 #: rustconn/src/window/templates.rs:89 rustconn/src/window/templates.rs:124
 msgid "Error Saving Template"

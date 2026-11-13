@@ -38,6 +38,9 @@ pub struct TabMenuState {
     pub can_detach: bool,
     /// The tab hosts a split layout, so it can be offered "Remove Split".
     pub hosts_split: bool,
+    /// The tab can be offered "Split with Other Tabs…": it is a session that
+    /// hosts no split yet and at least one other tab exists (issue #423).
+    pub can_split_with_tabs: bool,
     /// The tab is a VTE terminal (SSH, local shell, telnet, serial), so its
     /// scrollback can be offered for saving (issue #371). An embedded viewer
     /// (RDP/VNC/Web) and the Welcome tab have no VTE buffer and clear this.
@@ -244,6 +247,9 @@ impl TerminalNotebook {
                         any_groups_exist: info_ref.values().any(|i| i.tab_group.is_some()),
                         can_detach,
                         hosts_split,
+                        can_split_with_tabs: session_id.is_some()
+                            && !hosts_split
+                            && sessions.len() > 1,
                         // A VTE terminal is exactly a session with an entry in
                         // the terminals map; embedded viewers live in
                         // session_widgets and the Welcome tab has no session.
@@ -891,6 +897,28 @@ impl TerminalNotebook {
         });
         action_group.add_action(&unsplit_action);
 
+        // "Split with Other Tabs…" — selects the page, then hands over to
+        // `win.split-with-tabs`, which acts on the active tab and asks which
+        // other tabs to bring along (issue #423).
+        let split_with_action = gio::SimpleAction::new("split-with", None);
+        let context_page_split_with = context_page.clone();
+        let tab_view_for_split_with = self.tab_view.clone();
+        split_with_action.connect_activate(move |_, _| {
+            let Some(page) = context_page_split_with.borrow().clone() else {
+                return;
+            };
+            tab_view_for_split_with.set_selected_page(&page);
+            if let Some(window) = tab_view_for_split_with
+                .root()
+                .and_then(|root| root.downcast::<gtk4::ApplicationWindow>().ok())
+            {
+                gtk4::prelude::ActionGroupExt::activate_action(&window, "split-with-tabs", None);
+            } else {
+                tracing::warn!("tab.split-with: could not find ApplicationWindow");
+            }
+        });
+        action_group.add_action(&split_with_action);
+
         let detach_action = gio::SimpleAction::new("detach", None);
         let context_page_detach = context_page.clone();
         let sessions_for_detach = self.sessions.clone();
@@ -1221,9 +1249,17 @@ impl TerminalNotebook {
         // Split section — only for the tab that hosts a split layout, and the
         // reason the detach item directly below it is currently refused
         // (issue #252).
-        if state.hosts_split {
+        if state.hosts_split || state.can_split_with_tabs {
             let split_section = gio::Menu::new();
-            split_section.append(Some(&i18n("Remove Split")), Some("tab.unsplit"));
+            if state.can_split_with_tabs {
+                split_section.append(
+                    Some(&i18n("Split with Other Tabs…")),
+                    Some("tab.split-with"),
+                );
+            }
+            if state.hosts_split {
+                split_section.append(Some(&i18n("Remove Split")), Some("tab.unsplit"));
+            }
             menu.append_section(None, &split_section);
         }
         // Detach section — sits directly above the close section, and is
@@ -1307,6 +1343,53 @@ mod tests {
     use rustconn_core::DetachVerdict;
 
     use super::{offers_detach, session_output_filename};
+
+    /// Every action name in a menu model, sections and submenus included.
+    fn menu_actions(model: &gtk4::gio::MenuModel) -> Vec<String> {
+        use gtk4::gio::prelude::*;
+        let mut out = Vec::new();
+        for i in 0..model.n_items() {
+            if let Some(action) = model.item_attribute_value(i, "action", None) {
+                out.extend(action.str().map(str::to_owned));
+            }
+            for link in ["section", "submenu"] {
+                if let Some(child) = model.item_link(i, link) {
+                    out.extend(menu_actions(&child));
+                }
+            }
+        }
+        out
+    }
+
+    fn actions_for(state: super::TabMenuState) -> Vec<String> {
+        let menu = gtk4::gio::Menu::new();
+        super::TerminalNotebook::populate_tab_context_menu(&menu, state);
+        menu_actions(menu.as_ref())
+    }
+
+    #[test]
+    fn split_with_is_offered_only_when_a_split_can_be_created() {
+        // Issue #423.
+        let offered = actions_for(super::TabMenuState {
+            can_split_with_tabs: true,
+            ..Default::default()
+        });
+        assert!(offered.iter().any(|a| a == "tab.split-with"));
+        assert!(!offered.iter().any(|a| a == "tab.unsplit"));
+
+        let hidden = actions_for(super::TabMenuState::default());
+        assert!(!hidden.iter().any(|a| a == "tab.split-with"));
+    }
+
+    #[test]
+    fn a_split_owner_is_offered_remove_split_not_split_with() {
+        let actions = actions_for(super::TabMenuState {
+            hosts_split: true,
+            ..Default::default()
+        });
+        assert!(actions.iter().any(|a| a == "tab.unsplit"));
+        assert!(!actions.iter().any(|a| a == "tab.split-with"));
+    }
 
     #[test]
     fn a_detachable_session_gets_the_menu_item() {
