@@ -71,6 +71,39 @@ impl Default for TrayState {
     }
 }
 
+/// Latest XDG activation token the desktop handed to a tray click (KDE does,
+/// GNOME's AppIndicator does not). Consumed by [`present_activated`].
+static ACTIVATION_TOKEN: Mutex<Option<String>> = Mutex::new(None);
+
+fn take_activation_token() -> Option<String> {
+    match ACTIVATION_TOKEN.lock() {
+        Ok(mut t) => t.take(),
+        Err(e) => e.into_inner().take(),
+    }
+}
+
+/// Presents `win` with the activation token of the tray click that caused it.
+///
+/// Without a token on Wayland, KWin treats `present()` from a
+/// background process as focus stealing and only flashes the taskbar entry.
+pub fn present_activated(
+    win: &(impl gtk4::prelude::IsA<gtk4::Window> + gtk4::prelude::IsA<gtk4::Widget>),
+) {
+    use gtk4::prelude::*;
+    if let Some(token) = take_activation_token() {
+        // The surface is gone while the window is hidden; recreate it first.
+        win.realize();
+        if let Some(toplevel) = win
+            .native()
+            .and_then(|n| n.surface())
+            .and_then(|s| s.downcast::<gtk4::gdk::Toplevel>().ok())
+        {
+            toplevel.set_startup_id(&token);
+        }
+    }
+    win.present();
+}
+
 // ============================================================================
 // Tray implementation when the "tray" feature is enabled
 // ============================================================================
@@ -117,6 +150,23 @@ mod tray_impl {
             height: size as i32,
             data: argb_data,
         }]
+    }
+
+    /// Sends `msg` to the GTK main loop together with the click's activation token.
+    fn forward(sender: &async_channel::Sender<TrayMessage>, msg: TrayMessage) {
+        let token = (0..5).find_map(|_| {
+            ksni::current_xdg_activation_token().or_else(|| {
+                // ksni: the token may arrive slightly after the click event.
+                // ponytail: at most 8 ms on the D-Bus thread; GNOME never sends one.
+                std::thread::sleep(std::time::Duration::from_millis(2));
+                None
+            })
+        });
+        match ACTIVATION_TOKEN.lock() {
+            Ok(mut t) => *t = token,
+            Err(e) => *e.into_inner() = token,
+        }
+        let _ = sender.try_send(msg);
     }
 
     /// RustConn tray icon implementation
@@ -166,7 +216,7 @@ mod tray_impl {
             "io.github.totoshko88.RustConn".to_string()
         }
         fn activate(&mut self, _x: i32, _y: i32) {
-            let _ = self.sender.try_send(TrayMessage::ToggleWindow);
+            forward(&self.sender, TrayMessage::ToggleWindow);
         }
 
         fn menu(&self) -> Vec<MenuItem<Self>> {
@@ -194,7 +244,7 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: toggle_label,
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.try_send(TrayMessage::ToggleWindow);
+                    forward(&tray.sender, TrayMessage::ToggleWindow);
                 }),
                 ..Default::default()
             }));
@@ -211,7 +261,7 @@ mod tray_impl {
                         MenuItem::Standard(StandardItem {
                             label: name.clone(),
                             activate: Box::new(move |tray: &mut Self| {
-                                let _ = tray.sender.try_send(TrayMessage::Connect(conn_id));
+                                forward(&tray.sender, TrayMessage::Connect(conn_id));
                             }),
                             ..Default::default()
                         })
@@ -234,7 +284,7 @@ mod tray_impl {
                         MenuItem::Standard(StandardItem {
                             label: name.clone(),
                             activate: Box::new(move |tray: &mut Self| {
-                                let _ = tray.sender.try_send(TrayMessage::Connect(conn_id));
+                                forward(&tray.sender, TrayMessage::Connect(conn_id));
                             }),
                             ..Default::default()
                         })
@@ -251,14 +301,14 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Quick Connect…"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.try_send(TrayMessage::QuickConnect);
+                    forward(&tray.sender, TrayMessage::QuickConnect);
                 }),
                 ..Default::default()
             }));
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Local Shell"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.try_send(TrayMessage::LocalShell);
+                    forward(&tray.sender, TrayMessage::LocalShell);
                 }),
                 ..Default::default()
             }));
@@ -280,14 +330,14 @@ mod tray_impl {
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("About RustConn"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.try_send(TrayMessage::About);
+                    forward(&tray.sender, TrayMessage::About);
                 }),
                 ..Default::default()
             }));
             items.push(MenuItem::Standard(StandardItem {
                 label: gettext("Quit"),
                 activate: Box::new(|tray: &mut Self| {
-                    let _ = tray.sender.try_send(TrayMessage::Quit);
+                    forward(&tray.sender, TrayMessage::Quit);
                 }),
                 ..Default::default()
             }));

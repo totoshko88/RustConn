@@ -603,6 +603,8 @@ fn build_ui(app: &adw::Application, tray_manager: SharedTrayManager) {
 
     // Present window immediately — no waiting for secret backends
     window.present();
+    #[cfg(not(target_os = "macos"))]
+    crate::portal_check::warn_if_missing(window.gtk_window());
 
     // On screen lock and suspend, remove the SSH keys RustConn added to the
     // agent itself (never the user's). The handler runs off the GTK thread and
@@ -1326,7 +1328,7 @@ fn setup_tray_handling(
             match msg {
                 TrayMessage::ShowWindow => {
                     if let Some(win) = window_for_msgs.upgrade() {
-                        win.present();
+                        crate::tray::present_activated(&win);
                     }
                     tray.set_window_visible(true);
                 }
@@ -1342,14 +1344,14 @@ fn setup_tray_handling(
                             win.set_visible(false);
                             tray.set_window_visible(false);
                         } else {
-                            win.present();
+                            crate::tray::present_activated(&win);
                             tray.set_window_visible(true);
                         }
                     }
                 }
                 TrayMessage::Connect(conn_id) => {
                     if let Some(win) = window_for_msgs.upgrade() {
-                        win.present();
+                        crate::tray::present_activated(&win);
                         tray.set_window_visible(true);
                         gio::prelude::ActionGroupExt::activate_action(
                             &win,
@@ -1360,7 +1362,7 @@ fn setup_tray_handling(
                 }
                 TrayMessage::QuickConnect => {
                     if let Some(win) = window_for_msgs.upgrade() {
-                        win.present();
+                        crate::tray::present_activated(&win);
                         tray.set_window_visible(true);
                         gio::prelude::ActionGroupExt::activate_action(
                             &win,
@@ -1371,7 +1373,7 @@ fn setup_tray_handling(
                 }
                 TrayMessage::LocalShell => {
                     if let Some(win) = window_for_msgs.upgrade() {
-                        win.present();
+                        crate::tray::present_activated(&win);
                         tray.set_window_visible(true);
                         gio::prelude::ActionGroupExt::activate_action(
                             &win,
@@ -1382,7 +1384,7 @@ fn setup_tray_handling(
                 }
                 TrayMessage::About => {
                     if let Some(win) = window_for_msgs.upgrade() {
-                        win.present();
+                        crate::tray::present_activated(&win);
                         tray.set_window_visible(true);
                     }
                     gio::prelude::ActionGroupExt::activate_action(&app, "about", None);
@@ -1424,7 +1426,7 @@ fn setup_tray_handling(
                     if open > 0
                         && let Some(win) = window_for_msgs.upgrade()
                     {
-                        win.present();
+                        crate::tray::present_activated(&win);
                         tray.set_window_visible(true);
                     }
                     gio::prelude::ActionGroupExt::activate_action(&app, "quit", None);
@@ -1761,6 +1763,36 @@ fn load_css_styles() {
     if !crate::utils::add_css_provider(&provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION) {
         tracing::warn!("Failed to add CSS provider - no display available");
     }
+    follow_reduced_motion();
+}
+
+/// Stops the looping pulse animations while `gtk-enable-animations` is off.
+///
+/// GTK4 CSS has no `prefers-reduced-motion`; the setting behind it is
+/// `gtk-enable-animations`, which GTK fills from the desktop (GNOME "Animations",
+/// KDE animation speed set to instant via the settings portal) and which GTK
+/// itself honours for its own transitions. The stylesheet's own `animation`
+/// rules are ignored by that switch, so mirror it here, for every window.
+fn follow_reduced_motion() {
+    const STILL: &str = ".tunnel-node.starting .tunnel-status-dot, \
+        togglebutton.broadcasting image { animation: none; }";
+    let Some(settings) = gtk4::Settings::default() else {
+        return;
+    };
+    let provider = gtk4::CssProvider::new();
+    let apply = {
+        let provider = provider.clone();
+        move |settings: &gtk4::Settings| {
+            provider.load_from_string(if settings.is_gtk_enable_animations() {
+                ""
+            } else {
+                STILL
+            });
+        }
+    };
+    apply(&settings);
+    settings.connect_gtk_enable_animations_notify(apply);
+    crate::utils::add_css_provider(&provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION + 1);
 }
 
 /// Sets up application-level actions
