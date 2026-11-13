@@ -33,12 +33,14 @@ rustPlatform.buildRustPackage (finalAttrs: {
     hash = "sha256-9fhpr59wdl2CjB1a4fbbwjUOPHno0a0EAnLyiyJNHPM="; # v0.24.11, nix store prefetch-file --unpack
   };
 
-  # Placeholder: needs a real build (nix sandbox). Set lib.fakeHash, run
+  # cargoHash is the vendored-crates hash of the tag above (computed with
+  # rustPlatform.fetchCargoVendor on nixpkgs-unstable). On a version bump set
+  # lib.fakeHash, run
   #   nix-build -A rustconn   (in a nixpkgs checkout)
   # and copy the "got:" hash from the error. Cargo.lock has no git sources, so
   # no outputHashes are needed. src hash is refreshed per release the same way:
   #   nix store prefetch-file --unpack https://github.com/totoshko88/RustConn/archive/refs/tags/v<version>.tar.gz
-  cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  cargoHash = "sha256-0MQUlLfbbnNAGI30pi3H1+fLj3M7asEo+yNHGohvvmE="; # v0.24.11, fetchCargoVendor; recompute for 0.25.0
 
   nativeBuildInputs = [
     pkg-config
