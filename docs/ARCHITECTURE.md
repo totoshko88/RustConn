@@ -989,7 +989,7 @@ let key = KeePassHierarchy::build_group_lookup_key(&group, &groups, true);
 **Group Credentials:**
 - Groups can store shared credentials (username/password)
 - Stored in `RustConn/Groups/{path}` to separate from connection entries
-- Child connections can inherit group credentials via `PasswordSource::Group`
+- Child connections can inherit group credentials via `PasswordSource::Inherit`
 
 ### Fallback Chain
 

@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Nine unused credential-resolver methods** — `CredentialResolver::{needs_keepass_migration, migrate_to_keepass, store_unified, resolve_verified, store, retrieve, delete}_with_hierarchy`, `move_credential_on_group_change` and `rename_credential` had no callers (the GUI uses its own `vault_ops`); `resolve_with_hierarchy` stays. (`rustconn-core/src/secret/resolver.rs`)
 - **Unused connection-string interner** — `StringInterner`, `interner()`, `InternerStats` and the `intern_*`/`*_interning_stats` functions are gone from `rustconn-core`: the interned strings were thrown away, so the global set only grew and took a lock on every connection add or update. (`rustconn-core/src/performance/`, `rustconn-core/src/connection/`)
 - **Unused core modules** — `rustconn_core::cache` (`Cached`, `CacheRef`, `LoadCacheObject`) and `rustconn_core::drag_drop` (`DropConfig`, `calculate_*`, `ItemType`; the GUI has its own in `sidebar`) had no callers and are gone
 - **Dead GUI code** — the window actions `copy-username`, `copy-password`, `cluster-from-selection` and `select-item-by-id` (no menu, shortcut or palette entry used them), the `dialogs::keyboard` and `dialogs::adw_dialogs` modules, `block_on_async` / `ensure_main_thread` / `is_main_thread`, the unused tab activity/silence indicator CSS classes, and about 40 functions that nothing called (FreeRDP detection helpers, formatting and accessibility helpers, terminal and dialog getters).
@@ -99,6 +100,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semver-compatible updates: rustls-webpki 0.103.16 → 0.103.17, vnc-rs 0.6.0 → 0.6.1, zstd 0.14.3 → 0.14.4 (zstd-safe 8.3.0, zstd-sys 2.1.3). tokio was already at 1.54.1
 - `nix`, `libc` and `socket2` are declared once in `[workspace.dependencies]`
 - RUSTSEC-2023-0071 (`rsa`) stays ignored: sspi 0.23.1, winscard 0.4.1 and picky 7.0.0-rc.29 still pin rsa 0.10.0-rc.18
+
+### Known Issues
+
+- **`rustconn-cli run-script` does not see a `.kdbx` set on a connection or group ([#411](https://github.com/totoshko88/RustConn/issues/411))** — the GUI and `rustconn-cli secret` honour the per-connection / per-group KeePass database, but `run-script` reads saved passwords from the global database only, so a host with its own `.kdbx` gets no saved password and falls back to its keys or fails with "could not read the saved password". Found by reading the code (`rustconn-cli/src/commands/run_script.rs`), not confirmed by a run. Workaround: run the script from the GUI (**Run Local Script…**).
 
 ## [0.24.11] - 2026-11-12
 
