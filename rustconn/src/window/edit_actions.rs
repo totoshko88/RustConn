@@ -389,6 +389,58 @@ impl MainWindow {
         });
         window.add_action(&purge_deleted_action);
 
+        // Empty-trash action — permanently removes every entry still in the
+        // trash (and its vault credential) after a confirmation. Entries are
+        // normally purged as their Undo toast dismisses, so what remains here
+        // is what a crash or a quit during the toast left behind.
+        let empty_trash_action = gio::SimpleAction::new("empty-trash", None);
+        let state_clone = state.clone();
+        let window_weak = window.downgrade();
+        empty_trash_action.connect_activate(move |_, _| {
+            let Some(win) = window_weak.upgrade() else {
+                return;
+            };
+            let state = state_clone.clone();
+            let win_for_result = win.clone();
+            crate::alert::show_confirm(
+                &win,
+                &crate::i18n::i18n("Empty trash?"),
+                &crate::i18n::i18n(
+                    "Deleted items will be removed permanently. This cannot be undone.",
+                ),
+                &crate::i18n::i18n("Empty Trash"),
+                true,
+                move |confirmed| {
+                    if !confirmed {
+                        return;
+                    }
+                    let Ok(mut state_mut) = state.try_borrow_mut() else {
+                        tracing::warn!("Empty trash skipped: state busy");
+                        return;
+                    };
+                    match state_mut.empty_trash() {
+                        Ok(()) => crate::toast::show_toast_on_window(
+                            &win_for_result,
+                            &crate::i18n::i18n("Trash emptied"),
+                            crate::toast::ToastType::Success,
+                        ),
+                        Err(e) => {
+                            tracing::warn!(error = %e, "Failed to empty trash");
+                            crate::toast::show_toast_on_window(
+                                &win_for_result,
+                                &crate::i18n::i18n_f(
+                                    "Failed to empty trash: {}",
+                                    &[&e.to_string()],
+                                ),
+                                crate::toast::ToastType::Error,
+                            );
+                        }
+                    }
+                },
+            );
+        });
+        window.add_action(&empty_trash_action);
+
         // Retry connect action — retries a failed connection from toast button
         let retry_action = gio::SimpleAction::new("retry-connect", Some(glib::VariantTy::STRING));
         let state_clone = state.clone();
