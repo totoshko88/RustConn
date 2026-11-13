@@ -1290,6 +1290,23 @@ Before 0.20.9 there was no such setting. A separate window was sized from a fixe
 
 From the CLI: `--rdp-display-mode fit|fullscreen|custom|multimon` and `--rdp-resolution WIDTHxHEIGHT`.
 
+#### Choosing Which Monitors an External RDP Window Uses
+
+*New in 0.25.0.* The **Monitors** row under **External Window** takes FreeRDP monitor numbers, comma-separated. Its subtitle lists the screens GTK reports on this machine, numbered from 0, for example `0: DP-1 (DELL U2723QE), 1: HDMI-A-1 (LG)`.
+
+| Monitors | Window mode | Command line |
+|----------|-------------|--------------|
+| empty *(default)* | any | nothing added: FreeRDP uses the current monitor |
+| empty | **All monitors** | `/multimon` |
+| `1` | **Fullscreen** | `/f /monitors:1` |
+| `1` | **Fit to screen** / **Custom** | `/monitors:1 /multimon` |
+| `0,2` | any but **All monitors** | `/monitors:0,2 /multimon` |
+| `0,2` | **All monitors** | `/monitors:0,2 /multimon` (once) |
+
+A list wins over **All monitors**. FreeRDP honours `/monitors:` only in fullscreen or multi-monitor mode, so with **Fit to screen** or **Custom resolution** RustConn adds `/multimon`. The numbers are FreeRDP's, as printed by `xfreerdp /list:monitor`; on most desktops they follow the GTK order shown in the row, but if the wrong screen opens, check that list and correct the numbers. Connections saved before 0.25.0 have no list and behave as before.
+
+The setting is read only by the external FreeRDP client. The embedded viewer is a single widget, and GTK 4 on Wayland cannot place a window across several screens by coordinates, so it cannot span monitors. To put an embedded session fullscreen on one screen, right-click its tab and use **Move to New Window on…**.
+
 #### Resizing on Legacy Servers — Dynamic Resolution and Smart Sizing
 
 *New in 0.22.5.* Two Display-group switches control how an **external** FreeRDP

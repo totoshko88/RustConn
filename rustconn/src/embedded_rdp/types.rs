@@ -127,6 +127,8 @@ pub struct RdpConfig {
     /// ~1670x990 client on a 4K display — the widget size, unscaled, in a window
     /// that has nothing to do with the widget.
     pub external_display_mode: rustconn_core::models::RdpDisplayMode,
+    /// FreeRDP monitor ids for the external client (`/monitors:`).
+    pub external_monitor_ids: Vec<u32>,
     /// Fixed resolution for [`rustconn_core::models::RdpDisplayMode::Custom`]
     pub external_resolution: Option<rustconn_core::models::Resolution>,
     /// Session colour depth for the external client (`/bpp:`)
@@ -292,6 +294,7 @@ impl Default for RdpConfig {
             width: 1920,
             height: 1080,
             external_display_mode: rustconn_core::models::RdpDisplayMode::default(),
+            external_monitor_ids: Vec::new(),
             external_resolution: None,
             color_depth: None,
             system_scale_percent: 100,

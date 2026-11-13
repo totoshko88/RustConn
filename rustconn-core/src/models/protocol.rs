@@ -1784,6 +1784,45 @@ impl RdpDisplayMode {
     }
 }
 
+/// Returns the FreeRDP arguments that pick which monitors the session uses.
+///
+/// An empty list adds nothing, so FreeRDP keeps its default (the current
+/// monitor) and [`RdpDisplayMode::AllMonitors`] still means every monitor. A
+/// non-empty list wins over `AllMonitors`. FreeRDP reads `/monitors:` only in
+/// fullscreen or multi-monitor mode (`xfreerdp /?`), so `/multimon` is added
+/// unless the mode already emits it or the session is `/f` on a single monitor.
+#[must_use]
+pub fn freerdp_monitor_args(mode: RdpDisplayMode, ids: &[u32]) -> Vec<String> {
+    if ids.is_empty() {
+        return Vec::new();
+    }
+    let list = ids.iter().map(u32::to_string).collect::<Vec<_>>().join(",");
+    let mut args = vec![format!("/monitors:{list}")];
+    let single_fullscreen = ids.len() == 1 && mode == RdpDisplayMode::Fullscreen;
+    if !single_fullscreen && mode != RdpDisplayMode::AllMonitors {
+        args.push("/multimon".to_string());
+    }
+    args
+}
+
+/// Parses a comma-separated list of FreeRDP monitor ids (`0,2`).
+///
+/// Blank input is an empty list. Duplicates are dropped, order is kept.
+///
+/// # Errors
+///
+/// Returns the offending token when it is not a non-negative number.
+pub fn parse_monitor_ids(text: &str) -> Result<Vec<u32>, String> {
+    let mut ids = Vec::new();
+    for token in text.split(',').map(str::trim).filter(|t| !t.is_empty()) {
+        let id = token.parse::<u32>().map_err(|_| token.to_string())?;
+        if !ids.contains(&id) {
+            ids.push(id);
+        }
+    }
+    Ok(ids)
+}
+
 /// Smallest desktop scale factor MS-RDPEDISP accepts, and FreeRDP's own default.
 const FREERDP_MIN_SCALE_PERCENT: u16 = 100;
 
@@ -2526,6 +2565,14 @@ pub struct RdpConfig {
     /// widget it is drawn into.
     #[serde(default)]
     pub external_display_mode: RdpDisplayMode,
+    /// FreeRDP monitor ids (`/monitors:`) the external client should use.
+    ///
+    /// Empty means FreeRDP's own choice (the current monitor), or every monitor
+    /// under [`RdpDisplayMode::AllMonitors`]. Ids are FreeRDP's, as listed by
+    /// `xfreerdp /list:monitor`. Read only by the external client; absent in
+    /// files written before 0.25.0, which older versions simply ignore.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub monitor_ids: Vec<u32>,
     /// Screen resolution, used when [`Self::external_display_mode`] is
     /// [`RdpDisplayMode::Custom`].
     ///
@@ -2827,6 +2874,7 @@ impl Default for RdpConfig {
             performance_mode: RdpPerformanceMode::default(),
             graphics_mode: crate::rdp_client::graphics::GraphicsMode::default(),
             external_display_mode: RdpDisplayMode::default(),
+            monitor_ids: Vec::new(),
             resolution: None,
             color_depth: None,
             audio_redirect: false,
@@ -5303,6 +5351,63 @@ mod external_display_tests {
                 "{mode:?} left the session size to FreeRDP's default"
             );
         }
+    }
+
+    #[test]
+    fn monitor_args_cover_every_selection() {
+        use RdpDisplayMode::{AllMonitors, FitScreen, Fullscreen};
+        // Current monitor: nothing added, FreeRDP decides.
+        assert!(freerdp_monitor_args(Fullscreen, &[]).is_empty());
+        // One monitor: no /multimon needed.
+        assert_eq!(freerdp_monitor_args(Fullscreen, &[1]), ["/monitors:1"]);
+        // Fit/custom size ignore /monitors: on their own, so they get /multimon.
+        assert_eq!(
+            freerdp_monitor_args(FitScreen, &[1]),
+            ["/monitors:1", "/multimon"]
+        );
+        // Several: /multimon is required.
+        assert_eq!(
+            freerdp_monitor_args(FitScreen, &[0, 2]),
+            ["/monitors:0,2", "/multimon"]
+        );
+        // All monitors already emits /multimon, so it is not repeated.
+        assert_eq!(
+            freerdp_monitor_args(AllMonitors, &[0, 2]),
+            ["/monitors:0,2"]
+        );
+        // "All monitors" with no list stays the display mode's own /multimon.
+        assert!(freerdp_monitor_args(AllMonitors, &[]).is_empty());
+    }
+
+    #[test]
+    fn monitor_ids_parse_and_reject() {
+        assert_eq!(parse_monitor_ids(""), Ok(vec![]));
+        assert_eq!(parse_monitor_ids(" 0, 2,2 ,"), Ok(vec![0, 2]));
+        assert_eq!(parse_monitor_ids("0,x"), Err("x".to_string()));
+        assert_eq!(parse_monitor_ids("-1"), Err("-1".to_string()));
+    }
+
+    /// A connection saved before 0.25.0 has no `monitor_ids`; a default one
+    /// writes none, so older versions read files from this one unchanged.
+    #[test]
+    fn monitor_ids_are_optional_in_both_directions() {
+        let old: RdpConfig = serde_json::from_str(r#"{"external_display_mode":"fullscreen"}"#)
+            .expect("a pre-0.25 RdpConfig must still load");
+        assert!(old.monitor_ids.is_empty());
+        assert!(
+            !serde_json::to_string(&old)
+                .expect("serialises")
+                .contains("monitor_ids")
+        );
+
+        let chosen = RdpConfig {
+            monitor_ids: vec![1, 2],
+            ..RdpConfig::default()
+        };
+        let back: RdpConfig =
+            serde_json::from_str(&serde_json::to_string(&chosen).expect("serialises"))
+                .expect("round-trips");
+        assert_eq!(back.monitor_ids, [1, 2]);
     }
 
     #[test]

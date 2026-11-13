@@ -11,6 +11,7 @@ use secrecy::SecretString;
 use crate::models::{
     RdpAudioMode, RdpClipboardDirection, RdpDisplayMode, RdpGateway, RdpPerformanceMode,
     RdpSecurityLayer, Resolution, ScaleOverride, WindowGeometry, build_remote_app_freerdp_args,
+    freerdp_monitor_args,
 };
 
 /// A shared folder for RDP drive redirection
@@ -52,6 +53,8 @@ pub struct FreeRdpConfig {
     ///
     /// Only [`RdpDisplayMode::Custom`] reads `resolution`.
     pub display_mode: RdpDisplayMode,
+    /// FreeRDP monitor ids for `/monitors:`; empty keeps FreeRDP's default.
+    pub monitor_ids: Vec<u32>,
     /// Fixed resolution for [`RdpDisplayMode::Custom`].
     ///
     /// `None` is honoured rather than substituted: a `Custom` mode with no
@@ -182,6 +185,7 @@ impl FreeRdpConfig {
             password: None,
             domain: None,
             display_mode: RdpDisplayMode::default(),
+            monitor_ids: Vec::new(),
             resolution: None,
             scale_override: ScaleOverride::default(),
             system_scale_percent: 100,
@@ -616,6 +620,10 @@ pub fn build_freerdp_args(config: &FreeRdpConfig) -> Vec<String> {
 /// Pushes the arguments that decide the session's size, DPI and colour depth.
 fn push_display_args(args: &mut Vec<String>, config: &FreeRdpConfig) {
     args.extend(config.display_mode.freerdp_args(config.resolution.as_ref()));
+    args.extend(freerdp_monitor_args(
+        config.display_mode,
+        &config.monitor_ids,
+    ));
 
     if let Some(depth) = config.color_depth {
         args.push(format!("/bpp:{depth}"));
@@ -988,6 +996,35 @@ mod tests {
         let args = build_freerdp_args(&config);
 
         assert!(args.contains(&"/multimon".to_string()));
+    }
+
+    #[test]
+    fn test_build_freerdp_args_selected_monitors() {
+        let args_for = |mode, ids: Vec<u32>| {
+            build_freerdp_args(&FreeRdpConfig {
+                display_mode: mode,
+                monitor_ids: ids,
+                ..FreeRdpConfig::new("server.example.com")
+            })
+        };
+        let none = args_for(RdpDisplayMode::Fullscreen, vec![]);
+        assert!(!none.iter().any(|a| a.starts_with("/monitors:")));
+        assert!(!none.contains(&"/multimon".to_string()));
+
+        let one = args_for(RdpDisplayMode::Fullscreen, vec![1]);
+        assert!(one.contains(&"/monitors:1".to_string()) && one.contains(&"/f".to_string()));
+        assert!(!one.contains(&"/multimon".to_string()));
+
+        let two = args_for(RdpDisplayMode::Fullscreen, vec![0, 2]);
+        assert!(two.contains(&"/monitors:0,2".to_string()));
+        assert_eq!(two.iter().filter(|a| *a == "/multimon").count(), 1);
+
+        let all = args_for(RdpDisplayMode::AllMonitors, vec![0, 2]);
+        assert_eq!(all.iter().filter(|a| *a == "/multimon").count(), 1);
+        assert_eq!(
+            all.last().map(String::as_str),
+            Some("/v:server.example.com")
+        );
     }
 
     /// The performance mode used to be dropped on the external path: a Speed

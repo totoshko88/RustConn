@@ -138,6 +138,7 @@ pub(super) struct ConnectionDialogData<'a> {
     pub rdp_load_balance_entry: &'a Entry,
     pub rdp_auto_reconnect_check: &'a adw::SwitchRow,
     pub rdp_keyboard_hook_dropdown: &'a DropDown,
+    pub rdp_monitors_entry: &'a Entry,
     pub rdp_kerberos_check: &'a adw::SwitchRow,
     pub rdp_kdc_address_entry: &'a adw::EntryRow,
     pub rdp_jump_host_dropdown: &'a DropDown,
@@ -1758,6 +1759,10 @@ impl ConnectionDialogData<'_> {
                 _ => rustconn_core::rdp_client::graphics::GraphicsMode::Auto,
             },
             external_display_mode,
+            // A token that is not a number is dropped here; the entry is free text
+            // and an unreadable list must not turn into a bad `/monitors:` argument.
+            monitor_ids: rustconn_core::models::parse_monitor_ids(&self.rdp_monitors_entry.text())
+                .unwrap_or_default(),
             resolution,
             color_depth,
             audio_redirect: audio_mode.is_local_playback(),
