@@ -2123,7 +2123,7 @@ mod tests {
     /// The trash is the Undo buffer, not a sidebar folder: everything the
     /// sidebar lists comes from `list_connections`/`list_groups`, which must
     /// never include trashed items, also after a restart with a non-empty
-    /// `trash.toml` (H3: the sidebar has no "Trash" row by design).
+    /// `trash.toml`. The sidebar's Trash row is built separately, from the trash lists.
     #[tokio::test]
     async fn trashed_items_stay_out_of_live_lists_after_restart() {
         let temp = TempDir::new().unwrap();
