@@ -2120,6 +2120,35 @@ mod tests {
         );
     }
 
+    /// The trash is the Undo buffer, not a sidebar folder: everything the
+    /// sidebar lists comes from `list_connections`/`list_groups`, which must
+    /// never include trashed items, also after a restart with a non-empty
+    /// `trash.toml` (H3: the sidebar has no "Trash" row by design).
+    #[tokio::test]
+    async fn trashed_items_stay_out_of_live_lists_after_restart() {
+        let temp = TempDir::new().unwrap();
+        let cfg = || ConfigManager::with_config_dir(temp.path().to_path_buf());
+        let mut manager = ConnectionManager::new(cfg()).unwrap();
+        let conn = manager
+            .create_connection(
+                "Gone".to_string(),
+                "gone.example.com".to_string(),
+                22,
+                ProtocolConfig::Ssh(SshConfig::default()),
+            )
+            .unwrap();
+        let group = manager.create_group("GoneGroup".to_string()).unwrap();
+        manager.delete_connection(conn).unwrap();
+        manager.delete_group(group).unwrap();
+        manager.flush_persistence().await.unwrap();
+
+        let reloaded = ConnectionManager::new(cfg()).unwrap();
+        assert!(reloaded.list_connections().iter().all(|c| c.id != conn));
+        assert!(reloaded.list_groups().iter().all(|g| g.id != group));
+        assert!(reloaded.get_trash_connection(conn).is_some());
+        assert!(reloaded.get_trash_group(group).is_some());
+    }
+
     #[tokio::test]
     async fn purge_trash_connection_removes_only_the_named_entry() {
         let (mut manager, _temp) = create_test_manager();
