@@ -37,7 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`rpmspec` "bogus date" warnings** — 60 `%changelog` entries in `packaging/obs/rustconn.spec` named the wrong weekday; corrected.
 - **`start <name> cluster=<name>` in a script stopped silently ignoring the cluster** — the script engine parses the option but the GUI never implemented it, so the session started as a plain connection. The script now ends with "cluster=<name> is not supported", and the script reference and User Guide no longer list the option.
 - **Bitwarden Unlock no longer freezes the window on a slow keyring** — the saved master password is read from (and, after a typed password unlocks the vault, written to) the system keyring on the worker thread instead of the GTK thread, where a hung Secret Service blocked the whole application for up to 5 s.
-- **A background task that panics no longer leaves a "Testing…" spinner forever when it has a timeout** — `spawn_blocking_with_timeout` reports a panicked worker to its callback as "no result".
 
 ### Changed
 
