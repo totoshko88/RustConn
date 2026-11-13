@@ -686,12 +686,22 @@ pub fn show_popover(
     // items, so nothing changes for the common case; a long one scrolls.
     // Arrow-key navigation still works: a `ScrolledWindow` scrolls to whichever
     // child takes focus.
+    //
+    // The scrollbar is only asked for when the menu is taller than the cap: an
+    // `Automatic` policy reserves the scrollbar's minimum height even when the
+    // content fits, which left blank space under a one-item menu (Empty Trash).
+    let max_height = menu_max_height(window);
+    let scroll_policy = if stack.measure(Orientation::Vertical, -1).1 > max_height {
+        gtk4::PolicyType::Automatic
+    } else {
+        gtk4::PolicyType::External
+    };
     let scroller = gtk4::ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never)
-        .vscrollbar_policy(gtk4::PolicyType::Automatic)
+        .vscrollbar_policy(scroll_policy)
         .propagate_natural_height(true)
         .propagate_natural_width(true)
-        .max_content_height(menu_max_height(window))
+        .max_content_height(max_height)
         .child(&stack)
         .build();
     popover.set_child(Some(&scroller));
@@ -1388,5 +1398,61 @@ mod tests {
         ] {
             assert!(!offers_key_setup(protocol), "{protocol}");
         }
+    }
+}
+
+#[cfg(test)]
+mod gtk_tests {
+    use super::*;
+
+    /// A one-item menu must be as tall as its item. A `ScrolledWindow` with an
+    /// automatic vertical scrollbar reserves the scrollbar's minimum height even
+    /// when the content fits, which left blank space under "Empty Trash".
+    #[test]
+    #[ignore = "initialises GTK: needs a display and its own process; run alone with `cargo test -p rustconn --bin rustconn -- --ignored --exact sidebar_ui::gtk_tests::short_menu_is_as_tall_as_its_items`"]
+    fn short_menu_is_as_tall_as_its_items() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let app = gtk4::Application::builder()
+            .application_id("org.rustconn.test.menu-height")
+            .build();
+        if app.register(gtk4::gio::Cancellable::NONE).is_err() {
+            return;
+        }
+        let win = gtk4::ApplicationWindow::new(&app);
+        let anchor = Label::new(Some("row"));
+        win.set_child(Some(&anchor));
+        win.present();
+        let ctx = glib::MainContext::default();
+        while ctx.iteration(false) {}
+
+        show_trash_context_menu(
+            &anchor,
+            5.0,
+            5.0,
+            crate::sidebar::trash::TRASH_GROUP_ID,
+            MenuActivation::PointerFallback,
+        );
+        for _ in 0..20 {
+            while ctx.iteration(false) {}
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        let popover = anchor
+            .last_child()
+            .and_downcast::<gtk4::Popover>()
+            .expect("the menu is a popover child of its anchor");
+        let scroller = popover
+            .child()
+            .and_downcast::<gtk4::ScrolledWindow>()
+            .expect("the menu sits in a scrolled window");
+        let content = scroller.child().expect("viewport");
+        let natural = content.measure(Orientation::Vertical, -1).1;
+        assert_eq!(
+            scroller.height(),
+            natural,
+            "blank space under the menu items"
+        );
+        close_active_popover();
     }
 }
