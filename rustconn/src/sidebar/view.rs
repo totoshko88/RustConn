@@ -113,6 +113,17 @@ pub fn show_context_menu_for_connection_item(
     multi_session_checker: &Rc<RefCell<Option<Box<dyn Fn(&str) -> bool>>>>,
     activation: sidebar_ui::MenuActivation,
 ) {
+    // The virtual Trash row and its children have a menu of their own: the
+    // connection actions below would act on the *selection*, which for a trashed
+    // item resolves to nothing.
+    let row_id = item.id();
+    if row_id == crate::sidebar::trash::TRASH_GROUP_ID
+        || crate::sidebar::trash::parse_trash_item_id(&row_id).is_some()
+    {
+        sidebar_ui::show_trash_context_menu(widget, x, y, &row_id, activation);
+        return;
+    }
+
     let is_group = item.is_group();
     let protocol = item.protocol();
     let is_ssh = protocol == "ssh" || protocol == "sftp";
@@ -490,6 +501,25 @@ pub fn bind_list_item(
     let Some(content_box) = expander.child().and_downcast::<GtkBox>() else {
         return;
     };
+
+    // Accessible name of the virtual Trash row and of what is in it: the glyph
+    // icon carries no text, and a trashed item must say it is deleted. Rows are
+    // recycled, so any other row drops a label left by a previous bind.
+    let item_id = item.id();
+    if item_id == crate::sidebar::trash::TRASH_GROUP_ID {
+        let count = row.children().map_or(0, |c| c.n_items());
+        expander.update_property(&[gtk4::accessible::Property::Label(&i18n_f(
+            "Trash, {} deleted items",
+            &[&count.to_string()],
+        ))]);
+    } else if crate::sidebar::trash::parse_trash_item_id(&item_id).is_some() {
+        expander.update_property(&[gtk4::accessible::Property::Label(&i18n_f(
+            "{}, deleted",
+            &[&item.name()],
+        ))]);
+    } else {
+        expander.reset_property(gtk4::AccessibleProperty::Label);
+    }
 
     // Find icon — skip emoji labels that may have been prepended
     let icon = {

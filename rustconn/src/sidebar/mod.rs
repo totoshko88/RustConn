@@ -27,6 +27,7 @@ pub mod drag_drop;
 pub mod filter;
 pub mod saved_searches;
 pub mod search;
+pub mod trash;
 pub mod view;
 
 use std::cell::RefCell;
@@ -1125,6 +1126,82 @@ impl ConnectionSidebar {
     #[must_use]
     pub const fn list_view(&self) -> &ListView {
         &self.list_view
+    }
+
+    /// Whether the virtual Trash row is currently expanded.
+    #[must_use]
+    pub fn trash_expanded(&self) -> bool {
+        (0..self.tree_model.n_items()).any(|i| {
+            self.tree_model
+                .item(i)
+                .and_downcast::<TreeListRow>()
+                .is_some_and(|row| {
+                    row.is_expanded()
+                        && row
+                            .item()
+                            .and_downcast::<ConnectionItem>()
+                            .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+                })
+        })
+    }
+
+    /// Replaces the virtual Trash row at the end of the tree.
+    ///
+    /// The row exists only while `entries` is non-empty, so emptying the trash or
+    /// restoring its last item removes it. `expanded` re-opens it afterwards,
+    /// because the new `ConnectionItem` starts collapsed.
+    pub fn set_trash_row(&self, entries: &[trash::TrashEntry], expanded: bool) {
+        for i in 0..self.store.n_items() {
+            if self
+                .store
+                .item(i)
+                .and_downcast::<ConnectionItem>()
+                .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+            {
+                self.store.remove(i);
+                break;
+            }
+        }
+        if !trash::row_visible(entries) {
+            return;
+        }
+        let trash_item =
+            ConnectionItem::new_group_with_icon(trash::TRASH_GROUP_ID, &i18n("Trash"), "🗑");
+        for entry in entries {
+            let id = trash::trash_item_id(entry.kind, entry.id);
+            let child = match entry.kind {
+                trash::TrashKind::Group => {
+                    ConnectionItem::new_group_with_icon(&id, &entry.name, "📁")
+                }
+                trash::TrashKind::Connection => ConnectionItem::new_connection_full_with_icon(
+                    &id,
+                    &entry.name,
+                    &entry.protocol,
+                    &entry.host,
+                    "disconnected",
+                    false,
+                    "",
+                ),
+            };
+            trash_item.add_child(&child);
+        }
+        self.store.append(&trash_item);
+        if expanded {
+            let tree_model = self.tree_model.clone();
+            glib::idle_add_local_once(move || {
+                for i in 0..tree_model.n_items() {
+                    if let Some(row) = tree_model.item(i).and_downcast::<TreeListRow>()
+                        && row
+                            .item()
+                            .and_downcast::<ConnectionItem>()
+                            .is_some_and(|item| item.id() == trash::TRASH_GROUP_ID)
+                    {
+                        row.set_expanded(true);
+                        break;
+                    }
+                }
+            });
+        }
     }
 
     /// Returns the underlying store
