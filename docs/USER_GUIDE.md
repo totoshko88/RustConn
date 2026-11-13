@@ -5015,6 +5015,7 @@ markers appear; nothing else changes.
 | Ctrl+Shift+R | Pop Pane to Tab (keeps the session, returns it to its own tab) |
 | Ctrl+Shift+J | Unsplit (return every session to its own tab) |
 | Ctrl+` | Focus Next Pane |
+| Ctrl+Shift+Y | Reconnect Session (focused pane, or the active tab when not split) |
 
 ### Application
 
